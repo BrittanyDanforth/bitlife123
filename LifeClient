@@ -55,17 +55,46 @@ end
 MinigamesModule = safeRequireRS("Minigames")
 
 ----------------------------------------------------------------
--- REMOTES (optimized - fast lookup with short fallback)
+-- REMOTES (robust - wait for server to create them)
 ----------------------------------------------------------------
 
-local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or ReplicatedStorage:WaitForChild("LifeRemotes", 3)
-if not remotesFolder then
-	remotesFolder = ReplicatedStorage:FindFirstChild("Life") or ReplicatedStorage:WaitForChild("Life", 3)
+-- Wait for the remotes folder (server creates it on startup)
+local remotesFolder = nil
+local function waitForRemotes()
+	-- Try LifeRemotes first
+	remotesFolder = ReplicatedStorage:WaitForChild("LifeRemotes", 10)
+	if not remotesFolder then
+		-- Fallback to "Life" folder
+		remotesFolder = ReplicatedStorage:WaitForChild("Life", 5)
+	end
+	if not remotesFolder then
+		warn("[LifeClient] Could not find remotes folder! Server may not have initialized.")
+		return false
+	end
+	return true
 end
 
--- Use FindFirstChild first, then short WaitForChild as fallback
+-- Wait for remotes before continuing
+if not waitForRemotes() then
+	-- Create a placeholder folder to prevent nil errors
+	-- The game won't work properly, but at least it won't crash
+	warn("[LifeClient] Creating placeholder remotes folder - game will not function correctly!")
+	remotesFolder = Instance.new("Folder")
+	remotesFolder.Name = "LifeRemotesPlaceholder"
+	remotesFolder.Parent = ReplicatedStorage
+end
+
+-- Use FindFirstChild first, then WaitForChild as fallback
 local function getRemote(name, timeout)
-	return remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, timeout or 2)
+	if not remotesFolder then
+		warn("[LifeClient] Remotes folder is nil when getting:", name)
+		return nil
+	end
+	local remote = remotesFolder:FindFirstChild(name)
+	if not remote then
+		remote = remotesFolder:WaitForChild(name, timeout or 5)
+	end
+	return remote
 end
 
 local RequestAgeUp   = getRemote("RequestAgeUp")
@@ -73,8 +102,8 @@ local PresentEvent   = getRemote("PresentEvent")
 local SubmitChoice   = getRemote("SubmitChoice")
 local SyncState      = getRemote("SyncState")
 local SetLifeInfo    = getRemote("SetLifeInfo")
-local MinigameResult = getRemote("MinigameResult", 1)
-local MinigameStart  = getRemote("MinigameStart", 1)
+local MinigameResult = getRemote("MinigameResult", 2)
+local MinigameStart  = getRemote("MinigameStart", 2)
 
 ----------------------------------------------------------------
 -- STATE

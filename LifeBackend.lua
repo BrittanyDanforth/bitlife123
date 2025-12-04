@@ -1,13 +1,67 @@
 -- LifeBackend.lua (ServerScript)
 -- Main backend for BitLife-style game with smart event selection
+-- Place this in ServerScriptService
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local LifeEvents = require(ReplicatedStorage:WaitForChild("LifeEvents"))
+-- ════════════════════════════════════════════════════════════════════════════
+-- REQUIRE LIFE EVENTS MODULE
+-- The module should be at ServerScriptService.LifeServer.Modules.LifeEvents
+-- ════════════════════════════════════════════════════════════════════════════
+
+local LifeEvents
+local function loadLifeEvents()
+	-- Try ServerScriptService first (preferred location for server modules)
+	local ok, err = pcall(function()
+		local LifeServer = ServerScriptService:FindFirstChild("LifeServer")
+		if LifeServer then
+			local Modules = LifeServer:FindFirstChild("Modules")
+			if Modules then
+				local LifeEventsFolder = Modules:FindFirstChild("LifeEvents")
+				if LifeEventsFolder then
+					local init = LifeEventsFolder:FindFirstChild("init")
+					if init then
+						LifeEvents = require(init)
+						return
+					end
+				end
+			end
+		end
+		
+		-- Fallback: try ReplicatedStorage
+		local rsEvents = ReplicatedStorage:FindFirstChild("LifeEvents")
+		if rsEvents then
+			LifeEvents = require(rsEvents)
+			return
+		end
+		
+		error("LifeEvents module not found in ServerScriptService or ReplicatedStorage")
+	end)
+	
+	if not ok then
+		warn("[LifeBackend] Failed to load LifeEvents:", err)
+		-- Create a minimal fallback
+		LifeEvents = {
+			init = function() print("[LifeEvents] Using fallback (empty)") end,
+			buildYearQueue = function() return {} end,
+			getEvent = function() return nil end,
+			EventEngine = {
+				completeEvent = function() return nil end
+			}
+		}
+	end
+end
+
+loadLifeEvents()
 
 -- Initialize event system
-LifeEvents.init()
+if LifeEvents.init then
+	LifeEvents.init()
+end
+
+print("[LifeBackend] LifeEvents module loaded successfully")
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- REMOTES SETUP
@@ -59,6 +113,9 @@ local function createNewLife()
 		Smarts = 50,
 		Looks = 50,
 		
+		-- Stats alias for compatibility
+		Stats = nil, -- Will be set below
+		
 		-- Education
 		Education = "none",
 		GPA = 0,
@@ -66,6 +123,7 @@ local function createNewLife()
 		-- Career
 		CurrentJob = nil,
 		JobCategory = nil,
+		JobSalary = 0,
 		Experience = 0,
 		YearsAtJob = 0,
 		
@@ -95,6 +153,7 @@ local function createNewLife()
 			lastOccurrence = {},  -- eventId -> age when last occurred
 			completed = {},       -- eventId -> true (for one-time events)
 			choices = {},         -- eventId -> choiceIndex (last choice made)
+			recentCategories = {}, -- track recent categories for variety
 			feed = {},            -- array of { age, year, text }
 		},
 		
@@ -108,6 +167,8 @@ local function getPlayerData(player)
 	local userId = player.UserId
 	if not PlayerData[userId] then
 		PlayerData[userId] = createNewLife()
+		-- Create Stats alias pointing to self for compatibility
+		PlayerData[userId].Stats = PlayerData[userId]
 	end
 	return PlayerData[userId]
 end
@@ -124,8 +185,8 @@ end
 
 local function applyStatChanges(data, changes)
 	for stat, delta in pairs(changes) do
-		if stat == "Money" then
-			data.Money = data.Money + delta
+		if stat == "Money" or stat == "money" then
+			data.Money = math.max(0, (data.Money or 0) + delta)
 		elseif stat == "Happiness" or stat == "Health" or stat == "Smarts" or stat == "Looks" then
 			data[stat] = clampStat((data[stat] or 50) + delta)
 		end
@@ -133,9 +194,61 @@ local function applyStatChanges(data, changes)
 end
 
 local function applyFlagChanges(data, changes)
+	data.Flags = data.Flags or {}
 	for flag, value in pairs(changes) do
 		data.Flags[flag] = value
 	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- LIFE STAGE TRANSITIONS
+-- ════════════════════════════════════════════════════════════════════════════
+
+local LifeStages = {
+	{ id = "baby",       minAge = 0,  maxAge = 2,  name = "Baby" },
+	{ id = "toddler",    minAge = 3,  maxAge = 4,  name = "Toddler" },
+	{ id = "child",      minAge = 5,  maxAge = 12, name = "Child" },
+	{ id = "teen",       minAge = 13, maxAge = 17, name = "Teenager" },
+	{ id = "young_adult", minAge = 18, maxAge = 29, name = "Young Adult" },
+	{ id = "adult",      minAge = 30, maxAge = 49, name = "Adult" },
+	{ id = "middle_age", minAge = 50, maxAge = 64, name = "Middle-Aged" },
+	{ id = "senior",     minAge = 65, maxAge = 999, name = "Senior" },
+}
+
+local function getLifeStage(age)
+	for _, stage in ipairs(LifeStages) do
+		if age >= stage.minAge and age <= stage.maxAge then
+			return stage
+		end
+	end
+	return LifeStages[6] -- adult fallback
+end
+
+local function getStageTransitionEvent(prevAge, newAge)
+	local prevStage = getLifeStage(prevAge)
+	local newStage = getLifeStage(newAge)
+	
+	if prevStage.id ~= newStage.id then
+		-- Stage changed! Generate a transition event
+		return {
+			id = "stage_transition_" .. newStage.id,
+			title = "A New Chapter",
+			emoji = "🎂",
+			text = string.format("You are now a %s!", newStage.name),
+			question = "How do you feel about this new stage of life?",
+			choices = {
+				{ text = "Excited for what's ahead!", effects = { Happiness = 5 }, feed = string.format("You embraced becoming a %s.", newStage.name) },
+				{ text = "A bit nervous", effects = { Happiness = -2, Smarts = 2 }, feed = string.format("Growing up is scary sometimes. You're now a %s.", newStage.name) },
+				{ text = "Ready for the challenges", effects = { Health = 2, Smarts = 2 }, feed = string.format("You're ready to face life as a %s.", newStage.name) },
+			},
+			oneTime = true,
+			isMilestone = true,
+			priority = "high",
+			_category = "milestones",
+		}
+	end
+	
+	return nil
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -179,15 +292,17 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 local function selectEventsForPlayer(data)
-	-- Get eligible events based on player state and history
-	local events = LifeEvents.selectEventsForAge(data, data.EventHistory, 2)
+	-- Use the LifeEvents module to build the year's event queue
+	local events = LifeEvents.buildYearQueue(data, { maxEvents = 2 })
 	
 	-- Check for stage transition event
 	local prevAge = data.Age - 1
-	local transitionEvent = LifeEvents.getStageTransitionEvent(prevAge, data.Age)
-	if transitionEvent then
-		-- Put transition event first
-		table.insert(events, 1, transitionEvent)
+	if prevAge >= 0 then
+		local transitionEvent = getStageTransitionEvent(prevAge, data.Age)
+		if transitionEvent then
+			-- Put transition event first
+			table.insert(events, 1, transitionEvent)
+		end
 	end
 	
 	return events
@@ -221,7 +336,7 @@ local function presentNextEvent(player, data)
 		text = event.text or "",
 		question = event.question or "What do you do?",
 		choices = {},
-		category = event.category,
+		category = event._category or event.category,
 		showRelationship = event.showRelationship,
 		relationName = event.relationName,
 		relationship = event.relationship,
@@ -350,15 +465,19 @@ SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
 	print(string.format("[LifeBackend] Resolving event %s for %s with choice #%d", 
 		eventId, player.Name, choiceIndex))
 	
-	-- Process the choice
-	local outcome = LifeEvents.processChoice(eventId, choiceIndex, data)
+	-- Process the choice using EventEngine
+	local outcome = LifeEvents.EventEngine.completeEvent(currentEvent, choiceIndex, data)
 	
 	if outcome then
-		-- Apply stat changes
-		applyStatChanges(data, outcome.statChanges or {})
+		-- Apply stat changes (EventEngine may have already done this, but let's be safe)
+		if outcome.statChanges then
+			applyStatChanges(data, outcome.statChanges)
+		end
 		
 		-- Apply flag changes
-		applyFlagChanges(data, outcome.flagChanges or {})
+		if outcome.flagChanges then
+			applyFlagChanges(data, outcome.flagChanges)
+		end
 		
 		-- Record in history
 		data.EventHistory.occurrences[eventId] = (data.EventHistory.occurrences[eventId] or 0) + 1
@@ -368,16 +487,6 @@ SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
 		-- Mark one-time events as completed
 		if currentEvent.oneTime then
 			data.EventHistory.completed[eventId] = true
-		end
-		
-		-- Career hints
-		if outcome.unlocks and outcome.unlocks.careerHint then
-			data.CareerHints[outcome.unlocks.careerHint] = true
-		end
-		
-		-- Story arcs
-		if outcome.unlocks and outcome.unlocks.storyArc then
-			table.insert(data.StoryArcs, outcome.unlocks.storyArc)
 		end
 		
 		-- Add to feed
@@ -446,6 +555,7 @@ ResetLife.OnServerEvent:Connect(function(player)
 	
 	-- Create completely new life
 	PlayerData[userId] = createNewLife()
+	PlayerData[userId].Stats = PlayerData[userId]
 	
 	-- Notify client
 	SyncState:FireClient(player, PlayerData[userId], "A new life begins...")
