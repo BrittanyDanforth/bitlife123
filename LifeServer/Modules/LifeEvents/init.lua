@@ -530,17 +530,18 @@ local EventPools = {
 		},
 		{
 			id = "serious_relationship",
-			title = "Getting Serious",
+			title = "Getting More Serious",
 			emoji = "💑",
-			text = "Your relationship is getting more serious.",
-			question = "How do you feel?",
-			minAge = 20, maxAge = 35,
-			baseChance = 0.5, cooldown = 3,
+			text = "Your relationship has been going really well lately.",
+			question = "How do you want to take it to the next level?",
+			minAge = 18, maxAge = 40,
+			baseChance = 0.5, cooldown = 5,
+			requiresFlags = { has_partner = true }, -- Must already be dating
 			choices = {
-				{ text = "I'm ready to commit", effects = { Happiness = 10 }, setFlags = { committed_relationship = true }, feed = "Ready for a serious commitment!" },
-				{ text = "Let's take it slow", effects = { Happiness = 3 }, feed = "Taking things one step at a time." },
-				{ text = "I'm not sure about this", effects = { Happiness = -5 }, feed = "Having doubts about the relationship." },
-				{ text = "I need to end this", effects = { Happiness = -8 }, setFlags = { recently_single = true }, feed = "You ended the relationship." },
+				{ text = "Commit fully to this", effects = { Happiness = 10 }, setFlags = { committed_relationship = true }, feed = "You're fully committed now!" },
+				{ text = "Keep things as they are", effects = { Happiness = 3 }, feed = "No need to rush things." },
+				{ text = "Take a step back", effects = { Happiness = -5 }, feed = "You need some space to think." },
+				{ text = "End the relationship", effects = { Happiness = -8 }, setFlags = { recently_single = true }, feed = "You ended the relationship." },
 			},
 		},
 		{
@@ -1451,6 +1452,69 @@ end
 
 local EventEngine = {}
 
+-- Name pools for generating relationship names
+local MaleNames = {"James", "Michael", "David", "John", "Robert", "Chris", "Daniel", "Matthew", "Anthony", "Mark", "Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler", "Alex", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden", "Carter"}
+local FemaleNames = {"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Avery", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley", "Aria", "Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel", "Luna"}
+
+local function generateName(gender)
+	if gender == "female" then
+		return FemaleNames[RANDOM:NextInteger(1, #FemaleNames)]
+	else
+		return MaleNames[RANDOM:NextInteger(1, #MaleNames)]
+	end
+end
+
+local function getOppositeGender(playerGender)
+	if playerGender == "male" or playerGender == "Male" then
+		return "female"
+	else
+		return "male"
+	end
+end
+
+local function createRelationship(state, relType, customName)
+	state.Relationships = state.Relationships or {}
+	
+	local id = relType .. "_" .. tostring(RANDOM:NextInteger(1000, 9999))
+	local age = state.Age or 20
+	local gender = "male"
+	local name = customName
+	
+	-- For romance, use opposite gender
+	if relType == "romance" or relType == "partner" then
+		gender = getOppositeGender(state.Gender or "male")
+		name = name or generateName(gender)
+		-- Romance partners are around the same age
+		age = math.max(18, age + RANDOM:NextInteger(-5, 5))
+	elseif relType == "friend" then
+		-- Friends can be any gender
+		gender = RANDOM:NextNumber() > 0.5 and "male" or "female"
+		name = name or generateName(gender)
+		age = math.max(5, age + RANDOM:NextInteger(-3, 3))
+	end
+	
+	local relationship = {
+		id = id,
+		name = name,
+		type = relType,
+		role = relType == "romance" and "Partner" or (relType == "friend" and "Friend" or relType),
+		relationship = RANDOM:NextInteger(50, 75), -- Starting relationship level
+		age = age,
+		gender = gender,
+		alive = true,
+		metAge = state.Age,
+	}
+	
+	state.Relationships[id] = relationship
+	
+	-- For romance, also set as "partner" for easy access
+	if relType == "romance" then
+		state.Relationships.partner = relationship
+	end
+	
+	return relationship
+end
+
 function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	if not eventDef or not eventDef.choices then
 		return nil
@@ -1500,6 +1564,113 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	if choice.hintCareer then
 		state.CareerHints = state.CareerHints or {}
 		state.CareerHints[choice.hintCareer] = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CREATION BASED ON EVENT
+	-- ═══════════════════════════════════════════════════════════════════
+	
+	local eventId = eventDef.id or ""
+	state.Relationships = state.Relationships or {}
+	
+	-- Friend-making events (childhood best friend)
+	if eventId == "first_best_friend" then
+		if choiceIndex >= 1 and choiceIndex <= 4 then -- All positive choices make a friend
+			local friend = createRelationship(state, "friend")
+			outcome.feedText = outcome.feedText .. " " .. friend.name .. " became your best friend!"
+			outcome.newRelationship = friend
+		end
+	end
+	
+	-- New friendship (adult)
+	if eventId == "new_friendship" then
+		if choiceIndex == 1 or choiceIndex == 4 then -- "Invite to hang out" or "Share something personal"
+			local friend = createRelationship(state, "friend")
+			outcome.feedText = outcome.feedText .. " You became friends with " .. friend.name .. "!"
+			outcome.newRelationship = friend
+		end
+	end
+	
+	-- Dating app - creates a new partner
+	if eventId == "dating_app" then
+		if choiceIndex == 1 then -- "Met someone special"
+			if not state.Relationships.partner then
+				local partner = createRelationship(state, "romance")
+				outcome.feedText = "You matched with " .. partner.name .. " and hit it off!"
+				outcome.newRelationship = partner
+				state.Flags.dating = true
+				state.Flags.has_partner = true
+			end
+		end
+	end
+	
+	-- High school romance
+	if eventId == "high_school_romance" then
+		if choiceIndex == 1 then -- "Ask them out"
+			if not state.Relationships.partner then
+				local partner = createRelationship(state, "romance")
+				outcome.feedText = "You asked " .. partner.name .. " out and they said yes!"
+				outcome.newRelationship = partner
+				state.Flags.dating = true
+				state.Flags.has_partner = true
+			end
+		end
+	end
+	
+	-- Serious relationship - deepens existing relationship
+	if eventId == "serious_relationship" then
+		local partner = state.Relationships.partner
+		if partner then
+			if choiceIndex == 1 then -- "Commit fully"
+				partner.relationship = math.min(100, (partner.relationship or 50) + 20)
+				state.Flags.committed_relationship = true
+				outcome.feedText = "Your relationship with " .. partner.name .. " is now rock solid!"
+			elseif choiceIndex == 4 then -- "End the relationship"
+				state.Relationships.partner = nil
+				state.Relationships[partner.id] = nil
+				state.Flags.has_partner = nil
+				state.Flags.dating = nil
+				state.Flags.recently_single = true
+				outcome.feedText = "You broke up with " .. partner.name .. "."
+			else
+				partner.relationship = math.min(100, (partner.relationship or 50) + 5)
+			end
+		end
+	end
+	
+	-- First crush (childhood) - just a flag, no real relationship
+	if eventId == "first_crush_kid" then
+		if choiceIndex == 1 or choiceIndex == 2 then
+			state.Flags.had_first_crush = true
+		end
+	end
+	
+	-- Marriage proposal - requires existing partner
+	if eventId == "marriage_proposal" then
+		local partner = state.Relationships.partner
+		if partner then
+			if choiceIndex == 1 or choiceIndex == 3 then -- They said yes
+				state.Flags.engaged = true
+				partner.role = "Fiancé"
+				outcome.feedText = partner.name .. " said YES! You're engaged!"
+			elseif choiceIndex == 2 then -- They said no
+				state.Relationships.partner = nil
+				state.Relationships[partner.id] = nil
+				state.Flags.proposal_rejected = true
+				outcome.feedText = partner.name .. " said no. The relationship ended."
+			end
+		end
+	end
+	
+	-- Wedding creates marriage
+	if eventId == "wedding_day" then
+		local partner = state.Relationships.partner
+		if partner then
+			state.Flags.married = true
+			state.Flags.engaged = nil
+			partner.role = "Spouse"
+			outcome.feedText = "You married " .. partner.name .. "!"
+		end
 	end
 	
 	return outcome
