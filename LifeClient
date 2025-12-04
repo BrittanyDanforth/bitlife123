@@ -1685,50 +1685,52 @@ end)
 -- DEATH OVERLAY
 ----------------------------------------------------------------
 
-local deathBlocker = Instance.new("TextButton")
-deathBlocker.Name = "DeathBlocker"
-deathBlocker.Size = UDim2.fromScale(1, 1)
-deathBlocker.BackgroundTransparency = 1
-deathBlocker.Text = ""
-deathBlocker.AutoButtonColor = false
-deathBlocker.Visible = false
-deathBlocker.Active = false
-deathBlocker.Selectable = false
-deathBlocker.ZIndex = 118
-deathBlocker.Parent = screenGui
+local DeathUI = {}
 
-local deathOverlay = Instance.new("Frame")
-deathOverlay.Name = "DeathOverlay"
-deathOverlay.Size = UDim2.fromScale(1, 1)
-deathOverlay.BackgroundColor3 = C.Black
-deathOverlay.BackgroundTransparency = 0.45
-deathOverlay.Visible = false
-deathOverlay.ZIndex = 120
-deathOverlay.Parent = screenGui
+DeathUI.blocker = Instance.new("TextButton")
+DeathUI.blocker.Name = "DeathBlocker"
+DeathUI.blocker.Size = UDim2.fromScale(1, 1)
+DeathUI.blocker.BackgroundTransparency = 1
+DeathUI.blocker.Text = ""
+DeathUI.blocker.AutoButtonColor = false
+DeathUI.blocker.Visible = false
+DeathUI.blocker.Active = false
+DeathUI.blocker.Selectable = false
+DeathUI.blocker.ZIndex = 118
+DeathUI.blocker.Parent = screenGui
 
-local deathCard = Instance.new("Frame")
-deathCard.Size = UDim2.new(0, 360, 0, 0)
-deathCard.AutomaticSize = Enum.AutomaticSize.Y
-deathCard.AnchorPoint = Vector2.new(0.5, 0.5)
-deathCard.Position = UDim2.fromScale(0.5, 0.5)
-deathCard.BackgroundColor3 = C.White
-deathCard.ZIndex = 121
-deathCard.Parent = deathOverlay
-corner(deathCard, 24)
-pad(deathCard, 24, 24, 28, 32)
+DeathUI.overlay = Instance.new("Frame")
+DeathUI.overlay.Name = "DeathOverlay"
+DeathUI.overlay.Size = UDim2.fromScale(1, 1)
+DeathUI.overlay.BackgroundColor3 = C.Black
+DeathUI.overlay.BackgroundTransparency = 0.45
+DeathUI.overlay.Visible = false
+DeathUI.overlay.ZIndex = 120
+DeathUI.overlay.Parent = screenGui
+
+DeathUI.card = Instance.new("Frame")
+DeathUI.card.Size = UDim2.new(0, 360, 0, 0)
+DeathUI.card.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.card.AnchorPoint = Vector2.new(0.5, 0.5)
+DeathUI.card.Position = UDim2.fromScale(0.5, 0.5)
+DeathUI.card.BackgroundColor3 = C.White
+DeathUI.card.ZIndex = 121
+DeathUI.card.Parent = DeathUI.overlay
+corner(DeathUI.card, 24)
+pad(DeathUI.card, 24, 24, 28, 32)
 
 local deathLayout = Instance.new("UIListLayout")
 deathLayout.Padding = UDim.new(0, 12)
 deathLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 deathLayout.SortOrder = Enum.SortOrder.LayoutOrder
-deathLayout.Parent = deathCard
+deathLayout.Parent = DeathUI.card
 
-local deathEmoji = Instance.new("Frame")
-deathEmoji.Size = UDim2.new(0, 86, 0, 86)
-deathEmoji.BackgroundColor3 = C.RedPale
-deathEmoji.ZIndex = 122
-deathEmoji.Parent = deathCard
-corner(deathEmoji, 22)
+DeathUI.emojiFrame = Instance.new("Frame")
+DeathUI.emojiFrame.Size = UDim2.new(0, 86, 0, 86)
+DeathUI.emojiFrame.BackgroundColor3 = C.RedPale
+DeathUI.emojiFrame.ZIndex = 122
+DeathUI.emojiFrame.Parent = DeathUI.card
+corner(DeathUI.emojiFrame, 22)
 
 local deathEmojiLabel = Instance.new("TextLabel")
 deathEmojiLabel.Size = UDim2.fromScale(1, 1)
@@ -1738,44 +1740,44 @@ deathEmojiLabel.TextSize = 48
 deathEmojiLabel.TextColor3 = C.RedDark
 deathEmojiLabel.Text = "☠️"
 deathEmojiLabel.ZIndex = 123
-deathEmojiLabel.Parent = deathEmoji
+deathEmojiLabel.Parent = DeathUI.emojiFrame
 
-local deathTitle = Instance.new("TextLabel")
-deathTitle.Size = UDim2.new(1, 0, 0, 32)
-deathTitle.BackgroundTransparency = 1
-deathTitle.Font = F.Title
-deathTitle.TextSize = 24
-deathTitle.TextColor3 = C.Gray900
-deathTitle.TextWrapped = true
-deathTitle.Text = "Life Ended"
-deathTitle.ZIndex = 122
-deathTitle.Parent = deathCard
+DeathUI.title = Instance.new("TextLabel")
+DeathUI.title.Size = UDim2.new(1, 0, 0, 32)
+DeathUI.title.BackgroundTransparency = 1
+DeathUI.title.Font = F.Title
+DeathUI.title.TextSize = 24
+DeathUI.title.TextColor3 = C.Gray900
+DeathUI.title.TextWrapped = true
+DeathUI.title.Text = "Life Ended"
+DeathUI.title.ZIndex = 122
+DeathUI.title.Parent = DeathUI.card
 
-local deathCause = Instance.new("TextLabel")
-deathCause.Size = UDim2.new(1, 0, 0, 0)
-deathCause.AutomaticSize = Enum.AutomaticSize.Y
-deathCause.BackgroundTransparency = 1
-deathCause.Font = F.Body
-deathCause.TextSize = 16
-deathCause.TextColor3 = C.Gray600
-deathCause.TextWrapped = true
-deathCause.TextXAlignment = Enum.TextXAlignment.Center
-deathCause.Text = "Tap restart to begin a new story."
-deathCause.ZIndex = 122
-deathCause.Parent = deathCard
+DeathUI.cause = Instance.new("TextLabel")
+DeathUI.cause.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.cause.BackgroundTransparency = 1
+DeathUI.cause.Font = F.Body
+DeathUI.cause.TextSize = 16
+DeathUI.cause.TextColor3 = C.Gray600
+DeathUI.cause.TextWrapped = true
+DeathUI.cause.TextXAlignment = Enum.TextXAlignment.Center
+DeathUI.cause.Text = "Tap restart to begin a new story."
+DeathUI.cause.ZIndex = 122
+DeathUI.cause.Parent = DeathUI.card
 
-local deathQuote = Instance.new("TextLabel")
-deathQuote.Size = UDim2.new(1, -8, 0, 0)
-deathQuote.AutomaticSize = Enum.AutomaticSize.Y
-deathQuote.BackgroundTransparency = 1
-deathQuote.Font = F.Body
-deathQuote.TextSize = 14
-deathQuote.TextColor3 = C.Gray500
-deathQuote.TextWrapped = true
-deathQuote.TextXAlignment = Enum.TextXAlignment.Center
-deathQuote.Text = "Every ending is a chance to write a louder sequel."
-deathQuote.ZIndex = 122
-deathQuote.Parent = deathCard
+DeathUI.quote = Instance.new("TextLabel")
+DeathUI.quote.Size = UDim2.new(1, -8, 0, 0)
+DeathUI.quote.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.quote.BackgroundTransparency = 1
+DeathUI.quote.Font = F.Body
+DeathUI.quote.TextSize = 14
+DeathUI.quote.TextColor3 = C.Gray500
+DeathUI.quote.TextWrapped = true
+DeathUI.quote.TextXAlignment = Enum.TextXAlignment.Center
+DeathUI.quote.Text = "Every ending is a chance to write a louder sequel."
+DeathUI.quote.ZIndex = 122
+DeathUI.quote.Parent = DeathUI.card
 
 local function createDivider(height, transparency)
 	local divider = Instance.new("Frame")
@@ -1786,87 +1788,87 @@ local function createDivider(height, transparency)
 	return divider
 end
 
-createDivider(1).Parent = deathCard
+createDivider(1).Parent = DeathUI.card
 
-local deathStatsLabel = Instance.new("TextLabel")
-deathStatsLabel.Size = UDim2.new(1, 0, 0, 18)
-deathStatsLabel.BackgroundTransparency = 1
-deathStatsLabel.Font = F.Medium
-deathStatsLabel.TextSize = 14
-deathStatsLabel.TextColor3 = C.Gray500
-deathStatsLabel.Text = "Final Stats"
-deathStatsLabel.ZIndex = 122
-deathStatsLabel.Parent = deathCard
+DeathUI.statsLabel = Instance.new("TextLabel")
+DeathUI.statsLabel.Size = UDim2.new(1, 0, 0, 18)
+DeathUI.statsLabel.BackgroundTransparency = 1
+DeathUI.statsLabel.Font = F.Medium
+DeathUI.statsLabel.TextSize = 14
+DeathUI.statsLabel.TextColor3 = C.Gray500
+DeathUI.statsLabel.Text = "Final Stats"
+DeathUI.statsLabel.ZIndex = 122
+DeathUI.statsLabel.Parent = DeathUI.card
 
-local deathStatsList = Instance.new("Frame")
-deathStatsList.Size = UDim2.new(1, 0, 0, 0)
-deathStatsList.AutomaticSize = Enum.AutomaticSize.Y
-deathStatsList.BackgroundTransparency = 1
-deathStatsList.ZIndex = 122
-deathStatsList.Parent = deathCard
+DeathUI.statsList = Instance.new("Frame")
+DeathUI.statsList.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.statsList.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.statsList.BackgroundTransparency = 1
+DeathUI.statsList.ZIndex = 122
+DeathUI.statsList.Parent = DeathUI.card
 
 local deathStatsLayout = Instance.new("UIListLayout")
 deathStatsLayout.Padding = UDim.new(0, 6)
-deathStatsLayout.Parent = deathStatsList
+deathStatsLayout.Parent = DeathUI.statsList
 
-createDivider(1, 0.35).Parent = deathCard
+createDivider(1, 0.35).Parent = DeathUI.card
 
-local deathSummaryLabel = deathStatsLabel:Clone()
-deathSummaryLabel.Text = "Legacy Highlights"
-deathSummaryLabel.Parent = deathCard
+DeathUI.summaryLabel = DeathUI.statsLabel:Clone()
+DeathUI.summaryLabel.Text = "Legacy Highlights"
+DeathUI.summaryLabel.Parent = DeathUI.card
 
-local deathSummaryList = Instance.new("Frame")
-deathSummaryList.Size = UDim2.new(1, 0, 0, 0)
-deathSummaryList.AutomaticSize = Enum.AutomaticSize.Y
-deathSummaryList.BackgroundTransparency = 1
-deathSummaryList.ZIndex = 122
-deathSummaryList.Parent = deathCard
+DeathUI.summaryList = Instance.new("Frame")
+DeathUI.summaryList.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.summaryList.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.summaryList.BackgroundTransparency = 1
+DeathUI.summaryList.ZIndex = 122
+DeathUI.summaryList.Parent = DeathUI.card
 
 local deathSummaryLayout = Instance.new("UIListLayout")
-deathSummaryLayout.Padding = UDim.new(0, 6)
-deathSummaryLayout.Parent = deathSummaryList
+deathSummaryLayout.Padding = UDim2.new(0, 6)
+deathSummaryLayout.Parent = DeathUI.summaryList
 
-createDivider(1, 0.35).Parent = deathCard
+createDivider(1, 0.35).Parent = DeathUI.card
 
-local deathTimelineLabel = deathStatsLabel:Clone()
-deathTimelineLabel.Text = "Last Moments"
-deathTimelineLabel.Parent = deathCard
+DeathUI.timelineLabel = DeathUI.statsLabel:Clone()
+DeathUI.timelineLabel.Text = "Last Moments"
+DeathUI.timelineLabel.Parent = DeathUI.card
 
-local deathTimelineList = Instance.new("Frame")
-deathTimelineList.Size = UDim2.new(1, 0, 0, 0)
-deathTimelineList.AutomaticSize = Enum.AutomaticSize.Y
-deathTimelineList.BackgroundTransparency = 1
-deathTimelineList.ZIndex = 122
-deathTimelineList.Parent = deathCard
+DeathUI.timelineList = Instance.new("Frame")
+DeathUI.timelineList.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.timelineList.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.timelineList.BackgroundTransparency = 1
+DeathUI.timelineList.ZIndex = 122
+DeathUI.timelineList.Parent = DeathUI.card
 
 local deathTimelineLayout = Instance.new("UIListLayout")
-deathTimelineLayout.Padding = UDim.new(0, 4)
-deathTimelineLayout.Parent = deathTimelineList
+deathTimelineLayout.Padding = UDim2.new(0, 4)
+deathTimelineLayout.Parent = DeathUI.timelineList
 
-local deathRestart = Instance.new("TextButton")
-deathRestart.Size = UDim2.new(1, 0, 0, 52)
-deathRestart.BackgroundColor3 = C.Green
-deathRestart.Font = F.Button
-deathRestart.TextSize = 18
-deathRestart.TextColor3 = C.White
-deathRestart.Text = "Start New Life"
-deathRestart.AutoButtonColor = false
-deathRestart.ZIndex = 122
-deathRestart.Parent = deathCard
-corner(deathRestart, 14)
+DeathUI.restart = Instance.new("TextButton")
+DeathUI.restart.Size = UDim2.new(1, 0, 0, 52)
+DeathUI.restart.BackgroundColor3 = C.Green
+DeathUI.restart.Font = F.Button
+DeathUI.restart.TextSize = 18
+DeathUI.restart.TextColor3 = C.White
+DeathUI.restart.Text = "Start New Life"
+DeathUI.restart.AutoButtonColor = false
+DeathUI.restart.ZIndex = 122
+DeathUI.restart.Parent = DeathUI.card
+corner(DeathUI.restart, 14)
 
-local deathTip = Instance.new("TextLabel")
-deathTip.Size = UDim2.new(1, 0, 0, 0)
-deathTip.AutomaticSize = Enum.AutomaticSize.Y
-deathTip.BackgroundTransparency = 1
-deathTip.Font = F.Body
-deathTip.TextSize = 12
-deathTip.TextColor3 = C.Gray500
-deathTip.TextWrapped = true
-deathTip.TextXAlignment = Enum.TextXAlignment.Center
-deathTip.Text = "All progress was saved. Tap the button above to roll a brand-new destiny."
-deathTip.ZIndex = 122
-deathTip.Parent = deathCard
+DeathUI.tip = Instance.new("TextLabel")
+DeathUI.tip.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.tip.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.tip.BackgroundTransparency = 1
+DeathUI.tip.Font = F.Body
+DeathUI.tip.TextSize = 12
+DeathUI.tip.TextColor3 = C.Gray500
+DeathUI.tip.TextWrapped = true
+DeathUI.tip.TextXAlignment = Enum.TextXAlignment.Center
+DeathUI.tip.Text = "All progress was saved. Tap the button above to roll a brand-new destiny."
+DeathUI.tip.ZIndex = 122
+DeathUI.tip.Parent = DeathUI.card
 
 local function clearChildren(container)
 	for _, child in ipairs(container:GetChildren()) do
@@ -1970,70 +1972,70 @@ local function renderTimelineRow(parent, text)
 end
 
 local function populateDeathStats(state)
-	clearChildren(deathStatsList)
+	clearChildren(DeathUI.statsList)
 	for _, stat in ipairs(buildDeathStats(state)) do
-		renderStatRow(deathStatsList, stat)
+		renderStatRow(DeathUI.statsList, stat)
 	end
 end
 
 local function populateDeathSummary(state)
-	clearChildren(deathSummaryList)
+	clearChildren(DeathUI.summaryList)
 	for _, line in ipairs(buildDeathSummary(state)) do
-		renderSummaryRow(deathSummaryList, line)
+		renderSummaryRow(DeathUI.summaryList, line)
 	end
 end
 
 local function populateDeathTimeline(state)
-	clearChildren(deathTimelineList)
+	clearChildren(DeathUI.timelineList)
 	for _, line in ipairs(buildDeathTimeline(state, 4)) do
-		renderTimelineRow(deathTimelineList, line)
+		renderTimelineRow(DeathUI.timelineList, line)
 	end
 end
 
 local function setScreensLocked(locked, reason)
 	screensLocked = locked and true or false
-	if deathBlocker then
-		deathBlocker.Visible = screensLocked
-		deathBlocker.Active = screensLocked
-		deathBlocker.Selectable = screensLocked
+	if DeathUI.blocker then
+		DeathUI.blocker.Visible = screensLocked
+		DeathUI.blocker.Active = screensLocked
+		DeathUI.blocker.Selectable = screensLocked
 	end
 	if screensLocked then
 		log("UI locked:", reason or "unspecified")
 	end
 end
 
-deathBlocker.MouseButton1Click:Connect(function()
+DeathUI.blocker.MouseButton1Click:Connect(function()
 	log("Death overlay active - blocker consumed click")
 end)
 
-deathRestart.MouseEnter:Connect(function()
-	tween(deathRestart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+DeathUI.restart.MouseEnter:Connect(function()
+	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
 end)
-deathRestart.MouseLeave:Connect(function()
-	tween(deathRestart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+DeathUI.restart.MouseLeave:Connect(function()
+	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
 end)
 
-deathRestart.MouseButton1Click:Connect(function()
+DeathUI.restart.MouseButton1Click:Connect(function()
 	if deathRestartLocked then
 		log("Restart ignored; request already pending.")
 		return
 	end
 	if ResetLife then
 		deathRestartLocked = true
-		deathRestart.Text = "Resetting..."
+		DeathUI.restart.Text = "Resetting..."
 		log("Requesting new life reset")
 		ResetLife:FireServer()
-		deathCause.Text = "Creating a new life..."
+		DeathUI.cause.Text = "Creating a new life..."
 	end
 end)
 
 local function showDeathOverlay(causeText, age, meta)
-	deathTitle.Text = string.format("%s • Age %d", currentState.Name or "This life", age or currentState.Age or 0)
-	deathCause.Text = causeText or "Your story has ended. Tap below to begin anew."
-	deathQuote.Text = (meta and meta.quote) or getDeathQuote(causeText)
-	deathOverlay.Visible = true
+	DeathUI.title.Text = string.format("%s • Age %d", currentState.Name or "This life", age or currentState.Age or 0)
+	DeathUI.cause.Text = causeText or "Your story has ended. Tap below to begin anew."
+	DeathUI.quote.Text = (meta and meta.quote) or getDeathQuote(causeText)
+	DeathUI.overlay.Visible = true
 	deathRestartLocked = false
-	deathRestart.Text = "Start New Life"
+	DeathUI.restart.Text = "Start New Life"
 	populateDeathStats(currentState)
 	populateDeathSummary(currentState)
 	populateDeathTimeline(currentState)
@@ -2041,14 +2043,14 @@ local function showDeathOverlay(causeText, age, meta)
 end
 
 local function hideDeathOverlay()
-	if not deathOverlay.Visible then
+	if not DeathUI.overlay.Visible then
 		setScreensLocked(false)
 		return
 	end
-	deathOverlay.Visible = false
+	DeathUI.overlay.Visible = false
 	setScreensLocked(false)
 	deathRestartLocked = false
-	deathRestart.Text = "Start New Life"
+	DeathUI.restart.Text = "Start New Life"
 end
 
 ----------------------------------------------------------------
@@ -2736,8 +2738,8 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		hideTutorial()
 		hideDeathOverlay()
 		deathRestartLocked = false
-		if deathRestart then
-			deathRestart.Text = "Start New Life"
+		if DeathUI.restart then
+			DeathUI.restart.Text = "Start New Life"
 		end
 		setScreensLocked(false)
 		
