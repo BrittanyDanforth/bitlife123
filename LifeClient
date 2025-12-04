@@ -103,6 +103,7 @@ local pendingMinigameChoiceIndex = nil
 local showEvent, hideEvent
 local showIntro, hideIntro
 local showTutorial, hideTutorial
+local showDeathOverlay, hideDeathOverlay
 local updateNameButtons
 local updateFromState
 
@@ -1472,6 +1473,179 @@ surpriseBtn.MouseLeave:Connect(function()
 end)
 
 ----------------------------------------------------------------
+-- DEATH OVERLAY
+----------------------------------------------------------------
+
+local DeathUI = {}
+
+DeathUI.overlay = Instance.new("Frame")
+DeathUI.overlay.Name = "DeathOverlay"
+DeathUI.overlay.Size = UDim2.fromScale(1, 1)
+DeathUI.overlay.BackgroundColor3 = C.Black
+DeathUI.overlay.BackgroundTransparency = 0.45
+DeathUI.overlay.Visible = false
+DeathUI.overlay.ZIndex = 120
+DeathUI.overlay.Parent = screenGui
+
+DeathUI.card = Instance.new("Frame")
+DeathUI.card.Size = UDim2.new(0, 340, 0, 0)
+DeathUI.card.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.card.AnchorPoint = Vector2.new(0.5, 0.5)
+DeathUI.card.Position = UDim2.fromScale(0.5, 0.5)
+DeathUI.card.BackgroundColor3 = C.White
+DeathUI.card.ZIndex = 121
+DeathUI.card.Parent = DeathUI.overlay
+corner(DeathUI.card, 24)
+pad(DeathUI.card, 24, 24, 28, 32)
+
+local deathLayout = Instance.new("UIListLayout")
+deathLayout.Padding = UDim.new(0, 12)
+deathLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+deathLayout.SortOrder = Enum.SortOrder.LayoutOrder
+deathLayout.Parent = DeathUI.card
+
+DeathUI.emojiFrame = Instance.new("Frame")
+DeathUI.emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
+DeathUI.emojiFrame.ZIndex = 122
+DeathUI.emojiFrame.LayoutOrder = 1
+DeathUI.emojiFrame.Parent = DeathUI.card
+corner(DeathUI.emojiFrame, 20)
+
+local deathEmojiLabel = Instance.new("TextLabel")
+deathEmojiLabel.Size = UDim2.fromScale(1, 1)
+deathEmojiLabel.BackgroundTransparency = 1
+deathEmojiLabel.Font = F.Body
+deathEmojiLabel.TextSize = 48
+deathEmojiLabel.Text = "☠️"
+deathEmojiLabel.ZIndex = 123
+deathEmojiLabel.Parent = DeathUI.emojiFrame
+
+DeathUI.title = Instance.new("TextLabel")
+DeathUI.title.Size = UDim2.new(1, 0, 0, 32)
+DeathUI.title.BackgroundTransparency = 1
+DeathUI.title.Font = F.Title
+DeathUI.title.TextSize = 24
+DeathUI.title.TextColor3 = C.Gray900
+DeathUI.title.TextWrapped = true
+DeathUI.title.Text = "Life Ended"
+DeathUI.title.LayoutOrder = 2
+DeathUI.title.ZIndex = 122
+DeathUI.title.Parent = DeathUI.card
+
+DeathUI.cause = Instance.new("TextLabel")
+DeathUI.cause.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.cause.BackgroundTransparency = 1
+DeathUI.cause.Font = F.Body
+DeathUI.cause.TextSize = 16
+DeathUI.cause.TextColor3 = C.Gray600
+DeathUI.cause.TextWrapped = true
+DeathUI.cause.TextXAlignment = Enum.TextXAlignment.Center
+DeathUI.cause.Text = "Your story has ended."
+DeathUI.cause.LayoutOrder = 3
+DeathUI.cause.ZIndex = 122
+DeathUI.cause.Parent = DeathUI.card
+
+DeathUI.statsFrame = Instance.new("Frame")
+DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.statsFrame.BackgroundTransparency = 1
+DeathUI.statsFrame.LayoutOrder = 4
+DeathUI.statsFrame.ZIndex = 122
+DeathUI.statsFrame.Parent = DeathUI.card
+
+local deathStatsLayout = Instance.new("UIListLayout")
+deathStatsLayout.Padding = UDim.new(0, 6)
+deathStatsLayout.Parent = DeathUI.statsFrame
+
+DeathUI.restart = Instance.new("TextButton")
+DeathUI.restart.Size = UDim2.new(1, 0, 0, 52)
+DeathUI.restart.BackgroundColor3 = C.Green
+DeathUI.restart.Font = F.Button
+DeathUI.restart.TextSize = 18
+DeathUI.restart.TextColor3 = C.White
+DeathUI.restart.Text = "Start New Life"
+DeathUI.restart.AutoButtonColor = false
+DeathUI.restart.LayoutOrder = 5
+DeathUI.restart.ZIndex = 122
+DeathUI.restart.Parent = DeathUI.card
+corner(DeathUI.restart, 14)
+
+DeathUI.restart.MouseEnter:Connect(function()
+	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+end)
+DeathUI.restart.MouseLeave:Connect(function()
+	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+end)
+
+local ResetLife = remotesFolder:FindFirstChild("ResetLife")
+
+DeathUI.restart.MouseButton1Click:Connect(function()
+	if ResetLife then
+		DeathUI.restart.Text = "Resetting..."
+		ResetLife:FireServer()
+	end
+end)
+
+showDeathOverlay = function(causeText, age)
+	DeathUI.title.Text = string.format("%s • Age %d", currentState.Name or "This life", age or currentState.Age or 0)
+	DeathUI.cause.Text = causeText or "Your story has ended. Tap below to begin anew."
+	DeathUI.overlay.Visible = true
+	DeathUI.restart.Text = "Start New Life"
+	
+	-- Clear old stats
+	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+	
+	-- Add final stats
+	local stats = {
+		{ icon = "💰", label = "Net Worth", value = formatMoney(currentState.Money or 0) },
+		{ icon = "😀", label = "Happiness", value = (currentState.Happiness or 0) .. "%" },
+		{ icon = "🎓", label = "Education", value = currentState.Education or "None" },
+	}
+	
+	for _, stat in ipairs(stats) do
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 28)
+		row.BackgroundColor3 = C.Gray50
+		row.ZIndex = 123
+		row.Parent = DeathUI.statsFrame
+		corner(row, 8)
+		
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(0.6, 0, 1, 0)
+		lbl.Position = UDim2.new(0, 8, 0, 0)
+		lbl.BackgroundTransparency = 1
+		lbl.Font = F.Medium
+		lbl.TextSize = 13
+		lbl.TextColor3 = C.Gray600
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.Text = stat.icon .. " " .. stat.label
+		lbl.ZIndex = 124
+		lbl.Parent = row
+		
+		local val = Instance.new("TextLabel")
+		val.Size = UDim2.new(0.4, -8, 1, 0)
+		val.Position = UDim2.new(0.6, 0, 0, 0)
+		val.BackgroundTransparency = 1
+		val.Font = F.Title
+		val.TextSize = 13
+		val.TextColor3 = C.Gray700
+		val.TextXAlignment = Enum.TextXAlignment.Right
+		val.Text = tostring(stat.value)
+		val.ZIndex = 124
+		val.Parent = row
+	end
+end
+
+hideDeathOverlay = function()
+	DeathUI.overlay.Visible = false
+	DeathUI.restart.Text = "Start New Life"
+end
+
+----------------------------------------------------------------
 -- EVENT CATEGORY COLORS (BitLife-style themed borders)
 ----------------------------------------------------------------
 
@@ -2151,6 +2325,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			pcall(hideEvent) 
 		end
 		hideTutorial()
+		hideDeathOverlay()
 		
 		-- SHOW INTRO MODAL
 		showIntro()
@@ -2243,6 +2418,16 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	elseif deltas.money and deltas.money < -10000 then
 		-- Flash red for big money losses
 		flashScreen(C.Red, 0.7, 0.25)
+	end
+
+	-- Check for death (from result data or health hitting 0)
+	if resultData and resultData.fatal then
+		local causeText = resultData.cause or resultData.body or lastFeedText or "You passed away."
+		showDeathOverlay(causeText, state.Age)
+	elseif currentState.Health and currentState.Health <= 0 then
+		showDeathOverlay("Health depleted.", state.Age)
+	else
+		hideDeathOverlay()
 	end
 
 	-- Update UI from state
