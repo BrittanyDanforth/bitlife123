@@ -1093,15 +1093,22 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
+	-- BitLife style: ONE event per age up, not multiple stacked events
+	-- Stage transitions are shown as feed text, not as separate choice events
 	local queue = {}
+	
+	-- Check for stage transition - add to feed text, not as event
 	local transitionEvent = LifeStageSystem.getTransitionEvent(oldAge, state.Age)
 	if transitionEvent then
-		transitionEvent.source = "stage"
-		table.insert(queue, transitionEvent)
+		-- Show as feed notification instead of choice event
+		local stageName = transitionEvent.title or "a new stage"
+		feedText = string.format("🎂 %s\n%s", transitionEvent.text or ("You entered " .. stageName), feedText)
 	end
 
-	local yearlyEvents = LifeEvents.buildYearQueue(state, { maxEvents = 2 }) or {}
-	for _, eventDef in ipairs(yearlyEvents) do
+	-- Get just ONE event from the year queue (BitLife style)
+	local yearlyEvents = LifeEvents.buildYearQueue(state, { maxEvents = 1 }) or {}
+	if #yearlyEvents > 0 then
+		local eventDef = yearlyEvents[1]
 		eventDef.source = "lifeevents"
 		table.insert(queue, eventDef)
 	end
@@ -1112,11 +1119,10 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
-	local eventIds = {}
-	for _, ev in ipairs(queue) do
-		table.insert(eventIds, ev.id or "unknown")
+	-- Log which event was selected (if any)
+	if #queue > 0 then
+		debugPrint(string.format("Event for %s: %s", player.Name, queue[1].id or "unknown"))
 	end
-	debugPrint(string.format("Queued %d events for %s: %s", #queue, player.Name, table.concat(eventIds, ", ")))
 
 	self.pendingEvents[player.UserId] = {
 		queue = queue,
