@@ -169,6 +169,7 @@ local C = {
 	-- Accents
 	Red     = Color3.fromRGB(239, 68, 68),
 	RedDark = Color3.fromRGB(220, 38, 38),
+	RedPale = Color3.fromRGB(254, 226, 226),
 	Orange  = Color3.fromRGB(249, 115, 22),
 	Pink    = Color3.fromRGB(244, 114, 182),
 	Purple  = Color3.fromRGB(168, 85, 247),
