@@ -192,56 +192,71 @@ end
 -- ════════════════════════════════════════════════════════════════════════════════════
 
 local function getEventHistory(state)
-	-- Ensure EventHistory exists
-	if not state.EventHistory then
+	-- BULLETPROOF: Handle nil state
+	if not state then
+		return {
+			occurrences = {},
+			lastOccurrence = {},
+			completed = {},
+			recentCategories = {},
+			recentEvents = {},
+		}
+	end
+	
+	-- Ensure EventHistory exists on state
+	if type(state.EventHistory) ~= "table" then
 		state.EventHistory = {}
 	end
 	
 	local history = state.EventHistory
 	
 	-- Ensure ALL required fields exist (handles legacy/incomplete history objects)
-	if not history.occurrences then
-		history.occurrences = {}
-	end
-	if not history.lastOccurrence then
-		history.lastOccurrence = {}
-	end
-	if not history.completed then
-		history.completed = {}
-	end
-	if not history.recentCategories then
-		history.recentCategories = {}
-	end
-	if not history.recentEvents then
-		history.recentEvents = {}
-	end
+	history.occurrences = history.occurrences or {}
+	history.lastOccurrence = history.lastOccurrence or {}
+	history.completed = history.completed or {}
+	history.recentCategories = history.recentCategories or {}
+	history.recentEvents = history.recentEvents or {}
 	
 	return history
 end
 
 local function recordEventShown(state, event)
-	if not event or not event.id then
-		warn("[LifeEvents] recordEventShown called with invalid event")
+	-- Guard: invalid inputs
+	if not state then
+		warn("[LifeEvents] recordEventShown: state is nil")
+		return
+	end
+	if not event or type(event) ~= "table" or not event.id then
+		warn("[LifeEvents] recordEventShown: invalid event")
 		return
 	end
 	
 	local history = getEventHistory(state)
+	if not history then
+		warn("[LifeEvents] recordEventShown: could not get event history")
+		return
+	end
+	
 	local eventId = event.id
 	
-	-- Track occurrence count
-	history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
+	-- Track occurrence count (with nil safety)
+	if type(history.occurrences) == "table" then
+		history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
+	end
 	
 	-- Track when it last occurred
-	history.lastOccurrence[eventId] = state.Age or 0
+	if type(history.lastOccurrence) == "table" then
+		history.lastOccurrence[eventId] = state.Age or 0
+	end
 	
 	-- Mark one-time events as completed
-	if event.oneTime then
+	if event.oneTime and type(history.completed) == "table" then
 		history.completed[eventId] = true
 	end
 	
 	-- Track recent categories (for variety)
-	local category = event._category or "general"
-	if history.recentCategories then
+	if type(history.recentCategories) == "table" then
+		local category = event._category or "general"
 		table.insert(history.recentCategories, category)
 		while #history.recentCategories > 5 do
 			table.remove(history.recentCategories, 1)
@@ -249,7 +264,7 @@ local function recordEventShown(state, event)
 	end
 	
 	-- Track recent events
-	if history.recentEvents then
+	if type(history.recentEvents) == "table" then
 		table.insert(history.recentEvents, eventId)
 		while #history.recentEvents > 10 do
 			table.remove(history.recentEvents, 1)
