@@ -1563,6 +1563,60 @@ end
 -- EVENT FUNCTIONS
 ------------------------------------------------------------------
 
+-- REFACTORED: Extract choice button creation to reduce register pressure
+local function createChoiceButton(choice, i, payload)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 58)
+	btn.BackgroundColor3 = C.Blue
+	btn.Font = F.Button
+	btn.TextSize = 18
+	btn.TextColor3 = C.White
+	btn.Text = choice.text
+	btn.AutoButtonColor = false
+	btn.LayoutOrder = i
+	btn.ZIndex = 65
+	btn.Parent = choicesSection
+	corner(btn, 14)
+	stroke(btn, 2, 0.5, C.BlueLight)
+	
+	if choice.minigame then
+		btn.Text = "🎮 " .. choice.text
+	end
+	
+	btn.MouseEnter:Connect(function()
+		tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
+	end)
+	btn.MouseLeave:Connect(function()
+		tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
+	end)
+	
+	local choiceIndex = choice.index or i
+	local minigameType = choice.minigame
+	
+	local function handleChoice()
+		if not currentEventId then return end
+		if minigameType and minigamesInstance then
+			pendingMinigameEventId = currentEventId
+			pendingMinigameChoiceIndex = choiceIndex
+			hideEvent()
+			minigamesInstance:play(minigameType, function(won, data)
+				SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
+				if MinigameResult then
+					MinigameResult:FireServer(won, data)
+				end
+				pendingMinigameEventId = nil
+				pendingMinigameChoiceIndex = nil
+			end)
+		else
+			SubmitChoice:FireServer(currentEventId, choiceIndex)
+			hideEvent()
+		end
+	end
+	
+	btn.MouseButton1Click:Connect(handleChoice)
+	return btn, handleChoice
+end
+
 showEvent = function(payload)
 	-- Validate payload first
 	if not payload then
@@ -1608,72 +1662,17 @@ showEvent = function(payload)
 	
 	-- NOTE: Screen shake removed from event APPEARANCE
 	-- BitLife style: shake only happens on NEGATIVE OUTCOMES (after choice is made)
-	-- The shake effect is now triggered in SyncState when health drops or bad things happen
-	-- This prevents random shaking when events first appear
 
 	local choiceHandlers = {}
-
 	for i, choice in ipairs(payload.choices or {}) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
-		btn.BackgroundColor3 = C.Blue
-		btn.Font = F.Button
-		btn.TextSize = 18  -- BIGGER text (was 15)
-		btn.TextColor3 = C.White
-		btn.Text = choice.text
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = i
-		btn.ZIndex = 65
-		btn.Parent = choicesSection
-
-		corner(btn, 14)
-		stroke(btn, 2, 0.5, C.BlueLight)
-
-		if choice.minigame then
-			btn.Text = "🎮 " .. choice.text
-		end
-
-		btn.MouseEnter:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
-		end)
-		btn.MouseLeave:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
-		end)
-
-		local choiceIndex = choice.index or i
-		local minigameType = choice.minigame
-
-		local function handleChoice()
-			if not currentEventId then return end
-
-			if minigameType and minigamesInstance then
-				pendingMinigameEventId     = currentEventId
-				pendingMinigameChoiceIndex = choiceIndex
-				hideEvent()
-
-				minigamesInstance:play(minigameType, function(won, data)
-					SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
-					if MinigameResult then
-						MinigameResult:FireServer(won, data)
-					end
-					pendingMinigameEventId     = nil
-					pendingMinigameChoiceIndex = nil
-				end)
-			else
-				SubmitChoice:FireServer(currentEventId, choiceIndex)
-				hideEvent()
-			end
-		end
-
-		btn.MouseButton1Click:Connect(handleChoice)
-		table.insert(choiceHandlers, handleChoice)
+		local btn, handler = createChoiceButton(choice, i, payload)
+		table.insert(choiceHandlers, handler)
 		table.insert(activeChoiceButtons, btn)
 	end
 
 	surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
 		if currentEventId and #choiceHandlers > 0 then
-			local handler = choiceHandlers[math.random(1, #choiceHandlers)]
-			handler()
+			choiceHandlers[math.random(1, #choiceHandlers)]()
 		end
 	end)
 
@@ -2057,131 +2056,71 @@ end
 local previousState = {}
 local firstSync = true
 
-SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
-	if not state then return end
-	
-	-- Only log significant state changes, not every sync (reduces spam)
-	local ageChanged = currentState and currentState.Age ~= state.Age
-	local moneyChanged = currentState and currentState.Money ~= state.Money
-	
-	-- ═══════════════════════════════════════════════════════════════
-	-- STEP 1: DETECT IF THIS IS A NEW LIFE (BEFORE updating currentState)
-	-- ═══════════════════════════════════════════════════════════════
-	local isNewLife = false
-	
-	-- Method 1: Explicit "new life" message from server (resetPlayerLife sends this)
-	if lastFeedText == "A new life begins..." then
-		isNewLife = true
-	end
-	
-	-- Method 2: Old state had a name, new state doesn't -> this is a restart
-	if not isNewLife and currentState and currentState.Name and (not state.Name or state.Name == "") then
-		isNewLife = true
-	end
-	
-	-- Method 3: First sync with no name = new life
+-- REFACTORED: Helper functions to reduce register pressure in SyncState handler
+
+local function detectNewLife(state, lastFeedText)
+	if lastFeedText == "A new life begins..." then return true end
+	if currentState and currentState.Name and (not state.Name or state.Name == "") then return true end
 	if firstSync then
 		firstSync = false
-		if not state.Name or state.Name == "" then
-			isNewLife = true
-		end
+		if not state.Name or state.Name == "" then return true end
 	end
-	
-	-- Method 4: Age is 0 and no name = definitely new life
-	if (state.Age == 0 or state.Age == nil) and (not state.Name or state.Name == "") then
-		isNewLife = true
-	end
-	
-	-- ═══════════════════════════════════════════════════════════════
-	-- STEP 2: HANDLE NEW LIFE RESET
-	-- ═══════════════════════════════════════════════════════════════
-	if isNewLife then
-		
-		-- Reset all intro/game flags
-		introComplete = false
-		selectedGender = nil
-		awaitingEvent = false
-		hasShownAgeHint = false
-		
-		-- Clear pending minigame state
-		pendingMinigameEventId = nil
-		pendingMinigameChoiceIndex = nil
-		
-		-- Clear feed entries
-		feedEntryCount = 0
-		for _, child in ipairs(feedScroll:GetChildren()) do
-			if child:IsA("Frame") then
-				child:Destroy()
-			end
-		end
-		
-		-- Reset previous state tracking
-		previousState = {}
-		
-		-- Update currentState with new state
-		currentState = {
-			Name = nil,
-			Age = state.Age or 0,
-			Money = state.Money or 0,
-			Happiness = state.Happiness or 50,
-			Health = state.Health or 100,
-			Smarts = state.Smarts or 50,
-			Looks = state.Looks or 50,
-			Gender = nil,
-		}
-		
-		-- Reset header UI
-		nameLabel.Text = "New Life"
-		ageYearLabel.Text = string.format("Age %d • %d", state.Age or 0, getCurrentYear(state.Age))
-		moneyLabel.Text = formatMoney(state.Money or 0)
-		avatarEmoji.Text = "👶"
-		
-		-- Reset stats UI
-		for key, card in pairs(statCards) do
-			local val = state[key] or (state.Stats and state.Stats[key]) or 50
-			card.percentLabel.Text = val .. "%"
-			card.barFill.Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0)
-		end
-		
-		-- Hide any lingering modals
-		if hideResultPopup then 
-			pcall(hideResultPopup) 
-		end
-		if hideEvent then 
-			pcall(hideEvent) 
-		end
-		hideTutorial()
-		
-		-- SHOW INTRO MODAL
-		showIntro()
-		
-		-- Early return - don't process as normal sync
-		return
-	end
-	
-	-- ═══════════════════════════════════════════════════════════════
-	-- STEP 3: NORMAL (NON-RESET) SYNC HANDLING
-	-- ═══════════════════════════════════════════════════════════════
-	
-	-- Calculate deltas for result popup
-	local deltas = {}
-	if previousState.Happiness and state.Happiness then
-		deltas.happiness = state.Happiness - previousState.Happiness
-	end
-	if previousState.Health and state.Health then
-		deltas.health = state.Health - previousState.Health
-	end
-	if previousState.Smarts and state.Smarts then
-		deltas.smarts = state.Smarts - previousState.Smarts
-	end
-	if previousState.Looks and state.Looks then
-		deltas.looks = state.Looks - previousState.Looks
-	end
-	if previousState.Money and state.Money then
-		deltas.money = state.Money - previousState.Money
-	end
+	if (state.Age == 0 or state.Age == nil) and (not state.Name or state.Name == "") then return true end
+	return false
+end
 
-	-- Update current state
+local function handleNewLifeReset(state)
+	introComplete = false
+	selectedGender = nil
+	awaitingEvent = false
+	hasShownAgeHint = false
+	pendingMinigameEventId = nil
+	pendingMinigameChoiceIndex = nil
+	feedEntryCount = 0
+	
+	for _, child in ipairs(feedScroll:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+	
+	previousState = {}
+	currentState = {
+		Name = nil, Age = state.Age or 0, Money = state.Money or 0,
+		Happiness = state.Happiness or 50, Health = state.Health or 100,
+		Smarts = state.Smarts or 50, Looks = state.Looks or 50, Gender = nil,
+	}
+	
+	nameLabel.Text = "New Life"
+	ageYearLabel.Text = string.format("Age %d • %d", state.Age or 0, getCurrentYear(state.Age))
+	moneyLabel.Text = formatMoney(state.Money or 0)
+	avatarEmoji.Text = "👶"
+	
+	for key, card in pairs(statCards) do
+		local val = state[key] or (state.Stats and state.Stats[key]) or 50
+		card.percentLabel.Text = val .. "%"
+		card.barFill.Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0)
+	end
+	
+	if hideResultPopup then pcall(hideResultPopup) end
+	if hideEvent then pcall(hideEvent) end
+	hideTutorial()
+	hideDeathOverlay()
+	deathRestartLocked = false
+	if DeathUI.restart then DeathUI.restart.Text = "Start New Life" end
+	setScreensLocked(false)
+	showIntro()
+end
+
+local function calculateDeltas(state)
+	local d = {}
+	if previousState.Happiness and state.Happiness then d.happiness = state.Happiness - previousState.Happiness end
+	if previousState.Health and state.Health then d.health = state.Health - previousState.Health end
+	if previousState.Smarts and state.Smarts then d.smarts = state.Smarts - previousState.Smarts end
+	if previousState.Looks and state.Looks then d.looks = state.Looks - previousState.Looks end
+	if previousState.Money and state.Money then d.money = state.Money - previousState.Money end
+	return d
+end
+
+local function updateStateFromSync(state)
 	for k, v in pairs(state) do
 		currentState[k] = v
 		previousState[k] = v
@@ -2192,13 +2131,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			previousState[k] = v
 		end
 	end
+	if state.Age then currentState.Age = state.Age end
+end
 
-	-- Also copy Age directly if it's in the state
-	if state.Age then
-		currentState.Age = state.Age
-	end
-
-	-- Update all screen instances with latest state
+local function updateScreenInstances()
 	if occupationScreenInstance and occupationScreenInstance.updateState then
 		occupationScreenInstance:updateState(currentState)
 	end
@@ -2211,13 +2147,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if activitiesScreenInstance and activitiesScreenInstance.updateState then
 		activitiesScreenInstance:updateState(currentState)
 	end
-
 	if storyPathsScreenInstance and storyPathsScreenInstance.visible then
 		storyPathsScreenInstance:updateUI()
 	end
+end
 
-	-- Show result popup if we have result data from server
+local function handleResultData(resultData, deltas, lastFeedText, state)
 	if resultData and resultData.showPopup then
+		log("Result popup requested:", resultData.title or "Result")
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2227,33 +2164,49 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			smarts = resultData.smarts or deltas.smarts,
 			looks = resultData.looks or deltas.looks,
 			money = resultData.money or deltas.money,
-			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
+			wasSuccess = resultData.wasSuccess,
 		})
+		if resultData.fatal then
+			local causeText = resultData.cause or resultData.body or lastFeedText or "You passed away."
+			showDeathOverlay(causeText, state.Age, resultData.deathMeta)
+		end
 	elseif deltas.health and deltas.health < -15 then
-		-- Auto-shake for MAJOR negative health (15+ drop)
-		-- This is the BitLife-style "something bad happened" feedback
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)
 	elseif deltas.health and deltas.health < -5 then
-		-- Smaller health drop - just flash, no shake
 		flashScreen(C.Red, 0.7, 0.25)
 	elseif deltas.money and deltas.money > 10000 then
-		-- Flash green for big money gains
 		flashScreen(C.Green, 0.7, 0.3)
 	elseif deltas.money and deltas.money < -10000 then
-		-- Flash red for big money losses
 		flashScreen(C.Red, 0.7, 0.25)
 	end
+end
 
-	-- Update UI from state
+SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
+	if not state then return end
+	log("SyncState received -> Age:", state.Age, "Money:", state.Money)
+	
+	if detectNewLife(state, lastFeedText) then
+		handleNewLifeReset(state)
+		return
+	end
+	
+	local deltas = calculateDeltas(state)
+	updateStateFromSync(state)
+	updateScreenInstances()
+	handleResultData(resultData, deltas, lastFeedText, state)
 	updateFromState()
 	
-	-- Add feed entry
+	if currentState.Flags and currentState.Flags.dead then
+		showDeathOverlay(currentState.CauseOfDeath or lastFeedText or "You passed away.", currentState.Age)
+	else
+		hideDeathOverlay()
+	end
+	
 	if lastFeedText and lastFeedText ~= "" and not (resultData and resultData.showPopup) then
 		addFeedEntry(lastFeedText)
 	end
 	
-	-- Check if intro should be shown (shouldn't normally happen here, but safety check)
 	if not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
 	elseif currentState.Name and introOverlay.Visible then
