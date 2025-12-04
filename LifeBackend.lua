@@ -1890,11 +1890,14 @@ local InteractionEffects = {
 	},
 	friend = {
 		hangout = { delta = 6, message = "You hung out together." },
+		talk = { delta = 4, message = "You had a great conversation." },
+		hug = { delta = 5, message = "You gave them a warm hug." },
 		gift = { delta = 4, cost = 50, message = "You gave them a small gift." },
 		support = { delta = 5, message = "You supported them through a tough time." },
 		party = { delta = 7, message = "You partied together." },
 		betray = { delta = -15, message = "You betrayed their trust." },
 		ghost = { delta = -999, message = "You ghosted them.", remove = true },
+		argue = { delta = -8, message = "You argued and tensions rose." },
 	},
 	enemy = {
 		insult = { delta = -6, message = "You insulted them." },
@@ -1948,6 +1951,68 @@ function LifeBackend:handleInteraction(player, payload)
 	local relType = payload.relationshipType or "family"
 	local actionId = payload.actionId
 	local targetId = payload.targetId
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SPECIAL ACTIONS: Creating new relationships (make_friend, meet_someone, etc.)
+	-- These don't exist in InteractionEffects because they CREATE relationships
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if actionId == "make_friend" or actionId == "meet_friend" then
+		-- Create a new friend using EventEngine
+		local newFriend = EventEngine.createRelationship(state, "friend", {
+			startLevel = RANDOM:NextInteger(45, 70),
+		})
+		
+		local feed = string.format("You made a new friend: %s!", newFriend.name)
+		self:applyStatChanges(state, { Happiness = 5 })
+		self:pushState(player, feed, {
+			showPopup = true,
+			emoji = "🤝",
+			title = "New Friend!",
+			body = feed,
+			happiness = 5,
+			wasSuccess = true,
+		})
+		return {
+			success = true,
+			message = feed,
+			newRelationship = newFriend,
+			state = self:serializeState(state),
+		}
+	end
+	
+	if actionId == "meet_someone" or actionId == "start_dating" then
+		-- Check if already has a partner
+		if state.Relationships and state.Relationships.partner then
+			return { success = false, message = "You're already in a relationship!" }
+		end
+		
+		-- Create a new romantic partner using EventEngine
+		local newPartner = EventEngine.createRelationship(state, "romance", {
+			startLevel = RANDOM:NextInteger(50, 75),
+		})
+		
+		local feed = string.format("You started dating %s!", newPartner.name)
+		self:applyStatChanges(state, { Happiness = 8 })
+		self:pushState(player, feed, {
+			showPopup = true,
+			emoji = "💕",
+			title = "New Relationship!",
+			body = feed,
+			happiness = 8,
+			wasSuccess = true,
+		})
+		return {
+			success = true,
+			message = feed,
+			newRelationship = newPartner,
+			state = self:serializeState(state),
+		}
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STANDARD INTERACTIONS: Modify existing relationships
+	-- ═══════════════════════════════════════════════════════════════════════════════
 
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then

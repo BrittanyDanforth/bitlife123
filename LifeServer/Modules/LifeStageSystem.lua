@@ -322,6 +322,73 @@ function LifeStageSystem.getTransitionEvent(oldAge, newAge)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- EVENT VALIDATION (used by EventEngine)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeStageSystem.validateEvent(event, state)
+	if not event or not state then
+		return false
+	end
+	
+	local age = state.Age or 0
+	local flags = state.Flags or {}
+	local stats = state.Stats or state
+	
+	-- Check conditions table if present
+	local conditions = event.conditions or {}
+	
+	-- Age requirements (from conditions or direct event properties)
+	local minAge = conditions.minAge or event.minAge or 0
+	local maxAge = conditions.maxAge or event.maxAge or 999
+	if age < minAge or age > maxAge then
+		return false
+	end
+	
+	-- Required flags
+	local requiredFlags = conditions.requiredFlags or event.requiresFlags
+	if requiredFlags then
+		for flag, requiredValue in pairs(requiredFlags) do
+			if type(requiredValue) == "boolean" then
+				if requiredValue == true and not flags[flag] then
+					return false
+				end
+				if requiredValue == false and flags[flag] then
+					return false
+				end
+			else
+				-- Array format: { "flag1", "flag2" }
+				if not flags[requiredValue] then
+					return false
+				end
+			end
+		end
+	end
+	
+	-- Blocked flags
+	local blockedFlags = conditions.blockedFlags or event.blockedByFlags
+	if blockedFlags then
+		for _, flag in ipairs(blockedFlags) do
+			if flags[flag] then
+				return false
+			end
+		end
+	end
+	
+	-- Stat requirements
+	local minStats = conditions.minStats or event.requiresStats
+	if minStats then
+		for stat, minValue in pairs(minStats) do
+			local playerValue = stats[stat] or state[stat] or 50
+			if playerValue < minValue then
+				return false
+			end
+		end
+	end
+	
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- DEATH MECHANICS
 -- ════════════════════════════════════════════════════════════════════════════
 

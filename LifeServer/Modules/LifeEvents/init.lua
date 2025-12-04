@@ -51,10 +51,10 @@ local StageCategories = {
 	baby        = { "childhood", "milestones" },
 	toddler     = { "childhood", "milestones" },
 	child       = { "childhood", "milestones", "random" },
-	teen        = { "teen", "milestones", "relationships", "random" },
-	young_adult = { "adult", "milestones", "relationships", "random" },
-	adult       = { "adult", "milestones", "relationships", "random" },
-	middle_age  = { "adult", "milestones", "relationships", "random" },
+	teen        = { "teen", "milestones", "relationships", "random", "crime" },
+	young_adult = { "adult", "milestones", "relationships", "random", "crime" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime" },
+	middle_age  = { "adult", "milestones", "relationships", "random", "crime" },
 	senior      = { "adult", "milestones", "relationships", "random" },
 }
 
@@ -95,6 +95,26 @@ local function findModule(moduleName)
 		child = script.Parent:FindFirstChild(moduleName)
 		if child and child:IsA("ModuleScript") and child ~= script then
 			return child
+		end
+	end
+	
+	-- Method 3: Check inside Catalog subfolder (for organized event modules)
+	local catalogFolder = script:FindFirstChild("Catalog")
+	if catalogFolder then
+		child = catalogFolder:FindFirstChild(moduleName)
+		if child and child:IsA("ModuleScript") then
+			return child
+		end
+	end
+	
+	-- Method 4: Check Catalog in parent folder (alternate structure)
+	if script.Parent then
+		catalogFolder = script.Parent:FindFirstChild("Catalog")
+		if catalogFolder then
+			child = catalogFolder:FindFirstChild(moduleName)
+			if child and child:IsA("ModuleScript") then
+				return child
+			end
 		end
 	end
 	
@@ -161,6 +181,7 @@ function LifeEvents.init()
 	
 	-- Define module -> category mappings
 	local moduleConfig = {
+		-- Core event modules (direct children)
 		{ name = "Childhood",     category = "childhood" },
 		{ name = "Teen",          category = "teen" },
 		{ name = "Adult",         category = "adult" },
@@ -168,6 +189,12 @@ function LifeEvents.init()
 		{ name = "Relationships", category = "relationships" },
 		{ name = "Milestones",    category = "milestones" },
 		{ name = "Random",        category = "random" },
+		
+		-- Catalog modules (organized event collections)
+		{ name = "CareerEvents",   category = "career" },
+		{ name = "RomanceEvents",  category = "relationships" },
+		{ name = "CrimeEvents",    category = "crime" },
+		{ name = "CoreMilestones", category = "milestones" },
 	}
 	
 	local totalEvents = 0
