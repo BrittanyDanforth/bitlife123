@@ -136,6 +136,8 @@ local occupationScreenInstance, assetsScreenInstance, relationshipsScreenInstanc
 local minigamesInstance
 local pendingMinigameEventId     = nil
 local pendingMinigameChoiceIndex = nil
+local screensLocked = false
+local deathRestartLocked = false
 
 -- Forward declarations
 local showEvent, hideEvent
