@@ -1869,6 +1869,54 @@ end
 -- Relationships & Interactions
 -- ============================================================================
 
+local function inferNameFromId(identifier)
+	if type(identifier) ~= "string" or identifier == "" then
+		return nil
+	end
+	local cleaned = identifier:gsub("_", " ")
+	return cleaned:sub(1, 1):upper() .. cleaned:sub(2)
+end
+
+function LifeBackend:createRelationship(state, relType, options)
+	state.Relationships = state.Relationships or {}
+	state.Flags = state.Flags or {}
+	options = options or {}
+	
+	-- Prefer EventEngine for dynamic friend/romance generation
+	if EventEngine and EventEngine.createRelationship and not options.id and (relType == "friend" or relType == "romance" or relType == "partner" or relType == "enemy") then
+		local success, relationship = pcall(EventEngine.createRelationship, state, relType, options)
+		if success and relationship then
+			return relationship
+		end
+		if not success then
+			warn("[LifeBackend] EventEngine relationship creation failed:", relationship)
+		end
+	end
+	
+	local newId = options.id or string.format("%s_%s", relType, HttpService:GenerateGUID(false))
+	local defaultName = inferNameFromId(options.id) or inferNameFromId(relType) or "Person"
+	local relationship = {
+		id = newId,
+		name = options.name or defaultName,
+		type = relType,
+		role = options.role or defaultName,
+		relationship = options.startLevel or 60,
+		age = options.age or state.Age,
+		gender = options.gender,
+		alive = options.alive ~= false,
+	}
+	
+	state.Relationships[newId] = relationship
+	
+	if relType == "romance" or relType == "partner" then
+		state.Relationships.partner = relationship
+		state.Flags.has_partner = true
+		state.Flags.dating = true
+	end
+	
+	return relationship
+end
+
 local InteractionEffects = {
 	family = {
 		hug = { delta = 6, cost = 0, message = "You hugged them tightly." },
@@ -1883,10 +1931,19 @@ local InteractionEffects = {
 		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
 		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
 		kiss = { delta = 5, message = "You shared a kiss." },
-		propose = { delta = 15, cost = 5000, message = "You proposed!", flag = "engaged" },
-		breakup = { delta = -999, message = "You ended the relationship.", remove = true },
+		propose = { delta = 15, cost = 5000, message = "You proposed!", flags = { engaged = true, committed_relationship = true } },
+		breakup = { delta = -999, message = "You ended the relationship.", remove = true, clearFlags = { "has_partner", "dating", "committed_relationship", "married", "engaged" } },
 		flirt = { delta = 4, message = "You flirted playfully." },
 		compliment = { delta = 3, message = "You complimented them." },
+		meet_someone = {
+			forceNewRelationship = true,
+			requiresSingle = true,
+			delta = 10,
+			message = function(_, relationship)
+				local name = (relationship and relationship.name) or "someone new"
+				return string.format("You hit it off with %s!", name)
+			end,
+		},
 	},
 	friend = {
 		hangout = { delta = 6, message = "You hung out together." },
@@ -1895,6 +1952,14 @@ local InteractionEffects = {
 		party = { delta = 7, message = "You partied together." },
 		betray = { delta = -15, message = "You betrayed their trust." },
 		ghost = { delta = -999, message = "You ghosted them.", remove = true },
+		make_friend = {
+			forceNewRelationship = true,
+			delta = 12,
+			message = function(_, relationship)
+				local name = (relationship and relationship.name) or "a new friend"
+				return string.format("You became friends with %s.", name)
+			end,
+		},
 	},
 	enemy = {
 		insult = { delta = -6, message = "You insulted them." },
@@ -1905,34 +1970,43 @@ local InteractionEffects = {
 	},
 }
 
-function LifeBackend:ensureRelationship(state, relType, targetId)
+function LifeBackend:ensureRelationship(state, relType, targetId, options)
+	options = options or {}
 	state.Relationships = state.Relationships or {}
+	
 	if targetId and state.Relationships[targetId] then
 		return state.Relationships[targetId]
 	end
-
-	-- For new friends, create placeholder
-	if relType == "friend" then
-		local newId = "friend_" .. HttpService:GenerateGUID(false)
-		local rel = { id = newId, name = "New Friend", type = "friend", role = "Friend", relationship = 60, age = state.Age, alive = true }
-		state.Relationships[newId] = rel
-		return rel
+	
+	if options.forceNewRelationship then
+		return self:createRelationship(state, relType, options.relationshipOptions)
 	end
+	
+	-- Auto-generate new entries for friend actions initiated without a specific target
+	if relType == "friend" and not targetId then
+		return self:createRelationship(state, "friend", options.relationshipOptions)
+	end
+	
 	if relType == "romance" then
+		if targetId and state.Relationships[targetId] then
+			return state.Relationships[targetId]
+		end
+		
 		local partner = state.Relationships.partner
-		if partner then
+		if partner and partner.alive ~= false then
 			return partner
 		end
-		local rel = { id = "partner", name = "Partner", type = "romance", role = "Partner", relationship = 55, age = state.Age, alive = true }
-		state.Relationships.partner = rel
-		return rel
+		
+		return self:createRelationship(state, "romance", options.relationshipOptions)
 	end
+	
 	if targetId and not state.Relationships[targetId] then
-		local rel = { id = targetId, name = "Person", type = relType, role = relType, relationship = 50, age = state.Age, alive = true }
-		state.Relationships[targetId] = rel
-		return rel
+		local relOptions = shallowCopy(options.relationshipOptions or {})
+		relOptions.id = targetId
+		return self:createRelationship(state, relType, relOptions)
 	end
-	return state.Relationships[targetId]
+	
+	return targetId and state.Relationships[targetId] or self:createRelationship(state, relType, options.relationshipOptions)
 end
 
 function LifeBackend:handleInteraction(player, payload)
@@ -1948,6 +2022,7 @@ function LifeBackend:handleInteraction(player, payload)
 	local relType = payload.relationshipType or "family"
 	local actionId = payload.actionId
 	local targetId = payload.targetId
+	local targetStrength = tonumber(payload.relationshipStrength)
 
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then
@@ -1959,6 +2034,15 @@ function LifeBackend:handleInteraction(player, payload)
 		return { success = false, message = "Unknown interaction." }
 	end
 
+	state.Flags = state.Flags or {}
+	
+	if action.requiresSingle then
+		local partner = state.Relationships and state.Relationships.partner
+		if partner and partner.alive ~= false then
+			return { success = false, message = "You're already in a relationship." }
+		end
+	end
+	
 	if action.cost and state.Money < action.cost then
 		return { success = false, message = "You can't afford that gesture." }
 	end
@@ -1967,23 +2051,54 @@ function LifeBackend:handleInteraction(player, payload)
 		self:addMoney(state, -action.cost)
 	end
 
-	local relationship = self:ensureRelationship(state, relType, targetId)
+	local ensureOptions = {
+		forceNewRelationship = action.forceNewRelationship,
+		relationshipOptions = {
+			id = targetId,
+			name = payload.targetName,
+			role = payload.targetRole,
+			startLevel = targetStrength,
+		},
+	}
+	
+	local relationship = self:ensureRelationship(state, relType, targetId, ensureOptions)
 	if not relationship then
 		return { success = false, message = "No one to interact with." }
 	end
 
-	relationship.relationship = clamp((relationship.relationship or 50) + (action.delta or 0), -100, 100)
+	if action.delta then
+		relationship.relationship = clamp((relationship.relationship or 50) + action.delta, -100, 100)
+	end
 
 	if action.stats then
 		self:applyStatChanges(state, action.stats)
 	end
 
+	local grantMessage
+
 	if action.grant then
-		action.grant(state)
+		local success, result = pcall(action.grant, state, relationship, payload)
+		if not success then
+			warn("[LifeBackend] Interaction grant failed:", result)
+		elseif type(result) == "string" then
+			grantMessage = result
+		elseif type(result) == "table" and result.message then
+			grantMessage = result.message
+		end
 	end
 
 	if action.remove then
-		state.Relationships[relationship.id] = nil
+		if relationship.id then
+			state.Relationships[relationship.id] = nil
+		end
+		if relType == "romance" and state.Relationships.partner == relationship then
+			state.Relationships.partner = nil
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.married = nil
+			state.Flags.engaged = nil
+		end
 	end
 
 	if action.convert == "friend" then
@@ -1991,7 +2106,33 @@ function LifeBackend:handleInteraction(player, payload)
 		relationship.role = "Friend"
 	end
 
-	local feed = action.message or "You interacted."
+	if action.flag then
+		state.Flags[action.flag] = true
+	end
+	
+	if action.flags then
+		for flagName, value in pairs(action.flags) do
+			state.Flags[flagName] = value
+		end
+	end
+	
+	if action.clearFlags then
+		for _, flagName in ipairs(action.clearFlags) do
+			state.Flags[flagName] = nil
+		end
+	end
+	
+	local feed
+	if type(action.message) == "function" then
+		local success, message = pcall(action.message, state, relationship, action, payload)
+		if success then
+			feed = message
+		else
+			warn("[LifeBackend] Interaction message handler failed:", message)
+		end
+	end
+	
+	feed = feed or grantMessage or action.message or "You interacted."
 	self:pushState(player, feed)
 	return {
 		success = true,

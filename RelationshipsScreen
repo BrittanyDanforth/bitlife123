@@ -1636,6 +1636,12 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 		cost = cost or 0,
 	}
 
+	if person then
+		payload.targetName = person.name
+		payload.targetRole = person.role
+		payload.relationshipStrength = person.relationship
+	end
+
 	log("Firing DoInteraction:", actionId, "Type:", relType, "Target:", payload.targetId, "Cost:", payload.cost)
 
 	-- Close the interaction modal so result feels snappy
