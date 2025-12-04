@@ -644,6 +644,250 @@ end
 
 local EventEngine = {}
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ASSET MANAGEMENT API
+-- These helpers let events add/remove assets consistently (BitLife-style glue)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.ensureAssetTables(state)
+	state.Assets = state.Assets or {}
+	state.Assets.Properties = state.Assets.Properties or {}
+	state.Assets.Vehicles = state.Assets.Vehicles or {}
+	state.Assets.Items = state.Assets.Items or {}
+	state.Assets.Crypto = state.Assets.Crypto or {}
+	state.Assets.Investments = state.Assets.Investments or {}
+	state.Assets.Businesses = state.Assets.Businesses or {}
+end
+
+--[[
+	EventEngine.addAsset(state, assetType, assetData)
+	
+	Adds an asset to the player's state.
+	
+	@param state - The player's LifeState object
+	@param assetType - One of: "property", "vehicle", "item", "crypto", "investment", "business"
+	@param assetData - Table with asset information:
+		{
+			id = "unique_id",
+			name = "Display Name",
+			emoji = "🚗" (optional),
+			price = 2500,
+			value = 2500,
+			condition = 35 (optional, for vehicles),
+			acquiredAge = state.Age (optional),
+			acquiredYear = state.Year (optional),
+			isEventAcquired = true (optional, marks as story-given)
+		}
+	
+	Example:
+		EventEngine.addAsset(state, "vehicle", {
+			id = "cheap_used_car",
+			name = "Cheap Used Car",
+			emoji = "🚗",
+			price = 2500,
+			value = 2500,
+			condition = 35,
+			acquiredAge = state.Age,
+			isEventAcquired = true,
+		})
+]]
+function EventEngine.addAsset(state, assetType, assetData)
+	EventEngine.ensureAssetTables(state)
+	
+	-- Normalize asset type to plural category name
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	local category = categoryMap[assetType:lower()]
+	if not category then
+		warn("[EventEngine] Unknown asset type:", assetType)
+		return false
+	end
+	
+	-- Ensure asset has required fields
+	local asset = {
+		id = assetData.id or (assetType .. "_" .. tostring(RANDOM:NextInteger(10000, 99999))),
+		name = assetData.name or "Unknown Asset",
+		emoji = assetData.emoji,
+		price = assetData.price or 0,
+		value = assetData.value or assetData.price or 0,
+		condition = assetData.condition,
+		acquiredAge = assetData.acquiredAge or (state.Age or 0),
+		acquiredYear = assetData.acquiredYear or (state.Year or 2025),
+		isEventAcquired = assetData.isEventAcquired,
+		income = assetData.income,
+	}
+	
+	-- Use LifeState method if available, otherwise direct insert
+	if state.AddAsset and type(state.AddAsset) == "function" then
+		state:AddAsset(category, asset)
+	else
+		state.Assets[category] = state.Assets[category] or {}
+		table.insert(state.Assets[category], asset)
+	end
+	
+	return true
+end
+
+--[[
+	EventEngine.removeAssetById(state, assetType, assetId)
+	
+	Removes an asset from the player's state by its ID.
+	
+	@param state - The player's LifeState object
+	@param assetType - One of: "property", "vehicle", "item", "crypto", "investment", "business"
+	@param assetId - The unique ID of the asset to remove
+	
+	@returns The removed asset, or nil if not found
+]]
+function EventEngine.removeAssetById(state, assetType, assetId)
+	EventEngine.ensureAssetTables(state)
+	
+	-- Normalize asset type
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	local category = categoryMap[assetType:lower()]
+	if not category then
+		warn("[EventEngine] Unknown asset type:", assetType)
+		return nil
+	end
+	
+	-- Use LifeState method if available
+	if state.RemoveAsset and type(state.RemoveAsset) == "function" then
+		return state:RemoveAsset(category, assetId)
+	end
+	
+	-- Fallback: direct removal
+	local bucket = state.Assets[category]
+	if not bucket then return nil end
+	
+	for i = #bucket, 1, -1 do
+		if bucket[i].id == assetId then
+			return table.remove(bucket, i)
+		end
+	end
+	
+	return nil
+end
+
+--[[
+	EventEngine.hasAsset(state, assetType, assetId)
+	
+	Checks if the player owns a specific asset.
+	
+	@param state - The player's LifeState object
+	@param assetType - Asset category (or nil to search all)
+	@param assetId - The asset ID to find
+	
+	@returns true if owned, false otherwise
+]]
+function EventEngine.hasAsset(state, assetType, assetId)
+	EventEngine.ensureAssetTables(state)
+	
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	-- If no specific type, search all categories
+	local categoriesToSearch
+	if assetType then
+		local category = categoryMap[assetType:lower()]
+		if not category then return false end
+		categoriesToSearch = { category }
+	else
+		categoriesToSearch = { "Properties", "Vehicles", "Items", "Crypto", "Investments", "Businesses" }
+	end
+	
+	for _, category in ipairs(categoriesToSearch) do
+		local bucket = state.Assets[category]
+		if bucket then
+			for _, asset in ipairs(bucket) do
+				if asset.id == assetId then
+					return true
+				end
+			end
+		end
+	end
+	
+	return false
+end
+
+--[[
+	EventEngine.countAssets(state, assetType)
+	
+	Counts how many assets the player owns in a category.
+	
+	@param state - The player's LifeState object
+	@param assetType - Asset category (or nil for total count)
+	
+	@returns number of assets
+]]
+function EventEngine.countAssets(state, assetType)
+	EventEngine.ensureAssetTables(state)
+	
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	if assetType then
+		local category = categoryMap[assetType:lower()]
+		if not category then return 0 end
+		return #(state.Assets[category] or {})
+	end
+	
+	-- Count all assets
+	local total = 0
+	for _, category in pairs(state.Assets) do
+		if type(category) == "table" then
+			total = total + #category
+		end
+	end
+	return total
+end
+
 -- Name pools for dynamic relationship creation
 local NamePools = {
 	male = {
@@ -830,6 +1074,30 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			outcome.feedText = "You and " .. partnerName .. " broke up."
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM onResolve HANDLER - Execute event-specific logic (asset creation, etc.)
+	-- This is the key glue that connects story events to actual state changes!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if choice.onResolve and type(choice.onResolve) == "function" then
+		local success, err = pcall(function()
+			choice.onResolve(state, choice, eventDef, outcome)
+		end)
+		if not success then
+			warn("[EventEngine] onResolve handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
+		end
+	end
+	
+	-- Also support event-level onComplete handler (runs after any choice)
+	if eventDef.onComplete and type(eventDef.onComplete) == "function" then
+		local success, err = pcall(function()
+			eventDef.onComplete(state, choice, eventDef, outcome)
+		end)
+		if not success then
+			warn("[EventEngine] onComplete handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
 		end
 	end
 	

@@ -1707,6 +1707,15 @@ function LifeBackend:findAssetById(list, assetId)
 	end
 end
 
+--[[
+	handleAssetPurchase - Server-side validation for asset purchases
+	
+	Validates:
+	- Age requirements (must be 18+ for most purchases)
+	- Money availability
+	- Driver's license for vehicles
+	- Prevents godmode by enforcing real checks
+]]
 function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	local state = self:getState(player)
 	if not state then
@@ -1718,16 +1727,65 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		return { success = false, message = "Unknown asset." }
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- SERVER-SIDE VALIDATION - No godmode allowed!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	
+	-- Age check for major purchases (properties and vehicles)
+	local minAge = asset.minAge or 18
+	if assetType == "Properties" then
+		minAge = asset.minAge or 21 -- Must be 21+ to buy property
+	elseif assetType == "Vehicles" then
+		minAge = asset.minAge or 16 -- Must be 16+ for vehicles
+		
+		-- Vehicle-specific: require driver's license
+		local hasLicense = state.Flags and (state.Flags.has_license or state.Flags.drivers_license)
+		if not hasLicense then
+			return { success = false, message = "You need a driver's license first!" }
+		end
+	elseif assetType == "Items" then
+		minAge = asset.minAge or 14 -- Shop items can be bought younger
+	end
+	
+	if (state.Age or 0) < minAge then
+		return { success = false, message = string.format("You must be at least %d years old to buy this.", minAge) }
+	end
+	
+	-- Prison check - can't buy stuff while incarcerated
+	if state.InJail then
+		return { success = false, message = "You can't make purchases while incarcerated." }
+	end
+	
+	-- Money check
 	if state.Money < asset.price then
 		return { success = false, message = "You can't afford that." }
 	end
-
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- EXECUTE PURCHASE
+	-- ═══════════════════════════════════════════════════════════════════════════
+	
 	state.Assets[assetType] = state.Assets[assetType] or {}
 	table.insert(state.Assets[assetType], {
 		id = asset.id,
 		name = asset.name,
+		emoji = asset.emoji,
 		value = asset.price,
+		price = asset.price,
+		income = asset.income,
+		acquiredAge = state.Age,
+		acquiredYear = state.Year,
 	})
+	
+	-- Set relevant flags
+	state.Flags = state.Flags or {}
+	if assetType == "Vehicles" then
+		state.Flags.has_vehicle = true
+		state.Flags.has_car = true
+	elseif assetType == "Properties" then
+		state.Flags.has_property = true
+		state.Flags.homeowner = true
+	end
 
 	self:addMoney(state, -asset.price)
 	local feed = string.format("You purchased %s for %s.", asset.name, formatMoney(asset.price))
@@ -1740,6 +1798,11 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	if not state then
 		return { success = false, message = "Life data missing." }
 	end
+	
+	-- Prison check - can't sell stuff while incarcerated
+	if state.InJail then
+		return { success = false, message = "You can't sell assets while incarcerated." }
+	end
 
 	local bucket = state.Assets[assetType]
 	if not bucket then
@@ -1751,6 +1814,17 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 			local payout = math.floor((asset.value or 0) * 0.7)
 			table.remove(bucket, index)
 			self:addMoney(state, payout)
+			
+			-- Update flags if no assets left in category
+			state.Flags = state.Flags or {}
+			if assetType == "Vehicles" and #bucket == 0 then
+				state.Flags.has_vehicle = nil
+				state.Flags.has_car = nil
+			elseif assetType == "Properties" and #bucket == 0 then
+				state.Flags.has_property = nil
+				state.Flags.homeowner = nil
+			end
+			
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
 			self:pushState(player, feed)
 			return { success = true, message = feed }

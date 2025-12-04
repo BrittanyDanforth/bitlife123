@@ -115,6 +115,7 @@ function LifeState.new(player)
 		lastOccurrence = {},
 		completed = {},
 		recentCategories = {},
+		recentEvents = {},
 	}
 	
 	-- Death info

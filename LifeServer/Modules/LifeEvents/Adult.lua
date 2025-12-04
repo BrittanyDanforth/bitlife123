@@ -70,10 +70,65 @@ Adult.events = {
 		minAge = 25, maxAge = 50,
 		oneTime = true,
 		choices = {
-			{ text = "Buy a starter home", effects = { Happiness = 10, Money = -5000 }, setFlags = { homeowner = true, has_car = true }, feedText = "You bought your first home! A big milestone!" },
-			{ text = "Stretch for your dream home", effects = { Happiness = 15, Money = -15000, Health = -3 }, setFlags = { homeowner = true, has_car = true, high_mortgage = true }, feedText = "You got your dream home! But the mortgage is steep." },
-			{ text = "Keep renting for now", effects = { Money = 500 }, feedText = "You'll rent a bit longer. More flexibility." },
-			{ text = "Move to a cheaper area", effects = { Happiness = 5, Money = -3000 }, setFlags = { homeowner = true, relocated = true, has_car = true }, feedText = "You moved somewhere more affordable!" },
+			{
+				text = "Buy a starter home",
+				effects = { Happiness = 10, Money = -5000 },
+				setFlags = { homeowner = true, has_property = true },
+				feedText = "You bought your first home! A big milestone!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "property", {
+						id = "starter_home_" .. tostring(state.Age),
+						name = "Starter Home",
+						emoji = "🏠",
+						price = 85000,
+						value = 85000,
+						income = 0, -- not renting it out
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "Stretch for your dream home",
+				effects = { Happiness = 15, Money = -15000, Health = -3 },
+				setFlags = { homeowner = true, has_property = true, high_mortgage = true },
+				feedText = "You got your dream home! But the mortgage is steep.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "property", {
+						id = "dream_home_" .. tostring(state.Age),
+						name = "Dream Home",
+						emoji = "🏡",
+						price = 350000,
+						value = 350000,
+						income = 0,
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "Keep renting for now",
+				effects = { Money = 500 },
+				feedText = "You'll rent a bit longer. More flexibility.",
+			},
+			{
+				text = "Move to a cheaper area",
+				effects = { Happiness = 5, Money = -3000 },
+				setFlags = { homeowner = true, has_property = true, relocated = true },
+				feedText = "You moved somewhere more affordable!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "property", {
+						id = "affordable_home_" .. tostring(state.Age),
+						name = "Affordable Home",
+						emoji = "🏠",
+						price = 65000,
+						value = 65000,
+						income = 0,
+						isEventAcquired = true,
+					})
+				end,
+			},
 		},
 	},
 	{

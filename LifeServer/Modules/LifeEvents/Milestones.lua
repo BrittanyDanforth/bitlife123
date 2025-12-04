@@ -107,10 +107,65 @@ Milestones.events = {
 		oneTime = true,
 		requiresFlags = { has_license = true },
 		choices = {
-			{ text = "A beat-up used car", effects = { Happiness = 7, Money = -500 }, setFlags = { has_car = true }, feedText = "It's not pretty, but it's yours!" },
-			{ text = "A decent reliable car", effects = { Happiness = 8, Money = -3000 }, setFlags = { has_car = true }, feedText = "A solid first car!" },
-			{ text = "A gift from family", effects = { Happiness = 10 }, setFlags = { has_car = true }, feedText = "Your family helped you get a car!" },
-			{ text = "Saving up for something better", effects = { Money = 200 }, feedText = "You're waiting for the right one." },
+			{
+				text = "A beat-up used car",
+				effects = { Happiness = 7, Money = -500 },
+				setFlags = { has_car = true, has_vehicle = true },
+				feedText = "It's not pretty, but it's yours!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "vehicle", {
+						id = "beater_car_" .. tostring(state.Age),
+						name = "Beat-up Used Car",
+						emoji = "🚙",
+						price = 500,
+						value = 400,
+						condition = 35,
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "A decent reliable car",
+				effects = { Happiness = 8, Money = -3000 },
+				setFlags = { has_car = true, has_vehicle = true },
+				feedText = "A solid first car!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "vehicle", {
+						id = "reliable_car_" .. tostring(state.Age),
+						name = "Reliable Used Car",
+						emoji = "🚗",
+						price = 3000,
+						value = 2500,
+						condition = 65,
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "A gift from family",
+				effects = { Happiness = 10 },
+				setFlags = { has_car = true, has_vehicle = true },
+				feedText = "Your family helped you get a car!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "vehicle", {
+						id = "gift_car_" .. tostring(state.Age),
+						name = "Family Gift Car",
+						emoji = "🚗",
+						price = 0,
+						value = 5000,
+						condition = 70,
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "Saving up for something better",
+				effects = { Money = 200 },
+				feedText = "You're waiting for the right one.",
+			},
 		},
 	},
 

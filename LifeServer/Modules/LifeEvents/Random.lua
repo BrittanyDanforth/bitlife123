@@ -51,10 +51,51 @@ Random.events = {
 		cooldown = 10,
 		oneTime = true,
 		choices = {
-			{ text = "A substantial sum", effects = { Happiness = 10, Money = 10000 }, feedText = "You inherited a nice sum of money!" },
-			{ text = "A quirky family heirloom", effects = { Happiness = 5 }, setFlags = { has_heirloom = true }, feedText = "An interesting piece of family history." },
-			{ text = "An old house", effects = { Happiness = 8, Money = 5000 }, setFlags = { inherited_property = true }, feedText = "You inherited a property!" },
-			{ text = "Some debt, unfortunately", effects = { Happiness = -5, Money = -2000 }, feedText = "They left you with bills to pay." },
+			{
+				text = "A substantial sum",
+				effects = { Happiness = 10, Money = 10000 },
+				feedText = "You inherited a nice sum of money!",
+			},
+			{
+				text = "A quirky family heirloom",
+				effects = { Happiness = 5 },
+				setFlags = { has_heirloom = true },
+				feedText = "An interesting piece of family history.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "item", {
+						id = "family_heirloom_" .. tostring(state.Age),
+						name = "Family Heirloom",
+						emoji = "🏺",
+						price = 0,
+						value = 2500,
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "An old house",
+				effects = { Happiness = 8 },
+				setFlags = { inherited_property = true, homeowner = true, has_property = true },
+				feedText = "You inherited a property!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					EventEngine.addAsset(state, "property", {
+						id = "inherited_house_" .. tostring(state.Age),
+						name = "Inherited House",
+						emoji = "🏚️",
+						price = 0,
+						value = 120000,
+						income = 800, -- can rent it out
+						isEventAcquired = true,
+					})
+				end,
+			},
+			{
+				text = "Some debt, unfortunately",
+				effects = { Happiness = -5, Money = -2000 },
+				feedText = "They left you with bills to pay.",
+			},
 		},
 	},
 
@@ -88,10 +129,57 @@ Random.events = {
 		cooldown = 2,
 		requiresFlags = { has_car = true },
 		choices = {
-			{ text = "Pay for repairs", effects = { Money = -500, Happiness = -3 }, feedText = "Expensive repairs. Cars, right?" },
-			{ text = "Try to fix it yourself", effects = { Money = -100, Smarts = 3, Health = -2 }, feedText = "You learned something, at least." },
-			{ text = "Buy a new car", effects = { Money = -5000, Happiness = 5 }, feedText = "Time for an upgrade anyway!" },
-			{ text = "Use public transit for now", effects = { Money = -50, Happiness = -5 }, feedText = "You'll manage without it temporarily." },
+			{
+				text = "Pay for repairs",
+				effects = { Money = -500, Happiness = -3 },
+				feedText = "Expensive repairs. Cars, right?",
+			},
+			{
+				text = "Try to fix it yourself",
+				effects = { Money = -100, Smarts = 3, Health = -2 },
+				feedText = "You learned something, at least.",
+			},
+			{
+				text = "Junk it and buy a new car",
+				effects = { Money = -5000, Happiness = 5 },
+				feedText = "Time for an upgrade anyway!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					-- Remove old car (first one found)
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then
+						local oldCar = table.remove(vehicles, 1)
+						-- Add new car
+						EventEngine.addAsset(state, "vehicle", {
+							id = "replacement_car_" .. tostring(state.Age),
+							name = "New Reliable Car",
+							emoji = "🚗",
+							price = 5000,
+							value = 4500,
+							condition = 85,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
+			{
+				text = "Sell it for scrap and take the bus",
+				effects = { Money = 300, Happiness = -5 },
+				feedText = "You sold the heap and went back to public transit.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent).EventEngine
+					-- Remove all vehicles (simplification - in reality would track specific one)
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then
+						table.remove(vehicles, 1) -- Remove first car
+					end
+					-- Clear vehicle flags if no vehicles left
+					if not vehicles or #vehicles == 0 then
+						state.Flags.has_car = nil
+						state.Flags.has_vehicle = nil
+					end
+				end,
+			},
 		},
 	},
 	{
