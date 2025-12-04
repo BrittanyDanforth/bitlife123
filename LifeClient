@@ -151,13 +151,13 @@ local C = {
 	BlueDark  = Color3.fromRGB(29, 78, 216),
 	BlueLight = Color3.fromRGB(96, 165, 250),
 	BluePale  = Color3.fromRGB(219, 234, 254),
-
+	
 	-- Greens
 	Green      = Color3.fromRGB(34, 197, 94),
 	GreenDark  = Color3.fromRGB(22, 163, 74),
 	GreenRing  = Color3.fromRGB(21, 128, 61),
 	GreenPale  = Color3.fromRGB(220, 252, 231),
-
+	
 	-- Accents
 	Red      = Color3.fromRGB(239, 68, 68),
 	RedDark  = Color3.fromRGB(220, 38, 38),
@@ -169,29 +169,29 @@ local C = {
 	Purple   = Color3.fromRGB(168, 85, 247),
 	Yellow   = Color3.fromRGB(253, 224, 71),
 	Amber    = Color3.fromRGB(245, 158, 11),
-
+	
 	-- Gender
 	Male   = Color3.fromRGB(56, 189, 248),
 	Female = Color3.fromRGB(244, 114, 182),
-
+	
 	-- Neutrals
-	White   = Color3.fromRGB(255, 255, 255),
-	OffWhite= Color3.fromRGB(250, 250, 250),
-	Gray50  = Color3.fromRGB(249, 250, 251),
-	Gray100 = Color3.fromRGB(243, 244, 246),
-	Gray200 = Color3.fromRGB(229, 231, 235),
-	Gray300 = Color3.fromRGB(209, 213, 219),
-	Gray400 = Color3.fromRGB(156, 163, 175),
-	Gray500 = Color3.fromRGB(107, 114, 128),
-	Gray600 = Color3.fromRGB(75, 85, 99),
-	Gray700 = Color3.fromRGB(55, 65, 81),
-	Gray800 = Color3.fromRGB(31, 41, 55),
-	Gray900 = Color3.fromRGB(17, 24, 39),
-
+	White    = Color3.fromRGB(255, 255, 255),
+	OffWhite = Color3.fromRGB(250, 250, 250),
+	Gray50   = Color3.fromRGB(249, 250, 251),
+	Gray100  = Color3.fromRGB(243, 244, 246),
+	Gray200  = Color3.fromRGB(229, 231, 235),
+	Gray300  = Color3.fromRGB(209, 213, 219),
+	Gray400  = Color3.fromRGB(156, 163, 175),
+	Gray500  = Color3.fromRGB(107, 114, 128),
+	Gray600  = Color3.fromRGB(75, 85, 99),
+	Gray700  = Color3.fromRGB(55, 65, 81),
+	Gray800  = Color3.fromRGB(31, 41, 55),
+	Gray900  = Color3.fromRGB(17, 24, 39),
+	
 	-- Nav
 	NavBlue = Color3.fromRGB(30, 58, 138),
 	NavDark = Color3.fromRGB(23, 37, 84),
-
+	
 	-- Overlay
 	Black = Color3.fromRGB(0, 0, 0),
 }
@@ -202,6 +202,65 @@ local F = {
 	Medium = Enum.Font.GothamMedium,
 	Button = Enum.Font.GothamBold,
 }
+
+local function ensureSharedUITheme()
+	local sharedUI = safeRequireRS("UIComponents")
+	if not sharedUI then
+		return
+	end
+
+	sharedUI.Colors = sharedUI.Colors or {}
+	for name, value in pairs(C) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	-- Additional palette entries used by the standalone screens
+	local extraColors = {
+		Bg        = Color3.fromRGB(246, 248, 252),
+		Teal      = Color3.fromRGB(20, 184, 166),
+		TealDark  = Color3.fromRGB(13, 148, 136),
+		TealPale  = Color3.fromRGB(204, 251, 241),
+		Cyan      = Color3.fromRGB(14, 165, 233),
+		CyanDark  = Color3.fromRGB(21, 94, 117),
+		CyanPale  = Color3.fromRGB(224, 242, 254),
+		Gold      = Color3.fromRGB(251, 191, 36),
+		GoldDark  = Color3.fromRGB(217, 119, 6),
+		GoldPale  = Color3.fromRGB(254, 243, 199),
+		AmberDark = Color3.fromRGB(217, 119, 6),
+		AmberPale = Color3.fromRGB(254, 243, 199),
+		PurplePale= Color3.fromRGB(243, 232, 255),
+		Gray950   = Color3.fromRGB(2, 6, 23),
+	}
+	for name, value in pairs(extraColors) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	sharedUI.Fonts = sharedUI.Fonts or {}
+	for name, font in pairs(F) do
+		if sharedUI.Fonts[name] == nil then
+			sharedUI.Fonts[name] = font
+		end
+	end
+
+	if not sharedUI.formatMoney then
+		function sharedUI.formatMoney(amount)
+			if not amount then return "$0" end
+			if amount >= 1_000_000 then
+				return string.format("$%.1fM", amount / 1_000_000)
+			elseif amount >= 1_000 then
+				return string.format("$%.1fK", amount / 1_000)
+			else
+				return "$" .. tostring(math.floor(amount + 0.5))
+			end
+		end
+	end
+end
+
+ensureSharedUITheme()
 
 ----------------------------------------------------------------
 -- HELPERS

@@ -294,6 +294,81 @@ function LifeState:RemoveAsset(category, assetId)
 	return nil
 end
 
+function LifeState:AddFeed(message)
+	if not message or message == "" then
+		return
+	end
+	self.EventHistory = self.EventHistory or {}
+	self.EventHistory.feed = self.EventHistory.feed or {}
+	table.insert(self.EventHistory.feed, message)
+	self.PendingFeed = self.PendingFeed or message
+end
+
+function LifeState:SetCareer(jobData)
+	self.Flags = self.Flags or {}
+	self.Career = self.Career or {}
+	self.CareerInfo = self.CareerInfo or {
+		performance = 60,
+		promotionProgress = 0,
+		yearsAtJob = 0,
+		raises = 0,
+	}
+
+	if not jobData then
+		self.CurrentJob = nil
+		self.Flags.employed = nil
+		self.Career.jobTitle = nil
+		self.Career.company = nil
+		self.Career.salary = nil
+		self.Career.category = nil
+		return
+	end
+	
+	self.CurrentJob = {
+		id = jobData.id,
+		name = jobData.name,
+		company = jobData.company,
+		salary = jobData.salary or jobData.pay or 0,
+		category = jobData.category,
+	}
+	
+	self.Career = self.Career or {}
+	self.Career.jobTitle = jobData.jobTitle or jobData.name or self.Career.jobTitle
+	self.Career.company = jobData.company or self.Career.company
+	self.Career.salary = jobData.salary or self.Career.salary or 0
+	self.Career.category = jobData.category or self.Career.category
+	
+	self.CareerInfo.performance = 60
+	self.CareerInfo.promotionProgress = 0
+	self.CareerInfo.yearsAtJob = 0
+	self.CareerInfo.raises = 0
+	
+	self.Flags.employed = true
+end
+
+function LifeState:EnrollEducation(program)
+	program = program or {}
+	self.EducationData = self.EducationData or {}
+	self.EducationData.Status = "enrolled"
+	self.EducationData.Institution = program.name or program.institution or self.EducationData.Institution or "School"
+	self.EducationData.Level = program.type or program.level or self.EducationData.Level
+	self.EducationData.Progress = 0
+	self.EducationData.Duration = program.duration or self.EducationData.Duration or 4
+	self.EducationData.Year = 0
+	self.EducationData.TotalYears = program.totalYears or self.EducationData.TotalYears or self.EducationData.Duration
+	self.EducationData.Debt = self.EducationData.Debt or 0
+	self.EducationData.Cost = program.cost or self.EducationData.Cost or 0
+	
+	if program.cost and program.cost > 0 then
+		self:SubtractMoney(program.cost)
+		self.EducationData.Debt = self.EducationData.Debt + program.cost
+	end
+	
+	self.Flags = self.Flags or {}
+	self.Flags.in_school = true
+	return self.EducationData
+end
+
 function LifeState:GetNetWorth()
 	local total = self.Money
 	

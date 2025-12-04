@@ -133,6 +133,103 @@ local function loadEventModule(moduleName, categoryName)
 	local count = 0
 	for _, event in ipairs(events) do
 		if event.id then
+			if event.conditions then
+				local cond = event.conditions
+				-- Age bounds
+				event.minAge = event.minAge or cond.minAge
+				event.maxAge = event.maxAge or cond.maxAge
+
+				local function normalizeFlags(flagData, defaultValue)
+					if type(flagData) ~= "table" then
+						return nil
+					end
+					local normalized = {}
+					local hasArrayEntries = flagData[1] ~= nil
+					if hasArrayEntries then
+						for _, flag in ipairs(flagData) do
+							if type(flag) == "string" then
+								normalized[flag] = defaultValue ~= nil and defaultValue or true
+							elseif type(flag) == "table" and flag.name then
+								normalized[flag.name] = flag.value
+							end
+						end
+					else
+						for flag, value in pairs(flagData) do
+							normalized[flag] = value
+						end
+					end
+					return normalized
+				end
+
+				if cond.requiredFlags and not event.requiresFlags then
+					event.requiresFlags = normalizeFlags(cond.requiredFlags, true)
+				end
+				if cond.blockedFlags and not event.blockedByFlags then
+					event.blockedByFlags = normalizeFlags(cond.blockedFlags, true)
+				end
+
+				local function mergeStatRequirement(source, key)
+					if type(source) ~= "table" then
+						return
+					end
+					event.requiresStats = event.requiresStats or {}
+					for stat, value in pairs(source) do
+						local existing = event.requiresStats[stat]
+						if type(value) == "number" then
+							if type(existing) == "number" then
+								if key == "min" then
+									event.requiresStats[stat] = math.max(existing, value)
+								else
+									event.requiresStats[stat] = math.min(existing, value)
+								end
+							elseif type(existing) == "table" then
+								if key == "min" then
+									existing.min = existing.min and math.max(existing.min, value) or value
+								else
+									existing.max = existing.max and math.min(existing.max, value) or value
+								end
+							else
+								if key == "min" then
+									event.requiresStats[stat] = value
+								else
+									event.requiresStats[stat] = { max = value }
+								end
+							end
+						elseif type(value) == "table" then
+							local target = existing
+							if type(target) ~= "table" then
+								target = {}
+							end
+							if value.min then
+								target.min = target.min and math.max(target.min, value.min) or value.min
+							end
+							if value.max then
+								target.max = target.max and math.min(target.max, value.max) or value.max
+							end
+							event.requiresStats[stat] = target
+						end
+					end
+				end
+
+				mergeStatRequirement(cond.minStats, "min")
+				mergeStatRequirement(cond.maxStats, "max")
+
+				if cond.cooldown and not event.cooldown then
+					event.cooldown = cond.cooldown
+				end
+				if cond.oneTime ~= nil and event.oneTime == nil then
+					event.oneTime = cond.oneTime
+				end
+				if cond.priority and not event.priority then
+					event.priority = cond.priority
+				end
+				if cond.probability and not event.baseChance then
+					event.baseChance = cond.probability
+				end
+
+				event.conditions = nil
+			end
+
 			event._category = category
 			event._source = moduleName
 			AllEvents[event.id] = event
