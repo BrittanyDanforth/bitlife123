@@ -1,144 +1,225 @@
-# BitLife-Grade Backend Setup
+# BitLife-Grade Backend Setup (Zero → Live)
 
-**Purpose:** deliver a "triple-AAAA" BitLife-style backend that stays fully deterministic, supports 100+ careers, and feeds every premium UI screen without random junk events.
+You can start from an empty Roblox place and end with a BitLife-style backend by following this exact checklist. Copy/paste each step and you’ll go from nothing to a scripted, deterministic life simulator with working UI hooks.
 
 ---
 
-## 🔩 What’s Inside
+## 0. Prereqs
+
+- Roblox Studio installed (latest release)
+- A clean place file (File → New)
+- This repo cloned somewhere handy
 
 ```
-/LifeClient                 -- BitLife-grade UI already wired to LifeRemotes
-/LifeServer
-  ├── LifeBackend.lua       -- singleton bootstrap; wires remotes & yearly queue
-  └── Modules
-      ├── LifeState.lua         -- per-player save: stats, flags, traits, assets, history
-      ├── LifeStageSystem.lua   -- age stages, capability gates, death math
-      └── LifeEvents
-          ├── init.lua          -- event loader/registry facade
-          ├── EventEngine.lua   -- normalization, eligibility, weighted picks, choice resolver
-          ├── CareerSystem.lua  -- starter job catalog + helpers
-          └── Catalog/*.lua     -- drop-in event packs (CoreMilestones, CareerEvents, RomanceEvents, CrimeEvents, …)
+git clone https://github.com/your-org/bitlife-backend.git
 ```
 
 ---
 
-## ⚙️ Install & Boot
+## 1. Folder Bootstrapping (Studio)
 
-1. **Server placement**
-   - Drop the entire `LifeServer` folder into `ServerScriptService`.
-   - `LifeServer/init.server.lua` stays as-is (require + `.init()`).
+1. Open your place in Studio.
+2. In **ServerScriptService**, create a folder named `LifeServer`.
+3. Drag/drop the contents of this repo’s `/LifeServer` folder into that Studio folder.
+   - Ensure `LifeServer/init.server.lua` sits directly inside (not nested deeper).
+4. In **ReplicatedStorage**, no manual setup required (backend will auto-create remotes).
+5. In **StarterPlayer > StarterPlayerScripts**, create/drag a folder named `LifeClient` if you don’t already have one.
+6. Copy the `/LifeClient` folder from the repo into `StarterPlayerScripts`.
 
-2. **Client placement**
-   - Put `LifeClient` into `StarterPlayerScripts` (or wherever you mount your UI).
-   - It already waits on `ReplicatedStorage/LifeRemotes`.
-
-3. **Playtest**
-   - In Studio, launch a Local Server, hit “Age Up”, and you should see authored event queues, stat adjustments, and UI flashes.
-
-> **Persistence:** hook DataStores into `LifeState:Serialize()` / `LifeState.fromSerialized()` when you’re ready to save lives.
-
----
-
-## 🧠 Core Concepts
-
-| Piece | Highlights |
-|-------|------------|
-| `LifeState` | traits, stats, money, assets, relationships, education, career, paths, event history, feed buffer, serializer/deserializer |
-| `LifeStageSystem` | converts age → stage (infant → elder), exposes capability flags (`canWork`, `canDate`, etc.), validates categories, injects guaranteed milestone events, runs health-aware death rolls |
-| `LifeEvents` | auto-loads event modules, normalizes conditions, surfaces helpers like `selectEventsForYear`, `processChoice`, `getStats` |
-| `EventEngine` | deterministically filters eligible events, does weighted selection, resolves choice effects (stats, money, relationships, flags) |
-| `CareerSystem` | baseline career catalog + helpers for applications, income drift, promotions |
-| `LifeBackend` | remote wiring, aging loop, queue orchestration, feed pushes, bridging existing UI remotes |
-
-The backend delivers data to `LifeClient` through `SyncState` and `PresentEvent`. UI responds with `SubmitChoice`, and the server resolves everything — no client trust.
+Your Explorer should look like:
+```
+ServerScriptService
+└── LifeServer
+    ├── init.server.lua
+    ├── LifeBackend.lua
+    └── Modules
+        ├── LifeState.lua
+        ├── LifeStageSystem.lua
+        └── LifeEvents
+StarterPlayer
+└── StarterPlayerScripts
+    └── LifeClient
+ReplicatedStorage
+└── (empty – remotes will spawn at runtime)
+```
 
 ---
 
-## 🔁 Yearly Flow
+## 2. Server Wiring
 
-1. `RequestAgeUp` (client) → server grabs `LifeState`.
-2. `LifeState:AdvanceAge()` increments year, logs feed, and updates career stats.
-3. `LifeStageSystem.getTransitionEvent()` adds guaranteed “stage change” milestones.
-4. `LifeEvents.buildYearQueue()` curates contextual events (career, romance, crime, etc.) filtered through stage gates and flag requirements.
-5. Each event is sent to the client via `PresentEvent`. Player choice returns through `SubmitChoice`.
-6. `EventEngine.completeEvent()` mutates `LifeState` deterministically, records history, and builds `resultData` (for UI shakes/flash).
-7. After the queue clears, `LifeStageSystem.checkDeath()` determines if the life ends; `SyncState` pushes the final state + feed entry.
-
----
-
-## 🛰 Remote Overview
-
-**RemoteEvents**
-- `RequestAgeUp`, `SyncState`, `PresentEvent`, `SubmitChoice`, `SetLifeInfo`, `MinigameStart`, `MinigameResult`
-
-**RemoteFunctions**
-- Activities & risk: `DoActivity`, `CommitCrime`, `DoPrisonAction`
-- Careers/Education: `ApplyForJob`, `QuitJob`, `DoWork`, `RequestPromotion`, `RequestRaise`, `GetCareerInfo`, `GetEducationInfo`, `EnrollEducation`
-- Assets/Money: `BuyProperty`, `BuyVehicle`, `BuyItem`, `SellAsset`, `Gamble`
-- Social & Story: `DoInteraction`, `StartPath`, `DoPathAction`
-
-All remotes are created automatically under `ReplicatedStorage/LifeRemotes`.
+No extra scripts required—`LifeServer/init.server.lua` already contains:
+```lua
+local backendModule = require(script:WaitForChild("LifeBackend"))
+backendModule.init()
+```
+That bootstrapper:
+- Creates `ReplicatedStorage/LifeRemotes`
+- Instantiates all RemoteEvents/RemoteFunctions
+- Hooks into `Players.PlayerAdded/Removing`
+- Constructs a `LifeState` per player and keeps it authoritative on the server
 
 ---
 
-## 🧩 Authoring Events
+## 3. Client Wiring
 
-1. New ModuleScript inside `LifeServer/Modules/LifeEvents/Catalog`.
-2. Return a table of events; each event can include:
+`LifeClient` is a turnkey UI package that expects those remotes. Ensure the folder includes:
+- `Main.client.lua` (or similar bootstrap script)
+- Screen modules (`ActivitiesScreen`, `OccupationScreen`, `AssetsScreen`, `RelationshipsScreen`, `StoryPathsScreen`, `Minigames`)
+- Shared helpers (stat bars, feed, modals)
+
+When the backend fires `SyncState`, the client updates headers, stats, and feed. When `PresentEvent` fires, the client shows the modal. No additional code needed unless you’re customizing UI.
+
+---
+
+## 4. Data Schema (LifeState)
+
+Every player gets a `LifeState` instance with:
+- Core identity: `Name`, `Gender`, `Age`, `Year`
+- Stats: `Happiness`, `Health`, `Smarts`, `Looks`
+- Flags: `state.Flags` (set/clear for story conditions)
+- Relationships: flat map keyed by GUID or role
+- Career info: `state.Career`, `state.CurrentJob`, `state.CareerInfo`
+- Education info: `state.Education`, `state.EducationData`
+- Assets: properties, vehicles, items, crypto
+- Story: active paths, progress
+- Event history: seen IDs, cooldowns, recent feed entries
+- Personality traits: generated at birth
+
+Serialization helpers are ready:
+```lua
+local serialized = lifeState:Serialize()
+lifeState = LifeState.fromSerialized(player, serialized)
+```
+Use these when you plug into DataStores.
+
+---
+
+## 5. Yearly Loop (Age Up)
+
+1. Client fires `RequestAgeUp` (button).
+2. Server grabs `LifeState` → `LifeState:AdvanceAge()`.
+3. Stage transitions come from `LifeStageSystem.getTransitionEvent(oldAge, newAge)`.
+4. Main event queue: `LifeEvents.buildYearQueue(state, { maxEvents = 2 })`.
+5. Each event becomes a modal via `PresentEvent` (server → client). Client replies with `SubmitChoice`.
+6. `LifeEvents.processChoice` / `EventEngine.completeEvent` apply stats, money, flags, career deltas.
+7. After queue empties, `LifeStageSystem.checkDeath(state)` decides if the life ends.
+8. Final `SyncState` updates UI with feed entry + `resultData` for screen shakes/flashes.
+
+If the player dies, the backend sets `state.Flags.dead` and pushes a “Life Ended” popup so the UI can run obituaries/retry logic.
+
+---
+
+## 6. Remote Catalog
+
+Created automatically inside `ReplicatedStorage/LifeRemotes`:
+
+| Remote | Type | Purpose |
+|--------|------|---------|
+| `RequestAgeUp` | RemoteEvent | Client → Server, trigger yearly advance |
+| `SyncState` | RemoteEvent | Server → Client, send serialized state + feed + resultData |
+| `PresentEvent` | RemoteEvent | Server → Client, show life event modal |
+| `SubmitChoice` | RemoteEvent | Client → Server, respond to modal |
+| `SetLifeInfo` | RemoteEvent | Client → Server, set name/gender |
+| `MinigameStart` / `MinigameResult` | RemoteEvents | For QTE/heist/escape modules |
+| `DoActivity`, `CommitCrime`, `DoPrisonAction` | RemoteFunctions | Activities & prison slots |
+| `ApplyForJob`, `QuitJob`, `DoWork`, `RequestPromotion`, `RequestRaise` | RemoteFunctions | Career loops |
+| `GetCareerInfo`, `GetEducationInfo`, `EnrollEducation` | RemoteFunctions | Info panels + enrollments |
+| `BuyProperty`, `BuyVehicle`, `BuyItem`, `SellAsset`, `Gamble` | RemoteFunctions | Assets & gambling |
+| `DoInteraction` | RemoteFunction | Relationships screen |
+| `StartPath`, `DoPathAction` | RemoteFunctions | Long-form story paths |
+
+You don’t create these manually; `LifeBackend` handles it.
+
+---
+
+## 7. Event Authoring Pipeline
+
+1. Add a ModuleScript under `LifeServer/Modules/LifeEvents/Catalog/YourPack.lua`.
+2. Return `return { ...events... }` where each event uses the normalized schema:
    ```lua
    {
-     id = "karting_chance",
-     emoji = "🏎️",
-     title = "Karting Opportunity",
-     category = "motorsport",
+     id = "white_collar_scheme",
+     emoji = "💼",
+     title = "Insider Trading Tip",
+     text = "Coworker offers an illegal stock tip.",
+     category = "crime",
+     weight = 3,
      conditions = {
-       minAge = 8,
-       maxAge = 15,
-       requiredFlags = { "racing_interest" },
-       minStats = { Health = 40 },
+       minAge = 25,
+       requiredFlags = { "employed" },
+       blockedFlags = { "in_prison" },
      },
      choices = {
        {
-         text = "Sign up",
-         effects = { Happiness = 4, Money = -500 },
-         flags = { set = { "karting_started" } },
+         text = "Invest secretly",
+         effects = { Money = 15000, Happiness = 3 },
+         onResolve = function(state)
+           if Random.new():NextNumber() < 0.25 then
+             state:SetFlag("in_prison", true)
+             state:AddFeed("Authorities traced the trade. You were arrested.")
+           end
+         end,
        },
-       { text = "Skip", effects = { Happiness = -2 } },
+       { text = "Report it", effects = { Happiness = -1, Smarts = 2 } },
      },
    }
    ```
-3. Loader auto-normalizes IDs, conditions, flags, weights, and injects into the master registry.
-4. Use `conditions.custom = function(state) ... end` for bespoke logic.
+3. Loader finds every module, normalizes conditions/flags, and registers them.
+4. Use `LifeEvents.getStats()` in the console to confirm coverage by category/stage.
 
 ---
 
-## 🪙 Careers, Education, Assets, Crime
+## 8. Activities / Careers / Assets Hooks
 
-- `LifeState:SetCareer(jobDef)` handles feeds, flags, and progress.
-- `CareerSystem.getJobsForState(state)` filters the catalog by education/flags.
-- Education flows through `LifeState:EnrollEducation()` and `LifeState:Graduate()`.
-- Crime/prison actions set `in_prison` flags so `LifeStageSystem` blocks certain categories automatically.
-- Assets & gambling APIs are exposed through RemoteFunctions and update net worth and feed entries server-side.
-
----
-
-## ✅ Suggested QA Pass
-
-- [ ] Create a life, set name/gender, and age up repeatedly — check that stage events trigger.
-- [ ] Apply for jobs, enroll in school, buy/sell assets, commit crimes — ensure state stays deterministic.
-- [ ] Spam `DoInteraction` to confirm relationship helpers work across families, friends, romance.
-- [ ] Verify `resultData` values animate the client (shakes/red flashes) for big negative outcomes.
-- [ ] Call `LifeEvents.getStats()` in the console to verify coverage after adding new packs.
+- **Activities:** `ActivityCatalog` maps IDs to stat deltas, cost, feed text. Client calls `DoActivity`, backend clamps stats, pushes feed entry, and returns `resultData` for UI effects.
+- **Careers:** `CareerSystem` exposes `getJobsForState`, `getJob`, `simulateWork`. Use `ApplyForJob`, `DoWork`, `RequestPromotion`, `RequestRaise` remotes from the Occupation screen.
+- **Education:** `EnrollEducation` remote charges tuition, sets `student` flag, updates `LifeState.EducationData`. Graduation triggers feed + flag updates.
+- **Assets:** `BuyProperty`, `BuyVehicle`, `BuyItem`, `SellAsset`, `Gamble` handle the Assets screen, always server-authoritative.
+- **Crimes & Prison:** `CommitCrime` returns success/caught plus jail years; `DoPrisonAction` exposes workouts, appeals, riots, escape attempts.
+- **Story Paths:** `StartPath` and `DoPathAction` mutate `state.Paths` and drive long-form arcs like political or criminal empires.
 
 ---
 
-## 🚀 Extending
+## 9. Testing Script
 
-- Add more catalog modules for medical, celebrity, political, global story arcs.
-- Wire DataStores for persistence (serialization already done).
-- Feed analytics dashboards using `LifeEvents.getStats()` to catch content gaps.
-- Swap catalog folders at runtime for seasonal updates.
+1. Studio → Test tab → Play (Local Server w/2 players recommended).
+2. In the client window:
+   - Run through tutorial/introduction.
+   - Set life info, hit Age Up repeatedly.
+   - Ensure milestone events (child → teen, teen → adult, etc.) show.
+   - Try every screen (activities, crimes, jobs, assets, relationships, story paths, minigames).
+3. Watch the server output for warnings—any event load failure logs `LifeEvents` warnings.
+4. Optional: call `LifeEvents.getStats()` from the console to see event counts by category/stage.
 
 ---
 
-_Drop this backend into your experience and you get BitLife vibes: contextual events, authored deaths, screen shakes for bad beats, and zero random nonsense._
+## 10. Persistence (Optional)
+
+- Hook into `Players.PlayerRemoving` or a periodic save loop.
+- Grab the state: `local data = lifeState:Serialize()`.
+- Store it in DataStore keyed by `player.UserId`.
+- On join, call `LifeState.fromSerialized(player, data)` before replacing the default newborn state.
+
+---
+
+## 11. Deployment Checklist
+
+- [ ] All required folders placed correctly (ServerScriptService/LifeServer, StarterPlayerScripts/LifeClient).
+- [ ] No missing ModuleScripts when `LifeEvents` initializes.
+- [ ] Remotes appear under `ReplicatedStorage/LifeRemotes` at runtime.
+- [ ] Activities, careers, assets, crimes, relationships, and story paths tested end-to-end.
+- [ ] Stage transitions + deaths display proper popups.
+- [ ] (Optional) DataStore save/load verified.
+
+---
+
+## 12. Extending Beyond MVP
+
+- Add more catalog packs (medical, celebrity, global crises, etc.).
+- Build admin tooling to inspect `LifeState` live.
+- Track analytics using `LifeEvents.getStats()` results (e.g., ensure each age bracket has enough content).
+- Create seasonal folders by swapping `LifeEvents/Catalog` modules at runtime.
+
+---
+
+**Result:** from an empty place to a fully wired BitLife backend that keeps aging loops deterministic, respects age gates, and drives every UI screen through one server brain. Follow the steps in order and you’re done.
