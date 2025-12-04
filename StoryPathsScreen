@@ -1,0 +1,1041 @@
+-- StoryPathsScreen.lua
+-- Premium BitLife-style Story Paths screen
+-- Triple AAA polished UI for career/life paths and special storylines
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
+local C = UI.Colors
+local F = UI.Fonts
+
+local StoryPathsScreen = {}
+StoryPathsScreen.__index = StoryPathsScreen
+
+-- Debug logging (set to false to reduce log spam)
+local DEBUG = false
+local function log(...)
+	if DEBUG then print("[StoryPathsScreen]", ...) end
+end
+local function logWarn(...)
+	warn("[StoryPathsScreen]", ...)
+end
+
+-- Remotes (optimized - fast lookup)
+local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or ReplicatedStorage:WaitForChild("LifeRemotes", 3)
+local function getRemote(name)
+	return remotesFolder and (remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, 1))
+end
+local StartPath = getRemote("StartPath")
+local DoPathAction = getRemote("DoPathAction")
+
+-- Story Paths Data
+local Paths = {
+	political = {
+		id = "political",
+		name = "Political Career",
+		emoji = "🏛️",
+		description = "Rise through the political ranks from local office to President!",
+		color = C.Blue,
+		colorPale = C.BluePale,
+		colorDark = C.BlueDark,
+		minAge = 25,
+		requirements = { education = "university", smarts = 70 },
+		stages = {
+			{ id = "local_office", name = "Local Office", emoji = "🏫", description = "City Council or School Board" },
+			{ id = "mayor", name = "Mayor", emoji = "🏙️", description = "Lead your city" },
+			{ id = "governor", name = "Governor", emoji = "🗺️", description = "State leadership" },
+			{ id = "senator", name = "Senator", emoji = "🏛️", description = "National representation" },
+			{ id = "president", name = "President", emoji = "🇺🇸", description = "Leader of the nation!" },
+		},
+		actions = {
+			{ id = "campaign", name = "Campaign", emoji = "📢", effect = "+Votes", cost = 5000 },
+			{ id = "debate", name = "Debate Opponent", emoji = "🎤", effect = "+Reputation" },
+			{ id = "scandal", name = "Cover Up Scandal", emoji = "🤫", effect = "Risk!" },
+			{ id = "rally", name = "Hold Rally", emoji = "👥", effect = "+Support", cost = 10000 },
+			{ id = "ad", name = "Run TV Ads", emoji = "📺", effect = "+Recognition", cost = 50000 },
+		}
+	},
+	criminal = {
+		id = "criminal",
+		name = "Crime Empire",
+		emoji = "💀",
+		description = "Build a criminal empire from street hustler to crime boss!",
+		color = C.Red,
+		colorPale = C.RedPale,
+		colorDark = C.RedDark,
+		minAge = 16,
+		requirements = {},
+		stages = {
+			{ id = "hustler", name = "Street Hustler", emoji = "💊", description = "Small time deals" },
+			{ id = "dealer", name = "Dealer", emoji = "💰", description = "Run your own corner" },
+			{ id = "lieutenant", name = "Lieutenant", emoji = "🔫", description = "Manage territory" },
+			{ id = "underboss", name = "Underboss", emoji = "🕶️", description = "Second in command" },
+			{ id = "boss", name = "Crime Boss", emoji = "👑", description = "Run the whole operation!" },
+		},
+		actions = {
+			{ id = "recruit", name = "Recruit Members", emoji = "👥", effect = "+Crew" },
+			{ id = "territory", name = "Expand Territory", emoji = "🗺️", effect = "+Income", risk = 40 },
+			{ id = "heist", name = "Plan Heist", emoji = "🏦", effect = "+Big Money", risk = 60 },
+			{ id = "bribe", name = "Bribe Officials", emoji = "💵", effect = "-Heat", cost = 25000 },
+			{ id = "war", name = "Gang War", emoji = "⚔️", effect = "Danger!", risk = 80 },
+		}
+	},
+	celebrity = {
+		id = "celebrity",
+		name = "Fame & Fortune",
+		emoji = "⭐",
+		description = "Become a famous celebrity through talent and hard work!",
+		color = C.Amber,
+		colorPale = C.AmberPale,
+		colorDark = C.AmberDark,
+		minAge = 14,
+		requirements = { looks = 50 },
+		stages = {
+			{ id = "aspiring", name = "Aspiring Star", emoji = "🌟", description = "Dreams of fame" },
+			{ id = "influencer", name = "Influencer", emoji = "📱", description = "Social media presence" },
+			{ id = "rising_star", name = "Rising Star", emoji = "📈", description = "Getting recognized" },
+			{ id = "celebrity", name = "Celebrity", emoji = "🎬", description = "Famous and known" },
+			{ id = "icon", name = "Cultural Icon", emoji = "👑", description = "Legendary status!" },
+		},
+		actions = {
+			{ id = "post", name = "Post Content", emoji = "📸", effect = "+Followers" },
+			{ id = "collab", name = "Collaborate", emoji = "🤝", effect = "+Exposure" },
+			{ id = "interview", name = "TV Interview", emoji = "📺", effect = "+Fame" },
+			{ id = "scandal", name = "Start Drama", emoji = "😱", effect = "+Attention", risk = 30 },
+			{ id = "charity", name = "Charity Event", emoji = "💝", effect = "+Reputation", cost = 10000 },
+		}
+	},
+	royal = {
+		id = "royal",
+		name = "Royal Dynasty",
+		emoji = "👑",
+		description = "Marry into royalty and navigate palace intrigue!",
+		color = C.Purple,
+		colorPale = C.PurplePale,
+		colorDark = C.PurpleDark,
+		minAge = 18,
+		requirements = { looks = 80, happiness = 60 },
+		stages = {
+			{ id = "commoner", name = "Commoner", emoji = "👤", description = "Regular person" },
+			{ id = "courted", name = "Being Courted", emoji = "💕", description = "Royal interest" },
+			{ id = "engaged", name = "Royal Engaged", emoji = "💍", description = "Engagement announced" },
+			{ id = "married", name = "Royal Spouse", emoji = "👰", description = "Part of the family" },
+			{ id = "monarch", name = "Monarch", emoji = "👑", description = "Rule the kingdom!" },
+		},
+		actions = {
+			{ id = "charm", name = "Charm Royals", emoji = "😊", effect = "+Favor" },
+			{ id = "etiquette", name = "Learn Etiquette", emoji = "🎩", effect = "+Respect" },
+			{ id = "intrigue", name = "Palace Intrigue", emoji = "🗡️", effect = "Power play!", risk = 50 },
+			{ id = "heir", name = "Produce Heir", emoji = "👶", effect = "+Legacy" },
+			{ id = "decree", name = "Royal Decree", emoji = "📜", effect = "Change laws" },
+		}
+	},
+}
+
+function StoryPathsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+	log("=== CREATING StoryPathsScreen ===")
+	local self = setmetatable({}, StoryPathsScreen)
+	self.screenGui = screenGui
+	self.playerState = playerState or {}
+	self.showBlur = showBlurFunc
+	self.hideBlur = hideBlurFunc
+	self.isVisible = false
+	self.currentPath = nil
+	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "Active Path:", self:getActivePath() or "None")
+	self:createUI()
+	log("✅ StoryPathsScreen created successfully")
+	return self
+end
+
+function StoryPathsScreen:updateState(newState)
+	if newState then self.playerState = newState end
+end
+
+function StoryPathsScreen:getAge()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.Age or (state.Stats and state.Stats.Age) or 0
+end
+
+function StoryPathsScreen:getMoney()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.Money or (state.Stats and state.Stats.Money) or 0
+end
+
+function StoryPathsScreen:getActivePath()
+	local state = self.playerState
+	if not state then return nil end
+	return state.ActivePath or (state.Paths and state.Paths.active)
+end
+
+function StoryPathsScreen:getPathProgress(pathId)
+	local state = self.playerState
+	if not state or not state.Paths then return 0 end
+	return state.Paths[pathId] or 0
+end
+
+function StoryPathsScreen:getStat(stat)
+	local state = self.playerState
+	if not state then return 0 end
+	return state[stat] or (state.Stats and state.Stats[stat]) or 0
+end
+
+function StoryPathsScreen:createUI()
+	-- Main overlay
+	self.overlay = Instance.new("Frame")
+	self.overlay.Name = "StoryPathsOverlay"
+	self.overlay.Size = UDim2.fromScale(1, 1)
+	self.overlay.BackgroundColor3 = C.Bg
+	self.overlay.Visible = false
+	self.overlay.ZIndex = 80
+	self.overlay.Parent = self.screenGui
+
+	-- Premium header
+	local headerData = UI.createScreenHeader(self.overlay, {
+		title = "🌟 Story Paths",
+		color = C.Purple,
+		colorDark = C.PurpleDark,
+		zIndex = 85
+	})
+	headerData.closeButton.MouseButton1Click:Connect(function() self:hide() end)
+	headerData.closeButton.MouseEnter:Connect(function()
+		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	headerData.closeButton.MouseLeave:Connect(function()
+		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+
+	-- Info bar
+	self.infoBar = UI.createInfoBar(self.overlay, { topOffset = 116, zIndex = 84 })
+
+	self.ageChip = UI.createInfoChip(self.infoBar, {
+		name = "AgeChip", icon = "👤", text = "Age 0",
+		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 80
+	})
+	self.moneyChip = UI.createInfoChip(self.infoBar, {
+		name = "MoneyChip", icon = "💵", text = "$0",
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 85
+	})
+	self.pathChip = UI.createInfoChip(self.infoBar, {
+		name = "PathChip", icon = "🌟", text = "None",
+		bgColor = C.PurplePale, textColor = C.PurpleDark, order = 3, width = 85
+	})
+
+	-- Scroll area
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 175, zIndex = 81 })
+
+	-- Modals
+	self:createPathModal()
+	self:createResultModal()
+
+	-- Initial populate
+	self:populatePaths()
+end
+
+function StoryPathsScreen:updateInfoBar()
+	self.ageChip.text.Text = "Age " .. self:getAge()
+	self.moneyChip.text.Text = UI.formatMoney(self:getMoney())
+
+	local activePath = self:getActivePath()
+	if activePath and Paths[activePath] then
+		self.pathChip.text.Text = Paths[activePath].name:sub(1, 8)
+		self.pathChip.chip.BackgroundColor3 = Paths[activePath].colorPale
+		self.pathChip.text.TextColor3 = Paths[activePath].colorDark
+	else
+		self.pathChip.text.Text = "None"
+		self.pathChip.chip.BackgroundColor3 = C.Gray200
+		self.pathChip.text.TextColor3 = C.Gray600
+	end
+end
+
+function StoryPathsScreen:populatePaths()
+	self:updateInfoBar()
+
+	-- Clear content
+	for _, child in ipairs(self.contentScroll:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+
+	local activePath = self:getActivePath()
+
+	-- Show active path detail if there is one
+	if activePath and Paths[activePath] then
+		self:createActivePathView(Paths[activePath])
+	end
+
+	-- Available paths section
+	local availableCount = 0
+	for _ in pairs(Paths) do availableCount = availableCount + 1 end
+
+	local sectionTitle = activePath and "Other Paths" or "Choose Your Path"
+	local sectionSub = activePath and "Switch paths anytime" or "Start your journey"
+
+	local section = UI.createSectionCard(self.contentScroll, {
+		name = "PathsSection",
+		title = sectionTitle,
+		subtitle = sectionSub,
+		accentColor = C.Purple,
+		badgeWidth = activePath and 130 or 115,
+		order = activePath and 2 or 1,
+		zIndex = 82
+	})
+
+	local order = 1
+	for pathId, path in pairs(Paths) do
+		if pathId ~= activePath then
+			self:createPathCard(section, path, order)
+			order = order + 1
+		end
+	end
+end
+
+function StoryPathsScreen:createActivePathView(path)
+	-- Active path header card
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 140)
+	headerCard.BackgroundColor3 = path.color
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 20)
+	UI.createShadow(headerCard, 4, 12, C.Black, 0.9)
+	UI.gradient(headerCard, path.color, path.colorDark, 160)
+
+	-- Emoji
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, 70, 0, 70)
+	emojiFrame.Position = UDim2.new(0, 18, 0.5, -35)
+	emojiFrame.BackgroundColor3 = C.White
+	emojiFrame.BackgroundTransparency = 0.1
+	emojiFrame.ZIndex = 83
+	emojiFrame.Parent = headerCard
+	UI.corner(emojiFrame, 18)
+
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 40
+	emojiLabel.Text = path.emoji
+	emojiLabel.ZIndex = 84
+	emojiLabel.Parent = emojiFrame
+
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0.55, 0, 0, 28)
+	titleLabel.Position = UDim2.new(0, 100, 0, 20)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 22
+	titleLabel.TextColor3 = C.White
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = path.name
+	titleLabel.ZIndex = 83
+	titleLabel.Parent = headerCard
+
+	-- Current stage
+	local progress = self:getPathProgress(path.id)
+	local stageIdx = math.clamp(progress + 1, 1, #path.stages)
+	local currentStage = path.stages[stageIdx]
+
+	local stageLabel = Instance.new("TextLabel")
+	stageLabel.Size = UDim2.new(0.6, 0, 0, 22)
+	stageLabel.Position = UDim2.new(0, 100, 0, 50)
+	stageLabel.BackgroundTransparency = 1
+	stageLabel.Font = F.Medium
+	stageLabel.TextSize = 15
+	stageLabel.TextColor3 = C.White
+	stageLabel.TextTransparency = 0.2
+	stageLabel.TextXAlignment = Enum.TextXAlignment.Left
+	stageLabel.Text = currentStage.emoji .. " " .. currentStage.name
+	stageLabel.ZIndex = 83
+	stageLabel.Parent = headerCard
+
+	-- Progress bar
+	local progressBg = Instance.new("Frame")
+	progressBg.Size = UDim2.new(0.55, 0, 0, 12)
+	progressBg.Position = UDim2.new(0, 100, 0, 80)
+	progressBg.BackgroundColor3 = C.White
+	progressBg.BackgroundTransparency = 0.7
+	progressBg.ZIndex = 83
+	progressBg.Parent = headerCard
+	UI.pill(progressBg)
+
+	local progressPct = (stageIdx - 1) / (#path.stages - 1)
+	local progressFill = Instance.new("Frame")
+	progressFill.Size = UDim2.new(progressPct, 0, 1, 0)
+	progressFill.BackgroundColor3 = C.White
+	progressFill.ZIndex = 84
+	progressFill.Parent = progressBg
+	UI.pill(progressFill)
+
+	-- Progress text
+	local progressLabel = Instance.new("TextLabel")
+	progressLabel.Size = UDim2.new(0, 100, 0, 18)
+	progressLabel.Position = UDim2.new(0, 100, 0, 98)
+	progressLabel.BackgroundTransparency = 1
+	progressLabel.Font = F.Body
+	progressLabel.TextSize = 12
+	progressLabel.TextColor3 = C.White
+	progressLabel.TextTransparency = 0.3
+	progressLabel.TextXAlignment = Enum.TextXAlignment.Left
+	progressLabel.Text = "Stage " .. stageIdx .. "/" .. #path.stages
+	progressLabel.ZIndex = 83
+	progressLabel.Parent = headerCard
+
+	-- Actions button
+	local actionsBtn = Instance.new("TextButton")
+	actionsBtn.Size = UDim2.new(0, 85, 0, 50)
+	actionsBtn.AnchorPoint = Vector2.new(1, 0.5)
+	actionsBtn.Position = UDim2.new(1, -18, 0.5, 0)
+	actionsBtn.BackgroundColor3 = C.White
+	actionsBtn.Font = F.Button
+	actionsBtn.TextSize = 14
+	actionsBtn.TextColor3 = path.color
+	actionsBtn.Text = "Actions"
+	actionsBtn.AutoButtonColor = false
+	actionsBtn.ZIndex = 83
+	actionsBtn.Parent = headerCard
+	UI.corner(actionsBtn, 14)
+
+	actionsBtn.MouseEnter:Connect(function()
+		UI.tween(actionsBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+	actionsBtn.MouseLeave:Connect(function()
+		UI.tween(actionsBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	actionsBtn.MouseButton1Click:Connect(function()
+		self:showPathActions(path)
+	end)
+
+	-- Stages progress section
+	local stagesSection = UI.createSectionCard(self.contentScroll, {
+		name = "StagesSection",
+		title = "Progress",
+		subtitle = #path.stages .. " stages",
+		accentColor = path.color,
+		badgeWidth = 85,
+		order = 1,
+		zIndex = 82
+	})
+
+	for i, stage in ipairs(path.stages) do
+		self:createStageCard(stagesSection, stage, i, i <= stageIdx, i == stageIdx, path.color, path.colorPale)
+	end
+end
+
+function StoryPathsScreen:createPathCard(parent, path, order)
+	local age = self:getAge()
+	local canStart = age >= path.minAge
+
+	-- Check requirements
+	local reqsMet = true
+	local reqText = ""
+	if path.requirements.smarts and self:getStat("Smarts") < path.requirements.smarts then
+		reqsMet = false
+		reqText = "Need " .. path.requirements.smarts .. " Smarts"
+	end
+	if path.requirements.looks and self:getStat("Looks") < path.requirements.looks then
+		reqsMet = false
+		reqText = "Need " .. path.requirements.looks .. " Looks"
+	end
+
+	local card = Instance.new("Frame")
+	card.Name = path.id
+	card.Size = UDim2.new(1, 0, 0, 115)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = order
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 18)
+	UI.stroke(card, canStart and reqsMet and 2 or 1, canStart and reqsMet and 0.7 or 0.88, canStart and reqsMet and path.color or C.Gray200)
+	UI.createShadow(card, 2, 6, C.Black, 0.95)
+
+	-- Icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 68, 0, 68)
+	iconFrame.Position = UDim2.new(0, 14, 0.5, -34)
+	iconFrame.BackgroundColor3 = path.colorPale
+	iconFrame.ZIndex = 84
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 16)
+	UI.gradient(iconFrame, path.colorPale, path.colorPale:Lerp(C.White, 0.35), 135)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 38
+	iconLabel.Text = path.emoji
+	iconLabel.ZIndex = 85
+	iconLabel.Parent = iconFrame
+
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0.5, 0, 0, 24)
+	titleLabel.Position = UDim2.new(0, 96, 0, 14)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 17
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = path.name
+	titleLabel.ZIndex = 84
+	titleLabel.Parent = card
+
+	-- Description
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(0.55, 0, 0, 36)
+	descLabel.Position = UDim2.new(0, 96, 0, 40)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = 12
+	descLabel.TextColor3 = C.Gray500
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.TextWrapped = true
+	descLabel.Text = path.description
+	descLabel.ZIndex = 84
+	descLabel.Parent = card
+
+	-- Requirements badge
+	local reqBadgeText = not canStart and ("Age " .. path.minAge .. "+") or (not reqsMet and reqText or (#path.stages .. " stages"))
+	local reqBadgeBg = not canStart and C.RedPale or not reqsMet and C.AmberPale or path.colorPale
+	local reqBadgeColor = not canStart and C.RedDark or not reqsMet and C.AmberDark or path.colorDark
+
+	local reqBadge = Instance.new("Frame")
+	reqBadge.Size = UDim2.new(0, math.clamp(#reqBadgeText * 7 + 20, 75, 140), 0, 24)
+	reqBadge.Position = UDim2.new(0, 96, 0, 80)
+	reqBadge.BackgroundColor3 = reqBadgeBg
+	reqBadge.ZIndex = 84
+	reqBadge.Parent = card
+	UI.pill(reqBadge)
+
+	local reqLabel = Instance.new("TextLabel")
+	reqLabel.Size = UDim2.fromScale(1, 1)
+	reqLabel.BackgroundTransparency = 1
+	reqLabel.Font = F.Medium
+	reqLabel.TextSize = 11
+	reqLabel.TextColor3 = reqBadgeColor
+	reqLabel.Text = reqBadgeText
+	reqLabel.ZIndex = 85
+	reqLabel.Parent = reqBadge
+
+	-- Action button
+	local actionBtn = Instance.new("TextButton")
+	actionBtn.Size = UDim2.new(0, 80, 0, 50)
+	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
+	actionBtn.Position = UDim2.new(1, -14, 0.5, 0)
+	actionBtn.BackgroundColor3 = canStart and reqsMet and path.color or C.Gray300
+	actionBtn.Font = F.Button
+	actionBtn.TextSize = 14
+	actionBtn.TextColor3 = canStart and reqsMet and C.White or C.Gray500
+	actionBtn.Text = canStart and reqsMet and "Start" or "Locked"
+	actionBtn.AutoButtonColor = false
+	actionBtn.ZIndex = 84
+	actionBtn.Parent = card
+	UI.corner(actionBtn, 14)
+
+	if canStart and reqsMet then
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = path.colorDark })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = path.colorPale:Lerp(C.White, 0.7) })
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = path.color })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		actionBtn.MouseButton1Click:Connect(function()
+			self:showPathModal(path)
+		end)
+	end
+end
+
+function StoryPathsScreen:createStageCard(parent, stage, order, unlocked, current, accentColor, paleColor)
+	local card = Instance.new("Frame")
+	card.Name = stage.id
+	card.Size = UDim2.new(1, 0, 0, 70)
+	card.BackgroundColor3 = current and paleColor or C.White
+	card.LayoutOrder = order
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, current and 2 or 1, current and 0.6 or 0.88, current and accentColor or C.Gray200)
+
+	-- Stage number/check
+	local numFrame = Instance.new("Frame")
+	numFrame.Size = UDim2.new(0, 40, 0, 40)
+	numFrame.Position = UDim2.new(0, 12, 0.5, -20)
+	numFrame.BackgroundColor3 = unlocked and accentColor or C.Gray300
+	numFrame.ZIndex = 84
+	numFrame.Parent = card
+	UI.corner(numFrame, 10)
+
+	local numLabel = Instance.new("TextLabel")
+	numLabel.Size = UDim2.fromScale(1, 1)
+	numLabel.BackgroundTransparency = 1
+	numLabel.Font = F.Title
+	numLabel.TextSize = unlocked and 20 or 16
+	numLabel.TextColor3 = C.White
+	numLabel.Text = unlocked and (current and tostring(order) or "✓") or tostring(order)
+	numLabel.ZIndex = 85
+	numLabel.Parent = numFrame
+
+	-- Emoji
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.new(0, 40, 0, 40)
+	emojiLabel.Position = UDim2.new(0, 60, 0.5, -20)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 26
+	emojiLabel.Text = stage.emoji
+	emojiLabel.TextTransparency = unlocked and 0 or 0.5
+	emojiLabel.ZIndex = 84
+	emojiLabel.Parent = card
+
+	-- Name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	nameLabel.Position = UDim2.new(0, 106, 0, 12)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.Title
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = unlocked and C.Gray900 or C.Gray500
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = stage.name
+	nameLabel.ZIndex = 84
+	nameLabel.Parent = card
+
+	-- Description
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(0.55, 0, 0, 20)
+	descLabel.Position = UDim2.new(0, 106, 0, 36)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = 12
+	descLabel.TextColor3 = unlocked and C.Gray500 or C.Gray400
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.Text = stage.description
+	descLabel.ZIndex = 84
+	descLabel.Parent = card
+
+	-- Current badge
+	if current then
+		local currentBadge = Instance.new("Frame")
+		currentBadge.Size = UDim2.new(0, 65, 0, 26)
+		currentBadge.AnchorPoint = Vector2.new(1, 0.5)
+		currentBadge.Position = UDim2.new(1, -12, 0.5, 0)
+		currentBadge.BackgroundColor3 = accentColor
+		currentBadge.ZIndex = 84
+		currentBadge.Parent = card
+		UI.pill(currentBadge)
+
+		local currentLabel = Instance.new("TextLabel")
+		currentLabel.Size = UDim2.fromScale(1, 1)
+		currentLabel.BackgroundTransparency = 1
+		currentLabel.Font = F.Medium
+		currentLabel.TextSize = 11
+		currentLabel.TextColor3 = C.White
+		currentLabel.Text = "Current"
+		currentLabel.ZIndex = 85
+		currentLabel.Parent = currentBadge
+	end
+end
+
+function StoryPathsScreen:createPathModal()
+	self.pathModal = UI.createModalCard(self.screenGui, {
+		name = "PathStart",
+		accentColor = C.Purple,
+		accentDark = C.PurpleDark,
+		accentPale = C.PurplePale,
+		zIndex = 96
+	})
+
+	-- Additional confirm button
+	local confirmBtn = Instance.new("TextButton")
+	confirmBtn.Name = "ConfirmBtn"
+	confirmBtn.Size = UDim2.new(0.42, 0, 0, 52)
+	confirmBtn.Position = UDim2.new(0.04, 0, 0, 230)
+	confirmBtn.BackgroundColor3 = C.Green
+	confirmBtn.Font = F.Button
+	confirmBtn.TextSize = 16
+	confirmBtn.TextColor3 = C.White
+	confirmBtn.Text = "Start Path"
+	confirmBtn.AutoButtonColor = false
+	confirmBtn.ZIndex = 99
+	confirmBtn.Parent = self.pathModal.card
+	UI.corner(confirmBtn, 14)
+
+	self.pathModal.confirmBtn = confirmBtn
+
+	-- Resize OK button to be "Cancel"
+	self.pathModal.okButton.Size = UDim2.new(0.42, 0, 0, 52)
+	self.pathModal.okButton.Position = UDim2.new(0.54, 0, 0, 230)
+	self.pathModal.okButton.Text = "Cancel"
+	self.pathModal.okButton.BackgroundColor3 = C.Gray400
+
+	self.pathModal.closeArea.MouseButton1Click:Connect(function()
+		UI.hideModal(self.pathModal)
+	end)
+	self.pathModal.okButton.MouseButton1Click:Connect(function()
+		UI.hideModal(self.pathModal)
+	end)
+
+	self.selectedPath = nil
+end
+
+function StoryPathsScreen:showPathModal(path)
+	self.selectedPath = path
+
+	-- Update modal appearance
+	self.pathModal.shell.BackgroundColor3 = path.color
+	self.pathModal.shellStroke.Color = path.colorDark
+	self.pathModal.emojiFrame.BackgroundColor3 = path.colorPale
+	self.pathModal.emojiLabel.Text = path.emoji
+	self.pathModal.titleLabel.Text = path.name
+	self.pathModal.titleLabel.TextColor3 = path.colorDark
+	self.pathModal.messageLabel.Text = path.description .. "\n\nThis path has " .. #path.stages .. " stages to complete."
+	self.pathModal.confirmBtn.BackgroundColor3 = path.color
+
+	-- Update confirm handler
+	self.pathModal.confirmBtn.MouseButton1Click:Connect(function()
+		UI.hideModal(self.pathModal, function()
+			self:startPath(path.id)
+		end)
+	end)
+
+	UI.showModal(self.pathModal)
+end
+
+function StoryPathsScreen:showPathActions(path)
+	-- Create action overlay
+	if self.actionsOverlay then
+		self.actionsOverlay:Destroy()
+	end
+
+	self.actionsOverlay = Instance.new("Frame")
+	self.actionsOverlay.Size = UDim2.fromScale(1, 1)
+	self.actionsOverlay.BackgroundColor3 = C.Black
+	self.actionsOverlay.BackgroundTransparency = 0.4
+	self.actionsOverlay.ZIndex = 94
+	self.actionsOverlay.Parent = self.screenGui
+
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 94
+	closeArea.Parent = self.actionsOverlay
+	closeArea.MouseButton1Click:Connect(function()
+		self:hideActionsOverlay()
+	end)
+
+	-- Actions card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(0.92, 0, 0, 420)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 95
+	card.Parent = self.actionsOverlay
+	UI.corner(card, 24)
+	UI.createShadow(card, 6, 20, C.Black, 0.85)
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 75)
+	header.BackgroundColor3 = path.color
+	header.ZIndex = 96
+	header.Parent = card
+	UI.corner(header, 24)
+
+	local headerCover = Instance.new("Frame")
+	headerCover.Size = UDim2.new(1, 0, 0, 30)
+	headerCover.Position = UDim2.new(0, 0, 1, -30)
+	headerCover.BackgroundColor3 = path.color
+	headerCover.BorderSizePixel = 0
+	headerCover.ZIndex = 96
+	headerCover.Parent = header
+
+	local headerTitle = Instance.new("TextLabel")
+	headerTitle.Size = UDim2.new(0.7, 0, 1, 0)
+	headerTitle.Position = UDim2.new(0, 18, 0, 0)
+	headerTitle.BackgroundTransparency = 1
+	headerTitle.Font = F.Title
+	headerTitle.TextSize = 20
+	headerTitle.TextColor3 = C.White
+	headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+	headerTitle.Text = path.emoji .. " " .. path.name .. " Actions"
+	headerTitle.ZIndex = 97
+	headerTitle.Parent = header
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 36, 0, 36)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+	closeBtn.Position = UDim2.new(1, -14, 0.5, 0)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.1
+	closeBtn.Font = F.Title
+	closeBtn.TextSize = 18
+	closeBtn.TextColor3 = path.color
+	closeBtn.Text = "X"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 98
+	closeBtn.Parent = header
+	UI.corner(closeBtn, 10)
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hideActionsOverlay()
+	end)
+
+	-- Actions scroll
+	local actionsScroll = Instance.new("ScrollingFrame")
+	actionsScroll.Size = UDim2.new(1, -28, 1, -90)
+	actionsScroll.Position = UDim2.new(0, 14, 0, 85)
+	actionsScroll.BackgroundTransparency = 1
+	actionsScroll.ScrollBarThickness = 4
+	actionsScroll.ScrollBarImageColor3 = C.Gray400
+	actionsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	actionsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	actionsScroll.ZIndex = 96
+	actionsScroll.Parent = card
+
+	local actionsLayout = Instance.new("UIListLayout")
+	actionsLayout.Padding = UDim.new(0, 10)
+	actionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	actionsLayout.Parent = actionsScroll
+
+	-- Create action buttons
+	for i, action in ipairs(path.actions) do
+		self:createActionCard(actionsScroll, path, action, i)
+	end
+
+	-- Animate in
+	card.Position = UDim2.new(0.5, 0, 0.5, 50)
+	card.BackgroundTransparency = 1
+	UI.tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+
+	self.actionsCard = card
+end
+
+function StoryPathsScreen:hideActionsOverlay()
+	if self.actionsCard then
+		UI.tween(self.actionsCard, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 30),
+			BackgroundTransparency = 1
+		})
+	end
+	task.delay(0.2, function()
+		if self.actionsOverlay then
+			self.actionsOverlay:Destroy()
+			self.actionsOverlay = nil
+		end
+	end)
+end
+
+function StoryPathsScreen:createActionCard(parent, path, action, order)
+	local money = self:getMoney()
+	local cost = action.cost or 0
+	local canDo = money >= cost
+
+	local card = Instance.new("Frame")
+	card.Name = action.id
+	card.Size = UDim2.new(1, 0, 0, 70)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = order
+	card.ZIndex = 97
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, 0.88, C.Gray200)
+
+	-- Emoji
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.new(0, 50, 0, 50)
+	emojiLabel.Position = UDim2.new(0, 10, 0.5, -25)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 28
+	emojiLabel.Text = action.emoji
+	emojiLabel.ZIndex = 98
+	emojiLabel.Parent = card
+
+	-- Name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(0.4, 0, 0, 22)
+	nameLabel.Position = UDim2.new(0, 64, 0, 10)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.Title
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = C.Gray900
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = action.name
+	nameLabel.ZIndex = 98
+	nameLabel.Parent = card
+
+	-- Effect/cost badge
+	local badgeText = action.effect .. (cost > 0 and " • $" .. UI.formatMoney(cost):gsub("%$", "") or "") .. (action.risk and " • Risk " .. action.risk .. "%" or "")
+	local badgeBg = action.risk and C.RedPale or cost > 0 and C.AmberPale or path.colorPale
+	local badgeColor = action.risk and C.RedDark or cost > 0 and C.AmberDark or path.colorDark
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, math.clamp(#badgeText * 6.5 + 16, 80, 180), 0, 24)
+	badge.Position = UDim2.new(0, 64, 0, 36)
+	badge.BackgroundColor3 = badgeBg
+	badge.ZIndex = 98
+	badge.Parent = card
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Medium
+	badgeLabel.TextSize = 11
+	badgeLabel.TextColor3 = badgeColor
+	badgeLabel.Text = badgeText
+	badgeLabel.ZIndex = 99
+	badgeLabel.Parent = badge
+
+	-- Action button
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 60, 0, 40)
+	btn.AnchorPoint = Vector2.new(1, 0.5)
+	btn.Position = UDim2.new(1, -10, 0.5, 0)
+	btn.BackgroundColor3 = canDo and path.color or C.Gray300
+	btn.Font = F.Button
+	btn.TextSize = 13
+	btn.TextColor3 = canDo and C.White or C.Gray500
+	btn.Text = canDo and "Do" or "No $"
+	btn.AutoButtonColor = false
+	btn.ZIndex = 98
+	btn.Parent = card
+	UI.corner(btn, 10)
+
+	if canDo then
+		btn.MouseEnter:Connect(function()
+			UI.tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = path.colorDark })
+		end)
+		btn.MouseLeave:Connect(function()
+			UI.tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = path.color })
+		end)
+		btn.MouseButton1Click:Connect(function()
+			self:hideActionsOverlay()
+			task.delay(0.3, function()
+				self:doPathAction(path.id, action.id)
+			end)
+		end)
+	end
+end
+
+function StoryPathsScreen:createResultModal()
+	self.resultModal = UI.createModalCard(self.screenGui, {
+		name = "StoryPathsResult",
+		accentColor = C.Green,
+		accentDark = C.GreenDark,
+		accentPale = C.GreenPale,
+		zIndex = 98
+	})
+
+	self.resultModal.closeArea.MouseButton1Click:Connect(function()
+		UI.hideModal(self.resultModal, function() self:populatePaths() end)
+	end)
+	self.resultModal.okButton.MouseButton1Click:Connect(function()
+		UI.hideModal(self.resultModal, function() self:populatePaths() end)
+	end)
+end
+
+function StoryPathsScreen:startPath(pathId)
+	log("=== STARTING STORY PATH ===")
+	log("Path ID:", pathId)
+	log("Player Age:", self:getAge(), "Money:", self:getMoney())
+
+	if not StartPath then
+		logWarn("StartPath remote not available!")
+		self:showResult(false, "Server not available", "X")
+		return
+	end
+
+	log("Invoking server StartPath...")
+	local result = StartPath:InvokeServer(pathId)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		self:showResult(result.success, result.message, result.success and "Started!" or "Failed")
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error", "X")
+	end
+end
+
+function StoryPathsScreen:doPathAction(pathId, actionId)
+	log("=== DOING PATH ACTION ===")
+	log("Path ID:", pathId, "Action ID:", actionId)
+	log("Player Money:", self:getMoney())
+
+	if not DoPathAction then
+		logWarn("DoPathAction remote not available!")
+		self:showResult(false, "Server not available", "X")
+		return
+	end
+
+	log("Invoking server DoPathAction...")
+	local result = DoPathAction:InvokeServer(pathId, actionId)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Promoted:", result.promoted, "Caught:", result.caught, "Message:", result.message)
+		local emoji = result.success and "Done!" or "Failed"
+		if result.promoted then emoji = "Promoted!" end
+		if result.caught then emoji = "Caught!" end
+		self:showResult(result.success, result.message, emoji)
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error", "X")
+	end
+end
+
+function StoryPathsScreen:showResult(success, message, emoji)
+	local shellColor = success and C.Green or C.Red
+	local shellStroke = success and C.GreenDark or C.RedDark
+	local pale = success and C.GreenPale or C.RedPale
+
+	self.resultModal.shell.BackgroundColor3 = shellColor
+	self.resultModal.shellStroke.Color = shellStroke
+	self.resultModal.emojiFrame.BackgroundColor3 = pale
+	self.resultModal.emojiLabel.Text = emoji or (success and "🌟" or "😔")
+	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
+	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.okButton.BackgroundColor3 = shellColor
+
+	UI.showModal(self.resultModal)
+end
+
+function StoryPathsScreen:show()
+	log("=== SHOWING StoryPathsScreen ===")
+	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Active Path:", self:getActivePath() or "None")
+	self:updateInfoBar()
+	self:populatePaths()
+	UI.slideInScreen(self.overlay, "right")
+	self.isVisible = true
+	log("✅ StoryPathsScreen is now visible")
+end
+
+function StoryPathsScreen:hide()
+	log("=== HIDING StoryPathsScreen ===")
+	UI.slideOutScreen(self.overlay, "right", function()
+		self.resultModal.overlay.Visible = false
+		if self.actionsOverlay then
+			self.actionsOverlay:Destroy()
+			self.actionsOverlay = nil
+		end
+		log("✅ StoryPathsScreen hidden, modals cleaned up")
+	end)
+	self.isVisible = false
+end
+
+return StoryPathsScreen
