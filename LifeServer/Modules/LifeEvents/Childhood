@@ -685,7 +685,7 @@ ChildhoodEvents.events = {
 		minAge = 8, maxAge = 12,
 		oneTime = true,
 		baseChance = 0.5,
-		requiresFlags = { animal_lover = true },
+		requiresFlags = { animal_lover = true }, -- MUST be an animal lover
 		choices = {
 			{
 				text = "A dog",
@@ -772,7 +772,7 @@ ChildhoodEvents.events = {
 		minAge = 7, maxAge = 12,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresStats = { Smarts = { min = 60 } },
+		requiresStats = { Smarts = { min = 60 } }, -- MUST be smart enough
 		choices = {
 			{
 				text = "Academic Excellence",

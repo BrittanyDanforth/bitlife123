@@ -110,7 +110,7 @@ RandomEvents.events = {
 		minAge = 16, maxAge = 75,
 		baseChance = 0.4,
 		cooldown = 4,
-		requiresFlags = { has_car = true },
+		requiresFlags = { has_car = true }, -- MUST own a car
 		choices = {
 			{
 				text = "Change it yourself",

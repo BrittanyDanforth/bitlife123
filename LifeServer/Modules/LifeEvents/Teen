@@ -182,7 +182,7 @@ TeenEvents.events = {
 		question = "Will you join?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.5,
-		requiresStats = { Smarts = { min = 55 } },
+		requiresStats = { Smarts = { min = 55 } }, -- Must be smart enough
 		cooldown = 4,
 		choices = {
 			{
@@ -369,7 +369,7 @@ TeenEvents.events = {
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
 		cooldown = 3,
-		requiresFlags = { has_best_friend = true },
+		requiresFlags = { has_best_friend = true }, -- MUST have a best friend
 		choices = {
 			{
 				text = "Confront them",
@@ -778,7 +778,7 @@ TeenEvents.events = {
 		minAge = 14, maxAge = 17,
 		baseChance = 0.5,
 		cooldown = 2,
-		requiresStats = { Health = { min = 50 } },
+		requiresStats = { Health = { min = 50 } }, -- Must be healthy enough
 		choices = {
 			{
 				text = "Football",

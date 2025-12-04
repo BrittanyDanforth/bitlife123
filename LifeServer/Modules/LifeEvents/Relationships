@@ -18,6 +18,7 @@ RelationshipEvents.events = {
 		minAge = 5, maxAge = 25,
 		baseChance = 0.5,
 		cooldown = 3,
+		requiresFlags = { big_family = true }, -- Only if you have siblings
 		choices = {
 			{
 				text = "Work it out together",
@@ -305,11 +306,12 @@ RelationshipEvents.events = {
 		title = "Modern Dating",
 		emoji = "📱",
 		category = "romance",
-		text = "You're trying dating apps to meet people.",
+		text = "You've been single for a while and decide to try dating apps.",
 		question = "How's it going?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
+		requiresFlags = { has_partner = false }, -- MUST be single (no partner)
 		choices = {
 			{
 				text = "It's exhausting but I met someone special",
@@ -346,7 +348,8 @@ RelationshipEvents.events = {
 		minAge = 18, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresFlags = { dating_someone = true },
+		requiresFlags = { dating_someone = true }, -- MUST be dating someone
+		requiresPartner = true, -- MUST have a partner
 		choices = {
 			{
 				text = "Moving in together",
@@ -384,7 +387,8 @@ RelationshipEvents.events = {
 		minAge = 18, maxAge = 70,
 		baseChance = 0.4,
 		cooldown = 2,
-		requiresFlags = { committed_relationship = true },
+		requiresFlags = { committed_relationship = true }, -- MUST be in committed relationship
+		requiresPartner = true, -- MUST have a partner
 		choices = {
 			{
 				text = "Seek couples counseling",
@@ -419,7 +423,8 @@ RelationshipEvents.events = {
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
 		cooldown = 2,
-		requiresFlags = { committed_relationship = true },
+		requiresFlags = { committed_relationship = true }, -- MUST be in committed relationship
+		requiresPartner = true, -- MUST have a partner
 		choices = {
 			{
 				text = "Be there emotionally",

@@ -314,7 +314,7 @@ MilestoneEvents.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { college_bound = true },
+		requiresFlags = { college_bound = true }, -- MUST have gone to college
 		choices = {
 			{
 				text = "My academic achievements",
@@ -354,7 +354,8 @@ MilestoneEvents.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { engaged = true },
+		requiresFlags = { engaged = true }, -- MUST be engaged first
+		requiresPartner = true,
 		choices = {
 			{
 				text = "Dream wedding, spared no expense",
@@ -394,7 +395,7 @@ MilestoneEvents.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { has_children = true },
+		requiresFlags = { has_children = true }, -- MUST have children flag set
 		choices = {
 			{
 				text = "Overwhelmed with love",
@@ -474,7 +475,8 @@ MilestoneEvents.events = {
 		minAge = 40, maxAge = 90,
 		baseChance = 0.5,
 		cooldown = 10,
-		requiresFlags = { married = true },
+		requiresFlags = { married = true }, -- MUST be married
+		requiresPartner = true,
 		choices = {
 			{
 				text = "Renew our vows",

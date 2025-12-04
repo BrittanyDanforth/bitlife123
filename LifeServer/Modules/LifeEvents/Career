@@ -18,7 +18,7 @@ CareerEvents.events = {
 		minAge = 18, maxAge = 65,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		choices = {
 			{
 				text = "Confront them directly",
@@ -54,7 +54,7 @@ CareerEvents.events = {
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		choices = {
 			{
 				text = "Apply and compete hard",
@@ -91,7 +91,7 @@ CareerEvents.events = {
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 5,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		choices = {
 			{
 				text = "Work extra hard to prove value",
@@ -128,7 +128,7 @@ CareerEvents.events = {
 		minAge = 18, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 4,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		choices = {
 			{
 				text = "Keep your head down",
@@ -164,7 +164,7 @@ CareerEvents.events = {
 		minAge = 20, maxAge = 65,
 		baseChance = 0.3,
 		cooldown = 3,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		requiresStats = { Smarts = { min = 50 } },
 		choices = {
 			{
@@ -203,7 +203,7 @@ CareerEvents.events = {
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 2,
-		requiresFlags = { has_job = true },
+		requiresJob = true, -- MUST have a job
 		choices = {
 			{
 				text = "All business, impress the clients",
@@ -243,7 +243,8 @@ CareerEvents.events = {
 		minAge = 20, maxAge = 50,
 		baseChance = 0.3,
 		cooldown = 5,
-		requiresJobCategory = "tech",
+		requiresJob = true, -- MUST have a job
+		requiresJobCategory = "tech", -- Must work in tech
 		choices = {
 			{
 				text = "Pitch it to your company",
@@ -280,7 +281,8 @@ CareerEvents.events = {
 		minAge = 28, maxAge = 65,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresJobCategory = "medical",
+		requiresJob = true, -- MUST have a job
+		requiresJobCategory = "medical", -- Must work in medical
 		choices = {
 			{
 				text = "Trust your training and act",
@@ -310,7 +312,8 @@ CareerEvents.events = {
 		minAge = 27, maxAge = 65,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresJobCategory = "law",
+		requiresJob = true, -- MUST have a job
+		requiresJobCategory = "law", -- Must work in law
 		choices = {
 			{
 				text = "Work around the clock",
@@ -341,7 +344,8 @@ CareerEvents.events = {
 		minAge = 20, maxAge = 60,
 		baseChance = 0.5,
 		cooldown = 2,
-		requiresJobCategory = "creative",
+		requiresJob = true, -- MUST have a job
+		requiresJobCategory = "creative", -- Must work in creative field
 		choices = {
 			{
 				text = "Take a break and recharge",
@@ -377,7 +381,8 @@ CareerEvents.events = {
 		minAge = 18, maxAge = 40,
 		baseChance = 0.5,
 		cooldown = 3,
-		requiresJobCategory = "sports",
+		requiresJob = true, -- MUST have a job
+		requiresJobCategory = "sports", -- Must work in sports
 		choices = {
 			{
 				text = "Proper rehab, take time to heal",
@@ -516,6 +521,7 @@ CareerEvents.events = {
 		minAge = 30, maxAge = 65,
 		baseChance = 0.2,
 		cooldown = 5,
+		requiresJob = true, -- MUST have a job
 		requiresStats = { Smarts = { min = 70 } },
 		choices = {
 			{

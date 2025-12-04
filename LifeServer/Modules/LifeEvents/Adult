@@ -138,10 +138,11 @@ AdultEvents.events = {
 		title = "Career Beginning",
 		emoji = "💼",
 		category = "career",
-		text = "You're starting your first 'real' job in your field.",
+		text = "You've landed your first 'real' job in your field!",
 		question = "How do you approach your new role?",
 		minAge = 21, maxAge = 28,
 		oneTime = true,
+		requiresJob = true, -- Only triggers once you have a job
 		choices = {
 			{
 				text = "Work extra hard to impress",
@@ -175,11 +176,13 @@ AdultEvents.events = {
 		title = "Getting Serious",
 		emoji = "💑",
 		category = "romance",
-		text = "Your relationship is getting more serious. They want to talk about the future.",
+		text = "Your relationship is getting more serious. Your partner wants to talk about the future.",
 		question = "How do you feel?",
 		minAge = 20, maxAge = 35,
 		baseChance = 0.6,
 		cooldown = 3,
+		requiresFlags = { has_partner = true }, -- MUST have a partner
+		requiresPartner = true,
 		choices = {
 			{
 				text = "I'm ready to commit",
@@ -251,11 +254,12 @@ AdultEvents.events = {
 		title = "The Big Question",
 		emoji = "💍",
 		category = "romance",
-		text = "It's time to consider marriage.",
+		text = "Your relationship has reached a point where marriage feels right.",
 		question = "What happens?",
 		minAge = 24, maxAge = 45,
 		oneTime = true,
-		requiresFlags = { committed_relationship = true },
+		requiresFlags = { committed_relationship = true, has_partner = true }, -- MUST be committed AND have partner
+		requiresPartner = true,
 		choices = {
 			{
 				text = "Pop the question (they say yes!)",
@@ -325,11 +329,12 @@ AdultEvents.events = {
 		title = "Starting a Family",
 		emoji = "👶",
 		category = "family",
-		text = "You and your partner are talking about having children.",
+		text = "You and your spouse are talking about having children.",
 		question = "What's the decision?",
 		minAge = 25, maxAge = 45,
 		oneTime = true,
-		requiresFlags = { married = true },
+		requiresFlags = { married = true, has_partner = true }, -- MUST be married AND have partner
+		requiresPartner = true,
 		choices = {
 			{
 				text = "Yes, we want children!",
@@ -367,6 +372,7 @@ AdultEvents.events = {
 		minAge = 28, maxAge = 45,
 		baseChance = 0.5,
 		cooldown = 5,
+		requiresJob = true, -- MUST have a job to be at career crossroads
 		choices = {
 			{
 				text = "Push for a promotion",
@@ -473,11 +479,11 @@ AdultEvents.events = {
 		title = "Empty Nest",
 		emoji = "🪹",
 		category = "family",
-		text = "Your children have grown up and moved out.",
+		text = "Your children have all grown up and moved out.",
 		question = "How do you feel?",
 		minAge = 45, maxAge = 60,
 		oneTime = true,
-		requiresFlags = { has_children = true },
+		requiresFlags = { has_children = true }, -- MUST have children
 		choices = {
 			{
 				text = "Sad but proud",
@@ -593,7 +599,7 @@ AdultEvents.events = {
 		question = "How do you feel?",
 		minAge = 45, maxAge = 75,
 		oneTime = true,
-		requiresFlags = { has_children = true },
+		requiresFlags = { has_children = true }, -- MUST have children
 		choices = {
 			{
 				text = "Overjoyed!",
