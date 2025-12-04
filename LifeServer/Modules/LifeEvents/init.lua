@@ -600,6 +600,7 @@ local EventPools = {
 			question = "What path do you take?",
 			minAge = 28, maxAge = 45,
 			baseChance = 0.4, cooldown = 5,
+			requiresJob = true, -- Must have a job
 			choices = {
 				{ text = "Push for a promotion", effects = { Smarts = 2, Money = {-100, 500}, Happiness = {-3, 10} }, feed = "You went for the promotion!" },
 				{ text = "Change companies for better pay", effects = { Money = 1000, Happiness = 3 }, setFlags = { job_hopper = true }, feed = "Switched jobs for a raise!" },
@@ -682,6 +683,7 @@ local EventPools = {
 			question = "How do you handle this?",
 			minAge = 18, maxAge = 65,
 			baseChance = 0.4, cooldown = 3,
+			requiresJob = true,
 			choices = {
 				{ text = "Confront them directly", effects = { Happiness = {-5, 5} }, setFlags = { confrontational = true }, feed = "You called them out." },
 				{ text = "Document everything, report to HR", effects = { Smarts = 2 }, feed = "You took the professional route." },
@@ -693,10 +695,11 @@ local EventPools = {
 			id = "promotion_opportunity",
 			title = "Opportunity Knocks",
 			emoji = "📈",
-			text = "A promotion opportunity has opened up.",
+			text = "A promotion opportunity has opened up at work.",
 			question = "Do you go for it?",
 			minAge = 20, maxAge = 60,
 			baseChance = 0.4, cooldown = 3,
+			requiresJob = true,
 			choices = {
 				{ text = "Apply and compete hard", effects = { Smarts = 2, Money = {0, 1000}, Health = -2 }, feed = "You threw your hat in the ring!" },
 				{ text = "Apply casually", effects = { Money = {0, 500} }, feed = "Applied but kept expectations low." },
@@ -707,10 +710,11 @@ local EventPools = {
 			id = "layoff_threat",
 			title = "Company Restructuring",
 			emoji = "📉",
-			text = "Your company is laying people off. Position at risk.",
+			text = "Your company is laying people off. Your position is at risk.",
 			question = "What do you do?",
 			minAge = 22, maxAge = 60,
 			baseChance = 0.25, cooldown = 5,
+			requiresJob = true,
 			choices = {
 				{ text = "Work extra hard to prove value", effects = { Health = -5, Smarts = 2, Money = {-200, 500} }, feed = "Worked overtime to secure position." },
 				{ text = "Start job hunting quietly", effects = { Smarts = 2 }, setFlags = { job_hunting = true }, feed = "Exploring other options." },
@@ -726,6 +730,7 @@ local EventPools = {
 			question = "How do you cope?",
 			minAge = 18, maxAge = 60,
 			baseChance = 0.35, cooldown = 4,
+			requiresJob = true,
 			choices = {
 				{ text = "Keep your head down", effects = { Happiness = -5, Health = -3 }, feed = "You endured in silence." },
 				{ text = "Address it with HR", effects = { Happiness = {-5, 5} }, feed = "You reported the issues." },
@@ -1265,6 +1270,33 @@ local function canEventTrigger(event, state)
 				if req.max and value > req.max then return false end
 			end
 		end
+	end
+	
+	-- Check if event requires having a job
+	if event.requiresJob then
+		local hasJob = state.CurrentJob ~= nil
+		if not hasJob then return false end
+	end
+	
+	-- Check if event requires NOT having a job
+	if event.requiresNoJob then
+		local hasJob = state.CurrentJob ~= nil
+		if hasJob then return false end
+	end
+	
+	-- Check if event requires having a partner
+	if event.requiresPartner then
+		local hasPartner = state.Relationships and state.Relationships.partner
+		if not hasPartner then return false end
+	end
+	
+	-- Check if event requires education level
+	if event.requiresEducation then
+		local edu = state.Education or "none"
+		local eduLevels = { none = 0, elementary = 1, middle_school = 2, high_school = 3, community = 4, bachelor = 5, master = 6, law = 7, medical = 7, phd = 8 }
+		local playerLevel = eduLevels[edu] or 0
+		local requiredLevel = eduLevels[event.requiresEducation] or 0
+		if playerLevel < requiredLevel then return false end
 	end
 	
 	if event.baseChance then
