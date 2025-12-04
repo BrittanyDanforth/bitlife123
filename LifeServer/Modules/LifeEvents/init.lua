@@ -192,19 +192,39 @@ end
 -- ════════════════════════════════════════════════════════════════════════════════════
 
 local function getEventHistory(state)
+	-- Ensure EventHistory exists
 	if not state.EventHistory then
-		state.EventHistory = {
-			occurrences = {},      -- eventId -> count
-			lastOccurrence = {},   -- eventId -> age when last occurred
-			completed = {},        -- eventId -> true (for one-time events)
-			recentCategories = {}, -- last 5 categories used
-			recentEvents = {},     -- last 10 event IDs
-		}
+		state.EventHistory = {}
 	end
-	return state.EventHistory
+	
+	local history = state.EventHistory
+	
+	-- Ensure ALL required fields exist (handles legacy/incomplete history objects)
+	if not history.occurrences then
+		history.occurrences = {}
+	end
+	if not history.lastOccurrence then
+		history.lastOccurrence = {}
+	end
+	if not history.completed then
+		history.completed = {}
+	end
+	if not history.recentCategories then
+		history.recentCategories = {}
+	end
+	if not history.recentEvents then
+		history.recentEvents = {}
+	end
+	
+	return history
 end
 
 local function recordEventShown(state, event)
+	if not event or not event.id then
+		warn("[LifeEvents] recordEventShown called with invalid event")
+		return
+	end
+	
 	local history = getEventHistory(state)
 	local eventId = event.id
 	
@@ -212,7 +232,7 @@ local function recordEventShown(state, event)
 	history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
 	
 	-- Track when it last occurred
-	history.lastOccurrence[eventId] = state.Age
+	history.lastOccurrence[eventId] = state.Age or 0
 	
 	-- Mark one-time events as completed
 	if event.oneTime then
@@ -220,15 +240,20 @@ local function recordEventShown(state, event)
 	end
 	
 	-- Track recent categories (for variety)
-	table.insert(history.recentCategories, event._category or "general")
-	while #history.recentCategories > 5 do
-		table.remove(history.recentCategories, 1)
+	local category = event._category or "general"
+	if history.recentCategories then
+		table.insert(history.recentCategories, category)
+		while #history.recentCategories > 5 do
+			table.remove(history.recentCategories, 1)
+		end
 	end
 	
 	-- Track recent events
-	table.insert(history.recentEvents, eventId)
-	while #history.recentEvents > 10 do
-		table.remove(history.recentEvents, 1)
+	if history.recentEvents then
+		table.insert(history.recentEvents, eventId)
+		while #history.recentEvents > 10 do
+			table.remove(history.recentEvents, 1)
+		end
 	end
 end
 
