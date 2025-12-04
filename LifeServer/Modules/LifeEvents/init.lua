@@ -1,7 +1,7 @@
 local LifeEvents = {}
 
-local EventEngine = require(script.EventEngine)
-local CareerSystem = require(script.CareerSystem)
+local EventEngine = require(script.Parent:WaitForChild("EventEngine"))
+local CareerSystem = require(script.Parent:WaitForChild("CareerSystem"))
 
 LifeEvents.EventRegistry = {}
 LifeEvents.EventList = {}
@@ -36,7 +36,7 @@ function LifeEvents.initialize()
 		return
 	end
 
-	local catalogFolder = script:WaitForChild("Catalog")
+	local catalogFolder = script.Parent:WaitForChild("Catalog")
 	for _, moduleScript in ipairs(catalogFolder:GetChildren()) do
 		if moduleScript:IsA("ModuleScript") then
 			addEventsFromModule(moduleScript)
