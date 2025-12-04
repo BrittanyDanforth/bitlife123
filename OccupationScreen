@@ -1,0 +1,3733 @@
+-- OccupationScreen.lua
+-- Premium BitLife-style Occupation screen
+-- Triple AAA polished UI for jobs and education
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
+local C = UI.Colors
+local F = UI.Fonts
+
+local OccupationScreen = {}
+OccupationScreen.__index = OccupationScreen
+
+-- Remotes (optimized - fast lookup)
+local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or ReplicatedStorage:WaitForChild("LifeRemotes", 3)
+local function getRemote(name)
+	return remotesFolder and (remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, 1))
+end
+local ApplyForJob = getRemote("ApplyForJob")
+local QuitJob = getRemote("QuitJob")
+local EnrollEducation = getRemote("EnrollEducation")
+local DoWork = getRemote("DoWork")
+local RequestPromotion = getRemote("RequestPromotion")
+local RequestRaise = getRemote("RequestRaise")
+local GetCareerInfo = getRemote("GetCareerInfo")
+local GetEducationInfo = getRemote("GetEducationInfo") -- NEW: detailed GPA/progress/transcript
+
+-- Job Categories for filtering
+local JobCategories = {
+	{ id = "all", name = "All Jobs", emoji = "📋" },
+	{ id = "entry", name = "Entry Level", emoji = "🎒" },
+	{ id = "service", name = "Service", emoji = "🍽️" },
+	{ id = "trades", name = "Trades", emoji = "🔧" },
+	{ id = "office", name = "Office", emoji = "🏢" },
+	{ id = "tech", name = "Technology", emoji = "💻" },
+	{ id = "medical", name = "Medical", emoji = "🏥" },
+	{ id = "law", name = "Legal", emoji = "⚖️" },
+	{ id = "finance", name = "Finance", emoji = "💰" },
+	{ id = "creative", name = "Creative", emoji = "🎨" },
+	{ id = "government", name = "Government", emoji = "🏛️" },
+	{ id = "education", name = "Education", emoji = "📚" },
+	{ id = "science", name = "Science", emoji = "🔬" },
+	{ id = "sports", name = "Sports", emoji = "🏆" },
+	{ id = "military", name = "Military", emoji = "🎖️" },
+	{ id = "criminal", name = "Criminal", emoji = "💊" },
+}
+
+-- Job Data - Must match server's JobListings IDs exactly!
+-- MASSIVE EXPANDED LIST (75+ careers)
+local Jobs = {
+	-- ════════════════════════════════════════════════════════════════
+	-- ENTRY LEVEL / PART-TIME (No Education - Teen Jobs)
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "fastfood", name = "Fast Food Worker", company = "Burger Palace", emoji = "🍔", salary = 22000, minAge = 14, requirement = nil, category = "entry" },
+	{ id = "retail", name = "Retail Associate", company = "MegaMart", emoji = "🛒", salary = 26000, minAge = 16, requirement = nil, category = "entry" },
+	{ id = "cashier", name = "Cashier", company = "QuickMart", emoji = "💵", salary = 24000, minAge = 15, requirement = nil, category = "entry" },
+	{ id = "bagger", name = "Grocery Bagger", company = "Fresh Foods", emoji = "🛍️", salary = 18000, minAge = 14, requirement = nil, category = "entry" },
+	{ id = "movie_usher", name = "Movie Usher", company = "CineMax", emoji = "🎬", salary = 20000, minAge = 14, requirement = nil, category = "entry" },
+	{ id = "lifeguard", name = "Lifeguard", company = "City Pool", emoji = "🏊", salary = 28000, minAge = 16, requirement = nil, category = "entry" },
+	{ id = "camp_counselor", name = "Camp Counselor", company = "Summer Camp", emoji = "🏕️", salary = 22000, minAge = 16, requirement = nil, category = "entry" },
+	{ id = "newspaper_delivery", name = "Newspaper Delivery", company = "Daily News", emoji = "📰", salary = 15000, minAge = 12, requirement = nil, category = "entry" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- SERVICE INDUSTRY
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "waiter", name = "Waiter/Waitress", company = "The Grand Restaurant", emoji = "🍽️", salary = 32000, minAge = 16, requirement = nil, category = "service" },
+	{ id = "bartender", name = "Bartender", company = "The Tipsy Owl", emoji = "🍸", salary = 38000, minAge = 21, requirement = nil, category = "service" },
+	{ id = "barista", name = "Barista", company = "Bean Scene", emoji = "☕", salary = 28000, minAge = 16, requirement = nil, category = "service" },
+	{ id = "hotel_front_desk", name = "Hotel Receptionist", company = "Grand Hotel", emoji = "🏨", salary = 32000, minAge = 18, requirement = "high_school", category = "service" },
+	{ id = "flight_attendant", name = "Flight Attendant", company = "SkyWays Airlines", emoji = "✈️", salary = 55000, minAge = 21, requirement = "high_school", category = "service" },
+	{ id = "tour_guide", name = "Tour Guide", company = "City Tours", emoji = "🗺️", salary = 35000, minAge = 18, requirement = "high_school", category = "service" },
+	{ id = "casino_dealer", name = "Casino Dealer", company = "Lucky Star Casino", emoji = "🎰", salary = 45000, minAge = 21, requirement = "high_school", category = "service" },
+	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service" },
+	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- TRADES & SKILLED LABOR
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "janitor", name = "Janitor", company = "CleanCo Services", emoji = "🧹", salary = 28000, minAge = 18, requirement = nil, category = "trades" },
+	{ id = "construction", name = "Construction Worker", company = "BuildRight Co", emoji = "👷", salary = 42000, minAge = 18, requirement = nil, category = "trades" },
+	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades" },
+	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades" },
+	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades" },
+	{ id = "plumber", name = "Licensed Plumber", company = "FlowRight Plumbing", emoji = "🔧", salary = 58000, minAge = 22, requirement = "high_school", category = "trades" },
+	{ id = "mechanic", name = "Auto Mechanic", company = "QuickFix Auto", emoji = "🔩", salary = 45000, minAge = 18, requirement = "high_school", category = "trades" },
+	{ id = "hvac_tech", name = "HVAC Technician", company = "CoolAir Systems", emoji = "❄️", salary = 52000, minAge = 20, requirement = "high_school", category = "trades" },
+	{ id = "welder", name = "Welder", company = "Steel Works Inc", emoji = "🔥", salary = 48000, minAge = 18, requirement = "high_school", category = "trades" },
+	{ id = "carpenter", name = "Carpenter", company = "WoodCraft Co", emoji = "🪚", salary = 46000, minAge = 18, requirement = "high_school", category = "trades" },
+	{ id = "truck_driver", name = "Truck Driver", company = "FastFreight Logistics", emoji = "🚛", salary = 55000, minAge = 21, requirement = "high_school", category = "trades" },
+	{ id = "foreman", name = "Construction Foreman", company = "BuildRight Co", emoji = "🏗️", salary = 72000, minAge = 28, requirement = "high_school", category = "trades" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- OFFICE & BUSINESS
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "receptionist", name = "Receptionist", company = "Corporate Office", emoji = "📞", salary = 32000, minAge = 18, requirement = "high_school", category = "office" },
+	{ id = "office_assistant", name = "Office Assistant", company = "Business Solutions", emoji = "📋", salary = 35000, minAge = 18, requirement = "high_school", category = "office" },
+	{ id = "data_entry", name = "Data Entry Clerk", company = "DataCorp", emoji = "⌨️", salary = 34000, minAge = 18, requirement = "high_school", category = "office" },
+	{ id = "administrative_assistant", name = "Administrative Assistant", company = "Executive Office", emoji = "📁", salary = 42000, minAge = 20, requirement = "high_school", category = "office" },
+	{ id = "hr_coordinator", name = "HR Coordinator", company = "PeopleFirst HR", emoji = "👥", salary = 48000, minAge = 22, requirement = "bachelor", category = "office" },
+	{ id = "hr_manager", name = "HR Manager", company = "PeopleFirst HR", emoji = "👥", salary = 78000, minAge = 28, requirement = "bachelor", category = "office" },
+	{ id = "recruiter", name = "Corporate Recruiter", company = "TalentFind Inc", emoji = "🔍", salary = 58000, minAge = 24, requirement = "bachelor", category = "office" },
+	{ id = "office_manager", name = "Office Manager", company = "CorpWorld Inc", emoji = "🏢", salary = 62000, minAge = 26, requirement = "bachelor", category = "office" },
+	{ id = "executive_assistant", name = "Executive Assistant", company = "CEO Office", emoji = "👔", salary = 72000, minAge = 26, requirement = "bachelor", category = "office" },
+	{ id = "project_manager", name = "Project Manager", company = "ManageAll Corp", emoji = "📊", salary = 85000, minAge = 28, requirement = "bachelor", category = "office" },
+	{ id = "operations_director", name = "Operations Director", company = "Global Corp", emoji = "🎯", salary = 145000, minAge = 35, requirement = "master", category = "office" },
+	{ id = "coo", name = "Chief Operating Officer", company = "Fortune 500", emoji = "🏆", salary = 350000, minAge = 42, requirement = "master", category = "office" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- TECHNOLOGY
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech" },
+	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech" },
+	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech" },
+	{ id = "senior_developer", name = "Senior Developer", company = "BigTech Corp", emoji = "💻", salary = 145000, minAge = 27, requirement = "bachelor", category = "tech" },
+	{ id = "tech_lead", name = "Tech Lead", company = "BigTech Corp", emoji = "👨‍💻", salary = 175000, minAge = 30, requirement = "bachelor", category = "tech" },
+	{ id = "software_architect", name = "Software Architect", company = "MegaTech Inc", emoji = "🏗️", salary = 195000, minAge = 32, requirement = "master", category = "tech" },
+	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech" },
+	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech" },
+	{ id = "data_analyst", name = "Data Analyst", company = "DataDriven Co", emoji = "📈", salary = 72000, minAge = 22, requirement = "bachelor", category = "tech" },
+	{ id = "data_scientist", name = "Data Scientist", company = "AI Innovations", emoji = "🧠", salary = 135000, minAge = 26, requirement = "master", category = "tech" },
+	{ id = "ml_engineer", name = "Machine Learning Engineer", company = "AI Labs", emoji = "🤖", salary = 165000, minAge = 28, requirement = "master", category = "tech" },
+	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech" },
+	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech" },
+	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech" },
+	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- MEDICAL / HEALTHCARE
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical" },
+	{ id = "medical_assistant", name = "Medical Assistant", company = "Family Clinic", emoji = "💉", salary = 36000, minAge = 18, requirement = "high_school", category = "medical" },
+	{ id = "emt", name = "EMT / Paramedic", company = "City Ambulance", emoji = "🚑", salary = 42000, minAge = 18, requirement = "high_school", category = "medical" },
+	{ id = "nurse_lpn", name = "Licensed Practical Nurse", company = "Regional Hospital", emoji = "👩‍⚕️", salary = 52000, minAge = 20, requirement = "community", category = "medical" },
+	{ id = "nurse_rn", name = "Registered Nurse", company = "City Hospital", emoji = "👩‍⚕️", salary = 78000, minAge = 22, requirement = "bachelor", category = "medical" },
+	{ id = "nurse_practitioner", name = "Nurse Practitioner", company = "Medical Center", emoji = "👩‍⚕️", salary = 118000, minAge = 28, requirement = "master", category = "medical" },
+	{ id = "physical_therapist", name = "Physical Therapist", company = "RehabCare Center", emoji = "🦿", salary = 92000, minAge = 26, requirement = "master", category = "medical" },
+	{ id = "pharmacist", name = "Pharmacist", company = "MediPharm", emoji = "💊", salary = 128000, minAge = 28, requirement = "phd", category = "medical" },
+	{ id = "dentist", name = "Dentist", company = "Bright Smiles Dental", emoji = "🦷", salary = 175000, minAge = 28, requirement = "medical", category = "medical" },
+	{ id = "doctor_resident", name = "Medical Resident", company = "Teaching Hospital", emoji = "🩺", salary = 65000, minAge = 26, requirement = "medical", category = "medical" },
+	{ id = "doctor", name = "Doctor", company = "City Hospital", emoji = "🩺", salary = 250000, minAge = 30, requirement = "medical", category = "medical" },
+	{ id = "surgeon", name = "Surgeon", company = "Medical Center", emoji = "🔪", salary = 420000, minAge = 34, requirement = "medical", category = "medical" },
+	{ id = "chief_of_medicine", name = "Chief of Medicine", company = "University Hospital", emoji = "👨‍⚕️", salary = 550000, minAge = 45, requirement = "medical", category = "medical" },
+	{ id = "psychiatrist", name = "Psychiatrist", company = "Mental Health Center", emoji = "🧠", salary = 280000, minAge = 32, requirement = "medical", category = "medical" },
+	{ id = "veterinarian", name = "Veterinarian", company = "Pet Care Clinic", emoji = "🐾", salary = 105000, minAge = 28, requirement = "medical", category = "medical" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- LEGAL
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "paralegal", name = "Paralegal", company = "Legal Associates", emoji = "📜", salary = 52000, minAge = 22, requirement = "bachelor", category = "law" },
+	{ id = "legal_assistant", name = "Legal Assistant", company = "Smith & Partners", emoji = "📝", salary = 42000, minAge = 18, requirement = "high_school", category = "law" },
+	{ id = "associate_lawyer", name = "Associate Attorney", company = "Law Firm LLP", emoji = "⚖️", salary = 95000, minAge = 26, requirement = "law", category = "law" },
+	{ id = "lawyer", name = "Attorney", company = "Smith & Associates", emoji = "⚖️", salary = 145000, minAge = 28, requirement = "law", category = "law" },
+	{ id = "senior_partner", name = "Senior Partner", company = "Elite Law Firm", emoji = "⚖️", salary = 350000, minAge = 38, requirement = "law", category = "law" },
+	{ id = "prosecutor", name = "Prosecutor", company = "District Attorney", emoji = "🏛️", salary = 95000, minAge = 28, requirement = "law", category = "law" },
+	{ id = "public_defender", name = "Public Defender", company = "Public Defender's Office", emoji = "🏛️", salary = 72000, minAge = 26, requirement = "law", category = "law" },
+	{ id = "judge", name = "Judge", company = "Superior Court", emoji = "👨‍⚖️", salary = 195000, minAge = 45, requirement = "law", category = "law" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- FINANCE
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "bank_teller", name = "Bank Teller", company = "First National Bank", emoji = "🏦", salary = 34000, minAge = 18, requirement = "high_school", category = "finance" },
+	{ id = "loan_officer", name = "Loan Officer", company = "City Bank", emoji = "💰", salary = 58000, minAge = 22, requirement = "bachelor", category = "finance" },
+	{ id = "accountant_jr", name = "Junior Accountant", company = "Financial Services", emoji = "📊", salary = 52000, minAge = 22, requirement = "bachelor", category = "finance" },
+	{ id = "accountant", name = "Senior Accountant", company = "Big4 Accounting", emoji = "📊", salary = 78000, minAge = 25, requirement = "bachelor", category = "finance" },
+	{ id = "cpa", name = "Certified Public Accountant", company = "CPA Partners", emoji = "📊", salary = 95000, minAge = 28, requirement = "bachelor", category = "finance" },
+	{ id = "financial_analyst", name = "Financial Analyst", company = "Investment Group", emoji = "📈", salary = 85000, minAge = 23, requirement = "bachelor", category = "finance" },
+	{ id = "investment_banker_jr", name = "Investment Banking Analyst", company = "Goldman & Partners", emoji = "💹", salary = 120000, minAge = 22, requirement = "bachelor", category = "finance" },
+	{ id = "investment_banker", name = "Investment Banker", company = "Wall Street Bank", emoji = "💹", salary = 225000, minAge = 28, requirement = "master", category = "finance" },
+	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance" },
+	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance" },
+	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- CREATIVE / MEDIA / ENTERTAINMENT
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "graphic_designer_jr", name = "Junior Graphic Designer", company = "Design Studio", emoji = "🎨", salary = 42000, minAge = 21, requirement = "bachelor", category = "creative" },
+	{ id = "graphic_designer", name = "Graphic Designer", company = "Creative Agency", emoji = "🎨", salary = 62000, minAge = 24, requirement = "bachelor", category = "creative" },
+	{ id = "art_director", name = "Art Director", company = "Top Agency", emoji = "🎨", salary = 115000, minAge = 30, requirement = "bachelor", category = "creative" },
+	{ id = "photographer", name = "Photographer", company = "Photo Studio", emoji = "📷", salary = 48000, minAge = 18, requirement = nil, category = "creative" },
+	{ id = "videographer", name = "Videographer", company = "Video Productions", emoji = "🎥", salary = 55000, minAge = 21, requirement = "bachelor", category = "creative" },
+	{ id = "journalist_jr", name = "Junior Journalist", company = "City News", emoji = "📰", salary = 38000, minAge = 22, requirement = "bachelor", category = "creative" },
+	{ id = "journalist", name = "Journalist", company = "National Times", emoji = "📰", salary = 62000, minAge = 26, requirement = "bachelor", category = "creative" },
+	{ id = "editor", name = "Editor", company = "Publishing House", emoji = "✍️", salary = 72000, minAge = 28, requirement = "bachelor", category = "creative" },
+	{ id = "social_media_manager", name = "Social Media Manager", company = "Digital Agency", emoji = "📱", salary = 55000, minAge = 22, requirement = "bachelor", category = "creative" },
+	{ id = "marketing_associate", name = "Marketing Associate", company = "AdVenture Agency", emoji = "📈", salary = 52000, minAge = 22, requirement = "bachelor", category = "creative" },
+	{ id = "marketing_manager", name = "Marketing Manager", company = "Brand Corp", emoji = "📈", salary = 95000, minAge = 28, requirement = "bachelor", category = "creative" },
+	{ id = "cmo", name = "Chief Marketing Officer", company = "Fortune 500", emoji = "📢", salary = 320000, minAge = 40, requirement = "master", category = "creative" },
+	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative" },
+	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative" },
+	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative" },
+	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative" },
+	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative" },
+	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- GOVERNMENT / PUBLIC SERVICE
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "postal_worker", name = "Postal Worker", company = "US Postal Service", emoji = "📮", salary = 45000, minAge = 18, requirement = "high_school", category = "government" },
+	{ id = "dmv_clerk", name = "DMV Clerk", company = "Dept of Motor Vehicles", emoji = "🚗", salary = 38000, minAge = 18, requirement = "high_school", category = "government" },
+	{ id = "social_worker", name = "Social Worker", company = "Family Services", emoji = "🤝", salary = 52000, minAge = 22, requirement = "bachelor", category = "government" },
+	{ id = "probation_officer", name = "Probation Officer", company = "Corrections Dept", emoji = "🔒", salary = 55000, minAge = 22, requirement = "bachelor", category = "government" },
+	{ id = "police_officer", name = "Police Officer", company = "City Police Dept", emoji = "👮", salary = 62000, minAge = 21, requirement = "high_school", category = "government" },
+	{ id = "detective", name = "Detective", company = "City Police Dept", emoji = "🔍", salary = 85000, minAge = 28, requirement = "bachelor", category = "government" },
+	{ id = "police_chief", name = "Police Chief", company = "City Police Dept", emoji = "👮‍♂️", salary = 145000, minAge = 40, requirement = "bachelor", category = "government" },
+	{ id = "firefighter", name = "Firefighter", company = "Fire Department", emoji = "🚒", salary = 58000, minAge = 18, requirement = "high_school", category = "government" },
+	{ id = "fire_captain", name = "Fire Captain", company = "Fire Department", emoji = "🚒", salary = 95000, minAge = 32, requirement = "high_school", category = "government" },
+	{ id = "city_council", name = "City Council Member", company = "City Government", emoji = "🏛️", salary = 72000, minAge = 25, requirement = "bachelor", category = "government" },
+	{ id = "mayor", name = "Mayor", company = "City Hall", emoji = "🏛️", salary = 185000, minAge = 35, requirement = "bachelor", category = "government" },
+	{ id = "fbi_agent", name = "FBI Agent", company = "Federal Bureau of Investigation", emoji = "🕵️", salary = 95000, minAge = 25, requirement = "bachelor", category = "government" },
+	{ id = "cia_agent", name = "CIA Agent", company = "Central Intelligence Agency", emoji = "🕵️‍♂️", salary = 105000, minAge = 26, requirement = "bachelor", category = "government" },
+	{ id = "diplomat", name = "Diplomat", company = "State Department", emoji = "🌍", salary = 125000, minAge = 30, requirement = "master", category = "government" },
+	{ id = "senator", name = "Senator", company = "US Senate", emoji = "🏛️", salary = 174000, minAge = 35, requirement = "bachelor", category = "government" },
+	{ id = "president", name = "President", company = "United States", emoji = "🇺🇸", salary = 400000, minAge = 35, requirement = "bachelor", category = "government" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- EDUCATION
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "teaching_assistant", name = "Teaching Assistant", company = "Local School", emoji = "📚", salary = 28000, minAge = 18, requirement = "high_school", category = "education" },
+	{ id = "substitute_teacher", name = "Substitute Teacher", company = "School District", emoji = "📚", salary = 32000, minAge = 21, requirement = "bachelor", category = "education" },
+	{ id = "teacher", name = "Teacher", company = "Public School", emoji = "👨‍🏫", salary = 52000, minAge = 22, requirement = "bachelor", category = "education" },
+	{ id = "department_head", name = "Department Head", company = "High School", emoji = "👨‍🏫", salary = 72000, minAge = 32, requirement = "master", category = "education" },
+	{ id = "principal", name = "School Principal", company = "Local School District", emoji = "🏫", salary = 105000, minAge = 38, requirement = "master", category = "education" },
+	{ id = "superintendent", name = "School Superintendent", company = "School District", emoji = "🏫", salary = 185000, minAge = 45, requirement = "phd", category = "education" },
+	{ id = "professor_assistant", name = "Assistant Professor", company = "State University", emoji = "🎓", salary = 72000, minAge = 28, requirement = "phd", category = "education" },
+	{ id = "professor", name = "Professor", company = "University", emoji = "🎓", salary = 115000, minAge = 35, requirement = "phd", category = "education" },
+	{ id = "dean", name = "Dean", company = "University", emoji = "🎓", salary = 225000, minAge = 45, requirement = "phd", category = "education" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- SCIENCE / RESEARCH
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "lab_technician", name = "Lab Technician", company = "Research Lab", emoji = "🔬", salary = 42000, minAge = 22, requirement = "bachelor", category = "science" },
+	{ id = "research_assistant", name = "Research Assistant", company = "University Lab", emoji = "🔬", salary = 48000, minAge = 22, requirement = "bachelor", category = "science" },
+	{ id = "scientist", name = "Scientist", company = "Research Institute", emoji = "🧪", salary = 85000, minAge = 26, requirement = "master", category = "science" },
+	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science" },
+	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- SPORTS / ATHLETICS
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports" },
+	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports" },
+	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports" },
+	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports" },
+	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports" },
+	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- MILITARY
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military" },
+	{ id = "sergeant", name = "Sergeant", company = "US Army", emoji = "🪖", salary = 55000, minAge = 24, requirement = "high_school", category = "military" },
+	{ id = "officer", name = "Military Officer", company = "US Armed Forces", emoji = "🎖️", salary = 75000, minAge = 22, requirement = "bachelor", category = "military" },
+	{ id = "captain", name = "Captain", company = "US Armed Forces", emoji = "🎖️", salary = 95000, minAge = 28, requirement = "bachelor", category = "military" },
+	{ id = "colonel", name = "Colonel", company = "US Armed Forces", emoji = "🎖️", salary = 135000, minAge = 38, requirement = "master", category = "military" },
+	{ id = "general", name = "General", company = "Pentagon", emoji = "⭐", salary = 220000, minAge = 50, requirement = "master", category = "military" },
+
+	-- ════════════════════════════════════════════════════════════════
+	-- CRIMINAL CAREERS (Illegal - High Risk/Reward)
+	-- ════════════════════════════════════════════════════════════════
+	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "drug_dealer", name = "Drug Dealer", company = "The Organization", emoji = "💊", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
+	{ id = "hitman", name = "Hitman", company = "Unknown", emoji = "🔫", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true },
+	{ id = "gang_member", name = "Gang Member", company = "The Gang", emoji = "🔪", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "gang_lieutenant", name = "Gang Lieutenant", company = "The Gang", emoji = "🔪", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true },
+	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true },
+	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true },
+	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
+}
+
+-- Education Data - Must match server's EducationOptions IDs!
+local Education = {
+	{ id = "community", name = "Community College", emoji = "🏫", duration = 2, cost = 15000, minAge = 18, requirement = "high_school" },
+	{ id = "bachelor", name = "Bachelor's Degree", emoji = "🎓", duration = 4, cost = 80000, minAge = 18, requirement = "high_school" },
+	{ id = "master", name = "Master's Degree", emoji = "📚", duration = 2, cost = 60000, minAge = 22, requirement = "bachelor" },
+	{ id = "law", name = "Law School", emoji = "⚖️", duration = 3, cost = 150000, minAge = 22, requirement = "bachelor" },
+	{ id = "medical", name = "Medical School", emoji = "🏥", duration = 4, cost = 200000, minAge = 22, requirement = "bachelor" },
+	{ id = "phd", name = "PhD Program", emoji = "🎓", duration = 5, cost = 100000, minAge = 24, requirement = "master" },
+}
+
+-- Education rank ladder used for requirements/gating.
+-- Higher number = more advanced. FIXED: Matches actual Education IDs and job requirements!
+local EducationRanks = {
+	none        = 0,
+	high_school = 1,
+	community   = 2,
+	bachelor    = 3,
+	master      = 4,
+	law         = 5,
+	medical     = 5,
+	phd         = 6,
+}
+
+-- Debug logging (set to false to reduce log spam)
+local DEBUG = false
+local function log(...)
+	if DEBUG then print("[OccupationScreen]", ...) end
+end
+local function logWarn(...)
+	warn("[OccupationScreen]", ...)
+end
+
+function OccupationScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+	log("=== CREATING OccupationScreen ===")
+	local self = setmetatable({}, OccupationScreen)
+	self.screenGui = screenGui
+	self.playerState = playerState or {}
+	self.showBlur = showBlurFunc
+	self.hideBlur = hideBlurFunc
+	self.isVisible = false
+	self.currentTab = "jobs"
+	self.selectedCategory = "all" -- For job category filtering
+	self.careerInfo = nil -- Cached career info from server
+	self.educationInfo = nil -- Cached education info (GPA, progress, transcript)
+	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+	self:createUI()
+	log("✅ OccupationScreen created successfully")
+	return self
+end
+
+function OccupationScreen:updateState(newState)
+	log("Updating state...")
+	if newState then 
+		self.playerState = newState 
+		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+	end
+end
+
+function OccupationScreen:getAge()
+	local state = self.playerState
+	if not state then return 18 end
+	return state.Age or (state.Stats and state.Stats.Age) or 18
+end
+
+function OccupationScreen:getMoney()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.Money or (state.Stats and state.Stats.Money) or 0
+end
+
+function OccupationScreen:getCurrentJob()
+	local state = self.playerState
+	if not state then return nil end
+	-- Check both old and new job system
+	if state.CurrentJob and state.CurrentJob.id then
+		return state.CurrentJob.id -- Return job ID for matching
+	elseif state.CurrentJob and state.CurrentJob.title then
+		-- Fallback: try to find by title
+		return state.CurrentJob.title
+	end
+	return state.Job or (state.Career and state.Career.current)
+end
+
+function OccupationScreen:getCurrentJobData()
+	local state = self.playerState
+	if not state then return nil end
+	-- Return the full job object from server
+	if state.CurrentJob then
+		log("getCurrentJobData - Found CurrentJob from server:", state.CurrentJob.title or "No title")
+		return state.CurrentJob
+	end
+	return nil
+end
+
+function OccupationScreen:isInJail()
+	local state = self.playerState
+	if not state then return false end
+	return state.InJail == true or (state.Flags and state.Flags.in_prison) or false
+end
+
+function OccupationScreen:getJailYearsLeft()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.JailYearsLeft or 0
+end
+
+function OccupationScreen:getEducationLevel()
+	local state = self.playerState
+	if not state then
+		return "none"
+	end
+
+	local level = state.Education or (state.Career and state.Career.education)
+	if level then
+		return level
+	end
+
+	-- Fallback: if you're an adult and we never set a level, assume you at least
+	-- finished high school. Kids/teens default to "none".
+	local age = self:getAge()
+	if age and age >= 18 then
+		return "high_school"
+	end
+
+	return "none"
+end
+
+function OccupationScreen:isEnrolled()
+	local state = self.playerState
+	if not state then return false end
+	-- Check multiple sources for enrolled status
+	if state.Enrolled then return true end
+	if state.EducationData and state.EducationData.Status == "enrolled" then return true end
+	if state.Career and state.Career.enrolled then return true end
+	return false
+end
+
+function OccupationScreen:fetchCareerInfo()
+	if not GetCareerInfo then
+		log("GetCareerInfo remote not available")
+		return nil
+	end
+
+	local success, result = pcall(function()
+		return GetCareerInfo:InvokeServer()
+	end)
+
+	if success and result and result.success then
+		self.careerInfo = result
+		log("Fetched career info - Performance:", result.performance, "PromotionProgress:", result.promotionProgress)
+		return result
+	end
+	return nil
+end
+
+function OccupationScreen:getCareerPerformance()
+	if self.careerInfo then
+		return self.careerInfo.performance or 75
+	end
+	return 75
+end
+
+function OccupationScreen:getPromotionProgress()
+	if self.careerInfo then
+		return self.careerInfo.promotionProgress or 0
+	end
+	return 0
+end
+
+function OccupationScreen:getCareerSkills()
+	if self.careerInfo then
+		return self.careerInfo.skills or {}
+	end
+	return {}
+end
+
+function OccupationScreen:getCareerHistory()
+	if self.careerInfo then
+		return self.careerInfo.careerHistory or {}
+	end
+	return {}
+end
+
+function OccupationScreen:getYearsAtJob()
+	if self.careerInfo then
+		return self.careerInfo.yearsAtJob or 0
+	end
+	return 0
+end
+
+function OccupationScreen:getRaises()
+	if self.careerInfo then
+		return self.careerInfo.raises or 0
+	end
+	return 0
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- EDUCATION HELPERS (GPA, Progress, Transcript, etc.)
+-- ═══════════════════════════════════════════════════════════════
+
+function OccupationScreen:fetchEducationInfo()
+	-- First check if we have education data from synced state
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.GPA then
+		-- Use synced state data (faster, no remote call needed)
+		local eduData = state.EducationData
+		self.educationInfo = {
+			success = true,
+			level = eduData.Level or state.Education or "none",
+			institution = eduData.Institution,
+			major = eduData.Major,
+			gpa = eduData.GPA,
+			progress = eduData.Progress,
+			debt = eduData.Debt,
+			status = eduData.Status,
+			grades = eduData.Grades or {},
+			creditsEarned = eduData.CreditsEarned,
+			creditsRequired = eduData.CreditsRequired,
+			year = eduData.Year,
+			totalYears = eduData.TotalYears,
+			enrolled = state.Enrolled,
+		}
+		log("Using synced education data - GPA:", eduData.GPA, "Progress:", eduData.Progress)
+		return self.educationInfo
+	end
+
+	-- Fall back to remote call
+	if not GetEducationInfo then
+		log("GetEducationInfo remote not available")
+		return nil
+	end
+
+	local success, result = pcall(function()
+		return GetEducationInfo:InvokeServer()
+	end)
+
+	if success and result and result.success then
+		self.educationInfo = result
+		log("Fetched education info from server - Level:", result.level, "GPA:", result.gpa, "Progress:", result.progress)
+		return result
+	end
+
+	log("GetEducationInfo failed or returned no data")
+	return nil
+end
+
+function OccupationScreen:getEducationDisplayName(levelId)
+	if not levelId or levelId == "" or levelId == "none" then
+		return "No Formal Education"
+	end
+
+	if levelId == "high_school" then
+		return "High School Graduate"
+	end
+
+	for _, edu in ipairs(Education) do
+		if edu.id == levelId then
+			return edu.name
+		end
+	end
+
+	return levelId:gsub("_", " "):gsub("^%l", string.upper)
+end
+
+function OccupationScreen:getEducationEmoji(levelId)
+	if levelId == "high_school" then
+		return "📚"
+	elseif levelId == "community" then
+		return "🏫"
+	elseif levelId == "bachelor" or levelId == "master" or levelId == "phd" then
+		return "🎓"
+	elseif levelId == "law" then
+		return "⚖️"
+	elseif levelId == "medical" then
+		return "🏥"
+	end
+	return "📖"
+end
+
+function OccupationScreen:getEducationGPA()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.GPA then
+		return state.EducationData.GPA
+	end
+
+	-- Fall back to fetched info
+	local info = self.educationInfo
+	if info and info.gpa then
+		return info.gpa
+	end
+
+	-- Generate a reasonable GPA for high school students if none exists
+	local age = self:getAge()
+	if age >= 5 and age <= 22 then
+		local smarts = state and state.Stats and state.Stats.Smarts or 50
+		local gpa = 2.0 + (smarts / 100) * 2.0
+		return math.floor(gpa * 100) / 100
+	end
+
+	return nil
+end
+
+function OccupationScreen:getEducationProgress()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData then
+		local eduData = state.EducationData
+		if eduData.Progress and eduData.Progress > 0 then
+			return eduData.Progress
+		end
+		if eduData.CreditsEarned and eduData.CreditsRequired and eduData.CreditsRequired > 0 then
+			return math.clamp((eduData.CreditsEarned / eduData.CreditsRequired) * 100, 0, 100)
+		end
+		if eduData.Year and eduData.TotalYears and eduData.TotalYears > 0 then
+			return math.clamp((eduData.Year / eduData.TotalYears) * 100, 0, 100)
+		end
+	end
+
+	-- Fall back to fetched info
+	local info = self.educationInfo
+	if not info then
+		-- Calculate high school progress based on age
+		local age = self:getAge()
+		if age >= 5 and age < 18 then
+			local hsYear = math.max(0, age - 5)
+			return math.clamp((hsYear / 13) * 100, 0, 100)
+		end
+		return nil
+	end
+
+	if info.creditsEarned and info.creditsRequired and info.creditsRequired > 0 then
+		return math.clamp((info.creditsEarned / info.creditsRequired) * 100, 0, 100)
+	end
+
+	if info.year and info.totalYears and info.totalYears > 0 then
+		return math.clamp((info.year / info.totalYears) * 100, 0, 100)
+	end
+
+	if info.progress then
+		return math.clamp(info.progress, 0, 100)
+	end
+
+	return nil
+end
+
+function OccupationScreen:getEducationDebt()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.Debt then
+		return state.EducationData.Debt
+	end
+
+	local info = self.educationInfo
+	if info and info.debt then
+		return info.debt
+	end
+	return 0
+end
+
+function OccupationScreen:getEducationInstitution()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.Institution then
+		return state.EducationData.Institution
+	end
+
+	local info = self.educationInfo
+	if info and info.institution and info.institution ~= "" then
+		return info.institution
+	end
+
+	local level = (info and info.level) or self:getEducationLevel()
+	if level == "high_school" then
+		return "Local High School"
+	elseif level == "community" then
+		return "Community College"
+	elseif level == "bachelor" or level == "master" or level == "phd" then
+		return "State University"
+	elseif level == "law" then
+		return "Law School"
+	elseif level == "medical" then
+		return "Medical School"
+	end
+
+	return nil
+end
+
+function OccupationScreen:getEducationMajor()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.Major then
+		return state.EducationData.Major
+	end
+
+	local info = self.educationInfo
+	if info and info.major and info.major ~= "" then
+		return info.major
+	end
+	return "Undeclared"
+end
+
+function OccupationScreen:getEducationStatus()
+	-- Check synced state first
+	local state = self.playerState
+	if state and state.EducationData and state.EducationData.Status then
+		return state.EducationData.Status
+	end
+
+	local info = self.educationInfo
+	if info and info.status then
+		return info.status
+	end
+
+	if self:isEnrolled() then
+		return "enrolled"
+	end
+
+	-- Check if high school student
+	local age = self:getAge()
+	if age >= 5 and age < 18 then
+		return "enrolled"
+	end
+
+	return "none"
+end
+
+function OccupationScreen:getEducationGrades()
+	-- Check synced state first (but grades aren't synced for performance)
+	local info = self.educationInfo
+	if info and type(info.grades) == "table" then
+		return info.grades
+	end
+	return {}
+end
+
+function OccupationScreen:createUI()
+	-- Main overlay
+	self.overlay = Instance.new("Frame")
+	self.overlay.Name = "OccupationOverlay"
+	self.overlay.Size = UDim2.fromScale(1, 1)
+	self.overlay.BackgroundColor3 = C.Bg
+	self.overlay.Visible = false
+	self.overlay.ZIndex = 80
+	self.overlay.Parent = self.screenGui
+
+	-- Premium header
+	local headerData = UI.createScreenHeader(self.overlay, {
+		title = "Career & Education",
+		color = C.Blue,
+		colorDark = C.BlueDark,
+		zIndex = 85
+	})
+	self.header = headerData.header
+	headerData.closeButton.MouseButton1Click:Connect(function() self:hide() end)
+	headerData.closeButton.MouseEnter:Connect(function()
+		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	headerData.closeButton.MouseLeave:Connect(function()
+		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+
+	-- Info bar (no shadow for layout elements)
+	self.infoBar = Instance.new("Frame")
+	self.infoBar.Name = "InfoBar"
+	self.infoBar.Size = UDim2.new(1, -16, 0, 52)
+	self.infoBar.Position = UDim2.new(0, 8, 0, 116)
+	self.infoBar.BackgroundColor3 = C.White
+	self.infoBar.ZIndex = 84
+	self.infoBar.Parent = self.overlay
+	UI.corner(self.infoBar, 14)
+	UI.stroke(self.infoBar, 1, 0.9, C.Gray200)
+
+	local infoLayout = Instance.new("UIListLayout")
+	infoLayout.FillDirection = Enum.FillDirection.Horizontal
+	infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	infoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	infoLayout.Padding = UDim.new(0, 10)
+	infoLayout.Parent = self.infoBar
+
+	self.ageChip = UI.createInfoChip(self.infoBar, {
+		name = "AgeChip", icon = "Age", text = "18",
+		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 75
+	})
+	self.ageChip.icon.Text = ""
+	self.ageChip.text.Text = "Age 18"
+	self.ageChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.ageChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.ageChip.text.TextXAlignment = Enum.TextXAlignment.Center
+
+	self.moneyChip = UI.createInfoChip(self.infoBar, {
+		name = "MoneyChip", icon = "$", text = "$0",
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 90
+	})
+	self.moneyChip.icon.Text = ""
+	self.moneyChip.text.Text = "$0"
+	self.moneyChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.moneyChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
+
+	self.jobChip = UI.createInfoChip(self.infoBar, {
+		name = "JobChip", icon = "Job", text = "None",
+		bgColor = C.AmberPale, textColor = C.AmberDark, order = 3, width = 100
+	})
+	self.jobChip.icon.Text = ""
+	self.jobChip.text.Text = "Unemployed"
+	self.jobChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.jobChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.jobChip.text.TextXAlignment = Enum.TextXAlignment.Center
+
+	-- Tab bar
+	self.tabBar = Instance.new("Frame")
+	self.tabBar.Name = "TabBar"
+	self.tabBar.Size = UDim2.new(1, -16, 0, 52)
+	self.tabBar.Position = UDim2.new(0, 8, 0, 176)
+	self.tabBar.BackgroundColor3 = C.Gray100
+	self.tabBar.ZIndex = 84
+	self.tabBar.Parent = self.overlay
+	UI.corner(self.tabBar, 14)
+	UI.pad(self.tabBar, 5, 5, 5, 5)
+
+	local tabLayout = Instance.new("UIListLayout")
+	tabLayout.FillDirection = Enum.FillDirection.Horizontal
+	tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabLayout.Padding = UDim.new(0, 8)
+	tabLayout.Parent = self.tabBar
+
+	-- Jobs tab
+	self.jobsTab = Instance.new("TextButton")
+	self.jobsTab.Name = "JobsTab"
+	self.jobsTab.Size = UDim2.new(0.46, 0, 1, 0)
+	self.jobsTab.BackgroundColor3 = C.Blue
+	self.jobsTab.Font = F.Button
+	self.jobsTab.TextSize = 15
+	self.jobsTab.TextColor3 = C.White
+	self.jobsTab.Text = "Jobs"
+	self.jobsTab.AutoButtonColor = false
+	self.jobsTab.LayoutOrder = 1
+	self.jobsTab.ZIndex = 85
+	self.jobsTab.Parent = self.tabBar
+	UI.corner(self.jobsTab, 10)
+
+	-- Education tab
+	self.eduTab = Instance.new("TextButton")
+	self.eduTab.Name = "EduTab"
+	self.eduTab.Size = UDim2.new(0.46, 0, 1, 0)
+	self.eduTab.BackgroundColor3 = C.White
+	self.eduTab.Font = F.Button
+	self.eduTab.TextSize = 15
+	self.eduTab.TextColor3 = C.Gray600
+	self.eduTab.Text = "Education"
+	self.eduTab.AutoButtonColor = false
+	self.eduTab.LayoutOrder = 2
+	self.eduTab.ZIndex = 85
+	self.eduTab.Parent = self.tabBar
+	UI.corner(self.eduTab, 10)
+
+	self.jobsTab.MouseButton1Click:Connect(function() self:switchTab("jobs") end)
+	self.eduTab.MouseButton1Click:Connect(function() self:switchTab("education") end)
+
+	-- Category filter bar (horizontal scroll)
+	self.categoryBar = Instance.new("ScrollingFrame")
+	self.categoryBar.Name = "CategoryBar"
+	self.categoryBar.Size = UDim2.new(1, -16, 0, 44)
+	self.categoryBar.Position = UDim2.new(0, 8, 0, 236)
+	self.categoryBar.BackgroundTransparency = 1
+	self.categoryBar.CanvasSize = UDim2.new(0, 0, 0, 0)
+	self.categoryBar.AutomaticCanvasSize = Enum.AutomaticSize.X
+	self.categoryBar.ScrollBarThickness = 0
+	self.categoryBar.ScrollingDirection = Enum.ScrollingDirection.X
+	self.categoryBar.ZIndex = 84
+	self.categoryBar.Parent = self.overlay
+
+	local categoryLayout = Instance.new("UIListLayout")
+	categoryLayout.FillDirection = Enum.FillDirection.Horizontal
+	categoryLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	categoryLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	categoryLayout.Padding = UDim.new(0, 8)
+	categoryLayout.Parent = self.categoryBar
+
+	-- Create category chips
+	self.categoryChips = {}
+	for i, category in ipairs(JobCategories) do
+		local chip = Instance.new("TextButton")
+		chip.Name = category.id
+		chip.Size = UDim2.new(0, 0, 0, 34)
+		chip.AutomaticSize = Enum.AutomaticSize.X
+		chip.BackgroundColor3 = i == 1 and C.Blue or C.Gray100
+		chip.Font = F.Medium
+		chip.TextSize = 12
+		chip.TextColor3 = i == 1 and C.White or C.Gray600
+		chip.Text = "  " .. category.emoji .. " " .. category.name .. "  "
+		chip.AutoButtonColor = false
+		chip.LayoutOrder = i
+		chip.ZIndex = 85
+		chip.Parent = self.categoryBar
+		UI.pill(chip)
+
+		self.categoryChips[category.id] = chip
+
+		chip.MouseButton1Click:Connect(function()
+			self:selectCategory(category.id)
+		end)
+
+		chip.MouseEnter:Connect(function()
+			if self.selectedCategory ~= category.id then
+				UI.tween(chip, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray200 })
+			end
+		end)
+		chip.MouseLeave:Connect(function()
+			if self.selectedCategory ~= category.id then
+				UI.tween(chip, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray100 })
+			end
+		end)
+	end
+
+	-- Scroll area (adjusted position for category bar)
+	self.contentScroll = Instance.new("ScrollingFrame")
+	self.contentScroll.Name = "ContentScroll"
+	self.contentScroll.Size = UDim2.new(1, -16, 1, -296)
+	self.contentScroll.Position = UDim2.new(0, 8, 0, 286)
+	self.contentScroll.BackgroundTransparency = 1
+	self.contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	self.contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	self.contentScroll.ScrollBarThickness = 4
+	self.contentScroll.ScrollBarImageColor3 = C.Gray300
+	self.contentScroll.ZIndex = 81
+	self.contentScroll.Parent = self.overlay
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Parent = self.contentScroll
+
+	-- Result modal
+	self:createResultModal()
+
+	-- Initial populate
+	self:populateJobs()
+end
+
+function OccupationScreen:updateInfoBar()
+	local age = self:getAge()
+	local money = self:getMoney()
+	local job = self:getCurrentJob()
+
+	self.ageChip.text.Text = "Age " .. age
+	self.moneyChip.text.Text = UI.formatMoney(money)
+
+	if job then
+		-- Find job name - first check local Jobs list, then server data
+		local jobName = nil
+
+		-- Check local Jobs list
+		for _, j in ipairs(Jobs) do
+			if j.id == job then
+				jobName = j.name
+				break
+			end
+		end
+
+		-- If not found in local list, use server's job title (story-acquired jobs)
+		if not jobName then
+			local serverJob = self:getCurrentJobData()
+			if serverJob and serverJob.title then
+				jobName = serverJob.title
+				log("Using server job title:", jobName)
+			else
+				jobName = "Employed"
+			end
+		end
+
+		self.jobChip.text.Text = jobName
+		self.jobChip.chip.BackgroundColor3 = C.GreenPale
+		self.jobChip.text.TextColor3 = C.GreenDark
+	else
+		self.jobChip.text.Text = "Unemployed"
+		self.jobChip.chip.BackgroundColor3 = C.AmberPale
+		self.jobChip.text.TextColor3 = C.AmberDark
+	end
+end
+
+function OccupationScreen:switchTab(tabId)
+	log("Switching tab to:", tabId)
+	self.currentTab = tabId
+
+	if tabId == "jobs" then
+		log("Animating to Jobs tab")
+		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Blue, TextColor3 = C.White })
+		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
+		-- Show category bar and adjust content
+		self.categoryBar.Visible = true
+		self.contentScroll.Size = UDim2.new(1, -16, 1, -296)
+		self.contentScroll.Position = UDim2.new(0, 8, 0, 286)
+		self:populateJobs()
+	else
+		log("Animating to Education tab")
+		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
+		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Purple, TextColor3 = C.White })
+		-- Hide category bar and expand content
+		self.categoryBar.Visible = false
+		self.contentScroll.Size = UDim2.new(1, -16, 1, -250)
+		self.contentScroll.Position = UDim2.new(0, 8, 0, 240)
+		self:populateEducation()
+	end
+end
+
+function OccupationScreen:selectCategory(categoryId)
+	log("Selecting category:", categoryId)
+
+	-- Update selected category
+	local previousCategory = self.selectedCategory
+	self.selectedCategory = categoryId
+
+	-- Update chip colors
+	for id, chip in pairs(self.categoryChips) do
+		if id == categoryId then
+			UI.tween(chip, TweenInfo.new(0.15), { BackgroundColor3 = C.Blue, TextColor3 = C.White })
+		else
+			UI.tween(chip, TweenInfo.new(0.15), { BackgroundColor3 = C.Gray100, TextColor3 = C.Gray600 })
+		end
+	end
+
+	-- Repopulate jobs with filter
+	if previousCategory ~= categoryId then
+		self:populateJobs()
+	end
+end
+
+function OccupationScreen:populateJobs()
+	self:updateInfoBar()
+
+	-- Fetch career info from server (for performance, promotion progress, etc.)
+	self:fetchCareerInfo()
+
+	-- Clear content
+	for _, child in ipairs(self.contentScroll:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+
+	local age = self:getAge()
+	local currentJob = self:getCurrentJob()
+	local eduLevel = self:getEducationLevel()
+	local inJail = self:isInJail()
+	local selectedCategory = self.selectedCategory or "all"
+
+	log("Populating jobs - Age:", age, "CurrentJob:", currentJob, "EduLevel:", eduLevel, "InJail:", inJail, "Category:", selectedCategory)
+
+	-- Prison warning (if in jail)
+	if inJail then
+		local jailYears = self:getJailYearsLeft()
+		log("Player in jail! Years left:", jailYears)
+
+		local prisonCard = Instance.new("Frame")
+		prisonCard.Size = UDim2.new(1, 0, 0, 95)
+		prisonCard.BackgroundColor3 = C.Gray800
+		prisonCard.LayoutOrder = -1
+		prisonCard.ZIndex = 82
+		prisonCard.Parent = self.contentScroll
+		UI.corner(prisonCard, 18)
+
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 55, 0, 55)
+		iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+		iconFrame.BackgroundColor3 = C.Gray700
+		iconFrame.ZIndex = 83
+		iconFrame.Parent = prisonCard
+		UI.corner(iconFrame, 12)
+
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = 32
+		iconLabel.Text = "⛓️"
+		iconLabel.TextColor3 = C.White
+		iconLabel.ZIndex = 84
+		iconLabel.Parent = iconFrame
+
+		local headerText = Instance.new("TextLabel")
+		headerText.Size = UDim2.new(1, -85, 0, 24)
+		headerText.Position = UDim2.new(0, 80, 0, 14)
+		headerText.BackgroundTransparency = 1
+		headerText.Font = F.Title
+		headerText.TextSize = 18
+		headerText.TextColor3 = C.White
+		headerText.TextXAlignment = Enum.TextXAlignment.Left
+		headerText.Text = "You're Incarcerated"
+		headerText.ZIndex = 83
+		headerText.Parent = prisonCard
+
+		local subText = Instance.new("TextLabel")
+		subText.Size = UDim2.new(1, -85, 0, 40)
+		subText.Position = UDim2.new(0, 80, 0, 40)
+		subText.BackgroundTransparency = 1
+		subText.Font = F.Body
+		subText.TextSize = 13
+		subText.TextColor3 = C.Gray400
+		subText.TextXAlignment = Enum.TextXAlignment.Left
+		subText.TextWrapped = true
+		subText.Text = jailYears > 0 and string.format("%.1f years remaining. You can't work while in prison.", jailYears) or "You can't work while in prison."
+		subText.ZIndex = 83
+		subText.Parent = prisonCard
+	end
+
+	-- Current job section (if employed and not in jail)
+	if currentJob then
+		local currentSection = Instance.new("Frame")
+		currentSection.Name = "CurrentJobSection"
+		currentSection.Size = UDim2.new(1, 0, 0, 0)
+		currentSection.AutomaticSize = Enum.AutomaticSize.Y
+		currentSection.BackgroundColor3 = C.GreenPale
+		currentSection.LayoutOrder = 0
+		currentSection.ZIndex = 82
+		currentSection.Parent = self.contentScroll
+		UI.corner(currentSection, 18)
+		UI.stroke(currentSection, 2, 0.6, C.Green)
+		UI.pad(currentSection, 16, 16, 16, 16)
+
+		local currentLayout = Instance.new("UIListLayout")
+		currentLayout.Padding = UDim.new(0, 10)
+		currentLayout.Parent = currentSection
+
+		-- Find current job data - first try local Jobs list by ID
+		local jobData = nil
+		for _, j in ipairs(Jobs) do
+			if j.id == currentJob then
+				jobData = j
+				log("Found job in local Jobs list:", j.name)
+				break
+			end
+		end
+
+		-- If not found in local list, use server's job data directly
+		if not jobData then
+			local serverJob = self:getCurrentJobData()
+			if serverJob then
+				log("Using server job data - ID:", serverJob.id, "Title:", serverJob.title)
+				-- Create a compatible job object from server data
+				jobData = {
+					id = serverJob.id or "unknown",
+					name = serverJob.title or "Job",
+					company = serverJob.company or "Company",
+					emoji = "💼", -- Default emoji
+					salary = serverJob.salary or 0,
+					minAge = 0,
+					requirement = nil
+				}
+			end
+		end
+
+		if jobData then
+			self:createCurrentJobCard(currentSection, jobData)
+		else
+			log("No job data found for currentJob:", currentJob)
+		end
+	end
+
+	-- Available jobs section
+	local section = Instance.new("Frame")
+	section.Name = "AvailableJobsSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	-- Section header
+	local headerFrame = Instance.new("Frame")
+	headerFrame.Name = "Header"
+	headerFrame.Size = UDim2.new(1, 0, 0, 36)
+	headerFrame.BackgroundTransparency = 1
+	headerFrame.LayoutOrder = 0
+	headerFrame.ZIndex = 83
+	headerFrame.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 120, 0, 32)
+	badge.BackgroundColor3 = C.Blue
+	badge.ZIndex = 84
+	badge.Parent = headerFrame
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "Available Jobs"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	-- Add jobs (filtered by category)
+	local order = 1
+	local jobsShown = 0
+	for _, job in ipairs(Jobs) do
+		if job.id ~= currentJob then
+			-- Apply category filter
+			local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
+
+			if showJob then
+				self:createJobCard(section, job, order, age, eduLevel)
+				order = order + 1
+				jobsShown = jobsShown + 1
+			end
+		end
+	end
+
+	-- Show message if no jobs in category
+	if jobsShown == 0 then
+		local emptyLabel = Instance.new("TextLabel")
+		emptyLabel.Size = UDim2.new(1, 0, 0, 60)
+		emptyLabel.BackgroundTransparency = 1
+		emptyLabel.Font = F.Body
+		emptyLabel.TextSize = 14
+		emptyLabel.TextColor3 = C.Gray400
+		emptyLabel.Text = "No jobs available in this category for your qualifications."
+		emptyLabel.TextWrapped = true
+		emptyLabel.LayoutOrder = 1
+		emptyLabel.ZIndex = 84
+		emptyLabel.Parent = section
+	end
+end
+
+function OccupationScreen:createCurrentJobCard(parent, job)
+	log("Creating current job card for:", job.name)
+
+	-- Get career data
+	local performance = self:getCareerPerformance()
+	local promotionProgress = self:getPromotionProgress()
+	local yearsAtJob = self:getYearsAtJob()
+	local raises = self:getRaises()
+	local serverJob = self:getCurrentJobData()
+	local hasPromotion = serverJob and serverJob.promotesTo
+
+	-- Main container card - EXPANDED for career progression
+	local card = Instance.new("Frame")
+	card.Name = "CurrentJob"
+	card.Size = UDim2.new(1, 0, 0, 340)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = 1
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 18)
+
+	-- ═══════════════════════════════════════════════════════════
+	-- TOP SECTION: Job Info with Icon
+	-- ═══════════════════════════════════════════════════════════
+
+	-- Icon (bigger)
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 60, 0, 60)
+	iconFrame.Position = UDim2.new(0, 14, 0, 14)
+	iconFrame.BackgroundColor3 = C.GreenPale
+	iconFrame.ZIndex = 84
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 14)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 32
+	iconLabel.Text = job.emoji
+	iconLabel.ZIndex = 85
+	iconLabel.Parent = iconFrame
+
+	-- Job title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -90, 0, 24)
+	titleLabel.Position = UDim2.new(0, 86, 0, 12)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 17
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.Text = job.name
+	titleLabel.ZIndex = 84
+	titleLabel.Parent = card
+
+	-- Company name
+	local companyLabel = Instance.new("TextLabel")
+	companyLabel.Size = UDim2.new(0.5, 0, 0, 18)
+	companyLabel.Position = UDim2.new(0, 86, 0, 36)
+	companyLabel.BackgroundTransparency = 1
+	companyLabel.Font = F.Body
+	companyLabel.TextSize = 12
+	companyLabel.TextColor3 = C.Gray500
+	companyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	companyLabel.Text = "at " .. (job.company or "Unknown Company")
+	companyLabel.ZIndex = 84
+	companyLabel.Parent = card
+
+	-- Employed badge + Tenure
+	local statusRow = Instance.new("Frame")
+	statusRow.Size = UDim2.new(1, -90, 0, 24)
+	statusRow.Position = UDim2.new(0, 86, 0, 54)
+	statusRow.BackgroundTransparency = 1
+	statusRow.ZIndex = 84
+	statusRow.Parent = card
+
+	local statusLayout = Instance.new("UIListLayout")
+	statusLayout.FillDirection = Enum.FillDirection.Horizontal
+	statusLayout.Padding = UDim.new(0, 8)
+	statusLayout.Parent = statusRow
+
+	local currentBadge = Instance.new("Frame")
+	currentBadge.Size = UDim2.new(0, 90, 0, 24)
+	currentBadge.BackgroundColor3 = C.Green
+	currentBadge.LayoutOrder = 1
+	currentBadge.ZIndex = 85
+	currentBadge.Parent = statusRow
+	UI.pill(currentBadge)
+
+	local currentLabel = Instance.new("TextLabel")
+	currentLabel.Size = UDim2.fromScale(1, 1)
+	currentLabel.BackgroundTransparency = 1
+	currentLabel.Font = F.Button
+	currentLabel.TextSize = 11
+	currentLabel.TextColor3 = C.White
+	currentLabel.Text = "✓ Employed"
+	currentLabel.ZIndex = 86
+	currentLabel.Parent = currentBadge
+
+	local tenureBadge = Instance.new("Frame")
+	tenureBadge.Size = UDim2.new(0, 70, 0, 24)
+	tenureBadge.BackgroundColor3 = C.BluePale
+	tenureBadge.LayoutOrder = 2
+	tenureBadge.ZIndex = 85
+	tenureBadge.Parent = statusRow
+	UI.pill(tenureBadge)
+
+	local tenureLabel = Instance.new("TextLabel")
+	tenureLabel.Size = UDim2.fromScale(1, 1)
+	tenureLabel.BackgroundTransparency = 1
+	tenureLabel.Font = F.Medium
+	tenureLabel.TextSize = 10
+	tenureLabel.TextColor3 = C.BlueDark
+	tenureLabel.Text = string.format("%.1f yrs", yearsAtJob)
+	tenureLabel.ZIndex = 86
+	tenureLabel.Parent = tenureBadge
+
+	-- ═══════════════════════════════════════════════════════════
+	-- SALARY ROW
+	-- ═══════════════════════════════════════════════════════════
+
+	local salaryRow = Instance.new("Frame")
+	salaryRow.Size = UDim2.new(1, -28, 0, 36)
+	salaryRow.Position = UDim2.new(0, 14, 0, 85)
+	salaryRow.BackgroundColor3 = C.Gray50
+	salaryRow.ZIndex = 84
+	salaryRow.Parent = card
+	UI.corner(salaryRow, 10)
+
+	local salaryInnerLayout = Instance.new("UIListLayout")
+	salaryInnerLayout.FillDirection = Enum.FillDirection.Horizontal
+	salaryInnerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	salaryInnerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	salaryInnerLayout.Padding = UDim.new(0, 10)
+	salaryInnerLayout.Parent = salaryRow
+	UI.pad(salaryRow, 10, 10, 0, 0)
+
+	local salaryBadge = Instance.new("Frame")
+	salaryBadge.Size = UDim2.new(0, 110, 0, 26)
+	salaryBadge.BackgroundColor3 = C.GreenPale
+	salaryBadge.LayoutOrder = 1
+	salaryBadge.ZIndex = 85
+	salaryBadge.Parent = salaryRow
+	UI.pill(salaryBadge)
+
+	local salaryLabel = Instance.new("TextLabel")
+	salaryLabel.Size = UDim2.fromScale(1, 1)
+	salaryLabel.BackgroundTransparency = 1
+	salaryLabel.Font = F.Title
+	salaryLabel.TextSize = 12
+	salaryLabel.TextColor3 = C.GreenDark
+	salaryLabel.Text = "💵 " .. UI.formatMoney(job.salary) .. "/yr"
+	salaryLabel.ZIndex = 86
+	salaryLabel.Parent = salaryBadge
+
+	if raises > 0 then
+		local raisesBadge = Instance.new("Frame")
+		raisesBadge.Size = UDim2.new(0, 80, 0, 26)
+		raisesBadge.BackgroundColor3 = C.AmberPale
+		raisesBadge.LayoutOrder = 2
+		raisesBadge.ZIndex = 85
+		raisesBadge.Parent = salaryRow
+		UI.pill(raisesBadge)
+
+		local raisesLabel = Instance.new("TextLabel")
+		raisesLabel.Size = UDim2.fromScale(1, 1)
+		raisesLabel.BackgroundTransparency = 1
+		raisesLabel.Font = F.Medium
+		raisesLabel.TextSize = 11
+		raisesLabel.TextColor3 = C.AmberDark
+		raisesLabel.Text = "📈 +" .. raises .. " raises"
+		raisesLabel.ZIndex = 86
+		raisesLabel.Parent = raisesBadge
+	end
+
+	-- ═══════════════════════════════════════════════════════════
+	-- CAREER PROGRESSION SECTION (Performance + Promotion Progress)
+	-- ═══════════════════════════════════════════════════════════
+
+	local progressSection = Instance.new("Frame")
+	progressSection.Size = UDim2.new(1, -28, 0, 90)
+	progressSection.Position = UDim2.new(0, 14, 0, 128)
+	progressSection.BackgroundColor3 = C.Gray50
+	progressSection.ZIndex = 84
+	progressSection.Parent = card
+	UI.corner(progressSection, 12)
+	UI.pad(progressSection, 12, 12, 12, 12)
+
+	-- Performance meter
+	local perfLabel = Instance.new("TextLabel")
+	perfLabel.Size = UDim2.new(1, 0, 0, 16)
+	perfLabel.Position = UDim2.new(0, 12, 0, 10)
+	perfLabel.BackgroundTransparency = 1
+	perfLabel.Font = F.Medium
+	perfLabel.TextSize = 12
+	perfLabel.TextColor3 = C.Gray700
+	perfLabel.TextXAlignment = Enum.TextXAlignment.Left
+	perfLabel.Text = "⭐ Performance: " .. math.floor(performance) .. "%"
+	perfLabel.ZIndex = 85
+	perfLabel.Parent = progressSection
+
+	local perfBarBg = Instance.new("Frame")
+	perfBarBg.Size = UDim2.new(1, -24, 0, 10)
+	perfBarBg.Position = UDim2.new(0, 12, 0, 28)
+	perfBarBg.BackgroundColor3 = C.Gray200
+	perfBarBg.ZIndex = 85
+	perfBarBg.Parent = progressSection
+	UI.pill(perfBarBg)
+
+	local perfBarFill = Instance.new("Frame")
+	local perfColor = performance >= 80 and C.Green or (performance >= 60 and C.Blue or (performance >= 40 and C.Amber or C.Red))
+	perfBarFill.Size = UDim2.new(math.clamp(performance / 100, 0, 1), 0, 1, 0)
+	perfBarFill.BackgroundColor3 = perfColor
+	perfBarFill.ZIndex = 86
+	perfBarFill.Parent = perfBarBg
+	UI.pill(perfBarFill)
+
+	-- Promotion progress (only if promotion available)
+	if hasPromotion then
+		local promoLabel = Instance.new("TextLabel")
+		promoLabel.Size = UDim2.new(1, 0, 0, 16)
+		promoLabel.Position = UDim2.new(0, 12, 0, 48)
+		promoLabel.BackgroundTransparency = 1
+		promoLabel.Font = F.Medium
+		promoLabel.TextSize = 12
+		promoLabel.TextColor3 = C.Gray700
+		promoLabel.TextXAlignment = Enum.TextXAlignment.Left
+		promoLabel.Text = "🚀 Promotion Progress: " .. math.floor(promotionProgress) .. "% (80% needed)"
+		promoLabel.ZIndex = 85
+		promoLabel.Parent = progressSection
+
+		local promoBarBg = Instance.new("Frame")
+		promoBarBg.Size = UDim2.new(1, -24, 0, 10)
+		promoBarBg.Position = UDim2.new(0, 12, 0, 66)
+		promoBarBg.BackgroundColor3 = C.Gray200
+		promoBarBg.ZIndex = 85
+		promoBarBg.Parent = progressSection
+		UI.pill(promoBarBg)
+
+		local promoBarFill = Instance.new("Frame")
+		local promoColor = promotionProgress >= 80 and C.Green or C.Purple
+		promoBarFill.Size = UDim2.new(math.clamp(promotionProgress / 100, 0, 1), 0, 1, 0)
+		promoBarFill.BackgroundColor3 = promoColor
+		promoBarFill.ZIndex = 86
+		promoBarFill.Parent = promoBarBg
+		UI.pill(promoBarFill)
+	else
+		-- No promotion available message
+		local noPromoLabel = Instance.new("TextLabel")
+		noPromoLabel.Size = UDim2.new(1, -24, 0, 30)
+		noPromoLabel.Position = UDim2.new(0, 12, 0, 46)
+		noPromoLabel.BackgroundTransparency = 1
+		noPromoLabel.Font = F.Body
+		noPromoLabel.TextSize = 12
+		noPromoLabel.TextColor3 = C.Gray400
+		noPromoLabel.TextXAlignment = Enum.TextXAlignment.Left
+		noPromoLabel.Text = "🏆 You've reached the top of this career path!"
+		noPromoLabel.ZIndex = 85
+		noPromoLabel.Parent = progressSection
+	end
+
+	-- ═══════════════════════════════════════════════════════════
+	-- ACTION BUTTONS ROW 1: Work & Career Info
+	-- ═══════════════════════════════════════════════════════════
+
+	local actionRow1 = Instance.new("Frame")
+	actionRow1.Size = UDim2.new(1, -28, 0, 40)
+	actionRow1.Position = UDim2.new(0, 14, 0, 225)
+	actionRow1.BackgroundTransparency = 1
+	actionRow1.ZIndex = 84
+	actionRow1.Parent = card
+
+	local actionLayout1 = Instance.new("UIListLayout")
+	actionLayout1.FillDirection = Enum.FillDirection.Horizontal
+	actionLayout1.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	actionLayout1.Padding = UDim.new(0, 8)
+	actionLayout1.Parent = actionRow1
+
+	-- Do Work button
+	local workBtn = Instance.new("TextButton")
+	workBtn.Size = UDim2.new(0.48, 0, 0, 38)
+	workBtn.BackgroundColor3 = C.Green
+	workBtn.Font = F.Button
+	workBtn.TextSize = 13
+	workBtn.TextColor3 = C.White
+	workBtn.Text = "💼 Work"
+	workBtn.AutoButtonColor = false
+	workBtn.LayoutOrder = 1
+	workBtn.ZIndex = 85
+	workBtn.Parent = actionRow1
+	UI.corner(workBtn, 10)
+
+	workBtn.MouseEnter:Connect(function()
+		UI.tween(workBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+	end)
+	workBtn.MouseLeave:Connect(function()
+		UI.tween(workBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+	end)
+	workBtn.MouseButton1Click:Connect(function()
+		self:doWork()
+	end)
+
+	-- Career Info button
+	local infoBtn = Instance.new("TextButton")
+	infoBtn.Size = UDim2.new(0.48, 0, 0, 38)
+	infoBtn.BackgroundColor3 = C.Blue
+	infoBtn.Font = F.Button
+	infoBtn.TextSize = 13
+	infoBtn.TextColor3 = C.White
+	infoBtn.Text = "📋 Career Info"
+	infoBtn.AutoButtonColor = false
+	infoBtn.LayoutOrder = 2
+	infoBtn.ZIndex = 85
+	infoBtn.Parent = actionRow1
+	UI.corner(infoBtn, 10)
+
+	infoBtn.MouseEnter:Connect(function()
+		UI.tween(infoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
+	end)
+	infoBtn.MouseLeave:Connect(function()
+		UI.tween(infoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
+	end)
+	infoBtn.MouseButton1Click:Connect(function()
+		self:showCareerInfoModal()
+	end)
+
+	-- ═══════════════════════════════════════════════════════════
+	-- ACTION BUTTONS ROW 2: Promotion, Raise, Quit
+	-- ═══════════════════════════════════════════════════════════
+
+	local actionRow2 = Instance.new("Frame")
+	actionRow2.Size = UDim2.new(1, -28, 0, 40)
+	actionRow2.Position = UDim2.new(0, 14, 0, 270)
+	actionRow2.BackgroundTransparency = 1
+	actionRow2.ZIndex = 84
+	actionRow2.Parent = card
+
+	local actionLayout2 = Instance.new("UIListLayout")
+	actionLayout2.FillDirection = Enum.FillDirection.Horizontal
+	actionLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	actionLayout2.Padding = UDim.new(0, 6)
+	actionLayout2.Parent = actionRow2
+
+	-- Request Promotion button (only if promotion available and progress >= 80)
+	local canRequestPromo = hasPromotion and promotionProgress >= 80
+	local promoBtn = Instance.new("TextButton")
+	promoBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	promoBtn.BackgroundColor3 = canRequestPromo and C.Purple or C.Gray300
+	promoBtn.Font = F.Button
+	promoBtn.TextSize = 11
+	promoBtn.TextColor3 = canRequestPromo and C.White or C.Gray500
+	promoBtn.Text = "🚀 Promote"
+	promoBtn.AutoButtonColor = false
+	promoBtn.LayoutOrder = 1
+	promoBtn.ZIndex = 85
+	promoBtn.Parent = actionRow2
+	UI.corner(promoBtn, 10)
+
+	if canRequestPromo then
+		promoBtn.MouseEnter:Connect(function()
+			UI.tween(promoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.PurpleDark })
+		end)
+		promoBtn.MouseLeave:Connect(function()
+			UI.tween(promoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Purple })
+		end)
+		promoBtn.MouseButton1Click:Connect(function()
+			self:requestPromotion()
+		end)
+	end
+
+	-- Request Raise button (only if performance >= 60 and raises < 5)
+	local canRequestRaise = performance >= 60 and raises < 5
+	local raiseBtn = Instance.new("TextButton")
+	raiseBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	raiseBtn.BackgroundColor3 = canRequestRaise and C.Amber or C.Gray300
+	raiseBtn.Font = F.Button
+	raiseBtn.TextSize = 11
+	raiseBtn.TextColor3 = canRequestRaise and C.White or C.Gray500
+	raiseBtn.Text = "💰 Raise"
+	raiseBtn.AutoButtonColor = false
+	raiseBtn.LayoutOrder = 2
+	raiseBtn.ZIndex = 85
+	raiseBtn.Parent = actionRow2
+	UI.corner(raiseBtn, 10)
+
+	if canRequestRaise then
+		raiseBtn.MouseEnter:Connect(function()
+			UI.tween(raiseBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.AmberDark })
+		end)
+		raiseBtn.MouseLeave:Connect(function()
+			UI.tween(raiseBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Amber })
+		end)
+		raiseBtn.MouseButton1Click:Connect(function()
+			self:requestRaise()
+		end)
+	end
+
+	-- Quit Job button
+	local quitBtn = Instance.new("TextButton")
+	quitBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	quitBtn.BackgroundColor3 = C.Red
+	quitBtn.Font = F.Button
+	quitBtn.TextSize = 11
+	quitBtn.TextColor3 = C.White
+	quitBtn.Text = "🚪 Quit"
+	quitBtn.AutoButtonColor = false
+	quitBtn.LayoutOrder = 3
+	quitBtn.ZIndex = 85
+	quitBtn.Parent = actionRow2
+	UI.corner(quitBtn, 10)
+
+	quitBtn.MouseEnter:Connect(function()
+		UI.tween(quitBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.RedDark })
+	end)
+	quitBtn.MouseLeave:Connect(function()
+		UI.tween(quitBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Red })
+	end)
+	quitBtn.MouseButton1Click:Connect(function()
+		self:quitJob()
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- JOB INFO MODAL (BitLife-style)
+-- ═══════════════════════════════════════════════════════════
+
+function OccupationScreen:showJobInfoModal(job)
+	log("=== SHOWING JOB INFO MODAL ===")
+	log("Job:", job.name, "Company:", job.company, "Salary:", job.salary)
+
+	-- Create modal if doesn't exist
+	if not self.jobInfoModal then
+		self:createJobInfoModal()
+	end
+
+	-- Populate modal with job info
+	self.jobInfoEmoji.Text = job.emoji or "💼"
+	self.jobInfoTitle.Text = job.name or "Your Job"
+	self.jobInfoCompany.Text = "at " .. (job.company or "Unknown Company")
+	self.jobInfoSalary.Text = "💵 " .. UI.formatMoney(job.salary or 0) .. "/year"
+
+	-- Education requirement
+	local eduText = "📚 Requires: "
+	if job.requirement then
+		eduText = eduText .. job.requirement:gsub("_", " "):gsub("^%l", string.upper)
+	else
+		eduText = eduText .. "No specific education"
+	end
+	self.jobInfoEdu.Text = eduText
+
+	-- Min age
+	self.jobInfoAge.Text = "🎂 Minimum Age: " .. (job.minAge or 14)
+
+	-- Description
+	self.jobInfoDesc.Text = job.desc or "You work here as a " .. job.name .. "."
+
+	-- Show modal with premium animation
+	self.jobInfoOverlay.Visible = true
+
+	-- Initial positions for animation
+	self.jobInfoShell.Position = UDim2.new(0.5, 0, 0.5, 40)
+	self.jobInfoShadow.Position = UDim2.new(0.5, 3, 0.5, 43)
+	self.jobInfoShell.BackgroundTransparency = 0.5
+	self.jobInfoShadow.BackgroundTransparency = 1
+
+	-- Animate to final positions
+	local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	UI.tween(self.jobInfoShell, tweenInfo, {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+	UI.tween(self.jobInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 3),
+		BackgroundTransparency = 0.75
+	})
+end
+
+function OccupationScreen:createJobInfoModal()
+	log("Creating job info modal...")
+
+	self.jobInfoOverlay = Instance.new("Frame")
+	self.jobInfoOverlay.Name = "JobInfoOverlay"
+	self.jobInfoOverlay.Size = UDim2.fromScale(1, 1)
+	self.jobInfoOverlay.BackgroundColor3 = C.Black
+	self.jobInfoOverlay.BackgroundTransparency = 0.4
+	self.jobInfoOverlay.Visible = false
+	self.jobInfoOverlay.ZIndex = 96
+	self.jobInfoOverlay.Parent = self.screenGui
+
+	-- Close on tap outside
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 96
+	closeArea.Parent = self.jobInfoOverlay
+	closeArea.MouseButton1Click:Connect(function()
+		self:hideJobInfoModal()
+	end)
+
+	-- Shadow frame (premium effect)
+	local shadowFrame = Instance.new("Frame")
+	shadowFrame.Name = "ShadowFrame"
+	shadowFrame.Size = UDim2.new(0.9, 6, 0, 386)
+	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadowFrame.BackgroundColor3 = C.Black
+	shadowFrame.BackgroundTransparency = 0.75
+	shadowFrame.ZIndex = 96
+	shadowFrame.Parent = self.jobInfoOverlay
+	UI.corner(shadowFrame, 26)
+	self.jobInfoShadow = shadowFrame
+
+	-- Colored shell (premium BitLife look)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(0.9, 0, 0, 380)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = C.Blue
+	shell.ZIndex = 97
+	shell.Parent = self.jobInfoOverlay
+	UI.corner(shell, 24)
+	self.jobInfoShell = shell
+
+	-- Shell border stroke
+	local shellStroke = UI.stroke(shell, 2, 0.3, C.BlueDark)
+	self.jobInfoShellStroke = shellStroke
+
+	-- Inner white card
+	self.jobInfoCard = Instance.new("Frame")
+	self.jobInfoCard.Name = "Card"
+	self.jobInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.jobInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.jobInfoCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.jobInfoCard.BackgroundColor3 = C.White
+	self.jobInfoCard.ZIndex = 98
+	self.jobInfoCard.Parent = shell
+	UI.corner(self.jobInfoCard, 20)
+
+	-- Header (blue accent at top)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 75)
+	header.BackgroundColor3 = C.Blue
+	header.ZIndex = 99
+	header.Parent = self.jobInfoCard
+	UI.corner(header, 20)
+
+	local headerFix = Instance.new("Frame")
+	headerFix.Name = "HeaderFix"
+	headerFix.Size = UDim2.new(1, 0, 0, 30)
+	headerFix.Position = UDim2.new(0, 0, 1, -30)
+	headerFix.BackgroundColor3 = C.Blue
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 99
+	headerFix.Parent = header
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseButton"
+	closeBtn.Size = UDim2.new(0, 32, 0, 32)
+	closeBtn.AnchorPoint = Vector2.new(1, 0)
+	closeBtn.Position = UDim2.new(1, -10, 0, 10)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.1
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 14
+	closeBtn.TextColor3 = C.Blue
+	closeBtn.Text = "✕"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 101
+	closeBtn.Parent = header
+	UI.corner(closeBtn, 16)
+
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hideJobInfoModal()
+	end)
+
+	-- Title
+	local headerTitle = Instance.new("TextLabel")
+	headerTitle.Size = UDim2.new(1, 0, 1, 0)
+	headerTitle.Position = UDim2.new(0, 0, 0, 0)
+	headerTitle.BackgroundTransparency = 1
+	headerTitle.Font = F.Title
+	headerTitle.TextSize = 22
+	headerTitle.TextColor3 = C.White
+	headerTitle.Text = "📋 Job Information"
+	headerTitle.ZIndex = 99
+	headerTitle.Parent = header
+
+	-- Content
+	local content = Instance.new("Frame")
+	content.Size = UDim2.new(1, -32, 1, -105)
+	content.Position = UDim2.new(0, 16, 0, 95)
+	content.BackgroundTransparency = 1
+	content.ZIndex = 98
+	content.Parent = self.jobInfoCard
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	contentLayout.Parent = content
+
+	-- Emoji
+	self.jobInfoEmoji = Instance.new("TextLabel")
+	self.jobInfoEmoji.Size = UDim2.new(0, 70, 0, 70)
+	self.jobInfoEmoji.BackgroundTransparency = 1
+	self.jobInfoEmoji.Font = F.Body
+	self.jobInfoEmoji.TextSize = 55
+	self.jobInfoEmoji.Text = "💼"
+	self.jobInfoEmoji.LayoutOrder = 1
+	self.jobInfoEmoji.ZIndex = 99
+	self.jobInfoEmoji.Parent = content
+
+	-- Job title
+	self.jobInfoTitle = Instance.new("TextLabel")
+	self.jobInfoTitle.Size = UDim2.new(1, 0, 0, 30)
+	self.jobInfoTitle.BackgroundTransparency = 1
+	self.jobInfoTitle.Font = F.Title
+	self.jobInfoTitle.TextSize = 22
+	self.jobInfoTitle.TextColor3 = C.Gray900
+	self.jobInfoTitle.Text = "Job Title"
+	self.jobInfoTitle.LayoutOrder = 2
+	self.jobInfoTitle.ZIndex = 99
+	self.jobInfoTitle.Parent = content
+
+	-- Company
+	self.jobInfoCompany = Instance.new("TextLabel")
+	self.jobInfoCompany.Size = UDim2.new(1, 0, 0, 22)
+	self.jobInfoCompany.BackgroundTransparency = 1
+	self.jobInfoCompany.Font = F.Body
+	self.jobInfoCompany.TextSize = 14
+	self.jobInfoCompany.TextColor3 = C.Gray500
+	self.jobInfoCompany.Text = "at Company Name"
+	self.jobInfoCompany.LayoutOrder = 3
+	self.jobInfoCompany.ZIndex = 99
+	self.jobInfoCompany.Parent = content
+
+	-- Info badges container
+	local badgeContainer = Instance.new("Frame")
+	badgeContainer.Size = UDim2.new(1, 0, 0, 85)
+	badgeContainer.BackgroundColor3 = C.Gray50
+	badgeContainer.LayoutOrder = 4
+	badgeContainer.ZIndex = 98
+	badgeContainer.Parent = content
+	UI.corner(badgeContainer, 14)
+	UI.pad(badgeContainer, 14, 14, 12, 12)
+
+	local badgeLayout = Instance.new("UIListLayout")
+	badgeLayout.Padding = UDim.new(0, 8)
+	badgeLayout.Parent = badgeContainer
+
+	-- Salary
+	self.jobInfoSalary = Instance.new("TextLabel")
+	self.jobInfoSalary.Size = UDim2.new(1, 0, 0, 22)
+	self.jobInfoSalary.BackgroundTransparency = 1
+	self.jobInfoSalary.Font = F.Title
+	self.jobInfoSalary.TextSize = 16
+	self.jobInfoSalary.TextColor3 = C.GreenDark
+	self.jobInfoSalary.TextXAlignment = Enum.TextXAlignment.Left
+	self.jobInfoSalary.Text = "💵 $50,000/year"
+	self.jobInfoSalary.LayoutOrder = 1
+	self.jobInfoSalary.ZIndex = 99
+	self.jobInfoSalary.Parent = badgeContainer
+
+	-- Education
+	self.jobInfoEdu = Instance.new("TextLabel")
+	self.jobInfoEdu.Size = UDim2.new(1, 0, 0, 20)
+	self.jobInfoEdu.BackgroundTransparency = 1
+	self.jobInfoEdu.Font = F.Body
+	self.jobInfoEdu.TextSize = 13
+	self.jobInfoEdu.TextColor3 = C.Gray600
+	self.jobInfoEdu.TextXAlignment = Enum.TextXAlignment.Left
+	self.jobInfoEdu.Text = "📚 Requires: High School"
+	self.jobInfoEdu.LayoutOrder = 2
+	self.jobInfoEdu.ZIndex = 99
+	self.jobInfoEdu.Parent = badgeContainer
+
+	-- Min age
+	self.jobInfoAge = Instance.new("TextLabel")
+	self.jobInfoAge.Size = UDim2.new(1, 0, 0, 20)
+	self.jobInfoAge.BackgroundTransparency = 1
+	self.jobInfoAge.Font = F.Body
+	self.jobInfoAge.TextSize = 13
+	self.jobInfoAge.TextColor3 = C.Gray600
+	self.jobInfoAge.TextXAlignment = Enum.TextXAlignment.Left
+	self.jobInfoAge.Text = "🎂 Minimum Age: 16"
+	self.jobInfoAge.LayoutOrder = 3
+	self.jobInfoAge.ZIndex = 99
+	self.jobInfoAge.Parent = badgeContainer
+
+	-- Description
+	self.jobInfoDesc = Instance.new("TextLabel")
+	self.jobInfoDesc.Size = UDim2.new(1, 0, 0, 40)
+	self.jobInfoDesc.BackgroundTransparency = 1
+	self.jobInfoDesc.Font = F.Body
+	self.jobInfoDesc.TextSize = 13
+	self.jobInfoDesc.TextColor3 = C.Gray500
+	self.jobInfoDesc.TextWrapped = true
+	self.jobInfoDesc.Text = "Description..."
+	self.jobInfoDesc.LayoutOrder = 5
+	self.jobInfoDesc.ZIndex = 99
+	self.jobInfoDesc.Parent = content
+
+	log("Job info modal created successfully")
+end
+
+function OccupationScreen:hideJobInfoModal()
+	if not self.jobInfoOverlay then return end
+	log("Hiding job info modal")
+
+	local tweenInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+	UI.tween(self.jobInfoShell, tweenInfo, {
+		Position = UDim2.new(0.5, 0, 0.5, 25),
+		BackgroundTransparency = 0.5
+	})
+	UI.tween(self.jobInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 28),
+		BackgroundTransparency = 1
+	})
+
+	task.delay(0.18, function()
+		if self.jobInfoOverlay then
+			self.jobInfoOverlay.Visible = false
+		end
+	end)
+end
+
+function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
+	local meetsAge = age >= job.minAge
+	local meetsEdu = true
+	local eduNeeded = nil
+	local inJail = self:isInJail()
+
+	-- Check education requirement (FIXED to match actual Education IDs)
+	if job.requirement then
+		local playerRank = EducationRanks[eduLevel] or EducationRanks.high_school
+		local jobRank = EducationRanks[job.requirement] or 0
+		meetsEdu = playerRank >= jobRank
+		if not meetsEdu then
+			eduNeeded = self:getEducationDisplayName(job.requirement)
+		end
+	end
+
+	-- Can't apply if in jail
+	local canApply = meetsAge and meetsEdu and not inJail
+
+	local card = Instance.new("Frame")
+	card.Name = job.id
+	card.Size = UDim2.new(1, 0, 0, 90)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = order
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, canApply and 0.7 or 0.88, canApply and C.Blue or C.Gray200)
+
+	-- Icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 56, 0, 56)
+	iconFrame.Position = UDim2.new(0, 12, 0.5, -28)
+	iconFrame.BackgroundColor3 = canApply and C.BluePale or C.Gray100
+	iconFrame.ZIndex = 84
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 12)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 28
+	iconLabel.Text = job.emoji
+	iconLabel.TextTransparency = canApply and 0 or 0.3
+	iconLabel.ZIndex = 85
+	iconLabel.Parent = iconFrame
+
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Position = UDim2.new(0, 80, 0, 12)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 15
+	titleLabel.TextColor3 = canApply and C.Gray900 or C.Gray500
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = job.name
+	titleLabel.ZIndex = 84
+	titleLabel.Parent = card
+
+	-- Salary badge
+	local salaryBadge = Instance.new("Frame")
+	salaryBadge.Size = UDim2.new(0, 85, 0, 24)
+	salaryBadge.Position = UDim2.new(0, 80, 0, 36)
+	salaryBadge.BackgroundColor3 = C.GreenPale
+	salaryBadge.ZIndex = 84
+	salaryBadge.Parent = card
+	UI.pill(salaryBadge)
+
+	local salaryLabel = Instance.new("TextLabel")
+	salaryLabel.Size = UDim2.fromScale(1, 1)
+	salaryLabel.BackgroundTransparency = 1
+	salaryLabel.Font = F.Medium
+	salaryLabel.TextSize = 11
+	salaryLabel.TextColor3 = C.GreenDark
+	salaryLabel.Text = UI.formatMoney(job.salary) .. "/yr"
+	salaryLabel.ZIndex = 85
+	salaryLabel.Parent = salaryBadge
+
+	-- Requirements
+	local reqText = ""
+	if not meetsAge then
+		reqText = "Age " .. job.minAge .. "+"
+	elseif not meetsEdu then
+		reqText = "Need " .. eduNeeded
+	else
+		reqText = "Age " .. job.minAge .. "+"
+	end
+
+	local reqLabel = Instance.new("TextLabel")
+	reqLabel.Size = UDim2.new(0.4, 0, 0, 18)
+	reqLabel.Position = UDim2.new(0, 80, 0, 62)
+	reqLabel.BackgroundTransparency = 1
+	reqLabel.Font = F.Body
+	reqLabel.TextSize = 11
+	reqLabel.TextColor3 = canApply and C.Gray400 or C.Red
+	reqLabel.TextXAlignment = Enum.TextXAlignment.Left
+	reqLabel.Text = reqText
+	reqLabel.ZIndex = 84
+	reqLabel.Parent = card
+
+	-- Apply button
+	local applyBtn = Instance.new("TextButton")
+	applyBtn.Size = UDim2.new(0, 72, 0, 44)
+	applyBtn.AnchorPoint = Vector2.new(1, 0.5)
+	applyBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	applyBtn.BackgroundColor3 = canApply and C.Blue or C.Gray300
+	applyBtn.Font = F.Button
+	applyBtn.TextSize = 14
+	applyBtn.TextColor3 = canApply and C.White or C.Gray500
+	-- Button text based on why they can't apply
+	local btnText = "Apply"
+	if not canApply then
+		if inJail then
+			btnText = "Jailed"
+		elseif not meetsAge then
+			btnText = "Age " .. job.minAge
+		else
+			btnText = "Locked"
+		end
+	end
+	applyBtn.Text = btnText
+	applyBtn.AutoButtonColor = false
+	applyBtn.ZIndex = 84
+	applyBtn.Parent = card
+	UI.corner(applyBtn, 12)
+
+	if canApply then
+		applyBtn.MouseEnter:Connect(function()
+			UI.tween(applyBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.BluePale:Lerp(C.White, 0.7) })
+		end)
+		applyBtn.MouseLeave:Connect(function()
+			UI.tween(applyBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		applyBtn.MouseButton1Click:Connect(function()
+			self:applyForJob(job.id)
+		end)
+	end
+end
+
+function OccupationScreen:populateEducation()
+	self:updateInfoBar()
+
+	-- Clear content
+	for _, child in ipairs(self.contentScroll:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+
+	local age = self:getAge()
+	local money = self:getMoney()
+	local eduLevel = self:getEducationLevel()
+	local enrolled = self:isEnrolled()
+
+	-- Pull detailed info (GPA, progress, institution, etc.)
+	self:fetchEducationInfo()
+
+	-- Auto education info (grades K-12)
+	local autoSection = Instance.new("Frame")
+	autoSection.Name = "AutoEducation"
+	autoSection.Size = UDim2.new(1, 0, 0, 85)
+	autoSection.BackgroundColor3 = C.PurplePale
+	autoSection.LayoutOrder = 0
+	autoSection.ZIndex = 82
+	autoSection.Parent = self.contentScroll
+	UI.corner(autoSection, 18)
+	UI.stroke(autoSection, 1, 0.7, C.Purple)
+
+	local autoIcon = Instance.new("TextLabel")
+	autoIcon.Size = UDim2.new(0, 55, 0, 55)
+	autoIcon.Position = UDim2.new(0, 16, 0.5, -27.5)
+	autoIcon.BackgroundTransparency = 1
+	autoIcon.Font = F.Body
+	autoIcon.TextSize = 32
+	autoIcon.Text = "📖"
+	autoIcon.ZIndex = 83
+	autoIcon.Parent = autoSection
+
+	local autoTitle = Instance.new("TextLabel")
+	autoTitle.Size = UDim2.new(0.7, 0, 0, 24)
+	autoTitle.Position = UDim2.new(0, 80, 0, 16)
+	autoTitle.BackgroundTransparency = 1
+	autoTitle.Font = F.Title
+	autoTitle.TextSize = 15
+	autoTitle.TextColor3 = C.PurpleDark
+	autoTitle.TextXAlignment = Enum.TextXAlignment.Left
+	autoTitle.Text = "Basic Education"
+	autoTitle.ZIndex = 83
+	autoTitle.Parent = autoSection
+
+	local autoDesc = Instance.new("TextLabel")
+	autoDesc.Size = UDim2.new(0.8, 0, 0, 36)
+	autoDesc.Position = UDim2.new(0, 80, 0, 42)
+	autoDesc.BackgroundTransparency = 1
+	autoDesc.Font = F.Body
+	autoDesc.TextSize = 12
+	autoDesc.TextColor3 = C.Purple
+	autoDesc.TextXAlignment = Enum.TextXAlignment.Left
+	autoDesc.TextWrapped = true
+	autoDesc.Text = "Elementary, middle, and high school are handled automatically as you age. This tab is for detailed grades and higher education."
+	autoDesc.ZIndex = 83
+	autoDesc.Parent = autoSection
+
+	-- Current education status chip
+	local statusSection = Instance.new("Frame")
+	statusSection.Name = "StatusSection"
+	statusSection.Size = UDim2.new(1, 0, 0, 70)
+	statusSection.BackgroundColor3 = C.White
+	statusSection.LayoutOrder = 1
+	statusSection.ZIndex = 82
+	statusSection.Parent = self.contentScroll
+	UI.corner(statusSection, 16)
+	UI.stroke(statusSection, 1, 0.88, C.Gray200)
+
+	local statusLabel = Instance.new("TextLabel")
+	statusLabel.Size = UDim2.new(0.5, 0, 0, 24)
+	statusLabel.Position = UDim2.new(0, 18, 0, 14)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.Font = F.Title
+	statusLabel.TextSize = 14
+	statusLabel.TextColor3 = C.Gray700
+	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statusLabel.Text = "Current Education Level"
+	statusLabel.ZIndex = 83
+	statusLabel.Parent = statusSection
+
+	local eduDisplay = self:getEducationDisplayName(eduLevel)
+
+	local levelBadge = Instance.new("Frame")
+	levelBadge.Size = UDim2.new(0, 190, 0, 28)
+	levelBadge.Position = UDim2.new(0, 18, 0, 38)
+	levelBadge.BackgroundColor3 = C.Purple
+	levelBadge.ZIndex = 83
+	levelBadge.Parent = statusSection
+	UI.pill(levelBadge)
+
+	local levelLabel = Instance.new("TextLabel")
+	levelLabel.Size = UDim2.fromScale(1, 1)
+	levelLabel.BackgroundTransparency = 1
+	levelLabel.Font = F.Button
+	levelLabel.TextSize = 12
+	levelLabel.TextColor3 = C.White
+	levelLabel.TextXAlignment = Enum.TextXAlignment.Center
+	levelLabel.Text = eduDisplay
+	levelLabel.ZIndex = 84
+	levelLabel.Parent = levelBadge
+
+	if enrolled then
+		local enrolledBadge = Instance.new("Frame")
+		enrolledBadge.Size = UDim2.new(0, 95, 0, 28)
+		enrolledBadge.AnchorPoint = Vector2.new(1, 0.5)
+		enrolledBadge.Position = UDim2.new(1, -18, 0.5, 0)
+		enrolledBadge.BackgroundColor3 = C.Amber
+		enrolledBadge.ZIndex = 83
+		enrolledBadge.Parent = statusSection
+		UI.pill(enrolledBadge)
+
+		local enrolledLabel = Instance.new("TextLabel")
+		enrolledLabel.Size = UDim2.fromScale(1, 1)
+		enrolledLabel.BackgroundTransparency = 1
+		enrolledLabel.Font = F.Medium
+		enrolledLabel.TextSize = 11
+		enrolledLabel.TextColor3 = C.White
+		enrolledLabel.Text = "Currently Enrolled"
+		enrolledLabel.ZIndex = 84
+		enrolledLabel.Parent = enrolledBadge
+	end
+
+	-- Premium current-education card (GPA, progress, debt, transcript button)
+	if eduLevel ~= "none" or enrolled or self.educationInfo then
+		self:createCurrentEducationCard(self.contentScroll, eduLevel, self.educationInfo, enrolled)
+	end
+
+	-- Higher education choices
+	local section = Instance.new("Frame")
+	section.Name = "HigherEducation"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 3
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	local headerFrame = Instance.new("Frame")
+	headerFrame.Name = "Header"
+	headerFrame.Size = UDim2.new(1, 0, 0, 36)
+	headerFrame.BackgroundTransparency = 1
+	headerFrame.LayoutOrder = 0
+	headerFrame.ZIndex = 83
+	headerFrame.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 155, 0, 32)
+	badge.BackgroundColor3 = C.Purple
+	badge.ZIndex = 84
+	badge.Parent = headerFrame
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "Higher Education Options"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	-- Add education options
+	local order = 1
+	for _, edu in ipairs(Education) do
+		self:createEducationCard(section, edu, order, age, money, eduLevel, enrolled)
+		order = order + 1
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- CURRENT EDUCATION CARD (Premium AAA: GPA, progress, debt, transcript)
+-- ═══════════════════════════════════════════════════════════════
+
+function OccupationScreen:createCurrentEducationCard(parent, eduLevel, eduInfo, enrolled)
+	local levelId = eduLevel or (eduInfo and eduInfo.level) or "none"
+	if levelId == "none" and not enrolled then
+		return
+	end
+
+	local card = Instance.new("Frame")
+	card.Name = "CurrentEducationCard"
+	card.Size = UDim2.new(1, 0, 0, 190)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = 2
+	card.ZIndex = 82
+	card.Parent = parent
+	UI.corner(card, 18)
+	UI.stroke(card, 1, 0.9, C.Purple)
+
+	-- Icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 60, 0, 60)
+	iconFrame.Position = UDim2.new(0, 14, 0, 14)
+	iconFrame.BackgroundColor3 = C.PurplePale
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 16)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 32
+	iconLabel.Text = self:getEducationEmoji(levelId)
+	iconLabel.TextColor3 = C.PurpleDark
+	iconLabel.ZIndex = 84
+	iconLabel.Parent = iconFrame
+
+	-- Title + institution
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -90, 0, 24)
+	titleLabel.Position = UDim2.new(0, 86, 0, 12)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 17
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+	local levelName = self:getEducationDisplayName(levelId)
+	if levelId == "high_school" then
+		titleLabel.Text = "High School Student"
+	else
+		local major = self:getEducationMajor()
+		if major and major ~= "" and major ~= "Undeclared" then
+			titleLabel.Text = levelName .. " in " .. major
+		else
+			titleLabel.Text = levelName
+		end
+	end
+	titleLabel.ZIndex = 83
+	titleLabel.Parent = card
+
+	local institution = self:getEducationInstitution() or ""
+	local subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.Size = UDim2.new(1, -90, 0, 18)
+	subtitleLabel.Position = UDim2.new(0, 86, 0, 36)
+	subtitleLabel.BackgroundTransparency = 1
+	subtitleLabel.Font = F.Body
+	subtitleLabel.TextSize = 12
+	subtitleLabel.TextColor3 = C.Gray500
+	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subtitleLabel.Text = institution ~= "" and ("at " .. institution) or ""
+	subtitleLabel.ZIndex = 83
+	subtitleLabel.Parent = card
+
+	-- Status chips
+	local statusRow = Instance.new("Frame")
+	statusRow.Size = UDim2.new(1, -90, 0, 24)
+	statusRow.Position = UDim2.new(0, 86, 0, 56)
+	statusRow.BackgroundTransparency = 1
+	statusRow.ZIndex = 83
+	statusRow.Parent = card
+
+	local statusLayout = Instance.new("UIListLayout")
+	statusLayout.FillDirection = Enum.FillDirection.Horizontal
+	statusLayout.Padding = UDim.new(0, 8)
+	statusLayout.Parent = statusRow
+
+	local status = self:getEducationStatus()
+	local statusBadge = Instance.new("Frame")
+	statusBadge.Size = UDim2.new(0, 95, 0, 24)
+	statusBadge.BackgroundColor3 = (status == "graduated") and C.Green or C.Purple
+	statusBadge.LayoutOrder = 1
+	statusBadge.ZIndex = 84
+	statusBadge.Parent = statusRow
+	UI.pill(statusBadge)
+
+	local statusLabel2 = Instance.new("TextLabel")
+	statusLabel2.Size = UDim2.fromScale(1, 1)
+	statusLabel2.BackgroundTransparency = 1
+	statusLabel2.Font = F.Button
+	statusLabel2.TextSize = 11
+	statusLabel2.TextColor3 = C.White
+	if status == "graduated" then
+		statusLabel2.Text = "🎓 Graduated"
+	elseif status == "probation" then
+		statusLabel2.Text = "⚠️ On Probation"
+	elseif enrolled or status == "enrolled" then
+		statusLabel2.Text = "📚 Enrolled"
+	else
+		statusLabel2.Text = "—"
+	end
+	statusLabel2.ZIndex = 85
+	statusLabel2.Parent = statusBadge
+
+	if status == "probation" then
+		local probBadge = Instance.new("Frame")
+		probBadge.Size = UDim2.new(0, 110, 0, 24)
+		probBadge.BackgroundColor3 = C.Amber
+		probBadge.LayoutOrder = 2
+		probBadge.ZIndex = 84
+		probBadge.Parent = statusRow
+		UI.pill(probBadge)
+
+		local probLabel = Instance.new("TextLabel")
+		probLabel.Size = UDim2.fromScale(1, 1)
+		probLabel.BackgroundTransparency = 1
+		probLabel.Font = F.Medium
+		probLabel.TextSize = 10
+		probLabel.TextColor3 = C.White
+		probLabel.Text = "Study or risk failing"
+		probLabel.ZIndex = 85
+		probLabel.Parent = probBadge
+	end
+
+	-- GPA + progress
+	local detailRow = Instance.new("Frame")
+	detailRow.Size = UDim2.new(1, -28, 0, 52)
+	detailRow.Position = UDim2.new(0, 14, 0, 90)
+	detailRow.BackgroundColor3 = C.Gray50
+	detailRow.ZIndex = 83
+	detailRow.Parent = card
+	UI.corner(detailRow, 12)
+	UI.pad(detailRow, 10, 10, 8, 8)
+
+	local gpa = self:getEducationGPA()
+	local progress = self:getEducationProgress()
+
+	local gpaBadge = Instance.new("Frame")
+	gpaBadge.Size = UDim2.new(0, 90, 0, 26)
+	gpaBadge.BackgroundColor3 = C.PurplePale
+	gpaBadge.ZIndex = 84
+	gpaBadge.Parent = detailRow
+	UI.pill(gpaBadge)
+
+	local gpaLabel = Instance.new("TextLabel")
+	gpaLabel.Size = UDim2.fromScale(1, 1)
+	gpaLabel.BackgroundTransparency = 1
+	gpaLabel.Font = F.Medium
+	gpaLabel.TextSize = 12
+	gpaLabel.TextColor3 = C.PurpleDark
+	if gpa then
+		gpaLabel.Text = string.format("GPA %.2f", gpa)
+	else
+		gpaLabel.Text = "GPA —"
+	end
+	gpaLabel.ZIndex = 85
+	gpaLabel.Parent = gpaBadge
+
+	local progressLabel = Instance.new("TextLabel")
+	progressLabel.Size = UDim2.new(1, -100, 0, 16)
+	progressLabel.Position = UDim2.new(0, 100, 0, 4)
+	progressLabel.BackgroundTransparency = 1
+	progressLabel.Font = F.Body
+	progressLabel.TextSize = 11
+	progressLabel.TextColor3 = C.Gray700
+	progressLabel.TextXAlignment = Enum.TextXAlignment.Left
+	if progress then
+		progressLabel.Text = string.format("Progress: %.0f%% complete", progress)
+	else
+		progressLabel.Text = "Progress: —"
+	end
+	progressLabel.ZIndex = 84
+	progressLabel.Parent = detailRow
+
+	local progressBarBg = Instance.new("Frame")
+	progressBarBg.Size = UDim2.new(1, -100, 0, 8)
+	progressBarBg.Position = UDim2.new(0, 100, 0, 28)
+	progressBarBg.BackgroundColor3 = C.Gray200
+	progressBarBg.ZIndex = 84
+	progressBarBg.Parent = detailRow
+	UI.pill(progressBarBg)
+
+	local progressFill = Instance.new("Frame")
+	progressFill.Size = UDim2.new(progress and math.clamp(progress / 100, 0, 1) or 0, 0, 1, 0)
+	progressFill.BackgroundColor3 = C.Purple
+	progressFill.ZIndex = 85
+	progressFill.Parent = progressBarBg
+	UI.pill(progressFill)
+
+	-- Debt chip
+	local debt = self:getEducationDebt()
+	if debt > 0 then
+		local debtBadge = Instance.new("Frame")
+		debtBadge.Size = UDim2.new(0, 140, 0, 22)
+		debtBadge.Position = UDim2.new(0, 14, 0, 146)
+		debtBadge.BackgroundColor3 = C.RedPale
+		debtBadge.ZIndex = 83
+		debtBadge.Parent = card
+		UI.pill(debtBadge)
+
+		local debtLabel = Instance.new("TextLabel")
+		debtLabel.Size = UDim2.fromScale(1, 1)
+		debtLabel.BackgroundTransparency = 1
+		debtLabel.Font = F.Body
+		debtLabel.TextSize = 11
+		debtLabel.TextColor3 = C.RedDark
+		debtLabel.TextXAlignment = Enum.TextXAlignment.Center
+		debtLabel.Text = "💸 Debt: " .. UI.formatMoney(debt)
+		debtLabel.ZIndex = 84
+		debtLabel.Parent = debtBadge
+	end
+
+	-- Transcript button
+	local transcriptBtn = Instance.new("TextButton")
+	transcriptBtn.Size = UDim2.new(0, 140, 0, 32)
+	transcriptBtn.AnchorPoint = Vector2.new(1, 1)
+	transcriptBtn.Position = UDim2.new(1, -14, 1, -12)
+	transcriptBtn.BackgroundColor3 = C.Blue
+	transcriptBtn.Font = F.Button
+	transcriptBtn.TextSize = 13
+	transcriptBtn.TextColor3 = C.White
+	transcriptBtn.Text = "📑 View Transcript"
+	transcriptBtn.AutoButtonColor = false
+	transcriptBtn.ZIndex = 84
+	transcriptBtn.Parent = card
+	UI.corner(transcriptBtn, 10)
+
+	transcriptBtn.MouseEnter:Connect(function()
+		UI.tween(transcriptBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
+	end)
+	transcriptBtn.MouseLeave:Connect(function()
+		UI.tween(transcriptBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
+	end)
+	transcriptBtn.MouseButton1Click:Connect(function()
+		self:showEducationInfoModal()
+	end)
+end
+
+function OccupationScreen:createEducationCard(parent, edu, order, age, money, eduLevel, enrolled)
+	local meetsAge = age >= edu.minAge
+	local meetsMoney = money >= edu.cost
+	local meetsReq = true
+
+	-- Check prerequisite (FIXED to use proper EducationRanks)
+	if edu.requirement then
+		local playerRank = EducationRanks[eduLevel] or EducationRanks.high_school
+		local reqRank = EducationRanks[edu.requirement] or 0
+		meetsReq = playerRank >= reqRank
+	end
+
+	-- 🔥 FIXED: Money is NO LONGER a hard gate!
+	-- You can enroll with student loans. Only age, prereq, and not-already-enrolled matter.
+	local canEnroll = meetsAge and meetsReq and not enrolled
+
+	local card = Instance.new("Frame")
+	card.Name = edu.id
+	card.Size = UDim2.new(1, 0, 0, 95)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = order
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, canEnroll and 0.7 or 0.88, canEnroll and C.Purple or C.Gray200)
+
+	-- Icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 58, 0, 58)
+	iconFrame.Position = UDim2.new(0, 12, 0.5, -29)
+	iconFrame.BackgroundColor3 = canEnroll and C.PurplePale or C.Gray100
+	iconFrame.ZIndex = 84
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 14)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 30
+	iconLabel.Text = edu.emoji
+	iconLabel.TextTransparency = canEnroll and 0 or 0.3
+	iconLabel.ZIndex = 85
+	iconLabel.Parent = iconFrame
+
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Position = UDim2.new(0, 84, 0, 12)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 15
+	titleLabel.TextColor3 = canEnroll and C.Gray900 or C.Gray500
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = edu.name
+	titleLabel.ZIndex = 84
+	titleLabel.Parent = card
+
+	-- Cost badge (visual only - shows if you can pay cash or will need loan)
+	local costBadge = Instance.new("Frame")
+	costBadge.Size = UDim2.new(0, 80, 0, 24)
+	costBadge.Position = UDim2.new(0, 84, 0, 36)
+	costBadge.BackgroundColor3 = meetsMoney and C.GreenPale or C.AmberPale
+	costBadge.ZIndex = 84
+	costBadge.Parent = card
+	UI.pill(costBadge)
+
+	local costLabel = Instance.new("TextLabel")
+	costLabel.Size = UDim2.fromScale(1, 1)
+	costLabel.BackgroundTransparency = 1
+	costLabel.Font = F.Medium
+	costLabel.TextSize = 11
+	costLabel.TextColor3 = meetsMoney and C.GreenDark or C.AmberDark
+	costLabel.Text = UI.formatMoney(edu.cost)
+	costLabel.ZIndex = 85
+	costLabel.Parent = costBadge
+
+	-- Duration badge
+	local durBadge = Instance.new("Frame")
+	durBadge.Size = UDim2.new(0, 65, 0, 24)
+	durBadge.Position = UDim2.new(0, 170, 0, 36)
+	durBadge.BackgroundColor3 = C.BluePale
+	durBadge.ZIndex = 84
+	durBadge.Parent = card
+	UI.pill(durBadge)
+
+	local durLabel = Instance.new("TextLabel")
+	durLabel.Size = UDim2.fromScale(1, 1)
+	durLabel.BackgroundTransparency = 1
+	durLabel.Font = F.Medium
+	durLabel.TextSize = 11
+	durLabel.TextColor3 = C.BlueDark
+	durLabel.Text = edu.duration .. " years"
+	durLabel.ZIndex = 85
+	durLabel.Parent = durBadge
+
+	-- Requirement text (FIXED to show loan info instead of blocking)
+	local reqText = ""
+	if enrolled then
+		reqText = "Already enrolled"
+	elseif not meetsAge then
+		reqText = "Age " .. edu.minAge .. "+"
+	elseif not meetsReq then
+		reqText = "Need " .. self:getEducationDisplayName(edu.requirement)
+	elseif not meetsMoney then
+		reqText = "Will take student loans"
+	else
+		reqText = "Age " .. edu.minAge .. "+"
+	end
+
+	local reqLabel = Instance.new("TextLabel")
+	reqLabel.Size = UDim2.new(0.4, 0, 0, 18)
+	reqLabel.Position = UDim2.new(0, 84, 0, 64)
+	reqLabel.BackgroundTransparency = 1
+	reqLabel.Font = F.Body
+	reqLabel.TextSize = 11
+	-- Red for real locks, amber for loan warning, gray for OK
+	if not canEnroll then
+		reqLabel.TextColor3 = C.Red
+	elseif not meetsMoney then
+		reqLabel.TextColor3 = C.Amber
+	else
+		reqLabel.TextColor3 = C.Gray400
+	end
+	reqLabel.TextXAlignment = Enum.TextXAlignment.Left
+	reqLabel.Text = reqText
+	reqLabel.ZIndex = 84
+	reqLabel.Parent = card
+
+	-- Enroll button (FIXED to show "Loan" if paying with debt)
+	local enrollBtn = Instance.new("TextButton")
+	enrollBtn.Size = UDim2.new(0, 72, 0, 46)
+	enrollBtn.AnchorPoint = Vector2.new(1, 0.5)
+	enrollBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	enrollBtn.AutoButtonColor = false
+	enrollBtn.Font = F.Button
+	enrollBtn.TextSize = 14
+	enrollBtn.ZIndex = 84
+	enrollBtn.Parent = card
+	UI.corner(enrollBtn, 12)
+
+	if canEnroll then
+		enrollBtn.BackgroundColor3 = C.Purple
+		enrollBtn.TextColor3 = C.White
+		-- Show "Loan" if player can't afford it in cash, "Enroll" if they can
+		enrollBtn.Text = not meetsMoney and "Loan" or "Enroll"
+
+		enrollBtn.MouseEnter:Connect(function()
+			UI.tween(enrollBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.PurpleDark })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.PurplePale:Lerp(C.White, 0.7) })
+		end)
+		enrollBtn.MouseLeave:Connect(function()
+			UI.tween(enrollBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Purple })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		enrollBtn.MouseButton1Click:Connect(function()
+			-- Server handles loan/debt automatically
+			self:enrollEducation(edu.id)
+		end)
+	else
+		enrollBtn.BackgroundColor3 = C.Gray300
+		enrollBtn.TextColor3 = C.Gray500
+
+		if enrolled then
+			enrollBtn.Text = "Enrolled"
+		elseif not meetsAge then
+			enrollBtn.Text = "Age " .. edu.minAge
+		elseif not meetsReq then
+			enrollBtn.Text = "Locked"
+		else
+			enrollBtn.Text = "Locked"
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- EDUCATION DETAILS MODAL (GPA + transcript)
+-- ═══════════════════════════════════════════════════════════════
+
+function OccupationScreen:showEducationInfoModal()
+	log("=== SHOWING EDUCATION INFO MODAL ===")
+
+	if not self.educationInfoModal then
+		self:createEducationInfoModal()
+	end
+
+	self:fetchEducationInfo()
+
+	local gpa = self:getEducationGPA()
+	local progress = self:getEducationProgress()
+	local debt = self:getEducationDebt()
+	local grades = self:getEducationGrades()
+	local levelId = self.educationInfo and self.educationInfo.level or self:getEducationLevel()
+	local levelName = self:getEducationDisplayName(levelId)
+	local institution = self:getEducationInstitution() or ""
+	local status = self:getEducationStatus()
+
+	self.educationInfoTitle.Text = levelName
+	if institution ~= "" then
+		self.educationInfoSubtitle.Text = institution
+	else
+		self.educationInfoSubtitle.Text = ""
+	end
+
+	if gpa then
+		self.educationInfoGpaLabel.Text = string.format("🎓 GPA: %.2f", gpa)
+	else
+		self.educationInfoGpaLabel.Text = "🎓 GPA: —"
+	end
+
+	if progress then
+		self.educationInfoProgressLabel.Text = string.format("📈 Progress: %.0f%% complete", progress)
+	else
+		self.educationInfoProgressLabel.Text = "📈 Progress: —"
+	end
+
+	if debt > 0 then
+		self.educationInfoDebtLabel.Text = "💸 Student Debt: " .. UI.formatMoney(debt)
+	else
+		self.educationInfoDebtLabel.Text = "💸 Student Debt: None"
+	end
+
+	self.educationInfoStatusLabel.Text = "Status: " .. status:gsub("^%l", string.upper)
+
+	-- Transcript list
+	for _, child in ipairs(self.educationInfoGradesContainer:GetChildren()) do
+		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+			child:Destroy()
+		end
+	end
+
+	if #grades == 0 then
+		local noGrades = Instance.new("TextLabel")
+		noGrades.Size = UDim2.new(1, 0, 0, 40)
+		noGrades.BackgroundTransparency = 1
+		noGrades.Font = F.Body
+		noGrades.TextSize = 12
+		noGrades.TextColor3 = C.Gray400
+		noGrades.TextWrapped = true
+		noGrades.Text = "No detailed grades yet. Your school performance is still tracked and will affect jobs, scholarships, and events."
+		noGrades.ZIndex = 100
+		noGrades.Parent = self.educationInfoGradesContainer
+	else
+		for i, term in ipairs(grades) do
+			local row = Instance.new("Frame")
+			row.Size = UDim2.new(1, 0, 0, 32)
+			row.BackgroundColor3 = C.Gray50
+			row.ZIndex = 99
+			row.Parent = self.educationInfoGradesContainer
+			UI.corner(row, 10)
+
+			local termName = Instance.new("TextLabel")
+			termName.Size = UDim2.new(0.6, 0, 1, 0)
+			termName.BackgroundTransparency = 1
+			termName.Font = F.Body
+			termName.TextSize = 11
+			termName.TextColor3 = C.Gray800
+			termName.TextXAlignment = Enum.TextXAlignment.Left
+			termName.Text = term.term or term.name or ("Term " .. tostring(i))
+			termName.ZIndex = 100
+			termName.Parent = row
+
+			local termGpa = Instance.new("TextLabel")
+			termGpa.Size = UDim2.new(0.4, -8, 1, 0)
+			termGpa.Position = UDim2.new(0.6, 8, 0, 0)
+			termGpa.BackgroundTransparency = 1
+			termGpa.Font = F.Medium
+			termGpa.TextSize = 11
+			termGpa.TextColor3 = C.PurpleDark
+			termGpa.TextXAlignment = Enum.TextXAlignment.Right
+			if term.gpa then
+				termGpa.Text = string.format("GPA %.2f", term.gpa)
+			elseif term.grade then
+				termGpa.Text = tostring(term.grade)
+			else
+				termGpa.Text = "—"
+			end
+			termGpa.ZIndex = 100
+			termGpa.Parent = row
+		end
+	end
+
+	-- Show modal with animation
+	self.educationInfoOverlay.Visible = true
+
+	self.educationInfoShell.Position = UDim2.new(0.5, 0, 0.5, 40)
+	self.educationInfoShadow.Position = UDim2.new(0.5, 3, 0.5, 43)
+	self.educationInfoShell.BackgroundTransparency = 0.5
+	self.educationInfoShadow.BackgroundTransparency = 1
+
+	local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	UI.tween(self.educationInfoShell, tweenInfo, {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+	UI.tween(self.educationInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 3),
+		BackgroundTransparency = 0.75
+	})
+end
+
+function OccupationScreen:createEducationInfoModal()
+	log("Creating education info modal...")
+
+	self.educationInfoOverlay = Instance.new("Frame")
+	self.educationInfoOverlay.Name = "EducationInfoOverlay"
+	self.educationInfoOverlay.Size = UDim2.fromScale(1, 1)
+	self.educationInfoOverlay.BackgroundColor3 = C.Black
+	self.educationInfoOverlay.BackgroundTransparency = 0.4
+	self.educationInfoOverlay.Visible = false
+	self.educationInfoOverlay.ZIndex = 96
+	self.educationInfoOverlay.Parent = self.screenGui
+
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 96
+	closeArea.Parent = self.educationInfoOverlay
+	closeArea.MouseButton1Click:Connect(function()
+		self:hideEducationInfoModal()
+	end)
+
+	local shadowFrame = Instance.new("Frame")
+	shadowFrame.Name = "ShadowFrame"
+	shadowFrame.Size = UDim2.new(0.92, 6, 0, 460)
+	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadowFrame.BackgroundColor3 = C.Black
+	shadowFrame.BackgroundTransparency = 0.75
+	shadowFrame.ZIndex = 96
+	shadowFrame.Parent = self.educationInfoOverlay
+	UI.corner(shadowFrame, 26)
+	self.educationInfoShadow = shadowFrame
+
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(0.92, 0, 0, 454)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = C.Purple
+	shell.ZIndex = 97
+	shell.Parent = self.educationInfoOverlay
+	UI.corner(shell, 24)
+	self.educationInfoShell = shell
+
+	-- Inner card
+	self.educationInfoCard = Instance.new("Frame")
+	self.educationInfoCard.Name = "Card"
+	self.educationInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.educationInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.educationInfoCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.educationInfoCard.BackgroundColor3 = C.White
+	self.educationInfoCard.ZIndex = 98
+	self.educationInfoCard.Parent = shell
+	UI.corner(self.educationInfoCard, 20)
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 64)
+	header.BackgroundColor3 = C.Purple
+	header.ZIndex = 99
+	header.Parent = self.educationInfoCard
+	UI.corner(header, 20)
+
+	local headerFix = Instance.new("Frame")
+	headerFix.Name = "HeaderFix"
+	headerFix.Size = UDim2.new(1, 0, 0, 26)
+	headerFix.Position = UDim2.new(0, 0, 1, -26)
+	headerFix.BackgroundColor3 = C.Purple
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 99
+	headerFix.Parent = header
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -50, 0, 24)
+	title.Position = UDim2.new(0, 12, 0, 10)
+	title.BackgroundTransparency = 1
+	title.Font = F.Title
+	title.TextSize = 18
+	title.TextColor3 = C.White
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = "🎓 Education Details"
+	title.ZIndex = 100
+	title.Parent = header
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseButton"
+	closeBtn.Size = UDim2.new(0, 30, 0, 30)
+	closeBtn.AnchorPoint = Vector2.new(1, 0)
+	closeBtn.Position = UDim2.new(1, -8, 0, 8)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.1
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 13
+	closeBtn.TextColor3 = C.Purple
+	closeBtn.Text = "✕"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 101
+	closeBtn.Parent = header
+	UI.corner(closeBtn, 15)
+
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hideEducationInfoModal()
+	end)
+
+	-- Content scroll
+	local content = Instance.new("ScrollingFrame")
+	content.Name = "ContentScroll"
+	content.Size = UDim2.new(1, -16, 1, -72)
+	content.Position = UDim2.new(0, 8, 0, 68)
+	content.BackgroundTransparency = 1
+	content.CanvasSize = UDim2.new(0, 0, 0, 0)
+	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	content.ScrollBarThickness = 3
+	content.ScrollBarImageColor3 = C.Gray300
+	content.ZIndex = 99
+	content.Parent = self.educationInfoCard
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.Parent = content
+
+	-- Summary card
+	local summary = Instance.new("Frame")
+	summary.Size = UDim2.new(1, 0, 0, 84)
+	summary.BackgroundColor3 = C.Gray50
+	summary.LayoutOrder = 1
+	summary.ZIndex = 99
+	summary.Parent = content
+	UI.corner(summary, 12)
+	UI.pad(summary, 12, 12, 8, 8)
+
+	self.educationInfoTitle = Instance.new("TextLabel")
+	self.educationInfoTitle.Size = UDim2.new(1, 0, 0, 20)
+	self.educationInfoTitle.BackgroundTransparency = 1
+	self.educationInfoTitle.Font = F.Title
+	self.educationInfoTitle.TextSize = 15
+	self.educationInfoTitle.TextColor3 = C.Gray900
+	self.educationInfoTitle.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoTitle.Text = "Current Education"
+	self.educationInfoTitle.ZIndex = 100
+	self.educationInfoTitle.Parent = summary
+
+	self.educationInfoSubtitle = Instance.new("TextLabel")
+	self.educationInfoSubtitle.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoSubtitle.Position = UDim2.new(0, 0, 0, 22)
+	self.educationInfoSubtitle.BackgroundTransparency = 1
+	self.educationInfoSubtitle.Font = F.Body
+	self.educationInfoSubtitle.TextSize = 12
+	self.educationInfoSubtitle.TextColor3 = C.Gray600
+	self.educationInfoSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoSubtitle.Text = ""
+	self.educationInfoSubtitle.ZIndex = 100
+	self.educationInfoSubtitle.Parent = summary
+
+	self.educationInfoStatusLabel = Instance.new("TextLabel")
+	self.educationInfoStatusLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoStatusLabel.Position = UDim2.new(0, 0, 0, 44)
+	self.educationInfoStatusLabel.BackgroundTransparency = 1
+	self.educationInfoStatusLabel.Font = F.Body
+	self.educationInfoStatusLabel.TextSize = 12
+	self.educationInfoStatusLabel.TextColor3 = C.Gray600
+	self.educationInfoStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoStatusLabel.Text = "Status: enrolled"
+	self.educationInfoStatusLabel.ZIndex = 100
+	self.educationInfoStatusLabel.Parent = summary
+
+	-- GPA / progress / debt
+	local statsCard = Instance.new("Frame")
+	statsCard.Size = UDim2.new(1, 0, 0, 80)
+	statsCard.BackgroundColor3 = C.Gray50
+	statsCard.LayoutOrder = 2
+	statsCard.ZIndex = 99
+	statsCard.Parent = content
+	UI.corner(statsCard, 12)
+	UI.pad(statsCard, 12, 12, 8, 8)
+
+	self.educationInfoGpaLabel = Instance.new("TextLabel")
+	self.educationInfoGpaLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoGpaLabel.BackgroundTransparency = 1
+	self.educationInfoGpaLabel.Font = F.Medium
+	self.educationInfoGpaLabel.TextSize = 12
+	self.educationInfoGpaLabel.TextColor3 = C.Gray700
+	self.educationInfoGpaLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoGpaLabel.Text = "🎓 GPA: —"
+	self.educationInfoGpaLabel.ZIndex = 100
+	self.educationInfoGpaLabel.Parent = statsCard
+
+	self.educationInfoProgressLabel = Instance.new("TextLabel")
+	self.educationInfoProgressLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoProgressLabel.Position = UDim2.new(0, 0, 0, 20)
+	self.educationInfoProgressLabel.BackgroundTransparency = 1
+	self.educationInfoProgressLabel.Font = F.Medium
+	self.educationInfoProgressLabel.TextSize = 12
+	self.educationInfoProgressLabel.TextColor3 = C.Gray700
+	self.educationInfoProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoProgressLabel.Text = "📈 Progress: —"
+	self.educationInfoProgressLabel.ZIndex = 100
+	self.educationInfoProgressLabel.Parent = statsCard
+
+	self.educationInfoDebtLabel = Instance.new("TextLabel")
+	self.educationInfoDebtLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoDebtLabel.Position = UDim2.new(0, 0, 0, 40)
+	self.educationInfoDebtLabel.BackgroundTransparency = 1
+	self.educationInfoDebtLabel.Font = F.Medium
+	self.educationInfoDebtLabel.TextSize = 12
+	self.educationInfoDebtLabel.TextColor3 = C.Gray700
+	self.educationInfoDebtLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.educationInfoDebtLabel.Text = "💸 Student Debt: —"
+	self.educationInfoDebtLabel.ZIndex = 100
+	self.educationInfoDebtLabel.Parent = statsCard
+
+	-- Transcript
+	local transcriptHeader = Instance.new("TextLabel")
+	transcriptHeader.Size = UDim2.new(1, 0, 0, 24)
+	transcriptHeader.BackgroundTransparency = 1
+	transcriptHeader.Font = F.Title
+	transcriptHeader.TextSize = 14
+	transcriptHeader.TextColor3 = C.Gray800
+	transcriptHeader.TextXAlignment = Enum.TextXAlignment.Left
+	transcriptHeader.Text = "📑 Transcript"
+	transcriptHeader.LayoutOrder = 3
+	transcriptHeader.ZIndex = 99
+	transcriptHeader.Parent = content
+
+	self.educationInfoGradesContainer = Instance.new("Frame")
+	self.educationInfoGradesContainer.Size = UDim2.new(1, 0, 0, 0)
+	self.educationInfoGradesContainer.AutomaticSize = Enum.AutomaticSize.Y
+	self.educationInfoGradesContainer.BackgroundColor3 = C.Gray50
+	self.educationInfoGradesContainer.LayoutOrder = 4
+	self.educationInfoGradesContainer.ZIndex = 99
+	self.educationInfoGradesContainer.Parent = content
+	UI.corner(self.educationInfoGradesContainer, 12)
+	UI.pad(self.educationInfoGradesContainer, 12, 12, 8, 8)
+
+	local gradesLayout = Instance.new("UIListLayout")
+	gradesLayout.Padding = UDim.new(0, 6)
+	gradesLayout.Parent = self.educationInfoGradesContainer
+
+	self.educationInfoModal = true
+	log("Education info modal created")
+end
+
+function OccupationScreen:hideEducationInfoModal()
+	if not self.educationInfoOverlay then
+		return
+	end
+
+	log("Hiding education info modal")
+
+	local tweenInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+	UI.tween(self.educationInfoShell, tweenInfo, {
+		Position = UDim2.new(0.5, 0, 0.5, 25),
+		BackgroundTransparency = 0.5
+	})
+	UI.tween(self.educationInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 28),
+		BackgroundTransparency = 1
+	})
+
+	task.delay(0.18, function()
+		if self.educationInfoOverlay then
+			self.educationInfoOverlay.Visible = false
+		end
+	end)
+end
+
+function OccupationScreen:createResultModal()
+	self.resultModal = UI.createModalCard(self.screenGui, {
+		name = "OccupationResult",
+		accentColor = C.Green,
+		accentDark = C.GreenDark,
+		accentPale = C.GreenPale,
+		zIndex = 98
+	})
+
+	self.resultModal.closeArea.MouseButton1Click:Connect(function()
+		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	end)
+	self.resultModal.okButton.MouseButton1Click:Connect(function()
+		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	end)
+end
+
+function OccupationScreen:applyForJob(jobId)
+	log("=== APPLYING FOR JOB ===")
+	log("Job ID:", jobId)
+	log("Player Age:", self:getAge(), "Money:", self:getMoney())
+
+	if not ApplyForJob then
+		logWarn("ApplyForJob remote not available!")
+		self:showResult(false, "Server not available. Please try again later.", "X")
+		return
+	end
+
+	log("Invoking server ApplyForJob...")
+	local result = ApplyForJob:InvokeServer(jobId)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		self:showResult(result.success, result.message, result.success and "Hired!" or "Rejected")
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error. Please try again.", "X")
+	end
+end
+
+function OccupationScreen:quitJob()
+	log("=== QUITTING JOB ===")
+	log("Current job:", self:getCurrentJob() or "None")
+
+	if not QuitJob then
+		logWarn("QuitJob remote not available!")
+		self:showResult(false, "Server not available.", "X")
+		return
+	end
+
+	log("Invoking server QuitJob...")
+	local result = QuitJob:InvokeServer()
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		self:showResult(result.success, result.message, result.success and "Done" or "Error")
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error.", "X")
+	end
+end
+
+function OccupationScreen:doWork()
+	log("=== DOING WORK ===")
+
+	if not DoWork then
+		logWarn("DoWork remote not available!")
+		self:showResult(false, "Server not available.", "X")
+		return
+	end
+
+	log("Invoking server DoWork...")
+	local result = DoWork:InvokeServer()
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		if result.success then
+			local emoji = "💼"
+			if result.event then
+				emoji = result.event:find("positive") and "🎉" or (result.event:find("negative") and "😬" or "📋")
+			end
+			self:showResult(true, result.message, emoji)
+		else
+			-- Could be fired!
+			self:showResult(false, result.message, result.fired and "😱" or "❌")
+		end
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error.", "X")
+	end
+end
+
+function OccupationScreen:requestPromotion()
+	log("=== REQUESTING PROMOTION ===")
+
+	if not RequestPromotion then
+		logWarn("RequestPromotion remote not available!")
+		self:showResult(false, "Server not available.", "X")
+		return
+	end
+
+	log("Invoking server RequestPromotion...")
+	local result = RequestPromotion:InvokeServer()
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		if result.success then
+			self:showResult(true, result.message, "🎉")
+		else
+			self:showResult(false, result.message, "📋")
+		end
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error.", "X")
+	end
+end
+
+function OccupationScreen:requestRaise()
+	log("=== REQUESTING RAISE ===")
+
+	if not RequestRaise then
+		logWarn("RequestRaise remote not available!")
+		self:showResult(false, "Server not available.", "X")
+		return
+	end
+
+	log("Invoking server RequestRaise...")
+	local result = RequestRaise:InvokeServer()
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		if result.success then
+			self:showResult(true, result.message, "💰")
+		else
+			self:showResult(false, result.message, "📋")
+		end
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error.", "X")
+	end
+end
+
+function OccupationScreen:showCareerInfoModal()
+	log("=== SHOWING CAREER INFO MODAL ===")
+
+	-- Create modal if doesn't exist
+	if not self.careerInfoModal then
+		self:createCareerInfoModal()
+	end
+
+	-- Fetch latest career info
+	self:fetchCareerInfo()
+
+	local skills = self:getCareerSkills()
+	local history = self:getCareerHistory()
+	local performance = self:getCareerPerformance()
+	local totalExp = self.careerInfo and self.careerInfo.totalExperience or 0
+
+	-- Populate skills
+	self.careerInfoSkillsContainer:ClearAllChildren()
+
+	local skillLayout = Instance.new("UIListLayout")
+	skillLayout.Padding = UDim.new(0, 6)
+	skillLayout.Parent = self.careerInfoSkillsContainer
+
+	local skillOrder = {"Technical", "Creative", "Social", "Physical", "Analytical", "Leadership"}
+	local skillEmojis = {Technical = "💻", Creative = "🎨", Social = "🗣️", Physical = "💪", Analytical = "📊", Leadership = "👑"}
+
+	for i, skillName in ipairs(skillOrder) do
+		local skillValue = skills[skillName] or 0
+
+		local skillRow = Instance.new("Frame")
+		skillRow.Size = UDim2.new(1, 0, 0, 24)
+		skillRow.BackgroundTransparency = 1
+		skillRow.LayoutOrder = i
+		skillRow.ZIndex = 100
+		skillRow.Parent = self.careerInfoSkillsContainer
+
+		local skillLabel = Instance.new("TextLabel")
+		skillLabel.Size = UDim2.new(0.45, 0, 1, 0)
+		skillLabel.BackgroundTransparency = 1
+		skillLabel.Font = F.Body
+		skillLabel.TextSize = 11
+		skillLabel.TextColor3 = C.Gray700
+		skillLabel.TextXAlignment = Enum.TextXAlignment.Left
+		skillLabel.Text = (skillEmojis[skillName] or "📈") .. " " .. skillName
+		skillLabel.ZIndex = 100
+		skillLabel.Parent = skillRow
+
+		local skillBarBg = Instance.new("Frame")
+		skillBarBg.Size = UDim2.new(0.4, 0, 0, 8)
+		skillBarBg.Position = UDim2.new(0.45, 0, 0.5, -4)
+		skillBarBg.BackgroundColor3 = C.Gray200
+		skillBarBg.ZIndex = 100
+		skillBarBg.Parent = skillRow
+		UI.pill(skillBarBg)
+
+		local skillBarFill = Instance.new("Frame")
+		skillBarFill.Size = UDim2.new(math.clamp(skillValue / 100, 0, 1), 0, 1, 0)
+		skillBarFill.BackgroundColor3 = C.Blue
+		skillBarFill.ZIndex = 101
+		skillBarFill.Parent = skillBarBg
+		UI.pill(skillBarFill)
+
+		local skillValueLabel = Instance.new("TextLabel")
+		skillValueLabel.Size = UDim2.new(0.12, 0, 1, 0)
+		skillValueLabel.Position = UDim2.new(0.88, 0, 0, 0)
+		skillValueLabel.BackgroundTransparency = 1
+		skillValueLabel.Font = F.Medium
+		skillValueLabel.TextSize = 10
+		skillValueLabel.TextColor3 = C.Gray500
+		skillValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		skillValueLabel.Text = tostring(math.floor(skillValue))
+		skillValueLabel.ZIndex = 100
+		skillValueLabel.Parent = skillRow
+	end
+
+	-- Populate career history
+	self.careerInfoHistoryContainer:ClearAllChildren()
+
+	local historyLayout = Instance.new("UIListLayout")
+	historyLayout.Padding = UDim.new(0, 8)
+	historyLayout.Parent = self.careerInfoHistoryContainer
+
+	if #history == 0 then
+		local noHistory = Instance.new("TextLabel")
+		noHistory.Size = UDim2.new(1, 0, 0, 30)
+		noHistory.BackgroundTransparency = 1
+		noHistory.Font = F.Body
+		noHistory.TextSize = 12
+		noHistory.TextColor3 = C.Gray400
+		noHistory.Text = "No previous jobs"
+		noHistory.ZIndex = 100
+		noHistory.Parent = self.careerInfoHistoryContainer
+	else
+		for i, historyItem in ipairs(history) do
+			local historyCard = Instance.new("Frame")
+			historyCard.Size = UDim2.new(1, 0, 0, 50)
+			historyCard.BackgroundColor3 = C.Gray50
+			historyCard.LayoutOrder = #history - i + 1 -- Most recent first
+			historyCard.ZIndex = 99
+			historyCard.Parent = self.careerInfoHistoryContainer
+			UI.corner(historyCard, 8)
+
+			local historyTitle = Instance.new("TextLabel")
+			historyTitle.Size = UDim2.new(0.7, 0, 0, 20)
+			historyTitle.Position = UDim2.new(0, 10, 0, 6)
+			historyTitle.BackgroundTransparency = 1
+			historyTitle.Font = F.Medium
+			historyTitle.TextSize = 12
+			historyTitle.TextColor3 = C.Gray800
+			historyTitle.TextXAlignment = Enum.TextXAlignment.Left
+			historyTitle.TextTruncate = Enum.TextTruncate.AtEnd
+			historyTitle.Text = historyItem.title or "Previous Job"
+			historyTitle.ZIndex = 100
+			historyTitle.Parent = historyCard
+
+			local historyCompany = Instance.new("TextLabel")
+			historyCompany.Size = UDim2.new(0.7, 0, 0, 16)
+			historyCompany.Position = UDim2.new(0, 10, 0, 26)
+			historyCompany.BackgroundTransparency = 1
+			historyCompany.Font = F.Body
+			historyCompany.TextSize = 10
+			historyCompany.TextColor3 = C.Gray500
+			historyCompany.TextXAlignment = Enum.TextXAlignment.Left
+			historyCompany.Text = (historyItem.company or "Company") .. " • " .. string.format("%.1f yrs", historyItem.yearsWorked or 0)
+			historyCompany.ZIndex = 100
+			historyCompany.Parent = historyCard
+
+			local reasonColors = {quit = C.Amber, fired = C.Red, promoted = C.Green}
+			local reasonEmojis = {quit = "🚪", fired = "❌", promoted = "🚀"}
+			local reason = historyItem.reason or "quit"
+
+			local reasonBadge = Instance.new("Frame")
+			reasonBadge.Size = UDim2.new(0, 55, 0, 20)
+			reasonBadge.Position = UDim2.new(1, -65, 0.5, -10)
+			reasonBadge.BackgroundColor3 = reasonColors[reason] or C.Gray300
+			reasonBadge.ZIndex = 100
+			reasonBadge.Parent = historyCard
+			UI.pill(reasonBadge)
+
+			local reasonLabel = Instance.new("TextLabel")
+			reasonLabel.Size = UDim2.fromScale(1, 1)
+			reasonLabel.BackgroundTransparency = 1
+			reasonLabel.Font = F.Medium
+			reasonLabel.TextSize = 9
+			reasonLabel.TextColor3 = C.White
+			reasonLabel.Text = (reasonEmojis[reason] or "•") .. " " .. (reason:gsub("^%l", string.upper))
+			reasonLabel.ZIndex = 101
+			reasonLabel.Parent = reasonBadge
+		end
+	end
+
+	-- Update summary labels
+	self.careerInfoExpLabel.Text = "📊 Total Experience: " .. string.format("%.1f years", totalExp)
+	self.careerInfoPerfLabel.Text = "⭐ Current Performance: " .. math.floor(performance) .. "%"
+
+	-- Show modal with premium animation
+	self.careerInfoOverlay.Visible = true
+
+	-- Initial positions for animation
+	self.careerInfoShell.Position = UDim2.new(0.5, 0, 0.5, 40)
+	self.careerInfoShadow.Position = UDim2.new(0.5, 3, 0.5, 43)
+	self.careerInfoShell.BackgroundTransparency = 0.5
+	self.careerInfoShadow.BackgroundTransparency = 1
+
+	-- Animate to final positions
+	local tweenInfo = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	UI.tween(self.careerInfoShell, tweenInfo, {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+	UI.tween(self.careerInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 3),
+		BackgroundTransparency = 0.75
+	})
+end
+
+function OccupationScreen:createCareerInfoModal()
+	log("Creating career info modal...")
+
+	self.careerInfoOverlay = Instance.new("Frame")
+	self.careerInfoOverlay.Name = "CareerInfoOverlay"
+	self.careerInfoOverlay.Size = UDim2.fromScale(1, 1)
+	self.careerInfoOverlay.BackgroundColor3 = C.Black
+	self.careerInfoOverlay.BackgroundTransparency = 0.4
+	self.careerInfoOverlay.Visible = false
+	self.careerInfoOverlay.ZIndex = 96
+	self.careerInfoOverlay.Parent = self.screenGui
+
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 96
+	closeArea.Parent = self.careerInfoOverlay
+	closeArea.MouseButton1Click:Connect(function()
+		self:hideCareerInfoModal()
+	end)
+
+	-- Shadow frame (premium effect)
+	local shadowFrame = Instance.new("Frame")
+	shadowFrame.Name = "ShadowFrame"
+	shadowFrame.Size = UDim2.new(0.92, 6, 0, 526)
+	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadowFrame.BackgroundColor3 = C.Black
+	shadowFrame.BackgroundTransparency = 0.75
+	shadowFrame.ZIndex = 96
+	shadowFrame.Parent = self.careerInfoOverlay
+	UI.corner(shadowFrame, 26)
+	self.careerInfoShadow = shadowFrame
+
+	-- Colored shell (premium BitLife look)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(0.92, 0, 0, 520)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = C.Blue
+	shell.ZIndex = 97
+	shell.Parent = self.careerInfoOverlay
+	UI.corner(shell, 24)
+	self.careerInfoShell = shell
+
+	-- Shell border stroke
+	local shellStroke = UI.stroke(shell, 2, 0.3, C.BlueDark)
+	self.careerInfoShellStroke = shellStroke
+
+	-- Inner white card (inside shell)
+	self.careerInfoCard = Instance.new("Frame")
+	self.careerInfoCard.Name = "Card"
+	self.careerInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.careerInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.careerInfoCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.careerInfoCard.BackgroundColor3 = C.White
+	self.careerInfoCard.ZIndex = 98
+	self.careerInfoCard.Parent = shell
+	UI.corner(self.careerInfoCard, 20)
+
+	-- Header (colored accent banner)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 60)
+	header.BackgroundColor3 = C.Blue
+	header.ZIndex = 99
+	header.Parent = self.careerInfoCard
+	UI.corner(header, 20)
+
+	local headerFix = Instance.new("Frame")
+	headerFix.Name = "HeaderFix"
+	headerFix.Size = UDim2.new(1, 0, 0, 25)
+	headerFix.Position = UDim2.new(0, 0, 1, -25)
+	headerFix.BackgroundColor3 = C.Blue
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 99
+	headerFix.Parent = header
+
+	local headerTitle = Instance.new("TextLabel")
+	headerTitle.Size = UDim2.new(1, -50, 1, 0)
+	headerTitle.Position = UDim2.new(0, 0, 0, 0)
+	headerTitle.BackgroundTransparency = 1
+	headerTitle.Font = F.Title
+	headerTitle.TextSize = 17
+	headerTitle.TextColor3 = C.White
+	headerTitle.Text = "📋 Career Information"
+	headerTitle.ZIndex = 100
+	headerTitle.Parent = header
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseButton"
+	closeBtn.Size = UDim2.new(0, 30, 0, 30)
+	closeBtn.AnchorPoint = Vector2.new(1, 0)
+	closeBtn.Position = UDim2.new(1, -8, 0, 8)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.1
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 13
+	closeBtn.TextColor3 = C.Blue
+	closeBtn.Text = "✕"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 101
+	closeBtn.Parent = header
+	UI.corner(closeBtn, 15)
+
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	end)
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hideCareerInfoModal()
+	end)
+
+	-- Content scroll
+	local content = Instance.new("ScrollingFrame")
+	content.Name = "ContentScroll"
+	content.Size = UDim2.new(1, -16, 1, -72)
+	content.Position = UDim2.new(0, 8, 0, 65)
+	content.BackgroundTransparency = 1
+	content.CanvasSize = UDim2.new(0, 0, 0, 0)
+	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	content.ScrollBarThickness = 3
+	content.ScrollBarImageColor3 = C.Gray300
+	content.ZIndex = 99
+	content.Parent = self.careerInfoCard
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.Parent = content
+
+	-- Summary section
+	local summarySection = Instance.new("Frame")
+	summarySection.Size = UDim2.new(1, 0, 0, 55)
+	summarySection.BackgroundColor3 = C.Gray50
+	summarySection.LayoutOrder = 1
+	summarySection.ZIndex = 99
+	summarySection.Parent = content
+	UI.corner(summarySection, 12)
+	UI.pad(summarySection, 12, 12, 10, 10)
+
+	self.careerInfoExpLabel = Instance.new("TextLabel")
+	self.careerInfoExpLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.careerInfoExpLabel.Position = UDim2.new(0, 12, 0, 8)
+	self.careerInfoExpLabel.BackgroundTransparency = 1
+	self.careerInfoExpLabel.Font = F.Medium
+	self.careerInfoExpLabel.TextSize = 12
+	self.careerInfoExpLabel.TextColor3 = C.Gray700
+	self.careerInfoExpLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.careerInfoExpLabel.Text = "📊 Total Experience: 0 years"
+	self.careerInfoExpLabel.ZIndex = 100
+	self.careerInfoExpLabel.Parent = summarySection
+
+	self.careerInfoPerfLabel = Instance.new("TextLabel")
+	self.careerInfoPerfLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.careerInfoPerfLabel.Position = UDim2.new(0, 12, 0, 28)
+	self.careerInfoPerfLabel.BackgroundTransparency = 1
+	self.careerInfoPerfLabel.Font = F.Medium
+	self.careerInfoPerfLabel.TextSize = 12
+	self.careerInfoPerfLabel.TextColor3 = C.Gray700
+	self.careerInfoPerfLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.careerInfoPerfLabel.Text = "⭐ Current Performance: 75%"
+	self.careerInfoPerfLabel.ZIndex = 100
+	self.careerInfoPerfLabel.Parent = summarySection
+
+	-- Skills section
+	local skillsHeader = Instance.new("TextLabel")
+	skillsHeader.Size = UDim2.new(1, 0, 0, 24)
+	skillsHeader.BackgroundTransparency = 1
+	skillsHeader.Font = F.Title
+	skillsHeader.TextSize = 14
+	skillsHeader.TextColor3 = C.Gray800
+	skillsHeader.TextXAlignment = Enum.TextXAlignment.Left
+	skillsHeader.Text = "💼 Career Skills"
+	skillsHeader.LayoutOrder = 2
+	skillsHeader.ZIndex = 99
+	skillsHeader.Parent = content
+
+	self.careerInfoSkillsContainer = Instance.new("Frame")
+	self.careerInfoSkillsContainer.Size = UDim2.new(1, 0, 0, 0)
+	self.careerInfoSkillsContainer.AutomaticSize = Enum.AutomaticSize.Y
+	self.careerInfoSkillsContainer.BackgroundColor3 = C.Gray50
+	self.careerInfoSkillsContainer.LayoutOrder = 3
+	self.careerInfoSkillsContainer.ZIndex = 99
+	self.careerInfoSkillsContainer.Parent = content
+	UI.corner(self.careerInfoSkillsContainer, 12)
+	UI.pad(self.careerInfoSkillsContainer, 12, 12, 10, 10)
+
+	-- History section
+	local historyHeader = Instance.new("TextLabel")
+	historyHeader.Size = UDim2.new(1, 0, 0, 24)
+	historyHeader.BackgroundTransparency = 1
+	historyHeader.Font = F.Title
+	historyHeader.TextSize = 14
+	historyHeader.TextColor3 = C.Gray800
+	historyHeader.TextXAlignment = Enum.TextXAlignment.Left
+	historyHeader.Text = "📜 Career History"
+	historyHeader.LayoutOrder = 4
+	historyHeader.ZIndex = 99
+	historyHeader.Parent = content
+
+	self.careerInfoHistoryContainer = Instance.new("Frame")
+	self.careerInfoHistoryContainer.Size = UDim2.new(1, 0, 0, 0)
+	self.careerInfoHistoryContainer.AutomaticSize = Enum.AutomaticSize.Y
+	self.careerInfoHistoryContainer.BackgroundColor3 = C.Gray50
+	self.careerInfoHistoryContainer.LayoutOrder = 5
+	self.careerInfoHistoryContainer.ZIndex = 99
+	self.careerInfoHistoryContainer.Parent = content
+	UI.corner(self.careerInfoHistoryContainer, 12)
+	UI.pad(self.careerInfoHistoryContainer, 12, 12, 10, 10)
+
+	log("Career info modal created")
+end
+
+function OccupationScreen:hideCareerInfoModal()
+	if not self.careerInfoOverlay then return end
+	log("Hiding career info modal")
+
+	local tweenInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+	UI.tween(self.careerInfoShell, tweenInfo, {
+		Position = UDim2.new(0.5, 0, 0.5, 25),
+		BackgroundTransparency = 0.5
+	})
+	UI.tween(self.careerInfoShadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 28),
+		BackgroundTransparency = 1
+	})
+
+	task.delay(0.18, function()
+		if self.careerInfoOverlay then
+			self.careerInfoOverlay.Visible = false
+		end
+	end)
+end
+
+function OccupationScreen:enrollEducation(eduId)
+	log("=== ENROLLING IN EDUCATION ===")
+	log("Education ID:", eduId)
+	log("Player Age:", self:getAge(), "Money:", self:getMoney(), "Current Edu:", self:getEducationLevel())
+
+	if not EnrollEducation then
+		logWarn("EnrollEducation remote not available!")
+		self:showResult(false, "Server not available.", "X")
+		return
+	end
+
+	log("Invoking server EnrollEducation...")
+	local result = EnrollEducation:InvokeServer(eduId)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Message:", result.message)
+		self:showResult(result.success, result.message, result.success and "Enrolled!" or "Failed")
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error.", "X")
+	end
+end
+
+function OccupationScreen:showResult(success, message, emoji)
+	local shellColor = success and C.Green or C.Red
+	local shellStroke = success and C.GreenDark or C.RedDark
+	local pale = success and C.GreenPale or C.RedPale
+
+	self.resultModal.shell.BackgroundColor3 = shellColor
+	self.resultModal.shellStroke.Color = shellStroke
+	self.resultModal.emojiFrame.BackgroundColor3 = pale
+	self.resultModal.emojiLabel.Text = emoji or (success and "OK" or "X")
+	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
+	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.okButton.BackgroundColor3 = shellColor
+
+	UI.showModal(self.resultModal)
+end
+
+function OccupationScreen:show()
+	log("=== SHOWING OccupationScreen ===")
+	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+	self:updateInfoBar()
+	self:switchTab(self.currentTab)
+	UI.slideInScreen(self.overlay, "right")
+	self.isVisible = true
+	log("✅ OccupationScreen is now visible")
+end
+
+function OccupationScreen:hide()
+	log("=== HIDING OccupationScreen ===")
+	UI.slideOutScreen(self.overlay, "right", function()
+		self.resultModal.overlay.Visible = false
+		-- Also hide career info modal if open
+		if self.careerInfoOverlay then
+			self.careerInfoOverlay.Visible = false
+		end
+		-- Also hide job info modal if open
+		if self.jobInfoOverlay then
+			self.jobInfoOverlay.Visible = false
+		end
+		-- Also hide education info modal if open
+		if self.educationInfoOverlay then
+			self.educationInfoOverlay.Visible = false
+		end
+		log("✅ OccupationScreen hidden, modals cleaned up")
+	end)
+	self.isVisible = false
+end
+
+return OccupationScreen
