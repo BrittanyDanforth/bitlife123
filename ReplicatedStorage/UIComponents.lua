@@ -25,6 +25,7 @@ UI.Colors = {
 	PinkPale    = Color3.fromRGB(252, 231, 243),
 
 	Purple      = Color3.fromRGB(168, 85, 247),
+	PurpleDark  = Color3.fromRGB(126, 34, 206),
 	PurplePale  = Color3.fromRGB(237, 233, 254),
 
 	Cyan        = Color3.fromRGB(56, 189, 248),

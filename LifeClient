@@ -108,6 +108,7 @@ local SyncState      = getRemote("SyncState")
 local SetLifeInfo    = getRemote("SetLifeInfo")
 local MinigameResult = getRemote("MinigameResult", 1)
 local MinigameStart  = getRemote("MinigameStart", 1)
+local ResetLife      = getRemote("ResetLife", 1)
 
 ----------------------------------------------------------------
 -- STATE
@@ -1515,6 +1516,106 @@ surpriseBtn.MouseLeave:Connect(function()
 end)
 
 ----------------------------------------------------------------
+-- DEATH OVERLAY
+----------------------------------------------------------------
+
+local deathOverlay = Instance.new("Frame")
+deathOverlay.Name = "DeathOverlay"
+deathOverlay.Size = UDim2.fromScale(1, 1)
+deathOverlay.BackgroundColor3 = C.Black
+deathOverlay.BackgroundTransparency = 0.4
+deathOverlay.Visible = false
+deathOverlay.ZIndex = 120
+deathOverlay.Parent = screenGui
+
+local deathCard = Instance.new("Frame")
+deathCard.Size = UDim2.new(0, 340, 0, 0)
+deathCard.AutomaticSize = Enum.AutomaticSize.Y
+deathCard.AnchorPoint = Vector2.new(0.5, 0.5)
+deathCard.Position = UDim2.fromScale(0.5, 0.5)
+deathCard.BackgroundColor3 = C.White
+deathCard.ZIndex = 121
+deathCard.Parent = deathOverlay
+corner(deathCard, 22)
+
+local deathLayout = Instance.new("UIListLayout")
+deathLayout.Padding = UDim.new(0, 14)
+deathLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+deathLayout.Parent = deathCard
+pad(deathCard, 24, 24, 30, 30)
+
+local deathEmoji = Instance.new("TextLabel")
+deathEmoji.Size = UDim2.new(0, 80, 0, 80)
+deathEmoji.BackgroundColor3 = C.RedPale
+deathEmoji.Font = F.Body
+deathEmoji.TextSize = 44
+deathEmoji.TextColor3 = C.RedDark
+deathEmoji.Text = "☠️"
+deathEmoji.ZIndex = 122
+deathEmoji.Parent = deathCard
+corner(deathEmoji, 18)
+
+local deathTitle = Instance.new("TextLabel")
+deathTitle.Size = UDim2.new(1, -20, 0, 30)
+deathTitle.BackgroundTransparency = 1
+deathTitle.Font = F.Title
+deathTitle.TextSize = 22
+deathTitle.TextColor3 = C.Gray900
+deathTitle.Text = "Life Ended"
+deathTitle.ZIndex = 122
+deathTitle.Parent = deathCard
+
+local deathCause = Instance.new("TextLabel")
+deathCause.Size = UDim2.new(1, -10, 0, 0)
+deathCause.AutomaticSize = Enum.AutomaticSize.Y
+deathCause.BackgroundTransparency = 1
+deathCause.Font = F.Body
+deathCause.TextSize = 16
+deathCause.TextColor3 = C.Gray600
+deathCause.TextWrapped = true
+deathCause.TextXAlignment = Enum.TextXAlignment.Center
+deathCause.Text = "Tap restart to begin a new story."
+deathCause.ZIndex = 122
+deathCause.Parent = deathCard
+
+local deathRestart = Instance.new("TextButton")
+deathRestart.Size = UDim2.new(1, 0, 0, 50)
+deathRestart.BackgroundColor3 = C.Green
+deathRestart.Font = F.Button
+deathRestart.TextSize = 18
+deathRestart.TextColor3 = C.White
+deathRestart.Text = "Start New Life"
+deathRestart.AutoButtonColor = false
+deathRestart.ZIndex = 122
+deathRestart.Parent = deathCard
+corner(deathRestart, 14)
+
+deathRestart.MouseEnter:Connect(function()
+	tween(deathRestart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+end)
+deathRestart.MouseLeave:Connect(function()
+	tween(deathRestart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+end)
+
+deathRestart.MouseButton1Click:Connect(function()
+	if ResetLife then
+		log("Requesting new life reset")
+		ResetLife:FireServer()
+		deathCause.Text = "Creating a new life..."
+	end
+end)
+
+local function showDeathOverlay(causeText, age)
+	deathTitle.Text = string.format("Age %d", age or currentState.Age or 0)
+	deathCause.Text = causeText or "Your story has ended. Tap below to begin anew."
+	deathOverlay.Visible = true
+end
+
+local function hideDeathOverlay()
+	deathOverlay.Visible = false
+end
+
+----------------------------------------------------------------
 -- EVENT CATEGORY COLORS (BitLife-style themed borders)
 ----------------------------------------------------------------
 
@@ -2276,6 +2377,9 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			money = resultData.money or deltas.money,
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
+		if resultData.fatal then
+			showDeathOverlay(resultData.body or lastFeedText or "You passed away.", state.Age)
+		end
 	elseif deltas.health and deltas.health < -15 then
 		log("Major health drop detected:", deltas.health)
 		-- Auto-shake for MAJOR negative health (15+ drop)
@@ -2298,6 +2402,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- Update UI from state
 	updateFromState()
+
+	if currentState.Flags and currentState.Flags.dead then
+		showDeathOverlay(currentState.CauseOfDeath or lastFeedText or "You passed away.", currentState.Age)
+	else
+		hideDeathOverlay()
+	end
 	
 	-- Add feed entry
 	if lastFeedText and lastFeedText ~= "" and not (resultData and resultData.showPopup) then
@@ -2442,6 +2552,11 @@ ageButton.MouseButton1Click:Connect(function()
 	-- Block if no name set yet (intro not complete)
 	if not currentState.Name then
 		log("Age button pressed before name selected; ignoring.")
+		return
+	end
+
+	if currentState.Flags and currentState.Flags.dead then
+		log("Age button pressed but life has ended; waiting for restart.")
 		return
 	end
 	

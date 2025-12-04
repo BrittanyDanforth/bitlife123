@@ -274,38 +274,52 @@ function LifeStageSystem.calculateDeathChance(state)
 	return math.clamp(chance, 0, 1)
 end
 
-local DeathCauses = {
-	{ id = "natural_causes", label = "Natural Causes", weight = 5 },
-	{ id = "heart_attack", label = "Heart Attack", weight = 3, flag = "heart_condition" },
-	{ id = "accident", label = "Accident", weight = 2 },
-	{ id = "illness", label = "Illness", weight = 3, flag = "terminal_illness" },
-	{ id = "overdose", label = "Overdose", weight = 2, flag = "drug_addict" },
-}
+local function addCause(pool, id, label, weight, condition)
+	if condition and weight > 0 then
+		table.insert(pool, { id = id, label = label, weight = weight })
+	end
+end
 
 local function pickDeathCause(state)
-	local bucket = {}
-	for _, cause in ipairs(DeathCauses) do
-		if not cause.flag or state.Flags[cause.flag] then
-			table.insert(bucket, cause)
-		end
-	end
-	if #bucket == 0 then
-		return DeathCauses[1]
+	local pool = {}
+	local flags = state.Flags or {}
+	local age = state.Age or 0
+	local fame = state.Fame or 0
+	local jobTrack = state.Career and state.Career.track
+
+	addCause(pool, "natural", "Natural Causes", age >= 70 and 6 or 3, true)
+	addCause(pool, "heart_attack", "Massive Heart Attack", 4, flags.heart_condition or state.Health <= 15)
+	addCause(pool, "terminal_illness", "A Rare Illness", 3, flags.terminal_illness or flags.cancer)
+	addCause(pool, "overdose", "Overdose at an Afterparty", 4, flags.drug_addict)
+	addCause(pool, "street_crime", "A Late-Night Alley Ambush", 4, flags.crime_boss or flags.gang_member)
+	addCause(pool, "prison_fight", "Prison Yard Fight", 3, flags.in_prison)
+	addCause(pool, "heist_failure", "A Botched Heist", 3, flags.criminal_mastermind)
+	addCause(pool, "motorsport_crash", "High-Speed Racing Crash", 3, jobTrack == "motorsport")
+	addCause(pool, "tech_burnout", "Collapsed During a 48-hour Hackathon", 2, jobTrack == "tech")
+	addCause(pool, "political_scandal", "Scandal-Induced Breakdown", 2, flags.political_path)
+	addCause(pool, "paparazzi_chase", "Paparazzi Highway Pileup", 3, fame >= 70 or flags.famous)
+	addCause(pool, "pet_ferret", "Bitten by a Rabid Ferret", 1, true)
+	addCause(pool, "falling_piano", "Crushed by a Falling Piano", 1, true)
+	addCause(pool, "meteor", "Struck by a Baby Meteor", 1, true)
+	addCause(pool, "gamer_rage", "Slammed the Controller Too Hard", 1, fame >= 30)
+
+	if #pool == 0 then
+		addCause(pool, "natural", "Natural Causes", 1, true)
 	end
 
 	local total = 0
-	for _, cause in ipairs(bucket) do
+	for _, cause in ipairs(pool) do
 		total += cause.weight
 	end
 
 	local roll = Random.new():NextNumber() * total
-	for _, cause in ipairs(bucket) do
+	for _, cause in ipairs(pool) do
 		roll -= cause.weight
 		if roll <= 0 then
 			return cause
 		end
 	end
-	return bucket[#bucket]
+	return pool[#pool]
 end
 
 function LifeStageSystem.checkDeath(state)

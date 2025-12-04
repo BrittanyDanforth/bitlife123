@@ -715,6 +715,7 @@ function LifeBackend:setupRemotes()
 
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
+	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -795,6 +796,10 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoPathAction.OnServerInvoke = function(player, pathId, actionId)
 		return self:performPathAction(player, pathId, actionId)
 	end
+
+	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
+		self:resetLife(player)
+	end)
 end
 
 function LifeBackend:createInitialState(player)
@@ -992,7 +997,10 @@ end
 
 function LifeBackend:handleAgeUp(player)
 	local state = self:getState(player)
-	if not state or state.awaitingDecision then
+	if not state or state.awaitingDecision or (state.Flags and state.Flags.dead) then
+		if state and state.Flags and state.Flags.dead then
+			debugPrint("Age up ignored for dead player", player.Name)
+		end
 		return
 	end
 
@@ -1060,6 +1068,14 @@ function LifeBackend:handleAgeUp(player)
 	self:presentEvent(player, queue[1], feedText)
 end
 
+function LifeBackend:resetLife(player)
+	debugPrint("Resetting life for", player.Name)
+	local newState = LifeState.new(player)
+	self.playerStates[player] = newState
+	self.pendingEvents[player.UserId] = nil
+	self:pushState(player, "A new life begins...")
+end
+
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 	local deathInfo
 	if state.Health and state.Health <= 0 then
@@ -1075,6 +1091,7 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			state.Flags = state.Flags or {}
 			state.Flags.dead = true
 		end
+		state.CauseOfDeath = deathInfo.cause
 		feedText = string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
 		debugPrint(string.format("Player died: %s (Age %d) cause=%s", state.Name or player.Name, state.Age or -1, deathInfo.cause or "unknown"))
 		resultData = {
