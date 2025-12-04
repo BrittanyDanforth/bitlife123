@@ -6,24 +6,30 @@ local events = {
 		text = "Friends dare you to pocket a pricey pair of headphones from an electronics store.",
 		category = "crime",
 		weight = 5,
-		conditions = {
-			minAge = 13,
-			maxAge = 25,
-			blockedFlags = { "in_prison" },
-		},
+		minAge = 13,
+		maxAge = 25,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
 				text = "Do it",
 				effects = { Happiness = 2, Looks = -1 },
+				feedText = "You took the dare...",
 				onResolve = function(state)
 					if Random.new():NextNumber() < 0.45 then
-						state:SetFlag("criminal_record", true)
-						state:SetFlag("in_prison", true)
-						state:AddFeed("Security caught you! You spent a night in juvenile detention.")
+						if state.SetFlag then
+							state:SetFlag("criminal_record", true)
+						end
+						if state.AddFeed then
+							state:AddFeed("Security caught you! You spent a night in juvenile detention.")
+						end
 					else
-						state:AddFeed("You got away with the theft.")
-						state:AddMoney(200, "Sold stolen headphones")
+						if state.AddFeed then
+							state:AddFeed("You got away with the theft.")
+						end
+						if state.AddMoney then
+							state:AddMoney(200)
+						end
 					end
 				end,
 			},
@@ -31,6 +37,7 @@ local events = {
 				index = 2,
 				text = "Refuse",
 				effects = { Happiness = -1, Health = 1 },
+				feedText = "You refused the dare. Good choice.",
 			},
 		},
 	},
@@ -41,20 +48,22 @@ local events = {
 		text = "A coworker slips you a stock tip that seems too good to be legal.",
 		category = "crime",
 		weight = 3,
-		conditions = {
-			minAge = 25,
-			requiredFlags = { "employed" },
-		},
+		minAge = 25,
+		requiresJob = true,
 		choices = {
 			{
 				index = 1,
 				text = "Invest secretly",
 				effects = { Money = 15000, Happiness = 3 },
+				feedText = "You invested based on the tip...",
 				onResolve = function(state)
 					if Random.new():NextNumber() < 0.25 then
-						state:SetFlag("criminal_record", true)
-						state:SetFlag("in_prison", true)
-						state:AddFeed("Authorities traced suspicious trades back to you. You were arrested.")
+						if state.SetFlag then
+							state:SetFlag("criminal_record", true)
+						end
+						if state.AddFeed then
+							state:AddFeed("Authorities traced suspicious trades back to you!")
+						end
 					end
 				end,
 			},
@@ -62,6 +71,7 @@ local events = {
 				index = 2,
 				text = "Report it",
 				effects = { Happiness = -1, Smarts = 2 },
+				feedText = "You reported the insider trading tip.",
 			},
 		},
 	},

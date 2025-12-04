@@ -106,16 +106,18 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true },
 				feedText = "You bought your first home! A big milestone!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "property", {
-						id = "starter_home_" .. tostring(state.Age),
-						name = "Starter Home",
-						emoji = "🏠",
-						price = 85000,
-						value = 85000,
-						income = 0, -- not renting it out
-						isEventAcquired = true,
-					})
+					-- Use LifeState:AddAsset method directly
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "starter_home_" .. tostring(state.Age or 0),
+							name = "Starter Home",
+							emoji = "🏠",
+							price = 85000,
+							value = 85000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -124,16 +126,17 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true, high_mortgage = true },
 				feedText = "You got your dream home! But the mortgage is steep.",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "property", {
-						id = "dream_home_" .. tostring(state.Age),
-						name = "Dream Home",
-						emoji = "🏡",
-						price = 350000,
-						value = 350000,
-						income = 0,
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "dream_home_" .. tostring(state.Age or 0),
+							name = "Dream Home",
+							emoji = "🏡",
+							price = 350000,
+							value = 350000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -147,16 +150,17 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true, relocated = true },
 				feedText = "You moved somewhere more affordable!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "property", {
-						id = "affordable_home_" .. tostring(state.Age),
-						name = "Affordable Home",
-						emoji = "🏠",
-						price = 65000,
-						value = 65000,
-						income = 0,
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "affordable_home_" .. tostring(state.Age or 0),
+							name = "Affordable Home",
+							emoji = "🏠",
+							price = 65000,
+							value = 65000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 		},

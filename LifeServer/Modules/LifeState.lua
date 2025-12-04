@@ -311,6 +311,86 @@ function LifeState:GetNetWorth()
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CAREER (for event handlers)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:SetCareer(jobData)
+	if type(jobData) ~= "table" then return self end
+	
+	self.CurrentJob = {
+		id = jobData.id or "unknown",
+		name = jobData.name or jobData.jobTitle or "Job",
+		company = jobData.company or jobData.employer or "Company",
+		salary = jobData.salary or 30000,
+		category = jobData.category or "general",
+	}
+	
+	self.CareerInfo.performance = 60
+	self.CareerInfo.promotionProgress = 0
+	self.CareerInfo.yearsAtJob = 0
+	self.Career.track = jobData.category
+	
+	self.Flags.employed = true
+	self.Flags.has_job = true
+	
+	return self
+end
+
+function LifeState:ClearCareer()
+	self.CurrentJob = nil
+	self.CareerInfo.performance = 0
+	self.CareerInfo.promotionProgress = 0
+	self.CareerInfo.yearsAtJob = 0
+	self.Career.track = nil
+	self.Flags.employed = nil
+	self.Flags.has_job = nil
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EDUCATION (for event handlers)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:EnrollEducation(eduData)
+	if type(eduData) ~= "table" then return self end
+	
+	self.EducationData = {
+		Status = "enrolled",
+		Level = eduData.type or eduData.level or "college",
+		Progress = 0,
+		Duration = eduData.duration or 4,
+		Institution = eduData.name or eduData.institution or "University",
+		GPA = nil,
+		Debt = (self.EducationData.Debt or 0) + (eduData.cost or 0),
+		CreditsEarned = 0,
+		CreditsRequired = 120,
+		Year = 1,
+		TotalYears = eduData.duration or 4,
+	}
+	
+	self.Flags.in_college = true
+	self.Flags.college_student = true
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- FEED (for event handlers - stores pending feed text)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:AddFeed(text)
+	if text and text ~= "" then
+		self.PendingFeed = text
+	end
+	return self
+end
+
+function LifeState:ClearFlag(flagName)
+	self.Flags[flagName] = nil
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SERIALIZATION
 -- ════════════════════════════════════════════════════════════════════════════
 

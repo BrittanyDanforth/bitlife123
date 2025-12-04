@@ -309,13 +309,18 @@ local function canEventTrigger(event, state)
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
 	
+	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
+	local cond = event.conditions or {}
+	local minAge = event.minAge or cond.minAge
+	local maxAge = event.maxAge or cond.maxAge
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- BASIC CHECKS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Age range check
-	if event.minAge and age < event.minAge then return false end
-	if event.maxAge and age > event.maxAge then return false end
+	-- Age range check (check both event.minAge/maxAge and conditions.minAge/maxAge)
+	if minAge and age < minAge then return false end
+	if maxAge and age > maxAge then return false end
 	
 	-- One-time event already completed
 	if event.oneTime and history.completed[event.id] then
@@ -354,12 +359,35 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- Support old "conditions.requiredFlags" format (array of flag names)
+	if cond.requiredFlags then
+		for _, flag in ipairs(cond.requiredFlags) do
+			if not flags[flag] then
+				return false
+			end
+		end
+	end
+	
 	if event.blockedByFlags then
 		for flag, _ in pairs(event.blockedByFlags) do
 			if flags[flag] then
 				return false -- Has blocking flag
 			end
 		end
+	end
+	
+	-- Support old "conditions.blockedFlags" format (array of flag names)
+	if cond.blockedFlags then
+		for _, flag in ipairs(cond.blockedFlags) do
+			if flags[flag] then
+				return false
+			end
+		end
+	end
+	
+	-- Support old "requiresNoJob" field (same as blockedByFlags = {employed})
+	if event.requiresNoJob and (state.CurrentJob or flags.employed) then
+		return false
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

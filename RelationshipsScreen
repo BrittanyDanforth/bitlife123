@@ -10,22 +10,50 @@ local C = UI.Colors
 local F = UI.Fonts
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- COLOR SAFETY: Ensure all "dark" variants exist so TextColor3 never gets nil
+-- COLOR SAFETY: Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil
 -- This prevents "Color3 expected, got nil" errors if any colors are missing
 -- ═══════════════════════════════════════════════════════════════════════════════
-C.PinkDark   = C.PinkDark   or C.Pink   or Color3.fromRGB(220, 60, 120)
-C.GreenDark  = C.GreenDark  or C.Green  or Color3.fromRGB(20, 150, 90)
-C.RedDark    = C.RedDark    or C.Red    or Color3.fromRGB(210, 60, 60)
-C.PurpleDark = C.PurpleDark or C.Purple or Color3.fromRGB(110, 80, 200)
-C.CyanDark   = C.CyanDark   or C.Cyan   or Color3.fromRGB(0, 160, 220)
-C.BlueDark   = C.BlueDark   or C.Blue   or Color3.fromRGB(29, 78, 216)
-C.Gray500    = C.Gray500    or C.Gray400 or Color3.fromRGB(120, 120, 120)
-C.Gray600    = C.Gray600    or C.Gray500 or Color3.fromRGB(100, 100, 100)
-C.Gray700    = C.Gray700    or C.Gray600 or Color3.fromRGB(80, 80, 80)
-C.Gray800    = C.Gray800    or C.Gray700 or Color3.fromRGB(60, 60, 60)
-C.Gray900    = C.Gray900    or C.Gray800 or Color3.fromRGB(40, 40, 40)
+
+-- Base colors (must exist first!)
+C.Pink       = C.Pink       or Color3.fromRGB(236, 72, 153)
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Cyan       = C.Cyan       or Color3.fromRGB(6, 182, 212)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Orange     = C.Orange     or Color3.fromRGB(249, 115, 22)
+C.Yellow     = C.Yellow     or Color3.fromRGB(234, 179, 8)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.PinkDark   = C.PinkDark   or Color3.fromRGB(190, 24, 93)
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.CyanDark   = C.CyanDark   or Color3.fromRGB(14, 116, 144)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.OrangeDark = C.OrangeDark or Color3.fromRGB(194, 65, 12)
+
+-- Pale variants
 C.PinkPale   = C.PinkPale   or Color3.fromRGB(252, 231, 243)
 C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.YellowPale = C.YellowPale or Color3.fromRGB(254, 249, 195)
+C.OrangePale = C.OrangePale or Color3.fromRGB(255, 237, 213)
+
+-- Grays
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
 
 local RelationshipsScreen = {}
 RelationshipsScreen.__index = RelationshipsScreen
