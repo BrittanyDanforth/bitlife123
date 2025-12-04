@@ -292,16 +292,23 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 local function selectEventsForPlayer(data)
-	-- Use the LifeEvents module to build the year's event queue
-	local events = LifeEvents.buildYearQueue(data, { maxEvents = 2 })
+	-- BitLife style: Usually just 1 event per year, occasionally 0
+	-- Stage transitions are shown as notifications, not choice events
+	local events = LifeEvents.buildYearQueue(data, { maxEvents = 1 })
 	
-	-- Check for stage transition event
+	-- Check for stage transition - this is shown as a feed message, not an event
 	local prevAge = data.Age - 1
 	if prevAge >= 0 then
-		local transitionEvent = getStageTransitionEvent(prevAge, data.Age)
-		if transitionEvent then
-			-- Put transition event first
-			table.insert(events, 1, transitionEvent)
+		local prevStage = getLifeStage(prevAge)
+		local newStage = getLifeStage(data.Age)
+		
+		if prevStage.id ~= newStage.id then
+			-- Record stage transition in feed (shown as notification, not event)
+			data.StageTransition = {
+				from = prevStage.name,
+				to = newStage.name,
+				message = string.format("You are now a %s!", newStage.name)
+			}
 		end
 	end
 	
@@ -315,7 +322,13 @@ local function presentNextEvent(player, data)
 		data.EventQueue = {}
 		data.CurrentEventIndex = 0
 		
+		-- Build feed text including stage transition if applicable
 		local feedText = string.format("Age %d • Year %d", data.Age, 2025 + data.Age)
+		if data.StageTransition then
+			feedText = data.StageTransition.message .. "\n" .. feedText
+			data.StageTransition = nil -- Clear after showing
+		end
+		
 		SyncState:FireClient(player, data, feedText)
 		return
 	end
@@ -351,14 +364,19 @@ local function presentNextEvent(player, data)
 		})
 	end
 	
-	-- Generate feed text for age milestone
+	-- Generate feed text for age milestone (include stage transition if first event)
 	local ageFeedText = nil
 	if data.CurrentEventIndex == 1 then
-		ageFeedText = string.format("You are now %d years old. (%d)", data.Age, 2025 + data.Age)
+		if data.StageTransition then
+			ageFeedText = string.format("%s\nYou are now %d years old. (%d)", 
+				data.StageTransition.message, data.Age, 2025 + data.Age)
+			data.StageTransition = nil -- Clear after showing
+		else
+			ageFeedText = string.format("You are now %d years old. (%d)", data.Age, 2025 + data.Age)
+		end
 	end
 	
-	print(string.format("[LifeBackend] Presenting event '%s' to %s (event %d/%d)", 
-		event.id, player.Name, data.CurrentEventIndex, #data.EventQueue))
+	print(string.format("[LifeBackend] Presenting event '%s' to %s", event.id, player.Name))
 	
 	PresentEvent:FireClient(player, payload, ageFeedText)
 end
@@ -425,25 +443,27 @@ RequestAgeUp.OnServerEvent:Connect(function(player)
 		end
 	end
 	
-	-- Select events for this year
+	-- Select events for this year (BitLife style: usually just 1 event)
 	local events = selectEventsForPlayer(data)
 	
 	if #events > 0 then
 		data.EventQueue = events
 		data.CurrentEventIndex = 0
 		
-		-- Log which events were queued
-		local eventNames = {}
-		for _, e in ipairs(events) do
-			table.insert(eventNames, e.id)
-		end
-		print(string.format("[LifeBackend] Queued %d events for %s: %s", 
-			#events, player.Name, table.concat(eventNames, ", ")))
+		-- Log which event was queued
+		print(string.format("[LifeBackend] Event for %s: %s", player.Name, events[1].id))
 		
 		presentNextEvent(player, data)
 	else
-		-- No events, just sync state
-		local feedText = string.format("Age %d • Nothing eventful happened this year.", data.Age)
+		-- No events this year, just sync state with stage transition if applicable
+		local feedText
+		if data.StageTransition then
+			feedText = string.format("%s\nAge %d • Year %d", 
+				data.StageTransition.message, data.Age, 2025 + data.Age)
+			data.StageTransition = nil
+		else
+			feedText = string.format("Age %d • Nothing eventful happened this year.", data.Age)
+		end
 		SyncState:FireClient(player, data, feedText)
 	end
 end)

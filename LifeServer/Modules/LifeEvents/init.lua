@@ -1347,7 +1347,7 @@ end
 
 function LifeEvents.buildYearQueue(state, options)
 	options = options or {}
-	local maxEvents = options.maxEvents or 2
+	local maxEvents = options.maxEvents or 1 -- BitLife style: 1 event max per year
 	
 	if not state then return {} end
 	
@@ -1356,6 +1356,7 @@ function LifeEvents.buildYearQueue(state, options)
 	
 	local categories = getRelevantCategories(state)
 	
+	-- Collect all eligible events
 	for _, catName in ipairs(categories) do
 		local catEvents = EventsByCategory[catName] or {}
 		for _, event in ipairs(catEvents) do
@@ -1374,6 +1375,7 @@ function LifeEvents.buildYearQueue(state, options)
 		return {}
 	end
 	
+	-- Separate priority (milestone) events from regular events
 	local priorityEvents = {}
 	local regularEvents = {}
 	
@@ -1385,54 +1387,53 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	for _, candidate in ipairs(priorityEvents) do
-		if #selectedEvents < maxEvents then
-			table.insert(selectedEvents, candidate.event)
-			recordEventShown(state, candidate.event)
-		end
+	-- Priority events (milestones) always trigger if available
+	if #priorityEvents > 0 then
+		-- Pick the highest weighted priority event
+		table.sort(priorityEvents, function(a, b) return a.weight > b.weight end)
+		local chosen = priorityEvents[1]
+		table.insert(selectedEvents, chosen.event)
+		recordEventShown(state, chosen.event)
+		return selectedEvents -- Just return the milestone, don't stack more events
 	end
 	
-	if #selectedEvents < maxEvents and #regularEvents > 0 then
+	-- For regular events: chance of a "quiet year" with no events
+	-- Young kids (0-4): 30% chance of quiet year
+	-- Children (5-12): 40% chance of quiet year
+	-- Teens (13-17): 35% chance of quiet year
+	-- Adults (18+): 50% chance of quiet year
+	local age = state.Age or 0
+	local quietChance = 0.4
+	if age <= 4 then
+		quietChance = 0.3 -- More things happen in early childhood
+	elseif age <= 12 then
+		quietChance = 0.4
+	elseif age <= 17 then
+		quietChance = 0.35
+	else
+		quietChance = 0.5 -- Adult years are often routine
+	end
+	
+	if RANDOM:NextNumber() < quietChance then
+		return {} -- Quiet year, no event
+	end
+	
+	-- Select ONE regular event using weighted random selection
+	if #regularEvents > 0 then
 		local totalWeight = 0
 		for _, candidate in ipairs(regularEvents) do
 			totalWeight = totalWeight + candidate.weight
 		end
 		
-		local attempts = 0
-		local usedCategories = {}
+		local roll = RANDOM:NextNumber() * totalWeight
+		local cumulative = 0
 		
-		while #selectedEvents < maxEvents and #regularEvents > 0 and attempts < 50 do
-			attempts += 1
-			local roll = RANDOM:NextNumber() * totalWeight
-			local cumulative = 0
-			
-			for i, candidate in ipairs(regularEvents) do
-				cumulative = cumulative + candidate.weight
-				if roll <= cumulative then
-					local cat = candidate.event._category
-					
-					if usedCategories[cat] then
-						break
-					end
-					
-					local alreadySelected = false
-					for _, selected in ipairs(selectedEvents) do
-						if selected.id == candidate.event.id then
-							alreadySelected = true
-							break
-						end
-					end
-					
-					if not alreadySelected then
-						table.insert(selectedEvents, candidate.event)
-						recordEventShown(state, candidate.event)
-						usedCategories[cat] = true
-						
-						totalWeight = totalWeight - candidate.weight
-						table.remove(regularEvents, i)
-					end
-					break
-				end
+		for _, candidate in ipairs(regularEvents) do
+			cumulative = cumulative + candidate.weight
+			if roll <= cumulative then
+				table.insert(selectedEvents, candidate.event)
+				recordEventShown(state, candidate.event)
+				break
 			end
 		end
 	end
