@@ -31,6 +31,9 @@ LifeBackend.__index = LifeBackend
 
 local RANDOM = Random.new()
 
+local function debugPrint(...)
+	print("[LifeBackend]", ...)
+end
 local STAT_KEYS = { "Happiness", "Health", "Smarts", "Looks" }
 
 local function clamp(value, minValue, maxValue)
@@ -992,6 +995,8 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
+	debugPrint(string.format("Age up requested by %s (Age %d, Year %d)", player.Name, state.Age or -1, state.Year or 0))
+
 	local oldAge = state.Age
 	if state.AdvanceAge then
 		state:AdvanceAge()
@@ -1039,6 +1044,12 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
+	local eventIds = {}
+	for _, ev in ipairs(queue) do
+		table.insert(eventIds, ev.id or "unknown")
+	end
+	debugPrint(string.format("Queued %d events for %s: %s", #queue, player.Name, table.concat(eventIds, ", ")))
+
 	self.pendingEvents[player.UserId] = {
 		queue = queue,
 		cursor = 1,
@@ -1064,6 +1075,7 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			state.Flags.dead = true
 		end
 		feedText = string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
+		debugPrint(string.format("Player died: %s (Age %d) cause=%s", state.Name or player.Name, state.Age or -1, deathInfo.cause or "unknown"))
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
@@ -1101,6 +1113,8 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	if not choice then
 		return
 	end
+
+	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventDef.id or "unknown", player.Name, choiceIndex))
 
 	local state = self:getState(player)
 	if not state then
@@ -1178,11 +1192,13 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		if pending.cursor <= #pending.queue then
 			pending.definition = pending.queue[pending.cursor]
 			self.pendingEvents[player.UserId] = pending
+			debugPrint(string.format("Advancing to next event in queue (%d/%d) for %s", pending.cursor, #pending.queue, player.Name))
 			self:presentEvent(player, pending.definition, pending.feedText)
 			return
 		else
 			self.pendingEvents[player.UserId] = nil
 			state.awaitingDecision = false
+			debugPrint(string.format("Event queue complete for %s", player.Name))
 			self:completeAgeCycle(player, state, pending.feedText or feedText, resultData)
 			return
 		end

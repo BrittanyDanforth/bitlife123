@@ -11,33 +11,52 @@ local TweenService      = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 
+local LOG_PREFIX = "[LifeClient]"
+local function log(...)
+	print(LOG_PREFIX, ...)
+end
+
 ----------------------------------------------------------------
 -- SCREEN MODULES (with error handling) - PARALLEL LOADING
 ----------------------------------------------------------------
 
-local ScreensFolder = ReplicatedStorage:WaitForChild("Screens", 3) -- Reduced timeout
+local ScreensFolder = ReplicatedStorage:FindFirstChild("Screens")
+if not ScreensFolder then
+	ScreensFolder = script.Parent:FindFirstChild("Screens")
+end
 
 local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, StoryPathsScreen
 local MinigamesModule
 
-if ScreensFolder then
-	-- Load modules in parallel using coroutines for faster startup
-	local function safeRequire(name)
-		local child = ScreensFolder:FindFirstChild(name)
-		if child then
-			local s, r = pcall(require, child)
-			return s and r or nil
+local screenContainers = {
+	ScreensFolder,
+	script.Parent,
+}
+
+local function safeRequireFromContainers(name)
+	for _, container in ipairs(screenContainers) do
+		if container then
+			local child = container:FindFirstChild(name)
+			if child and child:IsA("ModuleScript") then
+				local ok, result = pcall(require, child)
+				if ok then
+					log("Loaded screen module", name, "from", container:GetFullName())
+					return result
+				else
+					warn(LOG_PREFIX, "Failed to require", name, ":", result)
+				end
+			end
 		end
-		return nil
 	end
-	
-	-- Fast parallel loading - no WaitForChild delays
-	OccupationScreen    = safeRequire("OccupationScreen")
-	AssetsScreen        = safeRequire("AssetsScreen")
-	RelationshipsScreen = safeRequire("RelationshipsScreen")
-	ActivitiesScreen    = safeRequire("ActivitiesScreen")
-	StoryPathsScreen    = safeRequire("StoryPathsScreen")
+	warn(LOG_PREFIX, "Could not locate screen module", name)
+	return nil
 end
+
+OccupationScreen    = safeRequireFromContainers("OccupationScreen")
+AssetsScreen        = safeRequireFromContainers("AssetsScreen")
+RelationshipsScreen = safeRequireFromContainers("RelationshipsScreen")
+ActivitiesScreen    = safeRequireFromContainers("ActivitiesScreen")
+StoryPathsScreen    = safeRequireFromContainers("StoryPathsScreen")
 
 -- Minigames module (directly in ReplicatedStorage) - wait for it!
 local function safeRequireRS(name)
@@ -48,7 +67,10 @@ local function safeRequireRS(name)
 	end
 	if child then
 		local s, r = pcall(require, child)
-		if s then return r end
+		if s then
+			log("Loaded shared module", name, "from ReplicatedStorage")
+			return r
+		end
 	end
 	return nil
 end
@@ -62,10 +84,21 @@ local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or Replica
 if not remotesFolder then
 	remotesFolder = ReplicatedStorage:FindFirstChild("Life") or ReplicatedStorage:WaitForChild("Life", 3)
 end
+log("Remotes folder resolved:", remotesFolder and remotesFolder:GetFullName() or "nil")
 
 -- Use FindFirstChild first, then short WaitForChild as fallback
 local function getRemote(name, timeout)
-	return remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, timeout or 2)
+	local remote = remotesFolder:FindFirstChild(name)
+	if remote then
+		return remote
+	end
+	remote = remotesFolder:WaitForChild(name, timeout or 2)
+	if not remote then
+		warn(LOG_PREFIX, "Remote missing:", name)
+	else
+		log("Remote resolved:", name)
+	end
+	return remote
 end
 
 local RequestAgeUp   = getRemote("RequestAgeUp")
@@ -1036,14 +1069,24 @@ local function createNavButton(info, parent, order)
 	btn.MouseButton1Click:Connect(function()
 		if info.screen == "occupation" and occupationScreenInstance then
 			occupationScreenInstance:show()
+		elseif info.screen == "occupation" then
+			warn(LOG_PREFIX, "Occupation screen not loaded")
 		elseif info.screen == "assets" and assetsScreenInstance then
 			assetsScreenInstance:show()
+		elseif info.screen == "assets" then
+			warn(LOG_PREFIX, "Assets screen not loaded")
 		elseif info.screen == "relationships" and relationshipsScreenInstance then
 			relationshipsScreenInstance:show()
+		elseif info.screen == "relationships" then
+			warn(LOG_PREFIX, "Relationships screen not loaded")
 		elseif info.screen == "activities" and activitiesScreenInstance then
 			activitiesScreenInstance:show()
+		elseif info.screen == "activities" then
+			warn(LOG_PREFIX, "Activities screen not loaded")
 		elseif info.screen == "storypaths" and storyPathsScreenInstance then
 			storyPathsScreenInstance:show()
+		elseif info.screen == "storypaths" then
+			warn(LOG_PREFIX, "Story Paths screen not loaded")
 		end
 	end)
 
@@ -1579,6 +1622,7 @@ showEvent = function(payload)
 	
 	-- Wrap in pcall to catch errors and ensure awaitingEvent gets reset
 	local success, errorMsg = pcall(function()
+		log("Displaying event", payload.id or "unknown", "title:", payload.title or "Life Event")
 		awaitingEvent = true
 		currentEventId = payload.id
 		clearChoices()
@@ -1703,6 +1747,7 @@ end
 hideEvent = function()
 	awaitingEvent  = false
 	currentEventId = nil
+	log("Event modal hidden")
 
 	-- Create the hide tween and track it
 	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
@@ -2059,6 +2104,7 @@ local firstSync = true
 
 SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if not state then return end
+	log("SyncState received -> Age:", state.Age, "Money:", state.Money)
 	
 	-- Only log significant state changes, not every sync (reduces spam)
 	local ageChanged = currentState and currentState.Age ~= state.Age
@@ -2218,6 +2264,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- Show result popup if we have result data from server
 	if resultData and resultData.showPopup then
+		log("Result popup requested:", resultData.title or "Result", "Money Δ:", resultData.money or deltas.money or 0)
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2230,17 +2277,21 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
 	elseif deltas.health and deltas.health < -15 then
+		log("Major health drop detected:", deltas.health)
 		-- Auto-shake for MAJOR negative health (15+ drop)
 		-- This is the BitLife-style "something bad happened" feedback
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)
 	elseif deltas.health and deltas.health < -5 then
+		log("Minor health drop:", deltas.health)
 		-- Smaller health drop - just flash, no shake
 		flashScreen(C.Red, 0.7, 0.25)
 	elseif deltas.money and deltas.money > 10000 then
+		log("Large money gain:", deltas.money)
 		-- Flash green for big money gains
 		flashScreen(C.Green, 0.7, 0.3)
 	elseif deltas.money and deltas.money < -10000 then
+		log("Large money loss:", deltas.money)
 		-- Flash red for big money losses
 		flashScreen(C.Red, 0.7, 0.25)
 	end
@@ -2289,6 +2340,7 @@ PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
 		warn("[LifeClient] ❌ PresentEvent received with nil eventData!")
 		return
 	end
+	log("PresentEvent received:", eventData.id or "unknown", "choices:", eventData.choices and #eventData.choices or 0)
 	
 	hideTutorial()
 	if ageFeedText then
@@ -2383,15 +2435,18 @@ ageButton.MouseButton1Click:Connect(function()
 	
 	-- Block age up if waiting for event choice
 	if awaitingEvent then
+		log("Age button pressed but awaiting event; ignoring.")
 		return
 	end
 	
 	-- Block if no name set yet (intro not complete)
 	if not currentState.Name then
+		log("Age button pressed before name selected; ignoring.")
 		return
 	end
 	
 	hideTutorial()
+	log("Firing RequestAgeUp for", currentState.Name or "Unnamed", "age", currentState.Age or 0)
 	pulseAge()
 	RequestAgeUp:FireServer()
 end)
@@ -2410,7 +2465,13 @@ end)
 local function safeNew(mod, name, ...)
 	if mod and mod.new then
 		local s, r = pcall(mod.new, ...)
-		if s and r then return r end
+		if s and r then
+			log("Initialized screen:", name)
+			return r
+		end
+		warn(LOG_PREFIX, "Failed to init screen", name, r)
+	else
+		warn(LOG_PREFIX, "Module missing new() for screen", name)
 	end
 	return nil
 end
