@@ -167,6 +167,17 @@ You don’t create these manually; `LifeBackend` handles it.
 3. Loader finds every module, normalizes conditions/flags, and registers them.
 4. Use `LifeEvents.getStats()` in the console to confirm coverage by category/stage.
 
+### Current Catalog Packs (Plain English)
+
+| File | What it covers | In-game impact |
+|------|----------------|----------------|
+| `Catalog/CoreMilestones.lua` | Life milestones from grade-school playdates to midlife burnout | Keeps every age bracket feeling grounded even before you add custom packs. |
+| `Catalog/CareerEvents.lua` | Job offers, bootcamp scholarships, promotion chats | Drives the Occupation screen with authored prompts so promotions/raises don’t feel random. |
+| `Catalog/RomanceEvents.lua` | High-school crushes, adult engagements | Powers the Relationships screen with simple love arcs that toggle partner flags. |
+| `Catalog/CrimeEvents.lua` | Petty theft dares, white-collar schemes | Backs the Crimes UI with risk vs reward stories (jail flags, payouts already built in). |
+
+Drop new files next to these and the loader will pick them up automatically.
+
 ---
 
 ## 8. Activities / Careers / Assets Hooks
