@@ -1,0 +1,2136 @@
+-- Minigames.lua
+-- Interactive minigames for deep story events (polished version)
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Minigames = {}
+Minigames.__index = Minigames
+
+-- Premium Colors
+local C = {
+	Navy = Color3.fromRGB(30, 58, 138),
+	NavyDark = Color3.fromRGB(23, 37, 84),
+	Blue = Color3.fromRGB(37, 99, 235),
+	BlueDark = Color3.fromRGB(29, 78, 216),
+	BluePale = Color3.fromRGB(219, 234, 254),
+	Green = Color3.fromRGB(34, 197, 94),
+	GreenDark = Color3.fromRGB(22, 163, 74),
+	GreenPale = Color3.fromRGB(220, 252, 231),
+	Red = Color3.fromRGB(239, 68, 68),
+	RedDark = Color3.fromRGB(220, 38, 38),
+	RedPale = Color3.fromRGB(254, 226, 226),
+	Amber = Color3.fromRGB(245, 158, 11),
+	AmberDark = Color3.fromRGB(217, 119, 6),
+	AmberPale = Color3.fromRGB(254, 243, 199),
+	Purple = Color3.fromRGB(147, 51, 234),
+	PurplePale = Color3.fromRGB(243, 232, 255),
+	Gold = Color3.fromRGB(234, 179, 8),
+	White = Color3.fromRGB(255, 255, 255),
+	Gray100 = Color3.fromRGB(243, 244, 246),
+	Gray200 = Color3.fromRGB(229, 231, 235),
+	Gray300 = Color3.fromRGB(209, 213, 219),
+	Gray400 = Color3.fromRGB(156, 163, 175),
+	Gray500 = Color3.fromRGB(107, 114, 128),
+	Gray600 = Color3.fromRGB(75, 85, 99),
+	Gray700 = Color3.fromRGB(55, 65, 81),
+	Gray800 = Color3.fromRGB(31, 41, 55),
+	Gray900 = Color3.fromRGB(17, 24, 39),
+	Black = Color3.fromRGB(0, 0, 0),
+}
+
+local F = {
+	Title = Enum.Font.GothamBold,
+	Body = Enum.Font.Gotham,
+	Medium = Enum.Font.GothamMedium,
+	Button = Enum.Font.GothamBold,
+}
+
+-- UI helpers
+local function corner(p, r)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, r)
+	c.Parent = p
+	return c
+end
+
+local function pill(p)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0.5, 0)
+	c.Parent = p
+	return c
+end
+
+local function stroke(p, t, tr, col)
+	local s = Instance.new("UIStroke")
+	s.Thickness = t
+	s.Transparency = tr or 0
+	s.Color = col or C.White
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.Parent = p
+	return s
+end
+
+local function pad(p, l, r, t, b)
+	local pd = Instance.new("UIPadding")
+	pd.PaddingLeft = UDim.new(0, l or 0)
+	pd.PaddingRight = UDim.new(0, r or 0)
+	pd.PaddingTop = UDim.new(0, t or 0)
+	pd.PaddingBottom = UDim.new(0, b or 0)
+	pd.Parent = p
+	return pd
+end
+
+local function tween(o, info, props)
+	local t = TweenService:Create(o, info, props)
+	t:Play()
+	return t
+end
+
+local function disconnect(conn)
+	if conn and conn.Connected then
+		conn:Disconnect()
+	end
+end
+
+local function disconnectAll(tbl)
+	if not tbl then return end
+	for key, conn in pairs(tbl) do
+		if typeof(conn) == "RBXScriptConnection" then
+			disconnect(conn)
+			tbl[key] = nil
+		end
+	end
+end
+
+function Minigames.new(screenGui)
+	local self = setmetatable({}, Minigames)
+	self.screenGui = screenGui
+	self.activeGame = nil
+	self.callback = nil
+
+	-- Connection tracking
+	self._debateButtonConnections = {}
+	self._debateTimerConnection = nil
+
+	self._heistNumConnections = {}
+	self._getawayButtonConnections = {}
+	self._getawayCopChaseThread = nil
+
+	self._qteTapConnection = nil
+
+	self._prisonArrowConnections = {}
+	self._prisonGuardThread = nil
+
+	self._mashConnection = nil
+	self._mashTimerThread = nil
+
+	self._hackKeyConnections = {}
+	self._hackTimerConnection = nil
+
+	-- Build UI once
+	self:createDebateGame()
+	self:createHeistGame()
+	self:createGetawayGame()
+	self:createQuickTimeGame()
+	self:createPrisonEscapeGame()
+	self:createMashGame()
+	self:createHackingGame()
+
+	return self
+end
+
+----------------------------------------------------------------
+-- DEBATE MINIGAME (Presidential Path)
+----------------------------------------------------------------
+
+function Minigames:createDebateGame()
+	self.debateOverlay = Instance.new("Frame")
+	self.debateOverlay.Size = UDim2.fromScale(1, 1)
+	self.debateOverlay.BackgroundColor3 = C.Black
+	self.debateOverlay.BackgroundTransparency = 0.3
+	self.debateOverlay.Visible = false
+	self.debateOverlay.ZIndex = 200
+	self.debateOverlay.Parent = self.screenGui
+
+	self.debateCard = Instance.new("Frame")
+	self.debateCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.debateCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.debateCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.debateCard.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+	self.debateCard.ZIndex = 201
+	self.debateCard.Parent = self.debateOverlay
+	corner(self.debateCard, 20)
+
+	-- Stage background
+	local stage = Instance.new("Frame")
+	stage.Size = UDim2.new(1, 0, 0, 80)
+	stage.BackgroundColor3 = C.Navy
+	stage.ZIndex = 202
+	stage.Parent = self.debateCard
+	corner(stage, 20)
+
+	local stageFix = Instance.new("Frame")
+	stageFix.Size = UDim2.new(1, 0, 0, 40)
+	stageFix.Position = UDim2.new(0, 0, 0, 45)
+	stageFix.BackgroundColor3 = C.Navy
+	stageFix.ZIndex = 202
+	stageFix.Parent = stage
+
+	local stageTitle = Instance.new("TextLabel")
+	stageTitle.Size = UDim2.new(1, 0, 1, 0)
+	stageTitle.BackgroundTransparency = 1
+	stageTitle.Font = F.Title
+	stageTitle.TextSize = 24
+	stageTitle.TextColor3 = C.White
+	stageTitle.Text = "🎤 PRESIDENTIAL DEBATE"
+	stageTitle.ZIndex = 203
+	stageTitle.Parent = stage
+
+	-- Score display
+	self.debateScoreFrame = Instance.new("Frame")
+	self.debateScoreFrame.Size = UDim2.new(0.9, 0, 0, 50)
+	self.debateScoreFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.debateScoreFrame.Position = UDim2.new(0.5, 0, 0, 90)
+	self.debateScoreFrame.BackgroundTransparency = 1
+	self.debateScoreFrame.ZIndex = 202
+	self.debateScoreFrame.Parent = self.debateCard
+
+	-- Your score
+	local yourScoreBox = Instance.new("Frame")
+	yourScoreBox.Size = UDim2.new(0.45, 0, 1, 0)
+	yourScoreBox.BackgroundColor3 = C.Green
+	yourScoreBox.ZIndex = 203
+	yourScoreBox.Parent = self.debateScoreFrame
+	corner(yourScoreBox, 12)
+
+	local yourLabel = Instance.new("TextLabel")
+	yourLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	yourLabel.BackgroundTransparency = 1
+	yourLabel.Font = F.Medium
+	yourLabel.TextSize = 11
+	yourLabel.TextColor3 = C.White
+	yourLabel.Text = "YOU"
+	yourLabel.ZIndex = 204
+	yourLabel.Parent = yourScoreBox
+
+	self.yourScoreLabel = Instance.new("TextLabel")
+	self.yourScoreLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	self.yourScoreLabel.Position = UDim2.new(0, 0, 0.5, 0)
+	self.yourScoreLabel.BackgroundTransparency = 1
+	self.yourScoreLabel.Font = F.Title
+	self.yourScoreLabel.TextSize = 20
+	self.yourScoreLabel.TextColor3 = C.White
+	self.yourScoreLabel.Text = "0"
+	self.yourScoreLabel.ZIndex = 204
+	self.yourScoreLabel.Parent = yourScoreBox
+
+	-- Opponent score
+	local oppScoreBox = Instance.new("Frame")
+	oppScoreBox.Size = UDim2.new(0.45, 0, 1, 0)
+	oppScoreBox.Position = UDim2.new(0.55, 0, 0, 0)
+	oppScoreBox.BackgroundColor3 = C.Red
+	oppScoreBox.ZIndex = 203
+	oppScoreBox.Parent = self.debateScoreFrame
+	corner(oppScoreBox, 12)
+
+	local oppLabel = Instance.new("TextLabel")
+	oppLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	oppLabel.BackgroundTransparency = 1
+	oppLabel.Font = F.Medium
+	oppLabel.TextSize = 11
+	oppLabel.TextColor3 = C.White
+	oppLabel.Text = "OPPONENT"
+	oppLabel.ZIndex = 204
+	oppLabel.Parent = oppScoreBox
+
+	self.oppScoreLabel = Instance.new("TextLabel")
+	self.oppScoreLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	self.oppScoreLabel.Position = UDim2.new(0, 0, 0.5, 0)
+	self.oppScoreLabel.BackgroundTransparency = 1
+	self.oppScoreLabel.Font = F.Title
+	self.oppScoreLabel.TextSize = 20
+	self.oppScoreLabel.TextColor3 = C.White
+	self.oppScoreLabel.Text = "0"
+	self.oppScoreLabel.ZIndex = 204
+	self.oppScoreLabel.Parent = oppScoreBox
+
+	-- Timer bar
+	self.debateTimerBg = Instance.new("Frame")
+	self.debateTimerBg.Size = UDim2.new(0.9, 0, 0, 12)
+	self.debateTimerBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.debateTimerBg.Position = UDim2.new(0.5, 0, 0, 150)
+	self.debateTimerBg.BackgroundColor3 = C.Gray700
+	self.debateTimerBg.ZIndex = 202
+	self.debateTimerBg.Parent = self.debateCard
+	pill(self.debateTimerBg)
+
+	self.debateTimerFill = Instance.new("Frame")
+	self.debateTimerFill.Size = UDim2.new(1, 0, 1, 0)
+	self.debateTimerFill.BackgroundColor3 = C.Amber
+	self.debateTimerFill.ZIndex = 203
+	self.debateTimerFill.Parent = self.debateTimerBg
+	pill(self.debateTimerFill)
+
+	-- Question display
+	self.debateQuestion = Instance.new("TextLabel")
+	self.debateQuestion.Size = UDim2.new(0.9, 0, 0, 80)
+	self.debateQuestion.AnchorPoint = Vector2.new(0.5, 0)
+	self.debateQuestion.Position = UDim2.new(0.5, 0, 0, 175)
+	self.debateQuestion.BackgroundColor3 = C.Gray800
+	self.debateQuestion.Font = F.Medium
+	self.debateQuestion.TextSize = 16
+	self.debateQuestion.TextColor3 = C.White
+	self.debateQuestion.TextWrapped = true
+	self.debateQuestion.Text = "Question loading..."
+	self.debateQuestion.ZIndex = 202
+	self.debateQuestion.Parent = self.debateCard
+	corner(self.debateQuestion, 12)
+
+	-- Answer buttons container
+	self.debateAnswers = Instance.new("Frame")
+	self.debateAnswers.Size = UDim2.new(0.9, 0, 0, 200)
+	self.debateAnswers.AnchorPoint = Vector2.new(0.5, 0)
+	self.debateAnswers.Position = UDim2.new(0.5, 0, 0, 270)
+	self.debateAnswers.BackgroundTransparency = 1
+	self.debateAnswers.ZIndex = 202
+	self.debateAnswers.Parent = self.debateCard
+
+	local answerLayout = Instance.new("UIListLayout")
+	answerLayout.Padding = UDim.new(0, 10)
+	answerLayout.Parent = self.debateAnswers
+
+	self.debateAnswerBtns = {}
+	for i = 1, 4 do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, 44)
+		btn.BackgroundColor3 = C.Blue
+		btn.Font = F.Button
+		btn.TextSize = 14
+		btn.TextColor3 = C.White
+		btn.Text = "Answer " .. i
+		btn.TextWrapped = true
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 203
+		btn.Parent = self.debateAnswers
+		corner(btn, 12)
+
+		self.debateAnswerBtns[i] = btn
+	end
+
+	-- Debate questions database
+	self.debateQuestions = {
+		{
+			q = "The moderator asks: What is your plan to address climate change?",
+			answers = {
+				{ text = "Invest in renewable energy and green jobs", correct = true },
+				{ text = "Climate change is a hoax", correct = false },
+				{ text = "Let the market figure it out", correct = false },
+				{ text = "I don't understand the question", correct = false },
+			}
+		},
+		{
+			q = "A citizen asks: How will you make healthcare more affordable?",
+			answers = {
+				{ text = "Expand coverage and negotiate drug prices", correct = true },
+				{ text = "Eliminate all healthcare programs", correct = false },
+				{ text = "Healthcare is not a government issue", correct = false },
+				{ text = "I'll think about it later", correct = false },
+			}
+		},
+		{
+			q = "The moderator asks: How will you handle the economy?",
+			answers = {
+				{ text = "Invest in infrastructure and education", correct = true },
+				{ text = "Cut all government spending immediately", correct = false },
+				{ text = "Print more money", correct = false },
+				{ text = "Economy? What economy?", correct = false },
+			}
+		},
+		{
+			q = "On foreign policy: How will you handle international relations?",
+			answers = {
+				{ text = "Strengthen alliances and diplomacy first", correct = true },
+				{ text = "Isolate America from the world", correct = false },
+				{ text = "Declare war on everyone", correct = false },
+				{ text = "Foreign policy isn't important", correct = false },
+			}
+		},
+		{
+			q = "On education: What's your plan for improving schools?",
+			answers = {
+				{ text = "Increase funding and teacher pay", correct = true },
+				{ text = "Close all public schools", correct = false },
+				{ text = "Kids don't need education", correct = false },
+				{ text = "Let parents figure it out", correct = false },
+			}
+		},
+		{
+			q = "A voter asks: How will you reduce crime?",
+			answers = {
+				{ text = "Community programs and smart policing", correct = true },
+				{ text = "Abolish all laws", correct = false },
+				{ text = "Lock everyone up forever", correct = false },
+				{ text = "Crime is fine actually", correct = false },
+			}
+		},
+		{
+			q = "The moderator asks: What about the national debt?",
+			answers = {
+				{ text = "Responsible budgeting and growth", correct = true },
+				{ text = "Just ignore it", correct = false },
+				{ text = "Borrow more money", correct = false },
+				{ text = "What's a debt?", correct = false },
+			}
+		},
+		{
+			q = "On immigration: What is your policy?",
+			answers = {
+				{ text = "Comprehensive reform with a path to citizenship", correct = true },
+				{ text = "Deport everyone", correct = false },
+				{ text = "Open borders with no rules", correct = false },
+				{ text = "Build a moat with alligators", correct = false },
+			}
+		},
+	}
+end
+
+function Minigames:startDebate(callback)
+	self.callback = callback
+	self.debateOverlay.Visible = true
+	self.activeGame = "debate"
+
+	self.yourScore = 0
+	self.oppScore = 0
+	self.currentQuestion = 0
+	self.totalQuestions = 5
+
+	self.yourScoreLabel.Text = "0"
+	self.oppScoreLabel.Text = "0"
+
+	-- Shuffle and pick questions
+	self.selectedQuestions = {}
+	local shuffled = {}
+	for _, q in ipairs(self.debateQuestions) do
+		table.insert(shuffled, q)
+	end
+	for i = #shuffled, 2, -1 do
+		local j = math.random(i)
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	end
+	for i = 1, math.min(self.totalQuestions, #shuffled) do
+		table.insert(self.selectedQuestions, shuffled[i])
+	end
+
+	self:showNextDebateQuestion()
+end
+
+function Minigames:showNextDebateQuestion()
+	self.currentQuestion += 1
+
+	if self.currentQuestion > #self.selectedQuestions then
+		self:endDebate()
+		return
+	end
+
+	local q = self.selectedQuestions[self.currentQuestion]
+	self.debateQuestion.Text = "Q" .. self.currentQuestion .. "/" .. #self.selectedQuestions .. ": " .. q.q
+
+	-- Shuffle answers
+	local shuffledAnswers = {}
+	for _, a in ipairs(q.answers) do
+		table.insert(shuffledAnswers, a)
+	end
+	for i = #shuffledAnswers, 2, -1 do
+		local j = math.random(i)
+		shuffledAnswers[i], shuffledAnswers[j] = shuffledAnswers[j], shuffledAnswers[i]
+	end
+
+	-- Clear old button connections
+	disconnectAll(self._debateButtonConnections)
+	self._debateButtonConnections = {}
+
+	-- Set up buttons
+	for i, btn in ipairs(self.debateAnswerBtns) do
+		local answer = shuffledAnswers[i]
+		if answer then
+			btn.Visible = true
+			btn.Text = answer.text
+			btn.BackgroundColor3 = C.Blue
+
+			self._debateButtonConnections[i] = btn.MouseButton1Click:Connect(function()
+				self:handleDebateAnswer(answer.correct)
+			end)
+		else
+			btn.Visible = false
+		end
+	end
+
+	-- Timer animation
+	self.debateTimerFill.Size = UDim2.new(1, 0, 1, 0)
+
+	if self._debateTimerConnection then
+		task.cancel(self._debateTimerConnection)
+		self._debateTimerConnection = nil
+	end
+
+	tween(self.debateTimerFill, TweenInfo.new(8, Enum.EasingStyle.Linear), {
+		Size = UDim2.new(0, 0, 1, 0),
+	})
+
+	self._debateTimerConnection = task.delay(8, function()
+		if self.activeGame == "debate" then
+			self:handleDebateAnswer(false) -- timeout
+		end
+	end)
+end
+
+function Minigames:handleDebateAnswer(correct)
+	if self._debateTimerConnection then
+		task.cancel(self._debateTimerConnection)
+		self._debateTimerConnection = nil
+	end
+
+	if correct then
+		self.yourScore += 1
+		self.yourScoreLabel.Text = tostring(self.yourScore)
+		for _, btn in ipairs(self.debateAnswerBtns) do
+			if btn.Visible then
+				btn.BackgroundColor3 = C.Green
+			end
+		end
+	else
+		self.oppScore += 1
+		self.oppScoreLabel.Text = tostring(self.oppScore)
+		for _, btn in ipairs(self.debateAnswerBtns) do
+			if btn.Visible then
+				btn.BackgroundColor3 = C.Red
+			end
+		end
+	end
+
+	task.delay(0.8, function()
+		if self.activeGame == "debate" then
+			self:showNextDebateQuestion()
+		end
+	end)
+end
+
+function Minigames:endDebate()
+	self.activeGame = nil
+	self.debateOverlay.Visible = false
+
+	disconnectAll(self._debateButtonConnections)
+	self._debateButtonConnections = {}
+	if self._debateTimerConnection then
+		task.cancel(self._debateTimerConnection)
+		self._debateTimerConnection = nil
+	end
+
+	local won = self.yourScore > self.oppScore
+	if self.callback then
+		self.callback(won, { yourScore = self.yourScore, oppScore = self.oppScore })
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- HEIST MINIGAME (Criminal Path)
+----------------------------------------------------------------
+
+function Minigames:createHeistGame()
+	self.heistOverlay = Instance.new("Frame")
+	self.heistOverlay.Size = UDim2.fromScale(1, 1)
+	self.heistOverlay.BackgroundColor3 = C.Black
+	self.heistOverlay.BackgroundTransparency = 0.2
+	self.heistOverlay.Visible = false
+	self.heistOverlay.ZIndex = 200
+	self.heistOverlay.Parent = self.screenGui
+
+	self.heistCard = Instance.new("Frame")
+	self.heistCard.Size = UDim2.new(0.95, 0, 0, 500)
+	self.heistCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.heistCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.heistCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	self.heistCard.ZIndex = 201
+	self.heistCard.Parent = self.heistOverlay
+	corner(self.heistCard, 20)
+
+	-- Title
+	local heistTitle = Instance.new("TextLabel")
+	heistTitle.Size = UDim2.new(1, 0, 0, 60)
+	heistTitle.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	heistTitle.Font = F.Title
+	heistTitle.TextSize = 24
+	heistTitle.TextColor3 = C.White
+	heistTitle.Text = "🔓 CRACK THE SAFE"
+	heistTitle.ZIndex = 202
+	heistTitle.Parent = self.heistCard
+	corner(heistTitle, 20)
+
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0, 30)
+	titleFix.Position = UDim2.new(0, 0, 0, 35)
+	titleFix.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	titleFix.ZIndex = 202
+	titleFix.Parent = heistTitle
+
+	-- Instructions
+	self.heistInstructions = Instance.new("TextLabel")
+	self.heistInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.heistInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.heistInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.heistInstructions.BackgroundTransparency = 1
+	self.heistInstructions.Font = F.Body
+	self.heistInstructions.TextSize = 14
+	self.heistInstructions.TextColor3 = C.Gray300
+	self.heistInstructions.TextWrapped = true
+	self.heistInstructions.Text = "Find the 4-digit code! Green = correct digit & position. Yellow = correct digit, wrong position."
+	self.heistInstructions.ZIndex = 202
+	self.heistInstructions.Parent = self.heistCard
+
+	-- Attempts remaining
+	self.heistAttempts = Instance.new("TextLabel")
+	self.heistAttempts.Size = UDim2.new(0.9, 0, 0, 30)
+	self.heistAttempts.AnchorPoint = Vector2.new(0.5, 0)
+	self.heistAttempts.Position = UDim2.new(0.5, 0, 0, 110)
+	self.heistAttempts.BackgroundTransparency = 1
+	self.heistAttempts.Font = F.Button
+	self.heistAttempts.TextSize = 16
+	self.heistAttempts.TextColor3 = C.Amber
+	self.heistAttempts.Text = "Attempts: 6 remaining"
+	self.heistAttempts.ZIndex = 202
+	self.heistAttempts.Parent = self.heistCard
+
+	-- Code input display
+	self.heistCodeDisplay = Instance.new("Frame")
+	self.heistCodeDisplay.Size = UDim2.new(0.8, 0, 0, 60)
+	self.heistCodeDisplay.AnchorPoint = Vector2.new(0.5, 0)
+	self.heistCodeDisplay.Position = UDim2.new(0.5, 0, 0, 150)
+	self.heistCodeDisplay.BackgroundColor3 = C.Gray800
+	self.heistCodeDisplay.ZIndex = 202
+	self.heistCodeDisplay.Parent = self.heistCard
+	corner(self.heistCodeDisplay, 12)
+
+	local codeLayout = Instance.new("UIListLayout")
+	codeLayout.FillDirection = Enum.FillDirection.Horizontal
+	codeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	codeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	codeLayout.Padding = UDim.new(0, 8)
+	codeLayout.Parent = self.heistCodeDisplay
+
+	self.heistDigitLabels = {}
+	for i = 1, 4 do
+		local digitFrame = Instance.new("Frame")
+		digitFrame.Size = UDim2.new(0, 50, 0, 50)
+		digitFrame.BackgroundColor3 = C.Gray700
+		digitFrame.LayoutOrder = i
+		digitFrame.ZIndex = 203
+		digitFrame.Parent = self.heistCodeDisplay
+		corner(digitFrame, 8)
+
+		local digitLabel = Instance.new("TextLabel")
+		digitLabel.Size = UDim2.fromScale(1, 1)
+		digitLabel.BackgroundTransparency = 1
+		digitLabel.Font = F.Title
+		digitLabel.TextSize = 28
+		digitLabel.TextColor3 = C.White
+		digitLabel.Text = "_"
+		digitLabel.ZIndex = 204
+		digitLabel.Parent = digitFrame
+
+		self.heistDigitLabels[i] = { frame = digitFrame, label = digitLabel }
+	end
+
+	-- Number pad
+	self.heistNumpad = Instance.new("Frame")
+	self.heistNumpad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.heistNumpad.AnchorPoint = Vector2.new(0.5, 0)
+	self.heistNumpad.Position = UDim2.new(0.5, 0, 0, 225)
+	self.heistNumpad.BackgroundTransparency = 1
+	self.heistNumpad.ZIndex = 202
+	self.heistNumpad.Parent = self.heistCard
+
+	local numpadLayout = Instance.new("UIGridLayout")
+	numpadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
+	numpadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	numpadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	numpadLayout.Parent = self.heistNumpad
+
+	local numOrder = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓" }
+	self.heistNumBtns = {}
+	for i, num in ipairs(numOrder) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = (num == "✓" and C.Green) or (num == "⌫" and C.Red) or C.Gray600
+		btn.Font = F.Title
+		btn.TextSize = 24
+		btn.TextColor3 = C.White
+		btn.Text = num
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 203
+		btn.Parent = self.heistNumpad
+		corner(btn, 12)
+
+		self.heistNumBtns[num] = btn
+	end
+
+	-- Previous guesses
+	self.heistHistory = Instance.new("Frame")
+	self.heistHistory.Size = UDim2.new(0.9, 0, 0, 80)
+	self.heistHistory.AnchorPoint = Vector2.new(0.5, 0)
+	self.heistHistory.Position = UDim2.new(0.5, 0, 0, 415)
+	self.heistHistory.BackgroundColor3 = C.Gray800
+	self.heistHistory.ZIndex = 202
+	self.heistHistory.Parent = self.heistCard
+	corner(self.heistHistory, 12)
+
+	local historyLayout = Instance.new("UIListLayout")
+	historyLayout.FillDirection = Enum.FillDirection.Horizontal
+	historyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	historyLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	historyLayout.Padding = UDim.new(0, 8)
+	historyLayout.Parent = self.heistHistory
+
+	self.heistHistoryLabels = {}
+end
+
+function Minigames:startHeist(callback)
+	self.callback = callback
+	self.heistOverlay.Visible = true
+	self.activeGame = "heist"
+
+	-- Generate secret code
+	self.heistSecretCode = ""
+	for _ = 1, 4 do
+		self.heistSecretCode ..= tostring(math.random(0, 9))
+	end
+
+	self.heistCurrentInput = ""
+	self.heistAttemptsLeft = 6
+	self.heistGuesses = {}
+
+	self.heistAttempts.Text = "Attempts: " .. self.heistAttemptsLeft .. " remaining"
+
+	for _, data in ipairs(self.heistDigitLabels) do
+		data.label.Text = "_"
+		data.frame.BackgroundColor3 = C.Gray700
+	end
+
+	for _, child in ipairs(self.heistHistory:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+
+	disconnectAll(self._heistNumConnections)
+	self._heistNumConnections = {}
+
+	for num, btn in pairs(self.heistNumBtns) do
+		self._heistNumConnections[num] = btn.MouseButton1Click:Connect(function()
+			self:handleHeistInput(num)
+		end)
+	end
+end
+
+function Minigames:handleHeistInput(input)
+	if self.activeGame ~= "heist" then return end
+
+	if input == "⌫" then
+		if #self.heistCurrentInput > 0 then
+			self.heistCurrentInput = string.sub(self.heistCurrentInput, 1, -2)
+		end
+	elseif input == "✓" then
+		if #self.heistCurrentInput == 4 then
+			self:submitHeistGuess()
+		end
+	else
+		if #self.heistCurrentInput < 4 then
+			self.heistCurrentInput ..= input
+		end
+	end
+
+	for i, data in ipairs(self.heistDigitLabels) do
+		local char = string.sub(self.heistCurrentInput, i, i)
+		data.label.Text = (char ~= "" and char) or "_"
+	end
+end
+
+function Minigames:submitHeistGuess()
+	local guess = self.heistCurrentInput
+	if #guess ~= 4 then return end
+
+	self.heistAttemptsLeft -= 1
+	self.heistAttempts.Text = "Attempts: " .. self.heistAttemptsLeft .. " remaining"
+
+	local results = {}
+
+	-- First pass: exact matches
+	for i = 1, 4 do
+		if string.sub(guess, i, i) == string.sub(self.heistSecretCode, i, i) then
+			results[i] = "green"
+		end
+	end
+
+	-- Second: correct digit, wrong position
+	for i = 1, 4 do
+		if not results[i] then
+			local guessChar = string.sub(guess, i, i)
+			local found = false
+			for j = 1, 4 do
+				if not results[j] and string.sub(self.heistSecretCode, j, j) == guessChar then
+					results[i] = "yellow"
+					found = true
+					break
+				end
+			end
+			if not found then
+				results[i] = "gray"
+			end
+		end
+	end
+
+	for i, data in ipairs(self.heistDigitLabels) do
+		if results[i] == "green" then
+			data.frame.BackgroundColor3 = C.Green
+		elseif results[i] == "yellow" then
+			data.frame.BackgroundColor3 = C.Amber
+		else
+			data.frame.BackgroundColor3 = C.Gray500
+		end
+	end
+
+	local historyEntry = Instance.new("Frame")
+	historyEntry.Size = UDim2.new(0, 60, 0, 50)
+	historyEntry.BackgroundColor3 = C.Gray700
+	historyEntry.ZIndex = 203
+	historyEntry.Parent = self.heistHistory
+	corner(historyEntry, 8)
+
+	local historyLabel = Instance.new("TextLabel")
+	historyLabel.Size = UDim2.fromScale(1, 1)
+	historyLabel.BackgroundTransparency = 1
+	historyLabel.Font = F.Button
+	historyLabel.TextSize = 14
+	historyLabel.TextColor3 = C.White
+	historyLabel.Text = guess
+	historyLabel.ZIndex = 204
+	historyLabel.Parent = historyEntry
+
+	if guess == self.heistSecretCode then
+		self:endHeist(true)
+		return
+	end
+
+	if self.heistAttemptsLeft <= 0 then
+		self:endHeist(false)
+		return
+	end
+
+	self.heistCurrentInput = ""
+	task.delay(0.5, function()
+		if self.activeGame ~= "heist" then return end
+		for _, data in ipairs(self.heistDigitLabels) do
+			data.label.Text = "_"
+			data.frame.BackgroundColor3 = C.Gray700
+		end
+	end)
+end
+
+function Minigames:endHeist(won)
+	self.activeGame = nil
+	self.heistOverlay.Visible = false
+
+	disconnectAll(self._heistNumConnections)
+	self._heistNumConnections = {}
+
+	if self.callback then
+		self.callback(won, {
+			secretCode = self.heistSecretCode,
+			attempts = 6 - self.heistAttemptsLeft,
+		})
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- GETAWAY MINIGAME (Criminal Path)
+----------------------------------------------------------------
+
+function Minigames:createGetawayGame()
+	self.getawayOverlay = Instance.new("Frame")
+	self.getawayOverlay.Size = UDim2.fromScale(1, 1)
+	self.getawayOverlay.BackgroundColor3 = C.Black
+	self.getawayOverlay.BackgroundTransparency = 0.2
+	self.getawayOverlay.Visible = false
+	self.getawayOverlay.ZIndex = 200
+	self.getawayOverlay.Parent = self.screenGui
+
+	self.getawayCard = Instance.new("Frame")
+	self.getawayCard.Size = UDim2.new(0.95, 0, 0, 450)
+	self.getawayCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.getawayCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.getawayCard.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
+	self.getawayCard.ZIndex = 201
+	self.getawayCard.Parent = self.getawayOverlay
+	corner(self.getawayCard, 20)
+
+	local getawayTitle = Instance.new("TextLabel")
+	getawayTitle.Size = UDim2.new(1, 0, 0, 60)
+	getawayTitle.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	getawayTitle.Font = F.Title
+	getawayTitle.TextSize = 24
+	getawayTitle.TextColor3 = C.White
+	getawayTitle.Text = "🚗 GETAWAY!"
+	getawayTitle.ZIndex = 202
+	getawayTitle.Parent = self.getawayCard
+	corner(getawayTitle, 20)
+
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0, 30)
+	titleFix.Position = UDim2.new(0, 0, 0, 35)
+	titleFix.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	titleFix.ZIndex = 202
+	titleFix.Parent = getawayTitle
+
+	self.getawayInstructions = Instance.new("TextLabel")
+	self.getawayInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.getawayInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.getawayInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.getawayInstructions.BackgroundTransparency = 1
+	self.getawayInstructions.Font = F.Body
+	self.getawayInstructions.TextSize = 14
+	self.getawayInstructions.TextColor3 = C.Gray300
+	self.getawayInstructions.TextWrapped = true
+	self.getawayInstructions.Text = "TAP THE HIGHLIGHTED BUTTONS IN ORDER! Don't let the cops catch you!"
+	self.getawayInstructions.ZIndex = 202
+	self.getawayInstructions.Parent = self.getawayCard
+
+	self.getawayProgressBg = Instance.new("Frame")
+	self.getawayProgressBg.Size = UDim2.new(0.85, 0, 0, 20)
+	self.getawayProgressBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.getawayProgressBg.Position = UDim2.new(0.5, 0, 0, 115)
+	self.getawayProgressBg.BackgroundColor3 = C.Gray700
+	self.getawayProgressBg.ZIndex = 202
+	self.getawayProgressBg.Parent = self.getawayCard
+	pill(self.getawayProgressBg)
+
+	self.getawayProgressFill = Instance.new("Frame")
+	self.getawayProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.getawayProgressFill.BackgroundColor3 = C.Green
+	self.getawayProgressFill.ZIndex = 203
+	self.getawayProgressFill.Parent = self.getawayProgressBg
+	pill(self.getawayProgressFill)
+
+	self.copProgressFill = Instance.new("Frame")
+	self.copProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.copProgressFill.AnchorPoint = Vector2.new(1, 0)
+	self.copProgressFill.Position = UDim2.new(1, 0, 0, 0)
+	self.copProgressFill.BackgroundColor3 = C.Red
+	self.copProgressFill.ZIndex = 203
+	self.copProgressFill.Parent = self.getawayProgressBg
+	pill(self.copProgressFill)
+
+	self.getawayGrid = Instance.new("Frame")
+	self.getawayGrid.Size = UDim2.new(0.9, 0, 0, 260)
+	self.getawayGrid.AnchorPoint = Vector2.new(0.5, 0)
+	self.getawayGrid.Position = UDim2.new(0.5, 0, 0, 150)
+	self.getawayGrid.BackgroundTransparency = 1
+	self.getawayGrid.ZIndex = 202
+	self.getawayGrid.Parent = self.getawayCard
+
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellSize = UDim2.new(0.3, 0, 0.3, 0)
+	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	gridLayout.Parent = self.getawayGrid
+
+	local directions = { "↖", "↑", "↗", "←", "⬤", "→", "↙", "↓", "↘" }
+	self.getawayBtns = {}
+	for i, dir in ipairs(directions) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Gray600
+		btn.Font = F.Title
+		btn.TextSize = 36
+		btn.TextColor3 = C.White
+		btn.Text = dir
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 203
+		btn.Parent = self.getawayGrid
+		corner(btn, 16)
+		self.getawayBtns[i] = btn
+	end
+end
+
+function Minigames:startGetaway(callback)
+	self.callback = callback
+	self.getawayOverlay.Visible = true
+	self.activeGame = "getaway"
+
+	self.getawayProgress = 0
+	self.copProgress = 0
+	self.getawaySequence = {}
+	self.currentSequenceIndex = 1
+	self.getawayRound = 1
+
+	self.getawayProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.copProgressFill.Size = UDim2.new(0, 0, 1, 0)
+
+	disconnectAll(self._getawayButtonConnections)
+	self._getawayButtonConnections = {}
+
+	for i, btn in ipairs(self.getawayBtns) do
+		self._getawayButtonConnections[i] = btn.MouseButton1Click:Connect(function()
+			self:handleGetawayInput(i)
+		end)
+	end
+
+	self:showNextGetawaySequence()
+	self:startCopChase()
+end
+
+function Minigames:showNextGetawaySequence()
+	local seqLength = 2 + self.getawayRound
+	self.getawaySequence = {}
+	for _ = 1, seqLength do
+		table.insert(self.getawaySequence, math.random(1, 9))
+	end
+	self.currentSequenceIndex = 1
+
+	for _, btn in ipairs(self.getawayBtns) do
+		btn.BackgroundColor3 = C.Gray600
+	end
+
+	for i, btnIndex in ipairs(self.getawaySequence) do
+		task.delay(i * 0.4, function()
+			if self.activeGame ~= "getaway" then return end
+			local btn = self.getawayBtns[btnIndex]
+			btn.BackgroundColor3 = C.Amber
+			task.delay(0.3, function()
+				if self.activeGame ~= "getaway" then return end
+				btn.BackgroundColor3 = C.Gray600
+			end)
+		end)
+	end
+
+	task.delay((#self.getawaySequence + 1) * 0.4, function()
+		if self.activeGame ~= "getaway" then return end
+		self:highlightCurrentTarget()
+	end)
+end
+
+function Minigames:highlightCurrentTarget()
+	if self.currentSequenceIndex > #self.getawaySequence then return end
+	for _, btn in ipairs(self.getawayBtns) do
+		btn.BackgroundColor3 = C.Gray600
+	end
+	local targetIndex = self.getawaySequence[self.currentSequenceIndex]
+	self.getawayBtns[targetIndex].BackgroundColor3 = C.Blue
+end
+
+function Minigames:handleGetawayInput(btnIndex)
+	if self.activeGame ~= "getaway" then return end
+	if self.currentSequenceIndex > #self.getawaySequence then return end
+
+	local targetIndex = self.getawaySequence[self.currentSequenceIndex]
+
+	if btnIndex == targetIndex then
+		self.getawayBtns[btnIndex].BackgroundColor3 = C.Green
+		self.currentSequenceIndex += 1
+
+		self.getawayProgress = self.getawayProgress + 0.1
+		tween(self.getawayProgressFill, TweenInfo.new(0.2), {
+			Size = UDim2.new(math.min(1, self.getawayProgress), 0, 1, 0),
+		})
+
+		if self.getawayProgress >= 1 then
+			self:endGetaway(true)
+			return
+		end
+
+		if self.currentSequenceIndex > #self.getawaySequence then
+			self.getawayRound += 1
+			task.delay(0.5, function()
+				if self.activeGame == "getaway" then
+					self:showNextGetawaySequence()
+				end
+			end)
+		else
+			task.delay(0.2, function()
+				if self.activeGame == "getaway" then
+					self:highlightCurrentTarget()
+				end
+			end)
+		end
+	else
+		self.getawayBtns[btnIndex].BackgroundColor3 = C.Red
+		self.copProgress = self.copProgress + 0.15
+		tween(self.copProgressFill, TweenInfo.new(0.2), {
+			Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
+		})
+
+		if self.copProgress >= 1 then
+			self:endGetaway(false)
+		end
+	end
+end
+
+function Minigames:startCopChase()
+	if self._getawayCopChaseThread then
+		task.cancel(self._getawayCopChaseThread)
+	end
+
+	self._getawayCopChaseThread = task.spawn(function()
+		while self.activeGame == "getaway" do
+			task.wait(2)
+			if self.activeGame ~= "getaway" then break end
+
+			self.copProgress = self.copProgress + 0.05
+			tween(self.copProgressFill, TweenInfo.new(0.3), {
+				Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
+			})
+
+			if self.copProgress >= 1 then
+				self:endGetaway(false)
+				break
+			end
+		end
+	end)
+end
+
+function Minigames:endGetaway(escaped)
+	self.activeGame = nil
+	self.getawayOverlay.Visible = false
+
+	disconnectAll(self._getawayButtonConnections)
+	self._getawayButtonConnections = {}
+
+	if self._getawayCopChaseThread then
+		task.cancel(self._getawayCopChaseThread)
+		self._getawayCopChaseThread = nil
+	end
+
+	if self.callback then
+		self.callback(escaped, { progress = self.getawayProgress })
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- QUICK TIME EVENT (Universal)
+----------------------------------------------------------------
+
+function Minigames:createQuickTimeGame()
+	self.qteOverlay = Instance.new("Frame")
+	self.qteOverlay.Size = UDim2.fromScale(1, 1)
+	self.qteOverlay.BackgroundColor3 = C.Black
+	self.qteOverlay.BackgroundTransparency = 0.3
+	self.qteOverlay.Visible = false
+	self.qteOverlay.ZIndex = 200
+	self.qteOverlay.Parent = self.screenGui
+
+	self.qteCard = Instance.new("Frame")
+	self.qteCard.Size = UDim2.new(0.9, 0, 0, 350)
+	self.qteCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.qteCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.qteCard.BackgroundColor3 = C.Gray800
+	self.qteCard.ZIndex = 201
+	self.qteCard.Parent = self.qteOverlay
+	corner(self.qteCard, 24)
+
+	self.qteTitle = Instance.new("TextLabel")
+	self.qteTitle.Size = UDim2.new(1, 0, 0, 60)
+	self.qteTitle.BackgroundTransparency = 1
+	self.qteTitle.Font = F.Title
+	self.qteTitle.TextSize = 24
+	self.qteTitle.TextColor3 = C.White
+	self.qteTitle.Text = "⚡ QUICK TIME EVENT"
+	self.qteTitle.ZIndex = 202
+	self.qteTitle.Parent = self.qteCard
+
+	self.qteInstructions = Instance.new("TextLabel")
+	self.qteInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.qteInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.qteInstructions.Position = UDim2.new(0.5, 0, 0, 60)
+	self.qteInstructions.BackgroundTransparency = 1
+	self.qteInstructions.Font = F.Body
+	self.qteInstructions.TextSize = 16
+	self.qteInstructions.TextColor3 = C.Gray300
+	self.qteInstructions.Text = "TAP when the bar is in the green zone!"
+	self.qteInstructions.ZIndex = 202
+	self.qteInstructions.Parent = self.qteCard
+
+	self.qteBarBg = Instance.new("Frame")
+	self.qteBarBg.Size = UDim2.new(0.85, 0, 0, 60)
+	self.qteBarBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.qteBarBg.Position = UDim2.new(0.5, 0, 0, 120)
+	self.qteBarBg.BackgroundColor3 = C.Gray600
+	self.qteBarBg.ZIndex = 202
+	self.qteBarBg.Parent = self.qteCard
+	corner(self.qteBarBg, 12)
+
+	self.qteGreenZone = Instance.new("Frame")
+	self.qteGreenZone.Size = UDim2.new(0.2, 0, 1, 0)
+	self.qteGreenZone.Position = UDim2.new(0.4, 0, 0, 0)
+	self.qteGreenZone.BackgroundColor3 = C.Green
+	self.qteGreenZone.BackgroundTransparency = 0.3
+	self.qteGreenZone.ZIndex = 203
+	self.qteGreenZone.Parent = self.qteBarBg
+	corner(self.qteGreenZone, 8)
+
+	self.qteIndicator = Instance.new("Frame")
+	self.qteIndicator.Size = UDim2.new(0.05, 0, 1.2, 0)
+	self.qteIndicator.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.qteIndicator.Position = UDim2.new(0, 0, 0.5, 0)
+	self.qteIndicator.BackgroundColor3 = C.White
+	self.qteIndicator.ZIndex = 204
+	self.qteIndicator.Parent = self.qteBarBg
+	corner(self.qteIndicator, 4)
+
+	self.qteTapBtn = Instance.new("TextButton")
+	self.qteTapBtn.Size = UDim2.new(0.7, 0, 0, 80)
+	self.qteTapBtn.AnchorPoint = Vector2.new(0.5, 0)
+	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 200)
+	self.qteTapBtn.BackgroundColor3 = C.Blue
+	self.qteTapBtn.Font = F.Title
+	self.qteTapBtn.TextSize = 28
+	self.qteTapBtn.TextColor3 = C.White
+	self.qteTapBtn.Text = "TAP!"
+	self.qteTapBtn.AutoButtonColor = false
+	self.qteTapBtn.ZIndex = 202
+	self.qteTapBtn.Parent = self.qteCard
+	corner(self.qteTapBtn, 16)
+
+	self.qteResult = Instance.new("TextLabel")
+	self.qteResult.Size = UDim2.new(1, 0, 0, 40)
+	self.qteResult.AnchorPoint = Vector2.new(0.5, 0)
+	self.qteResult.Position = UDim2.new(0.5, 0, 0, 295)
+	self.qteResult.BackgroundTransparency = 1
+	self.qteResult.Font = F.Title
+	self.qteResult.TextSize = 20
+	self.qteResult.TextColor3 = C.White
+	self.qteResult.Text = ""
+	self.qteResult.ZIndex = 202
+	self.qteResult.Parent = self.qteCard
+end
+
+function Minigames:startQTE(callback, difficulty)
+	self.callback = callback
+	self.qteOverlay.Visible = true
+	self.activeGame = "qte"
+	self.qteResult.Text = ""
+
+	difficulty = difficulty or "medium"
+	local greenZoneSize = (difficulty == "easy" and 0.3) or (difficulty == "hard" and 0.12) or 0.2
+	local speed = (difficulty == "easy" and 1.5) or (difficulty == "hard" and 0.8) or 1.2
+
+	self.qteGreenZone.Size = UDim2.new(greenZoneSize, 0, 1, 0)
+	self.qteGreenZone.Position = UDim2.new(0.5 - greenZoneSize / 2, 0, 0, 0)
+
+	self.qteIndicator.Position = UDim2.new(0, 0, 0.5, 0)
+	self.qteAnimating = true
+	self.qteDirection = 1
+
+	task.spawn(function()
+		while self.qteAnimating and self.activeGame == "qte" do
+			local currentX = self.qteIndicator.Position.X.Scale
+			local newX = currentX + (0.02 * self.qteDirection / speed)
+
+			if newX >= 1 then
+				newX = 1
+				self.qteDirection = -1
+			elseif newX <= 0 then
+				newX = 0
+				self.qteDirection = 1
+			end
+
+			self.qteIndicator.Position = UDim2.new(newX, 0, 0.5, 0)
+			task.wait(0.016)
+		end
+	end)
+
+	disconnect(self._qteTapConnection)
+	self._qteTapConnection = self.qteTapBtn.MouseButton1Click:Connect(function()
+		self:handleQTETap()
+	end)
+end
+
+function Minigames:handleQTETap()
+	if self.activeGame ~= "qte" then return end
+
+	self.qteAnimating = false
+	local indicatorX = self.qteIndicator.Position.X.Scale
+	local greenStart = self.qteGreenZone.Position.X.Scale
+	local greenEnd = greenStart + self.qteGreenZone.Size.X.Scale
+
+	local success = indicatorX >= greenStart and indicatorX <= greenEnd
+
+	if success then
+		self.qteResult.Text = "✅ PERFECT!"
+		self.qteResult.TextColor3 = C.Green
+		self.qteIndicator.BackgroundColor3 = C.Green
+	else
+		self.qteResult.Text = "❌ MISSED!"
+		self.qteResult.TextColor3 = C.Red
+		self.qteIndicator.BackgroundColor3 = C.Red
+	end
+
+	task.delay(1, function()
+		self:endQTE(success)
+	end)
+end
+
+function Minigames:endQTE(success)
+	self.activeGame = nil
+	self.qteOverlay.Visible = false
+	self.qteAnimating = false
+
+	disconnect(self._qteTapConnection)
+	self._qteTapConnection = nil
+
+	if self.callback then
+		self.callback(success, {})
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- PRISON ESCAPE MINIGAME
+----------------------------------------------------------------
+
+function Minigames:createPrisonEscapeGame()
+	self.prisonOverlay = Instance.new("Frame")
+	self.prisonOverlay.Size = UDim2.fromScale(1, 1)
+	self.prisonOverlay.BackgroundColor3 = C.Black
+	self.prisonOverlay.BackgroundTransparency = 0.2
+	self.prisonOverlay.Visible = false
+	self.prisonOverlay.ZIndex = 200
+	self.prisonOverlay.Parent = self.screenGui
+
+	self.prisonCard = Instance.new("Frame")
+	self.prisonCard.Size = UDim2.new(0.95, 0, 0, 480)
+	self.prisonCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.prisonCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.prisonCard.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+	self.prisonCard.ZIndex = 201
+	self.prisonCard.Parent = self.prisonOverlay
+	corner(self.prisonCard, 20)
+
+	local prisonTitle = Instance.new("TextLabel")
+	prisonTitle.Size = UDim2.new(1, 0, 0, 60)
+	prisonTitle.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+	prisonTitle.Font = F.Title
+	prisonTitle.TextSize = 24
+	prisonTitle.TextColor3 = C.White
+	prisonTitle.Text = "🔐 PRISON ESCAPE"
+	prisonTitle.ZIndex = 202
+	prisonTitle.Parent = self.prisonCard
+	corner(prisonTitle, 20)
+
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0, 30)
+	titleFix.Position = UDim2.new(0, 0, 0, 35)
+	titleFix.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+	titleFix.ZIndex = 202
+	titleFix.Parent = prisonTitle
+
+	self.prisonInstructions = Instance.new("TextLabel")
+	self.prisonInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.prisonInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.prisonInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.prisonInstructions.BackgroundTransparency = 1
+	self.prisonInstructions.Font = F.Body
+	self.prisonInstructions.TextSize = 14
+	self.prisonInstructions.TextColor3 = C.Gray300
+	self.prisonInstructions.TextWrapped = true
+	self.prisonInstructions.Text = "Navigate through the maze! Follow the highlighted arrow directions."
+	self.prisonInstructions.ZIndex = 202
+	self.prisonInstructions.Parent = self.prisonCard
+
+	-- Progress display
+	self.prisonProgressBg = Instance.new("Frame")
+	self.prisonProgressBg.Size = UDim2.new(0.85, 0, 0, 20)
+	self.prisonProgressBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.prisonProgressBg.Position = UDim2.new(0.5, 0, 0, 115)
+	self.prisonProgressBg.BackgroundColor3 = C.Gray700
+	self.prisonProgressBg.ZIndex = 202
+	self.prisonProgressBg.Parent = self.prisonCard
+	pill(self.prisonProgressBg)
+
+	self.prisonProgressFill = Instance.new("Frame")
+	self.prisonProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.prisonProgressFill.BackgroundColor3 = C.Green
+	self.prisonProgressFill.ZIndex = 203
+	self.prisonProgressFill.Parent = self.prisonProgressBg
+	pill(self.prisonProgressFill)
+
+	-- Guard alert bar
+	self.guardAlertBg = Instance.new("Frame")
+	self.guardAlertBg.Size = UDim2.new(0.85, 0, 0, 12)
+	self.guardAlertBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.guardAlertBg.Position = UDim2.new(0.5, 0, 0, 140)
+	self.guardAlertBg.BackgroundColor3 = C.Gray700
+	self.guardAlertBg.ZIndex = 202
+	self.guardAlertBg.Parent = self.prisonCard
+	pill(self.guardAlertBg)
+
+	self.guardAlertFill = Instance.new("Frame")
+	self.guardAlertFill.Size = UDim2.new(0, 0, 1, 0)
+	self.guardAlertFill.BackgroundColor3 = C.Red
+	self.guardAlertFill.ZIndex = 203
+	self.guardAlertFill.Parent = self.guardAlertBg
+	pill(self.guardAlertFill)
+
+	local guardLabel = Instance.new("TextLabel")
+	guardLabel.Size = UDim2.new(0, 100, 0, 12)
+	guardLabel.Position = UDim2.new(0, 0, 0, -14)
+	guardLabel.BackgroundTransparency = 1
+	guardLabel.Font = F.Medium
+	guardLabel.TextSize = 10
+	guardLabel.TextColor3 = C.Red
+	guardLabel.TextXAlignment = Enum.TextXAlignment.Left
+	guardLabel.Text = "⚠️ GUARD ALERT"
+	guardLabel.ZIndex = 203
+	guardLabel.Parent = self.guardAlertBg
+
+	-- Arrow grid
+	self.prisonGrid = Instance.new("Frame")
+	self.prisonGrid.Size = UDim2.new(0.9, 0, 0, 260)
+	self.prisonGrid.AnchorPoint = Vector2.new(0.5, 0)
+	self.prisonGrid.Position = UDim2.new(0.5, 0, 0, 165)
+	self.prisonGrid.BackgroundTransparency = 1
+	self.prisonGrid.ZIndex = 202
+	self.prisonGrid.Parent = self.prisonCard
+
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellSize = UDim2.new(0.3, 0, 0.3, 0)
+	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	gridLayout.Parent = self.prisonGrid
+
+	local arrows = { "↖", "↑", "↗", "←", "🚪", "→", "↙", "↓", "↘" }
+	self.prisonArrowBtns = {}
+	for i, arrow in ipairs(arrows) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Gray600
+		btn.Font = F.Title
+		btn.TextSize = 36
+		btn.TextColor3 = C.White
+		btn.Text = arrow
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 203
+		btn.Parent = self.prisonGrid
+		corner(btn, 16)
+		self.prisonArrowBtns[i] = btn
+	end
+end
+
+function Minigames:startPrisonEscape(callback)
+	self.callback = callback
+	self.prisonOverlay.Visible = true
+	self.activeGame = "prison_escape"
+
+	self.prisonProgress = 0
+	self.guardAlert = 0
+	self.prisonSequence = {}
+	self.currentPrisonStep = 1
+
+	self.prisonProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.guardAlertFill.Size = UDim2.new(0, 0, 1, 0)
+
+	-- Generate escape sequence (avoid center door at index 5)
+	local validArrows = {1, 2, 3, 4, 6, 7, 8, 9}
+	for _ = 1, 8 do
+		table.insert(self.prisonSequence, validArrows[math.random(1, #validArrows)])
+	end
+
+	disconnectAll(self._prisonArrowConnections)
+	self._prisonArrowConnections = {}
+
+	for i, btn in ipairs(self.prisonArrowBtns) do
+		self._prisonArrowConnections[i] = btn.MouseButton1Click:Connect(function()
+			self:handlePrisonInput(i)
+		end)
+	end
+
+	self:highlightPrisonTarget()
+	self:startGuardPatrol()
+end
+
+function Minigames:highlightPrisonTarget()
+	if self.currentPrisonStep > #self.prisonSequence then return end
+
+	for _, btn in ipairs(self.prisonArrowBtns) do
+		btn.BackgroundColor3 = C.Gray600
+	end
+
+	local targetIndex = self.prisonSequence[self.currentPrisonStep]
+	self.prisonArrowBtns[targetIndex].BackgroundColor3 = C.Amber
+end
+
+function Minigames:handlePrisonInput(btnIndex)
+	if self.activeGame ~= "prison_escape" then return end
+	if self.currentPrisonStep > #self.prisonSequence then return end
+
+	local targetIndex = self.prisonSequence[self.currentPrisonStep]
+
+	if btnIndex == targetIndex then
+		self.prisonArrowBtns[btnIndex].BackgroundColor3 = C.Green
+		self.currentPrisonStep += 1
+		self.prisonProgress = self.prisonProgress + (1 / #self.prisonSequence)
+
+		tween(self.prisonProgressFill, TweenInfo.new(0.2), {
+			Size = UDim2.new(math.min(1, self.prisonProgress), 0, 1, 0),
+		})
+
+		if self.prisonProgress >= 1 then
+			self:endPrisonEscape(true)
+			return
+		end
+
+		task.delay(0.2, function()
+			if self.activeGame == "prison_escape" then
+				self:highlightPrisonTarget()
+			end
+		end)
+	else
+		self.prisonArrowBtns[btnIndex].BackgroundColor3 = C.Red
+		self.guardAlert = self.guardAlert + 0.2
+
+		tween(self.guardAlertFill, TweenInfo.new(0.2), {
+			Size = UDim2.new(math.min(1, self.guardAlert), 0, 1, 0),
+		})
+
+		if self.guardAlert >= 1 then
+			self:endPrisonEscape(false)
+		end
+	end
+end
+
+function Minigames:startGuardPatrol()
+	if self._prisonGuardThread then
+		task.cancel(self._prisonGuardThread)
+	end
+
+	self._prisonGuardThread = task.spawn(function()
+		while self.activeGame == "prison_escape" do
+			task.wait(3)
+			if self.activeGame ~= "prison_escape" then break end
+
+			self.guardAlert = self.guardAlert + 0.08
+			tween(self.guardAlertFill, TweenInfo.new(0.3), {
+				Size = UDim2.new(math.min(1, self.guardAlert), 0, 1, 0),
+			})
+
+			if self.guardAlert >= 1 then
+				self:endPrisonEscape(false)
+				break
+			end
+		end
+	end)
+end
+
+function Minigames:endPrisonEscape(escaped)
+	self.activeGame = nil
+	self.prisonOverlay.Visible = false
+
+	disconnectAll(self._prisonArrowConnections)
+	self._prisonArrowConnections = {}
+
+	if self._prisonGuardThread then
+		task.cancel(self._prisonGuardThread)
+		self._prisonGuardThread = nil
+	end
+
+	if self.callback then
+		self.callback(escaped, { progress = self.prisonProgress })
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- MASH MINIGAME (Button Mashing)
+----------------------------------------------------------------
+
+function Minigames:createMashGame()
+	self.mashOverlay = Instance.new("Frame")
+	self.mashOverlay.Size = UDim2.fromScale(1, 1)
+	self.mashOverlay.BackgroundColor3 = C.Black
+	self.mashOverlay.BackgroundTransparency = 0.3
+	self.mashOverlay.Visible = false
+	self.mashOverlay.ZIndex = 200
+	self.mashOverlay.Parent = self.screenGui
+
+	self.mashCard = Instance.new("Frame")
+	self.mashCard.Size = UDim2.new(0.9, 0, 0, 400)
+	self.mashCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.mashCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.mashCard.BackgroundColor3 = C.Gray800
+	self.mashCard.ZIndex = 201
+	self.mashCard.Parent = self.mashOverlay
+	corner(self.mashCard, 24)
+
+	self.mashTitle = Instance.new("TextLabel")
+	self.mashTitle.Size = UDim2.new(1, 0, 0, 60)
+	self.mashTitle.BackgroundTransparency = 1
+	self.mashTitle.Font = F.Title
+	self.mashTitle.TextSize = 24
+	self.mashTitle.TextColor3 = C.White
+	self.mashTitle.Text = "👆 TAP FAST!"
+	self.mashTitle.ZIndex = 202
+	self.mashTitle.Parent = self.mashCard
+
+	self.mashInstructions = Instance.new("TextLabel")
+	self.mashInstructions.Size = UDim2.new(0.9, 0, 0, 30)
+	self.mashInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.mashInstructions.Position = UDim2.new(0.5, 0, 0, 55)
+	self.mashInstructions.BackgroundTransparency = 1
+	self.mashInstructions.Font = F.Body
+	self.mashInstructions.TextSize = 14
+	self.mashInstructions.TextColor3 = C.Gray400
+	self.mashInstructions.Text = "Tap the button as fast as you can!"
+	self.mashInstructions.ZIndex = 202
+	self.mashInstructions.Parent = self.mashCard
+
+	-- Progress bar
+	self.mashProgressBg = Instance.new("Frame")
+	self.mashProgressBg.Size = UDim2.new(0.85, 0, 0, 24)
+	self.mashProgressBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.mashProgressBg.Position = UDim2.new(0.5, 0, 0, 95)
+	self.mashProgressBg.BackgroundColor3 = C.Gray700
+	self.mashProgressBg.ZIndex = 202
+	self.mashProgressBg.Parent = self.mashCard
+	pill(self.mashProgressBg)
+
+	self.mashProgressFill = Instance.new("Frame")
+	self.mashProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.mashProgressFill.BackgroundColor3 = C.Green
+	self.mashProgressFill.ZIndex = 203
+	self.mashProgressFill.Parent = self.mashProgressBg
+	pill(self.mashProgressFill)
+
+	-- Timer display
+	self.mashTimer = Instance.new("TextLabel")
+	self.mashTimer.Size = UDim2.new(0.9, 0, 0, 40)
+	self.mashTimer.AnchorPoint = Vector2.new(0.5, 0)
+	self.mashTimer.Position = UDim2.new(0.5, 0, 0, 130)
+	self.mashTimer.BackgroundTransparency = 1
+	self.mashTimer.Font = F.Title
+	self.mashTimer.TextSize = 32
+	self.mashTimer.TextColor3 = C.Amber
+	self.mashTimer.Text = "5.0s"
+	self.mashTimer.ZIndex = 202
+	self.mashTimer.Parent = self.mashCard
+
+	-- Tap count
+	self.mashCount = Instance.new("TextLabel")
+	self.mashCount.Size = UDim2.new(0.9, 0, 0, 30)
+	self.mashCount.AnchorPoint = Vector2.new(0.5, 0)
+	self.mashCount.Position = UDim2.new(0.5, 0, 0, 170)
+	self.mashCount.BackgroundTransparency = 1
+	self.mashCount.Font = F.Medium
+	self.mashCount.TextSize = 16
+	self.mashCount.TextColor3 = C.Gray400
+	self.mashCount.Text = "Taps: 0"
+	self.mashCount.ZIndex = 202
+	self.mashCount.Parent = self.mashCard
+
+	-- Big tap button
+	self.mashButton = Instance.new("TextButton")
+	self.mashButton.Size = UDim2.new(0, 180, 0, 180)
+	self.mashButton.AnchorPoint = Vector2.new(0.5, 0)
+	self.mashButton.Position = UDim2.new(0.5, 0, 0, 210)
+	self.mashButton.BackgroundColor3 = C.Blue
+	self.mashButton.Font = F.Title
+	self.mashButton.TextSize = 48
+	self.mashButton.TextColor3 = C.White
+	self.mashButton.Text = "TAP!"
+	self.mashButton.AutoButtonColor = false
+	self.mashButton.ZIndex = 203
+	self.mashButton.Parent = self.mashCard
+	corner(self.mashButton, 90)
+end
+
+function Minigames:startMash(callback, options)
+	options = options or {}
+	self.callback = callback
+	self.mashOverlay.Visible = true
+	self.activeGame = "mash"
+
+	self.mashTaps = 0
+	self.mashTimeLeft = options.duration or 5
+	self.mashTarget = options.target or 30
+	self.mashProgress = 0
+
+	self.mashProgressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.mashTimer.Text = string.format("%.1fs", self.mashTimeLeft)
+	self.mashCount.Text = "Taps: 0 / " .. self.mashTarget
+
+	disconnect(self._mashConnection)
+	self._mashConnection = self.mashButton.MouseButton1Click:Connect(function()
+		self:handleMashTap()
+	end)
+
+	self:startMashTimer()
+end
+
+function Minigames:handleMashTap()
+	if self.activeGame ~= "mash" then return end
+
+	self.mashTaps += 1
+	self.mashProgress = math.min(1, self.mashTaps / self.mashTarget)
+
+	self.mashCount.Text = "Taps: " .. self.mashTaps .. " / " .. self.mashTarget
+
+	tween(self.mashProgressFill, TweenInfo.new(0.1), {
+		Size = UDim2.new(self.mashProgress, 0, 1, 0),
+	})
+
+	-- Button pulse effect
+	tween(self.mashButton, TweenInfo.new(0.05), {
+		Size = UDim2.new(0, 170, 0, 170),
+	})
+	task.delay(0.05, function()
+		if self.mashButton then
+			tween(self.mashButton, TweenInfo.new(0.05), {
+				Size = UDim2.new(0, 180, 0, 180),
+			})
+		end
+	end)
+
+	if self.mashTaps >= self.mashTarget then
+		self:endMash(true)
+	end
+end
+
+function Minigames:startMashTimer()
+	if self._mashTimerThread then
+		task.cancel(self._mashTimerThread)
+	end
+
+	self._mashTimerThread = task.spawn(function()
+		while self.activeGame == "mash" and self.mashTimeLeft > 0 do
+			task.wait(0.1)
+			if self.activeGame ~= "mash" then break end
+
+			self.mashTimeLeft = self.mashTimeLeft - 0.1
+			self.mashTimer.Text = string.format("%.1fs", math.max(0, self.mashTimeLeft))
+
+			if self.mashTimeLeft <= 2 then
+				self.mashTimer.TextColor3 = C.Red
+			end
+		end
+
+		if self.activeGame == "mash" and self.mashTimeLeft <= 0 then
+			self:endMash(self.mashTaps >= self.mashTarget)
+		end
+	end)
+end
+
+function Minigames:endMash(success)
+	self.activeGame = nil
+	self.mashOverlay.Visible = false
+	self.mashTimer.TextColor3 = C.Amber
+
+	disconnect(self._mashConnection)
+	self._mashConnection = nil
+
+	if self._mashTimerThread then
+		task.cancel(self._mashTimerThread)
+		self._mashTimerThread = nil
+	end
+
+	if self.callback then
+		self.callback(success, { taps = self.mashTaps, target = self.mashTarget })
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- HACKING MINIGAME
+----------------------------------------------------------------
+
+function Minigames:createHackingGame()
+	self.hackOverlay = Instance.new("Frame")
+	self.hackOverlay.Size = UDim2.fromScale(1, 1)
+	self.hackOverlay.BackgroundColor3 = C.Black
+	self.hackOverlay.BackgroundTransparency = 0.2
+	self.hackOverlay.Visible = false
+	self.hackOverlay.ZIndex = 200
+	self.hackOverlay.Parent = self.screenGui
+
+	self.hackCard = Instance.new("Frame")
+	self.hackCard.Size = UDim2.new(0.95, 0, 0, 500)
+	self.hackCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.hackCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.hackCard.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
+	self.hackCard.ZIndex = 201
+	self.hackCard.Parent = self.hackOverlay
+	corner(self.hackCard, 20)
+
+	local hackTitle = Instance.new("TextLabel")
+	hackTitle.Size = UDim2.new(1, 0, 0, 60)
+	hackTitle.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
+	hackTitle.Font = F.Title
+	hackTitle.TextSize = 24
+	hackTitle.TextColor3 = C.Green
+	hackTitle.Text = "💻 SYSTEM BREACH"
+	hackTitle.ZIndex = 202
+	hackTitle.Parent = self.hackCard
+	corner(hackTitle, 20)
+
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0, 30)
+	titleFix.Position = UDim2.new(0, 0, 0, 35)
+	titleFix.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
+	titleFix.ZIndex = 202
+	titleFix.Parent = hackTitle
+
+	self.hackInstructions = Instance.new("TextLabel")
+	self.hackInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.hackInstructions.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.hackInstructions.BackgroundTransparency = 1
+	self.hackInstructions.Font = F.Body
+	self.hackInstructions.TextSize = 14
+	self.hackInstructions.TextColor3 = C.Green
+	self.hackInstructions.TextWrapped = true
+	self.hackInstructions.Text = "Enter the security codes before time runs out!"
+	self.hackInstructions.ZIndex = 202
+	self.hackInstructions.Parent = self.hackCard
+
+	-- Timer bar
+	self.hackTimerBg = Instance.new("Frame")
+	self.hackTimerBg.Size = UDim2.new(0.9, 0, 0, 12)
+	self.hackTimerBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackTimerBg.Position = UDim2.new(0.5, 0, 0, 115)
+	self.hackTimerBg.BackgroundColor3 = C.Gray700
+	self.hackTimerBg.ZIndex = 202
+	self.hackTimerBg.Parent = self.hackCard
+	pill(self.hackTimerBg)
+
+	self.hackTimerFill = Instance.new("Frame")
+	self.hackTimerFill.Size = UDim2.new(1, 0, 1, 0)
+	self.hackTimerFill.BackgroundColor3 = C.Green
+	self.hackTimerFill.ZIndex = 203
+	self.hackTimerFill.Parent = self.hackTimerBg
+	pill(self.hackTimerFill)
+
+	-- Code display (what to type)
+	self.hackCodeDisplay = Instance.new("TextLabel")
+	self.hackCodeDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackCodeDisplay.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackCodeDisplay.Position = UDim2.new(0.5, 0, 0, 140)
+	self.hackCodeDisplay.BackgroundColor3 = Color3.fromRGB(0, 40, 30)
+	self.hackCodeDisplay.Font = Enum.Font.Code
+	self.hackCodeDisplay.TextSize = 28
+	self.hackCodeDisplay.TextColor3 = C.Green
+	self.hackCodeDisplay.Text = "####"
+	self.hackCodeDisplay.ZIndex = 202
+	self.hackCodeDisplay.Parent = self.hackCard
+	corner(self.hackCodeDisplay, 12)
+
+	-- User input display
+	self.hackInputDisplay = Instance.new("TextLabel")
+	self.hackInputDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackInputDisplay.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackInputDisplay.Position = UDim2.new(0.5, 0, 0, 200)
+	self.hackInputDisplay.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	self.hackInputDisplay.Font = Enum.Font.Code
+	self.hackInputDisplay.TextSize = 28
+	self.hackInputDisplay.TextColor3 = C.Amber
+	self.hackInputDisplay.Text = "____"
+	self.hackInputDisplay.ZIndex = 202
+	self.hackInputDisplay.Parent = self.hackCard
+	corner(self.hackInputDisplay, 12)
+
+	-- Progress
+	self.hackProgressLabel = Instance.new("TextLabel")
+	self.hackProgressLabel.Size = UDim2.new(0.9, 0, 0, 30)
+	self.hackProgressLabel.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackProgressLabel.Position = UDim2.new(0.5, 0, 0, 260)
+	self.hackProgressLabel.BackgroundTransparency = 1
+	self.hackProgressLabel.Font = F.Medium
+	self.hackProgressLabel.TextSize = 14
+	self.hackProgressLabel.TextColor3 = C.Green
+	self.hackProgressLabel.Text = "Codes: 0/5"
+	self.hackProgressLabel.ZIndex = 202
+	self.hackProgressLabel.Parent = self.hackCard
+
+	-- Keypad
+	self.hackKeypad = Instance.new("Frame")
+	self.hackKeypad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.hackKeypad.AnchorPoint = Vector2.new(0.5, 0)
+	self.hackKeypad.Position = UDim2.new(0.5, 0, 0, 300)
+	self.hackKeypad.BackgroundTransparency = 1
+	self.hackKeypad.ZIndex = 202
+	self.hackKeypad.Parent = self.hackCard
+
+	local keypadLayout = Instance.new("UIGridLayout")
+	keypadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
+	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	keypadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	keypadLayout.Parent = self.hackKeypad
+
+	local keyOrder = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓" }
+	self.hackKeyBtns = {}
+	for i, key in ipairs(keyOrder) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = (key == "✓" and C.Green) or (key == "⌫" and C.Red) or Color3.fromRGB(0, 60, 45)
+		btn.Font = F.Title
+		btn.TextSize = 24
+		btn.TextColor3 = C.White
+		btn.Text = key
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 203
+		btn.Parent = self.hackKeypad
+		corner(btn, 12)
+
+		self.hackKeyBtns[key] = btn
+	end
+end
+
+function Minigames:startHacking(callback, options)
+	options = options or {}
+	self.callback = callback
+	self.hackOverlay.Visible = true
+	self.activeGame = "hacking"
+
+	self.hackCodesCompleted = 0
+	self.hackCodesRequired = options.codes or 5
+	self.hackCurrentCode = ""
+	self.hackTargetCode = ""
+	self.hackTimeLimit = options.time or 30
+	self.hackInput = ""
+
+	self:generateHackCode()
+	self.hackProgressLabel.Text = "Codes: 0/" .. self.hackCodesRequired
+
+	disconnectAll(self._hackKeyConnections)
+	self._hackKeyConnections = {}
+
+	for key, btn in pairs(self.hackKeyBtns) do
+		self._hackKeyConnections[key] = btn.MouseButton1Click:Connect(function()
+			self:handleHackInput(key)
+		end)
+	end
+
+	self:startHackTimer()
+end
+
+function Minigames:generateHackCode()
+	self.hackTargetCode = ""
+	for _ = 1, 4 do
+		self.hackTargetCode ..= tostring(math.random(0, 9))
+	end
+	self.hackInput = ""
+	self.hackCodeDisplay.Text = self.hackTargetCode
+	self.hackInputDisplay.Text = "____"
+	self.hackInputDisplay.TextColor3 = C.Amber
+end
+
+function Minigames:handleHackInput(key)
+	if self.activeGame ~= "hacking" then return end
+
+	if key == "⌫" then
+		if #self.hackInput > 0 then
+			self.hackInput = string.sub(self.hackInput, 1, -2)
+		end
+	elseif key == "✓" then
+		if #self.hackInput == 4 then
+			self:submitHackCode()
+		end
+	else
+		if #self.hackInput < 4 then
+			self.hackInput ..= key
+		end
+	end
+
+	-- Update display
+	local display = ""
+	for i = 1, 4 do
+		local char = string.sub(self.hackInput, i, i)
+		display ..= (char ~= "" and char or "_")
+	end
+	self.hackInputDisplay.Text = display
+end
+
+function Minigames:submitHackCode()
+	if self.hackInput == self.hackTargetCode then
+		self.hackCodesCompleted += 1
+		self.hackProgressLabel.Text = "Codes: " .. self.hackCodesCompleted .. "/" .. self.hackCodesRequired
+		self.hackInputDisplay.TextColor3 = C.Green
+
+		if self.hackCodesCompleted >= self.hackCodesRequired then
+			self:endHacking(true)
+			return
+		end
+
+		task.delay(0.3, function()
+			if self.activeGame == "hacking" then
+				self:generateHackCode()
+			end
+		end)
+	else
+		self.hackInputDisplay.TextColor3 = C.Red
+		task.delay(0.3, function()
+			if self.activeGame == "hacking" then
+				self.hackInput = ""
+				self.hackInputDisplay.Text = "____"
+				self.hackInputDisplay.TextColor3 = C.Amber
+			end
+		end)
+	end
+end
+
+function Minigames:startHackTimer()
+	self.hackTimerFill.Size = UDim2.new(1, 0, 1, 0)
+
+	tween(self.hackTimerFill, TweenInfo.new(self.hackTimeLimit, Enum.EasingStyle.Linear), {
+		Size = UDim2.new(0, 0, 1, 0),
+	})
+
+	if self._hackTimerConnection then
+		task.cancel(self._hackTimerConnection)
+	end
+
+	self._hackTimerConnection = task.delay(self.hackTimeLimit, function()
+		if self.activeGame == "hacking" then
+			self:endHacking(false)
+		end
+	end)
+end
+
+function Minigames:endHacking(success)
+	self.activeGame = nil
+	self.hackOverlay.Visible = false
+
+	disconnectAll(self._hackKeyConnections)
+	self._hackKeyConnections = {}
+
+	if self._hackTimerConnection then
+		task.cancel(self._hackTimerConnection)
+		self._hackTimerConnection = nil
+	end
+
+	if self.callback then
+		self.callback(success, { codesCompleted = self.hackCodesCompleted, codesRequired = self.hackCodesRequired })
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
+-- PUBLIC API
+----------------------------------------------------------------
+
+function Minigames:play(gameType, callback, options)
+	options = options or {}
+
+	print("[Minigames] 🎮 Starting minigame:", gameType)
+
+	local success, err = pcall(function()
+		if gameType == "debate" then
+			self:startDebate(callback)
+		elseif gameType == "heist" then
+			self:startHeist(callback)
+		elseif gameType == "getaway" then
+			self:startGetaway(callback)
+		elseif gameType == "qte" then
+			self:startQTE(callback, options.difficulty)
+		elseif gameType == "prison_escape" then
+			self:startPrisonEscape(callback)
+		elseif gameType == "mash" then
+			self:startMash(callback, options)
+		elseif gameType == "hacking" then
+			self:startHacking(callback, options)
+		elseif gameType == "typing" then
+			-- Typing minigame - use mash as fallback
+			self:startMash(callback, options)
+		else
+			warn("[Minigames] ⚠️ Unknown minigame type:", gameType, "- auto-failing")
+			if callback then
+				-- IMPORTANT: Return FALSE for unknown types, not true!
+				callback(false, { error = "Unknown minigame type: " .. tostring(gameType) })
+			end
+		end
+	end)
+
+	if not success then
+		warn("[Minigames] ❌ Error starting minigame:", err)
+		if callback then
+			-- If minigame crashes, return false (fail)
+			callback(false, { error = "Minigame error: " .. tostring(err) })
+		end
+	end
+end
+
+function Minigames:isActive()
+	return self.activeGame ~= nil
+end
+
+function Minigames:cancel()
+	self.activeGame = nil
+
+	if self.debateOverlay then self.debateOverlay.Visible = false end
+	if self.heistOverlay then self.heistOverlay.Visible = false end
+	if self.getawayOverlay then self.getawayOverlay.Visible = false end
+	if self.qteOverlay then self.qteOverlay.Visible = false end
+	if self.prisonOverlay then self.prisonOverlay.Visible = false end
+	if self.mashOverlay then self.mashOverlay.Visible = false end
+	if self.hackOverlay then self.hackOverlay.Visible = false end
+
+	disconnectAll(self._debateButtonConnections)
+	if self._debateTimerConnection then
+		task.cancel(self._debateTimerConnection)
+		self._debateTimerConnection = nil
+	end
+
+	disconnectAll(self._heistNumConnections)
+	disconnectAll(self._getawayButtonConnections)
+	if self._getawayCopChaseThread then
+		task.cancel(self._getawayCopChaseThread)
+		self._getawayCopChaseThread = nil
+	end
+
+	disconnect(self._qteTapConnection)
+	self._qteTapConnection = nil
+
+	disconnectAll(self._prisonArrowConnections)
+	if self._prisonGuardThread then
+		task.cancel(self._prisonGuardThread)
+		self._prisonGuardThread = nil
+	end
+
+	disconnect(self._mashConnection)
+	self._mashConnection = nil
+	if self._mashTimerThread then
+		task.cancel(self._mashTimerThread)
+		self._mashTimerThread = nil
+	end
+
+	disconnectAll(self._hackKeyConnections)
+	if self._hackTimerConnection then
+		task.cancel(self._hackTimerConnection)
+		self._hackTimerConnection = nil
+	end
+
+	self.callback = nil
+end
+
+function Minigames:getAvailableGames()
+	return {
+		{ id = "debate", name = "Debate", emoji = "🎤", description = "Answer questions correctly" },
+		{ id = "heist", name = "Heist", emoji = "🔓", description = "Crack the safe code" },
+		{ id = "getaway", name = "Getaway", emoji = "🚗", description = "Escape from the cops" },
+		{ id = "qte", name = "Quick Time", emoji = "⚡", description = "Tap at the right moment" },
+		{ id = "prison_escape", name = "Prison Escape", emoji = "🔐", description = "Navigate the maze" },
+		{ id = "mash", name = "Mash", emoji = "👆", description = "Tap as fast as you can" },
+		{ id = "hacking", name = "Hacking", emoji = "💻", description = "Type codes to breach systems" },
+	}
+end
+
+return Minigames
