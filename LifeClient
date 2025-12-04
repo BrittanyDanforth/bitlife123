@@ -531,6 +531,13 @@ hideResultPopup = function()
 end
 
 local function showResultPopup(data, callback)
+	-- Force-hide any lingering event modal so we NEVER see both stacked
+	if hideEvent then
+		pcall(function()
+			hideEvent(true)
+		end)
+	end
+
 	if not resultOverlay then createResultPopup() end
 
 	resultCallback = callback
@@ -1907,11 +1914,36 @@ showEvent = function(payload)
 	end
 end
 
-hideEvent = function()
+hideEvent = function(instant)
 	awaitingEvent  = false
 	currentEventId = nil
 
-	-- Create the hide tween and track it
+	-- If we're being told to just nuke it (e.g. before a result popup),
+	-- skip animations and fully hide everything right away.
+	if instant then
+		if currentHideTween then
+			currentHideTween:Cancel()
+			currentHideTween = nil
+		end
+
+		eventOverlay.Visible = false
+		eventShadowFrame.BackgroundTransparency = 1
+		eventShell.BackgroundTransparency = 1
+		eventCard.BackgroundTransparency = 1
+
+		-- Reset header/body so next event starts clean
+		eventEmoji.Text = "🙂"
+		eventTitle.Text = ""
+		eventBody.Text = ""
+		eventAvatarEmoji.Text = "👤"
+		eventNameLbl.Text = ""
+		relationLbl.Text = ""
+		eventHeader.Visible = false
+
+		return
+	end
+
+	-- Normal animated hide (used when player taps a choice)
 	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
@@ -2426,6 +2458,13 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- Show result popup if we have result data from server
 	if resultData and resultData.showPopup then
+		-- Force-hide any lingering event modal before showing result
+		if hideEvent then
+			pcall(function()
+				hideEvent(true)
+			end)
+		end
+
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2483,6 +2522,13 @@ end)
 local ShowResult = remotesFolder:FindFirstChild("ShowResult")
 if ShowResult then
 	ShowResult.OnClientEvent:Connect(function(data)
+		-- Force-hide event modal before showing result
+		if hideEvent then
+			pcall(function()
+				hideEvent(true)
+			end)
+		end
+
 		showResultPopup({
 			emoji = data.emoji or "📋",
 			title = data.title or "Result",
@@ -2492,6 +2538,7 @@ if ShowResult then
 			smarts = data.smarts,
 			looks = data.looks,
 			money = data.money,
+			wasSuccess = data.wasSuccess, -- Pass through success flag for proper tinting
 		}, function()
 			-- Callback when popup closed
 			if data.feedText then
@@ -2526,6 +2573,7 @@ PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
 		relationName     = eventData.relationName,
 		relationship     = eventData.relationship,
 		question         = eventData.question,
+		category         = eventData.category,  -- Pass category for themed colors (romance=pink, career=blue, etc.)
 	})
 end)
 

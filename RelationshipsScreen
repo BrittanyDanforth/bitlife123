@@ -9,6 +9,24 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY: Ensure all "dark" variants exist so TextColor3 never gets nil
+-- This prevents "Color3 expected, got nil" errors if any colors are missing
+-- ═══════════════════════════════════════════════════════════════════════════════
+C.PinkDark   = C.PinkDark   or C.Pink   or Color3.fromRGB(220, 60, 120)
+C.GreenDark  = C.GreenDark  or C.Green  or Color3.fromRGB(20, 150, 90)
+C.RedDark    = C.RedDark    or C.Red    or Color3.fromRGB(210, 60, 60)
+C.PurpleDark = C.PurpleDark or C.Purple or Color3.fromRGB(110, 80, 200)
+C.CyanDark   = C.CyanDark   or C.Cyan   or Color3.fromRGB(0, 160, 220)
+C.BlueDark   = C.BlueDark   or C.Blue   or Color3.fromRGB(29, 78, 216)
+C.Gray500    = C.Gray500    or C.Gray400 or Color3.fromRGB(120, 120, 120)
+C.Gray600    = C.Gray600    or C.Gray500 or Color3.fromRGB(100, 100, 100)
+C.Gray700    = C.Gray700    or C.Gray600 or Color3.fromRGB(80, 80, 80)
+C.Gray800    = C.Gray800    or C.Gray700 or Color3.fromRGB(60, 60, 60)
+C.Gray900    = C.Gray900    or C.Gray800 or Color3.fromRGB(40, 40, 40)
+C.PinkPale   = C.PinkPale   or Color3.fromRGB(252, 231, 243)
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+
 local RelationshipsScreen = {}
 RelationshipsScreen.__index = RelationshipsScreen
 
@@ -1667,17 +1685,15 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 			self:updateState(result.state or result.newState)
 		end
 
-		local title = result.title
-		if not title then
-			if person and person.name then
-				title = actionId:gsub("^%l", string.upper) .. " with " .. person.name
-			else
-				title = "Interaction"
-			end
-		end
+		-- NOTE: We do NOT show our own modal here anymore!
+		-- The main LifeClient system handles result popups via SyncState.
+		-- Showing our own modal caused double-stacked popups.
+		-- Instead, just refresh the UI to show updated relationships.
 
-		local msg = result.message or result.resultText or "Interaction complete."
-		self:showResultModal(title, msg)
+		self:updateInfoBar()
+		if self.isVisible then
+			self:switchTab(self.currentTab)
+		end
 	else
 		-- No structured result – just refresh UI from whatever state you already have
 		self:updateInfoBar()
