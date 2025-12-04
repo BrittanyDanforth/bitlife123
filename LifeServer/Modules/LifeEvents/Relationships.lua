@@ -1,596 +1,328 @@
--- LifeEvents/Relationships.lua
--- Relationship-focused events across all life stages
+--[[
+	Relationship Events
+	Events related to romance, marriage, family, friends
+	Many require having or not having a partner
+]]
 
-local RelationshipEvents = {}
+local Relationships = {}
 
-RelationshipEvents.events = {
-	-- ══════════════════════════════════════════════════════════════════════
-	-- FAMILY RELATIONSHIPS
-	-- ══════════════════════════════════════════════════════════════════════
-
-	{
-		id = "sibling_rivalry",
-		title = "Sibling Conflict",
-		emoji = "👊",
-		category = "family",
-		text = "You and your sibling are fighting about something.",
-		question = "How do you handle it?",
-		minAge = 5, maxAge = 25,
-		baseChance = 0.5,
-		cooldown = 3,
-		requiresFlags = { big_family = true }, -- Only if you have siblings
-		choices = {
-			{
-				text = "Work it out together",
-				effects = { Happiness = 5, Smarts = 2 },
-				setFlags = { good_sibling_bond = true },
-				feedText = "You and your sibling made up.",
-			},
-			{
-				text = "Give them the silent treatment",
-				effects = { Happiness = -3 },
-				feedText = "The cold war continues...",
-			},
-			{
-				text = "Involve your parents",
-				effects = { Happiness = {-5, 3} },
-				feedText = "Parents got involved. Mixed results.",
-			},
-			{
-				text = "Apologize (even if not fully your fault)",
-				effects = { Happiness = 3 },
-				setFlags = { peacemaker = true },
-				feedText = "You chose peace over being right.",
-			},
-		},
-	},
-
-	{
-		id = "parent_conflict",
-		title = "Disagreement with Parents",
-		emoji = "😠",
-		category = "family",
-		text = "You and your parents strongly disagree about something important.",
-		question = "How do you approach this?",
-		minAge = 13, maxAge = 30,
-		baseChance = 0.5,
-		cooldown = 2,
-		choices = {
-			{
-				text = "Have a calm discussion",
-				effects = { Happiness = 3, Smarts = 2 },
-				feedText = "You communicated maturely.",
-			},
-			{
-				text = "Argue your point passionately",
-				effects = { Happiness = {-5, 5} },
-				feedText = "You made your case heard.",
-			},
-			{
-				text = "Rebel and do what you want",
-				effects = { Happiness = {-5, 8} },
-				setFlags = { rebellious = true },
-				feedText = "You went against their wishes.",
-			},
-			{
-				text = "Accept their decision reluctantly",
-				effects = { Happiness = -3 },
-				feedText = "You gave in... for now.",
-			},
-		},
-	},
-
-	{
-		id = "parent_illness",
-		title = "Parent's Health",
-		emoji = "🏥",
-		category = "family",
-		text = "One of your parents is facing health issues.",
-		question = "How do you respond?",
-		minAge = 25, maxAge = 70,
-		baseChance = 0.3,
-		cooldown = 5,
-		choices = {
-			{
-				text = "Become their primary caregiver",
-				effects = { Happiness = {-5, 5}, Health = -3, Money = -500 },
-				setFlags = { caregiver = true },
-				feedText = "You stepped up to care for your parent.",
-			},
-			{
-				text = "Help coordinate care",
-				effects = { Happiness = 3, Smarts = 2, Money = -200 },
-				feedText = "You helped manage their care.",
-			},
-			{
-				text = "Provide financial support",
-				effects = { Happiness = 3, Money = -1000 },
-				feedText = "You helped with medical expenses.",
-			},
-			{
-				text = "Stay emotionally supportive",
-				effects = { Happiness = 2 },
-				feedText = "You were there for emotional support.",
-			},
-		},
-	},
-
-	{
-		id = "family_reunion",
-		title = "Family Reunion",
-		emoji = "👨‍👩‍👧‍👦",
-		category = "family",
-		text = "There's a big family reunion coming up.",
-		question = "How do you approach it?",
-		minAge = 10, maxAge = 80,
-		baseChance = 0.4,
-		cooldown = 5,
-		choices = {
-			{
-				text = "Embrace the chaos",
-				effects = { Happiness = 7 },
-				setFlags = { family_oriented = true },
-				feedText = "You enjoyed reconnecting with family!",
-			},
-			{
-				text = "Catch up with specific relatives",
-				effects = { Happiness = 5, Smarts = 2 },
-				feedText = "You had meaningful conversations.",
-			},
-			{
-				text = "Avoid the drama",
-				effects = { Happiness = 2 },
-				feedText = "You stayed out of the family politics.",
-			},
-			{
-				text = "Skip it",
-				effects = { Happiness = {-3, 3} },
-				feedText = "You missed the reunion.",
-			},
-		},
-	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- FRIENDSHIPS
-	-- ══════════════════════════════════════════════════════════════════════
-
-	{
-		id = "friend_in_need",
-		title = "A Friend Needs Help",
-		emoji = "🆘",
-		category = "friendship",
-		text = "A close friend is going through a really tough time and reaches out.",
-		question = "How do you respond?",
-		minAge = 12, maxAge = 80,
-		baseChance = 0.5,
-		cooldown = 2,
-		choices = {
-			{
-				text = "Drop everything to help",
-				effects = { Happiness = 5, Health = -2 },
-				setFlags = { loyal_friend = true },
-				feedText = "You were there when they needed you most.",
-			},
-			{
-				text = "Help within your limits",
-				effects = { Happiness = 3 },
-				feedText = "You supported them the best you could.",
-			},
-			{
-				text = "Help them find professional support",
-				effects = { Happiness = 3, Smarts = 2 },
-				feedText = "You connected them with the right resources.",
-			},
-			{
-				text = "I have my own problems",
-				effects = { Happiness = -3 },
-				setFlags = { selfish_friend = true },
-				feedText = "You couldn't be there for them.",
-			},
-		},
-	},
-
-	{
-		id = "friendship_drift",
-		title = "Growing Apart",
-		emoji = "😔",
-		category = "friendship",
-		text = "You and a longtime friend have been drifting apart.",
-		question = "What do you do?",
-		minAge = 16, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 4,
-		choices = {
-			{
-				text = "Make an effort to reconnect",
-				effects = { Happiness = 5 },
-				setFlags = { values_friendship = true },
-				feedText = "You reached out and rekindled the friendship.",
-			},
-			{
-				text = "Accept that people change",
-				effects = { Happiness = -2, Smarts = 2 },
-				feedText = "Some friendships run their course.",
-			},
-			{
-				text = "Have an honest conversation",
-				effects = { Happiness = {-3, 5} },
-				feedText = "You talked about what's been happening.",
-			},
-			{
-				text = "Let it fade naturally",
-				effects = { Happiness = -3 },
-				feedText = "The friendship quietly ended.",
-			},
-		},
-	},
-
-	{
-		id = "new_friendship",
-		title = "Making New Friends",
-		emoji = "🤗",
-		category = "friendship",
-		text = "You've met someone who could become a good friend.",
-		question = "How do you nurture this connection?",
-		minAge = 8, maxAge = 70,
-		baseChance = 0.5,
-		cooldown = 2,
-		choices = {
-			{
-				text = "Invite them to hang out",
-				effects = { Happiness = 5 },
-				setFlags = { socially_active = true },
-				feedText = "You took initiative and made a new friend!",
-			},
-			{
-				text = "Keep it casual for now",
-				effects = { Happiness = 3 },
-				feedText = "You're taking things slow.",
-			},
-			{
-				text = "They seem great, but I'm too busy",
-				effects = { Happiness = -2 },
-				feedText = "The opportunity passed.",
-			},
-			{
-				text = "Share something personal",
-				effects = { Happiness = 7 },
-				setFlags = { deep_connector = true },
-				feedText = "You bonded quickly over shared experiences.",
-			},
-		},
-	},
-
-	{
-		id = "toxic_friend",
-		title = "Toxic Friendship",
-		emoji = "☢️",
-		category = "friendship",
-		text = "A friend has been treating you poorly. This pattern keeps repeating.",
-		question = "What do you do?",
-		minAge = 13, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 4,
-		choices = {
-			{
-				text = "Set firm boundaries",
-				effects = { Happiness = 5, Smarts = 3 },
-				setFlags = { has_boundaries = true },
-				feedText = "You established clear boundaries.",
-			},
-			{
-				text = "End the friendship",
-				effects = { Happiness = 3 },
-				setFlags = { knows_self_worth = true },
-				feedText = "You cut out the toxic relationship.",
-			},
-			{
-				text = "Try to help them change",
-				effects = { Happiness = {-5, 3}, Health = -2 },
-				feedText = "You tried to be patient with them.",
-			},
-			{
-				text = "Keep tolerating it",
-				effects = { Happiness = -5, Health = -3 },
-				feedText = "The situation continued to drain you.",
-			},
-		},
-	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- ROMANTIC RELATIONSHIPS
-	-- ══════════════════════════════════════════════════════════════════════
-
+Relationships.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DATING & ROMANCE
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "dating_app",
 		title = "Modern Dating",
 		emoji = "📱",
-		category = "romance",
-		text = "You've been single for a while and decide to try dating apps.",
-		question = "How's it going?",
+		text = "Your friend suggests you try a dating app.",
+		question = "Do you give it a shot?",
+		minAge = 18, maxAge = 45,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresSingle = true,
+		choices = {
+			{ text = "Swipe right!", effects = { Happiness = 8 }, setFlags = { has_partner = true, dating = true }, feedText = "You matched with someone great!" },
+			{ text = "Be super selective", effects = { Smarts = 2, Happiness = 3 }, feedText = "You're picky, but quality over quantity." },
+			{ text = "Dating apps aren't for me", effects = { Happiness = 2 }, feedText = "You prefer meeting people organically." },
+		},
+	},
+	{
+		id = "chance_encounter",
+		title = "Love at First Sight?",
+		emoji = "💘",
+		text = "You lock eyes with a stranger. There's an instant connection.",
+		question = "What do you do?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
-		requiresFlags = { has_partner = false }, -- MUST be single (no partner)
+		requiresSingle = true,
 		choices = {
-			{
-				text = "It's exhausting but I met someone special",
-				effects = { Happiness = 8 },
-				setFlags = { dating_someone = true },
-				feedText = "You found someone promising!",
-			},
-			{
-				text = "Lots of bad dates, but learning",
-				effects = { Happiness = -2, Smarts = 2 },
-				feedText = "The dating world is rough out there.",
-			},
-			{
-				text = "Delete the apps, try meeting people IRL",
-				effects = { Happiness = 3 },
-				feedText = "You're going old school.",
-			},
-			{
-				text = "I'm actually okay being single",
-				effects = { Happiness = 5 },
-				setFlags = { content_single = true },
-				feedText = "Single life has its perks!",
-			},
+			{ text = "Go talk to them", effects = { Happiness = 10, Looks = 2 }, setFlags = { has_partner = true, dating = true, met_cute = true }, feedText = "You made the first move!" },
+			{ text = "Smile and hope they approach", effects = { Happiness = 5 }, feedText = "You shared a moment but didn't pursue." },
+			{ text = "Too nervous to act", effects = { Happiness = -3 }, feedText = "The moment passed. What if...?" },
 		},
 	},
-
 	{
-		id = "relationship_milestone",
-		title = "Relationship Progress",
-		emoji = "💕",
-		category = "romance",
-		text = "Your relationship is progressing to the next level.",
-		question = "What's happening?",
-		minAge = 18, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 3,
-		requiresFlags = { dating_someone = true }, -- MUST be dating someone
-		requiresPartner = true, -- MUST have a partner
-		choices = {
-			{
-				text = "Moving in together",
-				effects = { Happiness = 10, Money = -200 },
-				setFlags = { living_together = true },
-				feedText = "You're moving in together!",
-			},
-			{
-				text = "Getting more serious",
-				effects = { Happiness = 8 },
-				setFlags = { committed_relationship = true },
-				feedText = "The relationship is deepening.",
-			},
-			{
-				text = "Taking a step back",
-				effects = { Happiness = {-5, 2} },
-				feedText = "You need some space.",
-			},
-			{
-				text = "Breaking up",
-				effects = { Happiness = -10 },
-				setFlags = { recently_single = true },
-				feedText = "The relationship has ended.",
-			},
-		},
-	},
-
-	{
-		id = "relationship_conflict",
-		title = "Relationship Trouble",
-		emoji = "💔",
-		category = "romance",
-		text = "You and your partner are having serious disagreements.",
-		question = "How do you handle it?",
-		minAge = 18, maxAge = 70,
-		baseChance = 0.4,
-		cooldown = 2,
-		requiresFlags = { committed_relationship = true }, -- MUST be in committed relationship
-		requiresPartner = true, -- MUST have a partner
-		choices = {
-			{
-				text = "Seek couples counseling",
-				effects = { Happiness = 5, Smarts = 2, Money = -200 },
-				feedText = "Professional help is improving things.",
-			},
-			{
-				text = "Have a heart-to-heart talk",
-				effects = { Happiness = {-5, 8} },
-				feedText = "You talked through the issues.",
-			},
-			{
-				text = "Give each other space",
-				effects = { Happiness = 2 },
-				feedText = "Some distance helped.",
-			},
-			{
-				text = "Let it fester",
-				effects = { Happiness = -5, Health = -2 },
-				feedText = "The problems are getting worse.",
-			},
-		},
-	},
-
-	{
-		id = "partner_support",
-		title = "Supporting Your Partner",
+		id = "new_friendship",
+		title = "Potential Friend",
 		emoji = "🤝",
-		category = "romance",
-		text = "Your partner is going through a difficult time.",
-		question = "How do you support them?",
-		minAge = 18, maxAge = 80,
-		baseChance = 0.4,
-		cooldown = 2,
-		requiresFlags = { committed_relationship = true }, -- MUST be in committed relationship
-		requiresPartner = true, -- MUST have a partner
-		choices = {
-			{
-				text = "Be there emotionally",
-				effects = { Happiness = 5 },
-				setFlags = { supportive_partner = true },
-				feedText = "You were their rock.",
-			},
-			{
-				text = "Help solve the problem",
-				effects = { Happiness = 5, Smarts = 2 },
-				feedText = "You helped them find solutions.",
-			},
-			{
-				text = "Give them space to process",
-				effects = { Happiness = 3 },
-				feedText = "You respected their need for space.",
-			},
-			{
-				text = "Struggle to know what to do",
-				effects = { Happiness = -3 },
-				feedText = "You felt helpless.",
-			},
-		},
-	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- SOCIAL SITUATIONS
-	-- ══════════════════════════════════════════════════════════════════════
-
-	{
-		id = "social_invitation",
-		title = "Party Invitation",
-		emoji = "🎉",
-		category = "social",
-		text = "You're invited to a big social gathering.",
-		question = "Will you go?",
-		minAge = 18, maxAge = 60,
+		text = "You've been hitting it off with someone you recently met.",
+		question = "Could this be a new friendship?",
+		minAge = 13, maxAge = 80,
 		baseChance = 0.5,
 		cooldown = 2,
 		choices = {
-			{
-				text = "Go and mingle",
-				effects = { Happiness = 5 },
-				setFlags = { socially_active = true },
-				feedText = "You had a great time!",
-			},
-			{
-				text = "Go but stick to people I know",
-				effects = { Happiness = 3 },
-				feedText = "You hung out with your circle.",
-			},
-			{
-				text = "Show up late, leave early",
-				effects = { Happiness = 2 },
-				feedText = "You made an appearance.",
-			},
-			{
-				text = "Stay home",
-				effects = { Happiness = {-2, 3} },
-				feedText = "Sometimes you need a quiet night.",
-			},
+			{ text = "Definitely - let's hang out more", effects = { Happiness = 8 }, setFlags = { has_best_friend = true }, feedText = "You made a new friend!" },
+			{ text = "Take it slow", effects = { Happiness = 3 }, feedText = "You're cautiously optimistic." },
+			{ text = "I'm good on friends", effects = { }, feedText = "You have enough friends." },
 		},
 	},
 
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- COMMITTED RELATIONSHIP
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "neighbor_relationship",
-		title = "Neighbor Relations",
-		emoji = "🏘️",
-		category = "social",
-		text = "Your relationship with your neighbors is evolving.",
-		question = "How's it going?",
+		id = "relationship_milestone",
+		title = "Getting Serious",
+		emoji = "💕",
+		text = "Your relationship is getting more serious.",
+		question = "How do you feel about it?",
+		minAge = 18, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresPartner = true,
+		requiresFlags = { dating = true },
+		choices = {
+			{ text = "I'm ready for commitment", effects = { Happiness = 10 }, setFlags = { committed_relationship = true }, feedText = "You're all in!" },
+			{ text = "I need more time", effects = { Happiness = 2 }, feedText = "You're taking things slow." },
+			{ text = "Maybe this isn't right", effects = { Happiness = -5 }, setFlags = { relationship_doubts = true }, feedText = "Doubts are creeping in." },
+		},
+	},
+	{
+		id = "move_in_together",
+		title = "Living Together",
+		emoji = "🏠",
+		text = "Your partner suggests moving in together.",
+		question = "What's your decision?",
+		minAge = 20, maxAge = 50,
+		oneTime = true,
+		requiresPartner = true,
+		requiresFlags = { committed_relationship = true },
+		choices = {
+			{ text = "Yes! Let's do it!", effects = { Happiness = 10, Money = 500 }, setFlags = { lives_with_partner = true }, feedText = "You moved in together!" },
+			{ text = "I'm not ready yet", effects = { Happiness = -3 }, feedText = "You need more time." },
+			{ text = "Break up instead", effects = { Happiness = -10 }, setFlags = { recently_single = true, has_partner = false, dating = false }, feedText = "The conversation led to a breakup." },
+		},
+	},
+	{
+		id = "proposal",
+		title = "The Proposal",
+		emoji = "💍",
+		text = "It feels like the right time. Should you propose?",
+		question = "Are you ready to pop the question?",
+		minAge = 22, maxAge = 50,
+		oneTime = true,
+		requiresPartner = true,
+		requiresFlags = { lives_with_partner = true },
+		choices = {
+			{ text = "Yes - plan the perfect proposal", effects = { Happiness = 15, Money = -2000 }, setFlags = { engaged = true }, feedText = "They said yes! You're engaged!" },
+			{ text = "Simple and intimate", effects = { Happiness = 12, Money = -500 }, setFlags = { engaged = true }, feedText = "A quiet, perfect moment. You're engaged!" },
+			{ text = "Not yet", effects = { Happiness = 2 }, feedText = "The timing isn't right." },
+		},
+	},
+	{
+		id = "wedding_day",
+		title = "Wedding Day",
+		emoji = "👰",
+		text = "The big day has arrived!",
+		question = "What kind of wedding do you have?",
+		minAge = 22, maxAge = 60,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresPartner = true,
+		requiresFlags = { engaged = true },
+		choices = {
+			{ text = "Grand celebration", effects = { Happiness = 20, Money = -10000 }, setFlags = { married = true }, feedText = "An unforgettable wedding! You're married!" },
+			{ text = "Intimate ceremony", effects = { Happiness = 15, Money = -2000 }, setFlags = { married = true }, feedText = "A beautiful, small wedding. You're married!" },
+			{ text = "Courthouse wedding", effects = { Happiness = 10, Money = -200 }, setFlags = { married = true }, feedText = "Quick and official. You're married!" },
+			{ text = "Elope!", effects = { Happiness = 12, Money = -1000 }, setFlags = { married = true, eloped = true }, feedText = "You eloped! Romantic and spontaneous!" },
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CHALLENGES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "relationship_conflict",
+		title = "Rough Patch",
+		emoji = "💔",
+		text = "You and your partner have been arguing a lot lately.",
+		question = "How do you handle it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresPartner = true,
+		choices = {
+			{ text = "Communicate openly", effects = { Happiness = 5, Smarts = 2 }, feedText = "You talked it through. Things improved." },
+			{ text = "Seek couples counseling", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference." },
+			{ text = "Give each other space", effects = { Happiness = 3 }, feedText = "Some distance helped." },
+			{ text = "It's time to break up", effects = { Happiness = -8 }, setFlags = { recently_single = true, has_partner = false, dating = false, married = false }, feedText = "You ended the relationship." },
+		},
+	},
+	{
+		id = "partner_achievement",
+		title = "Partner's Big Win",
+		emoji = "🎉",
+		text = "Your partner achieved something amazing!",
+		question = "How do you celebrate?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresPartner = true,
+		choices = {
+			{ text = "Throw a celebration", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!" },
+			{ text = "Heartfelt congratulations", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
+			{ text = "Feel a bit jealous", effects = { Happiness = -3 }, setFlags = { competitive_with_partner = true }, feedText = "You struggled with mixed feelings." },
+		},
+	},
+	{
+		id = "long_distance",
+		title = "Long Distance Relationship",
+		emoji = "🌍",
+		text = "Your partner has to move away for work/school. It will be long distance.",
+		question = "Can you make it work?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresPartner = true,
+		choices = {
+			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
+			{ text = "Move with them", effects = { Happiness = 8 }, setFlags = { relocated_for_love = true }, feedText = "You moved to stay together!" },
+			{ text = "Break up but stay friends", effects = { Happiness = -5 }, setFlags = { recently_single = true, has_partner = false }, feedText = "You ended it but remained friends." },
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FAMILY & CHILDREN
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "having_child",
+		title = "Starting a Family",
+		emoji = "👶",
+		text = "You and your partner are discussing having children.",
+		question = "What do you decide?",
+		minAge = 25, maxAge = 45,
+		oneTime = true,
+		requiresPartner = true,
+		requiresFlags = { married = true },
+		choices = {
+			{ text = "Let's have a baby!", effects = { Happiness = 15, Money = -3000 }, setFlags = { has_child = true, parent = true }, feedText = "Congratulations! You're having a baby!" },
+			{ text = "Adopt a child", effects = { Happiness = 15, Money = -5000 }, setFlags = { has_child = true, parent = true, adopted = true }, feedText = "You adopted a child! What a beautiful choice!" },
+			{ text = "Not right now", effects = { Happiness = 2 }, feedText = "You're not ready for kids yet." },
+			{ text = "We don't want children", effects = { Happiness = 5 }, setFlags = { childfree = true }, feedText = "You've decided to remain childfree." },
+		},
+	},
+	{
+		id = "parenting_challenge",
+		title = "Parenting Dilemma",
+		emoji = "👨‍👩‍👧",
+		text = "Your child is going through a difficult phase.",
+		question = "How do you handle it?",
+		minAge = 28, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresFlags = { parent = true },
+		choices = {
+			{ text = "Patient understanding", effects = { Happiness = 5, Smarts = 2 }, feedText = "Patience paid off." },
+			{ text = "Strict discipline", effects = { Happiness = -2 }, feedText = "You laid down the law." },
+			{ text = "Get professional advice", effects = { Happiness = 3, Money = -200 }, feedText = "Expert advice helped." },
+			{ text = "Just hope they grow out of it", effects = { Happiness = 2 }, feedText = "Time heals many things." },
+		},
+	},
+	{
+		id = "child_achievement",
+		title = "Proud Parent Moment",
+		emoji = "🌟",
+		text = "Your child did something amazing!",
+		question = "How do you react?",
+		minAge = 30, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresFlags = { parent = true },
+		choices = {
+			{ text = "Celebrate with them", effects = { Happiness = 12 }, feedText = "You shared their joy!" },
+			{ text = "Share it with everyone", effects = { Happiness = 8 }, feedText = "You proudly told everyone!" },
+			{ text = "Keep encouraging them", effects = { Happiness = 8, Smarts = 2 }, feedText = "You used it as motivation." },
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FAMILY RELATIONSHIPS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "sibling_rivalry",
+		title = "Sibling Issues",
+		emoji = "👊",
+		text = "You and your sibling have been at odds lately.",
+		question = "How do you deal with it?",
+		minAge = 10, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresFlags = { has_siblings = true },
+		choices = {
+			{ text = "Work it out together", effects = { Happiness = 5 }, feedText = "You reconciled with your sibling." },
+			{ text = "Keep your distance", effects = { Happiness = 2 }, feedText = "Some space helped." },
+			{ text = "Get parents involved", effects = { }, feedText = "Your parents tried to mediate." },
+			{ text = "Accept differences", effects = { Happiness = 3, Smarts = 2 }, feedText = "You accepted that you're different." },
+		},
+	},
+	{
+		id = "parent_relationship",
+		title = "Connecting with Parents",
+		emoji = "👪",
+		text = "Your relationship with your parents has been complicated.",
+		question = "How do you approach it?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with them." },
+			{ text = "Set healthy boundaries", effects = { Happiness = 5, Smarts = 2 }, feedText = "You established boundaries." },
+			{ text = "Accept the distance", effects = { Happiness = 2 }, feedText = "Not all families are close." },
+			{ text = "Cut contact", effects = { Happiness = -5 }, setFlags = { estranged_from_parents = true }, feedText = "You distanced yourself completely." },
+		},
+	},
+	{
+		id = "family_reunion",
+		title = "Family Gathering",
+		emoji = "🎊",
+		text = "There's a big family reunion happening.",
+		question = "Will you attend?",
 		minAge = 20, maxAge = 80,
 		baseChance = 0.4,
 		cooldown = 3,
 		choices = {
-			{
-				text = "We've become good friends",
-				effects = { Happiness = 5 },
-				setFlags = { friendly_neighbors = true },
-				feedText = "You've got great neighbors!",
-			},
-			{
-				text = "Polite but distant",
-				effects = { Happiness = 2 },
-				feedText = "You wave but don't chat.",
-			},
-			{
-				text = "There's ongoing tension",
-				effects = { Happiness = -5, Health = -2 },
-				setFlags = { neighbor_conflict = true },
-				feedText = "The neighborhood drama is stressful.",
-			},
-			{
-				text = "I barely know them",
-				effects = { },
-				feedText = "You keep to yourself.",
-			},
+			{ text = "Enthusiastically attend", effects = { Happiness = 8 }, feedText = "You had a great time with family!" },
+			{ text = "Go reluctantly", effects = { Happiness = 2 }, feedText = "You showed up. That counts." },
+			{ text = "Skip it this time", effects = { Happiness = 3 }, feedText = "You sat this one out." },
 		},
 	},
 
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- LOSS & GRIEF
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "community_involvement",
-		title = "Getting Involved",
-		emoji = "🏛️",
-		category = "social",
-		text = "There's an opportunity to get more involved in your community.",
-		question = "What interests you?",
-		minAge = 25, maxAge = 75,
-		baseChance = 0.3,
-		cooldown = 4,
-		choices = {
-			{
-				text = "Join a local organization",
-				effects = { Happiness = 5, Smarts = 2 },
-				setFlags = { community_member = true },
-				feedText = "You're part of something bigger!",
-			},
-			{
-				text = "Volunteer for local causes",
-				effects = { Happiness = 7 },
-				setFlags = { volunteer = true },
-				feedText = "Giving back feels great!",
-			},
-			{
-				text = "Get involved in local politics",
-				effects = { Smarts = 3, Happiness = {-3, 5} },
-				setFlags = { politically_active = true },
-				feedText = "You're making your voice heard!",
-			},
-			{
-				text = "I'm too busy for that",
-				effects = { },
-				feedText = "Community stuff will have to wait.",
-			},
-		},
-	},
-
-	{
-		id = "mentorship",
-		title = "Mentorship Opportunity",
-		emoji = "🧑‍🏫",
-		category = "social",
-		text = "You have a chance to become a mentor to someone younger.",
-		question = "Will you do it?",
-		minAge = 30, maxAge = 70,
-		baseChance = 0.3,
+		id = "loss_of_loved_one",
+		title = "Difficult Goodbye",
+		emoji = "🕯️",
+		text = "Someone close to you has passed away.",
+		question = "How do you cope with the loss?",
+		minAge = 20, maxAge = 90,
+		baseChance = 0.2,
 		cooldown = 5,
 		choices = {
-			{
-				text = "Yes, I'd love to give back",
-				effects = { Happiness = 8, Smarts = 3 },
-				setFlags = { mentor = true },
-				feedText = "You're guiding the next generation!",
-			},
-			{
-				text = "I don't have time right now",
-				effects = { Happiness = -2 },
-				feedText = "Maybe in the future.",
-			},
-			{
-				text = "I'm not sure I'm qualified",
-				effects = { Happiness = 2 },
-				feedText = "Imposter syndrome strikes again.",
-			},
+			{ text = "Lean on others for support", effects = { Happiness = -5, Health = -2 }, feedText = "Grief is heavy, but you're not alone." },
+			{ text = "Celebrate their life", effects = { Happiness = -3, Smarts = 2 }, feedText = "You chose to remember the good times." },
+			{ text = "Struggle in silence", effects = { Happiness = -10, Health = -5 }, setFlags = { grief = true }, feedText = "You're struggling but hiding it." },
+			{ text = "Seek professional help", effects = { Happiness = -3, Money = -200 }, feedText = "A therapist helped you process." },
+		},
+	},
+	{
+		id = "old_friend",
+		title = "Reconnecting",
+		emoji = "📱",
+		text = "An old friend reaches out after years of no contact.",
+		question = "Do you reconnect?",
+		minAge = 25, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 3,
+		choices = {
+			{ text = "Absolutely!", effects = { Happiness = 8 }, feedText = "You reconnected with an old friend!" },
+			{ text = "Cautiously yes", effects = { Happiness = 4 }, feedText = "You're giving it a try." },
+			{ text = "Some bridges are meant to stay closed", effects = { Happiness = 2 }, feedText = "You chose not to reconnect." },
 		},
 	},
 }
 
-return RelationshipEvents
+return Relationships

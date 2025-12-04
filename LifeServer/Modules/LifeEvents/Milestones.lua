@@ -1,583 +1,286 @@
--- LifeEvents/Milestones.lua
--- Major life milestone events - significant moments that shape the story
+--[[
+	Milestone Events
+	Important life events that mark major transitions
+	These are priority events that should trigger when conditions are met
+]]
 
-local MilestoneEvents = {}
+local Milestones = {}
 
-MilestoneEvents.events = {
-	-- ══════════════════════════════════════════════════════════════════════
+Milestones.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
 	-- EARLY LIFE MILESTONES
-	-- ══════════════════════════════════════════════════════════════════════
-
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "stage_transition_toddler",
+		title = "Growing Up Fast",
+		emoji = "👧",
+		text = "You're becoming a toddler! The world is getting bigger.",
+		question = "What's your personality like?",
+		minAge = 2, maxAge = 3,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{ text = "Curious about everything", effects = { Smarts = 3, Happiness = 5 }, setFlags = { curious = true }, hintCareer = "science", feedText = "You want to explore everything!" },
+			{ text = "Always making friends", effects = { Happiness = 7 }, setFlags = { social = true }, feedText = "You love being around people!" },
+			{ text = "Quiet and observant", effects = { Smarts = 5 }, setFlags = { observant = true }, feedText = "You watch and learn." },
+			{ text = "Little troublemaker", effects = { Happiness = 5 }, setFlags = { mischievous = true }, feedText = "You keep your parents on their toes!" },
+		},
+	},
 	{
 		id = "birth_story",
-		title = "Your Birth Story",
-		emoji = "🍼",
-		category = "milestone",
-		text = "Your parents sometimes tell the story of when you were born.",
-		question = "What was memorable about your arrival?",
-		minAge = 3, maxAge = 6,
-		oneTime = true,
-		priority = "high",
-		isMilestone = true,
-		choices = {
-			{
-				text = "I was born early but healthy",
-				effects = { Health = 5 },
-				setFlags = { premature_birth = true, fighter = true },
-				feedText = "You came early but showed your strength from day one.",
-			},
-			{
-				text = "A perfectly normal delivery",
-				effects = { Happiness = 3 },
-				feedText = "You arrived right on schedule.",
-			},
-			{
-				text = "There were complications, but I made it",
-				effects = { Health = -3 },
-				setFlags = { difficult_birth = true, survivor = true },
-				feedText = "Your birth was difficult, but you're a fighter.",
-			},
-			{
-				text = "I was a very big baby",
-				effects = { Health = 3 },
-				setFlags = { big_baby = true },
-				feedText = "You were a healthy, robust baby!",
-			},
-		},
-	},
-
-	{
-		id = "family_background",
-		title = "Your Family",
-		emoji = "👨‍👩‍👧",
-		category = "milestone",
-		text = "As you grow, you start to understand your family situation.",
-		question = "What kind of family do you have?",
-		minAge = 4, maxAge = 7,
-		oneTime = true,
-		priority = "high",
-		isMilestone = true,
-		choices = {
-			{
-				text = "Two loving parents",
-				effects = { Happiness = 10 },
-				setFlags = { two_parent_home = true, stable_home = true },
-				feedText = "You have a supportive, loving family.",
-			},
-			{
-				text = "Single parent working hard",
-				effects = { Happiness = 3, Smarts = 2 },
-				setFlags = { single_parent = true, independent_early = true },
-				feedText = "Your parent works hard to provide for you.",
-			},
-			{
-				text = "Living with grandparents",
-				effects = { Happiness = 5, Smarts = 3 },
-				setFlags = { raised_by_grandparents = true },
-				feedText = "Your grandparents raised you with wisdom and love.",
-			},
-			{
-				text = "Foster care / adopted family",
-				effects = { Happiness = {-3, 8}, Smarts = 2 },
-				setFlags = { adopted = true, resilient = true },
-				feedText = "Your path was different, but you found family.",
-			},
-			{
-				text = "Large extended family",
-				effects = { Happiness = 8 },
-				setFlags = { big_family = true },
-				feedText = "You're surrounded by relatives!",
-			},
-		},
-	},
-
-	{
-		id = "first_memory",
-		title = "First Clear Memory",
-		emoji = "🧠",
-		category = "milestone",
-		text = "You have your first clear memory that will stay with you forever.",
-		question = "What is this early memory?",
+		title = "Your Origin Story",
+		emoji = "📖",
+		text = "Your parents told you about the day you were born.",
+		question = "What was special about your birth?",
 		minAge = 3, maxAge = 5,
 		oneTime = true,
 		isMilestone = true,
 		choices = {
-			{
-				text = "A happy family moment",
-				effects = { Happiness = 8 },
-				setFlags = { positive_first_memory = true },
-				feedText = "Your first memory is warm and joyful.",
-			},
-			{
-				text = "An adventure or trip",
-				effects = { Happiness = 5 },
-				setFlags = { adventurous_memory = true },
-				feedText = "Your first memory is of exploring the world.",
-			},
-			{
-				text = "Something scary that you overcame",
-				effects = { Smarts = 3 },
-				setFlags = { overcame_fear_early = true },
-				feedText = "You learned you could face your fears.",
-			},
-			{
-				text = "Playing with a beloved toy or pet",
-				effects = { Happiness = 5 },
-				setFlags = { playful_memory = true },
-				feedText = "Pure innocent joy in your earliest memory.",
-			},
+			{ text = "Born during a big storm", effects = { Happiness = 3 }, setFlags = { dramatic_birth = true }, feedText = "You came into the world with thunder and lightning!" },
+			{ text = "Very easy delivery", effects = { Health = 3 }, setFlags = { easy_birth = true }, feedText = "You arrived smoothly into the world." },
+			{ text = "Born on a holiday", effects = { Happiness = 5 }, setFlags = { holiday_birthday = true }, feedText = "Your birthday is always a double celebration!" },
+			{ text = "Nearly didn't make it", effects = { Health = 3, Smarts = 2 }, setFlags = { fighter_from_birth = true }, feedText = "You've been a fighter since day one." },
 		},
 	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- CHILDHOOD MILESTONES
-	-- ══════════════════════════════════════════════════════════════════════
-
 	{
-		id = "losing_tooth",
-		title = "First Lost Tooth",
-		emoji = "🦷",
-		category = "milestone",
-		text = "Your first baby tooth fell out!",
-		question = "What do you do with it?",
-		minAge = 5, maxAge = 7,
+		id = "family_background",
+		title = "Understanding Your Family",
+		emoji = "👨‍👩‍👧‍👦",
+		text = "You're starting to understand your family's situation.",
+		question = "What's your family like?",
+		minAge = 4, maxAge = 6,
 		oneTime = true,
 		isMilestone = true,
 		choices = {
-			{
-				text = "Put it under my pillow for the tooth fairy",
-				effects = { Happiness = 5, Money = 5 },
-				feedText = "The tooth fairy left you some money!",
-			},
-			{
-				text = "Keep it in a special box",
-				effects = { Happiness = 3 },
-				setFlags = { sentimental = true },
-				feedText = "You're saving your teeth for some reason.",
-			},
-			{
-				text = "Show it off to everyone",
-				effects = { Happiness = 5, Looks = 1 },
-				feedText = "You proudly showed off your gap-toothed smile!",
-			},
-			{
-				text = "Accidentally swallow it",
-				effects = { Happiness = -2 },
-				feedText = "Oops! Well, that's one way to lose a tooth.",
-			},
+			{ text = "Wealthy and privileged", effects = { Money = 1000, Happiness = 3 }, setFlags = { wealthy_family = true }, feedText = "You grew up with advantages." },
+			{ text = "Comfortable middle class", effects = { Money = 300, Happiness = 5 }, setFlags = { middle_class = true }, feedText = "A comfortable, stable upbringing." },
+			{ text = "Working class, tight budget", effects = { Happiness = 3, Smarts = 2 }, setFlags = { working_class = true }, feedText = "You learned to value what you have." },
+			{ text = "Single parent household", effects = { Smarts = 3 }, setFlags = { single_parent = true }, feedText = "Your parent worked extra hard for you." },
+			{ text = "Big family with lots of siblings", effects = { Happiness = 5 }, setFlags = { has_siblings = true, big_family = true }, feedText = "Always someone to play with!" },
 		},
 	},
 
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- COMING OF AGE MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "learned_to_ride_bike",
-		title = "Learning to Ride a Bike",
-		emoji = "🚲",
-		category = "milestone",
-		text = "You're learning to ride a bike!",
-		question = "How does it go?",
-		minAge = 5, maxAge = 8,
-		oneTime = true,
-		isMilestone = true,
-		choices = {
-			{
-				text = "Got it on the first try!",
-				effects = { Happiness = 8, Health = 3 },
-				setFlags = { natural_athlete = true },
-				feedText = "You're a natural! Freedom on two wheels!",
-			},
-			{
-				text = "Fell a lot, but kept trying",
-				effects = { Happiness = 5, Health = -2 },
-				setFlags = { persistent = true },
-				feedText = "You got some scrapes, but you never gave up!",
-			},
-			{
-				text = "Needed training wheels for a while",
-				effects = { Happiness = 3 },
-				setFlags = { cautious_learner = true },
-				feedText = "You took your time, but you got there.",
-			},
-			{
-				text = "Too scared, gave up",
-				effects = { Happiness = -3 },
-				setFlags = { bike_phobia = true },
-				feedText = "Bikes aren't for everyone... yet.",
-			},
-		},
-	},
-
-	{
-		id = "discovered_passion",
-		title = "Finding Your Passion",
-		emoji = "⭐",
-		category = "milestone",
-		text = "Something really captured your interest and imagination!",
-		question = "What got you excited?",
-		minAge = 6, maxAge = 12,
-		oneTime = true,
-		isMilestone = true,
-		choices = {
-			{
-				text = "Sports and athletics",
-				effects = { Health = 5, Happiness = 5 },
-				setFlags = { passionate_athlete = true },
-				hintCareer = "sports",
-				feedText = "You fell in love with sports!",
-			},
-			{
-				text = "Art and creativity",
-				effects = { Happiness = 7, Looks = 3 },
-				setFlags = { passionate_artist = true },
-				hintCareer = "creative",
-				feedText = "Your creative soul awakened!",
-			},
-			{
-				text = "Science and discovery",
-				effects = { Smarts = 7 },
-				setFlags = { passionate_scientist = true },
-				hintCareer = "science",
-				feedText = "The mysteries of the universe call to you!",
-			},
-			{
-				text = "Building and creating things",
-				effects = { Smarts = 5, Happiness = 3 },
-				setFlags = { passionate_builder = true },
-				hintCareer = "tech",
-				feedText = "You love making things with your hands and mind!",
-			},
-			{
-				text = "Helping and caring for others",
-				effects = { Happiness = 5 },
-				setFlags = { passionate_helper = true },
-				hintCareer = "medical",
-				feedText = "You have a natural desire to help others!",
-			},
-			{
-				text = "Music and performance",
-				effects = { Happiness = 7, Looks = 2 },
-				setFlags = { passionate_performer = true },
-				hintCareer = "entertainment",
-				feedText = "The stage calls to you!",
-			},
-		},
-	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- SIGNIFICANT LIFE EVENTS
-	-- ══════════════════════════════════════════════════════════════════════
-
-	{
-		id = "graduation_high_school",
-		title = "High School Graduation",
-		emoji = "🎓",
-		category = "milestone",
-		text = "You're graduating from high school!",
-		question = "How do you feel about your high school experience?",
-		minAge = 17, maxAge = 19,
+		id = "turning_18",
+		title = "Official Adulthood",
+		emoji = "🎂",
+		text = "You're 18! Legally an adult now.",
+		question = "How do you feel about adulthood?",
+		minAge = 18, maxAge = 18,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
 		choices = {
-			{
-				text = "Best years of my life so far",
-				effects = { Happiness = 10 },
-				setFlags = { loved_high_school = true },
-				feedText = "You graduated with amazing memories!",
-			},
-			{
-				text = "Glad it's over",
-				effects = { Happiness = 5 },
-				feedText = "High school wasn't your favorite, but you made it!",
-			},
-			{
-				text = "Nervous about what's next",
-				effects = { Happiness = 2, Smarts = 2 },
-				feedText = "The future is uncertain but exciting.",
-			},
-			{
-				text = "I learned a lot about myself",
-				effects = { Happiness = 5, Smarts = 5 },
-				setFlags = { self_aware = true },
-				feedText = "High school was a journey of self-discovery.",
-			},
+			{ text = "Ready to take on the world", effects = { Happiness = 10 }, setFlags = { confident_adult = true }, feedText = "Adulthood, here you come!" },
+			{ text = "Nervous but excited", effects = { Happiness = 5, Smarts = 2 }, feedText = "It's a lot of responsibility." },
+			{ text = "Nothing really changed", effects = { Happiness = 3 }, feedText = "Just another birthday." },
+			{ text = "Register to vote!", effects = { Smarts = 3, Happiness = 5 }, setFlags = { civic_minded = true }, feedText = "You exercised your new civic rights!" },
+		},
+	},
+	{
+		id = "driving_license",
+		title = "Getting Your License",
+		emoji = "🚗",
+		text = "It's time to get your driver's license!",
+		question = "How does the test go?",
+		minAge = 16, maxAge = 20,
+		oneTime = true,
+		isMilestone = true,
+		choices = {
+			{ text = "Passed first try!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_license = true, good_driver = true }, feedText = "You nailed the driving test!" },
+			{ text = "Passed after a few attempts", effects = { Happiness = 5 }, setFlags = { has_license = true }, feedText = "Third time's the charm! You got your license." },
+			{ text = "Still working on it", effects = { Happiness = -2 }, feedText = "You'll get it eventually." },
+			{ text = "Don't need a license", effects = { }, feedText = "You'll use public transport." },
+		},
+	},
+	{
+		id = "first_car",
+		title = "First Set of Wheels",
+		emoji = "🚙",
+		text = "You're getting your first car!",
+		question = "What kind of car?",
+		minAge = 16, maxAge = 25,
+		oneTime = true,
+		requiresFlags = { has_license = true },
+		choices = {
+			{ text = "A beat-up used car", effects = { Happiness = 7, Money = -500 }, setFlags = { has_car = true }, feedText = "It's not pretty, but it's yours!" },
+			{ text = "A decent reliable car", effects = { Happiness = 8, Money = -3000 }, setFlags = { has_car = true }, feedText = "A solid first car!" },
+			{ text = "A gift from family", effects = { Happiness = 10 }, setFlags = { has_car = true }, feedText = "Your family helped you get a car!" },
+			{ text = "Saving up for something better", effects = { Money = 200 }, feedText = "You're waiting for the right one." },
 		},
 	},
 
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "graduation_college",
+		id = "college_graduation",
 		title = "College Graduation",
 		emoji = "🎓",
-		category = "milestone",
-		text = "You're graduating from college!",
-		question = "What are you most proud of?",
-		minAge = 21, maxAge = 30,
+		text = "You did it! Four years of hard work paid off.",
+		question = "How do you feel about graduating?",
+		minAge = 21, maxAge = 26,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { college_bound = true }, -- MUST have gone to college
+		requiresFlags = { college_bound = true },
 		choices = {
-			{
-				text = "My academic achievements",
-				effects = { Smarts = 10, Happiness = 5 },
-				setFlags = { college_graduate = true, academic_excellence = true },
-				feedText = "You graduated with honors!",
-			},
-			{
-				text = "The friendships I made",
-				effects = { Happiness = 10 },
-				setFlags = { college_graduate = true, college_friends = true },
-				feedText = "You made lifelong friends!",
-			},
-			{
-				text = "Just getting through it",
-				effects = { Happiness = 5 },
-				setFlags = { college_graduate = true },
-				feedText = "You survived college!",
-			},
-			{
-				text = "The experiences and growth",
-				effects = { Happiness = 7, Smarts = 5 },
-				setFlags = { college_graduate = true, grew_in_college = true },
-				feedText = "College transformed you.",
-			},
+			{ text = "Proud and ready for the future", effects = { Happiness = 15, Smarts = 5 }, setFlags = { college_grad = true }, feedText = "You graduated college! Bachelor's degree earned!" },
+			{ text = "Relieved it's over", effects = { Happiness = 10, Smarts = 3 }, setFlags = { college_grad = true }, feedText = "Finally done with school!" },
+			{ text = "Already missing it", effects = { Happiness = 8, Smarts = 5 }, setFlags = { college_grad = true }, feedText = "The college years were special." },
+			{ text = "Time for grad school", effects = { Smarts = 7, Money = -5000 }, setFlags = { college_grad = true, grad_school = true }, feedText = "You're continuing your education!" },
 		},
 	},
-
 	{
-		id = "wedding_day",
-		title = "Wedding Day",
-		emoji = "💒",
-		category = "milestone",
-		text = "It's your wedding day!",
-		question = "What kind of wedding did you have?",
-		minAge = 20, maxAge = 70,
+		id = "grad_school_complete",
+		title = "Advanced Degree",
+		emoji = "📜",
+		text = "You've completed your advanced degree!",
+		question = "What did you earn?",
+		minAge = 24, maxAge = 35,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { engaged = true }, -- MUST be engaged first
-		requiresPartner = true,
+		requiresFlags = { grad_school = true },
 		choices = {
-			{
-				text = "Dream wedding, spared no expense",
-				effects = { Happiness = 15, Money = -10000 },
-				setFlags = { married = true, big_wedding = true },
-				feedText = "Your fairy tale wedding was unforgettable!",
-			},
-			{
-				text = "Small, intimate ceremony",
-				effects = { Happiness = 12, Money = -2000 },
-				setFlags = { married = true, small_wedding = true },
-				feedText = "A beautiful, intimate celebration of love.",
-			},
-			{
-				text = "Courthouse wedding",
-				effects = { Happiness = 8, Money = -100 },
-				setFlags = { married = true, simple_wedding = true },
-				feedText = "Quick and simple - you're married!",
-			},
-			{
-				text = "Destination wedding adventure",
-				effects = { Happiness = 15, Money = -8000 },
-				setFlags = { married = true, destination_wedding = true },
-				feedText = "You got married in a beautiful location!",
-			},
+			{ text = "Master's Degree", effects = { Smarts = 8, Happiness = 10, Money = 1000 }, setFlags = { masters_degree = true }, feedText = "You earned your Master's!" },
+			{ text = "PhD/Doctorate", effects = { Smarts = 12, Happiness = 12 }, setFlags = { doctorate = true }, hintCareer = "science", feedText = "Dr. You! You earned your PhD!" },
+			{ text = "Law Degree (JD)", effects = { Smarts = 10, Happiness = 10 }, setFlags = { law_degree = true }, hintCareer = "law", feedText = "You passed the bar! You're a lawyer!" },
+			{ text = "Medical Degree (MD)", effects = { Smarts = 12, Happiness = 10 }, setFlags = { medical_degree = true }, hintCareer = "medical", feedText = "Dr. You! You're a physician!" },
 		},
 	},
 
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "first_child_birth",
-		title = "Becoming a Parent",
-		emoji = "👶",
-		category = "milestone",
-		text = "Your first child is born!",
-		question = "How do you feel?",
-		minAge = 20, maxAge = 50,
+		id = "first_real_job",
+		title = "Starting Your Career",
+		emoji = "💼",
+		text = "You got your first real, full-time job!",
+		question = "How do you feel about starting?",
+		minAge = 18, maxAge = 28,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		requiresFlags = { has_children = true }, -- MUST have children flag set
 		choices = {
-			{
-				text = "Overwhelmed with love",
-				effects = { Happiness = 20, Health = -3 },
-				setFlags = { devoted_parent = true },
-				feedText = "Your heart expanded the moment you held them.",
-			},
-			{
-				text = "Terrified but excited",
-				effects = { Happiness = 10 },
-				feedText = "Parenthood is scary but amazing!",
-			},
-			{
-				text = "Already planning their future",
-				effects = { Happiness = 8, Smarts = 2 },
-				setFlags = { tiger_parent = true },
-				feedText = "You have big dreams for your child!",
-			},
-			{
-				text = "I hope I can do this",
-				effects = { Happiness = 5 },
-				feedText = "You're nervous but determined to be a good parent.",
-			},
+			{ text = "Excited and motivated", effects = { Happiness = 10, Money = 500 }, setFlags = { employed = true }, feedText = "Your career begins!" },
+			{ text = "Nervous but ready", effects = { Happiness = 5, Smarts = 2, Money = 500 }, setFlags = { employed = true }, feedText = "First day jitters, but you've got this." },
+			{ text = "It's just a paycheck", effects = { Money = 500 }, setFlags = { employed = true }, feedText = "Work to live, not live to work." },
 		},
 	},
-
-	-- ══════════════════════════════════════════════════════════════════════
-	-- LATE LIFE MILESTONES
-	-- ══════════════════════════════════════════════════════════════════════
-
+	{
+		id = "major_promotion",
+		title = "Big Promotion",
+		emoji = "📈",
+		text = "You've been promoted to a senior position!",
+		question = "How do you handle the new responsibility?",
+		minAge = 28, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresJob = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You rose to the challenge!" },
+			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true }, feedText = "You're adjusting to the new role." },
+			{ text = "Struggle with impostor syndrome", effects = { Happiness = 5, Money = 1500, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You question if you deserve it." },
+		},
+	},
 	{
 		id = "retirement_day",
 		title = "Retirement Day",
-		emoji = "🌴",
-		category = "milestone",
-		text = "After decades of work, you're retiring!",
-		question = "How do you celebrate?",
-		minAge = 55, maxAge = 75,
+		emoji = "🎉",
+		text = "Today is your last day of work. You're retiring!",
+		question = "How do you feel?",
+		minAge = 60, maxAge = 70,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresJob = true,
+		choices = {
+			{ text = "Grateful for the journey", effects = { Happiness = 15 }, setFlags = { retired = true }, feedText = "A career well spent. Time to relax!" },
+			{ text = "Ready for the next adventure", effects = { Happiness = 12 }, setFlags = { retired = true, active_retiree = true }, feedText = "Retirement is just a new beginning!" },
+			{ text = "A bit sad to leave", effects = { Happiness = 8 }, setFlags = { retired = true }, feedText = "You'll miss the workplace, but it's time." },
+			{ text = "Relieved!", effects = { Happiness = 10, Health = 5 }, setFlags = { retired = true }, feedText = "Finally free!" },
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DECADE BIRTHDAYS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "turning_30",
+		title = "The Big 3-0",
+		emoji = "3️⃣0️⃣",
+		text = "You're turning 30! Welcome to a new decade.",
+		question = "How do you approach your 30s?",
+		minAge = 30, maxAge = 30,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
 		choices = {
-			{
-				text = "Big retirement party",
-				effects = { Happiness = 15, Money = -500 },
-				setFlags = { retired = true },
-				feedText = "You celebrated with colleagues and friends!",
-			},
-			{
-				text = "Immediately start traveling",
-				effects = { Happiness = 15, Money = -3000, Health = 3 },
-				setFlags = { retired = true, traveling_retiree = true },
-				feedText = "You're seeing the world!",
-			},
-			{
-				text = "Quietly transition to retirement",
-				effects = { Happiness = 10 },
-				setFlags = { retired = true },
-				feedText = "You slipped into retirement peacefully.",
-			},
-			{
-				text = "Already planning my next chapter",
-				effects = { Happiness = 12, Smarts = 3 },
-				setFlags = { retired = true, active_retiree = true },
-				feedText = "Retirement is just the beginning!",
-			},
+			{ text = "Best years ahead", effects = { Happiness = 10 }, feedText = "Your 30s are going to be amazing!" },
+			{ text = "Time to get serious", effects = { Smarts = 5, Happiness = 5 }, feedText = "Time to build your life." },
+			{ text = "Feeling old already", effects = { Happiness = -3 }, feedText = "Where did the time go?" },
+			{ text = "Just getting started", effects = { Happiness = 8, Health = 3 }, feedText = "Age is just a number!" },
 		},
 	},
-
 	{
-		id = "significant_anniversary",
-		title = "Milestone Anniversary",
-		emoji = "💍",
-		category = "milestone",
-		text = "You're celebrating a major wedding anniversary!",
-		question = "How do you mark the occasion?",
-		minAge = 40, maxAge = 90,
-		baseChance = 0.5,
-		cooldown = 10,
-		requiresFlags = { married = true }, -- MUST be married
-		requiresPartner = true,
-		choices = {
-			{
-				text = "Renew our vows",
-				effects = { Happiness = 15 },
-				setFlags = { renewed_vows = true },
-				feedText = "You renewed your commitment to each other!",
-			},
-			{
-				text = "Take a special trip",
-				effects = { Happiness = 12, Money = -2000 },
-				feedText = "You celebrated with a romantic getaway!",
-			},
-			{
-				text = "Family gathering",
-				effects = { Happiness = 10 },
-				feedText = "Surrounded by loved ones, you celebrated your love.",
-			},
-			{
-				text = "Quiet night together",
-				effects = { Happiness = 8 },
-				feedText = "Sometimes simple is perfect.",
-			},
-		},
-	},
-
-	{
-		id = "life_threatening_event",
-		title = "Facing Mortality",
-		emoji = "⚠️",
-		category = "milestone",
-		text = "You had a close call that made you think about life differently.",
-		question = "What happened?",
-		minAge = 30, maxAge = 80,
+		id = "turning_40",
+		title = "The Big 4-0",
+		emoji = "4️⃣0️⃣",
+		text = "You're 40! Midlife is here.",
+		question = "How do you feel about turning 40?",
+		minAge = 40, maxAge = 40,
 		oneTime = true,
-		baseChance = 0.2,
+		priority = "high",
 		isMilestone = true,
 		choices = {
-			{
-				text = "Health scare that I survived",
-				effects = { Health = -5, Happiness = 5, Smarts = 5 },
-				setFlags = { mortality_awareness = true, survivor = true },
-				feedText = "You gained a new appreciation for life.",
-			},
-			{
-				text = "Accident that could have been worse",
-				effects = { Health = -10, Happiness = 3 },
-				setFlags = { mortality_awareness = true },
-				feedText = "You're grateful to be alive.",
-			},
-			{
-				text = "Lost someone close unexpectedly",
-				effects = { Happiness = -10, Smarts = 3 },
-				setFlags = { experienced_loss = true },
-				feedText = "Loss taught you to treasure every moment.",
-			},
+			{ text = "Life begins at 40", effects = { Happiness = 10 }, feedText = "The best is yet to come!" },
+			{ text = "Time for a midlife check-in", effects = { Smarts = 3, Happiness = 5 }, feedText = "You're reflecting on where you are." },
+			{ text = "Buy a sports car", effects = { Happiness = 8, Money = -5000 }, setFlags = { midlife_crisis = true }, feedText = "Midlife crisis? Or just having fun?" },
+			{ text = "Content with where I am", effects = { Happiness = 8 }, feedText = "You're at peace with your life." },
 		},
 	},
-
 	{
-		id = "bucket_list_achievement",
-		title = "Dream Achievement",
-		emoji = "✨",
-		category = "milestone",
-		text = "You accomplished something you've always dreamed of!",
-		question = "What was it?",
-		minAge = 25, maxAge = 80,
-		baseChance = 0.2,
-		cooldown = 10,
+		id = "turning_50",
+		title = "Half Century",
+		emoji = "5️⃣0️⃣",
+		text = "50 years! Half a century of experiences.",
+		question = "What's your outlook?",
+		minAge = 50, maxAge = 50,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
 		choices = {
-			{
-				text = "Traveled somewhere incredible",
-				effects = { Happiness = 15, Money = -3000 },
-				setFlags = { world_traveler = true },
-				feedText = "You visited a dream destination!",
-			},
-			{
-				text = "Achieved a career goal",
-				effects = { Happiness = 15, Smarts = 5 },
-				setFlags = { career_peak = true },
-				feedText = "You reached the top of your field!",
-			},
-			{
-				text = "Created something lasting",
-				effects = { Happiness = 15, Smarts = 3 },
-				setFlags = { left_legacy = true },
-				feedText = "You created something that will outlive you!",
-			},
-			{
-				text = "Helped change someone's life",
-				effects = { Happiness = 20 },
-				setFlags = { changed_lives = true },
-				feedText = "You made a real difference for someone!",
-			},
-			{
-				text = "Overcame a lifelong fear",
-				effects = { Happiness = 12, Health = 5 },
-				setFlags = { conquered_fear = true },
-				feedText = "You faced your fear and won!",
-			},
+			{ text = "Wiser and happier", effects = { Happiness = 10, Smarts = 3 }, feedText = "Age brings wisdom and contentment." },
+			{ text = "Young at heart", effects = { Happiness = 8, Health = 3 }, feedText = "You feel as young as ever!" },
+			{ text = "Worried about health", effects = { Happiness = -2, Health = 5 }, setFlags = { health_conscious = true }, feedText = "You're taking health more seriously." },
+			{ text = "Best version of myself", effects = { Happiness = 12 }, feedText = "This is your era!" },
+		},
+	},
+	{
+		id = "becoming_grandparent",
+		title = "Grandparent!",
+		emoji = "👴",
+		text = "Congratulations! You've become a grandparent!",
+		question = "How do you approach this new role?",
+		minAge = 45, maxAge = 80,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresFlags = { parent = true },
+		choices = {
+			{ text = "Overjoyed and involved", effects = { Happiness = 15 }, setFlags = { grandparent = true, active_grandparent = true }, feedText = "You're going to be the best grandparent!" },
+			{ text = "Happy but keeping boundaries", effects = { Happiness = 10 }, setFlags = { grandparent = true }, feedText = "You'll be there when needed." },
+			{ text = "Feeling old suddenly", effects = { Happiness = 5 }, setFlags = { grandparent = true }, feedText = "A grandparent already?" },
 		},
 	},
 }
 
-return MilestoneEvents
+return Milestones
