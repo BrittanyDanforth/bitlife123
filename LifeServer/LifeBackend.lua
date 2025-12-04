@@ -30,6 +30,7 @@ local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
 local RANDOM = Random.new()
+local C = nil -- client palette not available on server
 
 local function debugPrint(...)
 	print("[LifeBackend]", ...)
