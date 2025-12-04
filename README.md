@@ -36,6 +36,14 @@ ServerScriptService
         ├── LifeState.lua
         ├── LifeStageSystem.lua
         └── LifeEvents
+            ├── init.lua
+            ├── EventEngine.lua
+            ├── CareerSystem.lua
+            └── Catalog
+                ├── CoreMilestones.lua
+                ├── CareerEvents.lua
+                ├── RomanceEvents.lua
+                └── CrimeEvents.lua
 StarterPlayer
 └── StarterPlayerScripts
     └── LifeClient
