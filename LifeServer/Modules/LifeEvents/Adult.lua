@@ -32,11 +32,41 @@ Adult.events = {
 		minAge = 18, maxAge = 22,
 		requiresFlags = { college_bound = true },
 		cooldown = 2,
+		-- Ensure player is enrolled in college when this fires
+		onComplete = function(state)
+			state.EducationData = state.EducationData or {}
+			state.EducationData.Status = "enrolled"
+			state.EducationData.Institution = "University"
+			state.EducationData.Level = "pursuing_bachelor"
+			state.Flags = state.Flags or {}
+			state.Flags.in_college = true
+		end,
 		choices = {
-			{ text = "Study hard, get great grades", effects = { Smarts = 7, Happiness = -2, Health = -2 }, setFlags = { honors_student = true }, feedText = "You're crushing it academically!" },
-			{ text = "Balance academics and social life", effects = { Smarts = 4, Happiness = 5 }, feedText = "You're getting the full college experience." },
-			{ text = "Party now, study later", effects = { Happiness = 8, Smarts = -2, Health = -3 }, setFlags = { party_animal = true }, feedText = "College is about the experience, right?" },
-			{ text = "Focus on networking and internships", effects = { Smarts = 3, Money = 100 }, setFlags = { career_focused = true }, hintCareer = "business", feedText = "You're building your professional network early." },
+			{
+				text = "Study hard, get great grades",
+				effects = { Smarts = 7, Happiness = -2, Health = -2 },
+				setFlags = { honors_student = true, in_college = true },
+				feedText = "You're crushing it academically!",
+			},
+			{
+				text = "Balance academics and social life",
+				effects = { Smarts = 4, Happiness = 5 },
+				setFlags = { in_college = true },
+				feedText = "You're getting the full college experience.",
+			},
+			{
+				text = "Party now, study later",
+				effects = { Happiness = 8, Smarts = -2, Health = -3 },
+				setFlags = { party_animal = true, in_college = true },
+				feedText = "College is about the experience, right?",
+			},
+			{
+				text = "Focus on networking and internships",
+				effects = { Smarts = 3, Money = 100 },
+				setFlags = { career_focused = true, in_college = true },
+				hintCareer = "business",
+				feedText = "You're building your professional network early.",
+			},
 		},
 	},
 	{

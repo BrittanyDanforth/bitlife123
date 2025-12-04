@@ -19,11 +19,40 @@ Teen.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		-- Set education status when entering high school
+		onComplete = function(state)
+			state.EducationData = state.EducationData or {}
+			state.EducationData.Status = "enrolled"
+			state.EducationData.Institution = "High School"
+			state.Flags = state.Flags or {}
+			state.Flags.in_high_school = true
+			state.Flags.is_teenager = true
+		end,
 		choices = {
-			{ text = "Focus on academics", effects = { Smarts = 5 }, setFlags = { academic_path = true }, feedText = "You're determined to excel academically." },
-			{ text = "Join lots of activities", effects = { Happiness = 5, Health = 2 }, setFlags = { extracurricular_focus = true }, feedText = "You want the full high school experience!" },
-			{ text = "Focus on making friends", effects = { Happiness = 5 }, setFlags = { social_path = true }, feedText = "Your social life is your priority." },
-			{ text = "Keep a low profile", effects = { Smarts = 2 }, setFlags = { introvert_path = true }, feedText = "You prefer to observe and stay under the radar." },
+			{
+				text = "Focus on academics",
+				effects = { Smarts = 5 },
+				setFlags = { academic_path = true, in_high_school = true },
+				feedText = "You're determined to excel academically.",
+			},
+			{
+				text = "Join lots of activities",
+				effects = { Happiness = 5, Health = 2 },
+				setFlags = { extracurricular_focus = true, in_high_school = true },
+				feedText = "You want the full high school experience!",
+			},
+			{
+				text = "Focus on making friends",
+				effects = { Happiness = 5 },
+				setFlags = { social_path = true, in_high_school = true },
+				feedText = "Your social life is your priority.",
+			},
+			{
+				text = "Keep a low profile",
+				effects = { Smarts = 2 },
+				setFlags = { introvert_path = true, in_high_school = true },
+				feedText = "You prefer to observe and stay under the radar.",
+			},
 		},
 	},
 
@@ -230,12 +259,39 @@ Teen.events = {
 		question = "What path are you considering?",
 		minAge = 16, maxAge = 17,
 		oneTime = true,
+		requiresFlags = { graduated_high_school = false }, -- Only show if haven't graduated yet (planning stage)
 		choices = {
-			{ text = "Aim for a top university", effects = { Smarts = 3, Happiness = -2 }, setFlags = { college_bound = true, ambitious = true }, feedText = "You're working hard for a prestigious school." },
-			{ text = "State school is fine", effects = { Smarts = 2, Happiness = 2 }, setFlags = { college_bound = true, practical = true }, feedText = "You're taking a practical approach to higher ed." },
-			{ text = "Community college first", effects = { Smarts = 1, Money = 50 }, setFlags = { college_bound = true, economical = true }, feedText = "You're saving money with community college." },
-			{ text = "Trade school / vocational", effects = { Smarts = 2 }, setFlags = { trade_school_bound = true }, hintCareer = "trades", feedText = "You're planning to learn a skilled trade." },
-			{ text = "Skip college, start working", effects = { Money = 100 }, setFlags = { no_college = true }, feedText = "You're ready to enter the workforce directly." },
+			{
+				text = "Aim for a top university",
+				effects = { Smarts = 3, Happiness = -2 },
+				setFlags = { college_bound = true, ambitious = true, plans_for_college = true },
+				feedText = "You're working hard for a prestigious school.",
+			},
+			{
+				text = "State school is fine",
+				effects = { Smarts = 2, Happiness = 2 },
+				setFlags = { college_bound = true, practical = true, plans_for_college = true },
+				feedText = "You're taking a practical approach to higher ed.",
+			},
+			{
+				text = "Community college first",
+				effects = { Smarts = 1, Money = 50 },
+				setFlags = { college_bound = true, economical = true, plans_for_community_college = true },
+				feedText = "You're saving money with community college.",
+			},
+			{
+				text = "Trade school / vocational",
+				effects = { Smarts = 2 },
+				setFlags = { trade_school_bound = true },
+				hintCareer = "trades",
+				feedText = "You're planning to learn a skilled trade.",
+			},
+			{
+				text = "Skip college, start working",
+				effects = { Money = 100 },
+				setFlags = { no_college = true, workforce_bound = true },
+				feedText = "You're ready to enter the workforce directly.",
+			},
 		},
 	},
 	{
@@ -248,11 +304,46 @@ Teen.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		-- onComplete runs after ANY choice - this ensures Education is always updated
+		onComplete = function(state, choice, eventDef, outcome)
+			-- Set education level
+			state.Education = "high_school"
+			-- Set graduated flag
+			state.Flags = state.Flags or {}
+			state.Flags.graduated_high_school = true
+			state.Flags.high_school_graduate = true
+			-- Update education data
+			if state.EducationData then
+				state.EducationData.Status = "completed"
+				state.EducationData.Level = "high_school"
+				state.EducationData.Institution = "High School"
+			end
+		end,
 		choices = {
-			{ text = "Best years of my life so far", effects = { Happiness = 10 }, setFlags = { loved_high_school = true }, feedText = "You graduated with amazing memories!" },
-			{ text = "Glad it's over", effects = { Happiness = 5 }, feedText = "High school wasn't your favorite, but you made it!" },
-			{ text = "Nervous about what's next", effects = { Happiness = 2, Smarts = 2 }, feedText = "The future is uncertain but exciting." },
-			{ text = "I learned a lot about myself", effects = { Happiness = 5, Smarts = 5 }, setFlags = { self_aware = true }, feedText = "High school was a journey of self-discovery." },
+			{
+				text = "Best years of my life so far",
+				effects = { Happiness = 10 },
+				setFlags = { loved_high_school = true, graduated_high_school = true, high_school_graduate = true },
+				feedText = "You graduated with amazing memories!",
+			},
+			{
+				text = "Glad it's over",
+				effects = { Happiness = 5 },
+				setFlags = { graduated_high_school = true, high_school_graduate = true },
+				feedText = "High school wasn't your favorite, but you made it!",
+			},
+			{
+				text = "Nervous about what's next",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { graduated_high_school = true, high_school_graduate = true },
+				feedText = "The future is uncertain but exciting.",
+			},
+			{
+				text = "I learned a lot about myself",
+				effects = { Happiness = 5, Smarts = 5 },
+				setFlags = { self_aware = true, graduated_high_school = true, high_school_graduate = true },
+				feedText = "High school was a journey of self-discovery.",
+			},
 		},
 	},
 

@@ -183,11 +183,43 @@ Milestones.events = {
 		priority = "high",
 		isMilestone = true,
 		requiresFlags = { college_bound = true },
+		-- onComplete ensures Education is always set after any choice
+		onComplete = function(state, choice, eventDef, outcome)
+			state.Education = "bachelor"
+			state.Flags = state.Flags or {}
+			state.Flags.college_grad = true
+			state.Flags.bachelor_degree = true
+			state.Flags.college_graduate = true
+			if state.EducationData then
+				state.EducationData.Status = "completed"
+				state.EducationData.Level = "bachelor"
+			end
+		end,
 		choices = {
-			{ text = "Proud and ready for the future", effects = { Happiness = 15, Smarts = 5 }, setFlags = { college_grad = true }, feedText = "You graduated college! Bachelor's degree earned!" },
-			{ text = "Relieved it's over", effects = { Happiness = 10, Smarts = 3 }, setFlags = { college_grad = true }, feedText = "Finally done with school!" },
-			{ text = "Already missing it", effects = { Happiness = 8, Smarts = 5 }, setFlags = { college_grad = true }, feedText = "The college years were special." },
-			{ text = "Time for grad school", effects = { Smarts = 7, Money = -5000 }, setFlags = { college_grad = true, grad_school = true }, feedText = "You're continuing your education!" },
+			{
+				text = "Proud and ready for the future",
+				effects = { Happiness = 15, Smarts = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true },
+				feedText = "You graduated college! Bachelor's degree earned!",
+			},
+			{
+				text = "Relieved it's over",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { college_grad = true, bachelor_degree = true },
+				feedText = "Finally done with school!",
+			},
+			{
+				text = "Already missing it",
+				effects = { Happiness = 8, Smarts = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true },
+				feedText = "The college years were special.",
+			},
+			{
+				text = "Time for grad school",
+				effects = { Smarts = 7, Money = -5000 },
+				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true },
+				feedText = "You're continuing your education!",
+			},
 		},
 	},
 	{
@@ -202,10 +234,68 @@ Milestones.events = {
 		isMilestone = true,
 		requiresFlags = { grad_school = true },
 		choices = {
-			{ text = "Master's Degree", effects = { Smarts = 8, Happiness = 10, Money = 1000 }, setFlags = { masters_degree = true }, feedText = "You earned your Master's!" },
-			{ text = "PhD/Doctorate", effects = { Smarts = 12, Happiness = 12 }, setFlags = { doctorate = true }, hintCareer = "science", feedText = "Dr. You! You earned your PhD!" },
-			{ text = "Law Degree (JD)", effects = { Smarts = 10, Happiness = 10 }, setFlags = { law_degree = true }, hintCareer = "law", feedText = "You passed the bar! You're a lawyer!" },
-			{ text = "Medical Degree (MD)", effects = { Smarts = 12, Happiness = 10 }, setFlags = { medical_degree = true }, hintCareer = "medical", feedText = "Dr. You! You're a physician!" },
+			{
+				text = "Master's Degree",
+				effects = { Smarts = 8, Happiness = 10, Money = 1000 },
+				setFlags = { masters_degree = true, advanced_degree = true },
+				feedText = "You earned your Master's!",
+				onResolve = function(state)
+					state.Education = "master"
+					state.Flags.masters_degree = true
+					if state.EducationData then
+						state.EducationData.Status = "completed"
+						state.EducationData.Level = "master"
+					end
+				end,
+			},
+			{
+				text = "PhD/Doctorate",
+				effects = { Smarts = 12, Happiness = 12 },
+				setFlags = { doctorate = true, phd = true, advanced_degree = true },
+				hintCareer = "science",
+				feedText = "Dr. You! You earned your PhD!",
+				onResolve = function(state)
+					state.Education = "phd"
+					state.Flags.doctorate = true
+					state.Flags.phd = true
+					if state.EducationData then
+						state.EducationData.Status = "completed"
+						state.EducationData.Level = "phd"
+					end
+				end,
+			},
+			{
+				text = "Law Degree (JD)",
+				effects = { Smarts = 10, Happiness = 10 },
+				setFlags = { law_degree = true, advanced_degree = true },
+				hintCareer = "law",
+				feedText = "You passed the bar! You're a lawyer!",
+				onResolve = function(state)
+					state.Education = "law"
+					state.Flags.law_degree = true
+					state.Flags.passed_bar = true
+					if state.EducationData then
+						state.EducationData.Status = "completed"
+						state.EducationData.Level = "law"
+					end
+				end,
+			},
+			{
+				text = "Medical Degree (MD)",
+				effects = { Smarts = 12, Happiness = 10 },
+				setFlags = { medical_degree = true, advanced_degree = true },
+				hintCareer = "medical",
+				feedText = "Dr. You! You're a physician!",
+				onResolve = function(state)
+					state.Education = "medical"
+					state.Flags.medical_degree = true
+					state.Flags.is_doctor = true
+					if state.EducationData then
+						state.EducationData.Status = "completed"
+						state.EducationData.Level = "medical"
+					end
+				end,
+			},
 		},
 	},
 

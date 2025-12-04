@@ -161,24 +161,35 @@ local TransitionEvents = {
 		question = "What's your plan for the future?",
 		priority = "high",
 		isMilestone = true,
+		-- Ensure high school graduation is set when becoming an adult
+		onComplete = function(state)
+			-- Make sure they have high school education
+			if state.Education == "none" or state.Education == nil then
+				state.Education = "high_school"
+			end
+			state.Flags = state.Flags or {}
+			state.Flags.is_adult = true
+			state.Flags.graduated_high_school = true
+			state.Flags.high_school_graduate = true
+		end,
 		choices = {
 			{
 				text = "Go to college",
 				effects = { Smarts = 5 },
-				setFlags = { college_bound = true },
+				setFlags = { college_bound = true, plans_for_college = true },
 				hintCareer = "professional",
 				feed = "Higher education is calling your name.",
 			},
 			{
 				text = "Start working right away",
 				effects = { Money = 500 },
-				setFlags = { early_worker = true },
+				setFlags = { early_worker = true, workforce_bound = true },
 				feed = "You're ready to earn your own money.",
 			},
 			{
 				text = "Travel and explore",
 				effects = { Happiness = 8 },
-				setFlags = { wanderer = true },
+				setFlags = { wanderer = true, gap_year = true },
 				feed = "You want to see the world before settling down.",
 			},
 			{
