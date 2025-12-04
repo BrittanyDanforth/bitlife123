@@ -17,6 +17,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 
+local ModulesFolder = script:FindFirstChild("Modules") or script.Parent:FindFirstChild("Modules")
+assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer/Modules.")
+
+local LifeState = require(ModulesFolder:WaitForChild("LifeState"))
+local LifeStageSystem = require(ModulesFolder:WaitForChild("LifeStageSystem"))
+local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
+local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
+local EventEngine = LifeEvents.EventEngine
+
 local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
@@ -784,61 +793,8 @@ function LifeBackend:setupRemotes()
 	end
 end
 
--- ============================================================================
--- Player state helpers
--- ============================================================================
-
-function LifeBackend:createFreshRelationships()
-	return {
-		mother = { id = "mother", name = "Mom", type = "family", role = "Mother", relationship = 80, age = RANDOM:NextInteger(35, 55), alive = true },
-		father = { id = "father", name = "Dad", type = "family", role = "Father", relationship = 75, age = RANDOM:NextInteger(37, 58), alive = true },
-	}
-end
-
 function LifeBackend:createInitialState(player)
-	return {
-		UserId = player.UserId,
-		Name = nil,
-		Gender = nil,
-		Age = 0,
-		Money = 0,
-		Happiness = nil, -- legacy compatibility
-		Health = nil,
-		Smarts = nil,
-		Looks = nil,
-		Stats = {
-			Happiness = RANDOM:NextInteger(65, 85),
-			Health = RANDOM:NextInteger(70, 90),
-			Smarts = RANDOM:NextInteger(45, 75),
-			Looks = RANDOM:NextInteger(40, 80),
-		},
-		Experience = 0,
-		Education = "none",
-		EducationData = { Status = "none" },
-		Assets = { Properties = {}, Vehicles = {}, Items = {}, Crypto = {} },
-		Relationships = self:createFreshRelationships(),
-		Flags = {},
-		InJail = false,
-		JailYearsLeft = 0,
-		CurrentJob = nil,
-		Career = {
-			track = nil,
-			education = "none",
-			enrolled = false,
-		},
-		CareerInfo = {
-			performance = 60,
-			promotionProgress = 0,
-			yearsAtJob = 0,
-			raises = 0,
-			careerHistory = {},
-			skills = {},
-		},
-		Paths = { active = nil },
-		ActivePath = nil,
-		PendingFeed = "A new life begins...",
-		lastFeed = "A new life begins...",
-	}
+	return LifeState.new(player)
 end
 
 function LifeBackend:getState(player)
@@ -846,9 +802,17 @@ function LifeBackend:getState(player)
 end
 
 function LifeBackend:serializeState(state)
+	if state and state.Serialize then
+		local serialized = state:Serialize()
+		serialized.PendingFeed = nil
+		serialized.lastFeed = nil
+		return serialized
+	end
 	local cloned = deepCopy(state)
-	cloned.PendingFeed = nil
-	cloned.lastFeed = nil
+	if cloned then
+		cloned.PendingFeed = nil
+		cloned.lastFeed = nil
+	end
 	return cloned
 end
 
@@ -870,12 +834,16 @@ function LifeBackend:applyStatChanges(state, deltas)
 			state.Money = math.max(0, state.Money + delta)
 		elseif stat == "Health" or stat == "H" then
 			state.Stats.Health = clamp(state.Stats.Health + delta)
+			state.Health = state.Stats.Health
 		elseif stat == "Happiness" or stat == "Happy" then
 			state.Stats.Happiness = clamp(state.Stats.Happiness + delta)
+			state.Happiness = state.Stats.Happiness
 		elseif stat == "Smarts" then
 			state.Stats.Smarts = clamp(state.Stats.Smarts + delta)
+			state.Smarts = state.Stats.Smarts
 		elseif stat == "Looks" then
 			state.Stats.Looks = clamp(state.Stats.Looks + delta)
+			state.Looks = state.Stats.Looks
 		end
 	end
 end
@@ -988,7 +956,7 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 		return
 	end
 
-	local eventId = eventDef.id .. "_" .. HttpService:GenerateGUID(false)
+	local eventId = (eventDef.id or "event") .. "_" .. HttpService:GenerateGUID(false)
 	local eventPayload = {
 		id = eventId,
 		title = eventDef.title,
@@ -999,62 +967,137 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 		choices = {},
 	}
 
-	for index, choice in ipairs(eventDef.choices) do
+	for index, choice in ipairs(eventDef.choices or {}) do
 		eventPayload.choices[index] = {
 			index = index,
-			text = choice.text,
+			text = choice.text or ("Choice " .. index),
 			minigame = choice.minigame,
 		}
 	end
 
-	self.pendingEvents[player.UserId] = {
-		id = eventId,
-		definition = eventDef,
-		choices = eventDef.choices,
-		timestamp = os.clock(),
-	}
+	local pending = self.pendingEvents[player.UserId] or {}
+	pending.activeEventId = eventId
+	pending.definition = eventDef
+	pending.choices = eventDef.choices
+	pending.timestamp = os.clock()
+	pending.feedText = feedText or pending.feedText
+	self.pendingEvents[player.UserId] = pending
 
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
 end
 
 function LifeBackend:handleAgeUp(player)
 	local state = self:getState(player)
-	if not state then
-		return
-	end
-	if state.awaitingDecision then
+	if not state or state.awaitingDecision then
 		return
 	end
 
-	state.Age = state.Age + 1
+	local oldAge = state.Age
+	if state.AdvanceAge then
+		state:AdvanceAge()
+	else
+		state.Age = state.Age + 1
+		state.Year = (state.Year or 2025) + 1
+	end
+
 	self:advanceRelationships(state)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 
-	-- natural stat drift
 	state.Stats.Health = clamp(state.Stats.Health - RANDOM:NextInteger(0, 2))
 	state.Stats.Happiness = clamp(state.Stats.Happiness + RANDOM:NextInteger(-1, 2))
 	state.Stats.Smarts = clamp(state.Stats.Smarts + RANDOM:NextInteger(-1, 2))
+	state.Health = state.Stats.Health
+	state.Happiness = state.Stats.Happiness
+	state.Smarts = state.Stats.Smarts
 
 	local feedText = string.format("Age %d: %s", state.Age, state.PendingFeed or "Another year passes.")
 	state.PendingFeed = nil
 
-	local eventDef = self:generateEvent(player, state)
-	if eventDef then
-		state.awaitingDecision = true
-		self:presentEvent(player, eventDef, feedText)
-	else
-		self:pushState(player, feedText)
+	if state.Health <= 0 then
+		state.awaitingDecision = false
+		self:completeAgeCycle(player, state, feedText)
+		return
 	end
+
+	local queue = {}
+	local transitionEvent = LifeStageSystem.getTransitionEvent(oldAge, state.Age)
+	if transitionEvent then
+		transitionEvent.source = "stage"
+		table.insert(queue, transitionEvent)
+	end
+
+	local yearlyEvents = LifeEvents.buildYearQueue(state, { maxEvents = 2 }) or {}
+	for _, eventDef in ipairs(yearlyEvents) do
+		eventDef.source = "lifeevents"
+		table.insert(queue, eventDef)
+	end
+
+	if #queue == 0 then
+		state.awaitingDecision = false
+		self:completeAgeCycle(player, state, feedText)
+		return
+	end
+
+	self.pendingEvents[player.UserId] = {
+		queue = queue,
+		cursor = 1,
+		feedText = feedText,
+	}
+	state.awaitingDecision = true
+	self:presentEvent(player, queue[1], feedText)
+end
+
+function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
+	local deathInfo
+	if state.Health and state.Health <= 0 then
+		deathInfo = { died = true, cause = "Health Failure" }
+	else
+		deathInfo = LifeStageSystem.checkDeath(state)
+	end
+
+	if deathInfo and deathInfo.died then
+		if state.SetFlag then
+			state:SetFlag("dead", true)
+		else
+			state.Flags = state.Flags or {}
+			state.Flags.dead = true
+		end
+		feedText = string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
+		resultData = {
+			showPopup = true,
+			emoji = "☠️",
+			title = "Life Ended",
+			body = feedText,
+			wasSuccess = false,
+			fatal = true,
+		}
+	end
+
+	self:pushState(player, feedText, resultData)
 end
 
 function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	local pending = self.pendingEvents[player.UserId]
-	if not pending or pending.id ~= eventId then
+	if not pending then
+		return
+	end
+	if pending.activeEventId and pending.activeEventId ~= eventId then
 		return
 	end
 
-	local choice = pending.choices[choiceIndex]
+	local eventDef
+	if pending.queue then
+		eventDef = pending.definition or pending.queue[pending.cursor]
+	else
+		eventDef = pending.definition
+	end
+	if not eventDef then
+		return
+	end
+
+	local choices = eventDef.choices or {}
+	local choice = choices[choiceIndex]
 	if not choice then
 		return
 	end
@@ -1064,47 +1107,86 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		return
 	end
 
-	self:applyStatChanges(state, choice.deltas)
+	local feedText = choice.feed or choice.text or "Life continues."
+	local resultData
+	local effectsSummary = choice.deltas or {}
 
-	if choice.cost and choice.cost > 0 then
-		self:addMoney(state, -choice.cost)
-	end
+	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
+		local preStats = table.clone(state.Stats)
+		local preMoney = state.Money
+		local success, err = pcall(function()
+			EventEngine.completeEvent(eventDef, choiceIndex, state)
+		end)
+		if not success then
+			warn("[LifeBackend] Event resolution error:", err)
+		end
+		effectsSummary = {
+			Happiness = (state.Stats.Happiness - preStats.Happiness),
+			Health = (state.Stats.Health - preStats.Health),
+			Smarts = (state.Stats.Smarts - preStats.Smarts),
+			Looks = (state.Stats.Looks - preStats.Looks),
+			Money = state.Money - preMoney,
+		}
+	else
+		self:applyStatChanges(state, choice.deltas)
 
-	if choice.career then
-		local info = state.CareerInfo
-		info.performance = clamp((info.performance or 60) + (choice.career.performance or 0))
-		info.promotionProgress = clamp((info.promotionProgress or 0) + (choice.career.progress or 0))
-		if choice.career.salaryBonus and state.CurrentJob then
-			local job = state.CurrentJob
-			job.salary = math.floor((job.salary or 0) * (1 + choice.career.salaryBonus))
+		if choice.cost and choice.cost > 0 then
+			self:addMoney(state, -choice.cost)
+			effectsSummary = effectsSummary or {}
+			effectsSummary.Money = (effectsSummary.Money or 0) - choice.cost
+		end
+
+		if choice.career then
+			local info = state.CareerInfo
+			info.performance = clamp((info.performance or 60) + (choice.career.performance or 0))
+			info.promotionProgress = clamp((info.promotionProgress or 0) + (choice.career.progress or 0))
+			if choice.career.salaryBonus and state.CurrentJob then
+				local job = state.CurrentJob
+				job.salary = math.floor((job.salary or 0) * (1 + choice.career.salaryBonus))
+			end
+		end
+
+		if choice.relationships and choice.relationships.delta then
+			for _, rel in pairs(state.Relationships or {}) do
+				rel.relationship = clamp((rel.relationship or 50) + choice.relationships.delta, 0, 100)
+			end
+		end
+
+		if choice.crime then
+			local reward = RANDOM:NextInteger(choice.crime.reward[1], choice.crime.reward[2])
+			self:addMoney(state, reward)
+			effectsSummary = effectsSummary or {}
+			effectsSummary.Money = (effectsSummary.Money or 0) + reward
 		end
 	end
 
-	if choice.relationships and choice.relationships.delta then
-		for _, rel in pairs(state.Relationships) do
-			rel.relationship = clamp((rel.relationship or 50) + choice.relationships.delta, 0, 100)
-		end
-	end
-
-	if choice.crime then
-		local reward = RANDOM:NextInteger(choice.crime.reward[1], choice.crime.reward[2])
-		self:addMoney(state, reward)
-	end
-
-	local feedText = choice.feed or "Life continues."
-	local deltas = choice.deltas or {}
-	local resultData = {
+	resultData = {
 		showPopup = true,
-		emoji = pending.definition.emoji,
-		title = pending.definition.title,
+		emoji = eventDef.emoji,
+		title = eventDef.title,
 		body = feedText,
-		happiness = deltas.Happiness,
-		health = deltas.Health,
-		smarts = deltas.Smarts,
-		looks = deltas.Looks,
-		money = deltas.Money,
+		happiness = effectsSummary.Happiness,
+		health = effectsSummary.Health,
+		smarts = effectsSummary.Smarts,
+		looks = effectsSummary.Looks,
+		money = effectsSummary.Money,
 		wasSuccess = true,
 	}
+
+	if pending.queue then
+		pending.cursor = pending.cursor + 1
+		if pending.cursor <= #pending.queue then
+			pending.definition = pending.queue[pending.cursor]
+			self.pendingEvents[player.UserId] = pending
+			self:presentEvent(player, pending.definition, pending.feedText)
+			return
+		else
+			self.pendingEvents[player.UserId] = nil
+			state.awaitingDecision = false
+			self:completeAgeCycle(player, state, pending.feedText or feedText, resultData)
+			return
+		end
+	end
 
 	self.pendingEvents[player.UserId] = nil
 	state.awaitingDecision = false
