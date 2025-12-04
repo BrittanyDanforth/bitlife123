@@ -30,23 +30,23 @@ Your Explorer should look like:
 ```
 ServerScriptService
 └── LifeServer
-    ├── init.server.lua
-    ├── LifeBackend.lua
+    ├── init.server.lua        (Script)
+    ├── LifeBackend.lua        (ModuleScript)
     └── Modules
-        ├── LifeState.lua
-        ├── LifeStageSystem.lua
+        ├── LifeState.lua         (ModuleScript)
+        ├── LifeStageSystem.lua   (ModuleScript)
         └── LifeEvents
-            ├── init.lua
-            ├── EventEngine.lua
-            ├── CareerSystem.lua
+            ├── init.lua             (ModuleScript)
+            ├── EventEngine.lua      (ModuleScript)
+            ├── CareerSystem.lua     (ModuleScript)
             └── Catalog
-                ├── CoreMilestones.lua
-                ├── CareerEvents.lua
-                ├── RomanceEvents.lua
-                └── CrimeEvents.lua
+                ├── CoreMilestones.lua  (ModuleScript)
+                ├── CareerEvents.lua    (ModuleScript)
+                ├── RomanceEvents.lua   (ModuleScript)
+                └── CrimeEvents.lua     (ModuleScript)
 StarterPlayer
 └── StarterPlayerScripts
-    └── LifeClient
+    └── LifeClient             (Folder)
 ReplicatedStorage
 └── (empty – remotes will spawn at runtime)
 ```
