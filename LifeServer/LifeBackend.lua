@@ -85,6 +85,65 @@ local function formatMoney(amount)
 	end
 end
 
+local function countEntries(tbl)
+	if type(tbl) ~= "table" then
+		return 0
+	end
+	local count = 0
+	for _ in pairs(tbl) do
+		count += 1
+	end
+	return count
+end
+
+local function sumAssetList(list)
+	if type(list) ~= "table" then
+		return 0
+	end
+	local total = 0
+	for _, asset in pairs(list) do
+		if type(asset) == "table" then
+			local value = asset.value or asset.price or asset.cost or asset.worth or asset.Worth
+			if typeof(value) == "number" then
+				total += value
+			end
+		elseif typeof(asset) == "number" then
+			total += asset
+		end
+	end
+	return total
+end
+
+local function computeNetWorth(state)
+	local total = state.Money or 0
+	local assets = state.Assets or {}
+	total += sumAssetList(assets.Properties)
+	total += sumAssetList(assets.Vehicles)
+	total += sumAssetList(assets.Items)
+	total += sumAssetList(assets.Crypto)
+	total += sumAssetList(assets.Businesses)
+	total += sumAssetList(assets.Investments)
+	return math.max(0, total)
+end
+
+local function buildDeathMeta(state, deathInfo)
+	local stageData = LifeStageSystem.getStage(state.Age or 0)
+	return {
+		age = state.Age,
+		year = state.Year,
+		cause = deathInfo and deathInfo.cause or "Unknown causes",
+		causeId = deathInfo and deathInfo.id,
+		stage = stageData and stageData.id or "unknown",
+		netWorth = computeNetWorth(state),
+		money = state.Money or 0,
+		career = state.Career and state.Career.jobTitle,
+		employer = state.Career and state.Career.employer,
+		fame = state.Fame or 0,
+		relationshipCount = countEntries(state.Relationships),
+		flags = shallowCopy(state.Flags or {}),
+	}
+end
+
 -- ============================================================================
 -- Job Catalog (mirrors OccupationScreen order and IDs)
 -- ============================================================================
@@ -1101,6 +1160,8 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			body = feedText,
 			wasSuccess = false,
 			fatal = true,
+			cause = deathInfo.cause,
+			deathMeta = buildDeathMeta(state, deathInfo),
 		}
 	end
 

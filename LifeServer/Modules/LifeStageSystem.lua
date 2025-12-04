@@ -298,10 +298,20 @@ local function pickDeathCause(state)
 	addCause(pool, "tech_burnout", "Collapsed During a 48-hour Hackathon", 2, jobTrack == "tech")
 	addCause(pool, "political_scandal", "Scandal-Induced Breakdown", 2, flags.political_path)
 	addCause(pool, "paparazzi_chase", "Paparazzi Highway Pileup", 3, fame >= 70 or flags.famous)
+	addCause(pool, "concert_stage", "Fell Off a Festival Stage", 3, fame >= 50 or flags.pop_star)
+	addCause(pool, "jet_malfunction", "Private Jet Malfunction", 2, (state.Money or 0) >= 5_000_000)
+	addCause(pool, "crypto_implosion", "Stress From a Crypto Implosion", 2, flags.crypto_tycoon)
+	addCause(pool, "space_tourist", "Commercial Rocket Mishap", 1, flags.space_tourist)
+	addCause(pool, "prison_escape", "Failed Prison Escape", 2, flags.fugitive or flags.escape_artist)
+	addCause(pool, "underground_fight", "Underground Fight Gone Wrong", 2, flags.fight_club or flags.boxer)
+	addCause(pool, "shark_selfie", "Shark Attack While Taking a Selfie", 1, flags.world_traveler)
+	addCause(pool, "mountain_misstep", "Slipped During a Mountain Summit", 2, flags.adventurer)
 	addCause(pool, "pet_ferret", "Bitten by a Rabid Ferret", 1, true)
 	addCause(pool, "falling_piano", "Crushed by a Falling Piano", 1, true)
 	addCause(pool, "meteor", "Struck by a Baby Meteor", 1, true)
 	addCause(pool, "gamer_rage", "Slammed the Controller Too Hard", 1, fame >= 30)
+	addCause(pool, "treadmill_disaster", "Launch off a Gym Treadmill", 1, flags.gym_rat or flags.fitness_buff)
+	addCause(pool, "lottery_stampede", "Lottery Winner Press Stampede", 1, flags.lottery_winner)
 
 	if #pool == 0 then
 		addCause(pool, "natural", "Natural Causes", 1, true)
@@ -323,8 +333,14 @@ local function pickDeathCause(state)
 end
 
 function LifeStageSystem.checkDeath(state)
+	local age = state.Age or 0
 	if state.Health <= 0 then
 		return { died = true, cause = "Health Failure", fatal = true }
+	end
+
+	if age < 5 and (state.Health or 0) > 10 then
+		-- Protect infants/toddlers from random death rolls unless health already zeroed
+		return { died = false }
 	end
 
 	local chance = LifeStageSystem.calculateDeathChance(state)

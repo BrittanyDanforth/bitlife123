@@ -265,6 +265,161 @@ local function formatMoney(n)
 	end
 end
 
+local function sumAssetValue(list)
+	if type(list) ~= "table" then
+		return 0
+	end
+	local total = 0
+	for _, asset in pairs(list) do
+		if type(asset) == "table" then
+			local value = asset.value or asset.price or asset.cost or asset.worth or asset.Worth
+			if type(value) == "number" then
+				total += value
+			end
+		elseif type(asset) == "number" then
+			total += asset
+		end
+	end
+	return total
+end
+
+local function calculateNetWorth(state)
+	if not state then
+		return 0
+	end
+	local assets = state.Assets or {}
+	local total = state.Money or 0
+	total += sumAssetValue(assets.Properties)
+	total += sumAssetValue(assets.Vehicles)
+	total += sumAssetValue(assets.Items)
+	total += sumAssetValue(assets.Crypto)
+	total += sumAssetValue(assets.Businesses)
+	total += sumAssetValue(assets.Investments)
+	return math.max(0, math.floor(total))
+end
+
+local function countRelationships(state, relType)
+	if not state or type(state.Relationships) ~= "table" then
+		return 0
+	end
+	local count = 0
+	for _, rel in pairs(state.Relationships) do
+		if not relType or rel.type == relType then
+			count += 1
+		end
+	end
+	return count
+end
+
+local DEATH_QUOTES = {
+	"Every life leaves a ripple.",
+	"In the end, we only regret the chances we didn't take.",
+	"Their story pauses here—press restart to write the sequel.",
+	"Legends never die, they respawn.",
+	"A good life is a collection of adventurous chapters.",
+}
+
+local function getDeathQuote(cause)
+	if not cause then
+		return DEATH_QUOTES[math.random(1, #DEATH_QUOTES)]
+	end
+	local lowerCause = string.lower(cause)
+	if lowerCause:find("heart") then
+		return "Guard the heart; it's the metronome of every story."
+	elseif lowerCause:find("overdose") then
+		return "Chasing highs can cost the entire skyline."
+	elseif lowerCause:find("natural") then
+		return "Time eventually collects all rents."
+	end
+	return DEATH_QUOTES[math.random(1, #DEATH_QUOTES)]
+end
+
+local function buildDeathStats(state)
+	local stats = {}
+	local netWorth = calculateNetWorth(state)
+	table.insert(stats, { icon = "💰", label = "Net Worth", value = formatMoney(netWorth) })
+
+	local career = state and state.Career or {}
+	local jobTitle = career and career.jobTitle or "Unemployed"
+	local employer = career and career.employer
+	local careerLabel = employer and (jobTitle .. " @ " .. employer) or jobTitle
+	table.insert(stats, { icon = "💼", label = "Career", value = careerLabel })
+
+	local education = (state and state.EducationData and state.EducationData.Level) or state.Education or "No diploma"
+	table.insert(stats, { icon = "🎓", label = "Education", value = education:gsub("^%l", string.upper) })
+
+	local relCount = countRelationships(state)
+	table.insert(stats, { icon = "👥", label = "Close Relations", value = relCount })
+
+	local fame = math.floor(state and state.Fame or 0)
+	table.insert(stats, { icon = "⭐", label = "Fame", value = string.format("%d%%", fame) })
+
+	return stats
+end
+
+local function buildDeathSummary(state)
+	local summary = {}
+	if not state then
+		return { "Life details unavailable." }
+	end
+
+	if state.Career and state.Career.jobTitle then
+		local years = state.Career.yearsAtJob or 0
+		table.insert(summary, string.format("Worked %d year%s as %s.", years, years == 1 and "" or "s", state.Career.jobTitle))
+	else
+		table.insert(summary, "Never held a steady career—free spirit energy.")
+	end
+
+	if state.Flags then
+		if state.Flags.married then
+			table.insert(summary, "Married their partner and kept love alive.")
+		end
+		if state.Flags.has_children then
+			table.insert(summary, "Raised a family that remembers them fondly.")
+		end
+		if state.Flags.famous then
+			table.insert(summary, "Lived in the spotlight with fans worldwide.")
+		end
+		if state.Flags.crime_boss then
+			table.insert(summary, "Built a notorious criminal empire.")
+		end
+	end
+
+	local relCount = countRelationships(state)
+	if relCount > 0 then
+		table.insert(summary, string.format("Maintained %d close relationship%s.", relCount, relCount == 1 and "" or "s"))
+	end
+
+	if #summary == 0 then
+		table.insert(summary, "A quiet life, but every page still matters.")
+	end
+
+	return summary
+end
+
+local function buildDeathTimeline(state, limit)
+	local feed = (state and state.EventHistory and state.EventHistory.feed) or {}
+	local entries = {}
+	if type(feed) ~= "table" then
+		return { "No notable moments were recorded." }
+	end
+
+	for index, entry in ipairs(feed) do
+		local label = entry.age and ("Age " .. entry.age) or (entry.year and tostring(entry.year) or "Year")
+		local text = entry.text or "Something happened."
+		table.insert(entries, string.format("%s — %s", label, text))
+		if index >= (limit or 3) then
+			break
+		end
+	end
+
+	if #entries == 0 then
+		table.insert(entries, "No memorable feed entries yet—time to create some!")
+	end
+
+	return entries
+end
+
 local function createShadow(parent, offset, blur, color, transparency)
 	local shadow = Instance.new("ImageLabel")
 	shadow.Name = "Shadow"
@@ -1075,6 +1230,10 @@ local function createNavButton(info, parent, order)
 	end)
 
 	btn.MouseButton1Click:Connect(function()
+		if screensLocked then
+			log("Navigation blocked: screens are locked (", info.screen, ")")
+			return
+		end
 		if info.screen == "occupation" and occupationScreenInstance then
 			occupationScreenInstance:show()
 		elseif info.screen == "occupation" then
@@ -1526,54 +1685,74 @@ end)
 -- DEATH OVERLAY
 ----------------------------------------------------------------
 
+local deathBlocker = Instance.new("TextButton")
+deathBlocker.Name = "DeathBlocker"
+deathBlocker.Size = UDim2.fromScale(1, 1)
+deathBlocker.BackgroundTransparency = 1
+deathBlocker.Text = ""
+deathBlocker.AutoButtonColor = false
+deathBlocker.Visible = false
+deathBlocker.Active = false
+deathBlocker.Selectable = false
+deathBlocker.ZIndex = 118
+deathBlocker.Parent = screenGui
+
 local deathOverlay = Instance.new("Frame")
 deathOverlay.Name = "DeathOverlay"
 deathOverlay.Size = UDim2.fromScale(1, 1)
 deathOverlay.BackgroundColor3 = C.Black
-deathOverlay.BackgroundTransparency = 0.4
+deathOverlay.BackgroundTransparency = 0.45
 deathOverlay.Visible = false
 deathOverlay.ZIndex = 120
 deathOverlay.Parent = screenGui
 
 local deathCard = Instance.new("Frame")
-deathCard.Size = UDim2.new(0, 340, 0, 0)
+deathCard.Size = UDim2.new(0, 360, 0, 0)
 deathCard.AutomaticSize = Enum.AutomaticSize.Y
 deathCard.AnchorPoint = Vector2.new(0.5, 0.5)
 deathCard.Position = UDim2.fromScale(0.5, 0.5)
 deathCard.BackgroundColor3 = C.White
 deathCard.ZIndex = 121
 deathCard.Parent = deathOverlay
-corner(deathCard, 22)
+corner(deathCard, 24)
+pad(deathCard, 24, 24, 28, 32)
 
 local deathLayout = Instance.new("UIListLayout")
-deathLayout.Padding = UDim.new(0, 14)
+deathLayout.Padding = UDim.new(0, 12)
 deathLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+deathLayout.SortOrder = Enum.SortOrder.LayoutOrder
 deathLayout.Parent = deathCard
-pad(deathCard, 24, 24, 30, 30)
 
-local deathEmoji = Instance.new("TextLabel")
-deathEmoji.Size = UDim2.new(0, 80, 0, 80)
+local deathEmoji = Instance.new("Frame")
+deathEmoji.Size = UDim2.new(0, 86, 0, 86)
 deathEmoji.BackgroundColor3 = C.RedPale
-deathEmoji.Font = F.Body
-deathEmoji.TextSize = 44
-deathEmoji.TextColor3 = C.RedDark
-deathEmoji.Text = "☠️"
 deathEmoji.ZIndex = 122
 deathEmoji.Parent = deathCard
-corner(deathEmoji, 18)
+corner(deathEmoji, 22)
+
+local deathEmojiLabel = Instance.new("TextLabel")
+deathEmojiLabel.Size = UDim2.fromScale(1, 1)
+deathEmojiLabel.BackgroundTransparency = 1
+deathEmojiLabel.Font = F.Body
+deathEmojiLabel.TextSize = 48
+deathEmojiLabel.TextColor3 = C.RedDark
+deathEmojiLabel.Text = "☠️"
+deathEmojiLabel.ZIndex = 123
+deathEmojiLabel.Parent = deathEmoji
 
 local deathTitle = Instance.new("TextLabel")
-deathTitle.Size = UDim2.new(1, -20, 0, 30)
+deathTitle.Size = UDim2.new(1, 0, 0, 32)
 deathTitle.BackgroundTransparency = 1
 deathTitle.Font = F.Title
-deathTitle.TextSize = 22
+deathTitle.TextSize = 24
 deathTitle.TextColor3 = C.Gray900
+deathTitle.TextWrapped = true
 deathTitle.Text = "Life Ended"
 deathTitle.ZIndex = 122
 deathTitle.Parent = deathCard
 
 local deathCause = Instance.new("TextLabel")
-deathCause.Size = UDim2.new(1, -10, 0, 0)
+deathCause.Size = UDim2.new(1, 0, 0, 0)
 deathCause.AutomaticSize = Enum.AutomaticSize.Y
 deathCause.BackgroundTransparency = 1
 deathCause.Font = F.Body
@@ -1585,8 +1764,87 @@ deathCause.Text = "Tap restart to begin a new story."
 deathCause.ZIndex = 122
 deathCause.Parent = deathCard
 
+local deathQuote = Instance.new("TextLabel")
+deathQuote.Size = UDim2.new(1, -8, 0, 0)
+deathQuote.AutomaticSize = Enum.AutomaticSize.Y
+deathQuote.BackgroundTransparency = 1
+deathQuote.Font = F.Body
+deathQuote.TextSize = 14
+deathQuote.TextColor3 = C.Gray500
+deathQuote.TextWrapped = true
+deathQuote.TextXAlignment = Enum.TextXAlignment.Center
+deathQuote.Text = "Every ending is a chance to write a louder sequel."
+deathQuote.ZIndex = 122
+deathQuote.Parent = deathCard
+
+local function createDivider(height, transparency)
+	local divider = Instance.new("Frame")
+	divider.Size = UDim2.new(1, 0, 0, height or 1)
+	divider.BackgroundTransparency = transparency or 0.25
+	divider.BackgroundColor3 = C.Gray200
+	divider.ZIndex = 121
+	return divider
+end
+
+createDivider(1).Parent = deathCard
+
+local deathStatsLabel = Instance.new("TextLabel")
+deathStatsLabel.Size = UDim2.new(1, 0, 0, 18)
+deathStatsLabel.BackgroundTransparency = 1
+deathStatsLabel.Font = F.Medium
+deathStatsLabel.TextSize = 14
+deathStatsLabel.TextColor3 = C.Gray500
+deathStatsLabel.Text = "Final Stats"
+deathStatsLabel.ZIndex = 122
+deathStatsLabel.Parent = deathCard
+
+local deathStatsList = Instance.new("Frame")
+deathStatsList.Size = UDim2.new(1, 0, 0, 0)
+deathStatsList.AutomaticSize = Enum.AutomaticSize.Y
+deathStatsList.BackgroundTransparency = 1
+deathStatsList.ZIndex = 122
+deathStatsList.Parent = deathCard
+
+local deathStatsLayout = Instance.new("UIListLayout")
+deathStatsLayout.Padding = UDim.new(0, 6)
+deathStatsLayout.Parent = deathStatsList
+
+createDivider(1, 0.35).Parent = deathCard
+
+local deathSummaryLabel = deathStatsLabel:Clone()
+deathSummaryLabel.Text = "Legacy Highlights"
+deathSummaryLabel.Parent = deathCard
+
+local deathSummaryList = Instance.new("Frame")
+deathSummaryList.Size = UDim2.new(1, 0, 0, 0)
+deathSummaryList.AutomaticSize = Enum.AutomaticSize.Y
+deathSummaryList.BackgroundTransparency = 1
+deathSummaryList.ZIndex = 122
+deathSummaryList.Parent = deathCard
+
+local deathSummaryLayout = Instance.new("UIListLayout")
+deathSummaryLayout.Padding = UDim.new(0, 6)
+deathSummaryLayout.Parent = deathSummaryList
+
+createDivider(1, 0.35).Parent = deathCard
+
+local deathTimelineLabel = deathStatsLabel:Clone()
+deathTimelineLabel.Text = "Last Moments"
+deathTimelineLabel.Parent = deathCard
+
+local deathTimelineList = Instance.new("Frame")
+deathTimelineList.Size = UDim2.new(1, 0, 0, 0)
+deathTimelineList.AutomaticSize = Enum.AutomaticSize.Y
+deathTimelineList.BackgroundTransparency = 1
+deathTimelineList.ZIndex = 122
+deathTimelineList.Parent = deathCard
+
+local deathTimelineLayout = Instance.new("UIListLayout")
+deathTimelineLayout.Padding = UDim.new(0, 4)
+deathTimelineLayout.Parent = deathTimelineList
+
 local deathRestart = Instance.new("TextButton")
-deathRestart.Size = UDim2.new(1, 0, 0, 50)
+deathRestart.Size = UDim2.new(1, 0, 0, 52)
 deathRestart.BackgroundColor3 = C.Green
 deathRestart.Font = F.Button
 deathRestart.TextSize = 18
@@ -1597,6 +1855,157 @@ deathRestart.ZIndex = 122
 deathRestart.Parent = deathCard
 corner(deathRestart, 14)
 
+local deathTip = Instance.new("TextLabel")
+deathTip.Size = UDim2.new(1, 0, 0, 0)
+deathTip.AutomaticSize = Enum.AutomaticSize.Y
+deathTip.BackgroundTransparency = 1
+deathTip.Font = F.Body
+deathTip.TextSize = 12
+deathTip.TextColor3 = C.Gray500
+deathTip.TextWrapped = true
+deathTip.TextXAlignment = Enum.TextXAlignment.Center
+deathTip.Text = "All progress was saved. Tap the button above to roll a brand-new destiny."
+deathTip.ZIndex = 122
+deathTip.Parent = deathCard
+
+local function clearChildren(container)
+	for _, child in ipairs(container:GetChildren()) do
+		if child:IsA("Frame") or child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+end
+
+local function renderStatRow(parent, stat)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 36)
+	row.BackgroundColor3 = C.Gray50
+	row.ZIndex = 123
+	row.Parent = parent
+	corner(row, 10)
+	pad(row, 10, 10, 6, 6)
+
+	local icon = Instance.new("TextLabel")
+	icon.Size = UDim2.new(0, 26, 1, 0)
+	icon.BackgroundTransparency = 1
+	icon.Font = F.Body
+	icon.TextSize = 18
+	icon.Text = stat.icon or "•"
+	icon.TextColor3 = C.Gray700
+	icon.ZIndex = 124
+	icon.Parent = row
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0.4, 0, 1, 0)
+	label.Position = UDim2.new(0, 30, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Font = F.Medium
+	label.TextSize = 14
+	label.TextColor3 = C.Gray500
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Text = stat.label or ""
+	label.ZIndex = 124
+	label.Parent = row
+
+	local value = Instance.new("TextLabel")
+	value.Size = UDim2.new(0.5, 0, 1, 0)
+	value.AnchorPoint = Vector2.new(1, 0)
+	value.Position = UDim2.new(1, -4, 0, 0)
+	value.BackgroundTransparency = 1
+	value.Font = F.Title
+	value.TextSize = 14
+	value.TextXAlignment = Enum.TextXAlignment.Right
+	value.TextColor3 = C.Gray700
+	value.Text = tostring(stat.value or "-")
+	value.ZIndex = 124
+	value.Parent = row
+end
+
+local function renderSummaryRow(parent, text)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 0)
+	row.AutomaticSize = Enum.AutomaticSize.Y
+	row.BackgroundTransparency = 1
+	row.ZIndex = 123
+	row.Parent = parent
+
+	local bullet = Instance.new("TextLabel")
+	bullet.Size = UDim2.new(0, 20, 0, 20)
+	bullet.BackgroundTransparency = 1
+	bullet.Font = F.Body
+	bullet.TextSize = 14
+	bullet.TextColor3 = C.Gray600
+	bullet.Text = "•"
+	bullet.ZIndex = 124
+	bullet.Parent = row
+
+	local body = Instance.new("TextLabel")
+	body.Size = UDim2.new(1, -24, 0, 0)
+	body.Position = UDim2.new(0, 24, 0, 0)
+	body.AutomaticSize = Enum.AutomaticSize.Y
+	body.BackgroundTransparency = 1
+	body.Font = F.Body
+	body.TextSize = 14
+	body.TextColor3 = C.Gray600
+	body.TextWrapped = true
+	body.TextXAlignment = Enum.TextXAlignment.Left
+	body.Text = text
+	body.ZIndex = 124
+	body.Parent = row
+end
+
+local function renderTimelineRow(parent, text)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 0, 0)
+	label.AutomaticSize = Enum.AutomaticSize.Y
+	label.BackgroundTransparency = 1
+	label.Font = F.Body
+	label.TextSize = 13
+	label.TextColor3 = C.Gray600
+	label.TextWrapped = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Text = text
+	label.ZIndex = 123
+	label.Parent = parent
+end
+
+local function populateDeathStats(state)
+	clearChildren(deathStatsList)
+	for _, stat in ipairs(buildDeathStats(state)) do
+		renderStatRow(deathStatsList, stat)
+	end
+end
+
+local function populateDeathSummary(state)
+	clearChildren(deathSummaryList)
+	for _, line in ipairs(buildDeathSummary(state)) do
+		renderSummaryRow(deathSummaryList, line)
+	end
+end
+
+local function populateDeathTimeline(state)
+	clearChildren(deathTimelineList)
+	for _, line in ipairs(buildDeathTimeline(state, 4)) do
+		renderTimelineRow(deathTimelineList, line)
+	end
+end
+
+local function setScreensLocked(locked, reason)
+	screensLocked = locked and true or false
+	if deathBlocker then
+		deathBlocker.Visible = screensLocked
+		deathBlocker.Active = screensLocked
+		deathBlocker.Selectable = screensLocked
+	end
+	if screensLocked then
+		log("UI locked:", reason or "unspecified")
+	end
+end
+
+deathBlocker.MouseButton1Click:Connect(function()
+	log("Death overlay active - blocker consumed click")
+end)
+
 deathRestart.MouseEnter:Connect(function()
 	tween(deathRestart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
 end)
@@ -1605,21 +2014,41 @@ deathRestart.MouseLeave:Connect(function()
 end)
 
 deathRestart.MouseButton1Click:Connect(function()
+	if deathRestartLocked then
+		log("Restart ignored; request already pending.")
+		return
+	end
 	if ResetLife then
+		deathRestartLocked = true
+		deathRestart.Text = "Resetting..."
 		log("Requesting new life reset")
 		ResetLife:FireServer()
 		deathCause.Text = "Creating a new life..."
 	end
 end)
 
-local function showDeathOverlay(causeText, age)
-	deathTitle.Text = string.format("Age %d", age or currentState.Age or 0)
+local function showDeathOverlay(causeText, age, meta)
+	deathTitle.Text = string.format("%s • Age %d", currentState.Name or "This life", age or currentState.Age or 0)
 	deathCause.Text = causeText or "Your story has ended. Tap below to begin anew."
+	deathQuote.Text = (meta and meta.quote) or getDeathQuote(causeText)
 	deathOverlay.Visible = true
+	deathRestartLocked = false
+	deathRestart.Text = "Start New Life"
+	populateDeathStats(currentState)
+	populateDeathSummary(currentState)
+	populateDeathTimeline(currentState)
+	setScreensLocked(true, "death overlay")
 end
 
 local function hideDeathOverlay()
+	if not deathOverlay.Visible then
+		setScreensLocked(false)
+		return
+	end
 	deathOverlay.Visible = false
+	setScreensLocked(false)
+	deathRestartLocked = false
+	deathRestart.Text = "Start New Life"
 end
 
 ----------------------------------------------------------------
@@ -2305,6 +2734,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			pcall(hideEvent) 
 		end
 		hideTutorial()
+		hideDeathOverlay()
+		deathRestartLocked = false
+		if deathRestart then
+			deathRestart.Text = "Start New Life"
+		end
+		setScreensLocked(false)
 		
 		-- SHOW INTRO MODAL
 		showIntro()
@@ -2385,7 +2820,8 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
 		if resultData.fatal then
-			showDeathOverlay(resultData.body or lastFeedText or "You passed away.", state.Age)
+			local causeText = resultData.cause or resultData.body or lastFeedText or "You passed away."
+			showDeathOverlay(causeText, state.Age, resultData.deathMeta)
 		end
 	elseif deltas.health and deltas.health < -15 then
 		log("Major health drop detected:", deltas.health)
@@ -2543,6 +2979,10 @@ local function pulseAge()
 end
 
 ageButton.MouseButton1Click:Connect(function()
+	if screensLocked then
+		log("Age button pressed while screens are locked; ignoring.")
+		return
+	end
 	-- Safety check: if awaitingEvent is true but the event overlay is NOT visible,
 	-- something went wrong - reset the flag
 	if awaitingEvent and not eventOverlay.Visible then
