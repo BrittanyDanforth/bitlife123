@@ -746,6 +746,7 @@ local EventPools = {
 			question = "What was it?",
 			minAge = 20, maxAge = 65,
 			baseChance = 0.3, cooldown = 3,
+			requiresJob = true,
 			requiresStats = { Smarts = { min = 50 } },
 			choices = {
 				{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feed = "You closed a major deal!" },
