@@ -1212,6 +1212,44 @@ function LifeBackend:handleAgeUp(player)
 
 	debugPrint(string.format("Age up requested by %s (Age %d, Year %d)", player.Name, state.Age or -1, state.Year or 0))
 
+	-- 🔥 CRITICAL FIX (BUG #20): Handle prison time properly!
+	-- If player is in jail, they serve time instead of normal aging!
+	if state.InJail then
+		debugPrint(string.format("%s is in prison - serving time", player.Name))
+		
+		-- Age up while in prison
+		state.Age = (state.Age or 0) + 1
+		state.Year = (state.Year or 2025) + 1
+		
+		-- Reduce sentence
+		local yearsLeft = (state.JailYearsLeft or 0) - 1
+		state.JailYearsLeft = math.max(0, yearsLeft)
+		
+		-- Small stat decay while in prison
+		state.Stats = state.Stats or {}
+		state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - RANDOM:NextInteger(2, 5), 0, 100)
+		state.Stats.Health = clamp((state.Stats.Health or 50) - RANDOM:NextInteger(1, 3), 0, 100)
+		
+		local feedText
+		if yearsLeft <= 0 then
+			-- RELEASED!
+			state.InJail = false
+			state.Flags.in_prison = nil
+			state.Flags.incarcerated = nil
+			feedText = string.format("🔓 Age %d: You served your sentence and are now FREE! Time to rebuild your life.", state.Age)
+			debugPrint(string.format("%s released from prison at age %d", player.Name, state.Age))
+		else
+			-- Still serving time
+			feedText = string.format("⛓️ Age %d: Year %d in prison. %.1f years remaining. Time moves slowly behind bars.", state.Age, math.ceil((state.JailYearsLeft or 0) + 1 - yearsLeft), yearsLeft)
+		end
+		
+		self:pushState(player, feedText, {
+			showPopup = false,
+			prisonYear = true,
+		})
+		return
+	end
+
 	local oldAge = state.Age
 	if state.AdvanceAge then
 		state:AdvanceAge()
