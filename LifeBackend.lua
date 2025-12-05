@@ -416,6 +416,56 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	-- Career-focused activities for deterministic progression
+	work_hard = {
+		feed = "put in focused effort at work",
+		career = { performance = 6, progress = 8 },
+		stats = { Happiness = -2 },
+		cost = 0,
+	},
+	overtime = {
+		feed = "worked overtime",
+		career = { performance = 4, progress = 12 },
+		stats = { Happiness = -4, Health = -1 },
+		cost = 0,
+	},
+	slack_off = {
+		feed = "slacked off at work",
+		career = { performance = -8, progress = -6 },
+		stats = { Happiness = 3 },
+		cost = 0,
+	},
+	brown_nose = {
+		feed = "networked with leadership",
+		career = { performance = 3, progress = 6 },
+		stats = { Happiness = -1 },
+		cost = 50,
+	},
+	pro_training = {
+		feed = "attended a professional training course",
+		career = { performance = 5, progress = 10 },
+		stats = { Smarts = 3, Happiness = 1 },
+		cost = 500,
+	},
+	cert_course = {
+		feed = "completed a certification course",
+		career = { performance = 4, progress = 14 },
+		stats = { Smarts = 4, Happiness = 2 },
+		cost = 1200,
+	},
+	-- Minor injury chances for physical activities
+	soccer = {
+		feed = "played a pickup soccer game",
+		stats = { Health = 3, Happiness = 3 },
+		injury = { locations = { "ankle", "knee" }, severity = "minor", cause = "sports" },
+		cost = 0,
+	},
+	basketball = {
+		feed = "hooped with friends",
+		stats = { Health = 3, Happiness = 3 },
+		injury = { locations = { "ankle", "finger" }, severity = "minor", cause = "sports" },
+		cost = 0,
+	},
 }
 
 local CrimeCatalog = {
@@ -1422,8 +1472,32 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 
 	self:applyStatChanges(state, deltas)
+	-- Career-focused deltas for deterministic progress
+	if activity.career then
+		state.CareerInfo = state.CareerInfo or {}
+		local info = state.CareerInfo
+		if activity.career.performance then
+			info.performance = clamp((info.performance or 60) + activity.career.performance)
+		end
+		if activity.career.progress then
+			info.promotionProgress = clamp((info.promotionProgress or 0) + activity.career.progress, 0, 100)
+		end
+	end
+	-- Optional injury from activity
+	local injuryText
+	if activity.injury then
+		local ok, msg = pcall(function()
+			return select(1, self:applyInjury(state, activity.injury))
+		end)
+		if ok and msg then
+			injuryText = msg
+		end
+	end
 
 	local resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
+	if injuryText then
+		resultMessage = string.format("%s %s", resultMessage, injuryText)
+	end
 	local resultData = {
 		showPopup = true,
 		emoji = "✨",
