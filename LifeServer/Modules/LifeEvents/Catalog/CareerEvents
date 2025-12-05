@@ -38,6 +38,16 @@ local events = {
 				effects = { Happiness = 7, Smarts = 3 },
 				feedText = "You were genuine. Told real stories. Admitted what you don't know. The interviewer smiled. 'Refreshing.' OFFER LETTER INCOMING! You got the job! $42,000! You're crying in your car!",
 				onResolve = function(state)
+					-- 🔥 FIX BUG #23: Actually GIVE the player a job!
+					if state.SetCareer then
+						state:SetCareer({
+							id = "junior_associate",
+							name = "Junior Associate",
+							company = "Anderson & Partners",
+							salary = 42000,
+							category = "office",
+						})
+					end
 					if state.AddFeed then
 						state:AddFeed("Congratulations! You got your first real job! Salary: $42,000. Start date: 2 weeks. Your career begins NOW!")
 					end
@@ -128,9 +138,16 @@ local events = {
 			{
 				index = 1,
 				text = "TAKE IT - this is YOUR moment!",
-				effects = { Happiness = 10, Money = 8000, Smarts = 3 },
+				effects = { Happiness = 10, Smarts = 3 },
 				setFlags = { promoted = true, ambitious = true, friend_enemy = true },
 				feedText = "You accepted! $65,000! Your title changed! Sarah stopped talking to you. She transferred departments 2 months later. You feel guilty but successful. Worth it?",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #24: Actually PROMOTE with salary increase!
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = 65000
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -142,16 +159,30 @@ local events = {
 			{
 				index = 3,
 				text = "Negotiate for BOTH of you to get promoted",
-				effects = { Happiness = 9, Money = 6000, Smarts = 5 },
+				effects = { Happiness = 9, Smarts = 5 },
 				setFlags = { promoted = true, negotiator = true, problem_solver = true },
 				feedText = "'What if we both get promoted to different teams?' Your boss loved it. You BOTH got promoted! Creative solution! Everyone wins! Leadership unlocked!",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #24: Actually PROMOTE with salary increase!
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = 63000
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					end
+				end,
 			},
 			{
 				index = 4,
 				text = "Take it but promise to help Sarah advance",
-				effects = { Happiness = 8, Money = 8000 },
+				effects = { Happiness = 8 },
 				setFlags = { promoted = true, team_player = true },
 				feedText = "You took it but told Sarah, 'I'll mentor you. We'll get you promoted next cycle.' She appreciated it. You BOTH moved up! Alliance formed! Smart politics!",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #24: Actually PROMOTE with salary increase!
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = 65000
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					end
+				end,
 			},
 		},
 	},
@@ -175,9 +206,15 @@ local events = {
 			{
 				index = 1,
 				text = "Demand a raise - $72K or you walk",
-				effects = { Happiness = 8, Money = 14000, Smarts = 4 },
+				effects = { Happiness = 8, Smarts = 4 },
 				setFlags = { good_negotiator = true, confident = true },
 				feedText = "You came prepared. Market data. Performance metrics. 'I need $72K.' Your boss countered at $68K. You accepted. $10K raise! You advocated for yourself! WINS!",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #25: Actually INCREASE SALARY!
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = 68000
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -189,9 +226,15 @@ local events = {
 			{
 				index = 3,
 				text = "Get a competing offer - use leverage",
-				effects = { Happiness = 10, Money = 18000, Smarts = 6 },
+				effects = { Happiness = 10, Smarts = 6 },
 				setFlags = { strategic = true, risk_taker = true },
 				feedText = "You interviewed elsewhere. Got an offer: $75K. Told your boss. 'Match it or I leave.' They matched it! $75K! You played hardball and WON! Power move!",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #25: Actually INCREASE SALARY!
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = 75000
+					end
+				end,
 			},
 			{
 				index = 4,
@@ -366,9 +409,16 @@ local events = {
 			{
 				index = 1,
 				text = "TAKE IT - this is your career peak!",
-				effects = { Happiness = 8, Money = 50000, Health = -8 },
+				effects = { Happiness = 8, Health = -8 },
 				setFlags = { executive = true, workaholic = true, family_sacrificed = true },
 				feedText = "You accepted. $185K! Corner office! Your name on the door! Your spouse filed for divorce 8 months later. Your kids don't call. You're successful... and alone. Was it worth it?",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #26: Actually UPDATE TO EXECUTIVE SALARY!
+					if state.CurrentJob then
+						state.CurrentJob.salary = 185000
+						state.CurrentJob.name = "VP of Operations"
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -380,9 +430,16 @@ local events = {
 			{
 				index = 3,
 				text = "Negotiate for work-life balance terms",
-				effects = { Happiness = 10, Money = 40000, Smarts = 6 },
+				effects = { Happiness = 10, Smarts = 6 },
 				setFlags = { executive = true, balanced = true, negotiated_lifestyle = true },
 				feedText = "You said yes BUT: no travel Fridays, remote Mondays, max 50 hours/week. They AGREED! $185K + work-life balance! You can have BOTH! Negotiation mastery!",
+				onResolve = function(state)
+					-- 🔥 FIX BUG #26: Actually UPDATE TO EXECUTIVE SALARY!
+					if state.CurrentJob then
+						state.CurrentJob.salary = 185000
+						state.CurrentJob.name = "VP of Operations"
+					end
+				end,
 			},
 			{
 				index = 4,
