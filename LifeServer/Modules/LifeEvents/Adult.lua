@@ -374,23 +374,106 @@ Adult.events = {
 				text = "Embrace retirement fully",
 				effects = { Happiness = 10 },
 				setFlags = { retired = true },
-				feedText = "Retirement is here! Time to relax."
+				feedText = "Retirement is here! Time to relax. Your pension awaits.",
+				-- Clear job and set up pension when fully retiring
+				onResolve = function(state)
+					-- Calculate pension based on career history
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					
+					-- Store last job before clearing
+					if state.CurrentJob then
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.lastJob = state.CurrentJob
+						state.CareerInfo.retirementAge = state.Age
+					end
+					
+					-- Clear the job
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 			{
 				text = "Keep working part-time",
 				effects = { Happiness = 5, Money = 500 },
 				setFlags = { semi_retired = true },
-				feedText = "You're staying active in the workforce."
+				feedText = "You're staying active in the workforce.",
+				-- Semi-retired: reduce salary but keep job
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = math.floor(state.CurrentJob.salary * 0.5)
+					end
+				end,
 			},
 			{
 				text = "Focus on hobbies and travel",
 				effects = { Happiness = 12, Money = -1000 },
-				feedText = "Time to enjoy life to the fullest!"
+				setFlags = { retired = true },
+				feedText = "Time to enjoy life to the fullest! Your pension awaits.",
+				-- Retire and travel
+				onResolve = function(state)
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					
+					if state.CurrentJob then
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.lastJob = state.CurrentJob
+						state.CareerInfo.retirementAge = state.Age
+					end
+					
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 			{
 				text = "Dedicate time to family",
 				effects = { Happiness = 8 },
-				feedText = "Family becomes your focus."
+				setFlags = { retired = true },
+				feedText = "Family becomes your focus. Your pension awaits.",
+				-- Retire for family
+				onResolve = function(state)
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					
+					if state.CurrentJob then
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.lastJob = state.CurrentJob
+						state.CareerInfo.retirementAge = state.Age
+					end
+					
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 		},
 	},
@@ -716,11 +799,42 @@ Adult.events = {
 		minAge = 25, maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 5,
+		requiresJob = true, -- Only trigger if you have a job
 
 		choices = {
-			{ text = "You got laid off", effects = { Money = -500, Happiness = -10, Health = -3 }, setFlags = { unemployed = true, laid_off = true }, feedText = "You lost your job. Devastating." },
+			{ 
+				text = "You got laid off", 
+				effects = { Money = -500, Happiness = -10, Health = -3 }, 
+				setFlags = { unemployed = true, laid_off = true, between_jobs = true }, 
+				feedText = "You lost your job. Devastating.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.has_job = nil
+						state.Flags.employed = nil
+					end
+				end,
+			},
 			{ text = "You survived the cuts", effects = { Happiness = -3 }, setFlags = { survivor_guilt = true }, feedText = "You kept your job but watched friends go. Guilt." },
-			{ text = "Took a severance package", effects = { Money = 3000, Happiness = -5 }, setFlags = { unemployed = true }, feedText = "You got paid to leave. Silver lining." },
+			{ 
+				text = "Took a severance package", 
+				effects = { Money = 3000, Happiness = -5 }, 
+				setFlags = { unemployed = true, between_jobs = true }, 
+				feedText = "You got paid to leave. Silver lining.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.has_job = nil
+						state.Flags.employed = nil
+					end
+				end,
+			},
 			{ text = "Already found something new", effects = { Happiness = 5, Money = 500 }, setFlags = { career_secure = true }, feedText = "You saw it coming and jumped ship early!" },
 		},
 	},

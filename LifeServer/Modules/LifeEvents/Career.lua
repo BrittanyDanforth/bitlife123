@@ -359,7 +359,22 @@ Career.events = {
 		careerTags = { "business" },
 
 		choices = {
-			{ text = "Go full-time on it", effects = { Happiness = 10, Money = 2000 }, setFlags = { full_time_entrepreneur = true }, feedText = "You quit your job to focus on your business!" },
+			{ 
+				text = "Go full-time on it", 
+				effects = { Happiness = 10, Money = 2000 }, 
+				setFlags = { full_time_entrepreneur = true, between_jobs = true }, 
+				feedText = "You quit your job to focus on your business!",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.has_job = nil
+						state.Flags.employed = nil
+					end
+				end,
+			},
 			{ text = "Keep it as a side income", effects = { Money = 500, Happiness = 5, Health = -2 }, feedText = "Extra income is nice!" },
 			{ text = "Sell it", effects = { Money = 5000, Happiness = 5 }, feedText = "You sold your side business for a nice profit!" },
 			{ text = "Find investors", effects = { Money = 3000, Smarts = 2 }, setFlags = { has_investors = true }, feedText = "You brought on investors to grow!" },
@@ -424,7 +439,22 @@ Career.events = {
 		requiresJob = true,
 
 		choices = {
-			{ text = "Quit immediately - mental health first", effects = { Happiness = 8, Health = 5, Money = -1000 }, setFlags = { between_jobs = true }, feedText = "You walked out. Best decision for your health." },
+			{ 
+				text = "Quit immediately - mental health first", 
+				effects = { Happiness = 8, Health = 5, Money = -1000 }, 
+				setFlags = { between_jobs = true }, 
+				feedText = "You walked out. Best decision for your health.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.has_job = nil
+						state.Flags.employed = nil
+					end
+				end,
+			},
 			{ text = "Start job hunting while staying", effects = { Happiness = -5, Health = -3 }, setFlags = { job_hunting = true }, feedText = "You're enduring while looking for exits." },
 			{ text = "Try to change the culture from within", effects = { Happiness = -3, Smarts = 3 }, feedText = "You're trying to make things better." },
 			{ text = "Document everything for a lawsuit", effects = { Smarts = 2 }, setFlags = { building_case = true }, feedText = "You're keeping records of everything." },
@@ -467,9 +497,17 @@ Career.events = {
 			{ text = "You quit before they could fire you", effects = { Happiness = -5, Money = -200 }, setFlags = { between_jobs = true, quit_before_fired = true }, feedText = "You saw the writing on the wall and quit first." },
 		},
 		onComplete = function(state)
-			state.Career = nil
-			state.Flags = state.Flags or {}
-			state.Flags.has_job = nil
+			-- CRITICAL FIX: Clear both Career and CurrentJob
+			-- The system uses CurrentJob for job checks, Career is legacy
+			if state.ClearCareer then
+				state:ClearCareer()
+			else
+				state.CurrentJob = nil
+				state.Career = nil
+				state.Flags = state.Flags or {}
+				state.Flags.has_job = nil
+				state.Flags.employed = nil
+			end
 		end,
 	},
 	{
@@ -524,7 +562,22 @@ Career.events = {
 		choices = {
 			{ text = "Take a medical leave", effects = { Health = 15, Happiness = 10, Money = -1000 }, setFlags = { took_leave = true }, feedText = "You needed the break desperately." },
 			{ text = "Push through - can't afford to stop", effects = { Health = -15, Happiness = -10 }, setFlags = { severe_burnout = true }, feedText = "You're destroying yourself..." },
-			{ text = "Quit without a plan", effects = { Happiness = 8, Health = 10, Money = -2000 }, setFlags = { between_jobs = true, sabbatical = true }, feedText = "You snapped and walked out. Freedom!" },
+			{ 
+				text = "Quit without a plan", 
+				effects = { Happiness = 8, Health = 10, Money = -2000 }, 
+				setFlags = { between_jobs = true, sabbatical = true }, 
+				feedText = "You snapped and walked out. Freedom!",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.has_job = nil
+						state.Flags.employed = nil
+					end
+				end,
+			},
 			{ text = "Negotiate reduced hours", effects = { Health = 8, Happiness = 5, Money = -300 }, setFlags = { part_time = true }, feedText = "Your employer worked with you on balance." },
 		},
 	},

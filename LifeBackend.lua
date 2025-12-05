@@ -1100,12 +1100,25 @@ function LifeBackend:updateEducationProgress(state)
 end
 
 function LifeBackend:tickCareer(state)
+	-- CRITICAL: Don't tick career for retired players
+	if state.Flags and state.Flags.retired then
+		return
+	end
+	
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
 	local job = state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob]
 	if not job then
 		return
 	end
+	
+	-- For semi-retired, only tick at half rate (less aggressive career progression)
+	if state.Flags and state.Flags.semi_retired then
+		if RANDOM:NextNumber() < 0.5 then
+			return -- Skip half the time
+		end
+	end
+	
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
@@ -1645,6 +1658,19 @@ function LifeBackend:handleJobApplication(player, jobId)
 	state.CareerInfo.raises = 0
 
 	state.Career.track = job.category
+	
+	-- CRITICAL FIX: Set employment flags and clear retirement-related flags
+	state.Flags = state.Flags or {}
+	state.Flags.employed = true
+	state.Flags.has_job = true
+	state.Flags.between_jobs = nil
+	state.Flags.unemployed = nil
+	-- Clear retirement flags if coming out of retirement
+	if state.Flags.retired then
+		state.Flags.retired = nil
+		state.Flags.semi_retired = nil
+		state.Flags.pension_amount = nil -- No longer receiving pension
+	end
 
 	local feed = string.format("You were hired as a %s at %s.", job.name, job.company)
 	self:pushState(player, feed)
@@ -1669,6 +1695,12 @@ function LifeBackend:handleQuitJob(player)
 	state.CareerInfo.promotionProgress = 0
 	state.CareerInfo.yearsAtJob = 0
 	state.Career.track = nil
+	
+	-- CRITICAL FIX: Clear employment flags properly
+	state.Flags = state.Flags or {}
+	state.Flags.employed = nil
+	state.Flags.has_job = nil
+	state.Flags.between_jobs = true
 
 	local feed = string.format("You resigned from your job as %s.", jobName)
 	self:pushState(player, feed)

@@ -113,6 +113,11 @@ function CareerSystem.getJob(jobId)
 end
 
 function CareerSystem.simulateWork(state)
+	-- CRITICAL FIX: Don't simulate work for retired players
+	if state.Flags and state.Flags.retired then
+		return
+	end
+	
 	-- Support both state.CurrentJob (LifeState) and state.Career.jobId (legacy)
 	local hasJob = state.CurrentJob or (state.Career and state.Career.jobId)
 	if not hasJob then

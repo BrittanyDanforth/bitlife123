@@ -409,6 +409,8 @@ Milestones.events = {
 		requiresJob = true,
 		priority = "high",
 		isMilestone = true,
+		-- CRITICAL: Block this event for retired players
+		blockedByFlags = { retired = true, semi_retired = true },
 
 		-- META
 		stage = "adult",
@@ -443,11 +445,41 @@ Milestones.events = {
 		milestoneKey = "RETIREMENT_DAY",
 		tags = { "retirement", "job_end", "transition" },
 
+		-- CRITICAL: Clear job when retiring to prevent career events from firing
+		onComplete = function(state, choice, eventDef, outcome)
+			-- Calculate pension based on career history
+			local pensionBase = 0
+			if state.CurrentJob and state.CurrentJob.salary then
+				pensionBase = math.floor(state.CurrentJob.salary * 0.4) -- 40% of last salary
+			end
+			
+			-- Store pension info before clearing career
+			state.Flags = state.Flags or {}
+			state.Flags.retired = true
+			state.Flags.pension_amount = pensionBase
+			
+			-- Store last job for history
+			if state.CurrentJob then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJob = state.CurrentJob
+				state.CareerInfo.retirementAge = state.Age
+			end
+			
+			-- Clear the job using ClearCareer if available
+			if state.ClearCareer then
+				state:ClearCareer()
+			else
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+		end,
+
 		choices = {
-			{ text = "Grateful for the journey", effects = { Happiness = 15 }, setFlags = { retired = true }, feedText = "A career well spent. Time to relax!" },
-			{ text = "Ready for the next adventure", effects = { Happiness = 12 }, setFlags = { retired = true, active_retiree = true }, feedText = "Retirement is just a new beginning!" },
-			{ text = "A bit sad to leave", effects = { Happiness = 8 }, setFlags = { retired = true }, feedText = "You'll miss the workplace, but it's time." },
-			{ text = "Relieved!", effects = { Happiness = 10, Health = 5 }, setFlags = { retired = true }, feedText = "Finally free!" },
+			{ text = "Grateful for the journey", effects = { Happiness = 15 }, setFlags = { retired = true }, feedText = "A career well spent. Time to relax! You'll receive pension income." },
+			{ text = "Ready for the next adventure", effects = { Happiness = 12 }, setFlags = { retired = true, active_retiree = true }, feedText = "Retirement is just a new beginning! Pension secured." },
+			{ text = "A bit sad to leave", effects = { Happiness = 8 }, setFlags = { retired = true }, feedText = "You'll miss the workplace, but it's time. Pension awaits." },
+			{ text = "Relieved!", effects = { Happiness = 10, Health = 5 }, setFlags = { retired = true }, feedText = "Finally free! Enjoy your pension!" },
 		},
 	},
 

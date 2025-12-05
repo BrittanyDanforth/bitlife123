@@ -201,6 +201,46 @@ function LifeState:AdvanceAge()
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PENSION/RETIREMENT INCOME SYSTEM
+	-- Retirees receive monthly pension based on their career history
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if self.Flags and self.Flags.retired then
+		local pensionAmount = self.Flags.pension_amount or 0
+		
+		-- If no pension was set, calculate a basic social security amount
+		if pensionAmount == 0 then
+			-- Base social security: $12,000/year minimum, scaled by smarts (work history proxy)
+			local baseSSI = 12000
+			local smartsBonus = (self.Stats.Smarts or 50) * 100 -- Up to $5,000 extra
+			pensionAmount = baseSSI + smartsBonus
+			self.Flags.pension_amount = pensionAmount
+		end
+		
+		-- Add annual pension (paid monthly but processed yearly)
+		if pensionAmount > 0 then
+			self.Money = (self.Money or 0) + pensionAmount
+			-- Don't set PendingFeed if there's already one (avoid overwriting important messages)
+			if not self.PendingFeed then
+				self.PendingFeed = string.format("You received $%s in pension income.", pensionAmount)
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SEMI-RETIRED INCOME (Part-time work)
+	-- Semi-retirees still earn from their part-time job
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if self.Flags and self.Flags.semi_retired and self.CurrentJob and self.CurrentJob.salary then
+		local partTimeSalary = self.CurrentJob.salary
+		self.Money = (self.Money or 0) + partTimeSalary
+		if not self.PendingFeed then
+			self.PendingFeed = string.format("You earned $%s from your part-time work.", partTimeSalary)
+		end
+	end
+	
 	return self
 end
 

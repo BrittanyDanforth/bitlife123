@@ -409,12 +409,16 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- JOB/CAREER REQUIREMENTS - No career events if unemployed!
+	-- JOB/CAREER REQUIREMENTS - No career events if unemployed or retired!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresJob then
 		if not state.CurrentJob then
 			return false -- MUST have a job
+		end
+		-- CRITICAL FIX: Also block if player is retired (even if CurrentJob wasn't cleared)
+		if flags.retired then
+			return false -- Retired players shouldn't get job events
 		end
 	end
 	

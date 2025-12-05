@@ -282,26 +282,88 @@ local TransitionEvents = {
 			{
 				text = "Embrace retirement",
 				effects = { Happiness = 10 },
-				setFlags = { happily_retired = true },
-				feed = "Retirement is everything you hoped for.",
+				setFlags = { happily_retired = true, retired = true },
+				feed = "Retirement is everything you hoped for. Your pension awaits.",
+				-- Clear job when choosing full retirement
+				onResolve = function(state)
+					-- Calculate pension
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					state.Flags.retired = true
+					
+					-- Clear job
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 			{
 				text = "Stay active and engaged",
 				effects = { Health = 5, Happiness = 5 },
-				setFlags = { active_senior = true },
-				feed = "You refuse to slow down.",
+				setFlags = { active_senior = true, semi_retired = true },
+				feed = "You refuse to slow down. Part-time work keeps you sharp.",
+				-- Semi-retired: reduce hours/salary
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						state.CurrentJob.salary = math.floor(state.CurrentJob.salary * 0.5)
+					end
+				end,
 			},
 			{
 				text = "Share your wisdom",
 				effects = { Happiness = 8, Smarts = 2 },
-				setFlags = { wise_elder = true },
-				feed = "You have so much to teach younger generations.",
+				setFlags = { wise_elder = true, retired = true },
+				feed = "You have so much to teach younger generations. Your pension awaits.",
+				-- Retire to mentor/teach
+				onResolve = function(state)
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					state.Flags.retired = true
+					
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 			{
 				text = "Worry about health",
 				effects = { Happiness = -5 },
-				setFlags = { health_anxious = true },
-				feed = "Health concerns weigh on your mind.",
+				setFlags = { health_anxious = true, retired = true },
+				feed = "Health concerns weigh on your mind. At least you have pension.",
+				-- Anxious retirement
+				onResolve = function(state)
+					local pensionBase = 0
+					if state.CurrentJob and state.CurrentJob.salary then
+						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = pensionBase
+					state.Flags.retired = true
+					
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end,
 			},
 		},
 	},
