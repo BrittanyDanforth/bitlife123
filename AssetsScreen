@@ -12,13 +12,35 @@ local F = UI.Fonts
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - ENABLED FOR DEEP ASSET TRACKING
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[AssetsScreen]", ...)
+end
+
+local function deepLog(label, tbl, indent)
+	if not DEBUG then return end
+	indent = indent or ""
+	print(indent .. "[AssetsScreen] " .. label)
+	if type(tbl) ~= "table" then
+		print(indent .. "  (not a table: " .. type(tbl) .. ")")
+		return
+	end
+	local count = 0
+	for k, v in pairs(tbl) do
+		count = count + 1
+		if type(v) == "table" then
+			print(indent .. "  [" .. tostring(k) .. "] = {...}")
+		else
+			print(indent .. "  [" .. tostring(k) .. "] = " .. tostring(v))
+		end
+	end
+	if count == 0 then
+		print(indent .. "  (empty table)")
+	end
 end
 
 -- Remotes (optimized - fast lookup)
@@ -81,14 +103,46 @@ function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pl
 end
 
 function AssetsScreen:updateState(newState)
-	log("Updating state...")
+	log("═══════════════════════════════════════════════════════════════")
+	log("UPDATING ASSETSSCREEN STATE")
+	log("═══════════════════════════════════════════════════════════════")
+	
 	if newState then 
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 		
+		-- DEEP DEBUGGING: Show EXACTLY what's in Assets
+		log("───────────────────────────────────────────────────────────────")
+		log("ASSETS STRUCTURE:")
+		if newState.Assets then
+			deepLog("Assets.Properties", newState.Assets.Properties, "  ")
+			deepLog("Assets.Vehicles", newState.Assets.Vehicles, "  ")
+			deepLog("Assets.Items", newState.Assets.Items, "  ")
+			deepLog("Assets.Crypto", newState.Assets.Crypto, "  ")
+			deepLog("Assets.Businesses", newState.Assets.Businesses, "  ")
+			deepLog("Assets.Investments", newState.Assets.Investments, "  ")
+			
+			local totalAssets = 0
+			for category, list in pairs(newState.Assets) do
+				if type(list) == "table" then
+					local count = 0
+					for _ in pairs(list) do count = count + 1 end
+					if count > 0 then
+						log("  " .. category .. ": " .. count .. " assets")
+						totalAssets = totalAssets + count
+					end
+				end
+			end
+			log("TOTAL ASSETS FOUND: " .. totalAssets)
+		else
+			log("  ❌ NO Assets TABLE IN STATE!")
+		end
+		log("───────────────────────────────────────────────────────────────")
+		
 		-- Auto-refresh the current tab if screen is visible
 		-- This ensures assets added by events appear immediately
 		if self.isVisible then
+			log("Screen is visible - refreshing current tab:", self.currentTab)
 			self:updateBalanceBar()
 			if self.currentTab == "property" then
 				self:populateProperty()
@@ -97,8 +151,13 @@ function AssetsScreen:updateState(newState)
 			else
 				self:populateShop()
 			end
+		else
+			log("Screen is NOT visible - skipping refresh")
 		end
+	else
+		log("❌ newState is NIL - cannot update!")
 	end
+	log("═══════════════════════════════════════════════════════════════")
 end
 
 function AssetsScreen:getAge()
@@ -115,45 +174,107 @@ end
 
 function AssetsScreen:getAssets()
 	local state = self.playerState
-	if not state then return {} end
+	if not state then 
+		log("❌ getAssets called but playerState is nil!")
+		return {} 
+	end
 
+	log("───────────────────────────────────────────────────────────────")
+	log("GET ASSETS - FLATTENING STATE")
+	
 	-- Assets is now structured: { Properties = [...], Vehicles = [...], Items = [...] }
 	-- Flatten into a lookup table by id for easy checking
 	local assets = state.Assets or {}
+	if not state.Assets then
+		log("❌ state.Assets is NIL!")
+	end
+	
 	local flatAssets = {}
+	local totalCount = 0
 
 	-- Flatten Properties
 	if assets.Properties then
-		for _, prop in ipairs(assets.Properties) do
-			flatAssets[prop.id] = prop
-			log("Found owned property:", prop.id, prop.name or "")
+		log("📦 Flattening Properties array:", #assets.Properties, "items")
+		for idx, prop in ipairs(assets.Properties) do
+			if prop and prop.id then
+				flatAssets[prop.id] = prop
+				totalCount = totalCount + 1
+				log("  [" .. idx .. "] Property ID:", prop.id, "Name:", prop.name or "?", "Value:", prop.value or prop.price or "?")
+			else
+				logWarn("  [" .. idx .. "] Invalid property entry (no ID)")
+			end
 		end
+	else
+		log("  Properties array is NIL or empty")
 	end
 
 	-- Flatten Vehicles
 	if assets.Vehicles then
-		for _, veh in ipairs(assets.Vehicles) do
-			flatAssets[veh.id] = veh
-			log("Found owned vehicle:", veh.id, veh.name or "")
+		log("🚗 Flattening Vehicles array:", #assets.Vehicles, "items")
+		for idx, veh in ipairs(assets.Vehicles) do
+			if veh and veh.id then
+				flatAssets[veh.id] = veh
+				totalCount = totalCount + 1
+				log("  [" .. idx .. "] Vehicle ID:", veh.id, "Name:", veh.name or "?", "Value:", veh.value or veh.price or "?")
+			else
+				logWarn("  [" .. idx .. "] Invalid vehicle entry (no ID)")
+			end
 		end
+	else
+		log("  Vehicles array is NIL or empty")
 	end
 
 	-- Flatten Items
 	if assets.Items then
-		for _, itm in ipairs(assets.Items) do
-			flatAssets[itm.id] = itm
-			log("Found owned item:", itm.id, itm.name or "")
+		log("🎁 Flattening Items array:", #assets.Items, "items")
+		for idx, itm in ipairs(assets.Items) do
+			if itm and itm.id then
+				flatAssets[itm.id] = itm
+				totalCount = totalCount + 1
+				log("  [" .. idx .. "] Item ID:", itm.id, "Name:", itm.name or "?", "Value:", itm.value or itm.price or "?")
+			else
+				logWarn("  [" .. idx .. "] Invalid item entry (no ID)")
+			end
 		end
+	else
+		log("  Items array is NIL or empty")
 	end
 
 	-- Flatten Crypto
 	if assets.Crypto then
-		for _, crypto in ipairs(assets.Crypto) do
-			flatAssets[crypto.id] = crypto
+		log("💎 Flattening Crypto array:", #assets.Crypto, "items")
+		for idx, crypto in ipairs(assets.Crypto) do
+			if crypto and crypto.id then
+				flatAssets[crypto.id] = crypto
+				totalCount = totalCount + 1
+			end
+		end
+	end
+	
+	-- Flatten Businesses
+	if assets.Businesses then
+		log("🏢 Flattening Businesses array:", #assets.Businesses, "items")
+		for idx, biz in ipairs(assets.Businesses) do
+			if biz and biz.id then
+				flatAssets[biz.id] = biz
+				totalCount = totalCount + 1
+			end
+		end
+	end
+	
+	-- Flatten Investments
+	if assets.Investments then
+		log("📈 Flattening Investments array:", #assets.Investments, "items")
+		for idx, inv in ipairs(assets.Investments) do
+			if inv and inv.id then
+				flatAssets[inv.id] = inv
+				totalCount = totalCount + 1
+			end
 		end
 	end
 
-	log("Total owned assets:", #flatAssets)
+	log("✅ Total flattened assets:", totalCount)
+	log("───────────────────────────────────────────────────────────────")
 	return flatAssets
 end
 

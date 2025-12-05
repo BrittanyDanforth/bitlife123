@@ -2321,6 +2321,40 @@ local firstSync = true
 
 SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if not state then return end
+	
+	-- DEEP ASSET DEBUGGING
+	local DEBUG_ASSETS = true
+	if DEBUG_ASSETS then
+		print("[LifeClient SyncState] ═══════════════════════════════════════════════════════════════")
+		print("[LifeClient SyncState] STATE RECEIVED FROM SERVER")
+		print("[LifeClient SyncState] Age:", state.Age or "?", "Money:", state.Money or "?")
+		
+		if state.Assets then
+			local totalAssets = 0
+			print("[LifeClient SyncState] Assets structure received:")
+			for category, list in pairs(state.Assets) do
+				if type(list) == "table" then
+					local count = 0
+					for _ in pairs(list) do count = count + 1 end
+					print("[LifeClient SyncState]   " .. category .. ":", count, "items")
+					totalAssets = totalAssets + count
+					
+					-- Show actual items
+					if count > 0 then
+						for i, asset in ipairs(list) do
+							if asset then
+								print("[LifeClient SyncState]     [" .. i .. "]", asset.id or "?", "-", asset.name or "?")
+							end
+						end
+					end
+				end
+			end
+			print("[LifeClient SyncState] TOTAL ASSETS IN STATE:", totalAssets)
+		else
+			print("[LifeClient SyncState] ❌ NO Assets TABLE IN STATE!")
+		end
+		print("[LifeClient SyncState] ═══════════════════════════════════════════════════════════════")
+	end
 
 	-- Only log significant state changes, not every sync (reduces spam)
 	local ageChanged = currentState and currentState.Age ~= state.Age

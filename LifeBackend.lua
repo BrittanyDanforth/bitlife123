@@ -1888,7 +1888,7 @@ function LifeBackend:findAssetById(list, assetId)
 end
 
 --[[
-	handleAssetPurchase - Server-side validation for asset purchases
+	handleAssetPurchase - Server-side validation for asset purchases WITH DEEP DEBUGGING
 	
 	Validates:
 	- Age requirements (must be 18+ for most purchases)
@@ -1897,18 +1897,43 @@ end
 	- Prevents godmode by enforcing real checks
 ]]
 function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
+	local DEBUG_ASSETS = true
+	local function log(...)
+		if DEBUG_ASSETS then
+			debugPrint("[ASSET PURCHASE]", ...)
+		end
+	end
+	
+	log("═══════════════════════════════════════════════════════════════")
+	log("ASSET PURCHASE REQUEST")
+	log("Player:", player.Name)
+	log("Asset Type:", assetType)
+	log("Asset ID:", assetId)
+	log("═══════════════════════════════════════════════════════════════")
+	
 	local state = self:getState(player)
 	if not state then
+		log("❌ FAILED: No state found")
 		return { success = false, message = "Life data missing." }
 	end
+	
+	log("Player Age:", state.Age or 0, "Money:", state.Money or 0)
 
 	local asset = self:findAssetById(catalog, assetId)
 	if not asset then
+		log("❌ FAILED: Asset not found in catalog")
 		return { success = false, message = "Unknown asset." }
 	end
+	
+	log("Asset Found:", asset.name, "Price:", asset.price)
 
 	state.Assets = state.Assets or {}
 	state.Flags = state.Flags or {}
+	
+	log("Current Assets structure:")
+	log("  Properties:", state.Assets.Properties and #state.Assets.Properties or 0)
+	log("  Vehicles:", state.Assets.Vehicles and #state.Assets.Vehicles or 0)
+	log("  Items:", state.Assets.Items and #state.Assets.Items or 0)
 
 	-- Age check for major purchases (properties and vehicles)
 	local minAge = asset.minAge or 18
@@ -1941,7 +1966,8 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	end
 
 	state.Assets[assetType] = state.Assets[assetType] or {}
-	table.insert(state.Assets[assetType], {
+	
+	local assetData = {
 		id = asset.id,
 		name = asset.name,
 		emoji = asset.emoji,
@@ -1950,18 +1976,48 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		income = asset.income,
 		acquiredAge = state.Age,
 		acquiredYear = state.Year,
-	})
+	}
+	
+	log("───────────────────────────────────────────────────────────────")
+	log("ADDING ASSET TO STATE:")
+	log("  Category:", assetType)
+	log("  ID:", assetData.id)
+	log("  Name:", assetData.name)
+	log("  Value:", assetData.value)
+	log("───────────────────────────────────────────────────────────────")
+	
+	table.insert(state.Assets[assetType], assetData)
+	
+	log("✅ Asset added! New count in", assetType, ":", #state.Assets[assetType])
+	log("Full", assetType, "list:")
+	for i, a in ipairs(state.Assets[assetType]) do
+		log("  [" .. i .. "]", a.id, "-", a.name)
+	end
 
 	if assetType == "Vehicles" then
 		state.Flags.has_vehicle = true
 		state.Flags.has_car = true
+		log("✅ Set flags: has_vehicle, has_car")
 	elseif assetType == "Properties" then
 		state.Flags.has_property = true
 		state.Flags.homeowner = true
+		log("✅ Set flags: has_property, homeowner")
 	end
 
 	self:addMoney(state, -asset.price)
+	log("💰 Subtracted", asset.price, "from money. New balance:", state.Money)
+	
 	local feed = string.format("You purchased %s for %s.", asset.name, formatMoney(asset.price))
+	
+	log("───────────────────────────────────────────────────────────────")
+	log("PUSHING STATE TO CLIENT")
+	log("Feed text:", feed)
+	log("Assets being sent:")
+	log("  Properties:", state.Assets.Properties and #state.Assets.Properties or 0)
+	log("  Vehicles:", state.Assets.Vehicles and #state.Assets.Vehicles or 0)
+	log("  Items:", state.Assets.Items and #state.Assets.Items or 0)
+	log("═══════════════════════════════════════════════════════════════")
+	
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

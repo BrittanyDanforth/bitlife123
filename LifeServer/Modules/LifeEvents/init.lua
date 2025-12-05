@@ -747,6 +747,19 @@ end
 		})
 ]]
 function EventEngine.addAsset(state, assetType, assetData)
+	local DEBUG_ASSETS = true
+	local function log(...)
+		if DEBUG_ASSETS then
+			print("[EventEngine.addAsset]", ...)
+		end
+	end
+	
+	log("═══════════════════════════════════════════════════════════════")
+	log("EVENT ADDING ASSET")
+	log("Asset Type:", assetType)
+	log("Asset Data:", assetData and assetData.name or "nil")
+	log("═══════════════════════════════════════════════════════════════")
+	
 	EventEngine.ensureAssetTables(state)
 	
 	-- Normalize asset type to plural category name
@@ -767,8 +780,11 @@ function EventEngine.addAsset(state, assetType, assetData)
 	local category = categoryMap[assetType:lower()]
 	if not category then
 		warn("[EventEngine] Unknown asset type:", assetType)
+		log("❌ FAILED: Unknown asset type")
 		return false
 	end
+	
+	log("Normalized category:", category)
 	
 	-- Ensure asset has required fields
 	local asset = {
@@ -784,13 +800,37 @@ function EventEngine.addAsset(state, assetType, assetData)
 		income = assetData.income,
 	}
 	
+	log("Built asset entry:")
+	log("  ID:", asset.id)
+	log("  Name:", asset.name)
+	log("  Value:", asset.value)
+	log("  IsEventAcquired:", asset.isEventAcquired or false)
+	
+	log("Assets BEFORE adding:")
+	log("  " .. category .. ":", state.Assets[category] and #state.Assets[category] or 0, "items")
+	
 	-- Use LifeState method if available, otherwise direct insert
 	if state.AddAsset and type(state.AddAsset) == "function" then
+		log("Using state:AddAsset() method")
 		state:AddAsset(category, asset)
 	else
+		log("Using direct table.insert")
 		state.Assets[category] = state.Assets[category] or {}
 		table.insert(state.Assets[category], asset)
 	end
+	
+	log("Assets AFTER adding:")
+	log("  " .. category .. ":", state.Assets[category] and #state.Assets[category] or 0, "items")
+	
+	-- Log full asset list
+	if state.Assets[category] then
+		for i, a in ipairs(state.Assets[category]) do
+			log("    [" .. i .. "]", a.id, "-", a.name)
+		end
+	end
+	
+	log("✅ Asset addition COMPLETE")
+	log("═══════════════════════════════════════════════════════════════")
 	
 	return true
 end
