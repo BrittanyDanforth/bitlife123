@@ -810,11 +810,19 @@ function EventEngine.addAsset(state, assetType, assetData)
 		income = assetData.income,
 	}
 	
+	-- Check for duplicates before adding
+	state.Assets[category] = state.Assets[category] or {}
+	for _, existingAsset in ipairs(state.Assets[category]) do
+		if existingAsset.id == asset.id then
+			-- Already owns this asset - skip duplicate
+			return false
+		end
+	end
+
 	-- Use LifeState method if available, otherwise direct insert
 	if state.AddAsset and type(state.AddAsset) == "function" then
 		state:AddAsset(category, asset)
 	else
-		state.Assets[category] = state.Assets[category] or {}
 		table.insert(state.Assets[category], asset)
 	end
 	
@@ -1036,9 +1044,9 @@ function EventEngine.createRelationship(state, relType, options)
 	
 	state.Relationships[id] = relationship
 	
-	-- Set flags if it's a romance (for convenience, also set .partner reference)
+	-- Set flags if it's a romance (DO NOT set .partner reference - relationships are stored by ID only)
 	if relType == "romance" or relType == "partner" then
-		state.Relationships.partner = relationship -- Convenience reference
+		-- DO NOT set state.Relationships.partner - relationships are stored by ID only!
 		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
 		state.Flags.has_romantic_partner = true
@@ -1169,10 +1177,7 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			if partnerId and state.Relationships then
 				state.Relationships[partnerId] = nil
 			end
-			-- Also clear the .partner reference if it exists
-			if state.Relationships.partner then
-				state.Relationships.partner = nil
-			end
+			-- Relationships are stored by ID only, no .partner reference needed
 			state.Flags.has_partner = nil
 			state.Flags.has_romantic_partner = nil
 			state.Flags.dating = nil

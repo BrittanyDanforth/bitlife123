@@ -1797,7 +1797,14 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		return { success = false, message = "You can't afford that." }
 	end
 
+	-- Check if already owns this asset (prevent duplicates)
 	state.Assets[assetType] = state.Assets[assetType] or {}
+	for _, existingAsset in ipairs(state.Assets[assetType]) do
+		if existingAsset.id == assetId then
+			return { success = false, message = "You already own this!" }
+		end
+	end
+
 	table.insert(state.Assets[assetType], {
 		id = asset.id,
 		name = asset.name,
@@ -1815,6 +1822,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	elseif assetType == "Properties" then
 		state.Flags.has_property = true
 		state.Flags.homeowner = true
+		state.Flags.renting = false -- Clear renting flag when buying property
 	end
 
 	self:addMoney(state, -asset.price)
@@ -1853,6 +1861,10 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 			elseif assetType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
+				-- If selling last property and not living with parents, set renting back to true
+				if not (state.Flags.lives_with_parents or state.Flags.living_with_family) then
+					state.Flags.renting = true
+				end
 			end
 
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
