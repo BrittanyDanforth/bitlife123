@@ -16,9 +16,9 @@
 	╚══════════════════════════════════════════════════════════════════════════════╝
 ]]
 
-local Random = {}
+local Random = RandomNumberGenerator.new(os.time())
 
-local RANDOM = Random.new()
+local RANDOM = Random
 
 -- Helper function to get random body part
 local function getRandomBodyPart()
