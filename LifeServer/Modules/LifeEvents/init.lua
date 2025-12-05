@@ -47,15 +47,17 @@ local LifeStages = {
 }
 
 -- Category mappings per life stage
+-- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
+-- Racing discovery can happen as young as age 10, hacker discovery at age 12
 local StageCategories = {
 	baby        = { "childhood", "milestones" },
 	toddler     = { "childhood", "milestones" },
-	child       = { "childhood", "milestones", "random" },
-	teen        = { "teen", "milestones", "relationships", "random", "crime" },
-	young_adult = { "adult", "milestones", "relationships", "random", "crime" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime" },
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime" },
-	senior      = { "adult", "milestones", "relationships", "random" },
+	child       = { "childhood", "milestones", "random", "career_racing" }, -- Racing discovery at 10+
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
+	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
+	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
+	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Seniors can still own racing teams
 }
 
 function LifeEvents.getLifeStage(age)
@@ -681,6 +683,29 @@ function LifeEvents.buildYearQueue(state, options)
 		if not hasCareer then
 			table.insert(categories, "career")
 		end
+		
+		-- CRITICAL FIX: Add specialized career categories based on job type
+		-- This ensures racing drivers get racing events, hackers get hacker events, etc.
+		local jobCategory = state.CurrentJob.category or ""
+		jobCategory = jobCategory:lower()
+		
+		if jobCategory == "racing" then
+			local hasRacing = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_racing" then hasRacing = true break end
+			end
+			if not hasRacing then
+				table.insert(categories, "career_racing")
+			end
+		elseif jobCategory == "hacker" or jobCategory == "tech" then
+			local hasHacker = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_hacker" then hasHacker = true break end
+			end
+			if not hasHacker then
+				table.insert(categories, "career_hacker")
+			end
+		end
 	end
 	
 	-- Collect all eligible events
@@ -1181,12 +1206,39 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	local eventId = eventDef.id
 	
-	-- Friend-making events
-	if eventId == "first_best_friend" or eventId == "new_friendship" then
-		if choice.setFlags and choice.setFlags.has_best_friend then
-			local friend = EventEngine.createRelationship(state, "friend")
-			outcome.feedText = outcome.feedText .. " " .. friend.name .. " became your friend!"
-			outcome.newRelationship = friend
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Universal friend creation handler
+	-- Any event that sets has_best_friend, has_work_friend, or made_friend flags
+	-- should create an actual friend relationship!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.setFlags then
+		local friendFlags = { "has_best_friend", "has_work_friend", "made_friend", "has_close_friend" }
+		local shouldCreateFriend = false
+		local friendType = "Friend"
+		
+		for _, flag in ipairs(friendFlags) do
+			if choice.setFlags[flag] then
+				shouldCreateFriend = true
+				if flag == "has_work_friend" then
+					friendType = "Work Friend"
+				elseif flag == "has_best_friend" then
+					friendType = "Best Friend"
+				end
+				break
+			end
+		end
+		
+		if shouldCreateFriend then
+			local friend = EventEngine.createRelationship(state, "friend", { role = friendType })
+			if friend then
+				outcome.newRelationship = friend
+				-- Update feed text to include friend's name
+				if outcome.feedText then
+					outcome.feedText = outcome.feedText .. " " .. friend.name .. " became your " .. friendType:lower() .. "!"
+				else
+					outcome.feedText = friend.name .. " became your " .. friendType:lower() .. "!"
+				end
+			end
 		end
 	end
 	

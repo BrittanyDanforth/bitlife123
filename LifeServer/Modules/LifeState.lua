@@ -274,16 +274,14 @@ function LifeState:AdvanceAge()
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- SEMI-RETIRED INCOME (Part-time work)
-	-- Semi-retirees still earn from their part-time job
+	-- CRITICAL FIX: REMOVED duplicate salary payment!
+	-- Semi-retired workers already get paid through LifeBackend:tickCareer()
+	-- Having it here too was causing double-payment bug.
+	-- 
+	-- Note: The salary for semi-retired is halved when they become semi-retired
+	-- (see Adult.lua and LifeStageSystem.lua onResolve handlers)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	
-	if self.Flags and self.Flags.semi_retired and self.CurrentJob and self.CurrentJob.salary then
-		local partTimeSalary = self.CurrentJob.salary
-		self.Money = (self.Money or 0) + partTimeSalary
-		if not self.PendingFeed then
-			self.PendingFeed = string.format("You earned $%s from your part-time work.", partTimeSalary)
-		end
-	end
+	-- (Salary payment handled by LifeBackend:tickCareer, not here)
 	
 	return self
 end

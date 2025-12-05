@@ -467,10 +467,58 @@ Milestones.events = {
 		tags = { "job", "promotion", "senior_role" },
 		careerTags = { "management" },
 
+		-- CRITICAL FIX: Actually update the job when promoted!
+		onComplete = function(state, choice, eventDef, outcome)
+			if state.CurrentJob and state.CurrentJob.salary then
+				local oldSalary = state.CurrentJob.salary
+				local oldTitle = state.CurrentJob.name or "Employee"
+				
+				-- Give a 20-35% raise on promotion
+				local raisePercent = math.random(20, 35) / 100
+				local newSalary = math.floor(oldSalary * (1 + raisePercent))
+				
+				-- Generate a promoted title
+				local promotedTitle = "Senior " .. oldTitle
+				if oldTitle:find("Junior") then
+					promotedTitle = oldTitle:gsub("Junior ", "")
+				elseif oldTitle:find("Associate") then
+					promotedTitle = oldTitle:gsub("Associate", "Senior")
+				elseif oldTitle:find("Senior") then
+					promotedTitle = "Lead " .. oldTitle:gsub("Senior ", "")
+				elseif oldTitle:find("Lead") then
+					promotedTitle = "Principal " .. oldTitle:gsub("Lead ", "")
+				elseif oldTitle:find("Manager") then
+					promotedTitle = "Director of " .. (state.CurrentJob.company or "Operations")
+				end
+				
+				-- Update the job
+				state.CurrentJob.name = promotedTitle
+				state.CurrentJob.salary = newSalary
+				
+				-- Update CareerInfo
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
+				state.CareerInfo.lastPromotion = state.Age
+				state.CareerInfo.promotionHistory = state.CareerInfo.promotionHistory or {}
+				table.insert(state.CareerInfo.promotionHistory, {
+					fromTitle = oldTitle,
+					toTitle = promotedTitle,
+					age = state.Age,
+					year = state.Year,
+					salaryIncrease = newSalary - oldSalary,
+				})
+				
+				-- Update feed with actual promotion details
+				if state.AddFeed then
+					state:AddFeed("📈 Promoted to " .. promotedTitle .. "! Salary: $" .. tostring(newSalary) .. "/year (+$" .. tostring(newSalary - oldSalary) .. ")")
+				end
+			end
+		end,
+
 		choices = {
-			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You rose to the challenge!" },
-			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true }, feedText = "You're adjusting to the new role." },
-			{ text = "Struggle with impostor syndrome", effects = { Happiness = 5, Money = 1500, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You question if you deserve it." },
+			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true, promoted = true }, feedText = "You rose to the challenge!" },
+			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true, promoted = true }, feedText = "You're adjusting to the new role." },
+			{ text = "Struggle with impostor syndrome", effects = { Happiness = 5, Money = 1500, Smarts = 3 }, setFlags = { senior_role = true, promoted = true }, feedText = "You question if you deserve it." },
 		},
 	},
 	{

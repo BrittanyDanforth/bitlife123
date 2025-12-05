@@ -2,13 +2,16 @@ local RANDOM = Random.new()
 
 -- Generate random first name
 local function randomName(gender)
-	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake"}
-	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe"}
+	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas"}
+	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley"}
 	local names = (gender == "male") and maleNames or femaleNames
 	return names[RANDOM:NextInteger(1, #names)]
 end
 
 local events = {
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- TEEN ROMANCE
+	-- ════════════════════════════════════════════════════════════════════════════════
 	{
 		id = "highschool_crush",
 		emoji = "💘",
@@ -19,20 +22,16 @@ local events = {
 		minAge = 14,
 		maxAge = 19,
 		blockedByFlags = { in_prison = true },
-		-- CRITICAL FIX: Use requiresSingle to prevent if already dating
 		requiresSingle = true,
 		choices = {
 			{
 				index = 1,
 				text = "Shoot your shot",
 				effects = { Happiness = 4 },
-				-- CRITICAL FIX: Use consistent flag name 'has_partner' and 'dating'
 				setFlags = { has_partner = true, dating = true },
 				feedText = "You started dating your crush!",
 				onResolve = function(state)
 					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					-- CRITICAL FIX: Set partner in the proper location (state.Relationships.partner)
-					-- so that requiresPartner checks work correctly
 					state.Relationships = state.Relationships or {}
 					state.Relationships.partner = {
 						id = "partner",
@@ -55,8 +54,185 @@ local events = {
 				effects = { Happiness = -2 },
 				feedText = "You stayed quiet about your feelings.",
 			},
+			{
+				index = 3,
+				text = "Pass them a note",
+				effects = { Happiness = 3 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "Your note worked! You're dating!",
+			},
 		},
 	},
+	{
+		id = "prom_invite",
+		emoji = "🎭",
+		title = "Prom Season",
+		text = "Prom is coming up and you need a date!",
+		category = "romance",
+		weight = 6,
+		minAge = 16,
+		maxAge = 18,
+		oneTime = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Ask your crush",
+				effects = { Happiness = 8 },
+				setFlags = { went_to_prom = true, has_partner = true, dating = true },
+				feedText = "They said yes! Best prom ever!",
+			},
+			{
+				index = 2,
+				text = "Go with friends",
+				effects = { Happiness = 5 },
+				setFlags = { went_to_prom = true },
+				feedText = "Prom was fun with friends!",
+			},
+			{
+				index = 3,
+				text = "Skip prom entirely",
+				effects = { Happiness = -3 },
+				feedText = "You missed prom. Oh well.",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- ADULT DATING
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "coffee_shop_meet",
+		emoji = "☕",
+		title = "Coffee Shop Connection",
+		text = "An attractive stranger smiles at you in the coffee shop.",
+		category = "romance",
+		weight = 7,
+		minAge = 18,
+		maxAge = 50,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Introduce yourself",
+				effects = { Happiness = 10 },
+				setFlags = { has_partner = true, dating = true, met_cute = true },
+				feedText = "You hit it off! Numbers exchanged!",
+			},
+			{
+				index = 2,
+				text = "Smile back, nothing more",
+				effects = { Happiness = 3 },
+				feedText = "A nice moment, but you let it pass.",
+			},
+			{
+				index = 3,
+				text = "Too nervous, look away",
+				effects = { Happiness = -2 },
+				feedText = "Opportunity missed.",
+			},
+		},
+	},
+	{
+		id = "gym_romance",
+		emoji = "💪",
+		title = "Gym Crush",
+		text = "You've been noticing someone at the gym who always works out near you.",
+		category = "romance",
+		weight = 5,
+		minAge = 18,
+		maxAge = 45,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Ask to spot them",
+				effects = { Happiness = 8, Health = 2 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "Great workout and a date!",
+			},
+			{
+				index = 2,
+				text = "Keep it professional",
+				effects = { Health = 3 },
+				feedText = "Focus on gains, not romance.",
+			},
+		},
+	},
+	{
+		-- CRITICAL FIX: Renamed from "blind_date" to avoid ID conflict with Relationships.lua
+		id = "blind_date_setup",
+		emoji = "🙈",
+		title = "Blind Date Setup",
+		text = "A friend wants to set you up on a blind date.",
+		category = "romance",
+		weight = 6,
+		minAge = 20,
+		maxAge = 55,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Go for it!",
+				effects = { Happiness = 8 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "The blind date was a success!",
+			},
+			{
+				index = 2,
+				text = "Awkward disaster",
+				effects = { Happiness = -5 },
+				feedText = "Worst. Date. Ever.",
+			},
+			{
+				index = 3,
+				text = "Decline politely",
+				effects = { Happiness = 0 },
+				feedText = "You're not ready for that.",
+			},
+		},
+	},
+	{
+		-- CRITICAL FIX: Renamed from "speed_dating" to avoid ID conflict with Relationships.lua
+		id = "speed_dating_night",
+		emoji = "⏱️",
+		title = "Speed Dating Night",
+		text = "You decided to try a speed dating event.",
+		category = "romance",
+		weight = 4,
+		minAge = 22,
+		maxAge = 45,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Made a real connection!",
+				effects = { Happiness = 10 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "You found someone special!",
+			},
+			{
+				index = 2,
+				text = "A few matches, nothing serious",
+				effects = { Happiness = 3 },
+				feedText = "Fun night, maybe next time.",
+			},
+			{
+				index = 3,
+				text = "Total dud, no chemistry",
+				effects = { Happiness = -3 },
+				feedText = "That was exhausting.",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP PROGRESSION
+	-- ════════════════════════════════════════════════════════════════════════════════
 	{
 		id = "adulthood_engagement",
 		emoji = "💍",
@@ -65,18 +241,17 @@ local events = {
 		category = "romance",
 		weight = 5,
 		minAge = 21,
-		-- CRITICAL FIX: Use requiresPartner (which checks state.Relationships.partner)
 		requiresPartner = true,
 		requiresFlags = { dating = true },
+		blockedByFlags = { engaged = true, married = true },
 		choices = {
 			{
 				index = 1,
 				text = "Propose",
-				effects = { Happiness = 6, Money = -3000 },
+				effects = { Happiness = 15, Money = -3000 },
 				setFlags = { engaged = true },
 				feedText = "You proposed and they said yes!",
 				onResolve = function(state)
-					-- Update partner role to Fiancé/Fiancée
 					if state.Relationships and state.Relationships.partner then
 						local partnerGender = state.Relationships.partner.gender or "female"
 						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
@@ -91,6 +266,147 @@ local events = {
 				text = "Not yet",
 				effects = { Happiness = -3 },
 				feedText = "You decided to wait a bit longer.",
+			},
+		},
+	},
+	{
+		id = "romantic_getaway",
+		emoji = "🏝️",
+		title = "Romantic Vacation",
+		text = "Your partner suggests a romantic getaway.",
+		category = "romance",
+		weight = 5,
+		minAge = 20,
+		requiresPartner = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Book a tropical paradise",
+				effects = { Happiness = 15, Money = -3000 },
+				feedText = "Best vacation ever! Your relationship is stronger than ever.",
+			},
+			{
+				index = 2,
+				text = "Staycation together",
+				effects = { Happiness = 8, Money = -200 },
+				feedText = "Cozy time at home. Perfect.",
+			},
+			{
+				index = 3,
+				text = "Too busy for vacation",
+				effects = { Happiness = -5 },
+				feedText = "Your partner was disappointed.",
+			},
+		},
+	},
+	{
+		id = "anniversary_celebration",
+		emoji = "🎂",
+		title = "Anniversary",
+		text = "It's your anniversary with your partner!",
+		category = "romance",
+		weight = 6,
+		minAge = 18,
+		cooldown = 2,
+		requiresPartner = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Plan something special",
+				effects = { Happiness = 12, Money = -500 },
+				feedText = "A beautiful celebration of your love!",
+			},
+			{
+				index = 2,
+				text = "Simple dinner at home",
+				effects = { Happiness = 8 },
+				feedText = "Intimate and meaningful.",
+			},
+			{
+				index = 3,
+				text = "Completely forgot...",
+				effects = { Happiness = -10 },
+				feedText = "Your partner is NOT happy.",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CHALLENGES
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "relationship_argument",
+		emoji = "😤",
+		title = "Big Argument",
+		text = "You and your partner had a major fight.",
+		category = "romance",
+		weight = 5,
+		minAge = 16,
+		requiresPartner = true,
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Apologize and work it out",
+				effects = { Happiness = 5 },
+				feedText = "You made up and grew closer.",
+			},
+			{
+				index = 2,
+				text = "Take some space",
+				effects = { Happiness = -3 },
+				setFlags = { relationship_rocky = true },
+				feedText = "You're giving each other space.",
+			},
+			{
+				index = 3,
+				text = "Break up",
+				effects = { Happiness = -15 },
+				setFlags = { recently_single = true },
+				feedText = "The relationship is over.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "jealousy_issue",
+		emoji = "😒",
+		title = "Jealousy Problems",
+		text = "Your partner seems jealous of your close friend.",
+		category = "romance",
+		weight = 4,
+		minAge = 16,
+		requiresPartner = true,
+		choices = {
+			{
+				index = 1,
+				text = "Reassure them",
+				effects = { Happiness = 5 },
+				feedText = "You talked it through.",
+			},
+			{
+				index = 2,
+				text = "They need to trust you",
+				effects = { Happiness = -3 },
+				setFlags = { relationship_rocky = true },
+				feedText = "The tension remains.",
+			},
+			{
+				index = 3,
+				text = "Distance yourself from friend",
+				effects = { Happiness = -5 },
+				feedText = "You sacrificed a friendship.",
 			},
 		},
 	},
