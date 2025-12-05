@@ -1,9 +1,31 @@
+--[[
+	╔══════════════════════════════════════════════════════════════════════════════╗
+	║                    CAREER EVENTS CATALOG v2.0                                ║
+	║              Triple-AAAA Quality Career-Focused Life Events                   ║
+	╠══════════════════════════════════════════════════════════════════════════════╣
+	║  This catalog contains 50+ detailed career events that trigger based on:      ║
+	║  • Player's current job/career track                                         ║
+	║  • Age and life stage                                                        ║
+	║  • Performance and career progress                                           ║
+	║  • Education level and skills                                                ║
+	║  • Flags and previous career choices                                         ║
+	║                                                                              ║
+	║  Events are CONTEXTUAL - they only trigger when relevant to the player's     ║
+	║  current career situation, preventing random "godmode" popups.                ║
+	╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
+local RANDOM = Random.new()
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ENTRY-LEVEL JOB OFFERS (Teen/Young Adult)
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "job_offer_barista",
 		emoji = "☕",
 		title = "Café Job Offer",
-		text = "A boutique café downtown desperately needs help. They like your vibe.",
+		text = "A boutique café downtown desperately needs help. The manager noticed you and thinks you'd be a good fit. The smell of fresh coffee fills the air.",
 		category = "career",
 		weight = 12,
 		minAge = 15,
@@ -13,10 +35,10 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Accept job",
-				effects = { Happiness = 3 },
-				setFlags = { employed = true, has_job = true },
-				feedText = "You got a job as a Barista at Bloom Cafe!",
+				text = "Accept the job",
+				effects = { Happiness = 3, Smarts = 1 },
+				setFlags = { employed = true, has_job = true, service_experience = true },
+				feedText = "You got a job as a Barista at Bloom Cafe! Time to learn latte art.",
 				onResolve = function(state)
 					if state.SetCareer then
 						state:SetCareer({
@@ -31,29 +53,112 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Decline",
+				text = "Decline politely",
 				effects = { Happiness = -1 },
-				feedText = "You passed on the café job.",
+				feedText = "You passed on the café job. Maybe something better will come along.",
 			},
 		},
 	},
+	
+	{
+		id = "job_offer_retail",
+		emoji = "🛒",
+		title = "Retail Store Hiring",
+		text = "The local MegaMart is hiring seasonal workers. It's not glamorous, but it's steady work and you'd get employee discounts.",
+		category = "career",
+		weight = 10,
+		minAge = 16,
+		maxAge = 25,
+		requiresNoJob = true,
+		blockedByFlags = { employed = true },
+		choices = {
+			{
+				index = 1,
+				text = "Take the retail job",
+				effects = { Happiness = 2, Money = 100 },
+				setFlags = { employed = true, has_job = true, retail_experience = true },
+				feedText = "You're now working at MegaMart. Time to learn the register!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "retail",
+							name = "Retail Associate",
+							company = "MegaMart",
+							salary = 26000,
+							category = "entry",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not interested",
+				effects = { },
+				feedText = "Retail isn't for you. You'll keep looking.",
+			},
+		},
+	},
+	
+	{
+		id = "job_offer_fastfood",
+		emoji = "🍔",
+		title = "Fast Food Opportunity",
+		text = "Burger Palace is hiring. The uniform is... interesting, but they're flexible with hours and it's a paycheck.",
+		category = "career",
+		weight = 11,
+		minAge = 14,
+		maxAge = 22,
+		requiresNoJob = true,
+		blockedByFlags = { employed = true },
+		choices = {
+			{
+				index = 1,
+				text = "Apply for the job",
+				effects = { Happiness = 1, Health = -1 },
+				setFlags = { employed = true, has_job = true, fast_food_experience = true },
+				feedText = "You got hired at Burger Palace. The smell of fries will haunt your dreams.",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "fastfood",
+							name = "Fast Food Worker",
+							company = "Burger Palace",
+							salary = 22000,
+							category = "entry",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Pass on it",
+				effects = { Happiness = 1 },
+				feedText = "You decided to hold out for something better.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION & TRAINING OPPORTUNITIES
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coding_bootcamp_offer",
 		emoji = "💻",
 		title = "Coding Bootcamp Scholarship",
-		text = "You win a partial scholarship to an elite coding bootcamp.",
+		text = "You win a partial scholarship to Stacks Academy, an elite coding bootcamp. It's intense - 12 weeks of full-time learning - but graduates often land six-figure tech jobs.",
 		category = "career",
 		weight = 6,
 		minAge = 17,
-		maxAge = 30,
+		maxAge = 35,
 		requiresFlags = { social_online = true },
+		blockedByFlags = { in_college = true },
 		choices = {
 			{
 				index = 1,
-				text = "Enroll",
-				effects = { Smarts = 4, Money = -4000 },
-				setFlags = { college_student = true, bootcamp_grad_pending = true },
-				feedText = "You enrolled in Stacks Academy coding bootcamp!",
+				text = "Enroll in the bootcamp",
+				effects = { Smarts = 6, Money = -4000, Health = -2 },
+				setFlags = { bootcamp_student = true, bootcamp_grad_pending = true, tech_training = true },
+				feedText = "You enrolled in Stacks Academy! Time to code your way to a new career.",
 				onResolve = function(state)
 					if state.EnrollEducation then
 						state:EnrollEducation({
@@ -63,47 +168,956 @@ local events = {
 							duration = 1,
 						})
 					end
+					if state.SetFlag then
+						state:SetFlag("bootcamp_completed", false)
+					end
 				end,
 			},
 			{
 				index = 2,
-				text = "Skip it",
-				effects = { Happiness = -2 },
-				feedText = "You passed on the bootcamp.",
+				text = "Can't afford it right now",
+				effects = { Happiness = -2, Smarts = 1 },
+				feedText = "The cost is too much. Maybe later when you've saved up.",
+			},
+			{
+				index = 3,
+				text = "Prefer traditional college",
+				effects = { Smarts = 2 },
+				setFlags = { prefers_college = true },
+				feedText = "You'd rather get a full degree. Bootcamps seem too rushed.",
 			},
 		},
 	},
+	
+	{
+		id = "internship_opportunity",
+		emoji = "📊",
+		title = "Internship Offer",
+		text = "A local company is offering an internship in your field of interest. It's unpaid, but the experience could be invaluable for your resume.",
+		category = "career",
+		weight = 8,
+		minAge = 18,
+		maxAge = 25,
+		requiresFlags = { college_bound = true },
+		blockedByFlags = { employed = true },
+		choices = {
+			{
+				index = 1,
+				text = "Take the internship",
+				effects = { Smarts = 5, Happiness = 3, Money = -500 },
+				setFlags = { intern = true, internship_experience = true },
+				feedText = "You're interning! Coffee runs and learning in equal measure.",
+				onResolve = function(state)
+					if state.SetFlag then
+						state:SetFlag("has_internship", true)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Need paid work",
+				effects = { Money = 200 },
+				feedText = "You need money more than experience right now.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PROMOTIONS & ADVANCEMENT
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "promotion_offer",
 		emoji = "⬆️",
 		title = "Promotion Consideration",
-		text = "Your manager calls you in to discuss a promotion with more responsibility.",
+		text = "Your manager calls you into their office. They're impressed with your work and want to discuss promoting you to a senior role with more responsibility and a significant pay raise.",
 		category = "career",
 		weight = 9,
 		minAge = 20,
+		maxAge = 60,
 		requiresJob = true,
-		requiresStats = { Smarts = 45 },
+		requiresStats = { Smarts = { min = 45 } },
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,
-				text = "Accept promotion",
-				effects = { Happiness = 3, Money = 5000 },
-				feedText = "You were promoted!",
+				text = "Accept the promotion",
+				effects = { Happiness = 5, Money = 5000, Health = -2 },
+				setFlags = { promoted = true, senior_role = true },
+				feedText = "You were promoted! More money, more responsibility, more stress... but mostly more money!",
 				onResolve = function(state)
 					if state.CurrentJob then
-						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.35)
+						local oldSalary = state.CurrentJob.salary or 30000
+						state.CurrentJob.salary = math.floor(oldSalary * 1.35)
 						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+							state.CareerInfo.promotionProgress = 0
+						end
 					end
 					if state.AddFeed then
-						state:AddFeed("You were promoted!")
+						state:AddFeed("Promoted to " .. (state.CurrentJob and state.CurrentJob.name or "Senior Role") .. "!")
 					end
 				end,
 			},
 			{
 				index = 2,
-				text = "Decline politely",
+				text = "Decline - not ready",
+				effects = { Happiness = -2, Smarts = 1 },
+				feedText = "You declined. The extra responsibility feels overwhelming right now.",
+			},
+			{
+				index = 3,
+				text = "Negotiate for better terms",
+				effects = { Happiness = 3, Money = 3000, Smarts = 2 },
+				setFlags = { promoted = true, good_negotiator = true },
+				feedText = "You negotiated! Got the promotion with better benefits.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						local oldSalary = state.CurrentJob.salary or 30000
+						state.CurrentJob.salary = math.floor(oldSalary * 1.25)
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "lateral_move_opportunity",
+		emoji = "↔️",
+		title = "Different Department",
+		text = "Another department wants you to transfer over. It's the same pay, but completely different work. Could be a fresh start or a mistake.",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 55,
+		requiresJob = true,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Make the move",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { department_transfer = true },
+				feedText = "You transferred departments. New challenges await!",
+			},
+			{
+				index = 2,
+				text = "Stay where you are",
+				effects = { Happiness = 2 },
+				feedText = "You're comfortable where you are. No need to rock the boat.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- WORKPLACE CHALLENGES & CONFLICTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "toxic_coworker",
+		emoji = "😤",
+		title = "Difficult Colleague",
+		text = "A coworker has been making your life miserable. They're passive-aggressive, take credit for your ideas, and seem to have it out for you. Everyone notices but no one does anything.",
+		category = "career",
+		weight = 8,
+		minAge = 18,
+		maxAge = 65,
+		requiresJob = true,
+		baseChance = 0.4,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Confront them directly",
+				effects = { Happiness = 3, Smarts = 1 },
+				setFlags = { confrontational = true },
+				feedText = "You called them out in a team meeting. Awkward, but necessary.",
+			},
+			{
+				index = 2,
+				text = "Document everything and go to HR",
+				effects = { Smarts = 3, Happiness = 2 },
+				setFlags = { professional = true },
+				feedText = "You built a case and took it to HR. They're investigating.",
+			},
+			{
+				index = 3,
+				text = "Rise above it",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { patient = true },
+				feedText = "You tried to ignore it, but it's eating at you.",
+			},
+			{
+				index = 4,
+				text = "Find a new job",
+				effects = { Happiness = 5 },
+				setFlags = { job_hunting = true },
+				feedText = "Life's too short. You started looking for a new job.",
+			},
+		},
+	},
+	
+	{
+		id = "workplace_mistake",
+		emoji = "😰",
+		title = "Major Mistake",
+		text = "You made a significant error at work. It's going to cost the company money and your boss is NOT happy. This could affect your career.",
+		category = "career",
+		weight = 6,
+		minAge = 20,
+		maxAge = 60,
+		requiresJob = true,
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Own up immediately",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { honest = true, learned_from_mistake = true },
+				feedText = "You took full responsibility. Your boss appreciated the honesty, but you're on thin ice.",
+			},
+			{
+				index = 2,
+				text = "Try to fix it quietly",
+				effects = { Smarts = 3, Health = -2 },
+				setFlags = { problem_solver = true },
+				feedText = "You worked overtime to fix the issue before anyone noticed.",
+			},
+			{
+				index = 3,
+				text = "Blame someone else",
+				effects = { Happiness = -5, Smarts = -2 },
+				setFlags = { untrustworthy = true },
+				feedText = "You tried to shift blame. People saw through it. Your reputation took a hit.",
+			},
+			{
+				index = 4,
+				text = "Offer to pay for damages",
+				effects = { Money = -2000, Happiness = 2 },
+				setFlags = { responsible = true },
+				feedText = "You offered to cover the costs. Expensive, but it saved your job.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER-SPECIFIC EVENTS (Tech)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "tech_startup_offer",
+		emoji = "🚀",
+		title = "Startup Opportunity",
+		text = "A tech startup wants to hire you. The pay is lower than your current job, but they're offering equity. High risk, high reward. They could be the next big thing... or bankrupt in a year.",
+		category = "career",
+		weight = 5,
+		minAge = 22,
+		maxAge = 40,
+		requiresJob = true,
+		requiresJobCategory = "tech",
+		baseChance = 0.3,
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "Join the startup",
+				effects = { Happiness = 5, Money = -5000, Smarts = 3 },
+				setFlags = { startup_employee = true, risk_taker = true },
+				feedText = "You took the leap! Time to build something amazing... or watch it crash and burn.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 0.7)
+						state.CurrentJob.company = "Tech Startup"
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay at current job",
+				effects = { Happiness = 2, Money = 1000 },
+				feedText = "Stability won out. You'll watch from the sidelines.",
+			},
+			{
+				index = 3,
+				text = "Counter-offer for better equity",
+				effects = { Happiness = 4, Money = -3000, Smarts = 4 },
+				setFlags = { startup_employee = true, good_negotiator = true },
+				feedText = "You negotiated better terms! More equity, slightly better pay.",
+			},
+		},
+	},
+	
+	{
+		id = "tech_bug_crisis",
+		emoji = "🐛",
+		title = "Production Bug Crisis",
+		text = "A critical bug went live in production. The entire system is down, customers are furious, and your team is scrambling. This is your moment to shine... or fail spectacularly.",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "tech",
+		baseChance = 0.4,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Lead the debugging effort",
+				effects = { Smarts = 5, Happiness = 3, Health = -5 },
+				setFlags = { crisis_leader = true, problem_solver = true },
+				feedText = "You pulled an all-nighter and fixed it. You're the hero of the day!",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Work with the team",
+				effects = { Smarts = 3, Happiness = 2, Health = -3 },
+				setFlags = { team_player = true },
+				feedText = "You collaborated effectively. The bug was fixed, and you learned a lot.",
+			},
+			{
+				index = 3,
+				text = "Point fingers",
+				effects = { Happiness = -5, Smarts = -2 },
+				setFlags = { blame_shifter = true },
+				feedText = "You tried to blame others. It backfired. Your reputation took a hit.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER-SPECIFIC EVENTS (Medical)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "medical_emergency",
+		emoji = "🚑",
+		title = "Code Blue",
+		text = "A patient crashes. Their heart stopped. You have seconds to act. This is what you trained for, but nothing prepares you for the real thing. The pressure is intense.",
+		category = "career",
+		weight = 8,
+		minAge = 26,
+		maxAge = 65,
+		requiresJob = true,
+		requiresJobCategory = "medical",
+		baseChance = 0.35,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Take charge and lead the code",
+				effects = { Smarts = 6, Happiness = 5, Health = -3 },
+				setFlags = { medical_leader = true, crisis_competent = true },
+				feedText = "You led the resuscitation effort. The patient survived. You saved a life today.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Follow protocol precisely",
+				effects = { Smarts = 3, Happiness = 2 },
+				setFlags = { by_the_book = true },
+				feedText = "You followed every step perfectly. The patient stabilized.",
+			},
+			{
+				index = 3,
+				text = "Freeze under pressure",
+				effects = { Happiness = -8, Health = -5 },
+				setFlags = { performance_anxiety = true },
+				feedText = "You froze. A senior colleague took over. The patient survived, but you're shaken.",
+			},
+		},
+	},
+	
+	{
+		id = "medical_malpractice_fear",
+		emoji = "⚖️",
+		title = "Lawsuit Threat",
+		text = "A former patient is threatening to sue. They claim you made a mistake that caused them harm. Your insurance will cover it, but your reputation could be damaged.",
+		category = "career",
+		weight = 4,
+		minAge = 28,
+		maxAge = 65,
+		requiresJob = true,
+		requiresJobCategory = "medical",
+		baseChance = 0.2,
+		cooldown = 8,
+		choices = {
+			{
+				index = 1,
+				text = "Fight it - you did nothing wrong",
+				effects = { Happiness = -3, Money = -2000, Smarts = 2 },
+				setFlags = { litigious = true },
+				feedText = "You're fighting the lawsuit. Expensive, but you believe you're in the right.",
+			},
+			{
+				index = 2,
+				text = "Settle out of court",
+				effects = { Happiness = -5, Money = -5000 },
+				setFlags = { settled_lawsuit = true },
+				feedText = "You settled. It's over, but it cost you and your reputation took a hit.",
+			},
+			{
+				index = 3,
+				text = "Review your practices",
+				effects = { Smarts = 4, Happiness = -2 },
+				setFlags = { reflective = true, improved_practices = true },
+				feedText = "You used this as a learning opportunity. Your practices improved.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER-SPECIFIC EVENTS (Legal)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "high_profile_case",
+		emoji = "⚖️",
+		title = "The Case of a Lifetime",
+		text = "You've been assigned to a high-profile case that's all over the news. Win this, and your career skyrockets. Lose, and you're the lawyer who failed publicly. The pressure is immense.",
+		category = "career",
+		weight = 6,
+		minAge = 28,
+		maxAge = 65,
+		requiresJob = true,
+		requiresJobCategory = "law",
+		baseChance = 0.3,
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "Work around the clock",
+				effects = { Smarts = 7, Happiness = 2, Health = -8, Money = 5000 },
+				setFlags = { workaholic = true, high_profile_lawyer = true },
+				feedText = "You dedicated everything to this case. Exhausted, but prepared.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("You won the case! Your career just leveled up!")
+						end
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 25)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You lost the case. It was close, but the jury didn't buy it.")
+						end
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 10)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Build a strong team",
+				effects = { Smarts = 5, Happiness = 4, Money = 2000 },
+				setFlags = { team_builder = true },
+				feedText = "You assembled a dream team. Together, you're unstoppable.",
+			},
+			{
+				index = 3,
+				text = "Decline - too much pressure",
+				effects = { Happiness = -3, Money = -1000 },
+				setFlags = { risk_averse = true },
+				feedText = "You passed on the case. Someone else got the opportunity.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER-SPECIFIC EVENTS (Finance)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "big_deal_opportunity",
+		emoji = "💼",
+		title = "Mega Deal",
+		text = "A massive client wants to work with your firm. This deal could be worth millions in fees. But they're demanding, difficult, and known for firing firms mid-deal. High risk, high reward.",
+		category = "career",
+		weight = 5,
+		minAge = 25,
+		maxAge = 60,
+		requiresJob = true,
+		requiresJobCategory = "finance",
+		baseChance = 0.25,
+		cooldown = 7,
+		choices = {
+			{
+				index = 1,
+				text = "Take the deal",
+				effects = { Happiness = 4, Money = 10000, Health = -5 },
+				setFlags = { deal_maker = true, high_stakes_player = true },
+				feedText = "You took on the mega client. Time to deliver or die trying.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.55 then
+						if state.AddFeed then
+							state:AddFeed("You closed the deal! Massive commission incoming!")
+						end
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The client fired your firm. You lost the deal.")
+						end
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 15)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too risky, pass",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { conservative = true },
+				feedText = "You passed. Better safe than sorry.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER-SPECIFIC EVENTS (Creative)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "creative_award_nomination",
+		emoji = "🏆",
+		title = "Industry Award Nomination",
+		text = "Your work has been nominated for a prestigious industry award! This could launch your career to the next level. But the competition is fierce.",
+		category = "career",
+		weight = 4,
+		minAge = 22,
+		maxAge = 60,
+		requiresJob = true,
+		requiresJobCategory = "creative",
+		baseChance = 0.2,
+		cooldown = 8,
+		requiresStats = { Smarts = { min = 60 } },
+		choices = {
+			{
+				index = 1,
+				text = "Attend the ceremony",
+				effects = { Happiness = 8, Money = -500 },
+				setFlags = { award_nominee = true },
+				feedText = "You attended the awards ceremony. Win or lose, you're honored to be nominated.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("YOU WON! The award is yours! Your career just exploded!")
+						end
+						if state.CareerInfo then
+							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 30)
+						end
+						if state.SetFlag then
+							state:SetFlag("award_winner", true)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You didn't win, but being nominated was still amazing.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Skip it - too nervous",
+				effects = { Happiness = -2 },
+				setFlags = { performance_anxiety = true },
+				feedText = "You couldn't handle the pressure. You stayed home.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- JOB LOSS & TRANSITIONS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "layoff_notice",
+		emoji = "📉",
+		title = "Pink Slip",
+		text = "Your company is downsizing. You've been let go. It's not personal - they say - but it sure feels personal. You have severance, but you need a new job fast.",
+		category = "career",
+		weight = 5,
+		minAge = 22,
+		maxAge = 65,
+		requiresJob = true,
+		baseChance = 0.2,
+		cooldown = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Take severance and job hunt",
+				effects = { Money = 5000, Happiness = -5 },
+				setFlags = { laid_off = true, job_hunting = true, unemployed = true },
+				feedText = "You got severance pay. Time to update that resume and start networking.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+					end
+					if state.SetFlag then
+						state:SetFlag("employed", false)
+						state:SetFlag("has_job", false)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Fight for your job",
+				effects = { Happiness = -3, Smarts = 1 },
+				setFlags = { fighter = true },
+				feedText = "You tried to appeal the decision. It didn't work, but you went down fighting.",
+			},
+			{
+				index = 3,
+				text = "Use it as opportunity",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { optimistic = true, job_hunting = true },
+				feedText = "This is a chance for something better. You're excited about the possibilities.",
+			},
+		},
+	},
+	
+	{
+		id = "headhunter_contact",
+		emoji = "📞",
+		title = "Recruiter Reaches Out",
+		text = "A headhunter contacted you. They have a position that pays significantly more than your current job. But it means leaving your current company and starting fresh somewhere new.",
+		category = "career",
+		weight = 6,
+		minAge = 25,
+		maxAge = 55,
+		requiresJob = true,
+		baseChance = 0.35,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Interview for the new job",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { job_hunting = true, exploring_options = true },
+				feedText = "You went to the interview. The opportunity looks promising.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("You got the job offer! Time to make a decision.")
+						end
+						if state.SetFlag then
+							state:SetFlag("job_offer_pending", true)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You didn't get the job. Back to the drawing board.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Loyalty to current company",
+				effects = { Happiness = 2 },
+				setFlags = { loyal = true },
+				feedText = "You're happy where you are. You declined the opportunity.",
+			},
+			{
+				index = 3,
+				text = "Use it to negotiate raise",
+				effects = { Money = 3000, Happiness = 3, Smarts = 3 },
+				setFlags = { good_negotiator = true },
+				feedText = "You used the offer to negotiate a raise at your current job. Smart move!",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ENTREPRENEURSHIP & SIDE HUSTLES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "side_business_idea",
+		emoji = "💡",
+		title = "Business Idea",
+		text = "You have an idea for a side business. It could be profitable, but it'll take time and money to get started. Do you have what it takes to be an entrepreneur?",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Start the business",
+				effects = { Happiness = 5, Money = -3000, Smarts = 3 },
+				setFlags = { entrepreneur = true, side_business_owner = true },
+				feedText = "You launched your side business! Here's hoping it takes off.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("Your business is doing well! Extra income coming in.")
+						end
+						if state.AddMoney then
+							state:AddMoney(RANDOM:NextInteger(500, 2000))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The business is struggling. It might not work out.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too risky right now",
+				effects = { Happiness = -1, Smarts = 1 },
+				setFlags = { risk_averse = true },
+				feedText = "You decided it's not the right time. Maybe later.",
+			},
+			{
+				index = 3,
+				text = "Test the waters first",
+				effects = { Happiness = 3, Money = -500, Smarts = 2 },
+				setFlags = { cautious_entrepreneur = true },
+				feedText = "You're starting small to test if there's demand. Smart approach.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- NETWORKING & RELATIONSHIPS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "industry_conference",
+		emoji = "🎤",
+		title = "Industry Conference",
+		text = "There's a major industry conference coming up. It's expensive to attend, but it's a goldmine for networking. You could meet future employers, clients, or partners.",
+		category = "career",
+		weight = 6,
+		minAge = 22,
+		maxAge = 60,
+		requiresJob = true,
+		baseChance = 0.3,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Attend and network aggressively",
+				effects = { Happiness = 5, Money = -800, Smarts = 3 },
+				setFlags = { networker = true, conference_attendee = true },
+				feedText = "You worked the room like a pro. Made valuable connections!",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("Someone you met offered you a job opportunity!")
+						end
+						if state.SetFlag then
+							state:SetFlag("job_opportunity_from_networking", true)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Attend but stay low-key",
+				effects = { Happiness = 3, Money = -800, Smarts = 2 },
+				feedText = "You attended and learned a lot, but didn't network much.",
+			},
+			{
+				index = 3,
+				text = "Too expensive, skip it",
+				effects = { Money = 200 },
+				feedText = "You saved the money. Conferences are overrated anyway.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MENTORSHIP & GROWTH
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "mentor_offers_guidance",
+		emoji = "👨‍🏫",
+		title = "Mentor Appears",
+		text = "A senior colleague has taken an interest in your career. They're offering to mentor you - share their knowledge, introduce you to people, help you advance. This could be huge for your career.",
+		category = "career",
+		weight = 5,
+		minAge = 22,
+		maxAge = 40,
+		requiresJob = true,
+		baseChance = 0.25,
+		cooldown = 6,
+		requiresStats = { Smarts = { min = 50 } },
+		choices = {
+			{
+				index = 1,
+				text = "Accept the mentorship",
+				effects = { Smarts = 5, Happiness = 4 },
+				setFlags = { has_mentor = true, mentored = true },
+				feedText = "You found a mentor! They're already teaching you valuable lessons.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Prefer to learn on your own",
+				effects = { Smarts = 2 },
+				setFlags = { independent_learner = true },
+				feedText = "You appreciate the offer, but you prefer figuring things out yourself.",
+			},
+		},
+	},
+	
+	{
+		id = "become_mentor",
+		emoji = "👩‍🏫",
+		title = "Mentoring Opportunity",
+		text = "A junior colleague asks you to mentor them. They look up to you and want to learn from your experience. It'll take time, but it's rewarding and looks good for leadership roles.",
+		category = "career",
+		weight = 4,
+		minAge = 28,
+		maxAge = 60,
+		requiresJob = true,
+		requiresStats = { Smarts = { min = 65 } },
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Take them under your wing",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { mentor = true, leadership_material = true },
+				feedText = "You're now a mentor! Teaching others is surprisingly rewarding.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too busy right now",
 				effects = { Happiness = -1 },
-				feedText = "You declined the promotion.",
+				feedText = "You're swamped. Maybe later when things calm down.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- WORK-LIFE BALANCE
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "work_life_balance_crisis",
+		emoji = "⚖️",
+		title = "Burning Out",
+		text = "Work has consumed your life. You're working 60+ hour weeks, missing family events, and your health is suffering. Something has to give.",
+		category = "career",
+		weight = 7,
+		minAge = 25,
+		maxAge = 55,
+		requiresJob = true,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresFlags = { workaholic = true },
+		choices = {
+			{
+				index = 1,
+				text = "Set boundaries",
+				effects = { Happiness = 5, Health = 5, Money = -1000 },
+				setFlags = { work_life_balance = true },
+				feedText = "You set firm boundaries. Less money, but more life.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 0.9)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep grinding",
+				effects = { Happiness = -5, Health = -8, Money = 2000 },
+				setFlags = { workaholic = true, burnout_risk = true },
+				feedText = "You kept pushing. The money's good, but you're exhausted.",
+			},
+			{
+				index = 3,
+				text = "Find a less demanding job",
+				effects = { Happiness = 8, Health = 5, Money = -5000 },
+				setFlags = { work_life_balance = true, job_hunting = true },
+				feedText = "You're looking for a job with better balance. Life's too short.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RETIREMENT & EXIT
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "early_retirement_offer",
+		emoji = "🏖️",
+		title = "Early Retirement Package",
+		text = "Your company is offering early retirement packages. It's a generous deal - enough to live comfortably if you're smart with it. But it means leaving the workforce years earlier than planned.",
+		category = "career",
+		weight = 3,
+		minAge = 50,
+		maxAge = 65,
+		requiresJob = true,
+		baseChance = 0.2,
+		cooldown = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Take the package",
+				effects = { Happiness = 10, Money = 50000 },
+				setFlags = { early_retired = true, retired = true },
+				feedText = "You took early retirement! Time to enjoy life!",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+					end
+					if state.SetFlag then
+						state:SetFlag("employed", false)
+						state:SetFlag("has_job", false)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep working",
+				effects = { Happiness = 2, Money = 2000 },
+				setFlags = { not_ready_to_retire = true },
+				feedText = "You're not ready to retire yet. You'll keep working.",
+			},
+			{
+				index = 3,
+				text = "Negotiate better terms",
+				effects = { Happiness = 8, Money = 75000, Smarts = 3 },
+				setFlags = { early_retired = true, retired = true, good_negotiator = true },
+				feedText = "You negotiated a better package! Even more money for retirement!",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					else
+						state.CurrentJob = nil
+					end
+				end,
 			},
 		},
 	},
