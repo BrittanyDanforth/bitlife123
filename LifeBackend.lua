@@ -35,7 +35,6 @@ local C = nil -- client palette not available on server
 local function debugPrint(...)
 	print("[LifeBackend]", ...)
 end
-local STAT_KEYS = { "Happiness", "Health", "Smarts", "Looks" }
 
 local function clamp(value, minValue, maxValue)
 	return math.clamp(value, minValue or 0, maxValue or 100)
@@ -897,27 +896,28 @@ function LifeBackend:applyStatChanges(state, deltas)
 	if not deltas then
 		return
 	end
+	state.Stats = state.Stats or {}
 	for stat, delta in pairs(deltas) do
 		if stat == "Money" or stat == "money" then
-			state.Money = math.max(0, state.Money + delta)
+			state.Money = math.max(0, (state.Money or 0) + delta)
 		elseif stat == "Health" or stat == "H" then
-			state.Stats.Health = clamp(state.Stats.Health + delta)
+			state.Stats.Health = clamp((state.Stats.Health or 0) + delta)
 			state.Health = state.Stats.Health
 		elseif stat == "Happiness" or stat == "Happy" then
-			state.Stats.Happiness = clamp(state.Stats.Happiness + delta)
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 0) + delta)
 			state.Happiness = state.Stats.Happiness
 		elseif stat == "Smarts" then
-			state.Stats.Smarts = clamp(state.Stats.Smarts + delta)
+			state.Stats.Smarts = clamp((state.Stats.Smarts or 0) + delta)
 			state.Smarts = state.Stats.Smarts
 		elseif stat == "Looks" then
-			state.Stats.Looks = clamp(state.Stats.Looks + delta)
+			state.Stats.Looks = clamp((state.Stats.Looks or 0) + delta)
 			state.Looks = state.Stats.Looks
 		end
 	end
 end
 
 function LifeBackend:addMoney(state, amount)
-	state.Money = math.max(0, state.Money + amount)
+	state.Money = math.max(0, (state.Money or 0) + amount)
 end
 
 -- ============================================================================
@@ -954,8 +954,11 @@ end
 -- ============================================================================
 
 function LifeBackend:advanceRelationships(state)
+	if not state.Relationships then
+		return
+	end
 	for _, rel in pairs(state.Relationships) do
-		if rel.alive ~= false then
+		if type(rel) == "table" and rel.alive ~= false then
 			rel.relationship = clamp((rel.relationship or 60) + RANDOM:NextInteger(-2, 3), 0, 100)
 			rel.age = (rel.age or (state.Age + 20)) + 1
 			if rel.age > 95 and RANDOM:NextNumber() < 0.2 then
@@ -981,6 +984,7 @@ function LifeBackend:updateEducationProgress(state)
 end
 
 function LifeBackend:tickCareer(state)
+	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
 	local job = state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob]
 	if not job then
@@ -1069,7 +1073,7 @@ function LifeBackend:handleAgeUp(player)
 	if state.AdvanceAge then
 		state:AdvanceAge()
 	else
-		state.Age = state.Age + 1
+		state.Age = (state.Age or 0) + 1
 		state.Year = (state.Year or 2025) + 1
 	end
 
@@ -1077,9 +1081,10 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 
-	state.Stats.Health = clamp(state.Stats.Health - RANDOM:NextInteger(0, 2))
-	state.Stats.Happiness = clamp(state.Stats.Happiness + RANDOM:NextInteger(-1, 2))
-	state.Stats.Smarts = clamp(state.Stats.Smarts + RANDOM:NextInteger(-1, 2))
+	state.Stats = state.Stats or {}
+	state.Stats.Health = clamp((state.Stats.Health or 0) - RANDOM:NextInteger(0, 2))
+	state.Stats.Happiness = clamp((state.Stats.Happiness or 0) + RANDOM:NextInteger(-1, 2))
+	state.Stats.Smarts = clamp((state.Stats.Smarts or 0) + RANDOM:NextInteger(-1, 2))
 	state.Health = state.Stats.Health
 	state.Happiness = state.Stats.Happiness
 	state.Smarts = state.Stats.Smarts
@@ -1094,13 +1099,11 @@ function LifeBackend:handleAgeUp(player)
 	end
 
 	-- BitLife style: ONE event per age up, not multiple stacked events
-	-- Stage transitions are shown as feed text, not as separate choice events
 	local queue = {}
-	
-	-- Check for stage transition - add to feed text, not as event
+
+	-- Stage transition -> fold into feed text, not a separate choice event
 	local transitionEvent = LifeStageSystem.getTransitionEvent(oldAge, state.Age)
 	if transitionEvent then
-		-- Show as feed notification instead of choice event
 		local stageName = transitionEvent.title or "a new stage"
 		feedText = string.format("🎂 %s\n%s", transitionEvent.text or ("You entered " .. stageName), feedText)
 	end
@@ -1119,7 +1122,6 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
-	-- Log which event was selected (if any)
 	if #queue > 0 then
 		debugPrint(string.format("Event for %s: %s", player.Name, queue[1].id or "unknown"))
 	end
@@ -1150,10 +1152,10 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 	end
 
 	if deathInfo and deathInfo.died then
+		state.Flags = state.Flags or {}
 		if state.SetFlag then
 			state:SetFlag("dead", true)
 		else
-			state.Flags = state.Flags or {}
 			state.Flags.dead = true
 		end
 		state.CauseOfDeath = deathInfo.cause
@@ -1224,7 +1226,7 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			Health = (state.Stats.Health - preStats.Health),
 			Smarts = (state.Stats.Smarts - preStats.Smarts),
 			Looks = (state.Stats.Looks - preStats.Looks),
-			Money = state.Money - preMoney,
+			Money = (state.Money - preMoney),
 		}
 	else
 		self:applyStatChanges(state, choice.deltas)
@@ -1236,6 +1238,7 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		end
 
 		if choice.career then
+			state.CareerInfo = state.CareerInfo or {}
 			local info = state.CareerInfo
 			info.performance = clamp((info.performance or 60) + (choice.career.performance or 0))
 			info.promotionProgress = clamp((info.promotionProgress or 0) + (choice.career.progress or 0))
@@ -1247,7 +1250,9 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 
 		if choice.relationships and choice.relationships.delta then
 			for _, rel in pairs(state.Relationships or {}) do
-				rel.relationship = clamp((rel.relationship or 50) + choice.relationships.delta, 0, 100)
+				if type(rel) == "table" then
+					rel.relationship = clamp((rel.relationship or 50) + choice.relationships.delta, 0, 100)
+				end
 			end
 		end
 
@@ -1311,7 +1316,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = "Unknown activity." }
 	end
 
-	if activity.cost and activity.cost > 0 and state.Money < activity.cost then
+	if activity.cost and activity.cost > 0 and (state.Money or 0) < activity.cost then
 		return { success = false, message = "You can't afford that right now." }
 	end
 
@@ -1338,7 +1343,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		health = deltas.Health,
 		smarts = deltas.Smarts,
 		looks = deltas.Looks,
-		money = -activity.cost,
+		money = activity.cost and -activity.cost or 0,
 		wasSuccess = true,
 	}
 
@@ -1359,6 +1364,8 @@ function LifeBackend:handleCrime(player, crimeId)
 	if not crime then
 		return { success = false, message = "Unknown crime." }
 	end
+
+	state.Flags = state.Flags or {}
 
 	local riskModifier = 0
 	if state.Flags.criminal_tendencies then
@@ -1415,7 +1422,9 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		return { success = false, message = "Unknown prison action." }
 	end
 
-	if action.moneyCost and state.Money < action.moneyCost then
+	state.Flags = state.Flags or {}
+
+	if action.moneyCost and (state.Money or 0) < action.moneyCost then
 		return { success = false, message = "You can't afford that legal help." }
 	end
 
@@ -1428,12 +1437,12 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	end
 
 	if action.jailReduction then
-		state.JailYearsLeft = math.max(0, state.JailYearsLeft - action.jailReduction)
+		state.JailYearsLeft = math.max(0, (state.JailYearsLeft or 0) - action.jailReduction)
 	end
 
 	if action.risk and RANDOM:NextInteger(1, 100) <= action.risk then
 		local message = "Guards caught you. Your sentence increased."
-		state.JailYearsLeft = state.JailYearsLeft + 1
+		state.JailYearsLeft = (state.JailYearsLeft or 0) + 1
 		self:applyStatChanges(state, { Happiness = -5 })
 		self:pushState(player, message)
 		return { success = false, message = message }
@@ -1454,7 +1463,7 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		return { success = true, message = "Escape attempt underway..." }
 	end
 
-	if state.JailYearsLeft <= 0 then
+	if (state.JailYearsLeft or 0) <= 0 then
 		state.InJail = false
 		state.Flags.in_prison = nil
 		state.Flags.incarcerated = nil
@@ -1495,7 +1504,7 @@ function LifeBackend:handleJobApplication(player, jobId)
 		return { success = false, message = "You can't apply while incarcerated." }
 	end
 
-	if state.Age < job.minAge then
+	if (state.Age or 0) < job.minAge then
 		return { success = false, message = string.format("You must be %d to apply.", job.minAge) }
 	end
 
@@ -1510,6 +1519,9 @@ function LifeBackend:handleJobApplication(player, jobId)
 		salary = job.salary,
 		category = job.category,
 	}
+
+	state.CareerInfo = state.CareerInfo or {}
+	state.Career = state.Career or {}
 
 	state.CareerInfo.performance = 60
 	state.CareerInfo.promotionProgress = 0
@@ -1532,6 +1544,9 @@ function LifeBackend:handleQuitJob(player)
 		return { success = false, message = "You're not currently employed." }
 	end
 
+	state.CareerInfo = state.CareerInfo or {}
+	state.Career = state.Career or {}
+
 	local jobName = state.CurrentJob.name
 	state.CurrentJob = nil
 	state.CareerInfo.performance = 0
@@ -1553,8 +1568,10 @@ function LifeBackend:handleWork(player)
 		return { success = false, message = "Get out of prison first." }
 	end
 
+	state.CareerInfo = state.CareerInfo or {}
+
 	local salary = state.CurrentJob.salary or 0
-	local bonus = math.floor((state.CareerInfo.performance or 50) / 100 * 0.2 * salary)
+	local bonus = math.floor(((state.CareerInfo.performance or 50) / 100) * 0.2 * salary)
 	local payday = math.floor(salary / 12 + bonus)
 	self:addMoney(state, payday)
 	self:applyStatChanges(state, { Happiness = RANDOM:NextInteger(-2, 2) })
@@ -1579,7 +1596,9 @@ function LifeBackend:handlePromotion(player)
 		return { success = false, message = "You need a job first." }
 	end
 
+	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
+
 	if (info.promotionProgress or 0) < 80 then
 		return { success = false, message = "You need more experience before a promotion." }
 	end
@@ -1599,7 +1618,9 @@ function LifeBackend:handleRaise(player)
 		return { success = false, message = "No employer to ask." }
 	end
 
+	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
+
 	if (info.performance or 0) < 60 then
 		return { success = false, message = "Improve your performance before asking." }
 	end
@@ -1627,6 +1648,9 @@ function LifeBackend:getCareerInfo(player)
 	if not state then
 		return { success = false }
 	end
+	state.CareerInfo = state.CareerInfo or {}
+	state.Career = state.Career or {}
+
 	return {
 		success = true,
 		performance = state.CareerInfo.performance or 0,
@@ -1645,11 +1669,21 @@ function LifeBackend:getEducationInfo(player)
 		return { success = false }
 	end
 	local edu = state.EducationData or { Status = "none" }
+	state.Stats = state.Stats or {}
+
+	local rawGPA
+	if edu.GPA ~= nil then
+		rawGPA = edu.GPA
+	else
+		local smarts = state.Stats.Smarts or 0
+		rawGPA = math.floor((smarts / 25) * 100) / 100
+	end
+
 	return {
 		success = true,
 		level = state.Education,
 		institution = edu.Institution or "Local School",
-		gpa = edu.GPA or math.floor(state.Stats.Smarts / 25 * 100) / 100,
+		gpa = rawGPA,
 		progress = edu.Progress or 0,
 		status = edu.Status or "none",
 		creditsEarned = edu.CreditsEarned,
@@ -1675,9 +1709,11 @@ function LifeBackend:enrollEducation(player, programId)
 		return { success = false, message = "You need to complete the prerequisite first." }
 	end
 
-	if state.Money < program.cost then
+	if (state.Money or 0) < program.cost then
 		return { success = false, message = "You can't afford tuition." }
 	end
+
+	local prevDebt = (state.EducationData and state.EducationData.Debt) or 0
 
 	self:addMoney(state, -program.cost)
 	state.EducationData = {
@@ -1686,8 +1722,9 @@ function LifeBackend:enrollEducation(player, programId)
 		Progress = 0,
 		Duration = program.duration,
 		Institution = program.name,
-		Debt = (state.EducationData.Debt or 0) + program.cost,
+		Debt = prevDebt + program.cost,
 	}
+	state.Career = state.Career or {}
 	state.Career.education = programId
 
 	local feed = string.format("You enrolled in %s.", program.name)
@@ -1727,17 +1764,16 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		return { success = false, message = "Unknown asset." }
 	end
 
-	-- ═══════════════════════════════════════════════════════════════════════════
-	-- SERVER-SIDE VALIDATION - No godmode allowed!
-	-- ═══════════════════════════════════════════════════════════════════════════
-	
+	state.Assets = state.Assets or {}
+	state.Flags = state.Flags or {}
+
 	-- Age check for major purchases (properties and vehicles)
 	local minAge = asset.minAge or 18
 	if assetType == "Properties" then
 		minAge = asset.minAge or 21 -- Must be 21+ to buy property
 	elseif assetType == "Vehicles" then
 		minAge = asset.minAge or 16 -- Must be 16+ for vehicles
-		
+
 		-- Vehicle-specific: require driver's license
 		local hasLicense = state.Flags and (state.Flags.has_license or state.Flags.drivers_license)
 		if not hasLicense then
@@ -1746,25 +1782,21 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	elseif assetType == "Items" then
 		minAge = asset.minAge or 14 -- Shop items can be bought younger
 	end
-	
+
 	if (state.Age or 0) < minAge then
 		return { success = false, message = string.format("You must be at least %d years old to buy this.", minAge) }
 	end
-	
+
 	-- Prison check - can't buy stuff while incarcerated
 	if state.InJail then
 		return { success = false, message = "You can't make purchases while incarcerated." }
 	end
-	
+
 	-- Money check
-	if state.Money < asset.price then
+	if (state.Money or 0) < asset.price then
 		return { success = false, message = "You can't afford that." }
 	end
-	
-	-- ═══════════════════════════════════════════════════════════════════════════
-	-- EXECUTE PURCHASE
-	-- ═══════════════════════════════════════════════════════════════════════════
-	
+
 	state.Assets[assetType] = state.Assets[assetType] or {}
 	table.insert(state.Assets[assetType], {
 		id = asset.id,
@@ -1776,9 +1808,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		acquiredAge = state.Age,
 		acquiredYear = state.Year,
 	})
-	
-	-- Set relevant flags
-	state.Flags = state.Flags or {}
+
 	if assetType == "Vehicles" then
 		state.Flags.has_vehicle = true
 		state.Flags.has_car = true
@@ -1798,11 +1828,13 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	if not state then
 		return { success = false, message = "Life data missing." }
 	end
-	
-	-- Prison check - can't sell stuff while incarcerated
+
 	if state.InJail then
 		return { success = false, message = "You can't sell assets while incarcerated." }
 	end
+
+	state.Assets = state.Assets or {}
+	state.Flags = state.Flags or {}
 
 	local bucket = state.Assets[assetType]
 	if not bucket then
@@ -1814,9 +1846,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 			local payout = math.floor((asset.value or 0) * 0.7)
 			table.remove(bucket, index)
 			self:addMoney(state, payout)
-			
-			-- Update flags if no assets left in category
-			state.Flags = state.Flags or {}
+
 			if assetType == "Vehicles" and #bucket == 0 then
 				state.Flags.has_vehicle = nil
 				state.Flags.has_car = nil
@@ -1824,7 +1854,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
 			end
-			
+
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
 			self:pushState(player, feed)
 			return { success = true, message = feed }
@@ -1844,12 +1874,13 @@ function LifeBackend:handleGamble(player, betAmount, finalSymbols)
 		return { success = false, message = "Bet a positive amount." }
 	end
 
-	if state.Money < betAmount then
+	if (state.Money or 0) < betAmount then
 		return { success = false, message = "Not enough money to bet." }
 	end
 
 	self:addMoney(state, -betAmount)
 
+	-- For now, trust client symbols; you can swap this to a pure server roll later.
 	local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]
 	local payout = 0
 	local message
@@ -1869,13 +1900,61 @@ end
 -- Relationships & Interactions
 -- ============================================================================
 
+local function inferNameFromId(identifier)
+	if type(identifier) ~= "string" or identifier == "" then
+		return nil
+	end
+	local cleaned = identifier:gsub("_", " ")
+	return cleaned:sub(1, 1):upper() .. cleaned:sub(2)
+end
+
+function LifeBackend:createRelationship(state, relType, options)
+	state.Relationships = state.Relationships or {}
+	state.Flags = state.Flags or {}
+	options = options or {}
+
+	-- Prefer EventEngine for dynamic friend/romance generation
+	if EventEngine and EventEngine.createRelationship and not options.id and (relType == "friend" or relType == "romance" or relType == "partner" or relType == "enemy") then
+		local success, relationship = pcall(EventEngine.createRelationship, state, relType, options)
+		if success and relationship then
+			return relationship
+		end
+		if not success then
+			warn("[LifeBackend] EventEngine relationship creation failed:", relationship)
+		end
+	end
+
+	local newId = options.id or string.format("%s_%s", relType, HttpService:GenerateGUID(false))
+	local defaultName = inferNameFromId(options.id) or inferNameFromId(relType) or "Person"
+	local relationship = {
+		id = newId,
+		name = options.name or defaultName,
+		type = relType,
+		role = options.role or defaultName,
+		relationship = options.startLevel or 60,
+		age = options.age or state.Age,
+		gender = options.gender,
+		alive = options.alive ~= false,
+	}
+
+	state.Relationships[newId] = relationship
+
+	if relType == "romance" or relType == "partner" then
+		state.Relationships.partner = relationship
+		state.Flags.has_partner = true
+		state.Flags.dating = true
+	end
+
+	return relationship
+end
+
 local InteractionEffects = {
 	family = {
 		hug = { delta = 6, cost = 0, message = "You hugged them tightly." },
 		talk = { delta = 4, message = "You caught up on life." },
 		gift = { delta = 5, cost = 100, message = "You bought them a thoughtful gift." },
 		argue = { delta = -8, message = "You argued and tensions rose." },
-		money = { delta = -2, message = "You asked them for money.", grant = function(state) state.Money = state.Money + RANDOM:NextInteger(100, 500) end },
+		money = { delta = -2, message = "You asked them for money.", grant = function(state) state.Money = (state.Money or 0) + RANDOM:NextInteger(100, 500) end },
 		vacation = { delta = 10, cost = 2000, message = "You took them on a vacation." },
 		apologize = { delta = 7, message = "You apologized for past mistakes." },
 	},
@@ -1883,21 +1962,35 @@ local InteractionEffects = {
 		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
 		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
 		kiss = { delta = 5, message = "You shared a kiss." },
-		propose = { delta = 15, cost = 5000, message = "You proposed!", flag = "engaged" },
-		breakup = { delta = -999, message = "You ended the relationship.", remove = true },
+		propose = { delta = 15, cost = 5000, message = "You proposed!", flags = { engaged = true, committed_relationship = true } },
+		breakup = { delta = -999, message = "You ended the relationship.", remove = true, clearFlags = { "has_partner", "dating", "committed_relationship", "married", "engaged" } },
 		flirt = { delta = 4, message = "You flirted playfully." },
 		compliment = { delta = 3, message = "You complimented them." },
+		meet_someone = {
+			forceNewRelationship = true,
+			requiresSingle = true,
+			delta = 10,
+			message = function(_, relationship)
+				local name = (relationship and relationship.name) or "someone new"
+				return string.format("You hit it off with %s!", name)
+			end,
+		},
 	},
 	friend = {
 		hangout = { delta = 6, message = "You hung out together." },
-		talk = { delta = 4, message = "You had a great conversation." },
-		hug = { delta = 5, message = "You gave them a warm hug." },
 		gift = { delta = 4, cost = 50, message = "You gave them a small gift." },
 		support = { delta = 5, message = "You supported them through a tough time." },
 		party = { delta = 7, message = "You partied together." },
 		betray = { delta = -15, message = "You betrayed their trust." },
 		ghost = { delta = -999, message = "You ghosted them.", remove = true },
-		argue = { delta = -8, message = "You argued and tensions rose." },
+		make_friend = {
+			forceNewRelationship = true,
+			delta = 12,
+			message = function(_, relationship)
+				local name = (relationship and relationship.name) or "a new friend"
+				return string.format("You became friends with %s.", name)
+			end,
+		},
 	},
 	enemy = {
 		insult = { delta = -6, message = "You insulted them." },
@@ -1908,34 +2001,42 @@ local InteractionEffects = {
 	},
 }
 
-function LifeBackend:ensureRelationship(state, relType, targetId)
+function LifeBackend:ensureRelationship(state, relType, targetId, options)
+	options = options or {}
 	state.Relationships = state.Relationships or {}
+
 	if targetId and state.Relationships[targetId] then
 		return state.Relationships[targetId]
 	end
 
-	-- For new friends, create placeholder
-	if relType == "friend" then
-		local newId = "friend_" .. HttpService:GenerateGUID(false)
-		local rel = { id = newId, name = "New Friend", type = "friend", role = "Friend", relationship = 60, age = state.Age, alive = true }
-		state.Relationships[newId] = rel
-		return rel
+	if options.forceNewRelationship then
+		return self:createRelationship(state, relType, options.relationshipOptions)
 	end
+
+	if relType == "friend" and not targetId then
+		return self:createRelationship(state, "friend", options.relationshipOptions)
+	end
+
 	if relType == "romance" then
+		if targetId and state.Relationships[targetId] then
+			return state.Relationships[targetId]
+		end
+
 		local partner = state.Relationships.partner
-		if partner then
+		if partner and partner.alive ~= false then
 			return partner
 		end
-		local rel = { id = "partner", name = "Partner", type = "romance", role = "Partner", relationship = 55, age = state.Age, alive = true }
-		state.Relationships.partner = rel
-		return rel
+
+		return self:createRelationship(state, "romance", options.relationshipOptions)
 	end
+
 	if targetId and not state.Relationships[targetId] then
-		local rel = { id = targetId, name = "Person", type = relType, role = relType, relationship = 50, age = state.Age, alive = true }
-		state.Relationships[targetId] = rel
-		return rel
+		local relOptions = shallowCopy(options.relationshipOptions or {})
+		relOptions.id = targetId
+		return self:createRelationship(state, relType, relOptions)
 	end
-	return state.Relationships[targetId]
+
+	return targetId and state.Relationships[targetId] or self:createRelationship(state, relType, options.relationshipOptions)
 end
 
 function LifeBackend:handleInteraction(player, payload)
@@ -1951,68 +2052,7 @@ function LifeBackend:handleInteraction(player, payload)
 	local relType = payload.relationshipType or "family"
 	local actionId = payload.actionId
 	local targetId = payload.targetId
-
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- SPECIAL ACTIONS: Creating new relationships (make_friend, meet_someone, etc.)
-	-- These don't exist in InteractionEffects because they CREATE relationships
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	
-	if actionId == "make_friend" or actionId == "meet_friend" then
-		-- Create a new friend using EventEngine
-		local newFriend = EventEngine.createRelationship(state, "friend", {
-			startLevel = RANDOM:NextInteger(45, 70),
-		})
-		
-		local feed = string.format("You made a new friend: %s!", newFriend.name)
-		self:applyStatChanges(state, { Happiness = 5 })
-		self:pushState(player, feed, {
-			showPopup = true,
-			emoji = "🤝",
-			title = "New Friend!",
-			body = feed,
-			happiness = 5,
-			wasSuccess = true,
-		})
-		return {
-			success = true,
-			message = feed,
-			newRelationship = newFriend,
-			state = self:serializeState(state),
-		}
-	end
-	
-	if actionId == "meet_someone" or actionId == "start_dating" then
-		-- Check if already has a partner
-		if state.Relationships and state.Relationships.partner then
-			return { success = false, message = "You're already in a relationship!" }
-		end
-		
-		-- Create a new romantic partner using EventEngine
-		local newPartner = EventEngine.createRelationship(state, "romance", {
-			startLevel = RANDOM:NextInteger(50, 75),
-		})
-		
-		local feed = string.format("You started dating %s!", newPartner.name)
-		self:applyStatChanges(state, { Happiness = 8 })
-		self:pushState(player, feed, {
-			showPopup = true,
-			emoji = "💕",
-			title = "New Relationship!",
-			body = feed,
-			happiness = 8,
-			wasSuccess = true,
-		})
-		return {
-			success = true,
-			message = feed,
-			newRelationship = newPartner,
-			state = self:serializeState(state),
-		}
-	end
-
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- STANDARD INTERACTIONS: Modify existing relationships
-	-- ═══════════════════════════════════════════════════════════════════════════════
+	local targetStrength = tonumber(payload.relationshipStrength)
 
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then
@@ -2024,7 +2064,19 @@ function LifeBackend:handleInteraction(player, payload)
 		return { success = false, message = "Unknown interaction." }
 	end
 
-	if action.cost and state.Money < action.cost then
+	state.Flags = state.Flags or {}
+	state.Relationships = state.Relationships or {}
+
+	-- Single-only actions (meet_someone etc.)
+	if action.requiresSingle then
+		local partner = state.Relationships.partner
+		if partner and partner.alive ~= false then
+			return { success = false, message = "You're already in a relationship." }
+		end
+	end
+
+	-- Money / cost checks
+	if action.cost and (state.Money or 0) < action.cost then
 		return { success = false, message = "You can't afford that gesture." }
 	end
 
@@ -2032,36 +2084,104 @@ function LifeBackend:handleInteraction(player, payload)
 		self:addMoney(state, -action.cost)
 	end
 
-	local relationship = self:ensureRelationship(state, relType, targetId)
+	local ensureOptions = {
+		forceNewRelationship = action.forceNewRelationship,
+		relationshipOptions = {
+			id = targetId,
+			name = payload.targetName,
+			role = payload.targetRole,
+			startLevel = targetStrength,
+		},
+	}
+
+	local relationship = self:ensureRelationship(state, relType, targetId, ensureOptions)
 	if not relationship then
 		return { success = false, message = "No one to interact with." }
 	end
 
-	relationship.relationship = clamp((relationship.relationship or 50) + (action.delta or 0), -100, 100)
+	-- Apply relationship strength change
+	if action.delta then
+		relationship.relationship = clamp((relationship.relationship or 50) + action.delta, -100, 100)
+	end
 
+	-- Stat changes
 	if action.stats then
 		self:applyStatChanges(state, action.stats)
 	end
 
+	-- Optional reward / grant
+	local grantMessage
 	if action.grant then
-		action.grant(state)
+		local ok, result = pcall(action.grant, state, relationship, payload)
+		if not ok then
+			warn("[LifeBackend] Interaction grant failed:", result)
+		elseif type(result) == "string" then
+			grantMessage = result
+		elseif type(result) == "table" and result.message then
+			grantMessage = result.message
+		end
 	end
 
+	-- Removal (breakup / ghost, etc.) – ONLY this relationship
 	if action.remove then
-		state.Relationships[relationship.id] = nil
+		if relationship.id and state.Relationships[relationship.id] then
+			state.Relationships[relationship.id] = nil
+		end
+
+		if relType == "romance" and state.Relationships.partner == relationship then
+			state.Relationships.partner = nil
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.married = nil
+			state.Flags.engaged = nil
+		end
 	end
 
+	-- Convert enemy -> friend, etc.
 	if action.convert == "friend" then
 		relationship.type = "friend"
 		relationship.role = "Friend"
 	end
 
-	local feed = action.message or "You interacted."
+	-- Flags
+	if action.flag then
+		state.Flags[action.flag] = true
+	end
+
+	if action.flags then
+		for flagName, value in pairs(action.flags) do
+			state.Flags[flagName] = value
+		end
+	end
+
+	if action.clearFlags then
+		for _, flagName in ipairs(action.clearFlags) do
+			state.Flags[flagName] = nil
+		end
+	end
+
+	-- Feed message
+	local feed
+	if type(action.message) == "function" then
+		local ok, message = pcall(action.message, state, relationship, action, payload)
+		if ok then
+			feed = message
+		else
+			warn("[LifeBackend] Interaction message handler failed:", message)
+		end
+	end
+
+	feed = feed or grantMessage or action.message or "You interacted."
 	self:pushState(player, feed)
+
+	-- IMPORTANT: do NOT return full state here – the UI should rely on SyncState,
+	-- or only use this small payload for local row updates.
 	return {
 		success = true,
 		message = feed,
-		state = self:serializeState(state),
+		targetId = relationship.id,
+		relationshipValue = relationship.relationship,
 	}
 end
 
@@ -2080,22 +2200,29 @@ function LifeBackend:startStoryPath(player, pathId)
 		return { success = false, message = "Unknown path." }
 	end
 
-	if state.Age < path.minAge then
+	local req = path.requirements or {}
+
+	if (state.Age or 0) < (path.minAge or 0) then
 		return { success = false, message = "You're too young for this path." }
 	end
 
-	if path.requirements.education and not self:meetsEducationRequirement(state, path.requirements.education) then
+	if req.education and not self:meetsEducationRequirement(state, req.education) then
 		return { success = false, message = "You need more education first." }
 	end
 
-	if path.requirements.smarts and state.Stats.Smarts < path.requirements.smarts then
+	if req.smarts and (state.Stats and state.Stats.Smarts or 0) < req.smarts then
 		return { success = false, message = "You need to be smarter to walk this path." }
 	end
 
-	if path.requirements.looks and state.Stats.Looks < path.requirements.looks then
+	if req.looks and (state.Stats and state.Stats.Looks or 0) < req.looks then
 		return { success = false, message = "You need higher looks for this path." }
 	end
 
+	if req.happiness and (state.Stats and state.Stats.Happiness or 0) < req.happiness then
+		return { success = false, message = "You need to be happier for this path." }
+	end
+
+	state.Paths = state.Paths or {}
 	state.Paths[pathId] = 0
 	state.Paths.active = pathId
 	state.ActivePath = pathId
@@ -2111,6 +2238,8 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 		return { success = false, message = "Life data missing." }
 	end
 
+	state.Paths = state.Paths or {}
+
 	if state.Paths.active ~= pathId then
 		return { success = false, message = "You're not on that path." }
 	end
@@ -2125,7 +2254,7 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 		return { success = false, message = "Unknown path action." }
 	end
 
-	if action.cost and state.Money < action.cost then
+	if action.cost and (state.Money or 0) < action.cost then
 		return { success = false, message = "Insufficient funds for that move." }
 	end
 
@@ -2138,7 +2267,8 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 	end
 
 	local progress = state.Paths[pathId] or 0
-	local stages = StoryPaths[pathId].stages
+	local path = StoryPaths[pathId]
+	local stages = path.stages
 
 	if action.reward then
 		local payout = RANDOM:NextInteger(action.reward[1], action.reward[2])
@@ -2163,7 +2293,7 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 		state.Paths[pathId] = #stages
 		state.Paths.active = nil
 		state.ActivePath = nil
-		local feed = string.format("You completed the %s path!", StoryPaths[pathId].name)
+		local feed = string.format("You completed the %s path!", path.name)
 		self:pushState(player, feed, {
 			showPopup = true,
 			emoji = "🌟",
