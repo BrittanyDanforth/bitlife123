@@ -1126,11 +1126,27 @@ function LifeBackend:handleAgeUp(player)
 	end
 
 	-- Get just ONE event from the year queue (BitLife style)
+	-- CRITICAL: Pass the CURRENT age (after increment) to ensure proper age validation
 	local yearlyEvents = LifeEvents.buildYearQueue(state, { maxEvents = 1 }) or {}
 	if #yearlyEvents > 0 then
 		local eventDef = yearlyEvents[1]
-		eventDef.source = "lifeevents"
-		table.insert(queue, eventDef)
+		-- CRITICAL: Final age validation check before adding to queue
+		local eventAge = state.Age or 0
+		local cond = eventDef.conditions or {}
+		local minAge = eventDef.minAge or cond.minAge
+		local maxAge = eventDef.maxAge or cond.maxAge
+		
+		-- Double-check age bounds (extra safety layer)
+		if minAge ~= nil and eventAge < minAge then
+			warn(string.format("[LifeBackend] ❌ CRITICAL: Event '%s' selected but age %d < minAge %d! Skipping event.", eventDef.id or "unknown", eventAge, minAge))
+			-- Don't add invalid event to queue
+		elseif maxAge ~= nil and eventAge > maxAge then
+			warn(string.format("[LifeBackend] ❌ CRITICAL: Event '%s' selected but age %d > maxAge %d! Skipping event.", eventDef.id or "unknown", eventAge, maxAge))
+			-- Don't add invalid event to queue
+		else
+			eventDef.source = "lifeevents"
+			table.insert(queue, eventDef)
+		end
 	end
 
 	if #queue == 0 then

@@ -153,11 +153,20 @@ local function loadEventModule(moduleName, categoryName)
 	local count = 0
 	for _, event in ipairs(events) do
 		if event.id then
-			event._category = category
-			event._source = moduleName
-			AllEvents[event.id] = event
-			table.insert(EventsByCategory[category], event)
-			count += 1
+			-- CRITICAL: Check for duplicate event IDs and warn/prevent conflicts
+			if AllEvents[event.id] then
+				warn(string.format("[LifeEvents] ⚠️ DUPLICATE EVENT ID '%s' detected! Already loaded from '%s', now trying to load from '%s'. Keeping the first one.", 
+					event.id, 
+					AllEvents[event.id]._source or "unknown", 
+					moduleName))
+				-- Skip duplicate - don't add it again
+			else
+				event._category = category
+				event._source = moduleName
+				AllEvents[event.id] = event
+				table.insert(EventsByCategory[category], event)
+				count += 1
+			end
 		end
 	end
 	
@@ -318,9 +327,26 @@ local function canEventTrigger(event, state)
 	-- BASIC CHECKS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Age range check (check both event.minAge/maxAge and conditions.minAge/maxAge)
-	if minAge and age < minAge then return false end
-	if maxAge and age > maxAge then return false end
+	-- CRITICAL AGE VALIDATION: Strict bounds checking (inclusive)
+	-- Age MUST be >= minAge (if specified) AND <= maxAge (if specified)
+	if minAge ~= nil then
+		if age < minAge then 
+			-- Debug: Log age validation failures for milestone events
+			if event.isMilestone or event.priority == "high" then
+				warn(string.format("[LifeEvents] ❌ Age check FAILED for event '%s': age %d < minAge %d", event.id or "unknown", age, minAge))
+			end
+			return false 
+		end
+	end
+	if maxAge ~= nil then
+		if age > maxAge then 
+			-- Debug: Log age validation failures for milestone events
+			if event.isMilestone or event.priority == "high" then
+				warn(string.format("[LifeEvents] ❌ Age check FAILED for event '%s': age %d > maxAge %d", event.id or "unknown", age, maxAge))
+			end
+			return false 
+		end
+	end
 	
 	-- One-time event already completed
 	if event.oneTime and history.completed[event.id] then
@@ -626,7 +652,33 @@ function LifeEvents.buildYearQueue(state, options)
 	for _, categoryName in ipairs(categories) do
 		local categoryEvents = EventsByCategory[categoryName] or {}
 		for _, event in ipairs(categoryEvents) do
-			if canEventTrigger(event, state) then
+			-- CRITICAL: Double-check age validation before adding to candidates
+			-- This ensures events with wrong ages are NEVER selected
+			local age = state.Age or 0
+			local cond = event.conditions or {}
+			local minAge = event.minAge or cond.minAge
+			local maxAge = event.maxAge or cond.maxAge
+			
+			-- Strict age check BEFORE canEventTrigger (which also checks, but this is extra safety)
+			local ageValid = true
+			if minAge ~= nil and age < minAge then
+				-- Age too young - skip this event
+				ageValid = false
+				-- Debug: Log age validation failures for milestone events
+				if event.isMilestone or event.priority == "high" then
+					warn(string.format("[LifeEvents] ❌ Pre-filter age check FAILED for event '%s': age %d < minAge %d", event.id or "unknown", age, minAge))
+				end
+			end
+			if maxAge ~= nil and age > maxAge then
+				-- Age too old - skip this event
+				ageValid = false
+				-- Debug: Log age validation failures for milestone events
+				if event.isMilestone or event.priority == "high" then
+					warn(string.format("[LifeEvents] ❌ Pre-filter age check FAILED for event '%s': age %d > maxAge %d", event.id or "unknown", age, maxAge))
+				end
+			end
+			
+			if ageValid and canEventTrigger(event, state) then
 				local weight = calculateEventWeight(event, state)
 				local candidate = {
 					event = event,
