@@ -1,9 +1,16 @@
 --[[
-	Childhood Events (Ages 0-12)
-	Formative moments that shape personality and hint at future paths
+    Childhood Events (Ages 0-12)
+    Formative moments that shape personality and hint at future paths
+
+    Integrated with:
+    - core milestone tracking via `isMilestone` + milestoneKey
+    - career catalog via `hintCareer` on choices + event-level careerTags
+    - soft tagging via `stage`, `ageBand`, `category`, `tags`
 ]]
 
 local Childhood = {}
+
+local STAGE = "childhood"
 
 Childhood.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
@@ -19,6 +26,15 @@ Childhood.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- NEW META
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "development",
+		milestoneKey = "CHILD_FIRST_WORDS",
+		tags = { "core", "family", "speech", "early_years" },
+		careerTags = { "veterinary" },
+
 		choices = {
 			{ text = '"Mama"', effects = { Happiness = 5 }, setFlags = { first_word = "mama" }, feedText = "You said your first word: 'Mama'. Your mother was overjoyed." },
 			{ text = '"Dada"', effects = { Happiness = 5 }, setFlags = { first_word = "dada" }, feedText = "You said your first word: 'Dada'. Your father beamed with pride." },
@@ -26,6 +42,7 @@ Childhood.events = {
 			{ text = "An attempt at the dog's name", effects = { Happiness = 4 }, setFlags = { first_word = "pet", animal_lover = true }, hintCareer = "veterinary", feedText = "You tried to say the dog's name. Pets already have your heart." },
 		},
 	},
+
 	{
 		id = "first_steps",
 		title = "First Steps",
@@ -36,12 +53,21 @@ Childhood.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "development",
+		milestoneKey = "CHILD_FIRST_STEPS",
+		tags = { "core", "mobility", "early_years" },
+
 		choices = {
 			{ text = "Carefully and cautiously", effects = { Smarts = 2 }, setFlags = { cautious_personality = true }, feedText = "You took careful, measured first steps. Safety first!" },
 			{ text = "Boldly charge forward", effects = { Health = -2, Happiness = 5 }, setFlags = { adventurous_spirit = true }, feedText = "You ran before you could walk - and took a tumble. But you got right back up!" },
 			{ text = "Wait for encouragement", effects = { Happiness = 3 }, setFlags = { seeks_approval = true }, feedText = "With your parents cheering, you walked right into their arms." },
 		},
 	},
+
 	{
 		id = "toddler_tantrum",
 		title = "The Terrible Twos",
@@ -51,6 +77,14 @@ Childhood.events = {
 		minAge = 2, maxAge = 3,
 		baseChance = 0.8,
 		cooldown = 2,
+
+		-- META
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "behavior",
+		tags = { "family", "store", "impulse_control" },
+		careerTags = { "law" },
+
 		choices = {
 			{ text = "Throw a massive tantrum", effects = { Happiness = -5 }, setFlags = { throws_tantrums = true }, feedText = "You threw an epic tantrum. Your parents were mortified." },
 			{ text = "Pout but accept it", effects = { Happiness = -2, Smarts = 1 }, setFlags = { learns_patience = true }, feedText = "You pouted, but learned that tantrums don't always work." },
@@ -58,6 +92,7 @@ Childhood.events = {
 			{ text = "Get distracted by something else", effects = { Happiness = 2 }, feedText = "A shiny object caught your eye. Crisis averted." },
 		},
 	},
+
 	{
 		id = "preschool_start",
 		title = "First Day of Preschool",
@@ -67,6 +102,14 @@ Childhood.events = {
 		minAge = 3, maxAge = 4,
 		oneTime = true,
 		priority = "high",
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "school",
+		milestoneKey = "CHILD_PRESCHOOL_START",
+		tags = { "school", "separation", "social" },
+
 		choices = {
 			{ text = "Cry and cling to mom/dad", effects = { Happiness = -5 }, feedText = "The first day was rough. Lots of tears, but you survived." },
 			{ text = "March in confidently", effects = { Happiness = 5, Smarts = 2 }, setFlags = { socially_confident = true }, feedText = "You walked in like you owned the place. New friends incoming!" },
@@ -74,6 +117,7 @@ Childhood.events = {
 			{ text = "Immediately find the art supplies", effects = { Happiness = 5, Looks = 1 }, setFlags = { artistic_interest = true }, hintCareer = "creative", feedText = "You made a beeline for the crayons. A creative soul!" },
 		},
 	},
+
 	{
 		id = "imaginary_friend",
 		title = "Imaginary Friend",
@@ -83,6 +127,14 @@ Childhood.events = {
 		minAge = 3, maxAge = 5,
 		oneTime = true,
 		baseChance = 0.6,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "psychology",
+		tags = { "imagination", "social", "coping" },
+		careerTags = { "creative", "veterinary" },
+
 		choices = {
 			{ text = "A brave superhero", effects = { Happiness = 5 }, setFlags = { hero_complex = true }, feedText = "Your imaginary superhero friend makes you feel invincible." },
 			{ text = "A wise wizard", effects = { Smarts = 3 }, setFlags = { loves_fantasy = true }, hintCareer = "creative", feedText = "Your wizard friend teaches you 'magic' - really just creative problem solving." },
@@ -104,6 +156,15 @@ Childhood.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "school",
+		milestoneKey = "CHILD_ELEMENTARY_START",
+		tags = { "core", "school", "transition" },
+		careerTags = { "education", "sports", "creative" },
+
 		choices = {
 			{ text = "Making new friends", effects = { Happiness = 5 }, setFlags = { social_focus = true }, feedText = "You're ready to meet tons of new friends!" },
 			{ text = "Learning to read", effects = { Smarts = 5 }, setFlags = { academic_focus = true }, hintCareer = "education", feedText = "Books are about to become your best friends." },
@@ -111,6 +172,7 @@ Childhood.events = {
 			{ text = "Art class", effects = { Happiness = 4, Looks = 2 }, setFlags = { artistic_focus = true }, hintCareer = "creative", feedText = "You're excited to express yourself creatively." },
 		},
 	},
+
 	{
 		id = "first_best_friend",
 		title = "A New Best Friend",
@@ -119,6 +181,14 @@ Childhood.events = {
 		question = "What do you two do together?",
 		minAge = 5, maxAge = 8,
 		oneTime = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "relationships",
+		tags = { "friends", "school", "social" },
+		careerTags = { "tech", "sports", "science" },
+
 		choices = {
 			{ text = "Play imaginative games", effects = { Happiness = 5, Smarts = 2 }, setFlags = { creative_play = true, has_best_friend = true }, feedText = "You and your new best friend create entire worlds together." },
 			{ text = "Build things with blocks/Legos", effects = { Smarts = 5, Happiness = 3 }, setFlags = { builder = true, has_best_friend = true }, hintCareer = "tech", feedText = "You're a building team! Engineering minds in the making." },
@@ -126,6 +196,7 @@ Childhood.events = {
 			{ text = "Read and explore together", effects = { Smarts = 5 }, setFlags = { curious = true, has_best_friend = true }, hintCareer = "science", feedText = "You're partners in curiosity, always discovering new things." },
 		},
 	},
+
 	{
 		id = "losing_tooth",
 		title = "First Lost Tooth",
@@ -135,12 +206,21 @@ Childhood.events = {
 		minAge = 5, maxAge = 7,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "development",
+		milestoneKey = "CHILD_FIRST_TOOTH_LOST",
+		tags = { "body_change", "family", "money_small" },
+
 		choices = {
 			{ text = "Put it under my pillow for the tooth fairy", effects = { Happiness = 5, Money = 5 }, feedText = "The tooth fairy left you some money!" },
 			{ text = "Keep it in a special box", effects = { Happiness = 3 }, setFlags = { sentimental = true }, feedText = "You're saving your teeth for some reason." },
 			{ text = "Show it off to everyone", effects = { Happiness = 5, Looks = 1 }, feedText = "You proudly showed off your gap-toothed smile!" },
 		},
 	},
+
 	{
 		id = "learned_bike",
 		title = "Learning to Ride a Bike",
@@ -150,6 +230,14 @@ Childhood.events = {
 		minAge = 5, maxAge = 8,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "skills",
+		milestoneKey = "CHILD_LEARNED_BIKE",
+		tags = { "mobility", "outdoors", "independence" },
+
 		choices = {
 			{ text = "Got it on the first try!", effects = { Happiness = 8, Health = 3 }, setFlags = { natural_athlete = true }, feedText = "You're a natural! Freedom on two wheels!" },
 			{ text = "Fell a lot, but kept trying", effects = { Happiness = 5, Health = -2 }, setFlags = { persistent = true }, feedText = "You got some scrapes, but you never gave up!" },
@@ -157,6 +245,7 @@ Childhood.events = {
 			{ text = "Too scared, gave up", effects = { Happiness = -3 }, setFlags = { bike_phobia = true }, feedText = "Bikes aren't for everyone... yet." },
 		},
 	},
+
 	{
 		id = "school_bully",
 		title = "Trouble on the Playground",
@@ -166,6 +255,14 @@ Childhood.events = {
 		minAge = 6, maxAge = 10,
 		baseChance = 0.6,
 		cooldown = 3,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "relationships",
+		tags = { "conflict", "school", "bullying" },
+		careerTags = { "social_work" },
+
 		choices = {
 			{ text = "Stand up to them", effects = { Happiness = 5 }, setFlags = { brave = true }, feedText = "You stood up to the bully. It was scary, but you earned respect." },
 			{ text = "Tell a teacher", effects = { Happiness = 2, Smarts = 2 }, setFlags = { trusts_authority = true }, feedText = "You told an adult. The bully got in trouble." },
@@ -173,6 +270,7 @@ Childhood.events = {
 			{ text = "Try to befriend them", effects = { Smarts = 3 }, setFlags = { peacemaker = true }, hintCareer = "social_work", feedText = "You tried to understand why they're mean. Sometimes kindness works." },
 		},
 	},
+
 	{
 		id = "class_pet",
 		title = "Classroom Pet",
@@ -182,6 +280,14 @@ Childhood.events = {
 		minAge = 6, maxAge = 9,
 		baseChance = 0.7,
 		cooldown = 5,
+
+		-- META
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "responsibility",
+		tags = { "animals", "school", "responsibility" },
+		careerTags = { "veterinary" },
+
 		choices = {
 			{ text = "Eagerly volunteer", effects = { Happiness = 5 }, setFlags = { responsible = true, animal_lover = true }, hintCareer = "veterinary", feedText = "You became the official hamster caretaker. Such responsibility!" },
 			{ text = "Help out sometimes", effects = { Happiness = 3 }, feedText = "You helped take care of the hamster when you could." },
@@ -201,6 +307,15 @@ Childhood.events = {
 		minAge = 6, maxAge = 12,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "identity",
+		milestoneKey = "CHILD_DISCOVERED_PASSION",
+		tags = { "core", "identity", "talent" },
+		careerTags = { "sports", "creative", "science", "tech", "medical", "entertainment" },
+
 		choices = {
 			{ text = "Sports and athletics", effects = { Health = 5, Happiness = 5 }, setFlags = { passionate_athlete = true }, hintCareer = "sports", feedText = "You fell in love with sports!" },
 			{ text = "Art and creativity", effects = { Happiness = 7, Looks = 3 }, setFlags = { passionate_artist = true }, hintCareer = "creative", feedText = "Your creative soul awakened!" },
@@ -210,6 +325,7 @@ Childhood.events = {
 			{ text = "Music and performance", effects = { Happiness = 7, Looks = 2 }, setFlags = { passionate_performer = true }, hintCareer = "entertainment", feedText = "The stage calls to you!" },
 		},
 	},
+
 	{
 		id = "science_fair",
 		title = "Science Fair Project",
@@ -219,6 +335,14 @@ Childhood.events = {
 		minAge = 7, maxAge = 11,
 		baseChance = 0.7,
 		cooldown = 3,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "school",
+		tags = { "science", "project", "school" },
+		careerTags = { "science", "tech" },
+
 		choices = {
 			{ text = "Volcano eruption", effects = { Smarts = 3, Happiness = 5 }, setFlags = { likes_chemistry = true }, hintCareer = "science", feedText = "Your baking soda volcano was the hit of the fair!" },
 			{ text = "Growing plants experiment", effects = { Smarts = 5 }, setFlags = { patient_researcher = true }, hintCareer = "science", feedText = "You carefully documented how different conditions affect plant growth." },
@@ -226,6 +350,7 @@ Childhood.events = {
 			{ text = "Skip it", effects = { Smarts = -2 }, feedText = "You didn't participate in the science fair this year." },
 		},
 	},
+
 	{
 		id = "summer_camp",
 		title = "Summer Camp",
@@ -235,6 +360,14 @@ Childhood.events = {
 		minAge = 8, maxAge = 12,
 		baseChance = 0.5,
 		cooldown = 2,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "activities",
+		tags = { "summer", "camp", "skills" },
+		careerTags = { "science", "creative", "sports", "tech" },
+
 		choices = {
 			{ text = "Outdoor adventure camp", effects = { Health = 5, Happiness = 5 }, setFlags = { nature_lover = true }, feedText = "You learned to hike, camp, and survive in nature!" },
 			{ text = "Science camp", effects = { Smarts = 7 }, setFlags = { science_enthusiast = true }, hintCareer = "science", feedText = "You spent the summer doing cool experiments!" },
@@ -243,6 +376,7 @@ Childhood.events = {
 			{ text = "Computer/coding camp", effects = { Smarts = 7 }, setFlags = { coder = true }, hintCareer = "tech", feedText = "You learned to code! The digital world opens up." },
 		},
 	},
+
 	{
 		id = "pet_encounter",
 		title = "A Pet of Your Own",
@@ -252,6 +386,14 @@ Childhood.events = {
 		minAge = 8, maxAge = 12,
 		oneTime = true,
 		baseChance = 0.5,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "responsibility",
+		tags = { "animals", "family", "responsibility" },
+		careerTags = { "veterinary" },
+
 		choices = {
 			{ text = "A dog", effects = { Happiness = 10, Health = 3 }, setFlags = { has_dog = true, animal_lover = true, has_pet = true }, hintCareer = "veterinary", feedText = "You got a dog! A loyal companion for years to come." },
 			{ text = "A cat", effects = { Happiness = 8 }, setFlags = { has_cat = true, animal_lover = true, has_pet = true }, feedText = "You got a cat! Independent, but loving." },
@@ -259,6 +401,7 @@ Childhood.events = {
 			{ text = "A hamster or guinea pig", effects = { Happiness = 5 }, setFlags = { has_small_pet = true, animal_lover = true, has_pet = true }, feedText = "Your little furry friend is adorable!" },
 		},
 	},
+
 	{
 		id = "first_crush",
 		title = "Butterfly Feelings",
@@ -268,6 +411,13 @@ Childhood.events = {
 		minAge = 9, maxAge = 12,
 		oneTime = true,
 		baseChance = 0.7,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "relationships",
+		tags = { "romance", "school", "feelings" },
+
 		choices = {
 			{ text = "Write them a secret note", effects = { Happiness = 3 }, setFlags = { romantic_soul = true }, feedText = "You slipped a note to your crush. Heart pounding!" },
 			{ text = "Tell your best friend", effects = { Happiness = 3 }, setFlags = { shares_feelings = true }, feedText = "You confided in your best friend about your crush." },
@@ -275,6 +425,7 @@ Childhood.events = {
 			{ text = "Ew, no thanks", effects = { Happiness = 2 }, feedText = "Romance? You've got better things to think about." },
 		},
 	},
+
 	{
 		id = "allowance_decision",
 		title = "First Allowance",
@@ -283,6 +434,14 @@ Childhood.events = {
 		question = "How do you handle your money?",
 		minAge = 8, maxAge = 11,
 		oneTime = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "money",
+		tags = { "money", "family", "habits" },
+		careerTags = { "finance" },
+
 		choices = {
 			{ text = "Save it all", effects = { Smarts = 3, Money = 50 }, setFlags = { saver = true }, hintCareer = "finance", feedText = "You save every penny. Future financial whiz!" },
 			{ text = "Spend it on candy and toys", effects = { Happiness = 5, Money = -20 }, setFlags = { spender = true }, feedText = "You enjoy your money while you have it!" },
