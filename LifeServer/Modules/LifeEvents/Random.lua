@@ -62,15 +62,27 @@ Random.events = {
 				setFlags = { has_heirloom = true },
 				feedText = "An interesting piece of family history.",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "item", {
-						id = "family_heirloom_" .. tostring(state.Age),
-						name = "Family Heirloom",
-						emoji = "🏺",
-						price = 0,
-						value = 2500,
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Items", {
+							id = "family_heirloom_" .. tostring(state.Age),
+							name = "Family Heirloom",
+							emoji = "🏺",
+							price = 0,
+							value = 2500,
+							isEventAcquired = true,
+						})
+					else
+						state.Assets = state.Assets or {}
+						state.Assets.Items = state.Assets.Items or {}
+						table.insert(state.Assets.Items, {
+							id = "family_heirloom_" .. tostring(state.Age),
+							name = "Family Heirloom",
+							emoji = "🏺",
+							price = 0,
+							value = 2500,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -79,16 +91,29 @@ Random.events = {
 				setFlags = { inherited_property = true, homeowner = true, has_property = true },
 				feedText = "You inherited a property!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "property", {
-						id = "inherited_house_" .. tostring(state.Age),
-						name = "Inherited House",
-						emoji = "🏚️",
-						price = 0,
-						value = 120000,
-						income = 800, -- can rent it out
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "inherited_house_" .. tostring(state.Age),
+							name = "Inherited House",
+							emoji = "🏚️",
+							price = 0,
+							value = 120000,
+							income = 800, -- can rent it out
+							isEventAcquired = true,
+						})
+					else
+						state.Assets = state.Assets or {}
+						state.Assets.Properties = state.Assets.Properties or {}
+						table.insert(state.Assets.Properties, {
+							id = "inherited_house_" .. tostring(state.Age),
+							name = "Inherited House",
+							emoji = "🏚️",
+							price = 0,
+							value = 120000,
+							income = 800,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -181,13 +206,25 @@ Random.events = {
 				effects = { Money = -5000, Happiness = 5 },
 				feedText = "Time for an upgrade anyway!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					-- Remove old car (first one found)
 					local vehicles = state.Assets and state.Assets.Vehicles
 					if vehicles and #vehicles > 0 then
-						local oldCar = table.remove(vehicles, 1)
-						-- Add new car
-						EventEngine.addAsset(state, "vehicle", {
+						table.remove(vehicles, 1) -- remove first car
+					end
+					-- Add new car
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "replacement_car_" .. tostring(state.Age),
+							name = "New Reliable Car",
+							emoji = "🚗",
+							price = 5000,
+							value = 4500,
+							condition = 85,
+							isEventAcquired = true,
+						})
+					else
+						state.Assets = state.Assets or {}
+						state.Assets.Vehicles = state.Assets.Vehicles or {}
+						table.insert(state.Assets.Vehicles, {
 							id = "replacement_car_" .. tostring(state.Age),
 							name = "New Reliable Car",
 							emoji = "🚗",
@@ -204,13 +241,10 @@ Random.events = {
 				effects = { Money = 300, Happiness = -5 },
 				feedText = "You sold the heap and went back to public transit.",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					-- Remove all vehicles (simplification - in reality would track specific one)
 					local vehicles = state.Assets and state.Assets.Vehicles
 					if vehicles and #vehicles > 0 then
-						table.remove(vehicles, 1) -- Remove first car
+						table.remove(vehicles, 1)
 					end
-					-- Clear vehicle flags if no vehicles left
 					if not vehicles or #vehicles == 0 then
 						state.Flags.has_car = nil
 						state.Flags.has_vehicle = nil
