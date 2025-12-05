@@ -156,8 +156,9 @@ function LifeState:AdvanceAge()
 	-- EDUCATION AUTO-PROGRESSION (BitLife-style automatic school progression)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL: Education progression cannot happen while in jail
 	-- Age 5: Start elementary school
-	if self.Age == 5 and self.Education == "none" then
+	if self.Age == 5 and self.Education == "none" and not (self.InJail == true) then
 		self.EducationData = self.EducationData or {}
 		self.EducationData.Status = "enrolled"
 		self.EducationData.Institution = "Elementary School"
@@ -165,21 +166,21 @@ function LifeState:AdvanceAge()
 	end
 	
 	-- Age 11: Middle school transition (just update institution)
-	if self.Age == 11 and self.Education == "none" then
+	if self.Age == 11 and self.Education == "none" and not (self.InJail == true) then
 		self.EducationData = self.EducationData or {}
 		self.EducationData.Institution = "Middle School"
 	end
 	
 	-- Age 14: Start high school (still no diploma yet!)
-	if self.Age == 14 and self.Education == "none" then
+	if self.Age == 14 and self.Education == "none" and not (self.InJail == true) then
 		self.EducationData = self.EducationData or {}
 		self.EducationData.Institution = "High School"
 		self.Flags.in_high_school = true
 	end
 	
 	-- Age 18: Auto-graduate high school if player hasn't already via event
-	-- This ensures EVERYONE gets high school education by 18
-	if self.Age == 18 then
+	-- This ensures EVERYONE gets high school education by 18 (unless in jail)
+	if self.Age == 18 and not (self.InJail == true) then
 		self.EducationData = self.EducationData or {}
 		if self.Education == "none" or self.EducationData.Status == "enrolled" then
 			self.Education = "high_school"

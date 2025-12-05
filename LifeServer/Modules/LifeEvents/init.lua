@@ -320,6 +320,21 @@ local function canEventTrigger(event, state)
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL STATE CHECKS - Must be first!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL: Dead players cannot trigger events
+	if state.IsDead == true then
+		return false
+	end
+	
+	-- CRITICAL: Events requiring a job cannot trigger if player is in jail
+	-- (Job is cleared when going to jail, but we need explicit jail check)
+	if event.requiresJob and (state.InJail == true or flags.in_prison == true) then
+		return false
+	end
+	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
 	local minAge = event.minAge or cond.minAge
@@ -441,6 +456,10 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresJob then
+		-- CRITICAL: Cannot have job events if in jail (job is cleared when jailed)
+		if state.InJail == true or flags.in_prison == true then
+			return false
+		end
 		if not state.CurrentJob then
 			return false -- MUST have a job
 		end
@@ -635,6 +654,11 @@ function LifeEvents.buildYearQueue(state, options)
 		return {}
 	end
 	
+	-- CRITICAL: Dead players cannot get events
+	if state.IsDead == true then
+		return {}
+	end
+	
 	local age = state.Age or 0
 	local stage = LifeEvents.getLifeStage(age)
 	local selectedEvents = {}
@@ -642,8 +666,9 @@ function LifeEvents.buildYearQueue(state, options)
 	-- Get categories relevant to this life stage
 	local categories = StageCategories[stage.id] or { "random" }
 	
-	-- Add career category only if player has a job
-	if state.CurrentJob and age >= 18 then
+	-- Add career category only if player has a job AND is not in jail
+	-- CRITICAL: Career events shouldn't trigger while incarcerated
+	if state.CurrentJob and age >= 18 and not (state.InJail == true or (state.Flags and state.Flags.in_prison == true)) then
 		local hasCareer = false
 		for _, cat in ipairs(categories) do
 			if cat == "career" then hasCareer = true break end
