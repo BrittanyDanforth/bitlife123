@@ -1091,7 +1091,16 @@ function EventEngine.createRelationship(state, relType, options)
 	state.Relationships = state.Relationships or {}
 	
 	local age = state.Age or 20
-	local id = relType .. "_" .. tostring(RANDOM:NextInteger(1000, 9999)) .. "_" .. tostring(tick())
+	
+	-- CRITICAL FIX: For romance/partner, use "partner" as the ID to prevent duplicates!
+	-- Previously, this created BOTH state.Relationships["romance_XXXX"] AND state.Relationships.partner
+	-- pointing to the same object, causing duplicate display in RelationshipsScreen
+	local id
+	if relType == "romance" or relType == "partner" then
+		id = "partner"  -- Use consistent ID for partners
+	else
+		id = relType .. "_" .. tostring(RANDOM:NextInteger(1000, 9999)) .. "_" .. tostring(tick())
+	end
 	
 	local gender
 	local name = options.name
@@ -1123,13 +1132,15 @@ function EventEngine.createRelationship(state, relType, options)
 		metYear = state.Year or 2025,
 	}
 	
-	state.Relationships[id] = relationship
-	
-	-- Set as partner if it's a romance
+	-- CRITICAL FIX: Only store in ONE location, not two!
+	-- For partners, store at Relationships.partner (which is also Relationships["partner"])
+	-- For friends/others, store at Relationships[id]
 	if relType == "romance" or relType == "partner" then
 		state.Relationships.partner = relationship
 		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
+	else
+		state.Relationships[id] = relationship
 	end
 	
 	return relationship

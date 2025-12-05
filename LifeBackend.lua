@@ -417,15 +417,23 @@ end
 -- ============================================================================
 
 local JobCatalogList = {
-	-- ENTRY LEVEL / PART-TIME
-	{ id = "fastfood", name = "Fast Food Worker", company = "Burger Palace", emoji = "🍔", salary = 22000, minAge = 14, requirement = nil, category = "entry" },
-	{ id = "retail", name = "Retail Associate", company = "MegaMart", emoji = "🛒", salary = 26000, minAge = 16, requirement = nil, category = "entry" },
-	{ id = "cashier", name = "Cashier", company = "QuickMart", emoji = "💵", salary = 24000, minAge = 15, requirement = nil, category = "entry" },
-	{ id = "bagger", name = "Grocery Bagger", company = "Fresh Foods", emoji = "🛍️", salary = 18000, minAge = 14, requirement = nil, category = "entry" },
-	{ id = "movie_usher", name = "Movie Usher", company = "CineMax", emoji = "🎬", salary = 20000, minAge = 14, requirement = nil, category = "entry" },
-	{ id = "lifeguard", name = "Lifeguard", company = "City Pool", emoji = "🏊", salary = 28000, minAge = 16, requirement = nil, category = "entry" },
-	{ id = "camp_counselor", name = "Camp Counselor", company = "Summer Camp", emoji = "🏕️", salary = 22000, minAge = 16, requirement = nil, category = "entry" },
-	{ id = "newspaper_delivery", name = "Newspaper Delivery", company = "Daily News", emoji = "📰", salary = 15000, minAge = 12, requirement = nil, category = "entry" },
+	-- ENTRY LEVEL / PART-TIME (Easy to get - difficulty 1)
+	{ id = "fastfood", name = "Fast Food Worker", company = "Burger Palace", emoji = "🍔", salary = 22000, minAge = 14, requirement = nil, category = "entry",
+		difficulty = 1, description = "Anyone can flip burgers!" },
+	{ id = "retail", name = "Retail Associate", company = "MegaMart", emoji = "🛒", salary = 26000, minAge = 16, requirement = nil, category = "entry",
+		difficulty = 1, description = "Helping customers find what they need" },
+	{ id = "cashier", name = "Cashier", company = "QuickMart", emoji = "💵", salary = 24000, minAge = 15, requirement = nil, category = "entry",
+		difficulty = 1, description = "Ring up customers all day" },
+	{ id = "bagger", name = "Grocery Bagger", company = "Fresh Foods", emoji = "🛍️", salary = 18000, minAge = 14, requirement = nil, category = "entry",
+		difficulty = 1, description = "Perfect first job for teens" },
+	{ id = "movie_usher", name = "Movie Usher", company = "CineMax", emoji = "🎬", salary = 20000, minAge = 14, requirement = nil, category = "entry",
+		difficulty = 1, description = "Watch movies and help guests" },
+	{ id = "lifeguard", name = "Lifeguard", company = "City Pool", emoji = "🏊", salary = 28000, minAge = 16, requirement = nil, category = "entry",
+		difficulty = 2, minStats = { Health = 50 }, description = "Must be able to swim well" },
+	{ id = "camp_counselor", name = "Camp Counselor", company = "Summer Camp", emoji = "🏕️", salary = 22000, minAge = 16, requirement = nil, category = "entry",
+		difficulty = 1, description = "Fun summer job with kids" },
+	{ id = "newspaper_delivery", name = "Newspaper Delivery", company = "Daily News", emoji = "📰", salary = 15000, minAge = 12, requirement = nil, category = "entry",
+		difficulty = 1, description = "Early morning route delivery" },
 
 	-- SERVICE
 	{ id = "waiter", name = "Waiter/Waitress", company = "The Grand Restaurant", emoji = "🍽️", salary = 32000, minAge = 16, requirement = nil, category = "service" },
@@ -438,9 +446,11 @@ local JobCatalogList = {
 	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service" },
 
-	-- TRADES
-	{ id = "janitor", name = "Janitor", company = "CleanCo Services", emoji = "🧹", salary = 28000, minAge = 18, requirement = nil, category = "trades" },
-	{ id = "construction", name = "Construction Worker", company = "BuildRight Co", emoji = "👷", salary = 42000, minAge = 18, requirement = nil, category = "trades" },
+	-- TRADES - CRITICAL FIX: Physical labor jobs now require health
+	{ id = "janitor", name = "Janitor", company = "CleanCo Services", emoji = "🧹", salary = 28000, minAge = 18, requirement = nil, category = "trades",
+		difficulty = 1, description = "Entry level maintenance work" },
+	{ id = "construction", name = "Construction Worker", company = "BuildRight Co", emoji = "👷", salary = 42000, minAge = 18, requirement = nil, category = "trades",
+		minStats = { Health = 45 }, difficulty = 2, description = "Physically demanding work" },
 	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades" },
 	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades" },
 	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades" },
@@ -463,8 +473,10 @@ local JobCatalogList = {
 	{ id = "office_manager", name = "Office Manager", company = "CorpWorld Inc", emoji = "🏢", salary = 62000, minAge = 26, requirement = "bachelor", category = "office" },
 	{ id = "executive_assistant", name = "Executive Assistant", company = "CEO Office", emoji = "👔", salary = 72000, minAge = 26, requirement = "bachelor", category = "office" },
 	{ id = "project_manager", name = "Project Manager", company = "ManageAll Corp", emoji = "📊", salary = 85000, minAge = 28, requirement = "bachelor", category = "office" },
-	{ id = "operations_director", name = "Operations Director", company = "Global Corp", emoji = "🎯", salary = 145000, minAge = 35, requirement = "master", category = "office" },
-	{ id = "coo", name = "Chief Operating Officer", company = "Fortune 500", emoji = "🏆", salary = 350000, minAge = 42, requirement = "master", category = "office" },
+	{ id = "operations_director", name = "Operations Director", company = "Global Corp", emoji = "🎯", salary = 145000, minAge = 35, requirement = "master", category = "office",
+		difficulty = 7, minStats = { Smarts = 65 }, description = "Executive leadership position" },
+	{ id = "coo", name = "Chief Operating Officer", company = "Fortune 500", emoji = "🏆", salary = 350000, minAge = 42, requirement = "master", category = "office",
+		difficulty = 9, minStats = { Smarts = 75 }, description = "C-suite requires exceptional talent" },
 
 	-- TECHNOLOGY
 	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech" },
@@ -481,7 +493,8 @@ local JobCatalogList = {
 	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech" },
 	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech" },
 	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech" },
-	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech" },
+	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech",
+		difficulty = 9, minStats = { Smarts = 80 }, description = "Lead technology strategy for entire company" },
 
 	-- MEDICAL
 	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical" },
@@ -521,7 +534,8 @@ local JobCatalogList = {
 	{ id = "investment_banker", name = "Investment Banker", company = "Wall Street Bank", emoji = "💹", salary = 225000, minAge = 28, requirement = "master", category = "finance" },
 	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance" },
 	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance" },
-	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance" },
+	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance",
+		difficulty = 9, minStats = { Smarts = 80 }, description = "Top financial leadership position" },
 
 	-- CREATIVE
 	{ id = "graphic_designer_jr", name = "Junior Graphic Designer", company = "Design Studio", emoji = "🎨", salary = 42000, minAge = 21, requirement = "bachelor", category = "creative" },
@@ -535,31 +549,46 @@ local JobCatalogList = {
 	{ id = "social_media_manager", name = "Social Media Manager", company = "Digital Agency", emoji = "📱", salary = 55000, minAge = 22, requirement = "bachelor", category = "creative" },
 	{ id = "marketing_associate", name = "Marketing Associate", company = "AdVenture Agency", emoji = "📈", salary = 52000, minAge = 22, requirement = "bachelor", category = "creative" },
 	{ id = "marketing_manager", name = "Marketing Manager", company = "Brand Corp", emoji = "📈", salary = 95000, minAge = 28, requirement = "bachelor", category = "creative" },
-	{ id = "cmo", name = "Chief Marketing Officer", company = "Fortune 500", emoji = "📢", salary = 320000, minAge = 40, requirement = "master", category = "creative" },
-	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative" },
-	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative" },
-	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative" },
-	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative" },
-	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative" },
-	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative" },
+	{ id = "cmo", name = "Chief Marketing Officer", company = "Fortune 500", emoji = "📢", salary = 320000, minAge = 40, requirement = "master", category = "creative",
+		difficulty = 8, minStats = { Smarts = 70 }, description = "Lead marketing for major corporation" },
+	-- CRITICAL FIX: Creative careers need difficulty to prevent everyone becoming a star instantly
+	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative",
+		difficulty = 2, minStats = { Looks = 35 }, description = "Entry point to acting career" },
+	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative",
+		difficulty = 7, minStats = { Looks = 55 }, description = "Professional acting requires talent and luck" },
+	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative",
+		difficulty = 10, minStats = { Looks = 80 }, description = "Only the most talented become stars" },
+	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative",
+		difficulty = 3, description = "Local gigs and small venues" },
+	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative",
+		difficulty = 7, description = "Record labels only sign the talented" },
+	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative",
+		difficulty = 10, minStats = { Looks = 70 }, description = "World-famous musical artist" },
 
 	-- GOVERNMENT
 	{ id = "postal_worker", name = "Postal Worker", company = "US Postal Service", emoji = "📮", salary = 45000, minAge = 18, requirement = "high_school", category = "government" },
 	{ id = "dmv_clerk", name = "DMV Clerk", company = "Dept of Motor Vehicles", emoji = "🚗", salary = 38000, minAge = 18, requirement = "high_school", category = "government" },
 	{ id = "social_worker", name = "Social Worker", company = "Family Services", emoji = "🤝", salary = 52000, minAge = 22, requirement = "bachelor", category = "government" },
 	{ id = "probation_officer", name = "Probation Officer", company = "Corrections Dept", emoji = "🔒", salary = 55000, minAge = 22, requirement = "bachelor", category = "government" },
-	{ id = "police_officer", name = "Police Officer", company = "City Police Dept", emoji = "👮", salary = 62000, minAge = 21, requirement = "high_school", category = "government" },
-	{ id = "detective", name = "Detective", company = "City Police Dept", emoji = "🔍", salary = 85000, minAge = 28, requirement = "bachelor", category = "government" },
-	{ id = "police_chief", name = "Police Chief", company = "City Police Dept", emoji = "👮‍♂️", salary = 145000, minAge = 40, requirement = "bachelor", category = "government" },
-	{ id = "firefighter", name = "Firefighter", company = "Fire Department", emoji = "🚒", salary = 58000, minAge = 18, requirement = "high_school", category = "government" },
-	{ id = "fire_captain", name = "Fire Captain", company = "Fire Department", emoji = "🚒", salary = 95000, minAge = 32, requirement = "high_school", category = "government" },
+	{ id = "police_officer", name = "Police Officer", company = "City Police Dept", emoji = "👮", salary = 62000, minAge = 21, requirement = "high_school", category = "government",
+		minStats = { Health = 50 }, difficulty = 3, description = "Must pass police academy fitness test" },
+	{ id = "detective", name = "Detective", company = "City Police Dept", emoji = "🔍", salary = 85000, minAge = 28, requirement = "bachelor", category = "government",
+		minStats = { Smarts = 55 }, difficulty = 5, description = "Investigative skills required" },
+	{ id = "police_chief", name = "Police Chief", company = "City Police Dept", emoji = "👮‍♂️", salary = 145000, minAge = 40, requirement = "bachelor", category = "government",
+		minStats = { Smarts = 60 }, difficulty = 7, description = "Top law enforcement position" },
+	{ id = "firefighter", name = "Firefighter", company = "Fire Department", emoji = "🚒", salary = 58000, minAge = 18, requirement = "high_school", category = "government",
+		minStats = { Health = 60 }, difficulty = 3, description = "Requires physical fitness test" },
+	{ id = "fire_captain", name = "Fire Captain", company = "Fire Department", emoji = "🚒", salary = 95000, minAge = 32, requirement = "high_school", category = "government",
+		minStats = { Health = 55 }, difficulty = 4, description = "Leadership role requiring experience" },
 	{ id = "city_council", name = "City Council Member", company = "City Government", emoji = "🏛️", salary = 72000, minAge = 25, requirement = "bachelor", category = "government" },
 	{ id = "mayor", name = "Mayor", company = "City Hall", emoji = "🏛️", salary = 185000, minAge = 35, requirement = "bachelor", category = "government" },
 	{ id = "fbi_agent", name = "FBI Agent", company = "Federal Bureau of Investigation", emoji = "🕵️", salary = 95000, minAge = 25, requirement = "bachelor", category = "government" },
 	{ id = "cia_agent", name = "CIA Agent", company = "Central Intelligence Agency", emoji = "🕵️‍♂️", salary = 105000, minAge = 26, requirement = "bachelor", category = "government" },
 	{ id = "diplomat", name = "Diplomat", company = "State Department", emoji = "🌍", salary = 125000, minAge = 30, requirement = "master", category = "government" },
-	{ id = "senator", name = "Senator", company = "US Senate", emoji = "🏛️", salary = 174000, minAge = 35, requirement = "bachelor", category = "government" },
-	{ id = "president", name = "President", company = "United States", emoji = "🇺🇸", salary = 400000, minAge = 35, requirement = "bachelor", category = "government" },
+	{ id = "senator", name = "Senator", company = "US Senate", emoji = "🏛️", salary = 174000, minAge = 35, requirement = "bachelor", category = "government",
+		difficulty = 9, minStats = { Smarts = 60 }, description = "Elected to national legislature" },
+	{ id = "president", name = "President", company = "United States", emoji = "🇺🇸", salary = 400000, minAge = 35, requirement = "bachelor", category = "government",
+		difficulty = 10, minStats = { Smarts = 70 }, description = "Leader of the free world" },
 
 	-- EDUCATION
 	{ id = "teaching_assistant", name = "Teaching Assistant", company = "Local School", emoji = "📚", salary = 28000, minAge = 18, requirement = "high_school", category = "education" },
@@ -579,21 +608,33 @@ local JobCatalogList = {
 	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science" },
 	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science" },
 
-	-- SPORTS
-	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports" },
-	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports" },
-	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports" },
-	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports" },
-	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports" },
-	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports" },
+	-- SPORTS - CRITICAL FIX: Sports careers now require actual fitness!
+	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports",
+		minStats = { Health = 60 }, difficulty = 2, description = "Must be in excellent physical shape" },
+	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports",
+		minStats = { Health = 70 }, difficulty = 6, description = "Exceptional athletic ability required" },
+	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports",
+		minStats = { Health = 80 }, difficulty = 9, description = "Elite-level athletic performance" },
+	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10, description = "World-class athletic ability" },
+	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports",
+		minStats = { Smarts = 45 }, difficulty = 4, description = "Teaching and athletic knowledge" },
+	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports",
+		minStats = { Smarts = 65 }, difficulty = 8, description = "Elite coaching position" },
 
-	-- MILITARY
-	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military" },
-	{ id = "sergeant", name = "Sergeant", company = "US Army", emoji = "🪖", salary = 55000, minAge = 24, requirement = "high_school", category = "military" },
-	{ id = "officer", name = "Military Officer", company = "US Armed Forces", emoji = "🎖️", salary = 75000, minAge = 22, requirement = "bachelor", category = "military" },
-	{ id = "captain", name = "Captain", company = "US Armed Forces", emoji = "🎖️", salary = 95000, minAge = 28, requirement = "bachelor", category = "military" },
-	{ id = "colonel", name = "Colonel", company = "US Armed Forces", emoji = "🎖️", salary = 135000, minAge = 38, requirement = "master", category = "military" },
-	{ id = "general", name = "General", company = "Pentagon", emoji = "⭐", salary = 220000, minAge = 50, requirement = "master", category = "military" },
+	-- MILITARY - CRITICAL FIX: All military jobs now require fitness!
+	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
+		minStats = { Health = 55 }, difficulty = 3, description = "Must pass physical fitness test" },
+	{ id = "sergeant", name = "Sergeant", company = "US Army", emoji = "🪖", salary = 55000, minAge = 24, requirement = "high_school", category = "military",
+		minStats = { Health = 50 }, difficulty = 4, description = "Leadership and combat experience required" },
+	{ id = "officer", name = "Military Officer", company = "US Armed Forces", emoji = "🎖️", salary = 75000, minAge = 22, requirement = "bachelor", category = "military",
+		minStats = { Health = 50, Smarts = 50 }, difficulty = 5, description = "Requires degree and fitness" },
+	{ id = "captain", name = "Captain", company = "US Armed Forces", emoji = "🎖️", salary = 95000, minAge = 28, requirement = "bachelor", category = "military",
+		minStats = { Health = 45, Smarts = 55 }, difficulty = 6, description = "Advanced military leadership" },
+	{ id = "colonel", name = "Colonel", company = "US Armed Forces", emoji = "🎖️", salary = 135000, minAge = 38, requirement = "master", category = "military",
+		minStats = { Smarts = 60 }, difficulty = 7, description = "High command position" },
+	{ id = "general", name = "General", company = "Pentagon", emoji = "⭐", salary = 220000, minAge = 50, requirement = "master", category = "military",
+		minStats = { Smarts = 70 }, difficulty = 9, description = "Top military leadership" },
 
 	-- CRIMINAL CAREERS
 	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
@@ -1625,19 +1666,80 @@ function LifeBackend:generateEvent(player, state)
 	return chooseRandom(pool)
 end
 
+-- ============================================================================
+-- CRITICAL FIX: Text variable replacement for dynamic content in events
+-- Replaces placeholders like {{PARTNER_NAME}}, {{PLAYER_NAME}}, {{AGE}}, etc.
+-- ============================================================================
+function LifeBackend:replaceTextVariables(text, state)
+	if not text or type(text) ~= "string" then
+		return text
+	end
+	
+	local result = text
+	
+	-- Partner name replacement
+	if state.Relationships and state.Relationships.partner then
+		local partnerName = state.Relationships.partner.name or "your partner"
+		result = result:gsub("{{PARTNER_NAME}}", partnerName)
+		result = result:gsub("{{PARTNER}}", partnerName)
+		result = result:gsub("your partner", partnerName) -- Also replace generic "your partner" with actual name
+		result = result:gsub("Your partner", partnerName)
+	else
+		result = result:gsub("{{PARTNER_NAME}}", "your partner")
+		result = result:gsub("{{PARTNER}}", "someone special")
+	end
+	
+	-- Player name replacement  
+	local playerName = state.Name or "You"
+	result = result:gsub("{{PLAYER_NAME}}", playerName)
+	result = result:gsub("{{NAME}}", playerName)
+	
+	-- Age replacement
+	local age = state.Age or 0
+	result = result:gsub("{{AGE}}", tostring(age))
+	
+	-- Job/company replacement
+	if state.CurrentJob then
+		result = result:gsub("{{JOB_NAME}}", state.CurrentJob.name or "your job")
+		result = result:gsub("{{COMPANY}}", state.CurrentJob.company or "your employer")
+	end
+	
+	-- Mother/Father name replacement
+	if state.Relationships then
+		if state.Relationships.mother then
+			result = result:gsub("{{MOTHER_NAME}}", state.Relationships.mother.name or "Mom")
+			result = result:gsub("Your mother", state.Relationships.mother.name or "Your mother")
+		end
+		if state.Relationships.father then
+			result = result:gsub("{{FATHER_NAME}}", state.Relationships.father.name or "Dad")
+			result = result:gsub("Your father", state.Relationships.father.name or "Your father")
+		end
+	end
+	
+	return result
+end
+
 function LifeBackend:presentEvent(player, eventDef, feedText)
 	if not eventDef then
 		self:pushState(player, feedText)
 		return
 	end
+	
+	local state = self:getState(player)
 
 	local eventId = (eventDef.id or "event") .. "_" .. HttpService:GenerateGUID(false)
+	
+	-- CRITICAL FIX: Replace text variables with actual names
+	local processedText = self:replaceTextVariables(eventDef.text, state)
+	local processedTitle = self:replaceTextVariables(eventDef.title, state)
+	local processedQuestion = self:replaceTextVariables(eventDef.question or "What will you do?", state)
+	
 	local eventPayload = {
 		id = eventId,
-		title = eventDef.title,
+		title = processedTitle,
 		emoji = eventDef.emoji,
-		text = eventDef.text,
-		question = eventDef.question or "What will you do?",
+		text = processedText,
+		question = processedQuestion,
 		category = eventDef.category or "life",
 		choices = {},
 	}
@@ -1645,7 +1747,7 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	for index, choice in ipairs(eventDef.choices or {}) do
 		eventPayload.choices[index] = {
 			index = index,
-			text = choice.text or ("Choice " .. index),
+			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
 			minigame = choice.minigame,
 		}
 	end
@@ -1659,6 +1761,200 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	self.pendingEvents[player.UserId] = pending
 
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
+end
+
+-- ============================================================================
+-- CRITICAL FIX: BitLife-style year summaries instead of boring "Another year passes"
+-- Generates context-aware summaries based on player's life situation
+-- ============================================================================
+function LifeBackend:generateYearSummary(state)
+	local age = state.Age or 0
+	local summaryParts = {}
+	local emoji = "📅"
+	
+	-- Age-based context
+	local ageContext = ""
+	if age <= 4 then
+		local toddlerLines = {
+			"You're learning to walk and talk.",
+			"Your parents watch you grow every day.",
+			"You discovered the joy of crayons on walls.",
+			"Nap time is your favorite time.",
+			"You learned some new words this year!",
+		}
+		ageContext = toddlerLines[RANDOM:NextInteger(1, #toddlerLines)]
+		emoji = "👶"
+	elseif age <= 12 then
+		local childLines = {
+			"School keeps you busy.",
+			"You made some new friends at school.",
+			"Summer break was the best part of the year.",
+			"You learned a lot this year.",
+			"Life is full of wonder and adventure.",
+		}
+		ageContext = childLines[RANDOM:NextInteger(1, #childLines)]
+		emoji = "🧒"
+	elseif age <= 17 then
+		local teenLines = {
+			"High school drama continues.",
+			"You're figuring out who you want to be.",
+			"Homework and hangouts fill your days.",
+			"Teen life has its ups and downs.",
+			"You're counting down to adulthood.",
+		}
+		ageContext = teenLines[RANDOM:NextInteger(1, #teenLines)]
+		emoji = "🎒"
+	elseif age <= 25 then
+		local youngAdultLines = {
+			"Young adulthood is full of possibilities.",
+			"You're building the foundation of your life.",
+			"The world is your oyster.",
+			"Finding your path takes time.",
+			"Every experience shapes who you're becoming.",
+		}
+		ageContext = youngAdultLines[RANDOM:NextInteger(1, #youngAdultLines)]
+		emoji = "🌟"
+	elseif age <= 40 then
+		local adultLines = {
+			"Life is in full swing.",
+			"Career and relationships keep you busy.",
+			"You're hitting your stride.",
+			"Adulting is harder than you expected.",
+			"You're making things happen.",
+		}
+		ageContext = adultLines[RANDOM:NextInteger(1, #adultLines)]
+		emoji = "💼"
+	elseif age <= 60 then
+		local middleAgeLines = {
+			"Wisdom comes with age.",
+			"You've learned what matters most.",
+			"Life experience is your greatest asset.",
+			"The years fly by faster now.",
+			"You're in the prime of your life.",
+		}
+		ageContext = middleAgeLines[RANDOM:NextInteger(1, #middleAgeLines)]
+		emoji = "🍷"
+	else
+		local seniorLines = {
+			"You've lived a full life.",
+			"Every day is a blessing.",
+			"You have stories to tell.",
+			"Reflecting on a life well lived.",
+			"Cherishing the golden years.",
+		}
+		ageContext = seniorLines[RANDOM:NextInteger(1, #seniorLines)]
+		emoji = "👴"
+	end
+	
+	table.insert(summaryParts, ageContext)
+	
+	-- Relationship status
+	if state.Relationships and state.Relationships.partner then
+		local partner = state.Relationships.partner
+		local partnerName = partner.name or "your partner"
+		local role = partner.role or "Partner"
+		
+		if state.Flags and state.Flags.married then
+			local marriedLines = {
+				string.format("Life with %s is good.", partnerName),
+				string.format("You and %s are building a life together.", partnerName),
+				string.format("Marriage keeps things interesting.", partnerName),
+			}
+			table.insert(summaryParts, marriedLines[RANDOM:NextInteger(1, #marriedLines)])
+		elseif state.Flags and state.Flags.engaged then
+			table.insert(summaryParts, string.format("You can't wait to marry %s.", partnerName))
+		elseif state.Flags and state.Flags.dating then
+			local datingLines = {
+				string.format("Dating %s is going well.", partnerName),
+				string.format("You enjoy spending time with %s.", partnerName),
+			}
+			table.insert(summaryParts, datingLines[RANDOM:NextInteger(1, #datingLines)])
+		end
+	end
+	
+	-- Job status (only for working-age adults)
+	if age >= 18 then
+		if state.CurrentJob then
+			local job = state.CurrentJob
+			if state.CareerInfo and (state.CareerInfo.yearsAtJob or 0) > 0 then
+				local years = state.CareerInfo.yearsAtJob
+				if years >= 10 then
+					table.insert(summaryParts, string.format("You've been at %s for %d years now.", job.company, years))
+				elseif years >= 5 then
+					table.insert(summaryParts, string.format("You're well established at %s.", job.company))
+				end
+			else
+				-- Just mention they have a job occasionally
+				if RANDOM:NextNumber() < 0.3 then
+					table.insert(summaryParts, string.format("Work at %s keeps you busy.", job.company))
+				end
+			end
+		elseif age < 65 and not (state.Flags and (state.Flags.retired or state.Flags.in_school)) then
+			if RANDOM:NextNumber() < 0.5 then
+				table.insert(summaryParts, "You're currently between jobs.")
+			end
+		end
+	end
+	
+	-- Money situation
+	local money = state.Money or 0
+	if money < 100 and age >= 18 then
+		if RANDOM:NextNumber() < 0.4 then
+			table.insert(summaryParts, "Money is tight right now.")
+		end
+	elseif money > 1000000 then
+		if RANDOM:NextNumber() < 0.3 then
+			table.insert(summaryParts, "Financial success feels good.")
+		end
+	end
+	
+	-- Health comments
+	local health = state.Stats and state.Stats.Health or 50
+	if health < 30 then
+		table.insert(summaryParts, "Your health concerns you.")
+	elseif health > 85 and RANDOM:NextNumber() < 0.2 then
+		table.insert(summaryParts, "You're feeling great!")
+	end
+	
+	-- Happiness comments
+	local happiness = state.Stats and state.Stats.Happiness or 50
+	if happiness < 25 then
+		if RANDOM:NextNumber() < 0.5 then
+			local sadLines = {
+				"Things feel harder lately.",
+				"You're going through a rough patch.",
+				"Life feels heavy sometimes.",
+			}
+			table.insert(summaryParts, sadLines[RANDOM:NextInteger(1, #sadLines)])
+		end
+	elseif happiness > 80 and RANDOM:NextNumber() < 0.3 then
+		local happyLines = {
+			"Life is treating you well.",
+			"You're in a good place.",
+			"Happiness comes easy these days.",
+		}
+		table.insert(summaryParts, happyLines[RANDOM:NextInteger(1, #happyLines)])
+	end
+	
+	-- Prison
+	if state.InJail then
+		emoji = "🔒"
+		summaryParts = { string.format("Behind bars. %d years remaining.", state.JailYearsLeft or 0) }
+	end
+	
+	-- Combine parts (max 2-3 sentences to avoid clutter)
+	local maxParts = math.min(#summaryParts, 3)
+	local finalParts = {}
+	for i = 1, maxParts do
+		table.insert(finalParts, summaryParts[i])
+	end
+	
+	local summary = table.concat(finalParts, " ")
+	if summary == "" then
+		summary = "Another year passes."
+	end
+	
+	return string.format("%s Age %d: %s", emoji, age, summary)
 end
 
 function LifeBackend:handleAgeUp(player)
@@ -1713,7 +2009,16 @@ function LifeBackend:handleAgeUp(player)
 	state.Happiness = state.Stats.Happiness
 	state.Smarts = state.Stats.Smarts
 
-	local feedText = string.format("Age %d: %s", state.Age, state.PendingFeed or "Another year passes.")
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Generate interesting BitLife-style year summaries instead of boring 
+	-- "Another year passes" - Include relationship status, job, notable things happening
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local feedText
+	if state.PendingFeed then
+		feedText = string.format("Age %d: %s", state.Age, state.PendingFeed)
+	else
+		feedText = self:generateYearSummary(state)
+	end
 	state.PendingFeed = nil
 
 	if state.Health <= 0 then
@@ -2282,6 +2587,34 @@ function LifeBackend:meetsEducationRequirement(state, requirement)
 	return playerRank >= jobRank
 end
 
+-- ============================================================================
+-- CRITICAL FIX: Job Rejection Messages for variety and realism
+-- ============================================================================
+local JobRejectionMessages = {
+	generic = {
+		"After careful consideration, we've decided to go with another candidate.",
+		"Unfortunately, your application was not successful this time.",
+		"We appreciate your interest, but we're looking for someone with more experience.",
+		"Thank you for applying, but we've filled the position.",
+		"Your qualifications don't quite match what we're looking for right now.",
+	},
+	lowStats = {
+		"You didn't pass the physical fitness requirements.",
+		"The aptitude test results weren't quite what we were hoping for.",
+		"We need someone with stronger qualifications for this role.",
+	},
+	competitive = {
+		"This position attracted many highly qualified candidates.",
+		"Competition for this role was extremely fierce.",
+		"We received over 500 applications for this position.",
+	},
+	entry = {
+		"Even entry-level positions can be competitive these days!",
+		"We're looking for someone with a bit more availability.",
+		"Your interview went well, but another candidate edged you out.",
+	},
+}
+
 function LifeBackend:handleJobApplication(player, jobId)
 	local state = self:getState(player)
 	if not state then
@@ -2298,31 +2631,137 @@ function LifeBackend:handleJobApplication(player, jobId)
 	end
 
 	if (state.Age or 0) < job.minAge then
-		return { success = false, message = string.format("You must be %d to apply.", job.minAge) }
+		return { success = false, message = string.format("You must be at least %d years old to apply.", job.minAge) }
 	end
 
 	if not self:meetsEducationRequirement(state, job.requirement) then
-		return { success = false, message = "You need more education first." }
+		local eduNames = { high_school = "a High School Diploma", bachelor = "a Bachelor's Degree", master = "a Master's Degree", 
+			phd = "a PhD", medical = "a Medical Degree", law = "a Law Degree", community = "a Community College certificate" }
+		local needed = eduNames[job.requirement] or "more education"
+		return { success = false, message = string.format("This position requires %s.", needed) }
 	end
 
-	-- CRITICAL FIX: Check minStats requirements (for Racing, Hacker, etc. careers)
+	-- CRITICAL FIX: Check minStats requirements (for physical/demanding jobs)
 	if job.minStats then
 		state.Stats = state.Stats or {}
 		for statName, minValue in pairs(job.minStats) do
-			local playerStat = state.Stats[statName] or state[statName] or 0
+			local playerStat = state.Stats[statName] or state[statName] or 50
 			if playerStat < minValue then
 				local statDisplayName = statName:gsub("^%l", string.upper)
+				local gap = minValue - playerStat
+				local severity = gap > 20 and "far below" or (gap > 10 and "below" or "slightly below")
 				return { 
 					success = false, 
-					message = string.format("You need at least %d %s for this job. (You have %d)", minValue, statDisplayName, playerStat) 
+					message = string.format("You're %s the %s requirement (%d needed, you have %d). Work on improving yourself!", severity, statDisplayName, minValue, playerStat) 
 				}
 			end
 		end
 	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Job Application Rejection System
+	-- Not every application should succeed! Add realistic interview/hiring mechanics.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	state.JobApplications = state.JobApplications or {}
+	local appHistory = state.JobApplications[jobId] or { attempts = 0, lastAttempt = 0, rejectedThisYear = false }
+	
+	-- Cooldown: Can't spam applications to the same job within the same year
+	if appHistory.lastAttempt == (state.Age or 0) and appHistory.rejectedThisYear then
+		return { 
+			success = false, 
+			message = string.format("You already applied to %s this year. Wait until next year to try again.", job.company)
+		}
+	end
+	
+	-- Calculate acceptance chance based on multiple factors
+	local baseChance = 0.90 -- 90% base for entry level jobs with no requirements
+	local difficulty = job.difficulty or 1
+	
+	-- Reduce chance based on job difficulty (1-10 scale)
+	-- difficulty 1 = easy entry job, difficulty 10 = near impossible (star athlete, CEO)
+	if difficulty >= 8 then
+		baseChance = 0.15 -- Elite jobs are very hard to get
+	elseif difficulty >= 6 then
+		baseChance = 0.35 -- Competitive positions
+	elseif difficulty >= 4 then
+		baseChance = 0.55 -- Moderate difficulty
+	elseif difficulty >= 2 then
+		baseChance = 0.75 -- Entry-level but some competition
+	end
+	
+	-- Boost chance based on relevant experience
+	state.CareerInfo = state.CareerInfo or {}
+	local yearsExperience = state.CareerInfo.totalYearsWorked or 0
+	local experienceBonus = math.min(0.20, yearsExperience * 0.02) -- Up to +20% for 10+ years experience
+	
+	-- Boost if applying to same category as previous job
+	if state.Career and state.Career.track == job.category then
+		experienceBonus = experienceBonus + 0.15 -- Industry experience helps!
+	end
+	
+	-- Boost based on Smarts for office/tech jobs, Health for physical jobs
+	state.Stats = state.Stats or {}
+	local statBonus = 0
+	if job.category == "tech" or job.category == "office" or job.category == "science" or job.category == "law" or job.category == "finance" then
+		local smarts = state.Stats.Smarts or state.Smarts or 50
+		statBonus = (smarts - 50) / 200 -- +/-25% based on Smarts
+	elseif job.category == "military" or job.category == "sports" or job.category == "trades" then
+		local health = state.Stats.Health or state.Health or 50
+		statBonus = (health - 50) / 200 -- +/-25% based on Health
+	end
+	
+	-- Previous rejection penalty (companies remember bad interviews)
+	local rejectionPenalty = math.min(0.30, (appHistory.attempts or 0) * 0.10) -- -10% per previous rejection, max -30%
+	
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty, 0.05, 0.98)
+	
+	-- Entry-level jobs (no requirements, low salary) should be easier
+	if not job.requirement and (job.salary or 0) < 35000 then
+		finalChance = math.max(finalChance, 0.80) -- At least 80% chance for basic jobs
+	end
+	
+	-- Roll for success
+	local roll = RANDOM:NextNumber()
+	local accepted = roll < finalChance
+	
+	-- Track application
+	state.JobApplications[jobId] = {
+		attempts = (appHistory.attempts or 0) + 1,
+		lastAttempt = state.Age or 0,
+		rejectedThisYear = not accepted,
+	}
+	
+	if not accepted then
+		-- Pick a rejection message based on situation
+		local messages
+		if difficulty >= 6 then
+			messages = JobRejectionMessages.competitive
+		elseif job.minStats then
+			messages = JobRejectionMessages.lowStats
+		elseif not job.requirement then
+			messages = JobRejectionMessages.entry
+		else
+			messages = JobRejectionMessages.generic
+		end
+		local msg = messages[RANDOM:NextInteger(1, #messages)]
+		
+		-- Add encouragement for first rejection
+		if appHistory.attempts == 0 then
+			msg = msg .. " Don't give up - try again next year or look for other opportunities!"
+		elseif appHistory.attempts >= 2 then
+			msg = msg .. " Consider gaining more experience or improving your skills before reapplying."
+		end
+		
+		return { success = false, message = msg }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SUCCESS! Hired for the job
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- Check if illegal job and warn/block based on criminal status
 	if job.illegal and not (state.Flags and state.Flags.criminal_path) then
-		-- First illegal job sets criminal flag
 		state.Flags = state.Flags or {}
 		state.Flags.criminal_path = true
 		state.Flags.criminal = true
@@ -2343,7 +2782,7 @@ function LifeBackend:handleJobApplication(player, jobId)
 	state.CareerInfo.promotionProgress = 0
 	state.CareerInfo.yearsAtJob = 0
 	state.CareerInfo.raises = 0
-	state.CareerInfo.promotions = 0 -- CRITICAL FIX: Reset promotions on new job
+	state.CareerInfo.promotions = 0
 
 	state.Career.track = job.category
 	
@@ -2353,14 +2792,16 @@ function LifeBackend:handleJobApplication(player, jobId)
 	state.Flags.has_job = true
 	state.Flags.between_jobs = nil
 	state.Flags.unemployed = nil
-	-- Clear retirement flags if coming out of retirement
 	if state.Flags.retired then
 		state.Flags.retired = nil
 		state.Flags.semi_retired = nil
-		state.Flags.pension_amount = nil -- No longer receiving pension
+		state.Flags.pension_amount = nil
 	end
+	
+	-- Clear application history for this job (fresh start)
+	state.JobApplications[jobId] = nil
 
-	local feed = string.format("You were hired as a %s at %s.", job.name, job.company)
+	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
