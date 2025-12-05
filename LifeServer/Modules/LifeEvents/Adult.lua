@@ -477,6 +477,577 @@ Adult.events = {
 			},
 		},
 	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADDITIONAL ADULT EVENTS - AAA QUALITY EXPANSION
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	-- YOUNG ADULT EXPANSION (18-29)
+	{
+		id = "first_apartment_problems",
+		title = "Apartment Problems",
+		emoji = "🏚️",
+		text = "Your first apartment has some... issues.",
+		question = "What's the biggest problem?",
+		minAge = 18, maxAge = 26,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresFlags = { lives_alone = true },
+
+		choices = {
+			{ text = "Noisy neighbors keep you up", effects = { Health = -3, Happiness = -4 }, feedText = "Sleep deprivation is real. These walls are paper thin." },
+			{ text = "Pests - roaches or mice!", effects = { Happiness = -6, Health = -2, Money = -100 }, feedText = "You spent money on pest control. Gross." },
+			{ text = "Landlord won't fix anything", effects = { Happiness = -4, Money = -200 }, setFlags = { bad_landlord = true }, feedText = "You had to pay for repairs yourself." },
+			{ text = "Actually, it's not so bad", effects = { Happiness = 3 }, feedText = "You lucked out with a decent place!" },
+		},
+	},
+	{
+		id = "roommate_drama",
+		title = "Roommate Drama",
+		emoji = "😤",
+		text = "Living with roommates is causing friction.",
+		question = "What's the issue?",
+		minAge = 18, maxAge = 28,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresFlags = { has_roommates = true },
+
+		choices = {
+			{ text = "They never clean", effects = { Happiness = -4, Health = -2 }, feedText = "Living in filth because they won't do dishes." },
+			{ text = "They eat my food", effects = { Happiness = -3, Money = -50 }, feedText = "Your groceries keep disappearing." },
+			{ text = "They're too loud", effects = { Happiness = -3, Health = -2 }, setFlags = { poor_sleep = true }, feedText = "Parties every night. You're exhausted." },
+			{ text = "We're actually great friends!", effects = { Happiness = 6 }, setFlags = { good_roommates = true }, feedText = "Living together strengthened your friendship!" },
+			{ text = "Time to move out", effects = { Money = -300, Happiness = 3 }, setFlags = { lives_alone = true }, feedText = "You got your own place. Peace at last." },
+		},
+	},
+	{
+		id = "quarter_life_crisis",
+		title = "Quarter-Life Crisis",
+		emoji = "😰",
+		text = "You're in your mid-20s and questioning everything.",
+		question = "What's bothering you most?",
+		minAge = 23, maxAge = 28,
+		oneTime = true,
+
+		choices = {
+			{ text = "I don't know what I want to do with my life", effects = { Happiness = -5, Smarts = 3 }, setFlags = { searching_purpose = true }, feedText = "You're soul-searching. It's uncomfortable but necessary." },
+			{ text = "I'm falling behind my peers", effects = { Happiness = -6 }, setFlags = { comparison_anxiety = true }, feedText = "Social media makes everyone seem more successful." },
+			{ text = "I'm not where I thought I'd be", effects = { Happiness = -4 }, feedText = "Life didn't follow the plan you imagined." },
+			{ text = "Actually, I'm pretty content", effects = { Happiness = 8 }, setFlags = { self_assured = true }, feedText = "You're at peace with where you are!" },
+		},
+	},
+	{
+		id = "first_real_job",
+		title = "First Real Job",
+		emoji = "💼",
+		text = "You landed your first 'real' adult job!",
+		question = "How's the adjustment going?",
+		minAge = 21, maxAge = 26,
+		oneTime = true,
+
+		choices = {
+			{ text = "Imposter syndrome is real", effects = { Happiness = -3, Smarts = 4 }, setFlags = { imposter_syndrome = true }, feedText = "You feel like a fraud, but you're learning fast." },
+			{ text = "I love it - finally in my field", effects = { Happiness = 8, Money = 500 }, setFlags = { career_launch = true }, feedText = "This is what you worked so hard for!" },
+			{ text = "It's nothing like I expected", effects = { Happiness = -2 }, feedText = "The reality of work life is setting in." },
+			{ text = "Already want to quit", effects = { Happiness = -5 }, setFlags = { job_dissatisfied = true }, feedText = "Is this really going to be your life?" },
+		},
+	},
+	{
+		id = "student_loan_reality",
+		title = "Student Loan Reality",
+		emoji = "💸",
+		text = "The student loan payments have started.",
+		question = "How are you handling the debt?",
+		minAge = 22, maxAge = 30,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresFlags = { has_degree = true },
+
+		choices = {
+			{ text = "Paying minimum - will take forever", effects = { Money = -200, Happiness = -3 }, feedText = "You'll be paying this for decades." },
+			{ text = "Aggressively paying them down", effects = { Money = -600, Happiness = -2, Smarts = 2 }, setFlags = { debt_focused = true }, feedText = "Living frugally to kill the debt faster." },
+			{ text = "Looking into loan forgiveness", effects = { Smarts = 2 }, setFlags = { public_service = true }, feedText = "Maybe public service can help." },
+			{ text = "Defaulted... oops", effects = { Money = -1000, Happiness = -8 }, setFlags = { bad_credit = true }, feedText = "Your credit is destroyed. Big mistake." },
+		},
+	},
+	{
+		id = "dating_apps",
+		title = "The Dating App Life",
+		emoji = "📱",
+		text = "You've entered the world of dating apps.",
+		question = "How's your experience?",
+		minAge = 20, maxAge = 40,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { married = true },
+
+		choices = {
+			{ text = "Tons of matches, no connections", effects = { Happiness = -3 }, feedText = "Quantity over quality. Modern dating is exhausting." },
+			{ text = "Found someone amazing!", effects = { Happiness = 10 }, setFlags = { has_partner = true, met_online = true }, feedText = "Swipe right turned into real love!" },
+			{ text = "Catfished and disappointed", effects = { Happiness = -6 }, setFlags = { burned_by_dating = true }, feedText = "That profile was definitely not them." },
+			{ text = "Prefer meeting people in person", effects = { Happiness = 2 }, setFlags = { traditional_dating = true }, feedText = "You deleted the apps. Old school it is." },
+		},
+	},
+	{
+		id = "wedding_planning",
+		title = "Wedding Planning",
+		emoji = "💒",
+		text = "You're engaged and planning a wedding!",
+		question = "What kind of wedding?",
+		minAge = 22, maxAge = 45,
+		oneTime = true,
+		requiresFlags = { engaged = true },
+
+		choices = {
+			{ text = "Big traditional wedding", effects = { Happiness = 12, Money = -15000 }, setFlags = { married = true, big_wedding = true }, feedText = "A beautiful wedding! But your wallet hurts." },
+			{ text = "Small intimate ceremony", effects = { Happiness = 10, Money = -3000 }, setFlags = { married = true }, feedText = "Just close friends and family. Perfect." },
+			{ text = "Destination wedding", effects = { Happiness = 14, Money = -10000, Health = 3 }, setFlags = { married = true, destination_wedding = true }, feedText = "Getting married on a beach was magical!" },
+			{ text = "Courthouse and save the money", effects = { Happiness = 5, Money = -100 }, setFlags = { married = true, practical_wedding = true }, feedText = "Quick and easy. More money for the honeymoon!" },
+			{ text = "Called off the wedding", effects = { Happiness = -15, Money = -2000 }, setFlags = { wedding_canceled = true }, feedText = "Cold feet? Better now than after." },
+		},
+	},
+	{
+		id = "having_kids_decision",
+		title = "The Baby Question",
+		emoji = "👶",
+		text = "The topic of having children comes up.",
+		question = "Where do you stand?",
+		minAge = 25, maxAge = 40,
+		oneTime = true,
+		requiresFlags = { has_partner = true },
+
+		choices = {
+			{ text = "We want kids - trying now!", effects = { Happiness = 5 }, setFlags = { trying_for_baby = true }, feedText = "You're ready to start a family!" },
+			{ text = "Maybe someday, not yet", effects = { Happiness = 3 }, setFlags = { kids_later = true }, feedText = "The timing isn't right yet." },
+			{ text = "Definitely don't want kids", effects = { Happiness = 5 }, setFlags = { child_free = true }, feedText = "You're confident in your child-free choice." },
+			{ text = "Partner and I disagree on this", effects = { Happiness = -10 }, setFlags = { relationship_strain = true }, feedText = "This fundamental disagreement is causing problems." },
+		},
+	},
+	{
+		id = "new_baby",
+		title = "Baby Arrives!",
+		emoji = "🍼",
+		text = "You have a new baby! Life will never be the same.",
+		question = "How are you handling parenthood?",
+		minAge = 20, maxAge = 45,
+		oneTime = true,
+		requiresFlags = { trying_for_baby = true },
+
+		choices = {
+			{ text = "It's exhausting but amazing", effects = { Happiness = 10, Health = -5, Money = -1000 }, setFlags = { has_child = true, parent = true }, feedText = "Sleep is a distant memory but you're in love." },
+			{ text = "Struggling with the transition", effects = { Happiness = 2, Health = -8, Money = -1000 }, setFlags = { has_child = true, parent = true, overwhelmed_parent = true }, feedText = "This is harder than you imagined." },
+			{ text = "Natural parent - taking to it well", effects = { Happiness = 15, Health = -3, Money = -1000 }, setFlags = { has_child = true, parent = true, natural_parent = true }, feedText = "You were born for this!" },
+			{ text = "Partner is doing most of the work", effects = { Happiness = 5, Money = -1000 }, setFlags = { has_child = true, parent = true }, feedText = "You're not pulling your weight..." },
+		},
+		onResolve = function(state)
+			-- Add the child to relationships
+			if state.AddRelationship then
+				state:AddRelationship("son", {
+					id = "child_" .. tostring(state.Age or 0),
+					name = "Baby",
+					type = "family",
+					age = 0,
+					relationship = 100,
+					alive = true,
+				})
+			end
+		end,
+	},
+
+	-- CAREER ADVANCEMENT (25-50)
+	{
+		id = "career_crossroads",
+		title = "Career Crossroads",
+		emoji = "🔀",
+		text = "You're at a crossroads in your career.",
+		question = "What path do you take?",
+		minAge = 28, maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 3,
+
+		choices = {
+			{ text = "Chase the promotion", effects = { Money = 1000, Happiness = -3, Health = -3 }, setFlags = { workaholic = true }, hintCareer = "management", feedText = "You're climbing the ladder. At what cost?" },
+			{ text = "Start my own business", effects = { Money = -5000, Happiness = 5 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You took the entrepreneurial leap!" },
+			{ text = "Change careers entirely", effects = { Happiness = 8, Money = -1000, Smarts = 5 }, setFlags = { career_changer = true }, feedText = "A fresh start in a new field!" },
+			{ text = "Focus on work-life balance", effects = { Happiness = 10, Health = 5, Money = -500 }, setFlags = { balanced_life = true }, feedText = "You prioritized quality of life." },
+		},
+	},
+	{
+		id = "workplace_conflict",
+		title = "Workplace Conflict",
+		emoji = "😠",
+		text = "There's serious conflict with a coworker.",
+		question = "How do you handle it?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 2,
+
+		choices = {
+			{ text = "Try to work it out professionally", effects = { Smarts = 3, Happiness = 2 }, feedText = "You handled it maturely. Conflict resolved." },
+			{ text = "Take it to HR", effects = { Happiness = -2 }, setFlags = { hr_involved = true }, feedText = "HR is now involved. Things got formal." },
+			{ text = "Confront them directly", effects = { Happiness = -4 }, setFlags = { confrontational = true }, feedText = "The confrontation didn't go well." },
+			{ text = "Just avoid them", effects = { Happiness = -2 }, feedText = "The tension remains but you're coexisting." },
+			{ text = "Quit over it", effects = { Money = -500, Happiness = 3 }, feedText = "Life's too short. You left for a new opportunity." },
+		},
+	},
+	{
+		id = "big_promotion",
+		title = "The Big Promotion",
+		emoji = "📈",
+		text = "You've been offered a major promotion!",
+		question = "What's the catch?",
+		minAge = 28, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 4,
+
+		choices = {
+			{ text = "More money, more responsibility", effects = { Money = 3000, Happiness = 5, Health = -3 }, setFlags = { senior_position = true }, feedText = "You're moving up! The pressure is on." },
+			{ text = "Requires relocating", effects = { Money = 2500, Happiness = -3 }, setFlags = { relocated = true }, feedText = "You moved for the job. Big change." },
+			{ text = "Would mean managing former peers", effects = { Money = 2000, Happiness = -2, Smarts = 3 }, feedText = "Awkward but you'll make it work." },
+			{ text = "Turn it down to keep sanity", effects = { Happiness = 5, Health = 3 }, feedText = "You know your limits. Smart choice." },
+		},
+	},
+	{
+		id = "layoff_notice",
+		title = "Layoffs Coming",
+		emoji = "📉",
+		text = "Your company is doing layoffs. You might be affected.",
+		question = "What happens?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 5,
+
+		choices = {
+			{ text = "You got laid off", effects = { Money = -500, Happiness = -10, Health = -3 }, setFlags = { unemployed = true, laid_off = true }, feedText = "You lost your job. Devastating." },
+			{ text = "You survived the cuts", effects = { Happiness = -3 }, setFlags = { survivor_guilt = true }, feedText = "You kept your job but watched friends go. Guilt." },
+			{ text = "Took a severance package", effects = { Money = 3000, Happiness = -5 }, setFlags = { unemployed = true }, feedText = "You got paid to leave. Silver lining." },
+			{ text = "Already found something new", effects = { Happiness = 5, Money = 500 }, setFlags = { career_secure = true }, feedText = "You saw it coming and jumped ship early!" },
+		},
+	},
+	{
+		id = "starting_business",
+		title = "Launching Your Business",
+		emoji = "🚀",
+		text = "Your business is finally launching!",
+		question = "How does the launch go?",
+		minAge = 25, maxAge = 55,
+		oneTime = true,
+		requiresFlags = { entrepreneur = true },
+
+		choices = {
+			{ text = "Massive success!", effects = { Money = 10000, Happiness = 15 }, setFlags = { successful_business = true }, feedText = "Your business took off! You're making money!" },
+			{ text = "Slow but steady growth", effects = { Money = 2000, Happiness = 5, Smarts = 3 }, feedText = "It's growing organically. Patience pays." },
+			{ text = "Struggling to find customers", effects = { Money = -3000, Happiness = -5 }, setFlags = { business_struggling = true }, feedText = "Revenue isn't there. Scary times." },
+			{ text = "Complete failure", effects = { Money = -10000, Happiness = -15 }, setFlags = { business_failed = true }, feedText = "The business failed. Bankruptcy looms." },
+		},
+	},
+
+	-- MIDLIFE (35-55)
+	{
+		id = "midlife_crisis",
+		title = "Midlife Crisis",
+		emoji = "🏎️",
+		text = "You're questioning everything about your life.",
+		question = "How do you cope?",
+		minAge = 38, maxAge = 52,
+		oneTime = true,
+
+		choices = {
+			{ text = "Buy something expensive and impractical", effects = { Money = -10000, Happiness = 8 }, setFlags = { midlife_crisis = true }, feedText = "That sports car makes you feel alive!", onResolve = function(state)
+				if state.AddAsset then
+					state:AddAsset("Vehicles", {
+						id = "midlife_car_" .. tostring(state.Age or 0),
+						name = "Midlife Crisis Sports Car",
+						emoji = "🏎️",
+						price = 45000,
+						value = 40000,
+						condition = 95,
+						isEventAcquired = true,
+					})
+				end
+			end },
+			{ text = "Have an affair", effects = { Happiness = 5 }, setFlags = { cheater = true, affair = true }, feedText = "You made a terrible decision..." },
+			{ text = "Make a dramatic career change", effects = { Money = -2000, Happiness = 10 }, setFlags = { career_reinvented = true }, feedText = "You quit to pursue your dream!" },
+			{ text = "Go to therapy", effects = { Happiness = 8, Money = -500, Smarts = 3 }, setFlags = { in_therapy = true }, feedText = "Talking it through helps you find clarity." },
+			{ text = "Embrace the change gracefully", effects = { Happiness = 10, Smarts = 2 }, setFlags = { wisdom = true }, feedText = "Growth is part of life. You accept it." },
+		},
+	},
+	{
+		id = "divorce_proceedings",
+		title = "Divorce",
+		emoji = "💔",
+		text = "Your marriage is ending in divorce.",
+		question = "How does it unfold?",
+		minAge = 28, maxAge = 65,
+		oneTime = true,
+		requiresFlags = { married = true },
+
+		choices = {
+			{ text = "Amicable split", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true }, feedText = "You parted ways peacefully. Still hurts." },
+			{ text = "Bitter court battle", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true }, feedText = "The divorce was ugly and expensive." },
+			{ text = "You cheated - you're the villain", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true }, feedText = "You destroyed the marriage. Living with guilt." },
+			{ text = "They cheated - you're devastated", effects = { Happiness = -25, Money = -5000, Health = -5 }, setFlags = { divorced = true, cheated_on = true }, feedText = "Betrayal. The trust is shattered." },
+		},
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.married = nil
+		end,
+	},
+	{
+		id = "empty_nest",
+		title = "Empty Nest",
+		emoji = "🏠",
+		text = "Your last child has moved out of the house.",
+		question = "How do you feel about it?",
+		minAge = 45, maxAge = 60,
+		oneTime = true,
+		requiresFlags = { has_child = true },
+
+		choices = {
+			{ text = "Lonely - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nester = true, lonely = true }, feedText = "The house feels so empty now." },
+			{ text = "Freedom! Time for us again", effects = { Happiness = 10 }, setFlags = { empty_nester = true }, feedText = "You and your partner are rediscovering each other!" },
+			{ text = "Proud of the adult they became", effects = { Happiness = 8 }, setFlags = { empty_nester = true, proud_parent = true }, feedText = "You raised them well. They're thriving." },
+			{ text = "Turning their room into something fun", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!" },
+		},
+	},
+	{
+		id = "parent_health_crisis",
+		title = "Parent's Health Crisis",
+		emoji = "🏥",
+		text = "One of your parents is having serious health problems.",
+		question = "How do you respond?",
+		minAge = 35, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 5,
+
+		choices = {
+			{ text = "Become their primary caregiver", effects = { Happiness = -10, Health = -8, Money = -2000 }, setFlags = { family_caregiver = true }, feedText = "You've taken on a huge responsibility." },
+			{ text = "Help coordinate their care", effects = { Happiness = -5, Money = -1000 }, feedText = "You're organizing doctors, nurses, and family." },
+			{ text = "Struggle to be there - too far away", effects = { Happiness = -12 }, setFlags = { family_guilt = true }, feedText = "Distance makes this heartbreaking." },
+			{ text = "They passed away", effects = { Happiness = -20, Health = -5 }, setFlags = { lost_parent = true }, feedText = "Your parent is gone. Grief is overwhelming." },
+		},
+	},
+	{
+		id = "bucket_list",
+		title = "Bucket List Time",
+		emoji = "✈️",
+		text = "You're thinking about your bucket list.",
+		question = "What's your next adventure?",
+		minAge = 40, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+
+		choices = {
+			{ text = "Dream vacation trip", effects = { Happiness = 15, Money = -5000, Health = 3 }, setFlags = { traveled_world = true }, feedText = "The trip of a lifetime! Worth every penny." },
+			{ text = "Learn a new skill", effects = { Happiness = 8, Smarts = 5, Money = -500 }, setFlags = { lifelong_learner = true }, feedText = "You're never too old to learn something new!" },
+			{ text = "Reconnect with old friends", effects = { Happiness = 10 }, feedText = "Those reunions filled your heart." },
+			{ text = "Write your memoirs", effects = { Happiness = 5, Smarts = 3 }, setFlags = { wrote_memoir = true }, feedText = "Your life story is now on paper." },
+		},
+	},
+	{
+		id = "inheritance_received",
+		title = "Inheritance",
+		emoji = "💰",
+		text = "A relative left you an inheritance.",
+		question = "What do you do with the money?",
+		minAge = 30, maxAge = 70,
+		baseChance = 0.15,
+		cooldown = 10,
+
+		choices = {
+			{ text = "Invest it wisely", effects = { Money = 20000, Smarts = 2 }, setFlags = { investor = true }, feedText = "You're growing that inheritance!" },
+			{ text = "Pay off debts", effects = { Money = 10000, Happiness = 8 }, setFlags = { debt_free = true }, feedText = "Finally debt-free! What a relief." },
+			{ text = "Splurge on something fun", effects = { Money = 5000, Happiness = 12 }, feedText = "You treated yourself. YOLO!" },
+			{ text = "Save it for retirement", effects = { Money = 15000, Happiness = 3 }, setFlags = { retirement_saver = true }, feedText = "Future you will thank present you." },
+			{ text = "Donate to charity", effects = { Money = -5000, Happiness = 15 }, setFlags = { philanthropist = true }, feedText = "Giving back feels amazing." },
+		},
+	},
+	{
+		id = "serious_illness",
+		title = "Serious Illness",
+		emoji = "🏥",
+		text = "You've been diagnosed with a serious illness.",
+		question = "How do you handle it?",
+		minAge = 40, maxAge = 80,
+		baseChance = 0.1,
+		cooldown = 10,
+
+		choices = {
+			{ text = "Fight with everything you have", effects = { Health = -10, Happiness = -10, Money = -10000 }, setFlags = { battling_illness = true, fighter = true }, feedText = "You're in the fight of your life." },
+			{ text = "Accept it and make peace", effects = { Health = -5, Happiness = -5 }, setFlags = { at_peace = true }, feedText = "You've found acceptance." },
+			{ text = "Seek alternative treatments", effects = { Health = -8, Happiness = -5, Money = -5000 }, setFlags = { alternative_medicine = true }, feedText = "You're trying every option." },
+			{ text = "It's treatable - caught it early", effects = { Health = -5, Money = -3000, Happiness = 5 }, setFlags = { health_recovered = true }, feedText = "Caught early! Treatment is working." },
+		},
+	},
+	{
+		id = "winning_lottery",
+		title = "Lottery Win!",
+		emoji = "🎰",
+		text = "You won a significant lottery prize!",
+		question = "What do you do?",
+		minAge = 21, maxAge = 85,
+		baseChance = 0.02,
+		cooldown = 20,
+
+		choices = {
+			{ text = "Quit job and live large", effects = { Money = 500000, Happiness = 20, Health = -5 }, setFlags = { lottery_winner = true }, feedText = "You're rich! But maybe you went too hard." },
+			{ text = "Invest and stay humble", effects = { Money = 450000, Happiness = 10, Smarts = 3 }, setFlags = { lottery_winner = true, wise_winner = true }, feedText = "Smart moves. The money will last." },
+			{ text = "Share with family", effects = { Money = 200000, Happiness = 15 }, setFlags = { lottery_winner = true, generous = true }, feedText = "Your generosity made everyone happy!" },
+			{ text = "Blow it all in a year", effects = { Money = 50000, Happiness = 15, Health = -8 }, setFlags = { lottery_winner = true, broke_again = true }, feedText = "Easy come, easy go. Back to square one." },
+		},
+	},
+
+	-- SENIOR EXPANSION (65+)
+	{
+		id = "grandchildren",
+		title = "Becoming a Grandparent",
+		emoji = "👶",
+		text = "Your child just had a baby - you're a grandparent!",
+		question = "How do you feel about it?",
+		minAge = 50, maxAge = 80,
+		oneTime = true,
+		requiresFlags = { has_child = true },
+
+		choices = {
+			{ text = "Over the moon - best day ever", effects = { Happiness = 20 }, setFlags = { grandparent = true }, feedText = "A grandchild! Your heart is bursting with joy." },
+			{ text = "Excited but feel old", effects = { Happiness = 10 }, setFlags = { grandparent = true }, feedText = "Amazing but... grandparent? Already?" },
+			{ text = "Ready to spoil them rotten", effects = { Happiness = 15, Money = -500 }, setFlags = { grandparent = true, spoiling_grandparent = true }, feedText = "This kid is getting EVERYTHING!" },
+			{ text = "Hope they visit often", effects = { Happiness = 12 }, setFlags = { grandparent = true }, feedText = "Can't wait to see them grow up!" },
+		},
+		onResolve = function(state)
+			if state.AddRelationship then
+				state:AddRelationship("grandchild", {
+					id = "grandchild_" .. tostring(state.Age or 0),
+					name = "Grandchild",
+					type = "family",
+					age = 0,
+					relationship = 100,
+					alive = true,
+				})
+			end
+		end,
+	},
+	{
+		id = "assisted_living",
+		title = "Considering Assisted Living",
+		emoji = "🏥",
+		text = "Living independently is getting harder.",
+		question = "What do you decide?",
+		minAge = 75, maxAge = 95,
+		baseChance = 0.3,
+		cooldown = 5,
+
+		choices = {
+			{ text = "Move to assisted living", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different." },
+			{ text = "Hire in-home care", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home." },
+			{ text = "Move in with family", effects = { Happiness = 5 }, setFlags = { lives_with_family = true }, feedText = "Your kids welcomed you into their home." },
+			{ text = "Stubbornly stay independent", effects = { Happiness = 3, Health = -5 }, setFlags = { fiercely_independent = true }, feedText = "You'll manage on your own, thank you very much!" },
+		},
+	},
+	{
+		id = "lifetime_achievement",
+		title = "Lifetime Achievement",
+		emoji = "🏆",
+		text = "You're being recognized for your life's work!",
+		question = "What are you being honored for?",
+		minAge = 60, maxAge = 90,
+		oneTime = true,
+
+		choices = {
+			{ text = "Career achievements", effects = { Happiness = 15, Money = 1000 }, setFlags = { honored = true, career_celebrated = true }, feedText = "Your professional contributions are legendary!" },
+			{ text = "Community service", effects = { Happiness = 18 }, setFlags = { honored = true, community_hero = true }, feedText = "You made your community a better place." },
+			{ text = "Family legacy", effects = { Happiness = 20 }, setFlags = { honored = true, family_patriarch = true }, feedText = "Your family honors you as the heart of the family." },
+			{ text = "Still working on my legacy", effects = { Happiness = 5, Smarts = 2 }, feedText = "You're not done making your mark yet!" },
+		},
+	},
+	{
+		id = "spouse_passes",
+		title = "Losing Your Partner",
+		emoji = "💔",
+		text = "Your life partner has passed away.",
+		question = "How do you cope with the loss?",
+		minAge = 55, maxAge = 95,
+		oneTime = true,
+		requiresFlags = { married = true },
+
+		choices = {
+			{ text = "Lean on family for support", effects = { Happiness = -25, Health = -10 }, setFlags = { widowed = true }, feedText = "Devastating loss. Family keeps you going." },
+			{ text = "Find solace in memories", effects = { Happiness = -20, Health = -8 }, setFlags = { widowed = true }, feedText = "The memories of your life together sustain you." },
+			{ text = "Struggle alone with grief", effects = { Happiness = -30, Health = -15 }, setFlags = { widowed = true, depressed = true }, feedText = "The loneliness is crushing." },
+			{ text = "Eventually find new companionship", effects = { Happiness = -15, Health = -5 }, setFlags = { widowed = true, found_love_again = true }, feedText = "After time, you found connection again." },
+		},
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.married = nil
+		end,
+	},
+	{
+		id = "writing_will",
+		title = "Writing Your Will",
+		emoji = "📜",
+		text = "It's time to formalize your last wishes.",
+		question = "How do you want to divide your estate?",
+		minAge = 60, maxAge = 95,
+		oneTime = true,
+
+		choices = {
+			{ text = "Everything split equally among children", effects = { Happiness = 5 }, setFlags = { has_will = true }, feedText = "Fair and simple. Fewer arguments later." },
+			{ text = "Leave more to those who need it", effects = { Happiness = 3 }, setFlags = { has_will = true }, feedText = "You considered each person's situation." },
+			{ text = "Donate much of it to charity", effects = { Happiness = 10, Money = -5000 }, setFlags = { has_will = true, charitable_legacy = true }, feedText = "Your wealth will help many causes." },
+			{ text = "Leave it all to one person", effects = { Happiness = -2 }, setFlags = { has_will = true, contentious_will = true }, feedText = "This might cause family drama later..." },
+		},
+	},
+	{
+		id = "technology_struggle",
+		title = "Technology Troubles",
+		emoji = "📱",
+		text = "Technology keeps changing and it's hard to keep up.",
+		question = "How do you handle it?",
+		minAge = 60, maxAge = 95,
+		baseChance = 0.5,
+		cooldown = 2,
+
+		choices = {
+			{ text = "Take a class to learn", effects = { Smarts = 5, Happiness = 5 }, setFlags = { tech_savvy_senior = true }, feedText = "You're learning! Video calls are great!" },
+			{ text = "Ask grandkids for help", effects = { Happiness = 5 }, feedText = "The young ones are patient teachers." },
+			{ text = "Give up - it's too confusing", effects = { Happiness = -3 }, setFlags = { technology_resistant = true }, feedText = "You'll stick with what you know." },
+			{ text = "Hire someone to set things up", effects = { Money = -200, Happiness = 3 }, feedText = "Everything works now... mostly." },
+		},
+	},
+	{
+		id = "downsizing",
+		title = "Time to Downsize",
+		emoji = "🏠",
+		text = "Your big house feels too empty now.",
+		question = "What do you do?",
+		minAge = 60, maxAge = 85,
+		oneTime = true,
+		requiresFlags = { homeowner = true },
+
+		choices = {
+			{ text = "Sell and move to a smaller place", effects = { Money = 20000, Happiness = 3 }, setFlags = { downsized = true }, feedText = "Less space, less maintenance. More freedom!" },
+			{ text = "Stay - too many memories here", effects = { Happiness = 5, Money = -1000 }, feedText = "This house is full of your life's history." },
+			{ text = "Move to a retirement community", effects = { Money = 15000, Happiness = 5 }, setFlags = { retirement_community = true }, feedText = "New friends and activities await!" },
+			{ text = "Have family move in with you", effects = { Happiness = 8 }, setFlags = { multigenerational_home = true }, feedText = "The house is full of life again!" },
+		},
+	},
+	{
+		id = "final_adventure",
+		title = "One Last Adventure",
+		emoji = "🌍",
+		text = "You want one final big adventure.",
+		question = "What will it be?",
+		minAge = 70, maxAge = 95,
+		oneTime = true,
+
+		choices = {
+			{ text = "World cruise", effects = { Money = -15000, Happiness = 20, Health = 3 }, setFlags = { world_traveler = true }, feedText = "Seeing the world at sea. Magnificent!" },
+			{ text = "Visit every grandchild", effects = { Money = -3000, Happiness = 15 }, feedText = "Quality time with each grandchild. Priceless." },
+			{ text = "Return to your birthplace", effects = { Money = -2000, Happiness = 12 }, setFlags = { returned_home = true }, feedText = "Revisiting where it all began. Emotional." },
+			{ text = "Learn to paint/play music", effects = { Money = -500, Happiness = 10, Smarts = 3 }, setFlags = { artist_senior = true }, feedText = "Never too late to be creative!" },
+			{ text = "Write your life story", effects = { Happiness = 8, Smarts = 3 }, setFlags = { memoir_complete = true }, feedText = "Your story is now preserved for generations." },
+		},
+	},
 }
 
 return Adult

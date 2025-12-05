@@ -449,6 +449,523 @@ Childhood.events = {
 			{ text = "Try to invest it somehow", effects = { Smarts = 5, Money = 30 }, setFlags = { entrepreneur = true }, hintCareer = "finance", feedText = "You're already thinking about growing your money!" },
 		},
 	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADDITIONAL CHILDHOOD EVENTS - AAA QUALITY EXPANSION
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "playground_accident",
+		title = "Playground Mishap",
+		emoji = "🤕",
+		text = "You fell off the monkey bars and hurt yourself!",
+		question = "Where did you get hurt?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.6,
+		cooldown = 3,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "injury", "playground", "pain" },
+
+		choices = {
+			{ text = "Scraped my knee badly", effects = { Health = -5, Happiness = -3 }, feedText = "Ouch! Your knee is all scraped up. You got a cool bandage though." },
+			{ text = "Bruised my arm", effects = { Health = -3, Happiness = -2 }, feedText = "Your arm is purple and sore, but you're tough!" },
+			{ text = "Bumped my head", effects = { Health = -8, Smarts = -1 }, feedText = "That was a hard bump. Mom is worried." },
+			{ text = "Landed on my butt - I'm fine!", effects = { Health = -1, Happiness = 2 }, feedText = "You bounced right back up like nothing happened!" },
+		},
+	},
+	{
+		id = "scary_movie",
+		title = "The Scary Movie",
+		emoji = "😱",
+		text = "You accidentally watched a scary movie that was way too intense for your age.",
+		question = "How do you react?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 4,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "psychology",
+		tags = { "fear", "movies", "nightmares" },
+
+		choices = {
+			{ text = "Can't sleep for weeks", effects = { Health = -4, Happiness = -6 }, setFlags = { easily_scared = true }, feedText = "You had nightmares for weeks. Maybe skip the horror section next time." },
+			{ text = "Pretend it didn't scare you", effects = { Happiness = -2 }, setFlags = { hides_feelings = true }, feedText = "You played it cool but still checked under the bed." },
+			{ text = "Actually thought it was cool", effects = { Happiness = 3 }, setFlags = { loves_horror = true }, feedText = "You found your love for spooky stuff!" },
+			{ text = "Run to your parents", effects = { Happiness = 2 }, feedText = "Mom and Dad made you feel safe again." },
+		},
+	},
+	{
+		id = "lost_in_store",
+		title = "Lost in the Store",
+		emoji = "😰",
+		text = "You got separated from your parents at the shopping mall!",
+		question = "What do you do?",
+		minAge = 3, maxAge = 8,
+		baseChance = 0.4,
+		cooldown = 5,
+
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "safety",
+		tags = { "lost", "scary", "parents" },
+
+		choices = {
+			{ text = "Panic and cry loudly", effects = { Happiness = -5 }, feedText = "Your crying helped a store worker find you quickly!" },
+			{ text = "Stay calm and find an employee", effects = { Smarts = 4, Happiness = 2 }, setFlags = { stays_calm = true }, feedText = "You remembered what your parents taught you. Smart kid!" },
+			{ text = "Start wandering around looking", effects = { Happiness = -3 }, feedText = "You got even more lost before security found you." },
+			{ text = "Hide and wait", effects = { Happiness = -4 }, setFlags = { anxious = true }, feedText = "You hid for a while until your frantic parents found you." },
+		},
+	},
+	{
+		id = "talent_show",
+		title = "School Talent Show",
+		emoji = "🎤",
+		text = "Your school is having a talent show! Will you participate?",
+		question = "What's your act?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.6,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "performance",
+		tags = { "talent", "performance", "school" },
+		careerTags = { "entertainment", "creative" },
+
+		choices = {
+			{ text = "Sing a song", effects = { Happiness = 6, Looks = 2 }, setFlags = { singer = true }, hintCareer = "entertainment", feedText = "You sang your heart out! The crowd loved it!" },
+			{ text = "Do a magic trick", effects = { Smarts = 3, Happiness = 5 }, setFlags = { magician = true }, feedText = "Your magic trick wowed everyone!" },
+			{ text = "Tell jokes", effects = { Happiness = 7 }, setFlags = { class_clown = true }, hintCareer = "entertainment", feedText = "You had everyone laughing!" },
+			{ text = "Play an instrument", effects = { Smarts = 4, Happiness = 5 }, setFlags = { musician = true }, hintCareer = "creative", feedText = "Your musical talent impressed the judges!" },
+			{ text = "Too shy to perform", effects = { Happiness = -2 }, setFlags = { stage_fright = true }, feedText = "You watched from the audience. Maybe next year." },
+		},
+	},
+	{
+		id = "new_baby_sibling",
+		title = "A New Baby!",
+		emoji = "👶",
+		text = "Your parents just brought home a new baby sibling!",
+		question = "How do you feel about being a big brother/sister?",
+		minAge = 3, maxAge = 10,
+		oneTime = true,
+		baseChance = 0.4,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "family",
+		tags = { "sibling", "baby", "family_change" },
+
+		onResolve = function(state)
+			-- Add the baby sibling to relationships
+			if state.AddRelationship then
+				local isBoy = math.random() > 0.5
+				state:AddRelationship("baby_sibling", {
+					id = "baby_sibling",
+					name = "Baby",
+					type = "family",
+					role = isBoy and "Baby Brother" or "Baby Sister",
+					relationship = 50,
+					age = 0,
+					gender = isBoy and "male" or "female",
+					alive = true,
+					isFamily = true,
+				})
+			end
+		end,
+
+		choices = {
+			{ text = "So excited to be a big sibling!", effects = { Happiness = 8 }, setFlags = { loves_sibling = true, has_younger_sibling = true }, feedText = "You can't wait to teach them everything you know!" },
+			{ text = "Jealous of the attention they get", effects = { Happiness = -5 }, setFlags = { sibling_rivalry = true, has_younger_sibling = true }, feedText = "You miss being the only child..." },
+			{ text = "Curious but cautious", effects = { Happiness = 3, Smarts = 2 }, setFlags = { protective_sibling = true, has_younger_sibling = true }, feedText = "You're learning how to be a good big sibling." },
+			{ text = "Want to help take care of them", effects = { Happiness = 5 }, setFlags = { nurturing = true, has_younger_sibling = true }, hintCareer = "medical", feedText = "You're already being so helpful with the baby!" },
+		},
+	},
+	{
+		id = "sports_tryout",
+		title = "Youth Sports Tryouts",
+		emoji = "⚽",
+		text = "Tryouts for a youth sports team are coming up!",
+		question = "Which sport do you try out for?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.6,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "sports",
+		tags = { "sports", "team", "competition" },
+		careerTags = { "sports" },
+
+		choices = {
+			{ text = "Soccer", effects = { Health = 5, Happiness = 4 }, setFlags = { plays_soccer = true, team_player = true }, hintCareer = "sports", feedText = "You made the soccer team!" },
+			{ text = "Basketball", effects = { Health = 5, Happiness = 4 }, setFlags = { plays_basketball = true, team_player = true }, hintCareer = "sports", feedText = "You're on the basketball team!" },
+			{ text = "Baseball/Softball", effects = { Health = 4, Happiness = 4, Smarts = 2 }, setFlags = { plays_baseball = true }, hintCareer = "sports", feedText = "Play ball! You made the team!" },
+			{ text = "Swimming", effects = { Health = 6, Happiness = 3 }, setFlags = { swimmer = true }, hintCareer = "sports", feedText = "You're a natural in the water!" },
+			{ text = "Not interested in sports", effects = { Happiness = 1 }, feedText = "Organized sports aren't your thing. That's okay!" },
+		},
+	},
+	{
+		id = "piano_lessons",
+		title = "Music Lessons",
+		emoji = "🎹",
+		text = "Your parents want you to take music lessons.",
+		question = "What instrument do you learn?",
+		minAge = 5, maxAge = 10,
+		oneTime = true,
+		baseChance = 0.5,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "music",
+		tags = { "music", "lessons", "skills" },
+		careerTags = { "creative", "entertainment" },
+
+		choices = {
+			{ text = "Piano", effects = { Smarts = 5, Happiness = 3 }, setFlags = { plays_piano = true, musical = true }, hintCareer = "creative", feedText = "You're learning the piano! Classical training begins." },
+			{ text = "Guitar", effects = { Smarts = 3, Happiness = 5, Looks = 2 }, setFlags = { plays_guitar = true, musical = true }, hintCareer = "entertainment", feedText = "You picked up the guitar! Very cool." },
+			{ text = "Violin", effects = { Smarts = 6, Happiness = 2 }, setFlags = { plays_violin = true, musical = true }, hintCareer = "creative", feedText = "The violin is challenging but you're determined!" },
+			{ text = "Drums", effects = { Happiness = 6, Health = 2 }, setFlags = { plays_drums = true, musical = true }, hintCareer = "entertainment", feedText = "You're the drummer! Your parents might regret this..." },
+			{ text = "I don't want lessons", effects = { Happiness = 2 }, feedText = "You'd rather spend time doing other things." },
+		},
+	},
+	{
+		id = "loose_tooth_fear",
+		title = "Wobbly Tooth Terror",
+		emoji = "🦷",
+		text = "Your tooth is really loose and wiggling around. It's about to fall out!",
+		question = "How do you handle it?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.7,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "teeth", "growing_up", "fear" },
+
+		choices = {
+			{ text = "Pull it out yourself!", effects = { Health = 1, Happiness = 5, Money = 5 }, setFlags = { brave_about_pain = true }, feedText = "You yanked it out! Tooth fairy money incoming!" },
+			{ text = "Let it fall out naturally", effects = { Happiness = 3, Money = 5 }, feedText = "It came out while eating an apple. Classic!" },
+			{ text = "Too scared to touch it", effects = { Happiness = -2 }, setFlags = { fears_dentist = true }, feedText = "You avoided it for days until it fell out on its own." },
+			{ text = "Ask mom/dad to help", effects = { Happiness = 3, Money = 5 }, feedText = "With a quick tug, it was done! Not so bad." },
+		},
+	},
+	{
+		id = "spelling_bee",
+		title = "The Spelling Bee",
+		emoji = "🐝",
+		text = "You've been selected to compete in the school spelling bee!",
+		question = "How do you prepare?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 3,
+
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "academics",
+		tags = { "competition", "school", "spelling" },
+		careerTags = { "education", "creative" },
+
+		choices = {
+			{ text = "Study the dictionary obsessively", effects = { Smarts = 7, Health = -2, Happiness = 3 }, setFlags = { academic_competitor = true }, feedText = "You won the spelling bee! E-X-C-E-L-L-E-N-T!" },
+			{ text = "Practice casually", effects = { Smarts = 4, Happiness = 3 }, feedText = "You made it to the final rounds!" },
+			{ text = "Wing it with natural ability", effects = { Smarts = 2, Happiness = 4 }, feedText = "You did okay without much studying!" },
+			{ text = "Get too nervous and freeze", effects = { Happiness = -4, Smarts = 1 }, setFlags = { performance_anxiety = true }, feedText = "You blanked on an easy word. It happens to everyone." },
+		},
+	},
+	{
+		id = "sleepover_first",
+		title = "First Sleepover",
+		emoji = "🛏️",
+		text = "You're invited to your first sleepover at a friend's house!",
+		question = "How does it go?",
+		minAge = 6, maxAge = 10,
+		oneTime = true,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "social",
+		tags = { "friends", "sleepover", "independence" },
+
+		choices = {
+			{ text = "Have an amazing time!", effects = { Happiness = 8 }, setFlags = { loves_sleepovers = true }, feedText = "Best night ever! You stayed up so late!" },
+			{ text = "Get homesick and call parents", effects = { Happiness = -3 }, setFlags = { gets_homesick = true }, feedText = "You missed home too much. That's okay, it was your first time." },
+			{ text = "Can't fall asleep anywhere else", effects = { Happiness = 2, Health = -2 }, feedText = "You were exhausted the next day but it was worth it!" },
+			{ text = "Make even closer friends", effects = { Happiness = 6 }, setFlags = { close_friendships = true }, feedText = "Late night talks made your friendship even stronger!" },
+		},
+	},
+	{
+		id = "caught_lying",
+		title = "The Big Lie",
+		emoji = "🤥",
+		text = "You told a lie and your parents found out!",
+		question = "What was the lie about?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 3,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "behavior",
+		tags = { "lying", "consequences", "morals" },
+
+		choices = {
+			{ text = "Said I didn't eat the cookies", effects = { Happiness = -3 }, feedText = "The chocolate on your face gave you away..." },
+			{ text = "Blamed my sibling for something I did", effects = { Happiness = -4 }, setFlags = { blames_others = true }, feedText = "You got caught and had to apologize to everyone." },
+			{ text = "Said I did my homework when I didn't", effects = { Smarts = -2, Happiness = -3 }, feedText = "Double trouble - for lying AND not doing homework!" },
+			{ text = "Confessed before getting caught", effects = { Happiness = 2, Smarts = 2 }, setFlags = { honest = true }, feedText = "Coming clean felt better than you expected." },
+		},
+	},
+	{
+		id = "video_game_discovery",
+		title = "Video Game Obsession",
+		emoji = "🎮",
+		text = "You discovered video games and can't stop playing!",
+		question = "What's your gaming style?",
+		minAge = 6, maxAge = 12,
+		oneTime = true,
+		baseChance = 0.7,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "hobbies",
+		tags = { "gaming", "technology", "hobby" },
+		careerTags = { "tech", "entertainment" },
+
+		choices = {
+			{ text = "Become a dedicated gamer", effects = { Happiness = 7, Health = -3, Smarts = 2 }, setFlags = { gamer = true, loves_games = true }, hintCareer = "tech", feedText = "Gaming becomes your favorite hobby!" },
+			{ text = "Play in moderation", effects = { Happiness = 4, Smarts = 2 }, setFlags = { casual_gamer = true }, feedText = "You enjoy games but keep a healthy balance." },
+			{ text = "Get bored of games quickly", effects = { Happiness = 1 }, feedText = "Games aren't really your thing." },
+			{ text = "Parents limit screen time strictly", effects = { Happiness = -2, Health = 2 }, setFlags = { limited_screen_time = true }, feedText = "Only 30 minutes a day. You made them count!" },
+		},
+	},
+	{
+		id = "show_and_tell",
+		title = "Show and Tell",
+		emoji = "🧸",
+		text = "It's your turn for show and tell at school!",
+		question = "What do you bring?",
+		minAge = 4, maxAge = 7,
+		baseChance = 0.8,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "school",
+		tags = { "school", "presentation", "sharing" },
+
+		choices = {
+			{ text = "My favorite toy", effects = { Happiness = 5 }, feedText = "Everyone loved your special toy!" },
+			{ text = "Something I made", effects = { Happiness = 4, Smarts = 3 }, setFlags = { creative = true }, feedText = "Your handmade creation impressed the class!" },
+			{ text = "A cool rock I found", effects = { Happiness = 3, Smarts = 2 }, setFlags = { collector = true }, feedText = "Nature is fascinating! Everyone wanted to see your rock." },
+			{ text = "My pet (with permission)", effects = { Happiness = 8 }, setFlags = { has_pet = true }, feedText = "Your pet was the star of show and tell!" },
+			{ text = "Forget to bring anything", effects = { Happiness = -4 }, feedText = "You had to improvise. It was awkward." },
+		},
+	},
+	{
+		id = "reading_discovery",
+		title = "Falling in Love with Reading",
+		emoji = "📚",
+		text = "You discovered a book series that captured your imagination!",
+		question = "What kind of books do you love?",
+		minAge = 6, maxAge = 12,
+		oneTime = true,
+		baseChance = 0.6,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "literacy",
+		tags = { "reading", "imagination", "learning" },
+		careerTags = { "education", "creative" },
+
+		choices = {
+			{ text = "Fantasy and magic", effects = { Smarts = 5, Happiness = 6 }, setFlags = { bookworm = true, loves_fantasy = true }, hintCareer = "creative", feedText = "You got lost in magical worlds!" },
+			{ text = "Mystery and detective stories", effects = { Smarts = 6, Happiness = 4 }, setFlags = { bookworm = true, loves_mystery = true }, feedText = "You're always trying to solve the case before the end!" },
+			{ text = "Science and nature books", effects = { Smarts = 7, Happiness = 3 }, setFlags = { bookworm = true, loves_science = true }, hintCareer = "science", feedText = "Non-fiction fascinated you. So many facts to learn!" },
+			{ text = "Comics and graphic novels", effects = { Happiness = 5, Smarts = 3 }, setFlags = { loves_comics = true }, feedText = "Pictures and stories combined? Perfect!" },
+			{ text = "I don't really like reading", effects = { Happiness = 1 }, feedText = "Books aren't your thing right now." },
+		},
+	},
+	{
+		id = "treehouse_adventure",
+		title = "The Secret Fort",
+		emoji = "🏠",
+		text = "You and your friends found a perfect spot for a secret hideout!",
+		question = "What kind of hideout do you build?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 4,
+
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "play",
+		tags = { "adventure", "creativity", "friends" },
+
+		choices = {
+			{ text = "A treehouse in the backyard", effects = { Happiness = 8, Health = 3 }, setFlags = { has_treehouse = true, outdoorsy = true }, feedText = "Your treehouse became legendary in the neighborhood!" },
+			{ text = "A blanket fort inside", effects = { Happiness = 6 }, setFlags = { creative_builder = true }, feedText = "The ultimate blanket fort! So cozy." },
+			{ text = "A secret club with rules", effects = { Happiness = 5, Smarts = 3 }, setFlags = { natural_leader = true }, feedText = "Your secret club had meetings and everything!" },
+			{ text = "A detective headquarters", effects = { Happiness = 5, Smarts = 4 }, setFlags = { detective_dreams = true }, feedText = "You solved neighborhood mysteries from your HQ!" },
+		},
+	},
+	{
+		id = "bad_dream",
+		title = "Nightmares",
+		emoji = "😨",
+		text = "You've been having scary dreams lately.",
+		question = "How do you cope with the nightmares?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 3,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "psychology",
+		tags = { "dreams", "fear", "coping" },
+
+		choices = {
+			{ text = "Sleep with a nightlight", effects = { Happiness = 3 }, setFlags = { needs_nightlight = true }, feedText = "The light helps you feel safe." },
+			{ text = "Mom/Dad checks for monsters", effects = { Happiness = 4 }, feedText = "Parents confirmed: no monsters under the bed!" },
+			{ text = "Create a dream catcher", effects = { Happiness = 4, Smarts = 2 }, setFlags = { believes_in_magic = true }, feedText = "Your dream catcher works!" },
+			{ text = "Face the fear bravely", effects = { Happiness = 5, Smarts = 3 }, setFlags = { brave = true }, feedText = "You learned that nightmares can't really hurt you." },
+		},
+	},
+	{
+		id = "swimming_lessons",
+		title = "Learning to Swim",
+		emoji = "🏊",
+		text = "Your parents signed you up for swimming lessons!",
+		question = "How do you take to the water?",
+		minAge = 4, maxAge = 8,
+		oneTime = true,
+		baseChance = 0.7,
+
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "skills",
+		tags = { "swimming", "water", "skills" },
+		careerTags = { "sports" },
+
+		choices = {
+			{ text = "Natural swimmer - love it!", effects = { Health = 5, Happiness = 7 }, setFlags = { can_swim = true, water_confident = true }, hintCareer = "sports", feedText = "You took to water like a fish!" },
+			{ text = "Nervous but learning", effects = { Health = 3, Happiness = 2 }, setFlags = { can_swim = true }, feedText = "It took a while, but you learned to swim!" },
+			{ text = "Absolutely terrified of water", effects = { Happiness = -4 }, setFlags = { water_phobia = true }, feedText = "Swimming isn't for everyone..." },
+			{ text = "Love playing in water more than lessons", effects = { Happiness = 5, Health = 3 }, setFlags = { can_swim = true, playful = true }, feedText = "Lessons were boring, but splashing around was great!" },
+		},
+	},
+	{
+		id = "holiday_excitement",
+		title = "Holiday Magic",
+		emoji = "🎄",
+		text = "The holidays are here! You're so excited!",
+		question = "What's your favorite part?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.8,
+		cooldown = 1,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "family",
+		tags = { "holiday", "family", "tradition" },
+
+		choices = {
+			{ text = "The presents!", effects = { Happiness = 8, Money = 20 }, feedText = "You got exactly what you wished for!" },
+			{ text = "Family time together", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Being with everyone you love is the best gift." },
+			{ text = "The special food", effects = { Happiness = 6, Health = -1 }, feedText = "So many delicious treats!" },
+			{ text = "Decorating and traditions", effects = { Happiness = 6 }, setFlags = { loves_traditions = true }, feedText = "The decorations and traditions make everything magical." },
+		},
+	},
+	{
+		id = "first_day_anxiety",
+		title = "First Day Fears",
+		emoji = "😟",
+		text = "It's the first day at a new school and you're nervous.",
+		question = "How do you handle the anxiety?",
+		minAge = 5, maxAge = 11,
+		baseChance = 0.4,
+		cooldown = 4,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "anxiety", "school", "new_beginnings" },
+
+		choices = {
+			{ text = "Put on a brave face", effects = { Happiness = 4, Smarts = 2 }, setFlags = { adapts_well = true }, feedText = "You walked in with confidence (even if you didn't feel it)." },
+			{ text = "Cry and want to go home", effects = { Happiness = -4 }, setFlags = { separation_anxiety = true }, feedText = "It was rough, but it got better." },
+			{ text = "Make a new friend immediately", effects = { Happiness = 7 }, setFlags = { makes_friends_easily = true }, feedText = "Within an hour, you had a new best friend!" },
+			{ text = "Stay quiet and observe", effects = { Smarts = 4 }, setFlags = { cautious = true }, feedText = "You figured out how things worked before jumping in." },
+		},
+	},
+	{
+		id = "dentist_visit",
+		title = "Dentist Appointment",
+		emoji = "🦷",
+		text = "Time for your dentist checkup!",
+		question = "How does the appointment go?",
+		minAge = 4, maxAge = 12,
+		baseChance = 0.6,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "dentist", "health", "fear" },
+
+		choices = {
+			{ text = "Perfect checkup - no cavities!", effects = { Health = 3, Happiness = 5 }, feedText = "Your teeth are perfect! Good brushing!" },
+			{ text = "A small cavity to fill", effects = { Health = 2, Happiness = -3, Money = -20 }, feedText = "The drilling wasn't fun, but it's over now." },
+			{ text = "So scared you cried", effects = { Happiness = -4 }, setFlags = { fears_dentist = true }, feedText = "Dentists are scary! But you got through it." },
+			{ text = "Actually liked the dentist", effects = { Happiness = 3, Smarts = 2 }, setFlags = { dentist_friendly = true }, hintCareer = "medical", feedText = "The dentist gave you a cool toothbrush!" },
+		},
+	},
+	{
+		id = "broken_favorite_toy",
+		title = "Broken Treasure",
+		emoji = "💔",
+		text = "Your favorite toy broke!",
+		question = "How do you react?",
+		minAge = 3, maxAge = 8,
+		baseChance = 0.5,
+		cooldown = 3,
+
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "emotions",
+		tags = { "loss", "emotions", "coping" },
+
+		choices = {
+			{ text = "Devastated - cry for hours", effects = { Happiness = -6 }, feedText = "You were heartbroken. That toy meant everything." },
+			{ text = "Try to fix it yourself", effects = { Happiness = -2, Smarts = 4 }, setFlags = { resourceful = true }, feedText = "You tried your best to repair it. That's problem-solving!" },
+			{ text = "Ask parents to fix it", effects = { Happiness = 3 }, feedText = "Dad fixed it with some tape. Good as new... mostly." },
+			{ text = "Move on to a new toy", effects = { Happiness = 2 }, setFlags = { adapts_easily = true }, feedText = "You found a new favorite pretty quickly." },
+		},
+	},
+	{
+		id = "caught_in_rain",
+		title = "Caught in a Storm",
+		emoji = "🌧️",
+		text = "You got caught in a sudden rainstorm!",
+		question = "What do you do?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "weather",
+		tags = { "weather", "adventure", "play" },
+
+		choices = {
+			{ text = "Jump in all the puddles!", effects = { Happiness = 8, Health = -2 }, setFlags = { loves_rain = true }, feedText = "Splashing in puddles is the best! You're soaked but happy." },
+			{ text = "Run home as fast as you can", effects = { Health = 2 }, feedText = "You made it home just in time!" },
+			{ text = "Find shelter and wait", effects = { Smarts = 3 }, setFlags = { patient = true }, feedText = "You stayed dry under the awning until it passed." },
+			{ text = "Get scared of the thunder", effects = { Happiness = -3 }, setFlags = { fears_storms = true }, feedText = "The thunder was really scary!" },
+		},
+	},
 }
 
 return Childhood

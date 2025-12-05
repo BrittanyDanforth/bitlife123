@@ -861,7 +861,112 @@ function LifeBackend:setupRemotes()
 end
 
 function LifeBackend:createInitialState(player)
-	return LifeState.new(player)
+	local state = LifeState.new(player)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SERVER-SIDE FAMILY CREATION
+	-- Create proper family members so they're part of authoritative state
+	-- This prevents the "disappearing family" bug where client-generated defaults
+	-- would conflict with server state after interactions.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	state.Relationships = state.Relationships or {}
+	
+	-- Generate random names for family members
+	local maleNames = {"James", "Michael", "David", "John", "Robert", "William", "Richard", "Thomas", "Charles", "Daniel"}
+	local femaleNames = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"}
+	
+	local function randomName(gender)
+		local names = (gender == "male") and maleNames or femaleNames
+		return names[RANDOM:NextInteger(1, #names)]
+	end
+	
+	-- Mother (always created)
+	local motherAge = 22 + RANDOM:NextInteger(0, 8) -- Mom is 22-30 years older
+	state.Relationships["mother"] = {
+		id = "mother",
+		name = randomName("female"),
+		type = "family",
+		role = "Mother",
+		relationship = 75 + RANDOM:NextInteger(-10, 15),
+		age = motherAge,
+		gender = "female",
+		alive = true,
+		isFamily = true,
+	}
+	
+	-- Father (always created)
+	local fatherAge = 24 + RANDOM:NextInteger(0, 10) -- Dad is 24-34 years older
+	state.Relationships["father"] = {
+		id = "father",
+		name = randomName("male"),
+		type = "family",
+		role = "Father",
+		relationship = 70 + RANDOM:NextInteger(-10, 15),
+		age = fatherAge,
+		gender = "male",
+		alive = true,
+		isFamily = true,
+	}
+	
+	-- Grandparents (50% chance each)
+	if RANDOM:NextNumber() > 0.5 then
+		local grandmaAge = motherAge + 22 + RANDOM:NextInteger(0, 8)
+		state.Relationships["grandmother_maternal"] = {
+			id = "grandmother_maternal",
+			name = randomName("female"),
+			type = "family",
+			role = "Grandmother",
+			relationship = 65 + RANDOM:NextInteger(-5, 10),
+			age = grandmaAge,
+			gender = "female",
+			alive = grandmaAge < 85,
+			isFamily = true,
+		}
+	end
+	
+	if RANDOM:NextNumber() > 0.5 then
+		local grandpaAge = fatherAge + 24 + RANDOM:NextInteger(0, 10)
+		state.Relationships["grandfather_paternal"] = {
+			id = "grandfather_paternal",
+			name = randomName("male"),
+			type = "family",
+			role = "Grandfather",
+			relationship = 60 + RANDOM:NextInteger(-5, 10),
+			age = grandpaAge,
+			gender = "male",
+			alive = grandpaAge < 82,
+			isFamily = true,
+		}
+	end
+	
+	-- Siblings (random chance)
+	local numSiblings = RANDOM:NextInteger(0, 3)
+	for i = 1, numSiblings do
+		local isBrother = RANDOM:NextNumber() > 0.5
+		local siblingAge = RANDOM:NextInteger(-5, 8) -- Can be older or younger
+		local siblingId = (isBrother and "brother_" or "sister_") .. tostring(i)
+		local siblingRole = siblingAge > 0 and (isBrother and "Older Brother" or "Older Sister") 
+			or (isBrother and "Younger Brother" or "Younger Sister")
+		
+		state.Relationships[siblingId] = {
+			id = siblingId,
+			name = randomName(isBrother and "male" or "female"),
+			type = "family",
+			role = siblingRole,
+			relationship = 55 + RANDOM:NextInteger(-10, 20),
+			age = math.max(1, siblingAge), -- Sibling age relative to player (stored as absolute later)
+			gender = isBrother and "male" or "female",
+			alive = true,
+			isFamily = true,
+			ageOffset = siblingAge, -- Store the offset for updating later
+		}
+	end
+	
+	debugPrint(string.format("Created initial state for %s with %d family members", 
+		player.Name, countEntries(state.Relationships)))
+	
+	return state
 end
 
 function LifeBackend:getState(player)
@@ -2005,18 +2110,46 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	options = options or {}
 	state.Relationships = state.Relationships or {}
 
+	-- If we have a specific targetId and it exists, return it
 	if targetId and state.Relationships[targetId] then
 		return state.Relationships[targetId]
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FAMILY MEMBER HANDLING
+	-- For family types (mother, father, sibling, etc.), do NOT create generic entries.
+	-- Family members are created server-side in createInitialState(). If a family
+	-- member doesn't exist in state.Relationships, return nil so the client knows
+	-- this person doesn't exist (preventing the "deleted family" bug).
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if relType == "family" then
+		-- If targetId is specified but doesn't exist, the family member doesn't exist
+		if targetId then
+			local familyIds = {"mother", "father", "grandmother", "grandfather", "brother", "sister", "son", "daughter"}
+			for _, familyType in ipairs(familyIds) do
+				if targetId:lower():find(familyType) then
+					-- This is a family ID but it doesn't exist in state - return nil
+					debugPrint(string.format("Family member '%s' not found in state - returning nil", targetId))
+					return nil
+				end
+			end
+		end
+		
+		-- For generic family requests without targetId, also return nil (don't create randoms)
+		return nil
+	end
+
+	-- Force create a new relationship if requested
 	if options.forceNewRelationship then
 		return self:createRelationship(state, relType, options.relationshipOptions)
 	end
 
+	-- Friend: create new friend if no specific target
 	if relType == "friend" and not targetId then
 		return self:createRelationship(state, "friend", options.relationshipOptions)
 	end
 
+	-- Romance: find existing partner or create new one
 	if relType == "romance" then
 		if targetId and state.Relationships[targetId] then
 			return state.Relationships[targetId]
@@ -2030,13 +2163,19 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 		return self:createRelationship(state, "romance", options.relationshipOptions)
 	end
 
+	-- Enemy: create new enemy if no specific target
+	if relType == "enemy" and not targetId then
+		return self:createRelationship(state, "enemy", options.relationshipOptions)
+	end
+
+	-- For other relationship types with targetId that doesn't exist, create it
 	if targetId and not state.Relationships[targetId] then
 		local relOptions = shallowCopy(options.relationshipOptions or {})
 		relOptions.id = targetId
 		return self:createRelationship(state, relType, relOptions)
 	end
 
-	return targetId and state.Relationships[targetId] or self:createRelationship(state, relType, options.relationshipOptions)
+	return targetId and state.Relationships[targetId] or nil
 end
 
 function LifeBackend:handleInteraction(player, payload)

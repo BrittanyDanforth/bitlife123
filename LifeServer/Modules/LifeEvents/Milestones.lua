@@ -161,16 +161,18 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "It's not pretty, but it's yours!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "vehicle", {
-						id = "beater_car_" .. tostring(state.Age),
-						name = "Beat-up Used Car",
-						emoji = "🚙",
-						price = 500,
-						value = 400,
-						condition = 35,
-						isEventAcquired = true,
-					})
+					-- Use LifeState:AddAsset directly instead of EventEngine
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "beater_car_" .. tostring(state.Age or 0),
+							name = "Beat-up Used Car",
+							emoji = "🚙",
+							price = 500,
+							value = 400,
+							condition = 35,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -179,16 +181,17 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "A solid first car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "vehicle", {
-						id = "reliable_car_" .. tostring(state.Age),
-						name = "Reliable Used Car",
-						emoji = "🚗",
-						price = 3000,
-						value = 2500,
-						condition = 65,
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "reliable_car_" .. tostring(state.Age or 0),
+							name = "Reliable Used Car",
+							emoji = "🚗",
+							price = 3000,
+							value = 2500,
+							condition = 65,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{
@@ -197,16 +200,17 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "Your family helped you get a car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
-					EventEngine.addAsset(state, "vehicle", {
-						id = "gift_car_" .. tostring(state.Age),
-						name = "Family Gift Car",
-						emoji = "🚗",
-						price = 0,
-						value = 5000,
-						condition = 70,
-						isEventAcquired = true,
-					})
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "gift_car_" .. tostring(state.Age or 0),
+							name = "Family Gift Car",
+							emoji = "🚗",
+							price = 0,
+							value = 5000,
+							condition = 70,
+							isEventAcquired = true,
+						})
+					end
 				end,
 			},
 			{

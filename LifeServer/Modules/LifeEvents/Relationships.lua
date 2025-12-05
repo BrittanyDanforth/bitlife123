@@ -323,6 +323,463 @@ Relationships.events = {
 			{ text = "Some bridges are meant to stay closed", effects = { Happiness = 2 }, feedText = "You chose not to reconnect." },
 		},
 	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADDITIONAL RELATIONSHIP EVENTS - AAA QUALITY EXPANSION
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	-- DATING EXPANSION
+	{
+		id = "first_date",
+		title = "First Date Jitters",
+		emoji = "☕",
+		text = "You're going on a first date!",
+		question = "How does it go?",
+		minAge = 15, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresSingle = true,
+
+		choices = {
+			{ text = "Amazing chemistry - sparks flying!", effects = { Happiness = 12 }, setFlags = { has_partner = true, dating = true, great_first_date = true }, feedText = "Best first date ever! You're smitten." },
+			{ text = "Nice but no chemistry", effects = { Happiness = 2 }, feedText = "Pleasant but not a match. Oh well." },
+			{ text = "Disaster date from hell", effects = { Happiness = -5 }, setFlags = { bad_date_story = true }, feedText = "Awful date. At least it's a funny story now." },
+			{ text = "You got stood up", effects = { Happiness = -8 }, feedText = "They never showed. Crushing." },
+		},
+	},
+	{
+		id = "ex_returns",
+		title = "Blast from the Past",
+		emoji = "💫",
+		text = "Your ex has reached out wanting to reconnect.",
+		question = "What do you do?",
+		minAge = 18, maxAge = 55,
+		baseChance = 0.2,
+		cooldown = 5,
+
+		choices = {
+			{ text = "Give them another chance", effects = { Happiness = 5 }, setFlags = { back_with_ex = true, has_partner = true }, feedText = "You're giving it another shot..." },
+			{ text = "Catch up but keep boundaries", effects = { Happiness = 3 }, feedText = "You caught up. Closure feels good." },
+			{ text = "Block and ignore", effects = { Happiness = 5 }, setFlags = { over_ex = true }, feedText = "You're completely over them. Blocked!" },
+			{ text = "Petty revenge - show them what they lost", effects = { Happiness = 8, Looks = 2 }, feedText = "You looked amazing. Their loss!" },
+		},
+	},
+	{
+		id = "speed_dating",
+		title = "Speed Dating Event",
+		emoji = "⏰",
+		text = "A friend dragged you to a speed dating event.",
+		question = "How does it go?",
+		minAge = 21, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresSingle = true,
+
+		choices = {
+			{ text = "Met someone incredible!", effects = { Happiness = 12 }, setFlags = { has_partner = true, dating = true }, feedText = "You found a real connection in just 5 minutes!" },
+			{ text = "Few decent options", effects = { Happiness = 3 }, feedText = "Got some numbers. We'll see where it goes." },
+			{ text = "All duds", effects = { Happiness = -3 }, feedText = "Nobody was your type. Disappointing." },
+			{ text = "Left early - too awkward", effects = { Happiness = -2 }, feedText = "You couldn't handle the awkwardness." },
+		},
+	},
+	{
+		id = "blind_date",
+		title = "Blind Date",
+		emoji = "🙈",
+		text = "A friend set you up on a blind date.",
+		question = "How did it go?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 3,
+		requiresSingle = true,
+
+		choices = {
+			{ text = "Love at first sight!", effects = { Happiness = 15 }, setFlags = { has_partner = true, dating = true, met_through_friend = true }, feedText = "Your friend knows you so well! Amazing match!" },
+			{ text = "Nice person, just no spark", effects = { Happiness = 2 }, feedText = "Good conversation but no romance." },
+			{ text = "Complete mismatch", effects = { Happiness = -3 }, feedText = "What was your friend thinking?" },
+			{ text = "They were creepy", effects = { Happiness = -8 }, feedText = "Never trusting that friend's taste again." },
+		},
+	},
+
+	-- RELATIONSHIP DRAMA
+	{
+		id = "caught_cheating",
+		title = "Caught Cheating",
+		emoji = "💔",
+		text = "You discovered your partner has been cheating on you.",
+		question = "What do you do?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.15,
+		cooldown = 10,
+		requiresPartner = true,
+
+		choices = {
+			{ text = "Confront them and break up", effects = { Happiness = -20 }, setFlags = { cheated_on = true, recently_single = true, has_partner = false }, feedText = "Your trust is shattered. Relationship over." },
+			{ text = "Try to work through it", effects = { Happiness = -15, Smarts = 2 }, setFlags = { cheated_on = true, rebuilding_trust = true }, feedText = "Trying to salvage the relationship..." },
+			{ text = "Revenge affair", effects = { Happiness = -10 }, setFlags = { cheater = true, toxic_relationship = true }, feedText = "Two wrongs don't make a right, but..." },
+			{ text = "Walk away silently", effects = { Happiness = -12 }, setFlags = { cheated_on = true, recently_single = true, has_partner = false }, feedText = "You left without a word. Dignity intact." },
+		},
+	},
+	{
+		id = "jealousy_issues",
+		title = "Jealousy Problems",
+		emoji = "😠",
+		text = "Jealousy is causing issues in your relationship.",
+		question = "Who's the jealous one?",
+		minAge = 16, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 3,
+		requiresPartner = true,
+
+		choices = {
+			{ text = "You are - and you're working on it", effects = { Happiness = -3, Smarts = 2 }, setFlags = { working_on_jealousy = true }, feedText = "Self-awareness is the first step." },
+			{ text = "They are - it's suffocating", effects = { Happiness = -8 }, setFlags = { possessive_partner = true }, feedText = "Their jealousy is exhausting." },
+			{ text = "Both of you need to improve", effects = { Happiness = -5 }, feedText = "Mutual growth is needed." },
+			{ text = "Time to break up", effects = { Happiness = -10 }, setFlags = { recently_single = true, has_partner = false }, feedText = "The jealousy killed the relationship." },
+		},
+	},
+	{
+		id = "partner_secret",
+		title = "Partner's Secret",
+		emoji = "🤫",
+		text = "You discovered a major secret your partner has been keeping.",
+		question = "What was it?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresPartner = true,
+
+		choices = {
+			{ text = "Hidden debt", effects = { Happiness = -10, Money = -3000 }, setFlags = { partner_debt = true }, feedText = "They've been hiding serious financial problems." },
+			{ text = "Secret family you didn't know about", effects = { Happiness = -15 }, setFlags = { partner_secret_family = true }, feedText = "They have a whole other life you didn't know about." },
+			{ text = "A harmless surprise for you", effects = { Happiness = 10 }, feedText = "They were planning a surprise for you! Phew!" },
+			{ text = "Past they're ashamed of", effects = { Happiness = -5, Smarts = 2 }, feedText = "Their past is complicated but you understand." },
+		},
+	},
+	{
+		id = "anniversary",
+		title = "Anniversary",
+		emoji = "💕",
+		text = "It's your anniversary!",
+		question = "How do you celebrate?",
+		minAge = 20, maxAge = 90,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresPartner = true,
+
+		choices = {
+			{ text = "Romantic getaway", effects = { Happiness = 15, Money = -1500, Health = 3 }, feedText = "A perfect anniversary trip!" },
+			{ text = "Fancy dinner", effects = { Happiness = 10, Money = -300 }, feedText = "Romantic dinner at your favorite spot." },
+			{ text = "Thoughtful homemade gift", effects = { Happiness = 12, Smarts = 2 }, feedText = "Your handmade gift meant everything to them." },
+			{ text = "You forgot...", effects = { Happiness = -15 }, setFlags = { forgot_anniversary = true }, feedText = "You forgot your anniversary. Big trouble." },
+		},
+	},
+	{
+		id = "in_laws",
+		title = "In-Law Drama",
+		emoji = "👨‍👩‍👦",
+		text = "Your in-laws are causing problems.",
+		question = "What's the issue?",
+		minAge = 22, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { married = true },
+
+		choices = {
+			{ text = "They don't approve of you", effects = { Happiness = -8 }, setFlags = { inlaw_problems = true }, feedText = "You'll never be good enough for them." },
+			{ text = "They're too involved in your life", effects = { Happiness = -6 }, feedText = "Boundaries don't exist for them." },
+			{ text = "They favor other siblings", effects = { Happiness = -5 }, feedText = "The favoritism is obvious and hurtful." },
+			{ text = "Actually, they adore you!", effects = { Happiness = 8 }, setFlags = { loved_by_inlaws = true }, feedText = "You lucked out with amazing in-laws!" },
+		},
+	},
+	{
+		id = "marriage_proposal_received",
+		title = "They Proposed!",
+		emoji = "💍",
+		text = "Your partner just proposed to you!",
+		question = "What do you say?",
+		minAge = 20, maxAge = 55,
+		oneTime = true,
+		requiresPartner = true,
+		requiresFlags = { committed_relationship = true },
+
+		choices = {
+			{ text = "YES! A thousand times yes!", effects = { Happiness = 20 }, setFlags = { engaged = true }, feedText = "You said yes! You're engaged!" },
+			{ text = "Yes, but need a long engagement", effects = { Happiness = 12 }, setFlags = { engaged = true, long_engagement = true }, feedText = "You said yes but want to take it slow." },
+			{ text = "I'm not ready yet", effects = { Happiness = -10 }, feedText = "You said no... for now. Awkward." },
+			{ text = "We need to break up", effects = { Happiness = -15 }, setFlags = { recently_single = true, has_partner = false }, feedText = "This made you realize it's not right." },
+		},
+	},
+
+	-- FRIENDSHIP EVENTS
+	{
+		id = "friend_betrayal",
+		title = "Friend Betrayal",
+		emoji = "🗡️",
+		text = "A close friend betrayed your trust.",
+		question = "What did they do?",
+		minAge = 13, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresFlags = { has_best_friend = true },
+
+		choices = {
+			{ text = "Shared your secrets", effects = { Happiness = -12 }, setFlags = { betrayed_by_friend = true }, feedText = "They told everyone your private business." },
+			{ text = "Stole from you", effects = { Happiness = -15, Money = -500 }, setFlags = { betrayed_by_friend = true }, feedText = "They stole money from you. Unforgivable." },
+			{ text = "Dated your ex", effects = { Happiness = -10 }, setFlags = { betrayed_by_friend = true }, feedText = "They broke the friend code." },
+			{ text = "Talked behind your back", effects = { Happiness = -8 }, feedText = "You heard what they really think of you." },
+		},
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.has_best_friend = nil
+		end,
+	},
+	{
+		id = "friend_group_drama",
+		title = "Friend Group Drama",
+		emoji = "👯",
+		text = "Drama has erupted in your friend group.",
+		question = "What's happening?",
+		minAge = 13, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+
+		choices = {
+			{ text = "Two friends are fighting, picking sides", effects = { Happiness = -5 }, feedText = "You had to choose. Awkward." },
+			{ text = "Everyone is drifting apart", effects = { Happiness = -8 }, setFlags = { losing_friends = true }, feedText = "The group is falling apart." },
+			{ text = "Someone new is causing chaos", effects = { Happiness = -4 }, feedText = "The new person changed the dynamic." },
+			{ text = "You mediated and saved the group", effects = { Happiness = 8, Smarts = 2 }, feedText = "You brought everyone together!" },
+		},
+	},
+	{
+		id = "toxic_friendship",
+		title = "Toxic Friendship",
+		emoji = "☢️",
+		text = "A friendship has become toxic and draining.",
+		question = "What do you do?",
+		minAge = 15, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 4,
+
+		choices = {
+			{ text = "Cut them off completely", effects = { Happiness = 5, Health = 3 }, setFlags = { ended_toxic_friendship = true }, feedText = "You're free from that negativity!" },
+			{ text = "Distance yourself gradually", effects = { Happiness = 3 }, feedText = "You're slowly pulling away." },
+			{ text = "Try to fix the friendship", effects = { Happiness = -3, Smarts = 2 }, feedText = "You're trying to work it out." },
+			{ text = "Keep enabling the toxicity", effects = { Happiness = -8, Health = -3 }, feedText = "This friendship is draining you." },
+		},
+	},
+	{
+		id = "best_friend_forever",
+		title = "BFF Moment",
+		emoji = "👯‍♀️",
+		text = "You and your best friend had an amazing experience together.",
+		question = "What happened?",
+		minAge = 10, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresFlags = { has_best_friend = true },
+
+		choices = {
+			{ text = "Epic adventure together", effects = { Happiness = 12, Health = 3 }, feedText = "You'll remember this forever!" },
+			{ text = "They helped you through tough times", effects = { Happiness = 10, Smarts = 2 }, feedText = "True friends are there when it matters." },
+			{ text = "Deep heart-to-heart conversation", effects = { Happiness = 8 }, feedText = "You've never felt closer to them." },
+			{ text = "Laughed until you cried", effects = { Happiness = 10 }, feedText = "Inside jokes for life!" },
+		},
+	},
+
+	-- FAMILY EXPANSION
+	{
+		id = "parent_divorce",
+		title = "Parents Divorcing",
+		emoji = "💔",
+		text = "Your parents are getting divorced.",
+		question = "How do you handle it?",
+		minAge = 8, maxAge = 40,
+		oneTime = true,
+
+		choices = {
+			{ text = "Devastated - your world is crashing", effects = { Happiness = -20, Health = -5 }, setFlags = { parents_divorced = true }, feedText = "Your family is falling apart." },
+			{ text = "Saw it coming - maybe for the best", effects = { Happiness = -8 }, setFlags = { parents_divorced = true }, feedText = "It's sad but not surprising." },
+			{ text = "Stuck in the middle - both want your support", effects = { Happiness = -15 }, setFlags = { parents_divorced = true, caught_in_middle = true }, feedText = "They're putting you in impossible positions." },
+			{ text = "Try to bring them back together", effects = { Happiness = -10 }, setFlags = { parents_divorced = true }, feedText = "You tried but couldn't save their marriage." },
+		},
+	},
+	{
+		id = "sibling_success",
+		title = "Sibling's Big Success",
+		emoji = "🌟",
+		text = "Your sibling achieved something major.",
+		question = "How do you feel?",
+		minAge = 15, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresFlags = { has_siblings = true },
+
+		choices = {
+			{ text = "Genuinely proud and happy for them", effects = { Happiness = 8 }, feedText = "You celebrated their success wholeheartedly!" },
+			{ text = "Happy but a bit jealous", effects = { Happiness = 3 }, setFlags = { sibling_jealousy = true }, feedText = "Why can't you have that success?" },
+			{ text = "It's always about them", effects = { Happiness = -5 }, setFlags = { overlooked_sibling = true }, feedText = "You feel invisible in comparison." },
+			{ text = "Inspired to achieve your own goals", effects = { Happiness = 6, Smarts = 2 }, feedText = "Their success motivated you!" },
+		},
+	},
+	{
+		id = "family_secret",
+		title = "Family Secret Revealed",
+		emoji = "🤫",
+		text = "You discovered a major family secret.",
+		question = "What was it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.15,
+		cooldown = 10,
+
+		choices = {
+			{ text = "You were adopted", effects = { Happiness = -15, Smarts = 2 }, setFlags = { discovered_adopted = true }, feedText = "Your whole identity is in question now." },
+			{ text = "A relative has a secret life", effects = { Happiness = -5 }, feedText = "They've been living a double life." },
+			{ text = "Hidden family wealth", effects = { Happiness = 8, Money = 5000 }, setFlags = { family_inheritance = true }, feedText = "There was money you never knew about!" },
+			{ text = "Dark family history", effects = { Happiness = -10 }, setFlags = { dark_family_secret = true }, feedText = "Some things were better left buried." },
+		},
+	},
+	{
+		id = "parent_remarriage",
+		title = "Parent Remarrying",
+		emoji = "💒",
+		text = "Your parent is getting remarried.",
+		question = "How do you feel about your new step-parent?",
+		minAge = 10, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 10,
+		requiresFlags = { parents_divorced = true },
+
+		choices = {
+			{ text = "They're amazing - welcome to the family!", effects = { Happiness = 10 }, setFlags = { good_stepparent = true }, feedText = "You gained a wonderful step-parent!" },
+			{ text = "They're okay, time will tell", effects = { Happiness = 2 }, feedText = "You're giving them a chance." },
+			{ text = "You don't like them", effects = { Happiness = -8 }, setFlags = { bad_stepparent = true }, feedText = "This is going to be difficult." },
+			{ text = "Refuse to accept them", effects = { Happiness = -10 }, setFlags = { rejected_stepparent = true }, feedText = "You can't accept this new family dynamic." },
+		},
+	},
+	{
+		id = "surprise_pregnancy",
+		title = "Surprise Pregnancy",
+		emoji = "🍼",
+		text = "There's an unexpected pregnancy!",
+		question = "How do you react?",
+		minAge = 16, maxAge = 45,
+		baseChance = 0.15,
+		cooldown = 5,
+
+		choices = {
+			{ text = "Unexpected but excited!", effects = { Happiness = 10, Money = -2000 }, setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, feedText = "Surprise! You're having a baby!" },
+			{ text = "Terrified but accepting", effects = { Happiness = -5, Money = -2000 }, setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, feedText = "Ready or not, here comes baby." },
+			{ text = "Not ready - considering options", effects = { Happiness = -10 }, setFlags = { difficult_decision = true }, feedText = "This is a life-changing decision." },
+			{ text = "It's not yours/didn't happen", effects = { Happiness = 3 }, feedText = "False alarm or not your situation." },
+		},
+	},
+	{
+		id = "fertility_struggle",
+		title = "Fertility Struggles",
+		emoji = "💔",
+		text = "You and your partner are struggling to conceive.",
+		question = "What do you do?",
+		minAge = 25, maxAge = 45,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresPartner = true,
+		requiresFlags = { trying_for_baby = true },
+
+		choices = {
+			{ text = "Keep trying naturally", effects = { Happiness = -5 }, feedText = "The waiting and hoping continues." },
+			{ text = "Pursue fertility treatments", effects = { Happiness = -3, Money = -10000 }, setFlags = { fertility_treatment = true }, feedText = "You're exploring medical options." },
+			{ text = "Consider adoption", effects = { Happiness = 3 }, setFlags = { considering_adoption = true }, feedText = "There are other ways to build a family." },
+			{ text = "Accept it might not happen", effects = { Happiness = -8 }, setFlags = { accepted_childless = true }, feedText = "Coming to terms with this possibility." },
+		},
+	},
+	{
+		id = "multiple_babies",
+		title = "Twins/Triplets!",
+		emoji = "👶👶",
+		text = "Surprise - it's multiples!",
+		question = "How do you handle this news?",
+		minAge = 20, maxAge = 45,
+		oneTime = true,
+		requiresFlags = { trying_for_baby = true },
+
+		choices = {
+			{ text = "Double/triple the joy!", effects = { Happiness = 15, Money = -5000, Health = -5 }, setFlags = { has_child = true, parent = true, has_multiples = true }, feedText = "Multiples! Exhausting but amazing!" },
+			{ text = "Overwhelmed but hopeful", effects = { Happiness = 5, Money = -5000, Health = -8 }, setFlags = { has_child = true, parent = true, has_multiples = true }, feedText = "You're going to need a lot of help..." },
+			{ text = "Terrified - how will we manage?", effects = { Happiness = -5, Money = -5000, Health = -5 }, setFlags = { has_child = true, parent = true, has_multiples = true, overwhelmed_parent = true }, feedText = "Two/three at once? Deep breaths..." },
+		},
+	},
+	{
+		id = "child_trouble",
+		title = "Child in Trouble",
+		emoji = "😰",
+		text = "Your child got into serious trouble.",
+		question = "What happened?",
+		minAge = 30, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresFlags = { parent = true },
+
+		choices = {
+			{ text = "Caught doing something illegal", effects = { Happiness = -15, Money = -2000 }, setFlags = { child_delinquent = true }, feedText = "Legal fees and a lot of worry." },
+			{ text = "Failing at school", effects = { Happiness = -8 }, feedText = "Their grades are tanking." },
+			{ text = "Hanging with the wrong crowd", effects = { Happiness = -10 }, setFlags = { child_bad_influences = true }, feedText = "You're worried about their friends." },
+			{ text = "Caught in a lie", effects = { Happiness = -5 }, feedText = "Trust issues are developing." },
+		},
+	},
+	{
+		id = "child_leaves_home",
+		title = "Child Moves Out",
+		emoji = "🏠",
+		text = "Your child is moving out on their own.",
+		question = "How do you feel?",
+		minAge = 40, maxAge = 70,
+		oneTime = true,
+		requiresFlags = { parent = true },
+
+		choices = {
+			{ text = "So proud of them!", effects = { Happiness = 10 }, setFlags = { empty_nester = true }, feedText = "They're ready for the world!" },
+			{ text = "Sad to see them go", effects = { Happiness = -8 }, setFlags = { empty_nester = true }, feedText = "The house feels so empty now." },
+			{ text = "Finally! Some peace and quiet!", effects = { Happiness = 8 }, setFlags = { empty_nester = true }, feedText = "You're enjoying the freedom!" },
+			{ text = "Worried they're not ready", effects = { Happiness = -5 }, setFlags = { empty_nester = true, worried_parent = true }, feedText = "Are they really prepared for this?" },
+		},
+	},
+	{
+		id = "relationship_rekindled",
+		title = "Old Flame Returns",
+		emoji = "🔥",
+		text = "Someone from your past wants to rekindle romance.",
+		question = "What do you do?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.2,
+		cooldown = 6,
+		blockedByFlags = { married = true },
+
+		choices = {
+			{ text = "Give love another chance", effects = { Happiness = 10 }, setFlags = { has_partner = true, rekindled_love = true }, feedText = "Second time's the charm?" },
+			{ text = "Too much history - say no", effects = { Happiness = 2, Smarts = 2 }, feedText = "You've moved on and won't go back." },
+			{ text = "Be friends only", effects = { Happiness = 5 }, feedText = "Friendship is all you can offer now." },
+			{ text = "It reawakens old pain", effects = { Happiness = -8 }, feedText = "Some doors are best left closed." },
+		},
+	},
+	{
+		id = "vow_renewal",
+		title = "Renewing Vows",
+		emoji = "💍",
+		text = "You're considering renewing your wedding vows.",
+		question = "How do you celebrate?",
+		minAge = 35, maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 10,
+		requiresFlags = { married = true },
+
+		choices = {
+			{ text = "Grand vow renewal ceremony", effects = { Happiness = 15, Money = -5000 }, feedText = "A beautiful celebration of your love!" },
+			{ text = "Intimate just-us moment", effects = { Happiness = 12 }, feedText = "Private and perfect." },
+			{ text = "Destination vow renewal", effects = { Happiness = 18, Money = -8000 }, feedText = "Renewed your vows in paradise!" },
+			{ text = "Not necessary - we know we love each other", effects = { Happiness = 5 }, feedText = "Actions speak louder than ceremonies." },
+		},
+	},
 }
 
 return Relationships
