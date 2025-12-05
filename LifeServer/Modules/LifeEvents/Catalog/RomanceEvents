@@ -26,6 +26,7 @@ local events = {
 				effects = { Happiness = 4 },
 				setFlags = { has_romantic_partner = true },
 				feedText = "You started dating your crush!",
+				nextEventId = "getting_serious",
 				onResolve = function(state)
 					local crushName = randomName(state.Gender == "male" and "female" or "male")
 					local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
@@ -57,6 +58,7 @@ local events = {
 		category = "romance",
 		weight = 5,
 		minAge = 21,
+		requiresPartner = true,
 		requiresFlags = { has_romantic_partner = true },
 		choices = {
 			{
@@ -65,12 +67,39 @@ local events = {
 				effects = { Happiness = 6, Money = -3000 },
 				setFlags = { engaged = true },
 				feedText = "You proposed and they said yes!",
+				nextEventId = "wedding_day",
 			},
 			{
 				index = 2,
 				text = "Not yet",
 				effects = { Happiness = -3 },
 				feedText = "You decided to wait a bit longer.",
+			},
+		},
+	},
+	{
+		id = "getting_serious",
+		emoji = "💞",
+		title = "Getting Serious",
+		text = "Things are getting serious with your partner.",
+		category = "romance",
+		weight = 6,
+		minAge = 16,
+		requiresPartner = true,
+		choices = {
+			{
+				index = 1,
+				text = "Make it official",
+				effects = { Happiness = 4 },
+				setFlags = { committed_relationship = true },
+				feedText = "You made it official.",
+				nextEventId = "adulthood_engagement",
+			},
+			{
+				index = 2,
+				text = "Keep it casual",
+				effects = { Happiness = -1 },
+				feedText = "You kept things casual for now.",
 			},
 		},
 	},
