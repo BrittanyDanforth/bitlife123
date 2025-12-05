@@ -74,6 +74,46 @@ local function chooseRandom(list)
 	return list[RANDOM:NextInteger(1, #list)]
 end
 
+-- Lightweight injury system for specific, story-like details
+-- Stores entries in state.Injuries with fields: id, location, severity, cause, year, age
+function LifeBackend:applyInjury(state, injurySpec)
+	if type(injurySpec) ~= "table" then
+		return nil
+	end
+	state.Injuries = state.Injuries or {}
+	local locations = injurySpec.locations or { "arm", "leg", "face", "torso", "hand", "foot" }
+	local location = injurySpec.location or chooseRandom(locations) or "arm"
+	local severity = injurySpec.severity or "minor"
+	local cause = injurySpec.cause or "accident"
+
+	local entry = {
+		id = string.format("injury_%s", HttpService:GenerateGUID(false)),
+		location = location,
+		severity = severity,
+		cause = cause,
+		year = state.Year,
+		age = state.Age,
+	}
+	table.insert(state.Injuries, entry)
+
+	-- Optional: severity-based extra health impact (kept conservative)
+	local extraDamage = 0
+	if severity == "minor" then
+		extraDamage = 0
+	elseif severity == "moderate" then
+		extraDamage = -2
+	elseif severity == "severe" then
+		extraDamage = -5
+	end
+	if extraDamage ~= 0 then
+		self:applyStatChanges(state, { Health = extraDamage })
+		debugPrint(string.format("Applied extra injury damage (%d) due to %s injury on %s", extraDamage, severity, location))
+	end
+
+	local msg = string.format("Injury: %s %s (%s).", severity, location, cause)
+	return msg, entry
+end
+
 local function formatMoney(amount)
 	if amount >= 1_000_000 then
 		return string.format("$%.1fM", amount / 1_000_000)
@@ -861,7 +901,33 @@ function LifeBackend:setupRemotes()
 end
 
 function LifeBackend:createInitialState(player)
-	return LifeState.new(player)
+	local state = LifeState.new(player)
+	-- Authoritative default family (prevents client-generated placeholders)
+	state.Relationships = state.Relationships or {}
+	if not state.Relationships.mother then
+		self:createRelationship(state, "family", {
+			id = "mother",
+			name = "Mom",
+			role = "Mother",
+			gender = "female",
+			startLevel = 70,
+			age = (state.Age or 0) + 25,
+			alive = true,
+		})
+	end
+	if not state.Relationships.father then
+		self:createRelationship(state, "family", {
+			id = "father",
+			name = "Dad",
+			role = "Father",
+			gender = "male",
+			startLevel = 65,
+			age = (state.Age or 0) + 27,
+			alive = true,
+		})
+	end
+	debugPrint(string.format("Initial family created for %s (mother=%s, father=%s)", player.Name, tostring(state.Relationships.mother ~= nil), tostring(state.Relationships.father ~= nil)))
+	return state
 end
 
 function LifeBackend:getState(player)
@@ -1994,7 +2060,17 @@ local InteractionEffects = {
 	},
 	enemy = {
 		insult = { delta = -6, message = "You insulted them." },
-		fight = { delta = -10, message = "You got into a fight.", stats = { Health = -5 } },
+		fight = {
+			delta = -10,
+			message = "You got into a fight.",
+			stats = { Health = -5 },
+			injury = {
+				-- Specific, story-like injury details
+				locations = { "face", "arm", "torso" },
+				severity = "minor",
+				cause = "fight",
+			},
+		},
 		forgive = { delta = 10, message = "You forgave them.", convert = "friend" },
 		prank = { delta = -4, message = "You pulled a prank on them." },
 		ignore = { delta = 0, message = "You ignored them." },
@@ -2007,6 +2083,17 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 
 	if targetId and state.Relationships[targetId] then
 		return state.Relationships[targetId]
+	end
+
+	-- Family is authoritative and must already exist server-side.
+	-- Never auto-create generic "Person" for family; return nil if missing.
+	if relType == "family" then
+		if targetId then
+			debugPrint(string.format("ensureRelationship(family): targetId=%s exists=%s", tostring(targetId), tostring(state.Relationships[targetId] ~= nil)))
+			return state.Relationships[targetId]
+		end
+		debugPrint("ensureRelationship(family): no targetId provided; refusing to auto-create")
+		return nil
 	end
 
 	if options.forceNewRelationship then
@@ -2109,6 +2196,17 @@ function LifeBackend:handleInteraction(player, payload)
 		self:applyStatChanges(state, action.stats)
 	end
 
+	-- Specific injury details (face/arm/etc.) for story-like outcomes
+	local injuryFeed
+	if action.injury then
+		local ok, msg = pcall(function()
+			return select(1, self:applyInjury(state, action.injury))
+		end)
+		if ok and msg then
+			injuryFeed = msg
+		end
+	end
+
 	-- Optional reward / grant
 	local grantMessage
 	if action.grant then
@@ -2173,6 +2271,9 @@ function LifeBackend:handleInteraction(player, payload)
 	end
 
 	feed = feed or grantMessage or action.message or "You interacted."
+	if injuryFeed then
+		feed = string.format("%s %s", feed, injuryFeed)
+	end
 	self:pushState(player, feed)
 
 	-- IMPORTANT: do NOT return full state here – the UI should rely on SyncState,
