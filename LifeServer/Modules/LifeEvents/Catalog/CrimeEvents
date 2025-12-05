@@ -23,6 +23,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Security caught you! You spent a night in juvenile detention.")
 						end
+						if state.ApplyInjury then
+							state:ApplyInjury({ locations = { "wrist", "arm" }, severity = "minor", cause = "security scuffle" })
+						end
 					else
 						if state.AddFeed then
 							state:AddFeed("You got away with the theft.")

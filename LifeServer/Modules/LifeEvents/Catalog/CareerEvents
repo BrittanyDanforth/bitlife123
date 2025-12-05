@@ -135,6 +135,8 @@ local events = {
 					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
 					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
 				end,
+				-- Hint a follow-up opportunity if they improve
+				nextEventId = "promotion_offer",
 			},
 			{
 				index = 2,
