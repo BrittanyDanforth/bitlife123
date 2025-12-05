@@ -376,7 +376,8 @@ Random.events = {
 					if EventEngine then
 						-- Remove old car (simplified - would track specific car in real implementation)
 						local vehicles = state.Assets and state.Assets.Vehicles
-						if vehicles and #vehicles > 0 then
+						-- CRITICAL FIX: Check if vehicles[1] exists and has .id before accessing
+						if vehicles and #vehicles > 0 and vehicles[1] and vehicles[1].id then
 							EventEngine.removeAssetById(state, "vehicle", vehicles[1].id)
 						end
 						if EventEngine.addAsset then
@@ -401,7 +402,8 @@ Random.events = {
 					local EventEngine = require(script.Parent.init).EventEngine
 					if EventEngine and EventEngine.removeAssetById then
 						local vehicles = state.Assets and state.Assets.Vehicles
-						if vehicles and #vehicles > 0 then
+						-- CRITICAL FIX: Check if vehicles[1] exists and has .id before accessing
+						if vehicles and #vehicles > 0 and vehicles[1] and vehicles[1].id then
 							EventEngine.removeAssetById(state, "vehicle", vehicles[1].id)
 						end
 					end

@@ -276,11 +276,13 @@ local function recordEventShown(state, event)
 	local eventId = event.id
 	
 	-- Track occurrence count (with nil safety)
+	history.occurrences = history.occurrences or {}
 	if type(history.occurrences) == "table" then
 		history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
 	end
 	
 	-- Track when it last occurred
+	history.lastOccurrence = history.lastOccurrence or {}
 	if type(history.lastOccurrence) == "table" then
 		history.lastOccurrence[eventId] = state.Age or 0
 	end
@@ -512,6 +514,9 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresEvents then
+		-- CRITICAL FIX: Ensure history tables exist before accessing
+		history.completed = history.completed or {}
+		history.occurrences = history.occurrences or {}
 		for _, reqEventId in ipairs(event.requiresEvents) do
 			if not history.completed[reqEventId] and (history.occurrences[reqEventId] or 0) == 0 then
 				return false
@@ -520,6 +525,9 @@ local function canEventTrigger(event, state)
 	end
 	
 	if event.blockedByEvents then
+		-- CRITICAL FIX: Ensure history tables exist before accessing
+		history.completed = history.completed or {}
+		history.occurrences = history.occurrences or {}
 		for _, blockEventId in ipairs(event.blockedByEvents) do
 			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
 				return false
@@ -865,7 +873,8 @@ function EventEngine.addAsset(state, assetType, assetData)
 	-- Check for duplicates before adding
 	state.Assets[category] = state.Assets[category] or {}
 	for _, existingAsset in ipairs(state.Assets[category]) do
-		if existingAsset.id == asset.id then
+		-- CRITICAL FIX: Check if existingAsset exists and has .id before comparing
+		if existingAsset and existingAsset.id and asset.id and existingAsset.id == asset.id then
 			-- Already owns this asset - skip duplicate
 			return false
 		end
@@ -926,7 +935,8 @@ function EventEngine.removeAssetById(state, assetType, assetId)
 	if not bucket then return nil end
 	
 	for i = #bucket, 1, -1 do
-		if bucket[i].id == assetId then
+		-- CRITICAL FIX: Check if bucket[i] exists and has .id before accessing
+		if bucket[i] and bucket[i].id == assetId then
 			return table.remove(bucket, i)
 		end
 	end
@@ -976,7 +986,8 @@ function EventEngine.hasAsset(state, assetType, assetId)
 		local bucket = state.Assets[category]
 		if bucket then
 			for _, asset in ipairs(bucket) do
-				if asset.id == assetId then
+				-- CRITICAL FIX: Check if asset exists and has .id before comparing
+				if asset and asset.id == assetId then
 					return true
 				end
 			end
@@ -1131,9 +1142,15 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		return nil
 	end
 	
+	-- CRITICAL FIX: Validate choiceIndex is within valid bounds (1-based indexing)
+	if not choiceIndex or choiceIndex < 1 or choiceIndex > #eventDef.choices then
+		warn("[EventEngine] Invalid choice index:", choiceIndex, "for event", eventDef.id or "unknown", "- valid range: 1 to", #eventDef.choices)
+		return nil
+	end
+	
 	local choice = eventDef.choices[choiceIndex]
 	if not choice then
-		warn("[EventEngine] Invalid choice index:", choiceIndex)
+		warn("[EventEngine] Invalid choice at index:", choiceIndex)
 		return nil
 	end
 	
