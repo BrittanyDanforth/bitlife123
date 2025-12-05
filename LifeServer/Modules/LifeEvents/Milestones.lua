@@ -407,7 +407,7 @@ Milestones.events = {
 		isMilestone = true,
 		-- Only trigger if player has earned it through hard work
 		customValidation = function(state)
-			if not state.CareerInfo then return false end
+			state.CareerInfo = state.CareerInfo or {}
 			local promotionProgress = state.CareerInfo.promotionProgress or 0
 			local performance = state.CareerInfo.performance or 0
 			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
@@ -431,10 +431,14 @@ Milestones.events = {
 				feedText = "You rose to the challenge! Your years of preparation made you ready for this.",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 30000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.4)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					state.CareerInfo = state.CareerInfo or {}
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
 					state.CareerInfo.promotionProgress = 0
 					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
 				end,
@@ -446,10 +450,14 @@ Milestones.events = {
 				feedText = "You're adjusting to the new role. It's a learning curve, but you're getting there.",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 30000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					state.CareerInfo = state.CareerInfo or {}
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
 					state.CareerInfo.promotionProgress = 0
 					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
 				end,
@@ -461,10 +469,14 @@ Milestones.events = {
 				feedText = "You question if you deserve it. But you do - your hard work earned this.",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 30000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					state.CareerInfo = state.CareerInfo or {}
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
 					state.CareerInfo.promotionProgress = 0
 					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
 				end,

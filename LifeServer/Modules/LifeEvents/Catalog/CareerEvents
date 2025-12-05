@@ -239,7 +239,7 @@ local events = {
 		cooldown = 3,
 		-- CUSTOM VALIDATION: Only trigger if player has actually worked hard
 		customValidation = function(state)
-			if not state.CareerInfo then return false end
+			state.CareerInfo = state.CareerInfo or {}
 			local promotionProgress = state.CareerInfo.promotionProgress or 0
 			local performance = state.CareerInfo.performance or 0
 			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
@@ -255,10 +255,14 @@ local events = {
 				feedText = "You were promoted! Your hard work paid off. More money, more responsibility, more stress... but mostly more money!",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 30000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.35)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
-					state.CareerInfo = state.CareerInfo or {}
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Associate"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
 					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
 					state.CareerInfo.promotionProgress = 0 -- Reset after promotion
 					if state.AddFeed then
@@ -281,10 +285,14 @@ local events = {
 				feedText = "You negotiated! Got the promotion with better benefits. Your confidence impressed them.",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 30000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.25)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
-					state.CareerInfo = state.CareerInfo or {}
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Associate"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
 					state.CareerInfo.promotionProgress = 0
 				end,
 			},

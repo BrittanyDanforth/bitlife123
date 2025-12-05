@@ -49,7 +49,7 @@ Career.events = {
 		requiresJob = true,
 		-- Only trigger if player has worked hard
 		customValidation = function(state)
-			if not state.CareerInfo then return false end
+			state.CareerInfo = state.CareerInfo or {}
 			local promotionProgress = state.CareerInfo.promotionProgress or 0
 			local performance = state.CareerInfo.performance or 0
 			return promotionProgress >= 70 and performance >= 65
@@ -164,7 +164,7 @@ Career.events = {
 		requiresStats = { Smarts = { min = 50 } },
 		-- Only trigger if player has been performing well
 		customValidation = function(state)
-			if not state.CareerInfo then return false end
+			state.CareerInfo = state.CareerInfo or {}
 			local performance = state.CareerInfo.performance or 0
 			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
 			return performance >= 60 and yearsAtJob >= 0.5 -- At least 6 months at job
@@ -440,7 +440,7 @@ Career.events = {
 					
 					if roll < 0.15 then -- 15% chance it's legit
 						local returnAmount = math.floor(investment * 1.5)
-						state.Money = (state.Money or 0) - investment + returnAmount
+						state.Money = math.max(0, (state.Money or 0) - investment + returnAmount)
 						if state.AddFeed then
 							state:AddFeed("Lucky! The investment paid off! You got back $" .. returnAmount .. "!")
 						end
@@ -464,7 +464,7 @@ Career.events = {
 					if roll < 0.3 then -- 30% chance it's legit after research
 						local investment = math.min(2000, math.floor((state.Money or 0) * 0.2))
 						local returnAmount = math.floor(investment * 1.3)
-						state.Money = (state.Money or 0) - investment + returnAmount
+						state.Money = math.max(0, (state.Money or 0) - investment + returnAmount)
 						if state.AddFeed then
 							state:AddFeed("Good call! After research, you invested wisely and made $" .. (returnAmount - investment) .. " profit!")
 						end

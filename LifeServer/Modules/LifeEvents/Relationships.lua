@@ -85,8 +85,10 @@ Relationships.events = {
 					-- Use EventEngine.createRelationship instead of state.AddRelationship
 					local EventEngine = require(script.Parent.init).EventEngine
 					if EventEngine and EventEngine.createRelationship then
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerName = (playerGender == "male") and "Emma" or "Alex"
 						local partner = EventEngine.createRelationship(state, "romance", {
-							name = state.Gender == "Male" and "Emma" or "Alex",
+							name = partnerName,
 							relationship = 60,
 							age = (state.Age or 25) + RANDOM:NextInteger(-5, 5),
 						})
@@ -132,11 +134,13 @@ Relationships.events = {
 						-- Use EventEngine.createRelationship instead of state.AddRelationship
 						local EventEngine = require(script.Parent.init).EventEngine
 						if EventEngine and EventEngine.createRelationship then
-							local partner = EventEngine.createRelationship(state, "romance", {
-								name = state.Gender == "Male" and "Sam" or "Jordan",
-								relationship = 55,
-								age = (state.Age or 25) + RANDOM:NextInteger(-3, 3),
-							})
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerName = (playerGender == "male") and "Sam" or "Jordan"
+						local partner = EventEngine.createRelationship(state, "romance", {
+							name = partnerName,
+							relationship = 55,
+							age = (state.Age or 25) + RANDOM:NextInteger(-3, 3),
+						})
 						end
 						-- Use state.Flags directly instead of deprecated SetFlag
 						state.Flags = state.Flags or {}
@@ -299,11 +303,22 @@ Relationships.events = {
 						if state.AddFeed then
 							state:AddFeed("You broke up. It wasn't right.")
 						end
-						-- Use state.Flags directly instead of deprecated SetFlag
+						-- Remove relationship if breakup happens
+						local EventEngine = require(script.Parent.init).EventEngine
+						local partnerId, partner = EventEngine.getCurrentPartner(state)
+						if partnerId then
+							if state.RemoveRelationship then
+								state:RemoveRelationship(partnerId)
+							elseif state.Relationships then
+								state.Relationships[partnerId] = nil
+							end
+						end
+						-- Clear partner flags
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = nil
 						state.Flags.has_romantic_partner = nil
 						state.Flags.dating = nil
+						state.Flags.committed_relationship = nil
 					end
 				end,
 			},
@@ -350,14 +365,24 @@ Relationships.events = {
 			{ 
 				text = "Break up instead", 
 				effects = { Happiness = -10 }, 
-				setFlags = { recently_single = true, has_partner = false, dating = false }, 
+				setFlags = { recently_single = true }, 
 				feedText = "The conversation led to a breakup. You realized you weren't on the same page.",
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.init).EventEngine
 					local partnerId, partner = EventEngine.getCurrentPartner(state)
-					if partnerId and state.RemoveRelationship then
-						state:RemoveRelationship(partnerId)
+					if partnerId then
+						if state.RemoveRelationship then
+							state:RemoveRelationship(partnerId)
+						elseif state.Relationships then
+							state.Relationships[partnerId] = nil
+						end
 					end
+					-- Clear partner flags
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.has_romantic_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
 				end,
 			},
 		},
@@ -533,14 +558,25 @@ Relationships.events = {
 			{ 
 				text = "It's time to break up", 
 				effects = { Happiness = -8 }, 
-				setFlags = { recently_single = true, has_partner = false, dating = false, married = false }, 
+				setFlags = { recently_single = true }, 
 				feedText = "You ended the relationship. It was toxic, and you're better off apart.",
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.init).EventEngine
 					local partnerId, partner = EventEngine.getCurrentPartner(state)
-					if partnerId and state.RemoveRelationship then
-						state:RemoveRelationship(partnerId)
+					if partnerId then
+						if state.RemoveRelationship then
+							state:RemoveRelationship(partnerId)
+						elseif state.Relationships then
+							state.Relationships[partnerId] = nil
+						end
 					end
+					-- Clear partner flags
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.has_romantic_partner = nil
+					state.Flags.dating = nil
+					state.Flags.married = nil
+					state.Flags.committed_relationship = nil
 				end,
 			},
 		},
@@ -620,11 +656,23 @@ Relationships.events = {
 						if state.AddFeed then
 							state:AddFeed("Long distance was too hard. You broke up.")
 						end
-						-- Use state.Flags directly instead of deprecated SetFlag
+						-- Remove relationship if breakup happens
+						local EventEngine = require(script.Parent.init).EventEngine
+						local partnerId, partner = EventEngine.getCurrentPartner(state)
+						if partnerId then
+							if state.RemoveRelationship then
+								state:RemoveRelationship(partnerId)
+							elseif state.Relationships then
+								state.Relationships[partnerId] = nil
+							end
+						end
+						-- Clear partner flags
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = nil
 						state.Flags.has_romantic_partner = nil
 						state.Flags.dating = nil
+						state.Flags.committed_relationship = nil
+						state.Flags.long_distance = nil
 					end
 				end,
 			},
@@ -644,8 +692,25 @@ Relationships.events = {
 			{ 
 				text = "Break up but stay friends", 
 				effects = { Happiness = -5 }, 
-				setFlags = { recently_single = true, has_partner = false }, 
+				setFlags = { recently_single = true }, 
 				feedText = "You ended it but remained friends. Sometimes love isn't enough.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId then
+						if state.RemoveRelationship then
+							state:RemoveRelationship(partnerId)
+						elseif state.Relationships then
+							state.Relationships[partnerId] = nil
+						end
+					end
+					-- Clear partner flags
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.has_romantic_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+				end,
 			},
 		},
 	},
@@ -664,14 +729,25 @@ Relationships.events = {
 			{
 				text = "Confront and break up immediately",
 				effects = { Happiness = -10 },
-				setFlags = { has_partner = false, dating = false, married = false, recently_single = true },
+				setFlags = { recently_single = true },
 				feedText = "You confronted them and broke up immediately. You deserve better than this.",
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.init).EventEngine
 					local partnerId, partner = EventEngine.getCurrentPartner(state)
-					if partnerId and state.RemoveRelationship then
-						state:RemoveRelationship(partnerId)
+					if partnerId then
+						if state.RemoveRelationship then
+							state:RemoveRelationship(partnerId)
+						elseif state.Relationships then
+							state.Relationships[partnerId] = nil
+						end
 					end
+					-- Clear partner flags
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.has_romantic_partner = nil
+					state.Flags.dating = nil
+					state.Flags.married = nil
+					state.Flags.committed_relationship = nil
 				end,
 			},
 			{
@@ -689,11 +765,21 @@ Relationships.events = {
 						if state.AddFeed then
 							state:AddFeed("It didn't work out. You broke up after all.")
 						end
-						-- Use state.Flags directly instead of deprecated SetFlag
+						-- Remove relationship if breakup happens
+						if partnerId then
+							if state.RemoveRelationship then
+								state:RemoveRelationship(partnerId)
+							elseif state.Relationships then
+								state.Relationships[partnerId] = nil
+							end
+						end
+						-- Clear partner flags (use nil for consistency)
 						state.Flags = state.Flags or {}
-						state.Flags.has_partner = false
-						state.Flags.dating = false
-						state.Flags.married = false
+						state.Flags.has_partner = nil
+						state.Flags.has_romantic_partner = nil
+						state.Flags.dating = nil
+						state.Flags.married = nil
+						state.Flags.committed_relationship = nil
 					end
 				end,
 			},
@@ -712,11 +798,21 @@ Relationships.events = {
 						if state.AddFeed then
 							state:AddFeed("You both broke up. Toxic relationship ended.")
 						end
-						-- Use state.Flags directly instead of deprecated SetFlag
+						-- Remove relationship if breakup happens
+						if partnerId then
+							if state.RemoveRelationship then
+								state:RemoveRelationship(partnerId)
+							elseif state.Relationships then
+								state.Relationships[partnerId] = nil
+							end
+						end
+						-- Clear partner flags (use nil for consistency)
 						state.Flags = state.Flags or {}
-						state.Flags.has_partner = false
-						state.Flags.dating = false
-						state.Flags.married = false
+						state.Flags.has_partner = nil
+						state.Flags.has_romantic_partner = nil
+						state.Flags.dating = nil
+						state.Flags.married = nil
+						state.Flags.committed_relationship = nil
 					end
 				end,
 			},

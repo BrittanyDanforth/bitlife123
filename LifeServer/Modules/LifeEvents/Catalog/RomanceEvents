@@ -62,7 +62,8 @@ local events = {
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.Parent.init).EventEngine
 					if EventEngine and EventEngine.createRelationship then
-						local crushName = randomName(state.Gender == "Male" and "female" or "male")
+						local playerGender = (state.Gender or "male"):lower()
+						local crushName = randomName((playerGender == "male") and "female" or "male")
 						local partner = EventEngine.createRelationship(state, "romance", {
 							name = crushName,
 							relationship = 65,
@@ -90,7 +91,8 @@ local events = {
 						end
 						local EventEngine = require(script.Parent.Parent.init).EventEngine
 						if EventEngine and EventEngine.createRelationship then
-							local crushName = randomName(state.Gender == "Male" and "female" or "male")
+							local playerGender = (state.Gender or "male"):lower()
+							local crushName = randomName((playerGender == "male") and "female" or "male")
 							local partner = EventEngine.createRelationship(state, "romance", {
 								name = crushName,
 								relationship = 60,
@@ -126,7 +128,8 @@ local events = {
 					if RANDOM:NextNumber() < 0.7 then
 						local EventEngine = require(script.Parent.Parent.init).EventEngine
 						if EventEngine and EventEngine.createRelationship then
-							local crushName = randomName(state.Gender == "Male" and "female" or "male")
+							local playerGender = (state.Gender or "male"):lower()
+							local crushName = randomName((playerGender == "male") and "female" or "male")
 							local partner = EventEngine.createRelationship(state, "romance", {
 								name = crushName,
 								relationship = 70,
@@ -231,7 +234,8 @@ local events = {
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.Parent.init).EventEngine
 					if EventEngine and EventEngine.createRelationship then
-						local crushName = randomName(state.Gender == "Male" and "female" or "male")
+						local playerGender = (state.Gender or "male"):lower()
+						local crushName = randomName((playerGender == "male") and "female" or "male")
 						local partner = EventEngine.createRelationship(state, "romance", {
 							name = crushName,
 							relationship = 70,
@@ -280,7 +284,8 @@ local events = {
 					if RANDOM:NextNumber() < 0.6 then
 						local EventEngine = require(script.Parent.Parent.init).EventEngine
 						if EventEngine and EventEngine.createRelationship then
-							local matchName = randomName(state.Gender == "Male" and "female" or "male")
+							local playerGender = (state.Gender or "male"):lower()
+							local matchName = randomName((playerGender == "male") and "female" or "male")
 							local partner = EventEngine.createRelationship(state, "romance", {
 								name = matchName,
 								relationship = 60,
@@ -341,7 +346,8 @@ local events = {
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.Parent.init).EventEngine
 					if EventEngine and EventEngine.createRelationship then
-						local coworkerName = randomName(state.Gender == "Male" and "female" or "male")
+						local playerGender = (state.Gender or "male"):lower()
+						local coworkerName = randomName((playerGender == "male") and "female" or "male")
 						local partner = EventEngine.createRelationship(state, "romance", {
 							name = coworkerName,
 							relationship = 65,
@@ -793,7 +799,8 @@ local events = {
 						end
 						local EventEngine = require(script.Parent.Parent.init).EventEngine
 						if EventEngine and EventEngine.createRelationship then
-							local exName = randomName(state.Gender == "Male" and "female" or "male")
+							local playerGender = (state.Gender or "male"):lower()
+							local exName = randomName((playerGender == "male") and "female" or "male")
 							local partner = EventEngine.createRelationship(state, "romance", {
 								name = exName,
 								relationship = 55,

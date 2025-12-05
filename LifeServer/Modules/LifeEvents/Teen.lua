@@ -292,7 +292,8 @@ Teen.events = {
 				onResolve = function(state)
 					local EventEngine = require(script.Parent.init).EventEngine
 					if EventEngine and EventEngine.createRelationship then
-						local partnerName = state.Gender == "Male" and "Alex" or "Jordan"
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerName = (playerGender == "male") and "Alex" or "Jordan"
 						local partner = EventEngine.createRelationship(state, "romance", {
 							name = partnerName,
 							relationship = 65,

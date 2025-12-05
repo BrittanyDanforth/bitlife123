@@ -684,9 +684,16 @@ local events = {
 				feedText = "You accepted! Major career milestone achieved!",
 				onResolve = function(state)
 					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
 					local oldSalary = state.CurrentJob.salary or 50000
 					state.CurrentJob.salary = math.floor(oldSalary * 1.5)
-					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
 				end,
 			},
 			{

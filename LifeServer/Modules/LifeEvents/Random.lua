@@ -124,7 +124,10 @@ Random.events = {
 					if winnings > 0 then
 						state.Money = (state.Money or 0) + winnings
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + (winnings >= 5000 and 20 or 5))
+						local happinessDelta = winnings >= 5000 and 20 or 5
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + happinessDelta)
+						-- Sync shortcut property for consistency with LifeState
+						state.Happiness = state.Stats.Happiness
 					end
 					
 					if state.AddFeed then
@@ -235,8 +238,13 @@ Random.events = {
 					if state.AddFeed then
 						state:AddFeed("You got " .. injury.text .. " on your " .. bodyPart .. ".")
 					end
+					-- Apply additional injury-specific damage (effects already applied base -5)
 					if state.ModifyStat then
 						state:ModifyStat("Health", injury.health)
+					elseif state.Stats then
+						-- Fallback if ModifyStat doesn't exist but Stats does
+						state.Stats.Health = math.max(0, math.min(100, (state.Stats.Health or 50) + injury.health))
+						state.Health = state.Stats.Health
 					end
 				end,
 			},
@@ -262,8 +270,13 @@ Random.events = {
 					if state.AddFeed then
 						state:AddFeed("You got " .. injury.text .. " on your " .. bodyPart .. ".")
 					end
+					-- Apply additional injury-specific damage (effects already applied base -8)
 					if state.ModifyStat then
 						state:ModifyStat("Health", injury.health)
+					elseif state.Stats then
+						-- Fallback if ModifyStat doesn't exist but Stats does
+						state.Stats.Health = math.max(0, math.min(100, (state.Stats.Health or 50) + injury.health))
+						state.Health = state.Stats.Health
 					end
 				end,
 			},
