@@ -713,26 +713,50 @@ local function showResultPopup(data, callback)
 	tween(resultShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	tween(resultCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 
-	-- Visual feedback - BitLife style: shake ONLY for significant negative outcomes
-	-- Specifically: health loss, major money loss, or explicit failure
+	-- CRITICAL FIX: Visual feedback - BitLife style shake for negative outcomes
+	-- More aggressive triggering for immersive gameplay feel
 	local shouldShake = false
 	local shouldFlash = false
-
-	if data.health and data.health < -5 then
-		-- Health dropped significantly - shake and red flash
+	local shakeIntensity = 6
+	
+	-- Check for any negative outcomes
+	if data.health and data.health < 0 then
+		-- ANY health loss triggers shake
 		shouldShake = true
-		shouldFlash = true
-	elseif data.money and data.money < -5000 then
-		-- Major money loss - subtle shake
-		shouldShake = true
-	elseif data.wasSuccess == false then
-		-- Explicit failure (minigame failed, etc) - light shake
-		shouldShake = true
-		shouldFlash = true
+		if data.health < -10 then
+			-- Major health loss - bigger shake and flash
+			shakeIntensity = 12
+			shouldFlash = true
+		elseif data.health < -5 then
+			shakeIntensity = 8
+			shouldFlash = true
+		end
 	end
-
+	
+	if data.happiness and data.happiness < -10 then
+		-- Significant happiness loss - shake
+		shouldShake = true
+		shakeIntensity = math.max(shakeIntensity, 6)
+	end
+	
+	if data.money and data.money < -1000 then
+		-- Money loss > $1000 - subtle shake
+		shouldShake = true
+		if data.money < -10000 then
+			shakeIntensity = math.max(shakeIntensity, 10)
+		end
+	end
+	
+	if data.wasSuccess == false then
+		-- Explicit failure (minigame failed, driving test failed, etc)
+		shouldShake = true
+		shouldFlash = true
+		shakeIntensity = math.max(shakeIntensity, 8)
+	end
+	
+	-- Apply effects
 	if shouldShake then
-		shakeScreen(8, 0.25)
+		shakeScreen(shakeIntensity, 0.25)
 	end
 	if shouldFlash then
 		flashScreen(C.Red, 0.6, 0.3)

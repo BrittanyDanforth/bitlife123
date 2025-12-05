@@ -567,16 +567,91 @@ Teen.events = {
 		id = "driving_test",
 		title = "The Driving Test",
 		emoji = "🚙",
-		text = "It's time for your driver's license road test!",
-		question = "How does it go?",
+		text = "It's time for your driver's license road test! The examiner is watching your every move.",
+		question = "How do you approach the test?",
 		minAge = 16, maxAge = 17,
 		oneTime = true,
 
+		-- CRITICAL FIX: Random outcome based on choice + stats, not player-picked result!
 		choices = {
-			{ text = "Passed on the first try!", effects = { Happiness = 10, Smarts = 3 }, setFlags = { has_license = true, good_driver = true, drivers_license = true }, feedText = "Perfect score! You're a licensed driver!" },
-			{ text = "Failed - hit a cone", effects = { Happiness = -5 }, feedText = "You knocked over a cone. Try again next month." },
-			{ text = "Passed after retaking it", effects = { Happiness = 5 }, setFlags = { has_license = true, drivers_license = true }, feedText = "Second time's the charm! You got your license." },
-			{ text = "Too nervous, rescheduled", effects = { Happiness = -3 }, setFlags = { test_anxiety = true }, feedText = "You weren't ready. That's okay." },
+			{ 
+				text = "Stay calm and focused", 
+				effects = {}, 
+				feedText = "You took a deep breath and focused...",
+				onResolve = function(state)
+					-- Better chance with smarts and good_driver flag
+					local baseChance = 0.65
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local bonus = (smarts - 50) / 100 -- +/- 0.5 based on smarts
+					if state.Flags and state.Flags.good_driver then bonus = bonus + 0.15 end
+					if state.Flags and state.Flags.nervous_driver then bonus = bonus - 0.1 end
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state:AddFeed("🚗 You passed the driving test! You're licensed!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚗 You failed the driving test. Hit a cone. Try again next time.")
+					end
+				end,
+			},
+			{ 
+				text = "Rush through it nervously", 
+				effects = {},
+				feedText = "Your nerves got the better of you...",
+				onResolve = function(state)
+					-- Lower chance when rushing
+					local baseChance = 0.35
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local bonus = (smarts - 50) / 150
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 7)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state:AddFeed("🚗 Somehow you passed despite being nervous! Licensed driver!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.nervous_driver = true
+						state:AddFeed("🚗 You were too nervous and failed. The examiner was not impressed.")
+					end
+				end,
+			},
+			{ 
+				text = "Study the rules beforehand", 
+				effects = { Smarts = 2 },
+				feedText = "You prepared thoroughly...",
+				onResolve = function(state)
+					-- Best chance - well prepared
+					local baseChance = 0.80
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local bonus = (smarts - 50) / 100
+					if state.Flags and state.Flags.good_driver then bonus = bonus + 0.1 end
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.good_driver = true
+						state:AddFeed("🚗 Perfect score! Your preparation paid off. Licensed to drive!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 Despite preparing, you made a mistake. Failed, but you'll get it next time.")
+					end
+				end,
+			},
+			{ 
+				text = "Reschedule - not ready yet", 
+				effects = { Happiness = -2 },
+				feedText = "You decided you're not ready yet. That's okay.",
+			},
 		},
 	},
 	{
@@ -774,16 +849,79 @@ Teen.events = {
 		id = "car_first_drive",
 		title = "First Time Behind the Wheel",
 		emoji = "🚗",
-		text = "Your parent is teaching you to drive for the first time!",
-		question = "How does your first driving lesson go?",
+		text = "Your parent is teaching you to drive for the first time! They look nervous.",
+		question = "How do you approach your first lesson?",
 		minAge = 15, maxAge = 16,
 		oneTime = true,
 
+		-- CRITICAL FIX: Random outcome based on stats, not player choice!
 		choices = {
-			{ text = "Natural driver - got the hang of it!", effects = { Happiness = 7, Smarts = 2 }, setFlags = { good_driver = true }, feedText = "You're a natural! Driving isn't so hard." },
-			{ text = "Nervous but managed okay", effects = { Happiness = 3 }, feedText = "You were shaky but didn't crash. Success!" },
-			{ text = "Almost hit something - scary!", effects = { Happiness = -3 }, setFlags = { nervous_driver = true }, feedText = "That was terrifying! You need more practice." },
-			{ text = "Parent was too stressed to teach", effects = { Happiness = -2 }, feedText = "Your parent couldn't handle it. Time to try driving school." },
+			{ 
+				text = "Listen carefully to instructions", 
+				effects = {},
+				feedText = "You paid close attention...",
+				onResolve = function(state)
+					local baseChance = 0.70
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local bonus = (smarts - 50) / 100
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 7)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.good_driver = true
+						state:AddFeed("🚗 You're a natural! Driving came easily to you.")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🚗 It was shaky, but you didn't crash. More practice needed!")
+					end
+				end,
+			},
+			{ 
+				text = "Get overconfident behind the wheel", 
+				effects = {},
+				feedText = "You felt like you already knew what you were doing...",
+				onResolve = function(state)
+					local baseChance = 0.30 -- risky approach
+					
+					if math.random() < baseChance then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.confident_driver = true
+						state:AddFeed("🚗 Your confidence paid off! Smooth first drive.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Health", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.nervous_driver = true
+						state:AddFeed("🚗 You almost hit a mailbox! Your parent is stressed. That was scary!")
+					end
+				end,
+			},
+			{ 
+				text = "Feel too nervous to try", 
+				effects = {},
+				feedText = "You were hesitant to take the wheel...",
+				onResolve = function(state)
+					local baseChance = 0.50
+					
+					if math.random() < baseChance then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🚗 Your parent encouraged you. You did okay despite the nerves!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.nervous_driver = true
+						state:AddFeed("🚗 You were too anxious. Maybe driving school would help.")
+					end
+				end,
+			},
+			{ 
+				text = "Ask to go to driving school instead", 
+				effects = { Money = -200 },
+				setFlags = { driving_school = true },
+				feedText = "You signed up for professional driving lessons.",
+			},
 		},
 	},
 }

@@ -847,17 +847,104 @@ Adult.events = {
 		id = "starting_business",
 		title = "Launching Your Business",
 		emoji = "🚀",
-		text = "Your business is finally launching!",
-		question = "How does the launch go?",
+		text = "Your business is finally launching! The big day is here.",
+		question = "What's your launch strategy?",
 		minAge = 25, maxAge = 55,
 		oneTime = true,
 		requiresFlags = { entrepreneur = true },
 
+		-- CRITICAL FIX: Random outcomes based on strategy + stats
 		choices = {
-			{ text = "Massive success!", effects = { Money = 10000, Happiness = 15 }, setFlags = { successful_business = true }, feedText = "Your business took off! You're making money!" },
-			{ text = "Slow but steady growth", effects = { Money = 2000, Happiness = 5, Smarts = 3 }, feedText = "It's growing organically. Patience pays." },
-			{ text = "Struggling to find customers", effects = { Money = -3000, Happiness = -5 }, setFlags = { business_struggling = true }, feedText = "Revenue isn't there. Scary times." },
-			{ text = "Complete failure", effects = { Money = -10000, Happiness = -15 }, setFlags = { business_failed = true }, feedText = "The business failed. Bankruptcy looms." },
+			{ 
+				text = "Go all-in with aggressive marketing", 
+				effects = {},
+				feedText = "You went big on marketing...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local baseChance = 0.40
+					local bonus = (smarts - 50) / 100 -- smarts helps
+					local roll = math.random()
+					
+					if roll < (baseChance + bonus) * 0.5 then
+						-- Massive success (rare)
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + 15000
+						state.Flags = state.Flags or {}
+						state.Flags.successful_business = true
+						state:AddFeed("🚀 MASSIVE SUCCESS! Your business took off! Big profits!")
+					elseif roll < (baseChance + bonus) then
+						-- Moderate success
+						state:ModifyStat("Happiness", 8)
+						state.Money = (state.Money or 0) + 5000
+						state:AddFeed("🚀 Your marketing worked! The business is growing!")
+					elseif roll < 0.85 then
+						-- Struggle
+						state:ModifyStat("Happiness", -5)
+						state.Money = (state.Money or 0) - 3000
+						state.Flags = state.Flags or {}
+						state.Flags.business_struggling = true
+						state:AddFeed("😰 The marketing spend didn't pay off. Struggling...")
+					else
+						-- Failure
+						state:ModifyStat("Happiness", -12)
+						state.Money = (state.Money or 0) - 8000
+						state.Flags = state.Flags or {}
+						state.Flags.business_failed = true
+						state:AddFeed("💔 The business flopped. You lost a lot of money.")
+					end
+				end,
+			},
+			{ 
+				text = "Start small and grow organically", 
+				effects = {},
+				feedText = "You took the careful approach...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local baseChance = 0.60 -- safer approach
+					local bonus = (smarts - 50) / 150
+					local roll = math.random()
+					
+					if roll < (baseChance + bonus) then
+						-- Slow but steady
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Smarts", 3)
+						state.Money = (state.Money or 0) + 3000
+						state:AddFeed("📈 Slow but steady growth! Smart move.")
+					else
+						-- Stagnation
+						state:ModifyStat("Happiness", -3)
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("😐 Growth is slower than expected, but you're staying afloat.")
+					end
+				end,
+			},
+			{ 
+				text = "Try to attract investors first", 
+				effects = {},
+				feedText = "You pitched to investors...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local looks = state.Stats and state.Stats.Looks or 50
+					local baseChance = 0.35
+					local bonus = ((smarts - 50) + (looks - 50)) / 200 -- charisma matters
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 12)
+						state.Money = (state.Money or 0) + 25000
+						state.Flags = state.Flags or {}
+						state.Flags.has_investors = true
+						state:AddFeed("💰 Investors loved your pitch! You got funded!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("😞 Investors passed. You'll need to bootstrap.")
+					end
+				end,
+			},
+			{ 
+				text = "Postpone - not ready yet", 
+				effects = { Happiness = -2 },
+				feedText = "You decided you're not ready. Maybe next year.",
+			},
 		},
 	},
 

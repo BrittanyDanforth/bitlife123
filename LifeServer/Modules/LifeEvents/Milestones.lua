@@ -117,8 +117,8 @@ Milestones.events = {
 		id = "driving_license",
 		title = "Getting Your License",
 		emoji = "🚗",
-		text = "It's time to get your driver's license!",
-		question = "How does the test go?",
+		text = "You're at the DMV for your driver's license test. The instructor looks strict.",
+		question = "What's your approach?",
 		minAge = 16, maxAge = 20,
 		oneTime = true,
 		isMilestone = true,
@@ -130,11 +130,77 @@ Milestones.events = {
 		milestoneKey = "DRIVING_LICENSE",
 		tags = { "independence", "transport", "test" },
 
+		-- CRITICAL FIX: Random outcomes based on stats, not player choice!
 		choices = {
-			{ text = "Passed first try!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_license = true, good_driver = true }, feedText = "You nailed the driving test!" },
-			{ text = "Passed after a few attempts", effects = { Happiness = 5 }, setFlags = { has_license = true }, feedText = "Third time's the charm! You got your license." },
-			{ text = "Still working on it", effects = { Happiness = -2 }, feedText = "You'll get it eventually." },
-			{ text = "Don't need a license", effects = { }, feedText = "You'll use public transport." },
+			{ 
+				text = "Drive carefully and by the book", 
+				effects = {},
+				feedText = "You drove carefully...",
+				onResolve = function(state)
+					local baseChance = 0.70
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local health = state.Stats and state.Stats.Health or 50
+					local bonus = ((smarts - 50) + (health - 50)) / 200
+					if state.Flags and state.Flags.good_driver then bonus = bonus + 0.15 end
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state.Flags.good_driver = true
+						state:AddFeed("🚗 You passed your driving test! Licensed driver!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🚗 You failed the test. Parallel parking was your downfall.")
+					end
+				end,
+			},
+			{ 
+				text = "Try to impress with your skills", 
+				effects = {},
+				feedText = "You tried to show off...",
+				onResolve = function(state)
+					local baseChance = 0.45 -- riskier approach
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local bonus = (smarts - 50) / 150
+					
+					if math.random() < (baseChance + bonus) then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state.Flags.confident_driver = true
+						state:AddFeed("🚗 The instructor was impressed! Perfect score, licensed!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("🚗 Showing off backfired. Failed! The instructor was not amused.")
+					end
+				end,
+			},
+			{ 
+				text = "Hope for the best, wing it", 
+				effects = {},
+				feedText = "You went in unprepared...",
+				onResolve = function(state)
+					local baseChance = 0.30 -- bad approach
+					if state.Flags and state.Flags.good_driver then baseChance = 0.50 end
+					
+					if math.random() < baseChance then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.has_license = true
+						state:AddFeed("🚗 Somehow you passed winging it! Lucky day!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚗 You weren't prepared enough. Failed the test.")
+					end
+				end,
+			},
+			{ 
+				text = "Skip it - public transport works fine", 
+				effects = { },
+				feedText = "You decided not to get a license. Public transport it is!",
+			},
 		},
 	},
 	{
