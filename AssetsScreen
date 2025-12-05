@@ -84,12 +84,21 @@ function AssetsScreen:updateState(newState)
 	log("Updating state...")
 	if newState then 
 		self.playerState = newState
-		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Assets:", self:getOwnedList("property"))
 		
 		-- Auto-refresh the current tab if screen is visible
 		-- This ensures assets added by events appear immediately
 		if self.isVisible then
 			self:updateBalanceBar()
+			-- Clear ALL existing content before repopulating (simpler and more reliable)
+			if self.contentScroll then
+				for _, child in ipairs(self.contentScroll:GetChildren()) do
+					if child:IsA("Frame") then
+						child:Destroy()
+					end
+				end
+			end
+			-- Repopulate current tab
 			if self.currentTab == "property" then
 				self:populateProperty()
 			elseif self.currentTab == "vehicles" then
@@ -560,6 +569,8 @@ end
 function AssetsScreen:populateProperty()
 	self:updateBalanceBar()
 
+	local state = self.playerState or {}
+	local flags = state.Flags or {}
 	local assets = self:getAssets()
 	local ownedProperties = {}
 	local catalogIds = {}
@@ -589,6 +600,109 @@ function AssetsScreen:populateProperty()
 	end
 
 	log("Owned properties:", #ownedProperties, "of", #Properties)
+
+	-- ═══════════════════════════════════════════════════════════
+	-- HOUSING STATUS SECTION (renting vs owning)
+	-- ═══════════════════════════════════════════════════════════
+	local housingStatusSection = Instance.new("Frame")
+	housingStatusSection.Name = "HousingStatusSection"
+	housingStatusSection.Size = UDim2.new(1, 0, 0, 0)
+	housingStatusSection.AutomaticSize = Enum.AutomaticSize.Y
+	housingStatusSection.BackgroundColor3 = C.White
+	housingStatusSection.LayoutOrder = -1
+	housingStatusSection.ZIndex = 82
+	housingStatusSection.Parent = self.contentScroll
+	UI.corner(housingStatusSection, 18)
+	UI.stroke(housingStatusSection, 2, 0.3, C.Gray300)
+	UI.pad(housingStatusSection, 16, 16, 16, 16)
+
+	local housingLayout = Instance.new("UIListLayout")
+	housingLayout.Padding = UDim.new(0, 12)
+	housingLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	housingLayout.Parent = housingStatusSection
+
+	-- Header
+	local housingHeader = Instance.new("Frame")
+	housingHeader.Size = UDim2.new(1, 0, 0, 32)
+	housingHeader.BackgroundTransparency = 1
+	housingHeader.LayoutOrder = 0
+	housingHeader.ZIndex = 83
+	housingHeader.Parent = housingStatusSection
+
+	local housingTitle = Instance.new("TextLabel")
+	housingTitle.Size = UDim2.new(1, 0, 1, 0)
+	housingTitle.BackgroundTransparency = 1
+	housingTitle.Font = F.Title
+	housingTitle.TextSize = 18
+	housingTitle.TextColor3 = C.Gray900
+	housingTitle.TextXAlignment = Enum.TextXAlignment.Left
+	housingTitle.Text = "🏠 Housing Status"
+	housingTitle.ZIndex = 84
+	housingTitle.Parent = housingHeader
+
+	-- Status display
+	local isRenting = flags.renting == true
+	local isHomeowner = flags.homeowner == true or flags.has_property == true or #ownedProperties > 0
+	local livesWithParents = flags.lives_with_parents == true
+
+	local statusText = ""
+	local statusColor = C.Gray600
+	local statusEmoji = "🏠"
+
+	if isHomeowner and #ownedProperties > 0 then
+		statusText = "✓ Homeowner - You own " .. #ownedProperties .. " propert" .. (#ownedProperties == 1 and "y" or "ies")
+		statusColor = C.Green
+		statusEmoji = "🏡"
+	elseif isRenting then
+		statusText = "🏘️ Renting - You're currently renting a place"
+		statusColor = C.Blue
+		statusEmoji = "🏘️"
+	elseif livesWithParents then
+		statusText = "👨‍👩‍👧 Living with Parents"
+		statusColor = C.Purple
+		statusEmoji = "👨‍👩‍👧"
+	else
+		statusText = "❓ Unknown Housing Status"
+		statusColor = C.Gray500
+		statusEmoji = "❓"
+	end
+
+	local statusFrame = Instance.new("Frame")
+	statusFrame.Size = UDim2.new(1, 0, 0, 50)
+	statusFrame.BackgroundColor3 = (isHomeowner and C.GreenPale) or (isRenting and C.BluePale) or (livesWithParents and C.PurplePale) or C.Gray100
+	statusFrame.LayoutOrder = 1
+	statusFrame.ZIndex = 83
+	statusFrame.Parent = housingStatusSection
+	UI.corner(statusFrame, 12)
+	UI.stroke(statusFrame, 1, 0.2, statusColor)
+
+	local statusLayout = Instance.new("UIListLayout")
+	statusLayout.FillDirection = Enum.FillDirection.Horizontal
+	statusLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	statusLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	statusLayout.Padding = UDim.new(0, 12)
+	statusLayout.Parent = statusFrame
+	UI.pad(statusFrame, 14, 14, 14, 14)
+
+	local statusEmojiLabel = Instance.new("TextLabel")
+	statusEmojiLabel.Size = UDim2.new(0, 30, 0, 30)
+	statusEmojiLabel.BackgroundTransparency = 1
+	statusEmojiLabel.Font = F.Body
+	statusEmojiLabel.TextSize = 24
+	statusEmojiLabel.Text = statusEmoji
+	statusEmojiLabel.ZIndex = 84
+	statusEmojiLabel.Parent = statusFrame
+
+	local statusTextLabel = Instance.new("TextLabel")
+	statusTextLabel.Size = UDim2.new(1, -42, 1, 0)
+	statusTextLabel.BackgroundTransparency = 1
+	statusTextLabel.Font = F.Medium
+	statusTextLabel.TextSize = 14
+	statusTextLabel.TextColor3 = statusColor
+	statusTextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statusTextLabel.Text = statusText
+	statusTextLabel.ZIndex = 84
+	statusTextLabel.Parent = statusFrame
 
 	-- ═══════════════════════════════════════════════════════════
 	-- MY PROPERTIES SECTION (only if owns any)
@@ -1279,9 +1393,13 @@ function AssetsScreen:spin()
 				if result.success then
 					self.spinResult.Text = "🎉 You won " .. UI.formatMoney(result.winnings) .. "!"
 					self.spinResult.TextColor3 = C.Green
+					-- Update balance bar immediately after winning
+					self:updateBalanceBar()
 				else
 					self.spinResult.Text = result.message or "Better luck next time!"
 					self.spinResult.TextColor3 = C.Red
+					-- Update balance bar after losing too
+					self:updateBalanceBar()
 				end
 			end
 		else

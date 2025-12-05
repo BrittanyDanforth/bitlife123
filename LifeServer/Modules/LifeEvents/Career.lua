@@ -5,6 +5,8 @@
 
 local Career = {}
 
+local RANDOM = Random.new()
+
 local STAGE = "adult" -- working-life events
 
 Career.events = {
@@ -39,12 +41,19 @@ Career.events = {
 		id = "promotion_opportunity",
 		title = "Opportunity Knocks",
 		emoji = "📈",
-		text = "A promotion opportunity has opened up at work.",
+		text = "A promotion opportunity has opened up at work. You've been putting in the hours and your performance reviews have been strong. This could be your chance!",
 		question = "Do you go for it?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- Only trigger if player has worked hard
+		customValidation = function(state)
+			state.CareerInfo = state.CareerInfo or {}
+			local promotionProgress = state.CareerInfo.promotionProgress or 0
+			local performance = state.CareerInfo.performance or 0
+			return promotionProgress >= 70 and performance >= 65
+		end,
 
 		-- META
 		stage = STAGE,
@@ -54,9 +63,44 @@ Career.events = {
 		careerTags = { "management" },
 
 		choices = {
-			{ text = "Apply and compete hard", effects = { Smarts = 2, Money = 500, Health = -2 }, setFlags = { sought_promotion = true }, feedText = "You threw your hat in the ring!" },
-			{ text = "Apply casually", effects = { Money = 250 }, feedText = "You applied but kept expectations low." },
-			{ text = "Not interested", effects = { Happiness = 2 }, feedText = "You're happy where you are." },
+			{ 
+				text = "Apply and compete hard", 
+				effects = { Smarts = 2, Health = -2 }, 
+				setFlags = { sought_promotion = true }, 
+				feedText = "You threw your hat in the ring! You'll need to prove yourself in interviews and assessments.",
+				onResolve = function(state)
+					-- Increase promotion progress based on how hard you've worked
+					state.CareerInfo = state.CareerInfo or {}
+					local currentProgress = state.CareerInfo.promotionProgress or 0
+					if currentProgress >= 80 then
+						-- High chance of success if you've worked hard enough
+						if (state.CareerInfo.performance or 0) >= 75 then
+							state.CareerInfo.promotionProgress = 100 -- Guaranteed promotion
+							if state.AddFeed then
+								state:AddFeed("Your hard work paid off! You got the promotion!")
+							end
+						else
+							state.CareerInfo.promotionProgress = math.min(100, currentProgress + 15)
+						end
+					else
+						state.CareerInfo.promotionProgress = math.min(100, currentProgress + 10)
+					end
+				end,
+			},
+			{ 
+				text = "Apply casually", 
+				effects = { }, 
+				feedText = "You applied but kept expectations low. Without strong preparation, your chances are slim.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
+				end,
+			},
+			{ 
+				text = "Not interested", 
+				effects = { Happiness = 2 }, 
+				feedText = "You're happy where you are. Stability over advancement.",
+			},
 		},
 	},
 	{
@@ -111,13 +155,20 @@ Career.events = {
 		id = "work_achievement",
 		title = "Major Achievement",
 		emoji = "🏆",
-		text = "You accomplished something significant at work!",
+		text = "After months of hard work and dedication, you accomplished something significant at work! Your efforts didn't go unnoticed.",
 		question = "What was it?",
 		minAge = 20, maxAge = 65,
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
+		-- Only trigger if player has been performing well
+		customValidation = function(state)
+			state.CareerInfo = state.CareerInfo or {}
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			return performance >= 60 and yearsAtJob >= 0.5 -- At least 6 months at job
+		end,
 
 		-- META
 		stage = STAGE,
@@ -127,10 +178,49 @@ Career.events = {
 		careerTags = { "leadership" },
 
 		choices = {
-			{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feedText = "You closed a major deal!" },
-			{ text = "Solved a critical problem", effects = { Happiness = 8, Smarts = 5 }, setFlags = { problem_solver = true }, feedText = "You saved the day with your solution!" },
-			{ text = "Got recognized by leadership", effects = { Happiness = 10, Money = 500 }, feedText = "The executives noticed your work!" },
-			{ text = "Mentored someone successfully", effects = { Happiness = 8, Smarts = 2 }, setFlags = { mentor = true }, feedText = "You helped someone grow in their career!" },
+			{ 
+				text = "Landed a big client/deal", 
+				effects = { Happiness = 10, Money = 1000, Smarts = 2 }, 
+				setFlags = { big_achiever = true }, 
+				feedText = "You closed a major deal! Your networking and persistence paid off.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 20)
+				end,
+			},
+			{ 
+				text = "Solved a critical problem", 
+				effects = { Happiness = 8, Smarts = 5 }, 
+				setFlags = { problem_solver = true }, 
+				feedText = "You saved the day with your solution! Your analytical skills impressed everyone.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 12)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
+				end,
+			},
+			{ 
+				text = "Got recognized by leadership", 
+				effects = { Happiness = 10, Money = 500 }, 
+				feedText = "The executives noticed your work! Your consistent performance earned recognition.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 12)
+				end,
+			},
+			{ 
+				text = "Mentored someone successfully", 
+				effects = { Happiness = 8, Smarts = 2 }, 
+				setFlags = { mentor = true }, 
+				feedText = "You helped someone grow in their career! Leadership potential recognized.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
+				end,
+			},
 		},
 	},
 	{
@@ -320,11 +410,16 @@ Career.events = {
 		id = "business_opportunity",
 		title = "Business Opportunity",
 		emoji = "💰",
-		text = "Someone approaches you with a business opportunity.",
-		question = "Is it legit?",
+		text = "Someone approaches you with a business opportunity. They claim it's a 'sure thing' and want you to invest. Something feels off, but they're very persuasive.",
+		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
+		-- Only trigger if player has some money to invest
+		customValidation = function(state)
+			local money = state.Money or 0
+			return money >= 2000 -- Need at least $2000 to be a target
+		end,
 
 		-- META
 		stage = STAGE,
@@ -334,22 +429,84 @@ Career.events = {
 		careerTags = { "business" },
 
 		choices = {
-			{ text = "It's a great opportunity! Invest!", effects = { Money = 3000, Happiness = 8 }, setFlags = { investor = true }, feedText = "You took a chance on the opportunity!" },
-			{ text = "Do thorough due diligence first", effects = { Smarts = 3, Money = 1000 }, feedText = "You researched carefully before deciding." },
-			{ text = "If it sounds too good to be true...", effects = { Happiness = 2, Smarts = 2 }, feedText = "You wisely passed on the 'opportunity.'" },
-			{ text = "It's a scam! Report it!", effects = { Smarts = 3 }, feedText = "You recognized and reported the scam." },
+			{ 
+				text = "Invest without checking", 
+				effects = { Happiness = -5 }, 
+				setFlags = { gullible = true },
+				feedText = "You invested without checking...",
+				onResolve = function(state)
+					local investment = math.min(3000, math.floor((state.Money or 0) * 0.3)) -- 30% of money or max 3000
+					local roll = RANDOM:NextNumber()
+					
+					if roll < 0.15 then -- 15% chance it's legit
+						local returnAmount = math.floor(investment * 1.5)
+						state.Money = math.max(0, (state.Money or 0) - investment + returnAmount)
+						if state.AddFeed then
+							state:AddFeed("Lucky! The investment paid off! You got back $" .. returnAmount .. "!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+					else -- 85% chance it's a scam
+						state.Money = math.max(0, (state.Money or 0) - investment)
+						if state.AddFeed then
+							state:AddFeed("It was a scam! You lost $" .. investment .. ". Always do your research!")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Do thorough due diligence first", 
+				effects = { Smarts = 3 }, 
+				setFlags = { careful_investor = true },
+				feedText = "You researched carefully...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then -- 30% chance it's legit after research
+						local investment = math.min(2000, math.floor((state.Money or 0) * 0.2))
+						local returnAmount = math.floor(investment * 1.3)
+						state.Money = math.max(0, (state.Money or 0) - investment + returnAmount)
+						if state.AddFeed then
+							state:AddFeed("Good call! After research, you invested wisely and made $" .. (returnAmount - investment) .. " profit!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+					else
+						if state.AddFeed then
+							state:AddFeed("Your research revealed it was a scam. You avoided losing money!")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "If it sounds too good to be true...", 
+				effects = { Happiness = 2, Smarts = 2 }, 
+				setFlags = { wise = true },
+				feedText = "You wisely passed on the 'opportunity.' Your gut was right - it was too good to be true.",
+			},
+			{ 
+				text = "It's a scam! Report it!", 
+				effects = { Smarts = 3, Happiness = 3 }, 
+				setFlags = { vigilant = true },
+				feedText = "You recognized and reported the scam. Authorities thanked you for helping prevent others from being victimized.",
+			},
 		},
 	},
 	{
 		id = "side_business",
 		title = "Side Business Idea",
 		emoji = "💡",
-		text = "You've been working on a side business that's gaining traction.",
+		text = "You've been working on a side business in your spare time. It's been growing slowly but steadily. You're starting to see real potential.",
 		question = "What's next?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresFlags = { entrepreneur = true },
+		-- Only trigger if player has been working on it (has entrepreneur flag for a while)
+		customValidation = function(state)
+			-- Check if they have enough money/savings to make business decisions
+			local money = state.Money or 0
+			return money >= 1000
+		end,
 
 		-- META
 		stage = STAGE,
@@ -359,10 +516,85 @@ Career.events = {
 		careerTags = { "business" },
 
 		choices = {
-			{ text = "Go full-time on it", effects = { Happiness = 10, Money = 2000 }, setFlags = { full_time_entrepreneur = true }, feedText = "You quit your job to focus on your business!" },
-			{ text = "Keep it as a side income", effects = { Money = 500, Happiness = 5, Health = -2 }, feedText = "Extra income is nice!" },
-			{ text = "Sell it", effects = { Money = 5000, Happiness = 5 }, feedText = "You sold your side business for a nice profit!" },
-			{ text = "Find investors", effects = { Money = 3000, Smarts = 2 }, setFlags = { has_investors = true }, feedText = "You brought on investors to grow!" },
+			{ 
+				text = "Go full-time on it", 
+				effects = { Happiness = 10 }, 
+				setFlags = { full_time_entrepreneur = true }, 
+				feedText = "You quit your job to focus on your business! Risky but exciting!",
+				onResolve = function(state)
+					-- Realistic outcome - might succeed or fail
+					local roll = RANDOM:NextNumber()
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local successChance = math.min(0.7, 0.4 + (smarts / 200)) -- Smarter = better chance
+					
+					if roll < successChance then
+						-- Success - business grows
+						local income = math.floor((state.Money or 0) * 0.1) + 2000
+						state.Money = (state.Money or 0) + income
+						if state.AddFeed then
+							state:AddFeed("Your business took off! You're making $" .. income .. " per month!")
+						end
+					else
+						-- Struggling - need to work harder
+						if state.AddFeed then
+							state:AddFeed("Going full-time is harder than expected. You're struggling but determined to make it work.")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Keep it as a side income", 
+				effects = { Happiness = 5, Health = -2 }, 
+				setFlags = { side_hustler = true },
+				feedText = "Extra income is nice! You're balancing work and your side business.",
+				onResolve = function(state)
+					-- Steady side income
+					local sideIncome = math.floor((state.Money or 0) * 0.05) + 500
+					state.Money = (state.Money or 0) + sideIncome
+					if state.AddFeed then
+						state:AddFeed("Your side business brings in $" .. sideIncome .. " this month. Steady progress!")
+					end
+				end,
+			},
+			{ 
+				text = "Sell it", 
+				effects = { Happiness = 5 }, 
+				setFlags = { sold_business = true },
+				feedText = "You're considering selling...",
+				onResolve = function(state)
+					-- Value depends on how successful it was
+					local baseValue = 3000
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local salePrice = baseValue + math.floor(smarts * 20) -- Smarter = better business = higher sale
+					state.Money = (state.Money or 0) + salePrice
+					if state.AddFeed then
+						state:AddFeed("You sold your side business for $" .. salePrice .. "! A nice profit for your efforts.")
+					end
+				end,
+			},
+			{ 
+				text = "Find investors", 
+				effects = { Smarts = 2 }, 
+				setFlags = { has_investors = true },
+				feedText = "You're pitching to investors...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = RANDOM:NextNumber()
+					local pitchSuccess = 0.3 + (smarts / 200) -- Better pitch if smarter
+					
+					if roll < pitchSuccess then
+						local investment = 5000 + math.floor(smarts * 30)
+						state.Money = (state.Money or 0) + investment
+						if state.AddFeed then
+							state:AddFeed("Investors loved your pitch! You secured $" .. investment .. " in funding!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("Investors weren't convinced. You'll need to refine your pitch and try again.")
+						end
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -388,6 +620,122 @@ Career.events = {
 			{ text = "Honored and humbled", effects = { Happiness = 10, Smarts = 2 }, setFlags = { award_winner = true }, feedText = "You were recognized for your contributions!" },
 			{ text = "It's about time!", effects = { Happiness = 8 }, setFlags = { award_winner = true }, feedText = "Finally, the recognition you deserved!" },
 			{ text = "Use it to help others", effects = { Happiness = 12, Smarts = 3 }, setFlags = { award_winner = true, gives_back = true }, feedText = "You used your platform to lift others." },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RACING CAREER EVENTS (Progression & Dangers)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_practice_session",
+		title = "Practice Session",
+		emoji = "🏎️",
+		text = "You're spending extra time on the track, pushing your limits. Practice makes perfect, but it's risky.",
+		question = "How hard do you push?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_racing",
+		tags = { "racing", "practice", "danger" },
+		careerTags = { "racing" },
+		choices = {
+			{ 
+				text = "Push to the limit", 
+				effects = { Smarts = 2, Health = -5 }, 
+				setFlags = { aggressive_racer = true },
+				feedText = "You pushed hard. Gained experience, but took some risks.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 8)
+					-- Risk of crash
+					if RANDOM:NextNumber() < 0.15 then
+						if state.AddFeed then
+							state:AddFeed("You crashed during practice! Minor injuries, but you're okay.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", -10)
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Practice safely", 
+				effects = { Smarts = 1, Health = 1 }, 
+				setFlags = { safe_racer = true },
+				feedText = "You practiced safely. Steady improvement.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 3)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
+				end,
+			},
+			{ 
+				text = "Skip practice this week", 
+				effects = { Happiness = 2 }, 
+				feedText = "You took a break. Sometimes rest is important.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HACKER CAREER EVENTS (Legal/Illegal Branching)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hacker_security_breach",
+		title = "Security Breach",
+		emoji = "🔓",
+		text = "You've discovered a major security vulnerability in a system. This could be reported ethically... or exploited for profit.",
+		question = "What do you do?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobCategory = "hacker",
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_hacking",
+		tags = { "hacking", "security", "ethics" },
+		careerTags = { "hacker" },
+		choices = {
+			{ 
+				text = "Report it responsibly", 
+				effects = { Happiness = 5, Money = 2000, Smarts = 3 }, 
+				setFlags = { ethical_hacker = true, responsible = true },
+				feedText = "You reported it through proper channels. Good karma and a reward!",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
+				end,
+			},
+			{ 
+				text = "Exploit it for profit", 
+				effects = { Happiness = -3, Money = 15000, Smarts = 2 }, 
+				setFlags = { black_hat_hacker = true, criminal_record = true },
+				feedText = "You exploited it. Made money, but crossed ethical lines.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					-- Risk of getting caught
+					if RANDOM:NextNumber() < 0.25 then
+						if state.AddFeed then
+							state:AddFeed("Your activities were detected. You're being investigated!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+					end
+				end,
+			},
+			{ 
+				text = "Ignore it", 
+				effects = { Smarts = 1 }, 
+				feedText = "You documented it but didn't act. Sometimes discretion is wise.",
+			},
 		},
 	},
 }

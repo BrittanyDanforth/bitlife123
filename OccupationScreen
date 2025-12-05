@@ -323,6 +323,25 @@ function OccupationScreen:updateState(newState)
 	if newState then 
 		self.playerState = newState 
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+		
+		-- Auto-refresh the current tab if screen is visible
+		-- This ensures jobs/career changes from events appear immediately
+		if self.isVisible then
+			self:updateInfoBar()
+			-- Clear existing content before repopulating
+			if self.contentScroll then
+				for _, child in ipairs(self.contentScroll:GetChildren()) do
+					if child:IsA("Frame") then
+						child:Destroy()
+					end
+				end
+			end
+			if self.currentTab == "jobs" then
+				self:populateJobs()
+			else
+				self:populateEducation()
+			end
+		end
 	end
 end
 

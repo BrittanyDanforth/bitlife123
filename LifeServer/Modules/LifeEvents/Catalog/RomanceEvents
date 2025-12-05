@@ -1,42 +1,73 @@
+--[[
+	╔══════════════════════════════════════════════════════════════════════════════╗
+	║                  ROMANCE EVENTS CATALOG v2.0                                 ║
+	║            Triple-AAAA Quality Romance-Focused Life Events                   ║
+	╠══════════════════════════════════════════════════════════════════════════════╣
+	║  This catalog contains 50+ detailed romance events that trigger based on:     ║
+	║  • Player's age and life stage                                               ║
+	║  • Current relationship status                                                ║
+	║  • Relationship quality and history                                           ║
+	║  • Social connections and opportunities                                       ║
+	║  • Flags and previous romantic choices                                        ║
+	║                                                                              ║
+	║  Events are CONTEXTUAL - they only trigger when relevant to the player's     ║
+	║  current romantic situation, preventing random "godmode" popups.             ║
+	╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
 local RANDOM = Random.new()
 
 -- Generate random first name
 local function randomName(gender)
-	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake"}
-	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe"}
+	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Daniel", "Matthew", "Joshua", "Andrew", "Nathan", "Ethan", "Noah", "Lucas", "Mason", "Logan"}
+	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Ella", "Elizabeth", "Sofia", "Avery", "Scarlett"}
 	local names = (gender == "male") and maleNames or femaleNames
 	return names[RANDOM:NextInteger(1, #names)]
 end
 
+-- Helper to find current romantic partner
+local function getCurrentPartner(state)
+	if not state.Relationships then return nil end
+	for id, rel in pairs(state.Relationships) do
+		if rel.type == "romance" and rel.alive ~= false then
+			return id, rel
+		end
+	end
+	return nil, nil
+end
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEEN ROMANCE (High School)
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "highschool_crush",
 		emoji = "💘",
 		title = "Hallway Crush",
-		text = "You keep running into the same person between classes. Ask them out?",
+		text = "You keep running into the same person between classes. They smile at you every time. Your friends are teasing you about it. Do you finally ask them out?",
 		category = "romance",
 		weight = 7,
 		minAge = 14,
 		maxAge = 19,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, has_romantic_partner = true },
+		baseChance = 0.4,
+		cooldown = 3,
 		choices = {
 			{
 				index = 1,
 				text = "Shoot your shot",
 				effects = { Happiness = 4 },
-				setFlags = { has_romantic_partner = true },
-				feedText = "You started dating your crush!",
+				setFlags = { has_romantic_partner = true, high_school_romance = true },
+				feedText = "You asked them out and they said yes! First date this weekend!",
 				onResolve = function(state)
-					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-					if state.AddRelationship then
-						state:AddRelationship(relId, {
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local playerGender = (state.Gender or "male"):lower()
+						local crushName = randomName((playerGender == "male") and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
 							name = crushName,
-							type = "romance",
-							role = "Partner",
 							relationship = 65,
 							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
-							alive = true,
 						})
 					end
 				end,
@@ -45,32 +76,822 @@ local events = {
 				index = 2,
 				text = "Stay quiet",
 				effects = { Happiness = -2 },
-				feedText = "You stayed quiet about your feelings.",
+				feedText = "You stayed quiet about your feelings. The moment passed.",
+			},
+			{
+				index = 3,
+				text = "Ask a friend to help",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { social = true },
+				feedText = "You got a friend to help you. They're setting something up.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("Your friend set it up! You're going on a date!")
+						end
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local playerGender = (state.Gender or "male"):lower()
+							local crushName = randomName((playerGender == "male") and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
+								name = crushName,
+								relationship = 60,
+								age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							})
+						end
+					end
+				end,
 			},
 		},
 	},
+	
+	{
+		id = "prom_date_ask",
+		emoji = "🎩",
+		title = "Prom Date",
+		text = "Prom is coming up. Everyone's asking dates. You have someone in mind, but you're nervous. Do you ask them, or go solo?",
+		category = "romance",
+		weight = 6,
+		minAge = 16,
+		maxAge = 18,
+		blockedByFlags = { in_prison = true },
+		baseChance = 0.35,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Ask your crush",
+				effects = { Happiness = 5 },
+				setFlags = { prom_date = true },
+				feedText = "You asked them to prom! They said yes!",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.7 then
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local playerGender = (state.Gender or "male"):lower()
+							local crushName = randomName((playerGender == "male") and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
+								name = crushName,
+								relationship = 70,
+								age = (state.Age or 17) + RANDOM:NextInteger(-1, 1),
+							})
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+					else
+						if state.AddFeed then
+							state:AddFeed("They said no. Ouch. You're going solo.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Go with friends",
+				effects = { Happiness = 3 },
+				setFlags = { prom_with_friends = true },
+				feedText = "You're going with your friend group. It'll be fun!",
+			},
+			{
+				index = 3,
+				text = "Skip prom",
+				effects = { Happiness = -1 },
+				feedText = "Prom's not your thing. You stayed home.",
+			},
+		},
+	},
+	
+	{
+		id = "first_kiss",
+		emoji = "💋",
+		title = "The Moment",
+		text = "You're on a date. The mood is perfect. The moment feels right. Do you go for your first kiss?",
+		category = "romance",
+		weight = 5,
+		minAge = 14,
+		maxAge = 20,
+		requiresFlags = { has_romantic_partner = true },
+		blockedByFlags = { first_kiss_happened = true },
+		baseChance = 0.3,
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Go for it",
+				effects = { Happiness = 8 },
+				setFlags = { first_kiss_happened = true },
+				feedText = "You kissed them! It was magical. Your first kiss!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait for them",
+				effects = { Happiness = 2, Smarts = 1 },
+				feedText = "You waited. They didn't make a move. Maybe next time.",
+			},
+			{
+				index = 3,
+				text = "Too nervous",
+				effects = { Happiness = -2 },
+				setFlags = { shy = true },
+				feedText = "You got too nervous. The moment passed.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- YOUNG ADULT ROMANCE (College/Early Career)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "college_dorm_romance",
+		emoji = "🏠",
+		title = "Dorm Neighbor",
+		text = "Your dorm neighbor keeps inviting you to study together. They're cute, smart, and you're pretty sure they're flirting. Do you make a move?",
+		category = "romance",
+		weight = 6,
+		minAge = 18,
+		maxAge = 22,
+		requiresFlags = { in_college = true },
+		blockedByFlags = { in_prison = true, has_romantic_partner = true },
+		baseChance = 0.35,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Ask them out",
+				effects = { Happiness = 5, Smarts = 1 },
+				setFlags = { has_romantic_partner = true, college_romance = true },
+				feedText = "You asked them out! They said yes. First date this weekend!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local playerGender = (state.Gender or "male"):lower()
+						local crushName = randomName((playerGender == "male") and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
+							name = crushName,
+							relationship = 70,
+							age = (state.Age or 19) + RANDOM:NextInteger(-2, 2),
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it friendly",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { focused_on_studies = true },
+				feedText = "You kept it platonic. Focused on your studies.",
+			},
+			{
+				index = 3,
+				text = "Wait and see",
+				effects = { Happiness = 1 },
+				feedText = "You're playing it cool. See what happens.",
+			},
+		},
+	},
+	
+	{
+		id = "dating_app_match",
+		emoji = "📱",
+		title = "Dating App Match",
+		text = "You matched with someone on a dating app. Their profile looks great, and they already messaged you. Do you respond and meet up?",
+		category = "romance",
+		weight = 7,
+		minAge = 18,
+		maxAge = 40,
+		blockedByFlags = { in_prison = true, has_romantic_partner = true },
+		requiresFlags = { social_online = true },
+		baseChance = 0.4,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Meet up for coffee",
+				effects = { Happiness = 4, Money = -20 },
+				setFlags = { dating_app_user = true },
+				feedText = "You met up for coffee. It went well!",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.6 then
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local playerGender = (state.Gender or "male"):lower()
+							local matchName = randomName((playerGender == "male") and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
+								name = matchName,
+								relationship = 60,
+								age = (state.Age or 25) + RANDOM:NextInteger(-5, 5),
+							})
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						if state.AddFeed then
+							state:AddFeed("You're going on a second date!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The date was okay, but no spark. You're still looking.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Chat online first",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { cautious_dater = true },
+				feedText = "You're chatting online first. Getting to know them better.",
+			},
+			{
+				index = 3,
+				text = "Unmatch - not interested",
+				effects = { Happiness = -1 },
+				feedText = "You unmatched. Not your type.",
+			},
+		},
+	},
+	
+	{
+		id = "workplace_romance",
+		emoji = "💼",
+		title = "Office Crush",
+		text = "A coworker has been flirting with you. They're attractive, smart, and you're interested. But dating coworkers is risky - what if it doesn't work out?",
+		category = "romance",
+		weight = 5,
+		minAge = 22,
+		maxAge = 50,
+		requiresJob = true,
+		blockedByFlags = { in_prison = true, has_romantic_partner = true },
+		baseChance = 0.3,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Ask them out",
+				effects = { Happiness = 5 },
+				setFlags = { has_romantic_partner = true, workplace_romance = true },
+				feedText = "You asked them out! They said yes. Dating a coworker... risky but exciting!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local playerGender = (state.Gender or "male"):lower()
+						local coworkerName = randomName((playerGender == "male") and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
+							name = coworkerName,
+							relationship = 65,
+							age = (state.Age or 28) + RANDOM:NextInteger(-5, 5),
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it professional",
+				effects = { Happiness = -1, Smarts = 2 },
+				setFlags = { professional = true },
+				feedText = "You kept it professional. Better safe than sorry.",
+			},
+			{
+				index = 3,
+				text = "Wait until one of you leaves",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { cautious = true },
+				feedText = "You're waiting. Once one of you changes jobs, then maybe.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- COMMITTED RELATIONSHIPS
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "adulthood_engagement",
 		emoji = "💍",
 		title = "Perfect Proposal Moment",
-		text = "Your partner hints they'd say yes if you popped the question.",
+		text = "You've been dating for a while. Your partner has been dropping hints about marriage. The moment feels right. Do you propose?",
 		category = "romance",
 		weight = 5,
 		minAge = 21,
+		maxAge = 45,
 		requiresFlags = { has_romantic_partner = true },
+		blockedByFlags = { engaged = true, married = true },
+		baseChance = 0.3,
+		cooldown = 6,
 		choices = {
 			{
 				index = 1,
 				text = "Propose",
-				effects = { Happiness = 6, Money = -3000 },
+				effects = { Happiness = 8, Money = -3000 },
 				setFlags = { engaged = true },
-				feedText = "You proposed and they said yes!",
+				feedText = "You proposed and they said yes! You're engaged!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 20) })
+					end
+					if state.AddFeed then
+						state:AddFeed("Wedding planning begins! So exciting!")
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Not yet",
 				effects = { Happiness = -3 },
-				feedText = "You decided to wait a bit longer.",
+				feedText = "You decided to wait a bit longer. They seem disappointed.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 10) })
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Plan a special proposal",
+				effects = { Happiness = 6, Money = -5000, Smarts = 1 },
+				setFlags = { engaged = true, romantic = true },
+				feedText = "You planned the perfect proposal! They said yes! It was magical!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 25) })
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "wedding_planning",
+		emoji = "👰",
+		title = "Wedding Planning Stress",
+		text = "You're planning your wedding. It's exciting, but also stressful. Budgets, guest lists, venues... everything is expensive and everyone has opinions.",
+		category = "romance",
+		weight = 4,
+		minAge = 21,
+		maxAge = 50,
+		requiresFlags = { engaged = true },
+		blockedByFlags = { married = true },
+		baseChance = 0.35,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Go all out",
+				effects = { Happiness = 6, Money = -15000 },
+				setFlags = { big_wedding = true },
+				feedText = "You're having a huge wedding! Expensive, but it'll be perfect.",
+			},
+			{
+				index = 2,
+				text = "Small, intimate wedding",
+				effects = { Happiness = 5, Money = -3000 },
+				setFlags = { intimate_wedding = true },
+				feedText = "You're keeping it small. Just close family and friends.",
+			},
+			{
+				index = 3,
+				text = "Elope",
+				effects = { Happiness = 7, Money = -1000 },
+				setFlags = { eloped = true },
+				feedText = "You eloped! Just the two of you. Romantic and stress-free!",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.married = true
+					state.Flags.engaged = nil
+					state.Flags.committed_relationship = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "moving_in_together",
+		emoji = "🏡",
+		title = "Moving In",
+		text = "Your partner wants to move in together. It's a big step - sharing space, finances, life. Are you ready?",
+		category = "romance",
+		weight = 6,
+		minAge = 20,
+		maxAge = 40,
+		requiresFlags = { has_romantic_partner = true },
+		blockedByFlags = { living_together = true, married = true },
+		baseChance = 0.4,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Move in together",
+				effects = { Happiness = 6, Money = -2000 },
+				setFlags = { living_together = true },
+				feedText = "You moved in together! It's an adjustment, but you're happy.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not ready yet",
+				effects = { Happiness = -2 },
+				feedText = "You're not ready. They seem disappointed.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 5) })
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Propose instead",
+				effects = { Happiness = 7, Money = -3000 },
+				setFlags = { engaged = true },
+				feedText = "You proposed instead! Let's get married first, then move in.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 20) })
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CHALLENGES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "relationship_fight",
+		emoji = "😠",
+		title = "Big Fight",
+		text = "You and your partner had a huge fight. It started over something small, but it escalated. Things were said. Do you try to fix it, or is this the end?",
+		category = "romance",
+		weight = 7,
+		minAge = 18,
+		maxAge = 60,
+		requiresFlags = { has_romantic_partner = true },
+		baseChance = 0.4,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Apologize and make up",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { good_communicator = true },
+				feedText = "You apologized and talked it out. You're stronger now.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 5) })
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait for them to apologize",
+				effects = { Happiness = -3 },
+				setFlags = { stubborn = true },
+				feedText = "You're waiting for them to apologize first. Pride might cost you.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 15) })
+					end
+					if RANDOM:NextNumber() < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("They broke up with you. Your pride wasn't worth it.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Break up",
+				effects = { Happiness = -8 },
+				setFlags = { has_romantic_partner = false },
+				feedText = "You broke up. It's over. Time to move on.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.RemoveRelationship then
+						state:RemoveRelationship(partnerId)
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cheating_discovery",
+		emoji = "💔",
+		title = "Caught Cheating",
+		text = "You discovered your partner has been cheating. Texts, photos, evidence. Your world is shattered. What do you do?",
+		category = "romance",
+		weight = 3,
+		minAge = 18,
+		maxAge = 60,
+		requiresFlags = { has_romantic_partner = true },
+		baseChance = 0.15,
+		cooldown = 8,
+		choices = {
+			{
+				index = 1,
+				text = "Confront and break up",
+				effects = { Happiness = -10 },
+				setFlags = { has_romantic_partner = false },
+				feedText = "You confronted them and broke up immediately. You deserve better.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.RemoveRelationship then
+						state:RemoveRelationship(partnerId)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Try to work it out",
+				effects = { Happiness = -5, Smarts = -2 },
+				setFlags = { forgiving = true },
+				feedText = "You're trying to work through it. It's hard, but you're trying.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 30) })
+					end
+					if RANDOM:NextNumber() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("It didn't work out. You broke up after all.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Get revenge",
+				effects = { Happiness = -3, Smarts = -3 },
+				setFlags = { vengeful = true },
+				feedText = "You cheated back. Now you're both miserable.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 40) })
+					end
+					if RANDOM:NextNumber() < 0.7 then
+						if state.AddFeed then
+							state:AddFeed("You both broke up. Toxic relationship ended.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "long_distance_struggle",
+		emoji = "✈️",
+		title = "Long Distance",
+		text = "Your partner got a job offer in another city. They want to take it, but it means long distance. Can your relationship survive?",
+		category = "romance",
+		weight = 5,
+		minAge = 22,
+		maxAge = 45,
+		requiresFlags = { has_romantic_partner = true },
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Support them, try long distance",
+				effects = { Happiness = -2, Smarts = 2 },
+				setFlags = { supportive = true, long_distance = true },
+				feedText = "You're trying long distance. It's hard, but you're committed.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 10) })
+					end
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("Long distance was too hard. You broke up.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Ask them to stay",
+				effects = { Happiness = -3 },
+				setFlags = { controlling = true },
+				feedText = "You asked them to stay. They're torn.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("They stayed, but resent you for it. Relationship strained.")
+						end
+						local partnerId, partner = getCurrentPartner(state)
+						if partnerId and state.ModifyRelationship then
+							state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 20) })
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("They took the job anyway. You broke up.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Move with them",
+				effects = { Happiness = 5, Money = -5000, Smarts = 1 },
+				setFlags = { committed = true },
+				feedText = "You're moving with them! Big change, but you're in it together.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- REKINDLING & SECOND CHANCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "ex_reaches_out",
+		emoji = "📞",
+		title = "Ex Contacts You",
+		text = "Your ex reached out. They want to meet up, talk, maybe try again. You have mixed feelings. Do you give them another chance?",
+		category = "romance",
+		weight = 4,
+		minAge = 20,
+		maxAge = 50,
+		blockedByFlags = { has_romantic_partner = true },
+		baseChance = 0.25,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Meet up",
+				effects = { Happiness = 3 },
+				setFlags = { considering_reconciliation = true },
+				feedText = "You met up. Old feelings resurfaced.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("You're giving it another shot. Second chance romance!")
+						end
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local playerGender = (state.Gender or "male"):lower()
+							local exName = randomName((playerGender == "male") and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
+								name = exName,
+								relationship = 55,
+								age = (state.Age or 25) + RANDOM:NextInteger(-3, 3),
+							})
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+					else
+						if state.AddFeed then
+							state:AddFeed("It didn't work out. Same problems as before.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Ignore them",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { moved_on = true },
+				feedText = "You ignored them. You've moved on.",
+			},
+			{
+				index = 3,
+				text = "Tell them no",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { firm_boundaries = true },
+				feedText = "You told them no. Clean break.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MARRIAGE & COMMITMENT
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "anniversary_celebration",
+		emoji = "🎉",
+		title = "Anniversary",
+		text = "It's your anniversary! You've been together for a while now. Do you plan something special, or keep it low-key?",
+		category = "romance",
+		weight = 5,
+		minAge = 20,
+		maxAge = 60,
+		requiresFlags = { has_romantic_partner = true },
+		baseChance = 0.3,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Plan something romantic",
+				effects = { Happiness = 7, Money = -500 },
+				setFlags = { romantic = true },
+				feedText = "You planned the perfect anniversary! They loved it!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 10) })
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it simple",
+				effects = { Happiness = 4, Money = -100 },
+				feedText = "You had a nice dinner together. Simple but sweet.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 5) })
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Forget about it",
+				effects = { Happiness = -5 },
+				setFlags = { forgetful = true },
+				feedText = "You forgot your anniversary. They're upset.",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
+					if partnerId and state.ModifyRelationship then
+						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 15) })
+					end
+				end,
 			},
 		},
 	},

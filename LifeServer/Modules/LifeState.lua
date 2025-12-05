@@ -97,6 +97,25 @@ function LifeState.new(player)
 	-- Career hints from childhood choices
 	self.CareerHints = {}
 	
+	-- CRITICAL: Interest tracking system (BitLife-style gradual career unlock)
+	-- Interests build up over time based on player choices and unlock related careers
+	self.Interests = {
+		-- Technical interests
+		coding = 0,           -- Built by coding events, computer classes, tech activities
+		programming = 0,       -- Similar to coding, more advanced
+		tech = 0,              -- General tech interest
+		-- Racing interests
+		racing = 0,            -- Built by racing games, driving events, car interests
+		driving = 0,           -- General driving interest
+		-- Other interests can be added here
+		business = 0,
+		art = 0,
+		music = 0,
+		sports = 0,
+		medicine = 0,
+		law = 0,
+	}
+	
 	-- Story arcs the player is pursuing
 	self.StoryArcs = {}
 	
@@ -156,27 +175,32 @@ function LifeState:AdvanceAge()
 	-- EDUCATION AUTO-PROGRESSION (BitLife-style automatic school progression)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL: Education progression cannot happen while in jail
 	-- Age 5: Start elementary school
-	if self.Age == 5 and self.Education == "none" then
+	if self.Age == 5 and self.Education == "none" and not (self.InJail == true) then
+		self.EducationData = self.EducationData or {}
 		self.EducationData.Status = "enrolled"
 		self.EducationData.Institution = "Elementary School"
 		self.Flags.in_school = true
 	end
 	
 	-- Age 11: Middle school transition (just update institution)
-	if self.Age == 11 and self.Education == "none" then
+	if self.Age == 11 and self.Education == "none" and not (self.InJail == true) then
+		self.EducationData = self.EducationData or {}
 		self.EducationData.Institution = "Middle School"
 	end
 	
 	-- Age 14: Start high school (still no diploma yet!)
-	if self.Age == 14 and self.Education == "none" then
+	if self.Age == 14 and self.Education == "none" and not (self.InJail == true) then
+		self.EducationData = self.EducationData or {}
 		self.EducationData.Institution = "High School"
 		self.Flags.in_high_school = true
 	end
 	
 	-- Age 18: Auto-graduate high school if player hasn't already via event
-	-- This ensures EVERYONE gets high school education by 18
-	if self.Age == 18 then
+	-- This ensures EVERYONE gets high school education by 18 (unless in jail)
+	if self.Age == 18 and not (self.InJail == true) then
+		self.EducationData = self.EducationData or {}
 		if self.Education == "none" or self.EducationData.Status == "enrolled" then
 			self.Education = "high_school"
 			self.EducationData.Status = "completed"
@@ -198,6 +222,29 @@ function LifeState:AdvanceAge()
 			self.Flags.in_prison = nil
 			self.Flags.incarcerated = nil
 			self.PendingFeed = "You've been released from prison!"
+		end
+	end
+	
+	-- CRITICAL: Career progression - increment years at job
+	if self.CurrentJob and self.CareerInfo then
+		self.CareerInfo.yearsAtJob = (self.CareerInfo.yearsAtJob or 0) + 1
+		-- Natural performance decay if not working hard (but cap at reasonable level)
+		if self.CareerInfo.performance and self.CareerInfo.performance > 40 then
+			-- Slight decay over time if performance is high (encourages active play)
+			local decay = RANDOM:NextNumber() < 0.1 and -1 or 0 -- 10% chance of -1 per year
+			self.CareerInfo.performance = math.max(40, self.CareerInfo.performance + decay)
+		end
+	end
+	
+	-- CRITICAL: Interest decay over time (interests fade if not pursued)
+	-- This makes it so players need to actively pursue interests to unlock careers
+	if self.Interests then
+		for interestName, value in pairs(self.Interests) do
+			if value > 0 then
+				-- Decay 1-2 points per year (slower than growth, but keeps interests dynamic)
+				local decay = RANDOM:NextInteger(1, 2)
+				self.Interests[interestName] = math.max(0, value - decay)
+			end
 		end
 	end
 	
@@ -264,10 +311,31 @@ function LifeState:GetRelationship(id)
 	return self.Relationships[id]
 end
 
-function LifeState:ModifyRelationship(id, delta)
+function LifeState:ModifyRelationship(id, deltaOrData)
 	local rel = self.Relationships[id]
-	if rel then
-		rel.relationship = math.clamp((rel.relationship or 50) + delta, 0, 100)
+	if not rel then return self end
+	
+	-- Support both formats:
+	-- 1. Number delta: ModifyRelationship(id, 15) -> adds 15
+	-- 2. Table with relationship key: ModifyRelationship(id, { relationship = 85 }) -> sets to 85
+	if type(deltaOrData) == "number" then
+		-- Delta format (add/subtract)
+		rel.relationship = math.clamp((rel.relationship or 50) + deltaOrData, 0, 100)
+	elseif type(deltaOrData) == "table" and deltaOrData.relationship ~= nil then
+		-- Table format (set absolute value)
+		rel.relationship = math.clamp(deltaOrData.relationship, 0, 100)
+		-- Also support other fields in the table
+		if deltaOrData.role then rel.role = deltaOrData.role end
+		if deltaOrData.age then rel.age = deltaOrData.age end
+		if deltaOrData.alive ~= nil then rel.alive = deltaOrData.alive end
+	end
+	
+	return self
+end
+
+function LifeState:RemoveRelationship(id)
+	if self.Relationships[id] then
+		self.Relationships[id] = nil
 	end
 	return self
 end
@@ -338,10 +406,15 @@ end
 
 function LifeState:ClearCareer()
 	self.CurrentJob = nil
+	-- CRITICAL: Ensure CareerInfo exists before accessing properties
+	self.CareerInfo = self.CareerInfo or {}
 	self.CareerInfo.performance = 0
 	self.CareerInfo.promotionProgress = 0
 	self.CareerInfo.yearsAtJob = 0
-	self.Career.track = nil
+	if self.Career then
+		self.Career.track = nil
+	end
+	self.Flags = self.Flags or {}
 	self.Flags.employed = nil
 	self.Flags.has_job = nil
 	return self
@@ -387,6 +460,24 @@ end
 
 function LifeState:ClearFlag(flagName)
 	self.Flags[flagName] = nil
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- PRISON/JAIL
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:GoToJail(days)
+	-- Convert days to years (assuming 365 days = 1 year for game purposes)
+	local years = math.ceil(days / 365)
+	self.InJail = true
+	self.JailYearsLeft = years
+	self.Flags.in_prison = true
+	self.Flags.incarcerated = true
+	-- Clear job if in prison
+	if self.CurrentJob then
+		self:ClearCareer()
+	end
 	return self
 end
 
@@ -443,6 +534,7 @@ function LifeState:Serialize()
 		
 		-- Career hints
 		CareerHints = self.CareerHints,
+		Interests = self.Interests,
 		
 		-- Story
 		StoryArcs = self.StoryArcs,

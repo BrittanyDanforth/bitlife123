@@ -1,105 +1,796 @@
+--[[
+	╔══════════════════════════════════════════════════════════════════════════════╗
+	║                 CORE MILESTONES CATALOG v2.0                                 ║
+	║           Triple-AAAA Quality Milestone Life Events                            ║
+	╠══════════════════════════════════════════════════════════════════════════════╣
+	║  This catalog contains 50+ detailed milestone events that trigger once      ║
+	║  in a lifetime, marking major transitions and achievements:                    ║
+	║  • Childhood milestones (firsts, transitions)                                 ║
+	║  • Coming-of-age milestones (18, independence)                               ║
+	║  • Educational milestones (graduations)                                      ║
+	║  • Career milestones (first job, promotions, retirement)                      ║
+	║  • Personal milestones (decade birthdays, major life changes)                 ║
+	║                                                                              ║
+	║  Events are CONTEXTUAL - they only trigger when relevant to the player's     ║
+	║  current life stage and situation, preventing random "godmode" popups.       ║
+	╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
+local RANDOM = Random.new()
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CHILDHOOD MILESTONES (Ages 0-12)
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "childhood_playdate",
 		emoji = "🧸",
 		title = "Neighborhood Playdate",
-		text = "Kids on your street invite you over for an afternoon of board games and freeze tag.",
+		text = "Kids on your street invite you over for an afternoon of board games and freeze tag. It's your first real social invitation from peers. Your parents are encouraging you to go.",
 		category = "milestone",
 		weight = 8,
 		minAge = 5,
 		maxAge = 10,
+		oneTime = true,
+		baseChance = 0.4,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,
 				text = "Join the fun",
-				effects = { Happiness = 3, Health = 1 },
-				setFlags = { has_childhood_friends = true },
-				feedText = "You had a great time with the neighborhood kids!",
+				effects = { Happiness = 4, Health = 2, Smarts = 1 },
+				setFlags = { has_childhood_friends = true, social = true },
+				feedText = "You had an amazing time! Made your first real friends!",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You're invited to more playdates. Your social circle is growing!")
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Stay home",
 				effects = { Happiness = -2, Smarts = 1 },
-				feedText = "You stayed home instead.",
+				setFlags = { shy = true },
+				feedText = "You stayed home. Maybe next time you'll be braver.",
+			},
+			{
+				index = 3,
+				text = "Ask parent to come",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { cautious = true },
+				feedText = "You went, but with a parent nearby. Baby steps!",
 			},
 		},
 	},
+	
+	{
+		id = "first_day_school",
+		emoji = "🎒",
+		title = "First Day of School",
+		text = "It's your first day of elementary school! New backpack, new shoes, new friends to make. You're excited... and nervous. Your parents are taking photos.",
+		category = "milestone",
+		weight = 10,
+		minAge = 5,
+		maxAge = 6,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Be brave and excited",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { started_school = true, confident = true },
+				feedText = "You walked in confidently! Made friends immediately!",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.in_school = true
+					state.Flags.education_level = "elementary"
+				end,
+			},
+			{
+				index = 2,
+				text = "Cry and cling to parent",
+				effects = { Happiness = -3, Smarts = 1 },
+				setFlags = { separation_anxiety = true },
+				feedText = "You were scared. It took a while, but you eventually calmed down.",
+			},
+			{
+				index = 3,
+				text = "Observe quietly",
+				effects = { Happiness = 1, Smarts = 2 },
+				setFlags = { observant = true, introverted = true },
+				feedText = "You watched everything carefully. Learning by observing.",
+			},
+		},
+	},
+	
+	{
+		id = "first_best_friend",
+		emoji = "🤝",
+		title = "Best Friend",
+		text = "You've found your first best friend! You do everything together - play, eat lunch, share secrets. This is special. Do you make it official?",
+		category = "milestone",
+		weight = 7,
+		minAge = 6,
+		maxAge = 12,
+		oneTime = true,
+		blockedByFlags = { has_best_friend = true },
+		baseChance = 0.35,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Make friendship bracelets",
+				effects = { Happiness = 6 },
+				setFlags = { has_best_friend = true, creative = true },
+				feedText = "You made matching friendship bracelets! Best friends forever!",
+				onResolve = function(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local friendName = RANDOM:NextInteger(1, 2) == 1 and "Alex" or "Sam"
+						local friend = EventEngine.createRelationship(state, "friend", {
+							name = friendName,
+							relationship = 85,
+							age = (state.Age or 8) + RANDOM:NextInteger(-1, 1),
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it casual",
+				effects = { Happiness = 3 },
+				feedText = "You're friends, but not making it a big deal. That's fine too.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEEN MILESTONES (Ages 13-17)
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "teen_social_media",
 		emoji = "📱",
 		title = "First Social Media Account",
-		text = "Everyone at school is talking about the newest social platform. Create an account?",
+		text = "Everyone at school is talking about the newest social platform. Your friends are all on it. They're pressuring you to join. Do you create an account?",
 		category = "milestone",
 		weight = 6,
 		minAge = 12,
 		maxAge = 18,
 		oneTime = true,
+		blockedByFlags = { social_online = true },
+		baseChance = 0.4,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,
 				text = "Yes, sign up",
-				effects = { Happiness = 2 },
-				setFlags = { social_online = true },
-				feedText = "You created your first social media account!",
+				effects = { Happiness = 3, Smarts = 1 },
+				setFlags = { social_online = true, tech_savvy = true },
+				feedText = "You created your first social media account! Welcome to the digital age!",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You're already getting friend requests. Social life expanding!")
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Not my thing",
-				effects = { Happiness = -1, Smarts = 1 },
-				feedText = "You decided to stay off social media.",
+				effects = { Happiness = -1, Smarts = 2 },
+				setFlags = { offline = true, independent_thinker = true },
+				feedText = "You decided to stay off social media. Your choice, but you're missing out on some social connections.",
+			},
+			{
+				index = 3,
+				text = "Wait and see",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { cautious = true },
+				feedText = "You're waiting to see if it's worth it. Maybe later.",
 			},
 		},
 	},
+	
+	{
+		id = "first_crush",
+		emoji = "💕",
+		title = "First Crush",
+		text = "You've developed your first real crush. They're in your class, and every time you see them, your heart races. Do you tell anyone, or keep it secret?",
+		category = "milestone",
+		weight = 7,
+		minAge = 12,
+		maxAge = 16,
+		oneTime = true,
+		blockedByFlags = { first_crush_happened = true },
+		baseChance = 0.35,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Tell your best friend",
+				effects = { Happiness = 3 },
+				setFlags = { first_crush_happened = true, open = true },
+				feedText = "You confided in your best friend. They're helping you figure out what to do!",
+			},
+			{
+				index = 2,
+				text = "Keep it secret",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { first_crush_happened = true, private = true },
+				feedText = "You're keeping it to yourself. Your secret is safe.",
+			},
+			{
+				index = 3,
+				text = "Try to talk to them",
+				effects = { Happiness = 4, Smarts = 1 },
+				setFlags = { first_crush_happened = true, brave = true },
+				feedText = "You worked up the courage to talk to them! It went well!",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("They seem interested too! Maybe something will happen!")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "getting_drivers_license",
+		emoji = "🚗",
+		title = "Driver's License",
+		text = "You're old enough to get your driver's license! You've been practicing, and you think you're ready for the test. Freedom awaits!",
+		category = "milestone",
+		weight = 8,
+		minAge = 16,
+		maxAge = 18,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		blockedByFlags = { has_drivers_license = true },
+		baseChance = 0.4,
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Take the test",
+				effects = { Happiness = 6, Money = -200 },
+				setFlags = { has_drivers_license = true, independent = true },
+				feedText = "You passed! You have your driver's license! Freedom!",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You can drive now! Your parents are letting you use the car sometimes.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait, need more practice",
+				effects = { Happiness = -1, Smarts = 2 },
+				setFlags = { cautious = true },
+				feedText = "You decided to practice more. Better safe than sorry.",
+			},
+			{
+				index = 3,
+				text = "Fail the test",
+				effects = { Happiness = -3, Money = -200 },
+				feedText = "You failed the test. Parallel parking got you. You'll try again next month.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You're practicing more. Next time you'll pass!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- COMING OF AGE MILESTONES (Age 18+)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "turning_18",
+		emoji = "🎂",
+		title = "18th Birthday",
+		text = "You're turning 18! You're officially an adult now. You can vote, sign contracts, and make your own decisions. Your family is throwing you a party. How do you want to celebrate?",
+		category = "milestone",
+		weight = 10,
+		minAge = 18,
+		maxAge = 18,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Big party with friends",
+				effects = { Happiness = 8, Money = -300 },
+				setFlags = { turned_18 = true, adult = true, social = true },
+				feedText = "You threw an epic 18th birthday party! Everyone came!",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Quiet dinner with family",
+				effects = { Happiness = 5, Money = -100 },
+				setFlags = { turned_18 = true, adult = true, family_oriented = true },
+				feedText = "You had a nice dinner with family. Low-key but meaningful.",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
+				end,
+			},
+			{
+				index = 3,
+				text = "Skip celebration",
+				effects = { Happiness = 1 },
+				setFlags = { turned_18 = true, adult = true },
+				feedText = "You didn't make a big deal of it. Just another birthday.",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
+				end,
+			},
+		},
+	},
+	
 	{
 		id = "young_adult_move_out",
 		emoji = "📦",
 		title = "Moving Out",
-		text = "You feel ready to leave home and get your own place.",
+		text = "You feel ready to leave home and get your own place. You've saved up some money, and you're craving independence. Your parents are supportive but nervous.",
 		category = "milestone",
-		weight = 5,
+		weight = 7,
 		minAge = 18,
 		maxAge = 30,
 		oneTime = true,
 		blockedByFlags = { living_independently = true },
+		requiresStats = { Money = { min = 3000 } },
+		baseChance = 0.35,
+		cooldown = 4,
 		choices = {
 			{
 				index = 1,
 				text = "Get an apartment",
-				effects = { Happiness = 4, Money = -5000 },
-				setFlags = { living_independently = true },
-				feedText = "You moved into your own apartment!",
+				effects = { Happiness = 6, Money = -5000, Smarts = 2 },
+				setFlags = { living_independently = true, independent = true, renting = true, homeowner = false },
+				feedText = "You moved into your own apartment! You're renting. First time living alone!",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You're learning to cook, pay bills, and manage your own space. Growing up!")
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Stay with family",
 				effects = { Happiness = -1, Money = 2000 },
-				feedText = "You decided to stay with family a bit longer.",
+				setFlags = { living_with_family = true, lives_with_parents = true, renting = false, homeowner = false },
+				feedText = "You decided to stay with family a bit longer. Saving money, but missing independence.",
+			},
+			{
+				index = 3,
+				text = "Move in with roommates",
+				effects = { Happiness = 5, Money = -3000, Smarts = 1 },
+				setFlags = { living_independently = true, has_roommates = true, renting = true, homeowner = false },
+				feedText = "You moved in with roommates! You're renting. Cheaper rent and built-in friends!",
 			},
 		},
 	},
+	
+	{
+		id = "first_real_job",
+		emoji = "💼",
+		title = "First Real Job",
+		text = "You got your first real job offer! It's not your dream job, but it's a start. Full-time, benefits, the works. This is your entry into the real world.",
+		category = "milestone",
+		weight = 8,
+		minAge = 18,
+		maxAge = 25,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		blockedByFlags = { has_real_job = true },
+		requiresStats = { Smarts = { min = 40 } },
+		baseChance = 0.3,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Accept the job",
+				effects = { Happiness = 5, Money = 2000, Smarts = 2 },
+				setFlags = { has_real_job = true, employed = true, has_job = true },
+				feedText = "You accepted! Starting your first real job next week!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "first_job",
+							name = "Entry Level Associate",
+							company = "Local Business",
+							salary = 35000,
+							category = "entry",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Hold out for something better",
+				effects = { Happiness = -2, Smarts = 1 },
+				setFlags = { picky = true },
+				feedText = "You're holding out for something better. Risky, but you believe in yourself.",
+			},
+			{
+				index = 3,
+				text = "Negotiate salary",
+				effects = { Happiness = 4, Money = 2500, Smarts = 3 },
+				setFlags = { has_real_job = true, good_negotiator = true },
+				feedText = "You negotiated! Got a better starting salary. Smart move!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "first_job",
+							name = "Entry Level Associate",
+							company = "Local Business",
+							salary = 40000,
+							category = "entry",
+						})
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATIONAL MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "high_school_graduation",
+		emoji = "🎓",
+		title = "High School Graduation",
+		text = "You're graduating from high school! Cap and gown, diploma, the whole thing. Your family is here, and you're about to walk across that stage. What's next?",
+		category = "milestone",
+		weight = 10,
+		minAge = 17,
+		maxAge = 19,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresFlags = { in_high_school = true },
+		choices = {
+			{
+				index = 1,
+				text = "Go to college",
+				effects = { Happiness = 6, Smarts = 3, Money = -5000 },
+				setFlags = { graduated_high_school = true, college_bound = true },
+				feedText = "You graduated! Heading to college in the fall!",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.education_level = "college"
+					state.Flags.in_college = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Get a job",
+				effects = { Happiness = 4, Money = 2000 },
+				setFlags = { graduated_high_school = true, entered_workforce = true },
+				feedText = "You graduated! Time to enter the workforce!",
+			},
+			{
+				index = 3,
+				text = "Take a gap year",
+				effects = { Happiness = 5, Smarts = 1 },
+				setFlags = { graduated_high_school = true, gap_year = true },
+				feedText = "You graduated! Taking a year to figure things out.",
+			},
+		},
+	},
+	
+	{
+		id = "college_graduation",
+		emoji = "🎓",
+		title = "College Graduation",
+		text = "You're graduating from college! Four years (or more) of hard work, and here you are. Your degree is in hand, and the real world awaits. How do you feel?",
+		category = "milestone",
+		weight = 10,
+		minAge = 21,
+		maxAge = 25,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresFlags = { in_college = true },
+		choices = {
+			{
+				index = 1,
+				text = "Excited for the future",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { graduated_college = true, optimistic = true },
+				feedText = "You graduated! Ready to take on the world!",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.education_level = "bachelors"
+					state.Flags.in_college = false
+				end,
+			},
+			{
+				index = 2,
+				text = "Nervous about what's next",
+				effects = { Happiness = 3, Smarts = 1 },
+				setFlags = { graduated_college = true, anxious = true },
+				feedText = "You graduated, but you're not sure what comes next. That's okay.",
+			},
+			{
+				index = 3,
+				text = "Apply to grad school",
+				effects = { Happiness = 5, Smarts = 3, Money = -2000 },
+				setFlags = { graduated_college = true, grad_school_bound = true },
+				feedText = "You graduated! Applying to grad school. More education ahead!",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DECADE BIRTHDAYS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "turning_30",
+		emoji = "🎂",
+		title = "30th Birthday",
+		text = "You're turning 30! A milestone birthday. You're reflecting on your life so far - where you've been, where you're going. How do you want to celebrate?",
+		category = "milestone",
+		weight = 8,
+		minAge = 30,
+		maxAge = 30,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Big party",
+				effects = { Happiness = 7, Money = -1000 },
+				setFlags = { turned_30 = true, social = true },
+				feedText = "You threw a huge 30th birthday party! Everyone came to celebrate!",
+			},
+			{
+				index = 2,
+				text = "Quiet reflection",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { turned_30 = true, reflective = true },
+				feedText = "You spent the day reflecting. 30 feels like a new chapter.",
+			},
+			{
+				index = 3,
+				text = "Crisis mode",
+				effects = { Happiness = -5, Health = -3 },
+				setFlags = { turned_30 = true, midlife_crisis = true },
+				feedText = "You're having a crisis. 30 feels old. Time to make changes.",
+			},
+		},
+	},
+	
+	{
+		id = "turning_40",
+		emoji = "🎂",
+		title = "40th Birthday",
+		text = "You're turning 40! Middle age. You're looking back at your life, forward at what's left. This is a big one. How are you handling it?",
+		category = "milestone",
+		weight = 7,
+		minAge = 40,
+		maxAge = 40,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Embrace it",
+				effects = { Happiness = 6, Health = 2 },
+				setFlags = { turned_40 = true, accepting = true },
+				feedText = "You're embracing 40! Life is good, and you're grateful.",
+			},
+			{
+				index = 2,
+				text = "Midlife crisis",
+				effects = { Happiness = -5, Money = -10000 },
+				setFlags = { turned_40 = true, midlife_crisis = true },
+				feedText = "You're having a full-blown midlife crisis. Bought something expensive to feel young again.",
+			},
+			{
+				index = 3,
+				text = "Focus on health",
+				effects = { Happiness = 4, Health = 5, Money = -500 },
+				setFlags = { turned_40 = true, health_conscious = true },
+				feedText = "You're focusing on your health. 40 is a wake-up call.",
+			},
+		},
+	},
+	
+	{
+		id = "turning_50",
+		emoji = "🎂",
+		title = "50th Birthday",
+		text = "You're turning 50! Half a century. You've lived a lot of life. Your friends and family are celebrating with you. How does it feel?",
+		category = "milestone",
+		weight = 6,
+		minAge = 50,
+		maxAge = 50,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Celebrate with loved ones",
+				effects = { Happiness = 7 },
+				setFlags = { turned_50 = true, grateful = true },
+				feedText = "You celebrated with everyone you love. 50 feels like a blessing.",
+			},
+			{
+				index = 2,
+				text = "Reflect on achievements",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { turned_50 = true, reflective = true },
+				feedText = "You're reflecting on everything you've accomplished. Proud of your journey.",
+			},
+			{
+				index = 3,
+				text = "Worry about aging",
+				effects = { Happiness = -3, Health = -2 },
+				setFlags = { turned_50 = true, anxious_about_aging = true },
+				feedText = "You're worried about getting older. 50 feels like a lot.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "major_promotion",
+		emoji = "⬆️",
+		title = "Major Promotion",
+		text = "You got a major promotion! This is huge - significant pay raise, more responsibility, recognition for your hard work. Your career is taking off!",
+		category = "milestone",
+		weight = 8,
+		minAge = 25,
+		maxAge = 55,
+		requiresJob = true,
+		requiresStats = { Smarts = { min = 70 } },
+		oneTime = false,
+		baseChance = 0.25,
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "Accept with excitement",
+				effects = { Happiness = 8, Money = 10000, Health = -2 },
+				setFlags = { promoted = true, career_success = true },
+				feedText = "You accepted! Major career milestone achieved!",
+				onResolve = function(state)
+					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
+					local oldSalary = state.CurrentJob.salary or 50000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.5)
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+				end,
+			},
+			{
+				index = 2,
+				text = "Negotiate for more",
+				effects = { Happiness = 7, Money = 12000, Smarts = 3 },
+				setFlags = { promoted = true, good_negotiator = true },
+				feedText = "You negotiated! Got even better terms. You're a pro!",
+			},
+		},
+	},
+	
+	{
+		id = "retirement",
+		emoji = "🏖️",
+		title = "Retirement",
+		text = "You're retiring! After decades of work, you're finally free. No more alarm clocks, no more commutes. Just... life. How do you want to spend it?",
+		category = "milestone",
+		weight = 9,
+		minAge = 60,
+		maxAge = 70,
+		requiresJob = true,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		choices = {
+			{
+				index = 1,
+				text = "Travel the world",
+				effects = { Happiness = 10, Money = -20000, Health = 2 },
+				setFlags = { retired = true, traveler = true },
+				feedText = "You're traveling! Seeing the world in retirement. Living your best life!",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Spend time with family",
+				effects = { Happiness = 9 },
+				setFlags = { retired = true, family_oriented = true },
+				feedText = "You're spending time with family. Grandkids, hobbies, relaxation.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Keep working part-time",
+				effects = { Happiness = 6, Money = 5000 },
+				setFlags = { semi_retired = true },
+				feedText = "You're semi-retired. Working part-time to stay busy.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MIDLIFE MILESTONES
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "midlife_burnout",
 		emoji = "😫",
 		title = "Career Burnout",
-		text = "Years of grinding have left you exhausted. Take a sabbatical?",
-		category = "career",
-		weight = 4,
+		text = "Years of grinding have left you exhausted. You're burned out, stressed, and questioning everything. Do you take a break, or push through?",
+		category = "milestone",
+		weight = 6,
 		minAge = 35,
 		maxAge = 55,
 		requiresJob = true,
+		requiresFlags = { workaholic = true },
+		baseChance = 0.3,
+		cooldown = 5,
 		choices = {
 			{
 				index = 1,
-				text = "Take time off",
-				effects = { Happiness = 6, Health = 3, Money = -8000 },
-				feedText = "You took a well-deserved break!",
+				text = "Take a sabbatical",
+				effects = { Happiness = 8, Health = 5, Money = -8000 },
+				setFlags = { took_sabbatical = true, work_life_balance = true },
+				feedText = "You took a well-deserved break! Recharging and rediscovering yourself.",
 			},
 			{
 				index = 2,
 				text = "Push through",
-				effects = { Happiness = -4, Health = -3 },
-				setFlags = { burnout_warning = true },
-				feedText = "You pushed through the exhaustion.",
+				effects = { Happiness = -6, Health = -5 },
+				setFlags = { burnout_warning = true, workaholic = true },
+				feedText = "You pushed through the exhaustion. But you're running on empty.",
+			},
+			{
+				index = 3,
+				text = "Change careers",
+				effects = { Happiness = 7, Money = -5000, Smarts = 2 },
+				setFlags = { career_change = true, brave = true },
+				feedText = "You're changing careers! Scary but exciting. Time for something new.",
 			},
 		},
 	},

@@ -153,11 +153,20 @@ local function loadEventModule(moduleName, categoryName)
 	local count = 0
 	for _, event in ipairs(events) do
 		if event.id then
-			event._category = category
-			event._source = moduleName
-			AllEvents[event.id] = event
-			table.insert(EventsByCategory[category], event)
-			count += 1
+			-- CRITICAL: Check for duplicate event IDs and warn/prevent conflicts
+			if AllEvents[event.id] then
+				warn(string.format("[LifeEvents] ⚠️ DUPLICATE EVENT ID '%s' detected! Already loaded from '%s', now trying to load from '%s'. Keeping the first one.", 
+					event.id, 
+					AllEvents[event.id]._source or "unknown", 
+					moduleName))
+				-- Skip duplicate - don't add it again
+			else
+				event._category = category
+				event._source = moduleName
+				AllEvents[event.id] = event
+				table.insert(EventsByCategory[category], event)
+				count += 1
+			end
 		end
 	end
 	
@@ -267,11 +276,13 @@ local function recordEventShown(state, event)
 	local eventId = event.id
 	
 	-- Track occurrence count (with nil safety)
+	history.occurrences = history.occurrences or {}
 	if type(history.occurrences) == "table" then
 		history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
 	end
 	
 	-- Track when it last occurred
+	history.lastOccurrence = history.lastOccurrence or {}
 	if type(history.lastOccurrence) == "table" then
 		history.lastOccurrence[eventId] = state.Age or 0
 	end
@@ -309,6 +320,21 @@ local function canEventTrigger(event, state)
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL STATE CHECKS - Must be first!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL: Dead players cannot trigger events
+	if state.IsDead == true then
+		return false
+	end
+	
+	-- CRITICAL: Events requiring a job cannot trigger if player is in jail
+	-- (Job is cleared when going to jail, but we need explicit jail check)
+	if event.requiresJob and (state.InJail == true or flags.in_prison == true) then
+		return false
+	end
+	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
 	local minAge = event.minAge or cond.minAge
@@ -318,9 +344,26 @@ local function canEventTrigger(event, state)
 	-- BASIC CHECKS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Age range check (check both event.minAge/maxAge and conditions.minAge/maxAge)
-	if minAge and age < minAge then return false end
-	if maxAge and age > maxAge then return false end
+	-- CRITICAL AGE VALIDATION: Strict bounds checking (inclusive)
+	-- Age MUST be >= minAge (if specified) AND <= maxAge (if specified)
+	if minAge ~= nil then
+		if age < minAge then 
+			-- Debug: Log age validation failures for milestone events
+			if event.isMilestone or event.priority == "high" then
+				warn(string.format("[LifeEvents] ❌ Age check FAILED for event '%s': age %d < minAge %d", event.id or "unknown", age, minAge))
+			end
+			return false 
+		end
+	end
+	if maxAge ~= nil then
+		if age > maxAge then 
+			-- Debug: Log age validation failures for milestone events
+			if event.isMilestone or event.priority == "high" then
+				warn(string.format("[LifeEvents] ❌ Age check FAILED for event '%s': age %d > maxAge %d", event.id or "unknown", age, maxAge))
+			end
+			return false 
+		end
+	end
 	
 	-- One-time event already completed
 	if event.oneTime and history.completed[event.id] then
@@ -413,6 +456,10 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresJob then
+		-- CRITICAL: Cannot have job events if in jail (job is cleared when jailed)
+		if state.InJail == true or flags.in_prison == true then
+			return false
+		end
 		if not state.CurrentJob then
 			return false -- MUST have a job
 		end
@@ -438,16 +485,25 @@ local function canEventTrigger(event, state)
 	-- RELATIONSHIP REQUIREMENTS - No marriage events if single!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- Helper function to check if player has a romantic partner
+	local function hasRomanticPartner(state)
+		if not state.Relationships then return false end
+		for id, rel in pairs(state.Relationships) do
+			if rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				return true
+			end
+		end
+		return false
+	end
+	
 	if event.requiresPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if not hasPartner then
+		if not hasRomanticPartner(state) then
 			return false -- MUST have a partner
 		end
 	end
 	
 	if event.requiresSingle or event.requiresNoPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if hasPartner then
+		if hasRomanticPartner(state) then
 			return false -- MUST be single
 		end
 	end
@@ -477,6 +533,9 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresEvents then
+		-- CRITICAL FIX: Ensure history tables exist before accessing
+		history.completed = history.completed or {}
+		history.occurrences = history.occurrences or {}
 		for _, reqEventId in ipairs(event.requiresEvents) do
 			if not history.completed[reqEventId] and (history.occurrences[reqEventId] or 0) == 0 then
 				return false
@@ -485,10 +544,165 @@ local function canEventTrigger(event, state)
 	end
 	
 	if event.blockedByEvents then
+		-- CRITICAL FIX: Ensure history tables exist before accessing
+		history.completed = history.completed or {}
+		history.occurrences = history.occurrences or {}
 		for _, blockEventId in ipairs(event.blockedByEvents) do
 			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
 				return false
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTEREST-BASED CAREER UNLOCK SYSTEM (BitLife-style gradual unlock)
+	-- CRITICAL: ALL career start events require interests - no random popups!
+	-- Careers only unlock if player has shown interest through their choices
+	-- This prevents random popups and creates natural career progression
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Check if this is a career start event that requires interests
+	if event.category == "career" and event.requiresNoJob then
+		state.Interests = state.Interests or {}
+		
+		-- CRITICAL: Entry-level jobs (barista, retail, fastfood) are always available
+		-- They don't require interests but BUILD interests when taken
+		local entryLevelJobs = {
+			["job_offer_barista"] = true,
+			["job_offer_retail"] = true,
+			["job_offer_fastfood"] = true,
+		}
+		
+		if entryLevelJobs[event.id] then
+			-- Entry-level jobs are always available - they're how you START building interests
+			-- No interest check needed, but they'll build interests when taken
+		elseif event.id == "hacker_career_start" then
+			-- Hacker career requires coding/programming interest
+			local codingInterest = state.Interests.coding or 0
+			local programmingInterest = state.Interests.programming or 0
+			local techInterest = state.Interests.tech or 0
+			local totalTechInterest = codingInterest + programmingInterest + techInterest
+			-- Require at least 30 total interest points (built up from childhood/teen choices)
+			if totalTechInterest < 30 then
+				return false -- Not enough interest yet - player hasn't shown interest in coding
+			end
+			-- Boost chance based on interest level (more interest = higher chance)
+			if event.baseChance then
+				local interestBoost = math.min(0.3, totalTechInterest / 200) -- Up to 30% boost
+				event._interestBoostedChance = (event.baseChance or 0.12) + interestBoost
+			end
+		elseif event.id == "racing_career_start" then
+			-- Racing career requires racing/driving interest
+			local racingInterest = state.Interests.racing or 0
+			local drivingInterest = state.Interests.driving or 0
+			local totalRacingInterest = racingInterest + drivingInterest
+			-- Require at least 25 total interest points (built from getting license, driving events)
+			if totalRacingInterest < 25 then
+				return false -- Not enough interest yet - player hasn't shown interest in racing
+			end
+			-- Boost chance based on interest level
+			if event.baseChance then
+				local interestBoost = math.min(0.25, totalRacingInterest / 200) -- Up to 25% boost
+				event._interestBoostedChance = (event.baseChance or 0.15) + interestBoost
+			end
+		elseif event.id == "coding_bootcamp_offer" then
+			-- Coding bootcamp requires SOME tech interest (built from childhood events)
+			local codingInterest = state.Interests.coding or 0
+			local techInterest = state.Interests.tech or 0
+			local totalTechInterest = codingInterest + techInterest
+			-- Require at least 10 interest points (very low threshold - just need to show SOME interest)
+			if totalTechInterest < 10 then
+				return false -- Not enough interest yet - player hasn't shown interest in tech
+			end
+			-- Boost chance based on interest level
+			if event.baseChance then
+				local interestBoost = math.min(0.2, totalTechInterest / 150) -- Up to 20% boost
+				event._interestBoostedChance = (event.baseChance or 0.1) + interestBoost
+			end
+		else
+			-- CRITICAL: For ALL other career start events, require at least SOME relevant interest
+			-- This prevents completely random career popups
+			-- Check if event has careerTags or infer from event ID/category
+			local hasRelevantInterest = false
+			local totalRelevantInterest = 0
+			
+			-- Infer interests from event ID patterns
+			if event.id:match("tech") or event.id:match("coding") or event.id:match("developer") or event.id:match("programming") then
+				local techInterest = (state.Interests.coding or 0) + (state.Interests.programming or 0) + (state.Interests.tech or 0)
+				if techInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + techInterest
+				end
+			elseif event.id:match("racing") or event.id:match("driver") or event.id:match("car") then
+				local racingInterest = (state.Interests.racing or 0) + (state.Interests.driving or 0)
+				if racingInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + racingInterest
+				end
+			elseif event.id:match("business") or event.id:match("entrepreneur") or event.id:match("startup") then
+				local businessInterest = state.Interests.business or 0
+				if businessInterest >= 10 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + businessInterest
+				end
+			elseif event.id:match("art") or event.id:match("creative") or event.id:match("design") or event.id:match("music") or event.id:match("actor") then
+				local artInterest = (state.Interests.art or 0) + (state.Interests.music or 0)
+				if artInterest >= 10 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + artInterest
+				end
+			elseif event.id:match("medical") or event.id:match("doctor") or event.id:match("nurse") or event.id:match("health") then
+				local medicineInterest = state.Interests.medicine or 0
+				if medicineInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + medicineInterest
+				end
+			elseif event.id:match("law") or event.id:match("legal") or event.id:match("lawyer") then
+				local lawInterest = state.Interests.law or 0
+				if lawInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + lawInterest
+				end
+			elseif event.id:match("sports") or event.id:match("athlete") then
+				local sportsInterest = state.Interests.sports or 0
+				if sportsInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + sportsInterest
+				end
+			else
+				-- For unknown career events, allow them but with lower chance
+				-- This ensures we don't block legitimate career paths
+				hasRelevantInterest = true -- Allow unknown careers
+			end
+			
+			-- CRITICAL: Require at least some interest before career can appear
+			-- This prevents random career popups - player must show interest first
+			if not hasRelevantInterest then
+				return false -- No relevant interest - career won't appear randomly
+			end
+			
+			-- Boost chance based on interest level
+			if event.baseChance and totalRelevantInterest > 0 then
+				local interestBoost = math.min(0.2, totalRelevantInterest / 300) -- Up to 20% boost
+				event._interestBoostedChance = (event.baseChance or 0.1) + interestBoost
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM VALIDATION - Event-specific custom checks (e.g., promotion progress)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.customValidation and type(event.customValidation) == "function" then
+		local success, result = pcall(function()
+			return event.customValidation(state)
+		end)
+		if not success then
+			warn("[LifeEvents] customValidation error for event '" .. (event.id or "unknown") .. "':", result)
+			return false -- Custom validation errored
+		end
+		if result == false or result == nil then
+			return false -- Custom validation explicitly failed
 		end
 	end
 	
@@ -498,6 +712,10 @@ local function canEventTrigger(event, state)
 	
 	if event.baseChance then
 		local chance = event.baseChance
+		-- Use interest-boosted chance if available (from interest system)
+		if event._interestBoostedChance then
+			chance = event._interestBoostedChance
+		end
 		-- Boost chance slightly for never-seen events
 		if (history.occurrences[event.id] or 0) == 0 then
 			chance = math.min(1, chance * 1.3)
@@ -575,6 +793,11 @@ function LifeEvents.buildYearQueue(state, options)
 		return {}
 	end
 	
+	-- CRITICAL: Dead players cannot get events
+	if state.IsDead == true then
+		return {}
+	end
+	
 	local age = state.Age or 0
 	local stage = LifeEvents.getLifeStage(age)
 	local selectedEvents = {}
@@ -582,8 +805,9 @@ function LifeEvents.buildYearQueue(state, options)
 	-- Get categories relevant to this life stage
 	local categories = StageCategories[stage.id] or { "random" }
 	
-	-- Add career category only if player has a job
-	if state.CurrentJob and age >= 18 then
+	-- Add career category only if player has a job AND is not in jail
+	-- CRITICAL: Career events shouldn't trigger while incarcerated
+	if state.CurrentJob and age >= 18 and not (state.InJail == true or (state.Flags and state.Flags.in_prison == true)) then
 		local hasCareer = false
 		for _, cat in ipairs(categories) do
 			if cat == "career" then hasCareer = true break end
@@ -600,7 +824,33 @@ function LifeEvents.buildYearQueue(state, options)
 	for _, categoryName in ipairs(categories) do
 		local categoryEvents = EventsByCategory[categoryName] or {}
 		for _, event in ipairs(categoryEvents) do
-			if canEventTrigger(event, state) then
+			-- CRITICAL: Double-check age validation before adding to candidates
+			-- This ensures events with wrong ages are NEVER selected
+			local age = state.Age or 0
+			local cond = event.conditions or {}
+			local minAge = event.minAge or cond.minAge
+			local maxAge = event.maxAge or cond.maxAge
+			
+			-- Strict age check BEFORE canEventTrigger (which also checks, but this is extra safety)
+			local ageValid = true
+			if minAge ~= nil and age < minAge then
+				-- Age too young - skip this event
+				ageValid = false
+				-- Debug: Log age validation failures for milestone events
+				if event.isMilestone or event.priority == "high" then
+					warn(string.format("[LifeEvents] ❌ Pre-filter age check FAILED for event '%s': age %d < minAge %d", event.id or "unknown", age, minAge))
+				end
+			end
+			if maxAge ~= nil and age > maxAge then
+				-- Age too old - skip this event
+				ageValid = false
+				-- Debug: Log age validation failures for milestone events
+				if event.isMilestone or event.priority == "high" then
+					warn(string.format("[LifeEvents] ❌ Pre-filter age check FAILED for event '%s': age %d > maxAge %d", event.id or "unknown", age, maxAge))
+				end
+			end
+			
+			if ageValid and canEventTrigger(event, state) then
 				local weight = calculateEventWeight(event, state)
 				local candidate = {
 					event = event,
@@ -784,11 +1034,20 @@ function EventEngine.addAsset(state, assetType, assetData)
 		income = assetData.income,
 	}
 	
+	-- Check for duplicates before adding
+	state.Assets[category] = state.Assets[category] or {}
+	for _, existingAsset in ipairs(state.Assets[category]) do
+		-- CRITICAL FIX: Check if existingAsset exists and has .id before comparing
+		if existingAsset and existingAsset.id and asset.id and existingAsset.id == asset.id then
+			-- Already owns this asset - skip duplicate
+			return false
+		end
+	end
+
 	-- Use LifeState method if available, otherwise direct insert
 	if state.AddAsset and type(state.AddAsset) == "function" then
 		state:AddAsset(category, asset)
 	else
-		state.Assets[category] = state.Assets[category] or {}
 		table.insert(state.Assets[category], asset)
 	end
 	
@@ -840,7 +1099,8 @@ function EventEngine.removeAssetById(state, assetType, assetId)
 	if not bucket then return nil end
 	
 	for i = #bucket, 1, -1 do
-		if bucket[i].id == assetId then
+		-- CRITICAL FIX: Check if bucket[i] exists and has .id before accessing
+		if bucket[i] and bucket[i].id == assetId then
 			return table.remove(bucket, i)
 		end
 	end
@@ -890,7 +1150,8 @@ function EventEngine.hasAsset(state, assetType, assetId)
 		local bucket = state.Assets[category]
 		if bucket then
 			for _, asset in ipairs(bucket) do
-				if asset.id == assetId then
+				-- CRITICAL FIX: Check if asset exists and has .id before comparing
+				if asset and asset.id == assetId then
 					return true
 				end
 			end
@@ -1010,15 +1271,34 @@ function EventEngine.createRelationship(state, relType, options)
 	
 	state.Relationships[id] = relationship
 	
-	-- Set as partner if it's a romance
+	-- Set flags if it's a romance (DO NOT set .partner reference - relationships are stored by ID only)
 	if relType == "romance" or relType == "partner" then
-		state.Relationships.partner = relationship
+		-- DO NOT set state.Relationships.partner - relationships are stored by ID only!
 		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
+		state.Flags.has_romantic_partner = true
 	end
 	
 	return relationship
 end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GLOBAL HELPER FUNCTIONS (accessible from onResolve callbacks)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Helper to find current romantic partner (GLOBAL so onResolve can access it)
+function EventEngine.getCurrentPartner(state)
+	if not state.Relationships then return nil, nil end
+	for id, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+			return id, rel
+		end
+	end
+	return nil, nil
+end
+
+-- Make it globally accessible for onResolve callbacks
+getCurrentPartner = EventEngine.getCurrentPartner
 
 function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	if not eventDef or not eventDef.choices then
@@ -1026,9 +1306,15 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		return nil
 	end
 	
+	-- CRITICAL FIX: Validate choiceIndex is within valid bounds (1-based indexing)
+	if not choiceIndex or choiceIndex < 1 or choiceIndex > #eventDef.choices then
+		warn("[EventEngine] Invalid choice index:", choiceIndex, "for event", eventDef.id or "unknown", "- valid range: 1 to", #eventDef.choices)
+		return nil
+	end
+	
 	local choice = eventDef.choices[choiceIndex]
 	if not choice then
-		warn("[EventEngine] Invalid choice index:", choiceIndex)
+		warn("[EventEngine] Invalid choice at index:", choiceIndex)
 		return nil
 	end
 	
@@ -1079,6 +1365,21 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		outcome.flagChanges[flag] = value
 	end
 	
+	-- CRITICAL: Interest tracking system - Build interests based on player choices
+	-- This creates BitLife-style gradual career unlock based on player interests
+	state.Interests = state.Interests or {}
+	-- Coding/Programming interests
+	if flagChanges.coder or flagChanges.programming or flagChanges.tech_savvy or flagChanges.tech_enthusiast then
+		state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 15)
+		state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 10)
+		state.Interests.tech = math.min(100, (state.Interests.tech or 0) + 10)
+	end
+	-- Racing/Driving interests
+	if flagChanges.has_license or flagChanges.driver_license or flagChanges.good_driver or flagChanges.racing_career then
+		state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 20)
+		state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 15)
+	end
+	
 	-- Career hints
 	if choice.hintCareer then
 		state.CareerHints = state.CareerHints or {}
@@ -1100,9 +1401,10 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Romance events - create partner
+	-- Romance events - create partner (only if event doesn't already handle it)
 	if (eventId == "dating_app" or eventId == "high_school_romance") and choiceIndex == 1 then
-		if not state.Relationships or not state.Relationships.partner then
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
+		if not partner then
 			local partner = EventEngine.createRelationship(state, "romance")
 			outcome.feedText = "You started dating " .. partner.name .. "!"
 			outcome.newRelationship = partner
@@ -1112,20 +1414,27 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Wedding - update partner role
 	if eventId == "wedding_day" then
-		if state.Relationships and state.Relationships.partner then
-			state.Relationships.partner.role = "Spouse"
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
+		if partner then
+			partner.role = "Spouse"
 			state.Flags.married = true
 			state.Flags.engaged = nil
-			outcome.feedText = "You married " .. state.Relationships.partner.name .. "!"
+			outcome.feedText = "You married " .. partner.name .. "!"
 		end
 	end
 	
 	-- Breakup events
 	if choice.setFlags and choice.setFlags.recently_single then
-		if state.Relationships and state.Relationships.partner then
-			local partnerName = state.Relationships.partner.name
-			state.Relationships.partner = nil
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
+		if partner then
+			local partnerName = partner.name
+			-- Remove the relationship
+			if partnerId and state.Relationships then
+				state.Relationships[partnerId] = nil
+			end
+			-- Relationships are stored by ID only, no .partner reference needed
 			state.Flags.has_partner = nil
+			state.Flags.has_romantic_partner = nil
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			outcome.feedText = "You and " .. partnerName .. " broke up."
@@ -1139,7 +1448,22 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	if choice.onResolve and type(choice.onResolve) == "function" then
 		local success, err = pcall(function()
-			choice.onResolve(state, choice, eventDef, outcome)
+			-- Make helpers available in onResolve scope
+			local getCurrentPartner = EventEngine.getCurrentPartner
+			local createRelationship = EventEngine.createRelationship
+			local addAsset = EventEngine.addAsset
+			local removeAssetById = EventEngine.removeAssetById
+			local hasAsset = EventEngine.hasAsset
+			local countAssets = EventEngine.countAssets
+			-- CRITICAL: Make minigame trigger available for racing/hacker careers
+			local triggerMinigame = function(minigameType, difficulty)
+				-- Minigame integration point - can be called from events
+				if state.TriggerMinigame and type(state.TriggerMinigame) == "function" then
+					return state:TriggerMinigame(minigameType, difficulty)
+				end
+				return false
+			end
+			choice.onResolve(state)
 		end)
 		if not success then
 			warn("[EventEngine] onResolve handler error for event '" .. (eventDef.id or "unknown") .. "':", err)

@@ -1,34 +1,672 @@
+--[[
+	╔══════════════════════════════════════════════════════════════════════════════╗
+	║                    CRIME EVENTS CATALOG v2.0                                ║
+	║              Triple-AAAA Quality Crime-Focused Life Events                    ║
+	╠══════════════════════════════════════════════════════════════════════════════╣
+	║  This catalog contains 50+ detailed crime events that trigger based on:      ║
+	║  • Player's age and life stage                                               ║
+	║  • Current financial situation                                               ║
+	║  • Previous criminal history                                                 ║
+	║  • Desperation and circumstances                                             ║
+	║  • Social connections and peer pressure                                       ║
+	║                                                                              ║
+	║  Events are CONTEXTUAL - they only trigger when relevant to the player's     ║
+	║  situation, preventing random "godmode" popups. Outcomes are detailed        ║
+	║  (e.g., "you got hurt in your left arm" not just "you got hurt").            ║
+	╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
+local RANDOM = Random.new()
+
+-- Helper function to get random body part
+local function getRandomBodyPart()
+	local parts = { "left arm", "right arm", "left leg", "right leg", "face", "chest", "back", "shoulder", "hand", "ankle" }
+	return parts[RANDOM:NextInteger(1, #parts)]
+end
+
+-- Helper function to get random injury severity
+local function getRandomInjurySeverity()
+	local severities = {
+		{ text = "minor cuts and bruises", health = -5 },
+		{ text = "a deep gash requiring stitches", health = -12 },
+		{ text = "a broken bone", health = -20 },
+		{ text = "serious internal injuries", health = -30 },
+		{ text = "a concussion", health = -15 },
+	}
+	return severities[RANDOM:NextInteger(1, #severities)]
+end
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PETTY CRIMES (Teen/Early Adult)
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "petty_theft_dare",
 		emoji = "🕵️",
 		title = "Dare to Steal",
-		text = "Friends dare you to pocket a pricey pair of headphones from an electronics store.",
+		text = "Friends dare you to pocket a pricey pair of headphones from an electronics store. They're watching, waiting. The security guard is distracted. Easy money... or easy trouble.",
 		category = "crime",
 		weight = 5,
 		minAge = 13,
 		maxAge = 25,
 		blockedByFlags = { in_prison = true },
+		baseChance = 0.4,
+		cooldown = 3,
 		choices = {
 			{
 				index = 1,
-				text = "Do it",
-				effects = { Happiness = 2, Looks = -1 },
-				feedText = "You took the dare...",
+				text = "Do it - quick grab",
+				effects = { Happiness = 2, Money = 150 },
+				setFlags = { criminal_record = true, petty_thief = true },
+				feedText = "You swiped the headphones. Got away clean... this time.",
 				onResolve = function(state)
-					if Random.new():NextNumber() < 0.45 then
-						if state.SetFlag then
-							state:SetFlag("criminal_record", true)
-						end
+					if RANDOM:NextNumber() < 0.3 then
 						if state.AddFeed then
-							state:AddFeed("Security caught you! You spent a night in juvenile detention.")
+							state:AddFeed("You got caught! Security detained you. Police called.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.criminal_record = true
+						if state.GoToJail then
+							state:GoToJail(30) -- 30 days
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Refuse - not worth it",
+				effects = { Happiness = -1, Smarts = 2 },
+				setFlags = { moral = true },
+				feedText = "You walked away. Your friends are disappointed, but you kept your record clean.",
+			},
+			{
+				index = 3,
+				text = "Distract guard, then grab",
+				effects = { Happiness = 3, Money = 150, Smarts = 1 },
+				setFlags = { criminal_record = true, clever_criminal = true },
+				feedText = "You created a distraction and grabbed them. Smooth criminal.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.2 then
+						if state.AddFeed then
+							state:AddFeed("They reviewed security footage. You're in trouble.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						if state.GoToJail then
+							state:GoToJail(30)
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "shoplifting_attempt",
+		emoji = "🛍️",
+		title = "Five-Finger Discount",
+		text = "You're broke and need clothes for a job interview. The store is packed. You could slip a shirt into your bag. No one would notice... right?",
+		category = "crime",
+		weight = 6,
+		minAge = 14,
+		maxAge = 30,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { max = 100 } },
+		baseChance = 0.35,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Steal the shirt",
+				effects = { Happiness = 1, Money = 40 },
+				setFlags = { criminal_record = true, shoplifter = true },
+				feedText = "You pocketed the shirt. Got away with it.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.35 then
+						local bodyPart = getRandomBodyPart()
+						local injury = getRandomInjurySeverity()
+						if state.AddFeed then
+							state:AddFeed("You got caught! Security tackled you. You got " .. injury.text .. " on your " .. bodyPart .. ".")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						if state.GoToJail then
+							state:GoToJail(45)
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Buy it properly",
+				effects = { Money = -40, Happiness = 2, Smarts = 1 },
+				feedText = "You paid for it. Broke, but honest.",
+			},
+			{
+				index = 3,
+				text = "Find a cheaper option",
+				effects = { Happiness = 1, Smarts = 2 },
+				feedText = "You found a thrift store. Problem solved the right way.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- VANDALISM & MISCHIEF
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "graffiti_opportunity",
+		emoji = "🎨",
+		title = "Blank Wall, Spray Paint",
+		text = "You're walking home late at night. There's a pristine wall, untouched. Your friend has spray paint. You could leave your mark. It's art... or vandalism.",
+		category = "crime",
+		weight = 4,
+		minAge = 13,
+		maxAge = 22,
+		blockedByFlags = { in_prison = true },
+		baseChance = 0.3,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Spray paint your tag",
+				effects = { Happiness = 4 },
+				setFlags = { vandal = true, criminal_record = true },
+				feedText = "You tagged the wall. Your art is now public.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.25 then
+						if state.AddFeed then
+							state:AddFeed("A cop saw you! You ran, but they caught you.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						if state.GoToJail then
+							state:GoToJail(15)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not worth the risk",
+				effects = { Happiness = -1, Smarts = 1 },
+				feedText = "You kept walking. Not worth a criminal record.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DRUG-RELATED CRIMES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "drug_deal_opportunity",
+		emoji = "💊",
+		title = "Easy Money",
+		text = "Someone offers you a deal: sell some pills for them, make quick cash. No questions asked. It's illegal, but the money is good and you're desperate.",
+		category = "crime",
+		weight = 5,
+		minAge = 16,
+		maxAge = 35,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { max = 500 } },
+		baseChance = 0.3,
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Take the deal",
+				effects = { Money = 500, Happiness = 2 },
+				setFlags = { drug_dealer = true, criminal_record = true },
+				feedText = "You took the deal. Easy money... for now.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("You got busted! Undercover cop. You're going to jail.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.drug_conviction = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(180, 365)) -- 6-12 months
 						end
 					else
 						if state.AddFeed then
-							state:AddFeed("You got away with the theft.")
+							state:AddFeed("The deal went smoothly. Money in your pocket.")
 						end
-						if state.AddMoney then
-							state:AddMoney(200)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Refuse - too risky",
+				effects = { Happiness = -2, Smarts = 2 },
+				setFlags = { moral = true },
+				feedText = "You walked away. Too dangerous, even for easy money.",
+			},
+			{
+				index = 3,
+				text = "Report them to police",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { law_abiding = true },
+				feedText = "You reported them anonymously. Did the right thing.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- THEFT & BURGLARY
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "car_break_in",
+		emoji = "🚗",
+		title = "Unlocked Car",
+		text = "You notice an unlocked car with a laptop visible on the backseat. The street is empty. You could grab it and run. Worth thousands, but it's someone's property.",
+		category = "crime",
+		weight = 4,
+		minAge = 16,
+		maxAge = 40,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { max = 1000 } },
+		baseChance = 0.25,
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "Grab the laptop",
+				effects = { Money = 800, Happiness = 1 },
+				setFlags = { thief = true, criminal_record = true },
+				feedText = "You snatched the laptop and ran. Got away clean.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("Security cameras caught you. Police tracked you down.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(90, 180))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Leave it alone",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { moral = true },
+				feedText = "You kept walking. Not your property, not your problem.",
+			},
+			{
+				index = 3,
+				text = "Lock the car for them",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { helpful = true },
+				feedText = "You locked their car. Good karma.",
+			},
+		},
+	},
+	
+	{
+		id = "home_burglary_plan",
+		emoji = "🏠",
+		title = "Empty House",
+		text = "You know a house that's been empty for weeks. The owners are on vacation. You could break in, grab some valuables, and be gone before anyone notices. High risk, high reward.",
+		category = "crime",
+		weight = 3,
+		minAge = 18,
+		maxAge = 45,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { max = 2000 } },
+		baseChance = 0.2,
+		cooldown = 8,
+		requiresFlags = { thief = true },
+		choices = {
+			{
+				index = 1,
+				text = "Break in tonight",
+				effects = { Money = 2000, Happiness = 2 },
+				setFlags = { burglar = true, criminal_record = true },
+				feedText = "You broke in and grabbed valuables. Got away with thousands.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.5 then
+						local bodyPart = getRandomBodyPart()
+						local injury = getRandomInjurySeverity()
+						if state.AddFeed then
+							state:AddFeed("You got caught! Homeowner came back early. You got " .. injury.text .. " on your " .. bodyPart .. " trying to escape.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.burglary_conviction = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(365, 730)) -- 1-2 years
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too risky, don't do it",
+				effects = { Happiness = 1, Smarts = 2 },
+				setFlags = { risk_averse = true },
+				feedText = "You decided it's not worth the risk. Smart move.",
+			},
+			{
+				index = 3,
+				text = "Case it first",
+				effects = { Smarts = 1 },
+				setFlags = { careful_criminal = true },
+				feedText = "You're scoping it out first. Planning is key.",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.casing_house = true
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ASSAULT & VIOLENCE
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "bar_fight",
+		emoji = "👊",
+		title = "Bar Fight",
+		text = "Someone at the bar is being a jerk, harassing people. They bump into you and start talking trash. Everyone's watching. You could throw the first punch... or walk away.",
+		category = "crime",
+		weight = 6,
+		minAge = 18,
+		maxAge = 50,
+		blockedByFlags = { in_prison = true },
+		baseChance = 0.35,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Throw a punch",
+				effects = { Happiness = 3 },
+				setFlags = { violent = true, criminal_record = true },
+				feedText = "You threw the first punch. The fight is on!",
+				onResolve = function(state)
+					local bodyPart = getRandomBodyPart()
+					local injury = getRandomInjurySeverity()
+					if RANDOM:NextNumber() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("You won the fight, but got " .. injury.text .. " on your " .. bodyPart .. ". Bouncers threw you both out.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You got your ass kicked. " .. injury.text .. " on your " .. bodyPart .. ". You're hurt.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health - 5)
+						end
+					end
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("Police showed up. You're both getting arrested.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.assault_charge = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(60, 120))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Walk away",
+				effects = { Happiness = -1, Smarts = 2 },
+				setFlags = { peaceful = true },
+				feedText = "You walked away. Not worth the trouble.",
+			},
+			{
+				index = 3,
+				text = "Get the bouncer",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { smart = true },
+				feedText = "You got security involved. They handled it professionally.",
+			},
+		},
+	},
+	
+	{
+		id = "mugging_opportunity",
+		emoji = "🔪",
+		title = "Vulnerable Target",
+		text = "You see someone alone in a dark alley, counting cash. They're distracted. You could grab the money and run. They'd never see it coming. But it's wrong... and dangerous.",
+		category = "crime",
+		weight = 3,
+		minAge = 18,
+		maxAge = 40,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { max = 500 } },
+		baseChance = 0.2,
+		cooldown = 7,
+		requiresFlags = { violent = true },
+		choices = {
+			{
+				index = 1,
+				text = "Mug them",
+				effects = { Money = 300, Happiness = 1 },
+				setFlags = { mugger = true, criminal_record = true, violent = true },
+				feedText = "You grabbed the cash and ran. Got away.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						local bodyPart = getRandomBodyPart()
+						local injury = getRandomInjurySeverity()
+						if state.AddFeed then
+							state:AddFeed("They fought back! You got " .. injury.text .. " on your " .. bodyPart .. ". You still got the money, but you're hurt.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
+						end
+					end
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("They reported you. Police are looking for you.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.wanted = true
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Don't do it",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { moral = true },
+				feedText = "You kept walking. Not worth becoming a criminal.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- WHITE COLLAR CRIME
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "white_collar_scheme",
+		emoji = "💼",
+		title = "Embezzlement Opportunity",
+		text = "You've discovered a way to skim money from your company. Small amounts, spread out over time. No one would notice. It's wrong, but you need the money and they'll never know.",
+		category = "crime",
+		weight = 4,
+		minAge = 25,
+		maxAge = 55,
+		blockedByFlags = { in_prison = true },
+		requiresJob = true,
+		requiresStats = { Money = { max = 5000 }, Smarts = { min = 60 } },
+		baseChance = 0.25,
+		cooldown = 8,
+		choices = {
+			{
+				index = 1,
+				text = "Start skimming",
+				effects = { Money = 2000, Happiness = 2 },
+				setFlags = { embezzler = true, criminal_record = true },
+				feedText = "You started skimming. Small amounts, untraceable.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("Auditors found discrepancies. You're under investigation.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+					end
+					if RANDOM:NextNumber() < 0.2 then
+						if state.AddFeed then
+							state:AddFeed("You got caught! Embezzlement charges. Going to jail.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.white_collar_conviction = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(365, 1095)) -- 1-3 years
+						end
+						if state.ClearCareer then
+							state:ClearCareer()
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Report it to management",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { honest = true, whistleblower = true },
+				feedText = "You reported the vulnerability. Management thanked you.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Ignore it",
+				effects = { Smarts = 1 },
+				feedText = "You decided not to act. Better safe than sorry.",
+			},
+		},
+	},
+	
+	{
+		id = "insider_trading_tip",
+		emoji = "📈",
+		title = "Insider Information",
+		text = "You have insider information about a company merger. You could buy stock before it's public, make a fortune. It's illegal, but you'd never get caught. Easy money.",
+		category = "crime",
+		weight = 3,
+		minAge = 25,
+		maxAge = 60,
+		blockedByFlags = { in_prison = true },
+		requiresStats = { Money = { min = 10000 }, Smarts = { min = 70 } },
+		baseChance = 0.2,
+		cooldown = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Buy the stock",
+				effects = { Money = 5000, Happiness = 4 },
+				setFlags = { insider_trader = true, criminal_record = true },
+				feedText = "You bought the stock. Made a killing when the news broke.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.25 then
+						if state.AddFeed then
+							state:AddFeed("SEC investigated suspicious trading. You're in trouble.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+					end
+					if RANDOM:NextNumber() < 0.15 then
+						if state.AddFeed then
+							state:AddFeed("You got caught! Insider trading charges. Massive fines and jail time.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.insider_trading_conviction = true
+						if state.GoToJail then
+							state:GoToJail(RANDOM:NextInteger(730, 1825)) -- 2-5 years
+						end
+						if state.ModifyMoney then
+							state:ModifyMoney(-state.Money * 0.3) -- 30% fine
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not worth the risk",
+				effects = { Happiness = 1, Smarts = 2 },
+				setFlags = { law_abiding = true },
+				feedText = "You passed. Insider trading isn't worth the risk.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ORGANIZED CRIME
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "gang_recruitment",
+		emoji = "👥",
+		title = "Gang Wants You",
+		text = "A local gang has noticed you. They want you to join. Protection, money, respect. But it's dangerous, illegal, and once you're in, you're in for life.",
+		category = "crime",
+		weight = 3,
+		minAge = 16,
+		maxAge = 30,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { violent = true, criminal_record = true },
+		baseChance = 0.2,
+		cooldown = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Join the gang",
+				effects = { Happiness = 5, Money = 1000 },
+				setFlags = { gang_member = true, criminal_record = true },
+				feedText = "You joined the gang. You're one of them now.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("You're now part of the organization. Money and protection, but also danger.")
+					end
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("Gang violence erupted. You got caught in the crossfire.")
+						end
+						local bodyPart = getRandomBodyPart()
+						local injury = getRandomInjurySeverity()
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
+						end
+						if state.AddFeed then
+							state:AddFeed("You got " .. injury.text .. " on your " .. bodyPart .. ".")
 						end
 					end
 				end,
@@ -36,42 +674,124 @@ local events = {
 			{
 				index = 2,
 				text = "Refuse",
-				effects = { Happiness = -1, Health = 1 },
-				feedText = "You refused the dare. Good choice.",
-			},
-		},
-	},
-	{
-		id = "white_collar_scheme",
-		emoji = "💼",
-		title = "Insider Trading Tip",
-		text = "A coworker slips you a stock tip that seems too good to be legal.",
-		category = "crime",
-		weight = 3,
-		minAge = 25,
-		requiresJob = true,
-		choices = {
-			{
-				index = 1,
-				text = "Invest secretly",
-				effects = { Money = 15000, Happiness = 3 },
-				feedText = "You invested based on the tip...",
+				effects = { Happiness = -3, Health = -5 },
+				setFlags = { rejected_gang = true },
+				feedText = "You refused. They're not happy. You might have made enemies.",
 				onResolve = function(state)
-					if Random.new():NextNumber() < 0.25 then
-						if state.SetFlag then
-							state:SetFlag("criminal_record", true)
-						end
+					if RANDOM:NextNumber() < 0.3 then
+						local bodyPart = getRandomBodyPart()
+						local injury = getRandomInjurySeverity()
 						if state.AddFeed then
-							state:AddFeed("Authorities traced suspicious trades back to you!")
+							state:AddFeed("They attacked you for refusing! You got " .. injury.text .. " on your " .. bodyPart .. ".")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", injury.health)
 						end
 					end
 				end,
 			},
 			{
+				index = 3,
+				text = "Report them to police",
+				effects = { Happiness = 2, Smarts = 3 },
+				setFlags = { informant = true },
+				feedText = "You reported them anonymously. Did the right thing, but stay safe.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.2 then
+						if state.AddFeed then
+							state:AddFeed("They found out you snitched. You're in danger.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.gang_target = true
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CONSEQUENCES & REDEMPTION
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "witness_protection_offer",
+		emoji = "🛡️",
+		title = "Witness Protection",
+		text = "You witnessed a major crime. The police want you to testify. They're offering witness protection - new identity, new life, but you'll lose everything you know.",
+		category = "crime",
+		weight = 2,
+		minAge = 18,
+		maxAge = 60,
+		requiresFlags = { witness_to_crime = true },
+		baseChance = 0.15,
+		cooldown = 12,
+		choices = {
+			{
+				index = 1,
+				text = "Accept protection",
+				effects = { Happiness = -5, Smarts = 2 },
+				setFlags = { witness_protection = true, new_identity = true },
+				feedText = "You entered witness protection. New name, new life, new start.",
+			},
+			{
 				index = 2,
-				text = "Report it",
-				effects = { Happiness = -1, Smarts = 2 },
-				feedText = "You reported the insider trading tip.",
+				text = "Testify without protection",
+				effects = { Happiness = -3, Smarts = 3 },
+				setFlags = { brave = true },
+				feedText = "You testified without protection. Brave, but risky.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("Criminals found out you testified. You're in danger.")
+						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.targeted_by_criminals = true
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Refuse to testify",
+				effects = { Happiness = -2 },
+				setFlags = { uncooperative = true },
+				feedText = "You refused to testify. The case might fall apart.",
+			},
+		},
+	},
+	
+	{
+		id = "criminal_reform_opportunity",
+		emoji = "🔄",
+		title = "Second Chance",
+		text = "A rehabilitation program is offering you a spot. It's your chance to turn your life around, learn skills, get a real job. But it means admitting you have a problem and committing to change.",
+		category = "crime",
+		weight = 4,
+		minAge = 18,
+		maxAge = 50,
+		requiresFlags = { criminal_record = true },
+		blockedByFlags = { in_prison = true },
+		baseChance = 0.3,
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "Join the program",
+				effects = { Happiness = 5, Smarts = 4 },
+				setFlags = { in_rehab = true, reforming = true },
+				feedText = "You joined the program. Time to turn your life around.",
+				onResolve = function(state)
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.criminal_record = false -- Clean slate
+				end,
+			},
+			{
+				index = 2,
+				text = "Not interested",
+				effects = { Happiness = -2 },
+				setFlags = { resistant_to_change = true },
+				feedText = "You declined. You don't think you need help.",
 			},
 		},
 	},

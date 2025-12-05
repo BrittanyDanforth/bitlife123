@@ -977,20 +977,31 @@ function LifeBackend:updateEducationProgress(state)
 		eduData.Progress = clamp((eduData.Progress or 0) + progressPerYear, 0, 100)
 		if eduData.Progress >= 100 then
 			eduData.Status = "completed"
-			state.Education = eduData.Level
+			-- Set Education to the program level (e.g., "bachelor", "master", "phd")
+			state.Education = eduData.Level or programId
+			-- Clear education debt on graduation (optional - could keep it for realism)
+			-- eduData.Debt = 0
 			state.PendingFeed = string.format("You graduated from %s!", eduData.Institution or "school")
 		end
 	end
 end
 
 function LifeBackend:tickCareer(state)
+	if not state.CurrentJob then
+		return -- No job, nothing to tick
+	end
+	
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
-	local job = state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob]
+	local job = JobCatalog[state.CurrentJob.id]
 	if not job then
 		return
 	end
+	
+	-- Increment yearsAtJob only once per year (this function is called once per age up)
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
+	
+	-- Natural performance and promotion progress changes over time
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
 end
@@ -1014,8 +1025,14 @@ function LifeBackend:generateEvent(player, state)
 		table.insert(triggers, "crime")
 	end
 
-	if state.Relationships and state.Relationships.partner then
-		table.insert(triggers, "romance")
+	-- Check for romantic partner (relationships stored by ID, not .partner)
+	if state.Relationships then
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				table.insert(triggers, "romance")
+				break
+			end
+		end
 	end
 
 	local pool = flattenEventPools(triggers)
@@ -1109,11 +1126,27 @@ function LifeBackend:handleAgeUp(player)
 	end
 
 	-- Get just ONE event from the year queue (BitLife style)
+	-- CRITICAL: Pass the CURRENT age (after increment) to ensure proper age validation
 	local yearlyEvents = LifeEvents.buildYearQueue(state, { maxEvents = 1 }) or {}
 	if #yearlyEvents > 0 then
 		local eventDef = yearlyEvents[1]
-		eventDef.source = "lifeevents"
-		table.insert(queue, eventDef)
+		-- CRITICAL: Final age validation check before adding to queue
+		local eventAge = state.Age or 0
+		local cond = eventDef.conditions or {}
+		local minAge = eventDef.minAge or cond.minAge
+		local maxAge = eventDef.maxAge or cond.maxAge
+		
+		-- Double-check age bounds (extra safety layer)
+		if minAge ~= nil and eventAge < minAge then
+			warn(string.format("[LifeBackend] ❌ CRITICAL: Event '%s' selected but age %d < minAge %d! Skipping event.", eventDef.id or "unknown", eventAge, minAge))
+			-- Don't add invalid event to queue
+		elseif maxAge ~= nil and eventAge > maxAge then
+			warn(string.format("[LifeBackend] ❌ CRITICAL: Event '%s' selected but age %d > maxAge %d! Skipping event.", eventDef.id or "unknown", eventAge, maxAge))
+			-- Don't add invalid event to queue
+		else
+			eventDef.source = "lifeevents"
+			table.insert(queue, eventDef)
+		end
 	end
 
 	if #queue == 0 then
@@ -1599,15 +1632,45 @@ function LifeBackend:handlePromotion(player)
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
 
+	-- Check promotionProgress, performance, AND yearsAtJob (like events do)
 	if (info.promotionProgress or 0) < 80 then
 		return { success = false, message = "You need more experience before a promotion." }
 	end
+	if (info.performance or 0) < 70 then
+		return { success = false, message = "Your performance isn't strong enough for a promotion yet." }
+	end
+	if (info.yearsAtJob or 0) < 1 then
+		return { success = false, message = "You need at least a year at this job before promotion." }
+	end
 
+	-- Reset promotion progress and boost performance
 	info.promotionProgress = 0
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.2)
 	info.performance = clamp((info.performance or 60) + 10, 0, 100)
+	
+	-- Increase salary
+	local oldSalary = state.CurrentJob.salary or 0
+	state.CurrentJob.salary = math.floor(oldSalary * 1.2)
+	
+	-- Update job title to reflect promotion (e.g., "Junior Developer" -> "Developer" -> "Senior Developer")
+	local job = JobCatalog[state.CurrentJob.id]
+	if job then
+		-- Try to find next tier job in same category
+		local currentName = state.CurrentJob.name or job.name
+		local promotedName = currentName
+		
+		-- Simple promotion naming logic
+		if currentName:find("Junior") then
+			promotedName = currentName:gsub("Junior ", "")
+		elseif currentName:find("Senior") == nil then
+			promotedName = "Senior " .. currentName
+		else
+			promotedName = "Lead " .. currentName:gsub("Senior ", "")
+		end
+		
+		state.CurrentJob.name = promotedName
+	end
 
-	local feed = string.format("You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	local feed = string.format("You were promoted to %s! Salary is now %s.", state.CurrentJob.name, formatMoney(state.CurrentJob.salary))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -1718,14 +1781,14 @@ function LifeBackend:enrollEducation(player, programId)
 	self:addMoney(state, -program.cost)
 	state.EducationData = {
 		Status = "enrolled",
-		Level = programId,
+		Level = program.level or programId, -- Use program.level if available, otherwise programId
 		Progress = 0,
 		Duration = program.duration,
 		Institution = program.name,
 		Debt = prevDebt + program.cost,
 	}
 	state.Career = state.Career or {}
-	state.Career.education = programId
+	state.Career.education = program.level or programId
 
 	local feed = string.format("You enrolled in %s.", program.name)
 	self:pushState(player, feed)
@@ -1797,7 +1860,14 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		return { success = false, message = "You can't afford that." }
 	end
 
+	-- Check if already owns this asset (prevent duplicates)
 	state.Assets[assetType] = state.Assets[assetType] or {}
+	for _, existingAsset in ipairs(state.Assets[assetType]) do
+		if existingAsset.id == assetId then
+			return { success = false, message = "You already own this!" }
+		end
+	end
+
 	table.insert(state.Assets[assetType], {
 		id = asset.id,
 		name = asset.name,
@@ -1815,6 +1885,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	elseif assetType == "Properties" then
 		state.Flags.has_property = true
 		state.Flags.homeowner = true
+		state.Flags.renting = false -- Clear renting flag when buying property
 	end
 
 	self:addMoney(state, -asset.price)
@@ -1853,6 +1924,10 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 			elseif assetType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
+				-- If selling last property and not living with parents, set renting back to true
+				if not (state.Flags.lives_with_parents or state.Flags.living_with_family) then
+					state.Flags.renting = true
+				end
 			end
 
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
@@ -1940,8 +2015,9 @@ function LifeBackend:createRelationship(state, relType, options)
 	state.Relationships[newId] = relationship
 
 	if relType == "romance" or relType == "partner" then
-		state.Relationships.partner = relationship
+		-- DO NOT set state.Relationships.partner - relationships are stored by ID only!
 		state.Flags.has_partner = true
+		state.Flags.has_romantic_partner = true
 		state.Flags.dating = true
 	end
 
@@ -2022,9 +2098,11 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 			return state.Relationships[targetId]
 		end
 
-		local partner = state.Relationships.partner
-		if partner and partner.alive ~= false then
-			return partner
+		-- Find existing romantic partner (relationships stored by ID, not .partner)
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				return rel
+			end
 		end
 
 		return self:createRelationship(state, "romance", options.relationshipOptions)
@@ -2069,9 +2147,11 @@ function LifeBackend:handleInteraction(player, payload)
 
 	-- Single-only actions (meet_someone etc.)
 	if action.requiresSingle then
-		local partner = state.Relationships.partner
-		if partner and partner.alive ~= false then
-			return { success = false, message = "You're already in a relationship." }
+		-- Check for existing romantic partner (relationships stored by ID, not .partner)
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				return { success = false, message = "You're already in a relationship." }
+			end
 		end
 	end
 
@@ -2128,9 +2208,10 @@ function LifeBackend:handleInteraction(player, payload)
 			state.Relationships[relationship.id] = nil
 		end
 
-		if relType == "romance" and state.Relationships.partner == relationship then
-			state.Relationships.partner = nil
+		-- Clear romance flags if breaking up with romantic partner
+		if relType == "romance" then
 			state.Flags.has_partner = nil
+			state.Flags.has_romantic_partner = nil
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			state.Flags.married = nil

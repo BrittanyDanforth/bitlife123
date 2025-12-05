@@ -131,8 +131,30 @@ Milestones.events = {
 		tags = { "independence", "transport", "test" },
 
 		choices = {
-			{ text = "Passed first try!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_license = true, good_driver = true }, feedText = "You nailed the driving test!" },
-			{ text = "Passed after a few attempts", effects = { Happiness = 5 }, setFlags = { has_license = true }, feedText = "Third time's the charm! You got your license." },
+			{ 
+				text = "Passed first try!", 
+				effects = { Happiness = 10, Smarts = 2 }, 
+				setFlags = { has_license = true, good_driver = true }, 
+				feedText = "You nailed the driving test!",
+				onResolve = function(state)
+					-- CRITICAL: Build racing/driving interest for gradual career unlock
+					state.Interests = state.Interests or {}
+					state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 30)
+					state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 25)
+				end,
+			},
+			{ 
+				text = "Passed after a few attempts", 
+				effects = { Happiness = 5 }, 
+				setFlags = { has_license = true }, 
+				feedText = "Third time's the charm! You got your license.",
+				onResolve = function(state)
+					-- CRITICAL: Build driving interest (less than perfect pass, but still builds interest)
+					state.Interests = state.Interests or {}
+					state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 20)
+					state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 20)
+				end,
+			},
 			{ text = "Still working on it", effects = { Happiness = -2 }, feedText = "You'll get it eventually." },
 			{ text = "Don't need a license", effects = { }, feedText = "You'll use public transport." },
 		},
@@ -161,7 +183,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "It's not pretty, but it's yours!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "beater_car_" .. tostring(state.Age),
 						name = "Beat-up Used Car",
@@ -179,7 +201,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "A solid first car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "reliable_car_" .. tostring(state.Age),
 						name = "Reliable Used Car",
@@ -197,7 +219,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "Your family helped you get a car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "gift_car_" .. tostring(state.Age),
 						name = "Family Gift Car",
@@ -397,7 +419,7 @@ Milestones.events = {
 		id = "major_promotion",
 		title = "Big Promotion",
 		emoji = "📈",
-		text = "You've been promoted to a senior position!",
+		text = "After years of dedication, hard work, and consistently exceeding expectations, you've been promoted to a senior position! This is a major career milestone.",
 		question = "How do you handle the new responsibility?",
 		minAge = 28, maxAge = 55,
 		baseChance = 0.3,
@@ -405,6 +427,15 @@ Milestones.events = {
 		requiresJob = true,
 		priority = "high",
 		isMilestone = true,
+		-- Only trigger if player has earned it through hard work
+		customValidation = function(state)
+			state.CareerInfo = state.CareerInfo or {}
+			local promotionProgress = state.CareerInfo.promotionProgress or 0
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			-- Must have worked very hard: max promotion progress AND excellent performance AND significant time at job
+			return promotionProgress >= 90 and performance >= 75 and yearsAtJob >= 2
+		end,
 
 		-- META
 		stage = "adult",
@@ -415,9 +446,63 @@ Milestones.events = {
 		careerTags = { "management" },
 
 		choices = {
-			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You rose to the challenge!" },
-			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true }, feedText = "You're adjusting to the new role." },
-			{ text = "Struggle with impostor syndrome", effects = { Happiness = 5, Money = 1500, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You question if you deserve it." },
+			{ 
+				text = "Step up and lead", 
+				effects = { Happiness = 12, Money = 2000, Smarts = 3 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You rose to the challenge! Your years of preparation made you ready for this.",
+				onResolve = function(state)
+					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.4)
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+				end,
+			},
+			{ 
+				text = "Grow into it gradually", 
+				effects = { Happiness = 8, Money = 1500, Smarts = 2 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You're adjusting to the new role. It's a learning curve, but you're getting there.",
+				onResolve = function(state)
+					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+				end,
+			},
+			{ 
+				text = "Struggle with impostor syndrome", 
+				effects = { Happiness = 5, Money = 1500, Smarts = 3 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You question if you deserve it. But you do - your hard work earned this.",
+				onResolve = function(state)
+					if not state.CurrentJob then return end
+					state.CareerInfo = state.CareerInfo or {}
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+					-- Prevent "Senior Senior" bug - check if already has "Senior" prefix
+					local currentName = state.CurrentJob.name or "Manager"
+					if not currentName:match("^Senior ") then
+						state.CurrentJob.name = "Senior " .. currentName
+					end
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
+				end,
+			},
 		},
 	},
 	{

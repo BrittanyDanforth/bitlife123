@@ -373,7 +373,20 @@ Childhood.events = {
 			{ text = "Science camp", effects = { Smarts = 7 }, setFlags = { science_enthusiast = true }, hintCareer = "science", feedText = "You spent the summer doing cool experiments!" },
 			{ text = "Arts camp", effects = { Happiness = 5, Looks = 3 }, setFlags = { artistic = true }, hintCareer = "creative", feedText = "You explored painting, sculpture, and more!" },
 			{ text = "Sports camp", effects = { Health = 7, Happiness = 3 }, setFlags = { athlete = true }, hintCareer = "sports", feedText = "You trained hard and improved your athletic skills!" },
-			{ text = "Computer/coding camp", effects = { Smarts = 7 }, setFlags = { coder = true }, hintCareer = "tech", feedText = "You learned to code! The digital world opens up." },
+			{ 
+				text = "Computer/coding camp", 
+				effects = { Smarts = 7 }, 
+				setFlags = { coder = true }, 
+				hintCareer = "tech", 
+				feedText = "You learned to code! The digital world opens up.",
+				onResolve = function(state)
+					-- CRITICAL: Build coding interest for gradual career unlock
+					state.Interests = state.Interests or {}
+					state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 25)
+					state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 20)
+					state.Interests.tech = math.min(100, (state.Interests.tech or 0) + 15)
+				end,
+			},
 		},
 	},
 

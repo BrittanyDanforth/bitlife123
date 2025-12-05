@@ -2087,32 +2087,36 @@ function RelationshipsScreen:show(tabId)
 		pcall(self.showBlur)
 	end
 
-	self.overlay.Visible = true
-
 	self:updateInfoBar()
 	if tabId then
 		self:switchTab(tabId)
 	else
 		self:switchTab(self.currentTab or "family")
 	end
+	
+	-- Smooth slide-in animation
+	UI.slideInScreen(self.overlay, "right")
+	log("✅ RelationshipsScreen is now visible with smooth animation")
 end
 
 function RelationshipsScreen:hide()
 	if not self.isVisible then return end
 	self.isVisible = false
 
-	if self.hideBlur then
-		pcall(self.hideBlur)
-	end
-
-	self.overlay.Visible = false
-
-	if self.interactOverlay then
-		self.interactOverlay.Visible = false
-	end
-	if self.resultModal and self.resultModal.overlay then
-		self.resultModal.overlay.Visible = false
-	end
+	-- Smooth slide-out animation
+	UI.slideOutScreen(self.overlay, "right", function()
+		if self.hideBlur then
+			pcall(self.hideBlur)
+		end
+		
+		if self.interactOverlay then
+			self.interactOverlay.Visible = false
+		end
+		if self.resultModal and self.resultModal.overlay then
+			self.resultModal.overlay.Visible = false
+		end
+		log("✅ RelationshipsScreen hidden with smooth animation, modals cleaned up")
+	end)
 end
 
 function RelationshipsScreen:toggle()
