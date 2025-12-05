@@ -2525,11 +2525,15 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	elseif deltas.health and deltas.health < -5 then
 		-- Smaller health drop - just flash, no shake
 		flashScreen(C.Red, 0.7, 0.25)
-	elseif deltas.money and deltas.money > 10000 then
-		-- Flash green for big money gains
+	-- CRITICAL FIX: Only flash green for UNEXPECTED money gains (windfalls, lottery, etc.)
+	-- Regular salary shouldn't cause a flash - it's expected and boring
+	-- Threshold raised to $100,000 to make flashes feel special and rare
+	elseif deltas.money and deltas.money > 100000 then
+		-- Flash green for massive money windfall (lottery, inheritance, etc.)
 		flashScreen(C.Green, 0.7, 0.3)
-	elseif deltas.money and deltas.money < -10000 then
-		-- Flash red for big money losses
+	-- CRITICAL FIX: Only flash red for big LOSSES, not normal expenses
+	elseif deltas.money and deltas.money < -50000 then
+		-- Flash red for major money losses (lawsuit, major purchase shouldn't flash)
 		flashScreen(C.Red, 0.7, 0.25)
 	end
 

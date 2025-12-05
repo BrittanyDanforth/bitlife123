@@ -1684,6 +1684,26 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Decrement jail sentence each year and auto-release when complete
+	-- Without this, prisoners would be stuck forever!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.InJail and state.JailYearsLeft then
+		state.JailYearsLeft = state.JailYearsLeft - 1
+		
+		if state.JailYearsLeft <= 0 then
+			-- Sentence complete! Release the prisoner
+			state.InJail = false
+			state.JailYearsLeft = 0
+			state.Flags.in_prison = nil
+			state.Flags.incarcerated = nil
+			state.PendingFeed = "🎉 You've been released from prison! Time served."
+			debugPrint("Player released from prison after completing sentence:", player.Name)
+		else
+			state.PendingFeed = string.format("📅 Prison: %.1f years remaining.", state.JailYearsLeft)
+		end
+	end
 
 	state.Stats = state.Stats or {}
 	state.Stats.Health = clamp((state.Stats.Health or 0) - RANDOM:NextInteger(0, 2))
@@ -2174,17 +2194,66 @@ function LifeBackend:handlePrisonAction(player, actionId)
 
 	if actionId == "prison_escape" then
 		state.awaitingDecision = true
-		local eventDef = {
-			id = "prison_escape_attempt",
-			title = "Attempted Escape",
-			emoji = "🔓",
-			text = "You plotted an escape. Did it work?",
-			choices = {
-				{ text = "Outcome pending...", deltas = {} },
-			},
-		}
-		self:presentEvent(player, eventDef, "You planned an escape.")
-		return { success = true, message = "Escape attempt underway..." }
+		-- CRITICAL FIX: Prison escape now has real outcomes that properly clear jail flags
+		local escapeChance = 0.25 + (state.Stats and state.Stats.Smarts or 0) / 200 -- 25-75% based on smarts
+		local escaped = RANDOM:NextNumber() < escapeChance
+		
+		local eventDef
+		if escaped then
+			eventDef = {
+				id = "prison_escape_success",
+				title = "Escape Successful!",
+				emoji = "🏃",
+				text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
+				question = "What now?",
+				choices = {
+					{ 
+						text = "Lay low and start fresh", 
+						deltas = { Happiness = 20 },
+						setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
+						clearFlags = { in_prison = true, incarcerated = true },
+						feedText = "You escaped prison! Now living as a fugitive.",
+					},
+					{ 
+						text = "Leave the country", 
+						deltas = { Happiness = 15, Money = -5000 },
+						setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
+						clearFlags = { in_prison = true, incarcerated = true },
+						feedText = "You escaped and fled to another country!",
+					},
+				},
+				-- CRITICAL: Actually free the player when event resolves
+				onResolve = function(state)
+					state.InJail = false
+					state.JailYearsLeft = 0
+					state.Flags.in_prison = nil
+					state.Flags.incarcerated = nil
+					state.Flags.escaped_prisoner = true
+					state.Flags.fugitive = true
+				end,
+			}
+		else
+			-- Escape failed - add years to sentence
+			local addedYears = RANDOM:NextInteger(2, 5)
+			state.JailYearsLeft = (state.JailYearsLeft or 0) + addedYears
+			eventDef = {
+				id = "prison_escape_failed",
+				title = "Escape Failed",
+				emoji = "🚨",
+				text = string.format("You were caught trying to escape! They added %d years to your sentence.", addedYears),
+				choices = {
+					{ 
+						text = "Accept your fate", 
+						deltas = { Happiness = -15, Health = -5 },
+						setFlags = { escape_attempt_failed = true },
+						feedText = "Your escape attempt failed. More time behind bars.",
+					},
+				},
+			}
+		end
+		
+		self:presentEvent(player, eventDef, escaped and "You attempted an escape..." or "You tried to escape...")
+		return { success = true, message = escaped and "Escape attempt underway..." or "Planning your escape..." }
 	end
 
 	if (state.JailYearsLeft or 0) <= 0 then

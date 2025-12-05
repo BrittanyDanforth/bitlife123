@@ -506,7 +506,9 @@ local DeathCauses = {
 	-- ═════════════════════════════════════════════════════════════════════════
 	{ id = "gang_violence",  cause = "gang violence", requiresFlag = "gang_member", chance = 0.05, description = "Street life caught up with them" },
 	{ id = "prison_fight",   cause = "a prison altercation", requiresFlag = "in_prison", chance = 0.02, description = "Prison is a dangerous place" },
-	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", chance = 0.01, description = "Crime doesn't pay" },
+	-- CRITICAL FIX: Don't kill players with robbery_gone_wrong if they're IN prison
+	-- Also requires they be free (not incarcerated) since robberies happen outside
+	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", blockedByFlag = "in_prison", chance = 0.01, description = "Crime doesn't pay" },
 	
 	-- ═════════════════════════════════════════════════════════════════════════
 	-- CAREER-RELATED DEATHS (for dangerous professions)
@@ -560,6 +562,11 @@ function LifeStageSystem.checkDeath(state)
 		
 		-- Flag requirement
 		if deathType.requiresFlag and not flags[deathType.requiresFlag] then
+			canOccur = false
+		end
+		
+		-- CRITICAL FIX: Blocked by flag (e.g., can't die from robbery if in prison)
+		if deathType.blockedByFlag and flags[deathType.blockedByFlag] then
 			canOccur = false
 		end
 		

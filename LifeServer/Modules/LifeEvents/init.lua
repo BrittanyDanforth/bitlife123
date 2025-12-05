@@ -1194,6 +1194,15 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		outcome.flagChanges[flag] = value
 	end
 	
+	-- CRITICAL FIX: Handle clearFlags (for events like prison escape that need to remove flags)
+	local clearFlagChanges = choice.clearFlags or {}
+	for flag, _ in pairs(clearFlagChanges) do
+		if state.Flags[flag] then
+			state.Flags[flag] = nil
+			outcome.flagChanges[flag] = nil -- Mark as cleared
+		end
+	end
+	
 	-- Career hints
 	if choice.hintCareer then
 		state.CareerHints = state.CareerHints or {}

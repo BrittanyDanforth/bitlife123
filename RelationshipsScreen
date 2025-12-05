@@ -1453,7 +1453,14 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	roleLabel.Font = F.Medium
 	roleLabel.TextSize = 11
 	roleLabel.TextColor3 = accentColor
-	roleLabel.Text = person.role
+	-- CRITICAL FIX: Show divorced/separated status in role badge
+	local roleText = person.role or ""
+	if person.divorced or person.maritalStatus == "Divorced" or person.status == "divorced" then
+		roleText = roleText .. " 💔"
+	elseif person.deceased or person.alive == false then
+		roleText = roleText .. " ✝️"
+	end
+	roleLabel.Text = roleText
 	roleLabel.ZIndex = 85
 	roleLabel.Parent = roleBadge
 
@@ -1754,7 +1761,18 @@ function RelationshipsScreen:showInteractionModal(person, relType, accentColor, 
 	self.interactCloseBtn.TextColor3        = accentColor
 
 	self.interactName.Text   = person.name or "Unknown"
-	self.interactStatus.Text = (person.role or "Person")
+	
+	-- CRITICAL FIX: Show divorced/separated status for parents
+	local statusStr = person.role or "Person"
+	if person.divorced or person.maritalStatus == "Divorced" then
+		statusStr = statusStr .. " (Divorced)"
+	elseif person.status == "separated" or person.status == "divorced" then
+		statusStr = statusStr .. " (Separated)"
+	elseif person.deceased or person.alive == false then
+		statusStr = statusStr .. " (Deceased)"
+	end
+	
+	self.interactStatus.Text = statusStr
 		.. " | "
 		.. string.format("%d%% Relationship", math.floor(person.relationship or 50))
 

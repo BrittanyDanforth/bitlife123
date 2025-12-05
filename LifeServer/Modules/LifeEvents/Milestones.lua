@@ -374,14 +374,16 @@ Milestones.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "first_real_job",
-		title = "Starting Your Career",
+		title = "Time to Start Working?",
 		emoji = "💼",
-		text = "You got your first real, full-time job!",
-		question = "How do you feel about starting?",
+		-- CRITICAL FIX: Changed from "you got a job" to asking if player WANTS a job
+		text = "You're an adult now. It might be time to enter the workforce.",
+		question = "What's your plan?",
 		minAge = 18, maxAge = 28,
 		oneTime = true,
-		priority = "high",
+		priority = "medium", -- Lowered priority - not forced
 		isMilestone = true,
+		baseChance = 0.6, -- Only 60% chance to trigger, not guaranteed
 		-- CRITICAL: Block if player already has a job
 		blockedByFlags = { employed = true, has_job = true },
 
@@ -394,14 +396,45 @@ Milestones.events = {
 		careerTags = { "career_general" },
 
 		choices = {
-			{ text = "Excited and motivated", effects = { Happiness = 10, Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "Your career begins!" },
-			{ text = "Nervous but ready", effects = { Happiness = 5, Smarts = 2, Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "First day jitters, but you've got this." },
-			{ text = "It's just a paycheck", effects = { Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "Work to live, not live to work." },
+			-- CRITICAL FIX: Added choice to NOT get a job - player agency is key!
+			{ 
+				text = "Start job hunting", 
+				effects = { Happiness = 5 }, 
+				setFlags = { job_hunting = true }, 
+				feedText = "You're looking for work. Check the Jobs tab to apply!",
+				-- No automatic job assignment - player chooses in OccupationScreen
+			},
+			{ 
+				text = "Focus on education first", 
+				effects = { Smarts = 3 }, 
+				setFlags = { prioritizing_education = true }, 
+				feedText = "You decided to focus on your studies before working." 
+			},
+			{ 
+				text = "Take some time to figure things out", 
+				effects = { Happiness = 2 }, 
+				feedText = "No rush - you're exploring your options." 
+			},
+			{ 
+				text = "Already have plans", 
+				effects = { Happiness = 3 }, 
+				feedText = "You've got your own path in mind." 
+			},
 		},
 		
-		-- CRITICAL FIX: Actually create the job object when this event fires!
-		-- Without this, the OccupationScreen shows "Unemployed" even after the event
+		-- CRITICAL FIX: REMOVED auto job assignment! Player should choose their own job!
+		-- The old onComplete was forcing a random job on players without consent
+		-- Now players can go to OccupationScreen and pick their own job
 		onComplete = function(state, choice, eventDef, outcome)
+			-- Only hint that jobs are available, don't force one
+			if state.AddFeed and choice and choice.text == "Start job hunting" then
+				state:AddFeed("💼 Tip: Open the Jobs tab to browse available positions!")
+			end
+		end,
+		
+		-- Keep backward compatibility but don't auto-assign
+		_deprecated_onComplete = function(state, choice, eventDef, outcome)
+			-- OLD CODE - REMOVED: Was forcing random jobs on players
 			-- Generate a random entry-level job for the player
 			local entryJobs = {
 				{ id = "retail", name = "Retail Associate", company = "MegaMart", salary = 26000, category = "entry" },

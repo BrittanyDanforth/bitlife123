@@ -723,6 +723,8 @@ Relationships.events = {
 		question = "How do you handle it?",
 		minAge = 8, maxAge = 40,
 		oneTime = true,
+		-- CRITICAL FIX: Block if parents already divorced
+		blockedByFlags = { parents_divorced = true },
 
 		choices = {
 			{ text = "Devastated - your world is crashing", effects = { Happiness = -20, Health = -5 }, setFlags = { parents_divorced = true }, feedText = "Your family is falling apart." },
@@ -730,6 +732,40 @@ Relationships.events = {
 			{ text = "Stuck in the middle - both want your support", effects = { Happiness = -15 }, setFlags = { parents_divorced = true, caught_in_middle = true }, feedText = "They're putting you in impossible positions." },
 			{ text = "Try to bring them back together", effects = { Happiness = -10 }, setFlags = { parents_divorced = true }, feedText = "You tried but couldn't save their marriage." },
 		},
+		
+		-- CRITICAL FIX: Actually update parent relationship statuses
+		onComplete = function(state, choice, eventDef, outcome)
+			-- Mark both parents as divorced/separated
+			if state.Relationships then
+				local mother = state.Relationships["mother"]
+				local father = state.Relationships["father"]
+				
+				if mother then
+					mother.status = "divorced"
+					mother.maritalStatus = "Divorced"
+					mother.divorced = true
+					-- Reduce relationship with non-custodial parent
+					if mother.relationship then
+						mother.relationship = math.max(20, mother.relationship - 10)
+					end
+				end
+				
+				if father then
+					father.status = "divorced"
+					father.maritalStatus = "Divorced"
+					father.divorced = true
+					-- Father often becomes less present after divorce
+					if father.relationship then
+						father.relationship = math.max(10, father.relationship - 15)
+					end
+				end
+				
+				-- Add feed entry about the separation
+				if state.AddFeed then
+					state:AddFeed("💔 Your parents have separated. Your family dynamic has changed.")
+				end
+			end
+		end,
 	},
 	{
 		id = "sibling_success",
