@@ -328,6 +328,23 @@ function OccupationScreen:updateState(newState)
 	if newState then 
 		self.playerState = newState 
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+		
+		-- CRITICAL FIX: Invalidate cached career info on state update
+		-- This ensures raises/promotions are shown correctly after state changes
+		-- We also update educationInfo since it may have changed
+		self.careerInfo = nil
+		self.educationInfo = nil
+		
+		-- If visible, refresh career info immediately
+		if self.isVisible and self:getCurrentJob() then
+			task.spawn(function()
+				self:fetchCareerInfo()
+				-- Only refresh UI if still visible and on jobs tab
+				if self.isVisible and self.currentTab == "jobs" then
+					self:populateJobs()
+				end
+			end)
+		end
 	end
 end
 
@@ -520,22 +537,46 @@ function OccupationScreen:fetchEducationInfo()
 	return nil
 end
 
+-- CRITICAL FIX: Comprehensive education display name mapping
+-- Handles all education levels with proper formatting
+local EducationDisplayNames = {
+	none = "No Formal Education",
+	elementary = "Elementary School",
+	middle_school = "Middle School",
+	high_school = "High School Diploma",
+	highschool = "High School Diploma",
+	community = "Associate's Degree",
+	associate = "Associate's Degree",
+	bachelor = "Bachelor's Degree",
+	bachelors = "Bachelor's Degree",
+	master = "Master's Degree",
+	masters = "Master's Degree",
+	law = "Law Degree (J.D.)",
+	medical = "Medical Degree (M.D.)",
+	doctorate = "Doctorate (Ph.D.)",
+	phd = "Doctorate (Ph.D.)",
+}
+
 function OccupationScreen:getEducationDisplayName(levelId)
 	if not levelId or levelId == "" or levelId == "none" then
 		return "No Formal Education"
 	end
-
-	if levelId == "high_school" then
-		return "High School Graduate"
+	
+	-- Check our comprehensive mapping first
+	local lowerId = levelId:lower()
+	if EducationDisplayNames[lowerId] then
+		return EducationDisplayNames[lowerId]
 	end
 
+	-- Fallback to Education catalog lookup
 	for _, edu in ipairs(Education) do
 		if edu.id == levelId then
 			return edu.name
 		end
 	end
 
-	return levelId:gsub("_", " "):gsub("^%l", string.upper)
+	-- Final fallback: format the ID nicely
+	return levelId:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
 end
 
 function OccupationScreen:getEducationEmoji(levelId)

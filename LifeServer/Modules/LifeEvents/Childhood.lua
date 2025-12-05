@@ -561,7 +561,9 @@ Childhood.events = {
 		onResolve = function(state)
 			-- Add the baby sibling to relationships
 			if state.AddRelationship then
-				local isBoy = math.random() > 0.5
+				-- CRITICAL FIX: Use consistent Random API
+				local RANDOM_SIBLING = Random.new()
+				local isBoy = RANDOM_SIBLING:NextNumber() > 0.5
 				state:AddRelationship("baby_sibling", {
 					id = "baby_sibling",
 					name = "Baby",

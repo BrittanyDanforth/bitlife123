@@ -66,6 +66,7 @@ function LifeState.new(player)
 		promotionProgress = 0,
 		yearsAtJob = 0,
 		raises = 0,
+		promotions = 0, -- CRITICAL FIX: Track promotions separately from raises
 		careerHistory = {},
 		skills = {},
 	}
@@ -478,6 +479,37 @@ function LifeState:ClearFlag(flagName)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- EDUCATION DISPLAY NAME FORMATTER
+-- Converts internal IDs (high_school) to display names (High School Diploma)
+-- ════════════════════════════════════════════════════════════════════════════
+
+local EducationDisplayNames = {
+	none = "No Formal Education",
+	elementary = "Elementary School",
+	middle_school = "Middle School",
+	high_school = "High School Diploma",
+	highschool = "High School Diploma",
+	community = "Associate's Degree",
+	associate = "Associate's Degree",
+	bachelor = "Bachelor's Degree",
+	bachelors = "Bachelor's Degree",
+	master = "Master's Degree",
+	masters = "Master's Degree",
+	law = "Law Degree (J.D.)",
+	medical = "Medical Degree (M.D.)",
+	doctorate = "Doctorate (Ph.D.)",
+	phd = "Doctorate (Ph.D.)",
+}
+
+function LifeState:FormatEducation(educationLevel)
+	local level = educationLevel or self.Education or "none"
+	if not level or level == "" then
+		return "No Formal Education"
+	end
+	return EducationDisplayNames[level:lower()] or level:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SERIALIZATION
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -518,6 +550,7 @@ function LifeState:Serialize()
 		
 		-- Education
 		Education = self.Education,
+		EducationDisplay = self:FormatEducation(), -- CRITICAL FIX: Human-readable education level
 		EducationData = self.EducationData,
 		
 		-- Career

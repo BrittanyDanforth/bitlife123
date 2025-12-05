@@ -125,21 +125,290 @@ local function computeNetWorth(state)
 	return math.max(0, total)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EDUCATION LEVEL FORMATTER - Convert internal IDs to display names
+-- ═══════════════════════════════════════════════════════════════════════════════
+local EducationDisplayNames = {
+	none = "No Formal Education",
+	elementary = "Elementary School",
+	middle_school = "Middle School",
+	high_school = "High School Diploma",
+	highschool = "High School Diploma",
+	community = "Associate's Degree",
+	associate = "Associate's Degree",
+	bachelor = "Bachelor's Degree",
+	bachelors = "Bachelor's Degree",
+	master = "Master's Degree",
+	masters = "Master's Degree",
+	law = "Law Degree (J.D.)",
+	medical = "Medical Degree (M.D.)",
+	doctorate = "Doctorate (Ph.D.)",
+	phd = "Doctorate (Ph.D.)",
+}
+
+local function formatEducation(educationLevel)
+	if not educationLevel or educationLevel == "" then
+		return "No Formal Education"
+	end
+	return EducationDisplayNames[educationLevel:lower()] or educationLevel:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PERSONALITY DESCRIPTION GENERATOR - BitLife AAA Quality
+-- Generates personality adjectives based on stats
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function getPersonalityDescription(stats, flags)
+	local traits = {}
+	stats = stats or {}
+	flags = flags or {}
+	
+	-- Happiness-based traits
+	local happiness = stats.Happiness or 50
+	if happiness >= 85 then
+		table.insert(traits, "radiantly happy")
+	elseif happiness >= 70 then
+		table.insert(traits, "cheerful")
+	elseif happiness >= 50 then
+		table.insert(traits, "content")
+	elseif happiness >= 30 then
+		table.insert(traits, "melancholic")
+	else
+		table.insert(traits, "deeply unhappy")
+	end
+	
+	-- Smarts-based traits
+	local smarts = stats.Smarts or 50
+	if smarts >= 90 then
+		table.insert(traits, "brilliant")
+	elseif smarts >= 75 then
+		table.insert(traits, "intelligent")
+	elseif smarts >= 50 then
+		table.insert(traits, "reasonably clever")
+	elseif smarts >= 30 then
+		table.insert(traits, "simple-minded")
+	else
+		table.insert(traits, "not academically inclined")
+	end
+	
+	-- Health-based traits
+	local health = stats.Health or 50
+	if health >= 85 then
+		table.insert(traits, "remarkably fit")
+	elseif health >= 70 then
+		table.insert(traits, "healthy")
+	elseif health >= 40 then
+		table.insert(traits, "of average health")
+	elseif health >= 20 then
+		table.insert(traits, "in poor health")
+	else
+		table.insert(traits, "gravely ill")
+	end
+	
+	-- Looks-based traits
+	local looks = stats.Looks or 50
+	if looks >= 90 then
+		table.insert(traits, "stunningly attractive")
+	elseif looks >= 75 then
+		table.insert(traits, "good-looking")
+	elseif looks >= 50 then
+		table.insert(traits, "average-looking")
+	elseif looks >= 30 then
+		table.insert(traits, "plain")
+	else
+		table.insert(traits, "homely")
+	end
+	
+	-- Flag-based personality additions
+	if flags.criminal_record then table.insert(traits, "with a troubled past") end
+	if flags.philanthropist then table.insert(traits, "generous") end
+	if flags.famous or flags.celebrity then table.insert(traits, "famous") end
+	if flags.world_champion or flags.racing_legend then table.insert(traits, "legendary") end
+	if flags.retired then table.insert(traits, "retired") end
+	
+	return traits
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- LIFESTYLE SUMMARY GENERATOR - BitLife AAA Quality
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function getLifestyleSummary(flags)
+	local lifestyles = {}
+	flags = flags or {}
+	
+	if flags.heavy_drinker then table.insert(lifestyles, "enjoyed drinking heavily") end
+	if flags.substance_issue then table.insert(lifestyles, "struggled with substance abuse") end
+	if flags.fitness_enthusiast then table.insert(lifestyles, "was dedicated to fitness") end
+	if flags.vegan or flags.vegetarian then table.insert(lifestyles, "followed a plant-based diet") end
+	if flags.smoker then table.insert(lifestyles, "was a smoker") end
+	if flags.workaholic then table.insert(lifestyles, "was a workaholic") end
+	if flags.adventurous then table.insert(lifestyles, "loved adventure") end
+	if flags.homebody then table.insert(lifestyles, "preferred staying home") end
+	if flags.religious then table.insert(lifestyles, "was deeply religious") end
+	if flags.criminal_path then table.insert(lifestyles, "walked the path of crime") end
+	if flags.entrepreneur then table.insert(lifestyles, "had an entrepreneurial spirit") end
+	if flags.philanthropist then table.insert(lifestyles, "was known for charitable giving") end
+	
+	return lifestyles
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- DEATH OBITUARY GENERATOR - BitLife AAA Quality
+-- Generates a full obituary-style death message
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function generateObituary(state, deathInfo)
+	local name = state.Name or "This person"
+	local age = state.Age or 0
+	local gender = state.Gender or "male"
+	local pronoun = gender == "female" and "She" or "He"
+	local possessive = gender == "female" and "her" or "his"
+	
+	local stats = state.Stats or {}
+	local flags = state.Flags or {}
+	
+	local lines = {}
+	
+	-- Opening line with personality
+	local traits = getPersonalityDescription(stats, flags)
+	local traitText = ""
+	if #traits >= 2 then
+		traitText = traits[1] .. " and " .. traits[2]
+	elseif #traits == 1 then
+		traitText = traits[1]
+	else
+		traitText = "ordinary"
+	end
+	
+	table.insert(lines, string.format("%s was a %s individual who passed away at age %d.", name, traitText, age))
+	
+	-- Cause of death
+	local cause = deathInfo and deathInfo.cause or "natural causes"
+	if cause == "Health failure" then
+		cause = "failing health after a long struggle"
+	elseif cause == "Natural causes" then
+		cause = "peaceful natural causes"
+	elseif cause == "Extraordinarily long life" then
+		cause = "an extraordinarily long and full life"
+	end
+	table.insert(lines, string.format("%s died from %s.", pronoun, cause))
+	
+	-- Education
+	local education = formatEducation(state.Education)
+	if education ~= "No Formal Education" then
+		table.insert(lines, string.format("%s held a %s.", pronoun, education))
+	end
+	
+	-- Career
+	if state.CurrentJob and state.CurrentJob.name then
+		table.insert(lines, string.format("At the time of death, %s was working as a %s at %s.", 
+			pronoun:lower(), state.CurrentJob.name, state.CurrentJob.company or "a local company"))
+	elseif flags.retired then
+		table.insert(lines, string.format("%s was enjoying %s retirement.", pronoun, possessive))
+	elseif flags.unemployed or flags.between_jobs then
+		table.insert(lines, string.format("%s was between jobs at the time.", pronoun))
+	end
+	
+	-- Relationships
+	local relationshipCount = countEntries(state.Relationships or {})
+	if state.Relationships and state.Relationships.partner then
+		local partner = state.Relationships.partner
+		local partnerRole = partner.role or "partner"
+		if flags.married then
+			table.insert(lines, string.format("%s was married to %s.", pronoun, partner.name or "their spouse"))
+		elseif flags.engaged then
+			table.insert(lines, string.format("%s was engaged to %s.", pronoun, partner.name or "their fiancé"))
+		else
+			table.insert(lines, string.format("%s was in a relationship with %s.", pronoun, partner.name or "someone special"))
+		end
+	else
+		table.insert(lines, string.format("%s was single.", pronoun))
+	end
+	
+	-- Family count
+	local familyCount = 0
+	local childCount = 0
+	for id, rel in pairs(state.Relationships or {}) do
+		if type(rel) == "table" then
+			if rel.type == "family" or rel.isFamily then
+				familyCount = familyCount + 1
+			end
+			if rel.role and (rel.role:find("Son") or rel.role:find("Daughter") or rel.role:find("Child")) then
+				childCount = childCount + 1
+			end
+		end
+	end
+	if childCount > 0 then
+		table.insert(lines, string.format("%s had %d %s.", pronoun, childCount, childCount == 1 and "child" or "children"))
+	end
+	
+	-- Lifestyle
+	local lifestyles = getLifestyleSummary(flags)
+	if #lifestyles > 0 then
+		local lifestyleText = table.concat(lifestyles, ", ")
+		table.insert(lines, string.format("Throughout life, %s %s.", pronoun:lower(), lifestyleText))
+	end
+	
+	-- Net worth
+	local netWorth = computeNetWorth(state)
+	if netWorth >= 1000000000 then
+		table.insert(lines, string.format("%s died a billionaire with a net worth of $%.2fB.", pronoun, netWorth / 1000000000))
+	elseif netWorth >= 1000000 then
+		table.insert(lines, string.format("%s died a millionaire with a net worth of $%.2fM.", pronoun, netWorth / 1000000))
+	elseif netWorth >= 100000 then
+		table.insert(lines, string.format("%s left behind a net worth of $%s.", pronoun, formatMoney(netWorth)))
+	elseif netWorth > 0 then
+		table.insert(lines, string.format("%s had modest savings of $%s.", pronoun, formatMoney(netWorth)))
+	else
+		table.insert(lines, string.format("%s died penniless.", pronoun))
+	end
+	
+	-- Final stat summary
+	table.insert(lines, string.format("\n📊 Final Stats: 😊 %d | ❤️ %d | 🧠 %d | 💎 %d", 
+		stats.Happiness or 0, stats.Health or 0, stats.Smarts or 0, stats.Looks or 0))
+	
+	return table.concat(lines, "\n")
+end
+
 local function buildDeathMeta(state, deathInfo)
 	local stageData = LifeStageSystem.getStage(state.Age or 0)
+	local stats = state.Stats or {}
+	local flags = state.Flags or {}
+	
 	return {
 		age = state.Age,
 		year = state.Year,
 		cause = deathInfo and deathInfo.cause or "Unknown causes",
 		causeId = deathInfo and deathInfo.id,
 		stage = stageData and stageData.id or "unknown",
+		stageName = stageData and stageData.name or "Unknown",
 		netWorth = computeNetWorth(state),
 		money = state.Money or 0,
-		career = state.Career and state.Career.jobTitle,
-		employer = state.Career and state.Career.employer,
+		-- Career info
+		career = state.CurrentJob and state.CurrentJob.name or (state.Career and state.Career.jobTitle),
+		employer = state.CurrentJob and state.CurrentJob.company or (state.Career and state.Career.employer),
+		-- Education - FIXED: Use formatted display name
+		education = formatEducation(state.Education),
+		educationRaw = state.Education,
+		-- Stats
+		happiness = stats.Happiness or 0,
+		health = stats.Health or 0,
+		smarts = stats.Smarts or 0,
+		looks = stats.Looks or 0,
+		-- Personality and lifestyle
+		personality = getPersonalityDescription(stats, flags),
+		lifestyle = getLifestyleSummary(flags),
+		-- Family and relationships
 		fame = state.Fame or 0,
 		relationshipCount = countEntries(state.Relationships),
-		flags = shallowCopy(state.Flags or {}),
+		wasMarried = flags.married or false,
+		hadChildren = flags.has_children or false,
+		-- Legacy flags
+		wasRich = computeNetWorth(state) >= 1000000,
+		wasFamous = (state.Fame or 0) >= 50,
+		wasCriminal = flags.criminal_record or flags.criminal_path or false,
+		-- Full obituary text
+		obituary = generateObituary(state, deathInfo),
+		-- Raw flags for client
+		flags = shallowCopy(flags),
 	}
 end
 
@@ -1494,17 +1763,23 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			state.Flags.dead = true
 		end
 		state.CauseOfDeath = deathInfo.cause
-		feedText = string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
+		
+		-- Build AAA-quality death summary
+		local deathMeta = buildDeathMeta(state, deathInfo)
+		
+		-- Use the full obituary for the death popup
+		feedText = deathMeta.obituary or string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
+		
 		debugPrint(string.format("Player died: %s (Age %d) cause=%s", state.Name or player.Name, state.Age or -1, deathInfo.cause or "unknown"))
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
-			title = "Life Ended",
+			title = string.format("💀 %s (Age %d)", state.Name or "You", state.Age or 0),
 			body = feedText,
 			wasSuccess = false,
 			fatal = true,
 			cause = deathInfo.cause,
-			deathMeta = buildDeathMeta(state, deathInfo),
+			deathMeta = deathMeta,
 		}
 	end
 
@@ -1999,6 +2274,7 @@ function LifeBackend:handleJobApplication(player, jobId)
 	state.CareerInfo.promotionProgress = 0
 	state.CareerInfo.yearsAtJob = 0
 	state.CareerInfo.raises = 0
+	state.CareerInfo.promotions = 0 -- CRITICAL FIX: Reset promotions on new job
 
 	state.Career.track = job.category
 	
@@ -2148,6 +2424,7 @@ function LifeBackend:getCareerInfo(player)
 		promotionProgress = state.CareerInfo.promotionProgress or 0,
 		yearsAtJob = state.CareerInfo.yearsAtJob or 0,
 		raises = state.CareerInfo.raises or 0,
+		promotions = state.CareerInfo.promotions or 0, -- CRITICAL FIX: Track promotions
 		careerHistory = state.CareerInfo.careerHistory or {},
 		skills = state.CareerInfo.skills or {},
 		track = state.Career.track,
@@ -2173,6 +2450,8 @@ function LifeBackend:getEducationInfo(player)
 	return {
 		success = true,
 		level = state.Education,
+		-- CRITICAL FIX: Add human-readable education level display
+		levelDisplay = formatEducation(state.Education),
 		institution = edu.Institution or "Local School",
 		gpa = rawGPA,
 		progress = edu.Progress or 0,

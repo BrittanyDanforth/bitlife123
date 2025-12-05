@@ -414,7 +414,9 @@ Milestones.events = {
 				{ id = "data_entry", name = "Data Entry Clerk", company = "DataCorp", salary = 34000, category = "office" },
 			}
 			
-			local job = entryJobs[math.random(1, #entryJobs)]
+			-- CRITICAL FIX: Use consistent Random API
+			local RANDOM = Random.new()
+			local job = entryJobs[RANDOM:NextInteger(1, #entryJobs)]
 			
 			if state.SetCareer then
 				state:SetCareer({
@@ -474,7 +476,9 @@ Milestones.events = {
 				local oldTitle = state.CurrentJob.name or "Employee"
 				
 				-- Give a 20-35% raise on promotion
-				local raisePercent = math.random(20, 35) / 100
+				-- CRITICAL FIX: Use consistent Random API
+				local RANDOM_PROMO = Random.new()
+				local raisePercent = RANDOM_PROMO:NextInteger(20, 35) / 100
 				local newSalary = math.floor(oldSalary * (1 + raisePercent))
 				
 				-- Generate a promoted title

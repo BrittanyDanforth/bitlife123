@@ -1,3 +1,15 @@
+--[[
+	CareerSystem.lua
+	
+	DEPRECATION NOTICE: This module is currently NOT USED by the main game loop.
+	Career simulation is handled by LifeBackend:tickCareer() instead.
+	
+	This module is kept for potential future use or modular career simulation.
+	If you need career functionality, use LifeBackend:tickCareer() instead.
+	
+	TODO: Consider removing or integrating this module fully.
+]]
+
 local CareerSystem = {}
 
 CareerSystem.Catalog = {
@@ -144,7 +156,11 @@ function CareerSystem.simulateWork(state)
 		end
 		
 		info.promotionProgress = 20
-		info.raises = (info.raises or 0) + 1
+		-- CRITICAL FIX: Track promotions separately from raises!
+		-- Promotions != Raises. Raises are negotiated, promotions are earned.
+		info.promotions = (info.promotions or 0) + 1
+		-- Reset raises counter on promotion (new role = new raise cap)
+		info.raises = 0
 		
 		local newSalary = state.CurrentJob and state.CurrentJob.salary or (state.Career and state.Career.salary) or currentSalary
 		if state.AddFeed then

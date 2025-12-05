@@ -469,20 +469,57 @@ end
 -- DEATH MECHANICS
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EXPANDED DEATH CAUSES - BitLife AAA Quality
+-- More varied and realistic causes of death with appropriate age/flag checks
+-- ═══════════════════════════════════════════════════════════════════════════════
 local DeathCauses = {
-	-- Natural causes (age-related) - BALANCED for realistic gameplay
-	-- Heart attacks and strokes should primarily affect seniors with poor health
-	{ id = "old_age",        cause = "Natural causes",          minAge = 75 },
-	{ id = "heart_attack",   cause = "Heart attack",            minAge = 55, healthFactor = 0.15 }, -- Reduced factor, higher min age
-	{ id = "stroke",         cause = "Stroke",                  minAge = 60, healthFactor = 0.12 }, -- Reduced factor, higher min age
-	{ id = "cancer",         cause = "Cancer",                  minAge = 45, baseChance = 0.005 }, -- Reduced chance
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- NATURAL CAUSES (age-related)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "old_age",        cause = "peacefully in their sleep", minAge = 75, description = "After a long and full life" },
+	{ id = "heart_attack",   cause = "a sudden heart attack", minAge = 55, healthFactor = 0.15, description = "It was sudden and unexpected" },
+	{ id = "stroke",         cause = "a stroke", minAge = 60, healthFactor = 0.12, description = "Despite quick medical attention" },
+	{ id = "cancer",         cause = "cancer", minAge = 45, baseChance = 0.005, description = "After a brave battle" },
+	{ id = "heart_disease",  cause = "heart disease", minAge = 50, healthFactor = 0.10, description = "Years of strain finally caught up" },
+	{ id = "dementia",       cause = "complications from dementia", minAge = 70, baseChance = 0.008, description = "The mind faded before the body" },
+	{ id = "pneumonia",      cause = "pneumonia", minAge = 65, healthFactor = 0.08, description = "A respiratory illness proved fatal" },
 	
-	-- Lifestyle-related (checked via flags)
-	{ id = "overdose",       cause = "Drug overdose",           requiresFlag = "substance_issue", chance = 0.03 }, -- Reduced chance
-	{ id = "alcohol",        cause = "Alcohol-related illness", requiresFlag = "heavy_drinker", minAge = 40, chance = 0.015 }, -- Reduced chance, higher min age
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- LIFESTYLE-RELATED DEATHS (checked via flags)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "overdose",       cause = "a drug overdose", requiresFlag = "substance_issue", chance = 0.03, description = "Addiction claimed another victim" },
+	{ id = "alcohol",        cause = "alcohol-related liver failure", requiresFlag = "heavy_drinker", minAge = 40, chance = 0.015, description = "Years of drinking took its toll" },
+	{ id = "smoking_cancer", cause = "lung cancer", requiresFlag = "smoker", minAge = 50, chance = 0.02, description = "Smoking proved deadly" },
+	{ id = "obesity",        cause = "complications from obesity", requiresFlag = "obese", minAge = 35, chance = 0.01, description = "Weight issues led to health failure" },
 	
-	-- Random accidents (very low chance)
-	{ id = "accident",       cause = "Tragic accident",         baseChance = 0.0005 }, -- Even lower base chance
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- ACCIDENTAL DEATHS (rare but possible)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "accident",       cause = "a tragic accident", baseChance = 0.0005, description = "An unfortunate turn of fate" },
+	{ id = "car_accident",   cause = "a car accident", requiresFlag = "has_car", baseChance = 0.0008, description = "They were driving when it happened" },
+	{ id = "drowning",       cause = "drowning", baseChance = 0.0002, description = "A day at the water turned tragic" },
+	{ id = "fall",           cause = "injuries from a fall", minAge = 60, healthFactor = 0.05, description = "A simple fall proved fatal" },
+	
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- VIOLENCE/CRIME-RELATED (requires criminal lifestyle flags)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "gang_violence",  cause = "gang violence", requiresFlag = "gang_member", chance = 0.05, description = "Street life caught up with them" },
+	{ id = "prison_fight",   cause = "a prison altercation", requiresFlag = "in_prison", chance = 0.02, description = "Prison is a dangerous place" },
+	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", chance = 0.01, description = "Crime doesn't pay" },
+	
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- CAREER-RELATED DEATHS (for dangerous professions)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "racing_crash",   cause = "a fatal racing crash", requiresFlag = "pro_racer", chance = 0.008, description = "The track claimed another driver" },
+	{ id = "military_kia",   cause = "in combat", requiresFlag = "military_service", chance = 0.005, description = "They died serving their country" },
+	
+	-- ═════════════════════════════════════════════════════════════════════════
+	-- MEDICAL/HEALTH-RELATED (requires prior health flags)
+	-- ═════════════════════════════════════════════════════════════════════════
+	{ id = "cancer_battle",  cause = "their battle with cancer", requiresFlag = "battling_cancer", chance = 0.15, description = "Cancer won in the end" },
+	{ id = "surgery_complications", cause = "surgical complications", requiresFlag = "needs_surgery", chance = 0.03, description = "The operation didn't go as planned" },
+	{ id = "traumatic_injury", cause = "injuries sustained", requiresFlag = "traumatic_injury", chance = 0.05, description = "They never fully recovered" },
 }
 
 function LifeStageSystem.checkDeath(state)
