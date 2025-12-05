@@ -181,7 +181,7 @@ Random.events = {
 			{
 				text = "An old house",
 				effects = { Happiness = 8 },
-				setFlags = { inherited_property = true, homeowner = true, has_property = true },
+				setFlags = { inherited_property = true, homeowner = true, has_property = true, renting = false },
 				feedText = "You inherited a property! Needs some work, but it's yours!",
 				onResolve = function(state)
 					if state.AddAsset then

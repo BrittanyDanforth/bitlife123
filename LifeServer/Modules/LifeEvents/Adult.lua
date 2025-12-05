@@ -36,19 +36,19 @@ Adult.events = {
 			{
 				text = "Get my own apartment",
 				effects = { Happiness = 10, Money = -500 },
-				setFlags = { lives_alone = true, independent = true },
-				feedText = "You got your own place! Freedom!"
+				setFlags = { lives_alone = true, independent = true, renting = true, homeowner = false },
+				feedText = "You got your own place! You're renting an apartment. Freedom!"
 			},
 			{
 				text = "Find roommates",
 				effects = { Happiness = 5, Money = -200 },
-				setFlags = { has_roommates = true },
-				feedText = "You moved in with roommates. Cheaper but... interesting."
+				setFlags = { has_roommates = true, renting = true, homeowner = false },
+				feedText = "You moved in with roommates. You're renting. Cheaper but... interesting."
 			},
 			{
 				text = "Stay home to save money",
 				effects = { Money = 300, Happiness = -3 },
-				setFlags = { lives_with_parents = true },
+				setFlags = { lives_with_parents = true, renting = false, homeowner = false },
 				feedText = "You're staying home. Smart financially."
 			},
 		},
@@ -206,7 +206,7 @@ Adult.events = {
 			{
 				text = "Buy a starter home",
 				effects = { Happiness = 10 },
-				setFlags = { homeowner = true, has_property = true },
+				setFlags = { homeowner = true, has_property = true, renting = false },
 				feedText = "You bought your first home! A big milestone!",
 				onResolve = function(state)
 					local homePrice = 85000
@@ -239,7 +239,7 @@ Adult.events = {
 			{
 				text = "Stretch for your dream home",
 				effects = { Happiness = 15, Health = -3 },
-				setFlags = { homeowner = true, has_property = true, high_mortgage = true },
+				setFlags = { homeowner = true, has_property = true, high_mortgage = true, renting = false },
 				feedText = "You got your dream home! But the mortgage is steep.",
 				onResolve = function(state)
 					local homePrice = 350000
@@ -272,12 +272,13 @@ Adult.events = {
 			{
 				text = "Keep renting for now",
 				effects = { Money = 500 },
+				setFlags = { renting = true, homeowner = false },
 				feedText = "You'll rent a bit longer. More flexibility and less financial stress.",
 			},
 			{
 				text = "Move to a cheaper area",
 				effects = { Happiness = 5 },
-				setFlags = { homeowner = true, has_property = true, relocated = true },
+				setFlags = { homeowner = true, has_property = true, relocated = true, renting = false },
 				feedText = "You moved somewhere more affordable!",
 				onResolve = function(state)
 					local homePrice = 65000

@@ -368,8 +368,8 @@ local events = {
 				index = 1,
 				text = "Get an apartment",
 				effects = { Happiness = 6, Money = -5000, Smarts = 2 },
-				setFlags = { living_independently = true, independent = true },
-				feedText = "You moved into your own apartment! First time living alone!",
+				setFlags = { living_independently = true, independent = true, renting = true, homeowner = false },
+				feedText = "You moved into your own apartment! You're renting. First time living alone!",
 				onResolve = function(state)
 					if state.AddFeed then
 						state:AddFeed("You're learning to cook, pay bills, and manage your own space. Growing up!")
@@ -380,15 +380,15 @@ local events = {
 				index = 2,
 				text = "Stay with family",
 				effects = { Happiness = -1, Money = 2000 },
-				setFlags = { living_with_family = true },
+				setFlags = { living_with_family = true, lives_with_parents = true, renting = false, homeowner = false },
 				feedText = "You decided to stay with family a bit longer. Saving money, but missing independence.",
 			},
 			{
 				index = 3,
 				text = "Move in with roommates",
 				effects = { Happiness = 5, Money = -3000, Smarts = 1 },
-				setFlags = { living_independently = true, has_roommates = true },
-				feedText = "You moved in with roommates! Cheaper rent and built-in friends!",
+				setFlags = { living_independently = true, has_roommates = true, renting = true, homeowner = false },
+				feedText = "You moved in with roommates! You're renting. Cheaper rent and built-in friends!",
 			},
 		},
 	},
