@@ -16,9 +16,12 @@
 	╚══════════════════════════════════════════════════════════════════════════════╝
 ]]
 
-local Random = RandomNumberGenerator.new(os.time())
+-- Store reference to global Random class before creating module table
+local RandomClass = Random
 
-local RANDOM = Random
+local Random = {}
+
+local RANDOM = RandomClass.new()
 
 -- Helper function to get random body part
 local function getRandomBodyPart()
