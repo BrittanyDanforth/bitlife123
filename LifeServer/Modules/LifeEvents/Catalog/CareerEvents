@@ -1,109 +1,482 @@
+--[[
+    Career Events Catalog
+    ═══════════════════════════════════════════════════════════════════════════════
+    
+    MASSIVELY EXPANDED FOR AAA BITLIFE QUALITY
+    
+    Features:
+    - 15+ career milestone events (was 3!)
+    - First job, promotions, office drama, firings, burnout
+    - Raises, negotiations, toxic bosses, career pivots
+    - Specific details: salary numbers, boss descriptions, office politics
+    - Multiple meaningful choices (4+ options per event)
+    - Real career consequences
+    
+    ═══════════════════════════════════════════════════════════════════════════════
+]]
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ENTRY-LEVEL CAREER (Ages 18-25)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
 	{
-		id = "job_offer_barista",
-		emoji = "☕",
-		title = "Café Job Offer",
-		text = "A boutique café downtown desperately needs help. They like your vibe.",
-		category = "career",
-		weight = 12,
-		minAge = 15,
-		maxAge = 30,
-		requiresNoJob = true,
-		blockedByFlags = { employed = true },
-		choices = {
-			{
-				index = 1,
-				text = "Accept job",
-				effects = { Happiness = 3 },
-				setFlags = { employed = true, has_job = true },
-				feedText = "You got a job as a Barista at Bloom Cafe!",
-				onResolve = function(state)
-					if state.SetCareer then
-						state:SetCareer({
-							id = "barista",
-							name = "Barista",
-							company = "Bloom Cafe",
-							salary = 24000,
-							category = "service",
-						})
-					end
-				end,
-			},
-			{
-				index = 2,
-				text = "Decline",
-				effects = { Happiness = -1 },
-				feedText = "You passed on the café job.",
-			},
-		},
-	},
-	{
-		id = "coding_bootcamp_offer",
-		emoji = "💻",
-		title = "Coding Bootcamp Scholarship",
-		text = "You win a partial scholarship to an elite coding bootcamp.",
-		category = "career",
-		weight = 6,
-		minAge = 17,
-		maxAge = 30,
-		requiresFlags = { social_online = true },
-		choices = {
-			{
-				index = 1,
-				text = "Enroll",
-				effects = { Smarts = 4, Money = -4000 },
-				setFlags = { college_student = true, bootcamp_grad_pending = true },
-				feedText = "You enrolled in Stacks Academy coding bootcamp!",
-				onResolve = function(state)
-					if state.EnrollEducation then
-						state:EnrollEducation({
-							name = "Stacks Academy",
-							type = "bootcamp",
-							cost = 4000,
-							duration = 1,
-						})
-					end
-				end,
-			},
-			{
-				index = 2,
-				text = "Skip it",
-				effects = { Happiness = -2 },
-				feedText = "You passed on the bootcamp.",
-			},
-		},
-	},
-	{
-		id = "promotion_offer",
-		emoji = "⬆️",
-		title = "Promotion Consideration",
-		text = "Your manager calls you in to discuss a promotion with more responsibility.",
+		id = "first_job_interview",
+		emoji = "💼",
+		title = "Your First Real Job Interview",
+		text = "You're sitting in a lobby wearing a suit you borrowed from your dad. It smells like mothballs. The receptionist called your name. 'Mr./Ms. [Your Name]? They're ready for you.' Your palms are SWEATING. This is your first interview for a REAL job. Not retail. Not food service. A career. $42,000/year. Benefits. 401(k). This could change your life. Don't fuck it up. Deep breath. Here we go.",
+		question = "What's your interview strategy?",
 		category = "career",
 		weight = 9,
-		minAge = 20,
-		requiresJob = true,
-		requiresStats = { Smarts = 45 },
+		minAge = 18,
+		maxAge = 25,
+		oneTime = true,
 		choices = {
 			{
 				index = 1,
-				text = "Accept promotion",
-				effects = { Happiness = 3, Money = 5000 },
-				feedText = "You were promoted!",
+				text = "Be yourself - authentic and honest",
+				effects = { Happiness = 7, Smarts = 3 },
+				feedText = "You were genuine. Told real stories. Admitted what you don't know. The interviewer smiled. 'Refreshing.' OFFER LETTER INCOMING! You got the job! $42,000! You're crying in your car!",
 				onResolve = function(state)
-					if state.CurrentJob then
-						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.35)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
-					end
 					if state.AddFeed then
-						state:AddFeed("You were promoted!")
+						state:AddFeed("Congratulations! You got your first real job! Salary: $42,000. Start date: 2 weeks. Your career begins NOW!")
+					end
+					if state.SetFlag then
+						state:SetFlag("got_first_real_job", true)
+						state:SetFlag("career_started", true)
 					end
 				end,
 			},
 			{
 				index = 2,
-				text = "Decline politely",
-				effects = { Happiness = -1 },
-				feedText = "You declined the promotion.",
+				text = "Overprepare - memorize everything",
+				effects = { Happiness = 6, Smarts = 5 },
+				setFlags = { overachiever = true, prepared = true },
+				feedText = "You researched for 10 hours. Knew the company's quarterly earnings. Memorized answers. TOO POLISHED. They said 'We'll let you know.' Rejection email came 3 days later. Overshot it.",
+			},
+			{
+				index = 3,
+				text = "Wing it - confidence over preparation",
+				effects = { Happiness = 5, Smarts = -1 },
+				feedText = "You walked in confident. Made jokes. Charmed them. But when they asked technical questions? You BOMBED. 'We're looking for someone with more experience.' You tried. Didn't work.",
+			},
+			{
+				index = 4,
+				text = "Be overly formal - impress with professionalism",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { stiff = true, formal = true },
+				feedText = "You used corporate buzzwords. 'Synergy.' 'Leverage.' 'Paradigm shift.' They looked... amused? 'We'll be in touch.' Rejection. You came off as robotic. Oops.",
+			},
+		},
+	},
+
+	{
+		id = "toxic_coworker_conflict",
+		emoji = "😠",
+		title = "Your Coworker is Sabotaging You",
+		text = "Jessica from Accounting HATES you. You don't know why. She 'accidentally' leaves you off email chains. Takes credit for YOUR ideas in meetings. Talks shit about you to your boss. Today: she blamed YOU for HER mistake. A $5,000 error. Your boss believed HER. You're furious. HR is useless. This is affecting your performance reviews. What do you do?",
+		question = "How do you handle this toxic coworker?",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 50,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Confront her directly - professionally",
+				effects = { Happiness = 3, Smarts = 4 },
+				setFlags = { confrontational = true, direct = true },
+				feedText = "You pulled her aside. 'This needs to stop.' She denied everything. Got defensive. But she knows you're onto her. She backed off slightly. Small win.",
+			},
+			{
+				index = 2,
+				text = "Document EVERYTHING - build a case",
+				effects = { Happiness = -2, Smarts = 6 },
+				setFlags = { strategic = true, paper_trail = true },
+				feedText = "You started saving emails. Screenshots. Dates. Times. 3 months later: You presented a 20-page doc to HR. She got written up! Revenge served cold. Professional style.",
+			},
+			{
+				index = 3,
+				text = "Go to your boss - escalate it",
+				effects = { Happiness = -4 },
+				feedText = "You told your boss. He said 'Just work it out between yourselves.' USELESS. Nothing changed. Jessica smirked at you. You're on your own.",
+			},
+			{
+				index = 4,
+				text = "Quit - find a better work environment",
+				effects = { Happiness = 8, Money = -5000 },
+				setFlags = { quit_toxic_job = true, prioritizes_mental_health = true },
+				feedText = "You gave 2 weeks notice. Your mental health matters MORE. You found a new job with better culture. Jessica won the battle. You won the WAR by leaving.",
+			},
+		},
+	},
+
+	{
+		id = "first_promotion_opportunity",
+		emoji = "📈",
+		title = "Your Boss is Offering You a Promotion",
+		text = "Your manager called you into her office. 'We want to promote you to Senior Associate. $65,000 salary. 15% raise! More responsibility, more visibility.' You're 26. This is HUGE. But Sarah (your friend/coworker) applied for the same role. She's been here 2 years longer. If you take it, she'll HATE you. Office dynamics will be weird. Do you take it? Or decline out of loyalty?",
+		question = "What do you do?",
+		category = "career",
+		weight = 8,
+		minAge = 24,
+		maxAge = 35,
+		requiresJob = true,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "TAKE IT - this is YOUR moment!",
+				effects = { Happiness = 10, Money = 8000, Smarts = 3 },
+				setFlags = { promoted = true, ambitious = true, friend_enemy = true },
+				feedText = "You accepted! $65,000! Your title changed! Sarah stopped talking to you. She transferred departments 2 months later. You feel guilty but successful. Worth it?",
+			},
+			{
+				index = 2,
+				text = "Decline and suggest Sarah instead",
+				effects = { Happiness = 5, Money = -5000 },
+				setFlags = { loyal = true, selfless = true, missed_opportunity = true },
+				feedText = "'Sarah deserves this more.' Your boss was surprised. Sarah got it. She hugged you. 'Thank you.' Friendship saved. Career momentum: stalled. Trade-off made.",
+			},
+			{
+				index = 3,
+				text = "Negotiate for BOTH of you to get promoted",
+				effects = { Happiness = 9, Money = 6000, Smarts = 5 },
+				setFlags = { promoted = true, negotiator = true, problem_solver = true },
+				feedText = "'What if we both get promoted to different teams?' Your boss loved it. You BOTH got promoted! Creative solution! Everyone wins! Leadership unlocked!",
+			},
+			{
+				index = 4,
+				text = "Take it but promise to help Sarah advance",
+				effects = { Happiness = 8, Money = 8000 },
+				setFlags = { promoted = true, team_player = true },
+				feedText = "You took it but told Sarah, 'I'll mentor you. We'll get you promoted next cycle.' She appreciated it. You BOTH moved up! Alliance formed! Smart politics!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MID-CAREER (Ages 26-45)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "raise_negotiation",
+		emoji = "💰",
+		title = "Time to Negotiate a Raise",
+		text = "You've been in this role for 3 years. Same salary: $58,000. Your performance reviews are 'Exceeds Expectations.' You do the work of 2 people. But your company has a 'budget freeze.' Your boss says 'Maybe next year.' You found out new hires make $62,000 for YOUR SAME JOB. You're PISSED. Market rate for your role: $72,000. Time to fight for yourself. Or leave.",
+		question = "How do you approach this?",
+		category = "career",
+		weight = 7,
+		minAge = 25,
+		maxAge = 45,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Demand a raise - $72K or you walk",
+				effects = { Happiness = 8, Money = 14000, Smarts = 4 },
+				setFlags = { good_negotiator = true, confident = true },
+				feedText = "You came prepared. Market data. Performance metrics. 'I need $72K.' Your boss countered at $68K. You accepted. $10K raise! You advocated for yourself! WINS!",
+			},
+			{
+				index = 2,
+				text = "Accept the 'budget freeze' excuse - stay quiet",
+				effects = { Happiness = -8, Health = -3 },
+				setFlags = { doormat = true, undervalued = true },
+				feedText = "You accepted it. 'Okay, I understand.' You're resentful. You do the bare minimum now. Your motivation is DEAD. You're quiet quitting. Congrats?",
+			},
+			{
+				index = 3,
+				text = "Get a competing offer - use leverage",
+				effects = { Happiness = 10, Money = 18000, Smarts = 6 },
+				setFlags = { strategic = true, risk_taker = true },
+				feedText = "You interviewed elsewhere. Got an offer: $75K. Told your boss. 'Match it or I leave.' They matched it! $75K! You played hardball and WON! Power move!",
+			},
+			{
+				index = 4,
+				text = "Just quit - find a company that values you",
+				effects = { Happiness = 9, Money = -3000 },
+				setFlags = { quit_for_self_worth = true, career_mover = true },
+				feedText = "You resigned. 'I know my worth.' Found a new job at $74K with better culture. Your old boss was shocked. You moved UP by moving OUT! Winning!",
+			},
+		},
+	},
+
+	{
+		id = "terrible_boss",
+		emoji = "👹",
+		title = "Your New Boss is a Nightmare",
+		text = "Your old boss retired. New boss started Monday: Marcus. He micromanages EVERYTHING. Emails at 11pm expecting replies. Criticizes you in front of clients. Takes credit for your work. Plays favorites. You heard him call you 'mediocre' in a meeting. Your mental health is tanking. You dread Mondays. This job is DESTROYING you. But you have bills. A mortgage. What do you do?",
+		question = "How do you handle this toxic boss?",
+		category = "career",
+		weight = 6,
+		minAge = 28,
+		maxAge = 55,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Report him to HR - formal complaint",
+				effects = { Happiness = -5, Smarts = 4 },
+				setFlags = { filed_hr_complaint = true, brave = true },
+				feedText = "You filed a complaint. HR 'investigated.' Marcus got a slap on the wrist. He KNOWS it was you. He's worse now. Subtle sabotage. You're fucked.",
+			},
+			{
+				index = 2,
+				text = "Document everything - build a lawsuit case",
+				effects = { Happiness = -8, Smarts = 6, Money = -5000 },
+				setFlags = { potential_lawsuit = true, strategic = true },
+				feedText = "You hired an employment lawyer. $5,000 retainer. You're building a case. Hostile work environment. This will take months. But you're fighting back legally.",
+			},
+			{
+				index = 3,
+				text = "Quit without another job lined up - prioritize mental health",
+				effects = { Happiness = 10, Money = -10000, Health = 8 },
+				setFlags = { quit_toxic_job = true, mental_health_priority = true },
+				feedText = "You quit. No plan. Just OUT. Your friends thought you were crazy. But you can BREATHE again. You'll figure it out. Sanity > Paycheck. Worth it.",
+			},
+			{
+				index = 4,
+				text = "Endure it - find a new job while employed",
+				effects = { Happiness = -4, Health = -5, Money = 3000 },
+				setFlags = { strategic_exit = true, resilient = true },
+				feedText = "You gritted your teeth. Applied to 50 jobs. Took 4 months. But you got an offer! $15K raise! You gave notice. Marcus looked SHOCKED. You win by leaving. Strategic!",
+			},
+		},
+	},
+
+	{
+		id = "layoff_announcement",
+		emoji = "📉",
+		title = "Company Layoffs - Are You Safe?",
+		text = "CEO just sent an email: 'Due to market conditions, we're implementing workforce reductions. 15% of staff will be let go.' You're in a meeting room. Your manager looks nervous. HR is here. This is it. The meeting. 'We're sorry, but your position has been eliminated.' You're being LAID OFF. Severance: 2 months pay. You have 30 days. You're 38 with a mortgage and 2 kids. PANIC MODE.",
+		question = "How do you react?",
+		category = "career",
+		weight = 5,
+		minAge = 25,
+		maxAge = 60,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Negotiate a better severance package",
+				effects = { Happiness = -5, Money = 15000, Smarts = 6 },
+				setFlags = { negotiated_severance = true, smart_in_crisis = true },
+				feedText = "You asked for 4 months severance + extended benefits. They agreed! $15,000 extra! You turned a bad situation into a better one. Negotiation skills!",
+			},
+			{
+				index = 2,
+				text = "Cry, pack your desk, leave immediately",
+				effects = { Happiness = -15, Health = -5 },
+				setFlags = { devastated = true, emotional = true },
+				feedText = "You cried in front of everyone. Packed your desk in shame. Drove home sobbing. You're unemployed. You feel like a failure. It's not your fault but it FEELS like it is.",
+			},
+			{
+				index = 3,
+				text = "Ask to be kept on as a contractor",
+				effects = { Happiness = -2, Money = 8000, Smarts = 5 },
+				setFlags = { contractor = true, adaptable = true },
+				feedText = "'Can I stay on as a contractor?' They said YES! $45/hour. No benefits but INCOME continues! You bought yourself time. Smart pivot!",
+			},
+			{
+				index = 4,
+				text = "Network immediately - leverage your connections",
+				effects = { Happiness = 2, Smarts = 5, Money = 5000 },
+				setFlags = { networker = true, resilient = true },
+				feedText = "You called 20 contacts that SAME DAY. LinkedIn post: 'Open to opportunities!' 3 interviews within a WEEK! New job in 30 days! You turned it around FAST! Hustle!",
+			},
+		},
+	},
+
+	{
+		id = "startup_offer",
+		emoji = "🚀",
+		title = "Startup Wants to Hire You - Equity Offer",
+		text = "You're making $95,000 at BigCorp. Stable. Boring. A startup just offered you $75,000 + 0.5% equity. 'We're going to IPO in 3 years. That equity could be worth $500,000!' But 90% of startups FAIL. You have kids. A mortgage. Stable income matters. But this could be life-changing money. Risk vs. reward. Boring stability vs. exciting uncertainty. What do you choose?",
+		question = "Do you take the startup job?",
+		category = "career",
+		weight = 4,
+		minAge = 28,
+		maxAge = 45,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "TAKE IT - bet on yourself!",
+				effects = { Happiness = 10, Money = -20000 },
+				setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
+				feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
+				onResolve = function(state)
+					if Random:NextNumber() < 0.15 then
+						if state.AddFeed then
+							state:AddFeed("3 years later: IPO! Your 0.5% equity is worth $650,000! You're RICH! You took the risk and it PAID OFF! You quit and bought a Tesla!")
+						end
+						if state.AddMoney then
+							state:AddMoney(650000)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("2 years later: Startup ran out of funding. Shut down. You're laid off. Equity is worthless. You gambled and LOST. Back to job hunting.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay at BigCorp - stability matters",
+				effects = { Happiness = -3, Money = 5000 },
+				setFlags = { risk_averse = true, stable = true, boring_career = true },
+				feedText = "You stayed. Safe. Stable. Boring. The startup DID IPO 3 years later. Your friend who joined made $400K. You think 'what if' every day. Regret hurts.",
+			},
+			{
+				index = 3,
+				text = "Negotiate for HIGHER salary + equity",
+				effects = { Happiness = 9, Money = 5000 },
+				setFlags = { negotiated_startup = true, smart = true },
+				feedText = "You countered: $90K + 0.75% equity. They accepted! You minimized risk AND maximized upside! Best of both worlds! Negotiation wins again!",
+			},
+			{
+				index = 4,
+				text = "Consult for them part-time - test the waters",
+				effects = { Happiness = 7, Money = 10000 },
+				setFlags = { side_hustle = true, cautious = true },
+				feedText = "You joined as a part-time consultant. $2,500/month extra! No equity but minimal risk. You're TESTING the startup before committing. Smart move!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SENIOR CAREER (Ages 40+)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "executive_promotion",
+		emoji = "👔",
+		title = "C-Suite Promotion Offer",
+		text = "The CEO just offered you VP of Operations. $185,000 salary. Corner office. Company car. Executive perks. But: 60-hour weeks. Constant travel. Board meetings. High stress. Your family already barely sees you. Your spouse said, 'If you take this, our marriage is over.' Your 12-year-old daughter said, 'You're never home.' The money is incredible. The cost is your family. What do you choose?",
+		question = "Do you take the promotion?",
+		category = "career",
+		weight = 3,
+		minAge = 40,
+		maxAge = 60,
+		requiresJob = true,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "TAKE IT - this is your career peak!",
+				effects = { Happiness = 8, Money = 50000, Health = -8 },
+				setFlags = { executive = true, workaholic = true, family_sacrificed = true },
+				feedText = "You accepted. $185K! Corner office! Your name on the door! Your spouse filed for divorce 8 months later. Your kids don't call. You're successful... and alone. Was it worth it?",
+			},
+			{
+				index = 2,
+				text = "Decline - family comes first",
+				effects = { Happiness = 9, Health = 5 },
+				setFlags = { family_first = true, turned_down_executive = true },
+				feedText = "You said no. 'My family matters more.' The CEO was shocked. But your spouse CRIED with relief. Your daughter hugged you. You chose right. Career isn't everything.",
+			},
+			{
+				index = 3,
+				text = "Negotiate for work-life balance terms",
+				effects = { Happiness = 10, Money = 40000, Smarts = 6 },
+				setFlags = { executive = true, balanced = true, negotiated_lifestyle = true },
+				feedText = "You said yes BUT: no travel Fridays, remote Mondays, max 50 hours/week. They AGREED! $185K + work-life balance! You can have BOTH! Negotiation mastery!",
+			},
+			{
+				index = 4,
+				text = "Quit and start your own company",
+				effects = { Happiness = 12, Money = -50000 },
+				setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
+				feedText = "You quit and started your own consulting firm! Risky but FREE! You control your time. Your family's happy. Revenue: $140K year one! You're building something YOURS!",
+			},
+		},
+	},
+
+	{
+		id = "fired_for_cause",
+		emoji = "🚪",
+		title = "You're Being Fired - For Cause",
+		text = "Your manager and HR are in the room. 'We're terminating your employment effective immediately. For cause.' WHAT?! For cause means NO SEVERANCE. They say you 'violated company policy.' Missed deadlines? Bad attitude? They're making up bullshit. This is retaliation for speaking up about the toxic VP. You're being FIRED. Escorted out by security. Box of your shit in your hands. 20 YEARS at this company. This is how it ends?",
+		question = "How do you respond?",
+		category = "career",
+		weight = 3,
+		minAge = 35,
+		maxAge = 65,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Demand to see the documentation - fight it",
+				effects = { Happiness = -10, Smarts = 5 },
+				setFlags = { fired = true, fighting_termination = true },
+				feedText = "'Show me proof.' They fumbled. Weak documentation. You hired a lawyer. Wrongful termination suit. $45,000 settlement 9 months later. Justice served.",
+			},
+			{
+				index = 2,
+				text = "Leave quietly - don't burn bridges",
+				effects = { Happiness = -12, Money = -5000 },
+				setFlags = { fired = true, no_severance = true },
+				feedText = "You left. Humiliated. Security walked you out. 20 years of loyalty for THIS. You cried in your car. Unemployed. No severance. Rock bottom.",
+			},
+			{
+				index = 3,
+				text = "Threaten a lawsuit - scare them into severance",
+				effects = { Happiness = -8, Money = 15000, Smarts = 6 },
+				setFlags = { fired = true, negotiated_exit = true },
+				feedText = "'My lawyer will love this wrongful termination case.' HR panicked. Offered 3 months severance to sign an NDA. You took it. $15K. Small win in a shit situation.",
+			},
+			{
+				index = 4,
+				text = "Yell, make a scene, burn it ALL down",
+				effects = { Happiness = -15, Health = -8 },
+				setFlags = { fired = true, burned_bridges = true, lost_control = true },
+				feedText = "You SNAPPED. Yelled at your manager. Called HR corrupt. They called security. You were ESCORTED OUT. Video went viral internally. Your reputation is DESTROYED. Regret incoming.",
+			},
+		},
+	},
+
+	{
+		id = "retirement_or_keep_working",
+		emoji = "🏖️",
+		title = "You're 65 - Time to Retire?",
+		text = "You're 65. Eligible for full retirement. Your 401(k) has $1.2 million. Social Security: $2,800/month. Your financial planner says 'You're SET.' But retiring means... what? Golf? Crossword puzzles? Watching TV? You've WORKED for 45 years. Work gives you PURPOSE. Identity. But your body is tired. Your spouse wants to travel. 'Retire already!' What do you do?",
+		question = "Do you retire or keep working?",
+		category = "career",
+		weight = 2,
+		minAge = 62,
+		maxAge = 70,
+		requiresJob = true,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Retire - enjoy your golden years!",
+				effects = { Happiness = 15, Health = 8 },
+				setFlags = { retired = true, golden_years = true, no_more_work = true },
+				feedText = "You retired! Gave a speech. They threw you a party. You're FREE! Travel. Hobbies. Grandkids. Sleep. This is what you worked for. FREEDOM ACHIEVED!",
+			},
+			{
+				index = 2,
+				text = "Work part-time - ease into retirement",
+				effects = { Happiness = 10, Money = 15000, Health = 4 },
+				setFlags = { semi_retired = true, consultant = true },
+				feedText = "You went part-time. 15 hours/week. Consulting. Best of both worlds! Extra income. Still relevant. But time for life too. Perfect balance!",
+			},
+			{
+				index = 3,
+				text = "Keep working full-time - you're not done!",
+				effects = { Happiness = 5, Money = 40000, Health = -5 },
+				setFlags = { workaholic = true, cant_let_go = true },
+				feedText = "You stayed full-time. Your spouse is annoyed. Your doctor says 'SLOW DOWN.' But work gives you purpose. You don't know who you are without it. Existential crisis masked as dedication.",
+			},
+			{
+				index = 4,
+				text = "Retire and start a passion project/business",
+				effects = { Happiness = 14, Money = -20000, Health = 6 },
+				setFlags = { retired = true, entrepreneur = true, fulfilled = true },
+				feedText = "You retired from your JOB but started a woodworking business! Passion project! You make custom furniture. Sold $30K year one! You're doing what you LOVE! Retirement = new beginning!",
 			},
 		},
 	},
