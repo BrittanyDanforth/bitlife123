@@ -1112,9 +1112,10 @@ function LifeBackend:tickCareer(state)
 	if not job then
 		return
 	end
+	-- Deterministic career model:
+	-- - Only tenure changes automatically each year
+	-- - Performance and promotion progress change via explicit activities/events
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
-	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
-	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
 end
 
 function LifeBackend:generateEvent(player, state)

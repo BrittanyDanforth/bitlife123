@@ -114,6 +114,110 @@ local events = {
 			},
 		},
 	},
+	-- Performance Review (positive/neutral/negative)
+	{
+		id = "performance_review",
+		emoji = "📈",
+		title = "Annual Performance Review",
+		text = "Your manager evaluates your yearly performance.",
+		category = "career",
+		weight = 10,
+		minAge = 18,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Accept feedback and improve",
+				effects = { Happiness = -1 },
+				feedText = "You took the feedback seriously and made a plan.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
+				end,
+			},
+			{
+				index = 2,
+				text = "Defend your work",
+				effects = { Happiness = -2 },
+				feedText = "You pushed back on some points.",
+			},
+		},
+	},
+	-- Written Warning (low performance, tenure >= 0.5y)
+	{
+		id = "written_warning",
+		emoji = "⚠️",
+		title = "Written Warning",
+		text = "HR issues a formal warning due to poor performance or conduct.",
+		category = "career",
+		weight = 4,
+		minAge = 18,
+		requiresJob = true,
+		requiresCareer = { minYearsAtJob = 0, maxPerformance = 45 },
+		choices = {
+			{
+				index = 1,
+				text = "Acknowledge and start improvement plan",
+				effects = { Happiness = -3 },
+				setFlags = { on_pip = true },
+				feedText = "You agreed to a performance improvement plan (PIP).",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 40) + 3)
+				end,
+			},
+			{
+				index = 2,
+				text = "Refuse (risky)",
+				effects = { Happiness = -5 },
+				feedText = "You refused the PIP. This may not end well.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.refused_pip = true
+				end,
+			},
+		},
+	},
+	-- Layoff / Termination (low performance + refusal or severe conditions)
+	{
+		id = "termination_meeting",
+		emoji = "🧾",
+		title = "Difficult Meeting",
+		text = "You're called into HR for an important discussion about your future at the company.",
+		category = "career",
+		weight = 2,
+		minAge = 18,
+		requiresJob = true,
+		requiresCareer = { maxPerformance = 40, minYearsAtJob = 0 },
+		requiresFlags = { refused_pip = true },
+		choices = {
+			{
+				index = 1,
+				text = "Negotiate severance",
+				effects = { Money = 2000, Happiness = -6 },
+				feedText = "You negotiated a severance package.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+					state.Flags.refused_pip = nil
+				end,
+			},
+			{
+				index = 2,
+				text = "Depart quietly",
+				effects = { Happiness = -4 },
+				feedText = "You left the company.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+					state.Flags.refused_pip = nil
+				end,
+			},
+		},
+	},
 }
 
 return events
