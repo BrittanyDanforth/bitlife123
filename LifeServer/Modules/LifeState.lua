@@ -206,6 +206,17 @@ function LifeState:AdvanceAge()
 		end
 	end
 	
+	-- CRITICAL: Career progression - increment years at job
+	if self.CurrentJob and self.CareerInfo then
+		self.CareerInfo.yearsAtJob = (self.CareerInfo.yearsAtJob or 0) + 1
+		-- Natural performance decay if not working hard (but cap at reasonable level)
+		if self.CareerInfo.performance and self.CareerInfo.performance > 40 then
+			-- Slight decay over time if performance is high (encourages active play)
+			local decay = RANDOM:NextNumber() < 0.1 and -1 or 0 -- 10% chance of -1 per year
+			self.CareerInfo.performance = math.max(40, self.CareerInfo.performance + decay)
+		end
+	end
+	
 	return self
 end
 
@@ -364,10 +375,15 @@ end
 
 function LifeState:ClearCareer()
 	self.CurrentJob = nil
+	-- CRITICAL: Ensure CareerInfo exists before accessing properties
+	self.CareerInfo = self.CareerInfo or {}
 	self.CareerInfo.performance = 0
 	self.CareerInfo.promotionProgress = 0
 	self.CareerInfo.yearsAtJob = 0
-	self.Career.track = nil
+	if self.Career then
+		self.Career.track = nil
+	end
+	self.Flags = self.Flags or {}
 	self.Flags.employed = nil
 	self.Flags.has_job = nil
 	return self

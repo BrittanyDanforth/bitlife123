@@ -1297,6 +1297,18 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			-- Make helpers available in onResolve scope
 			local getCurrentPartner = EventEngine.getCurrentPartner
 			local createRelationship = EventEngine.createRelationship
+			local addAsset = EventEngine.addAsset
+			local removeAssetById = EventEngine.removeAssetById
+			local hasAsset = EventEngine.hasAsset
+			local countAssets = EventEngine.countAssets
+			-- CRITICAL: Make minigame trigger available for racing/hacker careers
+			local triggerMinigame = function(minigameType, difficulty)
+				-- Minigame integration point - can be called from events
+				if state.TriggerMinigame and type(state.TriggerMinigame) == "function" then
+					return state:TriggerMinigame(minigameType, difficulty)
+				end
+				return false
+			end
 			choice.onResolve(state)
 		end)
 		if not success then

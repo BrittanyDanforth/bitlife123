@@ -1130,6 +1130,496 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RACING CAREER PATH (High Risk, High Reward)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_career_start",
+		emoji = "🏎️",
+		title = "Racing Opportunity",
+		text = "A local racing team noticed your driving skills. They're offering you a chance to join their amateur racing circuit. It's dangerous, but the thrill and potential earnings are massive.",
+		category = "career",
+		weight = 3,
+		minAge = 18,
+		maxAge = 35,
+		requiresNoJob = true,
+		blockedByFlags = { employed = true, in_prison = true },
+		requiresStats = { Health = { min = 70 }, Smarts = { min = 50 } },
+		-- CRITICAL: Racing requires driver's license - check if player has it
+		customValidation = function(state)
+			return (state.Flags and state.Flags.has_license == true) or (state.Flags and state.Flags.driver_license == true)
+		end,
+		baseChance = 0.15,
+		cooldown = 8,
+		choices = {
+			{
+				index = 1,
+				text = "Join the racing team",
+				effects = { Happiness = 8, Health = -5 },
+				setFlags = { employed = true, has_job = true, racing_career = true, risk_taker = true },
+				feedText = "You joined the racing team! Time to prove yourself on the track.",
+				onResolve = function(state)
+					-- CRITICAL: Ensure money doesn't go negative
+					local initialCost = 2000
+					state.Money = math.max(0, (state.Money or 0) - initialCost)
+					
+					if state.SetCareer then
+						state:SetCareer({
+							id = "amateur_racer",
+							name = "Amateur Racer",
+							company = "Local Racing Team",
+							salary = 35000,
+							category = "racing",
+						})
+					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = 50
+					state.CareerInfo.promotionProgress = 0
+				end,
+			},
+			{
+				index = 2,
+				text = "Too dangerous for me",
+				effects = { Happiness = -2 },
+				setFlags = { risk_averse = true },
+				feedText = "You passed. Racing is too risky for your taste.",
+			},
+		},
+	},
+	
+	{
+		id = "racing_crash",
+		emoji = "💥",
+		title = "Racing Crash",
+		text = "You crashed during a race! The car spun out, hit the barrier, and you're lucky to be alive. Your team is assessing the damage - and your future.",
+		category = "career",
+		weight = 8,
+		minAge = 18,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		baseChance = 0.25,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Push through the pain",
+				effects = { Health = -15, Happiness = -5, Smarts = 2 },
+				setFlags = { determined_racer = true, injury_risk = true },
+				feedText = "You're hurt but determined. You'll race again as soon as you're cleared.",
+				onResolve = function(state)
+					if state.ModifyStat then
+						state:ModifyStat("Health", -15)
+					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 10)
+				end,
+			},
+			{
+				index = 2,
+				text = "Take time to recover",
+				effects = { Health = 5, Happiness = -3, Money = -5000 },
+				setFlags = { cautious_racer = true },
+				feedText = "You're taking time off to fully recover. Your team understands.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = math.max(0, (state.CareerInfo.promotionProgress or 0) - 15)
+				end,
+			},
+			{
+				index = 3,
+				text = "Quit racing - too dangerous",
+				effects = { Happiness = 3, Health = 5 },
+				setFlags = { retired_racer = true },
+				feedText = "You've had enough. Racing isn't worth the risk anymore.",
+				onResolve = function(state)
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.employed = false
+					state.Flags.has_job = false
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "racing_championship",
+		emoji = "🏆",
+		title = "Championship Race",
+		text = "You've qualified for the regional championship! This is your biggest race yet. Win here, and you could move up to professional circuits. But the competition is fierce, and the stakes are high.",
+		category = "career",
+		weight = 6,
+		minAge = 20,
+		maxAge = 45,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		baseChance = 0.2,
+		cooldown = 5,
+		customValidation = function(state)
+			state.CareerInfo = state.CareerInfo or {}
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			return performance >= 70 and yearsAtJob >= 2
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "Go all out for the win",
+				effects = { Happiness = 10, Money = 15000, Health = -8 },
+				setFlags = { championship_racer = true, risk_taker = true },
+				feedText = "You gave it everything!",
+				onResolve = function(state)
+					-- CRITICAL: Racing championship requires minigame performance
+					local minigameSuccess = false
+					if state.TriggerMinigame and type(state.TriggerMinigame) == "function" then
+						minigameSuccess = state:TriggerMinigame("racing", "championship")
+					end
+					
+					local roll = RANDOM:NextNumber()
+					-- Minigame success gives bonus to win chance
+					local winChance = minigameSuccess and 0.6 or 0.4
+					if roll < winChance then
+						-- Win!
+						if state.AddFeed then
+							state:AddFeed("YOU WON THE CHAMPIONSHIP! You're moving up to professional racing!")
+						end
+						if state.SetCareer then
+							state:SetCareer({
+								id = "professional_racer",
+								name = "Professional Racer",
+								company = "Pro Racing Circuit",
+								salary = 120000,
+								category = "racing",
+							})
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = 85
+						state.CareerInfo.promotionProgress = 0
+					elseif roll < 0.7 then
+						-- Top 3 finish
+						if state.AddFeed then
+							state:AddFeed("You finished in the top 3! Great performance, but not quite first place.")
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 30)
+					else
+						-- Didn't place well
+						if state.AddFeed then
+							state:AddFeed("You didn't place well. The competition was tougher than expected.")
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 5)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Race conservatively",
+				effects = { Happiness = 5, Money = 5000, Health = -2 },
+				setFlags = { safe_racer = true },
+				feedText = "You raced safely and finished respectably.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HACKER CAREER PATH (High Risk, High Reward, Legal/Illegal Branching)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hacker_career_start",
+		emoji = "💻",
+		title = "Hacking Opportunity",
+		text = "You've been approached by someone offering 'cybersecurity consulting' work. The pay is incredible, but the work is... questionable. They want someone with your technical skills for 'penetration testing' that might cross legal lines.",
+		category = "career",
+		weight = 2,
+		minAge = 18,
+		maxAge = 40,
+		requiresNoJob = true,
+		blockedByFlags = { employed = true, in_prison = true },
+		requiresStats = { Smarts = { min = 75 } },
+		-- CRITICAL: Hacking requires computer skills - check if player has them
+		customValidation = function(state)
+			-- Check for computer-related flags or high Smarts stat
+			local hasComputerSkills = (state.Flags and (state.Flags.computer_skills == true or state.Flags.programming == true or state.Flags.tech_savvy == true))
+			local smarts = (state.Stats and state.Stats.Smarts) or 50
+			return hasComputerSkills or smarts >= 70
+		end,
+		baseChance = 0.12,
+		cooldown = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Take the job - legal work only",
+				effects = { Happiness = 5, Money = 2000, Smarts = 3 },
+				setFlags = { employed = true, has_job = true, ethical_hacker = true, cybersecurity_career = true },
+				feedText = "You took the job but made it clear you'll only do legal security work.",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "ethical_hacker",
+							name = "Ethical Hacker",
+							company = "Cybersecurity Firm",
+							salary = 65000,
+							category = "hacker",
+						})
+					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = 60
+					state.CareerInfo.promotionProgress = 0
+				end,
+			},
+			{
+				index = 2,
+				text = "Take the job - money is money",
+				effects = { Happiness = 3, Money = 5000, Smarts = 2 },
+				setFlags = { employed = true, has_job = true, black_hat_hacker = true, criminal_record = true },
+				feedText = "You took the job. The money's good, but you're walking a dangerous line.",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "black_hat_hacker",
+							name = "Black Hat Hacker",
+							company = "Underground Network",
+							salary = 85000,
+							category = "hacker",
+						})
+					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = 55
+					state.CareerInfo.promotionProgress = 0
+				end,
+			},
+			{
+				index = 3,
+				text = "Decline - too risky",
+				effects = { Happiness = -1, Smarts = 1 },
+				setFlags = { ethical = true },
+				feedText = "You declined. Something about this felt wrong.",
+			},
+		},
+	},
+	
+	{
+		id = "hacker_arrest_risk",
+		emoji = "🚨",
+		title = "FBI Investigation",
+		text = "The FBI is investigating cybercrimes in your area. Your recent activities have caught their attention. You need to decide how to handle this - cooperate, hide, or run.",
+		category = "career",
+		weight = 7,
+		minAge = 18,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "hacker",
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresFlags = { black_hat_hacker = true },
+		choices = {
+			{
+				index = 1,
+				text = "Cooperate and turn informant",
+				effects = { Happiness = -10, Smarts = 5 },
+				setFlags = { informant = true, criminal_record = true },
+				feedText = "You cooperated with the FBI. You avoided jail but lost your connections.",
+				onResolve = function(state)
+					-- CRITICAL: Ensure money doesn't go negative
+					local fine = 20000
+					state.Money = math.max(0, (state.Money or 0) - fine)
+					
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.employed = false
+					state.Flags.has_job = false
+					state.Flags.black_hat_hacker = nil
+				end,
+			},
+			{
+				index = 2,
+				text = "Go deeper underground",
+				effects = { Happiness = -5, Money = 10000, Smarts = 3 },
+				setFlags = { deeper_underground = true, wanted = true },
+				feedText = "You went deeper underground. The money's better, but you're always looking over your shoulder.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.3)
+					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 10)
+				end,
+			},
+			{
+				index = 3,
+				text = "Get caught and face consequences",
+				effects = { Happiness = -15 },
+				setFlags = { arrested = true, criminal_record = true },
+				feedText = "You got caught. Time to face the music.",
+				onResolve = function(state)
+					-- CRITICAL: Ensure money doesn't go negative, then send to jail
+					local fine = 50000
+					state.Money = math.max(0, (state.Money or 0) - fine)
+					
+					-- CRITICAL: Send player to jail for hacking crimes
+					local jailDays = RANDOM:NextInteger(365, 1095) -- 1-3 years
+					if state.GoToJail and type(state.GoToJail) == "function" then
+						state:GoToJail(jailDays)
+					else
+						-- Fallback if GoToJail method doesn't exist
+						state.InJail = true
+						state.JailYearsLeft = math.ceil(jailDays / 365)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+					end
+					if state.ClearCareer then
+						state:ClearCareer()
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.employed = false
+					state.Flags.has_job = false
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "hacker_major_contract",
+		emoji = "💰",
+		title = "Major Contract Offer",
+		text = "A major corporation wants to hire you for a massive cybersecurity project. The pay is astronomical, but the work is complex and high-stakes. One mistake could cost millions.",
+		category = "career",
+		weight = 5,
+		minAge = 22,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "hacker",
+		baseChance = 0.25,
+		cooldown = 6,
+		customValidation = function(state)
+			state.CareerInfo = state.CareerInfo or {}
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			return performance >= 75 and yearsAtJob >= 1
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "Take the contract",
+				effects = { Happiness = 8, Money = 25000, Smarts = 5, Health = -3 },
+				setFlags = { high_profile_hacker = true, workaholic = true },
+				feedText = "You took the contract! Time to prove yourself.",
+				onResolve = function(state)
+					-- CRITICAL: Hacking contract requires minigame performance
+					local minigameSuccess = false
+					if state.TriggerMinigame and type(state.TriggerMinigame) == "function" then
+						minigameSuccess = state:TriggerMinigame("hacking", "major_contract")
+					end
+					
+					local roll = RANDOM:NextNumber()
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local successChance = 0.5 + (smarts / 200) -- Smarter = better chance
+					-- Minigame success gives bonus
+					if minigameSuccess then
+						successChance = math.min(0.9, successChance + 0.2)
+					end
+					
+					if roll < successChance then
+						-- Success!
+						if state.AddFeed then
+							state:AddFeed("You completed the contract flawlessly! Your reputation skyrocketed!")
+						end
+						if state.CurrentJob then
+							state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.5)
+							-- CRITICAL: Prevent "Senior Senior" bug
+							local currentName = state.CurrentJob.name or "Hacker"
+							if not currentName:match("^Senior ") then
+								state.CurrentJob.name = "Senior " .. currentName
+							end
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 40)
+					else
+						-- Failure
+						if state.AddFeed then
+							state:AddFeed("You made a critical error. The contract was terminated. Your reputation took a hit.")
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 15)
+						state.CareerInfo.promotionProgress = math.max(0, (state.CareerInfo.promotionProgress or 0) - 20)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline - too risky",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { risk_averse = true },
+				feedText = "You passed. The stakes were too high.",
+			},
+		},
+	},
+	
+	{
+		id = "hacker_legit_career_switch",
+		emoji = "🔄",
+		title = "Go Legitimate",
+		text = "You've been offered a legitimate cybersecurity position at a major tech company. It pays less than your current work, but it's legal, stable, and you won't have to worry about the FBI.",
+		category = "career",
+		weight = 4,
+		minAge = 22,
+		maxAge = 45,
+		requiresJob = true,
+		requiresJobCategory = "hacker",
+		requiresFlags = { black_hat_hacker = true },
+		baseChance = 0.2,
+		cooldown = 8,
+		choices = {
+			{
+				index = 1,
+				text = "Switch to legitimate work",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { ethical_hacker = true, reformed = true },
+				feedText = "You went legitimate! Less money, but peace of mind.",
+				onResolve = function(state)
+					-- CRITICAL: Ensure money doesn't go negative
+					local payCut = 15000
+					state.Money = math.max(0, (state.Money or 0) - payCut)
+					
+					if state.SetCareer then
+						state:SetCareer({
+							id = "ethical_hacker",
+							name = "Ethical Hacker",
+							company = "Tech Security Corp",
+							salary = 70000,
+							category = "hacker",
+						})
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.black_hat_hacker = nil
+					state.Flags.wanted = nil
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = 70
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay in the underground",
+				effects = { Happiness = -2, Money = 5000 },
+				setFlags = { committed_to_underground = true },
+				feedText = "You're staying. The money's too good to give up.",
+			},
+		},
+	},
 }
 
 return events

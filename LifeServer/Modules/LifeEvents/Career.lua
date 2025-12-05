@@ -622,6 +622,122 @@ Career.events = {
 			{ text = "Use it to help others", effects = { Happiness = 12, Smarts = 3 }, setFlags = { award_winner = true, gives_back = true }, feedText = "You used your platform to lift others." },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RACING CAREER EVENTS (Progression & Dangers)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_practice_session",
+		title = "Practice Session",
+		emoji = "🏎️",
+		text = "You're spending extra time on the track, pushing your limits. Practice makes perfect, but it's risky.",
+		question = "How hard do you push?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_racing",
+		tags = { "racing", "practice", "danger" },
+		careerTags = { "racing" },
+		choices = {
+			{ 
+				text = "Push to the limit", 
+				effects = { Smarts = 2, Health = -5 }, 
+				setFlags = { aggressive_racer = true },
+				feedText = "You pushed hard. Gained experience, but took some risks.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 8)
+					-- Risk of crash
+					if RANDOM:NextNumber() < 0.15 then
+						if state.AddFeed then
+							state:AddFeed("You crashed during practice! Minor injuries, but you're okay.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Health", -10)
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Practice safely", 
+				effects = { Smarts = 1, Health = 1 }, 
+				setFlags = { safe_racer = true },
+				feedText = "You practiced safely. Steady improvement.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 3)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
+				end,
+			},
+			{ 
+				text = "Skip practice this week", 
+				effects = { Happiness = 2 }, 
+				feedText = "You took a break. Sometimes rest is important.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HACKER CAREER EVENTS (Legal/Illegal Branching)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hacker_security_breach",
+		title = "Security Breach",
+		emoji = "🔓",
+		text = "You've discovered a major security vulnerability in a system. This could be reported ethically... or exploited for profit.",
+		question = "What do you do?",
+		minAge = 18, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobCategory = "hacker",
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_hacking",
+		tags = { "hacking", "security", "ethics" },
+		careerTags = { "hacker" },
+		choices = {
+			{ 
+				text = "Report it responsibly", 
+				effects = { Happiness = 5, Money = 2000, Smarts = 3 }, 
+				setFlags = { ethical_hacker = true, responsible = true },
+				feedText = "You reported it through proper channels. Good karma and a reward!",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
+				end,
+			},
+			{ 
+				text = "Exploit it for profit", 
+				effects = { Happiness = -3, Money = 15000, Smarts = 2 }, 
+				setFlags = { black_hat_hacker = true, criminal_record = true },
+				feedText = "You exploited it. Made money, but crossed ethical lines.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					-- Risk of getting caught
+					if RANDOM:NextNumber() < 0.25 then
+						if state.AddFeed then
+							state:AddFeed("Your activities were detected. You're being investigated!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+					end
+				end,
+			},
+			{ 
+				text = "Ignore it", 
+				effects = { Smarts = 1 }, 
+				feedText = "You documented it but didn't act. Sometimes discretion is wise.",
+			},
+		},
+	},
 }
 
 return Career
