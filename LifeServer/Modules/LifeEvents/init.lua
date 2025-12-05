@@ -308,6 +308,13 @@ local function canEventTrigger(event, state)
 	local age = state.Age or 0
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
+	local assets = state.Assets or {}
+	local function assetCount(category)
+		local list = assets[category] or {}
+		local n = 0
+		for _, _ in pairs(list) do n += 1 end
+		return n
+	end
 	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
@@ -388,6 +395,70 @@ local function canEventTrigger(event, state)
 	-- Support old "requiresNoJob" field (same as blockedByFlags = {employed})
 	if event.requiresNoJob and (state.CurrentJob or flags.employed) then
 		return false
+	end
+	
+	-- Money / Net worth gating
+	if event.requiresMoney then
+		local moneyReq = event.requiresMoney
+		local money = state.Money or 0
+		if type(moneyReq) == "number" then
+			if money < moneyReq then return false end
+		elseif type(moneyReq) == "table" then
+			if moneyReq.min and money < moneyReq.min then return false end
+			if moneyReq.max and money > moneyReq.max then return false end
+		end
+	end
+	if event.requiresNetWorth then
+		local worth = (state.Money or 0)
+		for _, cat in pairs(assets) do
+			for _, a in pairs(cat) do
+				if type(a) == "table" then
+					worth += (a.value or a.price or 0)
+				elseif type(a) == "number" then
+					worth += a
+				end
+			end
+		end
+		local req = event.requiresNetWorth
+		if type(req) == "number" then
+			if worth < req then return false end
+		elseif type(req) == "table" and req.min and worth < req.min then
+			return false
+		end
+	end
+	
+	-- Asset gating
+	if event.requiresAssets then
+		-- supports: { category="Properties", min=1 } or { Vehicles = 1, Properties = 2 }
+		if event.requiresAssets.category then
+			local cat = event.requiresAssets.category
+			local min = event.requiresAssets.min or 1
+			if assetCount(cat) < min then
+				return false
+			end
+		else
+			for cat, min in pairs(event.requiresAssets) do
+				if type(min) == "number" and assetCount(cat) < min then
+					return false
+				end
+			end
+		end
+	end
+	
+	-- Injury gating
+	if event.requiresNoInjury and state.Injuries and #state.Injuries > 0 then
+		return false
+	end
+	if event.requiresInjuryLocation and state.Injuries then
+		local needed = tostring(event.requiresInjuryLocation):lower()
+		local has = false
+		for _, inj in ipairs(state.Injuries) do
+			if tostring(inj.location or ""):lower() == needed then
+				has = true
+				break
+			end
+		end
+		if not has then return false end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -1256,6 +1327,8 @@ end
 
 -- Expose the engine
 LifeEvents.EventEngine = EventEngine
+-- Expose eligibility for backend chaining checks
+LifeEvents.canEventTrigger = canEventTrigger
 
 -- ════════════════════════════════════════════════════════════════════════════════════
 -- AUTO-INITIALIZATION

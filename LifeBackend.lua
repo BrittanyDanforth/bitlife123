@@ -1356,7 +1356,7 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		if outcome and outcome.nextEventId then
 			local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 			local nextDef = LifeEvents.getEventById(outcome.nextEventId)
-			if nextDef then
+			if nextDef and LifeEvents.canEventTrigger(nextDef, state) then
 				self.pendingEvents[player.UserId] = {
 					activeEventId = nil,
 					queue = { nextDef },
@@ -1367,6 +1367,8 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 				debugPrint(string.format("Chaining to next event '%s' for %s", outcome.nextEventId, player.Name))
 				self:presentEvent(player, nextDef, outcome.feedText or feedText)
 				return
+			else
+				debugPrint(string.format("Chain skipped; next event '%s' not eligible or missing", tostring(outcome.nextEventId)))
 			end
 		end
 	else
