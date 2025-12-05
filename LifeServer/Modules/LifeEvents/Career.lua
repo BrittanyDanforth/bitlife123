@@ -5,6 +5,8 @@
 
 local Career = {}
 
+local RANDOM = Random.new()
+
 local STAGE = "adult" -- working-life events
 
 Career.events = {
@@ -414,11 +416,16 @@ Career.events = {
 		id = "business_opportunity",
 		title = "Business Opportunity",
 		emoji = "💰",
-		text = "Someone approaches you with a business opportunity.",
-		question = "Is it legit?",
+		text = "Someone approaches you with a business opportunity. They claim it's a 'sure thing' and want you to invest. Something feels off, but they're very persuasive.",
+		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
+		-- Only trigger if player has some money to invest
+		customValidation = function(state)
+			local money = state.Money or 0
+			return money >= 2000 -- Need at least $2000 to be a target
+		end,
 
 		-- META
 		stage = STAGE,
@@ -428,22 +435,84 @@ Career.events = {
 		careerTags = { "business" },
 
 		choices = {
-			{ text = "It's a great opportunity! Invest!", effects = { Money = 3000, Happiness = 8 }, setFlags = { investor = true }, feedText = "You took a chance on the opportunity!" },
-			{ text = "Do thorough due diligence first", effects = { Smarts = 3, Money = 1000 }, feedText = "You researched carefully before deciding." },
-			{ text = "If it sounds too good to be true...", effects = { Happiness = 2, Smarts = 2 }, feedText = "You wisely passed on the 'opportunity.'" },
-			{ text = "It's a scam! Report it!", effects = { Smarts = 3 }, feedText = "You recognized and reported the scam." },
+			{ 
+				text = "Invest without checking", 
+				effects = { Happiness = -5 }, 
+				setFlags = { gullible = true },
+				feedText = "You invested without checking...",
+				onResolve = function(state)
+					local investment = math.min(3000, math.floor((state.Money or 0) * 0.3)) -- 30% of money or max 3000
+					local roll = RANDOM:NextNumber()
+					
+					if roll < 0.15 then -- 15% chance it's legit
+						local returnAmount = math.floor(investment * 1.5)
+						state.Money = (state.Money or 0) - investment + returnAmount
+						if state.AddFeed then
+							state:AddFeed("Lucky! The investment paid off! You got back $" .. returnAmount .. "!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+					else -- 85% chance it's a scam
+						state.Money = math.max(0, (state.Money or 0) - investment)
+						if state.AddFeed then
+							state:AddFeed("It was a scam! You lost $" .. investment .. ". Always do your research!")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Do thorough due diligence first", 
+				effects = { Smarts = 3 }, 
+				setFlags = { careful_investor = true },
+				feedText = "You researched carefully...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then -- 30% chance it's legit after research
+						local investment = math.min(2000, math.floor((state.Money or 0) * 0.2))
+						local returnAmount = math.floor(investment * 1.3)
+						state.Money = (state.Money or 0) - investment + returnAmount
+						if state.AddFeed then
+							state:AddFeed("Good call! After research, you invested wisely and made $" .. (returnAmount - investment) .. " profit!")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+					else
+						if state.AddFeed then
+							state:AddFeed("Your research revealed it was a scam. You avoided losing money!")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "If it sounds too good to be true...", 
+				effects = { Happiness = 2, Smarts = 2 }, 
+				setFlags = { wise = true },
+				feedText = "You wisely passed on the 'opportunity.' Your gut was right - it was too good to be true.",
+			},
+			{ 
+				text = "It's a scam! Report it!", 
+				effects = { Smarts = 3, Happiness = 3 }, 
+				setFlags = { vigilant = true },
+				feedText = "You recognized and reported the scam. Authorities thanked you for helping prevent others from being victimized.",
+			},
 		},
 	},
 	{
 		id = "side_business",
 		title = "Side Business Idea",
 		emoji = "💡",
-		text = "You've been working on a side business that's gaining traction.",
+		text = "You've been working on a side business in your spare time. It's been growing slowly but steadily. You're starting to see real potential.",
 		question = "What's next?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresFlags = { entrepreneur = true },
+		-- Only trigger if player has been working on it (has entrepreneur flag for a while)
+		customValidation = function(state)
+			-- Check if they have enough money/savings to make business decisions
+			local money = state.Money or 0
+			return money >= 1000
+		end,
 
 		-- META
 		stage = STAGE,
@@ -453,10 +522,85 @@ Career.events = {
 		careerTags = { "business" },
 
 		choices = {
-			{ text = "Go full-time on it", effects = { Happiness = 10, Money = 2000 }, setFlags = { full_time_entrepreneur = true }, feedText = "You quit your job to focus on your business!" },
-			{ text = "Keep it as a side income", effects = { Money = 500, Happiness = 5, Health = -2 }, feedText = "Extra income is nice!" },
-			{ text = "Sell it", effects = { Money = 5000, Happiness = 5 }, feedText = "You sold your side business for a nice profit!" },
-			{ text = "Find investors", effects = { Money = 3000, Smarts = 2 }, setFlags = { has_investors = true }, feedText = "You brought on investors to grow!" },
+			{ 
+				text = "Go full-time on it", 
+				effects = { Happiness = 10 }, 
+				setFlags = { full_time_entrepreneur = true }, 
+				feedText = "You quit your job to focus on your business! Risky but exciting!",
+				onResolve = function(state)
+					-- Realistic outcome - might succeed or fail
+					local roll = RANDOM:NextNumber()
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local successChance = math.min(0.7, 0.4 + (smarts / 200)) -- Smarter = better chance
+					
+					if roll < successChance then
+						-- Success - business grows
+						local income = math.floor((state.Money or 0) * 0.1) + 2000
+						state.Money = (state.Money or 0) + income
+						if state.AddFeed then
+							state:AddFeed("Your business took off! You're making $" .. income .. " per month!")
+						end
+					else
+						-- Struggling - need to work harder
+						if state.AddFeed then
+							state:AddFeed("Going full-time is harder than expected. You're struggling but determined to make it work.")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Keep it as a side income", 
+				effects = { Happiness = 5, Health = -2 }, 
+				setFlags = { side_hustler = true },
+				feedText = "Extra income is nice! You're balancing work and your side business.",
+				onResolve = function(state)
+					-- Steady side income
+					local sideIncome = math.floor((state.Money or 0) * 0.05) + 500
+					state.Money = (state.Money or 0) + sideIncome
+					if state.AddFeed then
+						state:AddFeed("Your side business brings in $" .. sideIncome .. " this month. Steady progress!")
+					end
+				end,
+			},
+			{ 
+				text = "Sell it", 
+				effects = { Happiness = 5 }, 
+				setFlags = { sold_business = true },
+				feedText = "You're considering selling...",
+				onResolve = function(state)
+					-- Value depends on how successful it was
+					local baseValue = 3000
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local salePrice = baseValue + math.floor(smarts * 20) -- Smarter = better business = higher sale
+					state.Money = (state.Money or 0) + salePrice
+					if state.AddFeed then
+						state:AddFeed("You sold your side business for $" .. salePrice .. "! A nice profit for your efforts.")
+					end
+				end,
+			},
+			{ 
+				text = "Find investors", 
+				effects = { Smarts = 2 }, 
+				setFlags = { has_investors = true },
+				feedText = "You're pitching to investors...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = RANDOM:NextNumber()
+					local pitchSuccess = 0.3 + (smarts / 200) -- Better pitch if smarter
+					
+					if roll < pitchSuccess then
+						local investment = 5000 + math.floor(smarts * 30)
+						state.Money = (state.Money or 0) + investment
+						if state.AddFeed then
+							state:AddFeed("Investors loved your pitch! You secured $" .. investment .. " in funding!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("Investors weren't convinced. You'll need to refine your pitch and try again.")
+						end
+					end
+				end,
+			},
 		},
 	},
 	{

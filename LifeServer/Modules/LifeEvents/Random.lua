@@ -89,15 +89,50 @@ Random.events = {
 		cooldown = 2,
 		choices = {
 			{ 
-				text = "BIG WINNER!", 
-				effects = { Happiness = 20, Money = 5000 }, 
-				setFlags = { lottery_winner = true, lucky = true },
-				feedText = "Incredible! You won big! $5,000!",
+				text = "Scratch it off", 
+				effects = { Happiness = 2 }, 
+				setFlags = { scratched_ticket = true },
+				feedText = "You scratch off the ticket...",
+				onResolve = function(state)
+					-- Realistic lottery odds - most tickets lose, small chance of winning
+					local roll = RANDOM:NextNumber()
+					local winnings = 0
+					local message = ""
+					
+					if roll < 0.01 then -- 1% chance of big win
+						winnings = 5000
+						message = "INCREDIBLE! You won $5,000! This is your lucky day!"
+						state.Flags = state.Flags or {}
+						state.Flags.lottery_winner = true
+						state.Flags.lucky = true
+					elseif roll < 0.05 then -- 4% chance of medium win
+						winnings = 100
+						message = "Nice! You won $100! Not bad!"
+						state.Flags = state.Flags or {}
+						state.Flags.lucky = true
+					elseif roll < 0.15 then -- 10% chance of small win
+						winnings = 20
+						message = "You won $20! Better than nothing!"
+					else -- 85% chance of losing
+						winnings = 0
+						message = "Sorry, not a winner. Better luck next time!"
+					end
+					
+					if winnings > 0 then
+						state.Money = (state.Money or 0) + winnings
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + (winnings >= 5000 and 20 or 5))
+					end
+					
+					if state.AddFeed then
+						state:AddFeed(message)
+					end
+				end,
 			},
 			{ 
-				text = "Small prize", 
-				effects = { Happiness = 5, Money = 50 }, 
-				setFlags = { lucky = true },
+				text = "Give it to someone else", 
+				effects = { Happiness = 2 }, 
+				setFlags = { generous = true },
 				feedText = "You won a little something! $50 isn't bad!",
 			},
 			{ 

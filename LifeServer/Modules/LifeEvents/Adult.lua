@@ -183,10 +183,17 @@ Adult.events = {
 		id = "buying_home",
 		title = "Buying a Home",
 		emoji = "🏡",
-		text = "You're considering buying your first home.",
+		text = "After saving up and building your credit, you're finally ready to consider buying your first home. You've been looking at listings and talking to lenders.",
 		question = "What's your approach?",
 		minAge = 25, maxAge = 50,
 		oneTime = true,
+		-- Only trigger if player has enough money saved
+		customValidation = function(state)
+			local money = state.Money or 0
+			local hasJob = state.CurrentJob ~= nil
+			-- Need at least some savings and a job for mortgage approval
+			return money >= 10000 and hasJob
+		end,
 
 		-- META
 		stage = STAGE,
@@ -198,64 +205,105 @@ Adult.events = {
 		choices = {
 			{
 				text = "Buy a starter home",
-				effects = { Happiness = 10, Money = -5000 },
+				effects = { Happiness = 10 },
 				setFlags = { homeowner = true, has_property = true },
 				feedText = "You bought your first home! A big milestone!",
 				onResolve = function(state)
-					-- Use LifeState:AddAsset method directly (if available)
-					if state.AddAsset then
-						state:AddAsset("Properties", {
-							id = "starter_home_" .. tostring(state.Age or 0),
-							name = "Starter Home",
-							emoji = "🏠",
-							price = 85000,
-							value = 85000,
-							income = 0,
-							isEventAcquired = true,
-						})
+					local homePrice = 85000
+					local downPayment = math.floor(homePrice * 0.2) -- 20% down
+					local money = state.Money or 0
+					
+					if money >= downPayment then
+						state.Money = math.max(0, money - downPayment)
+						if state.AddAsset then
+							state:AddAsset("Properties", {
+								id = "starter_home_" .. tostring(state.Age or 0),
+								name = "Starter Home",
+								emoji = "🏠",
+								price = homePrice,
+								value = homePrice,
+								income = 0,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("You put down $" .. downPayment .. " and got a mortgage for your starter home!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You couldn't afford the down payment. You'll need to save more.")
+						end
 					end
 				end,
 			},
 			{
 				text = "Stretch for your dream home",
-				effects = { Happiness = 15, Money = -15000, Health = -3 },
+				effects = { Happiness = 15, Health = -3 },
 				setFlags = { homeowner = true, has_property = true, high_mortgage = true },
 				feedText = "You got your dream home! But the mortgage is steep.",
 				onResolve = function(state)
-					if state.AddAsset then
-						state:AddAsset("Properties", {
-							id = "dream_home_" .. tostring(state.Age or 0),
-							name = "Dream Home",
-							emoji = "🏡",
-							price = 350000,
-							value = 350000,
-							income = 0,
-							isEventAcquired = true,
-						})
+					local homePrice = 350000
+					local downPayment = math.floor(homePrice * 0.15) -- 15% down (stretching)
+					local money = state.Money or 0
+					
+					if money >= downPayment then
+						state.Money = math.max(0, money - downPayment)
+						if state.AddAsset then
+							state:AddAsset("Properties", {
+								id = "dream_home_" .. tostring(state.Age or 0),
+								name = "Dream Home",
+								emoji = "🏡",
+								price = homePrice,
+								value = homePrice,
+								income = 0,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("You stretched your budget and put down $" .. downPayment .. " on your dream home. The monthly payments will be tight!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You couldn't afford the down payment. Dreams will have to wait.")
+						end
 					end
 				end,
 			},
 			{
 				text = "Keep renting for now",
 				effects = { Money = 500 },
-				feedText = "You'll rent a bit longer. More flexibility.",
+				feedText = "You'll rent a bit longer. More flexibility and less financial stress.",
 			},
 			{
 				text = "Move to a cheaper area",
-				effects = { Happiness = 5, Money = -3000 },
+				effects = { Happiness = 5 },
 				setFlags = { homeowner = true, has_property = true, relocated = true },
 				feedText = "You moved somewhere more affordable!",
 				onResolve = function(state)
-					if state.AddAsset then
-						state:AddAsset("Properties", {
-							id = "affordable_home_" .. tostring(state.Age or 0),
-							name = "Affordable Home",
-							emoji = "🏠",
-							price = 65000,
-							value = 65000,
-							income = 0,
-							isEventAcquired = true,
-						})
+					local homePrice = 65000
+					local downPayment = math.floor(homePrice * 0.2)
+					local money = state.Money or 0
+					
+					if money >= downPayment then
+						state.Money = math.max(0, money - downPayment)
+						if state.AddAsset then
+							state:AddAsset("Properties", {
+								id = "affordable_home_" .. tostring(state.Age or 0),
+								name = "Affordable Home",
+								emoji = "🏠",
+								price = homePrice,
+								value = homePrice,
+								income = 0,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("You found an affordable home in a cheaper area! Down payment: $" .. downPayment)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("Even the cheaper area was out of reach. Keep saving!")
+						end
 					end
 				end,
 			},
