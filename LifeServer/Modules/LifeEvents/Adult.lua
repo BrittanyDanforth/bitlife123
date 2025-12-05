@@ -620,13 +620,18 @@ Adult.events = {
 		},
 	},
 	{
-		id = "first_real_job",
-		title = "First Real Job",
+		-- CRITICAL FIX: Renamed from first_real_job to avoid ID conflict with Milestones.lua
+		-- This event is about adjusting to work life, not getting your first job
+		id = "work_life_adjustment",
+		title = "Adjusting to Work Life",
 		emoji = "💼",
-		text = "You landed your first 'real' adult job!",
+		text = "You've been at your job for a while now. The 9-5 grind is real.",
 		question = "How's the adjustment going?",
-		minAge = 21, maxAge = 26,
+		minAge = 19, maxAge = 28,
 		oneTime = true,
+		-- CRITICAL: Requires player to actually HAVE a job
+		requiresJob = true,
+		requiresFlags = { employed = true },
 
 		choices = {
 			{ text = "Imposter syndrome is real", effects = { Happiness = -3, Smarts = 4 }, setFlags = { imposter_syndrome = true }, feedText = "You feel like a fraud, but you're learning fast." },

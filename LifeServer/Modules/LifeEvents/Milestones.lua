@@ -382,6 +382,8 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		-- CRITICAL: Block if player already has a job
+		blockedByFlags = { employed = true, has_job = true },
 
 		-- META
 		stage = "adult",
@@ -392,10 +394,55 @@ Milestones.events = {
 		careerTags = { "career_general" },
 
 		choices = {
-			{ text = "Excited and motivated", effects = { Happiness = 10, Money = 500 }, setFlags = { employed = true }, feedText = "Your career begins!" },
-			{ text = "Nervous but ready", effects = { Happiness = 5, Smarts = 2, Money = 500 }, setFlags = { employed = true }, feedText = "First day jitters, but you've got this." },
-			{ text = "It's just a paycheck", effects = { Money = 500 }, setFlags = { employed = true }, feedText = "Work to live, not live to work." },
+			{ text = "Excited and motivated", effects = { Happiness = 10, Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "Your career begins!" },
+			{ text = "Nervous but ready", effects = { Happiness = 5, Smarts = 2, Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "First day jitters, but you've got this." },
+			{ text = "It's just a paycheck", effects = { Money = 500 }, setFlags = { employed = true, has_job = true }, feedText = "Work to live, not live to work." },
 		},
+		
+		-- CRITICAL FIX: Actually create the job object when this event fires!
+		-- Without this, the OccupationScreen shows "Unemployed" even after the event
+		onComplete = function(state, choice, eventDef, outcome)
+			-- Generate a random entry-level job for the player
+			local entryJobs = {
+				{ id = "retail", name = "Retail Associate", company = "MegaMart", salary = 26000, category = "entry" },
+				{ id = "cashier", name = "Cashier", company = "QuickMart", salary = 24000, category = "entry" },
+				{ id = "fastfood", name = "Fast Food Worker", company = "Burger Palace", salary = 22000, category = "entry" },
+				{ id = "office_assistant", name = "Office Assistant", company = "Business Solutions", salary = 35000, category = "office" },
+				{ id = "receptionist", name = "Receptionist", company = "Corporate Office", salary = 32000, category = "office" },
+				{ id = "waiter", name = "Waiter/Waitress", company = "The Grand Restaurant", salary = 32000, category = "service" },
+				{ id = "barista", name = "Barista", company = "Bean Scene", salary = 28000, category = "service" },
+				{ id = "data_entry", name = "Data Entry Clerk", company = "DataCorp", salary = 34000, category = "office" },
+			}
+			
+			local job = entryJobs[math.random(1, #entryJobs)]
+			
+			if state.SetCareer then
+				state:SetCareer({
+					id = job.id,
+					name = job.name,
+					company = job.company,
+					salary = job.salary,
+					category = job.category,
+				})
+			else
+				-- Fallback if SetCareer doesn't exist
+				state.CurrentJob = {
+					id = job.id,
+					name = job.name,
+					company = job.company,
+					salary = job.salary,
+					category = job.category,
+				}
+				state.Flags = state.Flags or {}
+				state.Flags.employed = true
+				state.Flags.has_job = true
+			end
+			
+			-- Update feed text to include the job name
+			if state.AddFeed then
+				state:AddFeed("💼 You started working as a " .. job.name .. " at " .. job.company .. "!")
+			end
+		end,
 	},
 	{
 		id = "major_promotion",

@@ -1190,23 +1190,62 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Romance events - create partner
-	if (eventId == "dating_app" or eventId == "high_school_romance") and choiceIndex == 1 then
-		if not state.Relationships or not state.Relationships.partner then
-			local partner = EventEngine.createRelationship(state, "romance")
-			outcome.feedText = "You started dating " .. partner.name .. "!"
-			outcome.newRelationship = partner
-			state.Flags.dating = true
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Auto-create partner for ANY event that sets has_partner flag
+	-- Previously only worked for 2 hardcoded events, leaving all other dating events broken!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.setFlags and choice.setFlags.has_partner then
+		if not state.Relationships then
+			state.Relationships = {}
 		end
+		-- Only create a new partner if we don't already have one
+		if not state.Relationships.partner then
+			local partner = EventEngine.createRelationship(state, "romance")
+			if partner then
+				outcome.newRelationship = partner
+				-- Update feed text to include partner's name
+				if outcome.feedText then
+					outcome.feedText = outcome.feedText .. " You started dating " .. partner.name .. "!"
+				else
+					outcome.feedText = "You started dating " .. partner.name .. "!"
+				end
+			end
+		end
+		-- Ensure dating flag is set
+		state.Flags.dating = true
 	end
 	
 	-- Wedding - update partner role
+	-- CRITICAL FIX: Handle BOTH wedding_day event AND any event that sets married = true
 	if eventId == "wedding_day" then
 		if state.Relationships and state.Relationships.partner then
 			state.Relationships.partner.role = "Spouse"
 			state.Flags.married = true
 			state.Flags.engaged = nil
+			state.Flags.dating = nil -- No longer just dating!
 			outcome.feedText = "You married " .. state.Relationships.partner.name .. "!"
+		end
+	end
+	
+	-- CRITICAL FIX: Universal handler for ANY choice that sets married flag
+	-- This ensures wedding_planning (Adult.lua) and similar events update relationship properly
+	if choice.setFlags and choice.setFlags.married then
+		if state.Relationships and state.Relationships.partner then
+			state.Relationships.partner.role = "Spouse"
+			state.Flags.engaged = nil -- No longer engaged, now married
+			state.Flags.dating = nil -- No longer just dating
+			-- Update feed text to include partner name if not already mentioned
+			if outcome.feedText and not outcome.feedText:find("married") then
+				outcome.feedText = outcome.feedText .. " You and " .. state.Relationships.partner.name .. " are officially married!"
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Universal handler for ANY choice that sets engaged flag
+	if choice.setFlags and choice.setFlags.engaged then
+		if state.Relationships and state.Relationships.partner then
+			local partnerGender = state.Relationships.partner.gender or "female"
+			state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
 		end
 	end
 	

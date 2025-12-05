@@ -19,25 +19,33 @@ local events = {
 		minAge = 14,
 		maxAge = 19,
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Use requiresSingle to prevent if already dating
+		requiresSingle = true,
 		choices = {
 			{
 				index = 1,
 				text = "Shoot your shot",
 				effects = { Happiness = 4 },
-				setFlags = { has_romantic_partner = true },
+				-- CRITICAL FIX: Use consistent flag name 'has_partner' and 'dating'
+				setFlags = { has_partner = true, dating = true },
 				feedText = "You started dating your crush!",
 				onResolve = function(state)
 					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-					if state.AddRelationship then
-						state:AddRelationship(relId, {
-							name = crushName,
-							type = "romance",
-							role = "Partner",
-							relationship = 65,
-							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
-							alive = true,
-						})
+					-- CRITICAL FIX: Set partner in the proper location (state.Relationships.partner)
+					-- so that requiresPartner checks work correctly
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = crushName,
+						type = "romance",
+						role = "Partner",
+						relationship = 65,
+						age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+						gender = state.Gender == "male" and "female" or "male",
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("💕 You started dating " .. crushName .. "!")
 					end
 				end,
 			},
@@ -57,7 +65,9 @@ local events = {
 		category = "romance",
 		weight = 5,
 		minAge = 21,
-		requiresFlags = { has_romantic_partner = true },
+		-- CRITICAL FIX: Use requiresPartner (which checks state.Relationships.partner)
+		requiresPartner = true,
+		requiresFlags = { dating = true },
 		choices = {
 			{
 				index = 1,
@@ -65,6 +75,16 @@ local events = {
 				effects = { Happiness = 6, Money = -3000 },
 				setFlags = { engaged = true },
 				feedText = "You proposed and they said yes!",
+				onResolve = function(state)
+					-- Update partner role to Fiancé/Fiancée
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
+						if state.AddFeed then
+							state:AddFeed("💍 " .. state.Relationships.partner.name .. " said YES!")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
