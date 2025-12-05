@@ -1041,8 +1041,19 @@ function LifeBackend:createInitialState(player)
 		}
 	end
 	
+	-- CRITICAL FIX: Ensure Assets table is properly initialized
+	-- This prevents the "state.Assets is NIL" error on client
+	state.Assets = state.Assets or {}
+	state.Assets.Properties = state.Assets.Properties or {}
+	state.Assets.Vehicles = state.Assets.Vehicles or {}
+	state.Assets.Items = state.Assets.Items or {}
+	state.Assets.Crypto = state.Assets.Crypto or {}
+	state.Assets.Investments = state.Assets.Investments or {}
+	state.Assets.Businesses = state.Assets.Businesses or {}
+	
 	debugPrint(string.format("Created initial state for %s with %d family members", 
 		player.Name, countEntries(state.Relationships)))
+	debugPrint("  Assets initialized:", state.Assets ~= nil)
 	
 	return state
 end
@@ -1052,29 +1063,39 @@ function LifeBackend:getState(player)
 end
 
 function LifeBackend:serializeState(state)
+	local serialized
+	
 	if state and state.Serialize then
-		local serialized = state:Serialize()
+		serialized = state:Serialize()
 		serialized.PendingFeed = nil
 		serialized.lastFeed = nil
+	else
+		serialized = deepCopy(state)
+		if serialized then
+			serialized.PendingFeed = nil
+			serialized.lastFeed = nil
+		end
+	end
+	
+	-- CRITICAL FIX: Always ensure Assets is properly structured in serialized output
+	-- This fixes the "state.Assets is NIL" error on client
+	if serialized then
+		serialized.Assets = serialized.Assets or {}
+		serialized.Assets.Properties = serialized.Assets.Properties or {}
+		serialized.Assets.Vehicles = serialized.Assets.Vehicles or {}
+		serialized.Assets.Items = serialized.Assets.Items or {}
+		serialized.Assets.Crypto = serialized.Assets.Crypto or {}
+		serialized.Assets.Investments = serialized.Assets.Investments or {}
+		serialized.Assets.Businesses = serialized.Assets.Businesses or {}
 		
 		-- Debug: Trace what's being serialized
-		if serialized.Assets then
-			debugPrint("[serializeState] Assets in serialized state:")
-			debugPrint("  Properties:", serialized.Assets.Properties and #serialized.Assets.Properties or 0)
-			debugPrint("  Vehicles:", serialized.Assets.Vehicles and #serialized.Assets.Vehicles or 0)
-			debugPrint("  Items:", serialized.Assets.Items and #serialized.Assets.Items or 0)
-		else
-			debugPrint("[serializeState] WARNING: serialized.Assets is nil!")
-		end
-		
-		return serialized
+		debugPrint("[serializeState] Assets in serialized state:")
+		debugPrint("  Properties:", #serialized.Assets.Properties)
+		debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
+		debugPrint("  Items:", #serialized.Assets.Items)
 	end
-	local cloned = deepCopy(state)
-	if cloned then
-		cloned.PendingFeed = nil
-		cloned.lastFeed = nil
-	end
-	return cloned
+	
+	return serialized
 end
 
 function LifeBackend:pushState(player, feedText, resultData)
@@ -1222,12 +1243,17 @@ function LifeBackend:tickCareer(state)
 		return
 	end
 	
-	state.CareerInfo = state.CareerInfo or {}
-	local info = state.CareerInfo
-	local job = state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob]
-	if not job then
+	-- Must have a current job to tick career
+	if not state.CurrentJob then
 		return
 	end
+	
+	state.CareerInfo = state.CareerInfo or {}
+	local info = state.CareerInfo
+	
+	-- Try to get job from catalog, but fallback to CurrentJob data if not found
+	-- This handles jobs created by events that aren't in the main JobCatalog
+	local catalogJob = JobCatalog[state.CurrentJob.id or state.CurrentJob]
 	
 	-- For semi-retired, only tick at half rate (less aggressive career progression)
 	if state.Flags and state.Flags.semi_retired then
@@ -1241,10 +1267,18 @@ function LifeBackend:tickCareer(state)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
 	
 	-- CRITICAL FIX: Actually PAY the salary during age up!
-	-- This was completely missing - employed players were NOT receiving income
-	local salary = job.salary or 0
+	-- Use catalog job salary if available, otherwise use CurrentJob.salary directly
+	-- This ensures event-created jobs (not in catalog) still pay salary
+	local salary = 0
+	if catalogJob and catalogJob.salary then
+		salary = catalogJob.salary
+	elseif state.CurrentJob.salary then
+		salary = state.CurrentJob.salary
+	end
+	
 	if salary > 0 then
 		self:addMoney(state, salary)
+		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
 	end
 end
 
@@ -1553,6 +1587,9 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		return -- Wait for minigame result
 	end
 
+	-- CRITICAL: Track jail state BEFORE event processing to detect incarceration
+	local wasInJailBefore = state.InJail or false
+
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
 		local preStats = table.clone(state.Stats)
 		local preMoney = state.Money
@@ -1605,17 +1642,51 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		end
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Detect if player was JUST incarcerated by this event
+	-- Override popup with jail-specific content so user sees "Busted!" not generic text
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local justGotIncarcerated = (not wasInJailBefore) and state.InJail
+	local jailPopupBody = nil
+	local jailPopupTitle = nil
+	local jailPopupEmoji = nil
+
+	if justGotIncarcerated then
+		-- Player was caught during this event!
+		-- Try to get the jail message from PendingFeed set by onResolve
+		if state.PendingFeed and type(state.PendingFeed) == "string" and state.PendingFeed ~= "" then
+			-- Check if the feed text is jail-related (contains relevant keywords)
+			local feedLower = state.PendingFeed:lower()
+			if feedLower:find("sentenced") or feedLower:find("jail") or feedLower:find("prison") 
+				or feedLower:find("arrested") or feedLower:find("caught") or feedLower:find("years") then
+				jailPopupBody = state.PendingFeed
+			end
+		end
+
+		-- Fallback: construct a generic jail message if we couldn't find one
+		if not jailPopupBody then
+			local yearsText = state.JailYearsLeft and string.format("%.1f years", state.JailYearsLeft) or "some time"
+			jailPopupBody = string.format("You were caught and sentenced to %s in prison!", yearsText)
+		end
+
+		jailPopupTitle = "Busted!"
+		jailPopupEmoji = "🚔"
+		feedText = jailPopupBody -- Also update the feed text for the feed display
+
+		debugPrint(string.format("Player %s was incarcerated by event! Jail years: %.1f", player.Name, state.JailYearsLeft or 0))
+	end
+
 	resultData = {
 		showPopup = true,
-		emoji = eventDef.emoji,
-		title = eventDef.title,
-		body = feedText,
+		emoji = jailPopupEmoji or eventDef.emoji,
+		title = jailPopupTitle or eventDef.title,
+		body = jailPopupBody or feedText,
 		happiness = effectsSummary.Happiness,
 		health = effectsSummary.Health,
 		smarts = effectsSummary.Smarts,
 		looks = effectsSummary.Looks,
 		money = effectsSummary.Money,
-		wasSuccess = true,
+		wasSuccess = not justGotIncarcerated, -- Mark as failure if caught
 	}
 
 	if pending.queue then

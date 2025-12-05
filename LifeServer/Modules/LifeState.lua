@@ -176,16 +176,48 @@ function LifeState:AdvanceAge()
 	
 	-- Age 18: Auto-graduate high school if player hasn't already via event
 	-- This ensures EVERYONE gets high school education by 18
+	-- CRITICAL FIX: Don't auto-graduate if player is in jail - they need to finish later
 	if self.Age == 18 then
-		if self.Education == "none" or self.EducationData.Status == "enrolled" then
-			self.Education = "high_school"
-			self.EducationData.Status = "completed"
-			self.EducationData.Level = "high_school"
-			self.Flags.graduated_high_school = true
-			self.Flags.high_school_graduate = true
-			self.Flags.in_high_school = nil
+		if not self.InJail then
+			if self.Education == "none" or self.EducationData.Status == "enrolled" then
+				self.Education = "high_school"
+				self.EducationData.Status = "completed"
+				self.EducationData.Level = "high_school"
+				self.Flags.graduated_high_school = true
+				self.Flags.high_school_graduate = true
+				self.Flags.in_high_school = nil
+				if not self.PendingFeed then
+					self.PendingFeed = "You automatically graduated from high school!"
+				end
+			end
+		else
+			-- Player is in jail at 18 - mark that they missed graduation
+			self.Flags.missed_graduation = true
+			self.EducationData.Status = "suspended"
 			if not self.PendingFeed then
-				self.PendingFeed = "You automatically graduated from high school!"
+				self.PendingFeed = "You couldn't attend graduation because you're in prison."
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Allow late high school graduation when released from jail
+	-- If player missed graduation due to jail and is now out, let them complete it
+	if self.Age >= 18 and self.Age <= 25 then
+		if not self.InJail and self.Flags.missed_graduation then
+			if self.Education == "none" then
+				-- Option to get GED in prison should set this flag
+				if self.EducationData and self.EducationData.Status ~= "suspended" then
+					self.Education = "high_school"
+					self.EducationData.Status = "completed"
+					self.EducationData.Level = "high_school"
+					self.Flags.graduated_high_school = true
+					self.Flags.high_school_graduate = true
+					self.Flags.got_ged = true
+					self.Flags.missed_graduation = nil
+					if not self.PendingFeed then
+						self.PendingFeed = "You earned your GED!"
+					end
+				end
 			end
 		end
 	end

@@ -91,7 +91,25 @@ Relationships.events = {
 		choices = {
 			{ text = "Yes! Let's do it!", effects = { Happiness = 10, Money = 500 }, setFlags = { lives_with_partner = true }, feedText = "You moved in together!" },
 			{ text = "I'm not ready yet", effects = { Happiness = -3 }, feedText = "You need more time." },
-			{ text = "Break up instead", effects = { Happiness = -10 }, setFlags = { recently_single = true, has_partner = false, dating = false }, feedText = "The conversation led to a breakup." },
+			{ 
+				text = "Break up instead", 
+				effects = { Happiness = -10 }, 
+				setFlags = { recently_single = true }, 
+				feedText = "The conversation led to a breakup.",
+				-- CRITICAL FIX: Properly clear all relationship flags on breakup
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -147,7 +165,26 @@ Relationships.events = {
 			{ text = "Communicate openly", effects = { Happiness = 5, Smarts = 2 }, feedText = "You talked it through. Things improved." },
 			{ text = "Seek couples counseling", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference." },
 			{ text = "Give each other space", effects = { Happiness = 3 }, feedText = "Some distance helped." },
-			{ text = "It's time to break up", effects = { Happiness = -8 }, setFlags = { recently_single = true, has_partner = false, dating = false, married = false }, feedText = "You ended the relationship." },
+			{ 
+				text = "It's time to break up", 
+				effects = { Happiness = -8 }, 
+				setFlags = { recently_single = true }, 
+				feedText = "You ended the relationship.",
+				-- CRITICAL FIX: Properly clear all relationship flags on breakup
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.married = nil
+					state.Flags.engaged = nil
+					state.Flags.lives_with_partner = nil
+					state.Flags.committed_relationship = nil
+					-- Clear partner from relationships
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -179,7 +216,25 @@ Relationships.events = {
 		choices = {
 			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
 			{ text = "Move with them", effects = { Happiness = 8 }, setFlags = { relocated_for_love = true }, feedText = "You moved to stay together!" },
-			{ text = "Break up but stay friends", effects = { Happiness = -5 }, setFlags = { recently_single = true, has_partner = false }, feedText = "You ended it but remained friends." },
+			{ 
+				text = "Break up but stay friends", 
+				effects = { Happiness = -5 }, 
+				setFlags = { recently_single = true }, 
+				feedText = "You ended it but remained friends.",
+				-- CRITICAL FIX: Properly clear all relationship flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 
@@ -414,10 +469,46 @@ Relationships.events = {
 		requiresPartner = true,
 
 		choices = {
-			{ text = "Confront them and break up", effects = { Happiness = -20 }, setFlags = { cheated_on = true, recently_single = true, has_partner = false }, feedText = "Your trust is shattered. Relationship over." },
+			{ 
+				text = "Confront them and break up", 
+				effects = { Happiness = -20 }, 
+				setFlags = { cheated_on = true, recently_single = true }, 
+				feedText = "Your trust is shattered. Relationship over.",
+				-- CRITICAL FIX: Properly clear all relationship flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 			{ text = "Try to work through it", effects = { Happiness = -15, Smarts = 2 }, setFlags = { cheated_on = true, rebuilding_trust = true }, feedText = "Trying to salvage the relationship..." },
 			{ text = "Revenge affair", effects = { Happiness = -10 }, setFlags = { cheater = true, toxic_relationship = true }, feedText = "Two wrongs don't make a right, but..." },
-			{ text = "Walk away silently", effects = { Happiness = -12 }, setFlags = { cheated_on = true, recently_single = true, has_partner = false }, feedText = "You left without a word. Dignity intact." },
+			{ 
+				text = "Walk away silently", 
+				effects = { Happiness = -12 }, 
+				setFlags = { cheated_on = true, recently_single = true }, 
+				feedText = "You left without a word. Dignity intact.",
+				-- CRITICAL FIX: Properly clear all relationship flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -435,7 +526,25 @@ Relationships.events = {
 			{ text = "You are - and you're working on it", effects = { Happiness = -3, Smarts = 2 }, setFlags = { working_on_jealousy = true }, feedText = "Self-awareness is the first step." },
 			{ text = "They are - it's suffocating", effects = { Happiness = -8 }, setFlags = { possessive_partner = true }, feedText = "Their jealousy is exhausting." },
 			{ text = "Both of you need to improve", effects = { Happiness = -5 }, feedText = "Mutual growth is needed." },
-			{ text = "Time to break up", effects = { Happiness = -10 }, setFlags = { recently_single = true, has_partner = false }, feedText = "The jealousy killed the relationship." },
+			{ 
+				text = "Time to break up", 
+				effects = { Happiness = -10 }, 
+				setFlags = { recently_single = true }, 
+				feedText = "The jealousy killed the relationship.",
+				-- CRITICAL FIX: Properly clear all relationship flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -507,7 +616,25 @@ Relationships.events = {
 			{ text = "YES! A thousand times yes!", effects = { Happiness = 20 }, setFlags = { engaged = true }, feedText = "You said yes! You're engaged!" },
 			{ text = "Yes, but need a long engagement", effects = { Happiness = 12 }, setFlags = { engaged = true, long_engagement = true }, feedText = "You said yes but want to take it slow." },
 			{ text = "I'm not ready yet", effects = { Happiness = -10 }, feedText = "You said no... for now. Awkward." },
-			{ text = "We need to break up", effects = { Happiness = -15 }, setFlags = { recently_single = true, has_partner = false }, feedText = "This made you realize it's not right." },
+			{ 
+				text = "We need to break up", 
+				effects = { Happiness = -15 }, 
+				setFlags = { recently_single = true }, 
+				feedText = "This made you realize it's not right.",
+				-- CRITICAL FIX: Properly clear all relationship flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.committed_relationship = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					state.Flags.lives_with_partner = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
 		},
 	},
 

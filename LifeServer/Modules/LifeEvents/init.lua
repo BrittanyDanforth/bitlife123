@@ -231,6 +231,7 @@ local function getEventHistory(state)
 			completed = {},
 			recentCategories = {},
 			recentEvents = {},
+			lastCategoryOccurrence = {},
 		}
 	end
 	
@@ -247,6 +248,7 @@ local function getEventHistory(state)
 	history.completed = history.completed or {}
 	history.recentCategories = history.recentCategories or {}
 	history.recentEvents = history.recentEvents or {}
+	history.lastCategoryOccurrence = history.lastCategoryOccurrence or {} -- NEW: Category-based cooldowns
 	
 	return history
 end
@@ -287,7 +289,7 @@ local function recordEventShown(state, event)
 	
 	-- Track recent categories (for variety)
 	if type(history.recentCategories) == "table" then
-		local category = event._category or "general"
+		local category = event._category or event.category or "general"
 		table.insert(history.recentCategories, category)
 		while #history.recentCategories > 5 do
 			table.remove(history.recentCategories, 1)
@@ -300,6 +302,13 @@ local function recordEventShown(state, event)
 		while #history.recentEvents > 10 do
 			table.remove(history.recentEvents, 1)
 		end
+	end
+	
+	-- CRITICAL: Track category-based cooldowns to prevent spamming
+	local eventCategory = event.category or event._category
+	if eventCategory then
+		history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+		history.lastCategoryOccurrence[eventCategory] = state.Age or 0
 	end
 end
 
@@ -389,6 +398,33 @@ local function canEventTrigger(event, state)
 	local occurCount = history.occurrences[event.id] or 0
 	if occurCount >= maxOccur then
 		return false
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CATEGORY-BASED COOLDOWN - Prevent spamming of similar events
+	-- e.g., don't show multiple injury events in quick succession
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local eventCategory = event.category or event._category
+	if eventCategory then
+		-- Define category cooldowns (years between events of same category)
+		local categoryCooldowns = {
+			injury = 3,        -- At least 3 years between injury events
+			illness = 2,       -- At least 2 years between illness events
+			mental_health = 4, -- At least 4 years between mental health events
+			disaster = 5,      -- At least 5 years between disasters
+			crime = 2,         -- At least 2 years between crime events
+		}
+		
+		local catCooldown = categoryCooldowns[eventCategory]
+		if catCooldown then
+			-- Check history.lastCategoryOccurrence
+			history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+			local lastCatAge = history.lastCategoryOccurrence[eventCategory]
+			if lastCatAge and (age - lastCatAge) < catCooldown then
+				return false -- Too soon for another event of this category
+			end
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

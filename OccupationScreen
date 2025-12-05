@@ -27,6 +27,7 @@ local GetCareerInfo = getRemote("GetCareerInfo")
 local GetEducationInfo = getRemote("GetEducationInfo") -- NEW: detailed GPA/progress/transcript
 
 -- Job Categories for filtering
+-- CRITICAL FIX: Added missing categories for new career paths (racing, hacker, esports)
 local JobCategories = {
 	{ id = "all", name = "All Jobs", emoji = "📋" },
 	{ id = "entry", name = "Entry Level", emoji = "🎒" },
@@ -44,6 +45,10 @@ local JobCategories = {
 	{ id = "sports", name = "Sports", emoji = "🏆" },
 	{ id = "military", name = "Military", emoji = "🎖️" },
 	{ id = "criminal", name = "Criminal", emoji = "💊" },
+	-- NEW CAREER PATHS (v2.0)
+	{ id = "racing", name = "Racing", emoji = "🏎️" },
+	{ id = "hacker", name = "Hacker/Cyber", emoji = "💻🔓" },
+	{ id = "esports", name = "Esports/Gaming", emoji = "🎮" },
 }
 
 -- Job Data - Must match server's JobListings IDs exactly!

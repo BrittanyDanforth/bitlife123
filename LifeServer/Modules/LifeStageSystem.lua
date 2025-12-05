@@ -470,18 +470,19 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 local DeathCauses = {
-	-- Natural causes (age-related)
-	{ id = "old_age",        cause = "Natural causes",          minAge = 70 },
-	{ id = "heart_attack",   cause = "Heart attack",            minAge = 50, healthFactor = 0.3 },
-	{ id = "stroke",         cause = "Stroke",                  minAge = 55, healthFactor = 0.25 },
-	{ id = "cancer",         cause = "Cancer",                  minAge = 40, baseChance = 0.01 },
+	-- Natural causes (age-related) - BALANCED for realistic gameplay
+	-- Heart attacks and strokes should primarily affect seniors with poor health
+	{ id = "old_age",        cause = "Natural causes",          minAge = 75 },
+	{ id = "heart_attack",   cause = "Heart attack",            minAge = 55, healthFactor = 0.15 }, -- Reduced factor, higher min age
+	{ id = "stroke",         cause = "Stroke",                  minAge = 60, healthFactor = 0.12 }, -- Reduced factor, higher min age
+	{ id = "cancer",         cause = "Cancer",                  minAge = 45, baseChance = 0.005 }, -- Reduced chance
 	
 	-- Lifestyle-related (checked via flags)
-	{ id = "overdose",       cause = "Drug overdose",           requiresFlag = "substance_issue", chance = 0.05 },
-	{ id = "alcohol",        cause = "Alcohol-related illness", requiresFlag = "heavy_drinker", minAge = 35, chance = 0.02 },
+	{ id = "overdose",       cause = "Drug overdose",           requiresFlag = "substance_issue", chance = 0.03 }, -- Reduced chance
+	{ id = "alcohol",        cause = "Alcohol-related illness", requiresFlag = "heavy_drinker", minAge = 40, chance = 0.015 }, -- Reduced chance, higher min age
 	
 	-- Random accidents (very low chance)
-	{ id = "accident",       cause = "Tragic accident",         baseChance = 0.001 },
+	{ id = "accident",       cause = "Tragic accident",         baseChance = 0.0005 }, -- Even lower base chance
 }
 
 function LifeStageSystem.checkDeath(state)
@@ -492,6 +493,15 @@ function LifeStageSystem.checkDeath(state)
 	-- Health at 0 = immediate death
 	if health <= 0 then
 		return { died = true, cause = "Health failure" }
+	end
+	
+	-- CRITICAL FIX: Don't do random death checks for young people (under 45)
+	-- unless they have specific life-threatening conditions
+	local hasLifeThreateningCondition = flags.battling_cancer or flags.traumatic_injury 
+		or flags.substance_issue or flags.heavy_drinker
+	
+	if age < 45 and not hasLifeThreateningCondition then
+		return { died = false }
 	end
 	
 	-- Very old age = high death chance
@@ -518,29 +528,44 @@ function LifeStageSystem.checkDeath(state)
 		
 		-- Calculate chance based on age and health
 		if canOccur then
-			-- Base age-related chance (increases dramatically after 70)
-			if age >= 70 then
-				chance = chance + ((age - 70) / 100) * 0.15
+			-- Base age-related chance (increases gradually after 70, dramatically after 80)
+			if age >= 80 then
+				chance = chance + ((age - 80) / 100) * 0.25
+			elseif age >= 70 then
+				chance = chance + ((age - 70) / 100) * 0.08
 			end
 			
-			-- Health factor (low health increases death chance)
+			-- Health factor (low health increases death chance, but scaled by age)
+			-- Younger people are more resilient even with low health
 			if deathType.healthFactor then
-				if health < 30 then
-					chance = chance + deathType.healthFactor * (1 - health/30)
+				if health < 25 then
+					-- Scale health factor by age - older = more vulnerable
+					local ageMultiplier = math.max(0.3, (age - 40) / 60) -- 0.3 at 40, 1.0 at 100
+					chance = chance + deathType.healthFactor * (1 - health/25) * ageMultiplier
 				end
 			end
 			
-			-- Old age natural death
-			if deathType.id == "old_age" and age >= 75 then
-				chance = chance + ((age - 75) / 100) * 0.2
-				if health < 50 then
-					chance = chance * 1.5
+			-- Old age natural death - more gradual scaling
+			if deathType.id == "old_age" then
+				if age >= 85 then
+					chance = chance + ((age - 85) / 100) * 0.3
+				elseif age >= 75 then
+					chance = chance + ((age - 75) / 100) * 0.1
+				end
+				if health < 40 and age >= 75 then
+					chance = chance * 1.3
 				end
 			end
 			
-			-- Flag-based deaths
+			-- Flag-based deaths (lifestyle choices have consequences)
 			if deathType.chance and deathType.requiresFlag then
-				chance = deathType.chance
+				-- Scale by how long they've had the condition (proxy: age)
+				local baseChance = deathType.chance
+				if age > 50 then
+					chance = baseChance * (1 + (age - 50) / 100)
+				else
+					chance = baseChance * 0.5 -- Half chance when young
+				end
 			end
 			
 			-- Roll the dice

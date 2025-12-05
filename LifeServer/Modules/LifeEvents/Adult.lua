@@ -897,14 +897,24 @@ Adult.events = {
 		requiresFlags = { married = true },
 
 		choices = {
-			{ text = "Amicable split", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true }, feedText = "You parted ways peacefully. Still hurts." },
-			{ text = "Bitter court battle", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true }, feedText = "The divorce was ugly and expensive." },
-			{ text = "You cheated - you're the villain", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true }, feedText = "You destroyed the marriage. Living with guilt." },
-			{ text = "They cheated - you're devastated", effects = { Happiness = -25, Money = -5000, Health = -5 }, setFlags = { divorced = true, cheated_on = true }, feedText = "Betrayal. The trust is shattered." },
+			{ text = "Amicable split", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true, recently_single = true }, feedText = "You parted ways peacefully. Still hurts." },
+			{ text = "Bitter court battle", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true, recently_single = true }, feedText = "The divorce was ugly and expensive." },
+			{ text = "You cheated - you're the villain", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true, recently_single = true }, feedText = "You destroyed the marriage. Living with guilt." },
+			{ text = "They cheated - you're devastated", effects = { Happiness = -25, Money = -5000, Health = -5 }, setFlags = { divorced = true, cheated_on = true, recently_single = true }, feedText = "Betrayal. The trust is shattered." },
 		},
+		-- CRITICAL FIX: Properly clear ALL relationship flags on divorce
 		onComplete = function(state)
 			state.Flags = state.Flags or {}
 			state.Flags.married = nil
+			state.Flags.engaged = nil
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.lives_with_partner = nil
+			-- Clear the partner relationship
+			if state.Relationships then
+				state.Relationships.partner = nil
+			end
 		end,
 	},
 	{
@@ -1090,9 +1100,23 @@ Adult.events = {
 			{ text = "Struggle alone with grief", effects = { Happiness = -30, Health = -15 }, setFlags = { widowed = true, depressed = true }, feedText = "The loneliness is crushing." },
 			{ text = "Eventually find new companionship", effects = { Happiness = -15, Health = -5 }, setFlags = { widowed = true, found_love_again = true }, feedText = "After time, you found connection again." },
 		},
+		-- CRITICAL FIX: Properly clear ALL relationship flags when spouse dies
 		onComplete = function(state)
 			state.Flags = state.Flags or {}
 			state.Flags.married = nil
+			state.Flags.engaged = nil
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.lives_with_partner = nil
+			-- Mark partner as deceased but keep reference for memories
+			if state.Relationships and state.Relationships.partner then
+				state.Relationships.partner.alive = false
+				state.Relationships.partner.deceased = true
+				-- Move to a different key so new relationship can form
+				state.Relationships.late_spouse = state.Relationships.partner
+				state.Relationships.partner = nil
+			end
 		end,
 	},
 	{
