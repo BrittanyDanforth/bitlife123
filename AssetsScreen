@@ -90,14 +90,15 @@ function AssetsScreen:updateState(newState)
 		-- This ensures assets added by events appear immediately
 		if self.isVisible then
 			self:updateBalanceBar()
-			-- Clear existing content before repopulating
+			-- Clear ALL existing content before repopulating (simpler and more reliable)
 			if self.contentScroll then
 				for _, child in ipairs(self.contentScroll:GetChildren()) do
-					if child:IsA("Frame") and (child.Name == "HousingStatusSection" or child.Name == "MyPropertiesSection" or child.Name == "PropertySection" or child.Name == "MyVehiclesSection" or child.Name == "VehicleSection" or child.Name == "MyItemsSection" or child.Name == "ShopSection") then
+					if child:IsA("Frame") then
 						child:Destroy()
 					end
 				end
 			end
+			-- Repopulate current tab
 			if self.currentTab == "property" then
 				self:populateProperty()
 			elseif self.currentTab == "vehicles" then
@@ -1392,9 +1393,13 @@ function AssetsScreen:spin()
 				if result.success then
 					self.spinResult.Text = "🎉 You won " .. UI.formatMoney(result.winnings) .. "!"
 					self.spinResult.TextColor3 = C.Green
+					-- Update balance bar immediately after winning
+					self:updateBalanceBar()
 				else
 					self.spinResult.Text = result.message or "Better luck next time!"
 					self.spinResult.TextColor3 = C.Red
+					-- Update balance bar after losing too
+					self:updateBalanceBar()
 				end
 			end
 		else

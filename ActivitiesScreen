@@ -140,6 +140,11 @@ function ActivitiesScreen:updateState(newState)
 			if self.isVisible then
 				self:switchTab(self.currentTab)
 			end
+		elseif self.isVisible then
+			-- Even if jail status didn't change, refresh UI if visible
+			self:updateInfoBar()
+			-- Refresh current tab content
+			self:switchTab(self.currentTab)
 		end
 	end
 end

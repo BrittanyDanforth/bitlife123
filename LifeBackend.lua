@@ -1952,8 +1952,9 @@ function LifeBackend:createRelationship(state, relType, options)
 	state.Relationships[newId] = relationship
 
 	if relType == "romance" or relType == "partner" then
-		state.Relationships.partner = relationship
+		-- DO NOT set state.Relationships.partner - relationships are stored by ID only!
 		state.Flags.has_partner = true
+		state.Flags.has_romantic_partner = true
 		state.Flags.dating = true
 	end
 
