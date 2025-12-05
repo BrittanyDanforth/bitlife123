@@ -547,6 +547,16 @@ local function calculateEventWeight(event, state)
 	local baseWeight = event.weight or 10
 	local weight = baseWeight
 	
+	-- Career realism: scale career event weight by performance and progress
+	if event._category == "career" and state.CurrentJob then
+		local perf = (state.CareerInfo and state.CareerInfo.performance) or 50
+		local prog = (state.CareerInfo and state.CareerInfo.promotionProgress) or 0
+		-- Normalize factors: performance 0..100 -> 0.5..1.5, progress 0..100 -> 0.5..1.5
+		local perfFactor = 0.5 + (perf / 100)
+		local progFactor = 0.5 + (prog / 100)
+		weight = weight * perfFactor * progFactor
+	end
+	
 	-- BOOST: Never-seen events get priority
 	local occurCount = history.occurrences[event.id] or 0
 	if occurCount == 0 then
@@ -691,6 +701,11 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	return selectedEvents
+end
+
+-- Utility: fetch an event definition by id (for backend chaining)
+function LifeEvents.getEventById(eventId)
+	return AllEvents[eventId]
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════════

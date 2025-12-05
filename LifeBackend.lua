@@ -1287,8 +1287,9 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
 		local preStats = table.clone(state.Stats)
 		local preMoney = state.Money
+		local outcome
 		local success, err = pcall(function()
-			EventEngine.completeEvent(eventDef, choiceIndex, state)
+			outcome = EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
 		if not success then
 			warn("[LifeBackend] Event resolution error:", err)
@@ -1300,6 +1301,23 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			Looks = (state.Stats.Looks - preStats.Looks),
 			Money = (state.Money - preMoney),
 		}
+		-- Chain next event if provided by outcome
+		if outcome and outcome.nextEventId then
+			local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
+			local nextDef = LifeEvents.getEventById(outcome.nextEventId)
+			if nextDef then
+				self.pendingEvents[player.UserId] = {
+					activeEventId = nil,
+					queue = { nextDef },
+					cursor = 1,
+					feedText = outcome.feedText or feedText,
+					definition = nextDef,
+				}
+				debugPrint(string.format("Chaining to next event '%s' for %s", outcome.nextEventId, player.Name))
+				self:presentEvent(player, nextDef, outcome.feedText or feedText)
+				return
+			end
+		end
 	else
 		self:applyStatChanges(state, choice.deltas)
 
