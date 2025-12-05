@@ -438,16 +438,25 @@ local function canEventTrigger(event, state)
 	-- RELATIONSHIP REQUIREMENTS - No marriage events if single!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- Helper function to check if player has a romantic partner
+	local function hasRomanticPartner(state)
+		if not state.Relationships then return false end
+		for id, rel in pairs(state.Relationships) do
+			if rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				return true
+			end
+		end
+		return false
+	end
+	
 	if event.requiresPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if not hasPartner then
+		if not hasRomanticPartner(state) then
 			return false -- MUST have a partner
 		end
 	end
 	
 	if event.requiresSingle or event.requiresNoPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if hasPartner then
+		if hasRomanticPartner(state) then
 			return false -- MUST be single
 		end
 	end
@@ -1010,11 +1019,12 @@ function EventEngine.createRelationship(state, relType, options)
 	
 	state.Relationships[id] = relationship
 	
-	-- Set as partner if it's a romance
+	-- Set flags if it's a romance (for convenience, also set .partner reference)
 	if relType == "romance" or relType == "partner" then
-		state.Relationships.partner = relationship
+		state.Relationships.partner = relationship -- Convenience reference
 		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
+		state.Flags.has_romantic_partner = true
 	end
 	
 	return relationship
@@ -1100,9 +1110,21 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Romance events - create partner
+	-- Helper to find current romantic partner
+	local function getCurrentPartner(state)
+		if not state.Relationships then return nil, nil end
+		for id, rel in pairs(state.Relationships) do
+			if rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+				return id, rel
+			end
+		end
+		return nil, nil
+	end
+	
+	-- Romance events - create partner (only if event doesn't already handle it)
 	if (eventId == "dating_app" or eventId == "high_school_romance") and choiceIndex == 1 then
-		if not state.Relationships or not state.Relationships.partner then
+		local partnerId, partner = getCurrentPartner(state)
+		if not partner then
 			local partner = EventEngine.createRelationship(state, "romance")
 			outcome.feedText = "You started dating " .. partner.name .. "!"
 			outcome.newRelationship = partner
@@ -1112,20 +1134,30 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Wedding - update partner role
 	if eventId == "wedding_day" then
-		if state.Relationships and state.Relationships.partner then
-			state.Relationships.partner.role = "Spouse"
+		local partnerId, partner = getCurrentPartner(state)
+		if partner then
+			partner.role = "Spouse"
 			state.Flags.married = true
 			state.Flags.engaged = nil
-			outcome.feedText = "You married " .. state.Relationships.partner.name .. "!"
+			outcome.feedText = "You married " .. partner.name .. "!"
 		end
 	end
 	
 	-- Breakup events
 	if choice.setFlags and choice.setFlags.recently_single then
-		if state.Relationships and state.Relationships.partner then
-			local partnerName = state.Relationships.partner.name
-			state.Relationships.partner = nil
+		local partnerId, partner = getCurrentPartner(state)
+		if partner then
+			local partnerName = partner.name
+			-- Remove the relationship
+			if partnerId and state.Relationships then
+				state.Relationships[partnerId] = nil
+			end
+			-- Also clear the .partner reference if it exists
+			if state.Relationships.partner then
+				state.Relationships.partner = nil
+			end
 			state.Flags.has_partner = nil
+			state.Flags.has_romantic_partner = nil
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			outcome.feedText = "You and " .. partnerName .. " broke up."
