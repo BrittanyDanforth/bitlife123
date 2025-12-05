@@ -23,7 +23,7 @@ CareerSystem.Catalog = {
 			id = "software_engineer",
 			name = "Junior Software Engineer",
 			category = "tech",
-			requiredEducation = "bachelors",
+			requiredEducation = "bachelor", -- FIXED: was "bachelors"
 			baseSalary = 72000,
 			performanceGain = { Smarts = 2 },
 		},
@@ -31,7 +31,7 @@ CareerSystem.Catalog = {
 			id = "nurse",
 			name = "Registered Nurse",
 			category = "medical",
-			requiredEducation = "bachelors",
+			requiredEducation = "bachelor", -- FIXED: was "bachelors"
 			baseSalary = 68000,
 		},
 	},
@@ -40,7 +40,7 @@ CareerSystem.Catalog = {
 			id = "graphic_designer",
 			name = "Graphic Designer",
 			category = "creative",
-			requiredEducation = "associate",
+			requiredEducation = "community", -- FIXED: was "associate"
 			baseSalary = 52000,
 		},
 		{
@@ -59,15 +59,35 @@ local function meetsEducation(requirement, level)
 		return true
 	end
 
+	-- FIXED: Match the Education IDs used in LifeBackend and OccupationScreen
+	-- Supports both legacy names (bachelors) and new names (bachelor)
 	local hierarchy = {
 		none = 0,
+		-- High school variants
+		high_school = 1,
 		highschool = 1,
+		["high-school"] = 1,
+		-- Associate/Community
 		associate = 2,
+		community = 2,
+		-- Bachelor variants
+		bachelor = 3,
 		bachelors = 3,
+		["bachelor's"] = 3,
+		-- Master variants
+		master = 4,
 		masters = 4,
-		doctorate = 5,
+		["master's"] = 4,
+		-- Professional/Advanced
+		law = 5,
+		medical = 5,
+		doctorate = 6,
+		phd = 6,
 	}
-	return (hierarchy[level or "none"] or 0) >= (hierarchy[requirement] or 0)
+	
+	local playerLevel = hierarchy[string.lower(level or "none")] or 0
+	local requiredLevel = hierarchy[string.lower(requirement or "none")] or 0
+	return playerLevel >= requiredLevel
 end
 
 function CareerSystem.getJobsForState(state)
@@ -93,22 +113,53 @@ function CareerSystem.getJob(jobId)
 end
 
 function CareerSystem.simulateWork(state)
-	if not state.Career or not state.Career.jobId then
+	-- Support both state.CurrentJob (LifeState) and state.Career.jobId (legacy)
+	local hasJob = state.CurrentJob or (state.Career and state.Career.jobId)
+	if not hasJob then
 		return
 	end
-
-	state.Career.performance = math.clamp((state.Career.performance or 60) + Random.new():NextInteger(-2, 5), 0, 100)
-	state.Career.promotionProgress = math.clamp((state.Career.promotionProgress or 0) + Random.new():NextInteger(3, 10), 0, 100)
-
-	if state.Career.performance >= 90 and state.Career.promotionProgress >= 100 then
-		state.Career.salary = math.floor(state.Career.salary * 1.15)
-		state.Career.promotionProgress = 20
-		state.Career.raiseCount = (state.Career.raiseCount or 0) + 1
-		state:AddFeed(("You were promoted! Salary is now $%s."):format(state.Career.salary))
+	
+	-- Use CareerInfo for performance tracking (matches LifeState structure)
+	state.CareerInfo = state.CareerInfo or {}
+	local info = state.CareerInfo
+	
+	info.performance = math.clamp((info.performance or 60) + Random.new():NextInteger(-2, 5), 0, 100)
+	info.promotionProgress = math.clamp((info.promotionProgress or 0) + Random.new():NextInteger(3, 10), 0, 100)
+	
+	-- Check for promotion
+	if info.performance >= 90 and info.promotionProgress >= 100 then
+		-- Get current salary from CurrentJob or Career
+		local currentSalary = 0
+		if state.CurrentJob and state.CurrentJob.salary then
+			currentSalary = state.CurrentJob.salary
+			state.CurrentJob.salary = math.floor(currentSalary * 1.15)
+		elseif state.Career and state.Career.salary then
+			currentSalary = state.Career.salary
+			state.Career.salary = math.floor(currentSalary * 1.15)
+		end
+		
+		info.promotionProgress = 20
+		info.raises = (info.raises or 0) + 1
+		
+		local newSalary = state.CurrentJob and state.CurrentJob.salary or (state.Career and state.Career.salary) or currentSalary
+		if state.AddFeed then
+			state:AddFeed(("You were promoted! Salary is now $%s."):format(newSalary))
+		end
 	end
-
-	local salary = state.Career.salary or 0
-	state:AddMoney(math.floor(salary / 12), "Monthly salary")
+	
+	-- Add monthly salary
+	local salary = 0
+	if state.CurrentJob and state.CurrentJob.salary then
+		salary = state.CurrentJob.salary
+	elseif state.Career and state.Career.salary then
+		salary = state.Career.salary
+	end
+	
+	if state.AddMoney then
+		state:AddMoney(math.floor(salary / 12), "Monthly salary")
+	elseif state.Money ~= nil then
+		state.Money = (state.Money or 0) + math.floor(salary / 12)
+	end
 end
 
 return CareerSystem

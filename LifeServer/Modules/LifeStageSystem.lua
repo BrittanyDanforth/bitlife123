@@ -344,32 +344,47 @@ function LifeStageSystem.validateEvent(event, state)
 		return false
 	end
 	
-	-- Required flags
+	-- Required flags (supports both array format and table format)
 	local requiredFlags = conditions.requiredFlags or event.requiresFlags
 	if requiredFlags then
-		for flag, requiredValue in pairs(requiredFlags) do
-			if type(requiredValue) == "boolean" then
-				if requiredValue == true and not flags[flag] then
+		for key, value in pairs(requiredFlags) do
+			if type(key) == "number" then
+				-- Array format: { "flag1", "flag2" } - each value is a flag name
+				if not flags[value] then
 					return false
 				end
-				if requiredValue == false and flags[flag] then
+			elseif type(value) == "boolean" then
+				-- Table format: { flag1 = true, flag2 = false }
+				if value == true and not flags[key] then
+					return false
+				end
+				if value == false and flags[key] then
 					return false
 				end
 			else
-				-- Array format: { "flag1", "flag2" }
-				if not flags[requiredValue] then
+				-- Nested array format: { flag1 = { "subvalue" } } - unlikely but handle gracefully
+				if not flags[key] then
 					return false
 				end
 			end
 		end
 	end
 	
-	-- Blocked flags
+	-- Blocked flags (supports both array format and table format)
 	local blockedFlags = conditions.blockedFlags or event.blockedByFlags
 	if blockedFlags then
-		for _, flag in ipairs(blockedFlags) do
-			if flags[flag] then
-				return false
+		-- Check if it's a table with key-value pairs or an array
+		for key, value in pairs(blockedFlags) do
+			if type(key) == "number" then
+				-- Array format: { "flag1", "flag2" }
+				if flags[value] then
+					return false
+				end
+			else
+				-- Table format: { flag1 = true, flag2 = true }
+				if value == true and flags[key] then
+					return false
+				end
 			end
 		end
 	end
