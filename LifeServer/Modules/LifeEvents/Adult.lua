@@ -209,14 +209,15 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true, renting = false },
 				feedText = "You bought your first home! A big milestone!",
 				onResolve = function(state)
+					local EventEngine = require(script.Parent.init).EventEngine
 					local homePrice = 85000
 					local downPayment = math.floor(homePrice * 0.2) -- 20% down
 					local money = state.Money or 0
 					
 					if money >= downPayment then
 						state.Money = math.max(0, money - downPayment)
-						if state.AddAsset then
-							state:AddAsset("Properties", {
+						if EventEngine and EventEngine.addAsset then
+							EventEngine.addAsset(state, "property", {
 								id = "starter_home_" .. tostring(state.Age or 0),
 								name = "Starter Home",
 								emoji = "🏠",
@@ -242,14 +243,15 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true, high_mortgage = true, renting = false },
 				feedText = "You got your dream home! But the mortgage is steep.",
 				onResolve = function(state)
+					local EventEngine = require(script.Parent.init).EventEngine
 					local homePrice = 350000
 					local downPayment = math.floor(homePrice * 0.15) -- 15% down (stretching)
 					local money = state.Money or 0
 					
 					if money >= downPayment then
 						state.Money = math.max(0, money - downPayment)
-						if state.AddAsset then
-							state:AddAsset("Properties", {
+						if EventEngine and EventEngine.addAsset then
+							EventEngine.addAsset(state, "property", {
 								id = "dream_home_" .. tostring(state.Age or 0),
 								name = "Dream Home",
 								emoji = "🏡",
@@ -281,14 +283,15 @@ Adult.events = {
 				setFlags = { homeowner = true, has_property = true, relocated = true, renting = false },
 				feedText = "You moved somewhere more affordable!",
 				onResolve = function(state)
+					local EventEngine = require(script.Parent.init).EventEngine
 					local homePrice = 65000
 					local downPayment = math.floor(homePrice * 0.2)
 					local money = state.Money or 0
 					
 					if money >= downPayment then
 						state.Money = math.max(0, money - downPayment)
-						if state.AddAsset then
-							state:AddAsset("Properties", {
+						if EventEngine and EventEngine.addAsset then
+							EventEngine.addAsset(state, "property", {
 								id = "affordable_home_" .. tostring(state.Age or 0),
 								name = "Affordable Home",
 								emoji = "🏠",

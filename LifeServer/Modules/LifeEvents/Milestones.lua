@@ -161,7 +161,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "It's not pretty, but it's yours!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "beater_car_" .. tostring(state.Age),
 						name = "Beat-up Used Car",
@@ -179,7 +179,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "A solid first car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "reliable_car_" .. tostring(state.Age),
 						name = "Reliable Used Car",
@@ -197,7 +197,7 @@ Milestones.events = {
 				setFlags = { has_car = true, has_vehicle = true },
 				feedText = "Your family helped you get a car!",
 				onResolve = function(state)
-					local EventEngine = require(script.Parent).EventEngine
+					local EventEngine = require(script.Parent.init).EventEngine
 					EventEngine.addAsset(state, "vehicle", {
 						id = "gift_car_" .. tostring(state.Age),
 						name = "Family Gift Car",

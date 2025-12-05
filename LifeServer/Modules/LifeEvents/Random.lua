@@ -136,12 +136,13 @@ Random.events = {
 				text = "Give it to someone else", 
 				effects = { Happiness = 2 }, 
 				setFlags = { generous = true },
-				feedText = "You won a little something! $50 isn't bad!",
+				feedText = "You gave the ticket away. They were grateful!",
 			},
 			{ 
-				text = "Nothing this time", 
-				effects = { Happiness = -2 }, 
-				feedText = "No luck. Better luck next time.",
+				text = "Don't scratch it", 
+				effects = { Happiness = 1 }, 
+				setFlags = { cautious = true },
+				feedText = "You kept the ticket as a souvenir. Maybe you'll scratch it later.",
 			},
 		},
 	},
@@ -169,8 +170,9 @@ Random.events = {
 				setFlags = { has_heirloom = true },
 				feedText = "An interesting piece of family history. Worth something, but more sentimental value.",
 				onResolve = function(state)
-					if state.AddAsset then
-						state:AddAsset("Shop", {
+					local EventEngine = require(script.Parent.init).EventEngine
+					if EventEngine and EventEngine.addAsset then
+						EventEngine.addAsset(state, "item", {
 							id = "family_heirloom_" .. tostring(state.Age),
 							name = "Family Heirloom",
 							emoji = "🏺",
@@ -187,8 +189,9 @@ Random.events = {
 				setFlags = { inherited_property = true, homeowner = true, has_property = true, renting = false },
 				feedText = "You inherited a property! Needs some work, but it's yours!",
 				onResolve = function(state)
-					if state.AddAsset then
-						state:AddAsset("Properties", {
+					local EventEngine = require(script.Parent.init).EventEngine
+					if EventEngine and EventEngine.addAsset then
+						EventEngine.addAsset(state, "property", {
 							id = "inherited_house_" .. tostring(state.Age),
 							name = "Inherited House",
 							emoji = "🏚️",
@@ -356,22 +359,23 @@ Random.events = {
 				setFlags = { upgraded_car = true },
 				feedText = "Time for an upgrade anyway! You bought a new car. Fresh start!",
 				onResolve = function(state)
-					if state.RemoveAsset then
+					local EventEngine = require(script.Parent.init).EventEngine
+					if EventEngine then
 						-- Remove old car (simplified - would track specific car in real implementation)
 						local vehicles = state.Assets and state.Assets.Vehicles
 						if vehicles and #vehicles > 0 then
-							state:RemoveAsset("Vehicles", vehicles[1].id)
+							EventEngine.removeAssetById(state, "vehicle", vehicles[1].id)
 						end
-					end
-					if state.AddAsset then
-						state:AddAsset("Vehicles", {
-							id = "replacement_car_" .. tostring(state.Age),
-							name = "New Reliable Car",
-							emoji = "🚗",
-							price = 5000,
-							value = 4500,
-							isEventAcquired = true,
-						})
+						if EventEngine.addAsset then
+							EventEngine.addAsset(state, "vehicle", {
+								id = "replacement_car_" .. tostring(state.Age),
+								name = "New Reliable Car",
+								emoji = "🚗",
+								price = 5000,
+								value = 4500,
+								isEventAcquired = true,
+							})
+						end
 					end
 				end,
 			},
@@ -381,10 +385,11 @@ Random.events = {
 				setFlags = { carless = true },
 				feedText = "You sold the heap for $300 and went back to public transit. Less convenient, but cheaper.",
 				onResolve = function(state)
-					if state.RemoveAsset then
+					local EventEngine = require(script.Parent.init).EventEngine
+					if EventEngine and EventEngine.removeAssetById then
 						local vehicles = state.Assets and state.Assets.Vehicles
 						if vehicles and #vehicles > 0 then
-							state:RemoveAsset("Vehicles", vehicles[1].id)
+							EventEngine.removeAssetById(state, "vehicle", vehicles[1].id)
 						end
 					end
 					-- Use state.Flags directly instead of deprecated SetFlag
