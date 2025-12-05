@@ -335,6 +335,68 @@ local JobCatalogList = {
 	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true },
 	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true },
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RACING CAREER PATH
+	-- A full progression from go-karts to becoming a racing legend
+	-- Requires: High Health (reflexes), starts young, danger element
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Karting League", emoji = "🏎️", salary = 15000, minAge = 12, requirement = nil, category = "racing", 
+		minStats = { Health = 50 }, description = "Start your racing career on the track" },
+	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Racing Circuit", emoji = "🏎️", salary = 35000, minAge = 16, requirement = nil, category = "racing",
+		minStats = { Health = 60 }, description = "Compete in regional amateur racing series" },
+	{ id = "professional_racer", name = "Professional Racer", company = "National Racing Series", emoji = "🏁", salary = 150000, minAge = 18, requirement = nil, category = "racing",
+		minStats = { Health = 70 }, description = "Race professionally on the national circuit" },
+	{ id = "f1_driver", name = "Formula 1 Driver", company = "F1 Racing Team", emoji = "🏆", salary = 2500000, minAge = 21, requirement = nil, category = "racing",
+		minStats = { Health = 80 }, description = "The pinnacle of motorsport" },
+	{ id = "racing_legend", name = "Racing Legend", company = "Racing Hall of Fame", emoji = "👑", salary = 15000000, minAge = 28, requirement = nil, category = "racing",
+		minStats = { Health = 75 }, description = "Multi-champion, legend status achieved" },
+	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Your Racing Team", emoji = "🏢", salary = 5000000, minAge = 35, requirement = nil, category = "racing",
+		description = "Own and manage a professional racing team" },
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HACKER/CYBERSECURITY CAREER PATH
+	-- Two branches: White Hat (legit) or Black Hat (criminal)
+	-- Requires: High Smarts, tech skills
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- Entry points (shared)
+	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 0, minAge = 14, requirement = nil, category = "hacker",
+		minStats = { Smarts = 55 }, description = "Learning to hack with pre-made tools" },
+	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
+		minStats = { Smarts = 65 }, description = "Taking small hacking jobs online" },
+	
+	-- White Hat Path (Legit Cybersecurity)
+	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech",
+		minStats = { Smarts = 70 }, description = "Legally hack companies to find vulnerabilities" },
+	{ id = "security_consultant", name = "Security Consultant", company = "CyberGuard Inc", emoji = "🛡️", salary = 165000, minAge = 25, requirement = "bachelor", category = "tech",
+		minStats = { Smarts = 75 }, description = "Advise companies on cybersecurity" },
+	{ id = "ciso", name = "Chief Information Security Officer", company = "Fortune 500", emoji = "🔐", salary = 420000, minAge = 32, requirement = "bachelor", category = "tech",
+		minStats = { Smarts = 80 }, description = "Lead security for a major corporation" },
+	
+	-- Black Hat Path (Criminal Hacker)
+	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 20, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 70 }, description = "Hack for profit illegally" },
+	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 25, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 80 }, description = "One of the best hackers in the world" },
+	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 30, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 85 }, description = "Run a cyber criminal empire" },
+	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 28, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 90 }, description = "Control the most feared ransomware operations" },
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ESPORTS CAREER PATH
+	-- Modern gaming career for young players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports",
+		minStats = { Smarts = 40 }, description = "Stream games with a small following" },
+	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 45000, minAge = 16, requirement = nil, category = "esports",
+		minStats = { Smarts = 50 }, description = "Create gaming content with growing audience" },
+	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 150000, minAge = 16, requirement = nil, category = "esports",
+		minStats = { Smarts = 60 }, description = "Compete professionally in esports" },
+	{ id = "esports_champion", name = "Esports Champion", company = "World Champions", emoji = "🏆", salary = 1500000, minAge = 18, requirement = nil, category = "esports",
+		minStats = { Smarts = 70 }, description = "World champion esports player" },
+	{ id = "gaming_legend", name = "Gaming Legend", company = "Hall of Fame", emoji = "👑", salary = 5000000, minAge = 22, requirement = nil, category = "esports",
+		description = "Legendary status in gaming history" },
 }
 
 local JobCatalog = {}
@@ -352,6 +414,14 @@ local CareerTracks = {
 	government = { "postal_worker", "city_council", "mayor", "governor", "senator", "president" },
 	criminal = { "drug_dealer_street", "drug_dealer", "gang_lieutenant", "crime_boss" },
 	sports = { "gym_instructor", "minor_league", "professional_athlete", "star_athlete", "head_coach" },
+	-- NEW: Racing career track - from go-karts to legend
+	racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend", "racing_team_owner" },
+	-- NEW: Hacker career - white hat path (legit)
+	hacker_whitehat = { "script_kiddie", "freelance_hacker", "pen_tester", "security_consultant", "ciso" },
+	-- NEW: Hacker career - black hat path (criminal)
+	hacker_blackhat = { "script_kiddie", "freelance_hacker", "black_hat_hacker", "elite_hacker", "cyber_crime_boss", "ransomware_kingpin" },
+	-- NEW: Esports career track
+	esports = { "casual_gamer", "content_creator", "pro_gamer", "esports_champion", "gaming_legend" },
 }
 
 -- ============================================================================
@@ -1231,7 +1301,16 @@ function LifeBackend:generateEvent(player, state)
 		end
 	end
 
-	if state.ActivePath == "criminal" or (state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob] and JobCatalog[state.CurrentJob.id or state.CurrentJob].category == "criminal") then
+	-- Criminal and Black Hat Hacker careers trigger crime events
+	if state.CurrentJob then
+		local job = JobCatalog[state.CurrentJob.id or state.CurrentJob]
+		if job and (job.category == "criminal" or (job.category == "hacker" and job.illegal)) then
+			table.insert(triggers, "crime")
+		end
+	end
+	
+	-- Criminal story path also triggers crime events
+	if state.ActivePath == "criminal" then
 		table.insert(triggers, "crime")
 	end
 
@@ -1433,6 +1512,46 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	local feedText = choice.feed or choice.text or "Life continues."
 	local resultData
 	local effectsSummary = choice.deltas or {}
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Minigame Integration for Career Events (Racing, Hacking, etc.)
+	-- If choice triggers a minigame, store pending event and wait for minigame result
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.triggerMinigame then
+		-- Initialize pending minigame storage
+		self.pendingMinigameEvents = self.pendingMinigameEvents or {}
+		
+		-- Store the event context for when minigame completes
+		self.pendingMinigameEvents[player.UserId] = {
+			eventDef = eventDef,
+			choice = choice,
+			choiceIndex = choiceIndex,
+			feedText = feedText,
+		}
+		
+		-- Tell client to start the minigame
+		local minigamePayload = {
+			type = choice.triggerMinigame,
+			options = choice.minigameOptions or {},
+			eventId = eventDef.id,
+		}
+		
+		-- Clear the pending event queue but keep awaiting decision
+		self.pendingEvents[player.UserId] = nil
+		-- state.awaitingDecision stays true until minigame completes
+		
+		-- Fire the minigame start event to client
+		if self.remotes.MinigameStart then
+			self.remotes.MinigameStart:FireClient(player, minigamePayload)
+		else
+			-- Fallback: create the remote if it doesn't exist
+			local minigameRemote = self:createRemote("MinigameStart", "RemoteEvent")
+			minigameRemote:FireClient(player, minigamePayload)
+		end
+		
+		debugPrint(string.format("Minigame triggered for %s: %s", player.Name, choice.triggerMinigame))
+		return -- Wait for minigame result
+	end
 
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
 		local preStats = table.clone(state.Stats)
@@ -1769,6 +1888,29 @@ function LifeBackend:handleJobApplication(player, jobId)
 
 	if not self:meetsEducationRequirement(state, job.requirement) then
 		return { success = false, message = "You need more education first." }
+	end
+
+	-- CRITICAL FIX: Check minStats requirements (for Racing, Hacker, etc. careers)
+	if job.minStats then
+		state.Stats = state.Stats or {}
+		for statName, minValue in pairs(job.minStats) do
+			local playerStat = state.Stats[statName] or state[statName] or 0
+			if playerStat < minValue then
+				local statDisplayName = statName:gsub("^%l", string.upper)
+				return { 
+					success = false, 
+					message = string.format("You need at least %d %s for this job. (You have %d)", minValue, statDisplayName, playerStat) 
+				}
+			end
+		end
+	end
+	
+	-- Check if illegal job and warn/block based on criminal status
+	if job.illegal and not (state.Flags and state.Flags.criminal_path) then
+		-- First illegal job sets criminal flag
+		state.Flags = state.Flags or {}
+		state.Flags.criminal_path = true
+		state.Flags.criminal = true
 	end
 
 	state.CurrentJob = {
@@ -2650,6 +2792,55 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 	if not state then
 		return
 	end
+	
+	-- CRITICAL FIX: Check if there's a pending event minigame to resolve
+	local pending = self.pendingMinigameEvents and self.pendingMinigameEvents[player.UserId]
+	if pending and pending.eventDef and pending.choice then
+		local choice = pending.choice
+		local eventDef = pending.eventDef
+		
+		-- Create minigame result object
+		local minigameResult = {
+			success = won,
+			won = won,
+			payload = payload or {},
+		}
+		
+		-- Execute the onResolve handler with minigame result
+		if choice.onResolve and type(choice.onResolve) == "function" then
+			local success, err = pcall(function()
+				choice.onResolve(state, minigameResult)
+			end)
+			if not success then
+				warn("[LifeBackend] Event minigame onResolve error:", err)
+			end
+		end
+		
+		-- Apply base effects from the choice
+		if choice.effects then
+			self:applyStatChanges(state, choice.effects)
+		end
+		
+		-- Apply setFlags
+		if choice.setFlags then
+			state.Flags = state.Flags or {}
+			for flag, value in pairs(choice.setFlags) do
+				state.Flags[flag] = value
+			end
+		end
+		
+		-- Clear the pending minigame
+		self.pendingMinigameEvents[player.UserId] = nil
+		
+		-- Complete the age cycle
+		state.awaitingDecision = false
+		local feedText = choice.feedText or (won and "You succeeded!" or "You failed.")
+		self:completeAgeCycle(player, state, feedText)
+		
+		return
+	end
+	
+	-- Fallback for standalone minigames (not event-related)
 	if won then
 		self:applyStatChanges(state, { Happiness = 3 })
 	else

@@ -195,6 +195,10 @@ function LifeEvents.init()
 		{ name = "RomanceEvents",  category = "relationships" },
 		{ name = "CrimeEvents",    category = "crime" },
 		{ name = "CoreMilestones", category = "milestones" },
+		
+		-- NEW: Specialized career paths with minigame integration
+		{ name = "RacingEvents",   category = "career_racing" },
+		{ name = "HackerEvents",   category = "career_hacker" },
 	}
 	
 	local totalEvents = 0
@@ -333,6 +337,30 @@ local function canEventTrigger(event, state)
 		
 		if not allowedInPrison then
 			return false -- Block this event - player is incarcerated
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOSPITALIZATION CHECK - CRITICAL FIX
+	-- Players in the hospital cannot do normal activities, only medical/recovery events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if flags.hospitalized then
+		local eventCategory = event._category or event.category or ""
+		local allowedInHospital = event.allowedInHospital
+			or eventCategory == "medical"
+			or eventCategory == "recovery"
+			or eventCategory == "random" -- Allow random events like recovery
+			or (event.id and (
+				string.find(event.id, "hospital")
+				or string.find(event.id, "recovery")
+				or string.find(event.id, "medical")
+				or string.find(event.id, "health")
+				or string.find(event.id, "injury")
+			))
+		
+		if not allowedInHospital then
+			return false -- Block this event - player is hospitalized
 		end
 	end
 	
