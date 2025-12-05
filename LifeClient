@@ -30,7 +30,7 @@ if ScreensFolder then
 		end
 		return nil
 	end
-	
+
 	-- Fast parallel loading - no WaitForChild delays
 	OccupationScreen    = safeRequire("OccupationScreen")
 	AssetsScreen        = safeRequire("AssetsScreen")
@@ -175,18 +175,18 @@ local C = {
 	Female = Color3.fromRGB(244, 114, 182),
 
 	-- Neutrals
-	White   = Color3.fromRGB(255, 255, 255),
-	OffWhite= Color3.fromRGB(250, 250, 250),
-	Gray50  = Color3.fromRGB(249, 250, 251),
-	Gray100 = Color3.fromRGB(243, 244, 246),
-	Gray200 = Color3.fromRGB(229, 231, 235),
-	Gray300 = Color3.fromRGB(209, 213, 219),
-	Gray400 = Color3.fromRGB(156, 163, 175),
-	Gray500 = Color3.fromRGB(107, 114, 128),
-	Gray600 = Color3.fromRGB(75, 85, 99),
-	Gray700 = Color3.fromRGB(55, 65, 81),
-	Gray800 = Color3.fromRGB(31, 41, 55),
-	Gray900 = Color3.fromRGB(17, 24, 39),
+	White    = Color3.fromRGB(255, 255, 255),
+	OffWhite = Color3.fromRGB(250, 250, 250),
+	Gray50   = Color3.fromRGB(249, 250, 251),
+	Gray100  = Color3.fromRGB(243, 244, 246),
+	Gray200  = Color3.fromRGB(229, 231, 235),
+	Gray300  = Color3.fromRGB(209, 213, 219),
+	Gray400  = Color3.fromRGB(156, 163, 175),
+	Gray500  = Color3.fromRGB(107, 114, 128),
+	Gray600  = Color3.fromRGB(75, 85, 99),
+	Gray700  = Color3.fromRGB(55, 65, 81),
+	Gray800  = Color3.fromRGB(31, 41, 55),
+	Gray900  = Color3.fromRGB(17, 24, 39),
 
 	-- Nav
 	NavBlue = Color3.fromRGB(30, 58, 138),
@@ -202,6 +202,65 @@ local F = {
 	Medium = Enum.Font.GothamMedium,
 	Button = Enum.Font.GothamBold,
 }
+
+local function ensureSharedUITheme()
+	local sharedUI = safeRequireRS("UIComponents")
+	if not sharedUI then
+		return
+	end
+
+	sharedUI.Colors = sharedUI.Colors or {}
+	for name, value in pairs(C) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	-- Additional palette entries used by the standalone screens
+	local extraColors = {
+		Bg        = Color3.fromRGB(246, 248, 252),
+		Teal      = Color3.fromRGB(20, 184, 166),
+		TealDark  = Color3.fromRGB(13, 148, 136),
+		TealPale  = Color3.fromRGB(204, 251, 241),
+		Cyan      = Color3.fromRGB(14, 165, 233),
+		CyanDark  = Color3.fromRGB(21, 94, 117),
+		CyanPale  = Color3.fromRGB(224, 242, 254),
+		Gold      = Color3.fromRGB(251, 191, 36),
+		GoldDark  = Color3.fromRGB(217, 119, 6),
+		GoldPale  = Color3.fromRGB(254, 243, 199),
+		AmberDark = Color3.fromRGB(217, 119, 6),
+		AmberPale = Color3.fromRGB(254, 243, 199),
+		PurplePale= Color3.fromRGB(243, 232, 255),
+		Gray950   = Color3.fromRGB(2, 6, 23),
+	}
+	for name, value in pairs(extraColors) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	sharedUI.Fonts = sharedUI.Fonts or {}
+	for name, font in pairs(F) do
+		if sharedUI.Fonts[name] == nil then
+			sharedUI.Fonts[name] = font
+		end
+	end
+
+	if not sharedUI.formatMoney then
+		function sharedUI.formatMoney(amount)
+			if not amount then return "$0" end
+			if amount >= 1_000_000 then
+				return string.format("$%.1fM", amount / 1_000_000)
+			elseif amount >= 1_000 then
+				return string.format("$%.1fK", amount / 1_000)
+			else
+				return "$" .. tostring(math.floor(amount + 0.5))
+			end
+		end
+	end
+end
+
+ensureSharedUITheme()
 
 ----------------------------------------------------------------
 -- HELPERS
@@ -531,13 +590,6 @@ hideResultPopup = function()
 end
 
 local function showResultPopup(data, callback)
-	-- Force-hide any lingering event modal so we NEVER see both stacked
-	if hideEvent then
-		pcall(function()
-			hideEvent(true)
-		end)
-	end
-
 	if not resultOverlay then createResultPopup() end
 
 	resultCallback = callback
@@ -552,7 +604,7 @@ local function showResultPopup(data, callback)
 		-- Fall back to stat-based check
 		isPositive = (data.happiness or 0) >= 0 and (data.health or 0) >= 0
 	end
-	
+
 	local shellColor = isPositive and C.Green or C.Red
 	local shellStrokeColor = isPositive and C.GreenDark or C.RedDark
 
@@ -661,7 +713,7 @@ local function showResultPopup(data, callback)
 	-- Specifically: health loss, major money loss, or explicit failure
 	local shouldShake = false
 	local shouldFlash = false
-	
+
 	if data.health and data.health < -5 then
 		-- Health dropped significantly - shake and red flash
 		shouldShake = true
@@ -674,7 +726,7 @@ local function showResultPopup(data, callback)
 		shouldShake = true
 		shouldFlash = true
 	end
-	
+
 	if shouldShake then
 		shakeScreen(8, 0.25)
 	end
@@ -1230,7 +1282,7 @@ showTutorial = function()
 	hasShownAgeHint = true
 	tutorialOverlay.Visible = true
 	tutorialRing.Visible = true
-	
+
 	-- Pulse the ring stroke for attention
 	local pulse = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	local s = tutorialRing:FindFirstChildOfClass("UIStroke")
@@ -1239,7 +1291,7 @@ showTutorial = function()
 		s.Thickness = 4
 		tween(s, pulse, { Transparency = 0.4, Thickness = 6 })
 	end
-	
+
 	-- Also scale pulse the ring for extra visibility
 	local scalePulse = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	tween(tutorialRing, scalePulse, { 
@@ -1446,15 +1498,19 @@ eventBody.LayoutOrder = 1
 eventBody.ZIndex = 65
 eventBody.Parent = bodySection
 
+-- FIXED QUESTION LABEL: wraps + auto height so long questions stay inside card
 local eventQuestion = Instance.new("TextLabel")
 eventQuestion.Name = "EventQuestion"
-eventQuestion.Size = UDim2.new(1, 0, 0, 28)
+eventQuestion.Size = UDim2.new(1, 0, 0, 0)
+eventQuestion.AutomaticSize = Enum.AutomaticSize.Y
 eventQuestion.BackgroundTransparency = 1
 eventQuestion.Font = F.Title
 eventQuestion.TextSize = 18  -- BIGGER (was 15)
 eventQuestion.TextColor3 = C.Gray800
 eventQuestion.Text = "What will you do?"
 eventQuestion.TextXAlignment = Enum.TextXAlignment.Center
+eventQuestion.TextWrapped = true
+eventQuestion.LineHeight = 1.25
 eventQuestion.LayoutOrder = 2
 eventQuestion.ZIndex = 65
 eventQuestion.Parent = bodySection
@@ -1633,19 +1689,19 @@ showDeathOverlay = function(causeText, age)
 	DeathUI.cause.Text = causeText or "Your story has ended. Tap below to begin anew."
 	DeathUI.overlay.Visible = true
 	DeathUI.restart.Text = "Start New Life"
-	
+
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
 		if child:IsA("Frame") then child:Destroy() end
 	end
-	
+
 	-- Add final stats
 	local stats = {
 		{ icon = "💰", label = "Net Worth", value = formatMoney(currentState.Money or 0) },
 		{ icon = "😀", label = "Happiness", value = (currentState.Happiness or 0) .. "%" },
 		{ icon = "🎓", label = "Education", value = currentState.Education or "None" },
 	}
-	
+
 	for _, stat in ipairs(stats) do
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, 0, 0, 28)
@@ -1653,7 +1709,7 @@ showDeathOverlay = function(causeText, age)
 		row.ZIndex = 123
 		row.Parent = DeathUI.statsFrame
 		corner(row, 8)
-		
+
 		local lbl = Instance.new("TextLabel")
 		lbl.Size = UDim2.new(0.6, 0, 1, 0)
 		lbl.Position = UDim2.new(0, 8, 0, 0)
@@ -1665,7 +1721,7 @@ showDeathOverlay = function(causeText, age)
 		lbl.Text = stat.icon .. " " .. stat.label
 		lbl.ZIndex = 124
 		lbl.Parent = row
-		
+
 		local val = Instance.new("TextLabel")
 		val.Size = UDim2.new(0.4, -8, 1, 0)
 		val.Position = UDim2.new(0.6, 0, 0, 0)
@@ -1695,29 +1751,29 @@ local CategoryColors = {
 	danger = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	emergency = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	health = { shell = Color3.fromRGB(249, 115, 22), stroke = Color3.fromRGB(194, 65, 12), flash = C.Orange },
-	
+
 	-- Romance/relationships - PINK
 	romance = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
-	
+
 	-- Career/money - BLUE  
 	career = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
-	
+
 	-- Family - PURPLE
 	family = { shell = C.Purple, stroke = Color3.fromRGB(126, 34, 206), flash = C.Purple },
-	
+
 	-- School - TEAL
 	school = { shell = Color3.fromRGB(20, 184, 166), stroke = Color3.fromRGB(13, 148, 136), flash = Color3.fromRGB(20, 184, 166) },
-	
+
 	-- Social - GREEN
 	social = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	
+
 	-- Motorsport/Racing - ORANGE/GOLD (racing vibes!)
 	motorsport = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
 	racing = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
-	
+
 	-- Milestone events - GOLD
 	milestone = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
-	
+
 	-- Default - RED (BitLife style)
 	default = { shell = C.Red, stroke = C.RedDark, flash = C.Blue },
 }
@@ -1730,46 +1786,46 @@ local function isDisasterEvent(payload)
 	local emoji = payload.emoji or ""
 	local category = payload.category or ""
 	local title = payload.title or ""
-	
+
 	-- Check ID prefix for explicit disaster events
 	if id:match("^d_") or id:match("^disaster_") or id:match("^emergency_") then return true end
-	
+
 	-- Check dangerous emojis - ONLY actual disaster/death emojis
 	-- Removed: 🚗 (cars), 🔫 (crime), 😨 (general fear) - these are too broad
 	local dangerEmojis = {"🌪️", "🔥", "⛈️", "🌀", "🌊", "❄️", "🌡️", "💀", "☠️", "🆘", "🏥", "🚨"}
 	for _, de in ipairs(dangerEmojis) do
 		if emoji == de then return true end
 	end
-	
+
 	-- Check category - only explicit disaster categories
 	if category == "disaster" or category == "emergency" then
 		return true
 	end
-	
+
 	-- Check title keywords - only actual natural disasters and life-threatening emergencies
 	local dangerWords = {"tornado", "hurricane", "earthquake", "flood", "blizzard", "tsunami", "wildfire", "heart attack", "stroke", "collapsed", "dying"}
 	local lowerTitle = title:lower()
 	for _, word in ipairs(dangerWords) do
 		if lowerTitle:find(word) then return true end
 	end
-	
+
 	return false
 end
 
 -- Get the appropriate color scheme for an event
 local function getEventColors(payload)
 	local category = payload.category or "default"
-	
+
 	-- Override for disaster events
 	if isDisasterEvent(payload) then
 		return CategoryColors.disaster
 	end
-	
+
 	-- Check for category match
 	if CategoryColors[category] then
 		return CategoryColors[category]
 	end
-	
+
 	return CategoryColors.default
 end
 
@@ -1784,127 +1840,122 @@ showEvent = function(payload)
 		awaitingEvent = false
 		return
 	end
-	
+
 	-- Cancel any in-progress hide animation to prevent race conditions
 	if currentHideTween then
 		currentHideTween:Cancel()
 		currentHideTween = nil
 	end
-	
+
 	-- Wrap in pcall to catch errors and ensure awaitingEvent gets reset
 	local success, errorMsg = pcall(function()
 		awaitingEvent = true
 		currentEventId = payload.id
 		clearChoices()
-		
+
 		-- Get category-based colors
 		local colors = getEventColors(payload)
 		local isDisaster = isDisasterEvent(payload)
-	
-	-- Apply themed shell color
-	eventShell.BackgroundColor3 = colors.shell
-	local shellStroke = eventShell:FindFirstChildOfClass("UIStroke")
-	if shellStroke then
-		shellStroke.Color = colors.stroke
-	end
 
-	-- header
-	eventHeader.Visible = payload.showRelationship or false
-	if payload.showRelationship and payload.relationName then
-		eventNameLbl.Text = payload.relationName
-		relationLbl.Text  = payload.relationship or "Friend"
-	end
-
-	eventEmoji.Text     = payload.emoji or "🙂"
-	eventTitle.Text     = payload.title or "Life Event"
-	eventBody.Text      = payload.text or ""
-	eventQuestion.Text  = payload.question or "What will you do?"
-	
-	-- NOTE: Screen shake removed from event APPEARANCE
-	-- BitLife style: shake only happens on NEGATIVE OUTCOMES (after choice is made)
-	-- The shake effect is now triggered in SyncState when health drops or bad things happen
-	-- This prevents random shaking when events first appear
-
-	local choiceHandlers = {}
-
-	for i, choice in ipairs(payload.choices or {}) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
-		btn.BackgroundColor3 = C.Blue
-		btn.Font = F.Button
-		btn.TextSize = 18  -- BIGGER text (was 15)
-		btn.TextColor3 = C.White
-		btn.Text = choice.text
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = i
-		btn.ZIndex = 65
-		btn.Parent = choicesSection
-
-		corner(btn, 14)
-		stroke(btn, 2, 0.5, C.BlueLight)
-
-		if choice.minigame then
-			btn.Text = "🎮 " .. choice.text
+		-- Apply themed shell color
+		eventShell.BackgroundColor3 = colors.shell
+		local shellStroke = eventShell:FindFirstChildOfClass("UIStroke")
+		if shellStroke then
+			shellStroke.Color = colors.stroke
 		end
 
-		btn.MouseEnter:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
-		end)
-		btn.MouseLeave:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
-		end)
+		-- header
+		eventHeader.Visible = payload.showRelationship or false
+		if payload.showRelationship and payload.relationName then
+			eventNameLbl.Text = payload.relationName
+			relationLbl.Text  = payload.relationship or "Friend"
+		end
 
-		local choiceIndex = choice.index or i
-		local minigameType = choice.minigame
+		eventEmoji.Text     = payload.emoji or "🙂"
+		eventTitle.Text     = payload.title or "Life Event"
+		eventBody.Text      = payload.text or ""
+		eventQuestion.Text  = payload.question or "What will you do?"
 
-		local function handleChoice()
-			if not currentEventId then return end
+		local choiceHandlers = {}
 
-			if minigameType and minigamesInstance then
-				pendingMinigameEventId     = currentEventId
-				pendingMinigameChoiceIndex = choiceIndex
-				hideEvent()
+		for i, choice in ipairs(payload.choices or {}) do
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
+			btn.BackgroundColor3 = C.Blue
+			btn.Font = F.Button
+			btn.TextSize = 18  -- BIGGER text (was 15)
+			btn.TextColor3 = C.White
+			btn.Text = choice.text
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 65
+			btn.Parent = choicesSection
 
-				minigamesInstance:play(minigameType, function(won, data)
-					SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
-					if MinigameResult then
-						MinigameResult:FireServer(won, data)
-					end
-					pendingMinigameEventId     = nil
-					pendingMinigameChoiceIndex = nil
-				end)
-			else
-				SubmitChoice:FireServer(currentEventId, choiceIndex)
-				hideEvent()
+			corner(btn, 14)
+			stroke(btn, 2, 0.5, C.BlueLight)
+
+			if choice.minigame then
+				btn.Text = "🎮 " .. choice.text
 			end
+
+			btn.MouseEnter:Connect(function()
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
+			end)
+			btn.MouseLeave:Connect(function()
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
+			end)
+
+			local choiceIndex = choice.index or i
+			local minigameType = choice.minigame
+
+			local function handleChoice()
+				if not currentEventId then return end
+
+				if minigameType and minigamesInstance then
+					pendingMinigameEventId     = currentEventId
+					pendingMinigameChoiceIndex = choiceIndex
+					hideEvent()
+
+					minigamesInstance:play(minigameType, function(won, data)
+						SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
+						if MinigameResult then
+							MinigameResult:FireServer(won, data)
+						end
+						pendingMinigameEventId     = nil
+						pendingMinigameChoiceIndex = nil
+					end)
+				else
+					SubmitChoice:FireServer(currentEventId, choiceIndex)
+					hideEvent()
+				end
+			end
+
+			btn.MouseButton1Click:Connect(handleChoice)
+			table.insert(choiceHandlers, handleChoice)
+			table.insert(activeChoiceButtons, btn)
 		end
 
-		btn.MouseButton1Click:Connect(handleChoice)
-		table.insert(choiceHandlers, handleChoice)
-		table.insert(activeChoiceButtons, btn)
-	end
+		surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
+			if currentEventId and #choiceHandlers > 0 then
+				local handler = choiceHandlers[math.random(1, #choiceHandlers)]
+				handler()
+			end
+		end)
 
-	surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
-		if currentEventId and #choiceHandlers > 0 then
-			local handler = choiceHandlers[math.random(1, #choiceHandlers)]
-			handler()
-		end
-	end)
+		eventOverlay.Visible = true
+		eventShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
+		eventShadowFrame.BackgroundTransparency = 1
+		eventShell.BackgroundTransparency = 1
+		eventCard.BackgroundTransparency = 1
 
-	eventOverlay.Visible = true
-	eventShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
-	eventShadowFrame.BackgroundTransparency = 1
-	eventShell.BackgroundTransparency = 1
-	eventCard.BackgroundTransparency = 1
-
-	tween(eventShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, 0.5),
-		BackgroundTransparency = 0.92,
-	})
-	tween(eventShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-	tween(eventCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(eventShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundTransparency = 0.92,
+		})
+		tween(eventShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(eventCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
-	
+
 	-- Handle errors in showEvent
 	if not success then
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
@@ -1914,36 +1965,11 @@ showEvent = function(payload)
 	end
 end
 
-hideEvent = function(instant)
+hideEvent = function()
 	awaitingEvent  = false
 	currentEventId = nil
 
-	-- If we're being told to just nuke it (e.g. before a result popup),
-	-- skip animations and fully hide everything right away.
-	if instant then
-		if currentHideTween then
-			currentHideTween:Cancel()
-			currentHideTween = nil
-		end
-
-		eventOverlay.Visible = false
-		eventShadowFrame.BackgroundTransparency = 1
-		eventShell.BackgroundTransparency = 1
-		eventCard.BackgroundTransparency = 1
-
-		-- Reset header/body so next event starts clean
-		eventEmoji.Text = "🙂"
-		eventTitle.Text = ""
-		eventBody.Text = ""
-		eventAvatarEmoji.Text = "👤"
-		eventNameLbl.Text = ""
-		relationLbl.Text = ""
-		eventHeader.Visible = false
-
-		return
-	end
-
-	-- Normal animated hide (used when player taps a choice)
+	-- Create the hide tween and track it
 	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
@@ -1956,7 +1982,7 @@ hideEvent = function(instant)
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
 			eventOverlay.Visible = false
-			
+
 			-- Reset event UI elements for next event
 			eventEmoji.Text = "🙂"
 			eventTitle.Text = ""
@@ -1966,7 +1992,7 @@ hideEvent = function(instant)
 			relationLbl.Text = ""
 			eventHeader.Visible = false
 		end
-		
+
 		currentHideTween = nil
 	end)
 end
@@ -2047,7 +2073,7 @@ local nameColors  = { C.Green, Color3.fromRGB(234, 179, 8), C.Orange }
 local function generateRandomNames()
 	currentMaleNames = {}
 	currentFemaleNames = {}
-	
+
 	-- Shuffle and pick 3 unique male names
 	local usedMale = {}
 	for i = 1, 3 do
@@ -2059,7 +2085,7 @@ local function generateRandomNames()
 		usedMale[firstName .. lastName] = true
 		table.insert(currentMaleNames, firstName .. " " .. lastName)
 	end
-	
+
 	-- Shuffle and pick 3 unique female names
 	local usedFemale = {}
 	for i = 1, 3 do
@@ -2100,14 +2126,14 @@ for i = 1, 3 do
 	nameBtn.MouseButton1Click:Connect(function()
 		local chosenName = nameBtn.Text:match("^.-%s(.+)$") or nameBtn.Text
 		SetLifeInfo:FireServer(chosenName, selectedGender)
-		
+
 		-- Store gender in currentState immediately so avatar updates correctly
 		currentState.Gender = selectedGender
 		currentState.Name = chosenName
-		
+
 		introComplete = true
 		hideIntro()
-		
+
 		-- Update avatar immediately (defer to ensure function exists)
 		task.defer(function()
 			if updateFromState then
@@ -2160,18 +2186,18 @@ for _, g in ipairs(genderData) do
 	btn.MouseButton1Click:Connect(function()
 		selectedGender = g.gender
 		genderTitle.Text = "Now, pick someone to become"
-		
+
 		-- Smooth fade transition from gender to names
 		for _, genderBtn in ipairs(genderBtns:GetChildren()) do
 			if genderBtn:IsA("TextButton") then
 				tween(genderBtn, TweenInfo.new(0.15), { BackgroundTransparency = 1, TextTransparency = 1 })
 			end
 		end
-		
+
 		task.delay(0.15, function()
 			genderBtns.Visible = false
 			nameBtns.Visible  = true
-			
+
 			-- Reset gender buttons for next time
 			for _, genderBtn in ipairs(genderBtns:GetChildren()) do
 				if genderBtn:IsA("TextButton") then
@@ -2179,9 +2205,9 @@ for _, g in ipairs(genderData) do
 					genderBtn.TextTransparency = 0
 				end
 			end
-			
+
 			updateNameButtons()
-			
+
 			-- Fade in name buttons
 			for _, nameBtn in ipairs(nameBtns:GetChildren()) do
 				if nameBtn:IsA("TextButton") then
@@ -2196,20 +2222,20 @@ end
 
 showIntro = function()
 	if introComplete then return end
-	
+
 	-- Generate fresh random names each time intro is shown
 	generateRandomNames()
-	
+
 	-- Reset intro UI state
 	introOverlay.Visible = true
 	introOverlay.BackgroundTransparency = 0.5
 	introContent.Position = UDim2.fromScale(0.5, 0.5)
-	
+
 	showBlur()
 	genderTitle.Text = "Start by picking a gender"
 	genderBtns.Visible = true
 	nameBtns.Visible = false
-	
+
 	-- Fade in animation
 	introContent.Position = UDim2.new(0.5, 0, 0.55, 0)
 	tween(introContent, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -2220,16 +2246,16 @@ end
 hideIntro = function()
 	-- Smooth fade out animation
 	local fadeTime = 0.25
-	
+
 	tween(introContent, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, 0.45, 0)
 	})
 	tween(introOverlay, TweenInfo.new(fadeTime), {
 		BackgroundTransparency = 1
 	})
-	
+
 	hideBlur()
-	
+
 	task.delay(fadeTime, function()
 		introOverlay.Visible = false
 		if not hasShownAgeHint then
@@ -2238,14 +2264,11 @@ hideIntro = function()
 	end)
 end
 
--- Note: updateNameButtons() is called directly when needed in the gender button click handler
--- No need for a polling loop
-
 ----------------------------------------------------------------
 -- UPDATE UI FROM STATE
 ----------------------------------------------------------------
 
-local function updateFromState()
+function updateFromState()
 	if not currentState then return end
 
 	nameLabel.Text = currentState.Name or "New Life"
@@ -2260,7 +2283,7 @@ local function updateFromState()
 	-- Use currentState.Gender, fallback to selectedGender (local variable from intro)
 	local gender = currentState.Gender or selectedGender
 	local isFemale = (gender == "Female")
-	
+
 	local age = currentState.Age or 0
 	if age < 3 then
 		-- Baby - same emoji for both genders
@@ -2298,26 +2321,26 @@ local firstSync = true
 
 SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if not state then return end
-	
+
 	-- Only log significant state changes, not every sync (reduces spam)
 	local ageChanged = currentState and currentState.Age ~= state.Age
 	local moneyChanged = currentState and currentState.Money ~= state.Money
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 1: DETECT IF THIS IS A NEW LIFE (BEFORE updating currentState)
 	-- ═══════════════════════════════════════════════════════════════
 	local isNewLife = false
-	
+
 	-- Method 1: Explicit "new life" message from server (resetPlayerLife sends this)
 	if lastFeedText == "A new life begins..." then
 		isNewLife = true
 	end
-	
+
 	-- Method 2: Old state had a name, new state doesn't -> this is a restart
 	if not isNewLife and currentState and currentState.Name and (not state.Name or state.Name == "") then
 		isNewLife = true
 	end
-	
+
 	-- Method 3: First sync with no name = new life
 	if firstSync then
 		firstSync = false
@@ -2325,27 +2348,27 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			isNewLife = true
 		end
 	end
-	
+
 	-- Method 4: Age is 0 and no name = definitely new life
 	if (state.Age == 0 or state.Age == nil) and (not state.Name or state.Name == "") then
 		isNewLife = true
 	end
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 2: HANDLE NEW LIFE RESET
 	-- ═══════════════════════════════════════════════════════════════
 	if isNewLife then
-		
+
 		-- Reset all intro/game flags
 		introComplete = false
 		selectedGender = nil
 		awaitingEvent = false
 		hasShownAgeHint = false
-		
+
 		-- Clear pending minigame state
 		pendingMinigameEventId = nil
 		pendingMinigameChoiceIndex = nil
-		
+
 		-- Clear feed entries
 		feedEntryCount = 0
 		for _, child in ipairs(feedScroll:GetChildren()) do
@@ -2353,10 +2376,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 				child:Destroy()
 			end
 		end
-		
+
 		-- Reset previous state tracking
 		previousState = {}
-		
+
 		-- Update currentState with new state
 		currentState = {
 			Name = nil,
@@ -2368,20 +2391,20 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			Looks = state.Looks or 50,
 			Gender = nil,
 		}
-		
+
 		-- Reset header UI
 		nameLabel.Text = "New Life"
 		ageYearLabel.Text = string.format("Age %d • %d", state.Age or 0, getCurrentYear(state.Age))
 		moneyLabel.Text = formatMoney(state.Money or 0)
 		avatarEmoji.Text = "👶"
-		
+
 		-- Reset stats UI
 		for key, card in pairs(statCards) do
 			local val = state[key] or (state.Stats and state.Stats[key]) or 50
 			card.percentLabel.Text = val .. "%"
 			card.barFill.Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0)
 		end
-		
+
 		-- Hide any lingering modals
 		if hideResultPopup then 
 			pcall(hideResultPopup) 
@@ -2391,18 +2414,18 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		end
 		hideTutorial()
 		hideDeathOverlay()
-		
+
 		-- SHOW INTRO MODAL
 		showIntro()
-		
+
 		-- Early return - don't process as normal sync
 		return
 	end
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 3: NORMAL (NON-RESET) SYNC HANDLING
 	-- ═══════════════════════════════════════════════════════════════
-	
+
 	-- Calculate deltas for result popup
 	local deltas = {}
 	if previousState.Happiness and state.Happiness then
@@ -2458,13 +2481,6 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- Show result popup if we have result data from server
 	if resultData and resultData.showPopup then
-		-- Force-hide any lingering event modal before showing result
-		if hideEvent then
-			pcall(function()
-				hideEvent(true)
-			end)
-		end
-
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2478,7 +2494,6 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		})
 	elseif deltas.health and deltas.health < -15 then
 		-- Auto-shake for MAJOR negative health (15+ drop)
-		-- This is the BitLife-style "something bad happened" feedback
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)
 	elseif deltas.health and deltas.health < -5 then
@@ -2504,12 +2519,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- Update UI from state
 	updateFromState()
-	
+
 	-- Add feed entry
 	if lastFeedText and lastFeedText ~= "" and not (resultData and resultData.showPopup) then
 		addFeedEntry(lastFeedText)
 	end
-	
+
 	-- Check if intro should be shown (shouldn't normally happen here, but safety check)
 	if not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
@@ -2522,13 +2537,6 @@ end)
 local ShowResult = remotesFolder:FindFirstChild("ShowResult")
 if ShowResult then
 	ShowResult.OnClientEvent:Connect(function(data)
-		-- Force-hide event modal before showing result
-		if hideEvent then
-			pcall(function()
-				hideEvent(true)
-			end)
-		end
-
 		showResultPopup({
 			emoji = data.emoji or "📋",
 			title = data.title or "Result",
@@ -2538,7 +2546,6 @@ if ShowResult then
 			smarts = data.smarts,
 			looks = data.looks,
 			money = data.money,
-			wasSuccess = data.wasSuccess, -- Pass through success flag for proper tinting
 		}, function()
 			-- Callback when popup closed
 			if data.feedText then
@@ -2554,7 +2561,7 @@ PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
 		warn("[LifeClient] ❌ PresentEvent received with nil eventData!")
 		return
 	end
-	
+
 	hideTutorial()
 	if ageFeedText then
 		addFeedEntry(ageFeedText)
@@ -2573,7 +2580,6 @@ PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
 		relationName     = eventData.relationName,
 		relationship     = eventData.relationship,
 		question         = eventData.question,
-		category         = eventData.category,  -- Pass category for themed colors (romance=pink, career=blue, etc.)
 	})
 end)
 
@@ -2586,13 +2592,13 @@ if MinigameStart then
 		if eventOverlay.Visible then
 			hideEvent()
 		end
-		
+
 		pendingMinigameEventId = config.eventId
 		pendingMinigameChoiceIndex = config.choiceIndex
-		
+
 		if minigamesInstance and minigamesInstance.play then
 			minigamesInstance:play(config.id, function(won, data)
-				
+
 				-- Send result back to server
 				if MinigameResult then
 					MinigameResult:FireServer(won, {
@@ -2601,11 +2607,11 @@ if MinigameStart then
 						score = data and data.score or 0,
 					})
 				end
-				
+
 				-- Clear pending
 				pendingMinigameEventId = nil
 				pendingMinigameChoiceIndex = nil
-				
+
 				-- Visual feedback
 				if won then
 					flashScreen(C.Green, 0.7, 0.3)
@@ -2646,17 +2652,17 @@ ageButton.MouseButton1Click:Connect(function()
 		awaitingEvent = false
 		currentEventId = nil
 	end
-	
+
 	-- Block age up if waiting for event choice
 	if awaitingEvent then
 		return
 	end
-	
+
 	-- Block if no name set yet (intro not complete)
 	if not currentState.Name then
 		return
 	end
-	
+
 	hideTutorial()
 	pulseAge()
 	RequestAgeUp:FireServer()
@@ -2716,7 +2722,7 @@ local STUCK_THRESHOLD = 30 -- seconds before considering it stuck
 task.spawn(function()
 	while true do
 		task.wait(5) -- Check every 5 seconds
-		
+
 		if awaitingEvent then
 			if not lastAwaitingEventTime then
 				lastAwaitingEventTime = tick()
