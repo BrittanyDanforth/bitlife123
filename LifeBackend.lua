@@ -978,6 +978,17 @@ function LifeBackend:serializeState(state)
 		local serialized = state:Serialize()
 		serialized.PendingFeed = nil
 		serialized.lastFeed = nil
+		
+		-- Debug: Trace what's being serialized
+		if serialized.Assets then
+			debugPrint("[serializeState] Assets in serialized state:")
+			debugPrint("  Properties:", serialized.Assets.Properties and #serialized.Assets.Properties or 0)
+			debugPrint("  Vehicles:", serialized.Assets.Vehicles and #serialized.Assets.Vehicles or 0)
+			debugPrint("  Items:", serialized.Assets.Items and #serialized.Assets.Items or 0)
+		else
+			debugPrint("[serializeState] WARNING: serialized.Assets is nil!")
+		end
+		
 		return serialized
 	end
 	local cloned = deepCopy(state)
@@ -1859,15 +1870,22 @@ end
 	- Prevents godmode by enforcing real checks
 ]]
 function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
+	debugPrint("=== ASSET PURCHASE ===")
+	debugPrint("  Player:", player.Name, "Type:", assetType, "AssetId:", assetId)
+	
 	local state = self:getState(player)
 	if not state then
+		debugPrint("  FAILED: No state")
 		return { success = false, message = "Life data missing." }
 	end
 
 	local asset = self:findAssetById(catalog, assetId)
 	if not asset then
+		debugPrint("  FAILED: Unknown asset")
 		return { success = false, message = "Unknown asset." }
 	end
+	
+	debugPrint("  Found asset:", asset.name, "Price:", asset.price)
 
 	state.Assets = state.Assets or {}
 	state.Flags = state.Flags or {}
@@ -1913,6 +1931,12 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		acquiredAge = state.Age,
 		acquiredYear = state.Year,
 	})
+	
+	debugPrint("  SUCCESS: Added to state.Assets." .. assetType)
+	debugPrint("    Total items in " .. assetType .. ":", #state.Assets[assetType])
+	for i, a in ipairs(state.Assets[assetType]) do
+		debugPrint("      [" .. i .. "]", a.id, a.name)
+	end
 
 	if assetType == "Vehicles" then
 		state.Flags.has_vehicle = true
@@ -1924,6 +1948,13 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 
 	self:addMoney(state, -asset.price)
 	local feed = string.format("You purchased %s for %s.", asset.name, formatMoney(asset.price))
+	
+	-- Debug: Check assets before push
+	debugPrint("  Before pushState:")
+	debugPrint("    state.Assets.Properties:", state.Assets.Properties and #state.Assets.Properties or 0)
+	debugPrint("    state.Assets.Vehicles:", state.Assets.Vehicles and #state.Assets.Vehicles or 0)
+	debugPrint("    state.Assets.Items:", state.Assets.Items and #state.Assets.Items or 0)
+	
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

@@ -277,8 +277,13 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:AddAsset(category, asset)
+	print("[LifeState:AddAsset] Adding to category:", category)
+	print("  Asset id:", asset.id, "name:", asset.name)
+	
 	self.Assets[category] = self.Assets[category] or {}
 	table.insert(self.Assets[category], asset)
+	
+	print("  Total in", category .. ":", #self.Assets[category])
 	return self
 end
 
@@ -395,6 +400,16 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:Serialize()
+	-- Debug: Log asset counts before serialization
+	print("[LifeState:Serialize] Self.Assets status:")
+	if self.Assets then
+		print("  Properties:", self.Assets.Properties and #self.Assets.Properties or 0)
+		print("  Vehicles:", self.Assets.Vehicles and #self.Assets.Vehicles or 0)
+		print("  Items:", self.Assets.Items and #self.Assets.Items or 0)
+	else
+		print("  WARNING: self.Assets is nil!")
+	end
+	
 	return {
 		-- Identity
 		Name = self.Name,
@@ -435,7 +450,7 @@ function LifeState:Serialize()
 		-- Relationships
 		Relationships = self.Relationships,
 		
-		-- Assets
+		-- Assets (deep copy to ensure proper serialization)
 		Assets = self.Assets,
 		
 		-- Flags

@@ -63,7 +63,7 @@ Random.events = {
 			feedText = "An interesting piece of family history.",
 			onResolve = function(state)
 				if state.AddAsset then
-					state:AddAsset("ShopItems", {
+					state:AddAsset("Items", {
 						id = "family_heirloom_" .. tostring(state.Age or 0),
 						name = "Family Heirloom",
 						emoji = "🏺",

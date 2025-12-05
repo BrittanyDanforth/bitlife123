@@ -116,6 +116,10 @@ local currentState = {
 	Name = nil, Age = 0, Money = 0,
 	Happiness = 50, Health = 100, Smarts = 50, Looks = 50,
 	Education = "None", Experience = 0, CurrentJob = nil, InJail = false,
+	-- CRITICAL: Initialize Assets structure to prevent nil errors
+	Assets = { Properties = {}, Vehicles = {}, Items = {}, Crypto = {} },
+	Relationships = {},
+	Flags = {},
 }
 
 local awaitingEvent          = false
@@ -2380,7 +2384,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		-- Reset previous state tracking
 		previousState = {}
 
-		-- Update currentState with new state
+		-- Update currentState with new state (include all fields from server)
 		currentState = {
 			Name = nil,
 			Age = state.Age or 0,
@@ -2390,6 +2394,13 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			Smarts = state.Smarts or 50,
 			Looks = state.Looks or 50,
 			Gender = nil,
+			-- CRITICAL: Include Assets and other fields from server state
+			Assets = state.Assets or { Properties = {}, Vehicles = {}, Items = {} },
+			Relationships = state.Relationships or {},
+			Flags = state.Flags or {},
+			CurrentJob = state.CurrentJob,
+			Education = state.Education,
+			EducationData = state.EducationData,
 		}
 
 		-- Reset header UI
@@ -2414,6 +2425,21 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		end
 		hideTutorial()
 		hideDeathOverlay()
+
+		-- Update all screen instances with the new state (even during reset)
+		-- This ensures screens have proper initial state
+		if occupationScreenInstance and occupationScreenInstance.updateState then
+			occupationScreenInstance:updateState(currentState)
+		end
+		if assetsScreenInstance and assetsScreenInstance.updateState then
+			assetsScreenInstance:updateState(currentState)
+		end
+		if relationshipsScreenInstance and relationshipsScreenInstance.updateState then
+			relationshipsScreenInstance:updateState(currentState)
+		end
+		if activitiesScreenInstance and activitiesScreenInstance.updateState then
+			activitiesScreenInstance:updateState(currentState)
+		end
 
 		-- SHOW INTRO MODAL
 		showIntro()

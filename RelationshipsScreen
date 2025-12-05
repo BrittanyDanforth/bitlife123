@@ -65,7 +65,7 @@ C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
 local RelationshipsScreen = {}
 RelationshipsScreen.__index = RelationshipsScreen
 
-local DEBUG = false
+local DEBUG = true  -- ENABLED to trace relationship sync issues
 local function log(...)
 	if DEBUG then
 		print("[RelationshipsScreen]", ...)
@@ -73,6 +73,28 @@ local function log(...)
 end
 local function logWarn(...)
 	warn("[RelationshipsScreen]", ...)
+end
+
+-- Deep debug for relationships
+local function debugRelationships(rels, label)
+	if not DEBUG then return end
+	label = label or "Relationships"
+	print("[RelationshipsScreen] === " .. label .. " DEBUG ===")
+	if not rels then
+		print("  Relationships table is NIL")
+		return
+	end
+	local count = 0
+	for id, rel in pairs(rels) do
+		count = count + 1
+		if type(rel) == "table" then
+			print("  [" .. tostring(id) .. "] name=" .. tostring(rel.name) .. " role=" .. tostring(rel.role) .. " type=" .. tostring(rel.type) .. " alive=" .. tostring(rel.alive))
+		else
+			print("  [" .. tostring(id) .. "] = " .. tostring(rel))
+		end
+	end
+	print("  Total: " .. count .. " relationships")
+	print("[RelationshipsScreen] === END DEBUG ===")
 end
 
 local function safeLower(value)
@@ -281,22 +303,32 @@ function RelationshipsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurF
 end
 
 function RelationshipsScreen:updateState(newState)
-	log("Updating state...")
-	if not newState then return end
+	log("=== UPDATE STATE CALLED ===")
+	if not newState then 
+		log("WARNING: updateState called with nil newState!")
+		return 
+	end
 
 	self.playerState = newState
 	log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 
-	-- Debug: log relationships
+	-- CRITICAL DEBUG: Trace the Relationships field
+	if newState.Relationships then
+		debugRelationships(newState.Relationships, "Incoming State Relationships")
+	else
+		log("WARNING: newState.Relationships is NIL or missing!")
+	end
+
+	-- Debug: log relationships from our getter
 	local rels = self:getRelationships()
 	local relCount = 0
 	for id, rel in pairs(rels) do
 		if type(rel) == "table" then
 			relCount += 1
-			log("  Relationship:", id, "Type:", rel.type, "Name:", rel.name)
+			log("  Relationship:", id, "Type:", rel.type, "Name:", rel.name, "Role:", rel.role, "Alive:", rel.alive)
 		end
 	end
-	log("Total relationships in state:", relCount)
+	log("Total relationships from getRelationships():", relCount)
 
 	if self.isVisible then
 		self:updateInfoBar()
@@ -688,16 +720,20 @@ function RelationshipsScreen:getFamilyEmoji(role)
 end
 
 function RelationshipsScreen:getFamily()
+	log("=== GET FAMILY CALLED ===")
 	local rels   = self:getRelationships()
 	local age    = self:getAge()
 	local flags  = (self.playerState and self.playerState.Flags) or {}
 	local family = {}
 
+	log("Checking relationships for family members...")
 	-- Use stored family if present in Relationships table or flagged isFamily
 	for id, rel in pairs(rels) do
 		if type(rel) == "table" then
 			local cat = categorizeRelationship(rel, flags)
+			log("  Checking:", id, "-> category:", cat, "name:", rel.name, "type:", rel.type, "isFamily:", rel.isFamily)
 			if cat == "family" then
+				log("    -> ADDING to family list")
 				table.insert(family, {
 					id           = rel.id or id,
 					name         = rel.name,
@@ -711,8 +747,11 @@ function RelationshipsScreen:getFamily()
 		end
 	end
 
+	log("Found", #family, "family members from server relationships")
+
 	-- Generated defaults if no explicit family stored
 	if #family == 0 then
+		log("No server family found, generating defaults...")
 		local motherAge = math.max(age + 22, 22)
 		local fatherAge = math.max(age + 25, 25)
 

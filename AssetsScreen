@@ -12,13 +12,42 @@ local F = UI.Fonts
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging (ENABLED to trace asset sync issues)
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[AssetsScreen]", ...)
+end
+
+-- Deep debug for asset tracing
+local function debugAssets(assets, label)
+	if not DEBUG then return end
+	label = label or "Assets"
+	print("[AssetsScreen] === " .. label .. " DEBUG ===")
+	if not assets then
+		print("[AssetsScreen]   Assets table is NIL")
+		return
+	end
+	if type(assets) ~= "table" then
+		print("[AssetsScreen]   Assets is not a table, type:", type(assets))
+		return
+	end
+	
+	local categories = {"Properties", "Vehicles", "Items", "Crypto", "Investments", "Businesses"}
+	for _, cat in ipairs(categories) do
+		local bucket = assets[cat]
+		if bucket then
+			print("[AssetsScreen]   " .. cat .. ": " .. #bucket .. " items")
+			for i, item in ipairs(bucket) do
+				print("[AssetsScreen]     [" .. i .. "] id=" .. tostring(item.id) .. " name=" .. tostring(item.name))
+			end
+		else
+			print("[AssetsScreen]   " .. cat .. ": (nil)")
+		end
+	end
+	print("[AssetsScreen] === END DEBUG ===")
 end
 
 -- Remotes (optimized - fast lookup)
@@ -81,10 +110,24 @@ function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pl
 end
 
 function AssetsScreen:updateState(newState)
-	log("Updating state...")
+	log("=== UPDATE STATE CALLED ===")
 	if newState then 
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+		
+		-- CRITICAL DEBUG: Trace the Assets field
+		if newState.Assets then
+			debugAssets(newState.Assets, "Incoming State Assets")
+		else
+			log("WARNING: newState.Assets is NIL or missing!")
+			log("newState keys:", table.concat((function()
+				local keys = {}
+				for k, _ in pairs(newState) do
+					table.insert(keys, tostring(k))
+				end
+				return keys
+			end)(), ", "))
+		end
 		
 		-- Auto-refresh the current tab if screen is visible
 		-- This ensures assets added by events appear immediately
@@ -98,6 +141,8 @@ function AssetsScreen:updateState(newState)
 				self:populateShop()
 			end
 		end
+	else
+		log("WARNING: updateState called with nil newState!")
 	end
 end
 
@@ -558,37 +603,50 @@ function AssetsScreen:switchTab(tabId)
 end
 
 function AssetsScreen:populateProperty()
+	log("=== POPULATE PROPERTY CALLED ===")
 	self:updateBalanceBar()
+
+	-- Debug the raw state
+	debugAssets(self.playerState and self.playerState.Assets, "Current playerState.Assets")
 
 	local assets = self:getAssets()
 	local ownedProperties = {}
 	local catalogIds = {}
 
+	log("Checking catalog for owned properties...")
 	-- Find owned properties from shop catalog
 	for _, prop in ipairs(Properties) do
 		catalogIds[prop.id] = true
 		if assets[prop.id] then
+			log("  Found catalog property:", prop.id)
 			table.insert(ownedProperties, prop)
 		end
 	end
 
 	-- Also include event-acquired properties that aren't in the catalog
+	log("Getting owned list for 'property'...")
 	local ownedList = self:getOwnedList("property")
-	for _, owned in ipairs(ownedList) do
+	log("  getOwnedList returned:", #ownedList, "items")
+	
+	for i, owned in ipairs(ownedList) do
+		log("  Checking owned[" .. i .. "]: id=" .. tostring(owned.id) .. " name=" .. tostring(owned.name))
 		if not catalogIds[owned.id] then
 			-- Create a display entry for this event-acquired property
+			log("    -> Adding as event-acquired property")
 			table.insert(ownedProperties, {
 				id = owned.id,
 				name = owned.name or owned.id,
-				emoji = "🏡",
-				price = owned.value or 0,
+				emoji = owned.emoji or "🏡",
+				price = owned.value or owned.price or 0,
 				minAge = 0,
 				isEventAcquired = true
 			})
+		else
+			log("    -> Already in catalog, skipping")
 		end
 	end
 
-	log("Owned properties:", #ownedProperties, "of", #Properties)
+	log("FINAL: Owned properties:", #ownedProperties, "of catalog:", #Properties)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- MY PROPERTIES SECTION (only if owns any)
