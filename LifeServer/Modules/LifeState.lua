@@ -106,6 +106,9 @@ function LifeState.new(player)
 	}
 	self.ActivePath = nil
 	
+	-- Injuries (detailed, story-like outcomes)
+	self.Injuries = {}
+	
 	-- Fame (0-100)
 	self.Fame = 0
 	
@@ -232,6 +235,53 @@ end
 function LifeState:SubtractMoney(amount)
 	self.Money = math.max(0, self.Money - amount)
 	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- INJURIES (story-like details)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:ApplyInjury(injurySpec)
+	if type(injurySpec) ~= "table" then
+		return nil
+	end
+	local locations = injurySpec.locations or { "arm", "leg", "face", "torso", "hand", "foot" }
+	local location = injurySpec.location or locations[Random.new():NextInteger(1, #locations)]
+	local severity = injurySpec.severity or "minor"
+	local cause = injurySpec.cause or "accident"
+	
+	local entry = {
+		id = "injury_" .. tostring(Random.new():NextInteger(100000, 999999)),
+		location = location,
+		severity = severity,
+		cause = cause,
+		year = self.Year,
+		age = self.Age,
+	}
+	table.insert(self.Injuries, entry)
+	
+	-- Small severity-based impact
+	if severity == "moderate" then
+		self:ModifyStat("Health", -2)
+	elseif severity == "severe" then
+		self:ModifyStat("Health", -5)
+	end
+	
+	return entry
+end
+
+function LifeState:GetInjuries()
+	return self.Injuries
+end
+
+function LifeState:ClearInjuryById(injuryId)
+	for i, injury in ipairs(self.Injuries) do
+		if injury.id == injuryId then
+			table.remove(self.Injuries, i)
+			return true
+		end
+	end
+	return false
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -448,6 +498,9 @@ function LifeState:Serialize()
 		StoryArcs = self.StoryArcs,
 		Paths = self.Paths,
 		ActivePath = self.ActivePath,
+		
+		-- Injuries
+		Injuries = self.Injuries,
 		
 		-- Fame
 		Fame = self.Fame,

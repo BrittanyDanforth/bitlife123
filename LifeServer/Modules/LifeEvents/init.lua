@@ -1156,6 +1156,38 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
+	-- Optional injury support at the choice level for AAA specificity
+	if choice.injury and type(choice.injury) == "table" then
+		if state.ApplyInjury then
+			local success, injuryOrErr = pcall(function()
+				return state:ApplyInjury(choice.injury)
+			end)
+			if success and injuryOrErr then
+				local inj = injuryOrErr
+				local injText = string.format(" Injury: %s %s (%s).", tostring(inj.severity or "minor"), tostring(inj.location or "arm"), tostring(inj.cause or "accident"))
+				outcome.feedText = (outcome.feedText or (choice.text or eventDef.title or "Event")) .. injText
+			else
+				warn("[EventEngine] Failed to apply injury for event '" .. (eventDef.id or "unknown") .. "':", injuryOrErr)
+			end
+		end
+	end
+	
+	-- Story chaining hint (non-breaking): surface nextEventId in outcome for the backend to enqueue
+	if choice.nextEventId or eventDef.nextEventId then
+		outcome.nextEventId = choice.nextEventId or eventDef.nextEventId
+	end
+	
+	-- Debug summary for event resolution
+	if outcome and outcome.eventId then
+		print(string.format("[EventEngine] Resolved '%s' choice #%d -> money %+d, flags %+d, stats %+d%s",
+			outcome.eventId,
+			outcome.choiceIndex or -1,
+			outcome.moneyChange or 0,
+			(outcome.flagChanges and (function(t) local c=0 for _ in pairs(t) do c+=1 end return c end)(outcome.flagChanges)) or 0,
+			(outcome.statChanges and (function(t) local c=0 for _ in pairs(t) do c+=1 end return c end)(outcome.statChanges)) or 0,
+			outcome.nextEventId and (" next=" .. outcome.nextEventId) or ""
+		))
+	end
 	return outcome
 end
 

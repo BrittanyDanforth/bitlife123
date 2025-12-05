@@ -106,16 +106,53 @@ Random.events = {
 		id = "minor_accident",
 		title = "Ouch!",
 		emoji = "🤕",
-		text = "You had a minor accident.",
+		text = "You had a minor accident with a specific injury.",
 		question = "What happened?",
 		minAge = 5, maxAge = 80,
 		baseChance = 0.3,
 		cooldown = 2,
 		choices = {
-			{ text = "Tripped and fell", effects = { Health = -5, Happiness = -3 }, feedText = "You took a tumble. Bruises heal." },
-			{ text = "Cut yourself cooking", effects = { Health = -3, Smarts = 2 }, feedText = "Kitchen accidents happen." },
-			{ text = "Sports injury", effects = { Health = -8, Happiness = -2 }, setFlags = { sports_injury = true }, feedText = "You got hurt playing sports." },
-			{ text = "Stubbed toe badly", effects = { Health = -2, Happiness = -5 }, feedText = "The pain! It never gets easier!" },
+			{
+				text = "Tripped and fell",
+				effects = { Health = -5, Happiness = -3 },
+				feedText = "You took a tumble. Bruises heal.",
+				onResolve = function(state)
+					if state.ApplyInjury then
+						state:ApplyInjury({ locations = { "knee", "elbow", "face" }, severity = "minor", cause = "fall" })
+					end
+				end,
+			},
+			{
+				text = "Cut yourself cooking",
+				effects = { Health = -3, Smarts = 2 },
+				feedText = "Kitchen accidents happen.",
+				onResolve = function(state)
+					if state.ApplyInjury then
+						state:ApplyInjury({ locations = { "hand", "finger" }, severity = "minor", cause = "kitchen knife" })
+					end
+				end,
+			},
+			{
+				text = "Sports injury",
+				effects = { Health = -8, Happiness = -2 },
+				setFlags = { sports_injury = true },
+				feedText = "You got hurt playing sports.",
+				onResolve = function(state)
+					if state.ApplyInjury then
+						state:ApplyInjury({ locations = { "ankle", "knee", "shoulder" }, severity = "moderate", cause = "sports" })
+					end
+				end,
+			},
+			{
+				text = "Stubbed toe badly",
+				effects = { Health = -2, Happiness = -5 },
+				feedText = "The pain! It never gets easier!",
+				onResolve = function(state)
+					if state.ApplyInjury then
+						state:ApplyInjury({ locations = { "toe", "foot" }, severity = "minor", cause = "impact" })
+					end
+				end,
+			},
 		},
 	},
 	{
