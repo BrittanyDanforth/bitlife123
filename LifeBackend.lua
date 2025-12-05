@@ -860,8 +860,151 @@ function LifeBackend:setupRemotes()
 	end)
 end
 
+--[[
+	createInitialState - Creates a new player life with realistic starting family
+	
+	This is the authoritative server-side initialization that ensures ALL players
+	start with a complete, realistic family. Family is NOT generated client-side.
+	
+	Family includes:
+	- Mother (age: playerAge + 22-35, relationship: 70-90)
+	- Father (age: playerAge + 25-38, relationship: 65-85)
+	- Possible siblings (if player is 5+, 40% chance)
+	- Possible grandparents (if player is young, 60% chance and they're alive)
+]]
 function LifeBackend:createInitialState(player)
-	return LifeState.new(player)
+	local state = LifeState.new(player)
+	
+	-- Debug flag for relationship tracking
+	local DEBUG_RELATIONSHIPS = true
+	
+	local function log(...)
+		if DEBUG_RELATIONSHIPS then
+			debugPrint("[FAMILY GENERATION]", ...)
+		end
+	end
+	
+	-- Helper function to generate realistic names
+	local firstNamesMale = {"James", "Robert", "John", "Michael", "David", "William", "Richard", "Joseph", "Thomas", "Charles"}
+	local firstNamesFemale = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"}
+	local lastNames = {"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"}
+	
+	local function generateName(gender, customLast)
+		local first
+		if gender == "male" or gender == "Male" then
+			first = firstNamesMale[RANDOM:NextInteger(1, #firstNamesMale)]
+		else
+			first = firstNamesFemale[RANDOM:NextInteger(1, #firstNamesFemale)]
+		end
+		local last = customLast or lastNames[RANDOM:NextInteger(1, #lastNames)]
+		return string.format("%s %s", first, last)
+	end
+	
+	-- Determine family last name (use player's last name if set, otherwise random)
+	local familyLastName = lastNames[RANDOM:NextInteger(1, #lastNames)]
+	
+	-- Create Mother
+	local momAge = state.Age + RANDOM:NextInteger(22, 35)
+	local momRelationship = RANDOM:NextInteger(70, 90)
+	state.Relationships["mother"] = {
+		id = "mother",
+		name = generateName("female", familyLastName),
+		type = "family",
+		role = "Mother",
+		relationship = momRelationship,
+		age = momAge,
+		gender = "Female",
+		alive = true,
+	}
+	
+	-- Create Father
+	local dadAge = state.Age + RANDOM:NextInteger(25, 38)
+	local dadRelationship = RANDOM:NextInteger(65, 85)
+	state.Relationships["father"] = {
+		id = "father",
+		name = generateName("male", familyLastName),
+		type = "family",
+		role = "Father",
+		relationship = dadRelationship,
+		age = dadAge,
+		gender = "Male",
+		alive = true,
+	}
+	
+	-- Possibly create siblings (if player is 5+ years old, 40% chance)
+	if state.Age >= 5 and RANDOM:NextNumber() < 0.4 then
+		local siblingCount = RANDOM:NextInteger(1, 2)
+		for i = 1, siblingCount do
+			local siblingGender = (RANDOM:NextNumber() < 0.5) and "Male" or "Female"
+			local siblingAge = state.Age + RANDOM:NextInteger(-5, 5)
+			if siblingAge < 0 then siblingAge = RANDOM:NextInteger(0, 3) end
+			
+			local siblingId = string.format("sibling_%d", i)
+			local siblingRole = (siblingAge > state.Age) and "Older Sibling" or "Younger Sibling"
+			
+			state.Relationships[siblingId] = {
+				id = siblingId,
+				name = generateName(siblingGender:lower(), familyLastName),
+				type = "family",
+				role = siblingRole,
+				relationship = RANDOM:NextInteger(50, 80),
+				age = siblingAge,
+				gender = siblingGender,
+				alive = true,
+			}
+		end
+	end
+	
+	-- Possibly create grandparents (if player is young, 60% chance if they'd be <85)
+	if state.Age <= 15 and RANDOM:NextNumber() < 0.6 then
+		-- Maternal grandmother
+		local grandmaAge = momAge + RANDOM:NextInteger(22, 30)
+		if grandmaAge < 85 then
+			state.Relationships["grandmother_maternal"] = {
+				id = "grandmother_maternal",
+				name = generateName("female"),
+				type = "family",
+				role = "Grandmother",
+				relationship = RANDOM:NextInteger(60, 85),
+				age = grandmaAge,
+				gender = "Female",
+				alive = true,
+			}
+		end
+		
+		-- Maternal grandfather
+		local grandpaAge = momAge + RANDOM:NextInteger(24, 32)
+		if grandpaAge < 85 and RANDOM:NextNumber() < 0.7 then
+			state.Relationships["grandfather_maternal"] = {
+				id = "grandfather_maternal",
+				name = generateName("male"),
+				type = "family",
+				role = "Grandfather",
+				relationship = RANDOM:NextInteger(55, 80),
+				age = grandpaAge,
+				gender = "Male",
+				alive = true,
+			}
+		end
+	end
+	
+	-- Log family generation
+	log("═══════════════════════════════════════════════════════════════")
+	log(string.format("Generated family for %s (Age %d):", player.Name, state.Age))
+	log("═══════════════════════════════════════════════════════════════")
+	
+	local familyCount = 0
+	for id, rel in pairs(state.Relationships) do
+		if rel.type == "family" then
+			familyCount = familyCount + 1
+			log(string.format("[%d] %s (%s, Age %d) - Relationship: %d", familyCount, rel.name, rel.role, rel.age, rel.relationship))
+		end
+	end
+	
+	log(string.format("Total family members: %d", familyCount))
+	log("═══════════════════════════════════════════════════════════════")
+	
+	return state
 end
 
 function LifeBackend:getState(player)
@@ -2001,22 +2144,45 @@ local InteractionEffects = {
 	},
 }
 
+--[[
+	ensureRelationship - Ensures a relationship exists, OR returns nil for missing family
+	
+	CRITICAL FIX: For family relationships, if the targetId doesn't exist in state.Relationships,
+	DO NOT create a generic "Person" entry. This was causing the "hug Mom deletes all family" bug.
+	
+	Family members should ONLY exist if they were created server-side at initialization.
+	For friends/romance, we can create new relationships dynamically.
+]]
 function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	options = options or {}
 	state.Relationships = state.Relationships or {}
 
+	-- If the targetId already exists, return it
 	if targetId and state.Relationships[targetId] then
 		return state.Relationships[targetId]
 	end
 
+	-- If forcing a new relationship (e.g., "meet_someone", "make_friend")
 	if options.forceNewRelationship then
 		return self:createRelationship(state, relType, options.relationshipOptions)
 	end
 
+	-- For FAMILY type: if the targetId doesn't exist, return nil (don't create generic people)
+	if relType == "family" then
+		if targetId and not state.Relationships[targetId] then
+			warn(string.format("[LifeBackend] Family member '%s' not found in state. Not creating generic placeholder.", targetId))
+			return nil
+		end
+		-- If no targetId specified, also return nil (family must be specific)
+		return nil
+	end
+
+	-- For FRIEND type without targetId: create new friend dynamically
 	if relType == "friend" and not targetId then
 		return self:createRelationship(state, "friend", options.relationshipOptions)
 	end
 
+	-- For ROMANCE type: check partner or create new
 	if relType == "romance" then
 		if targetId and state.Relationships[targetId] then
 			return state.Relationships[targetId]
@@ -2030,6 +2196,7 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 		return self:createRelationship(state, "romance", options.relationshipOptions)
 	end
 
+	-- For other types: only create if explicitly requested
 	if targetId and not state.Relationships[targetId] then
 		local relOptions = shallowCopy(options.relationshipOptions or {})
 		relOptions.id = targetId
@@ -2039,7 +2206,21 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	return targetId and state.Relationships[targetId] or self:createRelationship(state, relType, options.relationshipOptions)
 end
 
+--[[
+	handleInteraction - Processes relationship interactions with comprehensive debugging
+	
+	This is the server-side handler for all RelationshipsScreen interactions.
+	Debug output helps trace the "hug Mom deletes family" bug.
+]]
 function LifeBackend:handleInteraction(player, payload)
+	local DEBUG_RELATIONSHIPS = true
+	
+	local function log(...)
+		if DEBUG_RELATIONSHIPS then
+			debugPrint("[INTERACTION]", ...)
+		end
+	end
+	
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data missing." }
@@ -2054,6 +2235,35 @@ function LifeBackend:handleInteraction(player, payload)
 	local targetId = payload.targetId
 	local targetStrength = tonumber(payload.relationshipStrength)
 
+	-- Log before state
+	log("═══════════════════════════════════════════════════════════════")
+	log(string.format("BEFORE %s interaction on %s", actionId, targetId))
+	log("═══════════════════════════════════════════════════════════════")
+	
+	state.Relationships = state.Relationships or {}
+	local relCount = 0
+	local familyCount = 0
+	local aliveCount = 0
+	local deadCount = 0
+	
+	for id, rel in pairs(state.Relationships) do
+		relCount = relCount + 1
+		if rel.type == "family" then
+			familyCount = familyCount + 1
+			if rel.alive ~= false then
+				aliveCount = aliveCount + 1
+			else
+				deadCount = deadCount + 1
+			end
+			log(string.format("  [%d] ID: %s | Name: %s | Role: %s | Relationship: %d | Age: %d | Alive: %s",
+				familyCount, id, rel.name or "?", rel.role or "?", rel.relationship or 0, rel.age or 0, tostring(rel.alive ~= false)))
+		end
+	end
+	
+	log("------------------------------------------")
+	log(string.format("TOTALS: %d relationships | %d family | %d alive | %d dead", relCount, familyCount, aliveCount, deadCount))
+	log("═══════════════════════════════════════════════════════════════")
+
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then
 		return { success = false, message = "Unknown relationship type." }
@@ -2065,7 +2275,6 @@ function LifeBackend:handleInteraction(player, payload)
 	end
 
 	state.Flags = state.Flags or {}
-	state.Relationships = state.Relationships or {}
 
 	-- Single-only actions (meet_someone etc.)
 	if action.requiresSingle then
@@ -2173,6 +2382,36 @@ function LifeBackend:handleInteraction(player, payload)
 	end
 
 	feed = feed or grantMessage or action.message or "You interacted."
+	
+	-- Log after state
+	log("═══════════════════════════════════════════════════════════════")
+	log(string.format("AFTER %s interaction on %s", actionId, targetId))
+	log("═══════════════════════════════════════════════════════════════")
+	
+	local relCount2 = 0
+	local familyCount2 = 0
+	local aliveCount2 = 0
+	local deadCount2 = 0
+	
+	for id, rel in pairs(state.Relationships) do
+		relCount2 = relCount2 + 1
+		if rel.type == "family" then
+			familyCount2 = familyCount2 + 1
+			if rel.alive ~= false then
+				aliveCount2 = aliveCount2 + 1
+			else
+				deadCount2 = deadCount2 + 1
+			end
+			log(string.format("  [%d] ID: %s | Name: %s | Role: %s | Relationship: %d | Age: %d | Alive: %s",
+				familyCount2, id, rel.name or "?", rel.role or "?", rel.relationship or 0, rel.age or 0, tostring(rel.alive ~= false)))
+		end
+	end
+	
+	log("------------------------------------------")
+	log(string.format("TOTALS: %d relationships | %d family | %d alive | %d dead", relCount2, familyCount2, aliveCount2, deadCount2))
+	log(string.format("CHANGE: %+d relationships | %+d family", relCount2 - relCount, familyCount2 - familyCount))
+	log("═══════════════════════════════════════════════════════════════")
+	
 	self:pushState(player, feed)
 
 	-- IMPORTANT: do NOT return full state here – the UI should rely on SyncState,
