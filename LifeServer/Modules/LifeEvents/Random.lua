@@ -657,7 +657,7 @@ Random.events = {
 			{ text = "Making great progress!", effects = { Health = 15, Happiness = 10 }, feedText = "Recovery is going well! Almost back to normal." },
 			{ text = "Slower than expected", effects = { Health = 5, Happiness = -5 }, feedText = "Recovery is taking longer than hoped." },
 			{ text = "Complications arose", effects = { Health = -10, Happiness = -10, Money = -1000 }, feedText = "Setback in recovery. More treatment needed." },
-			{ text = "Fully recovered!", effects = { Health = 20, Happiness = 15 }, setFlags = { fully_recovered = true }, feedText = "You're back to full health! What a journey.", onComplete = function(state)
+			{ text = "Fully recovered!", effects = { Health = 20, Happiness = 15 }, setFlags = { fully_recovered = true }, feedText = "You're back to full health! What a journey.", onResolve = function(state)
 				state.Flags = state.Flags or {}
 				state.Flags.hospitalized = nil
 				state.Flags.needs_surgery = nil
@@ -723,7 +723,7 @@ Random.events = {
 			{ text = "Devastated - they were family", effects = { Happiness = -20, Health = -5 }, feedText = "Losing your pet is heartbreaking." },
 			{ text = "Grateful for the time together", effects = { Happiness = -10 }, feedText = "You cherish the memories you shared." },
 			{ text = "Adopt another pet soon", effects = { Happiness = -8, Money = -300 }, setFlags = { has_pet = true }, feedText = "You opened your heart to another pet." },
-			{ text = "Not getting another pet", effects = { Happiness = -12 }, feedText = "Too painful. You can't go through this again.", onComplete = function(state)
+			{ text = "Not getting another pet", effects = { Happiness = -12 }, feedText = "Too painful. You can't go through this again.", onResolve = function(state)
 				state.Flags = state.Flags or {}
 				state.Flags.has_pet = nil
 				state.Flags.has_dog = nil

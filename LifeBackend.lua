@@ -389,6 +389,12 @@ local CrimeCatalog = {
 
 local PrisonActions = {
 	prison_escape = { description = "Attempt a daring escape", successStat = "Freedom" },
+	-- CRITICAL FIX: Added prison_escape_failed handler (called by ActivitiesScreen minigame failure)
+	prison_escape_failed = { 
+		stats = { Health = -5, Happiness = -10 }, 
+		feed = "got caught trying to escape", 
+		jailIncrease = 2, -- Add 2 years to sentence for failed escape attempt
+	},
 	prison_workout = { stats = { Health = 4, Looks = 1 }, feed = "worked out in the yard" },
 	prison_study = { stats = { Smarts = 4 }, feed = "studied for a GED" },
 	prison_gang = { stats = { Happiness = 2, Health = -3 }, feed = "aligned with a gang", flag = "gang_member" },
@@ -461,7 +467,8 @@ local StoryPaths = {
 		description = "Rise from local office to the presidency.",
 		color = C and C.Blue or Color3.fromRGB(59, 130, 246),
 		minAge = 25,
-		requirements = { education = "bachelor", smarts = 65 },
+		-- FIXED: Synced smarts requirement with StoryPathsScreen (was 65, now 70)
+		requirements = { education = "bachelor", smarts = 70 },
 		stages = { "local_office", "mayor", "governor", "senator", "president" },
 	},
 	criminal = {
@@ -488,7 +495,8 @@ local StoryPaths = {
 		description = "Charm your way into royalty.",
 		color = C and C.Purple or Color3.fromRGB(147, 51, 234),
 		minAge = 18,
-		requirements = { looks = 75, happiness = 60 },
+		-- FIXED: Synced looks requirement with StoryPathsScreen (was 75, now 80)
+		requirements = { looks = 80, happiness = 60 },
 		stages = { "commoner", "courted", "engaged", "married", "monarch" },
 	},
 }
@@ -1567,6 +1575,20 @@ function LifeBackend:handlePrisonAction(player, actionId)
 
 	if action.jailReduction then
 		state.JailYearsLeft = math.max(0, (state.JailYearsLeft or 0) - action.jailReduction)
+	end
+
+	-- CRITICAL FIX: Support for jailIncrease (for failed escape attempts)
+	if action.jailIncrease then
+		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
+		local message = string.format("Your escape failed. %d years added to your sentence.", action.jailIncrease)
+		self:pushState(player, message, {
+			showPopup = true,
+			emoji = "🚔",
+			title = "Caught!",
+			body = message,
+			wasSuccess = false,
+		})
+		return { success = false, message = message }
 	end
 
 	if action.risk and RANDOM:NextInteger(1, 100) <= action.risk then

@@ -40,7 +40,8 @@ local Paths = {
 		colorPale = C.BluePale,
 		colorDark = C.BlueDark,
 		minAge = 25,
-		requirements = { education = "university", smarts = 70 },
+		-- CRITICAL FIX: Changed "university" to "bachelor" to match LifeBackend EducationRanks
+		requirements = { education = "bachelor", smarts = 70 },
 		stages = {
 			{ id = "local_office", name = "Local Office", emoji = "🏫", description = "City Council or School Board" },
 			{ id = "mayor", name = "Mayor", emoji = "🏙️", description = "Lead your city" },
