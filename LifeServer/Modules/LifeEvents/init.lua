@@ -506,13 +506,13 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.customValidation and type(event.customValidation) == "function" then
-		local isValid = pcall(function()
+		local success, result = pcall(function()
 			return event.customValidation(state)
 		end)
-		if not isValid then
-			return false -- Custom validation failed or errored
+		if not success then
+			warn("[LifeEvents] customValidation error for event '" .. (event.id or "unknown") .. "':", result)
+			return false -- Custom validation errored
 		end
-		local result = event.customValidation(state)
 		if result == false or result == nil then
 			return false -- Custom validation explicitly failed
 		end
