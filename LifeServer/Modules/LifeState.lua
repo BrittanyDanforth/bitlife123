@@ -256,7 +256,17 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:AddRelationship(id, data)
+	data.id = id
 	self.Relationships[id] = data
+	
+	-- 🔥 CRITICAL FIX (BUG #19): Set .partner property for romance relationships!
+	-- This ensures requiresPartner checks work for ALL romance paths (not just hardcoded events)!
+	if data.type == "romance" or data.role == "Partner" or data.role == "Spouse" then
+		self.Relationships.partner = data
+		self.Flags = self.Flags or {}
+		self.Flags.has_partner = true
+	end
+	
 	return self
 end
 

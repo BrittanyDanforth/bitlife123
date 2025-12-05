@@ -359,6 +359,14 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- 🔥 CRITICAL FIX: Support "conditions.flag" format (single required flag)
+	-- BUG #16: 25+ events use this format but it was NEVER CHECKED!
+	if cond.flag then
+		if not flags[cond.flag] then
+			return false -- Missing required flag
+		end
+	end
+	
 	-- Support old "conditions.requiredFlags" format (array of flag names)
 	if cond.requiredFlags then
 		for _, flag in ipairs(cond.requiredFlags) do
