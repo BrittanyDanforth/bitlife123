@@ -1,7 +1,7 @@
 --[[
-	Milestone Events
-	Important life events that mark major transitions
-	These are priority events that should trigger when conditions are met
+    Milestone Events
+    Important life events that mark major transitions
+    These are priority events that should trigger when conditions are met
 ]]
 
 local Milestones = {}
@@ -20,6 +20,14 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "childhood",
+		ageBand = "baby_toddler",
+		category = "life_stage",
+		milestoneKey = "STAGE_TODDLER",
+		tags = { "core", "transition", "personality" },
+
 		choices = {
 			{ text = "Curious about everything", effects = { Smarts = 3, Happiness = 5 }, setFlags = { curious = true }, hintCareer = "science", feedText = "You want to explore everything!" },
 			{ text = "Always making friends", effects = { Happiness = 7 }, setFlags = { social = true }, feedText = "You love being around people!" },
@@ -36,6 +44,14 @@ Milestones.events = {
 		minAge = 3, maxAge = 5,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = "childhood",
+		ageBand = "early_childhood",
+		category = "family",
+		milestoneKey = "BIRTH_STORY",
+		tags = { "family", "background", "identity" },
+
 		choices = {
 			{ text = "Born during a big storm", effects = { Happiness = 3 }, setFlags = { dramatic_birth = true }, feedText = "You came into the world with thunder and lightning!" },
 			{ text = "Very easy delivery", effects = { Health = 3 }, setFlags = { easy_birth = true }, feedText = "You arrived smoothly into the world." },
@@ -52,6 +68,14 @@ Milestones.events = {
 		minAge = 4, maxAge = 6,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = "childhood",
+		ageBand = "early_childhood",
+		category = "family",
+		milestoneKey = "FAMILY_BACKGROUND",
+		tags = { "family", "class", "upbringing" },
+
 		choices = {
 			{ text = "Wealthy and privileged", effects = { Money = 1000, Happiness = 3 }, setFlags = { wealthy_family = true }, feedText = "You grew up with advantages." },
 			{ text = "Comfortable middle class", effects = { Money = 300, Happiness = 5 }, setFlags = { middle_class = true }, feedText = "A comfortable, stable upbringing." },
@@ -74,6 +98,14 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult", -- transition into adult stage
+		ageBand = "young_adult",
+		category = "life_stage",
+		milestoneKey = "TURNING_18",
+		tags = { "core", "adulthood", "birthday" },
+
 		choices = {
 			{ text = "Ready to take on the world", effects = { Happiness = 10 }, setFlags = { confident_adult = true }, feedText = "Adulthood, here you come!" },
 			{ text = "Nervous but excited", effects = { Happiness = 5, Smarts = 2 }, feedText = "It's a lot of responsibility." },
@@ -90,6 +122,14 @@ Milestones.events = {
 		minAge = 16, maxAge = 20,
 		oneTime = true,
 		isMilestone = true,
+
+		-- META
+		stage = "teen",
+		ageBand = "teen_mid",
+		category = "transport",
+		milestoneKey = "DRIVING_LICENSE",
+		tags = { "independence", "transport", "test" },
+
 		choices = {
 			{ text = "Passed first try!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_license = true, good_driver = true }, feedText = "You nailed the driving test!" },
 			{ text = "Passed after a few attempts", effects = { Happiness = 5 }, setFlags = { has_license = true }, feedText = "Third time's the charm! You got your license." },
@@ -106,6 +146,14 @@ Milestones.events = {
 		minAge = 16, maxAge = 25,
 		oneTime = true,
 		requiresFlags = { has_license = true },
+
+		-- META
+		stage = "teen",
+		ageBand = "late_teen",
+		category = "transport",
+		milestoneKey = "FIRST_CAR",
+		tags = { "transport", "money", "independence" },
+
 		choices = {
 			{
 				text = "A beat-up used car",
@@ -183,6 +231,15 @@ Milestones.events = {
 		priority = "high",
 		isMilestone = true,
 		requiresFlags = { college_bound = true },
+
+		-- META
+		stage = "adult",
+		ageBand = "young_adult",
+		category = "education",
+		milestoneKey = "COLLEGE_GRADUATION",
+		tags = { "college", "degree", "career_setup" },
+		careerTags = { "career_general" },
+
 		-- onComplete ensures Education is always set after any choice
 		onComplete = function(state, choice, eventDef, outcome)
 			state.Education = "bachelor"
@@ -233,6 +290,15 @@ Milestones.events = {
 		priority = "high",
 		isMilestone = true,
 		requiresFlags = { grad_school = true },
+
+		-- META
+		stage = "adult",
+		ageBand = "young_adult",
+		category = "education",
+		milestoneKey = "GRAD_SCHOOL_COMPLETE",
+		tags = { "graduate_school", "degree", "career_setup" },
+		careerTags = { "science", "law", "medical", "education" },
+
 		choices = {
 			{
 				text = "Master's Degree",
@@ -312,6 +378,15 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult",
+		ageBand = "young_adult",
+		category = "career",
+		milestoneKey = "FIRST_REAL_JOB",
+		tags = { "job", "career_start", "money" },
+		careerTags = { "career_general" },
+
 		choices = {
 			{ text = "Excited and motivated", effects = { Happiness = 10, Money = 500 }, setFlags = { employed = true }, feedText = "Your career begins!" },
 			{ text = "Nervous but ready", effects = { Happiness = 5, Smarts = 2, Money = 500 }, setFlags = { employed = true }, feedText = "First day jitters, but you've got this." },
@@ -330,6 +405,15 @@ Milestones.events = {
 		requiresJob = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult",
+		ageBand = "adult_midlife",
+		category = "career",
+		milestoneKey = "MAJOR_PROMOTION",
+		tags = { "job", "promotion", "senior_role" },
+		careerTags = { "management" },
+
 		choices = {
 			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You rose to the challenge!" },
 			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true }, feedText = "You're adjusting to the new role." },
@@ -347,6 +431,14 @@ Milestones.events = {
 		priority = "high",
 		isMilestone = true,
 		requiresJob = true,
+
+		-- META
+		stage = "senior",
+		ageBand = "senior_early",
+		category = "career",
+		milestoneKey = "RETIREMENT_DAY",
+		tags = { "retirement", "job_end", "transition" },
+
 		choices = {
 			{ text = "Grateful for the journey", effects = { Happiness = 15 }, setFlags = { retired = true }, feedText = "A career well spent. Time to relax!" },
 			{ text = "Ready for the next adventure", effects = { Happiness = 12 }, setFlags = { retired = true, active_retiree = true }, feedText = "Retirement is just a new beginning!" },
@@ -368,6 +460,14 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult",
+		ageBand = "adult_30s",
+		category = "decade_birthday",
+		milestoneKey = "TURNING_30",
+		tags = { "birthday", "decade", "reflection" },
+
 		choices = {
 			{ text = "Best years ahead", effects = { Happiness = 10 }, feedText = "Your 30s are going to be amazing!" },
 			{ text = "Time to get serious", effects = { Smarts = 5, Happiness = 5 }, feedText = "Time to build your life." },
@@ -385,6 +485,14 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult",
+		ageBand = "adult_40s",
+		category = "decade_birthday",
+		milestoneKey = "TURNING_40",
+		tags = { "birthday", "midlife", "reflection" },
+
 		choices = {
 			{ text = "Life begins at 40", effects = { Happiness = 10 }, feedText = "The best is yet to come!" },
 			{ text = "Time for a midlife check-in", effects = { Smarts = 3, Happiness = 5 }, feedText = "You're reflecting on where you are." },
@@ -402,6 +510,14 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+
+		-- META
+		stage = "adult",
+		ageBand = "adult_50s",
+		category = "decade_birthday",
+		milestoneKey = "TURNING_50",
+		tags = { "birthday", "aging", "reflection" },
+
 		choices = {
 			{ text = "Wiser and happier", effects = { Happiness = 10, Smarts = 3 }, feedText = "Age brings wisdom and contentment." },
 			{ text = "Young at heart", effects = { Happiness = 8, Health = 3 }, feedText = "You feel as young as ever!" },
@@ -420,6 +536,14 @@ Milestones.events = {
 		priority = "high",
 		isMilestone = true,
 		requiresFlags = { parent = true },
+
+		-- META
+		stage = "senior",
+		ageBand = "senior",
+		category = "family",
+		milestoneKey = "BECOMING_GRANDPARENT",
+		tags = { "family", "grandparent", "next_generation" },
+
 		choices = {
 			{ text = "Overjoyed and involved", effects = { Happiness = 15 }, setFlags = { grandparent = true, active_grandparent = true }, feedText = "You're going to be the best grandparent!" },
 			{ text = "Happy but keeping boundaries", effects = { Happiness = 10 }, setFlags = { grandparent = true }, feedText = "You'll be there when needed." },
