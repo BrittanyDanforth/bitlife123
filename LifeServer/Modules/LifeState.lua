@@ -75,6 +75,10 @@ function LifeState.new(player)
 		education = nil,
 	}
 	
+	-- CRITICAL FIX: YearLog tracks events that happen during the year
+	-- Used by generateYearSummary for event-based summaries instead of random messages
+	self.YearLog = {}
+	
 	-- Prison
 	self.InJail = false
 	self.JailYearsLeft = 0

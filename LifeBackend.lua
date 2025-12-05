@@ -1576,6 +1576,42 @@ function LifeBackend:tickCareer(state)
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Track career skills based on job category
+	-- Skills grow slowly while working in related fields
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	info.skills = info.skills or {}
+	local category = state.CurrentJob.category or "general"
+	
+	-- Map job categories to skills
+	local categorySkills = {
+		tech = { Technical = 3, Analytical = 2 },
+		office = { Social = 2, Analytical = 1 },
+		science = { Analytical = 3, Technical = 2 },
+		law = { Social = 2, Analytical = 2 },
+		finance = { Analytical = 3, Leadership = 1 },
+		medical = { Technical = 2, Analytical = 2, Social = 1 },
+		military = { Physical = 3, Leadership = 2 },
+		sports = { Physical = 4, Leadership = 1 },
+		trades = { Technical = 2, Physical = 2 },
+		creative = { Creative = 4, Social = 1 },
+		entertainment = { Creative = 3, Social = 2 },
+		service = { Social = 3 },
+		retail = { Social = 2 },
+		food = { Social = 1, Physical = 1 },
+		executive = { Leadership = 4, Analytical = 2, Social = 2 },
+		management = { Leadership = 3, Social = 2 },
+		government = { Leadership = 2, Social = 2, Analytical = 1 },
+	}
+	
+	local skillGrowth = categorySkills[category] or { Social = 1 }
+	for skill, maxGain in pairs(skillGrowth) do
+		local currentLevel = info.skills[skill] or 0
+		-- Diminishing returns at higher levels
+		local gain = math.max(1, math.floor(maxGain * (1 - currentLevel / 100)))
+		info.skills[skill] = math.min(100, currentLevel + RANDOM:NextInteger(0, gain))
+	end
+	
 	-- CRITICAL FIX: Actually PAY the salary during age up!
 	-- Use catalog job salary if available, otherwise use CurrentJob.salary directly
 	-- This ensures event-created jobs (not in catalog) still pay salary
@@ -1764,63 +1800,137 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 end
 
 -- ============================================================================
--- CRITICAL FIX: BitLife-style year summaries instead of boring "Another year passes"
--- Generates context-aware summaries based on player's life situation
+-- CRITICAL FIX: Log significant events that occur during the year
+-- These get used in the year summary instead of random generic messages
+-- ============================================================================
+function LifeBackend:logYearEvent(state, eventType, description, emoji)
+	state.YearLog = state.YearLog or {}
+	table.insert(state.YearLog, {
+		type = eventType,
+		text = description,
+		emoji = emoji or "📌",
+		age = state.Age,
+	})
+end
+
+-- ============================================================================
+-- CRITICAL FIX: BitLife-style year summaries using ACTUAL event history
+-- Uses logged events from the year instead of random generic messages
 -- ============================================================================
 function LifeBackend:generateYearSummary(state)
 	local age = state.Age or 0
 	local summaryParts = {}
 	local emoji = "📅"
 	
-	-- Age-based context
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: First check for actual logged events from this year
+	-- This replaces random generic messages with real event descriptions
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.YearLog and #state.YearLog > 0 then
+		-- Use actual events that happened
+		for _, logEntry in ipairs(state.YearLog) do
+			if logEntry.text and logEntry.text ~= "" then
+				table.insert(summaryParts, logEntry.text)
+				if logEntry.emoji then
+					emoji = logEntry.emoji
+				end
+			end
+		end
+		-- Clear the year log after using it
+		state.YearLog = {}
+		
+		-- If we have actual events, use them and skip random filler
+		if #summaryParts > 0 then
+			local maxParts = math.min(#summaryParts, 3)
+			local finalParts = {}
+			for i = 1, maxParts do
+				table.insert(finalParts, summaryParts[i])
+			end
+			return string.format("%s Age %d: %s", emoji, age, table.concat(finalParts, " "))
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- Fallback: No specific events logged, use context-aware generic summary
+	-- These should only appear when genuinely nothing notable happened
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Check for specific life situations first (these ARE real, not random)
+	if state.Flags then
+		-- Divorce just happened
+		if state.Flags.parents_divorced and not state.Flags.divorce_acknowledged then
+			table.insert(summaryParts, "Your parents have separated. Your family dynamic has changed.")
+			emoji = "💔"
+			state.Flags.divorce_acknowledged = true
+		end
+		
+		-- Just got married
+		if state.Flags.just_married then
+			local partnerName = state.Relationships and state.Relationships.partner and state.Relationships.partner.name or "your partner"
+			table.insert(summaryParts, string.format("You married %s!", partnerName))
+			emoji = "💒"
+			state.Flags.just_married = nil
+		end
+		
+		-- Just had a baby
+		if state.Flags.just_had_baby then
+			table.insert(summaryParts, "You became a parent!")
+			emoji = "👶"
+			state.Flags.just_had_baby = nil
+		end
+		
+		-- Just got promoted
+		if state.Flags.just_promoted then
+			table.insert(summaryParts, "You earned a promotion at work!")
+			emoji = "📈"
+			state.Flags.just_promoted = nil
+		end
+	end
+	
+	-- If we found real situation-based summaries, return them
+	if #summaryParts > 0 then
+		return string.format("%s Age %d: %s", emoji, age, table.concat(summaryParts, " "))
+	end
+	
+	-- Age-based generic context (only if nothing specific happened)
 	local ageContext = ""
 	if age <= 4 then
 		local toddlerLines = {
-			"You're learning to walk and talk.",
-			"Your parents watch you grow every day.",
-			"You discovered the joy of crayons on walls.",
-			"Nap time is your favorite time.",
-			"You learned some new words this year!",
+			"Another year of growing up.",
+			"Learning new things every day.",
+			"Time flies when you're little.",
 		}
 		ageContext = toddlerLines[RANDOM:NextInteger(1, #toddlerLines)]
 		emoji = "👶"
 	elseif age <= 12 then
 		local childLines = {
 			"School keeps you busy.",
-			"You made some new friends at school.",
-			"Summer break was the best part of the year.",
-			"You learned a lot this year.",
-			"Life is full of wonder and adventure.",
+			"Another year of growing up.",
+			"Childhood continues.",
 		}
 		ageContext = childLines[RANDOM:NextInteger(1, #childLines)]
 		emoji = "🧒"
 	elseif age <= 17 then
 		local teenLines = {
-			"High school drama continues.",
-			"You're figuring out who you want to be.",
-			"Homework and hangouts fill your days.",
-			"Teen life has its ups and downs.",
-			"You're counting down to adulthood.",
+			"Another year of high school.",
+			"Teen life continues.",
+			"Growing up fast.",
 		}
 		ageContext = teenLines[RANDOM:NextInteger(1, #teenLines)]
 		emoji = "🎒"
 	elseif age <= 25 then
 		local youngAdultLines = {
-			"Young adulthood is full of possibilities.",
-			"You're building the foundation of your life.",
-			"The world is your oyster.",
-			"Finding your path takes time.",
-			"Every experience shapes who you're becoming.",
+			"Building your future.",
+			"Young adulthood continues.",
+			"Finding your path.",
 		}
 		ageContext = youngAdultLines[RANDOM:NextInteger(1, #youngAdultLines)]
 		emoji = "🌟"
 	elseif age <= 40 then
 		local adultLines = {
-			"Life is in full swing.",
-			"Career and relationships keep you busy.",
-			"You're hitting your stride.",
-			"Adulting is harder than you expected.",
-			"You're making things happen.",
+			"Life continues.",
+			"Staying busy.",
+			"Making progress.",
 		}
 		ageContext = adultLines[RANDOM:NextInteger(1, #adultLines)]
 		emoji = "💼"
@@ -2239,6 +2349,17 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			self:addMoney(state, reward)
 			effectsSummary = effectsSummary or {}
 			effectsSummary.Money = (effectsSummary.Money or 0) + reward
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Log this event to the year log for accurate year summaries
+	-- This ensures the year summary says what ACTUALLY happened, not random text
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if eventDef.id and eventDef.title then
+		local logText = choice.feedText or choice.feed or choice.text or eventDef.title
+		if logText and logText ~= "" then
+			self:logYearEvent(state, eventDef.id, logText, eventDef.emoji)
 		end
 	end
 
@@ -2766,6 +2887,34 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.criminal_path = true
 		state.Flags.criminal = true
 	end
+	
+	state.CareerInfo = state.CareerInfo or {}
+	state.Career = state.Career or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save OLD job to career history before replacing
+	-- This populates the Career Info screen's career history section
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.CurrentJob then
+		state.CareerInfo.careerHistory = state.CareerInfo.careerHistory or {}
+		local historyEntry = {
+			title = state.CurrentJob.name,
+			company = state.CurrentJob.company,
+			salary = state.CurrentJob.salary,
+			category = state.CurrentJob.category,
+			yearsWorked = state.CareerInfo.yearsAtJob or 0,
+			performance = state.CareerInfo.performance or 60,
+			raises = state.CareerInfo.raises or 0,
+			promotions = state.CareerInfo.promotions or 0,
+			reason = "quit", -- They left for a new job
+			endAge = state.Age or 0,
+			endYear = state.Year or 2025,
+		}
+		table.insert(state.CareerInfo.careerHistory, historyEntry)
+		
+		-- Track total years worked for experience bonuses
+		state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
+	end
 
 	state.CurrentJob = {
 		id = job.id,
@@ -2773,10 +2922,9 @@ function LifeBackend:handleJobApplication(player, jobId)
 		company = job.company,
 		salary = job.salary,
 		category = job.category,
+		difficulty = job.difficulty or 1, -- CRITICAL FIX: Pass difficulty to client
+		minStats = job.minStats, -- CRITICAL FIX: Pass stat requirements
 	}
-
-	state.CareerInfo = state.CareerInfo or {}
-	state.Career = state.Career or {}
 
 	state.CareerInfo.performance = 60
 	state.CareerInfo.promotionProgress = 0
@@ -2817,6 +2965,29 @@ function LifeBackend:handleQuitJob(player)
 
 	state.CareerInfo = state.CareerInfo or {}
 	state.Career = state.Career or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save job to career history before clearing
+	-- This populates the Career Info screen's career history section
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.CareerInfo.careerHistory = state.CareerInfo.careerHistory or {}
+	local historyEntry = {
+		title = state.CurrentJob.name,
+		company = state.CurrentJob.company,
+		salary = state.CurrentJob.salary,
+		category = state.CurrentJob.category,
+		yearsWorked = state.CareerInfo.yearsAtJob or 0,
+		performance = state.CareerInfo.performance or 60,
+		raises = state.CareerInfo.raises or 0,
+		promotions = state.CareerInfo.promotions or 0,
+		reason = "quit",
+		endAge = state.Age or 0,
+		endYear = state.Year or 2025,
+	}
+	table.insert(state.CareerInfo.careerHistory, historyEntry)
+	
+	-- Track total years worked for experience bonuses
+	state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
 
 	local jobName = state.CurrentJob.name
 	state.CurrentJob = nil
@@ -2938,6 +3109,9 @@ function LifeBackend:getCareerInfo(player)
 		careerHistory = state.CareerInfo.careerHistory or {},
 		skills = state.CareerInfo.skills or {},
 		track = state.Career.track,
+		-- CRITICAL FIX: Add totalExperience for Career Info modal display
+		totalExperience = state.CareerInfo.totalYearsWorked or 0,
+		totalYearsWorked = state.CareerInfo.totalYearsWorked or 0,
 	}
 end
 

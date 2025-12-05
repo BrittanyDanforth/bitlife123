@@ -105,10 +105,25 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 	end
 
 	applyChoiceEffects(state, choice)
+	
+	-- CRITICAL FIX: Call choice-level onResolve callback
 	if choice.onResolve then
 		local success, err = pcall(choice.onResolve, state, choice, event)
 		if not success then
 			warn("[LifeEvents] Choice handler error:", err)
+		end
+	end
+	
+	-- CRITICAL FIX: Also call event-level onComplete callback!
+	-- This is needed for events like parent_divorce that update relationship statuses
+	if event.onComplete then
+		local outcome = {
+			choiceIndex = choiceIndex,
+			choice = choice,
+		}
+		local success, err = pcall(event.onComplete, state, choice, event, outcome)
+		if not success then
+			warn("[LifeEvents] Event onComplete error:", err)
 		end
 	end
 
