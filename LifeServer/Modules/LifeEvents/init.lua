@@ -555,6 +555,26 @@ local function calculateEventWeight(event, state)
 		local perfFactor = 0.5 + (perf / 100)
 		local progFactor = 0.5 + (prog / 100)
 		weight = weight * perfFactor * progFactor
+		
+		-- Targeted boosts/penalties for specific beats
+		if event.id == "promotion_offer" then
+			-- Require solid progress to meaningfully surface
+			weight = weight * math.max(0.1, prog / 100)
+		elseif event.id == "performance_review" then
+			-- Everyone gets reviews; moderate emphasis
+			weight = weight * 1.2
+		elseif event.id == "written_warning" then
+			-- Emphasize when performance is low
+			weight = weight * (perf < 50 and 2.0 or 0.6)
+		elseif event.id == "termination_meeting" then
+			-- Very rare unless extremely low
+			weight = weight * (perf < 40 and 1.5 or 0.1)
+		elseif event.id == "raise_small" or event.id == "raise_merit" then
+			weight = weight * (perf >= 75 and 1.8 or 0.3)
+		elseif event.id == "lateral_transfer" then
+			-- Neutral; gate mostly by requiresCareer
+			weight = weight * 1.0
+		end
 	end
 	
 	-- BOOST: Never-seen events get priority

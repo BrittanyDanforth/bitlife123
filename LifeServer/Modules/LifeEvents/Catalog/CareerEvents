@@ -37,6 +37,148 @@ local events = {
 			},
 		},
 	},
+	-- Merit raise (small)
+	{
+		id = "raise_small",
+		emoji = "💵",
+		title = "Merit Raise",
+		text = "Your performance earns you a small raise.",
+		category = "career",
+		weight = 8,
+		minAge = 18,
+		requiresJob = true,
+		requiresCareer = { minPerformance = 75, minYearsAtJob = 1 },
+		choices = {
+			{
+				index = 1,
+				text = "Accept the raise",
+				effects = { Happiness = 3 },
+				feedText = "You received a merit raise!",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.10)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Negotiate for more",
+				effects = { Happiness = -1 },
+				feedText = "You negotiated for a better package.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
+					end
+				end,
+			},
+		},
+	},
+	-- Lateral transfer
+	{
+		id = "lateral_transfer",
+		emoji = "🔁",
+		title = "Lateral Transfer Opportunity",
+		text = "An internal opening lets you switch teams without a promotion.",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		requiresJob = true,
+		requiresCareer = { minYearsAtJob = 1 },
+		choices = {
+			{
+				index = 1,
+				text = "Transfer to new team",
+				effects = { Happiness = 2 },
+				feedText = "You switched to a new team.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.name = state.CurrentJob.name -- title unchanged
+						state.CareerInfo.promotionProgress = math.max(0, (state.CareerInfo.promotionProgress or 0) - 10)
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay where you are",
+				effects = { Happiness = -1 },
+				feedText = "You decided to stay with your current team.",
+			},
+		},
+	},
+	-- Demotion warning (without PIP refusal)
+	{
+		id = "demotion_warning",
+		emoji = "⬇️",
+		title = "Demotion Warning",
+		text = "Your manager warns that your recent performance could lead to a demotion.",
+		category = "career",
+		weight = 4,
+		minAge = 18,
+		requiresJob = true,
+		requiresCareer = { maxPerformance = 45, minYearsAtJob = 0 },
+		choices = {
+			{
+				index = 1,
+				text = "Commit to improvement",
+				effects = { Happiness = -2 },
+				feedText = "You committed to clear improvement goals.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 40) + 4)
+				end,
+			},
+			{
+				index = 2,
+				text = "Ignore it",
+				effects = { Happiness = -3 },
+				feedText = "You ignored the warning.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.ignored_demotion_warning = true
+				end,
+				nextEventId = "demoted_role",
+			},
+		},
+	},
+	-- Demoted role (if warnings ignored)
+	{
+		id = "demoted_role",
+		emoji = "🪪",
+		title = "Demotion",
+		text = "Due to performance, you're reassigned to a lower-responsibility role.",
+		category = "career",
+		weight = 3,
+		minAge = 18,
+		requiresJob = true,
+		requiresFlags = { ignored_demotion_warning = true },
+		choices = {
+			{
+				index = 1,
+				text = "Accept demotion",
+				effects = { Happiness = -6 },
+				feedText = "You accepted the demotion.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 0.85)
+						-- Prefix with "Associate" if not already
+						if not tostring(state.CurrentJob.name):lower():find("associate") then
+							state.CurrentJob.name = "Associate " .. (state.CurrentJob.name or "")
+						end
+					end
+					state.Flags.ignored_demotion_warning = nil
+					state.Flags.refused_pip = nil
+					state.CareerInfo.performance = math.max(35, (state.CareerInfo.performance or 35))
+					state.CareerInfo.promotionProgress = 0
+				end,
+			},
+			{
+				index = 2,
+				text = "Appeal decision",
+				effects = { Happiness = -2 },
+				feedText = "You filed an appeal. Management will review.",
+			},
+		},
+	},
 	{
 		id = "coding_bootcamp_offer",
 		emoji = "💻",
