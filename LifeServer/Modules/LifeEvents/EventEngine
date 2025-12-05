@@ -1,0 +1,159 @@
+local LifeStageSystem = require(script.Parent.Parent.LifeStageSystem)
+
+local EventEngine = {}
+EventEngine.EventStats = {
+	total = 0,
+	byCategory = {},
+	byStage = {},
+}
+
+local function clone(tbl)
+	if type(tbl) ~= "table" then
+		return tbl
+	end
+	local result = {}
+	for key, value in pairs(tbl) do
+		result[key] = clone(value)
+	end
+	return result
+end
+
+function EventEngine.normalizeEvent(event)
+	if not event.id then
+		error("Events require id")
+	end
+	event.id = string.lower(event.id)
+	event.choices = event.choices or {
+		{ index = 1, text = "Continue", effects = {} },
+	}
+
+	event.conditions = event.conditions or {}
+	event.weight = event.weight or 1
+
+	EventEngine.EventStats.total += 1
+	EventEngine.EventStats.byCategory[event.category or "uncategorized"] =
+		(EventEngine.EventStats.byCategory[event.category or "uncategorized"] or 0) + 1
+
+	local minAge = event.conditions.minAge or event.minAge or 0
+	local stage = LifeStageSystem.getStage(minAge)
+	local stageId = stage and stage.id or "all"
+	EventEngine.EventStats.byStage[stageId] = (EventEngine.EventStats.byStage[stageId] or 0) + 1
+
+	return event
+end
+
+local function meetsProbability(probability)
+	if not probability then
+		return true
+	end
+	return Random.new():NextNumber() <= probability
+end
+
+function EventEngine.isEligible(event, state)
+	if event.probability and not meetsProbability(event.probability) then
+		return false
+	end
+	return LifeStageSystem.validateEvent(event, state)
+end
+
+local function applyChoiceEffects(state, choice)
+	if choice.effects then
+		for stat, delta in pairs(choice.effects) do
+			if state.ModifyStat then
+				state:ModifyStat(stat, delta)
+			elseif state.Stats and state.Stats[stat] then
+				state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+			end
+		end
+	end
+
+	if choice.money then
+		local amount = choice.money
+		if state.AddMoney then
+			state:AddMoney(amount, choice.text)
+		else
+			state.Money = (state.Money or 0) + amount
+		end
+	end
+
+	if choice.flags then
+		if choice.flags.set then
+			for _, flag in ipairs(choice.flags.set) do
+				if state.SetFlag then
+					state:SetFlag(flag, true)
+				else
+					state.Flags[flag] = true
+				end
+			end
+		end
+		if choice.flags.clear then
+			for _, flag in ipairs(choice.flags.clear) do
+				if state.ClearFlag then
+					state:ClearFlag(flag)
+				else
+					state.Flags[flag] = nil
+				end
+			end
+		end
+	end
+end
+
+function EventEngine.completeEvent(event, choiceIndex, state)
+	local choice = event.choices[choiceIndex]
+	if not choice then
+		return nil, "Invalid choice"
+	end
+
+	applyChoiceEffects(state, choice)
+	if choice.onResolve then
+		local success, err = pcall(choice.onResolve, state, choice, event)
+		if not success then
+			warn("[LifeEvents] Choice handler error:", err)
+		end
+	end
+
+	if state.RecordEvent then
+		state:RecordEvent(event.id, { choice = choiceIndex })
+	end
+
+	return choice
+end
+
+local function weightedPick(events)
+	local total = 0
+	for _, event in ipairs(events) do
+		total += event.weight or 1
+	end
+	local roll = Random.new():NextNumber() * total
+	for _, event in ipairs(events) do
+		roll -= event.weight or 1
+		if roll <= 0 then
+			return event
+		end
+	end
+	return events[#events]
+end
+
+function EventEngine.selectYearEvents(events, state, options)
+	options = options or {}
+	local eligible = {}
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			table.insert(eligible, event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	local maxEvents = options.maxEvents or 2
+	local selected = {}
+	for i = 1, math.min(maxEvents, #eligible) do
+		local pick = weightedPick(eligible)
+		table.insert(selected, clone(pick))
+	end
+	return selected
+end
+
+return EventEngine

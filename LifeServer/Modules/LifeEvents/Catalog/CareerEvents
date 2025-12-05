@@ -1,0 +1,112 @@
+local events = {
+	{
+		id = "job_offer_barista",
+		emoji = "☕",
+		title = "Café Job Offer",
+		text = "A boutique café downtown desperately needs help. They like your vibe.",
+		category = "career",
+		weight = 12,
+		minAge = 15,
+		maxAge = 30,
+		requiresNoJob = true,
+		blockedByFlags = { employed = true },
+		choices = {
+			{
+				index = 1,
+				text = "Accept job",
+				effects = { Happiness = 3 },
+				setFlags = { employed = true, has_job = true },
+				feedText = "You got a job as a Barista at Bloom Cafe!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "barista",
+							name = "Barista",
+							company = "Bloom Cafe",
+							salary = 24000,
+							category = "service",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline",
+				effects = { Happiness = -1 },
+				feedText = "You passed on the café job.",
+			},
+		},
+	},
+	{
+		id = "coding_bootcamp_offer",
+		emoji = "💻",
+		title = "Coding Bootcamp Scholarship",
+		text = "You win a partial scholarship to an elite coding bootcamp.",
+		category = "career",
+		weight = 6,
+		minAge = 17,
+		maxAge = 30,
+		requiresFlags = { social_online = true },
+		choices = {
+			{
+				index = 1,
+				text = "Enroll",
+				effects = { Smarts = 4, Money = -4000 },
+				setFlags = { college_student = true, bootcamp_grad_pending = true },
+				feedText = "You enrolled in Stacks Academy coding bootcamp!",
+				onResolve = function(state)
+					if state.EnrollEducation then
+						state:EnrollEducation({
+							name = "Stacks Academy",
+							type = "bootcamp",
+							cost = 4000,
+							duration = 1,
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Skip it",
+				effects = { Happiness = -2 },
+				feedText = "You passed on the bootcamp.",
+			},
+		},
+	},
+	{
+		id = "promotion_offer",
+		emoji = "⬆️",
+		title = "Promotion Consideration",
+		text = "Your manager calls you in to discuss a promotion with more responsibility.",
+		category = "career",
+		weight = 9,
+		minAge = 20,
+		requiresJob = true,
+		requiresStats = { Smarts = 45 },
+		choices = {
+			{
+				index = 1,
+				text = "Accept promotion",
+				effects = { Happiness = 3, Money = 5000 },
+				feedText = "You were promoted!",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.35)
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					end
+					if state.AddFeed then
+						state:AddFeed("You were promoted!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline politely",
+				effects = { Happiness = -1 },
+				feedText = "You declined the promotion.",
+			},
+		},
+	},
+}
+
+return events

@@ -85,6 +85,19 @@ function AssetsScreen:updateState(newState)
 	if newState then 
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+		
+		-- Auto-refresh the current tab if screen is visible
+		-- This ensures assets added by events appear immediately
+		if self.isVisible then
+			self:updateBalanceBar()
+			if self.currentTab == "property" then
+				self:populateProperty()
+			elseif self.currentTab == "vehicles" then
+				self:populateVehicles()
+			else
+				self:populateShop()
+			end
+		end
 	end
 end
 

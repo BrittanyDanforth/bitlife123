@@ -1,0 +1,79 @@
+local RANDOM = Random.new()
+
+-- Generate random first name
+local function randomName(gender)
+	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake"}
+	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe"}
+	local names = (gender == "male") and maleNames or femaleNames
+	return names[RANDOM:NextInteger(1, #names)]
+end
+
+local events = {
+	{
+		id = "highschool_crush",
+		emoji = "💘",
+		title = "Hallway Crush",
+		text = "You keep running into the same person between classes. Ask them out?",
+		category = "romance",
+		weight = 7,
+		minAge = 14,
+		maxAge = 19,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Shoot your shot",
+				effects = { Happiness = 4 },
+				setFlags = { has_romantic_partner = true },
+				feedText = "You started dating your crush!",
+				onResolve = function(state)
+					local crushName = randomName(state.Gender == "male" and "female" or "male")
+					local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
+					if state.AddRelationship then
+						state:AddRelationship(relId, {
+							name = crushName,
+							type = "romance",
+							role = "Partner",
+							relationship = 65,
+							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							alive = true,
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay quiet",
+				effects = { Happiness = -2 },
+				feedText = "You stayed quiet about your feelings.",
+			},
+		},
+	},
+	{
+		id = "adulthood_engagement",
+		emoji = "💍",
+		title = "Perfect Proposal Moment",
+		text = "Your partner hints they'd say yes if you popped the question.",
+		category = "romance",
+		weight = 5,
+		minAge = 21,
+		requiresFlags = { has_romantic_partner = true },
+		choices = {
+			{
+				index = 1,
+				text = "Propose",
+				effects = { Happiness = 6, Money = -3000 },
+				setFlags = { engaged = true },
+				feedText = "You proposed and they said yes!",
+			},
+			{
+				index = 2,
+				text = "Not yet",
+				effects = { Happiness = -3 },
+				feedText = "You decided to wait a bit longer.",
+			},
+		},
+	},
+}
+
+return events

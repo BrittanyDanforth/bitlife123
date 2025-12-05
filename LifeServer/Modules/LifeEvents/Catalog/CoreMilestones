@@ -1,0 +1,108 @@
+local events = {
+	{
+		id = "childhood_playdate",
+		emoji = "🧸",
+		title = "Neighborhood Playdate",
+		text = "Kids on your street invite you over for an afternoon of board games and freeze tag.",
+		category = "milestone",
+		weight = 8,
+		minAge = 5,
+		maxAge = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Join the fun",
+				effects = { Happiness = 3, Health = 1 },
+				setFlags = { has_childhood_friends = true },
+				feedText = "You had a great time with the neighborhood kids!",
+			},
+			{
+				index = 2,
+				text = "Stay home",
+				effects = { Happiness = -2, Smarts = 1 },
+				feedText = "You stayed home instead.",
+			},
+		},
+	},
+	{
+		id = "teen_social_media",
+		emoji = "📱",
+		title = "First Social Media Account",
+		text = "Everyone at school is talking about the newest social platform. Create an account?",
+		category = "milestone",
+		weight = 6,
+		minAge = 12,
+		maxAge = 18,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Yes, sign up",
+				effects = { Happiness = 2 },
+				setFlags = { social_online = true },
+				feedText = "You created your first social media account!",
+			},
+			{
+				index = 2,
+				text = "Not my thing",
+				effects = { Happiness = -1, Smarts = 1 },
+				feedText = "You decided to stay off social media.",
+			},
+		},
+	},
+	{
+		id = "young_adult_move_out",
+		emoji = "📦",
+		title = "Moving Out",
+		text = "You feel ready to leave home and get your own place.",
+		category = "milestone",
+		weight = 5,
+		minAge = 18,
+		maxAge = 30,
+		oneTime = true,
+		blockedByFlags = { living_independently = true },
+		choices = {
+			{
+				index = 1,
+				text = "Get an apartment",
+				effects = { Happiness = 4, Money = -5000 },
+				setFlags = { living_independently = true },
+				feedText = "You moved into your own apartment!",
+			},
+			{
+				index = 2,
+				text = "Stay with family",
+				effects = { Happiness = -1, Money = 2000 },
+				feedText = "You decided to stay with family a bit longer.",
+			},
+		},
+	},
+	{
+		id = "midlife_burnout",
+		emoji = "😫",
+		title = "Career Burnout",
+		text = "Years of grinding have left you exhausted. Take a sabbatical?",
+		category = "career",
+		weight = 4,
+		minAge = 35,
+		maxAge = 55,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Take time off",
+				effects = { Happiness = 6, Health = 3, Money = -8000 },
+				feedText = "You took a well-deserved break!",
+			},
+			{
+				index = 2,
+				text = "Push through",
+				effects = { Happiness = -4, Health = -3 },
+				setFlags = { burnout_warning = true },
+				feedText = "You pushed through the exhaustion.",
+			},
+		},
+	},
+}
+
+return events
