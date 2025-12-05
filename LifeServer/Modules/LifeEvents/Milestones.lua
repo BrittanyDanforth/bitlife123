@@ -397,7 +397,7 @@ Milestones.events = {
 		id = "major_promotion",
 		title = "Big Promotion",
 		emoji = "📈",
-		text = "You've been promoted to a senior position!",
+		text = "After years of dedication, hard work, and consistently exceeding expectations, you've been promoted to a senior position! This is a major career milestone.",
 		question = "How do you handle the new responsibility?",
 		minAge = 28, maxAge = 55,
 		baseChance = 0.3,
@@ -405,6 +405,15 @@ Milestones.events = {
 		requiresJob = true,
 		priority = "high",
 		isMilestone = true,
+		-- Only trigger if player has earned it through hard work
+		customValidation = function(state)
+			if not state.CareerInfo then return false end
+			local promotionProgress = state.CareerInfo.promotionProgress or 0
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			-- Must have worked very hard: max promotion progress AND excellent performance AND significant time at job
+			return promotionProgress >= 90 and performance >= 75 and yearsAtJob >= 2
+		end,
 
 		-- META
 		stage = "adult",
@@ -415,9 +424,57 @@ Milestones.events = {
 		careerTags = { "management" },
 
 		choices = {
-			{ text = "Step up and lead", effects = { Happiness = 12, Money = 2000, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You rose to the challenge!" },
-			{ text = "Grow into it gradually", effects = { Happiness = 8, Money = 1500, Smarts = 2 }, setFlags = { senior_role = true }, feedText = "You're adjusting to the new role." },
-			{ text = "Struggle with impostor syndrome", effects = { Happiness = 5, Money = 1500, Smarts = 3 }, setFlags = { senior_role = true }, feedText = "You question if you deserve it." },
+			{ 
+				text = "Step up and lead", 
+				effects = { Happiness = 12, Money = 2000, Smarts = 3 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You rose to the challenge! Your years of preparation made you ready for this.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						local oldSalary = state.CurrentJob.salary or 30000
+						state.CurrentJob.salary = math.floor(oldSalary * 1.4)
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					end
+					if state.CareerInfo then
+						state.CareerInfo.promotionProgress = 0
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+					end
+				end,
+			},
+			{ 
+				text = "Grow into it gradually", 
+				effects = { Happiness = 8, Money = 1500, Smarts = 2 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You're adjusting to the new role. It's a learning curve, but you're getting there.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						local oldSalary = state.CurrentJob.salary or 30000
+						state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					end
+					if state.CareerInfo then
+						state.CareerInfo.promotionProgress = 0
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					end
+				end,
+			},
+			{ 
+				text = "Struggle with impostor syndrome", 
+				effects = { Happiness = 5, Money = 1500, Smarts = 3 }, 
+				setFlags = { senior_role = true }, 
+				feedText = "You question if you deserve it. But you do - your hard work earned this.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						local oldSalary = state.CurrentJob.salary or 30000
+						state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					end
+					if state.CareerInfo then
+						state.CareerInfo.promotionProgress = 0
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
+					end
+				end,
+			},
 		},
 	},
 	{

@@ -39,12 +39,19 @@ Career.events = {
 		id = "promotion_opportunity",
 		title = "Opportunity Knocks",
 		emoji = "📈",
-		text = "A promotion opportunity has opened up at work.",
+		text = "A promotion opportunity has opened up at work. You've been putting in the hours and your performance reviews have been strong. This could be your chance!",
 		question = "Do you go for it?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- Only trigger if player has worked hard
+		customValidation = function(state)
+			if not state.CareerInfo then return false end
+			local promotionProgress = state.CareerInfo.promotionProgress or 0
+			local performance = state.CareerInfo.performance or 0
+			return promotionProgress >= 70 and performance >= 65
+		end,
 
 		-- META
 		stage = STAGE,
@@ -54,9 +61,46 @@ Career.events = {
 		careerTags = { "management" },
 
 		choices = {
-			{ text = "Apply and compete hard", effects = { Smarts = 2, Money = 500, Health = -2 }, setFlags = { sought_promotion = true }, feedText = "You threw your hat in the ring!" },
-			{ text = "Apply casually", effects = { Money = 250 }, feedText = "You applied but kept expectations low." },
-			{ text = "Not interested", effects = { Happiness = 2 }, feedText = "You're happy where you are." },
+			{ 
+				text = "Apply and compete hard", 
+				effects = { Smarts = 2, Health = -2 }, 
+				setFlags = { sought_promotion = true }, 
+				feedText = "You threw your hat in the ring! You'll need to prove yourself in interviews and assessments.",
+				onResolve = function(state)
+					-- Increase promotion progress based on how hard you've worked
+					if state.CareerInfo then
+						local currentProgress = state.CareerInfo.promotionProgress or 0
+						if currentProgress >= 80 then
+							-- High chance of success if you've worked hard enough
+							if state.CareerInfo.performance and state.CareerInfo.performance >= 75 then
+								state.CareerInfo.promotionProgress = 100 -- Guaranteed promotion
+								if state.AddFeed then
+									state:AddFeed("Your hard work paid off! You got the promotion!")
+								end
+							else
+								state.CareerInfo.promotionProgress = math.min(100, currentProgress + 15)
+							end
+						else
+							state.CareerInfo.promotionProgress = math.min(100, currentProgress + 10)
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Apply casually", 
+				effects = { }, 
+				feedText = "You applied but kept expectations low. Without strong preparation, your chances are slim.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
+					end
+				end,
+			},
+			{ 
+				text = "Not interested", 
+				effects = { Happiness = 2 }, 
+				feedText = "You're happy where you are. Stability over advancement.",
+			},
 		},
 	},
 	{
@@ -111,13 +155,20 @@ Career.events = {
 		id = "work_achievement",
 		title = "Major Achievement",
 		emoji = "🏆",
-		text = "You accomplished something significant at work!",
+		text = "After months of hard work and dedication, you accomplished something significant at work! Your efforts didn't go unnoticed.",
 		question = "What was it?",
 		minAge = 20, maxAge = 65,
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
+		-- Only trigger if player has been performing well
+		customValidation = function(state)
+			if not state.CareerInfo then return false end
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			return performance >= 60 and yearsAtJob >= 0.5 -- At least 6 months at job
+		end,
 
 		-- META
 		stage = STAGE,
@@ -127,10 +178,53 @@ Career.events = {
 		careerTags = { "leadership" },
 
 		choices = {
-			{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feedText = "You closed a major deal!" },
-			{ text = "Solved a critical problem", effects = { Happiness = 8, Smarts = 5 }, setFlags = { problem_solver = true }, feedText = "You saved the day with your solution!" },
-			{ text = "Got recognized by leadership", effects = { Happiness = 10, Money = 500 }, feedText = "The executives noticed your work!" },
-			{ text = "Mentored someone successfully", effects = { Happiness = 8, Smarts = 2 }, setFlags = { mentor = true }, feedText = "You helped someone grow in their career!" },
+			{ 
+				text = "Landed a big client/deal", 
+				effects = { Happiness = 10, Money = 1000, Smarts = 2 }, 
+				setFlags = { big_achiever = true }, 
+				feedText = "You closed a major deal! Your networking and persistence paid off.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 20)
+					end
+				end,
+			},
+			{ 
+				text = "Solved a critical problem", 
+				effects = { Happiness = 8, Smarts = 5 }, 
+				setFlags = { problem_solver = true }, 
+				feedText = "You saved the day with your solution! Your analytical skills impressed everyone.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 12)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
+					end
+				end,
+			},
+			{ 
+				text = "Got recognized by leadership", 
+				effects = { Happiness = 10, Money = 500 }, 
+				feedText = "The executives noticed your work! Your consistent performance earned recognition.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 12)
+					end
+				end,
+			},
+			{ 
+				text = "Mentored someone successfully", 
+				effects = { Happiness = 8, Smarts = 2 }, 
+				setFlags = { mentor = true }, 
+				feedText = "You helped someone grow in their career! Leadership potential recognized.",
+				onResolve = function(state)
+					if state.CareerInfo then
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
+						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
+					end
+				end,
+			},
 		},
 	},
 	{

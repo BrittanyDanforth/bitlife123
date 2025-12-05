@@ -229,21 +229,30 @@ local events = {
 		id = "promotion_offer",
 		emoji = "⬆️",
 		title = "Promotion Consideration",
-		text = "Your manager calls you into their office. They're impressed with your work and want to discuss promoting you to a senior role with more responsibility and a significant pay raise.",
+		text = "Your manager calls you into their office. They've noticed your consistent hard work and excellent performance. After reviewing your contributions, they want to discuss promoting you to a senior role with more responsibility and a significant pay raise.",
 		category = "career",
 		weight = 9,
 		minAge = 20,
 		maxAge = 60,
 		requiresJob = true,
-		requiresStats = { Smarts = { min = 45 } },
-		cooldown = 2,
+		requiresStats = { Smarts = { min = 50 } },
+		cooldown = 3,
+		-- CUSTOM VALIDATION: Only trigger if player has actually worked hard
+		customValidation = function(state)
+			if not state.CareerInfo then return false end
+			local promotionProgress = state.CareerInfo.promotionProgress or 0
+			local performance = state.CareerInfo.performance or 0
+			local yearsAtJob = state.CareerInfo.yearsAtJob or 0
+			-- Must have worked hard: high promotion progress AND good performance AND some time at job
+			return promotionProgress >= 80 and performance >= 70 and yearsAtJob >= 1
+		end,
 		choices = {
 			{
 				index = 1,
 				text = "Accept the promotion",
 				effects = { Happiness = 5, Money = 5000, Health = -2 },
 				setFlags = { promoted = true, senior_role = true },
-				feedText = "You were promoted! More money, more responsibility, more stress... but mostly more money!",
+				feedText = "You were promoted! Your hard work paid off. More money, more responsibility, more stress... but mostly more money!",
 				onResolve = function(state)
 					if state.CurrentJob then
 						local oldSalary = state.CurrentJob.salary or 30000
@@ -251,11 +260,11 @@ local events = {
 						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
 						if state.CareerInfo then
 							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
-							state.CareerInfo.promotionProgress = 0
+							state.CareerInfo.promotionProgress = 0 -- Reset after promotion
 						end
 					end
 					if state.AddFeed then
-						state:AddFeed("Promoted to " .. (state.CurrentJob and state.CurrentJob.name or "Senior Role") .. "!")
+						state:AddFeed("Promoted to " .. (state.CurrentJob and state.CurrentJob.name or "Senior Role") .. "! Your dedication was recognized.")
 					end
 				end,
 			},
@@ -263,19 +272,23 @@ local events = {
 				index = 2,
 				text = "Decline - not ready",
 				effects = { Happiness = -2, Smarts = 1 },
-				feedText = "You declined. The extra responsibility feels overwhelming right now.",
+				setFlags = { declined_promotion = true },
+				feedText = "You declined. The extra responsibility feels overwhelming right now. Your manager respects your decision.",
 			},
 			{
 				index = 3,
 				text = "Negotiate for better terms",
 				effects = { Happiness = 3, Money = 3000, Smarts = 2 },
 				setFlags = { promoted = true, good_negotiator = true },
-				feedText = "You negotiated! Got the promotion with better benefits.",
+				feedText = "You negotiated! Got the promotion with better benefits. Your confidence impressed them.",
 				onResolve = function(state)
 					if state.CurrentJob then
 						local oldSalary = state.CurrentJob.salary or 30000
 						state.CurrentJob.salary = math.floor(oldSalary * 1.25)
 						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+						if state.CareerInfo then
+							state.CareerInfo.promotionProgress = 0
+						end
 					end
 				end,
 			},

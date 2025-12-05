@@ -502,6 +502,23 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM VALIDATION - Event-specific custom checks (e.g., promotion progress)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.customValidation and type(event.customValidation) == "function" then
+		local isValid = pcall(function()
+			return event.customValidation(state)
+		end)
+		if not isValid then
+			return false -- Custom validation failed or errored
+		end
+		local result = event.customValidation(state)
+		if result == false or result == nil then
+			return false -- Custom validation explicitly failed
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RANDOM CHANCE - Final roll (only if all other checks pass)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
