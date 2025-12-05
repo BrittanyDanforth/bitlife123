@@ -556,11 +556,7 @@ local function canEventTrigger(event, state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- INTEREST-BASED CAREER UNLOCK SYSTEM (BitLife-style gradual unlock)
-	-- Careers only unlock if player has shown interest through their choices
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- INTEREST-BASED CAREER UNLOCK SYSTEM (BitLife-style gradual unlock)
+	-- CRITICAL: ALL career start events require interests - no random popups!
 	-- Careers only unlock if player has shown interest through their choices
 	-- This prevents random popups and creates natural career progression
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -569,8 +565,19 @@ local function canEventTrigger(event, state)
 	if event.category == "career" and event.requiresNoJob then
 		state.Interests = state.Interests or {}
 		
-		-- Hacker career requires coding/programming interest
-		if event.id == "hacker_career_start" then
+		-- CRITICAL: Entry-level jobs (barista, retail, fastfood) are always available
+		-- They don't require interests but BUILD interests when taken
+		local entryLevelJobs = {
+			["job_offer_barista"] = true,
+			["job_offer_retail"] = true,
+			["job_offer_fastfood"] = true,
+		}
+		
+		if entryLevelJobs[event.id] then
+			-- Entry-level jobs are always available - they're how you START building interests
+			-- No interest check needed, but they'll build interests when taken
+		elseif event.id == "hacker_career_start" then
+			-- Hacker career requires coding/programming interest
 			local codingInterest = state.Interests.coding or 0
 			local programmingInterest = state.Interests.programming or 0
 			local techInterest = state.Interests.tech or 0
@@ -580,15 +587,12 @@ local function canEventTrigger(event, state)
 				return false -- Not enough interest yet - player hasn't shown interest in coding
 			end
 			-- Boost chance based on interest level (more interest = higher chance)
-			-- This makes it more likely to appear if player has been coding-focused
 			if event.baseChance then
 				local interestBoost = math.min(0.3, totalTechInterest / 200) -- Up to 30% boost
 				event._interestBoostedChance = (event.baseChance or 0.12) + interestBoost
 			end
-		end
-		
-		-- Racing career requires racing/driving interest
-		if event.id == "racing_career_start" then
+		elseif event.id == "racing_career_start" then
+			-- Racing career requires racing/driving interest
 			local racingInterest = state.Interests.racing or 0
 			local drivingInterest = state.Interests.driving or 0
 			local totalRacingInterest = racingInterest + drivingInterest
@@ -600,6 +604,87 @@ local function canEventTrigger(event, state)
 			if event.baseChance then
 				local interestBoost = math.min(0.25, totalRacingInterest / 200) -- Up to 25% boost
 				event._interestBoostedChance = (event.baseChance or 0.15) + interestBoost
+			end
+		elseif event.id == "coding_bootcamp_offer" then
+			-- Coding bootcamp requires SOME tech interest (built from childhood events)
+			local codingInterest = state.Interests.coding or 0
+			local techInterest = state.Interests.tech or 0
+			local totalTechInterest = codingInterest + techInterest
+			-- Require at least 10 interest points (very low threshold - just need to show SOME interest)
+			if totalTechInterest < 10 then
+				return false -- Not enough interest yet - player hasn't shown interest in tech
+			end
+			-- Boost chance based on interest level
+			if event.baseChance then
+				local interestBoost = math.min(0.2, totalTechInterest / 150) -- Up to 20% boost
+				event._interestBoostedChance = (event.baseChance or 0.1) + interestBoost
+			end
+		else
+			-- CRITICAL: For ALL other career start events, require at least SOME relevant interest
+			-- This prevents completely random career popups
+			-- Check if event has careerTags or infer from event ID/category
+			local hasRelevantInterest = false
+			local totalRelevantInterest = 0
+			
+			-- Infer interests from event ID patterns
+			if event.id:match("tech") or event.id:match("coding") or event.id:match("developer") or event.id:match("programming") then
+				local techInterest = (state.Interests.coding or 0) + (state.Interests.programming or 0) + (state.Interests.tech or 0)
+				if techInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + techInterest
+				end
+			elseif event.id:match("racing") or event.id:match("driver") or event.id:match("car") then
+				local racingInterest = (state.Interests.racing or 0) + (state.Interests.driving or 0)
+				if racingInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + racingInterest
+				end
+			elseif event.id:match("business") or event.id:match("entrepreneur") or event.id:match("startup") then
+				local businessInterest = state.Interests.business or 0
+				if businessInterest >= 10 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + businessInterest
+				end
+			elseif event.id:match("art") or event.id:match("creative") or event.id:match("design") or event.id:match("music") or event.id:match("actor") then
+				local artInterest = (state.Interests.art or 0) + (state.Interests.music or 0)
+				if artInterest >= 10 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + artInterest
+				end
+			elseif event.id:match("medical") or event.id:match("doctor") or event.id:match("nurse") or event.id:match("health") then
+				local medicineInterest = state.Interests.medicine or 0
+				if medicineInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + medicineInterest
+				end
+			elseif event.id:match("law") or event.id:match("legal") or event.id:match("lawyer") then
+				local lawInterest = state.Interests.law or 0
+				if lawInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + lawInterest
+				end
+			elseif event.id:match("sports") or event.id:match("athlete") then
+				local sportsInterest = state.Interests.sports or 0
+				if sportsInterest >= 15 then
+					hasRelevantInterest = true
+					totalRelevantInterest = totalRelevantInterest + sportsInterest
+				end
+			else
+				-- For unknown career events, allow them but with lower chance
+				-- This ensures we don't block legitimate career paths
+				hasRelevantInterest = true -- Allow unknown careers
+			end
+			
+			-- CRITICAL: Require at least some interest before career can appear
+			-- This prevents random career popups - player must show interest first
+			if not hasRelevantInterest then
+				return false -- No relevant interest - career won't appear randomly
+			end
+			
+			-- Boost chance based on interest level
+			if event.baseChance and totalRelevantInterest > 0 then
+				local interestBoost = math.min(0.2, totalRelevantInterest / 300) -- Up to 20% boost
+				event._interestBoostedChance = (event.baseChance or 0.1) + interestBoost
 			end
 		end
 	end

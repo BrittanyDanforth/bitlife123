@@ -40,6 +40,10 @@ local events = {
 				setFlags = { employed = true, has_job = true, service_experience = true },
 				feedText = "You got a job as a Barista at Bloom Cafe! Time to learn latte art.",
 				onResolve = function(state)
+					-- CRITICAL: Entry-level jobs build business/service interests
+					state.Interests = state.Interests or {}
+					state.Interests.business = math.min(100, (state.Interests.business or 0) + 5)
+					
 					if state.SetCareer then
 						state:SetCareer({
 							id = "barista",
@@ -79,6 +83,10 @@ local events = {
 				setFlags = { employed = true, has_job = true, retail_experience = true },
 				feedText = "You're now working at MegaMart. Time to learn the register!",
 				onResolve = function(state)
+					-- CRITICAL: Entry-level jobs build business interests
+					state.Interests = state.Interests or {}
+					state.Interests.business = math.min(100, (state.Interests.business or 0) + 5)
+					
 					if state.SetCareer then
 						state:SetCareer({
 							id = "retail",
@@ -118,6 +126,10 @@ local events = {
 				setFlags = { employed = true, has_job = true, fast_food_experience = true },
 				feedText = "You got hired at Burger Palace. The smell of fries will haunt your dreams.",
 				onResolve = function(state)
+					-- CRITICAL: Entry-level jobs build business interests
+					state.Interests = state.Interests or {}
+					state.Interests.business = math.min(100, (state.Interests.business or 0) + 5)
+					
 					if state.SetCareer then
 						state:SetCareer({
 							id = "fastfood",
@@ -160,6 +172,12 @@ local events = {
 				setFlags = { bootcamp_student = true, bootcamp_grad_pending = true, tech_training = true },
 				feedText = "You enrolled in Stacks Academy! Time to code your way to a new career.",
 				onResolve = function(state)
+					-- CRITICAL: Build coding/programming/tech interests when enrolling
+					state.Interests = state.Interests or {}
+					state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 30)
+					state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 25)
+					state.Interests.tech = math.min(100, (state.Interests.tech or 0) + 20)
+					
 					if state.EnrollEducation then
 						state:EnrollEducation({
 							name = "Stacks Academy",
