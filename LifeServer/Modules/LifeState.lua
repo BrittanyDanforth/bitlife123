@@ -264,10 +264,31 @@ function LifeState:GetRelationship(id)
 	return self.Relationships[id]
 end
 
-function LifeState:ModifyRelationship(id, delta)
+function LifeState:ModifyRelationship(id, deltaOrData)
 	local rel = self.Relationships[id]
-	if rel then
-		rel.relationship = math.clamp((rel.relationship or 50) + delta, 0, 100)
+	if not rel then return self end
+	
+	-- Support both formats:
+	-- 1. Number delta: ModifyRelationship(id, 15) -> adds 15
+	-- 2. Table with relationship key: ModifyRelationship(id, { relationship = 85 }) -> sets to 85
+	if type(deltaOrData) == "number" then
+		-- Delta format (add/subtract)
+		rel.relationship = math.clamp((rel.relationship or 50) + deltaOrData, 0, 100)
+	elseif type(deltaOrData) == "table" and deltaOrData.relationship ~= nil then
+		-- Table format (set absolute value)
+		rel.relationship = math.clamp(deltaOrData.relationship, 0, 100)
+		-- Also support other fields in the table
+		if deltaOrData.role then rel.role = deltaOrData.role end
+		if deltaOrData.age then rel.age = deltaOrData.age end
+		if deltaOrData.alive ~= nil then rel.alive = deltaOrData.alive end
+	end
+	
+	return self
+end
+
+function LifeState:RemoveRelationship(id)
+	if self.Relationships[id] then
+		self.Relationships[id] = nil
 	end
 	return self
 end
@@ -387,6 +408,24 @@ end
 
 function LifeState:ClearFlag(flagName)
 	self.Flags[flagName] = nil
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- PRISON/JAIL
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:GoToJail(days)
+	-- Convert days to years (assuming 365 days = 1 year for game purposes)
+	local years = math.ceil(days / 365)
+	self.InJail = true
+	self.JailYearsLeft = years
+	self.Flags.in_prison = true
+	self.Flags.incarcerated = true
+	-- Clear job if in prison
+	if self.CurrentJob then
+		self:ClearCareer()
+	end
 	return self
 end
 
