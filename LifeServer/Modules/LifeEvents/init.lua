@@ -315,6 +315,28 @@ local function canEventTrigger(event, state)
 	local maxAge = event.maxAge or cond.maxAge
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INCARCERATION CHECK - CRITICAL FIX
+	-- Players in jail cannot receive most events (career, romance, activities, etc.)
+	-- Only allow events specifically marked for prison or with category "prison"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if state.InJail then
+		local eventCategory = event._category or event.category or ""
+		local allowedInPrison = event.allowedInPrison 
+			or eventCategory == "prison" 
+			or eventCategory == "crime"
+			or (event.id and (
+				string.find(event.id, "prison") 
+				or string.find(event.id, "jail")
+				or string.find(event.id, "inmate")
+			))
+		
+		if not allowedInPrison then
+			return false -- Block this event - player is incarcerated
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- BASIC CHECKS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	

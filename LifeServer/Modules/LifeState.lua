@@ -197,7 +197,19 @@ function LifeState:AdvanceAge()
 			self.InJail = false
 			self.Flags.in_prison = nil
 			self.Flags.incarcerated = nil
-			self.PendingFeed = "You've been released from prison!"
+			
+			-- CRITICAL FIX: Resume suspended education if player was enrolled before jail
+			if self.EducationData and self.EducationData.Status == "suspended" then
+				if self.EducationData.StatusBeforeJail == "enrolled" then
+					self.EducationData.Status = "enrolled"
+					self.EducationData.StatusBeforeJail = nil
+					self.PendingFeed = "You've been released from prison! You can resume your education."
+				else
+					self.PendingFeed = "You've been released from prison!"
+				end
+			else
+				self.PendingFeed = "You've been released from prison!"
+			end
 		end
 	end
 	

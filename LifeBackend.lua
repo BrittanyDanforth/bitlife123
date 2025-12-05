@@ -1081,9 +1081,36 @@ function LifeBackend:advanceRelationships(state)
 	if not state.Relationships then
 		return
 	end
+	
+	-- CRITICAL FIX: Relationships degrade much faster while in jail!
+	-- Prison isolates you from loved ones, causing relationships to suffer
+	local isInJail = state.InJail
+	
 	for _, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
-			rel.relationship = clamp((rel.relationship or 60) + RANDOM:NextInteger(-2, 3), 0, 100)
+			-- Normal fluctuation: -2 to +3
+			-- Jail fluctuation: -8 to -2 (always negative, relationships decay)
+			local change
+			if isInJail then
+				change = RANDOM:NextInteger(-8, -2)
+			else
+				change = RANDOM:NextInteger(-2, 3)
+			end
+			rel.relationship = clamp((rel.relationship or 60) + change, 0, 100)
+			
+			-- Partner might leave if relationship drops too low during jail
+			if isInJail and rel.type == "romance" and rel.relationship < 20 then
+				if RANDOM:NextNumber() < 0.4 then -- 40% chance partner leaves
+					rel.alive = false -- Mark as "gone" (breakup)
+					state.Flags.recently_single = true
+					state.Flags.has_partner = nil
+					if state.Relationships.partner and state.Relationships.partner.id == rel.id then
+						state.Relationships.partner = nil
+					end
+					state.PendingFeed = (rel.name or "Your partner") .. " couldn't handle the separation and left you."
+				end
+			end
+			
 			rel.age = (rel.age or (state.Age + 20)) + 1
 			if rel.age > 95 and RANDOM:NextNumber() < 0.2 then
 				rel.alive = false
@@ -1094,6 +1121,12 @@ function LifeBackend:advanceRelationships(state)
 end
 
 function LifeBackend:updateEducationProgress(state)
+	-- CRITICAL FIX: Can't attend school/college while incarcerated!
+	-- Education progress is paused during jail time
+	if state.InJail then
+		return
+	end
+	
 	local eduData = state.EducationData
 	if eduData and eduData.Status == "enrolled" then
 		local duration = eduData.Duration or 4
@@ -1110,6 +1143,12 @@ end
 function LifeBackend:tickCareer(state)
 	-- CRITICAL: Don't tick career for retired players
 	if state.Flags and state.Flags.retired then
+		return
+	end
+	
+	-- CRITICAL FIX: Don't tick career while in jail - player loses their job progression
+	-- and cannot work while incarcerated
+	if state.InJail then
 		return
 	end
 	
@@ -1130,6 +1169,51 @@ function LifeBackend:tickCareer(state)
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
+	
+	-- CRITICAL FIX: Actually PAY the salary during age up!
+	-- This was completely missing - employed players were NOT receiving income
+	local salary = job.salary or 0
+	if salary > 0 then
+		self:addMoney(state, salary)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PROPERTY INCOME - Collect passive income from owned real estate
+-- CRITICAL FIX: This was completely missing! Properties have income fields but
+-- the rental income was never being collected during age up.
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectPropertyIncome(state)
+	-- Properties still generate income even if player is in jail (tenants pay rent)
+	-- But player can't BUY or SELL while incarcerated (handled elsewhere)
+	
+	state.Assets = state.Assets or {}
+	local properties = state.Assets.Properties or {}
+	
+	if #properties == 0 then
+		return
+	end
+	
+	local totalIncome = 0
+	for _, prop in ipairs(properties) do
+		local income = prop.income or 0
+		if income > 0 then
+			totalIncome = totalIncome + income
+		end
+	end
+	
+	if totalIncome > 0 then
+		self:addMoney(state, totalIncome)
+		-- Add to feed if significant income
+		if totalIncome >= 1000 then
+			local currentFeed = state.PendingFeed or ""
+			if currentFeed ~= "" then
+				state.PendingFeed = currentFeed .. string.format(" You collected $%s in rental income.", formatMoney(totalIncome))
+			else
+				state.PendingFeed = string.format("You collected $%s in rental income.", formatMoney(totalIncome))
+			end
+		end
+	end
 end
 
 function LifeBackend:generateEvent(player, state)
@@ -1217,6 +1301,7 @@ function LifeBackend:handleAgeUp(player)
 	self:advanceRelationships(state)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
+	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
 
 	state.Stats = state.Stats or {}
 	state.Stats.Health = clamp((state.Stats.Health or 0) - RANDOM:NextInteger(0, 2))
@@ -1518,8 +1603,31 @@ function LifeBackend:handleCrime(player, crimeId)
 		state.JailYearsLeft = years
 		state.Flags.in_prison = true
 		state.Flags.incarcerated = true
+		
+		-- CRITICAL FIX: Lose job when going to prison!
+		-- In BitLife, you get fired when incarcerated. Save last job for potential re-employment.
+		if state.CurrentJob then
+			state.CareerInfo = state.CareerInfo or {}
+			state.CareerInfo.lastJobBeforeJail = {
+				id = state.CurrentJob.id,
+				name = state.CurrentJob.name,
+				company = state.CurrentJob.company,
+				salary = state.CurrentJob.salary,
+			}
+			-- Clear current job
+			state.CurrentJob = nil
+			state.Flags.employed = nil
+			state.Flags.has_job = nil
+		end
+		
+		-- Also pause any education enrollment
+		if state.EducationData and state.EducationData.Status == "enrolled" then
+			state.EducationData.StatusBeforeJail = "enrolled"
+			state.EducationData.Status = "suspended"
+		end
+		
 		self:applyStatChanges(state, { Happiness = -10, Health = -5 })
-		local message = string.format("You were caught! Sentenced to %.1f years.", years)
+		local message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
 		self:pushState(player, message, {
 			showPopup = true,
 			emoji = "🚔",
