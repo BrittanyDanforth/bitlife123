@@ -987,13 +987,21 @@ function LifeBackend:updateEducationProgress(state)
 end
 
 function LifeBackend:tickCareer(state)
+	if not state.CurrentJob then
+		return -- No job, nothing to tick
+	end
+	
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
-	local job = state.CurrentJob and JobCatalog[state.CurrentJob.id or state.CurrentJob]
+	local job = JobCatalog[state.CurrentJob.id]
 	if not job then
 		return
 	end
+	
+	-- Increment yearsAtJob only once per year (this function is called once per age up)
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
+	
+	-- Natural performance and promotion progress changes over time
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
 	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
 end

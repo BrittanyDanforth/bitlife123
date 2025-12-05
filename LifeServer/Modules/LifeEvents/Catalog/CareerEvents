@@ -254,17 +254,15 @@ local events = {
 				setFlags = { promoted = true, senior_role = true },
 				feedText = "You were promoted! Your hard work paid off. More money, more responsibility, more stress... but mostly more money!",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 30000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.35)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
-							state.CareerInfo.promotionProgress = 0 -- Reset after promotion
-						end
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.35)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					state.CareerInfo.promotionProgress = 0 -- Reset after promotion
 					if state.AddFeed then
-						state:AddFeed("Promoted to " .. (state.CurrentJob and state.CurrentJob.name or "Senior Role") .. "! Your dedication was recognized.")
+						state:AddFeed("Promoted to " .. state.CurrentJob.name .. "! Your dedication was recognized.")
 					end
 				end,
 			},
@@ -282,14 +280,12 @@ local events = {
 				setFlags = { promoted = true, good_negotiator = true },
 				feedText = "You negotiated! Got the promotion with better benefits. Your confidence impressed them.",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 30000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.25)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
-						if state.CareerInfo then
-							state.CareerInfo.promotionProgress = 0
-						end
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.25)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Associate")
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = 0
 				end,
 			},
 		},
@@ -481,9 +477,8 @@ local events = {
 				setFlags = { crisis_leader = true, problem_solver = true },
 				feedText = "You pulled an all-nighter and fixed it. You're the hero of the day!",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
 				end,
 			},
 			{
@@ -527,9 +522,8 @@ local events = {
 				setFlags = { medical_leader = true, crisis_competent = true },
 				feedText = "You led the resuscitation effort. The patient survived. You saved a life today.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
 				end,
 			},
 			{
@@ -615,16 +609,14 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You won the case! Your career just leveled up!")
 						end
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 25)
-						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 25)
 					else
 						if state.AddFeed then
 							state:AddFeed("You lost the case. It was close, but the jury didn't buy it.")
 						end
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 10)
-						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 10)
 					end
 				end,
 			},
@@ -673,16 +665,14 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You closed the deal! Massive commission incoming!")
 						end
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
-						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 20)
 					else
 						if state.AddFeed then
 							state:AddFeed("The client fired your firm. You lost the deal.")
 						end
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 15)
-						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.max(0, (state.CareerInfo.performance or 60) - 15)
 					end
 				end,
 			},
@@ -725,9 +715,8 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("YOU WON! The award is yours! Your career just exploded!")
 						end
-						if state.CareerInfo then
-							state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 30)
-						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 30)
 						if state.SetFlag then
 							state:SetFlag("award_winner", true)
 						end
@@ -850,6 +839,7 @@ local events = {
 					if state.CurrentJob then
 						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
 					end
+					state.CareerInfo = state.CareerInfo or {}
 				end,
 			},
 		},
@@ -980,9 +970,8 @@ local events = {
 				setFlags = { has_mentor = true, mentored = true },
 				feedText = "You found a mentor! They're already teaching you valuable lessons.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
 				end,
 			},
 			{
@@ -1016,10 +1005,9 @@ local events = {
 				setFlags = { mentor = true, leadership_material = true },
 				feedText = "You're now a mentor! Teaching others is surprisingly rewarding.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 5)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
 				end,
 			},
 			{

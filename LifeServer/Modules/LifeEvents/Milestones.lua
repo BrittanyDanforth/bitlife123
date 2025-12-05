@@ -430,15 +430,13 @@ Milestones.events = {
 				setFlags = { senior_role = true }, 
 				feedText = "You rose to the challenge! Your years of preparation made you ready for this.",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 30000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.4)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					end
-					if state.CareerInfo then
-						state.CareerInfo.promotionProgress = 0
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.4)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
 				end,
 			},
 			{ 
@@ -447,15 +445,13 @@ Milestones.events = {
 				setFlags = { senior_role = true }, 
 				feedText = "You're adjusting to the new role. It's a learning curve, but you're getting there.",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 30000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.3)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					end
-					if state.CareerInfo then
-						state.CareerInfo.promotionProgress = 0
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
 				end,
 			},
 			{ 
@@ -464,15 +460,13 @@ Milestones.events = {
 				setFlags = { senior_role = true }, 
 				feedText = "You question if you deserve it. But you do - your hard work earned this.",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 30000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.3)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					end
-					if state.CareerInfo then
-						state.CareerInfo.promotionProgress = 0
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 30000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.3)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = 0
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
 				end,
 			},
 		},

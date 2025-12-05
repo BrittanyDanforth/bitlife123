@@ -70,21 +70,20 @@ Career.events = {
 				feedText = "You threw your hat in the ring! You'll need to prove yourself in interviews and assessments.",
 				onResolve = function(state)
 					-- Increase promotion progress based on how hard you've worked
-					if state.CareerInfo then
-						local currentProgress = state.CareerInfo.promotionProgress or 0
-						if currentProgress >= 80 then
-							-- High chance of success if you've worked hard enough
-							if state.CareerInfo.performance and state.CareerInfo.performance >= 75 then
-								state.CareerInfo.promotionProgress = 100 -- Guaranteed promotion
-								if state.AddFeed then
-									state:AddFeed("Your hard work paid off! You got the promotion!")
-								end
-							else
-								state.CareerInfo.promotionProgress = math.min(100, currentProgress + 15)
+					state.CareerInfo = state.CareerInfo or {}
+					local currentProgress = state.CareerInfo.promotionProgress or 0
+					if currentProgress >= 80 then
+						-- High chance of success if you've worked hard enough
+						if (state.CareerInfo.performance or 0) >= 75 then
+							state.CareerInfo.promotionProgress = 100 -- Guaranteed promotion
+							if state.AddFeed then
+								state:AddFeed("Your hard work paid off! You got the promotion!")
 							end
 						else
-							state.CareerInfo.promotionProgress = math.min(100, currentProgress + 10)
+							state.CareerInfo.promotionProgress = math.min(100, currentProgress + 15)
 						end
+					else
+						state.CareerInfo.promotionProgress = math.min(100, currentProgress + 10)
 					end
 				end,
 			},
@@ -93,9 +92,8 @@ Career.events = {
 				effects = { }, 
 				feedText = "You applied but kept expectations low. Without strong preparation, your chances are slim.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 5)
 				end,
 			},
 			{ 
@@ -186,10 +184,9 @@ Career.events = {
 				setFlags = { big_achiever = true }, 
 				feedText = "You closed a major deal! Your networking and persistence paid off.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 20)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 15)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 20)
 				end,
 			},
 			{ 
@@ -198,10 +195,9 @@ Career.events = {
 				setFlags = { problem_solver = true }, 
 				feedText = "You saved the day with your solution! Your analytical skills impressed everyone.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 12)
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 12)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 15)
 				end,
 			},
 			{ 
@@ -209,10 +205,9 @@ Career.events = {
 				effects = { Happiness = 10, Money = 500 }, 
 				feedText = "The executives noticed your work! Your consistent performance earned recognition.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 12)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 10)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 12)
 				end,
 			},
 			{ 
@@ -221,10 +216,9 @@ Career.events = {
 				setFlags = { mentor = true }, 
 				feedText = "You helped someone grow in their career! Leadership potential recognized.",
 				onResolve = function(state)
-					if state.CareerInfo then
-						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
-						state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
-					end
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 8)
+					state.CareerInfo.promotionProgress = math.min(100, (state.CareerInfo.promotionProgress or 0) + 10)
 				end,
 			},
 		},

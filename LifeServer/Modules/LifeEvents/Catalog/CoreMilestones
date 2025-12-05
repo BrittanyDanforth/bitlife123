@@ -686,11 +686,10 @@ local events = {
 				setFlags = { promoted = true, career_success = true },
 				feedText = "You accepted! Major career milestone achieved!",
 				onResolve = function(state)
-					if state.CurrentJob then
-						local oldSalary = state.CurrentJob.salary or 50000
-						state.CurrentJob.salary = math.floor(oldSalary * 1.5)
-						state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
-					end
+					if not state.CurrentJob then return end
+					local oldSalary = state.CurrentJob.salary or 50000
+					state.CurrentJob.salary = math.floor(oldSalary * 1.5)
+					state.CurrentJob.name = "Senior " .. (state.CurrentJob.name or "Manager")
 				end,
 			},
 			{
