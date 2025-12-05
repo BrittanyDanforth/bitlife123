@@ -84,10 +84,10 @@ local events = {
 				setFlags = { started_school = true, confident = true },
 				feedText = "You walked in confidently! Made friends immediately!",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("in_school", true)
-						state:SetFlag("education_level", "elementary")
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.in_school = true
+					state.Flags.education_level = "elementary"
 				end,
 			},
 			{
@@ -128,16 +128,13 @@ local events = {
 				setFlags = { has_best_friend = true, creative = true },
 				feedText = "You made matching friendship bracelets! Best friends forever!",
 				onResolve = function(state)
-					if state.AddRelationship then
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
 						local friendName = RANDOM:NextInteger(1, 2) == 1 and "Alex" or "Sam"
-						local relId = "best_friend_" .. tostring(state.Age or 0)
-						state:AddRelationship(relId, {
+						local friend = EventEngine.createRelationship(state, "friend", {
 							name = friendName,
-							type = "friend",
-							role = "Best Friend",
 							relationship = 85,
 							age = (state.Age or 8) + RANDOM:NextInteger(-1, 1),
-							alive = true,
 						})
 					end
 				end,
@@ -314,10 +311,10 @@ local events = {
 				setFlags = { turned_18 = true, adult = true, social = true },
 				feedText = "You threw an epic 18th birthday party! Everyone came!",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("can_vote", true)
-						state:SetFlag("legal_adult", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
 				end,
 			},
 			{
@@ -327,10 +324,10 @@ local events = {
 				setFlags = { turned_18 = true, adult = true, family_oriented = true },
 				feedText = "You had a nice dinner with family. Low-key but meaningful.",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("can_vote", true)
-						state:SetFlag("legal_adult", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
 				end,
 			},
 			{
@@ -340,10 +337,10 @@ local events = {
 				setFlags = { turned_18 = true, adult = true },
 				feedText = "You didn't make a big deal of it. Just another birthday.",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("can_vote", true)
-						state:SetFlag("legal_adult", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.can_vote = true
+					state.Flags.legal_adult = true
 				end,
 			},
 		},
@@ -480,10 +477,10 @@ local events = {
 				setFlags = { graduated_high_school = true, college_bound = true },
 				feedText = "You graduated! Heading to college in the fall!",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("education_level", "college")
-						state:SetFlag("in_college", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.education_level = "college"
+					state.Flags.in_college = true
 				end,
 			},
 			{
@@ -524,10 +521,10 @@ local events = {
 				setFlags = { graduated_college = true, optimistic = true },
 				feedText = "You graduated! Ready to take on the world!",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("education_level", "bachelors")
-						state:SetFlag("in_college", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.education_level = "bachelors"
+					state.Flags.in_college = false
 				end,
 			},
 			{

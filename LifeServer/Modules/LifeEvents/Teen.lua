@@ -290,16 +290,13 @@ Teen.events = {
 				setFlags = { romantically_active = true, has_romantic_partner = true, dating = true }, 
 				feedText = "You made a move! They said yes! Heart pounding, butterflies - this is exciting!",
 				onResolve = function(state)
-					if state.AddRelationship then
-						local partnerName = state.Gender == "male" and "Alex" or "Jordan"
-						local relId = "hs_romance_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-						state:AddRelationship(relId, {
+					local EventEngine = require(script.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local partnerName = state.Gender == "Male" and "Alex" or "Jordan"
+						local partner = EventEngine.createRelationship(state, "romance", {
 							name = partnerName,
-							type = "romance",
-							role = "Partner",
 							relationship = 65,
 							age = (state.Age or 16) + RANDOM:NextInteger(-1, 1),
-							alive = true,
 						})
 					end
 				end,

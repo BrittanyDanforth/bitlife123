@@ -77,22 +77,15 @@ local function applyChoiceEffects(state, choice)
 	end
 
 	if choice.flags then
+		state.Flags = state.Flags or {}
 		if choice.flags.set then
 			for _, flag in ipairs(choice.flags.set) do
-				if state.SetFlag then
-					state:SetFlag(flag, true)
-				else
-					state.Flags[flag] = true
-				end
+				state.Flags[flag] = true
 			end
 		end
 		if choice.flags.clear then
 			for _, flag in ipairs(choice.flags.clear) do
-				if state.ClearFlag then
-					state:ClearFlag(flag)
-				else
-					state.Flags[flag] = nil
-				end
+				state.Flags[flag] = nil
 			end
 		end
 	end

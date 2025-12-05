@@ -384,10 +384,10 @@ Random.events = {
 							state:RemoveAsset("Vehicles", vehicles[1].id)
 						end
 					end
-					if state.SetFlag then
-						state:SetFlag("has_car", false)
-						state:SetFlag("has_vehicle", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.has_car = false
+					state.Flags.has_vehicle = false
 				end,
 			},
 		},

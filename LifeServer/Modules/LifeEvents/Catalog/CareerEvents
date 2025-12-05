@@ -168,9 +168,9 @@ local events = {
 							duration = 1,
 						})
 					end
-					if state.SetFlag then
-						state:SetFlag("bootcamp_completed", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.bootcamp_completed = false
 				end,
 			},
 			{
@@ -208,9 +208,9 @@ local events = {
 				setFlags = { intern = true, internship_experience = true },
 				feedText = "You're interning! Coffee runs and learning in equal measure.",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("has_internship", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.has_internship = true
 				end,
 			},
 			{
@@ -717,9 +717,9 @@ local events = {
 						end
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 60) + 30)
-						if state.SetFlag then
-							state:SetFlag("award_winner", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.award_winner = true
 					else
 						if state.AddFeed then
 							state:AddFeed("You didn't win, but being nominated was still amazing.")
@@ -765,10 +765,10 @@ local events = {
 					else
 						state.CurrentJob = nil
 					end
-					if state.SetFlag then
-						state:SetFlag("employed", false)
-						state:SetFlag("has_job", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.employed = false
+					state.Flags.has_job = false
 				end,
 			},
 			{
@@ -812,9 +812,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You got the job offer! Time to make a decision.")
 						end
-						if state.SetFlag then
-							state:SetFlag("job_offer_pending", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.job_offer_pending = true
 					else
 						if state.AddFeed then
 							state:AddFeed("You didn't get the job. Back to the drawing board.")
@@ -925,9 +925,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Someone you met offered you a job opportunity!")
 						end
-						if state.SetFlag then
-							state:SetFlag("job_opportunity_from_networking", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.job_opportunity_from_networking = true
 					end
 				end,
 			},
@@ -1093,10 +1093,10 @@ local events = {
 					else
 						state.CurrentJob = nil
 					end
-					if state.SetFlag then
-						state:SetFlag("employed", false)
-						state:SetFlag("has_job", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.employed = false
+					state.Flags.has_job = false
 				end,
 			},
 			{

@@ -60,17 +60,13 @@ local events = {
 				setFlags = { has_romantic_partner = true, high_school_romance = true },
 				feedText = "You asked them out and they said yes! First date this weekend!",
 				onResolve = function(state)
-					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-					if state.AddRelationship then
-						state:AddRelationship(relId, {
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local crushName = randomName(state.Gender == "Male" and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
 							name = crushName,
-							type = "romance",
-							role = "Partner",
 							relationship = 65,
 							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
-							alive = true,
-							metAt = state.Age or 16,
 						})
 					end
 				end,
@@ -92,16 +88,13 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Your friend set it up! You're going on a date!")
 						end
-						local crushName = randomName(state.Gender == "male" and "female" or "male")
-						local relId = "crush_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-						if state.AddRelationship then
-							state:AddRelationship(relId, {
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local crushName = randomName(state.Gender == "Male" and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
 								name = crushName,
-								type = "romance",
-								role = "Partner",
 								relationship = 60,
 								age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
-								alive = true,
 							})
 						end
 					end
@@ -131,21 +124,20 @@ local events = {
 				feedText = "You asked them to prom! They said yes!",
 				onResolve = function(state)
 					if RANDOM:NextNumber() < 0.7 then
-						local crushName = randomName(state.Gender == "male" and "female" or "male")
-						local relId = "prom_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-						if state.AddRelationship then
-							state:AddRelationship(relId, {
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local crushName = randomName(state.Gender == "Male" and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
 								name = crushName,
-								type = "romance",
-								role = "Partner",
 								relationship = 70,
 								age = (state.Age or 17) + RANDOM:NextInteger(-1, 1),
-								alive = true,
 							})
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
 					else
 						if state.AddFeed then
 							state:AddFeed("They said no. Ouch. You're going solo.")
@@ -190,7 +182,8 @@ local events = {
 				setFlags = { first_kiss_happened = true },
 				feedText = "You kissed them! It was magical. Your first kiss!",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
 					end
@@ -236,17 +229,13 @@ local events = {
 				setFlags = { has_romantic_partner = true, college_romance = true },
 				feedText = "You asked them out! They said yes. First date this weekend!",
 				onResolve = function(state)
-					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					local relId = "college_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-					if state.AddRelationship then
-						state:AddRelationship(relId, {
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local crushName = randomName(state.Gender == "Male" and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
 							name = crushName,
-							type = "romance",
-							role = "Partner",
 							relationship = 70,
 							age = (state.Age or 19) + RANDOM:NextInteger(-2, 2),
-							alive = true,
-							metAt = state.Age or 19,
 						})
 					end
 				end,
@@ -289,21 +278,20 @@ local events = {
 				feedText = "You met up for coffee. It went well!",
 				onResolve = function(state)
 					if RANDOM:NextNumber() < 0.6 then
-						local matchName = randomName(state.Gender == "male" and "female" or "male")
-						local relId = "app_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-						if state.AddRelationship then
-							state:AddRelationship(relId, {
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local matchName = randomName(state.Gender == "Male" and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
 								name = matchName,
-								type = "romance",
-								role = "Partner",
 								relationship = 60,
 								age = (state.Age or 25) + RANDOM:NextInteger(-5, 5),
-								alive = true,
 							})
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
 						if state.AddFeed then
 							state:AddFeed("You're going on a second date!")
 						end
@@ -351,16 +339,13 @@ local events = {
 				setFlags = { has_romantic_partner = true, workplace_romance = true },
 				feedText = "You asked them out! They said yes. Dating a coworker... risky but exciting!",
 				onResolve = function(state)
-					local coworkerName = randomName(state.Gender == "male" and "female" or "male")
-					local relId = "work_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-					if state.AddRelationship then
-						state:AddRelationship(relId, {
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					if EventEngine and EventEngine.createRelationship then
+						local coworkerName = randomName(state.Gender == "Male" and "female" or "male")
+						local partner = EventEngine.createRelationship(state, "romance", {
 							name = coworkerName,
-							type = "romance",
-							role = "Partner",
 							relationship = 65,
 							age = (state.Age or 28) + RANDOM:NextInteger(-5, 5),
-							alive = true,
 						})
 					end
 				end,
@@ -406,7 +391,8 @@ local events = {
 				setFlags = { engaged = true },
 				feedText = "You proposed and they said yes! You're engaged!",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 20) })
 					end
@@ -421,7 +407,8 @@ local events = {
 				effects = { Happiness = -3 },
 				feedText = "You decided to wait a bit longer. They seem disappointed.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 10) })
 					end
@@ -434,7 +421,8 @@ local events = {
 				setFlags = { engaged = true, romantic = true },
 				feedText = "You planned the perfect proposal! They said yes! It was magical!",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 25) })
 					end
@@ -478,10 +466,11 @@ local events = {
 				setFlags = { eloped = true },
 				feedText = "You eloped! Just the two of you. Romantic and stress-free!",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("married", true)
-						state:SetFlag("engaged", false)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.married = true
+					state.Flags.engaged = nil
+					state.Flags.committed_relationship = true
 				end,
 			},
 		},
@@ -508,7 +497,8 @@ local events = {
 				setFlags = { living_together = true },
 				feedText = "You moved in together! It's an adjustment, but you're happy.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
 					end
@@ -520,7 +510,8 @@ local events = {
 				effects = { Happiness = -2 },
 				feedText = "You're not ready. They seem disappointed.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 5) })
 					end
@@ -533,7 +524,8 @@ local events = {
 				setFlags = { engaged = true },
 				feedText = "You proposed instead! Let's get married first, then move in.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 20) })
 					end
@@ -565,7 +557,8 @@ local events = {
 				setFlags = { good_communicator = true },
 				feedText = "You apologized and talked it out. You're stronger now.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 5) })
 					end
@@ -578,7 +571,8 @@ local events = {
 				setFlags = { stubborn = true },
 				feedText = "You're waiting for them to apologize first. Pride might cost you.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 15) })
 					end
@@ -586,9 +580,11 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("They broke up with you. Your pride wasn't worth it.")
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", false)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
 					end
 				end,
 			},
@@ -599,7 +595,8 @@ local events = {
 				setFlags = { has_romantic_partner = false },
 				feedText = "You broke up. It's over. Time to move on.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.RemoveRelationship then
 						state:RemoveRelationship(partnerId)
 					end
@@ -628,7 +625,8 @@ local events = {
 				setFlags = { has_romantic_partner = false },
 				feedText = "You confronted them and broke up immediately. You deserve better.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.RemoveRelationship then
 						state:RemoveRelationship(partnerId)
 					end
@@ -641,7 +639,8 @@ local events = {
 				setFlags = { forgiving = true },
 				feedText = "You're trying to work through it. It's hard, but you're trying.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 30) })
 					end
@@ -649,9 +648,11 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("It didn't work out. You broke up after all.")
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", false)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
 					end
 				end,
 			},
@@ -662,7 +663,8 @@ local events = {
 				setFlags = { vengeful = true },
 				feedText = "You cheated back. Now you're both miserable.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 40) })
 					end
@@ -670,9 +672,11 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You both broke up. Toxic relationship ended.")
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", false)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
 					end
 				end,
 			},
@@ -699,7 +703,8 @@ local events = {
 				setFlags = { supportive = true, long_distance = true },
 				feedText = "You're trying long distance. It's hard, but you're committed.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 10) })
 					end
@@ -707,9 +712,11 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Long distance was too hard. You broke up.")
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", false)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
 					end
 				end,
 			},
@@ -732,9 +739,11 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("They took the job anyway. You broke up.")
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", false)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = nil
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
 					end
 				end,
 			},
@@ -745,7 +754,8 @@ local events = {
 				setFlags = { committed = true },
 				feedText = "You're moving with them! Big change, but you're in it together.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 15) })
 					end
@@ -781,21 +791,20 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You're giving it another shot. Second chance romance!")
 						end
-						local exName = randomName(state.Gender == "male" and "female" or "male")
-						local relId = "ex_" .. tostring(state.Age or 0) .. "_" .. tostring(os.time())
-						if state.AddRelationship then
-							state:AddRelationship(relId, {
+						local EventEngine = require(script.Parent.Parent.init).EventEngine
+						if EventEngine and EventEngine.createRelationship then
+							local exName = randomName(state.Gender == "Male" and "female" or "male")
+							local partner = EventEngine.createRelationship(state, "romance", {
 								name = exName,
-								type = "romance",
-								role = "Partner",
 								relationship = 55,
 								age = (state.Age or 25) + RANDOM:NextInteger(-3, 3),
-								alive = true,
 							})
 						end
-						if state.SetFlag then
-							state:SetFlag("has_romantic_partner", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.has_romantic_partner = true
+						state.Flags.has_partner = true
+						state.Flags.dating = true
 					else
 						if state.AddFeed then
 							state:AddFeed("It didn't work out. Same problems as before.")
@@ -843,7 +852,8 @@ local events = {
 				setFlags = { romantic = true },
 				feedText = "You planned the perfect anniversary! They loved it!",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 10) })
 					end
@@ -855,7 +865,8 @@ local events = {
 				effects = { Happiness = 4, Money = -100 },
 				feedText = "You had a nice dinner together. Simple but sweet.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.min(100, (partner.relationship or 50) + 5) })
 					end
@@ -868,7 +879,8 @@ local events = {
 				setFlags = { forgetful = true },
 				feedText = "You forgot your anniversary. They're upset.",
 				onResolve = function(state)
-					local partnerId, partner = getCurrentPartner(state)
+					local EventEngine = require(script.Parent.Parent.init).EventEngine
+					local partnerId, partner = EventEngine.getCurrentPartner(state)
 					if partnerId and state.ModifyRelationship then
 						state:ModifyRelationship(partnerId, { relationship = math.max(0, (partner.relationship or 50) - 15) })
 					end

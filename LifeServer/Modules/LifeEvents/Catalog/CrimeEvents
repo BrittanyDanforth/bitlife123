@@ -64,10 +64,10 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You got caught! Security detained you. Police called.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("criminal_record", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.criminal_record = true
 						if state.GoToJail then
 							state:GoToJail(30) -- 30 days
 						end
@@ -92,9 +92,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("They reviewed security footage. You're in trouble.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
 						if state.GoToJail then
 							state:GoToJail(30)
 						end
@@ -131,9 +131,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You got caught! Security tackled you. You got " .. injury.text .. " on your " .. bodyPart .. ".")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
 						if state.GoToJail then
 							state:GoToJail(45)
 						end
@@ -185,9 +185,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("A cop saw you! You ran, but they caught you.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
 						if state.GoToJail then
 							state:GoToJail(15)
 						end
@@ -231,10 +231,10 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You got busted! Undercover cop. You're going to jail.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("drug_conviction", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.drug_conviction = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(180, 365)) -- 6-12 months
 						end
@@ -290,9 +290,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Security cameras caught you. Police tracked you down.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(90, 180))
 						end
@@ -344,10 +344,10 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("You got caught! Homeowner came back early. You got " .. injury.text .. " on your " .. bodyPart .. " trying to escape.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("burglary_conviction", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.burglary_conviction = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(365, 730)) -- 1-2 years
 						end
@@ -371,9 +371,9 @@ local events = {
 				setFlags = { careful_criminal = true },
 				feedText = "You're scoping it out first. Planning is key.",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("casing_house", true)
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.casing_house = true
 				end,
 			},
 		},
@@ -423,10 +423,10 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Police showed up. You're both getting arrested.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("assault_charge", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.assault_charge = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(60, 120))
 						end
@@ -486,9 +486,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("They reported you. Police are looking for you.")
 						end
-						if state.SetFlag then
-							state:SetFlag("wanted", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.wanted = true
 					end
 				end,
 			},
@@ -531,18 +531,18 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Auditors found discrepancies. You're under investigation.")
 						end
-						if state.SetFlag then
-							state:SetFlag("under_investigation", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
 					end
 					if RANDOM:NextNumber() < 0.2 then
 						if state.AddFeed then
 							state:AddFeed("You got caught! Embezzlement charges. Going to jail.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("white_collar_conviction", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.white_collar_conviction = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(365, 1095)) -- 1-3 years
 						end
@@ -598,18 +598,18 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("SEC investigated suspicious trading. You're in trouble.")
 						end
-						if state.SetFlag then
-							state:SetFlag("under_investigation", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
 					end
 					if RANDOM:NextNumber() < 0.15 then
 						if state.AddFeed then
 							state:AddFeed("You got caught! Insider trading charges. Massive fines and jail time.")
 						end
-						if state.SetFlag then
-							state:SetFlag("arrested", true)
-							state:SetFlag("insider_trading_conviction", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.arrested = true
+						state.Flags.insider_trading_conviction = true
 						if state.GoToJail then
 							state:GoToJail(RANDOM:NextInteger(730, 1825)) -- 2-5 years
 						end
@@ -701,9 +701,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("They found out you snitched. You're in danger.")
 						end
-						if state.SetFlag then
-							state:SetFlag("gang_target", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.gang_target = true
 					end
 				end,
 			},
@@ -744,9 +744,9 @@ local events = {
 						if state.AddFeed then
 							state:AddFeed("Criminals found out you testified. You're in danger.")
 						end
-						if state.SetFlag then
-							state:SetFlag("targeted_by_criminals", true)
-						end
+						-- Use state.Flags directly instead of deprecated SetFlag
+						state.Flags = state.Flags or {}
+						state.Flags.targeted_by_criminals = true
 					end
 				end,
 			},
@@ -781,9 +781,9 @@ local events = {
 				setFlags = { in_rehab = true, reforming = true },
 				feedText = "You joined the program. Time to turn your life around.",
 				onResolve = function(state)
-					if state.SetFlag then
-						state:SetFlag("criminal_record", false) -- Clean slate
-					end
+					-- Use state.Flags directly instead of deprecated SetFlag
+					state.Flags = state.Flags or {}
+					state.Flags.criminal_record = false -- Clean slate
 				end,
 			},
 			{

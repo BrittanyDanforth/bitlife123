@@ -1055,6 +1055,24 @@ function EventEngine.createRelationship(state, relType, options)
 	return relationship
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GLOBAL HELPER FUNCTIONS (accessible from onResolve callbacks)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Helper to find current romantic partner (GLOBAL so onResolve can access it)
+function EventEngine.getCurrentPartner(state)
+	if not state.Relationships then return nil, nil end
+	for id, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
+			return id, rel
+		end
+	end
+	return nil, nil
+end
+
+-- Make it globally accessible for onResolve callbacks
+getCurrentPartner = EventEngine.getCurrentPartner
+
 function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	if not eventDef or not eventDef.choices then
 		warn("[EventEngine] Invalid event definition")
@@ -1135,20 +1153,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Helper to find current romantic partner
-	local function getCurrentPartner(state)
-		if not state.Relationships then return nil, nil end
-		for id, rel in pairs(state.Relationships) do
-			if rel.type == "romance" and (rel.alive == nil or rel.alive == true) then
-				return id, rel
-			end
-		end
-		return nil, nil
-	end
-	
 	-- Romance events - create partner (only if event doesn't already handle it)
 	if (eventId == "dating_app" or eventId == "high_school_romance") and choiceIndex == 1 then
-		local partnerId, partner = getCurrentPartner(state)
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
 		if not partner then
 			local partner = EventEngine.createRelationship(state, "romance")
 			outcome.feedText = "You started dating " .. partner.name .. "!"
@@ -1159,7 +1166,7 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Wedding - update partner role
 	if eventId == "wedding_day" then
-		local partnerId, partner = getCurrentPartner(state)
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
 		if partner then
 			partner.role = "Spouse"
 			state.Flags.married = true
@@ -1170,7 +1177,7 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Breakup events
 	if choice.setFlags and choice.setFlags.recently_single then
-		local partnerId, partner = getCurrentPartner(state)
+		local partnerId, partner = EventEngine.getCurrentPartner(state)
 		if partner then
 			local partnerName = partner.name
 			-- Remove the relationship
@@ -1193,7 +1200,10 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	if choice.onResolve and type(choice.onResolve) == "function" then
 		local success, err = pcall(function()
-			choice.onResolve(state, choice, eventDef, outcome)
+			-- Make helpers available in onResolve scope
+			local getCurrentPartner = EventEngine.getCurrentPartner
+			local createRelationship = EventEngine.createRelationship
+			choice.onResolve(state)
 		end)
 		if not success then
 			warn("[EventEngine] onResolve handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
