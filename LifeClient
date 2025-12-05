@@ -2508,9 +2508,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if activitiesScreenInstance and activitiesScreenInstance.updateState then
 		activitiesScreenInstance:updateState(currentState)
 	end
-
-	if storyPathsScreenInstance and storyPathsScreenInstance.visible then
-		storyPathsScreenInstance:updateUI()
+	
+	-- 🔥 FIX: Call updateState like all other screens, not just updateUI!
+	if storyPathsScreenInstance and storyPathsScreenInstance.updateState then
+		storyPathsScreenInstance:updateState(currentState)
 	end
 
 	-- Show result popup if we have result data from server
@@ -2725,7 +2726,7 @@ occupationScreenInstance    = safeNew(OccupationScreen,    "OccupationScreen",  
 assetsScreenInstance        = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
 relationshipsScreenInstance = safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
 activitiesScreenInstance    = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
-storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
+storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)  -- 🔥 FIX: Added missing blur parameters!
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)

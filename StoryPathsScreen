@@ -12,8 +12,8 @@ local F = UI.Fonts
 local StoryPathsScreen = {}
 StoryPathsScreen.__index = StoryPathsScreen
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - ENABLED to track state updates
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[StoryPathsScreen]", ...) end
 end
@@ -149,7 +149,20 @@ function StoryPathsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 end
 
 function StoryPathsScreen:updateState(newState)
-	if newState then self.playerState = newState end
+	log("Updating state...")
+	if newState then 
+		self.playerState = newState
+		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Active Path:", self:getActivePath() or "None")
+		
+		-- 🔥 CRITICAL FIX: Auto-refresh UI if screen is visible!
+		-- This was causing stale data - screen never updated!
+		if self.visible then
+			log("Screen is visible - refreshing UI!")
+			self:updateUI()
+		else
+			log("Screen not visible - skipping refresh")
+		end
+	end
 end
 
 function StoryPathsScreen:getAge()
