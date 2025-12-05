@@ -82,6 +82,7 @@ local events = {
 		weight = 9,
 		minAge = 20,
 		requiresJob = true,
+		requiresCareer = { minPerformance = 70, minYearsAtJob = 1 },
 		requiresStats = { Smarts = 45 },
 		choices = {
 			{
@@ -96,6 +97,12 @@ local events = {
 					end
 					if state.AddFeed then
 						state:AddFeed("You were promoted!")
+					end
+					-- Reset/boost career progression
+					if state.CareerInfo then
+						state.CareerInfo.promotionProgress = 0
+						state.CareerInfo.performance = math.min(100, (state.CareerInfo.performance or 70) + 5)
+						state.CareerInfo.raises = (state.CareerInfo.raises or 0) + 1
 					end
 				end,
 			},

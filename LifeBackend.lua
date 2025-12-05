@@ -978,6 +978,12 @@ function LifeBackend:applyStatChanges(state, deltas)
 		elseif stat == "Looks" then
 			state.Stats.Looks = clamp((state.Stats.Looks or 0) + delta)
 			state.Looks = state.Stats.Looks
+		elseif stat == "CareerPerformance" or stat == "Performance" then
+			state.CareerInfo = state.CareerInfo or {}
+			state.CareerInfo.performance = clamp((state.CareerInfo.performance or 50) + delta, 0, 100)
+		elseif stat == "PromotionProgress" then
+			state.CareerInfo = state.CareerInfo or {}
+			state.CareerInfo.promotionProgress = clamp((state.CareerInfo.promotionProgress or 0) + delta, 0, 100)
 		end
 	end
 end

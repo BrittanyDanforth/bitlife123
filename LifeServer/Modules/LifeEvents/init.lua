@@ -434,6 +434,34 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- Deterministic career gating: performance and tenure
+	if event.requiresCareer then
+		local req = event.requiresCareer
+		if not state.CurrentJob then
+			return false
+		end
+		local perf = (state.CareerInfo and state.CareerInfo.performance) or 0
+		local years = (state.CareerInfo and state.CareerInfo.yearsAtJob) or 0
+		if req.minPerformance and perf < req.minPerformance then
+			return false
+		end
+		if req.maxPerformance and perf > req.maxPerformance then
+			return false
+		end
+		if req.minYearsAtJob and years < req.minYearsAtJob then
+			return false
+		end
+		if req.maxYearsAtJob and years > req.maxYearsAtJob then
+			return false
+		end
+		if req.category then
+			local jobCat = state.CurrentJob.category or ""
+			if jobCat:lower() ~= tostring(req.category):lower() then
+				return false
+			end
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP REQUIREMENTS - No marriage events if single!
 	-- ═══════════════════════════════════════════════════════════════════════════════
