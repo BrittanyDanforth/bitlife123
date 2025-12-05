@@ -555,6 +555,56 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTEREST-BASED CAREER UNLOCK SYSTEM (BitLife-style gradual unlock)
+	-- Careers only unlock if player has shown interest through their choices
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTEREST-BASED CAREER UNLOCK SYSTEM (BitLife-style gradual unlock)
+	-- Careers only unlock if player has shown interest through their choices
+	-- This prevents random popups and creates natural career progression
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Check if this is a career start event that requires interests
+	if event.category == "career" and event.requiresNoJob then
+		state.Interests = state.Interests or {}
+		
+		-- Hacker career requires coding/programming interest
+		if event.id == "hacker_career_start" then
+			local codingInterest = state.Interests.coding or 0
+			local programmingInterest = state.Interests.programming or 0
+			local techInterest = state.Interests.tech or 0
+			local totalTechInterest = codingInterest + programmingInterest + techInterest
+			-- Require at least 30 total interest points (built up from childhood/teen choices)
+			if totalTechInterest < 30 then
+				return false -- Not enough interest yet - player hasn't shown interest in coding
+			end
+			-- Boost chance based on interest level (more interest = higher chance)
+			-- This makes it more likely to appear if player has been coding-focused
+			if event.baseChance then
+				local interestBoost = math.min(0.3, totalTechInterest / 200) -- Up to 30% boost
+				event._interestBoostedChance = (event.baseChance or 0.12) + interestBoost
+			end
+		end
+		
+		-- Racing career requires racing/driving interest
+		if event.id == "racing_career_start" then
+			local racingInterest = state.Interests.racing or 0
+			local drivingInterest = state.Interests.driving or 0
+			local totalRacingInterest = racingInterest + drivingInterest
+			-- Require at least 25 total interest points (built from getting license, driving events)
+			if totalRacingInterest < 25 then
+				return false -- Not enough interest yet - player hasn't shown interest in racing
+			end
+			-- Boost chance based on interest level
+			if event.baseChance then
+				local interestBoost = math.min(0.25, totalRacingInterest / 200) -- Up to 25% boost
+				event._interestBoostedChance = (event.baseChance or 0.15) + interestBoost
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CUSTOM VALIDATION - Event-specific custom checks (e.g., promotion progress)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
@@ -577,6 +627,10 @@ local function canEventTrigger(event, state)
 	
 	if event.baseChance then
 		local chance = event.baseChance
+		-- Use interest-boosted chance if available (from interest system)
+		if event._interestBoostedChance then
+			chance = event._interestBoostedChance
+		end
 		-- Boost chance slightly for never-seen events
 		if (history.occurrences[event.id] or 0) == 0 then
 			chance = math.min(1, chance * 1.3)
@@ -1224,6 +1278,21 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	for flag, value in pairs(flagChanges) do
 		state.Flags[flag] = value
 		outcome.flagChanges[flag] = value
+	end
+	
+	-- CRITICAL: Interest tracking system - Build interests based on player choices
+	-- This creates BitLife-style gradual career unlock based on player interests
+	state.Interests = state.Interests or {}
+	-- Coding/Programming interests
+	if flagChanges.coder or flagChanges.programming or flagChanges.tech_savvy or flagChanges.tech_enthusiast then
+		state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 15)
+		state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 10)
+		state.Interests.tech = math.min(100, (state.Interests.tech or 0) + 10)
+	end
+	-- Racing/Driving interests
+	if flagChanges.has_license or flagChanges.driver_license or flagChanges.good_driver or flagChanges.racing_career then
+		state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 20)
+		state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 15)
 	end
 	
 	-- Career hints

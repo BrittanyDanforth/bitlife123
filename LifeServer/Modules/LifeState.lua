@@ -97,6 +97,25 @@ function LifeState.new(player)
 	-- Career hints from childhood choices
 	self.CareerHints = {}
 	
+	-- CRITICAL: Interest tracking system (BitLife-style gradual career unlock)
+	-- Interests build up over time based on player choices and unlock related careers
+	self.Interests = {
+		-- Technical interests
+		coding = 0,           -- Built by coding events, computer classes, tech activities
+		programming = 0,       -- Similar to coding, more advanced
+		tech = 0,              -- General tech interest
+		-- Racing interests
+		racing = 0,            -- Built by racing games, driving events, car interests
+		driving = 0,           -- General driving interest
+		-- Other interests can be added here
+		business = 0,
+		art = 0,
+		music = 0,
+		sports = 0,
+		medicine = 0,
+		law = 0,
+	}
+	
 	-- Story arcs the player is pursuing
 	self.StoryArcs = {}
 	
@@ -214,6 +233,18 @@ function LifeState:AdvanceAge()
 			-- Slight decay over time if performance is high (encourages active play)
 			local decay = RANDOM:NextNumber() < 0.1 and -1 or 0 -- 10% chance of -1 per year
 			self.CareerInfo.performance = math.max(40, self.CareerInfo.performance + decay)
+		end
+	end
+	
+	-- CRITICAL: Interest decay over time (interests fade if not pursued)
+	-- This makes it so players need to actively pursue interests to unlock careers
+	if self.Interests then
+		for interestName, value in pairs(self.Interests) do
+			if value > 0 then
+				-- Decay 1-2 points per year (slower than growth, but keeps interests dynamic)
+				local decay = RANDOM:NextInteger(1, 2)
+				self.Interests[interestName] = math.max(0, value - decay)
+			end
 		end
 	end
 	
@@ -503,6 +534,7 @@ function LifeState:Serialize()
 		
 		-- Career hints
 		CareerHints = self.CareerHints,
+		Interests = self.Interests,
 		
 		-- Story
 		StoryArcs = self.StoryArcs,

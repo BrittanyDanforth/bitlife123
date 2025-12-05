@@ -131,8 +131,30 @@ Milestones.events = {
 		tags = { "independence", "transport", "test" },
 
 		choices = {
-			{ text = "Passed first try!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_license = true, good_driver = true }, feedText = "You nailed the driving test!" },
-			{ text = "Passed after a few attempts", effects = { Happiness = 5 }, setFlags = { has_license = true }, feedText = "Third time's the charm! You got your license." },
+			{ 
+				text = "Passed first try!", 
+				effects = { Happiness = 10, Smarts = 2 }, 
+				setFlags = { has_license = true, good_driver = true }, 
+				feedText = "You nailed the driving test!",
+				onResolve = function(state)
+					-- CRITICAL: Build racing/driving interest for gradual career unlock
+					state.Interests = state.Interests or {}
+					state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 30)
+					state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 25)
+				end,
+			},
+			{ 
+				text = "Passed after a few attempts", 
+				effects = { Happiness = 5 }, 
+				setFlags = { has_license = true }, 
+				feedText = "Third time's the charm! You got your license.",
+				onResolve = function(state)
+					-- CRITICAL: Build driving interest (less than perfect pass, but still builds interest)
+					state.Interests = state.Interests or {}
+					state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 20)
+					state.Interests.driving = math.min(100, (state.Interests.driving or 0) + 20)
+				end,
+			},
 			{ text = "Still working on it", effects = { Happiness = -2 }, feedText = "You'll get it eventually." },
 			{ text = "Don't need a license", effects = { }, feedText = "You'll use public transport." },
 		},

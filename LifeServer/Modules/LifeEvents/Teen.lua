@@ -665,6 +665,12 @@ Teen.events = {
 				setFlags = { entrepreneur = true, tech_savvy = true }, 
 				hintCareer = "tech", 
 				feedText = "You're the neighborhood tech expert! Fixing computers, setting up Wi-Fi - you're in demand!",
+				onResolve = function(state)
+					-- CRITICAL: Build tech/coding interest for gradual career unlock
+					state.Interests = state.Interests or {}
+					state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 15)
+					state.Interests.tech = math.min(100, (state.Interests.tech or 0) + 20)
+				end,
 			},
 			{ 
 				text = "Social media management", 

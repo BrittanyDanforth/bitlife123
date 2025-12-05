@@ -1146,9 +1146,20 @@ local events = {
 		requiresNoJob = true,
 		blockedByFlags = { employed = true, in_prison = true },
 		requiresStats = { Health = { min = 70 }, Smarts = { min = 50 } },
-		-- CRITICAL: Racing requires driver's license - check if player has it
+		-- CRITICAL: Racing requires driver's license AND interest in racing
 		customValidation = function(state)
-			return (state.Flags and state.Flags.has_license == true) or (state.Flags and state.Flags.driver_license == true)
+			-- Check for driver's license
+			local hasLicense = (state.Flags and state.Flags.has_license == true) or (state.Flags and state.Flags.driver_license == true)
+			if not hasLicense then
+				return false
+			end
+			-- CRITICAL: Check interest level (BitLife-style gradual unlock)
+			state.Interests = state.Interests or {}
+			local racingInterest = state.Interests.racing or 0
+			local drivingInterest = state.Interests.driving or 0
+			local totalInterest = racingInterest + drivingInterest
+			-- Require at least 25 interest points (built from driving events, license, etc.)
+			return totalInterest >= 25
 		end,
 		baseChance = 0.15,
 		cooldown = 8,
@@ -1163,6 +1174,10 @@ local events = {
 					-- CRITICAL: Ensure money doesn't go negative
 					local initialCost = 2000
 					state.Money = math.max(0, (state.Money or 0) - initialCost)
+					
+					-- CRITICAL: Boost racing interest when entering career
+					state.Interests = state.Interests or {}
+					state.Interests.racing = math.min(100, (state.Interests.racing or 0) + 10)
 					
 					if state.SetCareer then
 						state:SetCareer({
@@ -1346,12 +1361,20 @@ local events = {
 		requiresNoJob = true,
 		blockedByFlags = { employed = true, in_prison = true },
 		requiresStats = { Smarts = { min = 75 } },
-		-- CRITICAL: Hacking requires computer skills - check if player has them
+		-- CRITICAL: Hacking requires computer skills AND interest in coding/programming
 		customValidation = function(state)
 			-- Check for computer-related flags or high Smarts stat
 			local hasComputerSkills = (state.Flags and (state.Flags.computer_skills == true or state.Flags.programming == true or state.Flags.tech_savvy == true))
 			local smarts = (state.Stats and state.Stats.Smarts) or 50
-			return hasComputerSkills or smarts >= 70
+			-- CRITICAL: Check interest level (BitLife-style gradual unlock)
+			state.Interests = state.Interests or {}
+			local codingInterest = state.Interests.coding or 0
+			local programmingInterest = state.Interests.programming or 0
+			local techInterest = state.Interests.tech or 0
+			local totalInterest = codingInterest + programmingInterest + techInterest
+			-- Require at least 30 interest points (built from coding camp, tech events, etc.)
+			-- OR high smarts + some interest (smart people can pick it up faster)
+			return (hasComputerSkills or smarts >= 70) and (totalInterest >= 30 or (smarts >= 80 and totalInterest >= 15))
 		end,
 		baseChance = 0.12,
 		cooldown = 10,
@@ -1363,6 +1386,11 @@ local events = {
 				setFlags = { employed = true, has_job = true, ethical_hacker = true, cybersecurity_career = true },
 				feedText = "You took the job but made it clear you'll only do legal security work.",
 				onResolve = function(state)
+					-- CRITICAL: Boost coding/programming interest when entering career
+					state.Interests = state.Interests or {}
+					state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 10)
+					state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 10)
+					
 					if state.SetCareer then
 						state:SetCareer({
 							id = "ethical_hacker",
@@ -1384,6 +1412,11 @@ local events = {
 				setFlags = { employed = true, has_job = true, black_hat_hacker = true, criminal_record = true },
 				feedText = "You took the job. The money's good, but you're walking a dangerous line.",
 				onResolve = function(state)
+					-- CRITICAL: Boost coding/programming interest when entering career
+					state.Interests = state.Interests or {}
+					state.Interests.coding = math.min(100, (state.Interests.coding or 0) + 10)
+					state.Interests.programming = math.min(100, (state.Interests.programming or 0) + 10)
+					
 					if state.SetCareer then
 						state:SetCareer({
 							id = "black_hat_hacker",
