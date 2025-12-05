@@ -1,9 +1,11 @@
 --[[
-	Career Events
-	All events here REQUIRE the player to have a job (requiresJob = true)
+    Career Events
+    All events here REQUIRE the player to have a job (requiresJob = true)
 ]]
 
 local Career = {}
+
+local STAGE = "adult" -- working-life events
 
 Career.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
@@ -19,6 +21,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_workplace",
+		tags = { "job", "conflict", "coworker", "office_politics" },
+
 		choices = {
 			{ text = "Confront them directly", effects = { Happiness = 3 }, setFlags = { workplace_confrontation = true }, feedText = "You called them out. The tension is thick." },
 			{ text = "Document everything, report to HR", effects = { Smarts = 2 }, feedText = "You took the professional route." },
@@ -36,6 +45,14 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_growth",
+		tags = { "job", "promotion", "money", "advancement" },
+		careerTags = { "management" },
+
 		choices = {
 			{ text = "Apply and compete hard", effects = { Smarts = 2, Money = 500, Health = -2 }, setFlags = { sought_promotion = true }, feedText = "You threw your hat in the ring!" },
 			{ text = "Apply casually", effects = { Money = 250 }, feedText = "You applied but kept expectations low." },
@@ -52,6 +69,13 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_risk",
+		tags = { "job", "layoffs", "risk", "stress" },
+
 		choices = {
 			{ text = "Work extra hard to prove value", effects = { Health = -5, Smarts = 2, Money = 200 }, feedText = "You worked overtime to secure your position." },
 			{ text = "Start job hunting quietly", effects = { Smarts = 2 }, setFlags = { job_hunting = true }, feedText = "You're exploring other options." },
@@ -69,6 +93,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 4,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_workplace",
+		tags = { "job", "manager", "stress", "conflict" },
+
 		choices = {
 			{ text = "Keep your head down", effects = { Happiness = -5, Health = -3 }, feedText = "You endured in silence." },
 			{ text = "Address it with HR", effects = { Happiness = 3 }, feedText = "You reported the issues." },
@@ -87,6 +118,14 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_success",
+		tags = { "achievement", "recognition", "job" },
+		careerTags = { "leadership" },
+
 		choices = {
 			{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feedText = "You closed a major deal!" },
 			{ text = "Solved a critical problem", effects = { Happiness = 8, Smarts = 5 }, setFlags = { problem_solver = true }, feedText = "You saved the day with your solution!" },
@@ -104,6 +143,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_travel",
+		tags = { "job", "travel", "clients" },
+
 		choices = {
 			{ text = "All business, impress the clients", effects = { Smarts = 3, Money = 300, Health = -2 }, feedText = "You crushed it professionally!" },
 			{ text = "Balance work and exploration", effects = { Happiness = 5, Smarts = 2 }, feedText = "You saw some sights while getting work done!" },
@@ -120,6 +166,14 @@ Career.events = {
 		baseChance = 0.5,
 		cooldown = 5,
 		requiresJob = true,
+
+		-- META
+		stage = STAGE,
+		ageBand = "adult_midlife",
+		category = "career_decision",
+		tags = { "job", "decision", "pivot" },
+		careerTags = { "career_general" },
+
 		choices = {
 			{ text = "Push for a promotion", effects = { Smarts = 2, Money = 500, Happiness = 5 }, feedText = "You went for the promotion!" },
 			{ text = "Change companies for better pay", effects = { Money = 1000, Happiness = 3 }, setFlags = { job_hopper = true }, feedText = "You switched jobs for a raise!" },
@@ -142,6 +196,14 @@ Career.events = {
 		cooldown = 5,
 		requiresJob = true,
 		requiresJobCategory = "tech",
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_tech",
+		tags = { "tech", "innovation", "product", "startup" },
+		careerTags = { "tech", "startup" },
+
 		choices = {
 			{ text = "Pitch it to your company", effects = { Happiness = 8, Money = 1000, Smarts = 3 }, feedText = "You pitched your big idea!" },
 			{ text = "Start your own company with it", effects = { Happiness = 10, Money = -3000 }, setFlags = { entrepreneur = true, startup_founder = true }, feedText = "You're going out on your own!" },
@@ -160,6 +222,14 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresJobCategory = "medical",
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_medical",
+		tags = { "medical", "emergency", "patients" },
+		careerTags = { "medical" },
+
 		choices = {
 			{ text = "Trust your training and act", effects = { Happiness = 10, Smarts = 5 }, feedText = "You made a split-second decision that saved them!" },
 			{ text = "Consult with colleagues first", effects = { Smarts = 3, Happiness = 5 }, feedText = "Team medicine saved the day." },
@@ -177,6 +247,14 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresJobCategory = "law",
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_law",
+		tags = { "law", "case", "high_profile" },
+		careerTags = { "law" },
+
 		choices = {
 			{ text = "Work around the clock", effects = { Smarts = 5, Money = 2000, Health = -5 }, setFlags = { legal_star = true }, feedText = "You gave it everything!" },
 			{ text = "Delegate and manage", effects = { Smarts = 3, Money = 1000 }, feedText = "Leadership got the job done." },
@@ -194,6 +272,14 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		requiresJobCategory = "creative",
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_creative",
+		tags = { "creative", "block", "art", "work" },
+		careerTags = { "creative" },
+
 		choices = {
 			{ text = "Take a break and recharge", effects = { Happiness = 5, Health = 3, Smarts = 2 }, feedText = "Rest brought the creativity back." },
 			{ text = "Push through with discipline", effects = { Smarts = 3, Happiness = -3, Health = -2 }, feedText = "Discipline overcame the block." },
@@ -212,6 +298,14 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresJobCategory = "sports",
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_sports",
+		tags = { "sports", "injury", "health" },
+		careerTags = { "sports" },
+
 		choices = {
 			{ text = "Proper rehab, take time to heal", effects = { Health = 5, Money = -500, Happiness = -3 }, setFlags = { recovered_athlete = true }, feedText = "You took recovery seriously." },
 			{ text = "Rush back too soon", effects = { Health = -10, Happiness = -5 }, setFlags = { chronic_injury = true }, feedText = "Coming back too fast made it worse..." },
@@ -231,6 +325,14 @@ Career.events = {
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "entrepreneurship",
+		tags = { "business", "investment", "scam_risk", "money" },
+		careerTags = { "business" },
+
 		choices = {
 			{ text = "It's a great opportunity! Invest!", effects = { Money = 3000, Happiness = 8 }, setFlags = { investor = true }, feedText = "You took a chance on the opportunity!" },
 			{ text = "Do thorough due diligence first", effects = { Smarts = 3, Money = 1000 }, feedText = "You researched carefully before deciding." },
@@ -248,6 +350,14 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresFlags = { entrepreneur = true },
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "entrepreneurship",
+		tags = { "business", "side_hustle", "growth" },
+		careerTags = { "business" },
+
 		choices = {
 			{ text = "Go full-time on it", effects = { Happiness = 10, Money = 2000 }, setFlags = { full_time_entrepreneur = true }, feedText = "You quit your job to focus on your business!" },
 			{ text = "Keep it as a side income", effects = { Money = 500, Happiness = 5, Health = -2 }, feedText = "Extra income is nice!" },
@@ -266,6 +376,14 @@ Career.events = {
 		cooldown = 5,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 70 } },
+
+		-- META
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_success",
+		tags = { "award", "industry", "recognition" },
+		careerTags = { "career_general" },
+
 		choices = {
 			{ text = "Honored and humbled", effects = { Happiness = 10, Smarts = 2 }, setFlags = { award_winner = true }, feedText = "You were recognized for your contributions!" },
 			{ text = "It's about time!", effects = { Happiness = 8 }, setFlags = { award_winner = true }, feedText = "Finally, the recognition you deserved!" },
