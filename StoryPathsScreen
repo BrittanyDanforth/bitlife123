@@ -156,7 +156,8 @@ function StoryPathsScreen:updateState(newState)
 		
 		-- 🔥 CRITICAL FIX: Auto-refresh UI if screen is visible!
 		-- This was causing stale data - screen never updated!
-		if self.visible then
+		-- 🔥 FIX #2: Changed self.visible to self.isVisible for consistency!
+		if self.isVisible then
 			log("Screen is visible - refreshing UI!")
 			self:updateUI()
 		else

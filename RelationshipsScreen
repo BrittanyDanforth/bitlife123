@@ -2080,39 +2080,47 @@ end
 -- PUBLIC API -------------------------------------------------------------------
 
 function RelationshipsScreen:show(tabId)
-	if self.isVisible then return end
-	self.isVisible = true
-
-	if self.showBlur then
-		pcall(self.showBlur)
+	log("=== SHOWING RelationshipsScreen ===")
+	local relCount = self.playerState and self.playerState.Relationships and #self.playerState.Relationships or 0
+	log("Current state - Age:", self:getAge(), "Relationships:", relCount)
+	
+	if self.isVisible then 
+		log("Already visible, skipping")
+		return 
 	end
-
-	self.overlay.Visible = true
-
+	
 	self:updateInfoBar()
 	if tabId then
 		self:switchTab(tabId)
 	else
 		self:switchTab(self.currentTab or "family")
 	end
+	
+	-- 🔥 FIX: Use UI.slideInScreen like all other screens for consistency!
+	UI.slideInScreen(self.overlay, "right")
+	self.isVisible = true
+	log("✅ RelationshipsScreen is now visible")
 end
 
 function RelationshipsScreen:hide()
-	if not self.isVisible then return end
+	log("=== HIDING RelationshipsScreen ===")
+	if not self.isVisible then 
+		log("Already hidden, skipping")
+		return 
+	end
+	
+	-- 🔥 FIX: Use UI.slideOutScreen like all other screens for consistency!
+	UI.slideOutScreen(self.overlay, "right", function()
+		if self.interactOverlay then
+			self.interactOverlay.Visible = false
+		end
+		if self.resultModal and self.resultModal.overlay then
+			self.resultModal.overlay.Visible = false
+		end
+		log("✅ RelationshipsScreen hidden, modals cleaned up")
+	end)
+	
 	self.isVisible = false
-
-	if self.hideBlur then
-		pcall(self.hideBlur)
-	end
-
-	self.overlay.Visible = false
-
-	if self.interactOverlay then
-		self.interactOverlay.Visible = false
-	end
-	if self.resultModal and self.resultModal.overlay then
-		self.resultModal.overlay.Visible = false
-	end
 end
 
 function RelationshipsScreen:toggle()
