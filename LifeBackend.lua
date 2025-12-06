@@ -1327,9 +1327,33 @@ function LifeBackend:createInitialState(player)
 	
 	state.Relationships = state.Relationships or {}
 	
-	-- Generate random names for family members
-	local maleNames = {"James", "Michael", "David", "John", "Robert", "William", "Richard", "Thomas", "Charles", "Daniel"}
-	local femaleNames = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"}
+	-- Generate random names for family members (EXPANDED - 80+ names each for variety)
+	local maleNames = {
+		-- Classic names
+		"James", "Michael", "David", "John", "Robert", "William", "Richard", "Thomas", "Charles", "Daniel",
+		"Christopher", "Matthew", "Anthony", "Mark", "Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan",
+		-- Modern names
+		"Liam", "Noah", "Oliver", "Ethan", "Aiden", "Lucas", "Mason", "Logan", "Alexander", "Sebastian",
+		"Benjamin", "Henry", "Owen", "Jack", "Carter", "Jayden", "Dylan", "Wyatt", "Luke", "Caleb",
+		-- Diverse cultural names
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Marcus", "Dante", "Isaiah", "Brandon",
+		"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Ren", "Sora", "Haruki",
+		"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
+	}
+	local femaleNames = {
+		-- Classic names
+		"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen",
+		"Nancy", "Lisa", "Betty", "Margaret", "Dorothy", "Sandra", "Ashley", "Kimberly", "Donna", "Emily",
+		-- Modern names
+		"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+		"Abigail", "Luna", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Aria", "Lily", "Zoey",
+		-- Diverse cultural names
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Gabriela", "Natalia", "Sofia",
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Tiana", "Sierra", "Layla", "Aisha", "Zoe",
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Kaori", "Nanami", "Koharu",
+		"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
+	}
 	
 	local function randomName(gender)
 		local names = (gender == "male") and maleNames or femaleNames
@@ -1942,40 +1966,66 @@ function LifeBackend:replaceTextVariables(text, state)
 	end
 	
 	-- Mother/Father name replacement
-	-- CRITICAL FIX: More robust relationship name handling
+	-- CRITICAL FIX: Ultra-robust relationship name handling with multiple fallbacks
 	local motherName = "Mom"
 	local fatherName = "Dad"
 	
-	if state.Relationships then
-		-- Try multiple ways to access relationships (in case of different storage formats)
-		local mother = state.Relationships.mother or state.Relationships["mother"]
-		local father = state.Relationships.father or state.Relationships["father"]
-		
-		if mother and type(mother) == "table" then
-			motherName = mother.name or mother.Name or "Mom"
-		end
-		if father and type(father) == "table" then
-			fatherName = father.name or father.Name or "Dad"
-		end
-		
-		-- CRITICAL FIX: Add friend name placeholder
-		-- Look for any friend in relationships
-		for relId, rel in pairs(state.Relationships) do
-			if type(rel) == "table" and rel.type == "friend" then
-				result = result:gsub("{{FRIEND_NAME}}", rel.name or "your friend")
-				break
+	-- Try to get parent names from relationships
+	local success, extractedNames = pcall(function()
+		if state.Relationships then
+			-- Try multiple ways to access relationships (in case of different storage formats)
+			local mother = state.Relationships.mother or state.Relationships["mother"]
+			local father = state.Relationships.father or state.Relationships["father"]
+			
+			local extractedMom = "Mom"
+			local extractedDad = "Dad"
+			
+			if mother and type(mother) == "table" then
+				extractedMom = mother.name or mother.Name or "Mom"
 			end
+			if father and type(father) == "table" then
+				extractedDad = father.name or father.Name or "Dad"
+			end
+			
+			return { mom = extractedMom, dad = extractedDad }
 		end
+		return { mom = "Mom", dad = "Dad" }
+	end)
+	
+	if success and extractedNames then
+		motherName = extractedNames.mom or "Mom"
+		fatherName = extractedNames.dad or "Dad"
 	end
 	
-	-- CRITICAL FIX: Always replace placeholders (even if relationships table is missing)
+	-- CRITICAL FIX: Friend name lookup with pcall protection
+	if state.Relationships then
+		pcall(function()
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.type == "friend" then
+					result = result:gsub("{{FRIEND_NAME}}", rel.name or "your friend")
+					break
+				end
+			end
+		end)
+	end
+	
+	-- CRITICAL FIX: Always replace placeholders with multiple pattern variations
 	-- This prevents {{FATHER_NAME}} from appearing literally in game text
+	-- Try both escaped and unescaped patterns for maximum compatibility
 	result = result:gsub("{{MOTHER_NAME}}", motherName)
 	result = result:gsub("{{FATHER_NAME}}", fatherName)
+	-- Escaped pattern versions (Lua pattern special chars)
+	result = result:gsub("%%{%%{MOTHER_NAME%%}%%}", motherName)
+	result = result:gsub("%%{%%{FATHER_NAME%%}%%}", fatherName)
+	-- Generic parent terms
 	result = result:gsub("Your mother", motherName)
 	result = result:gsub("Your father", fatherName)
 	result = result:gsub("your mother", motherName:lower())
 	result = result:gsub("your father", fatherName:lower())
+	result = result:gsub("Your dad", fatherName)
+	result = result:gsub("your dad", fatherName:lower())
+	result = result:gsub("Your mom", motherName)
+	result = result:gsub("your mom", motherName:lower())
 	
 	-- Fallback for friend name if no friend found
 	result = result:gsub("{{FRIEND_NAME}}", "your friend")

@@ -1104,21 +1104,43 @@ function EventEngine.countAssets(state, assetType)
 	return total
 end
 
--- Name pools for dynamic relationship creation
+-- Name pools for dynamic relationship creation (EXPANDED - 100+ names each for variety)
 local NamePools = {
 	male = {
-		"James", "Michael", "David", "John", "Robert", "Christopher", "Daniel",
-		"Matthew", "Anthony", "Mark", "Steven", "Andrew", "Joshua", "Kevin",
-		"Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler", "Alexander",
-		"Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden",
-		"Carter", "Sebastian", "Henry", "Owen", "Jack", "Leo", "Nathan"
+		-- Classic American
+		"James", "Michael", "David", "John", "Robert", "Christopher", "Daniel", "Matthew", "Anthony", "Mark",
+		"Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler",
+		"Alexander", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden", "Carter",
+		"Sebastian", "Henry", "Owen", "Jack", "Leo", "Nathan", "Logan", "Dylan", "Jayden", "Wyatt",
+		"Caleb", "Luke", "Gabriel", "Isaac", "Connor", "Elijah", "Hunter", "Cameron", "Evan", "Austin",
+		-- Hispanic/Latino
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Mateo", "Santiago", "Javier", "Pablo", "Ricardo", "Andres", "Fernando", "Hector", "Oscar", "Victor",
+		-- African American
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Marcus", "Dante", "Isaiah", "Xavier",
+		-- Asian
+		"Kenji", "Ryu", "Akira", "Ren", "Sora", "Kai", "Hiro", "Yuto", "Jun", "Tao",
+		"Wei", "Chen", "Jin", "Min", "Jae", "Sung", "Arjun", "Raj", "Vikram", "Rahul",
+		-- Middle Eastern
+		"Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq", "Yusuf", "Ahmed", "Ali", "Samir"
 	},
 	female = {
-		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia",
-		"Harper", "Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Avery",
-		"Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley", "Aria",
-		"Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel",
-		"Luna", "Penelope", "Stella", "Aurora", "Violet", "Savannah", "Audrey"
+		-- Classic American
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail",
+		"Emily", "Elizabeth", "Sofia", "Avery", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley",
+		"Aria", "Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel", "Luna",
+		"Penelope", "Stella", "Aurora", "Violet", "Savannah", "Audrey", "Brooklyn", "Claire", "Skylar", "Paisley",
+		"Natalie", "Madison", "Addison", "Eleanor", "Lillian", "Aubrey", "Ellie", "Camila", "Genesis", "Kennedy",
+		-- Hispanic/Latino
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Gabriela", "Natalia", "Isabella",
+		"Camila", "Mariana", "Daniela", "Fernanda", "Paula", "Andrea", "Carolina", "Diana", "Adriana", "Alejandra",
+		-- African American
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Tiana", "Sierra", "Aisha", "Nia", "Maya",
+		-- Asian
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Kaori", "Nanami", "Koharu",
+		"Lin", "Mei-Lin", "Jing", "Yuna", "Hye", "Ji-Yeon", "Priya", "Ananya", "Isha", "Diya",
+		-- Middle Eastern
+		"Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin", "Layla", "Mariam", "Aisha"
 	}
 }
 
