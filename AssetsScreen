@@ -291,29 +291,8 @@ function AssetsScreen:createUI()
 	self.balanceValue.ZIndex = 85
 	self.balanceValue.Parent = self.balanceBar
 
-	-- Casino button
-	local casinoBtn = Instance.new("TextButton")
-	casinoBtn.Size = UDim2.new(0, 90, 0, 50)
-	casinoBtn.AnchorPoint = Vector2.new(1, 0.5)
-	casinoBtn.Position = UDim2.new(1, -14, 0.5, 0)
-	casinoBtn.BackgroundColor3 = C.Gold
-	casinoBtn.Font = F.Button
-	casinoBtn.TextSize = 13
-	casinoBtn.TextColor3 = C.White
-	casinoBtn.Text = "🎰 Casino"
-	casinoBtn.AutoButtonColor = false
-	casinoBtn.ZIndex = 85
-	casinoBtn.Parent = self.balanceBar
-	UI.corner(casinoBtn, 14)
-	UI.gradient(casinoBtn, C.Gold, C.GoldDark, 90)
-
-	casinoBtn.MouseButton1Click:Connect(function() self:showGambling() end)
-	casinoBtn.MouseEnter:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 96, 0, 54) })
-	end)
-	casinoBtn.MouseLeave:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 50) })
-	end)
+	-- REMOVED: Casino button (per user request)
+	-- Casino/gambling feature removed from AssetsScreen
 
 	-- Tab bar
 	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 200, zIndex = 84 })
@@ -339,7 +318,7 @@ function AssetsScreen:createUI()
 
 	-- Modals
 	self:createResultModal()
-	self:createGamblingModal()
+	-- REMOVED: self:createGamblingModal() - Casino feature removed
 
 	-- Initial populate
 	self:populateProperty()

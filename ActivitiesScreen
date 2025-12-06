@@ -1905,8 +1905,9 @@ function ActivitiesScreen:createMinigameModal()
 	self.minigameOverlay.ZIndex = 96
 	self.minigameOverlay.Parent = self.screenGui
 
+	-- CRITICAL FIX: Made card taller to prevent cramped UI
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(0.92, 0, 0, 480) -- Taller for escape grid
+	card.Size = UDim2.new(0.92, 0, 0, 520) -- Taller for escape grid
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.Position = UDim2.fromScale(0.5, 0.5)
 	card.BackgroundColor3 = C.White
@@ -1915,14 +1916,16 @@ function ActivitiesScreen:createMinigameModal()
 	UI.corner(card, 24)
 	self.minigameCard = card
 
-	-- Title
+	-- Title - positioned lower to give breathing room
 	self.minigameTitle = Instance.new("TextLabel")
-	self.minigameTitle.Size = UDim2.new(1, 0, 0, 55)
+	self.minigameTitle.Size = UDim2.new(1, -20, 0, 45)
+	self.minigameTitle.Position = UDim2.new(0, 10, 0, 8)
 	self.minigameTitle.BackgroundTransparency = 1
 	self.minigameTitle.Font = F.Title
-	self.minigameTitle.TextSize = 24
+	self.minigameTitle.TextSize = 20
 	self.minigameTitle.TextColor3 = C.Gray900
 	self.minigameTitle.Text = "Tap to Workout!"
+	self.minigameTitle.TextWrapped = true
 	self.minigameTitle.ZIndex = 98
 	self.minigameTitle.Parent = card
 
@@ -1974,16 +1977,17 @@ function ActivitiesScreen:createMinigameModal()
 	self.tapCounter.ZIndex = 98
 	self.tapCounter.Parent = card
 
-	-- Instructions
+	-- CRITICAL FIX: Instructions repositioned - at bottom of card, below buttons
 	self.minigameInstructions = Instance.new("TextLabel")
 	self.minigameInstructions.Name = "Instructions"
-	self.minigameInstructions.Size = UDim2.new(1, 0, 0, 30)
-	self.minigameInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.minigameInstructions.Position = UDim2.new(0.5, 0, 0, 350)
+	self.minigameInstructions.Size = UDim2.new(1, -20, 0, 40)
+	self.minigameInstructions.AnchorPoint = Vector2.new(0.5, 1)
+	self.minigameInstructions.Position = UDim2.new(0.5, 0, 1, -10)
 	self.minigameInstructions.BackgroundTransparency = 1
 	self.minigameInstructions.Font = F.Body
-	self.minigameInstructions.TextSize = 15
+	self.minigameInstructions.TextSize = 13
 	self.minigameInstructions.TextColor3 = C.Gray500
+	self.minigameInstructions.TextWrapped = true
 	self.minigameInstructions.Text = "Tap as fast as you can!"
 	self.minigameInstructions.ZIndex = 98
 	self.minigameInstructions.Parent = card
@@ -2058,22 +2062,23 @@ function ActivitiesScreen:createMinigameModal()
 	self.exitCell.Parent = self.escapeGrid
 	UI.corner(self.exitCell, 6)
 
-	-- Direction buttons
+	-- CRITICAL FIX: Direction buttons repositioned to not cover text
+	-- Grid is 280px ending at Y=340, so buttons start at Y=355
 	self.dirButtons = Instance.new("Frame")
 	self.dirButtons.Name = "DirectionButtons"
 	self.dirButtons.Size = UDim2.new(0, 150, 0, 100)
 	self.dirButtons.AnchorPoint = Vector2.new(0.5, 0)
-	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 345)
+	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 360)
 	self.dirButtons.BackgroundTransparency = 1
 	self.dirButtons.Visible = false
 	self.dirButtons.ZIndex = 98
 	self.dirButtons.Parent = card
 
 	local dirData = {
-		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -20, 0, 0) },
-		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -20, 0, 60) },
-		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 30) },
-		{ dir = "right", text = "➡️", pos = UDim2.new(1, -40, 0, 30) },
+		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -22, 0, 0) },
+		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -22, 0, 55) },
+		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 27) },
+		{ dir = "right", text = "➡️", pos = UDim2.new(1, -44, 0, 27) },
 	}
 
 	self.dirBtns = {}

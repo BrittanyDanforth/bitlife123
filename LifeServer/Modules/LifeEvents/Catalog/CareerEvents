@@ -491,6 +491,374 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TRADES CAREER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "apprentice_mistake",
+		emoji = "🔧",
+		title = "Made a Mistake on the Job",
+		text = "You messed up on a project at work. Your supervisor noticed.",
+		question = "How do you handle it?",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		maxAge = 40,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJobCategory = "trades",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Own up to it immediately",
+				effects = { Happiness = -3, Smarts = 3 },
+				feedText = "You took responsibility...",
+				onResolve = function(state)
+					if math.random() < 0.7 then
+						state.Flags = state.Flags or {}
+						state.Flags.honest_worker = true
+						if state.AddFeed then
+							state:AddFeed("✅ Your honesty impressed your boss! They respect your integrity.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😬 Boss wasn't happy but appreciates the honesty.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Try to fix it before anyone else notices",
+				effects = { Happiness = 2 },
+				feedText = "You tried to fix your mistake quietly...",
+				onResolve = function(state)
+					if math.random() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("🔧 You fixed it! Crisis averted.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.got_written_up = true
+						if state.AddFeed then
+							state:AddFeed("❌ They found out anyway. Written warning.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Blame someone else",
+				effects = { Happiness = -5 },
+				setFlags = { blame_shifter = true },
+				feedText = "You tried to shift blame...",
+				onResolve = function(state)
+					if math.random() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("😈 They bought it. But you know what you did...")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.reputation_damaged = true
+						if state.AddFeed then
+							state:AddFeed("👎 Coworkers saw through it. Trust broken.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "trade_certification",
+		emoji = "📜",
+		title = "Certification Opportunity",
+		text = "There's a chance to get an advanced certification that would boost your career and pay.",
+		question = "Do you go for it?",
+		category = "career",
+		weight = 5,
+		minAge = 20,
+		maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 10,
+		requiresJobCategory = "trades",
+		blockedByFlags = { in_prison = true, master_certified = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Study hard and take the exam",
+				effects = { Happiness = 5, Money = -500 },
+				feedText = "You prepared for the certification exam...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local passChance = 0.5 + (smarts / 200)
+					
+					if math.random() < passChance then
+						state.Flags = state.Flags or {}
+						state.Flags.master_certified = true
+						if state.CurrentJob then
+							state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 40000) * 1.2)
+						end
+						if state.AddFeed then
+							state:AddFeed("🎓 PASSED! You're now certified! 20% salary increase!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("📚 Didn't pass this time. Can try again next year.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not ready for that commitment",
+				effects = { Happiness = 2 },
+				feedText = "You'll think about it for next time.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HEALTHCARE CAREER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "medical_emergency_call",
+		emoji = "🚨",
+		title = "Emergency Situation",
+		text = "A critical emergency comes in during your shift. Lives are on the line!",
+		question = "How do you respond?",
+		category = "career",
+		weight = 7,
+		minAge = 25,
+		maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJobCategory = "healthcare",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Stay calm and follow protocol",
+				effects = { Happiness = 5, Health = -3 },
+				feedText = "You handled the emergency professionally...",
+				onResolve = function(state)
+					local outcome = math.random()
+					if outcome < 0.7 then
+						state.Flags = state.Flags or {}
+						state.Flags.life_saver = true
+						if state.AddFeed then
+							state:AddFeed("💪 Patient survived! Your training paid off!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.lost_patient = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("💔 Despite your best efforts, the patient didn't make it...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Call for backup immediately",
+				effects = { Happiness = 2 },
+				feedText = "You got help right away...",
+				onResolve = function(state)
+					if math.random() < 0.8 then
+						if state.AddFeed then
+							state:AddFeed("👥 Team effort saved the day!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("⏰ Backup arrived but it was too late...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Panic and freeze",
+				effects = { Happiness = -10, Health = -5 },
+				setFlags = { choked_under_pressure = true },
+				feedText = "You froze up under pressure...",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("😰 Someone else had to take over. You're shaken.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CREATIVE CAREER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "creative_breakthrough",
+		emoji = "✨",
+		title = "Creative Breakthrough",
+		text = "You've been working on a project for months. Suddenly, inspiration strikes!",
+		question = "What do you create?",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 8,
+		requiresJobCategory = "creative",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Work through the night to finish it",
+				effects = { Happiness = 10, Health = -5 },
+				feedText = "You worked non-stop on your masterpiece...",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						local bonus = math.random(2000, 10000)
+						state.Money = (state.Money or 0) + bonus
+						state.Flags = state.Flags or {}
+						state.Flags.artistic_success = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🎨 Masterpiece complete! Got a $%d bonus!", bonus))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🎨 Finished but reception was lukewarm. Still proud of it.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Take my time and do it right",
+				effects = { Happiness = 8 },
+				feedText = "You paced yourself and created something meaningful.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SERVICE INDUSTRY EVENTS  
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "difficult_customer",
+		emoji = "😤",
+		title = "Difficult Customer",
+		text = "A customer is being incredibly rude and demanding to speak to your manager.",
+		question = "How do you handle this?",
+		category = "career",
+		weight = 8,
+		minAge = 16,
+		maxAge = 50,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJobCategory = "service",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Kill them with kindness",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "You stayed professional despite their rudeness...",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("😊 They actually apologized! Kindness wins.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😐 They left grumpy but you kept your cool.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Get the manager",
+				effects = { Happiness = 2 },
+				feedText = "You escalated to your manager.",
+			},
+			{
+				index = 3,
+				text = "Give them a piece of your mind",
+				effects = { Happiness = 5, Health = -2 },
+				feedText = "You snapped back at them...",
+				onResolve = function(state)
+					if math.random() < 0.3 then
+						state.Flags = state.Flags or {}
+						state.Flags.got_fired = true
+						state.CurrentJob = nil
+						if state.AddFeed then
+							state:AddFeed("🔥 Worth it but... you're fired.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.final_warning = true
+						if state.AddFeed then
+							state:AddFeed("⚠️ Manager gave you a warning. Worth it though.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "tip_windfall",
+		emoji = "💵",
+		title = "Big Tipper!",
+		text = "A customer left you an unexpectedly huge tip!",
+		question = "What do you do?",
+		category = "career",
+		weight = 5,
+		minAge = 16,
+		maxAge = 50,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresJobCategory = "service",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Pocket it all - I earned it",
+				effects = { Happiness = 10 },
+				feedText = "A nice surprise!",
+				onResolve = function(state)
+					local tip = math.random(50, 200)
+					state.Money = (state.Money or 0) + tip
+					if state.AddFeed then
+						state:AddFeed(string.format("💰 $%d tip! Today was a good day.", tip))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Share with coworkers",
+				effects = { Happiness = 8 },
+				setFlags = { team_player = true },
+				feedText = "You shared the wealth.",
+				onResolve = function(state)
+					local tip = math.random(20, 100)
+					state.Money = (state.Money or 0) + tip
+					if state.AddFeed then
+						state:AddFeed("🤝 Split the tip! Coworkers appreciate you.")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return events

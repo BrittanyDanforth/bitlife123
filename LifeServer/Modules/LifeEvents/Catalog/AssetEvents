@@ -401,58 +401,145 @@ local events = {
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- RISK EVENTS - Things that can go wrong with assets
+	-- CRITICAL FIX: Accidents are NOT god-mode - injuries are random!
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "car_accident",
+		id = "car_accident_owner",
 		emoji = "💥",
 		title = "Car Accident!",
-		text = "You were in a car accident! Another driver ran a red light and hit you.",
-		question = "How bad is it?",
+		text = "You were driving your car when another driver ran a red light and hit you! The ambulance is on the way.",
+		question = "What happens next?",
 		category = "assets",
 		weight = 4,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.1,
+		baseChance = 0.08,
 		cooldown = 15,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Vehicles")
 		end,
 		
+		-- CRITICAL FIX: NO CHOICES - outcome is random like BitLife!
 		choices = {
 			{
 				index = 1,
-				text = "Minor fender bender",
-				effects = { Happiness = -5, Money = -1500 },
-				feedText = "Minor damage, you're okay.",
-			},
-			{
-				index = 2,
-				text = "Serious crash - you're hurt",
-				effects = { Happiness = -15, Health = -20, Money = -5000 },
-				feedText = "You're in the hospital. Car is totaled.",
+				text = "Wait for the ambulance...",
+				effects = { Happiness = -5 },
+				feedText = "The paramedics arrive...",
 				onResolve = function(state)
-					state.Flags = state.Flags or {}
-					state.Flags.hospitalized = true
-					state.Flags.car_accident_survivor = true
-				end,
-			},
-			{
-				index = 3,
-				text = "It was their fault - sue them!",
-				effects = { Happiness = 0 },
-				feedText = "You're pursuing legal action...",
-				onResolve = function(state)
-					if RANDOM:NextNumber() < 0.6 then
-						local settlement = RANDOM:NextInteger(10000, 50000)
-						state.Money = (state.Money or 0) + settlement
+					local severity = RANDOM:NextNumber()
+					local vehicle = getBestVehicle(state)
+					local vehicleName = vehicle and vehicle.name or "your car"
+					
+					if severity < 0.4 then
+						-- Minor accident - just shaken up
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(500, 2000))
 						if state.AddFeed then
-							state:AddFeed(string.format("⚖️ Won the lawsuit! $%d settlement!", settlement))
+							state:AddFeed("🚗 Minor fender bender! " .. vehicleName .. " has some scratches. You're okay though.")
+						end
+					elseif severity < 0.75 then
+						-- Moderate - injured but okay
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-20, -8))
+						end
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(2000, 8000))
+						state.Flags = state.Flags or {}
+						state.Flags.recovering_from_accident = true
+						if state.AddFeed then
+							state:AddFeed("🏥 You're injured but will recover. " .. vehicleName .. " needs repairs.")
+						end
+					elseif severity < 0.95 then
+						-- Serious - hospitalized
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-40, -20))
+						end
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(5000, 15000))
+						state.Flags = state.Flags or {}
+						state.Flags.hospitalized = true
+						state.Flags.car_accident_survivor = true
+						-- Car might be totaled
+						if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+							table.remove(state.Assets.Vehicles, 1)
+							if state.AddFeed then
+								state:AddFeed("🏥 Serious crash! " .. vehicleName .. " is totaled. You're in the hospital.")
+							end
 						end
 					else
-						state.Money = math.max(0, (state.Money or 0) - 3000)
+						-- Critical - life threatening
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-60, -40))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.in_icu = true
+						state.Flags.near_death = true
 						if state.AddFeed then
-							state:AddFeed("⚖️ Lost the case. Out legal fees and still hurt.")
+							state:AddFeed("⚠️ CRITICAL CONDITION! You're in the ICU fighting for your life!")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- CRITICAL FIX: Separate event for people WITHOUT cars (uber/taxi/bus)
+	{
+		id = "transit_accident",
+		emoji = "🚕",
+		title = "Accident While Traveling!",
+		text = "You were in an Uber when the driver got into a collision with another vehicle! You're shaken up.",
+		question = "What happens?",
+		category = "random",
+		weight = 3,
+		minAge = 16,
+		maxAge = 80,
+		baseChance = 0.05,
+		cooldown = 20,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			-- Only for people WITHOUT their own vehicle
+			return not hasAssetType(state, "Vehicles")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Check if you're okay...",
+				effects = { Happiness = -3 },
+				feedText = "Checking for injuries...",
+				onResolve = function(state)
+					local severity = RANDOM:NextNumber()
+					
+					if severity < 0.6 then
+						-- Just shaken up
+						if state.AddFeed then
+							state:AddFeed("😰 Scary moment but you're okay! Just some bruises.")
+						end
+					elseif severity < 0.85 then
+						-- Minor injuries
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-12, -5))
+						end
+						if state.AddFeed then
+							state:AddFeed("🤕 You got hurt but nothing serious. Might sue the driver...")
+						end
+						-- Chance to get settlement
+						if RANDOM:NextNumber() < 0.4 then
+							local settlement = RANDOM:NextInteger(2000, 10000)
+							state.Money = (state.Money or 0) + settlement
+							if state.AddFeed then
+								state:AddFeed(string.format("💰 Insurance settlement: $%d!", settlement))
+							end
+						end
+					else
+						-- Serious injuries
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-30, -15))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.hospitalized = true
+						if state.AddFeed then
+							state:AddFeed("🏥 You're hospitalized from the crash injuries.")
 						end
 					end
 				end,

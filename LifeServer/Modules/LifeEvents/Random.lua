@@ -1623,6 +1623,301 @@ Random.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- JOB OPPORTUNITY EVENTS - Jobs come to YOU (BitLife-style)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_job_offer",
+		emoji = "📧",
+		title = "Job Opportunity!",
+		text = "A recruiter reached out to you with a job offer! They found your profile online.",
+		question = "What do you do?",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		maxAge = 55,
+		baseChance = 0.25,
+		cooldown = 5,
+		requiresNoJob = true, -- Only for unemployed
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Accept the interview!",
+				effects = { Happiness = 5 },
+				feedText = "You went to the interview...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.7 then -- 70% chance to get job
+						local jobs = {
+							{ name = "Office Assistant", salary = 32000, category = "entry" },
+							{ name = "Customer Service Rep", salary = 30000, category = "service" },
+							{ name = "Retail Associate", salary = 28000, category = "entry" },
+							{ name = "Data Entry Clerk", salary = 34000, category = "entry" },
+							{ name = "Receptionist", salary = 31000, category = "service" },
+						}
+						local job = jobs[math.random(1, #jobs)]
+						state.CurrentJob = {
+							id = "random_" .. math.random(1000, 9999),
+							name = job.name,
+							company = "Local Business",
+							salary = job.salary,
+							category = job.category,
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.employed = true
+						state.Flags.has_job = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🎉 You got the job! %s - $%d/year", job.name, job.salary))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 The interview didn't go well. Keep trying!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not interested right now",
+				effects = { Happiness = 2 },
+				feedText = "You passed on the opportunity.",
+			},
+		},
+	},
+	
+	{
+		id = "friend_job_referral",
+		emoji = "🤝",
+		title = "Friend Knows Someone Hiring",
+		text = "A friend says their company is hiring and can put in a good word for you!",
+		question = "Do you take the referral?",
+		category = "career",
+		weight = 5,
+		minAge = 18,
+		maxAge = 50,
+		baseChance = 0.2,
+		cooldown = 8,
+		requiresNoJob = true,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Yes! I need a job!",
+				effects = { Happiness = 8 },
+				feedText = "Your friend vouched for you...",
+				onResolve = function(state)
+					-- Referrals have higher success rate
+					if math.random() < 0.85 then
+						local jobs = {
+							{ name = "Junior Developer", salary = 55000, category = "tech" },
+							{ name = "Marketing Coordinator", salary = 42000, category = "creative" },
+							{ name = "Sales Rep", salary = 38000, category = "sales" },
+							{ name = "Administrative Assistant", salary = 36000, category = "entry" },
+							{ name = "Account Manager", salary = 48000, category = "business" },
+						}
+						local job = jobs[math.random(1, #jobs)]
+						state.CurrentJob = {
+							id = "referral_" .. math.random(1000, 9999),
+							name = job.name,
+							company = "Friend's Company",
+							salary = job.salary,
+							category = job.category,
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.employed = true
+						state.Flags.has_job = true
+						state.Flags.got_job_through_friend = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🎉 Referral worked! You're now a %s earning $%d!", job.name, job.salary))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 The position was filled before your interview.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "No thanks, I'll find my own way",
+				effects = { Happiness = 2 },
+				feedText = "You want to succeed on your own merits.",
+			},
+		},
+	},
+	
+	{
+		id = "headhunted_better_job",
+		emoji = "🎯",
+		title = "Headhunted!",
+		text = "A recruiter says a competitor is interested in you. They're offering a better position with more pay!",
+		question = "Do you take the meeting?",
+		category = "career",
+		weight = 5,
+		minAge = 25,
+		maxAge = 55,
+		baseChance = 0.2,
+		cooldown = 10,
+		requiresJob = true, -- Need a job to be headhunted
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Take the meeting - hear them out",
+				effects = { Happiness = 5 },
+				feedText = "You met with the recruiter...",
+				onResolve = function(state)
+					if state.CurrentJob then
+						local currentSalary = state.CurrentJob.salary or 40000
+						local raise = math.random(15, 35) -- 15-35% raise
+						local newSalary = math.floor(currentSalary * (1 + raise/100))
+						
+						-- Random outcome
+						local outcome = math.random()
+						if outcome < 0.5 then
+							-- Great offer
+							state.CurrentJob.salary = newSalary
+							state.CurrentJob.company = "New Company"
+							state.CareerInfo = state.CareerInfo or {}
+							state.CareerInfo.jobChanges = (state.CareerInfo.jobChanges or 0) + 1
+							if state.AddFeed then
+								state:AddFeed(string.format("💼 You switched companies! New salary: $%d (+%d%%)!", newSalary, raise))
+							end
+						elseif outcome < 0.75 then
+							-- They match your expectations but you stay
+							local matchRaise = math.floor(currentSalary * 0.1)
+							state.CurrentJob.salary = currentSalary + matchRaise
+							if state.AddFeed then
+								state:AddFeed(string.format("💰 Your current employer counter-offered! +$%d raise to keep you!", matchRaise))
+							end
+						else
+							-- Didn't work out
+							if state.AddFeed then
+								state:AddFeed("🤷 The offer wasn't as good as promised. You stayed put.")
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'm loyal to my current employer",
+				effects = { Happiness = 3 },
+				setFlags = { loyal_employee = true },
+				feedText = "Loyalty matters to you. Your boss appreciates it.",
+			},
+		},
+	},
+	
+	{
+		id = "side_hustle_opportunity",
+		emoji = "💡",
+		title = "Side Hustle Opportunity",
+		text = "Someone offers you a chance to make extra money on the side. It's freelance work!",
+		question = "Do you take on the side gig?",
+		category = "career",
+		weight = 6,
+		minAge = 16,
+		maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Sure, I can use the extra cash!",
+				effects = { Happiness = 3, Health = -2 },
+				feedText = "You took on some side work...",
+				onResolve = function(state)
+					local earnings = math.random(200, 800)
+					state.Money = (state.Money or 0) + earnings
+					state.Flags = state.Flags or {}
+					state.Flags.side_hustler = true
+					if state.AddFeed then
+						state:AddFeed(string.format("💵 Side hustle paid $%d! Extra income is nice.", earnings))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'm too busy for extra work",
+				effects = { Happiness = 2, Health = 2 },
+				feedText = "Work-life balance is important too.",
+			},
+		},
+	},
+	
+	{
+		id = "dream_job_posting",
+		emoji = "⭐",
+		title = "Dream Job Posted!",
+		text = "You see a job posting that looks PERFECT for you. It's at your dream company!",
+		question = "Do you apply?",
+		category = "career",
+		weight = 4,
+		minAge = 22,
+		maxAge = 45,
+		baseChance = 0.15,
+		cooldown = 15,
+		oneTime = true,
+		blockedByFlags = { in_prison = true, got_dream_job = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Apply immediately!",
+				effects = { Happiness = 5 },
+				feedText = "You put your best foot forward...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local successChance = 0.3 + (smarts / 200) -- 30-80% based on smarts
+					
+					if math.random() < successChance then
+						local dreamJobs = {
+							{ name = "Game Developer", salary = 85000, company = "Dream Studios" },
+							{ name = "Product Manager", salary = 95000, company = "Tech Giant Inc" },
+							{ name = "Creative Director", salary = 110000, company = "Design Co" },
+							{ name = "Software Engineer", salary = 105000, company = "Innovation Labs" },
+							{ name = "UX Designer", salary = 82000, company = "Digital Agency" },
+						}
+						local job = dreamJobs[math.random(1, #dreamJobs)]
+						state.CurrentJob = {
+							id = "dream_" .. math.random(1000, 9999),
+							name = job.name,
+							company = job.company,
+							salary = job.salary,
+							category = "tech",
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.employed = true
+						state.Flags.has_job = true
+						state.Flags.got_dream_job = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🌟 DREAM JOB! You're now a %s at %s making $%d!!", job.name, job.company, job.salary))
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job_rejected = true
+						if state.AddFeed then
+							state:AddFeed("😢 They went with another candidate. Keep dreaming...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'm not qualified enough yet",
+				effects = { Happiness = -3 },
+				feedText = "Maybe one day you'll feel ready...",
+			},
+		},
+	},
 }
 
 return Random

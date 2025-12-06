@@ -914,7 +914,7 @@ Adult.events = {
 		id = "big_promotion",
 		title = "The Big Promotion",
 		emoji = "📈",
-		text = "You've been offered a major promotion!",
+		text = "You've been offered a major promotion at {{COMPANY}}!",
 		question = "What's the catch?",
 		minAge = 28, maxAge = 55,
 		baseChance = 0.3,
@@ -922,9 +922,62 @@ Adult.events = {
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
-			{ text = "More money, more responsibility", effects = { Money = 3000, Happiness = 5, Health = -3 }, setFlags = { senior_position = true }, feedText = "You're moving up! The pressure is on." },
-			{ text = "Requires relocating", effects = { Money = 2500, Happiness = -3 }, setFlags = { relocated = true }, feedText = "You moved for the job. Big change." },
-			{ text = "Would mean managing former peers", effects = { Money = 2000, Happiness = -2, Smarts = 3 }, feedText = "Awkward but you'll make it work." },
+			{ 
+				text = "Step up and lead!", 
+				effects = { Happiness = 5, Health = -3 }, 
+				setFlags = { senior_position = true, promoted = true }, 
+				feedText = "You're moving up! The pressure is on.",
+				-- CRITICAL FIX: Actually increase salary when promoted
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						local raiseAmount = math.floor(state.CurrentJob.salary * 0.25) -- 25% raise
+						state.CurrentJob.salary = state.CurrentJob.salary + raiseAmount
+						state.Money = (state.Money or 0) + 3000 -- Signing bonus
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
+						state.CareerInfo.raises = (state.CareerInfo.raises or 0) + 1
+						if state.AddFeed then
+							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary))
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Take it - requires relocating", 
+				effects = { Happiness = -3 }, 
+				setFlags = { relocated = true, promoted = true }, 
+				feedText = "You moved for the job. Big change.",
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						local raiseAmount = math.floor(state.CurrentJob.salary * 0.20) -- 20% raise
+						state.CurrentJob.salary = state.CurrentJob.salary + raiseAmount
+						state.Money = (state.Money or 0) + 2500 -- Relocation bonus
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
+						if state.AddFeed then
+							state:AddFeed(string.format("📈 Relocated for the promotion! New salary: $%d", state.CurrentJob.salary))
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Accept - managing former peers", 
+				effects = { Happiness = -2, Smarts = 3 }, 
+				feedText = "Awkward but you'll make it work.",
+				setFlags = { manager = true, promoted = true },
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						local raiseAmount = math.floor(state.CurrentJob.salary * 0.15) -- 15% raise
+						state.CurrentJob.salary = state.CurrentJob.salary + raiseAmount
+						state.Money = (state.Money or 0) + 2000
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
+						if state.AddFeed then
+							state:AddFeed(string.format("📈 Manager now! Salary: $%d. Time to lead.", state.CurrentJob.salary))
+						end
+					end
+				end,
+			},
 			{ text = "Turn it down to keep sanity", effects = { Happiness = 5, Health = 3 }, feedText = "You know your limits. Smart choice." },
 		},
 	},
