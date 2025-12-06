@@ -116,7 +116,8 @@ local events = {
 		id = "first_promotion_opportunity",
 		emoji = "📈",
 		title = "Your Boss is Offering You a Promotion",
-		text = "Your manager called you into her office. 'We want to promote you to Senior Associate. $65,000 salary. 15% raise! More responsibility, more visibility.' You're 26. This is HUGE. But Sarah (your friend/coworker) applied for the same role. She's been here 2 years longer. If you take it, she'll HATE you. Office dynamics will be weird. Do you take it? Or decline out of loyalty?",
+		-- CRITICAL FIX: Use dynamic age instead of hardcoded "26"
+		text = "Your manager called you into her office. 'We want to promote you to Senior Associate. Better salary and 15% raise! More responsibility, more visibility.' You're only {{AGE}}. This is HUGE. But Sarah (your friend/coworker) applied for the same role. She's been here 2 years longer. If you take it, she'll HATE you. Office dynamics will be weird. Do you take it? Or decline out of loyalty?",
 		question = "What do you do?",
 		category = "career",
 		weight = 8,
@@ -250,7 +251,8 @@ local events = {
 		id = "layoff_announcement",
 		emoji = "📉",
 		title = "Company Layoffs - Are You Safe?",
-		text = "CEO just sent an email: 'Due to market conditions, we're implementing workforce reductions. 15% of staff will be let go.' You're in a meeting room. Your manager looks nervous. HR is here. This is it. The meeting. 'We're sorry, but your position has been eliminated.' You're being LAID OFF. Severance: 2 months pay. You have 30 days. You're 38 with a mortgage and 2 kids. PANIC MODE.",
+		-- CRITICAL FIX: Dynamic text instead of hardcoded "38 with 2 kids"
+		text = "CEO just sent an email: 'Due to market conditions, we're implementing workforce reductions. 15% of staff will be let go.' You're in a meeting room. Your manager looks nervous. HR is here. This is it. The meeting. 'We're sorry, but your position has been eliminated.' You're being LAID OFF. Severance: 2 months pay. You have 30 days. {{FAMILY_STATUS}} PANIC MODE.",
 		question = "How do you react?",
 		category = "career",
 		weight = 5,
@@ -293,7 +295,8 @@ local events = {
 		id = "startup_offer",
 		emoji = "🚀",
 		title = "Startup Wants to Hire You - Equity Offer",
-		text = "You're making $95,000 at BigCorp. Stable. Boring. A startup just offered you $75,000 + 0.5% equity. 'We're going to IPO in 3 years. That equity could be worth $500,000!' But 90% of startups FAIL. You have kids. A mortgage. Stable income matters. But this could be life-changing money. Risk vs. reward. Boring stability vs. exciting uncertainty. What do you choose?",
+		-- CRITICAL FIX: Dynamic text instead of hardcoded family status
+		text = "You're making {{SALARY}} at {{COMPANY}}. Stable. Boring. A startup just offered you less salary + 0.5% equity. 'We're going to IPO in 3 years. That equity could be worth $500,000!' But 90% of startups FAIL. {{FAMILY_STATUS}} Stable income matters. But this could be life-changing money. Risk vs. reward. Boring stability vs. exciting uncertainty. What do you choose?",
 		question = "Do you take the startup job?",
 		category = "career",
 		weight = 4,
@@ -447,8 +450,9 @@ local events = {
 	{
 		id = "retirement_or_keep_working",
 		emoji = "🏖️",
-		title = "You're 65 - Time to Retire?",
-		text = "You're 65. Eligible for full retirement. Your 401(k) has $1.2 million. Social Security: $2,800/month. Your financial planner says 'You're SET.' But retiring means... what? Golf? Crossword puzzles? Watching TV? You've WORKED for 45 years. Work gives you PURPOSE. Identity. But your body is tired. Your spouse wants to travel. 'Retire already!' What do you do?",
+		title = "Time to Retire?",
+		-- CRITICAL FIX: Use dynamic age instead of hardcoded "65"
+		text = "You're {{AGE}}. Eligible for retirement. You have savings put away and could collect Social Security. Your financial planner says 'You're SET.' But retiring means... what? Golf? Crossword puzzles? Watching TV? You've WORKED for decades. Work gives you PURPOSE. Identity. But your body is tired. Time to travel? What do you do?",
 		question = "Do you retire or keep working?",
 		category = "career",
 		weight = 2,

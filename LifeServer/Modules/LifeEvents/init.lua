@@ -201,6 +201,9 @@ function LifeEvents.init()
 		-- NEW: Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
+		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
+		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
+		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
 	}
 	
 	local totalEvents = 0
@@ -594,6 +597,20 @@ local function canEventTrigger(event, state)
 		for _, blockEventId in ipairs(event.blockedByEvents) do
 			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
 				return false
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM ELIGIBILITY FUNCTION - For complex checks (like money thresholds)
+	-- CRITICAL FIX: This allows events to have custom logic beyond simple flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.eligibility and type(event.eligibility) == "function" then
+		local success, result = pcall(event.eligibility, state)
+		if success then
+			if result == false then
+				return false -- Custom eligibility check failed
 			end
 		end
 	end

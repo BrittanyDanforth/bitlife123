@@ -1169,6 +1169,12 @@ function OccupationScreen:selectCategory(categoryId)
 end
 
 function OccupationScreen:populateJobs()
+	-- CRITICAL FIX: Check if we're still on jobs tab to prevent glitches
+	-- when rapidly switching tabs
+	if self.currentTab ~= "jobs" then
+		return
+	end
+	
 	self:updateInfoBar()
 
 	-- Fetch career info from server (for performance, promotion progress, etc.)
@@ -2296,6 +2302,12 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 end
 
 function OccupationScreen:populateEducation()
+	-- CRITICAL FIX: Check if we're still on education tab to prevent glitches
+	-- when rapidly switching tabs
+	if self.currentTab ~= "education" then
+		return
+	end
+	
 	self:updateInfoBar()
 
 	-- Clear content

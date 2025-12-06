@@ -467,7 +467,8 @@ local events = {
 		id = "midlife_burnout",
 		emoji = "😫",
 		title = "Midlife Career Burnout",
-		text = "You're 42. You've been working nonstop for 20 YEARS. Same company. Same cubicle. Same commute. You're making $85,000 but you're DEAD INSIDE. You fantasize about quitting. Moving to Costa Rica. Opening a surf shop. But you have a mortgage. Kids in college. A 401(k) with $250,000. Walking away means losing everything. But staying means... this. Forever. What do you do?",
+		-- CRITICAL FIX: Use dynamic age and salary instead of hardcoded values
+		text = "You're {{AGE}}. You've been working nonstop for {{YEARS_AT_JOB}} years at {{COMPANY}}. Same cubicle. Same commute. You're making {{SALARY}} but you're DEAD INSIDE. You fantasize about quitting. Moving somewhere tropical. Opening a small business. {{FAMILY_STATUS}} Walking away means losing everything. But staying means... this. Forever. What do you do?",
 		question = "How do you handle this crisis?",
 		category = "milestone",
 		weight = 4,
@@ -510,7 +511,8 @@ local events = {
 		id = "retirement_decision",
 		emoji = "🏖️",
 		title = "Retirement: The Big Decision",
-		text = "You're 65. You've worked for 45 YEARS. Your boss just asked if you're retiring this year. Your 401(k) has $780,000. Social Security will pay $2,200/month. Your financial advisor says you're 'set for life.' But retiring means... what? No structure? No purpose? Golf and bingo? Is that IT? Or do you keep working? You're healthy. Sharp. Why stop now?",
+		-- CRITICAL FIX: Use dynamic age instead of hardcoded "65"
+		text = "You're {{AGE}}. You've worked for decades. Your boss at {{COMPANY}} just asked if you're retiring this year. You have savings and could collect Social Security. Your financial advisor says you're 'set for life.' But retiring means... what? No structure? No purpose? Golf and bingo? Is that IT? Or do you keep working? You're healthy. Sharp. Why stop now?",
 		question = "What do you do?",
 		category = "milestone",
 		weight = 3,

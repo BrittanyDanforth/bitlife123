@@ -485,38 +485,37 @@ function ActivitiesScreen:createUI()
 	infoLayout.Padding = UDim.new(0, 8)
 	infoLayout.Parent = self.infoBar
 
+	-- CRITICAL FIX: Match OccupationScreen styling for consistent look
+	-- Use proper sizing and don't use TextScaled (causes weird resizing)
 	self.ageChip = UI.createInfoChip(self.infoBar, {
 		name = "AgeChip", icon = "", text = "Age 18",
 		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 75
 	})
 	self.ageChip.icon.Text = ""
 	self.ageChip.text.Text = "Age 18"
-	self.ageChip.text.Position = UDim2.new(0, 6, 0, 0)
-	self.ageChip.text.Size = UDim2.new(1, -12, 1, 0)
+	self.ageChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.ageChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.ageChip.text.TextXAlignment = Enum.TextXAlignment.Center
-	self.ageChip.text.TextScaled = true
 
 	self.moneyChip = UI.createInfoChip(self.infoBar, {
-		name = "MoneyChip", icon = "", text = "$1,000",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 85
+		name = "MoneyChip", icon = "", text = "$0",
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 90
 	})
 	self.moneyChip.icon.Text = ""
-	self.moneyChip.text.Text = "$1,000"
-	self.moneyChip.text.Position = UDim2.new(0, 6, 0, 0)
-	self.moneyChip.text.Size = UDim2.new(1, -12, 1, 0)
+	self.moneyChip.text.Text = "$0"
+	self.moneyChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.moneyChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
-	self.moneyChip.text.TextScaled = true
 
 	self.statusChip = UI.createInfoChip(self.infoBar, {
 		name = "StatusChip", icon = "", text = "Adult",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 85
+		bgColor = C.AmberPale, textColor = C.AmberDark, order = 3, width = 90
 	})
 	self.statusChip.icon.Text = ""
 	self.statusChip.text.Text = "Adult"
-	self.statusChip.text.Position = UDim2.new(0, 4, 0, 0)
-	self.statusChip.text.Size = UDim2.new(1, -8, 1, 0)
+	self.statusChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.statusChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.statusChip.text.TextXAlignment = Enum.TextXAlignment.Center
-	self.statusChip.text.TextScaled = true
 
 	-- Tab bar (positioned relative to contentRoot)
 	self.tabBar = Instance.new("Frame")
@@ -1263,7 +1262,7 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 	nameLabel.Size = UDim2.new(1, -130, 0, 22)
 	nameLabel.Position = UDim2.new(0, 65, 0, 10)
 	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = F.SemiBold
+	nameLabel.Font = F.Medium or Enum.Font.GothamMedium
 	nameLabel.TextSize = 15
 	nameLabel.TextColor3 = C.Gray900
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left

@@ -1918,6 +1918,63 @@ function LifeBackend:replaceTextVariables(text, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add more dynamic placeholders for realistic events
+	-- These prevent hardcoded text like "You're 38 with 2 kids"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Money/salary replacement
+	local money = state.Money or 0
+	result = result:gsub("{{MONEY}}", formatMoney(money))
+	result = result:gsub("{{SAVINGS}}", formatMoney(money))
+	if state.CurrentJob then
+		result = result:gsub("{{SALARY}}", formatMoney(state.CurrentJob.salary or 0))
+	end
+	
+	-- Family status replacement
+	local familyParts = {}
+	if state.Flags and (state.Flags.has_child or state.Flags.parent) then
+		local childCount = state.ChildCount or 0
+		if childCount > 0 then
+			table.insert(familyParts, childCount == 1 and "a child" or (childCount .. " kids"))
+		else
+			table.insert(familyParts, "children")
+		end
+	end
+	if state.Flags and (state.Flags.married or state.Flags.has_partner) then
+		table.insert(familyParts, "a spouse")
+	end
+	if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+		table.insert(familyParts, "a mortgage")
+	end
+	
+	local familyStatus = ""
+	if #familyParts > 0 then
+		familyStatus = "You're " .. tostring(age) .. " with " .. table.concat(familyParts, " and ") .. "."
+	else
+		familyStatus = "You're " .. tostring(age) .. " years old."
+	end
+	result = result:gsub("{{FAMILY_STATUS}}", familyStatus)
+	
+	-- Life stage
+	local stage = "adult"
+	if age < 5 then stage = "toddler"
+	elseif age < 13 then stage = "child"
+	elseif age < 18 then stage = "teenager"
+	elseif age < 30 then stage = "young adult"
+	elseif age < 50 then stage = "adult"
+	elseif age < 65 then stage = "middle-aged"
+	else stage = "senior"
+	end
+	result = result:gsub("{{LIFE_STAGE}}", stage)
+	
+	-- Years at job
+	if state.CareerInfo and state.CareerInfo.yearsAtJob then
+		result = result:gsub("{{YEARS_AT_JOB}}", tostring(state.CareerInfo.yearsAtJob))
+	else
+		result = result:gsub("{{YEARS_AT_JOB}}", "several")
+	end
+	
 	return result
 end
 
@@ -3424,25 +3481,54 @@ function LifeBackend:enrollEducation(player, programId)
 		return { success = false, message = "You need to complete the prerequisite first." }
 	end
 
-	if (state.Money or 0) < program.cost then
-		return { success = false, message = "You can't afford tuition." }
-	end
-
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Allow student loans! Don't block enrollment for not having cash.
+	-- Just like real life - students take out loans for education
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local prevDebt = (state.EducationData and state.EducationData.Debt) or 0
-
-	self:addMoney(state, -program.cost)
+	local currentMoney = state.Money or 0
+	local tuitionCost = program.cost or 0
+	local loanNeeded = 0
+	
+	if currentMoney >= tuitionCost then
+		-- Player can pay in full
+		self:addMoney(state, -tuitionCost)
+	else
+		-- Player takes out student loans for the remainder
+		loanNeeded = tuitionCost - currentMoney
+		if currentMoney > 0 then
+			self:addMoney(state, -currentMoney) -- Pay what they can
+		end
+		-- Loan is added to debt (paid back later)
+	end
+	-- CRITICAL FIX: Track loan separately from total cost for proper messaging
+	local totalDebt = prevDebt + loanNeeded -- Only add the loan portion to debt, not what was paid
+	
 	state.EducationData = {
 		Status = "enrolled",
 		Level = programId,
 		Progress = 0,
 		Duration = program.duration,
 		Institution = program.name,
-		Debt = prevDebt + program.cost,
+		Debt = totalDebt,
+		LoanAmount = loanNeeded, -- Track how much was borrowed this enrollment
 	}
 	state.Career = state.Career or {}
 	state.Career.education = programId
+	
+	-- Set student loan flag if they took a loan
+	if loanNeeded > 0 then
+		state.Flags = state.Flags or {}
+		state.Flags.has_student_loans = true
+		state.Flags.student_loan_amount = (state.Flags.student_loan_amount or 0) + loanNeeded
+	end
 
-	local feed = string.format("You enrolled in %s.", program.name)
+	local feed
+	if loanNeeded > 0 then
+		feed = string.format("You enrolled in %s! Took out %s in student loans.", program.name, formatMoney(loanNeeded))
+	else
+		feed = string.format("You enrolled in %s! Paid tuition in full.", program.name)
+	end
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

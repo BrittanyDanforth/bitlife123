@@ -1454,9 +1454,19 @@ Random.events = {
 		minAge = 18, maxAge = 80,
 		baseChance = 0.8, -- High chance if triggered
 		cooldown = 5,
-		-- Only triggers for people with bum_life flag or very low money
+		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
+		-- This prevents rich players from getting eviction notices!
 		requiresFlags = { bum_life = true },
 		blockedByFlags = { homeless = true },
+		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- Only show eviction if player has less than $500
+			if money >= 500 then
+				return false, "Has enough money to pay rent"
+			end
+			return true
+		end,
 
 		choices = {
 			{ 
