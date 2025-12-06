@@ -244,12 +244,12 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- CRITICAL FIX: Balance bar redesigned - seamlessly integrated below header
-	-- Uses a clean horizontal layout with minimal padding, feels like part of the header
+	-- CRITICAL FIX: Balance bar properly positioned below header curve
+	-- Header has a curved bottom extension, so balance bar must start lower to avoid overlap
 	self.balanceBar = Instance.new("Frame")
 	self.balanceBar.Name = "BalanceBar"
-	self.balanceBar.Size = UDim2.new(1, 0, 0, 48) -- Full width, compact height
-	self.balanceBar.Position = UDim2.new(0, 0, 0, 100) -- Right below header (header is ~100px)
+	self.balanceBar.Size = UDim2.new(1, -24, 0, 52) -- Proper margins, good height
+	self.balanceBar.Position = UDim2.new(0, 12, 0, 130) -- Below header curve (header extends to ~120px)
 	self.balanceBar.BackgroundColor3 = C.TealDark -- Match header color for integration
 	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
