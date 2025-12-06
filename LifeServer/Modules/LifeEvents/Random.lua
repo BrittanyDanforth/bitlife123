@@ -1918,6 +1918,281 @@ Random.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MORE RANDOM LIFE EVENTS - Variety and spontaneity
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_compliment",
+		emoji = "😊",
+		title = "Unexpected Compliment",
+		text = "A stranger complimented you out of nowhere! They said you have great style.",
+		question = "How do you react?",
+		category = "random",
+		weight = 6,
+		minAge = 10,
+		maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 5,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Thank them warmly",
+				effects = { Happiness = 8, Looks = 1 },
+				feedText = "You smiled and thanked them. Made your day!",
+			},
+			{
+				index = 2,
+				text = "Get awkward about it",
+				effects = { Happiness = 3 },
+				feedText = "You mumbled thanks and walked away quickly.",
+			},
+		},
+	},
+	
+	{
+		id = "old_friend_reconnect",
+		emoji = "📱",
+		title = "Old Friend Reached Out",
+		text = "An old friend from years ago messaged you on social media! They want to catch up.",
+		question = "Do you reconnect?",
+		category = "random",
+		weight = 5,
+		minAge = 16,
+		maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 10,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Meet up with them!",
+				effects = { Happiness = 10 },
+				feedText = "You reconnected! It was like no time had passed.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.reconnected_friend = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Just text, too busy to meet",
+				effects = { Happiness = 5 },
+				feedText = "You caught up via text. Nice but not the same.",
+			},
+			{
+				index = 3,
+				text = "Ignore the message",
+				effects = { Happiness = -2 },
+				feedText = "You left them on read. Some people belong in the past.",
+			},
+		},
+	},
+	
+	{
+		id = "random_talent_discovery",
+		emoji = "🎯",
+		title = "Hidden Talent!",
+		text = "You tried something new and discovered you're surprisingly good at it!",
+		question = "What talent did you discover?",
+		category = "random",
+		weight = 4,
+		minAge = 10,
+		maxAge = 60,
+		baseChance = 0.15,
+		cooldown = 15,
+		oneTime = true,
+		
+		choices = {
+			{
+				index = 1,
+				text = "You can sing!",
+				effects = { Happiness = 12, Looks = 2 },
+				setFlags = { singing_talent = true },
+				feedText = "Your voice is amazing! People are impressed.",
+			},
+			{
+				index = 2,
+				text = "You're great at art!",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { artistic_talent = true },
+				feedText = "Your drawings are incredible! Hidden artist!",
+			},
+			{
+				index = 3,
+				text = "You're a natural at cooking!",
+				effects = { Happiness = 10, Health = 2 },
+				setFlags = { cooking_talent = true },
+				feedText = "Your food is amazing! Everyone wants your recipes.",
+			},
+			{
+				index = 4,
+				text = "You're surprisingly athletic!",
+				effects = { Happiness = 8, Health = 5 },
+				setFlags = { athletic_talent = true },
+				feedText = "You have natural athletic ability! Who knew?",
+			},
+		},
+	},
+	
+	{
+		id = "viral_moment",
+		emoji = "📱",
+		title = "You Went Viral!",
+		text = "Something you posted online went completely viral! Thousands of views!",
+		question = "What happened?",
+		category = "random",
+		weight = 3,
+		minAge = 13,
+		maxAge = 50,
+		baseChance = 0.1,
+		cooldown = 20,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Embrace the fame!",
+				effects = { Happiness = 15, Looks = 3 },
+				feedText = "You went viral! People recognize you now.",
+				setFlags = { internet_famous = true },
+				onResolve = function(state)
+					if math.random() < 0.3 then
+						local money = math.random(500, 2000)
+						state.Money = (state.Money or 0) + money
+						if state.AddFeed then
+							state:AddFeed(string.format("💵 Brand deal from your viral post: $%d!", money))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Delete it - too much attention",
+				effects = { Happiness = 3 },
+				feedText = "You deleted it. Privacy > fame.",
+			},
+		},
+	},
+	
+	{
+		id = "bad_day",
+		emoji = "😔",
+		title = "Just a Bad Day",
+		text = "Everything went wrong today. Spilled coffee, missed the bus, phone died...",
+		question = "How do you cope?",
+		category = "random",
+		weight = 6,
+		minAge = 10,
+		maxAge = 80,
+		baseChance = 0.2,
+		cooldown = 3,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Tomorrow will be better",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "You stayed positive. That's strength.",
+			},
+			{
+				index = 2,
+				text = "Comfort food and early bed",
+				effects = { Happiness = 5, Health = -1 },
+				feedText = "You treated yourself and called it a day.",
+			},
+			{
+				index = 3,
+				text = "Complain to everyone",
+				effects = { Happiness = 3 },
+				feedText = "Venting helped a little.",
+			},
+		},
+	},
+	
+	{
+		id = "amazing_day",
+		emoji = "🌟",
+		title = "Everything Went Right!",
+		text = "Today was perfect! Everything fell into place. Life is good!",
+		question = "How do you celebrate?",
+		category = "random",
+		weight = 5,
+		minAge = 10,
+		maxAge = 80,
+		baseChance = 0.15,
+		cooldown = 5,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Share the joy with others",
+				effects = { Happiness = 15 },
+				feedText = "Your good mood was contagious!",
+			},
+			{
+				index = 2,
+				text = "Treat yourself to something nice",
+				effects = { Happiness = 12, Money = -100 },
+				feedText = "You deserve it!",
+			},
+			{
+				index = 3,
+				text = "Be grateful and humble",
+				effects = { Happiness = 10, Smarts = 2 },
+				feedText = "You appreciated the moment.",
+			},
+		},
+	},
+	
+	{
+		id = "neighbor_drama",
+		emoji = "🏠",
+		title = "Neighbor Issues",
+		text = "Your neighbor is being really annoying. Loud music, messy yard, or just rude.",
+		question = "How do you handle it?",
+		category = "random",
+		weight = 5,
+		minAge = 18,
+		maxAge = 80,
+		baseChance = 0.2,
+		cooldown = 8,
+		blockedByFlags = { homeless = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Talk to them directly and politely",
+				effects = { Happiness = 5, Smarts = 3 },
+				feedText = "You had a reasonable conversation...",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🤝 They apologized! Problem solved.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.bad_neighbor = true
+						if state.AddFeed then
+							state:AddFeed("😤 They didn't care. Great...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "File a complaint",
+				effects = { Happiness = 2 },
+				feedText = "You reported them officially.",
+			},
+			{
+				index = 3,
+				text = "Just deal with it",
+				effects = { Happiness = -3 },
+				feedText = "You're being the bigger person. Sort of.",
+			},
+		},
+	},
 }
 
 return Random

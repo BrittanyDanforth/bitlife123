@@ -24,7 +24,8 @@ local events = {
 		id = "first_job_interview",
 		emoji = "💼",
 		title = "Your First Real Job Interview",
-		text = "You're sitting in a lobby wearing a suit you borrowed from your dad. It smells like mothballs. The receptionist called your name. 'Mr./Ms. [Your Name]? They're ready for you.' Your palms are SWEATING. This is your first interview for a REAL job. Not retail. Not food service. A career. $42,000/year. Benefits. 401(k). This could change your life. Don't fuck it up. Deep breath. Here we go.",
+		-- CRITICAL FIX: Removed hardcoded salary, made dynamic
+		text = "You're sitting in a lobby wearing nice clothes. The receptionist called your name. 'Mr./Ms. {{NAME}}? They're ready for you.' Your palms are SWEATING. This is your first interview for a REAL job. Not retail. Not food service. A career with benefits and 401(k). This could change your life. Deep breath. Here we go.",
 		question = "What's your interview strategy?",
 		category = "career",
 		weight = 9,
@@ -36,14 +37,26 @@ local events = {
 				index = 1,
 				text = "Be yourself - authentic and honest",
 				effects = { Happiness = 7, Smarts = 3 },
-				feedText = "You were genuine. Told real stories. Admitted what you don't know. The interviewer smiled. 'Refreshing.' OFFER LETTER INCOMING! You got the job! $42,000! You're crying in your car!",
+				feedText = "You were genuine and authentic. The interviewer loved it. OFFER LETTER INCOMING!",
 				onResolve = function(state)
-					if state.AddFeed then
-						state:AddFeed("Congratulations! You got your first real job! Salary: $42,000. Start date: 2 weeks. Your career begins NOW!")
+					-- CRITICAL FIX: Set dynamic salary instead of hardcoded
+					local salary = 38000 + math.random(0, 10) * 1000 -- 38k-48k
+					if state.SetCareer then
+						state:SetCareer({
+							id = "entry_career",
+							name = "Associate",
+							company = "Local Company",
+							salary = salary,
+							category = "entry",
+						})
 					end
-					if state.SetFlag then
-						state:SetFlag("got_first_real_job", true)
-						state:SetFlag("career_started", true)
+					state.Flags = state.Flags or {}
+					state.Flags.got_first_real_job = true
+					state.Flags.career_started = true
+					state.Flags.employed = true
+					state.Flags.has_job = true
+					if state.AddFeed then
+						state:AddFeed(string.format("🎉 You got the job! Salary: $%d. Your career begins NOW!", salary))
 					end
 				end,
 			},
@@ -165,7 +178,8 @@ local events = {
 		id = "raise_negotiation",
 		emoji = "💰",
 		title = "Time to Negotiate a Raise",
-		text = "You've been in this role for 3 years. Same salary: $58,000. Your performance reviews are 'Exceeds Expectations.' You do the work of 2 people. But your company has a 'budget freeze.' Your boss says 'Maybe next year.' You found out new hires make $62,000 for YOUR SAME JOB. You're PISSED. Market rate for your role: $72,000. Time to fight for yourself. Or leave.",
+		-- CRITICAL FIX: Dynamic values instead of hardcoded salaries
+		text = "You've been at {{COMPANY}} for {{YEARS_AT_JOB}} years making {{SALARY}}. Your performance reviews are 'Exceeds Expectations.' You do the work of 2 people. But your company has a 'budget freeze.' Your boss says 'Maybe next year.' You found out new hires make MORE for your SAME JOB. You're PISSED. Time to fight for yourself. Or leave.",
 		question = "How do you approach this?",
 		category = "career",
 		weight = 7,
@@ -175,10 +189,20 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Demand a raise - $72K or you walk",
-				effects = { Happiness = 8, Money = 14000, Smarts = 4 },
+				text = "Demand a raise or you walk",
+				effects = { Happiness = 8, Smarts = 4 },
 				setFlags = { good_negotiator = true, confident = true },
-				feedText = "You came prepared. Market data. Performance metrics. 'I need $72K.' Your boss countered at $68K. You accepted. $10K raise! You advocated for yourself! WINS!",
+				feedText = "You came prepared with market data...",
+				onResolve = function(state)
+					if state.CurrentJob and state.CurrentJob.salary then
+						local raise = math.floor(state.CurrentJob.salary * 0.18) -- 18% raise
+						state.CurrentJob.salary = state.CurrentJob.salary + raise
+						state.Money = (state.Money or 0) + raise
+						if state.AddFeed then
+							state:AddFeed(string.format("💰 You got a $%d raise! Now making $%d!", raise, state.CurrentJob.salary))
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -357,8 +381,8 @@ local events = {
 		id = "executive_promotion",
 		emoji = "👔",
 		title = "C-Suite Promotion Offer",
-		-- CRITICAL FIX: Dynamic text based on salary to avoid offering less than current
-		text = "The CEO just offered you an executive position. Corner office. Company car. Executive perks. But: 60-hour weeks. Constant travel. Board meetings. High stress. Your family already barely sees you. Your spouse said, 'If you take this, our marriage is over.' Your 12-year-old daughter said, 'You're never home.' The opportunity is incredible. The cost is your family. What do you choose?",
+		-- CRITICAL FIX: Dynamic text, requires family to trigger family-conflict version
+		text = "The CEO at {{COMPANY}} just offered you an executive position. Corner office. Company car. Executive perks. But: 60-hour weeks. Constant travel. Board meetings. High stress. {{FAMILY_STATUS}} The opportunity is incredible but the cost is high. What do you choose?",
 		question = "Do you take the promotion?",
 		category = "career",
 		weight = 3,
@@ -366,40 +390,55 @@ local events = {
 		maxAge = 60,
 		requiresJob = true,
 		oneTime = true,
-		-- CRITICAL FIX: Only show if it would be a meaningful promotion (at least 30% raise)
-		requiresStats = {
-			-- This is a check that will be evaluated dynamically
-		},
-		-- Custom condition: Don't offer if player already makes over $200K (they're already executive level)
 		blockedByFlags = { executive = true },
 		choices = {
 			{
 				index = 1,
 				text = "TAKE IT - this is your career peak!",
 				effects = { Happiness = 8, Money = 50000, Health = -8 },
-				setFlags = { executive = true, workaholic = true, family_sacrificed = true },
-				feedText = "You accepted! Corner office! Your name on the door! Your spouse filed for divorce 8 months later. Your kids don't call. You're successful... and alone. Was it worth it?",
+				setFlags = { executive = true, workaholic = true },
+				feedText = "You accepted! Corner office! Your name on the door!",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 100000) * 1.6)
+						state.CurrentJob.name = "Executive"
+					end
+					if state.AddFeed then
+						state:AddFeed("👔 You're now an executive! Big responsibilities, bigger salary.")
+					end
+				end,
 			},
 			{
 				index = 2,
-				text = "Decline - family comes first",
+				text = "Decline - work-life balance matters",
 				effects = { Happiness = 9, Health = 5 },
-				setFlags = { family_first = true, turned_down_executive = true },
-				feedText = "You said no. 'My family matters more.' The CEO was shocked. But your spouse CRIED with relief. Your daughter hugged you. You chose right. Career isn't everything.",
+				setFlags = { work_life_balance = true, turned_down_executive = true },
+				feedText = "You said no. Balance matters more than titles.",
 			},
 			{
 				index = 3,
 				text = "Negotiate for work-life balance terms",
 				effects = { Happiness = 10, Money = 40000, Smarts = 6 },
 				setFlags = { executive = true, balanced = true, negotiated_lifestyle = true },
-				feedText = "You said yes BUT: no travel Fridays, remote Mondays, max 50 hours/week. They AGREED! Big raise + work-life balance! You can have BOTH! Negotiation mastery!",
+				feedText = "You said yes BUT with conditions. They agreed! Big raise + balance!",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 100000) * 1.4)
+						state.CurrentJob.name = "Executive (Flexible)"
+					end
+				end,
 			},
 			{
 				index = 4,
 				text = "Quit and start your own company",
 				effects = { Happiness = 12, Money = -50000 },
 				setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
-				feedText = "You quit and started your own consulting firm! Risky but FREE! You control your time. Your family's happy. You're building something YOURS!",
+				feedText = "You quit and started your own business! Risky but FREE!",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.entrepreneur = true
+				end,
 			},
 		},
 	},
