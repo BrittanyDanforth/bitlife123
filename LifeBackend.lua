@@ -637,11 +637,11 @@ local JobCatalogList = {
 		minStats = { Smarts = 70 }, difficulty = 9, description = "Top military leadership" },
 
 	-- CRIMINAL CAREERS
-	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
-	{ id = "drug_dealer", name = "Drug Dealer", company = "The Organization", emoji = "💊", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
-	{ id = "hitman", name = "Hitman", company = "Unknown", emoji = "🔫", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true },
-	{ id = "gang_member", name = "Gang Member", company = "The Gang", emoji = "🔪", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
-	{ id = "gang_lieutenant", name = "Gang Lieutenant", company = "The Gang", emoji = "🔪", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true },
+	{ id = "illegal_dealer_street", name = "Street Hustler", company = "The Streets", emoji = "💰", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "illegal_dealer", name = "Illegal Dealer", company = "The Organization", emoji = "💰", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
+	{ id = "enforcer", name = "Enforcer", company = "Unknown", emoji = "💪", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true },
+	{ id = "crew_member", name = "Crew Member", company = "The Crew", emoji = "🤝", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "crew_leader", name = "Crew Leader", company = "The Crew", emoji = "🔥", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true },
 	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true },
 	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true },
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
@@ -723,7 +723,7 @@ local CareerTracks = {
 	creative = { "graphic_designer_jr", "graphic_designer", "art_director", "actor", "movie_star" },
 	finance = { "bank_teller", "accountant_jr", "financial_analyst", "investment_banker", "hedge_fund_manager", "cfo" },
 	government = { "postal_worker", "city_council", "mayor", "governor", "senator", "president" },
-	criminal = { "drug_dealer_street", "drug_dealer", "gang_lieutenant", "crime_boss" },
+	criminal = { "illegal_dealer_street", "illegal_dealer", "crew_leader", "crime_boss" },
 	sports = { "gym_instructor", "minor_league", "professional_athlete", "star_athlete", "head_coach" },
 	-- NEW: Racing career track - from go-karts to legend
 	racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend", "racing_team_owner" },
@@ -778,7 +778,7 @@ local PrisonActions = {
 	},
 	prison_workout = { stats = { Health = 4, Looks = 1 }, feed = "worked out in the yard" },
 	prison_study = { stats = { Smarts = 4 }, feed = "studied for a GED" },
-	prison_gang = { stats = { Happiness = 2, Health = -3 }, feed = "aligned with a gang", flag = "gang_member" },
+	prison_crew = { stats = { Happiness = 2, Health = -3 }, feed = "aligned with a crew", flag = "crew_member" },
 	prison_riot = { stats = { Health = -10 }, feed = "started a riot", risk = 70 },
 	prison_snitch = { stats = { Health = -5 }, feed = "snitched on someone", risk = 50 },
 	prison_appeal = { moneyCost = 5000, feed = "filed an appeal", jailReduction = 1 },
@@ -859,7 +859,7 @@ local StoryPaths = {
 		color = C and C.Red or Color3.fromRGB(239, 68, 68),
 		minAge = 16,
 		requirements = {},
-		stages = { "hustler", "dealer", "lieutenant", "underboss", "boss" },
+		stages = { "hustler", "operator", "lieutenant", "underboss", "boss" },
 	},
 	celebrity = {
 		id = "celebrity",

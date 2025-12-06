@@ -333,7 +333,7 @@ function Minigames:createDebateGame()
 		{
 			q = "A citizen asks: How will you make healthcare more affordable?",
 			answers = {
-				{ text = "Expand coverage and negotiate drug prices", correct = true },
+				{ text = "Expand coverage and negotiate better prices", correct = true },
 				{ text = "Eliminate all healthcare programs", correct = false },
 				{ text = "Healthcare is not a government issue", correct = false },
 				{ text = "I'll think about it later", correct = false },

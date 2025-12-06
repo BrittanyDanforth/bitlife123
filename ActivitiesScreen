@@ -62,7 +62,7 @@ local PrisonActivities = {
 	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true },
 	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0 },
 	{ id = "prison_study", name = "Get GED", emoji = "📚", effect = "+Smarts", minAge = 0 },
-	{ id = "prison_gang", name = "Join Prison Gang", emoji = "⛓️", effect = "+Respect -Health", minAge = 0 },
+	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+Respect -Health", minAge = 0 },
 	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85 },
 	{ id = "prison_snitch", name = "Snitch", emoji = "🐀", effect = "-Sentence +Risk", minAge = 0 },
 	{ id = "prison_appeal", name = "Appeal Sentence", emoji = "⚖️", effect = "Legal Help", minAge = 0, cost = 5000 },
@@ -285,8 +285,8 @@ function ActivitiesScreen:getCrimeRiskModifier(crimeId)
 	if flags.criminal_tendencies then riskModifier = riskModifier - 5 end
 	if flags.petty_thief or flags.shoplifter then riskModifier = riskModifier - 5 end
 	if flags.car_thief or flags.burglar then riskModifier = riskModifier - 8 end
-	if flags.gang_member then riskModifier = riskModifier - 10 end
-	if flags.underboss or flags.crime_boss then riskModifier = riskModifier - 15 end
+	if flags.crew_member then riskModifier = riskModifier - 10 end
+	if flags.underboss or flags.crime_boss or flags.crew_leader then riskModifier = riskModifier - 15 end
 
 	-- Low happiness increases risk
 	if happiness <= 20 then riskModifier = riskModifier + 10

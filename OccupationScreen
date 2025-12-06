@@ -44,7 +44,7 @@ local JobCategories = {
 	{ id = "science", name = "Science", emoji = "🔬" },
 	{ id = "sports", name = "Sports", emoji = "🏆" },
 	{ id = "military", name = "Military", emoji = "🎖️" },
-	{ id = "criminal", name = "Criminal", emoji = "💊" },
+	{ id = "criminal", name = "Criminal", emoji = "💰" },
 	-- NEW CAREER PATHS (v2.0)
 	{ id = "racing", name = "Racing", emoji = "🏎️" },
 	{ id = "hacker", name = "Hacker/Cyber", emoji = "💻🔓" },
@@ -264,11 +264,11 @@ local Jobs = {
 	-- ════════════════════════════════════════════════════════════════
 	-- CRIMINAL CAREERS (Illegal - High Risk/Reward) - Added difficulty
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
-	{ id = "drug_dealer", name = "Drug Dealer", company = "The Organization", emoji = "💊", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
-	{ id = "hitman", name = "Hitman", company = "Unknown", emoji = "🔫", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true, difficulty = 8, minStats = { Health = 60 } },
-	{ id = "gang_member", name = "Gang Member", company = "The Gang", emoji = "🔪", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
-	{ id = "gang_lieutenant", name = "Gang Lieutenant", company = "The Gang", emoji = "🔪", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true, difficulty = 6 },
+	{ id = "illegal_dealer_street", name = "Street Hustler", company = "The Streets", emoji = "💰", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
+	{ id = "illegal_dealer", name = "Illegal Dealer", company = "The Organization", emoji = "💰", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
+	{ id = "enforcer", name = "Enforcer", company = "Unknown", emoji = "💪", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true, difficulty = 8, minStats = { Health = 60 } },
+	{ id = "crew_member", name = "Crew Member", company = "The Crew", emoji = "🤝", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
+	{ id = "crew_leader", name = "Crew Leader", company = "The Crew", emoji = "🔥", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true, difficulty = 6 },
 	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true, difficulty = 9, minStats = { Smarts = 60 } },
 	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 4 },
