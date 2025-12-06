@@ -2597,16 +2597,12 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	end
 
 	-- CRITICAL FIX: Support for jailIncrease (for failed escape attempts)
+	-- NOTE: Client handles showing the popup, so we DON'T send showPopup here
+	-- to avoid DOUBLE POPUP bug
 	if action.jailIncrease then
 		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
 		local message = string.format("Your escape failed. %d years added to your sentence.", action.jailIncrease)
-		self:pushState(player, message, {
-			showPopup = true,
-			emoji = "🚔",
-			title = "Caught!",
-			body = message,
-			wasSuccess = false,
-		})
+		self:pushState(player, message)
 		return { success = false, message = message }
 	end
 

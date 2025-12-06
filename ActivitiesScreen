@@ -1999,19 +1999,26 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 
 	-- The server handles the actual escape logic, but we pass the minigame result
 	if escaped then
-		-- Call server escape action
+		-- CRITICAL FIX: Don't show result popup here!
+		-- The server will send an event popup with escape choices.
+		-- Showing a popup here causes DOUBLE POPUP bug.
 		local result = DoPrisonAction:InvokeServer("prison_escape")
 		if result then
 			log("Server response:", result.success, result.message)
-			self:showResult(result.success, result.message, result.success and "FREE!" or "Caught!")
+			-- Server handles the popup via presentEvent - don't show duplicate!
 		else
 			self:showResult(false, "Server error", "Error")
 		end
 	else
 		-- Player failed minigame - got caught
-		self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
-		-- Server will add time when we call the action with failure
-		DoPrisonAction:InvokeServer("prison_escape_failed")
+		-- Call server first to add time, THEN show the result
+		local result = DoPrisonAction:InvokeServer("prison_escape_failed")
+		if result then
+			log("Server response for failed escape:", result.success, result.message)
+			self:showResult(false, result.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
+		else
+			self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
+		end
 	end
 end
 
