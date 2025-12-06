@@ -471,6 +471,29 @@ function LifeState:ClearFlag(flagName)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: RecordEvent function for event tracking
+-- Called by EventEngine to track which events have occurred
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:RecordEvent(eventId, data)
+	if not eventId then return self end
+	
+	self.EventHistory = self.EventHistory or {}
+	self.EventHistory.completed = self.EventHistory.completed or {}
+	self.EventHistory.occurrences = self.EventHistory.occurrences or {}
+	
+	self.EventHistory.completed[eventId] = true
+	self.EventHistory.occurrences[eventId] = (self.EventHistory.occurrences[eventId] or 0) + 1
+	
+	if data then
+		self.EventHistory.lastChoice = self.EventHistory.lastChoice or {}
+		self.EventHistory.lastChoice[eventId] = data.choice
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- EDUCATION DISPLAY NAME FORMATTER
 -- Converts internal IDs (high_school) to display names (High School Diploma)
 -- ════════════════════════════════════════════════════════════════════════════

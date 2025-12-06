@@ -15,12 +15,13 @@ local events = {
 		title = "Racing Talent Discovered",
 		text = "At a go-kart track, a scout notices your exceptional reflexes and racing instincts.",
 		category = "career_racing",
-		weight = 8,
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.35, -- CRITICAL FIX: More likely to trigger
 		minAge = 10,
-		maxAge = 16,
+		maxAge = 18, -- CRITICAL FIX: Extended age range
 		oneTime = true,
-		requiresNoJob = true,
-		requiresStats = { Health = 50 },
+		-- REMOVED: requiresNoJob (too restrictive - teens can discover racing while in school)
+		requiresStats = { Health = 40 }, -- CRITICAL FIX: Lower threshold
 		blockedByFlags = { discovered_racing = true },
 		choices = {
 			{

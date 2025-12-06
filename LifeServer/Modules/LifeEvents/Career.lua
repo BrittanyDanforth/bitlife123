@@ -1450,8 +1450,9 @@ Career.events = {
 -- CREATIVE JOB SPECIFIC EVENTS
 -- ══════════════════════════════════════════════════════════════════════════════
 {
-	id = "creative_block",
-	title = "Creative Block",
+	-- CRITICAL FIX: Renamed to avoid duplicate ID with earlier creative_block event
+	id = "creative_deadline_crisis",
+	title = "Deadline Creative Block",
 	emoji = "🎨",
 	text = "You're staring at a blank canvas/screen/page. Nothing. The deadline is TOMORROW. Your creative well has run completely dry.",
 	question = "How do you overcome it?",

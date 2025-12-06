@@ -19,11 +19,12 @@ local events = {
 		title = "Natural Hacker",
 		text = "While messing around on the computer, you discover you have a talent for finding security flaws.",
 		category = "career_hacker",
-		weight = 6,
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.4, -- CRITICAL FIX: More likely to trigger
 		minAge = 12,
-		maxAge = 20,
+		maxAge = 22,
 		oneTime = true,
-		requiresStats = { Smarts = 55 },
+		requiresStats = { Smarts = 45 }, -- CRITICAL FIX: Lower threshold for accessibility
 		blockedByFlags = { hacker_discovered = true },
 		choices = {
 			{

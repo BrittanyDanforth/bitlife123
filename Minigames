@@ -1131,45 +1131,49 @@ function Minigames:createQuickTimeGame()
 	self.qteOverlay.ZIndex = 200
 	self.qteOverlay.Parent = self.screenGui
 
+	-- CRITICAL UI FIX: Larger card for better spacing
 	self.qteCard = Instance.new("Frame")
-	self.qteCard.Size = UDim2.new(0.9, 0, 0, 350)
+	self.qteCard.Size = UDim2.new(0.92, 0, 0, 420)
 	self.qteCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.qteCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.qteCard.BackgroundColor3 = C.Gray800
 	self.qteCard.ZIndex = 201
 	self.qteCard.Parent = self.qteOverlay
 	corner(self.qteCard, 24)
+	pad(self.qteCard, 16, 16, 16, 16)
 
 	self.qteTitle = Instance.new("TextLabel")
-	self.qteTitle.Size = UDim2.new(1, 0, 0, 60)
+	self.qteTitle.Size = UDim2.new(1, 0, 0, 50)
 	self.qteTitle.BackgroundTransparency = 1
 	self.qteTitle.Font = F.Title
-	self.qteTitle.TextSize = 24
+	self.qteTitle.TextSize = 26
 	self.qteTitle.TextColor3 = C.White
 	self.qteTitle.Text = "⚡ QUICK TIME EVENT"
 	self.qteTitle.ZIndex = 202
 	self.qteTitle.Parent = self.qteCard
 
 	self.qteInstructions = Instance.new("TextLabel")
-	self.qteInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.qteInstructions.Size = UDim2.new(0.9, 0, 0, 50)
 	self.qteInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteInstructions.Position = UDim2.new(0.5, 0, 0, 60)
+	self.qteInstructions.Position = UDim2.new(0.5, 0, 0, 55)
 	self.qteInstructions.BackgroundTransparency = 1
 	self.qteInstructions.Font = F.Body
-	self.qteInstructions.TextSize = 16
+	self.qteInstructions.TextSize = 18
 	self.qteInstructions.TextColor3 = C.Gray300
+	self.qteInstructions.TextWrapped = true
 	self.qteInstructions.Text = "TAP when the bar is in the green zone!"
 	self.qteInstructions.ZIndex = 202
 	self.qteInstructions.Parent = self.qteCard
 
+	-- CRITICAL UI FIX: Larger bar for easier visibility
 	self.qteBarBg = Instance.new("Frame")
-	self.qteBarBg.Size = UDim2.new(0.85, 0, 0, 60)
+	self.qteBarBg.Size = UDim2.new(0.9, 0, 0, 70)
 	self.qteBarBg.AnchorPoint = Vector2.new(0.5, 0)
 	self.qteBarBg.Position = UDim2.new(0.5, 0, 0, 120)
 	self.qteBarBg.BackgroundColor3 = C.Gray600
 	self.qteBarBg.ZIndex = 202
 	self.qteBarBg.Parent = self.qteCard
-	corner(self.qteBarBg, 12)
+	corner(self.qteBarBg, 14)
 
 	self.qteGreenZone = Instance.new("Frame")
 	self.qteGreenZone.Size = UDim2.new(0.2, 0, 1, 0)
@@ -1178,10 +1182,10 @@ function Minigames:createQuickTimeGame()
 	self.qteGreenZone.BackgroundTransparency = 0.3
 	self.qteGreenZone.ZIndex = 203
 	self.qteGreenZone.Parent = self.qteBarBg
-	corner(self.qteGreenZone, 8)
+	corner(self.qteGreenZone, 10)
 
 	self.qteIndicator = Instance.new("Frame")
-	self.qteIndicator.Size = UDim2.new(0.05, 0, 1.2, 0)
+	self.qteIndicator.Size = UDim2.new(0.04, 0, 1.2, 0)
 	self.qteIndicator.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.qteIndicator.Position = UDim2.new(0, 0, 0.5, 0)
 	self.qteIndicator.BackgroundColor3 = C.White
@@ -1189,27 +1193,28 @@ function Minigames:createQuickTimeGame()
 	self.qteIndicator.Parent = self.qteBarBg
 	corner(self.qteIndicator, 4)
 
+	-- CRITICAL UI FIX: Larger tap button
 	self.qteTapBtn = Instance.new("TextButton")
-	self.qteTapBtn.Size = UDim2.new(0.7, 0, 0, 80)
+	self.qteTapBtn.Size = UDim2.new(0.8, 0, 0, 100)
 	self.qteTapBtn.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 200)
+	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 210)
 	self.qteTapBtn.BackgroundColor3 = C.Blue
 	self.qteTapBtn.Font = F.Title
-	self.qteTapBtn.TextSize = 28
+	self.qteTapBtn.TextSize = 32
 	self.qteTapBtn.TextColor3 = C.White
-	self.qteTapBtn.Text = "TAP!"
+	self.qteTapBtn.Text = "🎯 TAP!"
 	self.qteTapBtn.AutoButtonColor = false
 	self.qteTapBtn.ZIndex = 202
 	self.qteTapBtn.Parent = self.qteCard
-	corner(self.qteTapBtn, 16)
+	corner(self.qteTapBtn, 20)
 
 	self.qteResult = Instance.new("TextLabel")
-	self.qteResult.Size = UDim2.new(1, 0, 0, 40)
+	self.qteResult.Size = UDim2.new(1, 0, 0, 50)
 	self.qteResult.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteResult.Position = UDim2.new(0.5, 0, 0, 295)
+	self.qteResult.Position = UDim2.new(0.5, 0, 0, 330)
 	self.qteResult.BackgroundTransparency = 1
 	self.qteResult.Font = F.Title
-	self.qteResult.TextSize = 20
+	self.qteResult.TextSize = 24
 	self.qteResult.TextColor3 = C.White
 	self.qteResult.Text = ""
 	self.qteResult.ZIndex = 202

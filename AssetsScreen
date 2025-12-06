@@ -244,57 +244,83 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- CRITICAL FIX: Balance bar - reduced size, better integrated into UI
+	-- CRITICAL FIX: Balance bar - properly sized container with centered content
 	self.balanceBar = Instance.new("Frame")
-	self.balanceBar.Size = UDim2.new(1, -16, 0, 56)
-	self.balanceBar.Position = UDim2.new(0, 8, 0, 116)
+	self.balanceBar.Name = "BalanceBar"
+	self.balanceBar.Size = UDim2.new(1, -24, 0, 48)
+	self.balanceBar.Position = UDim2.new(0, 12, 0, 118)
 	self.balanceBar.BackgroundColor3 = C.White
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 14)
-	UI.stroke(self.balanceBar, 1, 0.9, C.Gray200)
+	UI.corner(self.balanceBar, 12)
+	UI.stroke(self.balanceBar, 1, 0.85, C.Gray200)
+	
+	-- Use UIListLayout for proper horizontal alignment
+	local balanceLayout = Instance.new("UIListLayout")
+	balanceLayout.FillDirection = Enum.FillDirection.Horizontal
+	balanceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	balanceLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	balanceLayout.Padding = UDim.new(0, 8)
+	balanceLayout.Parent = self.balanceBar
+	
+	-- Padding inside balance bar
+	local balancePad = Instance.new("UIPadding")
+	balancePad.PaddingLeft = UDim.new(0, 12)
+	balancePad.PaddingRight = UDim.new(0, 12)
+	balancePad.Parent = self.balanceBar
 
-	-- Balance icon - smaller
+	-- Balance icon - fits within bar
 	local balanceIcon = Instance.new("TextLabel")
-	balanceIcon.Size = UDim2.new(0, 40, 0, 40)
-	balanceIcon.Position = UDim2.new(0, 12, 0.5, -20)
+	balanceIcon.Name = "Icon"
+	balanceIcon.Size = UDim2.new(0, 32, 0, 32)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 26
+	balanceIcon.TextSize = 24
 	balanceIcon.Text = "💰"
 	balanceIcon.ZIndex = 85
+	balanceIcon.LayoutOrder = 1
 	balanceIcon.Parent = self.balanceBar
 
-	-- Balance text - smaller and better positioned
+	-- Balance text container (label + value stacked)
+	local balanceTextContainer = Instance.new("Frame")
+	balanceTextContainer.Name = "TextContainer"
+	balanceTextContainer.Size = UDim2.new(0, 180, 1, 0)
+	balanceTextContainer.BackgroundTransparency = 1
+	balanceTextContainer.ZIndex = 85
+	balanceTextContainer.LayoutOrder = 2
+	balanceTextContainer.Parent = self.balanceBar
+	
 	local balanceLabel = Instance.new("TextLabel")
-	balanceLabel.Size = UDim2.new(0.4, 0, 0, 16)
-	balanceLabel.Position = UDim2.new(0, 56, 0, 10)
+	balanceLabel.Name = "Label"
+	balanceLabel.Size = UDim2.new(1, 0, 0, 14)
+	balanceLabel.Position = UDim2.new(0, 0, 0, 6)
 	balanceLabel.BackgroundTransparency = 1
 	balanceLabel.Font = F.Body
-	balanceLabel.TextSize = 11
-	balanceLabel.TextColor3 = C.Gray500
+	balanceLabel.TextSize = 10
+	balanceLabel.TextColor3 = C.Gray400
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	balanceLabel.Text = "Your Balance"
-	balanceLabel.ZIndex = 85
-	balanceLabel.Parent = self.balanceBar
+	balanceLabel.ZIndex = 86
+	balanceLabel.Parent = balanceTextContainer
 
 	self.balanceValue = Instance.new("TextLabel")
-	self.balanceValue.Size = UDim2.new(0.5, 0, 0, 24)
-	self.balanceValue.Position = UDim2.new(0, 56, 0, 26)
+	self.balanceValue.Name = "Value"
+	self.balanceValue.Size = UDim2.new(1, 0, 0, 20)
+	self.balanceValue.Position = UDim2.new(0, 0, 0, 22)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 18
+	self.balanceValue.TextSize = 16
 	self.balanceValue.TextColor3 = C.GreenDark
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
-	self.balanceValue.ZIndex = 85
-	self.balanceValue.Parent = self.balanceBar
+	self.balanceValue.ZIndex = 86
+	self.balanceValue.Parent = balanceTextContainer
 
 	-- REMOVED: Casino button (per user request)
 	-- Casino/gambling feature removed from AssetsScreen
 
-	-- Tab bar - CRITICAL FIX: Adjusted position for smaller balance bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 180, zIndex = 84 })
+	-- Tab bar - CRITICAL FIX: Adjusted position for properly sized balance bar
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 174, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
