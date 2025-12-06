@@ -686,6 +686,362 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PROPERTY SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "property_flood_damage",
+		emoji = "🌊",
+		title = "Flood Damage!",
+		text = "Heavy rains caused flooding in your home! Water is seeping through the basement. Furniture is ruined. This is a disaster.",
+		question = "How do you handle it?",
+		category = "assets",
+		weight = 6,
+		minAge = 21,
+		maxAge = 90,
+		baseChance = 0.15,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "File insurance claim",
+				effects = { Happiness = -5 },
+				feedText = "You filed a claim...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.7 then
+						state.Money = (state.Money or 0) + 8000
+						if state.AddFeed then
+							state:AddFeed("✅ Insurance covered most of the damage. $8,000 payout.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("❌ Claim denied. 'Act of God' exclusion. You're on your own.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Fix it yourself",
+				effects = { Health = -5, Happiness = -5, Money = -3000 },
+				feedText = "You spent weekends repairing flood damage. Exhausting but saved money.",
+			},
+			{
+				index = 3,
+				text = "Hire professional restoration",
+				effects = { Money = -8000 },
+				feedText = "Professionals fixed everything. Expensive but quick.",
+			},
+		},
+	},
+	{
+		id = "property_appreciation",
+		emoji = "📈",
+		title = "Property Value Increase!",
+		text = "Great news! The area around your property has developed significantly. New restaurants, shops, better schools. Your property value has INCREASED!",
+		question = "What's your reaction?",
+		category = "assets",
+		weight = 4,
+		minAge = 25,
+		maxAge = 90,
+		baseChance = 0.2,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Consider selling for profit",
+				effects = { Happiness = 8, Smarts = 2 },
+				feedText = "Your real estate investment paid off!",
+				onResolve = function(state)
+					-- Just a happy event - not forcing a sale
+					if state.AddFeed then
+						local appreciation = RANDOM:NextInteger(15000, 50000)
+						state:AddFeed(string.format("🏠 Property appreciated $%d! Smart investment!", appreciation))
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "property_bad_neighbors",
+		emoji = "🏠",
+		title = "Terrible Neighbors",
+		text = "Your new neighbors are AWFUL. Loud parties every night. Their dog barks constantly. They park in your spot. This is affecting your quality of life.",
+		question = "How do you handle this?",
+		category = "assets",
+		weight = 6,
+		minAge = 21,
+		maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Talk to them directly",
+				effects = {},
+				feedText = "You went over to talk...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.5 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 8)
+						end
+						if state.AddFeed then
+							state:AddFeed("🤝 They apologized! Things got better.")
+						end
+					elseif roll < 0.8 then
+						if state.AddFeed then
+							state:AddFeed("😤 They told you to mind your business. No improvement.")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -5)
+							state:ModifyStat("Health", -3)
+						end
+						if state.AddFeed then
+							state:AddFeed("👊 It escalated into an argument. Now there's a feud.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Call the police about noise",
+				effects = { Happiness = 2 },
+				feedText = "You called the authorities...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🚔 Police gave them a warning. Quiet... for now.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.neighbor_enemies = true
+						if state.AddFeed then
+							state:AddFeed("😬 They know you called. Now they hate you.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Invest in soundproofing",
+				effects = { Money = -2000, Happiness = 5 },
+				feedText = "You soundproofed your place. Problem solved with money.",
+			},
+		},
+	},
+	{
+		id = "property_rental_opportunity",
+		emoji = "🏘️",
+		title = "Rental Income Opportunity",
+		text = "Someone wants to rent a room in your property! Extra income could be nice. But sharing your space with a stranger...",
+		question = "Do you rent it out?",
+		category = "assets",
+		weight = 5,
+		minAge = 25,
+		maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Yes, rent it out",
+				effects = { Happiness = -2 },
+				setFlags = { landlord = true },
+				feedText = "You became a landlord...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.7 then
+						local rent = RANDOM:NextInteger(800, 1500)
+						state.Money = (state.Money or 0) + rent * 12
+						if state.AddFeed then
+							state:AddFeed(string.format("🏠 Great tenant! $%d/month income.", rent))
+						end
+					else
+						state.Money = (state.Money or 0) - 2000
+						if state.AddFeed then
+							state:AddFeed("😤 Terrible tenant! Caused damage. Never again.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "No, I value my privacy",
+				effects = { Happiness = 3 },
+				feedText = "Your space is yours alone. That's worth something.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- LUXURY ITEM SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "luxury_item_stolen",
+		emoji = "💎",
+		title = "Valuable Item Stolen!",
+		text = "Someone broke into your place and stole one of your valuable items! You come home to find it GONE.",
+		question = "What do you do?",
+		category = "assets",
+		weight = 5,
+		minAge = 21,
+		maxAge = 90,
+		baseChance = 0.12,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Items")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "File a police report",
+				effects = { Happiness = -8 },
+				feedText = "You reported the theft...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("🚔 Police recovered your item! Lucky!")
+						end
+					else
+						if state.Assets and state.Assets.Items and #state.Assets.Items > 0 then
+							local stolen = table.remove(state.Assets.Items, 1)
+							if state.AddFeed then
+								state:AddFeed("😔 Never recovered. " .. (stolen.name or "Your item") .. " is gone.")
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Insurance claim",
+				effects = { Happiness = -5, Money = 5000 },
+				feedText = "Insurance partially covered the loss.",
+				onResolve = function(state)
+					if state.Assets and state.Assets.Items and #state.Assets.Items > 0 then
+						table.remove(state.Assets.Items, 1)
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "luxury_item_appreciate",
+		emoji = "📈",
+		title = "Collectible Value Surge!",
+		text = "One of your items has become a sought-after collectible! Collectors are offering CRAZY money for it.",
+		question = "What do you do?",
+		category = "assets",
+		weight = 4,
+		minAge = 25,
+		maxAge = 90,
+		baseChance = 0.1,
+		cooldown = 8,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Items")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Sell it now!",
+				effects = { Happiness = 10 },
+				feedText = "You sold it...",
+				onResolve = function(state)
+					local profit = RANDOM:NextInteger(10000, 50000)
+					state.Money = (state.Money or 0) + profit
+					if state.Assets and state.Assets.Items and #state.Assets.Items > 0 then
+						table.remove(state.Assets.Items, 1)
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("💰 SOLD for $%d! Great return on investment!", profit))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Hold onto it - might go higher",
+				effects = { Smarts = 3 },
+				setFlags = { collector = true },
+				feedText = "You're holding out for more. Risky but could pay off.",
+			},
+		},
+	},
+	{
+		id = "show_off_luxury",
+		emoji = "✨",
+		title = "Showing Off",
+		text = "Friends are coming over. They're going to see your new luxury purchases. Time to show off a little!",
+		question = "How do you present your success?",
+		category = "assets",
+		weight = 5,
+		minAge = 21,
+		maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local hasItems = hasAssetType(state, "Items")
+			local hasVehicles = hasAssetType(state, "Vehicles")
+			return hasItems or hasVehicles
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Casually show everything off",
+				effects = { Happiness = 8 },
+				feedText = "You gave the grand tour...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("😎 Friends impressed! You're living the dream!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🙄 Some friends seemed jealous. Tension in the air.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay humble about it",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "You downplayed your success. Classy move.",
+			},
+		},
+	},
 }
 
 return events

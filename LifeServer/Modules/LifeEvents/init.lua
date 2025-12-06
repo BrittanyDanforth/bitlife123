@@ -49,15 +49,16 @@ local LifeStages = {
 -- Category mappings per life stage
 -- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
 -- Racing discovery can happen as young as age 10, hacker discovery at age 12
+-- MINOR FIX: Improved comments for clarity on what each life stage allows
 local StageCategories = {
-	baby        = { "childhood", "milestones" },
-	toddler     = { "childhood", "milestones" },
-	child       = { "childhood", "milestones", "random", "career_racing" }, -- Racing discovery at 10+
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Seniors can still own racing teams
+	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
+	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
+	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 13-17: Full teen experience
+	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 18-34: Peak career years
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 35-49: Established adult
+	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 50-64: Midlife
+	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Ages 65+: Retirement years (can own racing teams)
 }
 
 function LifeEvents.getLifeStage(age)
@@ -520,6 +521,11 @@ local function canEventTrigger(event, state)
 		-- CRITICAL FIX: Also block if player is retired (even if CurrentJob wasn't cleared)
 		if flags.retired then
 			return false -- Retired players shouldn't get job events
+		end
+		-- CRITICAL FIX #2: Players in prison can't have work events!
+		-- Even if they technically still have a "job", they can't go to work from prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
 		end
 	end
 	

@@ -32,6 +32,8 @@ local events = {
 		minAge = 18,
 		maxAge = 25,
 		oneTime = true,
+		-- CRITICAL FIX: Can't interview while in prison
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
@@ -893,6 +895,695 @@ local events = {
 					state.Money = (state.Money or 0) + tip
 					if state.AddFeed then
 						state:AddFeed("🤝 Split the tip! Coworkers appreciate you.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TECH JOB SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "code_review_conflict",
+		emoji = "💻",
+		title = "Code Review Drama",
+		text = "A senior developer tore apart your code in a review. Publicly. 'This is terrible. Who wrote this?' Everyone on Slack saw it. Your face is RED. It's your code. You worked on it all weekend.",
+		question = "How do you handle this?",
+		category = "career",
+		weight = 7,
+		minAge = 20,
+		maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobCategory = "tech",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Defend your work professionally",
+				effects = { Happiness = -3 },
+				feedText = "You stood up for yourself...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						if state.ModifyStat then
+							state:ModifyStat("Smarts", 4)
+						end
+						if state.AddFeed then
+							state:AddFeed("💪 Your explanation made sense. Senior dev apologized privately.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😤 The senior dev doubled down. Now there's tension.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Take notes and learn from it",
+				effects = { Smarts = 5, Happiness = -2 },
+				feedText = "You took the criticism and grew.",
+			},
+			{
+				index = 3,
+				text = "Report to HR for unprofessional behavior",
+				effects = {},
+				feedText = "You escalated to HR...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("✅ HR talked to the senior dev. Things got better.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.office_snitch = true
+						if state.AddFeed then
+							state:AddFeed("😬 Now you're 'that person' who reports to HR.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "tech_conference_opportunity",
+		emoji = "🎤",
+		title = "Conference Speaker Invite",
+		text = "You've been invited to speak at a major tech conference! This could boost your career visibility. But public speaking... scary.",
+		question = "Do you accept?",
+		category = "career",
+		weight = 6,
+		minAge = 24,
+		maxAge = 50,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobCategory = "tech",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Accept and prepare thoroughly",
+				effects = { Smarts = 5, Health = -3 },
+				feedText = "You presented at the conference...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.7 then
+						state.Money = (state.Money or 0) + 2000
+						state.Flags = state.Flags or {}
+						state.Flags.tech_speaker = true
+						if state.AddFeed then
+							state:AddFeed("🎤 Standing ovation! You killed it! LinkedIn blowing up!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😅 It went okay. Not viral but not embarrassing.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline - not ready yet",
+				effects = { Happiness = 3 },
+				feedText = "You passed on this one. Maybe next time.",
+			},
+		},
+	},
+	{
+		id = "tech_burnout",
+		emoji = "🔥",
+		title = "Tech Burnout",
+		text = "You've been coding 12-hour days. Sprints never end. Your eyes hurt. Your back hurts. Sleep is a distant memory. You're BURNING OUT.",
+		question = "What do you do?",
+		category = "career",
+		weight = 8,
+		minAge = 22,
+		maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobCategory = "tech",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Take mental health days",
+				effects = { Health = 8, Happiness = 5, Money = -200 },
+				feedText = "Rest is productivity. You feel better.",
+			},
+			{
+				index = 2,
+				text = "Push through - deadlines matter",
+				effects = { Health = -10, Happiness = -8 },
+				feedText = "You pushed through...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state.Money = (state.Money or 0) + 1000
+						if state.AddFeed then
+							state:AddFeed("💼 Project shipped! Bonus! But at what cost...")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.chronic_stress = true
+						if state.AddFeed then
+							state:AddFeed("😰 You crashed. Hard. Body can't take this anymore.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Start looking for new jobs",
+				effects = { Happiness = -3 },
+				setFlags = { job_hunting = true },
+				feedText = "Time to find a less toxic environment.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- OFFICE JOB SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "office_politics_drama",
+		emoji = "🏢",
+		title = "Office Politics",
+		text = "The office is divided into factions. Your manager is in a power struggle with another manager. They're both trying to recruit you to their 'side'. This is awkward.",
+		question = "What's your play?",
+		category = "career",
+		weight = 6,
+		minAge = 22,
+		maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobCategory = "office",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Stay neutral - just do your work",
+				effects = { Smarts = 3, Happiness = 2 },
+				feedText = "You stayed out of it. Smart.",
+			},
+			{
+				index = 2,
+				text = "Side with your direct manager",
+				effects = {},
+				feedText = "You backed your boss...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + 500
+						if state.AddFeed then
+							state:AddFeed("👑 Your manager won! You're in their good graces.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😬 Your manager lost. Now you're on the losing team.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Play both sides",
+				effects = { Smarts = 2 },
+				feedText = "You tried to play both sides...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("🧠 Master manipulator! You came out ahead.")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.untrustworthy = true
+						if state.AddFeed then
+							state:AddFeed("🐍 Both sides figured it out. Nobody trusts you now.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_affair_gossip",
+		emoji = "💋",
+		title = "Office Affair Rumor",
+		text = "You accidentally stumbled onto evidence that two executives are having an affair. This is JUICY gossip. But also dangerous information.",
+		question = "What do you do?",
+		category = "career",
+		weight = 5,
+		minAge = 21,
+		maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 6,
+		requiresJob = true,
+		requiresJobCategory = "office",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Pretend you saw nothing",
+				effects = { Smarts = 2 },
+				feedText = "What affair? You didn't see anything.",
+			},
+			{
+				index = 2,
+				text = "Tell your work friends",
+				effects = { Happiness = 5 },
+				feedText = "The gossip spread...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state.Flags = state.Flags or {}
+						state.Flags.gossip_trouble = true
+						if state.AddFeed then
+							state:AddFeed("😱 It got back to them. They know it was you.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🍿 Best gossip of the year! Your coworkers love you.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Use it as leverage... eventually",
+				effects = { Smarts = -5 },
+				setFlags = { has_blackmail = true },
+				feedText = "You filed this away for later. Dangerous game.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MEDICAL JOB SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "medical_malpractice_fear",
+		emoji = "🏥",
+		title = "Potential Malpractice",
+		text = "A patient had a bad outcome. Their family is upset. You followed protocol exactly, but the family is threatening to sue. Your hands are shaking.",
+		question = "How do you handle this?",
+		category = "career",
+		weight = 8,
+		minAge = 26,
+		maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobCategory = "medical",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Document everything meticulously",
+				effects = { Smarts = 4, Happiness = -5 },
+				feedText = "You documented every detail...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.8 then
+						if state.AddFeed then
+							state:AddFeed("📋 Documentation saved you. Case dismissed.")
+						end
+					else
+						state.Money = (state.Money or 0) - 10000
+						if state.AddFeed then
+							state:AddFeed("⚖️ Settlement anyway. Insurance covered most of it.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Talk to the family with compassion",
+				effects = { Happiness = -3 },
+				feedText = "You spoke with the family...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.7 then
+						if state.AddFeed then
+							state:AddFeed("🤝 The family calmed down. They understood.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 They're still angry. This will haunt you.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Immediately contact your malpractice insurance",
+				effects = { Smarts = 2 },
+				feedText = "You got lawyers involved immediately. Smart.",
+			},
+		},
+	},
+	{
+		id = "medical_miracle_save",
+		emoji = "💉",
+		title = "Emergency Save",
+		text = "Code Blue! A patient is crashing and YOU are the closest medical professional. You leap into action. Training takes over. It's life or death.",
+		question = "How does it go?",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobCategory = "medical",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "You give it EVERYTHING",
+				effects = { Health = -3 },
+				feedText = "You fought for their life...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.75 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 15)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.life_saver = true
+						if state.AddFeed then
+							state:AddFeed("💓 THEY'RE ALIVE! You saved them! Hero!")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+						if state.AddFeed then
+							state:AddFeed("😢 You did everything right. Sometimes... it's just their time.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FINANCE JOB SPECIFIC EVENTS  
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "insider_trading_temptation",
+		emoji = "💰",
+		title = "Insider Information",
+		text = "You overheard executives discussing an acquisition. If you buy stock NOW, you'll make a fortune when it's announced. But that's... illegal.",
+		question = "What do you do?",
+		category = "career",
+		weight = 6,
+		minAge = 24,
+		maxAge = 65,
+		baseChance = 0.15,
+		cooldown = 6,
+		requiresJob = true,
+		requiresJobCategory = "finance",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Trade on it - fortune awaits!",
+				effects = {},
+				feedText = "You made the trade...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						local profit = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + profit
+						state.Flags = state.Flags or {}
+						state.Flags.insider_trader = true
+						if state.AddFeed then
+							state:AddFeed(string.format("💸 You made $%d! But... you committed a federal crime.", profit))
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.white_collar_criminal = true
+						if state.AddFeed then
+							state:AddFeed("🚔 SEC caught you. Federal charges. Your career is OVER.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay ethical - not worth the risk",
+				effects = { Smarts = 3 },
+				setFlags = { ethical = true },
+				feedText = "You resisted temptation. Integrity intact.",
+			},
+			{
+				index = 3,
+				text = "Report it to compliance",
+				effects = { Smarts = 2 },
+				feedText = "You reported the leak. You're a company hero... or snitch.",
+			},
+		},
+	},
+	{
+		id = "client_money_pressure",
+		emoji = "📈",
+		title = "Questionable Investment",
+		text = "A wealthy client wants you to invest their money in a risky scheme. It's legal but borderline. If it works, huge bonuses. If it fails, you'll be blamed.",
+		question = "What's your recommendation?",
+		category = "career",
+		weight = 6,
+		minAge = 25,
+		maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobCategory = "finance",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Do it - go for the bonus",
+				effects = {},
+				feedText = "You made the risky investment...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						local bonus = math.random(10000, 50000)
+						state.Money = (state.Money or 0) + bonus
+						if state.AddFeed then
+							state:AddFeed(string.format("🎰 It worked! $%d bonus! You're a genius!", bonus))
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("📉 It crashed. Client furious. Your reputation is damaged.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Recommend safer options",
+				effects = { Smarts = 2, Happiness = 3 },
+				feedText = "You gave conservative advice. Client appreciated your honesty.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION JOB SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "student_cheating_dilemma",
+		emoji = "📚",
+		title = "Student Caught Cheating",
+		text = "You caught a student cheating on an exam. But they're crying. They explain their family situation is terrible and they're under immense pressure. Failing them would devastate them.",
+		question = "What do you do?",
+		category = "career",
+		weight = 7,
+		minAge = 24,
+		maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobCategory = "education",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Report them - rules are rules",
+				effects = { Happiness = -3 },
+				feedText = "You reported the cheating. It had to be done.",
+			},
+			{
+				index = 2,
+				text = "Give them a second chance",
+				effects = { Happiness = 5 },
+				feedText = "You showed mercy...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🌟 Student straightened out. They thanked you years later.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😞 They cheated again. Maybe mercy was wrong.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Have a private conversation first",
+				effects = { Smarts = 3 },
+				feedText = "You talked to them. Got the full story. Made a fair decision.",
+			},
+		},
+	},
+	{
+		id = "teacher_inspiration_moment",
+		emoji = "🎓",
+		title = "Inspiring Moment",
+		text = "A former student visits you. They're successful now - doctor, engineer, whatever. They said YOU changed their life. 'I would've given up without you.'",
+		question = "How do you respond?",
+		category = "career",
+		weight = 5,
+		minAge = 30,
+		maxAge = 80,
+		baseChance = 0.2,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobCategory = "education",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Accept the gratitude graciously",
+				effects = { Happiness = 15 },
+				setFlags = { inspiring_teacher = true },
+				feedText = "This is why you became a teacher. This moment. Worth everything.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MILITARY JOB SPECIFIC EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "military_deployment",
+		emoji = "🪖",
+		title = "Deployment Orders",
+		text = "You've received deployment orders. You'll be sent overseas for 6-12 months. Your family is worried. You're worried. This is what you signed up for.",
+		question = "How do you handle this?",
+		category = "career",
+		weight = 8,
+		minAge = 18,
+		maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 8,
+		requiresJob = true,
+		requiresJobCategory = "military",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Accept with honor",
+				effects = { Happiness = -5, Health = -3 },
+				setFlags = { deployed = true },
+				feedText = "You deployed...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.9 then
+						state.Money = (state.Money or 0) + 15000
+						if state.ModifyStat then
+							state:ModifyStat("Smarts", 3)
+						end
+						if state.AddFeed then
+							state:AddFeed("🎖️ Deployment complete. You served with honor. Hazard pay banked.")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Health", -20)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.combat_veteran = true
+						if state.AddFeed then
+							state:AddFeed("🏥 Injured in action. Purple Heart. Changed forever.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "military_leadership_test",
+		emoji = "⭐",
+		title = "Leadership Challenge",
+		text = "Your unit is in a tough situation. Morale is low. Supplies are short. Everyone is looking to YOU for direction. This is your leadership test.",
+		question = "How do you lead?",
+		category = "career",
+		weight = 7,
+		minAge = 22,
+		maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobCategory = "military",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Lead by example - work hardest",
+				effects = { Health = -5, Happiness = 5 },
+				feedText = "You led from the front...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.respected_leader = true
+					if state.AddFeed then
+						state:AddFeed("💪 Your unit pulled through. They'd follow you anywhere now.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Rally morale with words",
+				effects = { Smarts = 3 },
+				feedText = "You gave a speech...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🔥 Your words inspired them. Morale restored!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🗣️ Words only go so far. They need action.")
+						end
 					end
 				end,
 			},

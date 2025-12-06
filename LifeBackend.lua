@@ -1916,7 +1916,17 @@ function LifeBackend:replaceTextVariables(text, state)
 			result = result:gsub("{{FATHER_NAME}}", state.Relationships.father.name or "Dad")
 			result = result:gsub("Your father", state.Relationships.father.name or "Your father")
 		end
+		-- CRITICAL FIX: Add friend name placeholder
+		-- Look for any friend in relationships
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.type == "friend" then
+				result = result:gsub("{{FRIEND_NAME}}", rel.name or "your friend")
+				break
+			end
+		end
 	end
+	-- Fallback for friend name if no friend found
+	result = result:gsub("{{FRIEND_NAME}}", "your friend")
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Add more dynamic placeholders for realistic events
@@ -1929,6 +1939,11 @@ function LifeBackend:replaceTextVariables(text, state)
 	result = result:gsub("{{SAVINGS}}", formatMoney(money))
 	if state.CurrentJob then
 		result = result:gsub("{{SALARY}}", formatMoney(state.CurrentJob.salary or 0))
+		result = result:gsub("{{COMPANY}}", state.CurrentJob.company or "your employer")
+	else
+		-- CRITICAL FIX: Fallback for SALARY and COMPANY when unemployed
+		result = result:gsub("{{SALARY}}", "$0")
+		result = result:gsub("{{COMPANY}}", "your last employer")
 	end
 	
 	-- Family status replacement
@@ -2944,6 +2959,7 @@ end
 -- ============================================================================
 -- CRITICAL FIX: Job Rejection Messages for variety and realism
 -- ============================================================================
+-- MINOR FIX: Expanded rejection messages for more variety
 local JobRejectionMessages = {
 	generic = {
 		"After careful consideration, we've decided to go with another candidate.",
@@ -2951,21 +2967,26 @@ local JobRejectionMessages = {
 		"We appreciate your interest, but we're looking for someone with more experience.",
 		"Thank you for applying, but we've filled the position.",
 		"Your qualifications don't quite match what we're looking for right now.",
+		"We're moving forward with other candidates at this time.",
+		"While your application was strong, we found a better fit.",
 	},
 	lowStats = {
 		"You didn't pass the physical fitness requirements.",
 		"The aptitude test results weren't quite what we were hoping for.",
 		"We need someone with stronger qualifications for this role.",
+		"Your skills assessment didn't meet our requirements.",
 	},
 	competitive = {
 		"This position attracted many highly qualified candidates.",
 		"Competition for this role was extremely fierce.",
 		"We received over 500 applications for this position.",
+		"The hiring committee narrowed it down and chose someone else.",
 	},
 	entry = {
 		"Even entry-level positions can be competitive these days!",
 		"We're looking for someone with a bit more availability.",
 		"Your interview went well, but another candidate edged you out.",
+		"Keep applying! The right opportunity will come.",
 	},
 }
 

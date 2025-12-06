@@ -419,7 +419,8 @@ Random.events = {
 		cooldown = 3,
 		choices = {
 			{ text = "Keys - found them eventually", effects = { Happiness = -3 }, feedText = "Stressful search, but they turned up." },
-			{ text = "Wallet - had to cancel cards", effects = { Happiness = -5, Money = -50 }, feedText = "What a hassle!" },
+			-- MINOR FIX: More descriptive feedText
+		{ text = "Wallet - had to cancel cards", effects = { Happiness = -5, Money = -50 }, feedText = "Lost your wallet. Had to cancel cards and replace everything. What a hassle!" },
 			{ text = "Something sentimental", effects = { Happiness = -7 }, feedText = "It can't be replaced..." },
 			{ text = "Something replaceable", effects = { Happiness = -2, Money = -30 }, feedText = "Annoying, but not the end of the world." },
 		},
@@ -1815,7 +1816,8 @@ Random.events = {
 	},
 	
 	{
-		id = "side_hustle_opportunity",
+		-- CRITICAL FIX: Renamed from "side_hustle_opportunity" to avoid duplicate ID
+		id = "freelance_side_gig",
 		emoji = "💡",
 		title = "Side Hustle Opportunity",
 		text = "Someone offers you a chance to make extra money on the side. It's freelance work!",
@@ -2134,7 +2136,8 @@ Random.events = {
 				index = 2,
 				text = "Treat yourself to something nice",
 				effects = { Happiness = 12, Money = -100 },
-				feedText = "You deserve it!",
+				-- MINOR FIX: More descriptive feedText
+				feedText = "You treated yourself to something special. You definitely deserve it!",
 			},
 			{
 				index = 3,

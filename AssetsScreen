@@ -244,35 +244,34 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- Balance bar with casino button
+	-- CRITICAL FIX: Balance bar - reduced size, better integrated into UI
 	self.balanceBar = Instance.new("Frame")
-	self.balanceBar.Size = UDim2.new(1, -16, 0, 75)
+	self.balanceBar.Size = UDim2.new(1, -16, 0, 56)
 	self.balanceBar.Position = UDim2.new(0, 8, 0, 116)
 	self.balanceBar.BackgroundColor3 = C.White
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 18)
-	UI.stroke(self.balanceBar, 1, 0.88, C.Gray200)
-	UI.createShadow(self.balanceBar, 3, 10, C.Black, 0.93)
+	UI.corner(self.balanceBar, 14)
+	UI.stroke(self.balanceBar, 1, 0.9, C.Gray200)
 
-	-- Balance icon
+	-- Balance icon - smaller
 	local balanceIcon = Instance.new("TextLabel")
-	balanceIcon.Size = UDim2.new(0, 55, 0, 55)
-	balanceIcon.Position = UDim2.new(0, 14, 0.5, -27.5)
+	balanceIcon.Size = UDim2.new(0, 40, 0, 40)
+	balanceIcon.Position = UDim2.new(0, 12, 0.5, -20)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 38
+	balanceIcon.TextSize = 26
 	balanceIcon.Text = "💰"
 	balanceIcon.ZIndex = 85
 	balanceIcon.Parent = self.balanceBar
 
-	-- Balance text
+	-- Balance text - smaller and better positioned
 	local balanceLabel = Instance.new("TextLabel")
-	balanceLabel.Size = UDim2.new(0.4, 0, 0, 20)
-	balanceLabel.Position = UDim2.new(0, 75, 0, 14)
+	balanceLabel.Size = UDim2.new(0.4, 0, 0, 16)
+	balanceLabel.Position = UDim2.new(0, 56, 0, 10)
 	balanceLabel.BackgroundTransparency = 1
 	balanceLabel.Font = F.Body
-	balanceLabel.TextSize = 13
+	balanceLabel.TextSize = 11
 	balanceLabel.TextColor3 = C.Gray500
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	balanceLabel.Text = "Your Balance"
@@ -280,11 +279,11 @@ function AssetsScreen:createUI()
 	balanceLabel.Parent = self.balanceBar
 
 	self.balanceValue = Instance.new("TextLabel")
-	self.balanceValue.Size = UDim2.new(0.5, 0, 0, 32)
-	self.balanceValue.Position = UDim2.new(0, 75, 0, 34)
+	self.balanceValue.Size = UDim2.new(0.5, 0, 0, 24)
+	self.balanceValue.Position = UDim2.new(0, 56, 0, 26)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 28
+	self.balanceValue.TextSize = 18
 	self.balanceValue.TextColor3 = C.GreenDark
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
@@ -294,8 +293,8 @@ function AssetsScreen:createUI()
 	-- REMOVED: Casino button (per user request)
 	-- Casino/gambling feature removed from AssetsScreen
 
-	-- Tab bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 200, zIndex = 84 })
+	-- Tab bar - CRITICAL FIX: Adjusted position for smaller balance bar
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 180, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -313,8 +312,8 @@ function AssetsScreen:createUI()
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
 
-	-- Scroll area
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 264, zIndex = 81 })
+	-- Scroll area - CRITICAL FIX: Adjusted position for smaller balance bar
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 244, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()

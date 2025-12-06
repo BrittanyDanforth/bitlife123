@@ -3,6 +3,17 @@
 	
 	Manages life stage transitions and death mechanics.
 	Provides stage-based events and natural death checks.
+	
+	MINOR FIX: Added documentation on life stages
+	Life Stages:
+	  - Baby (0-2): First experiences, family bonding
+	  - Toddler (3-4): Learning, curiosity, first words/steps
+	  - Child (5-12): School, friendships, hobbies, family dynamics
+	  - Teen (13-17): High school, first jobs, relationships, identity
+	  - Young Adult (18-29): College, career start, independence
+	  - Adult (30-49): Career peak, family building, home ownership
+	  - Middle-Aged (50-64): Career culmination, midlife reflection
+	  - Senior (65+): Retirement, legacy, health considerations
 ]]
 
 local LifeStageSystem = {}
