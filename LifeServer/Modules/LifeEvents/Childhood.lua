@@ -225,8 +225,8 @@ Childhood.events = {
 		id = "learned_bike",
 		title = "Learning to Ride a Bike",
 		emoji = "🚲",
-		text = "You're learning to ride a bike!",
-		question = "How does it go?",
+		text = "You're learning to ride a bike! Your parent is holding the back.",
+		question = "How do you approach this?",
 		minAge = 5, maxAge = 8,
 		oneTime = true,
 		isMilestone = true,
@@ -237,12 +237,63 @@ Childhood.events = {
 		category = "skills",
 		milestoneKey = "CHILD_LEARNED_BIKE",
 		tags = { "mobility", "outdoors", "independence" },
-
+		-- CRITICAL FIX: Random outcome based on approach + stats
 		choices = {
-			{ text = "Got it on the first try!", effects = { Happiness = 8, Health = 3 }, setFlags = { natural_athlete = true }, feedText = "You're a natural! Freedom on two wheels!" },
-			{ text = "Fell a lot, but kept trying", effects = { Happiness = 5, Health = -2 }, setFlags = { persistent = true }, feedText = "You got some scrapes, but you never gave up!" },
-			{ text = "Needed training wheels for a while", effects = { Happiness = 3 }, setFlags = { cautious_learner = true }, feedText = "You took your time, but you got there." },
-			{ text = "Too scared, gave up", effects = { Happiness = -3 }, setFlags = { bike_phobia = true }, feedText = "Bikes aren't for everyone... yet." },
+			{
+				text = "Pedal confidently!",
+				effects = {},
+				feedText = "You pushed forward with confidence...",
+				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local successChance = 0.40 + (health / 150)
+					if roll < successChance then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.ModifyStat then state:ModifyStat("Health", 3) end
+						state.Flags = state.Flags or {}
+						state.Flags.natural_athlete = true
+						if state.AddFeed then state:AddFeed("🚲 You're a natural! Freedom on two wheels!") end
+					elseif roll < successChance + 0.35 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.ModifyStat then state:ModifyStat("Health", -2) end
+						state.Flags = state.Flags or {}
+						state.Flags.persistent = true
+						if state.AddFeed then state:AddFeed("🚲 You fell a few times, but kept trying. You did it!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.ModifyStat then state:ModifyStat("Health", -4) end
+						if state.AddFeed then state:AddFeed("🚲 Lots of falls... but you'll get it eventually!") end
+					end
+				end,
+			},
+			{
+				text = "Go slow and careful",
+				effects = {},
+				feedText = "You took a cautious approach...",
+				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
+					local roll = math.random()
+					if roll < 0.60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						state.Flags = state.Flags or {}
+						state.Flags.cautious_learner = true
+						if state.AddFeed then state:AddFeed("🚲 Taking your time paid off! You learned safely.") end
+					elseif roll < 0.85 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("🚲 Training wheels for a while, but you got there!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🚲 Still too scared... maybe try again next year.") end
+					end
+				end,
+			},
+			{
+				text = "I don't want to learn",
+				effects = { Happiness = -3 },
+				setFlags = { bike_phobia = true },
+				feedText = "Bikes aren't for everyone... yet.",
+			},
 		},
 	},
 
@@ -457,8 +508,8 @@ Childhood.events = {
 		id = "playground_accident",
 		title = "Playground Mishap",
 		emoji = "🤕",
-		text = "You fell off the monkey bars and hurt yourself!",
-		question = "Where did you get hurt?",
+		text = "You fell off the monkey bars!",
+		question = "Do you tell a grown-up?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.6,
 		cooldown = 3,
@@ -467,12 +518,55 @@ Childhood.events = {
 		ageBand = "childhood",
 		category = "health",
 		tags = { "injury", "playground", "pain" },
-
+		-- CRITICAL FIX: Random injury, not player chosen
 		choices = {
-			{ text = "Scraped my knee badly", effects = { Health = -5, Happiness = -3 }, feedText = "Ouch! Your knee is all scraped up. You got a cool bandage though." },
-			{ text = "Bruised my arm", effects = { Health = -3, Happiness = -2 }, feedText = "Your arm is purple and sore, but you're tough!" },
-			{ text = "Bumped my head", effects = { Health = -8, Smarts = -1 }, feedText = "That was a hard bump. Mom is worried." },
-			{ text = "Landed softly - I'm fine!", effects = { Health = -1, Happiness = 2 }, feedText = "You bounced right back up like nothing happened!" },
+			{
+				text = "Tell a teacher right away",
+				effects = {},
+				feedText = "You got help quickly...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Health", -1)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🤕 Just a small scrape. The teacher gave you a cool bandage!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Health", -4)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🤕 Scraped your knee pretty bad. Got cleaned up at the office.")
+					elseif roll < 0.90 then
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤕 Bruised your arm. Parents called to pick you up.")
+					else
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Smarts", -1)
+						state.Flags = state.Flags or {}
+						state.Flags.head_injury = true
+						state:AddFeed("🤕 Bumped your head hard. Had to go to the doctor!")
+					end
+				end,
+			},
+			{
+				text = "Try to be tough and hide it",
+				effects = {},
+				feedText = "You tried to act like nothing happened...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Health", -2)
+						state:AddFeed("🤕 Actually wasn't that bad. You shook it off!")
+					elseif roll < 0.60 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤕 Your scrapes got worse because you didn't tell anyone.")
+					else
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🤕 You ended up crying anyway. Should have told someone!")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -534,13 +628,103 @@ Childhood.events = {
 		category = "performance",
 		tags = { "talent", "performance", "school" },
 		careerTags = { "entertainment", "creative" },
-
+		-- CRITICAL FIX: Random performance outcome
 		choices = {
-			{ text = "Sing a song", effects = { Happiness = 6, Looks = 2 }, setFlags = { singer = true }, hintCareer = "entertainment", feedText = "You sang your heart out! The crowd loved it!" },
-			{ text = "Do a magic trick", effects = { Smarts = 3, Happiness = 5 }, setFlags = { magician = true }, feedText = "Your magic trick wowed everyone!" },
-			{ text = "Tell jokes", effects = { Happiness = 7 }, setFlags = { class_clown = true }, hintCareer = "entertainment", feedText = "You had everyone laughing!" },
-			{ text = "Play an instrument", effects = { Smarts = 4, Happiness = 5 }, setFlags = { musician = true }, hintCareer = "creative", feedText = "Your musical talent impressed the judges!" },
-			{ text = "Too shy to perform", effects = { Happiness = -2 }, setFlags = { stage_fright = true }, feedText = "You watched from the audience. Maybe next year." },
+			{
+				text = "Sing a song",
+				effects = {},
+				setFlags = { singer = true },
+				hintCareer = "entertainment",
+				feedText = "You stepped on stage to sing...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Looks", 2)
+						state:AddFeed("🎤 Standing ovation! You sang your heart out!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎤 Nice performance! Solid applause from the crowd.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎤 Your voice cracked... embarrassing but you finished!")
+					end
+				end,
+			},
+			{
+				text = "Do a magic trick",
+				effects = {},
+				setFlags = { magician = true },
+				feedText = "You prepared your magic act...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎤 Your magic trick wowed everyone! How did you do that?!")
+					elseif roll < 0.80 then
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎤 Good trick! Some people figured it out but still impressive.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🎤 The trick failed and everyone saw how it worked... oops.")
+					end
+				end,
+			},
+			{
+				text = "Tell jokes",
+				effects = {},
+				setFlags = { class_clown = true },
+				hintCareer = "entertainment",
+				feedText = "You stepped up to do comedy...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🎤 HILARIOUS! Everyone was laughing so hard!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎤 Good laughs! Your timing needs work but fun!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎤 Silence... those jokes didn't land. Tough crowd.")
+					end
+				end,
+			},
+			{
+				text = "Play an instrument",
+				effects = {},
+				setFlags = { musician = true },
+				hintCareer = "creative",
+				feedText = "You brought your instrument on stage...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local hasSkill = state.Flags and (state.Flags.plays_piano or state.Flags.plays_guitar or state.Flags.musical)
+					local successChance = hasSkill and 0.55 or 0.35
+					if roll < successChance then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎤 Beautiful! Your musical talent impressed everyone!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎤 Nice performance! A few missed notes but good overall.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎤 Stage fright made you mess up... it was rough.")
+					end
+				end,
+			},
+			{
+				text = "Too shy to perform",
+				effects = { Happiness = -2 },
+				setFlags = { stage_fright = true },
+				feedText = "You watched from the audience. Maybe next year.",
+			},
 		},
 	},
 	{
@@ -561,9 +745,8 @@ Childhood.events = {
 		onResolve = function(state)
 			-- Add the baby sibling to relationships
 			if state.AddRelationship then
-				-- CRITICAL FIX: Use consistent Random API
-				local RANDOM_SIBLING = Random.new()
-				local isBoy = RANDOM_SIBLING:NextNumber() > 0.5
+				-- CRITICAL FIX: Use math.random() instead of undefined Random.new()
+				local isBoy = math.random() > 0.5
 				state:AddRelationship("baby_sibling", {
 					id = "baby_sibling",
 					name = "Baby",
@@ -600,13 +783,103 @@ Childhood.events = {
 		category = "sports",
 		tags = { "sports", "team", "competition" },
 		careerTags = { "sports" },
-
+		-- CRITICAL FIX: Random tryout outcome - making the team isn't guaranteed
 		choices = {
-			{ text = "Soccer", effects = { Health = 5, Happiness = 4 }, setFlags = { plays_soccer = true, team_player = true }, hintCareer = "sports", feedText = "You made the soccer team!" },
-			{ text = "Basketball", effects = { Health = 5, Happiness = 4 }, setFlags = { plays_basketball = true, team_player = true }, hintCareer = "sports", feedText = "You're on the basketball team!" },
-			{ text = "Baseball/Softball", effects = { Health = 4, Happiness = 4, Smarts = 2 }, setFlags = { plays_baseball = true }, hintCareer = "sports", feedText = "Play ball! You made the team!" },
-			{ text = "Swimming", effects = { Health = 6, Happiness = 3 }, setFlags = { swimmer = true }, hintCareer = "sports", feedText = "You're a natural in the water!" },
-			{ text = "Not interested in sports", effects = { Happiness = 1 }, feedText = "Organized sports aren't your thing. That's okay!" },
+			{
+				text = "Soccer",
+				effects = {},
+				hintCareer = "sports",
+				feedText = "You tried out for soccer...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local makeTeamChance = 0.50 + (health / 150)
+					if state.Flags and state.Flags.athlete then makeTeamChance = makeTeamChance + 0.15 end
+					if roll < makeTeamChance then
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.plays_soccer = true
+						state.Flags.team_player = true
+						state:AddFeed("⚽ You made the soccer team! Go team!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("⚽ Didn't make the team this year. Keep practicing!")
+					end
+				end,
+			},
+			{
+				text = "Basketball",
+				effects = {},
+				hintCareer = "sports",
+				feedText = "You tried out for basketball...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local makeTeamChance = 0.50 + (health / 150)
+					if roll < makeTeamChance then
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.plays_basketball = true
+						state.Flags.team_player = true
+						state:AddFeed("🏀 You made the basketball team!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🏀 Cut from the team. Height matters... keep trying!")
+					end
+				end,
+			},
+			{
+				text = "Baseball/Softball",
+				effects = {},
+				hintCareer = "sports",
+				feedText = "You tried out for baseball...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local makeTeamChance = 0.55 + (health / 200) + (smarts / 300)
+					if roll < makeTeamChance then
+						state:ModifyStat("Health", 4)
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 1)
+						state.Flags = state.Flags or {}
+						state.Flags.plays_baseball = true
+						state:AddFeed("⚾ Play ball! You made the team!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("⚾ Didn't make it this season. Practice your swing!")
+					end
+				end,
+			},
+			{
+				text = "Swimming",
+				effects = {},
+				hintCareer = "sports",
+				feedText = "You tried out for the swim team...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local makeTeamChance = 0.55 + (health / 150)
+					if state.Flags and state.Flags.can_swim then makeTeamChance = makeTeamChance + 0.20 end
+					if roll < makeTeamChance then
+						state:ModifyStat("Health", 6)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.swimmer = true
+						state:AddFeed("🏊 You're on the swim team! Natural in the water!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏊 Not fast enough for the team this year. Keep swimming!")
+					end
+				end,
+			},
+			{
+				text = "Not interested in sports",
+				effects = { Happiness = 1 },
+				feedText = "Organized sports aren't your thing. That's okay!",
+			},
 		},
 	},
 	{
@@ -670,12 +943,79 @@ Childhood.events = {
 		category = "academics",
 		tags = { "competition", "school", "spelling" },
 		careerTags = { "education", "creative" },
-
+		-- CRITICAL FIX: Random spelling bee outcome based on preparation
 		choices = {
-			{ text = "Study the dictionary obsessively", effects = { Smarts = 7, Health = -2, Happiness = 3 }, setFlags = { academic_competitor = true }, feedText = "You won the spelling bee! E-X-C-E-L-L-E-N-T!" },
-			{ text = "Practice casually", effects = { Smarts = 4, Happiness = 3 }, feedText = "You made it to the final rounds!" },
-			{ text = "Wing it with natural ability", effects = { Smarts = 2, Happiness = 4 }, feedText = "You did okay without much studying!" },
-			{ text = "Get too nervous and freeze", effects = { Happiness = -4, Smarts = 1 }, setFlags = { performance_anxiety = true }, feedText = "You blanked on an easy word. It happens to everyone." },
+			{
+				text = "Study the dictionary obsessively",
+				effects = { Health = -2 },
+				feedText = "You studied for hours every day...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local winChance = 0.40 + (smarts / 150)
+					if roll < winChance then
+						state:ModifyStat("Smarts", 7)
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.academic_competitor = true
+						state.Flags.spelling_champion = true
+						state:AddFeed("🐝 You won the spelling bee! E-X-C-E-L-L-E-N-T!")
+					elseif roll < winChance + 0.30 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🐝 Second place! So close to winning!")
+					else
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🐝 Tripped up on a tricky word. You tried your best!")
+					end
+				end,
+			},
+			{
+				text = "Practice casually",
+				effects = {},
+				feedText = "You prepared a little bit...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local goodChance = 0.25 + (smarts / 200)
+					if roll < goodChance then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🐝 Made it to the final rounds! Great job!")
+					elseif roll < goodChance + 0.35 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🐝 Did pretty well! Made it past the first round.")
+					else
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("🐝 Out in the first round. Should have studied more.")
+					end
+				end,
+			},
+			{
+				text = "Wing it with natural ability",
+				effects = {},
+				feedText = "You walked in without preparation...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if smarts > 70 and roll < 0.30 then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🐝 Natural talent! You did great without studying!")
+					elseif roll < 0.40 then
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🐝 Got through a few rounds on instinct!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.performance_anxiety = true
+						state:AddFeed("🐝 Blanked on an easy word. Should have prepared!")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -839,8 +1179,8 @@ Childhood.events = {
 		id = "swimming_lessons",
 		title = "Learning to Swim",
 		emoji = "🏊",
-		text = "Your parents signed you up for swimming lessons!",
-		question = "How do you take to the water?",
+		text = "Your parents signed you up for swimming lessons! Time to get in the pool.",
+		question = "How do you approach the water?",
 		minAge = 4, maxAge = 8,
 		oneTime = true,
 		baseChance = 0.7,
@@ -850,12 +1190,79 @@ Childhood.events = {
 		category = "skills",
 		tags = { "swimming", "water", "skills" },
 		careerTags = { "sports" },
-
+		-- CRITICAL FIX: Random swimming lesson outcome
 		choices = {
-			{ text = "Natural swimmer - love it!", effects = { Health = 5, Happiness = 7 }, setFlags = { can_swim = true, water_confident = true }, hintCareer = "sports", feedText = "You took to water like a fish!" },
-			{ text = "Nervous but learning", effects = { Health = 3, Happiness = 2 }, setFlags = { can_swim = true }, feedText = "It took a while, but you learned to swim!" },
-			{ text = "Absolutely terrified of water", effects = { Happiness = -4 }, setFlags = { water_phobia = true }, feedText = "Swimming isn't for everyone..." },
-			{ text = "Love playing in water more than lessons", effects = { Happiness = 5, Health = 3 }, setFlags = { can_swim = true, playful = true }, feedText = "Lessons were boring, but splashing around was great!" },
+			{
+				text = "Jump right in!",
+				effects = {},
+				feedText = "You dove in with enthusiasm...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local successChance = 0.45 + (health / 150)
+					if roll < successChance then
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 7)
+						state.Flags = state.Flags or {}
+						state.Flags.can_swim = true
+						state.Flags.water_confident = true
+						state:AddFeed("🏊 You took to water like a fish! Natural swimmer!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.can_swim = true
+						state:AddFeed("🏊 Swallowed some water but learned to swim!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -2)
+						state:AddFeed("🏊 That was scary! Almost drowned but the instructor saved you.")
+					end
+				end,
+			},
+			{
+				text = "Go slow and steady",
+				effects = {},
+				feedText = "You took a cautious approach...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Health", 4)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.can_swim = true
+						state:AddFeed("🏊 Took a few lessons but you learned to swim!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Health", 2)
+						state:ModifyStat("Happiness", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.can_swim = true
+						state:AddFeed("🏊 Still nervous but you can doggy paddle at least!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🏊 Still working on it... lessons continue next summer.")
+					end
+				end,
+			},
+			{
+				text = "I don't want to go in!",
+				effects = {},
+				feedText = "You refused to get in the pool...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.can_swim = true
+						state:AddFeed("🏊 The instructor convinced you and you actually liked it!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.water_phobia = true
+						state:AddFeed("🏊 You cried and refused. Swimming isn't for everyone...")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -906,8 +1313,8 @@ Childhood.events = {
 		id = "dentist_visit",
 		title = "Dentist Appointment",
 		emoji = "🦷",
-		text = "Time for your dentist checkup!",
-		question = "How does the appointment go?",
+		text = "Time for your dentist checkup! You sit in the big chair.",
+		question = "How do you feel about the dentist?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.6,
 		cooldown = 2,
@@ -916,12 +1323,72 @@ Childhood.events = {
 		ageBand = "childhood",
 		category = "health",
 		tags = { "dentist", "health", "fear" },
-
+		-- CRITICAL FIX: Random cavity outcome - you don't choose dental health
 		choices = {
-			{ text = "Perfect checkup - no cavities!", effects = { Health = 3, Happiness = 5 }, feedText = "Your teeth are perfect! Good brushing!" },
-			{ text = "A small cavity to fill", effects = { Health = 2, Happiness = -3, Money = -20 }, feedText = "The drilling wasn't fun, but it's over now." },
-			{ text = "So scared you cried", effects = { Happiness = -4 }, setFlags = { fears_dentist = true }, feedText = "Dentists are scary! But you got through it." },
-			{ text = "Actually liked the dentist", effects = { Happiness = 3, Smarts = 2 }, setFlags = { dentist_friendly = true }, hintCareer = "medical", feedText = "The dentist gave you a cool toothbrush!" },
+			{
+				text = "Open wide - let's see!",
+				effects = {},
+				feedText = "The dentist takes a look...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					-- Better health = less likely to have cavities
+					local cavityChance = 0.35 - (health / 300)
+					if roll < cavityChance then
+						state:ModifyStat("Health", 1)
+						state:ModifyStat("Happiness", -4)
+						state.Money = math.max(0, (state.Money or 0) - 20)
+						state:AddFeed("🦷 A cavity! The drilling wasn't fun, but it's over now.")
+					elseif roll < cavityChance + 0.15 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🦷 Teeth are okay but you need to brush better!")
+					else
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🦷 Perfect checkup! No cavities! Good brushing!")
+					end
+				end,
+			},
+			{
+				text = "I'm scared but I'll be brave",
+				effects = {},
+				feedText = "You're nervous but cooperate...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Health", 1)
+						state:ModifyStat("Happiness", -3)
+						state.Money = math.max(0, (state.Money or 0) - 20)
+						state:AddFeed("🦷 Had a small cavity but you were so brave!")
+					elseif roll < 0.50 then
+						state:ModifyStat("Happiness", 3)
+						state:ModifyStat("Smarts", 1)
+						state.Flags = state.Flags or {}
+						state.Flags.dentist_friendly = true
+						state:AddFeed("🦷 All clear! The dentist gave you a cool toothbrush!")
+					else
+						state:ModifyStat("Health", 2)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🦷 Good checkup! Being brave paid off!")
+					end
+				end,
+			},
+			{
+				text = "I'm too scared!",
+				effects = {},
+				feedText = "You started crying in the chair...",
+				onResolve = function(state)
+					local roll = math.random()
+					state:ModifyStat("Happiness", -4)
+					state.Flags = state.Flags or {}
+					state.Flags.fears_dentist = true
+					if roll < 0.40 then
+						state:AddFeed("🦷 The dentist tried but you wouldn't open your mouth!")
+					else
+						state:AddFeed("🦷 Cried the whole time but they finished. It's over!")
+					end
+				end,
+			},
 		},
 	},
 	{

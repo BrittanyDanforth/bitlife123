@@ -3,6 +3,17 @@
 	
 	Manages life stage transitions and death mechanics.
 	Provides stage-based events and natural death checks.
+	
+	MINOR FIX: Added documentation on life stages
+	Life Stages:
+	  - Baby (0-2): First experiences, family bonding
+	  - Toddler (3-4): Learning, curiosity, first words/steps
+	  - Child (5-12): School, friendships, hobbies, family dynamics
+	  - Teen (13-17): High school, first jobs, relationships, identity
+	  - Young Adult (18-29): College, career start, independence
+	  - Adult (30-49): Career peak, family building, home ownership
+	  - Middle-Aged (50-64): Career culmination, midlife reflection
+	  - Senior (65+): Retirement, legacy, health considerations
 ]]
 
 local LifeStageSystem = {}
@@ -488,9 +499,9 @@ local DeathCauses = {
 	-- ═════════════════════════════════════════════════════════════════════════
 	-- LIFESTYLE-RELATED DEATHS (checked via flags)
 	-- ═════════════════════════════════════════════════════════════════════════
-	{ id = "overdose",       cause = "a drug overdose", requiresFlag = "substance_issue", chance = 0.03, description = "Addiction claimed another victim" },
-	{ id = "alcohol",        cause = "alcohol-related liver failure", requiresFlag = "heavy_drinker", minAge = 40, chance = 0.015, description = "Years of drinking took its toll" },
-	{ id = "smoking_cancer", cause = "lung cancer", requiresFlag = "smoker", minAge = 50, chance = 0.02, description = "Smoking proved deadly" },
+	{ id = "substance_complications", cause = "complications from poor lifestyle choices", requiresFlag = "substance_issue", chance = 0.03, description = "Bad choices caught up with them" },
+	{ id = "liver_failure", cause = "liver failure", requiresFlag = "heavy_drinker", minAge = 40, chance = 0.015, description = "Years of unhealthy habits took their toll" },
+	{ id = "lung_disease", cause = "lung disease", requiresFlag = "smoker", minAge = 50, chance = 0.02, description = "Health issues proved fatal" },
 	{ id = "obesity",        cause = "complications from obesity", requiresFlag = "obese", minAge = 35, chance = 0.01, description = "Weight issues led to health failure" },
 	
 	-- ═════════════════════════════════════════════════════════════════════════
@@ -504,9 +515,9 @@ local DeathCauses = {
 	-- ═════════════════════════════════════════════════════════════════════════
 	-- VIOLENCE/CRIME-RELATED (requires criminal lifestyle flags)
 	-- ═════════════════════════════════════════════════════════════════════════
-	{ id = "gang_violence",  cause = "gang violence", requiresFlag = "gang_member", chance = 0.05, description = "Street life caught up with them" },
+	{ id = "street_danger",  cause = "a dangerous situation", requiresFlag = "crew_member", chance = 0.05, description = "Street life caught up with them" },
 	{ id = "prison_fight",   cause = "a prison altercation", requiresFlag = "in_prison", chance = 0.02, description = "Prison is a dangerous place" },
-	-- CRITICAL FIX: Don't kill players with robbery_gone_wrong if they're IN prison
+	-- CRITICAL FIX: Don't end players' lives with robbery_gone_wrong if they're IN prison
 	-- Also requires they be free (not incarcerated) since robberies happen outside
 	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", blockedByFlag = "in_prison", chance = 0.01, description = "Crime doesn't pay" },
 	

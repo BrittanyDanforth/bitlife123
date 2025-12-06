@@ -19,11 +19,12 @@ local events = {
 		title = "Natural Hacker",
 		text = "While messing around on the computer, you discover you have a talent for finding security flaws.",
 		category = "career_hacker",
-		weight = 6,
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.4, -- CRITICAL FIX: More likely to trigger
 		minAge = 12,
-		maxAge = 20,
+		maxAge = 22,
 		oneTime = true,
-		requiresStats = { Smarts = 55 },
+		requiresStats = { Smarts = 45 }, -- CRITICAL FIX: Lower threshold for accessibility
 		blockedByFlags = { hacker_discovered = true },
 		choices = {
 			{
@@ -594,10 +595,10 @@ local events = {
 	},
 
 	{
-		id = "assassination_target",
-		emoji = "🎯",
-		title = "You're a Target",
-		text = "A rival hacking group has put a bounty on your head. You know too much.",
+		id = "rival_hackers_threat",
+		emoji = "⚠️",
+		title = "Rivals Closing In",
+		text = "A rival hacking group is trying to expose you and take you down. They want you out of business.",
 		category = "career_hacker",
 		weight = 5,
 		minAge = 22,
@@ -622,9 +623,9 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Health = (state.Stats.Health or 50) - 25
+						state.Stats.Health = (state.Stats.Health or 50) - 15
 						if state.AddFeed then
-							state:AddFeed("Your hack failed. Assassin got close. You're wounded.")
+							state:AddFeed("Your hack failed. They got your personal info and doxed you!")
 						end
 					end
 				end,
@@ -640,7 +641,7 @@ local events = {
 				index = 3,
 				text = "Pay them off",
 				effects = { Money = -200000 },
-				feedText = "Blood money. They called off the hit... for now.",
+				feedText = "Expensive, but they backed off... for now.",
 			},
 		},
 	},

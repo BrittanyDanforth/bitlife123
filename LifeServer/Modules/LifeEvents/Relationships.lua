@@ -20,6 +20,8 @@ Relationships.events = {
 		baseChance = 0.5,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX: Can't use dating apps from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{ text = "Swipe right!", effects = { Happiness = 8 }, setFlags = { has_partner = true, dating = true }, feedText = "You matched with someone great!" },
 			{ text = "Be super selective", effects = { Smarts = 2, Happiness = 3 }, feedText = "You're picky, but quality over quantity." },
@@ -36,6 +38,8 @@ Relationships.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX: Can't have chance encounters in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{ text = "Go talk to them", effects = { Happiness = 10, Looks = 2 }, setFlags = { has_partner = true, dating = true, met_cute = true }, feedText = "You made the first move!" },
 			{ text = "Smile and hope they approach", effects = { Happiness = 5 }, feedText = "You shared a moment but didn't pursue." },
@@ -294,8 +298,72 @@ Relationships.events = {
 		requiresPartner = true,
 		requiresFlags = { married = true },
 		choices = {
-			{ text = "Let's have a baby!", effects = { Happiness = 15, Money = -3000 }, setFlags = { has_child = true, parent = true }, feedText = "Congratulations! You're having a baby!" },
-			{ text = "Adopt a child", effects = { Happiness = 15, Money = -5000 }, setFlags = { has_child = true, parent = true, adopted = true }, feedText = "You adopted a child! What a beautiful choice!" },
+			{ 
+				text = "Let's have a baby!", 
+				effects = { Happiness = 15, Money = -3000 }, 
+				setFlags = { has_child = true, parent = true }, 
+				feedText = "Congratulations! You're having a baby!",
+				-- CRITICAL FIX: Actually create the child in Relationships table!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("👶 Welcome to the world, %s!", childName))
+					end
+				end,
+			},
+			{ 
+				text = "Adopt a child", 
+				effects = { Happiness = 15, Money = -5000 }, 
+				setFlags = { has_child = true, parent = true, adopted = true }, 
+				feedText = "You adopted a child! What a beautiful choice!",
+				-- CRITICAL FIX: Actually create the adopted child in Relationships table!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					local childAge = math.random(0, 5)  -- Adopted children can be ages 0-5
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 85, -- Slightly lower initial bond for adopted
+						age = childAge,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+						adopted = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💕 You adopted %s (age %d)! Welcome to the family!", childName, childAge))
+					end
+				end,
+			},
 			{ text = "Not right now", effects = { Happiness = 2 }, feedText = "You're not ready for kids yet." },
 			{ text = "We don't want children", effects = { Happiness = 5 }, setFlags = { childfree = true }, feedText = "You've decided to remain childfree." },
 		},
@@ -430,18 +498,88 @@ Relationships.events = {
 		id = "first_date",
 		title = "First Date Jitters",
 		emoji = "☕",
-		text = "You're going on a first date!",
-		question = "How does it go?",
+		text = "You're going on a first date! How do you approach it?",
+		question = "What's your game plan?",
 		minAge = 15, maxAge = 55,
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresSingle = true,
-
+		-- CRITICAL FIX: Random first date outcome
 		choices = {
-			{ text = "Amazing chemistry - sparks flying!", effects = { Happiness = 12 }, setFlags = { has_partner = true, dating = true, great_first_date = true }, feedText = "Best first date ever! You're smitten." },
-			{ text = "Nice but no chemistry", effects = { Happiness = 2 }, feedText = "Pleasant but not a match. Oh well." },
-			{ text = "Total disaster date", effects = { Happiness = -5 }, setFlags = { bad_date_story = true }, feedText = "Awful date. At least it's a funny story now." },
-			{ text = "You got stood up", effects = { Happiness = -8 }, feedText = "They never showed. Crushing." },
+			{
+				text = "Be confident and be yourself",
+				effects = {},
+				feedText = "You walked in with confidence...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (looks / 200) + (happiness / 300)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Flags.great_first_date = true
+						state:AddFeed("☕ Amazing chemistry! Best first date ever! You're smitten.")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("☕ Nice enough, but no real spark. Probably won't call them.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.bad_date_story = true
+						state:AddFeed("☕ Awkward disaster. At least it's a funny story now.")
+					end
+				end,
+			},
+			{
+				text = "Play it cool and mysterious",
+				effects = {},
+				feedText = "You tried to be mysterious...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					local successChance = 0.25 + (looks / 150)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state:AddFeed("☕ They found you intriguing! Chemistry is building.")
+					elseif roll < successChance + 0.35 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("☕ They couldn't really read you. Mixed signals all around.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("☕ Being mysterious came off as disinterested. Oops.")
+					end
+				end,
+			},
+			{
+				text = "Be nervous and overthink everything",
+				effects = {},
+				feedText = "Your nerves got the better of you...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.20 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state:AddFeed("☕ They found your nervousness endearing! How sweet!")
+					elseif roll < 0.50 then
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("☕ You were awkward but they were nice about it.")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("☕ Too nervous. The conversation was painful.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("☕ They never showed up. Crushing.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -465,36 +603,132 @@ Relationships.events = {
 		id = "speed_dating",
 		title = "Speed Dating Event",
 		emoji = "⏰",
-		text = "A friend dragged you to a speed dating event.",
-		question = "How does it go?",
+		text = "A friend dragged you to a speed dating event. 5 minutes per person!",
+		question = "What's your strategy?",
 		minAge = 21, maxAge = 50,
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresSingle = true,
-
+		-- CRITICAL FIX: Random speed dating outcome
 		choices = {
-			{ text = "Met someone incredible!", effects = { Happiness = 12 }, setFlags = { has_partner = true, dating = true }, feedText = "You found a real connection in just 5 minutes!" },
-			{ text = "Few decent options", effects = { Happiness = 3 }, feedText = "Got some numbers. We'll see where it goes." },
-			{ text = "All duds", effects = { Happiness = -3 }, feedText = "Nobody was your type. Disappointing." },
-			{ text = "Left early - too awkward", effects = { Happiness = -2 }, feedText = "You couldn't handle the awkwardness." },
+			{
+				text = "Try to make a real connection",
+				effects = {},
+				feedText = "You gave each person your genuine attention...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.30 + (looks / 200) + (smarts / 300)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state:AddFeed("⏰ You found a real connection in just 5 minutes!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("⏰ Got a few numbers. We'll see where it goes.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("⏰ Nice people but no real spark with anyone.")
+					end
+				end,
+			},
+			{
+				text = "Just have fun with it",
+				effects = {},
+				feedText = "You didn't take it too seriously...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state:AddFeed("⏰ Someone loved your fun energy! You clicked!")
+					elseif roll < 0.60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⏰ Fun night out! Made some potential friends too.")
+					else
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("⏰ Entertaining evening but nobody caught your eye.")
+					end
+				end,
+			},
+			{
+				text = "Leave early - this isn't for me",
+				effects = { Happiness = -2 },
+				feedText = "You couldn't handle the awkwardness and left.",
+			},
 		},
 	},
 	{
 		id = "blind_date",
 		title = "Blind Date",
 		emoji = "🙈",
-		text = "A friend set you up on a blind date.",
-		question = "How did it go?",
+		text = "A friend set you up on a blind date. You don't know what they look like!",
+		question = "Where do you meet?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresSingle = true,
-
+		-- CRITICAL FIX: Random blind date outcome
 		choices = {
-			{ text = "Love at first sight!", effects = { Happiness = 15 }, setFlags = { has_partner = true, dating = true, met_through_friend = true }, feedText = "Your friend knows you so well! Amazing match!" },
-			{ text = "Nice person, just no spark", effects = { Happiness = 2 }, feedText = "Good conversation but no romance." },
-			{ text = "Complete mismatch", effects = { Happiness = -3 }, feedText = "What was your friend thinking?" },
-			{ text = "They were creepy", effects = { Happiness = -8 }, feedText = "Never trusting that friend's taste again." },
+			{
+				text = "A nice restaurant",
+				effects = { Money = -50 },
+				feedText = "You waited at the restaurant...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (looks / 250)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Flags.met_through_friend = true
+						state:AddFeed("🙈 Love at first sight! Your friend knows you so well!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🙈 Nice person. Good conversation but no real spark.")
+					elseif roll < successChance + 0.50 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🙈 Complete mismatch. What was your friend thinking?")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🙈 They were creepy. Never trusting that friend's taste again!")
+					end
+				end,
+			},
+			{
+				text = "A casual coffee shop",
+				effects = { Money = -10 },
+				feedText = "You met for coffee...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Flags.met_through_friend = true
+						state:AddFeed("🙈 Great connection! Easy conversation and good vibes.")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🙈 Pleasant coffee. Maybe friends, not romance.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🙈 Awkward silence. Long 30 minutes.")
+					end
+				end,
+			},
+			{
+				text = "Cancel last minute - too nervous",
+				effects = { Happiness = -3 },
+				feedText = "You chickened out. Your friend is disappointed.",
+			},
 		},
 	},
 
@@ -873,8 +1107,64 @@ Relationships.events = {
 		cooldown = 5,
 
 		choices = {
-			{ text = "Unexpected but excited!", effects = { Happiness = 10, Money = -2000 }, setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, feedText = "Surprise! You're having a baby!" },
-			{ text = "Terrified but accepting", effects = { Happiness = -5, Money = -2000 }, setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, feedText = "Ready or not, here comes baby." },
+			{ 
+				text = "Unexpected but excited!", 
+				effects = { Happiness = 10, Money = -2000 }, 
+				setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, 
+				feedText = "Surprise! You're having a baby!",
+				-- CRITICAL FIX: Actually create the child in Relationships table!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
+			{ 
+				text = "Terrified but accepting", 
+				effects = { Happiness = -5, Money = -2000 }, 
+				setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, 
+				feedText = "Ready or not, here comes baby.",
+				-- CRITICAL FIX: Actually create the child in Relationships table!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 90,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
 			{ text = "Not ready - considering options", effects = { Happiness = -10 }, setFlags = { difficult_decision = true }, feedText = "This is a life-changing decision." },
 			{ text = "It's not yours/didn't happen", effects = { Happiness = 3 }, feedText = "False alarm or not your situation." },
 		},
@@ -909,9 +1199,121 @@ Relationships.events = {
 		requiresFlags = { trying_for_baby = true },
 
 		choices = {
-			{ text = "Double/triple the joy!", effects = { Happiness = 15, Money = -5000, Health = -5 }, setFlags = { has_child = true, parent = true, has_multiples = true }, feedText = "Multiples! Exhausting but amazing!" },
-			{ text = "Overwhelmed but hopeful", effects = { Happiness = 5, Money = -5000, Health = -8 }, setFlags = { has_child = true, parent = true, has_multiples = true }, feedText = "You're going to need a lot of help..." },
-			{ text = "Terrified - how will we manage?", effects = { Happiness = -5, Money = -5000, Health = -5 }, setFlags = { has_child = true, parent = true, has_multiples = true, overwhelmed_parent = true }, feedText = "Two/three at once? Deep breaths..." },
+			{ 
+				text = "Double/triple the joy!", 
+				effects = { Happiness = 15, Money = -5000, Health = -5 }, 
+				setFlags = { has_child = true, parent = true, has_multiples = true }, 
+				feedText = "Multiples! Exhausting but amazing!",
+				-- CRITICAL FIX: Actually create twin/triplet children in Relationships table!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local numBabies = math.random() > 0.7 and 3 or 2 -- 30% triplets, 70% twins
+					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local usedNames = {}
+					for i = 1, numBabies do
+						local childCount = (state.ChildCount or 0) + 1
+						state.ChildCount = childCount
+						local isBoy = math.random() > 0.5
+						local names = isBoy and boyNames or girlNames
+						local childName
+						repeat
+							childName = names[math.random(1, #names)]
+						until not usedNames[childName]
+						usedNames[childName] = true
+						local childId = "child_" .. tostring(childCount)
+						state.Relationships[childId] = {
+							id = childId,
+							name = childName,
+							type = "family",
+							role = isBoy and "Son" or "Daughter",
+							relationship = 100,
+							age = 0,
+							gender = isBoy and "male" or "female",
+							alive = true,
+							isFamily = true,
+							isChild = true,
+							isMultiple = true,
+						}
+					end
+				end,
+			},
+			{ 
+				text = "Overwhelmed but hopeful", 
+				effects = { Happiness = 5, Money = -5000, Health = -8 }, 
+				setFlags = { has_child = true, parent = true, has_multiples = true }, 
+				feedText = "You're going to need a lot of help...",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local numBabies = 2 -- Twins
+					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local usedNames = {}
+					for i = 1, numBabies do
+						local childCount = (state.ChildCount or 0) + 1
+						state.ChildCount = childCount
+						local isBoy = math.random() > 0.5
+						local names = isBoy and boyNames or girlNames
+						local childName
+						repeat
+							childName = names[math.random(1, #names)]
+						until not usedNames[childName]
+						usedNames[childName] = true
+						local childId = "child_" .. tostring(childCount)
+						state.Relationships[childId] = {
+							id = childId,
+							name = childName,
+							type = "family",
+							role = isBoy and "Son" or "Daughter",
+							relationship = 85,
+							age = 0,
+							gender = isBoy and "male" or "female",
+							alive = true,
+							isFamily = true,
+							isChild = true,
+							isMultiple = true,
+						}
+					end
+				end,
+			},
+			{ 
+				text = "Terrified - how will we manage?", 
+				effects = { Happiness = -5, Money = -5000, Health = -5 }, 
+				setFlags = { has_child = true, parent = true, has_multiples = true, overwhelmed_parent = true }, 
+				feedText = "Two/three at once? Deep breaths...",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local numBabies = 2 -- Twins
+					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local usedNames = {}
+					for i = 1, numBabies do
+						local childCount = (state.ChildCount or 0) + 1
+						state.ChildCount = childCount
+						local isBoy = math.random() > 0.5
+						local names = isBoy and boyNames or girlNames
+						local childName
+						repeat
+							childName = names[math.random(1, #names)]
+						until not usedNames[childName]
+						usedNames[childName] = true
+						local childId = "child_" .. tostring(childCount)
+						state.Relationships[childId] = {
+							id = childId,
+							name = childName,
+							type = "family",
+							role = isBoy and "Son" or "Daughter",
+							relationship = 70,
+							age = 0,
+							gender = isBoy and "male" or "female",
+							alive = true,
+							isFamily = true,
+							isChild = true,
+							isMultiple = true,
+						}
+					end
+				end,
+			},
 		},
 	},
 	{

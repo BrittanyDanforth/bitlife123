@@ -2,7 +2,7 @@
 	Racing Career Events
 	Full AAA-quality racing career with minigame integration
 	Requires: QTE minigame for races, high Health (reflexes)
-	Danger element: Crashes can injure/kill player
+	Danger element: Crashes can result in injury or end career
 ]]
 
 local events = {
@@ -15,12 +15,13 @@ local events = {
 		title = "Racing Talent Discovered",
 		text = "At a go-kart track, a scout notices your exceptional reflexes and racing instincts.",
 		category = "career_racing",
-		weight = 8,
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.35, -- CRITICAL FIX: More likely to trigger
 		minAge = 10,
-		maxAge = 16,
+		maxAge = 18, -- CRITICAL FIX: Extended age range
 		oneTime = true,
-		requiresNoJob = true,
-		requiresStats = { Health = 50 },
+		-- REMOVED: requiresNoJob (too restrictive - teens can discover racing while in school)
+		requiresStats = { Health = 40 }, -- CRITICAL FIX: Lower threshold
 		blockedByFlags = { discovered_racing = true },
 		choices = {
 			{
@@ -404,31 +405,35 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Fight for survival!",
-				feedText = "Life or death moment!",
+				text = "Fight for control!",
+				feedText = "Critical moment!",
 				triggerMinigame = "qte",
 				minigameOptions = { difficulty = "hard" },
 				onResolve = function(state, minigameResult)
 					if minigameResult and minigameResult.success then
 						state.Flags = state.Flags or {}
-						state.Flags.cheated_death = true
+						state.Flags.miracle_escape = true
 						state.Stats = state.Stats or {}
 						state.Stats.Health = (state.Stats.Health or 50) - 10
 						if state.AddFeed then
-							state:AddFeed("Miracle escape! You walked away from certain death!")
+							state:AddFeed("Miracle escape! You walked away from a terrifying crash!")
 						end
 					else
-						-- CRITICAL: Potential death or career-ending injury
-						local deathRoll = math.random(1, 100)
+						-- Career-ending injury scenario
+						local outcomeRoll = math.random(1, 100)
 						state.Stats = state.Stats or {}
-						if deathRoll <= 15 then
-							-- Fatal crash (15% chance)
-							state.Stats.Health = 0
+						if outcomeRoll <= 15 then
+							-- Severe injury, ends racing career
+							state.Stats.Health = 15
 							state.Flags = state.Flags or {}
-							state.Flags.dead = true
-							state.CauseOfDeath = "Racing Accident"
+							state.Flags.career_ended = true
+							state.Flags.hospitalized = true
+							-- Clear career
+							state.CurrentJob = nil
+							state.Flags.employed = nil
+							state.Flags.has_job = nil
 							if state.AddFeed then
-								state:AddFeed("💀 Fatal crash. Your racing career ends tragically.")
+								state:AddFeed("🏥 Severe crash. You'll need a long recovery and can't race anymore.")
 							end
 						else
 							-- Career-ending injury
@@ -441,7 +446,7 @@ local events = {
 							state.Flags.employed = nil
 							state.Flags.has_job = nil
 							if state.AddFeed then
-								state:AddFeed("🏥 Catastrophic injuries. Your racing career is over.")
+								state:AddFeed("🏥 Serious injuries. Your racing career is over.")
 							end
 						end
 					end

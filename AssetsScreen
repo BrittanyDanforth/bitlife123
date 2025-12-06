@@ -244,79 +244,82 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- Balance bar with casino button
+	-- CRITICAL FIX: Balance bar - clean card design that fits naturally below header
+	-- Uses a white card with teal accent, positioned to look integrated
 	self.balanceBar = Instance.new("Frame")
-	self.balanceBar.Size = UDim2.new(1, -16, 0, 75)
-	self.balanceBar.Position = UDim2.new(0, 8, 0, 116)
+	self.balanceBar.Name = "BalanceBar"
+	self.balanceBar.Size = UDim2.new(1, -24, 0, 54) -- Full width minus margins
+	self.balanceBar.Position = UDim2.new(0, 12, 0, 130) -- Below header curve (header extends to ~120px)
 	self.balanceBar.BackgroundColor3 = C.White
+	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 18)
-	UI.stroke(self.balanceBar, 1, 0.88, C.Gray200)
-	UI.createShadow(self.balanceBar, 3, 10, C.Black, 0.93)
-
-	-- Balance icon
+	UI.corner(self.balanceBar, 12)
+	UI.stroke(self.balanceBar, 1, 0.85, C.TealPale)
+	
+	-- Teal accent bar on left edge
+	local accentBar = Instance.new("Frame")
+	accentBar.Name = "AccentBar"
+	accentBar.Size = UDim2.new(0, 4, 1, -12)
+	accentBar.Position = UDim2.new(0, 6, 0, 6)
+	accentBar.BackgroundColor3 = C.Teal
+	accentBar.ZIndex = 85
+	accentBar.Parent = self.balanceBar
+	UI.corner(accentBar, 2)
+	
+	-- Money icon in a circular badge
+	local iconBadge = Instance.new("Frame")
+	iconBadge.Name = "IconBadge"
+	iconBadge.Size = UDim2.new(0, 36, 0, 36)
+	iconBadge.Position = UDim2.new(0, 18, 0.5, -18)
+	iconBadge.BackgroundColor3 = C.TealPale or Color3.fromRGB(209, 250, 229)
+	iconBadge.ZIndex = 85
+	iconBadge.Parent = self.balanceBar
+	UI.corner(iconBadge, 18)
+	
 	local balanceIcon = Instance.new("TextLabel")
-	balanceIcon.Size = UDim2.new(0, 55, 0, 55)
-	balanceIcon.Position = UDim2.new(0, 14, 0.5, -27.5)
+	balanceIcon.Name = "Icon"
+	balanceIcon.Size = UDim2.fromScale(1, 1)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 38
+	balanceIcon.TextSize = 20
 	balanceIcon.Text = "💰"
-	balanceIcon.ZIndex = 85
-	balanceIcon.Parent = self.balanceBar
-
-	-- Balance text
+	balanceIcon.ZIndex = 86
+	balanceIcon.Parent = iconBadge
+	
+	-- Balance label and value stacked
 	local balanceLabel = Instance.new("TextLabel")
-	balanceLabel.Size = UDim2.new(0.4, 0, 0, 20)
-	balanceLabel.Position = UDim2.new(0, 75, 0, 14)
+	balanceLabel.Name = "Label"
+	balanceLabel.Size = UDim2.new(0.5, 0, 0, 14)
+	balanceLabel.Position = UDim2.new(0, 62, 0, 10)
 	balanceLabel.BackgroundTransparency = 1
-	balanceLabel.Font = F.Body
-	balanceLabel.TextSize = 13
-	balanceLabel.TextColor3 = C.Gray500
+	balanceLabel.Font = F.Medium
+	balanceLabel.TextSize = 10
+	balanceLabel.TextColor3 = C.Gray500 or Color3.fromRGB(107, 114, 128)
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-	balanceLabel.Text = "Your Balance"
-	balanceLabel.ZIndex = 85
+	balanceLabel.Text = "YOUR BALANCE"
+	balanceLabel.ZIndex = 86
 	balanceLabel.Parent = self.balanceBar
 
 	self.balanceValue = Instance.new("TextLabel")
-	self.balanceValue.Size = UDim2.new(0.5, 0, 0, 32)
-	self.balanceValue.Position = UDim2.new(0, 75, 0, 34)
+	self.balanceValue.Name = "Value"
+	self.balanceValue.Size = UDim2.new(0.6, 0, 0, 22)
+	self.balanceValue.Position = UDim2.new(0, 62, 0, 24)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 28
-	self.balanceValue.TextColor3 = C.GreenDark
+	self.balanceValue.TextSize = 19
+	self.balanceValue.TextColor3 = C.TealDark or Color3.fromRGB(17, 94, 89)
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
-	self.balanceValue.ZIndex = 85
+	self.balanceValue.ZIndex = 86
 	self.balanceValue.Parent = self.balanceBar
 
-	-- Casino button
-	local casinoBtn = Instance.new("TextButton")
-	casinoBtn.Size = UDim2.new(0, 90, 0, 50)
-	casinoBtn.AnchorPoint = Vector2.new(1, 0.5)
-	casinoBtn.Position = UDim2.new(1, -14, 0.5, 0)
-	casinoBtn.BackgroundColor3 = C.Gold
-	casinoBtn.Font = F.Button
-	casinoBtn.TextSize = 13
-	casinoBtn.TextColor3 = C.White
-	casinoBtn.Text = "🎰 Casino"
-	casinoBtn.AutoButtonColor = false
-	casinoBtn.ZIndex = 85
-	casinoBtn.Parent = self.balanceBar
-	UI.corner(casinoBtn, 14)
-	UI.gradient(casinoBtn, C.Gold, C.GoldDark, 90)
+	-- REMOVED: Casino button (per user request)
+	-- Casino/gambling feature removed from AssetsScreen
 
-	casinoBtn.MouseButton1Click:Connect(function() self:showGambling() end)
-	casinoBtn.MouseEnter:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 96, 0, 54) })
-	end)
-	casinoBtn.MouseLeave:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 50) })
-	end)
-
-	-- Tab bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 200, zIndex = 84 })
+	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
+	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 196, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -334,12 +337,13 @@ function AssetsScreen:createUI()
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
 
-	-- Scroll area
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 264, zIndex = 81 })
+	-- Scroll area - CRITICAL FIX: Positioned below tab bar
+	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 266, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()
-	self:createGamblingModal()
+	-- REMOVED: self:createGamblingModal() - Casino feature removed
 
 	-- Initial populate
 	self:populateProperty()

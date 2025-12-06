@@ -68,9 +68,9 @@ local Paths = {
 		minAge = 16,
 		requirements = {},
 		stages = {
-			{ id = "hustler", name = "Street Hustler", emoji = "💊", description = "Small time deals" },
-			{ id = "dealer", name = "Dealer", emoji = "💰", description = "Run your own corner" },
-			{ id = "lieutenant", name = "Lieutenant", emoji = "🔫", description = "Manage territory" },
+			{ id = "hustler", name = "Street Hustler", emoji = "💰", description = "Small time hustles" },
+			{ id = "operator", name = "Operator", emoji = "📦", description = "Run your own operation" },
+			{ id = "lieutenant", name = "Lieutenant", emoji = "🔥", description = "Manage territory" },
 			{ id = "underboss", name = "Underboss", emoji = "🕶️", description = "Second in command" },
 			{ id = "boss", name = "Crime Boss", emoji = "👑", description = "Run the whole operation!" },
 		},
@@ -79,7 +79,7 @@ local Paths = {
 			{ id = "territory", name = "Expand Territory", emoji = "🗺️", effect = "+Income", risk = 40 },
 			{ id = "heist", name = "Plan Heist", emoji = "🏦", effect = "+Big Money", risk = 60 },
 			{ id = "bribe", name = "Bribe Officials", emoji = "💵", effect = "-Heat", cost = 25000 },
-			{ id = "war", name = "Gang War", emoji = "⚔️", effect = "Danger!", risk = 80 },
+			{ id = "turf_war", name = "Turf War", emoji = "⚔️", effect = "Danger!", risk = 80 },
 		}
 	},
 	celebrity = {

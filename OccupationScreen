@@ -44,7 +44,7 @@ local JobCategories = {
 	{ id = "science", name = "Science", emoji = "🔬" },
 	{ id = "sports", name = "Sports", emoji = "🏆" },
 	{ id = "military", name = "Military", emoji = "🎖️" },
-	{ id = "criminal", name = "Criminal", emoji = "💊" },
+	{ id = "criminal", name = "Criminal", emoji = "💰" },
 	-- NEW CAREER PATHS (v2.0)
 	{ id = "racing", name = "Racing", emoji = "🏎️" },
 	{ id = "hacker", name = "Hacker/Cyber", emoji = "💻🔓" },
@@ -264,11 +264,11 @@ local Jobs = {
 	-- ════════════════════════════════════════════════════════════════
 	-- CRIMINAL CAREERS (Illegal - High Risk/Reward) - Added difficulty
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
-	{ id = "drug_dealer", name = "Drug Dealer", company = "The Organization", emoji = "💊", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
-	{ id = "hitman", name = "Hitman", company = "Unknown", emoji = "🔫", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true, difficulty = 8, minStats = { Health = 60 } },
-	{ id = "gang_member", name = "Gang Member", company = "The Gang", emoji = "🔪", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
-	{ id = "gang_lieutenant", name = "Gang Lieutenant", company = "The Gang", emoji = "🔪", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true, difficulty = 6 },
+	{ id = "illegal_dealer_street", name = "Street Hustler", company = "The Streets", emoji = "💰", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
+	{ id = "illegal_dealer", name = "Illegal Dealer", company = "The Organization", emoji = "💰", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
+	{ id = "enforcer", name = "Enforcer", company = "Unknown", emoji = "💪", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true, difficulty = 8, minStats = { Health = 60 } },
+	{ id = "crew_member", name = "Crew Member", company = "The Crew", emoji = "🤝", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true, difficulty = 3 },
+	{ id = "crew_leader", name = "Crew Leader", company = "The Crew", emoji = "🔥", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true, difficulty = 6 },
 	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true, difficulty = 9, minStats = { Smarts = 60 } },
 	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true, difficulty = 5 },
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 4 },
@@ -365,17 +365,29 @@ function OccupationScreen:updateState(newState)
 		self.playerState = newState 
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		
-		-- CRITICAL FIX: Invalidate cached career info on state update
-		-- This ensures raises/promotions are shown correctly after state changes
-		-- We also update educationInfo since it may have changed
-		self.careerInfo = nil
+		-- CRITICAL FIX: Immediately update cached career info from state if available
+		-- This ensures raises/promotions from events are shown correctly
+		if newState.CareerInfo then
+			self.careerInfo = newState.CareerInfo
+			log("Career info updated from state:", 
+				"raises:", self.careerInfo.raises or 0,
+				"promotions:", self.careerInfo.promotions or 0,
+				"yearsAtJob:", self.careerInfo.yearsAtJob or 0)
+		else
+			-- Only invalidate if we didn't get fresh data
+			self.careerInfo = nil
+		end
 		self.educationInfo = nil
 		
-		-- If visible, refresh career info immediately
-		if self.isVisible and self:getCurrentJob() then
+		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
+		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
+		if self.isVisible then
 			task.spawn(function()
-				self:fetchCareerInfo()
-				-- Only refresh UI if still visible and on jobs tab
+				-- Only fetch career info from server if we didn't already get it from state
+				if self:getCurrentJob() and not self.careerInfo then
+					self:fetchCareerInfo()
+				end
+				-- Always refresh UI if still visible and on jobs tab (even if no job!)
 				if self.isVisible and self.currentTab == "jobs" then
 					self:populateJobs()
 				end
@@ -1109,23 +1121,35 @@ function OccupationScreen:switchTab(tabId)
 	log("Switching tab to:", tabId)
 	self.currentTab = tabId
 
+	-- CRITICAL FIX: Use calculated layout values matching createUI()
+	-- Layout constants (must match createUI):
+	local INFO_HEIGHT = 52
+	local TAB_HEIGHT = 52
+	local CATEGORY_HEIGHT = 44
+	local GAP = 8
+	
+	local tabY = INFO_HEIGHT + GAP  -- 60
+	local categoryY = tabY + TAB_HEIGHT + GAP  -- 120
+	local scrollY_withCategory = categoryY + CATEGORY_HEIGHT + GAP  -- 172
+	local scrollY_noCategory = tabY + TAB_HEIGHT + GAP  -- 120
+
 	if tabId == "jobs" then
 		log("Animating to Jobs tab")
 		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Blue, TextColor3 = C.White })
 		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
-		-- Show category bar and adjust content
+		-- Show category bar and adjust content (relative to contentRoot!)
 		self.categoryBar.Visible = true
-		self.contentScroll.Size = UDim2.new(1, -16, 1, -296)
-		self.contentScroll.Position = UDim2.new(0, 8, 0, 286)
+		self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY_withCategory)
+		self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY_withCategory)
 		self:populateJobs()
 	else
 		log("Animating to Education tab")
 		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
 		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Purple, TextColor3 = C.White })
-		-- Hide category bar and expand content
+		-- Hide category bar and expand content (relative to contentRoot!)
 		self.categoryBar.Visible = false
-		self.contentScroll.Size = UDim2.new(1, -16, 1, -250)
-		self.contentScroll.Position = UDim2.new(0, 8, 0, 240)
+		self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY_noCategory)
+		self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY_noCategory)
 		self:populateEducation()
 	end
 end
@@ -1153,6 +1177,12 @@ function OccupationScreen:selectCategory(categoryId)
 end
 
 function OccupationScreen:populateJobs()
+	-- CRITICAL FIX: Check if we're still on jobs tab to prevent glitches
+	-- when rapidly switching tabs
+	if self.currentTab ~= "jobs" then
+		return
+	end
+	
 	self:updateInfoBar()
 
 	-- Fetch career info from server (for performance, promotion progress, etc.)
@@ -2280,6 +2310,12 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 end
 
 function OccupationScreen:populateEducation()
+	-- CRITICAL FIX: Check if we're still on education tab to prevent glitches
+	-- when rapidly switching tabs
+	if self.currentTab ~= "education" then
+		return
+	end
+	
 	self:updateInfoBar()
 
 	-- Clear content
@@ -3341,16 +3377,202 @@ function OccupationScreen:quitJob()
 		return
 	end
 
-	log("Invoking server QuitJob...")
-	local result = QuitJob:InvokeServer()
-	log("Server response:", result and "received" or "nil")
+	-- CRITICAL FIX: Show confirmation dialog instead of quitting immediately
+	self:showQuitConfirmation()
+end
 
-	if result then
-		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Done" or "Error")
+function OccupationScreen:showQuitConfirmation()
+	local currentJobData = self:getCurrentJobData()
+	local jobName = currentJobData and currentJobData.name or "your job"
+	local salary = currentJobData and currentJobData.salary or 0
+	local yearsWorked = self.careerInfo and self.careerInfo.yearsAtJob or 0
+	
+	-- Create quit confirmation modal if it doesn't exist
+	if not self.quitConfirmModal then
+		self:createQuitConfirmModal()
+	end
+	
+	-- Update the modal with current job info
+	local yearsText = yearsWorked == 1 and "1 year" or string.format("%d years", yearsWorked)
+	self.quitConfirmModal.jobLabel.Text = "💼 " .. jobName
+	self.quitConfirmModal.salaryLabel.Text = string.format("💰 %s/year • %s", UI.formatMoney(salary), yearsText)
+	
+	-- Show the modal
+	UI.showModal(self.quitConfirmModal)
+end
+
+function OccupationScreen:createQuitConfirmModal()
+	-- CRITICAL FIX: Simplified message and taller modal to fit all buttons
+	self.quitConfirmModal = UI.createModalCard(self.screenGui, {
+		title = "Quit Your Job?",
+		message = "Are you sure?", -- Shortened message
+		emoji = "🤔",
+		shellColor = C.Amber,
+		strokeColor = C.AmberDark,
+	})
+	
+	-- Add job info labels - repositioned for smaller message
+	local jobLabel = Instance.new("TextLabel")
+	jobLabel.Name = "JobLabel"
+	jobLabel.Size = UDim2.new(1, -32, 0, 24)
+	jobLabel.Position = UDim2.new(0, 16, 0, 115)
+	jobLabel.BackgroundTransparency = 1
+	jobLabel.Font = F.Title
+	jobLabel.TextSize = 16
+	jobLabel.TextColor3 = C.Gray800
+	jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+	jobLabel.Text = "💼 Your Job"
+	jobLabel.ZIndex = 105
+	jobLabel.Parent = self.quitConfirmModal.shell
+	self.quitConfirmModal.jobLabel = jobLabel
+	
+	local salaryLabel = Instance.new("TextLabel")
+	salaryLabel.Name = "SalaryLabel"
+	salaryLabel.Size = UDim2.new(1, -32, 0, 20)
+	salaryLabel.Position = UDim2.new(0, 16, 0, 139)
+	salaryLabel.BackgroundTransparency = 1
+	salaryLabel.Font = F.Body
+	salaryLabel.TextSize = 13
+	salaryLabel.TextColor3 = C.Gray500
+	salaryLabel.TextXAlignment = Enum.TextXAlignment.Center
+	salaryLabel.Text = "💰 $0/year • 0 years"
+	salaryLabel.ZIndex = 105
+	salaryLabel.Parent = self.quitConfirmModal.shell
+	self.quitConfirmModal.salaryLabel = salaryLabel
+	
+	-- CRITICAL FIX: Made shell much taller to fit all buttons properly (was 420, now 480)
+	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 480)
+	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -240)
+	
+	-- Remove default OK button, add choice buttons
+	self.quitConfirmModal.okButton.Visible = false
+	
+	-- CRITICAL FIX: Choice container much taller and repositioned (was 200, now 260)
+	local choiceContainer = Instance.new("Frame")
+	choiceContainer.Name = "ChoiceContainer"
+	choiceContainer.Size = UDim2.new(1, -32, 0, 260)
+	choiceContainer.Position = UDim2.new(0, 16, 0, 180)
+	choiceContainer.BackgroundTransparency = 1
+	choiceContainer.ZIndex = 105
+	choiceContainer.Parent = self.quitConfirmModal.shell
+	
+	local choiceLayout = Instance.new("UIListLayout")
+	choiceLayout.Padding = UDim.new(0, 8)
+	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choiceLayout.Parent = choiceContainer
+	
+	-- Choice 1: Resign professionally - CRITICAL FIX: Taller button to prevent cutoff
+	local choice1 = Instance.new("TextButton")
+	choice1.Size = UDim2.new(1, 0, 0, 48)
+	choice1.BackgroundColor3 = C.Green
+	choice1.Font = F.Medium
+	choice1.TextSize = 14
+	choice1.TextColor3 = C.White
+	choice1.Text = "✅ Resign professionally"
+	choice1.ZIndex = 106
+	choice1.LayoutOrder = 1
+	choice1.Parent = choiceContainer
+	UI.corner(choice1, 10)
+	choice1.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("professional")
+		end)
+	end)
+	
+	-- Choice 2: Quit dramatically - CRITICAL FIX: Taller button
+	local choice2 = Instance.new("TextButton")
+	choice2.Size = UDim2.new(1, 0, 0, 48)
+	choice2.BackgroundColor3 = C.Amber
+	choice2.Font = F.Medium
+	choice2.TextSize = 14
+	choice2.TextColor3 = C.White
+	choice2.Text = "🔥 Quit dramatically"
+	choice2.ZIndex = 106
+	choice2.LayoutOrder = 2
+	choice2.Parent = choiceContainer
+	UI.corner(choice2, 10)
+	choice2.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("dramatic")
+		end)
+	end)
+	
+	-- Choice 3: Ghost them - CRITICAL FIX: Taller button
+	local choice3 = Instance.new("TextButton")
+	choice3.Size = UDim2.new(1, 0, 0, 48)
+	choice3.BackgroundColor3 = C.Purple
+	choice3.Font = F.Medium
+	choice3.TextSize = 14
+	choice3.TextColor3 = C.White
+	choice3.Text = "👻 Ghost them"
+	choice3.ZIndex = 106
+	choice3.LayoutOrder = 3
+	choice3.Parent = choiceContainer
+	UI.corner(choice3, 10)
+	choice3.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("ghost")
+		end)
+	end)
+	
+	-- Choice 4: Stay at job - CRITICAL FIX: Taller button
+	local choice4 = Instance.new("TextButton")
+	choice4.Size = UDim2.new(1, 0, 0, 48)
+	choice4.BackgroundColor3 = C.Gray500
+	choice4.Font = F.Medium
+	choice4.TextSize = 14
+	choice4.TextColor3 = C.White
+	choice4.Text = "🤔 Nevermind, stay"
+	choice4.ZIndex = 106
+	choice4.LayoutOrder = 4
+	choice4.Parent = choiceContainer
+	UI.corner(choice4, 10)
+	choice4.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal)
+	end)
+	
+	-- Close area
+	self.quitConfirmModal.closeArea.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal)
+	end)
+end
+
+function OccupationScreen:executeQuit(quitStyle)
+	log("=== EXECUTING QUIT ===")
+	log("Quit style:", quitStyle)
+	
+	local result = QuitJob:InvokeServer(quitStyle)
+	log("Server response:", result and "received" or "nil")
+	
+	if result and result.success then
+		-- CRITICAL FIX: Immediately clear local job state so UI refreshes correctly
+		if self.playerState then
+			self.playerState.CurrentJob = nil
+		end
+		self.careerInfo = nil -- Clear cached career info
+		
+		local emoji = "👋"
+		local title = "You quit!"
+		local message = result.message
+		
+		if quitStyle == "dramatic" then
+			emoji = "🔥"
+			title = "Epic Exit!"
+		elseif quitStyle == "ghost" then
+			emoji = "👻"
+			title = "Gone!"
+		end
+		
+		self:showResult(true, message, emoji)
+		
+		-- Force refresh the job list after showing result
+		task.delay(0.1, function()
+			if self.isVisible then
+				self:populateJobs()
+			end
+		end)
 	else
-		logWarn("Server returned nil!")
-		self:showResult(false, "Server error.", "X")
+		self:showResult(false, result and result.message or "Server error.", "❌")
 	end
 end
 

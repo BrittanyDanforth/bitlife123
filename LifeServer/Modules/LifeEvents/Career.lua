@@ -21,6 +21,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Can't have workplace conflicts while in prison!
+		blockedByFlags = { in_prison = true },
 
 		-- META
 		stage = STAGE,
@@ -45,6 +47,7 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		blockedByFlags = { in_prison = true },
 
 		-- META
 		stage = STAGE,
@@ -111,8 +114,8 @@ Career.events = {
 		id = "work_achievement",
 		title = "Major Achievement",
 		emoji = "🏆",
-		text = "You accomplished something significant at work!",
-		question = "What was it?",
+		text = "Your manager says you have a chance to really shine today.",
+		question = "How do you approach this opportunity?",
 		minAge = 20, maxAge = 65,
 		baseChance = 0.3,
 		cooldown = 3,
@@ -125,12 +128,63 @@ Career.events = {
 		category = "career_success",
 		tags = { "achievement", "recognition", "job" },
 		careerTags = { "leadership" },
-
+		-- CRITICAL FIX: Random achievement outcome based on approach
 		choices = {
-			{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feedText = "You closed a major deal!" },
-			{ text = "Solved a critical problem", effects = { Happiness = 8, Smarts = 5 }, setFlags = { problem_solver = true }, feedText = "You saved the day with your solution!" },
-			{ text = "Got recognized by leadership", effects = { Happiness = 10, Money = 500 }, feedText = "The executives noticed your work!" },
-			{ text = "Mentored someone successfully", effects = { Happiness = 8, Smarts = 2 }, setFlags = { mentor = true }, feedText = "You helped someone grow in their career!" },
+			{
+				text = "Go all out - maximum effort!",
+				effects = { Health = -2 },
+				feedText = "You gave it everything...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.40 + (smarts / 150)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.big_achiever = true
+						state:AddFeed("🏆 You knocked it out of the park! Major achievement!")
+					elseif roll < successChance + 0.30 then
+						state.Money = (state.Money or 0) + 300
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏆 Solid performance! Good job but not exceptional.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🏆 Despite your effort, it didn't go as planned. Disappointing.")
+					end
+				end,
+			},
+			{
+				text = "Play it smart and strategic",
+				effects = {},
+				feedText = "You approached it methodically...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.30 + (smarts / 120)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 800
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.problem_solver = true
+						state:AddFeed("🏆 Your strategic approach paid off beautifully!")
+					elseif roll < successChance + 0.35 then
+						state.Money = (state.Money or 0) + 200
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏆 It went okay. Nothing special but nothing wrong either.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏆 Your plan didn't work out. Back to the drawing board.")
+					end
+				end,
+			},
+			{
+				text = "Let others take the lead",
+				effects = { Happiness = 2 },
+				feedText = "You supported from the sidelines.",
+			},
 		},
 	},
 	{
@@ -320,8 +374,8 @@ Career.events = {
 		id = "business_opportunity",
 		title = "Business Opportunity",
 		emoji = "💰",
-		text = "Someone approaches you with a business opportunity.",
-		question = "Is it legit?",
+		text = "Someone approaches you with an exciting business opportunity. They promise big returns!",
+		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
@@ -332,12 +386,69 @@ Career.events = {
 		category = "entrepreneurship",
 		tags = { "business", "investment", "scam_risk", "money" },
 		careerTags = { "business" },
-
+		-- CRITICAL FIX: Random investment outcome - can't choose if scam/legit
 		choices = {
-			{ text = "It's a great opportunity! Invest!", effects = { Money = 3000, Happiness = 8 }, setFlags = { investor = true }, feedText = "You took a chance on the opportunity!" },
-			{ text = "Do thorough due diligence first", effects = { Smarts = 3, Money = 1000 }, feedText = "You researched carefully before deciding." },
-			{ text = "If it sounds too good to be true...", effects = { Happiness = 2, Smarts = 2 }, feedText = "You wisely passed on the 'opportunity.'" },
-			{ text = "It's a scam! Report it!", effects = { Smarts = 3 }, feedText = "You recognized and reported the scam." },
+			{
+				text = "Invest a significant amount",
+				effects = { Money = -3000 },
+				feedText = "You put your money on the line...",
+				onResolve = function(state)
+					local roll = math.random()
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					-- Smarter people slightly less likely to fall for scams
+					local scamChance = 0.35 - (smarts / 400)
+					if roll < scamChance then
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💰 It was a scam! You lost everything you invested!")
+					elseif roll < scamChance + 0.35 then
+						state.Money = (state.Money or 0) + 3500
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Made a modest return on the investment.")
+					else
+						state.Money = (state.Money or 0) + 8000
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state:AddFeed("💰 Great investment! You made serious money!")
+					end
+				end,
+			},
+			{
+				text = "Research it thoroughly first",
+				effects = { Smarts = 2 },
+				feedText = "You investigated before committing...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Your research revealed it was a scam! Good call.")
+					elseif roll < 0.60 then
+						state.Money = (state.Money or 0) + 2000
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state:AddFeed("💰 Legitimate opportunity! You invested and profited.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💰 Took too long researching - the opportunity passed.")
+					end
+				end,
+			},
+			{
+				text = "Decline - too risky",
+				effects = { Happiness = 2 },
+				feedText = "You played it safe...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("💰 Smart move - later heard others lost money on it.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💰 Others made good money on it. Maybe you were too cautious?")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -577,20 +688,77 @@ Career.events = {
 	},
 	{
 		id = "dream_job_offer",
-		title = "Dream Job Offer",
+		title = "Dream Job Offer?",
 		emoji = "✨",
-		text = "You got an offer for your dream job!",
-		question = "What's the catch?",
+		text = "You received an incredible job offer! But should you trust it?",
+		question = "How do you respond?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.2,
 		cooldown = 6,
 		requiresJob = true,
-
+		-- CRITICAL FIX: Random job offer legitimacy - can't choose if it's a scam
 		choices = {
-			{ text = "It's perfect! Take it!", effects = { Happiness = 15, Money = 1000 }, setFlags = { dream_job = true }, feedText = "You got your dream job! Incredible!" },
-			{ text = "Great job but requires relocating", effects = { Happiness = 8, Money = 800, Health = -3 }, setFlags = { dream_job = true, relocated = true }, feedText = "Worth the move for this opportunity!" },
-			{ text = "Amazing role but less pay", effects = { Happiness = 10, Money = -500 }, setFlags = { dream_job = true }, feedText = "Passion over pay. You're happier." },
-			{ text = "Too good to be true - scam", effects = { Happiness = -10 }, feedText = "It was fake. Crushing disappointment." },
+			{
+				text = "Accept immediately - this is my chance!",
+				effects = {},
+				feedText = "You jumped at the opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then -- 60% legitimate great job
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ It's real! You got your dream job! Incredible!")
+					elseif roll < 0.80 then -- 20% good but tradeoffs
+						state.Money = (state.Money or 0) + 300
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ Great job but required sacrifices. Worth it though!")
+					else -- 20% scam
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("✨ It was a scam! They just wanted personal information. Crushed.")
+					end
+				end,
+			},
+			{
+				text = "Research the company thoroughly first",
+				effects = { Smarts = 1 },
+				feedText = "You did your due diligence...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.10 then -- Small chance it was a scam you avoided
+						state:ModifyStat("Happiness", 3)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("✨ Good thing you researched - it was a scam! Crisis averted.")
+					elseif roll < 0.70 then -- Usually it's legit and you get it
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 14)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ Verified and accepted! Your dream job awaits!")
+					else -- Sometimes you're too slow
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("✨ Took too long researching - they gave the job to someone else!")
+					end
+				end,
+			},
+			{
+				text = "Decline - seems too good to be true",
+				effects = { Happiness = -3 },
+				feedText = "You passed on the opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("✨ Smart move - later heard it was a scam company!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("✨ It was actually legitimate... you missed a real opportunity.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -669,17 +837,84 @@ Career.events = {
 		title = "Big Presentation",
 		emoji = "📊",
 		text = "You have to present to the executive team!",
-		question = "How does it go?",
+		question = "How do you prepare?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-
+		-- CRITICAL FIX: Random presentation outcome based on preparation
 		choices = {
-			{ text = "Nailed it! Standing ovation", effects = { Happiness = 12, Money = 500, Smarts = 3 }, setFlags = { great_presenter = true }, feedText = "You crushed that presentation!" },
-			{ text = "Solid performance, good feedback", effects = { Happiness = 5, Smarts = 2 }, feedText = "You did well. Not perfect but strong." },
-			{ text = "Froze up - disaster", effects = { Happiness = -10, Smarts = -2 }, setFlags = { presentation_trauma = true }, feedText = "Total failure. Embarrassing." },
-			{ text = "Technical difficulties saved you", effects = { Happiness = 3 }, feedText = "The projector broke - presentation rescheduled!" },
+			{
+				text = "Practice extensively beforehand",
+				effects = { Health = -1 },
+				feedText = "You rehearsed for hours...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.45 + (smarts / 150)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.great_presenter = true
+						state:AddFeed("📊 Nailed it! Standing ovation from the executives!")
+					elseif roll < successChance + 0.35 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📊 Solid presentation. Good feedback all around.")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("📊 You stumbled a bit. Not great, but you recovered.")
+					end
+				end,
+			},
+			{
+				text = "Wing it - I know this stuff",
+				effects = {},
+				feedText = "You walked in confident...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.25 + (smarts / 200)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 600
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.natural_presenter = true
+						state:AddFeed("📊 Crushed it! Natural born presenter!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📊 It went okay. Got through it.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Smarts", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.presentation_trauma = true
+						state:AddFeed("📊 Froze up completely. Total disaster. Embarrassing.")
+					end
+				end,
+			},
+			{
+				text = "Ask a colleague to co-present",
+				effects = { Happiness = 2 },
+				feedText = "You presented together...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("📊 Good teamwork! The presentation went smoothly.")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📊 It was okay. Some confusion about who was saying what.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📊 Your colleague dropped the ball. Awkward...")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -864,13 +1099,608 @@ Career.events = {
 					end
 				end,
 			},
-			{ 
-				text = "Ask to reschedule - not feeling ready", 
-				effects = { Happiness = -3 },
-				feedText = "You postponed the review. The anxiety continues." 
-			},
+		{ 
+			text = "Ask to reschedule - not feeling ready", 
+			effects = { Happiness = -3 },
+			feedText = "You postponed the review. The anxiety continues." 
 		},
 	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- NEW EVENTS - EXPANDED CAREER CONTENT
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	id = "company_acquisition",
+	title = "Your Company Got Acquired!",
+	emoji = "🏢",
+	text = "Big news: a larger corporation just acquired your company. There's talk of 'synergies' and 'restructuring.' Translation: layoffs might be coming. But there could also be new opportunities.",
+	question = "How do you handle this uncertain time?",
+	minAge = 22, maxAge = 55,
+	baseChance = 0.25,
+	cooldown = 6,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_risk",
+	tags = { "job", "acquisition", "corporate", "change" },
+	
+	choices = {
+		{ text = "Network aggressively - make yourself visible", effects = { Happiness = -2, Smarts = 3, Money = 200 }, setFlags = { networker = true }, feedText = "You introduced yourself to the new executives. Smart move." },
+		{ text = "Keep your head down and hope for the best", effects = { Happiness = -5 }, feedText = "You're playing it safe. Nervously checking your email." },
+		{ text = "Start looking for a new job immediately", effects = { Happiness = 3, Smarts = 2 }, setFlags = { proactive_job_hunt = true }, feedText = "You're not waiting to find out. Applications are out." },
+		{ text = "Volunteer for the integration team", effects = { Happiness = 5, Money = 500, Smarts = 4 }, setFlags = { integration_leader = true }, feedText = "You positioned yourself as a key player in the transition!" },
+	},
+},
+{
+	id = "remote_work_decision",
+	title = "Remote Work Opportunity",
+	emoji = "🏠",
+	text = "Your company is offering permanent remote work options. You could work from home forever, come to the office, or go hybrid.",
+	question = "What's your work style?",
+	minAge = 20, maxAge = 60,
+	baseChance = 0.35,
+	cooldown = 5,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_lifestyle",
+	tags = { "job", "remote", "flexibility", "lifestyle" },
+	
+	choices = {
+		{ text = "Go fully remote - freedom!", effects = { Happiness = 10, Health = 3 }, setFlags = { remote_worker = true }, feedText = "No more commute! You're working in pajamas now." },
+		{ text = "Stay in the office - I need the structure", effects = { Happiness = 3, Smarts = 2 }, setFlags = { office_worker = true }, feedText = "You thrive on in-person collaboration." },
+		{ text = "Hybrid - best of both worlds", effects = { Happiness = 7, Health = 2 }, setFlags = { hybrid_worker = true }, feedText = "Some days home, some days office. Perfect balance." },
+		{ text = "Ask to relocate to a cheaper city", effects = { Happiness = 8, Money = 800 }, setFlags = { relocated_worker = true }, feedText = "You moved somewhere with lower cost of living while keeping your salary!" },
+	},
+},
+{
+	id = "side_hustle_opportunity",
+	title = "Side Hustle Opportunity",
+	emoji = "💡",
+	text = "You've got an idea for a side business. It could bring in extra money, but it'll take time away from your main job and personal life.",
+	question = "Do you pursue the side hustle?",
+	minAge = 22, maxAge = 50,
+	baseChance = 0.35,
+	cooldown = 4,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_entrepreneurship",
+	tags = { "job", "side_hustle", "entrepreneurship", "money" },
+	
+	choices = {
+		{ text = "Go all in - build it nights and weekends", effects = { Happiness = 5, Money = 1500, Health = -5 }, setFlags = { side_hustler = true, entrepreneur = true }, feedText = "You're burning the midnight oil. The hustle is real!" },
+		{ text = "Start small - test the waters", effects = { Happiness = 3, Money = 500 }, setFlags = { small_business = true }, feedText = "You launched with minimal risk. Smart approach." },
+		{ text = "Focus on my current career", effects = { Happiness = 2, Smarts = 2 }, feedText = "You decided to excel at your main job instead." },
+		{ text = "Partner with a friend on it", effects = { Happiness = 5, Money = 800 }, setFlags = { business_partner = true }, feedText = "You and a friend are building something together!" },
+	},
+},
+{
+	id = "toxic_workplace_culture",
+	title = "Toxic Work Environment",
+	emoji = "☣️",
+	text = "Your workplace has become toxic. Gossip, backstabbing, unclear expectations, and constant stress. Your mental health is suffering.",
+	question = "How do you cope?",
+	minAge = 20, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 4,
+	requiresJob = true,
+	requiresStats = { Happiness = { max = 60 } },
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_challenge",
+	tags = { "job", "toxic", "stress", "mental_health" },
+	
+	choices = {
+		{ text = "Set firm boundaries", effects = { Happiness = 5, Health = 3, Smarts = 2 }, setFlags = { boundary_setter = true }, feedText = "You stopped answering emails after 6pm. Revolutionary." },
+		{ text = "Confront the issues head-on", effects = { Happiness = -3, Smarts = 4 }, setFlags = { confrontational = true }, feedText = "You called out the toxicity in a meeting. Brave but risky." },
+		{ text = "Document everything and report to HR", effects = { Happiness = -2, Smarts = 3 }, setFlags = { documented_issues = true }, feedText = "You're building a paper trail. Just in case." },
+		{ text = "Start therapy to cope", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference." },
+	},
+},
+{
+	id = "mentorship_opportunity",
+	title = "Mentorship Moment",
+	emoji = "🎓",
+	text = "A senior leader at your company has taken notice of your work and offered to be your mentor.",
+	question = "How do you respond?",
+	minAge = 22, maxAge = 40,
+	baseChance = 0.25,
+	cooldown = 5,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_growth",
+	tags = { "job", "mentor", "leadership", "growth" },
+	
+	choices = {
+		{ text = "Eagerly accept - learn everything!", effects = { Happiness = 8, Smarts = 6, Money = 300 }, setFlags = { has_mentor = true, eager_learner = true }, feedText = "You're soaking up wisdom like a sponge. Career accelerating!" },
+		{ text = "Accept but set boundaries", effects = { Happiness = 5, Smarts = 4 }, setFlags = { has_mentor = true }, feedText = "You're learning but maintaining your independence." },
+		{ text = "Politely decline - don't want the pressure", effects = { Happiness = 2 }, feedText = "You prefer to find your own way. Valid choice." },
+		{ text = "Accept and eventually become a mentor yourself", effects = { Happiness = 10, Smarts = 5 }, setFlags = { has_mentor = true, future_mentor = true }, feedText = "The cycle of mentorship continues through you!" },
+	},
+},
+{
+	id = "career_pivot_consideration",
+	title = "Career Pivot?",
+	emoji = "🔄",
+	text = "You've been thinking about a complete career change. Different industry, different role. A fresh start.",
+	question = "Do you take the leap?",
+	minAge = 28, maxAge = 50,
+	baseChance = 0.25,
+	cooldown = 6,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "adult_midlife",
+	category = "career_change",
+	tags = { "job", "pivot", "change", "risk" },
+	
+	choices = {
+		{ 
+			text = "Yes - start over in a new field", 
+			effects = { Happiness = 10, Money = -2000, Smarts = 5 }, 
+			setFlags = { career_pivoter = true },
+			feedText = "You quit and started over. Scary but exciting!",
+			onResolve = function(state)
+				if state.ClearCareer then
+					state:ClearCareer()
+				else
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.has_job = nil
+					state.Flags.employed = nil
+					state.Flags.between_jobs = true
+				end
+			end,
+		},
+		{ text = "Take night classes while keeping your job", effects = { Happiness = 5, Smarts = 4, Health = -2 }, setFlags = { learning_new_field = true }, feedText = "You're building new skills on the side." },
+		{ text = "Stay where you are - too risky", effects = { Happiness = -3 }, feedText = "You chose security over passion. For now." },
+		{ text = "Transition gradually within your company", effects = { Happiness = 6, Smarts = 3 }, setFlags = { internal_pivot = true }, feedText = "You're moving to a different department. New challenges, same paycheck!" },
+	},
+},
+{
+	id = "workplace_recognition",
+	title = "You Got Recognized!",
+	emoji = "🏆",
+	text = "Your work has been noticed! You're being considered for an employee recognition award.",
+	question = "How does this play out?",
+	minAge = 22, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 3,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_success",
+	tags = { "job", "recognition", "achievement", "success" },
+	
+	choices = {
+		{ text = "Win the award - full ceremony!", effects = { Happiness = 15, Money = 500, Smarts = 3 }, setFlags = { award_winner = true, recognized = true }, feedText = "You won! Standing ovation. Your parents are so proud!" },
+		{ text = "Runner-up - still honored", effects = { Happiness = 7, Money = 200 }, setFlags = { recognized = true }, feedText = "Second place. Still an honor. Still a little disappointed." },
+		{ text = "Win but it creates jealousy", effects = { Happiness = 10, Money = 500 }, setFlags = { office_jealousy = true }, feedText = "You won but some coworkers are salty about it." },
+		{ text = "Humbly deflect the recognition", effects = { Happiness = 5, Smarts = 2 }, setFlags = { humble = true }, feedText = "You credited your team. Everyone respects that." },
+	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SPORTS JOB SPECIFIC EVENTS  
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	-- CRITICAL FIX: Player can't choose injury severity - random outcome
+	id = "sports_injury_scare",
+	title = "Career-Threatening Injury",
+	emoji = "🏥",
+	text = "During practice, you go down. Pain shoots through your leg. Trainers rush over. You're carried off. MRI scheduled. This could be BAD.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 45,
+	baseChance = 0.25,
+	cooldown = 5,
+	requiresJob = true,
+	requiresJobCategory = "sports",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_sports",
+	tags = { "injury", "sports", "career" },
+
+	choices = {
+		{
+			text = "Wait anxiously for the MRI results",
+			effects = { Happiness = -5 },
+			feedText = "The waiting is the worst part...",
+			onResolve = function(state)
+				-- Random injury severity - player doesn't choose!
+				local roll = math.random()
+				if roll < 0.50 then
+					-- Minor injury
+					if state.ModifyStat then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 10)
+					end
+					if state.AddFeed then
+						state:AddFeed("🎉 Great news! Just a minor strain. 2 weeks of rest and you'll be back on the field.")
+					end
+				elseif roll < 0.85 then
+					-- Serious injury
+					if state.ModifyStat then
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Happiness", -15)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.injured_athlete = true
+					if state.AddFeed then
+						state:AddFeed("😔 Bad news. Torn ligament. Surgery needed. Season's over. Months of grueling rehab ahead.")
+					end
+				else
+					-- Career-ending
+					if state.ModifyStat then
+						state:ModifyStat("Health", -35)
+						state:ModifyStat("Happiness", -30)
+					end
+					state.Money = (state.Money or 0) + 50000
+					if state.CurrentJob and state.CurrentJob.category == "sports" then
+						state.CurrentJob = nil
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.retired_athlete = true
+					if state.AddFeed then
+						state:AddFeed("💔 The worst news. Career-ending injury. Your playing days are over. $50K insurance settlement. Time for chapter 2 of your life.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Stay positive and pray for good news",
+			effects = { Happiness = 2 },
+			feedText = "You try to keep a positive mindset...",
+			onResolve = function(state)
+				-- Same random outcome but slight happiness boost for positivity
+				local roll = math.random()
+				if roll < 0.55 then -- Slightly better odds for being positive
+					if state.ModifyStat then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 12)
+					end
+					if state.AddFeed then
+						state:AddFeed("🙏 Your positive attitude paid off! Just a minor sprain. Back in action soon!")
+					end
+				else
+					if state.ModifyStat then
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -10)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.injured_athlete = true
+					if state.AddFeed then
+						state:AddFeed("😢 Serious injury confirmed. Months of rehab ahead. Stay strong.")
+					end
+				end
+			end,
+		},
+	},
+},
+{
+	id = "championship_game",
+	title = "Championship Opportunity",
+	emoji = "🏆",
+	text = "Your team made it to the championship! All your hard work led to this moment. The whole world is watching. Nerves are electric.",
+	question = "How do you perform?",
+	minAge = 18, maxAge = 40,
+	baseChance = 0.15,
+	cooldown = 8,
+	requiresJob = true,
+	requiresJobCategory = "sports",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_sports",
+	tags = { "championship", "sports", "success" },
+
+	choices = {
+		{
+			text = "MVP performance - CHAMPIONS!",
+			effects = { Happiness = 25, Health = -5 },
+			setFlags = { championship_winner = true, sports_legend = true },
+			feedText = "YOU DID IT! MVP! CHAMPIONS! Parade through the city!",
+			onResolve = function(state)
+				local bonus = math.random(100000, 500000)
+				state.Money = (state.Money or 0) + bonus
+				if state.AddFeed then
+					state:AddFeed(string.format("🏆 Championship bonus: $%d! You're a LEGEND!", bonus))
+				end
+			end,
+		},
+		{
+			text = "Solid contribution - team wins",
+			effects = { Happiness = 18, Health = -3 },
+			setFlags = { championship_winner = true },
+			feedText = "Your team won! You contributed. Champion!",
+			onResolve = function(state)
+				local bonus = math.random(50000, 150000)
+				state.Money = (state.Money or 0) + bonus
+			end,
+		},
+		{
+			text = "Heartbreaking loss in finals",
+			effects = { Happiness = -15, Health = -5 },
+			feedText = "So close. Runner-up. The 'what ifs' will haunt you.",
+		},
+	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- CREATIVE JOB SPECIFIC EVENTS
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	-- CRITICAL FIX: Renamed to avoid duplicate ID with earlier creative_block event
+	id = "creative_deadline_crisis",
+	title = "Deadline Creative Block",
+	emoji = "🎨",
+	text = "You're staring at a blank canvas/screen/page. Nothing. The deadline is TOMORROW. Your creative well has run completely dry.",
+	question = "How do you overcome it?",
+	minAge = 20, maxAge = 60,
+	baseChance = 0.35,
+	cooldown = 3,
+	requiresJob = true,
+	requiresJobCategory = "creative",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_creative",
+	tags = { "creativity", "stress", "deadline" },
+
+	choices = {
+		{
+			text = "Power through - all-nighter",
+			effects = { Health = -8, Happiness = -5 },
+			feedText = "You pulled an all-nighter...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.6 then
+					if state.ModifyStat then
+						state:ModifyStat("Smarts", 3)
+					end
+					if state.AddFeed then
+						state:AddFeed("💡 Breakthrough at 3AM! Creativity struck! It's GOOD!")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("😩 Exhausted garbage. You'll have to redo it.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Step away and find inspiration",
+			effects = { Happiness = 3, Health = 2 },
+			feedText = "You went for a walk...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.7 then
+					if state.AddFeed then
+						state:AddFeed("🌅 Fresh air did the trick. Idea struck while walking!")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("🤷 Nice walk. Still no ideas. Deadline missed.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Be honest with the client",
+			effects = { Happiness = -3, Smarts = 2 },
+			feedText = "You asked for an extension. Honest but risky.",
+		},
+	},
+},
+{
+	id = "creative_viral_moment",
+	title = "Viral Success!",
+	emoji = "📱",
+	text = "Your latest work EXPLODED online! Millions of views. People sharing. News outlets reaching out. You're suddenly FAMOUS.",
+	question = "How do you handle sudden fame?",
+	minAge = 18, maxAge = 55,
+	baseChance = 0.1,
+	cooldown = 10,
+	requiresJob = true,
+	requiresJobCategory = "creative",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_creative",
+	tags = { "viral", "fame", "success" },
+
+	choices = {
+		{
+			text = "Capitalize immediately - brand deals!",
+			effects = { Happiness = 12 },
+			setFlags = { viral_star = true },
+			feedText = "You struck while the iron was hot!",
+			onResolve = function(state)
+				local earnings = math.random(20000, 100000)
+				state.Money = (state.Money or 0) + earnings
+				if state.AddFeed then
+					state:AddFeed(string.format("💰 Brand deals and sponsorships: $%d!", earnings))
+				end
+			end,
+		},
+		{
+			text = "Stay humble - focus on the craft",
+			effects = { Happiness = 8, Smarts = 5 },
+			setFlags = { respected_artist = true },
+			feedText = "You didn't let it go to your head. Respect increased.",
+		},
+		{
+			text = "Panic - not ready for this",
+			effects = { Happiness = -8, Health = -5 },
+			setFlags = { anxiety_issues = true },
+			feedText = "Fame is overwhelming. You're not handling it well.",
+		},
+	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- GOVERNMENT JOB SPECIFIC EVENTS
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	id = "government_whistleblower",
+	title = "Witness Something Wrong",
+	emoji = "🏛️",
+	text = "You discovered your agency is doing something... questionable. Maybe not illegal, but definitely unethical. Higher-ups are involved.",
+	question = "What do you do?",
+	minAge = 25, maxAge = 65,
+	baseChance = 0.15,
+	cooldown = 8,
+	requiresJob = true,
+	requiresJobCategory = "government",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_government",
+	tags = { "ethics", "whistleblower", "government" },
+
+	choices = {
+		{
+			text = "Report through proper channels",
+			effects = { Smarts = 3 },
+			feedText = "You filed an internal report...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.4 then
+					state.Flags = state.Flags or {}
+					state.Flags.reform_hero = true
+					if state.AddFeed then
+						state:AddFeed("✅ Your report led to reforms. You're a quiet hero.")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("📝 Report filed. Nothing happened. Bureaucracy.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Go to the press",
+			effects = {},
+			setFlags = { whistleblower = true },
+			feedText = "You became a whistleblower...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", 15)
+					end
+					if state.AddFeed then
+						state:AddFeed("📰 You're a national hero! The truth came out!")
+					end
+				else
+					state.CurrentJob = nil
+					if state.AddFeed then
+						state:AddFeed("🔥 Fired. Blacklisted. Nobody will hire you now.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Look the other way",
+			effects = { Happiness = -8 },
+			feedText = "You said nothing. The guilt eats at you.",
+		},
+	},
+},
+{
+	id = "government_promotion_politics",
+	title = "Political Promotion",
+	emoji = "🏛️",
+	text = "A senior position opened up. You're qualified. But so is someone connected to the mayor's office. Politics vs. merit.",
+	question = "How do you handle it?",
+	minAge = 30, maxAge = 60,
+	baseChance = 0.25,
+	cooldown = 4,
+	requiresJob = true,
+	requiresJobCategory = "government",
+	blockedByFlags = { in_prison = true },
+
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_government",
+	tags = { "promotion", "politics", "government" },
+
+	choices = {
+		{
+			text = "Apply based on merit alone",
+			effects = { Smarts = 3 },
+			feedText = "You let your work speak for itself...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.4 then
+					local raise = math.random(5000, 15000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 50000) + raise
+					end
+					if state.AddFeed then
+						state:AddFeed("🎉 You got the promotion! Merit won!")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("😤 The connected person got it. Politics wins again.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Network and play the game",
+			effects = { Smarts = 2, Happiness = -3 },
+			feedText = "You did some schmoozing...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.6 then
+					local raise = math.random(5000, 15000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 50000) + raise
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.political_player = true
+					if state.AddFeed then
+						state:AddFeed("🎭 You played the game. And WON. Promoted!")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("🤷 The networking didn't help. Still passed over.")
+					end
+				end
+			end,
+		},
+	},
+},
 }
 
 return Career

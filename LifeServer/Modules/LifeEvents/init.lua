@@ -49,15 +49,17 @@ local LifeStages = {
 -- Category mappings per life stage
 -- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
 -- Racing discovery can happen as young as age 10, hacker discovery at age 12
+-- CRITICAL FIX: Added "teen" to young_adult to catch late-teen events like graduation
+-- MINOR FIX: Improved comments for clarity on what each life stage allows
 local StageCategories = {
-	baby        = { "childhood", "milestones" },
-	toddler     = { "childhood", "milestones" },
-	child       = { "childhood", "milestones", "random", "career_racing" }, -- Racing discovery at 10+
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" },
-	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Seniors can still own racing teams
+	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
+	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
+	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 13-17: Full teen experience + part-time work
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 18-34: Peak career years (include teen for graduation/late-teen events)
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 35-49: Established adult
+	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 50-64: Midlife
+	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Ages 65+: Retirement years (can own racing teams)
 }
 
 function LifeEvents.getLifeStage(age)
@@ -201,6 +203,10 @@ function LifeEvents.init()
 		-- NEW: Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
+		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
+		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
+		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
+		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
 	}
 	
 	local totalEvents = 0
@@ -323,6 +329,13 @@ local function canEventTrigger(event, state)
 	local age = state.Age or 0
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Dead players should not receive any events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.IsDead or flags.dead or (state.Stats and state.Stats.Health and state.Stats.Health <= 0) then
+		return false -- Dead players can't have events
+	end
 	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
@@ -518,6 +531,11 @@ local function canEventTrigger(event, state)
 		if flags.retired then
 			return false -- Retired players shouldn't get job events
 		end
+		-- CRITICAL FIX #2: Players in prison can't have work events!
+		-- Even if they technically still have a "job", they can't go to work from prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
+		end
 	end
 	
 	if event.requiresNoJob then
@@ -541,15 +559,19 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if not hasPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if not hasPartnerRelation and not hasPartnerFlag then
 			return false -- MUST have a partner
 		end
 	end
 	
 	if event.requiresSingle or event.requiresNoPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if hasPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if hasPartnerRelation or hasPartnerFlag then
 			return false -- MUST be single
 		end
 	end
@@ -590,6 +612,20 @@ local function canEventTrigger(event, state)
 		for _, blockEventId in ipairs(event.blockedByEvents) do
 			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
 				return false
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM ELIGIBILITY FUNCTION - For complex checks (like money thresholds)
+	-- CRITICAL FIX: This allows events to have custom logic beyond simple flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.eligibility and type(event.eligibility) == "function" then
+		local success, result = pcall(event.eligibility, state)
+		if success then
+			if result == false then
+				return false -- Custom eligibility check failed
 			end
 		end
 	end
@@ -1068,21 +1104,43 @@ function EventEngine.countAssets(state, assetType)
 	return total
 end
 
--- Name pools for dynamic relationship creation
+-- Name pools for dynamic relationship creation (EXPANDED - 100+ names each for variety)
 local NamePools = {
 	male = {
-		"James", "Michael", "David", "John", "Robert", "Christopher", "Daniel",
-		"Matthew", "Anthony", "Mark", "Steven", "Andrew", "Joshua", "Kevin",
-		"Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler", "Alexander",
-		"Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden",
-		"Carter", "Sebastian", "Henry", "Owen", "Jack", "Leo", "Nathan"
+		-- Classic American
+		"James", "Michael", "David", "John", "Robert", "Christopher", "Daniel", "Matthew", "Anthony", "Mark",
+		"Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler",
+		"Alexander", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden", "Carter",
+		"Sebastian", "Henry", "Owen", "Jack", "Leo", "Nathan", "Logan", "Dylan", "Jayden", "Wyatt",
+		"Caleb", "Luke", "Gabriel", "Isaac", "Connor", "Elijah", "Hunter", "Cameron", "Evan", "Austin",
+		-- Hispanic/Latino
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Mateo", "Santiago", "Javier", "Pablo", "Ricardo", "Andres", "Fernando", "Hector", "Oscar", "Victor",
+		-- African American
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Marcus", "Dante", "Isaiah", "Xavier",
+		-- Asian
+		"Kenji", "Ryu", "Akira", "Ren", "Sora", "Kai", "Hiro", "Yuto", "Jun", "Tao",
+		"Wei", "Chen", "Jin", "Min", "Jae", "Sung", "Arjun", "Raj", "Vikram", "Rahul",
+		-- Middle Eastern
+		"Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq", "Yusuf", "Ahmed", "Ali", "Samir"
 	},
 	female = {
-		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia",
-		"Harper", "Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Avery",
-		"Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley", "Aria",
-		"Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel",
-		"Luna", "Penelope", "Stella", "Aurora", "Violet", "Savannah", "Audrey"
+		-- Classic American
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail",
+		"Emily", "Elizabeth", "Sofia", "Avery", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley",
+		"Aria", "Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel", "Luna",
+		"Penelope", "Stella", "Aurora", "Violet", "Savannah", "Audrey", "Brooklyn", "Claire", "Skylar", "Paisley",
+		"Natalie", "Madison", "Addison", "Eleanor", "Lillian", "Aubrey", "Ellie", "Camila", "Genesis", "Kennedy",
+		-- Hispanic/Latino
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Gabriela", "Natalia", "Isabella",
+		"Camila", "Mariana", "Daniela", "Fernanda", "Paula", "Andrea", "Carolina", "Diana", "Adriana", "Alejandra",
+		-- African American
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Tiana", "Sierra", "Aisha", "Nia", "Maya",
+		-- Asian
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Kaori", "Nanami", "Koharu",
+		"Lin", "Mei-Lin", "Jing", "Yuna", "Hye", "Ji-Yeon", "Priya", "Ananya", "Isha", "Diya",
+		-- Middle Eastern
+		"Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin", "Layla", "Mariam", "Aisha"
 	}
 }
 
@@ -1305,7 +1363,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Flags.married = true
 			state.Flags.engaged = nil
 			state.Flags.dating = nil -- No longer just dating!
-			outcome.feedText = "You married " .. state.Relationships.partner.name .. "!"
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			outcome.feedText = "You married " .. partnerName .. "!"
 		end
 	end
 	
@@ -1316,9 +1376,11 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Relationships.partner.role = "Spouse"
 			state.Flags.engaged = nil -- No longer engaged, now married
 			state.Flags.dating = nil -- No longer just dating
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
 			-- Update feed text to include partner name if not already mentioned
 			if outcome.feedText and not outcome.feedText:find("married") then
-				outcome.feedText = outcome.feedText .. " You and " .. state.Relationships.partner.name .. " are officially married!"
+				outcome.feedText = outcome.feedText .. " You and " .. partnerName .. " are officially married!"
 			end
 		end
 	end

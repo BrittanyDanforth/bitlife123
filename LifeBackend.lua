@@ -637,11 +637,11 @@ local JobCatalogList = {
 		minStats = { Smarts = 70 }, difficulty = 9, description = "Top military leadership" },
 
 	-- CRIMINAL CAREERS
-	{ id = "drug_dealer_street", name = "Street Dealer", company = "The Streets", emoji = "💊", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
-	{ id = "drug_dealer", name = "Drug Dealer", company = "The Organization", emoji = "💊", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
-	{ id = "hitman", name = "Hitman", company = "Unknown", emoji = "🔫", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true },
-	{ id = "gang_member", name = "Gang Member", company = "The Gang", emoji = "🔪", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
-	{ id = "gang_lieutenant", name = "Gang Lieutenant", company = "The Gang", emoji = "🔪", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true },
+	{ id = "illegal_dealer_street", name = "Street Hustler", company = "The Streets", emoji = "💰", salary = 45000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "illegal_dealer", name = "Illegal Dealer", company = "The Organization", emoji = "💰", salary = 120000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
+	{ id = "enforcer", name = "Enforcer", company = "Unknown", emoji = "💪", salary = 200000, minAge = 25, requirement = nil, category = "criminal", illegal = true },
+	{ id = "crew_member", name = "Crew Member", company = "The Crew", emoji = "🤝", salary = 55000, minAge = 16, requirement = nil, category = "criminal", illegal = true },
+	{ id = "crew_leader", name = "Crew Leader", company = "The Crew", emoji = "🔥", salary = 150000, minAge = 22, requirement = nil, category = "criminal", illegal = true },
 	{ id = "crime_boss", name = "Crime Boss", company = "The Syndicate", emoji = "🎩", salary = 500000, minAge = 30, requirement = nil, category = "criminal", illegal = true },
 	{ id = "smuggler", name = "Smuggler", company = "Import/Export", emoji = "📦", salary = 95000, minAge = 21, requirement = nil, category = "criminal", illegal = true },
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true },
@@ -688,9 +688,9 @@ local JobCatalogList = {
 	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 22, requirement = nil, category = "hacker", illegal = true,
 		minStats = { Smarts = 75 }, requiresFlags = { "coder", "tech_experience" }, description = "Requires coding experience to hack" },
 	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 26, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 85 }, requiresFlags = { "hacker_experience" }, description = "Must have proven hacking skills" },
+		minStats = { Smarts = 85 }, requiresFlags = { "hacker_experience" }, grantsFlags = { "elite_hacker_rep", "elite_hacker" }, description = "Must have proven hacking skills" },
 	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 32, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 90 }, requiresFlags = { "elite_hacker_rep" }, description = "Must be a known elite hacker" },
+		minStats = { Smarts = 90 }, requiresFlags = { "elite_hacker_rep" }, grantsFlags = { "cyber_crime_history" }, description = "Must be a known elite hacker" },
 	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 30, requirement = nil, category = "hacker", illegal = true,
 		minStats = { Smarts = 95 }, requiresFlags = { "cyber_crime_history" }, description = "Must have cyber crime background" },
 
@@ -723,7 +723,7 @@ local CareerTracks = {
 	creative = { "graphic_designer_jr", "graphic_designer", "art_director", "actor", "movie_star" },
 	finance = { "bank_teller", "accountant_jr", "financial_analyst", "investment_banker", "hedge_fund_manager", "cfo" },
 	government = { "postal_worker", "city_council", "mayor", "governor", "senator", "president" },
-	criminal = { "drug_dealer_street", "drug_dealer", "gang_lieutenant", "crime_boss" },
+	criminal = { "illegal_dealer_street", "illegal_dealer", "crew_leader", "crime_boss" },
 	sports = { "gym_instructor", "minor_league", "professional_athlete", "star_athlete", "head_coach" },
 	-- NEW: Racing career track - from go-karts to legend
 	racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend", "racing_team_owner" },
@@ -757,6 +757,71 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-5)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	play_toys = { stats = { Happiness = 4 }, feed = "played with toys", cost = 0 },
+	watch_cartoons = { stats = { Happiness = 3 }, feed = "watched cartoons", cost = 0 },
+	play_peekaboo = { stats = { Happiness = 5 }, feed = "played peekaboo", cost = 0 },
+	play_blocks = { stats = { Happiness = 3, Smarts = 2 }, feed = "played with blocks", cost = 0 },
+	playground = { stats = { Happiness = 5, Health = 2 }, feed = "went to the playground", cost = 0 },
+	coloring = { stats = { Happiness = 3 }, feed = "colored a picture", cost = 0 },
+	play_dolls = { stats = { Happiness = 3 }, feed = "played with dolls", cost = 0 },
+	bubbles = { stats = { Happiness = 4 }, feed = "blew bubbles", cost = 0 },
+	nap_time = { stats = { Health = 4, Happiness = 2 }, feed = "took a nap", cost = 0 },
+	play_outside = { stats = { Happiness = 4, Health = 3 }, feed = "played outside", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- BABY MISCHIEF (Ages 0-4) - CRITICAL FIX: Added to server catalog
+	-- ═══════════════════════════════════════════════════════════════════════════
+	cry_loudly = { stats = { Happiness = 2 }, feed = "cried really loud for attention", cost = 0 },
+	throw_food = { stats = { Happiness = 3 }, feed = "threw food everywhere", cost = 0 },
+	break_toy = { stats = { Happiness = -1 }, feed = "broke a toy", cost = 0 },
+	draw_walls = { stats = { Happiness = 4 }, feed = "drew on the walls", cost = 0 },
+	refuse_nap = { stats = { Happiness = 3, Health = -1 }, feed = "refused to take a nap", cost = 0 },
+	tantrum = { stats = { Happiness = -2 }, feed = "threw a tantrum", cost = 0 },
+	bite_sibling = { stats = { Happiness = 1 }, feed = "bit someone", cost = 0 },
+	hide_mom_keys = { stats = { Happiness = 4 }, feed = "hid mom's keys", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CHILD MISCHIEF (Ages 5-12) - CRITICAL FIX: Added to server catalog
+	-- ═══════════════════════════════════════════════════════════════════════════
+	skip_chores = { stats = { Happiness = 4, Smarts = -1 }, feed = "skipped chores", cost = 0 },
+	prank_sibling = { stats = { Happiness = 5 }, feed = "pranked a sibling", cost = 0 },
+	sneak_candy = { stats = { Happiness = 4, Health = -1 }, feed = "sneaked candy", cost = 0 },
+	stay_up_late = { stats = { Happiness = 3, Health = -2 }, feed = "stayed up past bedtime", cost = 0 },
+	cheat_test = { stats = { Happiness = -2 }, feed = "cheated on a test", cost = 0, setFlag = "cheater" },
+	talk_back = { stats = { Happiness = 1 }, feed = "talked back to parents", cost = 0 },
+	blame_sibling = { stats = { Happiness = 2 }, feed = "blamed a sibling", cost = 0 },
+	fake_sick = { stats = { Happiness = 4 }, feed = "faked being sick", cost = 0 },
+	toilet_paper_house = { stats = { Happiness = 5 }, feed = "toilet papered a house", cost = 0 },
+	ring_doorbell_run = { stats = { Happiness = 4, Health = 1 }, feed = "played ding dong ditch", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- TEEN MISCHIEF (Ages 13-17) - CRITICAL FIX: Added to server catalog
+	-- Activities have risk of getting caught with consequences
+	-- ═══════════════════════════════════════════════════════════════════════════
+	sneak_out = { stats = { Happiness = 6 }, feed = "snuck out at night", cost = 0, setFlag = "rebellious", 
+		risk = 25, riskConsequence = "your parents caught you coming back! Grounded!", riskFlag = "grounded" },
+	skip_class = { stats = { Happiness = 4, Smarts = -2 }, feed = "skipped class", cost = 0,
+		risk = 30, riskConsequence = "the school called your parents!", riskFlag = "truant" },
+	party_crash = { stats = { Happiness = 5 }, feed = "crashed a party", cost = 0,
+		risk = 20, riskConsequence = "you got kicked out!" },
+	fake_id = { stats = { Happiness = 2 }, feed = "got a fake ID", cost = 0, setFlag = "has_fake_id",
+		risk = 15, riskConsequence = "the bouncer confiscated it!" },
+	vandalize = { stats = { Happiness = 2 }, feed = "vandalized something", cost = 0, setFlag = "vandal",
+		risk = 35, riskConsequence = "someone saw you and called the cops!", riskFlag = "criminal_record" },
+	bully = { stats = { Happiness = -3 }, feed = "bullied someone", cost = 0, setFlag = "bully",
+		risk = 40, riskConsequence = "a teacher witnessed it! You're in big trouble." },
+	steal_parents_car = { stats = { Happiness = 6, Health = -2 }, feed = "took parents' car for a joyride", cost = 0,
+		risk = 30, riskConsequence = "you crashed it! Your parents are furious.", riskFlag = "in_trouble" },
+	break_curfew = { stats = { Happiness = 4 }, feed = "broke curfew", cost = 0,
+		risk = 20, riskConsequence = "your parents were waiting up for you!" },
+	drink_underage = { stats = { Happiness = 3, Health = -3 }, feed = "drank alcohol underage", cost = 0,
+		risk = 25, riskConsequence = "you got sick and your parents found out!" },
+	smoke = { stats = { Happiness = 1, Health = -4 }, feed = "tried smoking", cost = 0, setFlag = "smoker",
+		risk = 20, riskConsequence = "your parents smelled it on your clothes!" },
 }
 
 local CrimeCatalog = {
@@ -778,7 +843,7 @@ local PrisonActions = {
 	},
 	prison_workout = { stats = { Health = 4, Looks = 1 }, feed = "worked out in the yard" },
 	prison_study = { stats = { Smarts = 4 }, feed = "studied for a GED" },
-	prison_gang = { stats = { Happiness = 2, Health = -3 }, feed = "aligned with a gang", flag = "gang_member" },
+	prison_crew = { stats = { Happiness = 2, Health = -3 }, feed = "aligned with a crew", flag = "crew_member" },
 	prison_riot = { stats = { Health = -10 }, feed = "started a riot", risk = 70 },
 	prison_snitch = { stats = { Health = -5 }, feed = "snitched on someone", risk = 50 },
 	prison_appeal = { moneyCost = 5000, feed = "filed an appeal", jailReduction = 1 },
@@ -818,12 +883,13 @@ local ShopItems = {
 }
 
 local EducationCatalog = {
-	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school" },
-	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school" },
-	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor" },
-	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor" },
-	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor" },
-	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master" },
+	-- CRITICAL FIX: Added minAge to prevent underage enrollment
+	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school", minAge = 18 },
+	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school", minAge = 18 },
+	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor", minAge = 22 },
+	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor", minAge = 22 },
+	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor", minAge = 22 },
+	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master", minAge = 24 },
 }
 
 local EducationRanks = {
@@ -859,7 +925,7 @@ local StoryPaths = {
 		color = C and C.Red or Color3.fromRGB(239, 68, 68),
 		minAge = 16,
 		requirements = {},
-		stages = { "hustler", "dealer", "lieutenant", "underboss", "boss" },
+		stages = { "hustler", "operator", "lieutenant", "underboss", "boss" },
 	},
 	celebrity = {
 		id = "celebrity",
@@ -1194,8 +1260,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.ApplyForJob.OnServerInvoke = function(player, jobId)
 		return self:handleJobApplication(player, jobId)
 	end
-	self.remotes.QuitJob.OnServerInvoke = function(player)
-		return self:handleQuitJob(player)
+	self.remotes.QuitJob.OnServerInvoke = function(player, quitStyle)
+		return self:handleQuitJob(player, quitStyle)
 	end
 	self.remotes.DoWork.OnServerInvoke = function(player)
 		return self:handleWork(player)
@@ -1261,9 +1327,33 @@ function LifeBackend:createInitialState(player)
 	
 	state.Relationships = state.Relationships or {}
 	
-	-- Generate random names for family members
-	local maleNames = {"James", "Michael", "David", "John", "Robert", "William", "Richard", "Thomas", "Charles", "Daniel"}
-	local femaleNames = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"}
+	-- Generate random names for family members (EXPANDED - 80+ names each for variety)
+	local maleNames = {
+		-- Classic names
+		"James", "Michael", "David", "John", "Robert", "William", "Richard", "Thomas", "Charles", "Daniel",
+		"Christopher", "Matthew", "Anthony", "Mark", "Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan",
+		-- Modern names
+		"Liam", "Noah", "Oliver", "Ethan", "Aiden", "Lucas", "Mason", "Logan", "Alexander", "Sebastian",
+		"Benjamin", "Henry", "Owen", "Jack", "Carter", "Jayden", "Dylan", "Wyatt", "Luke", "Caleb",
+		-- Diverse cultural names
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Marcus", "Dante", "Isaiah", "Brandon",
+		"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Ren", "Sora", "Haruki",
+		"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
+	}
+	local femaleNames = {
+		-- Classic names
+		"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen",
+		"Nancy", "Lisa", "Betty", "Margaret", "Dorothy", "Sandra", "Ashley", "Kimberly", "Donna", "Emily",
+		-- Modern names
+		"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+		"Abigail", "Luna", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Aria", "Lily", "Zoey",
+		-- Diverse cultural names
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Gabriela", "Natalia", "Sofia",
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Tiana", "Sierra", "Layla", "Aisha", "Zoe",
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Kaori", "Nanami", "Koharu",
+		"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
+	}
 	
 	local function randomName(gender)
 		local names = (gender == "male") and maleNames or femaleNames
@@ -1488,7 +1578,14 @@ function LifeBackend:advanceRelationships(state)
 	-- Prison isolates you from loved ones, causing relationships to suffer
 	local isInJail = state.InJail
 	
-	for _, rel in pairs(state.Relationships) do
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Improved family death mechanics
+	-- Realistic death chances based on age, not just >95
+	-- Proper happiness impact and death notifications
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local familyDeaths = {}
+	
+	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
 			-- Normal fluctuation: -2 to +3
 			-- Jail fluctuation: -8 to -2 (always negative, relationships decay)
@@ -1513,12 +1610,85 @@ function LifeBackend:advanceRelationships(state)
 				end
 			end
 			
+			-- Age up the family member
 			rel.age = (rel.age or (state.Age + 20)) + 1
-			if rel.age > 95 and RANDOM:NextNumber() < 0.2 then
+			
+			-- CRITICAL FIX: Realistic death chances based on age for family members
+			-- More graduated death chances instead of just >95 = 20%
+			if rel.type == "family" or rel.isFamily then
+				local deathChance = 0
+				local relAge = rel.age or 0
+				
+				if relAge >= 100 then
+					deathChance = 0.50 -- 50% chance at 100+
+				elseif relAge >= 95 then
+					deathChance = 0.25 -- 25% chance at 95-99
+				elseif relAge >= 90 then
+					deathChance = 0.12 -- 12% chance at 90-94
+				elseif relAge >= 85 then
+					deathChance = 0.06 -- 6% chance at 85-89
+				elseif relAge >= 80 then
+					deathChance = 0.03 -- 3% chance at 80-84
+				elseif relAge >= 75 then
+					deathChance = 0.015 -- 1.5% chance at 75-79
+				elseif relAge >= 70 then
+					deathChance = 0.008 -- 0.8% chance at 70-74
+				elseif relAge >= 60 then
+					deathChance = 0.003 -- 0.3% chance at 60-69 (accidents, illness)
+				end
+				
+				if deathChance > 0 and RANDOM:NextNumber() < deathChance then
+					rel.alive = false
+					rel.deceased = true
+					rel.deathAge = relAge
+					table.insert(familyDeaths, {
+						name = rel.name or "A loved one",
+						role = rel.role or "family member",
+						age = relAge,
+						id = relId,
+					})
+				end
+			elseif rel.age > 95 and RANDOM:NextNumber() < 0.2 then
+				-- Non-family (old friends etc) still use simple check
 				rel.alive = false
+				rel.deceased = true
 				state.PendingFeed = (rel.name or "A loved one") .. " passed away."
 			end
 		end
+	end
+	
+	-- CRITICAL FIX: Handle family death notifications with proper emotional impact
+	if #familyDeaths > 0 then
+		local death = familyDeaths[1] -- Process one death at a time
+		local roleName = death.role or "family member"
+		local isCloseFamily = (death.id == "mother" or death.id == "father" or 
+			death.id:find("brother") or death.id:find("sister"))
+		
+		-- Happiness impact based on closeness
+		if state.ModifyStat then
+			if isCloseFamily then
+				state:ModifyStat("Happiness", -25)
+			else
+				state:ModifyStat("Happiness", -10)
+			end
+		else
+			state.Stats = state.Stats or {}
+			local impact = isCloseFamily and -25 or -10
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) + impact, 0, 100)
+		end
+		
+		local messages = {
+			"💔 %s (%s, age %d) has passed away. Rest in peace.",
+			"😢 Sadly, %s (%s) died at age %d.",
+			"🕯️ Your %s, %s, passed away at %d years old.",
+		}
+		local msgTemplate = messages[RANDOM:NextInteger(1, #messages)]
+		local formattedMsg = string.format(msgTemplate, death.name, roleName, death.age)
+		
+		state.PendingFeed = formattedMsg
+		state.Flags = state.Flags or {}
+		state.Flags.recently_bereaved = true
+		state.Flags["lost_" .. death.id] = true
 	end
 end
 
@@ -1531,13 +1701,48 @@ function LifeBackend:updateEducationProgress(state)
 	
 	local eduData = state.EducationData
 	if eduData and eduData.Status == "enrolled" then
-		local duration = eduData.Duration or 4
+		-- CRITICAL FIX: Ensure duration is never 0 or nil to prevent instant graduation bug
+		-- Duration of 0 would cause 100/0 = infinity, triggering instant "graduation"
+		local duration = eduData.Duration
+		if not duration or duration <= 0 then
+			duration = 4 -- Default to 4 years if not set properly
+		end
 		local progressPerYear = 100 / duration
 		eduData.Progress = clamp((eduData.Progress or 0) + progressPerYear, 0, 100)
 		if eduData.Progress >= 100 then
-			eduData.Status = "completed"
-			state.Education = eduData.Level
-			state.PendingFeed = string.format("You graduated from %s!", eduData.Institution or "school")
+			-- CRITICAL FIX: Only show graduation message for High School and higher
+			-- Elementary and Middle School are silent auto-progressions (BitLife-style)
+			local level = eduData.Level or ""
+			local isPreHighSchool = (level == "elementary" or level == "middle_school" or level == "")
+			
+			if isPreHighSchool then
+				-- Silent progression - just reset progress for next phase
+				-- The actual institution transition is handled in LifeState:AdvanceAge()
+				eduData.Progress = 0
+				-- Don't set status to "completed" - we're still in school
+			else
+				-- High School and above get proper graduation messages
+				eduData.Status = "completed"
+				state.Education = eduData.Level
+				state.PendingFeed = string.format("🎓 You graduated from %s!", eduData.Institution or "school")
+				
+				-- Set appropriate flags
+				state.Flags = state.Flags or {}
+				if level == "high_school" then
+					state.Flags.graduated_high_school = true
+					state.Flags.high_school_graduate = true
+				elseif level == "bachelor" or level == "community" or level == "associate" then
+					state.Flags.college_graduate = true
+				elseif level == "master" then
+					state.Flags.masters_degree = true
+				elseif level == "law" then
+					state.Flags.law_degree = true
+				elseif level == "medical" then
+					state.Flags.medical_degree = true
+				elseif level == "phd" or level == "doctorate" then
+					state.Flags.doctorate = true
+				end
+			end
 		end
 	end
 end
@@ -1655,13 +1860,21 @@ function LifeBackend:collectPropertyIncome(state)
 	
 	if totalIncome > 0 then
 		self:addMoney(state, totalIncome)
-		-- Add to feed if significant income
-		if totalIncome >= 1000 then
+		-- CRITICAL FIX: Only show rental income message occasionally to avoid spam
+		-- Only show if:
+		-- 1. Income is very significant ($10K+ per year), OR
+		-- 2. Player has multiple properties (actual landlord)
+		-- AND only show message sometimes (roughly every 3 years) to avoid repetitive feed
+		local numProperties = #properties
+		local shouldShowMessage = (totalIncome >= 10000 or numProperties >= 2) and RANDOM:NextNumber() < 0.33
+		
+		if shouldShowMessage then
 			local currentFeed = state.PendingFeed or ""
+			local incomeText = string.format("💰 Your properties generated $%s in rental income this year.", formatMoney(totalIncome))
 			if currentFeed ~= "" then
-				state.PendingFeed = currentFeed .. string.format(" You collected $%s in rental income.", formatMoney(totalIncome))
+				state.PendingFeed = currentFeed .. " " .. incomeText
 			else
-				state.PendingFeed = string.format("You collected $%s in rental income.", formatMoney(totalIncome))
+				state.PendingFeed = incomeText
 			end
 		end
 	end
@@ -1753,15 +1966,130 @@ function LifeBackend:replaceTextVariables(text, state)
 	end
 	
 	-- Mother/Father name replacement
+	-- CRITICAL FIX: Ultra-robust relationship name handling with multiple fallbacks
+	local motherName = "Mom"
+	local fatherName = "Dad"
+	
+	-- Try to get parent names from relationships
+	local success, extractedNames = pcall(function()
+		if state.Relationships then
+			-- Try multiple ways to access relationships (in case of different storage formats)
+			local mother = state.Relationships.mother or state.Relationships["mother"]
+			local father = state.Relationships.father or state.Relationships["father"]
+			
+			local extractedMom = "Mom"
+			local extractedDad = "Dad"
+			
+			if mother and type(mother) == "table" then
+				extractedMom = mother.name or mother.Name or "Mom"
+			end
+			if father and type(father) == "table" then
+				extractedDad = father.name or father.Name or "Dad"
+			end
+			
+			return { mom = extractedMom, dad = extractedDad }
+		end
+		return { mom = "Mom", dad = "Dad" }
+	end)
+	
+	if success and extractedNames then
+		motherName = extractedNames.mom or "Mom"
+		fatherName = extractedNames.dad or "Dad"
+	end
+	
+	-- CRITICAL FIX: Friend name lookup with pcall protection
 	if state.Relationships then
-		if state.Relationships.mother then
-			result = result:gsub("{{MOTHER_NAME}}", state.Relationships.mother.name or "Mom")
-			result = result:gsub("Your mother", state.Relationships.mother.name or "Your mother")
+		pcall(function()
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.type == "friend" then
+					result = result:gsub("{{FRIEND_NAME}}", rel.name or "your friend")
+					break
+				end
+			end
+		end)
+	end
+	
+	-- CRITICAL FIX: Always replace placeholders with multiple pattern variations
+	-- This prevents {{FATHER_NAME}} from appearing literally in game text
+	-- Try both escaped and unescaped patterns for maximum compatibility
+	result = result:gsub("{{MOTHER_NAME}}", motherName)
+	result = result:gsub("{{FATHER_NAME}}", fatherName)
+	-- Escaped pattern versions (Lua pattern special chars)
+	result = result:gsub("%%{%%{MOTHER_NAME%%}%%}", motherName)
+	result = result:gsub("%%{%%{FATHER_NAME%%}%%}", fatherName)
+	-- Generic parent terms
+	result = result:gsub("Your mother", motherName)
+	result = result:gsub("Your father", fatherName)
+	result = result:gsub("your mother", motherName:lower())
+	result = result:gsub("your father", fatherName:lower())
+	result = result:gsub("Your dad", fatherName)
+	result = result:gsub("your dad", fatherName:lower())
+	result = result:gsub("Your mom", motherName)
+	result = result:gsub("your mom", motherName:lower())
+	
+	-- Fallback for friend name if no friend found
+	result = result:gsub("{{FRIEND_NAME}}", "your friend")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add more dynamic placeholders for realistic events
+	-- These prevent hardcoded text like "You're 38 with 2 kids"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Money/salary replacement
+	local money = state.Money or 0
+	result = result:gsub("{{MONEY}}", formatMoney(money))
+	result = result:gsub("{{SAVINGS}}", formatMoney(money))
+	if state.CurrentJob then
+		result = result:gsub("{{SALARY}}", formatMoney(state.CurrentJob.salary or 0))
+		result = result:gsub("{{COMPANY}}", state.CurrentJob.company or "your employer")
+	else
+		-- CRITICAL FIX: Fallback for SALARY and COMPANY when unemployed
+		result = result:gsub("{{SALARY}}", "$0")
+		result = result:gsub("{{COMPANY}}", "your last employer")
+	end
+	
+	-- Family status replacement
+	local familyParts = {}
+	if state.Flags and (state.Flags.has_child or state.Flags.parent) then
+		local childCount = state.ChildCount or 0
+		if childCount > 0 then
+			table.insert(familyParts, childCount == 1 and "a child" or (childCount .. " kids"))
+		else
+			table.insert(familyParts, "children")
 		end
-		if state.Relationships.father then
-			result = result:gsub("{{FATHER_NAME}}", state.Relationships.father.name or "Dad")
-			result = result:gsub("Your father", state.Relationships.father.name or "Your father")
-		end
+	end
+	if state.Flags and (state.Flags.married or state.Flags.has_partner) then
+		table.insert(familyParts, "a spouse")
+	end
+	if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+		table.insert(familyParts, "a mortgage")
+	end
+	
+	local familyStatus = ""
+	if #familyParts > 0 then
+		familyStatus = "You're " .. tostring(age) .. " with " .. table.concat(familyParts, " and ") .. "."
+	else
+		familyStatus = "You're " .. tostring(age) .. " years old."
+	end
+	result = result:gsub("{{FAMILY_STATUS}}", familyStatus)
+	
+	-- Life stage
+	local stage = "adult"
+	if age < 5 then stage = "toddler"
+	elseif age < 13 then stage = "child"
+	elseif age < 18 then stage = "teenager"
+	elseif age < 30 then stage = "young adult"
+	elseif age < 50 then stage = "adult"
+	elseif age < 65 then stage = "middle-aged"
+	else stage = "senior"
+	end
+	result = result:gsub("{{LIFE_STAGE}}", stage)
+	
+	-- Years at job
+	if state.CareerInfo and state.CareerInfo.yearsAtJob then
+		result = result:gsub("{{YEARS_AT_JOB}}", tostring(state.CareerInfo.yearsAtJob))
+	else
+		result = result:gsub("{{YEARS_AT_JOB}}", "several")
 	end
 	
 	return result
@@ -2278,7 +2606,8 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		return
 	end
 
-	local feedText = choice.feed or choice.text or "Life continues."
+	-- CRITICAL FIX: Use feedText (what events use), then feed, then text
+	local feedText = choice.feedText or choice.feed or choice.text or "Life continues..."
 	local resultData
 	local effectsSummary = choice.deltas or {}
 
@@ -2422,11 +2751,18 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		debugPrint(string.format("Player %s was incarcerated by event! Jail years: %.1f", player.Name, state.JailYearsLeft or 0))
 	end
 
+	-- CRITICAL FIX: Use PendingFeed (detailed outcome from onResolve) for popup body
+	-- Fall back to feedText (short choice text) only if no detailed outcome was set
+	local popupBody = jailPopupBody or state.PendingFeed or feedText
+	if popupBody == nil or popupBody == "" then
+		popupBody = "Something happened..."
+	end
+	
 	resultData = {
 		showPopup = true,
 		emoji = jailPopupEmoji or eventDef.emoji,
 		title = jailPopupTitle or eventDef.title,
-		body = jailPopupBody or feedText,
+		body = popupBody,
 		happiness = effectsSummary.Happiness,
 		health = effectsSummary.Health,
 		smarts = effectsSummary.Smarts,
@@ -2490,12 +2826,51 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 
 	self:applyStatChanges(state, deltas)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle setFlag for activities (especially mischief activities)
+	-- Without this, flags like "cheater", "rebellious", "bully" won't be set
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	if activity.setFlag then
+		state.Flags[activity.setFlag] = true
+	end
+	
+	-- Handle multiple flags if needed
+	if activity.setFlags then
+		for flagName, flagValue in pairs(activity.setFlags) do
+			state.Flags[flagName] = flagValue
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Some mischief activities have risk of getting caught
+	-- E.g., vandalism, bullying, underage drinking may have consequences
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local resultMessage = ""
+	local gotCaught = false
+	
+	if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+		gotCaught = true
+		-- Risk-based consequence (usually for teen mischief)
+		if activity.riskConsequence then
+			resultMessage = string.format("You %s... but %s", activity.feed or "did it", activity.riskConsequence)
+		else
+			resultMessage = string.format("You %s... and got caught!", activity.feed or "did it")
+		end
+		-- Apply negative effects for getting caught
+		self:applyStatChanges(state, { Happiness = -5 })
+		if activity.riskFlag then
+			state.Flags[activity.riskFlag] = true
+		end
+	else
+		resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
+	end
 
-	local resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
 	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
 	-- This was causing double popup issues in ActivitiesScreen
 	self:pushState(player, resultMessage)
-	return { success = true, message = resultMessage }
+	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
 function LifeBackend:handleCrime(player, crimeId)
@@ -2552,7 +2927,13 @@ function LifeBackend:handleCrime(player, crimeId)
 		end
 		
 		self:applyStatChanges(state, { Happiness = -10, Health = -5 })
-		local message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
+		-- CRITICAL FIX: Only mention losing job if they actually had one
+		local message
+		if state.CareerInfo and state.CareerInfo.lastJobBeforeJail then
+			message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
+		else
+			message = string.format("You were caught! Sentenced to %.1f years.", years)
+		end
 		-- CRITICAL FIX: Don't use showPopup - client shows its own result
 		self:pushState(player, message)
 		return { success = false, caught = true, message = message }
@@ -2597,16 +2978,12 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	end
 
 	-- CRITICAL FIX: Support for jailIncrease (for failed escape attempts)
+	-- NOTE: Client handles showing the popup, so we DON'T send showPopup here
+	-- to avoid DOUBLE POPUP bug
 	if action.jailIncrease then
 		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
 		local message = string.format("Your escape failed. %d years added to your sentence.", action.jailIncrease)
-		self:pushState(player, message, {
-			showPopup = true,
-			emoji = "🚔",
-			title = "Caught!",
-			body = message,
-			wasSuccess = false,
-		})
+		self:pushState(player, message)
 		return { success = false, message = message }
 	end
 
@@ -2692,6 +3069,7 @@ end
 -- ============================================================================
 -- CRITICAL FIX: Job Rejection Messages for variety and realism
 -- ============================================================================
+-- MINOR FIX: Expanded rejection messages for more variety
 local JobRejectionMessages = {
 	generic = {
 		"After careful consideration, we've decided to go with another candidate.",
@@ -2699,21 +3077,26 @@ local JobRejectionMessages = {
 		"We appreciate your interest, but we're looking for someone with more experience.",
 		"Thank you for applying, but we've filled the position.",
 		"Your qualifications don't quite match what we're looking for right now.",
+		"We're moving forward with other candidates at this time.",
+		"While your application was strong, we found a better fit.",
 	},
 	lowStats = {
 		"You didn't pass the physical fitness requirements.",
 		"The aptitude test results weren't quite what we were hoping for.",
 		"We need someone with stronger qualifications for this role.",
+		"Your skills assessment didn't meet our requirements.",
 	},
 	competitive = {
 		"This position attracted many highly qualified candidates.",
 		"Competition for this role was extremely fierce.",
 		"We received over 500 applications for this position.",
+		"The hiring committee narrowed it down and chose someone else.",
 	},
 	entry = {
 		"Even entry-level positions can be competitive these days!",
 		"We're looking for someone with a bit more availability.",
 		"Your interview went well, but another candidate edged you out.",
+		"Keep applying! The right opportunity will come.",
 	},
 }
 
@@ -2981,7 +3364,7 @@ function LifeBackend:handleJobApplication(player, jobId)
 	return { success = true, message = feed }
 end
 
-function LifeBackend:handleQuitJob(player)
+function LifeBackend:handleQuitJob(player, quitStyle)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data not loaded." }
@@ -2998,6 +3381,15 @@ function LifeBackend:handleQuitJob(player)
 	-- This populates the Career Info screen's career history section
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	state.CareerInfo.careerHistory = state.CareerInfo.careerHistory or {}
+	
+	-- Determine quit reason based on style
+	local quitReason = "quit"
+	if quitStyle == "dramatic" then
+		quitReason = "quit_dramatic"
+	elseif quitStyle == "ghost" then
+		quitReason = "quit_ghost"
+	end
+	
 	local historyEntry = {
 		title = state.CurrentJob.name,
 		company = state.CurrentJob.company,
@@ -3007,7 +3399,7 @@ function LifeBackend:handleQuitJob(player)
 		performance = state.CareerInfo.performance or 60,
 		raises = state.CareerInfo.raises or 0,
 		promotions = state.CareerInfo.promotions or 0,
-		reason = "quit",
+		reason = quitReason,
 		endAge = state.Age or 0,
 		endYear = state.Year or 2025,
 	}
@@ -3017,6 +3409,7 @@ function LifeBackend:handleQuitJob(player)
 	state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
 
 	local jobName = state.CurrentJob.name
+	local companyName = state.CurrentJob.company or "your employer"
 	state.CurrentJob = nil
 	state.CareerInfo.performance = 0
 	state.CareerInfo.promotionProgress = 0
@@ -3028,8 +3421,34 @@ function LifeBackend:handleQuitJob(player)
 	state.Flags.employed = nil
 	state.Flags.has_job = nil
 	state.Flags.between_jobs = true
+	
+	-- BITLIFE-STYLE: Different messages and effects based on quit style
+	local feed
+	local happinessBonus = 0
+	
+	if quitStyle == "dramatic" then
+		-- Dramatic quit - burned bridges but felt GOOD
+		feed = string.format("🔥 You told %s EXACTLY what you think of them. Flipped your desk. Said goodbye to nobody. Walked out like a BOSS. Your ex-coworkers are STILL talking about it. #Legend", companyName)
+		happinessBonus = 15
+		state.Flags.burned_bridges = true
+		state.Flags.epic_quitter = true
+	elseif quitStyle == "ghost" then
+		-- Ghost - just stopped showing up
+		feed = string.format("👻 You just... stopped going to %s. No call. No text. Nothing. They probably filed a missing person report. Your desk stuff is still there. You're officially a ghost.", companyName)
+		happinessBonus = 5
+		state.Flags.unreliable = true
+		state.Flags.ghosted_employer = true
+	else
+		-- Professional - two week notice
+		feed = string.format("✅ You submitted your two-week notice at %s. Your boss looked disappointed but thanked you for your professionalism. Wrote you a great recommendation letter.", companyName)
+		happinessBonus = 5
+		state.Flags.professional_quitter = true
+	end
+	
+	-- Apply happiness bonus
+	state.Stats = state.Stats or {}
+	state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + happinessBonus)
 
-	local feed = string.format("You resigned from your job as %s.", jobName)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -3182,29 +3601,65 @@ function LifeBackend:enrollEducation(player, programId)
 		return { success = false, message = "Unknown education program." }
 	end
 
+	-- CRITICAL FIX: Check minimum age for enrollment
+	local playerAge = state.Age or 0
+	local minAge = program.minAge or 18
+	if playerAge < minAge then
+		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, program.name) }
+	end
+
 	if not self:meetsEducationRequirement(state, program.requirement) then
 		return { success = false, message = "You need to complete the prerequisite first." }
 	end
 
-	if (state.Money or 0) < program.cost then
-		return { success = false, message = "You can't afford tuition." }
-	end
-
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Allow student loans! Don't block enrollment for not having cash.
+	-- Just like real life - students take out loans for education
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local prevDebt = (state.EducationData and state.EducationData.Debt) or 0
-
-	self:addMoney(state, -program.cost)
+	local currentMoney = state.Money or 0
+	local tuitionCost = program.cost or 0
+	local loanNeeded = 0
+	
+	if currentMoney >= tuitionCost then
+		-- Player can pay in full
+		self:addMoney(state, -tuitionCost)
+	else
+		-- Player takes out student loans for the remainder
+		loanNeeded = tuitionCost - currentMoney
+		if currentMoney > 0 then
+			self:addMoney(state, -currentMoney) -- Pay what they can
+		end
+		-- Loan is added to debt (paid back later)
+	end
+	-- CRITICAL FIX: Track loan separately from total cost for proper messaging
+	local totalDebt = prevDebt + loanNeeded -- Only add the loan portion to debt, not what was paid
+	
 	state.EducationData = {
 		Status = "enrolled",
 		Level = programId,
 		Progress = 0,
 		Duration = program.duration,
 		Institution = program.name,
-		Debt = prevDebt + program.cost,
+		Debt = totalDebt,
+		LoanAmount = loanNeeded, -- Track how much was borrowed this enrollment
 	}
 	state.Career = state.Career or {}
 	state.Career.education = programId
+	
+	-- Set student loan flag if they took a loan
+	if loanNeeded > 0 then
+		state.Flags = state.Flags or {}
+		state.Flags.has_student_loans = true
+		state.Flags.student_loan_amount = (state.Flags.student_loan_amount or 0) + loanNeeded
+	end
 
-	local feed = string.format("You enrolled in %s.", program.name)
+	local feed
+	if loanNeeded > 0 then
+		feed = string.format("You enrolled in %s! Took out %s in student loans.", program.name, formatMoney(loanNeeded))
+	else
+		feed = string.format("You enrolled in %s! Paid tuition in full.", program.name)
+	end
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

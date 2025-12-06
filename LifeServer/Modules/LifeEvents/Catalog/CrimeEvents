@@ -157,13 +157,13 @@ local events = {
 	},
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
-	-- DRUG-RELATED CRIMES
+	-- ILLEGAL GOODS DISTRIBUTION
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "drug_dealing_offer",
-		emoji = "💊",
+		id = "shady_delivery_offer",
+		emoji = "📦",
 		title = "Easy Money",
-		text = "Someone offers you quick cash to deliver a package. No questions asked. You know what's inside.",
+		text = "Someone offers you quick cash to deliver a suspicious package. No questions asked. You have a bad feeling about what's inside.",
 		category = "crime",
 		weight = 6,
 		minAge = 16,
@@ -176,13 +176,13 @@ local events = {
 				index = 1,
 				text = "Make the delivery",
 				effects = { },
-				feedText = "You agreed to the drug run...",
+				feedText = "You agreed to the sketchy job...",
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.30
 					if caught then
-						local years = incarceratePlayer(state, 2, 7, "drug trafficking")
+						local years = incarceratePlayer(state, 2, 7, "trafficking illegal goods")
 						if state.AddFeed then
-							state:AddFeed(string.format("Undercover cops! You were arrested and sentenced to %.1f years for drug trafficking.", years))
+							state:AddFeed(string.format("Undercover cops! You were arrested and sentenced to %.1f years for trafficking.", years))
 						end
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
@@ -194,7 +194,7 @@ local events = {
 							state:AddMoney(payout)
 						end
 						state.Flags = state.Flags or {}
-						state.Flags.drug_runner = true
+						state.Flags.illegal_runner = true
 						if state.AddFeed then
 							state:AddFeed(string.format("Package delivered. You earned $%d in cash.", payout))
 						end
@@ -214,17 +214,17 @@ local events = {
 	},
 	
 	{
-		id = "drug_distribution_network",
+		id = "illegal_distribution_network",
 		emoji = "🏭",
 		title = "Distribution Opportunity",
-		text = "You're offered a role in a larger drug distribution network. The money is incredible but so are the risks.",
+		text = "You're offered a role in a larger underground distribution network. The money is incredible but so are the risks.",
 		category = "crime",
 		weight = 3,
 		minAge = 21,
 		maxAge = 50,
 		cooldown = 8,
 		maxOccurrences = 2,
-		requiresFlags = { drug_runner = true },
+		requiresFlags = { illegal_runner = true },
 		blockedByFlags = { in_prison = true },
 		choices = {
 			{
@@ -235,11 +235,11 @@ local events = {
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.40
 					if caught then
-						local years = incarceratePlayer(state, 8, 20, "drug kingpin")
+						local years = incarceratePlayer(state, 8, 20, "running an illegal operation")
 						state.Flags = state.Flags or {}
-						state.Flags.major_drug_conviction = true
+						state.Flags.major_conviction = true
 						if state.AddFeed then
-							state:AddFeed(string.format("DEA bust! Your operation was dismantled. Sentenced to %.1f years in federal prison.", years))
+							state:AddFeed(string.format("Federal bust! Your operation was dismantled. Sentenced to %.1f years in federal prison.", years))
 						end
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -25)
@@ -251,7 +251,7 @@ local events = {
 							state:AddMoney(payout)
 						end
 						state.Flags = state.Flags or {}
-						state.Flags.drug_kingpin = true
+						state.Flags.underground_boss = true
 						if state.AddFeed then
 							state:AddFeed(string.format("The operation was a massive success. You made $%d.", payout))
 						end
@@ -275,7 +275,7 @@ local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "convenience_store_robbery",
-		emoji = "🔫",
+		emoji = "💰",
 		title = "Desperate Times",
 		text = "You're desperate for money. The convenience store on the corner looks like an easy target.",
 		category = "crime",
@@ -736,26 +736,26 @@ local events = {
 	},
 	
 	{
-		id = "gang_recruitment",
-		emoji = "🤙",
-		title = "Gang Invitation",
-		text = "A local gang has noticed you. They're offering protection and money if you join.",
+		id = "crew_recruitment",
+		emoji = "🤝",
+		title = "Crew Invitation",
+		text = "A local crew has noticed you. They're offering protection and money if you join.",
 		category = "crime",
 		weight = 3,
 		minAge = 14,
 		maxAge = 30,
 		cooldown = 8,
 		maxOccurrences = 2,
-		blockedByFlags = { in_prison = true, gang_member = true },
+		blockedByFlags = { in_prison = true, crew_member = true },
 		choices = {
 			{
 				index = 1,
-				text = "Join the gang",
+				text = "Join the crew",
 				effects = { },
-				feedText = "You're initiated into the gang...",
+				feedText = "You're now part of the crew...",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
-					state.Flags.gang_member = true
+					state.Flags.crew_member = true
 					state.Flags.criminal_record = true
 					
 					local payout = RANDOM:NextInteger(1000, 3000)
@@ -781,17 +781,17 @@ local events = {
 				index = 3,
 				text = "Report them to police",
 				effects = { Happiness = -5 },
-				setFlags = { gang_snitch = true },
+				setFlags = { snitch = true },
 				feedText = "You reported them. Watch your back now.",
 			},
 		},
 	},
 	
 	{
-		id = "hit_job",
-		emoji = "🎯",
-		title = "Dark Offer",
-		text = "Someone offers you serious money to 'take care of' a problem person for them.",
+		id = "intimidation_job",
+		emoji = "💪",
+		title = "Shady Offer",
+		text = "Someone offers you serious money to 'send a message' to a business rival for them.",
 		category = "crime",
 		weight = 1,
 		minAge = 21,
@@ -805,19 +805,19 @@ local events = {
 				index = 1,
 				text = "Accept the contract",
 				effects = { },
-				feedText = "You agreed to the darkest job imaginable...",
+				feedText = "You agreed to the intimidation job...",
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.50
 					if caught then
-						local years = incarceratePlayer(state, 25, 99, "murder for hire")
+						local years = incarceratePlayer(state, 5, 15, "extortion and intimidation")
 						state.Flags = state.Flags or {}
-						state.Flags.murderer = true
+						state.Flags.serious_criminal = true
 						if state.AddFeed then
-							state:AddFeed(string.format("You were caught and charged with murder. Life sentence: %.0f years.", years))
+							state:AddFeed(string.format("You were caught! Sentenced to %.0f years for extortion.", years))
 						end
 						if state.ModifyStat then
-							state:ModifyStat("Happiness", -40)
-							state:ModifyStat("Health", -15)
+							state:ModifyStat("Happiness", -25)
+							state:ModifyStat("Health", -10)
 						end
 					else
 						local payout = RANDOM:NextInteger(50000, 200000)
@@ -825,21 +825,19 @@ local events = {
 							state:AddMoney(payout)
 						end
 						state.Flags = state.Flags or {}
-						state.Flags.murderer = true
-						state.Flags.hitman = true
+						state.Flags.enforcer = true
 						if state.AddFeed then
-							state:AddFeed(string.format("The job is done. You received $%d. You'll never be the same.", payout))
+							state:AddFeed(string.format("The job is done. You received $%d.", payout))
 						end
 						if state.ModifyStat then
-							state:ModifyStat("Happiness", -10)
-							state:ModifyStat("Health", -5)
+							state:ModifyStat("Happiness", -5)
 						end
 					end
 				end,
 			},
 			{
 				index = 2,
-				text = "This is too dark - never",
+				text = "This is too shady - no way",
 				effects = { Happiness = 2 },
 				feedText = "You refused. Some lines can't be crossed.",
 			},

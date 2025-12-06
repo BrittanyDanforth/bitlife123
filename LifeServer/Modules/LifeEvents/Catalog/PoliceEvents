@@ -1,0 +1,667 @@
+--[[
+	PoliceEvents.lua
+	
+	Career events for Law Enforcement careers (Police Officer, Detective, etc.)
+	
+	Features:
+	- Daily patrol encounters
+	- Crime investigations
+	- Corruption temptations
+	- Career advancement to detective/sergeant
+	- Internal affairs investigations
+	- Dangerous situations
+]]
+
+local RANDOM = Random.new()
+
+-- CRITICAL FIX: Police job IDs for eligibility checks
+-- eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category doesn't work because police jobs use "government" category
+local POLICE_JOB_IDS = {
+	police_officer = true,
+	detective = true,
+	police_chief = true,
+	probation_officer = true,
+	fbi_agent = true,
+	cia_agent = true,
+}
+
+local function isPoliceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = state.CurrentJob.id or state.CurrentJob
+	return POLICE_JOB_IDS[jobId] == true
+end
+
+local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DAILY PATROL EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "routine_traffic_stop",
+		emoji = "🚔",
+		title = "Routine Traffic Stop",
+		text = "You pull over a vehicle for speeding. The driver seems nervous. Something feels off.",
+		question = "How do you proceed?",
+		category = "career_police",
+		weight = 8,
+		minAge = 21,
+		maxAge = 60,
+		baseChance = 0.6,
+		cooldown = 2,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { in_prison = true, suspended = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "By the book - just write the ticket",
+				effects = { Happiness = 2 },
+				feedText = "You wrote the ticket and let them go.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.1 then
+						-- The car was actually carrying something illegal
+						if state.AddFeed then
+							state:AddFeed("💭 Later you heard that driver was arrested in another county with contraband. Should've searched...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Request backup and search the vehicle",
+				effects = { Happiness = 3 },
+				feedText = "You called for backup...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.4 then
+						-- Find something
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("🎯 Good instincts! You found illegal items. One more arrest on your record!")
+						end
+					elseif outcome < 0.7 then
+						-- Nothing found
+						if state.AddFeed then
+							state:AddFeed("🔍 Search came up clean. False alarm.")
+						end
+					else
+						-- Complaint filed
+						state.Flags = state.Flags or {}
+						state.Flags.complaint_filed = true
+						if state.AddFeed then
+							state:AddFeed("😤 Driver filed a complaint. Internal Affairs wants to talk...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Let them off with a warning",
+				effects = { Happiness = 5, Health = 1 },
+				feedText = "You gave them a warning. Sometimes mercy matters.",
+			},
+		},
+	},
+	
+	{
+		id = "domestic_disturbance",
+		emoji = "🏠",
+		title = "Domestic Disturbance Call",
+		text = "Dispatch sends you to a home where neighbors reported yelling and breaking glass. These calls are always unpredictable.",
+		question = "How do you approach?",
+		category = "career_police",
+		weight = 7,
+		minAge = 21,
+		maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Wait for backup before approaching",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "You waited for backup. Smart and safe.",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("🤝 With backup, you de-escalated the situation safely. Everyone went home.")
+						end
+					else
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("🚔 Made an arrest for domestic violence. You helped protect someone.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Go in immediately - someone might be in danger",
+				effects = { Happiness = 3 },
+				feedText = "You rushed in to help...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.3 then
+						-- Heroic outcome
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
+						state.Flags = state.Flags or {}
+						state.Flags.hero_cop = true
+						if state.AddFeed then
+							state:AddFeed("🦸 You saved someone's life! Department commendation incoming.")
+						end
+					elseif outcome < 0.6 then
+						-- Situation resolved
+						if state.AddFeed then
+							state:AddFeed("✅ You calmed things down. Just a heated argument.")
+						end
+					else
+						-- Got hurt
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-15, -5))
+						end
+						if state.AddFeed then
+							state:AddFeed("🤕 Things got physical. You got hurt but subdued the aggressor.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Call a social worker to accompany you",
+				effects = { Happiness = 5, Smarts = 3 },
+				feedText = "You called for specialized support.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("💙 The social worker de-escalated beautifully. Modern policing at its best.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CORRUPTION / ETHICS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "bribe_offered",
+		emoji = "💰",
+		title = "Bribe Offer",
+		text = "During a traffic stop, the driver opens their wallet and you see stacks of cash. 'Officer, maybe we can work something out? $5,000, no questions asked.'",
+		question = "What do you do?",
+		category = "career_police",
+		weight = 5,
+		minAge = 21,
+		maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 10,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Arrest them for attempting to bribe an officer",
+				effects = { Happiness = 8, Smarts = 5 },
+				feedText = "You arrested them for bribery!",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
+					state.Flags = state.Flags or {}
+					state.Flags.honest_cop = true
+					if state.AddFeed then
+						state:AddFeed("⚖️ You did the right thing. The department commended your integrity.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Take the money and let them go",
+				effects = { Happiness = -3, Money = 5000 },
+				setFlags = { corrupt_cop = true, dirty = true },
+				feedText = "You took the bribe...",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.2 then
+						-- Internal affairs was watching
+						state.Flags.under_investigation = true
+						if state.AddFeed then
+							state:AddFeed("😰 Someone was watching. Internal Affairs wants to see you...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Let them off with a warning - no money involved",
+				effects = { Happiness = 2 },
+				feedText = "You let them go. Maybe mercy, maybe avoiding a situation.",
+			},
+		},
+	},
+	
+	{
+		id = "internal_affairs_investigation",
+		emoji = "🔍",
+		title = "Internal Affairs Investigation",
+		text = "Internal Affairs has called you in for questioning. They're investigating complaints against you. Your career could be on the line.",
+		question = "How do you handle this?",
+		category = "career_police",
+		weight = 6,
+		minAge = 22,
+		maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 15,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		requiresFlags = { complaint_filed = true },
+		blockedByFlags = { in_prison = true, cleared_by_ia = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Cooperate fully - I have nothing to hide",
+				effects = { Happiness = 5 },
+				feedText = "You cooperated with the investigation...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					local corrupt = state.Flags and state.Flags.corrupt_cop
+					if corrupt then
+						if outcome < 0.5 then
+							-- They found evidence
+							state.CurrentJob = nil
+							state.Flags.fired_from_police = true
+							state.Flags.disgraced = true
+							if state.AddFeed then
+								state:AddFeed("👮‍♂️❌ They found evidence of corruption. You've been fired from the force.")
+							end
+						else
+							-- Covered your tracks
+							state.Flags.cleared_by_ia = true
+							if state.AddFeed then
+								state:AddFeed("😅 Insufficient evidence. You're cleared... this time.")
+							end
+						end
+					else
+						state.Flags.cleared_by_ia = true
+						state.Flags.complaint_filed = nil
+						if state.AddFeed then
+							state:AddFeed("✅ Investigation cleared you completely! Your record is clean.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Get a union lawyer immediately",
+				effects = { Happiness = 0, Money = -2000 },
+				feedText = "You lawyered up...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.cleared_by_ia = true
+					state.Flags.complaint_filed = nil
+					if state.AddFeed then
+						state:AddFeed("⚖️ Your lawyer got the investigation dropped. Cost you, but worth it.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Resign before they can fire you",
+				effects = { Happiness = -10 },
+				feedText = "You resigned from the force.",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.former_cop = true
+					if state.AddFeed then
+						state:AddFeed("🚶 You left the force on your own terms. Time for a new chapter.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER ADVANCEMENT
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "detective_promotion",
+		emoji = "🕵️",
+		title = "Detective Exam",
+		text = "You've been on the force for years. The detective exam is coming up. This could be your chance to move up.",
+		question = "What do you do?",
+		category = "career_police",
+		weight = 5,
+		minAge = 26,
+		maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 20,
+		oneTime = true,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { detective = true, in_prison = true },
+		eligibility = function(state)
+			local arrests = state.CareerInfo and state.CareerInfo.arrests or 0
+			return arrests >= 5 -- Need some experience
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Study hard and take the exam",
+				effects = { Happiness = 5, Smarts = 3 },
+				feedText = "You prepared for the detective exam...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local passChance = 0.4 + (smarts / 200) -- 40-90% based on smarts
+					
+					if RANDOM:NextNumber() < passChance then
+						state.Flags = state.Flags or {}
+						state.Flags.detective = true
+						if state.CurrentJob then
+							state.CurrentJob.name = "Detective"
+							state.CurrentJob.salary = (state.CurrentJob.salary or 50000) * 1.4
+						end
+						if state.AddFeed then
+							state:AddFeed("🎉 You passed! You're now Detective " .. (state.Name or "Unknown") .. "!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 You didn't pass this time. Maybe next year.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not ready yet - stay on patrol",
+				effects = { Happiness = 2 },
+				feedText = "You decided to wait. More street experience first.",
+			},
+		},
+	},
+	
+	{
+		id = "sergeant_promotion",
+		emoji = "⭐",
+		title = "Sergeant Position Open",
+		text = "A sergeant position has opened up in your precinct. Your captain thinks you'd be a good fit for a leadership role.",
+		question = "Do you go for it?",
+		category = "career_police",
+		weight = 4,
+		minAge = 30,
+		maxAge = 55,
+		baseChance = 0.25,
+		cooldown = 25,
+		oneTime = true,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { sergeant = true, in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Apply for the promotion",
+				effects = { Happiness = 5 },
+				feedText = "You applied for sergeant...",
+				onResolve = function(state)
+					local honest = state.Flags and state.Flags.honest_cop
+					local heroic = state.Flags and state.Flags.hero_cop
+					local corrupt = state.Flags and state.Flags.corrupt_cop
+					
+					local baseChance = 0.5
+					if honest then baseChance = baseChance + 0.2 end
+					if heroic then baseChance = baseChance + 0.2 end
+					if corrupt then baseChance = baseChance - 0.3 end
+					
+					if RANDOM:NextNumber() < baseChance then
+						state.Flags = state.Flags or {}
+						state.Flags.sergeant = true
+						if state.CurrentJob then
+							state.CurrentJob.name = "Sergeant"
+							state.CurrentJob.salary = (state.CurrentJob.salary or 60000) * 1.3
+						end
+						if state.AddFeed then
+							state:AddFeed("⭐ Congratulations, Sergeant! You're now leading a team.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 Someone else got the position. Keep working hard.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay on the streets - I like the action",
+				effects = { Happiness = 5 },
+				feedText = "You prefer being in the field. Leadership isn't for everyone.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DANGEROUS SITUATIONS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "active_shooter",
+		emoji = "⚠️",
+		title = "Active Shooter Situation",
+		text = "Dispatch reports an active shooter at a public location. You're the closest unit. Lives are at stake.",
+		question = "What do you do?",
+		category = "career_police",
+		weight = 4,
+		minAge = 21,
+		maxAge = 55,
+		baseChance = 0.15,
+		cooldown = 30,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Rush in immediately - every second counts",
+				effects = { Happiness = 5 },
+				feedText = "You ran toward danger...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.4 then
+						-- Hero outcome
+						state.Flags = state.Flags or {}
+						state.Flags.hero_cop = true
+						state.Flags.medal_of_valor = true
+						if state.AddFeed then
+							state:AddFeed("🦸 You stopped the shooter and saved lives! Medal of Valor incoming!")
+						end
+					elseif outcome < 0.7 then
+						-- Injured but survived
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-25, -10))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.wounded_in_line = true
+						if state.AddFeed then
+							state:AddFeed("🏥 You were wounded but survived. You're a hero.")
+						end
+					else
+						-- Situation resolved by others
+						if state.AddFeed then
+							state:AddFeed("✅ By the time you got there, the situation was resolved. Everyone safe.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait for SWAT - follow protocol",
+				effects = { Happiness = -5, Smarts = 3 },
+				feedText = "You waited for specialized units...",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.3 then
+						-- More casualties while waiting
+						state.Flags = state.Flags or {}
+						state.Flags.ptsd_trauma = true
+						if state.AddFeed then
+							state:AddFeed("💔 More people were hurt while you waited. Could you have done more?")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("✅ SWAT handled it professionally. Right call to wait.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Coordinate evacuation - save who you can",
+				effects = { Happiness = 5, Smarts = 5 },
+				feedText = "You focused on getting people to safety.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.saved_civilians = true
+					if state.AddFeed then
+						state:AddFeed("🚨 You evacuated dozens of people to safety. Well done.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "partner_in_danger",
+		emoji = "👮",
+		title = "Partner in Danger",
+		text = "Your partner radioed for help - they're pinned down by gunfire during a pursuit. Backup is minutes away.",
+		question = "What do you do?",
+		category = "career_police",
+		weight = 5,
+		minAge = 21,
+		maxAge = 55,
+		baseChance = 0.2,
+		cooldown = 15,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Go in alone - my partner needs me NOW",
+				effects = { Happiness = 5 },
+				feedText = "You rushed to help your partner...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.5 then
+						-- Both survive
+						state.Flags = state.Flags or {}
+						state.Flags.loyal_partner = true
+						if state.AddFeed then
+							state:AddFeed("💪 You saved your partner! Brothers in blue forever.")
+						end
+					elseif outcome < 0.8 then
+						-- You get hurt
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-20, -10))
+						end
+						if state.AddFeed then
+							state:AddFeed("🤕 You got shot but your partner is alive. Worth it.")
+						end
+					else
+						-- Both survive but close call
+						if state.AddFeed then
+							state:AddFeed("😰 Bullets everywhere but you both made it. Close one.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait for backup - we need numbers",
+				effects = { Happiness = -5 },
+				feedText = "You waited for backup...",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.3 then
+						-- Partner wounded
+						state.Flags = state.Flags or {}
+						state.Flags.partner_wounded = true
+						if state.AddFeed then
+							state:AddFeed("😔 Your partner was hurt waiting for backup. They survived but...")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("✅ Backup arrived in time. Everyone's okay.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RETIREMENT / END GAME
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "police_retirement",
+		emoji = "🏖️",
+		title = "Retirement from the Force",
+		text = "After decades on the force, it's time to hang up the badge. You've seen a lot. Done a lot. Time to rest.",
+		question = "How do you feel about retirement?",
+		category = "career_police",
+		weight = 5,
+		minAge = 50,
+		maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 50,
+		oneTime = true,
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
+		blockedByFlags = { retired_cop = true, in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Full pension - I've earned it",
+				effects = { Happiness = 15, Health = 5 },
+				setFlags = { retired_cop = true },
+				feedText = "You retired with full honors and pension.",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.retired = true
+					state.Flags.pension = true
+					-- Set up pension income
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.pensionAmount = 4000 -- Monthly pension
+					if state.AddFeed then
+						state:AddFeed("👮‍♂️ Thank you for your service. Enjoy retirement!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay on as a desk officer",
+				effects = { Happiness = 5 },
+				feedText = "You moved to a desk position. Lighter duties, still on the job.",
+			},
+			{
+				index = 3,
+				text = "Become a private investigator",
+				effects = { Happiness = 10 },
+				feedText = "You opened your own PI business. Still solving cases.",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.private_investigator = true
+					if state.AddFeed then
+						state:AddFeed("🔍 You're now a private investigator. Same skills, new rules.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return events

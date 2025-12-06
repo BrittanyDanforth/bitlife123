@@ -49,7 +49,7 @@ function LifeState.new(player)
 		Status = "none", -- none, enrolled, completed
 		Level = nil,
 		Progress = 0,
-		Duration = 0,
+		Duration = nil, -- CRITICAL FIX: nil instead of 0 to prevent divide-by-zero in progress calc
 		Institution = nil,
 		GPA = nil,
 		Debt = 0,
@@ -162,21 +162,38 @@ function LifeState:AdvanceAge()
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- Age 5: Start elementary school
+	-- CRITICAL FIX: Elementary/Middle school are silent progressions - NO graduation events
+	-- Only High School and higher get graduation events
 	if self.Age == 5 and self.Education == "none" then
 		self.EducationData.Status = "enrolled"
 		self.EducationData.Institution = "Elementary School"
+		self.EducationData.Level = "elementary" -- Mark as pre-high-school level
+		self.EducationData.Duration = 6 -- Elementary is 6 years (ages 5-10)
+		self.EducationData.Progress = 0
 		self.Flags.in_school = true
 	end
 	
-	-- Age 11: Middle school transition (just update institution)
+	-- Age 11: Middle school transition (automatic, no graduation message)
 	if self.Age == 11 and self.Education == "none" then
 		self.EducationData.Institution = "Middle School"
+		self.EducationData.Level = "middle_school" -- Still pre-high-school
+		self.EducationData.Duration = 3 -- Middle school is 3 years (ages 11-13)
+		self.EducationData.Progress = 0 -- Reset progress for new phase
+		-- No graduation message - this is silent progression
 	end
 	
 	-- Age 14: Start high school (still no diploma yet!)
+	-- CRITICAL FIX: Only set up high school if not already enrolled (event may have handled this)
 	if self.Age == 14 and self.Education == "none" then
-		self.EducationData.Institution = "High School"
-		self.Flags.in_high_school = true
+		-- Only initialize if not already set up by the Teen event
+		if not self.EducationData.Institution or self.EducationData.Institution == "Middle School" then
+			self.EducationData.Institution = "High School"
+			self.EducationData.Level = "high_school"
+			self.EducationData.Status = "enrolled"
+			self.EducationData.Duration = 4 -- High school takes 4 years (ages 14-18)
+			self.EducationData.Progress = self.EducationData.Progress or 0 -- Don't reset if already has progress
+			self.Flags.in_high_school = true
+		end
 	end
 	
 	-- Age 18: Auto-graduate high school if player hasn't already via event
@@ -227,28 +244,8 @@ function LifeState:AdvanceAge()
 		end
 	end
 	
-	-- Jail time reduction
-	if self.InJail and self.JailYearsLeft > 0 then
-		self.JailYearsLeft = math.max(0, self.JailYearsLeft - 1)
-		if self.JailYearsLeft <= 0 then
-			self.InJail = false
-			self.Flags.in_prison = nil
-			self.Flags.incarcerated = nil
-			
-			-- CRITICAL FIX: Resume suspended education if player was enrolled before jail
-			if self.EducationData and self.EducationData.Status == "suspended" then
-				if self.EducationData.StatusBeforeJail == "enrolled" then
-					self.EducationData.Status = "enrolled"
-					self.EducationData.StatusBeforeJail = nil
-					self.PendingFeed = "You've been released from prison! You can resume your education."
-				else
-					self.PendingFeed = "You've been released from prison!"
-				end
-			else
-				self.PendingFeed = "You've been released from prison!"
-			end
-		end
-	end
+	-- NOTE: Jail time is now decremented in LifeBackend.lua to prevent DOUBLE decrementation bug
+	-- The duplicate code here was causing jail sentences to decrease by 2 years per age instead of 1
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PENSION/RETIREMENT INCOME SYSTEM
@@ -296,10 +293,18 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:ModifyStat(statName, delta)
-	if self.Stats[statName] ~= nil then
-		self.Stats[statName] = math.clamp(self.Stats[statName] + delta, 0, 100)
-		self[statName] = self.Stats[statName]
+	-- CRITICAL FIX: Initialize stat if missing (prevents silent failures)
+	if self.Stats[statName] == nil then
+		-- Initialize common stats to default values
+		local defaults = { Happiness = 50, Health = 50, Smarts = 50, Looks = 50 }
+		if defaults[statName] then
+			self.Stats[statName] = defaults[statName]
+		else
+			return self -- Unknown stat, skip silently
+		end
 	end
+	self.Stats[statName] = math.clamp(self.Stats[statName] + delta, 0, 100)
+	self[statName] = self.Stats[statName]
 	return self
 end
 
@@ -364,6 +369,21 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:AddAsset(category, asset)
+	-- CRITICAL FIX: Validate inputs to prevent crashes
+	if type(category) ~= "string" or category == "" then
+		warn("[LifeState:AddAsset] Invalid category:", category)
+		return self
+	end
+	if type(asset) ~= "table" then
+		warn("[LifeState:AddAsset] Invalid asset (expected table):", type(asset))
+		return self
+	end
+	
+	-- CRITICAL FIX: Ensure asset has required fields
+	asset.id = asset.id or (category .. "_" .. tostring(tick()))
+	asset.name = asset.name or "Unknown Asset"
+	asset.value = asset.value or asset.price or 0
+	
 	print("[LifeState:AddAsset] Adding to category:", category)
 	print("  Asset id:", asset.id, "name:", asset.name)
 	
@@ -479,6 +499,29 @@ end
 
 function LifeState:ClearFlag(flagName)
 	self.Flags[flagName] = nil
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: RecordEvent function for event tracking
+-- Called by EventEngine to track which events have occurred
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:RecordEvent(eventId, data)
+	if not eventId then return self end
+	
+	self.EventHistory = self.EventHistory or {}
+	self.EventHistory.completed = self.EventHistory.completed or {}
+	self.EventHistory.occurrences = self.EventHistory.occurrences or {}
+	
+	self.EventHistory.completed[eventId] = true
+	self.EventHistory.occurrences[eventId] = (self.EventHistory.occurrences[eventId] or 0) + 1
+	
+	if data then
+		self.EventHistory.lastChoice = self.EventHistory.lastChoice or {}
+		self.EventHistory.lastChoice[eventId] = data.choice
+	end
+	
 	return self
 end
 

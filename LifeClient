@@ -26,7 +26,12 @@ if ScreensFolder then
 		local child = ScreensFolder:FindFirstChild(name)
 		if child then
 			local s, r = pcall(require, child)
+			if not s then
+				warn("[LifeClient] ❌ Failed to require", name, ":", r)
+			end
 			return s and r or nil
+		else
+			warn("[LifeClient] ❌ Module not found:", name)
 		end
 		return nil
 	end
@@ -486,7 +491,9 @@ local function createResultPopup()
 
 	local cardLayout = Instance.new("UIListLayout")
 	cardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	cardLayout.Padding = UDim.new(0, 10)
+	cardLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder -- CRITICAL FIX: Explicit sort order
+	cardLayout.Padding = UDim.new(0, 12)
 	cardLayout.Parent = resultCard
 	pad(resultCard, 20, 20, 20, 20)
 
@@ -545,19 +552,19 @@ local function createResultPopup()
 	statsLayout.Padding = UDim.new(0, 4)
 	statsLayout.Parent = resultStatsPreview
 
-	-- OK Button
+	-- OK Button - CRITICAL FIX: Made more prominent and at bottom with higher LayoutOrder
 	resultOkBtn = Instance.new("TextButton")
-	resultOkBtn.Size = UDim2.new(1, 0, 0, 48)
+	resultOkBtn.Size = UDim2.new(1, 0, 0, 52)
 	resultOkBtn.BackgroundColor3 = C.Green
 	resultOkBtn.Font = F.Button
-	resultOkBtn.TextSize = 16
+	resultOkBtn.TextSize = 18
 	resultOkBtn.TextColor3 = C.White
-	resultOkBtn.Text = "OK"
+	resultOkBtn.Text = "Continue"
 	resultOkBtn.AutoButtonColor = false
-	resultOkBtn.LayoutOrder = 5
+	resultOkBtn.LayoutOrder = 99 -- High number ensures it's always last
 	resultOkBtn.ZIndex = 84
 	resultOkBtn.Parent = resultCard
-	corner(resultOkBtn, 10)
+	corner(resultOkBtn, 12)
 
 	resultOkBtn.MouseEnter:Connect(function()
 		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
@@ -619,7 +626,12 @@ local function showResultPopup(data, callback)
 
 	resultEmoji.Text = data.emoji or (isPositive and "✨" or "😢")
 	resultTitle.Text = data.title or "What Happened"
-	resultBody.Text = data.body or "Life goes on..."
+	-- CRITICAL UI FIX: More descriptive default body text
+	local bodyText = data.body or "Something happened, but the details are unclear."
+	if bodyText == "" then
+		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
+	end
+	resultBody.Text = bodyText
 
 	-- Clear old stat previews
 	for _, child in ipairs(resultStatsPreview:GetChildren()) do
@@ -1600,101 +1612,267 @@ end)
 -- DEATH OVERLAY
 ----------------------------------------------------------------
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BITLIFE-STYLE DEATH SCREEN - Full screen memorial with comprehensive stats
+-- ═══════════════════════════════════════════════════════════════════════════════
 local DeathUI = {}
 
 DeathUI.overlay = Instance.new("Frame")
 DeathUI.overlay.Name = "DeathOverlay"
 DeathUI.overlay.Size = UDim2.fromScale(1, 1)
-DeathUI.overlay.BackgroundColor3 = C.Black
-DeathUI.overlay.BackgroundTransparency = 0.45
+DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+DeathUI.overlay.BackgroundTransparency = 0
 DeathUI.overlay.Visible = false
 DeathUI.overlay.ZIndex = 120
 DeathUI.overlay.Parent = screenGui
 
-DeathUI.card = Instance.new("Frame")
-DeathUI.card.Size = UDim2.new(0, 340, 0, 0)
-DeathUI.card.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.card.AnchorPoint = Vector2.new(0.5, 0.5)
-DeathUI.card.Position = UDim2.fromScale(0.5, 0.5)
-DeathUI.card.BackgroundColor3 = C.White
-DeathUI.card.ZIndex = 121
-DeathUI.card.Parent = DeathUI.overlay
-corner(DeathUI.card, 24)
-pad(DeathUI.card, 24, 24, 28, 32)
+-- Scrollable container for all content
+DeathUI.scroll = Instance.new("ScrollingFrame")
+DeathUI.scroll.Name = "DeathScroll"
+DeathUI.scroll.Size = UDim2.fromScale(1, 1)
+DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+DeathUI.scroll.BackgroundTransparency = 1
+DeathUI.scroll.ScrollBarThickness = 4
+DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
+DeathUI.scroll.ZIndex = 121
+DeathUI.scroll.Parent = DeathUI.overlay
 
-local deathLayout = Instance.new("UIListLayout")
-deathLayout.Padding = UDim.new(0, 12)
-deathLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-deathLayout.SortOrder = Enum.SortOrder.LayoutOrder
-deathLayout.Parent = DeathUI.card
+local deathScrollLayout = Instance.new("UIListLayout")
+deathScrollLayout.Padding = UDim.new(0, 0)
+deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+deathScrollLayout.Parent = DeathUI.scroll
 
+-- Header section with gravestone
+DeathUI.headerSection = Instance.new("Frame")
+DeathUI.headerSection.Name = "Header"
+DeathUI.headerSection.Size = UDim2.new(1, 0, 0, 280)
+DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+DeathUI.headerSection.ZIndex = 121
+DeathUI.headerSection.LayoutOrder = 1
+DeathUI.headerSection.Parent = DeathUI.scroll
+
+-- Gravestone emoji
 DeathUI.emojiFrame = Instance.new("Frame")
-DeathUI.emojiFrame.Size = UDim2.new(0, 80, 0, 80)
-DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
+DeathUI.emojiFrame.Size = UDim2.new(0, 100, 0, 100)
+DeathUI.emojiFrame.Position = UDim2.new(0.5, -50, 0, 30)
+DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
 DeathUI.emojiFrame.ZIndex = 122
-DeathUI.emojiFrame.LayoutOrder = 1
-DeathUI.emojiFrame.Parent = DeathUI.card
-corner(DeathUI.emojiFrame, 20)
+DeathUI.emojiFrame.Parent = DeathUI.headerSection
+corner(DeathUI.emojiFrame, 50)
 
 local deathEmojiLabel = Instance.new("TextLabel")
 deathEmojiLabel.Size = UDim2.fromScale(1, 1)
 deathEmojiLabel.BackgroundTransparency = 1
 deathEmojiLabel.Font = F.Body
-deathEmojiLabel.TextSize = 48
-deathEmojiLabel.Text = "☠️"
+deathEmojiLabel.TextSize = 56
+deathEmojiLabel.Text = "⚰️"
 deathEmojiLabel.ZIndex = 123
 deathEmojiLabel.Parent = DeathUI.emojiFrame
 
+-- "REST IN PEACE" header
+local ripLabel = Instance.new("TextLabel")
+ripLabel.Name = "RIP"
+ripLabel.Size = UDim2.new(1, 0, 0, 28)
+ripLabel.Position = UDim2.new(0, 0, 0, 140)
+ripLabel.BackgroundTransparency = 1
+ripLabel.Font = F.Medium
+ripLabel.TextSize = 14
+ripLabel.TextColor3 = C.Gray400
+ripLabel.Text = "REST IN PEACE"
+ripLabel.ZIndex = 122
+ripLabel.Parent = DeathUI.headerSection
+
+-- Name and lifespan
 DeathUI.title = Instance.new("TextLabel")
-DeathUI.title.Size = UDim2.new(1, 0, 0, 32)
+DeathUI.title.Size = UDim2.new(1, 0, 0, 36)
+DeathUI.title.Position = UDim2.new(0, 0, 0, 168)
 DeathUI.title.BackgroundTransparency = 1
 DeathUI.title.Font = F.Title
-DeathUI.title.TextSize = 24
-DeathUI.title.TextColor3 = C.Gray900
+DeathUI.title.TextSize = 28
+DeathUI.title.TextColor3 = C.White
 DeathUI.title.TextWrapped = true
-DeathUI.title.Text = "Life Ended"
-DeathUI.title.LayoutOrder = 2
+DeathUI.title.Text = "Name Here"
 DeathUI.title.ZIndex = 122
-DeathUI.title.Parent = DeathUI.card
+DeathUI.title.Parent = DeathUI.headerSection
 
+-- Birth - Death years
+DeathUI.lifespan = Instance.new("TextLabel")
+DeathUI.lifespan.Name = "Lifespan"
+DeathUI.lifespan.Size = UDim2.new(1, 0, 0, 24)
+DeathUI.lifespan.Position = UDim2.new(0, 0, 0, 204)
+DeathUI.lifespan.BackgroundTransparency = 1
+DeathUI.lifespan.Font = F.Body
+DeathUI.lifespan.TextSize = 16
+DeathUI.lifespan.TextColor3 = C.Gray300
+DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
+DeathUI.lifespan.ZIndex = 122
+DeathUI.lifespan.Parent = DeathUI.headerSection
+
+-- Cause of death
 DeathUI.cause = Instance.new("TextLabel")
-DeathUI.cause.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
+DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
 DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
 DeathUI.cause.BackgroundTransparency = 1
 DeathUI.cause.Font = F.Body
-DeathUI.cause.TextSize = 16
-DeathUI.cause.TextColor3 = C.Gray600
+DeathUI.cause.TextSize = 14
+DeathUI.cause.TextColor3 = C.Gray400
 DeathUI.cause.TextWrapped = true
-DeathUI.cause.TextXAlignment = Enum.TextXAlignment.Center
-DeathUI.cause.Text = "Your story has ended."
-DeathUI.cause.LayoutOrder = 3
+DeathUI.cause.Text = "Cause of death"
 DeathUI.cause.ZIndex = 122
-DeathUI.cause.Parent = DeathUI.card
+DeathUI.cause.Parent = DeathUI.headerSection
+
+-- Stats container
+DeathUI.statsSection = Instance.new("Frame")
+DeathUI.statsSection.Name = "StatsSection"
+DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+DeathUI.statsSection.ZIndex = 121
+DeathUI.statsSection.LayoutOrder = 2
+DeathUI.statsSection.Parent = DeathUI.scroll
+
+local statsSectionPad = Instance.new("UIPadding")
+statsSectionPad.PaddingTop = UDim.new(0, 20)
+statsSectionPad.PaddingBottom = UDim.new(0, 20)
+statsSectionPad.PaddingLeft = UDim.new(0, 16)
+statsSectionPad.PaddingRight = UDim.new(0, 16)
+statsSectionPad.Parent = DeathUI.statsSection
+
+local statsSectionLayout = Instance.new("UIListLayout")
+statsSectionLayout.Padding = UDim.new(0, 12)
+statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+statsSectionLayout.Parent = DeathUI.statsSection
+
+-- Stats title
+local statsTitle = Instance.new("TextLabel")
+statsTitle.Name = "StatsTitle"
+statsTitle.Size = UDim2.new(1, 0, 0, 28)
+statsTitle.BackgroundTransparency = 1
+statsTitle.Font = F.Title
+statsTitle.TextSize = 18
+statsTitle.TextColor3 = C.White
+statsTitle.TextXAlignment = Enum.TextXAlignment.Left
+statsTitle.Text = "📊 LIFE STATISTICS"
+statsTitle.LayoutOrder = 0
+statsTitle.ZIndex = 122
+statsTitle.Parent = DeathUI.statsSection
 
 DeathUI.statsFrame = Instance.new("Frame")
+DeathUI.statsFrame.Name = "StatsFrame"
 DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
 DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
 DeathUI.statsFrame.BackgroundTransparency = 1
-DeathUI.statsFrame.LayoutOrder = 4
+DeathUI.statsFrame.LayoutOrder = 1
 DeathUI.statsFrame.ZIndex = 122
-DeathUI.statsFrame.Parent = DeathUI.card
+DeathUI.statsFrame.Parent = DeathUI.statsSection
 
 local deathStatsLayout = Instance.new("UIListLayout")
-deathStatsLayout.Padding = UDim.new(0, 6)
+deathStatsLayout.Padding = UDim.new(0, 8)
 deathStatsLayout.Parent = DeathUI.statsFrame
 
+-- Achievements section
+DeathUI.achievementsSection = Instance.new("Frame")
+DeathUI.achievementsSection.Name = "AchievementsSection"
+DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
+DeathUI.achievementsSection.ZIndex = 121
+DeathUI.achievementsSection.LayoutOrder = 3
+DeathUI.achievementsSection.Parent = DeathUI.scroll
+
+local achievePad = Instance.new("UIPadding")
+achievePad.PaddingTop = UDim.new(0, 16)
+achievePad.PaddingBottom = UDim.new(0, 16)
+achievePad.PaddingLeft = UDim.new(0, 16)
+achievePad.PaddingRight = UDim.new(0, 16)
+achievePad.Parent = DeathUI.achievementsSection
+
+local achieveLayout = Instance.new("UIListLayout")
+achieveLayout.Padding = UDim.new(0, 10)
+achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
+achieveLayout.Parent = DeathUI.achievementsSection
+
+local achieveTitle = Instance.new("TextLabel")
+achieveTitle.Name = "AchieveTitle"
+achieveTitle.Size = UDim2.new(1, 0, 0, 24)
+achieveTitle.BackgroundTransparency = 1
+achieveTitle.Font = F.Title
+achieveTitle.TextSize = 16
+achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
+achieveTitle.Text = "🏆 ACHIEVEMENTS"
+achieveTitle.LayoutOrder = 0
+achieveTitle.ZIndex = 122
+achieveTitle.Parent = DeathUI.achievementsSection
+
+DeathUI.achieveFrame = Instance.new("Frame")
+DeathUI.achieveFrame.Name = "AchieveFrame"
+DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.achieveFrame.BackgroundTransparency = 1
+DeathUI.achieveFrame.LayoutOrder = 1
+DeathUI.achieveFrame.ZIndex = 122
+DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
+
+local achieveListLayout = Instance.new("UIListLayout")
+achieveListLayout.Padding = UDim.new(0, 6)
+achieveListLayout.Parent = DeathUI.achieveFrame
+
+-- Epitaph section
+DeathUI.epitaphSection = Instance.new("Frame")
+DeathUI.epitaphSection.Name = "EpitaphSection"
+DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+DeathUI.epitaphSection.ZIndex = 121
+DeathUI.epitaphSection.LayoutOrder = 4
+DeathUI.epitaphSection.Parent = DeathUI.scroll
+
+local epitaphPad = Instance.new("UIPadding")
+epitaphPad.PaddingTop = UDim.new(0, 16)
+epitaphPad.PaddingBottom = UDim.new(0, 24)
+epitaphPad.PaddingLeft = UDim.new(0, 20)
+epitaphPad.PaddingRight = UDim.new(0, 20)
+epitaphPad.Parent = DeathUI.epitaphSection
+
+DeathUI.epitaph = Instance.new("TextLabel")
+DeathUI.epitaph.Name = "Epitaph"
+DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
+DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
+DeathUI.epitaph.BackgroundTransparency = 1
+DeathUI.epitaph.Font = F.Body
+DeathUI.epitaph.TextSize = 14
+DeathUI.epitaph.TextColor3 = C.Gray400
+DeathUI.epitaph.TextWrapped = true
+DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
+DeathUI.epitaph.Text = ""
+DeathUI.epitaph.ZIndex = 122
+DeathUI.epitaph.Parent = DeathUI.epitaphSection
+
+-- Restart button section
+DeathUI.buttonSection = Instance.new("Frame")
+DeathUI.buttonSection.Name = "ButtonSection"
+DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
+DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+DeathUI.buttonSection.ZIndex = 121
+DeathUI.buttonSection.LayoutOrder = 5
+DeathUI.buttonSection.Parent = DeathUI.scroll
+
 DeathUI.restart = Instance.new("TextButton")
-DeathUI.restart.Size = UDim2.new(1, 0, 0, 52)
+DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
+DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
 DeathUI.restart.BackgroundColor3 = C.Green
 DeathUI.restart.Font = F.Button
-DeathUI.restart.TextSize = 18
+DeathUI.restart.TextSize = 20
 DeathUI.restart.TextColor3 = C.White
-DeathUI.restart.Text = "Start New Life"
+DeathUI.restart.Text = "🔄 Start New Life"
 DeathUI.restart.AutoButtonColor = false
-DeathUI.restart.LayoutOrder = 5
 DeathUI.restart.ZIndex = 122
-DeathUI.restart.Parent = DeathUI.card
-corner(DeathUI.restart, 14)
+DeathUI.restart.Parent = DeathUI.buttonSection
+corner(DeathUI.restart, 16)
 
 DeathUI.restart.MouseEnter:Connect(function()
 	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
@@ -1707,61 +1885,373 @@ local ResetLife = remotesFolder:FindFirstChild("ResetLife")
 
 DeathUI.restart.MouseButton1Click:Connect(function()
 	if ResetLife then
-		DeathUI.restart.Text = "Resetting..."
+		DeathUI.restart.Text = "Starting new life..."
 		ResetLife:FireServer()
 	end
 end)
 
+-- Helper to create a stat row
+local function createDeathStatRow(icon, label, value, color, order)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 36)
+	row.BackgroundColor3 = Color3.fromRGB(35, 40, 50)
+	row.LayoutOrder = order or 0
+	row.ZIndex = 123
+	corner(row, 10)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(0.55, 0, 1, 0)
+	lbl.Position = UDim2.new(0, 12, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = F.Medium
+	lbl.TextSize = 14
+	lbl.TextColor3 = C.Gray300
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Text = icon .. " " .. label
+	lbl.ZIndex = 124
+	lbl.Parent = row
+
+	local val = Instance.new("TextLabel")
+	val.Size = UDim2.new(0.45, -12, 1, 0)
+	val.Position = UDim2.new(0.55, 0, 0, 0)
+	val.BackgroundTransparency = 1
+	val.Font = F.Title
+	val.TextSize = 14
+	val.TextColor3 = color or C.White
+	val.TextXAlignment = Enum.TextXAlignment.Right
+	val.Text = tostring(value)
+	val.ZIndex = 124
+	val.Parent = row
+	
+	return row
+end
+
+-- Helper to create achievement badge
+local function createAchievementBadge(icon, text, order)
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(1, 0, 0, 32)
+	badge.BackgroundColor3 = Color3.fromRGB(45, 40, 20)
+	badge.LayoutOrder = order or 0
+	badge.ZIndex = 123
+	corner(badge, 8)
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, -16, 1, 0)
+	lbl.Position = UDim2.new(0, 8, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = F.Medium
+	lbl.TextSize = 13
+	lbl.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Text = icon .. " " .. text
+	lbl.ZIndex = 124
+	lbl.Parent = badge
+	
+	return badge
+end
+
 showDeathOverlay = function(causeText, age)
-	DeathUI.title.Text = string.format("%s • Age %d", currentState.Name or "This life", age or currentState.Age or 0)
-	DeathUI.cause.Text = causeText or "Your story has ended. Tap below to begin anew."
+	local name = currentState.Name or "Unknown"
+	local finalAge = age or currentState.Age or 0
+	local birthYear = 2024 - finalAge
+	local deathYear = 2024
+	
+	DeathUI.title.Text = name
+	DeathUI.lifespan.Text = string.format("%d - %d (%d years)", birthYear, deathYear, finalAge)
+	DeathUI.cause.Text = causeText or "Natural causes"
 	DeathUI.overlay.Visible = true
-	DeathUI.restart.Text = "Start New Life"
+	DeathUI.restart.Text = "🔄 Start New Life"
+	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
 
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
 		if child:IsA("Frame") then child:Destroy() end
 	end
-
-	-- Add final stats
-	local stats = {
-		{ icon = "💰", label = "Net Worth", value = formatMoney(currentState.Money or 0) },
-		{ icon = "😀", label = "Happiness", value = (currentState.Happiness or 0) .. "%" },
-		{ icon = "🎓", label = "Education", value = currentState.Education or "None" },
-	}
-
-	for _, stat in ipairs(stats) do
-		local row = Instance.new("Frame")
-		row.Size = UDim2.new(1, 0, 0, 28)
-		row.BackgroundColor3 = C.Gray50
-		row.ZIndex = 123
-		row.Parent = DeathUI.statsFrame
-		corner(row, 8)
-
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.new(0.6, 0, 1, 0)
-		lbl.Position = UDim2.new(0, 8, 0, 0)
-		lbl.BackgroundTransparency = 1
-		lbl.Font = F.Medium
-		lbl.TextSize = 13
-		lbl.TextColor3 = C.Gray600
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-		lbl.Text = stat.icon .. " " .. stat.label
-		lbl.ZIndex = 124
-		lbl.Parent = row
-
-		local val = Instance.new("TextLabel")
-		val.Size = UDim2.new(0.4, -8, 1, 0)
-		val.Position = UDim2.new(0.6, 0, 0, 0)
-		val.BackgroundTransparency = 1
-		val.Font = F.Title
-		val.TextSize = 13
-		val.TextColor3 = C.Gray700
-		val.TextXAlignment = Enum.TextXAlignment.Right
-		val.Text = tostring(stat.value)
-		val.ZIndex = 124
-		val.Parent = row
+	for _, child in ipairs(DeathUI.achieveFrame:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
 	end
+
+	-- Gather comprehensive stats
+	local stats = currentState.Stats or {}
+	local money = currentState.Money or 0
+	local happiness = stats.Happiness or currentState.Happiness or 50
+	local health = stats.Health or currentState.Health or 0
+	local smarts = stats.Smarts or currentState.Smarts or 50
+	local looks = stats.Looks or currentState.Looks or 50
+	local education = currentState.Education or "None"
+	local career = currentState.CurrentJob and currentState.CurrentJob.Title or "Unemployed"
+	local flags = currentState.Flags or {}
+	local assets = currentState.Assets or {}
+	
+	-- Count assets
+	local propertyCount = assets.Properties and #assets.Properties or 0
+	local vehicleCount = assets.Vehicles and #assets.Vehicles or 0
+	local itemCount = assets.Items and #assets.Items or 0
+	
+	-- Count relationships
+	local relationships = currentState.Relationships or {}
+	local relationshipCount = 0
+	local childCount = 0
+	local marriageCount = 0
+	for _, rel in pairs(relationships) do
+		relationshipCount = relationshipCount + 1
+		if rel.Type == "Child" then childCount = childCount + 1 end
+		if rel.Type == "Spouse" then marriageCount = marriageCount + 1 end
+	end
+	
+	-- Create stat rows
+	local statList = {
+		{ icon = "🎂", label = "Years Lived", value = finalAge .. " years", color = C.White, order = 1 },
+		{ icon = "💰", label = "Net Worth", value = formatMoney(money), color = money >= 1000000 and C.Gold or (money >= 100000 and C.Green or C.White), order = 2 },
+		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 3 },
+		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 4 },
+		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 5 },
+		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 6 },
+		{ icon = "🎓", label = "Education", value = education == "none" and "None" or education:gsub("^%l", string.upper), color = C.Teal, order = 7 },
+		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 8 },
+		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 9 },
+		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 10 },
+		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 11 },
+		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 12 },
+		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 13 },
+		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 14 },
+	}
+	
+	for _, s in ipairs(statList) do
+		local row = createDeathStatRow(s.icon, s.label, s.value, s.color, s.order)
+		row.Parent = DeathUI.statsFrame
+	end
+	
+	-- Generate achievements (EXPANDED - BitLife-style comprehensive list)
+	local achievements = {}
+	
+	-- Age achievements
+	if finalAge >= 100 then
+		table.insert(achievements, { icon = "🎖️", text = "Centenarian - Lived 100+ years!" })
+	elseif finalAge >= 80 then
+		table.insert(achievements, { icon = "👴", text = "Golden Years - Lived to 80+" })
+	elseif finalAge >= 65 then
+		table.insert(achievements, { icon = "🧓", text = "Retiree - Made it to 65+" })
+	end
+	
+	-- Early death achievements
+	if finalAge < 20 then
+		table.insert(achievements, { icon = "😢", text = "Gone Too Soon - Died before 20" })
+	elseif finalAge < 40 then
+		table.insert(achievements, { icon = "💔", text = "Life Cut Short - Died before 40" })
+	end
+	
+	-- Wealth achievements
+	if money >= 100000000 then
+		table.insert(achievements, { icon = "👑", text = "Billionaire Club - $100M+ net worth" })
+	elseif money >= 10000000 then
+		table.insert(achievements, { icon = "💎", text = "Mega Millionaire - $10M+ net worth" })
+	elseif money >= 1000000 then
+		table.insert(achievements, { icon = "💰", text = "Millionaire - $1M+ net worth" })
+	elseif money >= 100000 then
+		table.insert(achievements, { icon = "🏦", text = "Wealthy - $100K+ net worth" })
+	elseif money < 0 then
+		table.insert(achievements, { icon = "💸", text = "In Debt - Died owing money" })
+	elseif money < 1000 then
+		table.insert(achievements, { icon = "🪙", text = "Broke - Died nearly penniless" })
+	end
+	
+	-- Happiness achievements
+	if happiness >= 90 then
+		table.insert(achievements, { icon = "😊", text = "Joyful Life - 90%+ happiness" })
+	elseif happiness < 20 then
+		table.insert(achievements, { icon = "😞", text = "Miserable - Low happiness" })
+	end
+	
+	-- Intelligence achievements
+	if smarts >= 90 then
+		table.insert(achievements, { icon = "🧠", text = "Genius - 90%+ intelligence" })
+	end
+	
+	-- Looks achievements
+	if looks >= 90 then
+		table.insert(achievements, { icon = "😍", text = "Gorgeous - 90%+ looks" })
+	end
+	
+	-- Education achievements
+	if education == "phd" or education == "doctorate" then
+		table.insert(achievements, { icon = "📚", text = "Scholar - Earned a Doctorate" })
+	elseif education == "master" then
+		table.insert(achievements, { icon = "🎓", text = "Academic - Master's Degree" })
+	elseif education == "law" then
+		table.insert(achievements, { icon = "⚖️", text = "Lawyer - Earned a Law Degree" })
+	elseif education == "medical" then
+		table.insert(achievements, { icon = "🏥", text = "Doctor - Earned a Medical Degree" })
+	elseif education == "bachelor" then
+		table.insert(achievements, { icon = "🎓", text = "Graduate - Bachelor's Degree" })
+	elseif education == "none" and finalAge >= 18 then
+		table.insert(achievements, { icon = "🚫", text = "School Dropout - No diploma" })
+	end
+	
+	-- Family achievements
+	if childCount >= 10 then
+		table.insert(achievements, { icon = "🏆", text = "Super Parent - 10+ children" })
+	elseif childCount >= 5 then
+		table.insert(achievements, { icon = "👨‍👩‍👧‍👦", text = "Big Family - 5+ children" })
+	elseif childCount >= 1 then
+		table.insert(achievements, { icon = "👶", text = "Parent - Had children" })
+	end
+	
+	if marriageCount >= 3 then
+		table.insert(achievements, { icon = "💍", text = "Serial Spouse - Married 3+ times" })
+	elseif marriageCount >= 1 then
+		table.insert(achievements, { icon = "💒", text = "Married - Found love" })
+	end
+	
+	-- Property/Assets achievements
+	if propertyCount >= 5 then
+		table.insert(achievements, { icon = "🏰", text = "Property Baron - 5+ properties" })
+	elseif propertyCount >= 3 then
+		table.insert(achievements, { icon = "🏘️", text = "Real Estate Mogul - 3+ properties" })
+	elseif propertyCount >= 1 then
+		table.insert(achievements, { icon = "🏠", text = "Homeowner - Owned property" })
+	end
+	
+	if vehicleCount >= 10 then
+		table.insert(achievements, { icon = "🏎️", text = "Car Enthusiast - 10+ vehicles" })
+	elseif vehicleCount >= 5 then
+		table.insert(achievements, { icon = "🚗", text = "Car Collector - 5+ vehicles" })
+	end
+	
+	-- Fame achievements
+	if flags.famous or flags.celebrity then
+		table.insert(achievements, { icon = "⭐", text = "Famous - Became a celebrity" })
+	end
+	
+	-- Crime achievements
+	if flags.criminal_mastermind then
+		table.insert(achievements, { icon = "🦹", text = "Criminal Mastermind" })
+	end
+	if flags.served_time or flags.ex_convict then
+		table.insert(achievements, { icon = "⛓️", text = "Ex-Con - Served prison time" })
+	end
+	if flags.never_caught and flags.criminal_record then
+		table.insert(achievements, { icon = "🥷", text = "Ghost - Never caught" })
+	end
+	
+	-- Career achievements
+	if career and career ~= "Unemployed" and career ~= "" then
+		if flags.ceo or flags.executive then
+			table.insert(achievements, { icon = "👔", text = "Executive - Reached the top" })
+		elseif flags.retired then
+			table.insert(achievements, { icon = "🎉", text = "Retired - Earned retirement" })
+		end
+	else
+		table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+	end
+	
+	-- Special achievements from flags
+	if flags.war_hero then
+		table.insert(achievements, { icon = "🎖️", text = "War Hero - Served honorably" })
+	end
+	if flags.olympic_gold or flags.champion then
+		table.insert(achievements, { icon = "🏅", text = "Champion - Won a major competition" })
+	end
+	if flags.viral or flags.influencer then
+		table.insert(achievements, { icon = "📱", text = "Influencer - Went viral" })
+	end
+	if flags.good_person or flags.philanthropist then
+		table.insert(achievements, { icon = "😇", text = "Good Samaritan - Helped others" })
+	end
+	if flags.world_traveler then
+		table.insert(achievements, { icon = "✈️", text = "Globetrotter - Traveled the world" })
+	end
+	
+	-- Default achievement if none earned
+	if #achievements == 0 then
+		table.insert(achievements, { icon = "🌟", text = "Lived a Life - Every journey counts" })
+	end
+	
+	for i, achieve in ipairs(achievements) do
+		local badge = createAchievementBadge(achieve.icon, achieve.text, i)
+		badge.Parent = DeathUI.achieveFrame
+	end
+	
+	-- Generate epitaph (EXPANDED - more variety and context-specific)
+	local epitaphs = {
+		"A life well lived, remembered by many.",
+		"Gone but never forgotten.",
+		"Their story may end, but their legacy lives on.",
+		"Every moment was a gift.",
+		"Beloved by those who knew them.",
+		"Here lies one who made their mark on the world.",
+		"They came, they lived, they mattered.",
+		"In the end, it's not the years in your life that count, it's the life in your years.",
+		"Rest in peace, forever in our hearts.",
+		"Until we meet again.",
+	}
+	
+	-- Context-specific epitaphs
+	if money >= 10000000 then
+		table.insert(epitaphs, "Died richer than most could dream.")
+		table.insert(epitaphs, "Their wealth was legendary, their legacy even more so.")
+	elseif money >= 1000000 then
+		table.insert(epitaphs, "They say money can't buy happiness, but they sure tried.")
+		table.insert(epitaphs, "Left behind a fortune and a legacy.")
+	elseif money < 100 then
+		table.insert(epitaphs, "Proved that money isn't everything.")
+		table.insert(epitaphs, "Rich in spirit, if not in wallet.")
+	end
+	
+	if happiness >= 90 then
+		table.insert(epitaphs, "Lived life to the fullest with a smile.")
+		table.insert(epitaphs, "Happiness was their greatest treasure.")
+		table.insert(epitaphs, "Found joy in every day.")
+	elseif happiness < 30 then
+		table.insert(epitaphs, "May they find peace at last.")
+		table.insert(epitaphs, "Rest now, the struggles are over.")
+	end
+	
+	if finalAge >= 100 then
+		table.insert(epitaphs, "A century of memories, a lifetime of love.")
+		table.insert(epitaphs, "Proved that age is just a number.")
+	elseif finalAge >= 90 then
+		table.insert(epitaphs, "A long life filled with countless memories.")
+		table.insert(epitaphs, "Witnessed history and made their own.")
+	elseif finalAge < 20 then
+		table.insert(epitaphs, "A candle that burned briefly but brightly.")
+		table.insert(epitaphs, "Young in years, old in wisdom.")
+	end
+	
+	if childCount >= 5 then
+		table.insert(epitaphs, "Their greatest achievement: their family.")
+		table.insert(epitaphs, "Surrounded by the love of many children.")
+	elseif childCount >= 1 then
+		table.insert(epitaphs, "Lives on through their children.")
+	end
+	
+	if marriageCount >= 3 then
+		table.insert(epitaphs, "Loved many, loved deeply.")
+	elseif marriageCount >= 1 then
+		table.insert(epitaphs, "Found true love in this lifetime.")
+	end
+	
+	if flags.famous or flags.celebrity then
+		table.insert(epitaphs, "A star that shone bright in the world.")
+		table.insert(epitaphs, "Famous in life, legendary in death.")
+	end
+	
+	if flags.criminal_record then
+		table.insert(epitaphs, "Lived life by their own rules.")
+		table.insert(epitaphs, "A complicated soul with a complicated past.")
+	end
+	
+	if education == "phd" or education == "doctorate" then
+		table.insert(epitaphs, "A brilliant mind, gone too soon.")
+		table.insert(epitaphs, "Their knowledge lives on in their work.")
+	end
+	
+	if propertyCount >= 3 then
+		table.insert(epitaphs, "Built an empire, brick by brick.")
+	end
+	
+	-- Random selection
+	DeathUI.epitaph.Text = "\"" .. epitaphs[math.random(1, #epitaphs)] .. "\""
 end
 
 hideDeathOverlay = function()
@@ -1911,26 +2401,34 @@ showEvent = function(payload)
 			btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
 			btn.BackgroundColor3 = C.Blue
 			btn.Font = F.Button
-			btn.TextSize = 18  -- BIGGER text (was 15)
+			btn.TextSize = 16  -- Slightly smaller for longer text
 			btn.TextColor3 = C.White
 			btn.Text = choice.text
 			btn.AutoButtonColor = false
 			btn.LayoutOrder = i
 			btn.ZIndex = 65
+			-- CRITICAL FIX: Enable text wrapping and truncation to prevent cutoff
+			btn.TextWrapped = true
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.TextXAlignment = Enum.TextXAlignment.Center
+			btn.TextYAlignment = Enum.TextYAlignment.Center
 			btn.Parent = choicesSection
 
 			corner(btn, 14)
 			stroke(btn, 2, 0.5, C.BlueLight)
+			-- Add padding so text doesn't touch edges
+			pad(btn, 12, 12, 6, 6)
 
 			if choice.minigame then
 				btn.Text = "🎮 " .. choice.text
 			end
 
+			-- CRITICAL FIX: Simpler hover effect that doesn't change size (prevents layout jumps)
 			btn.MouseEnter:Connect(function()
-				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark })
 			end)
 			btn.MouseLeave:Connect(function()
-				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue })
 			end)
 
 			local choiceIndex = choice.index or i
@@ -2088,10 +2586,69 @@ nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 nameBtnLayout.Padding = UDim.new(0, 12)
 nameBtnLayout.Parent = nameBtns
 
--- Name pools for randomization
-local maleFirstNames = { "James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry", "Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden" }
-local femaleFirstNames = { "Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope" }
-local lastNames = { "Wilson", "Chen", "Thompson", "Rodriguez", "Kim", "Brown", "Johnson", "Williams", "Garcia", "Martinez", "Davis", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "White", "Harris", "Clark", "Lewis" }
+-- Name pools for randomization - EXPANDED for variety (100+ names each)
+local maleFirstNames = {
+	-- Classic names
+	"James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
+	"Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden",
+	"Matthew", "Anthony", "Christopher", "Joshua", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Tyler",
+	"Brandon", "Justin", "Aaron", "Kevin", "Eric", "Brian", "Adam", "Dylan", "Kyle", "Jason",
+	-- Modern names
+	"Logan", "Carter", "Owen", "Wyatt", "Jack", "Luke", "Gabriel", "Isaac", "Isaiah", "Jaxon",
+	"Caleb", "Connor", "Levi", "Hunter", "Cameron", "Eli", "Jordan", "Adrian", "Evan", "Austin",
+	"Chase", "Cooper", "Xavier", "Blake", "Gavin", "Zachary", "Cole", "Landon", "Dominic", "Tristan",
+	-- Unique names
+	"Maverick", "Phoenix", "Jasper", "Declan", "Emmett", "Asher", "Finn", "Theo", "Miles", "Leo",
+	"Harrison", "Felix", "Beckett", "August", "Nolan", "Atlas", "Kai", "Rowan", "Bennett", "Brooks",
+	-- Diverse cultural names
+	"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+	"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Tyrone", "Marcus", "Dante", "Isaiah",
+	"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Haruki", "Ren", "Sora",
+	"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
+}
+
+local femaleFirstNames = {
+	-- Classic names
+	"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+	"Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope",
+	"Elizabeth", "Sarah", "Jessica", "Jennifer", "Ashley", "Amanda", "Stephanie", "Nicole", "Melissa", "Lauren",
+	"Rachel", "Hannah", "Megan", "Samantha", "Katherine", "Rebecca", "Brittany", "Christina", "Michelle", "Victoria",
+	-- Modern names
+	"Chloe", "Zoey", "Grace", "Lily", "Audrey", "Natalie", "Brooklyn", "Leah", "Savannah", "Violet",
+	"Claire", "Bella", "Aurora", "Lucy", "Skyler", "Paisley", "Genesis", "Naomi", "Elena", "Maya",
+	"Madelyn", "Addison", "Willow", "Aubrey", "Eliana", "Stella", "Hazel", "Ivy", "Riley", "Quinn",
+	-- Unique names
+	"Serenity", "Nova", "Athena", "Jade", "Autumn", "Ruby", "Jasmine", "Kennedy", "Ariana", "Gianna",
+	"Brielle", "Sienna", "Adalynn", "Kinsley", "Londyn", "Emery", "Teagan", "Peyton", "Parker", "Reagan",
+	-- Diverse cultural names
+	"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Isabella", "Gabriela", "Natalia",
+	"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Zoe", "Tiana", "Sierra", "Layla", "Aisha",
+	"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Koharu", "Kaori", "Nanami",
+	"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
+}
+
+local lastNames = {
+	-- American/English
+	"Wilson", "Thompson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas", "Moore",
+	"Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young", "King",
+	"Wright", "Hill", "Scott", "Green", "Adams", "Baker", "Nelson", "Carter", "Mitchell", "Roberts",
+	"Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards", "Collins", "Stewart", "Morris", "Murphy",
+	"Cook", "Rogers", "Morgan", "Peterson", "Cooper", "Reed", "Bailey", "Bell", "Gomez", "Kelly",
+	-- Hispanic/Latino
+	"Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
+	"Flores", "Rivera", "Diaz", "Morales", "Ortiz", "Gutierrez", "Chavez", "Ramos", "Cruz", "Mendez",
+	-- Asian
+	"Chen", "Kim", "Nguyen", "Lee", "Wang", "Li", "Zhang", "Liu", "Huang", "Wu",
+	"Yang", "Lin", "Park", "Choi", "Tanaka", "Yamamoto", "Suzuki", "Watanabe", "Sato", "Nakamura",
+	"Patel", "Singh", "Shah", "Kumar", "Sharma", "Gupta", "Ali", "Khan", "Ahmed", "Hassan",
+	-- European
+	"Mueller", "Schmidt", "Schneider", "Weber", "Meyer", "Wagner", "Becker", "Fischer", "Hoffmann", "Koch",
+	"Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco",
+	"Dubois", "Laurent", "Martin", "Bernard", "Lefebvre", "Moreau", "Fournier", "Girard", "Bonnet", "Dupont",
+	-- Irish/Scottish
+	"Murphy", "O'Brien", "Kelly", "Sullivan", "Walsh", "O'Connor", "Quinn", "Byrne", "Ryan", "Gallagher",
+	"MacDonald", "Campbell", "Stewart", "Robertson", "Thomson", "Fraser", "Morrison", "Murray", "Cameron", "Ross"
+}
 
 local currentMaleNames = {}
 local currentFemaleNames = {}
@@ -2529,8 +3086,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		storyPathsScreenInstance:updateUI()
 	end
 
-	-- Show result popup if we have result data from server
-	if resultData and resultData.showPopup then
+	-- CRITICAL FIX: Check for death FIRST before showing any popups
+	-- This prevents the DOUBLE DEATH SCREEN bug where both result popup and death overlay show
+	local isDead = (resultData and resultData.fatal) or (currentState.Health and currentState.Health <= 0)
+	
+	-- Show result popup if we have result data from server (but NOT if player is dead!)
+	if resultData and resultData.showPopup and not isDead then
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2542,7 +3103,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			money = resultData.money or deltas.money,
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
-	elseif deltas.health and deltas.health < -15 then
+	elseif deltas.health and deltas.health < -15 and not isDead then
 		-- Auto-shake for MAJOR negative health (15+ drop)
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)
