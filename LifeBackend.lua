@@ -1681,9 +1681,39 @@ function LifeBackend:updateEducationProgress(state)
 		local progressPerYear = 100 / duration
 		eduData.Progress = clamp((eduData.Progress or 0) + progressPerYear, 0, 100)
 		if eduData.Progress >= 100 then
-			eduData.Status = "completed"
-			state.Education = eduData.Level
-			state.PendingFeed = string.format("You graduated from %s!", eduData.Institution or "school")
+			-- CRITICAL FIX: Only show graduation message for High School and higher
+			-- Elementary and Middle School are silent auto-progressions (BitLife-style)
+			local level = eduData.Level or ""
+			local isPreHighSchool = (level == "elementary" or level == "middle_school" or level == "")
+			
+			if isPreHighSchool then
+				-- Silent progression - just reset progress for next phase
+				-- The actual institution transition is handled in LifeState:AdvanceAge()
+				eduData.Progress = 0
+				-- Don't set status to "completed" - we're still in school
+			else
+				-- High School and above get proper graduation messages
+				eduData.Status = "completed"
+				state.Education = eduData.Level
+				state.PendingFeed = string.format("🎓 You graduated from %s!", eduData.Institution or "school")
+				
+				-- Set appropriate flags
+				state.Flags = state.Flags or {}
+				if level == "high_school" then
+					state.Flags.graduated_high_school = true
+					state.Flags.high_school_graduate = true
+				elseif level == "bachelor" or level == "community" or level == "associate" then
+					state.Flags.college_graduate = true
+				elseif level == "master" then
+					state.Flags.masters_degree = true
+				elseif level == "law" then
+					state.Flags.law_degree = true
+				elseif level == "medical" then
+					state.Flags.medical_degree = true
+				elseif level == "phd" or level == "doctorate" then
+					state.Flags.doctorate = true
+				end
+			end
 		end
 	end
 end

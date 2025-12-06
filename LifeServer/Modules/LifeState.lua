@@ -162,15 +162,24 @@ function LifeState:AdvanceAge()
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- Age 5: Start elementary school
+	-- CRITICAL FIX: Elementary/Middle school are silent progressions - NO graduation events
+	-- Only High School and higher get graduation events
 	if self.Age == 5 and self.Education == "none" then
 		self.EducationData.Status = "enrolled"
 		self.EducationData.Institution = "Elementary School"
+		self.EducationData.Level = "elementary" -- Mark as pre-high-school level
+		self.EducationData.Duration = 6 -- Elementary is 6 years (ages 5-10)
+		self.EducationData.Progress = 0
 		self.Flags.in_school = true
 	end
 	
-	-- Age 11: Middle school transition (just update institution)
+	-- Age 11: Middle school transition (automatic, no graduation message)
 	if self.Age == 11 and self.Education == "none" then
 		self.EducationData.Institution = "Middle School"
+		self.EducationData.Level = "middle_school" -- Still pre-high-school
+		self.EducationData.Duration = 3 -- Middle school is 3 years (ages 11-13)
+		self.EducationData.Progress = 0 -- Reset progress for new phase
+		-- No graduation message - this is silent progression
 	end
 	
 	-- Age 14: Start high school (still no diploma yet!)

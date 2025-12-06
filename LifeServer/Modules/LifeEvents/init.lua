@@ -54,9 +54,9 @@ local StageCategories = {
 	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
 	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
 	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 13-17: Full teen experience
-	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 18-34: Peak career years
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 35-49: Established adult
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 13-17: Full teen experience + part-time work
+	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 18-34: Peak career years
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 35-49: Established adult
 	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 50-64: Midlife
 	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Ages 65+: Retirement years (can own racing teams)
 }
@@ -205,6 +205,7 @@ function LifeEvents.init()
 		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
 		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
 		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
+		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
 	}
 	
 	local totalEvents = 0

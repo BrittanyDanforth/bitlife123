@@ -244,83 +244,94 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- CRITICAL FIX: Balance bar - properly sized container with centered content
+	-- CRITICAL FIX: Balance bar - properly integrated into the header area
+	-- Made to look like it's part of the header, not floating separately
 	self.balanceBar = Instance.new("Frame")
 	self.balanceBar.Name = "BalanceBar"
-	self.balanceBar.Size = UDim2.new(1, -24, 0, 48)
-	self.balanceBar.Position = UDim2.new(0, 12, 0, 118)
+	self.balanceBar.Size = UDim2.new(1, -24, 0, 56)
+	self.balanceBar.Position = UDim2.new(0, 12, 0, 110)
 	self.balanceBar.BackgroundColor3 = C.White
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 12)
-	UI.stroke(self.balanceBar, 1, 0.85, C.Gray200)
+	UI.corner(self.balanceBar, 14)
+	UI.stroke(self.balanceBar, 2, 0.7, C.TealPale)
 	
-	-- Use UIListLayout for proper horizontal alignment
-	local balanceLayout = Instance.new("UIListLayout")
-	balanceLayout.FillDirection = Enum.FillDirection.Horizontal
-	balanceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-	balanceLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	balanceLayout.Padding = UDim.new(0, 8)
-	balanceLayout.Parent = self.balanceBar
+	-- Add subtle shadow for depth
+	local balShadow = Instance.new("ImageLabel")
+	balShadow.Name = "Shadow"
+	balShadow.Size = UDim2.new(1, 16, 1, 12)
+	balShadow.Position = UDim2.new(0, -8, 0, 2)
+	balShadow.BackgroundTransparency = 1
+	balShadow.Image = "rbxassetid://5554236805"
+	balShadow.ImageColor3 = C.Black or Color3.fromRGB(0, 0, 0)
+	balShadow.ImageTransparency = 0.92
+	balShadow.ScaleType = Enum.ScaleType.Slice
+	balShadow.SliceCenter = Rect.new(23, 23, 277, 277)
+	balShadow.ZIndex = 83
+	balShadow.Parent = self.balanceBar
 	
-	-- Padding inside balance bar
-	local balancePad = Instance.new("UIPadding")
-	balancePad.PaddingLeft = UDim.new(0, 12)
-	balancePad.PaddingRight = UDim.new(0, 12)
-	balancePad.Parent = self.balanceBar
+	-- Accent left strip for visual integration
+	local accentStrip = Instance.new("Frame")
+	accentStrip.Name = "AccentStrip"
+	accentStrip.Size = UDim2.new(0, 4, 1, -16)
+	accentStrip.Position = UDim2.new(0, 8, 0, 8)
+	accentStrip.BackgroundColor3 = C.Teal
+	accentStrip.ZIndex = 85
+	accentStrip.Parent = self.balanceBar
+	UI.corner(accentStrip, 2)
 
-	-- Balance icon - fits within bar
+	-- Balance icon with background circle
+	local iconBg = Instance.new("Frame")
+	iconBg.Name = "IconBg"
+	iconBg.Size = UDim2.new(0, 40, 0, 40)
+	iconBg.Position = UDim2.new(0, 20, 0.5, -20)
+	iconBg.BackgroundColor3 = C.TealPale
+	iconBg.ZIndex = 85
+	iconBg.Parent = self.balanceBar
+	UI.corner(iconBg, 20)
+	
 	local balanceIcon = Instance.new("TextLabel")
 	balanceIcon.Name = "Icon"
-	balanceIcon.Size = UDim2.new(0, 32, 0, 32)
+	balanceIcon.Size = UDim2.fromScale(1, 1)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 24
+	balanceIcon.TextSize = 22
 	balanceIcon.Text = "💰"
-	balanceIcon.ZIndex = 85
-	balanceIcon.LayoutOrder = 1
-	balanceIcon.Parent = self.balanceBar
+	balanceIcon.ZIndex = 86
+	balanceIcon.Parent = iconBg
 
-	-- Balance text container (label + value stacked)
-	local balanceTextContainer = Instance.new("Frame")
-	balanceTextContainer.Name = "TextContainer"
-	balanceTextContainer.Size = UDim2.new(0, 180, 1, 0)
-	balanceTextContainer.BackgroundTransparency = 1
-	balanceTextContainer.ZIndex = 85
-	balanceTextContainer.LayoutOrder = 2
-	balanceTextContainer.Parent = self.balanceBar
-	
+	-- Balance text container (label + value inline)
 	local balanceLabel = Instance.new("TextLabel")
 	balanceLabel.Name = "Label"
-	balanceLabel.Size = UDim2.new(1, 0, 0, 14)
-	balanceLabel.Position = UDim2.new(0, 0, 0, 6)
+	balanceLabel.Size = UDim2.new(0, 90, 0, 18)
+	balanceLabel.Position = UDim2.new(0, 68, 0, 10)
 	balanceLabel.BackgroundTransparency = 1
-	balanceLabel.Font = F.Body
-	balanceLabel.TextSize = 10
-	balanceLabel.TextColor3 = C.Gray400
+	balanceLabel.Font = F.Medium
+	balanceLabel.TextSize = 11
+	balanceLabel.TextColor3 = C.Gray500
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-	balanceLabel.Text = "Your Balance"
+	balanceLabel.Text = "YOUR BALANCE"
 	balanceLabel.ZIndex = 86
-	balanceLabel.Parent = balanceTextContainer
+	balanceLabel.Parent = self.balanceBar
 
 	self.balanceValue = Instance.new("TextLabel")
 	self.balanceValue.Name = "Value"
-	self.balanceValue.Size = UDim2.new(1, 0, 0, 20)
-	self.balanceValue.Position = UDim2.new(0, 0, 0, 22)
+	self.balanceValue.Size = UDim2.new(0.6, 0, 0, 24)
+	self.balanceValue.Position = UDim2.new(0, 68, 0, 26)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 16
-	self.balanceValue.TextColor3 = C.GreenDark
+	self.balanceValue.TextSize = 20
+	self.balanceValue.TextColor3 = C.TealDark
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
 	self.balanceValue.ZIndex = 86
-	self.balanceValue.Parent = balanceTextContainer
+	self.balanceValue.Parent = self.balanceBar
 
 	-- REMOVED: Casino button (per user request)
 	-- Casino/gambling feature removed from AssetsScreen
 
 	-- Tab bar - CRITICAL FIX: Adjusted position for properly sized balance bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 174, zIndex = 84 })
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 176, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -338,8 +349,8 @@ function AssetsScreen:createUI()
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
 
-	-- Scroll area - CRITICAL FIX: Adjusted position for smaller balance bar
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 244, zIndex = 81 })
+	-- Scroll area - CRITICAL FIX: Adjusted position for new balance bar
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 246, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()

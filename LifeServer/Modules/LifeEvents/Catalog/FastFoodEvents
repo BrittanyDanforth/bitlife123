@@ -1,0 +1,557 @@
+--[[
+    Fast Food & Service Industry Events Catalog
+    ═══════════════════════════════════════════════════════════════════════════════
+    
+    Events for entry-level service industry jobs:
+    - Fast Food Workers (fastfood)
+    - Waiters/Waitresses (waiter)
+    - Grocery Workers (bagger)
+    - Retail Workers (retail)
+    - Baristas (barista)
+    
+    Features:
+    - Rude customers and Karen encounters
+    - Workplace drama and teamwork
+    - Tips and hustle culture
+    - Path to management or escape
+    - Burnout and career decisions
+    
+    ═══════════════════════════════════════════════════════════════════════════════
+]]
+
+local RANDOM = Random.new()
+
+-- Check if player has a fast food/service industry job
+local function hasServiceJob(state)
+    if not state.CurrentJob then return false end
+    local jobId = state.CurrentJob.id or state.CurrentJob.Id or ""
+    local category = state.CurrentJob.category or ""
+    local serviceJobs = {
+        "fastfood", "waiter", "waitress", "barista", "bagger", "retail", "cashier",
+        "server", "busser", "host", "dishwasher", "cook", "line_cook"
+    }
+    for _, svc in ipairs(serviceJobs) do
+        if string.find(jobId:lower(), svc) or string.find(category:lower(), "entry") or string.find(category:lower(), "service") then
+            return true
+        end
+    end
+    return false
+end
+
+local events = {
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- THE KAREN ENCOUNTERS
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "karen_customer_complaint",
+        emoji = "😤",
+        title = "The Karen Has Arrived",
+        text = "A customer with 'I want to speak to your manager' energy approaches the counter. She's ALREADY upset. 'This isn't what I ordered!' (It is.) 'I've been waiting TWENTY MINUTES!' (It's been 3.) 'I want a FULL REFUND and my food for FREE!' Your manager is on break. Everyone's watching. You can feel your soul leaving your body.",
+        question = "How do you handle this Karen?",
+        category = "career_service",
+        weight = 10,
+        minAge = 14,
+        maxAge = 30,
+        cooldown = 3,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Stay calm - kill her with kindness",
+                effects = { Happiness = -3, Smarts = 3 },
+                feedText = "You smiled through the pain. 'I'm so sorry ma'am, let me fix that for you.' She left satisfied. Your soul died a little. But you kept your job.",
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.customer_service_pro = true
+                    if state.AddFeed then
+                        state:AddFeed("😇 You handled the Karen like a pro. Customer service skill: UNLOCKED.")
+                    end
+                end,
+            },
+            {
+                text = "Stand your ground - you're right",
+                effects = { Happiness = 5 },
+                feedText = "You showed her the receipt. Proved her wrong. She stormed out screaming about Yelp. Your coworkers slow-clapped.",
+                onResolve = function(state)
+                    local roll = math.random()
+                    if roll < 0.3 then
+                        state:ModifyStat("Happiness", -5)
+                        if state.AddFeed then
+                            state:AddFeed("😰 Your manager pulled you aside. 'We need to talk about your attitude.' Uh oh...")
+                        end
+                    else
+                        state:ModifyStat("Happiness", 3)
+                        if state.AddFeed then
+                            state:AddFeed("😎 You stood your ground! Your coworkers respect you now.")
+                        end
+                    end
+                end,
+            },
+            {
+                text = "Get your manager - not paid enough for this",
+                effects = { Happiness = 2 },
+                setFlags = { delegates_problems = true },
+                feedText = "You got your manager. They gave her a $5 gift card. She left happy. You learned: just give them gift cards. Always works.",
+            },
+            {
+                text = "Snap at her - you've had ENOUGH",
+                effects = { Happiness = 10, Health = -2 },
+                feedText = "You finally snapped. 'MA'AM, THE ORDER IS CORRECT. READ YOUR RECEIPT.' Dead silence. She left. You felt ALIVE. For about 5 minutes...",
+                onResolve = function(state)
+                    local roll = math.random()
+                    if roll < 0.4 then
+                        -- Fired!
+                        state:ModifyStat("Happiness", -15)
+                        state.Flags = state.Flags or {}
+                        state.Flags.employed = nil
+                        state.Flags.has_job = nil
+                        state.Flags.fired_for_attitude = true
+                        state.CurrentJob = nil
+                        if state.AddFeed then
+                            state:AddFeed("🔥 You got FIRED. Worth it? Maybe. Time to find a new job...")
+                        end
+                    else
+                        state:ModifyStat("Happiness", 5)
+                        if state.AddFeed then
+                            state:AddFeed("😅 You got a warning but kept your job. Coworkers called you a legend.")
+                        end
+                    end
+                end,
+            },
+        },
+    },
+    
+    {
+        id = "rude_customer_no_tip",
+        emoji = "💸",
+        title = "The No-Tip Table",
+        text = "You just served a table for 2 HOURS. They ran you RAGGED. 'More napkins!' 'Can you refill this again?' 'The steak is cold!' (It wasn't.) You smiled through it all. Perfect service. Finally, they leave. You check the receipt. ZERO tip. They wrote 'Get a real job :)' on the receipt. Your blood is BOILING.",
+        question = "How do you react?",
+        category = "career_service",
+        weight = 8,
+        minAge = 16,
+        maxAge = 35,
+        cooldown = 2,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Brush it off - comes with the job",
+                effects = { Happiness = -3, Smarts = 2 },
+                setFlags = { thick_skinned = true },
+                feedText = "You shrugged it off. This is the service industry. Some people just suck. Moving on.",
+            },
+            {
+                text = "Vent to your coworkers in the back",
+                effects = { Happiness = 3, Health = 2 },
+                feedText = "You went to the kitchen and screamed. Your coworkers shared their worst no-tip stories. You bonded over shared trauma. Feels better.",
+            },
+            {
+                text = "Chase them down in the parking lot",
+                effects = { Happiness = -2 },
+                feedText = "You ran outside. 'Excuse me, I think you forgot something!' They looked confused. You stared at them. They drove off. You felt stupid.",
+                onResolve = function(state)
+                    local roll = math.random()
+                    if roll < 0.3 then
+                        state.Money = (state.Money or 0) + 50
+                        if state.AddFeed then
+                            state:AddFeed("💵 Wait! They actually gave you $50! 'Sorry, we forgot!' Holy crap!")
+                        end
+                    else
+                        if state.AddFeed then
+                            state:AddFeed("🤦 They just drove away. What did you expect?")
+                        end
+                    end
+                end,
+            },
+            {
+                text = "Post about it on social media",
+                effects = { Happiness = 5 },
+                feedText = "You posted the receipt on TikTok. It went viral. 400K views! Fellow service workers united in the comments. No tip, but fame!",
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.viral_moment = true
+                    state.Flags.social_media_famous = true
+                end,
+            },
+        },
+    },
+    
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- WORKPLACE DRAMA
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "fast_food_rush_hour",
+        emoji = "🍔",
+        title = "The Lunch Rush From Hell",
+        text = "It's noon on a Saturday. The line is OUT THE DOOR. Someone called in sick. The fryer is making weird noises. A kid just THREW UP in the play area. Your manager is hiding in the office. The drive-thru is 20 cars deep. Orders are piling up. Everyone is screaming. This is your Vietnam. This is your test.",
+        question = "How do you survive?",
+        category = "career_service",
+        weight = 9,
+        minAge = 14,
+        maxAge = 28,
+        cooldown = 3,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Enter BEAST MODE - you got this",
+                effects = { Health = -5, Happiness = 5, Smarts = 3 },
+                setFlags = { work_ethic = true, survivor = true },
+                feedText = "You became a MACHINE. Filling orders. Clearing tables. Working every station. 3 hours later: you survived. Your legs hurt. Your back hurts. But you're a LEGEND.",
+                onResolve = function(state)
+                    state.Money = (state.Money or 0) + 50
+                    if state.AddFeed then
+                        state:AddFeed("💪 You DOMINATED the rush! Manager noticed. Possible promotion material!")
+                    end
+                end,
+            },
+            {
+                text = "Work at your normal pace - not your problem",
+                effects = { Happiness = 3, Health = 2 },
+                feedText = "You worked steadily. Not your fault someone called in. Orders took longer. Customers complained. Manager glared. Whatever.",
+            },
+            {
+                text = "Have a breakdown in the walk-in freezer",
+                effects = { Happiness = -5, Health = 5 },
+                setFlags = { had_breakdown = true },
+                feedText = "You went to the freezer. Sat on a bucket. Cried for 5 minutes. Deep breath. Back to the grind. Classic service industry self-care.",
+            },
+            {
+                text = "Walk out - you don't get paid enough",
+                effects = { Happiness = 10 },
+                feedText = "You took off your apron. 'I quit.' Walked out the door. Freedom! But also... no job. No paycheck. Worth it?",
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.employed = nil
+                    state.Flags.has_job = nil
+                    state.Flags.quit_dramatically = true
+                    state.CurrentJob = nil
+                    if state.AddFeed then
+                        state:AddFeed("🚪 You walked out! Freedom feels good. Now to find a new job...")
+                    end
+                end,
+            },
+        },
+    },
+    
+    {
+        id = "coworker_drama_service",
+        emoji = "🔥",
+        title = "The Workplace Drama",
+        text = "The break room is ON FIRE with gossip. Apparently, Marcus (night shift) is dating Jessica (morning shift) but was seen with Ashley (weekends) at the movies. Also, someone's been stealing tips from the jar. And there's a rumor the store might close. Your coworker is telling you EVERYTHING. Should you engage or stay neutral?",
+        question = "How deep into the drama do you go?",
+        category = "career_service",
+        weight = 6,
+        minAge = 14,
+        maxAge = 30,
+        cooldown = 4,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Stay out of it - drama is dangerous",
+                effects = { Happiness = 2, Smarts = 3 },
+                setFlags = { stays_out_of_drama = true },
+                feedText = "You nodded, listened, said nothing. Kept your head down. Smart move. Let them self-destruct.",
+            },
+            {
+                text = "Get ALL the tea - you need to know",
+                effects = { Happiness = 5 },
+                setFlags = { gossip_lover = true },
+                feedText = "You got every detail. Screenshots. Names. Dates. You know EVERYTHING. This is better than reality TV!",
+            },
+            {
+                text = "Report the tip stealing to management",
+                effects = { Happiness = -2, Smarts = 2 },
+                feedText = "You told your manager about the missing tips. They reviewed the cameras. Caught the thief! But now everyone thinks you're a snitch...",
+                onResolve = function(state)
+                    local roll = math.random()
+                    if roll < 0.5 then
+                        state.Flags = state.Flags or {}
+                        state.Flags.snitch_reputation = true
+                        if state.AddFeed then
+                            state:AddFeed("🐀 People are giving you the cold shoulder. Being a snitch has consequences...")
+                        end
+                    else
+                        state.Money = (state.Money or 0) + 75
+                        if state.AddFeed then
+                            state:AddFeed("💵 Manager gave you a bonus for your honesty! Some coworkers appreciate you.")
+                        end
+                    end
+                end,
+            },
+            {
+                text = "Start MORE drama - chaos is fun",
+                effects = { Happiness = 8 },
+                setFlags = { chaos_agent = true, drama_starter = true },
+                feedText = "You stirred the pot. 'I heard Marcus said WHAT about Ashley?' By end of shift, there were tears. And a shouting match. And one person quit. Oops? Fun though.",
+            },
+        },
+    },
+    
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- CAREER PROGRESSION
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "promotion_to_shift_lead",
+        emoji = "📈",
+        title = "Shift Lead Opportunity",
+        text = "Your manager pulls you aside. 'You've been here 6 months. You're reliable. I want to make you Shift Lead. Extra $2/hour. You'll close some nights. Train new people. Handle complaints.' This is more responsibility. More stress. But also... a step up. Your friends might be weird about you being their 'boss' though.",
+        question = "Do you take the promotion?",
+        category = "career_service",
+        weight = 7,
+        minAge = 16,
+        maxAge = 28,
+        cooldown = 5,
+        oneTime = true,
+        eligibility = hasServiceJob,
+        blockedByFlags = { shift_lead = true, manager = true },
+        choices = {
+            {
+                text = "Accept it - climb that ladder",
+                effects = { Happiness = 6, Money = 2000, Smarts = 2 },
+                setFlags = { shift_lead = true, promoted = true },
+                feedText = "You're now Shift Lead! More money, more responsibility. Your friends are acting weird. But you're moving up!",
+                onResolve = function(state)
+                    if state.CurrentJob then
+                        state.CurrentJob.title = (state.CurrentJob.title or "Worker") .. " (Shift Lead)"
+                        if state.CurrentJob.salary then
+                            state.CurrentJob.salary = state.CurrentJob.salary + math.floor(state.CurrentJob.salary * 0.15)
+                        end
+                    end
+                    if state.AddFeed then
+                        state:AddFeed("📈 Congratulations! You're now Shift Lead. Keys to the building. Big responsibility!")
+                    end
+                end,
+            },
+            {
+                text = "Decline - not worth the stress",
+                effects = { Happiness = 3 },
+                setFlags = { declined_promotion = true },
+                feedText = "You said no thanks. Same pay, same role. Less stress. Your manager looked disappointed but said okay.",
+            },
+            {
+                text = "Negotiate - want more money first",
+                effects = { Smarts = 3 },
+                feedText = "You asked for $3/hour more. They countered with $2.50. You settled on $2.75. Nice! Negotiation skills!",
+                onResolve = function(state)
+                    local roll = math.random()
+                    if roll < 0.6 then
+                        state.Flags = state.Flags or {}
+                        state.Flags.shift_lead = true
+                        state.Flags.good_negotiator = true
+                        state.Money = (state.Money or 0) + 2500
+                        if state.AddFeed then
+                            state:AddFeed("💰 You negotiated a better deal! $2.75/hour extra! Shift Lead AND more money!")
+                        end
+                    else
+                        if state.AddFeed then
+                            state:AddFeed("😅 They said the original offer is final. Take it or leave it. You took it.")
+                        end
+                        state.Flags = state.Flags or {}
+                        state.Flags.shift_lead = true
+                    end
+                end,
+            },
+        },
+    },
+    
+    {
+        id = "escape_fast_food",
+        emoji = "🎓",
+        title = "Is This Your Future?",
+        text = "It's 11 PM. You're mopping floors. The radio is playing sad songs. You're covered in grease. Your feet are KILLING you. A drunk customer is passed out in a booth. This is your life. Is this... forever? Your coworker is 45 and has been here 20 years. He seems... fine? Maybe? You start thinking about college. Trade school. ANYTHING else.",
+        question = "What's your next move?",
+        category = "career_service",
+        weight = 6,
+        minAge = 18,
+        maxAge = 28,
+        cooldown = 6,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Start looking at college/trade school",
+                effects = { Happiness = 5, Smarts = 5 },
+                setFlags = { plans_education = true, motivated = true },
+                feedText = "You started researching your options. Community college. Trade programs. Certifications. There IS a way out!",
+            },
+            {
+                text = "Apply to other jobs - office work maybe?",
+                effects = { Happiness = 4, Smarts = 2 },
+                setFlags = { job_searching = true },
+                feedText = "You updated your resume. Applied to 20 places. Entry-level office jobs. ANYTHING with a chair. The grind continues, but with hope.",
+            },
+            {
+                text = "This is fine - embrace it",
+                effects = { Happiness = -3 },
+                setFlags = { accepted_fate = true },
+                feedText = "You looked at your 45-year-old coworker. That could be you. Is that... bad? Maybe it's okay. Stability. Routine. This is fine.",
+            },
+            {
+                text = "Become the manager - own this place",
+                effects = { Happiness = 6, Smarts = 3 },
+                setFlags = { management_aspirations = true },
+                feedText = "If you can't beat 'em, lead 'em. You're going to become the BEST damn manager this place has ever seen. Move over, regional manager!",
+                onResolve = function(state)
+                    if state.AddFeed then
+                        state:AddFeed("🎯 You've set your sights on management. Time to climb that corporate ladder!")
+                    end
+                end,
+            },
+        },
+    },
+    
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- TIPS AND MONEY
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "big_tipper_table",
+        emoji = "💰",
+        title = "The Mysterious Big Tipper",
+        text = "A well-dressed person came in alone. Ordered a simple meal. Was SUPER polite. Said 'please' and 'thank you.' Made small talk. When they left, you found a $100 bill under the plate with a note: 'You reminded me of my kid. Keep working hard.' You almost CRIED. This job doesn't suck ALL the time.",
+        question = "What do you do with the windfall?",
+        category = "career_service",
+        weight = 5,
+        minAge = 14,
+        maxAge = 35,
+        cooldown = 5,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Save it - emergency fund",
+                effects = { Happiness = 5, Smarts = 3 },
+                setFlags = { financially_responsible = true },
+                feedText = "You put the $100 in savings. Emergency fund growing! Responsible moves.",
+                onResolve = function(state)
+                    state.Money = (state.Money or 0) + 100
+                    if state.AddFeed then
+                        state:AddFeed("💵 $100 tip saved! Your emergency fund thanks you.")
+                    end
+                end,
+            },
+            {
+                text = "Treat yourself - you deserve it",
+                effects = { Happiness = 8 },
+                feedText = "You bought yourself something nice. New shoes? Video game? Fancy dinner? Whatever it was, you EARNED it.",
+                onResolve = function(state)
+                    state.Money = (state.Money or 0) + 50 -- Half spent on treating yourself
+                    if state.AddFeed then
+                        state:AddFeed("🛍️ You treated yourself! Self-care is important.")
+                    end
+                end,
+            },
+            {
+                text = "Share it with coworkers - team tip",
+                effects = { Happiness = 6 },
+                setFlags = { generous = true, team_player = true },
+                feedText = "You split it 5 ways with the kitchen crew. $20 each. They were SO grateful. Kitchen staff don't get tips often. You're a legend.",
+            },
+            {
+                text = "Pay forward - help someone struggling",
+                effects = { Happiness = 10, Smarts = 2 },
+                setFlags = { charitable = true },
+                feedText = "You saw a homeless person on your way home. Gave them $20. Bought them a meal. They cried. You cried. Good vibes all around.",
+            },
+        },
+    },
+    
+    {
+        id = "side_hustle_opportunity",
+        emoji = "🚗",
+        title = "The Side Hustle Offer",
+        text = "A regular customer (local business owner) made you an offer. 'You're a hard worker. I need someone for odd jobs. Deliveries. Cleaning. Random stuff. Cash under the table. $20/hour. Few hours a week.' It's extra money. But it's outside your main job. And it might interfere with your schedule.",
+        question = "Do you take the side hustle?",
+        category = "career_service",
+        weight = 6,
+        minAge = 16,
+        maxAge = 35,
+        cooldown = 6,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Take it - money is money",
+                effects = { Happiness = 4, Health = -2 },
+                setFlags = { side_hustle = true, hustler = true },
+                feedText = "You're now working 2 jobs! Exhausted but the extra cash is nice. $150-200/week extra!",
+                onResolve = function(state)
+                    state.Money = (state.Money or 0) + RANDOM:NextInteger(150, 250)
+                    if state.AddFeed then
+                        state:AddFeed("💵 Side hustle secured! Extra income rolling in.")
+                    end
+                end,
+            },
+            {
+                text = "Decline - need work-life balance",
+                effects = { Happiness = 3, Health = 3 },
+                setFlags = { values_balance = true },
+                feedText = "You said no thanks. Your free time matters. Can't hustle yourself into the grave.",
+            },
+            {
+                text = "Negotiate - want $25/hour",
+                effects = { Smarts = 3 },
+                feedText = "You countered. 'Make it $25.' They thought about it... and agreed! Better deal!",
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.side_hustle = true
+                    state.Flags.good_negotiator = true
+                    state.Money = (state.Money or 0) + RANDOM:NextInteger(200, 350)
+                    if state.AddFeed then
+                        state:AddFeed("💰 $25/hour side hustle! Negotiation skills paying off!")
+                    end
+                end,
+            },
+            {
+                text = "This seems sketchy - report it",
+                effects = { Happiness = -2, Smarts = 2 },
+                feedText = "You declined and mentioned it to your manager. 'Cash under the table? Sounds like tax evasion.' You stayed clean, but probably made an enemy.",
+            },
+        },
+    },
+    
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- BURNOUT AND MENTAL HEALTH
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "service_industry_burnout",
+        emoji = "😩",
+        title = "The Breaking Point",
+        text = "You've been doing this for months. Maybe years. The fake smiles. The 'thank you for choosing us!' The customers who treat you like you're subhuman. Today, a customer SNAPPED THEIR FINGERS at you like you were a dog. And you felt... nothing. Just dead inside. You're burned OUT. Something needs to change before you lose it.",
+        question = "How do you cope?",
+        category = "career_service",
+        weight = 6,
+        minAge = 16,
+        maxAge = 35,
+        cooldown = 8,
+        eligibility = hasServiceJob,
+        choices = {
+            {
+                text = "Take a mental health day - call in sick",
+                effects = { Happiness = 8, Health = 5 },
+                setFlags = { practices_self_care = true },
+                feedText = "You called in 'sick.' (Mentally sick counts.) Spent the day in bed. Watched movies. Ate junk food. Felt human again.",
+            },
+            {
+                text = "Start job hunting seriously",
+                effects = { Happiness = 5, Smarts = 3 },
+                setFlags = { actively_job_hunting = true },
+                feedText = "You updated your resume. Applied to 15 jobs. LinkedIn refreshed. Indeed bookmarked. Time to ESCAPE.",
+            },
+            {
+                text = "Push through - can't afford to quit",
+                effects = { Happiness = -5, Health = -3 },
+                setFlags = { struggling = true },
+                feedText = "You kept going. Forced the smile. Said the lines. But something inside you died a little more. This isn't sustainable...",
+            },
+            {
+                text = "Talk to someone - therapist or friend",
+                effects = { Happiness = 6, Health = 3, Smarts = 2 },
+                setFlags = { seeks_help = true },
+                feedText = "You opened up to someone. They listened. You're not alone. Many people feel this way. It helped to talk. Maybe things can get better.",
+            },
+        },
+    },
+}
+
+return events
