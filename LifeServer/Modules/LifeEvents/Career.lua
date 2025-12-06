@@ -864,13 +864,202 @@ Career.events = {
 					end
 				end,
 			},
-			{ 
-				text = "Ask to reschedule - not feeling ready", 
-				effects = { Happiness = -3 },
-				feedText = "You postponed the review. The anxiety continues." 
-			},
+		{ 
+			text = "Ask to reschedule - not feeling ready", 
+			effects = { Happiness = -3 },
+			feedText = "You postponed the review. The anxiety continues." 
 		},
 	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- NEW EVENTS - EXPANDED CAREER CONTENT
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	id = "company_acquisition",
+	title = "Your Company Got Acquired!",
+	emoji = "🏢",
+	text = "Big news: a larger corporation just acquired your company. There's talk of 'synergies' and 'restructuring.' Translation: layoffs might be coming. But there could also be new opportunities.",
+	question = "How do you handle this uncertain time?",
+	minAge = 22, maxAge = 55,
+	baseChance = 0.25,
+	cooldown = 6,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_risk",
+	tags = { "job", "acquisition", "corporate", "change" },
+	
+	choices = {
+		{ text = "Network aggressively - make yourself visible", effects = { Happiness = -2, Smarts = 3, Money = 200 }, setFlags = { networker = true }, feedText = "You introduced yourself to the new executives. Smart move." },
+		{ text = "Keep your head down and hope for the best", effects = { Happiness = -5 }, feedText = "You're playing it safe. Nervously checking your email." },
+		{ text = "Start looking for a new job immediately", effects = { Happiness = 3, Smarts = 2 }, setFlags = { proactive_job_hunt = true }, feedText = "You're not waiting to find out. Applications are out." },
+		{ text = "Volunteer for the integration team", effects = { Happiness = 5, Money = 500, Smarts = 4 }, setFlags = { integration_leader = true }, feedText = "You positioned yourself as a key player in the transition!" },
+	},
+},
+{
+	id = "remote_work_decision",
+	title = "Remote Work Opportunity",
+	emoji = "🏠",
+	text = "Your company is offering permanent remote work options. You could work from home forever, come to the office, or go hybrid.",
+	question = "What's your work style?",
+	minAge = 20, maxAge = 60,
+	baseChance = 0.35,
+	cooldown = 5,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_lifestyle",
+	tags = { "job", "remote", "flexibility", "lifestyle" },
+	
+	choices = {
+		{ text = "Go fully remote - freedom!", effects = { Happiness = 10, Health = 3 }, setFlags = { remote_worker = true }, feedText = "No more commute! You're working in pajamas now." },
+		{ text = "Stay in the office - I need the structure", effects = { Happiness = 3, Smarts = 2 }, setFlags = { office_worker = true }, feedText = "You thrive on in-person collaboration." },
+		{ text = "Hybrid - best of both worlds", effects = { Happiness = 7, Health = 2 }, setFlags = { hybrid_worker = true }, feedText = "Some days home, some days office. Perfect balance." },
+		{ text = "Ask to relocate to a cheaper city", effects = { Happiness = 8, Money = 800 }, setFlags = { relocated_worker = true }, feedText = "You moved somewhere with lower cost of living while keeping your salary!" },
+	},
+},
+{
+	id = "side_hustle_opportunity",
+	title = "Side Hustle Opportunity",
+	emoji = "💡",
+	text = "You've got an idea for a side business. It could bring in extra money, but it'll take time away from your main job and personal life.",
+	question = "Do you pursue the side hustle?",
+	minAge = 22, maxAge = 50,
+	baseChance = 0.35,
+	cooldown = 4,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_entrepreneurship",
+	tags = { "job", "side_hustle", "entrepreneurship", "money" },
+	
+	choices = {
+		{ text = "Go all in - build it nights and weekends", effects = { Happiness = 5, Money = 1500, Health = -5 }, setFlags = { side_hustler = true, entrepreneur = true }, feedText = "You're burning the midnight oil. The hustle is real!" },
+		{ text = "Start small - test the waters", effects = { Happiness = 3, Money = 500 }, setFlags = { small_business = true }, feedText = "You launched with minimal risk. Smart approach." },
+		{ text = "Focus on my current career", effects = { Happiness = 2, Smarts = 2 }, feedText = "You decided to excel at your main job instead." },
+		{ text = "Partner with a friend on it", effects = { Happiness = 5, Money = 800 }, setFlags = { business_partner = true }, feedText = "You and a friend are building something together!" },
+	},
+},
+{
+	id = "toxic_workplace_culture",
+	title = "Toxic Work Environment",
+	emoji = "☣️",
+	text = "Your workplace has become toxic. Gossip, backstabbing, unclear expectations, and constant stress. Your mental health is suffering.",
+	question = "How do you cope?",
+	minAge = 20, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 4,
+	requiresJob = true,
+	requiresStats = { Happiness = { max = 60 } },
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_challenge",
+	tags = { "job", "toxic", "stress", "mental_health" },
+	
+	choices = {
+		{ text = "Set firm boundaries", effects = { Happiness = 5, Health = 3, Smarts = 2 }, setFlags = { boundary_setter = true }, feedText = "You stopped answering emails after 6pm. Revolutionary." },
+		{ text = "Confront the issues head-on", effects = { Happiness = -3, Smarts = 4 }, setFlags = { confrontational = true }, feedText = "You called out the toxicity in a meeting. Brave but risky." },
+		{ text = "Document everything and report to HR", effects = { Happiness = -2, Smarts = 3 }, setFlags = { documented_issues = true }, feedText = "You're building a paper trail. Just in case." },
+		{ text = "Start therapy to cope", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference." },
+	},
+},
+{
+	id = "mentorship_opportunity",
+	title = "Mentorship Moment",
+	emoji = "🎓",
+	text = "A senior leader at your company has taken notice of your work and offered to be your mentor.",
+	question = "How do you respond?",
+	minAge = 22, maxAge = 40,
+	baseChance = 0.25,
+	cooldown = 5,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_growth",
+	tags = { "job", "mentor", "leadership", "growth" },
+	
+	choices = {
+		{ text = "Eagerly accept - learn everything!", effects = { Happiness = 8, Smarts = 6, Money = 300 }, setFlags = { has_mentor = true, eager_learner = true }, feedText = "You're soaking up wisdom like a sponge. Career accelerating!" },
+		{ text = "Accept but set boundaries", effects = { Happiness = 5, Smarts = 4 }, setFlags = { has_mentor = true }, feedText = "You're learning but maintaining your independence." },
+		{ text = "Politely decline - don't want the pressure", effects = { Happiness = 2 }, feedText = "You prefer to find your own way. Valid choice." },
+		{ text = "Accept and eventually become a mentor yourself", effects = { Happiness = 10, Smarts = 5 }, setFlags = { has_mentor = true, future_mentor = true }, feedText = "The cycle of mentorship continues through you!" },
+	},
+},
+{
+	id = "career_pivot_consideration",
+	title = "Career Pivot?",
+	emoji = "🔄",
+	text = "You've been thinking about a complete career change. Different industry, different role. A fresh start.",
+	question = "Do you take the leap?",
+	minAge = 28, maxAge = 50,
+	baseChance = 0.25,
+	cooldown = 6,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "adult_midlife",
+	category = "career_change",
+	tags = { "job", "pivot", "change", "risk" },
+	
+	choices = {
+		{ 
+			text = "Yes - start over in a new field", 
+			effects = { Happiness = 10, Money = -2000, Smarts = 5 }, 
+			setFlags = { career_pivoter = true },
+			feedText = "You quit and started over. Scary but exciting!",
+			onResolve = function(state)
+				if state.ClearCareer then
+					state:ClearCareer()
+				else
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.has_job = nil
+					state.Flags.employed = nil
+					state.Flags.between_jobs = true
+				end
+			end,
+		},
+		{ text = "Take night classes while keeping your job", effects = { Happiness = 5, Smarts = 4, Health = -2 }, setFlags = { learning_new_field = true }, feedText = "You're building new skills on the side." },
+		{ text = "Stay where you are - too risky", effects = { Happiness = -3 }, feedText = "You chose security over passion. For now." },
+		{ text = "Transition gradually within your company", effects = { Happiness = 6, Smarts = 3 }, setFlags = { internal_pivot = true }, feedText = "You're moving to a different department. New challenges, same paycheck!" },
+	},
+},
+{
+	id = "workplace_recognition",
+	title = "You Got Recognized!",
+	emoji = "🏆",
+	text = "Your work has been noticed! You're being considered for an employee recognition award.",
+	question = "How does this play out?",
+	minAge = 22, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 3,
+	requiresJob = true,
+	
+	-- META
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_success",
+	tags = { "job", "recognition", "achievement", "success" },
+	
+	choices = {
+		{ text = "Win the award - full ceremony!", effects = { Happiness = 15, Money = 500, Smarts = 3 }, setFlags = { award_winner = true, recognized = true }, feedText = "You won! Standing ovation. Your parents are so proud!" },
+		{ text = "Runner-up - still honored", effects = { Happiness = 7, Money = 200 }, setFlags = { recognized = true }, feedText = "Second place. Still an honor. Still a little disappointed." },
+		{ text = "Win but it creates jealousy", effects = { Happiness = 10, Money = 500 }, setFlags = { office_jealousy = true }, feedText = "You won but some coworkers are salty about it." },
+		{ text = "Humbly deflect the recognition", effects = { Happiness = 5, Smarts = 2 }, setFlags = { humble = true }, feedText = "You credited your team. Everyone respects that." },
+	},
+},
 }
 
 return Career

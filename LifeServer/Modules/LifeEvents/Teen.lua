@@ -227,8 +227,8 @@ Teen.events = {
 		minAge = 15, maxAge = 17,
 		baseChance = 0.7,
 		cooldown = 3,
-		-- CRITICAL FIX: Block if player already has ANY job
-		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, coder = true, tech_experience = true },
+		-- CRITICAL FIX: Only block by ACTUAL employment flags, not experience flags
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true },
 		requiresNoJob = true,
 		choices = {
 			{ text = "Work at a fast food place", effects = { Money = 200, Health = -2, Happiness = -1 }, setFlags = { has_teen_job = true, fast_food_experience = true }, feedText = "You got a job flipping burgers. Money incoming!" },
@@ -265,7 +265,9 @@ Teen.events = {
 		question = "What path are you considering?",
 		minAge = 16, maxAge = 17,
 		oneTime = true,
-		requiresFlags = { graduated_high_school = false }, -- Only show if haven't graduated yet (planning stage)
+		-- CRITICAL FIX: Use blockedByFlags instead of requiresFlags with false value
+		-- Only show if haven't graduated yet (planning stage)
+		blockedByFlags = { graduated_high_school = true, high_school_graduate = true },
 		choices = {
 			{
 				text = "Aim for a top university",

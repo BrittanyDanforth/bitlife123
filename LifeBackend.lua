@@ -1195,8 +1195,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.ApplyForJob.OnServerInvoke = function(player, jobId)
 		return self:handleJobApplication(player, jobId)
 	end
-	self.remotes.QuitJob.OnServerInvoke = function(player)
-		return self:handleQuitJob(player)
+	self.remotes.QuitJob.OnServerInvoke = function(player, quitStyle)
+		return self:handleQuitJob(player, quitStyle)
 	end
 	self.remotes.DoWork.OnServerInvoke = function(player)
 		return self:handleWork(player)
@@ -2992,7 +2992,7 @@ function LifeBackend:handleJobApplication(player, jobId)
 	return { success = true, message = feed }
 end
 
-function LifeBackend:handleQuitJob(player)
+function LifeBackend:handleQuitJob(player, quitStyle)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data not loaded." }
@@ -3009,6 +3009,15 @@ function LifeBackend:handleQuitJob(player)
 	-- This populates the Career Info screen's career history section
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	state.CareerInfo.careerHistory = state.CareerInfo.careerHistory or {}
+	
+	-- Determine quit reason based on style
+	local quitReason = "quit"
+	if quitStyle == "dramatic" then
+		quitReason = "quit_dramatic"
+	elseif quitStyle == "ghost" then
+		quitReason = "quit_ghost"
+	end
+	
 	local historyEntry = {
 		title = state.CurrentJob.name,
 		company = state.CurrentJob.company,
@@ -3018,7 +3027,7 @@ function LifeBackend:handleQuitJob(player)
 		performance = state.CareerInfo.performance or 60,
 		raises = state.CareerInfo.raises or 0,
 		promotions = state.CareerInfo.promotions or 0,
-		reason = "quit",
+		reason = quitReason,
 		endAge = state.Age or 0,
 		endYear = state.Year or 2025,
 	}
@@ -3028,6 +3037,7 @@ function LifeBackend:handleQuitJob(player)
 	state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
 
 	local jobName = state.CurrentJob.name
+	local companyName = state.CurrentJob.company or "your employer"
 	state.CurrentJob = nil
 	state.CareerInfo.performance = 0
 	state.CareerInfo.promotionProgress = 0
@@ -3039,8 +3049,34 @@ function LifeBackend:handleQuitJob(player)
 	state.Flags.employed = nil
 	state.Flags.has_job = nil
 	state.Flags.between_jobs = true
+	
+	-- BITLIFE-STYLE: Different messages and effects based on quit style
+	local feed
+	local happinessBonus = 0
+	
+	if quitStyle == "dramatic" then
+		-- Dramatic quit - burned bridges but felt GOOD
+		feed = string.format("🔥 You told %s EXACTLY what you think of them. Flipped your desk. Said goodbye to nobody. Walked out like a BOSS. Your ex-coworkers are STILL talking about it. #Legend", companyName)
+		happinessBonus = 15
+		state.Flags.burned_bridges = true
+		state.Flags.epic_quitter = true
+	elseif quitStyle == "ghost" then
+		-- Ghost - just stopped showing up
+		feed = string.format("👻 You just... stopped going to %s. No call. No text. Nothing. They probably filed a missing person report. Your desk stuff is still there. You're officially a ghost.", companyName)
+		happinessBonus = 5
+		state.Flags.unreliable = true
+		state.Flags.ghosted_employer = true
+	else
+		-- Professional - two week notice
+		feed = string.format("✅ You submitted your two-week notice at %s. Your boss looked disappointed but thanked you for your professionalism. Wrote you a great recommendation letter.", companyName)
+		happinessBonus = 5
+		state.Flags.professional_quitter = true
+	end
+	
+	-- Apply happiness bonus
+	state.Stats = state.Stats or {}
+	state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + happinessBonus)
 
-	local feed = string.format("You resigned from your job as %s.", jobName)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

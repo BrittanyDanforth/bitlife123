@@ -3345,16 +3345,201 @@ function OccupationScreen:quitJob()
 		return
 	end
 
-	log("Invoking server QuitJob...")
-	local result = QuitJob:InvokeServer()
-	log("Server response:", result and "received" or "nil")
+	-- CRITICAL FIX: Show confirmation dialog instead of quitting immediately
+	self:showQuitConfirmation()
+end
 
-	if result then
-		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Done" or "Error")
+function OccupationScreen:showQuitConfirmation()
+	local currentJobData = self:getCurrentJobData()
+	local jobName = currentJobData and currentJobData.name or "your job"
+	local salary = currentJobData and currentJobData.salary or 0
+	local yearsWorked = self.careerInfo and self.careerInfo.yearsAtJob or 0
+	
+	-- Create quit confirmation modal if it doesn't exist
+	if not self.quitConfirmModal then
+		self:createQuitConfirmModal()
+	end
+	
+	-- Update the modal with current job info
+	local yearsText = yearsWorked == 1 and "1 year" or string.format("%d years", yearsWorked)
+	self.quitConfirmModal.jobLabel.Text = "💼 " .. jobName
+	self.quitConfirmModal.salaryLabel.Text = string.format("💰 %s/year • %s", UI.formatMoney(salary), yearsText)
+	
+	-- Show the modal
+	UI.showModal(self.quitConfirmModal)
+end
+
+function OccupationScreen:createQuitConfirmModal()
+	self.quitConfirmModal = UI.createModalCard(self.screenGui, {
+		title = "Quit Your Job?",
+		message = "Are you sure? This decision could change your life.",
+		emoji = "🤔",
+		shellColor = C.Amber,
+		strokeColor = C.AmberDark,
+	})
+	
+	-- Add job info labels
+	local jobLabel = Instance.new("TextLabel")
+	jobLabel.Name = "JobLabel"
+	jobLabel.Size = UDim2.new(1, -32, 0, 24)
+	jobLabel.Position = UDim2.new(0, 16, 0, 135)
+	jobLabel.BackgroundTransparency = 1
+	jobLabel.Font = F.Title
+	jobLabel.TextSize = 16
+	jobLabel.TextColor3 = C.Gray800
+	jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+	jobLabel.Text = "💼 Your Job"
+	jobLabel.ZIndex = 105
+	jobLabel.Parent = self.quitConfirmModal.shell
+	self.quitConfirmModal.jobLabel = jobLabel
+	
+	local salaryLabel = Instance.new("TextLabel")
+	salaryLabel.Name = "SalaryLabel"
+	salaryLabel.Size = UDim2.new(1, -32, 0, 20)
+	salaryLabel.Position = UDim2.new(0, 16, 0, 159)
+	salaryLabel.BackgroundTransparency = 1
+	salaryLabel.Font = F.Body
+	salaryLabel.TextSize = 13
+	salaryLabel.TextColor3 = C.Gray500
+	salaryLabel.TextXAlignment = Enum.TextXAlignment.Center
+	salaryLabel.Text = "💰 $0/year • 0 years"
+	salaryLabel.ZIndex = 105
+	salaryLabel.Parent = self.quitConfirmModal.shell
+	self.quitConfirmModal.salaryLabel = salaryLabel
+	
+	-- Extend shell to fit choices
+	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 380)
+	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -190)
+	
+	-- Remove default OK button, add choice buttons
+	self.quitConfirmModal.okButton.Visible = false
+	
+	-- Choice container
+	local choiceContainer = Instance.new("Frame")
+	choiceContainer.Name = "ChoiceContainer"
+	choiceContainer.Size = UDim2.new(1, -32, 0, 160)
+	choiceContainer.Position = UDim2.new(0, 16, 0, 190)
+	choiceContainer.BackgroundTransparency = 1
+	choiceContainer.ZIndex = 105
+	choiceContainer.Parent = self.quitConfirmModal.shell
+	
+	local choiceLayout = Instance.new("UIListLayout")
+	choiceLayout.Padding = UDim.new(0, 8)
+	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choiceLayout.Parent = choiceContainer
+	
+	-- Choice 1: Resign professionally
+	local choice1 = Instance.new("TextButton")
+	choice1.Size = UDim2.new(1, 0, 0, 36)
+	choice1.BackgroundColor3 = C.Green
+	choice1.Font = F.Medium
+	choice1.TextSize = 14
+	choice1.TextColor3 = C.White
+	choice1.Text = "✅ Resign professionally (2-week notice)"
+	choice1.ZIndex = 106
+	choice1.LayoutOrder = 1
+	choice1.Parent = choiceContainer
+	UI.corner(choice1, 10)
+	choice1.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("professional")
+		end)
+	end)
+	
+	-- Choice 2: Quit dramatically
+	local choice2 = Instance.new("TextButton")
+	choice2.Size = UDim2.new(1, 0, 0, 36)
+	choice2.BackgroundColor3 = C.Amber
+	choice2.Font = F.Medium
+	choice2.TextSize = 14
+	choice2.TextColor3 = C.White
+	choice2.Text = "🔥 Quit dramatically (tell them off!)"
+	choice2.ZIndex = 106
+	choice2.LayoutOrder = 2
+	choice2.Parent = choiceContainer
+	UI.corner(choice2, 10)
+	choice2.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("dramatic")
+		end)
+	end)
+	
+	-- Choice 3: Ghost them
+	local choice3 = Instance.new("TextButton")
+	choice3.Size = UDim2.new(1, 0, 0, 36)
+	choice3.BackgroundColor3 = C.Purple
+	choice3.Font = F.Medium
+	choice3.TextSize = 14
+	choice3.TextColor3 = C.White
+	choice3.Text = "👻 Ghost them (just stop showing up)"
+	choice3.ZIndex = 106
+	choice3.LayoutOrder = 3
+	choice3.Parent = choiceContainer
+	UI.corner(choice3, 10)
+	choice3.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal, function()
+			self:executeQuit("ghost")
+		end)
+	end)
+	
+	-- Choice 4: Stay at job
+	local choice4 = Instance.new("TextButton")
+	choice4.Size = UDim2.new(1, 0, 0, 36)
+	choice4.BackgroundColor3 = C.Gray500
+	choice4.Font = F.Medium
+	choice4.TextSize = 14
+	choice4.TextColor3 = C.White
+	choice4.Text = "🤔 Stay at the job (nevermind)"
+	choice4.ZIndex = 106
+	choice4.LayoutOrder = 4
+	choice4.Parent = choiceContainer
+	UI.corner(choice4, 10)
+	choice4.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal)
+	end)
+	
+	-- Close area
+	self.quitConfirmModal.closeArea.MouseButton1Click:Connect(function()
+		UI.hideModal(self.quitConfirmModal)
+	end)
+end
+
+function OccupationScreen:executeQuit(quitStyle)
+	log("=== EXECUTING QUIT ===")
+	log("Quit style:", quitStyle)
+	
+	local result = QuitJob:InvokeServer(quitStyle)
+	log("Server response:", result and "received" or "nil")
+	
+	if result and result.success then
+		-- CRITICAL FIX: Immediately clear local job state so UI refreshes correctly
+		if self.playerState then
+			self.playerState.CurrentJob = nil
+		end
+		self.careerInfo = nil -- Clear cached career info
+		
+		local emoji = "👋"
+		local title = "You quit!"
+		local message = result.message
+		
+		if quitStyle == "dramatic" then
+			emoji = "🔥"
+			title = "Epic Exit!"
+		elseif quitStyle == "ghost" then
+			emoji = "👻"
+			title = "Gone!"
+		end
+		
+		self:showResult(true, message, emoji)
+		
+		-- Force refresh the job list after showing result
+		task.delay(0.1, function()
+			if self.isVisible then
+				self:populateJobs()
+			end
+		end)
 	else
-		logWarn("Server returned nil!")
-		self:showResult(false, "Server error.", "X")
+		self:showResult(false, result and result.message or "Server error.", "❌")
 	end
 end
 

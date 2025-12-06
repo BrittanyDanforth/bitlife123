@@ -541,15 +541,19 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.requiresPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if not hasPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if not hasPartnerRelation and not hasPartnerFlag then
 			return false -- MUST have a partner
 		end
 	end
 	
 	if event.requiresSingle or event.requiresNoPartner then
-		local hasPartner = state.Relationships and state.Relationships.partner
-		if hasPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if hasPartnerRelation or hasPartnerFlag then
 			return false -- MUST be single
 		end
 	end

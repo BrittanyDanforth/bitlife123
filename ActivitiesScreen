@@ -377,14 +377,15 @@ function ActivitiesScreen:createUI()
 	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
 
 	self.statusChip = UI.createInfoChip(self.infoBar, {
-		name = "StatusChip", icon = "", text = "Free",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 75
+		name = "StatusChip", icon = "", text = "Adult",
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 90
 	})
 	self.statusChip.icon.Text = ""
-	self.statusChip.text.Text = "Free"
-	self.statusChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.statusChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.statusChip.text.Text = "Adult"
+	self.statusChip.text.Position = UDim2.new(0, 6, 0, 0)
+	self.statusChip.text.Size = UDim2.new(1, -12, 1, 0)
 	self.statusChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.statusChip.text.TextScaled = true -- Allow text to scale down if needed
 
 	-- Tab bar
 	self.tabBar = Instance.new("Frame")
@@ -486,16 +487,61 @@ function ActivitiesScreen:updateInfoBar()
 
 	local inJail = self:isInJail()
 	local jailYears = self:getJailYearsLeft()
+	local age = self:getAge()
 
 	if inJail then
-		local jailText = jailYears > 0 and string.format("%.1f yrs", jailYears) or "Jail"
+		-- Show jail time remaining
+		local jailText = jailYears > 0 and string.format("⛓️%.0fy", jailYears) or "⛓️Jail"
 		self.statusChip.text.Text = jailText
 		self.statusChip.chip.BackgroundColor3 = C.RedPale
 		self.statusChip.text.TextColor3 = C.RedDark
 	else
-		self.statusChip.text.Text = "Free"
-		self.statusChip.chip.BackgroundColor3 = C.GreenPale
-		self.statusChip.text.TextColor3 = C.GreenDark
+		-- CRITICAL FIX: Show life stage instead of just "Free"
+		local statusText = "Adult"
+		local bgColor = C.GreenPale
+		local textColor = C.GreenDark
+		
+		if age < 2 then
+			statusText = "👶 Baby"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		elseif age < 5 then
+			statusText = "🧒 Toddler"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		elseif age < 13 then
+			statusText = "📚 Child"
+			bgColor = C.BluePale
+			textColor = C.BlueDark
+		elseif age < 18 then
+			statusText = "🎮 Teen"
+			bgColor = C.AmberPale or C.Amber
+			textColor = C.AmberDark
+		elseif age < 30 then
+			statusText = "✨ Young"
+			bgColor = C.GreenPale
+			textColor = C.GreenDark
+		elseif age < 50 then
+			statusText = "💼 Adult"
+			bgColor = C.GreenPale
+			textColor = C.GreenDark
+		elseif age < 65 then
+			statusText = "👔 Midlife"
+			bgColor = C.BluePale
+			textColor = C.BlueDark
+		elseif age < 80 then
+			statusText = "🧓 Senior"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		else
+			statusText = "👴 Elder"
+			bgColor = C.Gray200
+			textColor = C.Gray700
+		end
+		
+		self.statusChip.text.Text = statusText
+		self.statusChip.chip.BackgroundColor3 = bgColor
+		self.statusChip.text.TextColor3 = textColor
 	end
 end
 

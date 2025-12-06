@@ -473,6 +473,7 @@ Random.events = {
 		baseChance = 0.15,
 		cooldown = 4,
 		category = "injury",
+		requiresJob = true, -- CRITICAL FIX: Can't have workplace accident without a job!
 
 		choices = {
 			{ text = "Fell off a ladder", effects = { Health = -18, Happiness = -10, Money = 1000 }, setFlags = { workplace_injury = true }, feedText = "Ladder fall at work. Workers' comp is kicking in." },
@@ -981,14 +982,19 @@ Random.events = {
 				setFlags = { desperate_criminal = true },
 				feedText = "Desperation is pushing you to dark choices...",
 				onResolve = function(state)
-					if math.random() < 0.4 then
-						state.Money = (state.Money or 0) + math.random(50, 200)
-						state:AddFeed("💵 You stole some money. Risky, but you needed it.")
-					else
-						state.InJail = true
-						state.JailYearsLeft = math.random(1, 3)
-						state:AddFeed("🚔 You got caught! Arrested for theft.")
-					end
+				if math.random() < 0.4 then
+					state.Money = (state.Money or 0) + math.random(50, 200)
+					state:AddFeed("💵 You stole some money. Risky, but you needed it.")
+				else
+					-- CRITICAL FIX: Set BOTH InJail AND in_prison flag for consistency
+					state.InJail = true
+					state.JailYearsLeft = math.random(1, 3)
+					state.Flags = state.Flags or {}
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.criminal_record = true
+					state:AddFeed("🚔 You got caught! Arrested for theft.")
+				end
 				end,
 			},
 		},
