@@ -293,10 +293,18 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:ModifyStat(statName, delta)
-	if self.Stats[statName] ~= nil then
-		self.Stats[statName] = math.clamp(self.Stats[statName] + delta, 0, 100)
-		self[statName] = self.Stats[statName]
+	-- CRITICAL FIX: Initialize stat if missing (prevents silent failures)
+	if self.Stats[statName] == nil then
+		-- Initialize common stats to default values
+		local defaults = { Happiness = 50, Health = 50, Smarts = 50, Looks = 50 }
+		if defaults[statName] then
+			self.Stats[statName] = defaults[statName]
+		else
+			return self -- Unknown stat, skip silently
+		end
 	end
+	self.Stats[statName] = math.clamp(self.Stats[statName] + delta, 0, 100)
+	self[statName] = self.Stats[statName]
 	return self
 end
 
@@ -361,6 +369,21 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:AddAsset(category, asset)
+	-- CRITICAL FIX: Validate inputs to prevent crashes
+	if type(category) ~= "string" or category == "" then
+		warn("[LifeState:AddAsset] Invalid category:", category)
+		return self
+	end
+	if type(asset) ~= "table" then
+		warn("[LifeState:AddAsset] Invalid asset (expected table):", type(asset))
+		return self
+	end
+	
+	-- CRITICAL FIX: Ensure asset has required fields
+	asset.id = asset.id or (category .. "_" .. tostring(tick()))
+	asset.name = asset.name or "Unknown Asset"
+	asset.value = asset.value or asset.price or 0
+	
 	print("[LifeState:AddAsset] Adding to category:", category)
 	print("  Asset id:", asset.id, "name:", asset.name)
 	

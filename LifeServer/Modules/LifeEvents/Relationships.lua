@@ -20,6 +20,8 @@ Relationships.events = {
 		baseChance = 0.5,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX: Can't use dating apps from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{ text = "Swipe right!", effects = { Happiness = 8 }, setFlags = { has_partner = true, dating = true }, feedText = "You matched with someone great!" },
 			{ text = "Be super selective", effects = { Smarts = 2, Happiness = 3 }, feedText = "You're picky, but quality over quantity." },
@@ -36,6 +38,8 @@ Relationships.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX: Can't have chance encounters in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{ text = "Go talk to them", effects = { Happiness = 10, Looks = 2 }, setFlags = { has_partner = true, dating = true, met_cute = true }, feedText = "You made the first move!" },
 			{ text = "Smile and hope they approach", effects = { Happiness = 5 }, feedText = "You shared a moment but didn't pursue." },

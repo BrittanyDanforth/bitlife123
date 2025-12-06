@@ -24,6 +24,8 @@ Adult.events = {
 		question = "What's your plan?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,
+		-- CRITICAL FIX: Can't move out from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		-- META
 		stage = STAGE,
@@ -626,6 +628,8 @@ Adult.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresFlags = { has_roommates = true },
+		-- CRITICAL FIX: Can't have roommate drama from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
 			{ text = "They never clean", effects = { Happiness = -4, Health = -2 }, feedText = "Living in filth because they won't do dishes." },
@@ -643,6 +647,8 @@ Adult.events = {
 		question = "What's bothering you most?",
 		minAge = 23, maxAge = 28,
 		oneTime = true,
+		-- CRITICAL FIX: Different crisis priorities in prison
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
 			{ text = "I don't know what I want to do with my life", effects = { Happiness = -5, Smarts = 3 }, setFlags = { searching_purpose = true }, feedText = "You're soul-searching. It's uncomfortable but necessary." },

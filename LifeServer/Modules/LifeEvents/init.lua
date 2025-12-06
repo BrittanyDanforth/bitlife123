@@ -1363,7 +1363,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Flags.married = true
 			state.Flags.engaged = nil
 			state.Flags.dating = nil -- No longer just dating!
-			outcome.feedText = "You married " .. state.Relationships.partner.name .. "!"
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			outcome.feedText = "You married " .. partnerName .. "!"
 		end
 	end
 	
@@ -1374,9 +1376,11 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Relationships.partner.role = "Spouse"
 			state.Flags.engaged = nil -- No longer engaged, now married
 			state.Flags.dating = nil -- No longer just dating
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
 			-- Update feed text to include partner name if not already mentioned
 			if outcome.feedText and not outcome.feedText:find("married") then
-				outcome.feedText = outcome.feedText .. " You and " .. state.Relationships.partner.name .. " are officially married!"
+				outcome.feedText = outcome.feedText .. " You and " .. partnerName .. " are officially married!"
 			end
 		end
 	end

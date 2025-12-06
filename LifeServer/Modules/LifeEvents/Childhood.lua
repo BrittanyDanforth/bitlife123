@@ -244,25 +244,26 @@ Childhood.events = {
 				effects = {},
 				feedText = "You pushed forward with confidence...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
 					local successChance = 0.40 + (health / 150)
 					if roll < successChance then
-						state:ModifyStat("Happiness", 8)
-						state:ModifyStat("Health", 3)
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.ModifyStat then state:ModifyStat("Health", 3) end
 						state.Flags = state.Flags or {}
 						state.Flags.natural_athlete = true
-						state:AddFeed("🚲 You're a natural! Freedom on two wheels!")
+						if state.AddFeed then state:AddFeed("🚲 You're a natural! Freedom on two wheels!") end
 					elseif roll < successChance + 0.35 then
-						state:ModifyStat("Happiness", 5)
-						state:ModifyStat("Health", -2)
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.ModifyStat then state:ModifyStat("Health", -2) end
 						state.Flags = state.Flags or {}
 						state.Flags.persistent = true
-						state:AddFeed("🚲 You fell a few times, but kept trying. You did it!")
+						if state.AddFeed then state:AddFeed("🚲 You fell a few times, but kept trying. You did it!") end
 					else
-						state:ModifyStat("Happiness", 2)
-						state:ModifyStat("Health", -4)
-						state:AddFeed("🚲 Lots of falls... but you'll get it eventually!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.ModifyStat then state:ModifyStat("Health", -4) end
+						if state.AddFeed then state:AddFeed("🚲 Lots of falls... but you'll get it eventually!") end
 					end
 				end,
 			},
@@ -271,18 +272,19 @@ Childhood.events = {
 				effects = {},
 				feedText = "You took a cautious approach...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local roll = math.random()
 					if roll < 0.60 then
-						state:ModifyStat("Happiness", 5)
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
 						state.Flags = state.Flags or {}
 						state.Flags.cautious_learner = true
-						state:AddFeed("🚲 Taking your time paid off! You learned safely.")
+						if state.AddFeed then state:AddFeed("🚲 Taking your time paid off! You learned safely.") end
 					elseif roll < 0.85 then
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🚲 Training wheels for a while, but you got there!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("🚲 Training wheels for a while, but you got there!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🚲 Still too scared... maybe try again next year.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🚲 Still too scared... maybe try again next year.") end
 					end
 				end,
 			},

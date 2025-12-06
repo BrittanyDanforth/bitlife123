@@ -245,12 +245,13 @@ local events = {
 				effects = {},
 				feedText = "You pushed the pedal to the metal...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local outcome = RANDOM:NextNumber()
 					local vehicle = getBestVehicle(state)
 					local vehicleName = vehicle and vehicle.name or "your car"
 					
 					if outcome < 0.30 then -- Pure thrill!
-						state:ModifyStat("Happiness", 20)
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
 						state.Flags = state.Flags or {}
 						state.Flags.speed_demon = true
 						if state.AddFeed then
@@ -268,18 +269,18 @@ local events = {
 					elseif outcome < 0.70 then -- Car trouble at high speed
 						local repairCost = RANDOM:NextInteger(2000, 8000)
 						state.Money = math.max(0, (state.Money or 0) - repairCost)
-						state:ModifyStat("Happiness", -10)
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
 						if state.AddFeed then
 							state:AddFeed(string.format("🔧 Engine blew at 130 mph! $%d in repairs. Lucky to be alive.", repairCost))
 						end
 					elseif outcome < 0.90 then -- Near miss
-						state:ModifyStat("Happiness", 5)
-						state:ModifyStat("Health", -5)
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.ModifyStat then state:ModifyStat("Health", -5) end
 						if state.AddFeed then
 							state:AddFeed("😰 Nearly hit a deer at 120 mph. Heart almost stopped. Never again.")
 						end
 					else -- CRASH
-						state:ModifyStat("Health", RANDOM:NextInteger(-40, -20))
+						if state.ModifyStat then state:ModifyStat("Health", RANDOM:NextInteger(-40, -20)) end
 						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(10000, 30000))
 						state.Flags = state.Flags or {}
 						state.Flags.hospitalized = true

@@ -34,6 +34,8 @@ Random.events = {
 		minAge = 18, maxAge = 90,
 		baseChance = 0.3,
 		cooldown = 2,
+		-- CRITICAL FIX: Can't gamble from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random outcome instead of player picking result
 		choices = {
 			{ 
@@ -41,18 +43,19 @@ Random.events = {
 				effects = {},
 				feedText = "You scratch with anticipation...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local roll = math.random()
 					if roll < 0.02 then -- 2% chance big winner
 						state.Money = (state.Money or 0) + 5000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("🎰 JACKPOT!!! You won $5,000! Incredible!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						if state.AddFeed then state:AddFeed("🎰 JACKPOT!!! You won $5,000! Incredible!") end
 					elseif roll < 0.15 then -- 13% chance small prize
 						state.Money = (state.Money or 0) + math.random(20, 100)
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🎰 You won a small prize! Nice!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🎰 You won a small prize! Nice!") end
 					else -- 85% nothing
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎰 Nothing. Better luck next time.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🎰 Nothing. Better luck next time.") end
 					end
 				end,
 			},
@@ -61,18 +64,19 @@ Random.events = {
 				effects = {},
 				feedText = "You scratch methodically...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local roll = math.random()
 					if roll < 0.02 then
 						state.Money = (state.Money or 0) + 5000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("🎰 JACKPOT!!! You won $5,000!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						if state.AddFeed then state:AddFeed("🎰 JACKPOT!!! You won $5,000!") end
 					elseif roll < 0.15 then
 						state.Money = (state.Money or 0) + math.random(20, 100)
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🎰 Small winner! A little cash.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🎰 Small winner! A little cash.") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎰 Not a winner. Oh well.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🎰 Not a winner. Oh well.") end
 					end
 				end,
 			},
@@ -96,18 +100,19 @@ Random.events = {
 				effects = {},
 				feedText = "You attended the reading of the will...",
 				onResolve = function(state)
+					-- CRITICAL FIX: Added nil checks for all method calls
 					local roll = math.random()
 					if roll < 0.30 then -- 30% substantial money
 						local amount = math.random(5000, 25000)
 						state.Money = (state.Money or 0) + amount
-						state:ModifyStat("Happiness", 12)
-						state:AddFeed(string.format("📜 You inherited $%d! What a windfall!", amount))
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then state:AddFeed(string.format("📜 You inherited $%d! What a windfall!", amount)) end
 					elseif roll < 0.50 then -- 20% house
 						state.Flags = state.Flags or {}
 						state.Flags.inherited_property = true
 						state.Flags.homeowner = true
 						state.Flags.has_property = true
-						state:ModifyStat("Happiness", 10)
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						if state.AddAsset then
 							state:AddAsset("Properties", {
 								id = "inherited_house_" .. tostring(state.Age or 0),
@@ -119,11 +124,11 @@ Random.events = {
 								isEventAcquired = true,
 							})
 						end
-						state:AddFeed("📜 You inherited a house! It needs some work but it's yours.")
+						if state.AddFeed then state:AddFeed("📜 You inherited a house! It needs some work but it's yours.") end
 					elseif roll < 0.70 then -- 20% heirloom
 						state.Flags = state.Flags or {}
 						state.Flags.has_heirloom = true
-						state:ModifyStat("Happiness", 5)
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
 						if state.AddAsset then
 							state:AddAsset("Items", {
 								id = "family_heirloom_" .. tostring(state.Age or 0),
@@ -134,17 +139,17 @@ Random.events = {
 								isEventAcquired = true,
 							})
 						end
-						state:AddFeed("📜 You inherited a family heirloom. Interesting piece of history!")
+						if state.AddFeed then state:AddFeed("📜 You inherited a family heirloom. Interesting piece of history!") end
 					elseif roll < 0.85 then -- 15% small amount
 						local amount = math.random(500, 2000)
 						state.Money = (state.Money or 0) + amount
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed(string.format("📜 You inherited $%d. Every bit helps!", amount))
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed(string.format("📜 You inherited $%d. Every bit helps!", amount)) end
 					else -- 15% debt
 						local debt = math.random(1000, 5000)
 						state.Money = math.max(0, (state.Money or 0) - debt)
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed(string.format("📜 Bad news... you inherited $%d in debt!", debt))
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed(string.format("📜 Bad news... you inherited $%d in debt!", debt)) end
 					end
 				end,
 			},
@@ -168,6 +173,9 @@ Random.events = {
 		minAge = 5, maxAge = 80,
 		baseChance = 0.3,
 		cooldown = 2,
+		category = "random", -- CRITICAL FIX: Added explicit category
+		-- CRITICAL FIX: Can't have accidents in prison (different event set)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
 			{
@@ -231,6 +239,8 @@ Random.events = {
 		baseChance = 0.3,
 		cooldown = 2,
 		requiresFlags = { has_car = true },
+		-- CRITICAL FIX: Can't have car trouble in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				text = "Pay for repairs",

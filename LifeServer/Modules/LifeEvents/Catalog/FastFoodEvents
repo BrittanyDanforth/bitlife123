@@ -73,14 +73,15 @@ local events = {
                 effects = { Happiness = 5 },
                 feedText = "You showed her the receipt. Proved her wrong. She stormed out screaming about Yelp. Your coworkers slow-clapped.",
                 onResolve = function(state)
+                    -- CRITICAL FIX: Added nil checks for all method calls
                     local roll = math.random()
                     if roll < 0.3 then
-                        state:ModifyStat("Happiness", -5)
+                        if state.ModifyStat then state:ModifyStat("Happiness", -5) end
                         if state.AddFeed then
                             state:AddFeed("😰 Your manager pulled you aside. 'We need to talk about your attitude.' Uh oh...")
                         end
                     else
-                        state:ModifyStat("Happiness", 3)
+                        if state.ModifyStat then state:ModifyStat("Happiness", 3) end
                         if state.AddFeed then
                             state:AddFeed("😎 You stood your ground! Your coworkers respect you now.")
                         end
@@ -98,10 +99,11 @@ local events = {
                 effects = { Happiness = 10, Health = -2 },
                 feedText = "You finally snapped. 'MA'AM, THE ORDER IS CORRECT. READ YOUR RECEIPT.' Dead silence. She left. You felt ALIVE. For about 5 minutes...",
                 onResolve = function(state)
+                    -- CRITICAL FIX: Added nil checks for all method calls
                     local roll = math.random()
                     if roll < 0.4 then
                         -- Fired!
-                        state:ModifyStat("Happiness", -15)
+                        if state.ModifyStat then state:ModifyStat("Happiness", -15) end
                         state.Flags = state.Flags or {}
                         state.Flags.employed = nil
                         state.Flags.has_job = nil
@@ -111,7 +113,7 @@ local events = {
                             state:AddFeed("🔥 You got FIRED. Worth it? Maybe. Time to find a new job...")
                         end
                     else
-                        state:ModifyStat("Happiness", 5)
+                        if state.ModifyStat then state:ModifyStat("Happiness", 5) end
                         if state.AddFeed then
                             state:AddFeed("😅 You got a warning but kept your job. Coworkers called you a legend.")
                         end
