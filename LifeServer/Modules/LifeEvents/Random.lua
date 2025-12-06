@@ -869,7 +869,7 @@ Random.events = {
 
 		choices = {
 			{ text = "Wardrobe malfunction", effects = { Happiness = -10, Looks = -3 }, feedText = "Everyone saw... everything. Mortifying." },
-			{ text = "Said something stupid", effects = { Happiness = -8, Smarts = -2 }, feedText = "You can't believe you said that. Cringe." },
+			{ text = "Said something embarrassing", effects = { Happiness = -8, Smarts = -2 }, feedText = "You can't believe you said that. Cringe." },
 			{ text = "Tripped and fell spectacularly", effects = { Happiness = -7, Health = -3 }, feedText = "Epic fall. Someone definitely recorded it." },
 			{ text = "Got caught in a lie publicly", effects = { Happiness = -12 }, setFlags = { reputation_damaged = true }, feedText = "Your lie was exposed. Reputation hit." },
 			{ text = "Laughed it off - no big deal", effects = { Happiness = 5 }, setFlags = { thick_skinned = true }, feedText = "You didn't let it bother you. Strong move." },

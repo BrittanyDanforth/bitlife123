@@ -84,7 +84,7 @@ Career.events = {
 		},
 	},
 	{
-		id = "boss_from_hell",
+		id = "difficult_boss",
 		title = "Difficult Manager",
 		emoji = "👹",
 		text = "Your new manager is making work miserable.",
@@ -611,7 +611,7 @@ Career.events = {
 		requiresJob = true,
 
 		choices = {
-			{ text = "Nailed it! Standing ovation", effects = { Happiness = 12, Money = 500, Smarts = 3 }, setFlags = { great_presenter = true }, feedText = "You killed that presentation!" },
+			{ text = "Nailed it! Standing ovation", effects = { Happiness = 12, Money = 500, Smarts = 3 }, setFlags = { great_presenter = true }, feedText = "You crushed that presentation!" },
 			{ text = "Solid performance, good feedback", effects = { Happiness = 5, Smarts = 2 }, feedText = "You did well. Not perfect but strong." },
 			{ text = "Froze up - disaster", effects = { Happiness = -10, Smarts = -2 }, setFlags = { presentation_trauma = true }, feedText = "Total failure. Embarrassing." },
 			{ text = "Technical difficulties saved you", effects = { Happiness = 3 }, feedText = "The projector broke - presentation rescheduled!" },

@@ -653,7 +653,7 @@ Adult.events = {
 
 		choices = {
 			{ text = "Paying minimum - will take forever", effects = { Money = -200, Happiness = -3 }, feedText = "You'll be paying this for decades." },
-			{ text = "Aggressively paying them down", effects = { Money = -600, Happiness = -2, Smarts = 2 }, setFlags = { debt_focused = true }, feedText = "Living frugally to kill the debt faster." },
+			{ text = "Aggressively paying them down", effects = { Money = -600, Happiness = -2, Smarts = 2 }, setFlags = { debt_focused = true }, feedText = "Living frugally to eliminate the debt faster." },
 			{ text = "Looking into loan forgiveness", effects = { Smarts = 2 }, setFlags = { public_service = true }, feedText = "Maybe public service can help." },
 			{ text = "Defaulted... oops", effects = { Money = -1000, Happiness = -8 }, setFlags = { bad_credit = true }, feedText = "Your credit is destroyed. Big mistake." },
 		},

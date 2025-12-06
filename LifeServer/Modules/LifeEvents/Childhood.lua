@@ -472,7 +472,7 @@ Childhood.events = {
 			{ text = "Scraped my knee badly", effects = { Health = -5, Happiness = -3 }, feedText = "Ouch! Your knee is all scraped up. You got a cool bandage though." },
 			{ text = "Bruised my arm", effects = { Health = -3, Happiness = -2 }, feedText = "Your arm is purple and sore, but you're tough!" },
 			{ text = "Bumped my head", effects = { Health = -8, Smarts = -1 }, feedText = "That was a hard bump. Mom is worried." },
-			{ text = "Landed on my butt - I'm fine!", effects = { Health = -1, Happiness = 2 }, feedText = "You bounced right back up like nothing happened!" },
+			{ text = "Landed softly - I'm fine!", effects = { Health = -1, Happiness = 2 }, feedText = "You bounced right back up like nothing happened!" },
 		},
 	},
 	{

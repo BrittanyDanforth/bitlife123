@@ -667,7 +667,7 @@ Teen.events = {
 		choices = {
 			{ text = "Go all out - essays, recommendations, the works", effects = { Smarts = 5, Happiness = -3, Money = 5000 }, setFlags = { scholarship_winner = true }, feedText = "Your hard work paid off! You won the scholarship!" },
 			{ text = "Put in a solid effort", effects = { Smarts = 3, Money = 1000 }, feedText = "You got an honorable mention and partial scholarship!" },
-			{ text = "Half-ass the application", effects = { Smarts = 1 }, feedText = "You didn't put in enough effort. Rejected." },
+			{ text = "Barely try on the application", effects = { Smarts = 1 }, feedText = "You didn't put in enough effort. Rejected." },
 			{ text = "Don't bother applying", effects = { }, feedText = "You missed the opportunity entirely." },
 		},
 	},

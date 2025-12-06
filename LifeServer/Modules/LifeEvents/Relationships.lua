@@ -440,7 +440,7 @@ Relationships.events = {
 		choices = {
 			{ text = "Amazing chemistry - sparks flying!", effects = { Happiness = 12 }, setFlags = { has_partner = true, dating = true, great_first_date = true }, feedText = "Best first date ever! You're smitten." },
 			{ text = "Nice but no chemistry", effects = { Happiness = 2 }, feedText = "Pleasant but not a match. Oh well." },
-			{ text = "Disaster date from hell", effects = { Happiness = -5 }, setFlags = { bad_date_story = true }, feedText = "Awful date. At least it's a funny story now." },
+			{ text = "Total disaster date", effects = { Happiness = -5 }, setFlags = { bad_date_story = true }, feedText = "Awful date. At least it's a funny story now." },
 			{ text = "You got stood up", effects = { Happiness = -8 }, feedText = "They never showed. Crushing." },
 		},
 	},
@@ -572,7 +572,7 @@ Relationships.events = {
 				text = "Time to break up", 
 				effects = { Happiness = -10 }, 
 				setFlags = { recently_single = true }, 
-				feedText = "The jealousy killed the relationship.",
+				feedText = "The jealousy ruined the relationship.",
 				-- CRITICAL FIX: Properly clear all relationship flags
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
