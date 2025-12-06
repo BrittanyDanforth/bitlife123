@@ -669,11 +669,11 @@ local JobCatalogList = {
 	-- Two branches: White Hat (legit) or Black Hat (criminal)
 	-- Requires: High Smarts, tech skills
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- Entry points (shared)
+	-- Entry points (shared) - These give experience flags for higher-tier jobs
 	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 0, minAge = 14, requirement = nil, category = "hacker",
-		minStats = { Smarts = 55 }, description = "Learning to hack with pre-made tools" },
+		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
-		minStats = { Smarts = 65 }, description = "Taking small hacking jobs online" },
+		minStats = { Smarts = 65 }, requiresFlags = { "coder", "tech_experience" }, grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
 	
 	-- White Hat Path (Legit Cybersecurity)
 	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech",
@@ -684,14 +684,15 @@ local JobCatalogList = {
 		minStats = { Smarts = 80 }, description = "Lead security for a major corporation" },
 	
 	-- Black Hat Path (Criminal Hacker)
-	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 20, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 70 }, description = "Hack for profit illegally" },
-	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 25, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 80 }, description = "One of the best hackers in the world" },
-	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 30, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 85 }, description = "Run a cyber criminal empire" },
-	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 28, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 90 }, description = "Control the most feared ransomware operations" },
+	-- CRITICAL FIX: Hacker jobs now require prior coding/tech experience!
+	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 22, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 75 }, requiresFlags = { "coder", "tech_experience" }, description = "Requires coding experience to hack" },
+	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 26, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 85 }, requiresFlags = { "hacker_experience" }, description = "Must have proven hacking skills" },
+	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 32, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 90 }, requiresFlags = { "elite_hacker_rep" }, description = "Must be a known elite hacker" },
+	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 30, requirement = nil, category = "hacker", illegal = true,
+		minStats = { Smarts = 95 }, requiresFlags = { "cyber_crime_history" }, description = "Must have cyber crime background" },
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- ESPORTS CAREER PATH
@@ -2607,67 +2608,48 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	end
 
 	if actionId == "prison_escape" then
+		-- CRITICAL FIX: Prison escape is now determined by the client-side minigame!
+		-- The client calls "prison_escape" only after winning the minigame.
+		-- So if we get here, the player WON the minigame and should escape!
+		
 		state.awaitingDecision = true
-		-- CRITICAL FIX: Prison escape now has real outcomes that properly clear jail flags
-		local escapeChance = 0.25 + (state.Stats and state.Stats.Smarts or 0) / 200 -- 25-75% based on smarts
-		local escaped = RANDOM:NextNumber() < escapeChance
 		
-		local eventDef
-		if escaped then
-			eventDef = {
-				id = "prison_escape_success",
-				title = "Escape Successful!",
-				emoji = "🏃",
-				text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
-				question = "What now?",
-				choices = {
-					{ 
-						text = "Lay low and start fresh", 
-						deltas = { Happiness = 20 },
-						setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
-						clearFlags = { in_prison = true, incarcerated = true },
-						feedText = "You escaped prison! Now living as a fugitive.",
-					},
-					{ 
-						text = "Leave the country", 
-						deltas = { Happiness = 15, Money = -5000 },
-						setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
-						clearFlags = { in_prison = true, incarcerated = true },
-						feedText = "You escaped and fled to another country!",
-					},
+		-- Player won the minigame - they escape successfully!
+		local eventDef = {
+			id = "prison_escape_success",
+			title = "Escape Successful!",
+			emoji = "🏃",
+			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
+			question = "What now?",
+			choices = {
+				{ 
+					text = "Lay low and start fresh", 
+					deltas = { Happiness = 20 },
+					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
+					clearFlags = { in_prison = true, incarcerated = true },
+					feedText = "You escaped prison! Now living as a fugitive.",
 				},
-				-- CRITICAL: Actually free the player when event resolves
-				onResolve = function(state)
-					state.InJail = false
-					state.JailYearsLeft = 0
-					state.Flags.in_prison = nil
-					state.Flags.incarcerated = nil
-					state.Flags.escaped_prisoner = true
-					state.Flags.fugitive = true
-				end,
-			}
-		else
-			-- Escape failed - add years to sentence
-			local addedYears = RANDOM:NextInteger(2, 5)
-			state.JailYearsLeft = (state.JailYearsLeft or 0) + addedYears
-			eventDef = {
-				id = "prison_escape_failed",
-				title = "Escape Failed",
-				emoji = "🚨",
-				text = string.format("You were caught trying to escape! They added %d years to your sentence.", addedYears),
-				choices = {
-					{ 
-						text = "Accept your fate", 
-						deltas = { Happiness = -15, Health = -5 },
-						setFlags = { escape_attempt_failed = true },
-						feedText = "Your escape attempt failed. More time behind bars.",
-					},
+				{ 
+					text = "Leave the country", 
+					deltas = { Happiness = 15, Money = -5000 },
+					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
+					clearFlags = { in_prison = true, incarcerated = true },
+					feedText = "You escaped and fled to another country!",
 				},
-			}
-		end
+			},
+			-- CRITICAL: Actually free the player when event resolves
+			onResolve = function(state)
+				state.InJail = false
+				state.JailYearsLeft = 0
+				state.Flags.in_prison = nil
+				state.Flags.incarcerated = nil
+				state.Flags.escaped_prisoner = true
+				state.Flags.fugitive = true
+			end,
+		}
 		
-		self:presentEvent(player, eventDef, escaped and "You attempted an escape..." or "You tried to escape...")
-		return { success = true, message = escaped and "Escape attempt underway..." or "Planning your escape..." }
+		self:presentEvent(player, eventDef, "You attempted an escape...")
+		return { success = true, message = "Escape attempt underway..." }
 	end
 
 	if (state.JailYearsLeft or 0) <= 0 then
@@ -2764,6 +2746,38 @@ function LifeBackend:handleJobApplication(player, jobId)
 					message = string.format("You're %s the %s requirement (%d needed, you have %d). Work on improving yourself!", severity, statDisplayName, minValue, playerStat) 
 				}
 			end
+		end
+	end
+	
+	-- CRITICAL FIX: Check requiresFlags (for specialized jobs like hacking that need prior experience)
+	if job.requiresFlags then
+		state.Flags = state.Flags or {}
+		local hasRequiredExperience = false
+		local requiredFlagNames = {}
+		
+		for _, flagName in ipairs(job.requiresFlags) do
+			table.insert(requiredFlagNames, flagName)
+			if state.Flags[flagName] then
+				hasRequiredExperience = true
+				break -- Only need ONE of the flags
+			end
+		end
+		
+		if not hasRequiredExperience then
+			-- Provide helpful message about what experience is needed
+			local experienceMessages = {
+				coder = "coding skills (try computer camp or study programming)",
+				tech_experience = "tech industry experience (work in IT first)",
+				hacker_experience = "hacking experience (start as a script kiddie first)",
+				elite_hacker_rep = "elite hacker reputation (prove yourself as a black hat first)",
+				cyber_crime_history = "cyber crime background (work your way up the criminal ladder)",
+			}
+			
+			local helpText = experienceMessages[requiredFlagNames[1]] or "specialized experience"
+			return { 
+				success = false, 
+				message = string.format("This job requires %s. You don't have the necessary background.", helpText)
+			}
 		end
 	end
 
@@ -2932,6 +2946,14 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.retired = nil
 		state.Flags.semi_retired = nil
 		state.Flags.pension_amount = nil
+	end
+	
+	-- CRITICAL FIX: Grant experience flags from job (for career progression)
+	-- Some jobs grant flags that unlock higher-tier jobs
+	if job.grantsFlags then
+		for _, flagName in ipairs(job.grantsFlags) do
+			state.Flags[flagName] = true
+		end
 	end
 	
 	-- Clear application history for this job (fresh start)

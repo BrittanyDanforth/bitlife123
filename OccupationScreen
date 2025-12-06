@@ -283,11 +283,11 @@ local Jobs = {
 	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech", difficulty = 5, minStats = { Smarts = 70 } },
 	{ id = "security_consultant", name = "Security Consultant", company = "CyberGuard Inc", emoji = "🛡️", salary = 165000, minAge = 25, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 75 } },
 	{ id = "ciso", name = "Chief Information Security Officer", company = "Fortune 500", emoji = "🔐", salary = 420000, minAge = 32, requirement = "bachelor", category = "tech", difficulty = 9, minStats = { Smarts = 80 } },
-	-- Black Hat Path (Criminal - illegal)
-	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 20, requirement = nil, category = "hacker", illegal = true, difficulty = 6, minStats = { Smarts = 70 } },
-	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 25, requirement = nil, category = "hacker", illegal = true, difficulty = 8, minStats = { Smarts = 80 } },
-	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 30, requirement = nil, category = "hacker", illegal = true, difficulty = 9, minStats = { Smarts = 85 } },
-	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 28, requirement = nil, category = "hacker", illegal = true, difficulty = 10, minStats = { Smarts = 90 } },
+	-- Black Hat Path (Criminal - illegal) - CRITICAL FIX: Requires prior coding experience!
+	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 22, requirement = nil, category = "hacker", illegal = true, difficulty = 7, minStats = { Smarts = 75 }, requiresExp = "Coding experience required" },
+	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 26, requirement = nil, category = "hacker", illegal = true, difficulty = 8, minStats = { Smarts = 85 }, requiresExp = "Hacking experience required" },
+	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 32, requirement = nil, category = "hacker", illegal = true, difficulty = 9, minStats = { Smarts = 90 }, requiresExp = "Elite hacker reputation required" },
+	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 30, requirement = nil, category = "hacker", illegal = true, difficulty = 10, minStats = { Smarts = 95 }, requiresExp = "Cyber crime history required" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- RACING CAREERS - CRITICAL FIX: IDs must match server JobCatalog!
