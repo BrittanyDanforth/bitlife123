@@ -14,6 +14,23 @@
 
 local RANDOM = Random.new()
 
+-- CRITICAL FIX: Police job IDs for eligibility checks
+-- eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category doesn't work because police jobs use "government" category
+local POLICE_JOB_IDS = {
+	police_officer = true,
+	detective = true,
+	police_chief = true,
+	probation_officer = true,
+	fbi_agent = true,
+	cia_agent = true,
+}
+
+local function isPoliceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = state.CurrentJob.id or state.CurrentJob
+	return POLICE_JOB_IDS[jobId] == true
+end
+
 local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- DAILY PATROL EVENTS
@@ -30,7 +47,7 @@ local events = {
 		maxAge = 60,
 		baseChance = 0.6,
 		cooldown = 2,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true, suspended = true },
 		
 		choices = {
@@ -98,7 +115,7 @@ local events = {
 		maxAge = 55,
 		baseChance = 0.5,
 		cooldown = 3,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -183,7 +200,7 @@ local events = {
 		maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 10,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -239,7 +256,7 @@ local events = {
 		maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 15,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		requiresFlags = { complaint_filed = true },
 		blockedByFlags = { in_prison = true, cleared_by_ia = true },
 		
@@ -323,7 +340,7 @@ local events = {
 		baseChance = 0.3,
 		cooldown = 20,
 		oneTime = true,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { detective = true, in_prison = true },
 		eligibility = function(state)
 			local arrests = state.CareerInfo and state.CareerInfo.arrests or 0
@@ -379,7 +396,7 @@ local events = {
 		baseChance = 0.25,
 		cooldown = 25,
 		oneTime = true,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { sergeant = true, in_prison = true },
 		
 		choices = {
@@ -439,7 +456,7 @@ local events = {
 		maxAge = 55,
 		baseChance = 0.15,
 		cooldown = 30,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -527,7 +544,7 @@ local events = {
 		maxAge = 55,
 		baseChance = 0.2,
 		cooldown = 15,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -600,7 +617,7 @@ local events = {
 		baseChance = 0.5,
 		cooldown = 50,
 		oneTime = true,
-		requiresJobCategory = "law_enforcement",
+		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { retired_cop = true, in_prison = true },
 		
 		choices = {

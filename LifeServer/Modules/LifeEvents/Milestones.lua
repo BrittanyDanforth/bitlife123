@@ -122,6 +122,8 @@ Milestones.events = {
 		minAge = 16, maxAge = 20,
 		oneTime = true,
 		isMilestone = true,
+		-- CRITICAL FIX: Block if player already has a license from learning_to_drive event!
+		blockedByFlags = { driver_license = true, has_license = true },
 
 		-- META
 		stage = "teen",

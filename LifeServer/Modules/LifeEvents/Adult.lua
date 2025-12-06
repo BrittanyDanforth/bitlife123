@@ -1010,7 +1010,7 @@ Adult.events = {
 					else
 						state:ModifyStat("Happiness", -10)
 						state:ModifyStat("Health", -3)
-						state.Money = (state.Money or 0) - 500
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.unemployed = true
 						state.Flags.laid_off = true
@@ -1136,14 +1136,14 @@ Adult.events = {
 					elseif roll < 0.85 then
 						-- Struggle
 						state:ModifyStat("Happiness", -5)
-						state.Money = (state.Money or 0) - 3000
+						state.Money = math.max(0, (state.Money or 0) - 3000)
 						state.Flags = state.Flags or {}
 						state.Flags.business_struggling = true
 						state:AddFeed("😰 The marketing spend didn't pay off. Struggling...")
 					else
 						-- Failure
 						state:ModifyStat("Happiness", -12)
-						state.Money = (state.Money or 0) - 8000
+						state.Money = math.max(0, (state.Money or 0) - 8000)
 						state.Flags = state.Flags or {}
 						state.Flags.business_failed = true
 						state:AddFeed("💔 The business flopped. You lost a lot of money.")

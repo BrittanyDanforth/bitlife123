@@ -365,18 +365,26 @@ function OccupationScreen:updateState(newState)
 		self.playerState = newState 
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		
-		-- CRITICAL FIX: Invalidate cached career info on state update
-		-- This ensures raises/promotions are shown correctly after state changes
-		-- We also update educationInfo since it may have changed
-		self.careerInfo = nil
+		-- CRITICAL FIX: Immediately update cached career info from state if available
+		-- This ensures raises/promotions from events are shown correctly
+		if newState.CareerInfo then
+			self.careerInfo = newState.CareerInfo
+			log("Career info updated from state:", 
+				"raises:", self.careerInfo.raises or 0,
+				"promotions:", self.careerInfo.promotions or 0,
+				"yearsAtJob:", self.careerInfo.yearsAtJob or 0)
+		else
+			-- Only invalidate if we didn't get fresh data
+			self.careerInfo = nil
+		end
 		self.educationInfo = nil
 		
 		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
 		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
 		if self.isVisible then
 			task.spawn(function()
-				-- Only fetch career info if player has a job
-				if self:getCurrentJob() then
+				-- Only fetch career info from server if we didn't already get it from state
+				if self:getCurrentJob() and not self.careerInfo then
 					self:fetchCareerInfo()
 				end
 				-- Always refresh UI if still visible and on jobs tab (even if no job!)
@@ -3432,18 +3440,18 @@ function OccupationScreen:createQuitConfirmModal()
 	salaryLabel.Parent = self.quitConfirmModal.shell
 	self.quitConfirmModal.salaryLabel = salaryLabel
 	
-	-- CRITICAL FIX: Made shell taller to fit all buttons (was 380, now 420)
-	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 420)
-	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -210)
+	-- CRITICAL FIX: Made shell much taller to fit all buttons properly (was 420, now 480)
+	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 480)
+	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -240)
 	
 	-- Remove default OK button, add choice buttons
 	self.quitConfirmModal.okButton.Visible = false
 	
-	-- CRITICAL FIX: Choice container taller and repositioned (was 160, now 200)
+	-- CRITICAL FIX: Choice container much taller and repositioned (was 200, now 260)
 	local choiceContainer = Instance.new("Frame")
 	choiceContainer.Name = "ChoiceContainer"
-	choiceContainer.Size = UDim2.new(1, -32, 0, 200)
-	choiceContainer.Position = UDim2.new(0, 16, 0, 170)
+	choiceContainer.Size = UDim2.new(1, -32, 0, 260)
+	choiceContainer.Position = UDim2.new(0, 16, 0, 180)
 	choiceContainer.BackgroundTransparency = 1
 	choiceContainer.ZIndex = 105
 	choiceContainer.Parent = self.quitConfirmModal.shell
@@ -3453,14 +3461,14 @@ function OccupationScreen:createQuitConfirmModal()
 	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choiceLayout.Parent = choiceContainer
 	
-	-- Choice 1: Resign professionally
+	-- Choice 1: Resign professionally - CRITICAL FIX: Taller button to prevent cutoff
 	local choice1 = Instance.new("TextButton")
-	choice1.Size = UDim2.new(1, 0, 0, 36)
+	choice1.Size = UDim2.new(1, 0, 0, 48)
 	choice1.BackgroundColor3 = C.Green
 	choice1.Font = F.Medium
 	choice1.TextSize = 14
 	choice1.TextColor3 = C.White
-	choice1.Text = "✅ Resign professionally (2-week notice)"
+	choice1.Text = "✅ Resign professionally"
 	choice1.ZIndex = 106
 	choice1.LayoutOrder = 1
 	choice1.Parent = choiceContainer
@@ -3471,14 +3479,14 @@ function OccupationScreen:createQuitConfirmModal()
 		end)
 	end)
 	
-	-- Choice 2: Quit dramatically
+	-- Choice 2: Quit dramatically - CRITICAL FIX: Taller button
 	local choice2 = Instance.new("TextButton")
-	choice2.Size = UDim2.new(1, 0, 0, 36)
+	choice2.Size = UDim2.new(1, 0, 0, 48)
 	choice2.BackgroundColor3 = C.Amber
 	choice2.Font = F.Medium
 	choice2.TextSize = 14
 	choice2.TextColor3 = C.White
-	choice2.Text = "🔥 Quit dramatically (tell them off!)"
+	choice2.Text = "🔥 Quit dramatically"
 	choice2.ZIndex = 106
 	choice2.LayoutOrder = 2
 	choice2.Parent = choiceContainer
@@ -3489,14 +3497,14 @@ function OccupationScreen:createQuitConfirmModal()
 		end)
 	end)
 	
-	-- Choice 3: Ghost them
+	-- Choice 3: Ghost them - CRITICAL FIX: Taller button
 	local choice3 = Instance.new("TextButton")
-	choice3.Size = UDim2.new(1, 0, 0, 36)
+	choice3.Size = UDim2.new(1, 0, 0, 48)
 	choice3.BackgroundColor3 = C.Purple
 	choice3.Font = F.Medium
 	choice3.TextSize = 14
 	choice3.TextColor3 = C.White
-	choice3.Text = "👻 Ghost them (just stop showing up)"
+	choice3.Text = "👻 Ghost them"
 	choice3.ZIndex = 106
 	choice3.LayoutOrder = 3
 	choice3.Parent = choiceContainer
@@ -3507,14 +3515,14 @@ function OccupationScreen:createQuitConfirmModal()
 		end)
 	end)
 	
-	-- Choice 4: Stay at job
+	-- Choice 4: Stay at job - CRITICAL FIX: Taller button
 	local choice4 = Instance.new("TextButton")
-	choice4.Size = UDim2.new(1, 0, 0, 36)
+	choice4.Size = UDim2.new(1, 0, 0, 48)
 	choice4.BackgroundColor3 = C.Gray500
 	choice4.Font = F.Medium
 	choice4.TextSize = 14
 	choice4.TextColor3 = C.White
-	choice4.Text = "🤔 Stay at the job (nevermind)"
+	choice4.Text = "🤔 Nevermind, stay"
 	choice4.ZIndex = 106
 	choice4.LayoutOrder = 4
 	choice4.Parent = choiceContainer

@@ -328,6 +328,13 @@ local function canEventTrigger(event, state)
 	local history = getEventHistory(state)
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Dead players should not receive any events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.IsDead or flags.dead or (state.Stats and state.Stats.Health and state.Stats.Health <= 0) then
+		return false -- Dead players can't have events
+	end
+	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
 	local minAge = event.minAge or cond.minAge

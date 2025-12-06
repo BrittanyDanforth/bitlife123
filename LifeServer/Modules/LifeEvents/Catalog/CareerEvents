@@ -678,7 +678,7 @@ local events = {
 		maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 5,
-		requiresJobCategory = "healthcare",
+		requiresJobCategory = "medical",
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -1222,7 +1222,7 @@ local events = {
 							state:AddFeed("📋 Documentation saved you. Case dismissed.")
 						end
 					else
-						state.Money = (state.Money or 0) - 10000
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						if state.AddFeed then
 							state:AddFeed("⚖️ Settlement anyway. Insurance covered most of it.")
 						end

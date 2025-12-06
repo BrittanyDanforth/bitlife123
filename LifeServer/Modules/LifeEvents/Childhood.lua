@@ -1335,7 +1335,7 @@ Childhood.events = {
 					if roll < cavityChance then
 						state:ModifyStat("Health", 1)
 						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 20
+						state.Money = math.max(0, (state.Money or 0) - 20)
 						state:AddFeed("🦷 A cavity! The drilling wasn't fun, but it's over now.")
 					elseif roll < cavityChance + 0.15 then
 						state:ModifyStat("Happiness", -2)
@@ -1356,7 +1356,7 @@ Childhood.events = {
 					if roll < 0.25 then
 						state:ModifyStat("Health", 1)
 						state:ModifyStat("Happiness", -3)
-						state.Money = (state.Money or 0) - 20
+						state.Money = math.max(0, (state.Money or 0) - 20)
 						state:AddFeed("🦷 Had a small cavity but you were so brave!")
 					elseif roll < 0.50 then
 						state:ModifyStat("Happiness", 3)

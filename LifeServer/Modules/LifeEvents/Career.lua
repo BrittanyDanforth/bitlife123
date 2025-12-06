@@ -1300,11 +1300,12 @@ Career.events = {
 -- SPORTS JOB SPECIFIC EVENTS  
 -- ══════════════════════════════════════════════════════════════════════════════
 {
+	-- CRITICAL FIX: Player can't choose injury severity - random outcome
 	id = "sports_injury_scare",
 	title = "Career-Threatening Injury",
 	emoji = "🏥",
 	text = "During practice, you go down. Pain shoots through your leg. Trainers rush over. You're carried off. MRI scheduled. This could be BAD.",
-	question = "What's the diagnosis?",
+	question = "What do you do?",
 	minAge = 18, maxAge = 45,
 	baseChance = 0.25,
 	cooldown = 5,
@@ -1320,29 +1321,75 @@ Career.events = {
 
 	choices = {
 		{
-			text = "Minor strain - 2 weeks recovery",
-			effects = { Health = -5, Happiness = 5 },
-			feedText = "Dodged a bullet. Back to full strength soon.",
-		},
-		{
-			text = "Serious injury - season over",
-			effects = { Health = -25, Happiness = -15 },
-			setFlags = { injured_athlete = true },
-			feedText = "Surgery needed. Months of rehab. Will you ever be the same?",
-		},
-		{
-			text = "Career-ending injury",
-			effects = { Health = -35, Happiness = -30, Money = 50000 },
-			feedText = "Your playing days are over. Insurance settlement. Time for chapter 2.",
+			text = "Wait anxiously for the MRI results",
+			effects = { Happiness = -5 },
+			feedText = "The waiting is the worst part...",
 			onResolve = function(state)
-				-- Force retirement from sports
-				if state.CurrentJob and state.CurrentJob.category == "sports" then
-					state.CurrentJob = nil
+				-- Random injury severity - player doesn't choose!
+				local roll = math.random()
+				if roll < 0.50 then
+					-- Minor injury
+					if state.ModifyStat then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 10)
+					end
+					if state.AddFeed then
+						state:AddFeed("🎉 Great news! Just a minor strain. 2 weeks of rest and you'll be back on the field.")
+					end
+				elseif roll < 0.85 then
+					-- Serious injury
+					if state.ModifyStat then
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Happiness", -15)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.injured_athlete = true
+					if state.AddFeed then
+						state:AddFeed("😔 Bad news. Torn ligament. Surgery needed. Season's over. Months of grueling rehab ahead.")
+					end
+				else
+					-- Career-ending
+					if state.ModifyStat then
+						state:ModifyStat("Health", -35)
+						state:ModifyStat("Happiness", -30)
+					end
+					state.Money = (state.Money or 0) + 50000
+					if state.CurrentJob and state.CurrentJob.category == "sports" then
+						state.CurrentJob = nil
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.retired_athlete = true
+					if state.AddFeed then
+						state:AddFeed("💔 The worst news. Career-ending injury. Your playing days are over. $50K insurance settlement. Time for chapter 2 of your life.")
+					end
 				end
-				state.Flags = state.Flags or {}
-				state.Flags.retired_athlete = true
-				if state.AddFeed then
-					state:AddFeed("😢 Your athletic career is over. But the next chapter begins...")
+			end,
+		},
+		{
+			text = "Stay positive and pray for good news",
+			effects = { Happiness = 2 },
+			feedText = "You try to keep a positive mindset...",
+			onResolve = function(state)
+				-- Same random outcome but slight happiness boost for positivity
+				local roll = math.random()
+				if roll < 0.55 then -- Slightly better odds for being positive
+					if state.ModifyStat then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 12)
+					end
+					if state.AddFeed then
+						state:AddFeed("🙏 Your positive attitude paid off! Just a minor sprain. Back in action soon!")
+					end
+				else
+					if state.ModifyStat then
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -10)
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.injured_athlete = true
+					if state.AddFeed then
+						state:AddFeed("😢 Serious injury confirmed. Months of rehab ahead. Stay strong.")
+					end
 				end
 			end,
 		},

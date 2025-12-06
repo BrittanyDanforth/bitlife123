@@ -2504,7 +2504,8 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		return
 	end
 
-	local feedText = choice.feed or choice.text or "Life continues."
+	-- CRITICAL FIX: Use feedText (what events use), then feed, then text
+	local feedText = choice.feedText or choice.feed or choice.text or "Life continues..."
 	local resultData
 	local effectsSummary = choice.deltas or {}
 
@@ -2648,11 +2649,18 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		debugPrint(string.format("Player %s was incarcerated by event! Jail years: %.1f", player.Name, state.JailYearsLeft or 0))
 	end
 
+	-- CRITICAL FIX: Use PendingFeed (detailed outcome from onResolve) for popup body
+	-- Fall back to feedText (short choice text) only if no detailed outcome was set
+	local popupBody = jailPopupBody or state.PendingFeed or feedText
+	if popupBody == nil or popupBody == "" then
+		popupBody = "Something happened..."
+	end
+	
 	resultData = {
 		showPopup = true,
 		emoji = jailPopupEmoji or eventDef.emoji,
 		title = jailPopupTitle or eventDef.title,
-		body = jailPopupBody or feedText,
+		body = popupBody,
 		happiness = effectsSummary.Happiness,
 		health = effectsSummary.Health,
 		smarts = effectsSummary.Smarts,

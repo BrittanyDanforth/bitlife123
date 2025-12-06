@@ -381,14 +381,21 @@ local events = {
 		id = "first_car_purchase",
 		emoji = "🚙",
 		title = "Buying Your First Car",
-		-- CRITICAL FIX: Removed hardcoded age "24" and savings amount
-		text = "You've been borrowing cars or taking Uber. But you're {{AGE}} now. Time to buy YOUR OWN CAR. You're at the dealership. The salesman has that commission look. 'What's your budget?' he asks. You have {{MONEY}} saved. 'Great financing options!' he says. Do you trust him? Should you go used?",
+		-- CRITICAL FIX: Don't show if player is broke
+		text = "You've been borrowing cars or taking Uber. But you're {{AGE}} now. Time to buy YOUR OWN CAR. You're at the dealership. The salesman has that commission look. 'What's your budget?' he asks. 'Great financing options!' he says. Do you trust him? Should you go used?",
 		question = "What do you buy?",
 		category = "milestone",
 		weight = 7,
 		minAge = 22,
 		maxAge = 30,
 		oneTime = true,
+		-- CRITICAL FIX: Only show if player has at least $2000 (for beater) or doesn't already own a car
+		eligibility = function(state)
+			if state.Flags and (state.Flags.car_owner or state.Flags.has_car) then
+				return false -- Already owns a car
+			end
+			return (state.Money or 0) >= 2000 -- Need at least enough for cheapest option
+		end,
 		choices = {
 			{
 				index = 1,
@@ -429,14 +436,21 @@ local events = {
 		id = "buying_first_home",
 		emoji = "🏠",
 		title = "Buying Your First Home",
-		-- CRITICAL FIX: Removed hardcoded prices - use dynamic values
-		text = "You're {{AGE}} and you've been renting for years. Rent keeps going up. Your real estate agent found a house. 3 bed, 2 bath. Needs work but it could be YOURS. You have {{MONEY}} saved. This is it. The biggest purchase of your life. Sign or walk away?",
+		-- CRITICAL FIX: Removed hardcoded prices - don't mention specific money
+		text = "You're {{AGE}} and you've been renting for years. Rent keeps going up. Your real estate agent found a house. 3 bed, 2 bath. Needs work but it could be YOURS. This is it. The biggest purchase of your life. Sign or walk away?",
 		question = "Do you buy the house?",
 		category = "milestone",
 		weight = 6,
 		minAge = 28,
 		maxAge = 45,
 		oneTime = true,
+		-- CRITICAL FIX: Only show if player has at least $20000 for down payment
+		eligibility = function(state)
+			if state.Flags and (state.Flags.homeowner or state.Flags.owns_property) then
+				return false -- Already owns a home
+			end
+			return (state.Money or 0) >= 20000 -- Need at least a down payment
+		end,
 		choices = {
 			{
 				index = 1,

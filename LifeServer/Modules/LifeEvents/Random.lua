@@ -142,7 +142,7 @@ Random.events = {
 						state:AddFeed(string.format("📜 You inherited $%d. Every bit helps!", amount))
 					else -- 15% debt
 						local debt = math.random(1000, 5000)
-						state.Money = (state.Money or 0) - debt
+						state.Money = math.max(0, (state.Money or 0) - debt)
 						state:ModifyStat("Happiness", -8)
 						state:AddFeed(string.format("📜 Bad news... you inherited $%d in debt!", debt))
 					end
@@ -295,7 +295,7 @@ Random.events = {
 		baseChance = 0.3,
 		cooldown = 2,
 		choices = {
-			{ text = "Get the latest model", effects = { Money = -800, Happiness = 8 }, feedText = "New phone! Shiny!" },
+			{ text = "Get the latest model", effects = { Money = -800, Happiness = 8 }, feedText = "New phone! It's shiny and does everything. $800 well spent!" },
 			{ text = "Get a basic replacement", effects = { Money = -200, Happiness = 2 }, feedText = "It works. That's what matters." },
 			{ text = "Fix the old one", effects = { Money = -100, Happiness = 3, Smarts = 2 }, feedText = "Good as new (almost)." },
 			{ text = "Go without for a while", effects = { Happiness = -5 }, feedText = "Living disconnected. It's... different." },
@@ -331,7 +331,7 @@ Random.events = {
 		baseChance = 0.3,
 		cooldown = 3,
 		choices = {
-			{ text = "Start going to the gym", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You joined a gym!" },
+			{ text = "Start going to the gym", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You signed up for a gym membership! Time to get fit and feel great." },
 			{ text = "Take up running", effects = { Health = 7, Happiness = 3 }, setFlags = { runner = true }, feedText = "You started running regularly!" },
 			{ text = "Try a new sport", effects = { Health = 5, Happiness = 7 }, feedText = "You picked up a new sport!" },
 			{ text = "Eh, motivation faded", effects = { Happiness = -2 }, feedText = "The motivation was short-lived." },
@@ -354,7 +354,7 @@ Random.events = {
 			{ text = "Ask for a selfie", effects = { Happiness = 10 }, feedText = "You got a photo with a celebrity!" },
 			{ text = "Play it cool", effects = { Happiness = 5, Smarts = 2 }, feedText = "You acted casual. Smooth." },
 			{ text = "Totally fanboy/fangirl", effects = { Happiness = 7, Looks = -2 }, feedText = "You couldn't contain your excitement!" },
-			{ text = "Didn't recognize them", effects = { }, feedText = "Wait, who was that?" },
+			{ text = "Didn't recognize them", effects = { Happiness = -1 }, feedText = "Wait, who was that? You pretended to recognize them but had no idea. Awkward!" },
 		},
 	},
 	{
@@ -435,11 +435,11 @@ Random.events = {
 		baseChance = 0.3,
 		cooldown = 3,
 		choices = {
-			{ text = "Gaming", effects = { Happiness = 7, Smarts = 2 }, setFlags = { gamer = true }, feedText = "You got into gaming!" },
+			{ text = "Gaming", effects = { Happiness = 7, Smarts = 2 }, setFlags = { gamer = true }, feedText = "You discovered video games and became hooked! Your reaction time improved." },
 			{ text = "Crafting/DIY", effects = { Happiness = 5, Smarts = 3 }, setFlags = { crafter = true }, feedText = "You love making things!" },
 			{ text = "Cooking/Baking", effects = { Happiness = 6, Health = 2 }, setFlags = { foodie = true }, feedText = "You're exploring the kitchen!" },
 			{ text = "Reading", effects = { Smarts = 5, Happiness = 4 }, setFlags = { bookworm = true }, feedText = "Books are your new escape!" },
-			{ text = "Outdoor activities", effects = { Health = 5, Happiness = 5 }, setFlags = { outdoorsy = true }, feedText = "Nature calls to you!" },
+			{ text = "Outdoor activities", effects = { Health = 5, Happiness = 5 }, setFlags = { outdoorsy = true }, feedText = "You discovered a love for the outdoors! Hiking, camping, and fresh air became your thing." },
 			{ text = "Music", effects = { Happiness = 7 }, setFlags = { musician = true }, feedText = "You're learning music!" },
 		},
 	},
@@ -614,7 +614,7 @@ Random.events = {
 					elseif roll < 0.25 then -- ACL - serious
 						state:ModifyStat("Health", -18)
 						state:ModifyStat("Happiness", -12)
-						state.Money = (state.Money or 0) - 2000
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						state.Flags = state.Flags or {}
 						state.Flags.acl_injury = true
 						state.Flags.needs_surgery = true
@@ -703,7 +703,7 @@ Random.events = {
 						state:ModifyStat("Health", -32)
 						state:ModifyStat("Smarts", -4)
 						state:ModifyStat("Happiness", -18)
-						state.Money = (state.Money or 0) - 8000
+						state.Money = math.max(0, (state.Money or 0) - 8000)
 						state.Flags = state.Flags or {}
 						state.Flags.traumatic_injury = true
 						state.Flags.hospitalized = true
@@ -711,7 +711,7 @@ Random.events = {
 					elseif roll < 0.15 then -- 10% multiple fractures
 						state:ModifyStat("Health", -25)
 						state:ModifyStat("Happiness", -15)
-						state.Money = (state.Money or 0) - 4000
+						state.Money = math.max(0, (state.Money or 0) - 4000)
 						state.Flags = state.Flags or {}
 						state.Flags.multiple_fractures = true
 						state.Flags.hospitalized = true
@@ -920,22 +920,74 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Doctor gives diagnosis, not player choosing their disease!
 		id = "illness_chronic",
-		title = "Chronic Condition",
+		title = "Medical Results",
 		emoji = "🏥",
-		text = "You've been diagnosed with a chronic condition.",
-		question = "What's the diagnosis?",
+		text = "After your checkup, the doctor has some news about your test results.",
+		question = "How do you react?",
 		minAge = 25, maxAge = 85,
 		baseChance = 0.1,
 		cooldown = 10,
 		category = "illness",
 
 		choices = {
-			{ text = "Diabetes - manageable with lifestyle", effects = { Health = -10, Happiness = -8, Money = -300 }, setFlags = { diabetic = true }, feedText = "Diabetes diagnosis. Diet and exercise are key." },
-			{ text = "High blood pressure", effects = { Health = -8, Happiness = -5, Money = -100 }, setFlags = { hypertension = true }, feedText = "High blood pressure. Medication and monitoring." },
-			{ text = "Autoimmune condition", effects = { Health = -15, Happiness = -12, Money = -500 }, setFlags = { autoimmune = true }, feedText = "Autoimmune disorder. Managing flare-ups." },
-			{ text = "Arthritis - joint pain", effects = { Health = -10, Happiness = -8 }, setFlags = { arthritis = true }, feedText = "Arthritis. Movement is harder now." },
-			{ text = "Asthma - breathing issues", effects = { Health = -8, Happiness = -5, Money = -150 }, setFlags = { asthma = true }, feedText = "Asthma diagnosis. Inhaler is your new friend." },
+			{
+				text = "Accept the diagnosis and manage it",
+				effects = { Smarts = 2 },
+				feedText = "The doctor explained your condition...",
+				onResolve = function(state)
+					-- Random diagnosis - player doesn't choose their disease!
+					local conditions = {
+						{ name = "diabetes", flag = "diabetic", health = -10, happiness = -8, money = 300, text = "Diabetes diagnosis. Your blood sugar is high. Diet and exercise are key to managing this." },
+						{ name = "hypertension", flag = "hypertension", health = -8, happiness = -5, money = 100, text = "High blood pressure. You'll need medication and regular monitoring." },
+						{ name = "autoimmune", flag = "autoimmune", health = -15, happiness = -12, money = 500, text = "Autoimmune disorder diagnosed. Managing flare-ups will be part of your life now." },
+						{ name = "arthritis", flag = "arthritis", health = -10, happiness = -8, money = 0, text = "Arthritis in your joints. Movement will be harder, but manageable with treatment." },
+						{ name = "asthma", flag = "asthma", health = -8, happiness = -5, money = 150, text = "Asthma diagnosis. Your inhaler is your new best friend." },
+					}
+					local condition = conditions[math.random(1, #conditions)]
+					state.Flags = state.Flags or {}
+					state.Flags[condition.flag] = true
+					if state.ModifyStat then
+						state:ModifyStat("Health", condition.health)
+						state:ModifyStat("Happiness", condition.happiness)
+					end
+					state.Money = math.max(0, (state.Money or 0) - condition.money)
+					if state.AddFeed then
+						state:AddFeed("🏥 " .. condition.text)
+					end
+				end,
+			},
+			{
+				text = "Seek a second opinion",
+				effects = { Smarts = 3, Money = -500 },
+				feedText = "You went to another doctor...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.2 then
+						-- False alarm!
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 15)
+						end
+						if state.AddFeed then
+							state:AddFeed("😮‍💨 Second opinion: False alarm! You're healthy. What a relief!")
+						end
+					else
+						-- Same diagnosis confirmed
+						local conditions = { "diabetes", "hypertension", "arthritis" }
+						local condition = conditions[math.random(1, #conditions)]
+						state.Flags = state.Flags or {}
+						state.Flags[condition] = true
+						if state.ModifyStat then
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏥 Second doctor confirmed: " .. condition .. ". At least you know for sure now.")
+						end
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -966,14 +1018,14 @@ Random.events = {
 					elseif roll < 0.50 + (cancerRisk * 0.6) then -- Variable early stage
 						state:ModifyStat("Health", -18)
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 8000
+						state.Money = math.max(0, (state.Money or 0) - 8000)
 						state.Flags = state.Flags or {}
 						state.Flags.cancer_survivor = true
 						state:AddFeed("🎗️ Cancer caught early. Treatment is working. You'll beat this.")
 					elseif roll < 0.50 + cancerRisk then -- Variable serious
 						state:ModifyStat("Health", -35)
 						state:ModifyStat("Happiness", -20)
-						state.Money = (state.Money or 0) - 20000
+						state.Money = math.max(0, (state.Money or 0) - 20000)
 						state.Flags = state.Flags or {}
 						state.Flags.battling_cancer = true
 						state:AddFeed("🎗️ Serious diagnosis. The fight of your life begins.")
@@ -1198,11 +1250,11 @@ Random.events = {
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("⚖️ You won the case! Justice prevailed.")
 					elseif roll < winChance + 0.20 then
-						state.Money = (state.Money or 0) - 5000
+						state.Money = math.max(0, (state.Money or 0) - 5000)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("⚖️ Settled out of court. Could've been worse.")
 					else
-						state.Money = (state.Money or 0) - 15000
+						state.Money = math.max(0, (state.Money or 0) - 15000)
 						state:ModifyStat("Happiness", -15)
 						state.Flags = state.Flags or {}
 						state.Flags.lawsuit_lost = true
@@ -1220,11 +1272,11 @@ Random.events = {
 						state:ModifyStat("Happiness", 6)
 						state:AddFeed("⚖️ Against the odds, you won! Good public defender.")
 					elseif roll < 0.50 then
-						state.Money = (state.Money or 0) - 8000
+						state.Money = math.max(0, (state.Money or 0) - 8000)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("⚖️ Settled for a reasonable amount.")
 					else
-						state.Money = (state.Money or 0) - 20000
+						state.Money = math.max(0, (state.Money or 0) - 20000)
 						state:ModifyStat("Happiness", -18)
 						state.Flags = state.Flags or {}
 						state.Flags.lawsuit_lost = true
@@ -1245,11 +1297,11 @@ Random.events = {
 						state:ModifyStat("Smarts", 3)
 						state:AddFeed("⚖️ Incredible! You represented yourself and WON!")
 					elseif roll < 0.30 then
-						state.Money = (state.Money or 0) - 10000
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						state:ModifyStat("Happiness", -8)
 						state:AddFeed("⚖️ Forced to settle. Not great, not terrible.")
 					else
-						state.Money = (state.Money or 0) - 25000
+						state.Money = math.max(0, (state.Money or 0) - 25000)
 						state:ModifyStat("Happiness", -20)
 						state.Flags = state.Flags or {}
 						state.Flags.lawsuit_lost = true
@@ -1280,16 +1332,16 @@ Random.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.disaster_survivor = true
 					if roll < 0.10 then
-						state.Money = (state.Money or 0) - 25000
+						state.Money = math.max(0, (state.Money or 0) - 25000)
 						state:ModifyStat("Happiness", -22)
 						state.Flags.homeless = true
 						state:AddFeed("🌪️ Home destroyed. Everything is gone, but you're alive.")
 					elseif roll < 0.30 then
-						state.Money = (state.Money or 0) - 8000
+						state.Money = math.max(0, (state.Money or 0) - 8000)
 						state:ModifyStat("Happiness", -12)
 						state:AddFeed("🌪️ Significant damage. Insurance will cover some of it.")
 					elseif roll < 0.60 then
-						state.Money = (state.Money or 0) - 1500
+						state.Money = math.max(0, (state.Money or 0) - 1500)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🌪️ Minor damage. You got lucky!")
 					else
@@ -1307,18 +1359,18 @@ Random.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.disaster_survivor = true
 					if roll < 0.15 then
-						state.Money = (state.Money or 0) - 30000
+						state.Money = math.max(0, (state.Money or 0) - 30000)
 						state:ModifyStat("Happiness", -25)
 						state:ModifyStat("Health", -15)
 						state.Flags.homeless = true
 						state:AddFeed("🌪️ Home destroyed with you in it! Injured and lost everything.")
 					elseif roll < 0.35 then
-						state.Money = (state.Money or 0) - 10000
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						state:ModifyStat("Happiness", -15)
 						state:ModifyStat("Health", -5)
 						state:AddFeed("🌪️ Major damage. Got hurt in the chaos.")
 					elseif roll < 0.65 then
-						state.Money = (state.Money or 0) - 2000
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						state:ModifyStat("Happiness", -8)
 						state:AddFeed("🌪️ Some damage but you're okay.")
 					else
@@ -1337,12 +1389,12 @@ Random.events = {
 					state.Flags.disaster_survivor = true
 					state.Flags.local_hero = true
 					if roll < 0.20 then
-						state.Money = (state.Money or 0) - 20000
+						state.Money = math.max(0, (state.Money or 0) - 20000)
 						state:ModifyStat("Happiness", -10)
 						state:ModifyStat("Health", -10)
 						state:AddFeed("🌪️ You saved lives but your home is destroyed. A true hero.")
 					elseif roll < 0.50 then
-						state.Money = (state.Money or 0) - 5000
+						state.Money = math.max(0, (state.Money or 0) - 5000)
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("🌪️ Saved your neighbors! Some damage to your place.")
 					else

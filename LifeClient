@@ -486,7 +486,9 @@ local function createResultPopup()
 
 	local cardLayout = Instance.new("UIListLayout")
 	cardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	cardLayout.Padding = UDim.new(0, 10)
+	cardLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder -- CRITICAL FIX: Explicit sort order
+	cardLayout.Padding = UDim.new(0, 12)
 	cardLayout.Parent = resultCard
 	pad(resultCard, 20, 20, 20, 20)
 
@@ -545,19 +547,19 @@ local function createResultPopup()
 	statsLayout.Padding = UDim.new(0, 4)
 	statsLayout.Parent = resultStatsPreview
 
-	-- OK Button
+	-- OK Button - CRITICAL FIX: Made more prominent and at bottom with higher LayoutOrder
 	resultOkBtn = Instance.new("TextButton")
-	resultOkBtn.Size = UDim2.new(1, 0, 0, 48)
+	resultOkBtn.Size = UDim2.new(1, 0, 0, 52)
 	resultOkBtn.BackgroundColor3 = C.Green
 	resultOkBtn.Font = F.Button
-	resultOkBtn.TextSize = 16
+	resultOkBtn.TextSize = 18
 	resultOkBtn.TextColor3 = C.White
-	resultOkBtn.Text = "OK"
+	resultOkBtn.Text = "Continue"
 	resultOkBtn.AutoButtonColor = false
-	resultOkBtn.LayoutOrder = 5
+	resultOkBtn.LayoutOrder = 99 -- High number ensures it's always last
 	resultOkBtn.ZIndex = 84
 	resultOkBtn.Parent = resultCard
-	corner(resultOkBtn, 10)
+	corner(resultOkBtn, 12)
 
 	resultOkBtn.MouseEnter:Connect(function()
 		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
@@ -619,7 +621,12 @@ local function showResultPopup(data, callback)
 
 	resultEmoji.Text = data.emoji or (isPositive and "✨" or "😢")
 	resultTitle.Text = data.title or "What Happened"
-	resultBody.Text = data.body or "Life goes on..."
+	-- CRITICAL UI FIX: More descriptive default body text
+	local bodyText = data.body or "Something happened, but the details are unclear."
+	if bodyText == "" then
+		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
+	end
+	resultBody.Text = bodyText
 
 	-- Clear old stat previews
 	for _, child in ipairs(resultStatsPreview:GetChildren()) do
@@ -1911,26 +1918,34 @@ showEvent = function(payload)
 			btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
 			btn.BackgroundColor3 = C.Blue
 			btn.Font = F.Button
-			btn.TextSize = 18  -- BIGGER text (was 15)
+			btn.TextSize = 16  -- Slightly smaller for longer text
 			btn.TextColor3 = C.White
 			btn.Text = choice.text
 			btn.AutoButtonColor = false
 			btn.LayoutOrder = i
 			btn.ZIndex = 65
+			-- CRITICAL FIX: Enable text wrapping and truncation to prevent cutoff
+			btn.TextWrapped = true
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.TextXAlignment = Enum.TextXAlignment.Center
+			btn.TextYAlignment = Enum.TextYAlignment.Center
 			btn.Parent = choicesSection
 
 			corner(btn, 14)
 			stroke(btn, 2, 0.5, C.BlueLight)
+			-- Add padding so text doesn't touch edges
+			pad(btn, 12, 12, 6, 6)
 
 			if choice.minigame then
 				btn.Text = "🎮 " .. choice.text
 			end
 
+			-- CRITICAL FIX: Simpler hover effect that doesn't change size (prevents layout jumps)
 			btn.MouseEnter:Connect(function()
-				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark })
 			end)
 			btn.MouseLeave:Connect(function()
-				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue })
 			end)
 
 			local choiceIndex = choice.index or i
