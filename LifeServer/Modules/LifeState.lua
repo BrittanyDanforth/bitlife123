@@ -174,9 +174,17 @@ function LifeState:AdvanceAge()
 	end
 	
 	-- Age 14: Start high school (still no diploma yet!)
+	-- CRITICAL FIX: Only set up high school if not already enrolled (event may have handled this)
 	if self.Age == 14 and self.Education == "none" then
-		self.EducationData.Institution = "High School"
-		self.Flags.in_high_school = true
+		-- Only initialize if not already set up by the Teen event
+		if not self.EducationData.Institution or self.EducationData.Institution == "Middle School" then
+			self.EducationData.Institution = "High School"
+			self.EducationData.Level = "high_school"
+			self.EducationData.Status = "enrolled"
+			self.EducationData.Duration = 4 -- High school takes 4 years (ages 14-18)
+			self.EducationData.Progress = self.EducationData.Progress or 0 -- Don't reset if already has progress
+			self.Flags.in_high_school = true
+		end
 	end
 	
 	-- Age 18: Auto-graduate high school if player hasn't already via event
@@ -227,28 +235,8 @@ function LifeState:AdvanceAge()
 		end
 	end
 	
-	-- Jail time reduction
-	if self.InJail and self.JailYearsLeft > 0 then
-		self.JailYearsLeft = math.max(0, self.JailYearsLeft - 1)
-		if self.JailYearsLeft <= 0 then
-			self.InJail = false
-			self.Flags.in_prison = nil
-			self.Flags.incarcerated = nil
-			
-			-- CRITICAL FIX: Resume suspended education if player was enrolled before jail
-			if self.EducationData and self.EducationData.Status == "suspended" then
-				if self.EducationData.StatusBeforeJail == "enrolled" then
-					self.EducationData.Status = "enrolled"
-					self.EducationData.StatusBeforeJail = nil
-					self.PendingFeed = "You've been released from prison! You can resume your education."
-				else
-					self.PendingFeed = "You've been released from prison!"
-				end
-			else
-				self.PendingFeed = "You've been released from prison!"
-			end
-		end
-	end
+	-- NOTE: Jail time is now decremented in LifeBackend.lua to prevent DOUBLE decrementation bug
+	-- The duplicate code here was causing jail sentences to decrease by 2 years per age instead of 1
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PENSION/RETIREMENT INCOME SYSTEM

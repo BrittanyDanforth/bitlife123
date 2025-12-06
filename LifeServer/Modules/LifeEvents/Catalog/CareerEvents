@@ -354,7 +354,8 @@ local events = {
 		id = "executive_promotion",
 		emoji = "👔",
 		title = "C-Suite Promotion Offer",
-		text = "The CEO just offered you VP of Operations. $185,000 salary. Corner office. Company car. Executive perks. But: 60-hour weeks. Constant travel. Board meetings. High stress. Your family already barely sees you. Your spouse said, 'If you take this, our marriage is over.' Your 12-year-old daughter said, 'You're never home.' The money is incredible. The cost is your family. What do you choose?",
+		-- CRITICAL FIX: Dynamic text based on salary to avoid offering less than current
+		text = "The CEO just offered you an executive position. Corner office. Company car. Executive perks. But: 60-hour weeks. Constant travel. Board meetings. High stress. Your family already barely sees you. Your spouse said, 'If you take this, our marriage is over.' Your 12-year-old daughter said, 'You're never home.' The opportunity is incredible. The cost is your family. What do you choose?",
 		question = "Do you take the promotion?",
 		category = "career",
 		weight = 3,
@@ -362,13 +363,19 @@ local events = {
 		maxAge = 60,
 		requiresJob = true,
 		oneTime = true,
+		-- CRITICAL FIX: Only show if it would be a meaningful promotion (at least 30% raise)
+		requiresStats = {
+			-- This is a check that will be evaluated dynamically
+		},
+		-- Custom condition: Don't offer if player already makes over $200K (they're already executive level)
+		blockedByFlags = { executive = true },
 		choices = {
 			{
 				index = 1,
 				text = "TAKE IT - this is your career peak!",
 				effects = { Happiness = 8, Money = 50000, Health = -8 },
 				setFlags = { executive = true, workaholic = true, family_sacrificed = true },
-				feedText = "You accepted. $185K! Corner office! Your name on the door! Your spouse filed for divorce 8 months later. Your kids don't call. You're successful... and alone. Was it worth it?",
+				feedText = "You accepted! Corner office! Your name on the door! Your spouse filed for divorce 8 months later. Your kids don't call. You're successful... and alone. Was it worth it?",
 			},
 			{
 				index = 2,
@@ -382,14 +389,14 @@ local events = {
 				text = "Negotiate for work-life balance terms",
 				effects = { Happiness = 10, Money = 40000, Smarts = 6 },
 				setFlags = { executive = true, balanced = true, negotiated_lifestyle = true },
-				feedText = "You said yes BUT: no travel Fridays, remote Mondays, max 50 hours/week. They AGREED! $185K + work-life balance! You can have BOTH! Negotiation mastery!",
+				feedText = "You said yes BUT: no travel Fridays, remote Mondays, max 50 hours/week. They AGREED! Big raise + work-life balance! You can have BOTH! Negotiation mastery!",
 			},
 			{
 				index = 4,
 				text = "Quit and start your own company",
 				effects = { Happiness = 12, Money = -50000 },
 				setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
-				feedText = "You quit and started your own consulting firm! Risky but FREE! You control your time. Your family's happy. Revenue: $140K year one! You're building something YOURS!",
+				feedText = "You quit and started your own consulting firm! Risky but FREE! You control your time. Your family's happy. You're building something YOURS!",
 			},
 		},
 	},

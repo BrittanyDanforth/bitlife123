@@ -752,6 +752,7 @@ Adult.events = {
 		minAge = 28, maxAge = 45,
 		baseChance = 0.4,
 		cooldown = 3,
+		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
 			{ text = "Chase the promotion", effects = { Money = 1000, Happiness = -3, Health = -3 }, setFlags = { workaholic = true }, hintCareer = "management", feedText = "You're climbing the ladder. At what cost?" },
@@ -769,6 +770,7 @@ Adult.events = {
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 2,
+		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
 			{ text = "Try to work it out professionally", effects = { Smarts = 3, Happiness = 2 }, feedText = "You handled it maturely. Conflict resolved." },
@@ -787,6 +789,7 @@ Adult.events = {
 		minAge = 28, maxAge = 55,
 		baseChance = 0.3,
 		cooldown = 4,
+		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
 			{ text = "More money, more responsibility", effects = { Money = 3000, Happiness = 5, Health = -3 }, setFlags = { senior_position = true }, feedText = "You're moving up! The pressure is on." },

@@ -371,11 +371,15 @@ function OccupationScreen:updateState(newState)
 		self.careerInfo = nil
 		self.educationInfo = nil
 		
-		-- If visible, refresh career info immediately
-		if self.isVisible and self:getCurrentJob() then
+		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
+		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
+		if self.isVisible then
 			task.spawn(function()
-				self:fetchCareerInfo()
-				-- Only refresh UI if still visible and on jobs tab
+				-- Only fetch career info if player has a job
+				if self:getCurrentJob() then
+					self:fetchCareerInfo()
+				end
+				-- Always refresh UI if still visible and on jobs tab (even if no job!)
 				if self.isVisible and self.currentTab == "jobs" then
 					self:populateJobs()
 				end

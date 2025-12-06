@@ -2529,8 +2529,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		storyPathsScreenInstance:updateUI()
 	end
 
-	-- Show result popup if we have result data from server
-	if resultData and resultData.showPopup then
+	-- CRITICAL FIX: Check for death FIRST before showing any popups
+	-- This prevents the DOUBLE DEATH SCREEN bug where both result popup and death overlay show
+	local isDead = (resultData and resultData.fatal) or (currentState.Health and currentState.Health <= 0)
+	
+	-- Show result popup if we have result data from server (but NOT if player is dead!)
+	if resultData and resultData.showPopup and not isDead then
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2542,7 +2546,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			money = resultData.money or deltas.money,
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
-	elseif deltas.health and deltas.health < -15 then
+	elseif deltas.health and deltas.health < -15 and not isDead then
 		-- Auto-shake for MAJOR negative health (15+ drop)
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)

@@ -688,9 +688,9 @@ local JobCatalogList = {
 	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 22, requirement = nil, category = "hacker", illegal = true,
 		minStats = { Smarts = 75 }, requiresFlags = { "coder", "tech_experience" }, description = "Requires coding experience to hack" },
 	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 26, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 85 }, requiresFlags = { "hacker_experience" }, description = "Must have proven hacking skills" },
+		minStats = { Smarts = 85 }, requiresFlags = { "hacker_experience" }, grantsFlags = { "elite_hacker_rep", "elite_hacker" }, description = "Must have proven hacking skills" },
 	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 32, requirement = nil, category = "hacker", illegal = true,
-		minStats = { Smarts = 90 }, requiresFlags = { "elite_hacker_rep" }, description = "Must be a known elite hacker" },
+		minStats = { Smarts = 90 }, requiresFlags = { "elite_hacker_rep" }, grantsFlags = { "cyber_crime_history" }, description = "Must be a known elite hacker" },
 	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 30, requirement = nil, category = "hacker", illegal = true,
 		minStats = { Smarts = 95 }, requiresFlags = { "cyber_crime_history" }, description = "Must have cyber crime background" },
 
@@ -818,12 +818,13 @@ local ShopItems = {
 }
 
 local EducationCatalog = {
-	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school" },
-	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school" },
-	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor" },
-	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor" },
-	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor" },
-	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master" },
+	-- CRITICAL FIX: Added minAge to prevent underage enrollment
+	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school", minAge = 18 },
+	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school", minAge = 18 },
+	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor", minAge = 22 },
+	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor", minAge = 22 },
+	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor", minAge = 22 },
+	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master", minAge = 24 },
 }
 
 local EducationRanks = {
@@ -1655,13 +1656,21 @@ function LifeBackend:collectPropertyIncome(state)
 	
 	if totalIncome > 0 then
 		self:addMoney(state, totalIncome)
-		-- Add to feed if significant income
-		if totalIncome >= 1000 then
+		-- CRITICAL FIX: Only show rental income message occasionally to avoid spam
+		-- Only show if:
+		-- 1. Income is very significant ($10K+ per year), OR
+		-- 2. Player has multiple properties (actual landlord)
+		-- AND only show message sometimes (roughly every 3 years) to avoid repetitive feed
+		local numProperties = #properties
+		local shouldShowMessage = (totalIncome >= 10000 or numProperties >= 2) and RANDOM:NextNumber() < 0.33
+		
+		if shouldShowMessage then
 			local currentFeed = state.PendingFeed or ""
+			local incomeText = string.format("💰 Your properties generated $%s in rental income this year.", formatMoney(totalIncome))
 			if currentFeed ~= "" then
-				state.PendingFeed = currentFeed .. string.format(" You collected $%s in rental income.", formatMoney(totalIncome))
+				state.PendingFeed = currentFeed .. " " .. incomeText
 			else
-				state.PendingFeed = string.format("You collected $%s in rental income.", formatMoney(totalIncome))
+				state.PendingFeed = incomeText
 			end
 		end
 	end
@@ -2552,7 +2561,13 @@ function LifeBackend:handleCrime(player, crimeId)
 		end
 		
 		self:applyStatChanges(state, { Happiness = -10, Health = -5 })
-		local message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
+		-- CRITICAL FIX: Only mention losing job if they actually had one
+		local message
+		if state.CareerInfo and state.CareerInfo.lastJobBeforeJail then
+			message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
+		else
+			message = string.format("You were caught! Sentenced to %.1f years.", years)
+		end
 		-- CRITICAL FIX: Don't use showPopup - client shows its own result
 		self:pushState(player, message)
 		return { success = false, caught = true, message = message }
@@ -3176,6 +3191,13 @@ function LifeBackend:enrollEducation(player, programId)
 	local program = EducationCatalog[programId]
 	if not program then
 		return { success = false, message = "Unknown education program." }
+	end
+
+	-- CRITICAL FIX: Check minimum age for enrollment
+	local playerAge = state.Age or 0
+	local minAge = program.minAge or 18
+	if playerAge < minAge then
+		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, program.name) }
 	end
 
 	if not self:meetsEducationRequirement(state, program.requirement) then
