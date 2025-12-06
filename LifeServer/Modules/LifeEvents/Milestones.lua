@@ -450,8 +450,9 @@ Milestones.events = {
 		priority = "medium", -- Lowered priority - not forced
 		isMilestone = true,
 		baseChance = 0.6, -- Only 60% chance to trigger, not guaranteed
-		-- CRITICAL: Block if player already has a job
-		blockedByFlags = { employed = true, has_job = true },
+		-- CRITICAL FIX: Block if player already has a job (multiple checks for safety!)
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, coder = true, tech_experience = true },
+		requiresNoJob = true, -- Extra safety check
 
 		-- META
 		stage = "adult",

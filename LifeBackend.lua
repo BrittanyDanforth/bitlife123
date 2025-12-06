@@ -1730,6 +1730,11 @@ function LifeBackend:replaceTextVariables(text, state)
 	local playerName = state.Name or "You"
 	result = result:gsub("{{PLAYER_NAME}}", playerName)
 	result = result:gsub("{{NAME}}", playerName)
+	-- CRITICAL FIX: Also replace [YOUR NAME] placeholder format
+	result = result:gsub("%[YOUR NAME%]", playerName)
+	result = result:gsub("%[your name%]", playerName)
+	result = result:gsub("Mr%./Ms%. %[YOUR NAME%]", "Mr./Ms. " .. playerName)
+	result = result:gsub("Mr%./Ms%.", (state.Gender == "female") and "Ms." or "Mr.")
 	
 	-- Age replacement
 	local age = state.Age or 0

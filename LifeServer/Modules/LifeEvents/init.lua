@@ -474,8 +474,18 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- Support old "requiresNoJob" field (same as blockedByFlags = {employed})
-	if event.requiresNoJob and (state.CurrentJob or flags.employed) then
-		return false
+	-- CRITICAL FIX: Check ALL job indicators to prevent job events for employed players
+	if event.requiresNoJob then
+		if state.CurrentJob then
+			return false -- Has a current job
+		end
+		if flags.employed or flags.has_job or flags.has_teen_job then
+			return false -- Has employment flags
+		end
+		-- Also check for tech/coding jobs that aren't tracked via flags
+		if flags.coder or flags.tech_experience or flags.hacker_experience then
+			return false -- Has tech job experience
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
