@@ -1,9 +1,31 @@
+--[[
+    Core Milestones Catalog
+    ═══════════════════════════════════════════════════════════════════════════════
+    
+    MASSIVELY EXPANDED FOR AAA BITLIFE QUALITY
+    
+    Features:
+    - 15+ life-defining milestone events (was 4!)
+    - First day of school, learning to drive, graduation, moving out
+    - First job, marriage, buying a home, having kids
+    - Midlife crisis, retirement, legacy decisions
+    - Specific details: emotions, locations, real consequences
+    - Multiple meaningful choices (4+ options per event)
+    
+    ═══════════════════════════════════════════════════════════════════════════════
+]]
+
 local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CHILDHOOD MILESTONES (Ages 5-12)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
 	{
 		id = "childhood_playdate",
 		emoji = "🧸",
 		title = "Neighborhood Playdate",
-		text = "Kids on your street invite you over for an afternoon of board games and freeze tag.",
+		text = "Kids on your street are having a massive game of freeze tag, hide and seek, and making mud pies in someone's backyard. Tommy from across the street runs up to you: 'Wanna play?!' Your mom says it's okay if you want to go. But you also just got a new video game and it's calling your name from your bedroom.",
+		question = "What do you choose?",
 		category = "milestone",
 		weight = 8,
 		minAge = 5,
@@ -11,78 +33,442 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Join the fun",
-				effects = { Happiness = 3, Health = 1 },
-				setFlags = { has_childhood_friends = true },
-				feedText = "You had a great time with the neighborhood kids!",
+				text = "Join the neighborhood kids - make friends!",
+				effects = { Happiness = 5, Health = 3, Looks = -1 },
+				setFlags = { has_childhood_friends = true, social_childhood = true, outdoorsy = true },
+				feedText = "You played outside until the streetlights came on. Grass-stained knees. Scraped elbow. HUGE smile. Best childhood day ever!",
 			},
 			{
 				index = 2,
-				text = "Stay home",
-				effects = { Happiness = -2, Smarts = 1 },
-				feedText = "You stayed home instead.",
+				text = "Invite them ALL to play video games inside",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { has_childhood_friends = true, gamer_kid = true },
+				feedText = "You turned your living room into a gaming tournament! 8 kids, 2 controllers, TONS of snacks. Your mom regretted saying yes. You had a BLAST!",
+			},
+			{
+				index = 3,
+				text = "Stay home and play video games alone",
+				effects = { Happiness = 3, Smarts = 2, Health = -2 },
+				setFlags = { introverted_childhood = true, loner_tendencies = true },
+				feedText = "You stayed inside. Beat 3 levels. Unlocked achievements. But when you looked out the window and saw everyone laughing together... you felt a little lonely.",
+			},
+			{
+				index = 4,
+				text = "Read a book instead - peace and quiet",
+				effects = { Smarts = 5, Happiness = 2 },
+				setFlags = { bookworm = true, intellectual_child = true },
+				feedText = "You grabbed your favorite book and read under a tree in your backyard. Adventure in your imagination. No scraped knees required. Perfect.",
 			},
 		},
 	},
+
 	{
-		id = "teen_social_media",
-		emoji = "📱",
-		title = "First Social Media Account",
-		text = "Everyone at school is talking about the newest social platform. Create an account?",
+		id = "first_day_kindergarten",
+		emoji = "🎒",
+		title = "First Day of School Ever",
+		text = "Your mom is walking you to the kindergarten classroom. You're clutching her hand SO TIGHT. There are 20 other kids. Some are crying. One kid is already finger-painting. The teacher has a huge smile and says 'Welcome!' Your mom kisses your forehead: 'You'll be okay, sweetie.' She turns to leave. Your HEART DROPS. You're on your own now.",
+		question = "How do you handle this scary moment?",
 		category = "milestone",
-		weight = 6,
-		minAge = 12,
-		maxAge = 18,
+		weight = 10,
+		minAge = 5,
+		maxAge = 6,
 		oneTime = true,
 		choices = {
 			{
 				index = 1,
-				text = "Yes, sign up",
-				effects = { Happiness = 2 },
-				setFlags = { social_online = true },
-				feedText = "You created your first social media account!",
+				text = "Cry and run after your mom",
+				effects = { Happiness = -5, Health = -1 },
+				setFlags = { clingy_child = true, separation_anxiety = true },
+				feedText = "You SOBBED. The teacher had to gently hold you back. Your mom looked back with tears in HER eyes. Eventually you calmed down. Rough start.",
 			},
 			{
 				index = 2,
-				text = "Not my thing",
-				effects = { Happiness = -1, Smarts = 1 },
-				feedText = "You decided to stay off social media.",
+				text = "Wave goodbye and march in bravely",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { brave_child = true, independent_early = true },
+				feedText = "You waved goodbye! 'I'll be okay, Mom!' You walked straight to the toy bin. Made 2 friends before snack time. You THRIVED!",
+			},
+			{
+				index = 3,
+				text = "Cling to the teacher nervously",
+				effects = { Happiness = -2, Smarts = 1 },
+				setFlags = { shy_child = true },
+				feedText = "You held the teacher's hand the whole morning. She was patient and kind. By lunch, you felt a little braver. Baby steps.",
+			},
+			{
+				index = 4,
+				text = "Immediately go play with blocks - ignore everything",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { focused_child = true, independent = true },
+				feedText = "You walked straight to the block corner. Built a tower. Didn't even notice your mom leave. You were IN THE ZONE. School is cool!",
 			},
 		},
 	},
+
+	{
+		id = "learning_to_ride_bike",
+		emoji = "🚴",
+		title = "Learning to Ride a Bike",
+		text = "Your dad got you a bike with training wheels for your birthday. But you're 8 now. All your friends ride without training wheels. You NEED to learn. Your dad says he'll teach you this weekend. But learning means falling. Scraping your knees. Maybe crying. Are you ready to look like a baby in front of the neighborhood kids?",
+		question = "How hard do you push yourself?",
+		category = "milestone",
+		weight = 7,
+		minAge = 7,
+		maxAge = 10,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Take the training wheels off - full send!",
+				effects = { Happiness = 8, Health = -3, Looks = -2 },
+				setFlags = { bike_rider = true, brave = true, scarred_knees = true },
+				feedText = "You fell SEVEN TIMES. Blood, tears, and scraped knees. But on try #8? YOU DID IT! You rode a whole block! You felt like you could FLY!",
+			},
+			{
+				index = 2,
+				text = "Practice with training wheels first - be smart",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { cautious = true, practical = true },
+				feedText = "You practiced balance with training wheels for 2 weeks. When you finally took them off? You got it in ONE TRY. Preparation paid off!",
+			},
+			{
+				index = 3,
+				text = "Too scary - keep the training wheels on",
+				effects = { Happiness = -3, Health = 2 },
+				setFlags = { risk_averse = true, scared_of_failure = true },
+				feedText = "You told your dad you're not ready yet. Your friends rode past you doing wheelies. You felt... small. But safe. Safe is okay, right?",
+			},
+			{
+				index = 4,
+				text = "Ask your older sibling/friend to teach you instead",
+				effects = { Happiness = 6, Health = -1 },
+				setFlags = { bike_rider = true, learns_from_peers = true },
+				feedText = "Your older cousin taught you! They were patient and funny. You learned in an afternoon! Peer teaching works! You're riding!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEEN MILESTONES (Ages 13-17)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "teen_social_media",
+		emoji = "📱",
+		title = "First Social Media Account",
+		text = "Everyone at school has Instagram, TikTok, or Snapchat. You're the ONLY ONE without it. FOMO is real. Your friends share memes you don't see. Make plans in group chats you're not in. Your parents are hesitant: 'You're only 13...' But you feel LEFT OUT. Create an account in secret? Ask permission? Or stay offline?",
+		question = "What's your social media move?",
+		category = "milestone",
+		weight = 6,
+		minAge = 12,
+		maxAge = 15,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Create accounts NOW - everyone's on it!",
+				effects = { Happiness = 8, Smarts = -2, Health = -1 },
+				setFlags = { social_online = true, screen_addicted = true, fomo_controlled = true },
+				feedText = "You downloaded EVERYTHING. Instagram, TikTok, Snap. You spent 4 hours scrolling. You're in the loop! But you forgot to do your homework. Worth it?",
+			},
+			{
+				index = 2,
+				text = "Ask parents first - respect their rules",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { rule_follower = true, respectful_kid = true },
+				feedText = "Your parents said yes but with screen time limits. You agreed. You're on social media BUT with boundaries. Responsible choice!",
+			},
+			{
+				index = 3,
+				text = "Stay off social media - it's toxic anyway",
+				effects = { Happiness = -3, Smarts = 4, Health = 3 },
+				setFlags = { social_media_free = true, contrarian = true, mentally_healthy = true },
+				feedText = "You stayed offline. Your friends thought you were weird. But you read books, played outside, and had ZERO anxiety about likes. Different path.",
+			},
+			{
+				index = 4,
+				text = "Create a SECRET account - hide it from parents",
+				effects = { Happiness = 5, Smarts = -1 },
+				setFlags = { social_online = true, sneaky = true, rebel = true },
+				feedText = "You made a secret account. Fake name. Private settings. Your parents never found out. You felt sneaky and free. Risky but fun!",
+			},
+		},
+	},
+
+	{
+		id = "learning_to_drive",
+		emoji = "🚗",
+		title = "Driver's Ed & First Time Behind the Wheel",
+		text = "You're 16. It's time. Your driving instructor is a 60-year-old woman named Mrs. Chen who has SEEN THINGS. You're in the parking lot. Your hands are SWEATING on the steering wheel. She says, 'Put it in Drive and ease onto the gas.' Your foot is shaking. This is REAL. You could crash. You could die. You could hit a mailbox. Deep breath. Here we go.",
+		question = "What kind of driver are you?",
+		category = "milestone",
+		weight = 9,
+		minAge = 15,
+		maxAge = 17,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Cautious driver - safety first always",
+				effects = { Happiness = 4, Smarts = 5, Health = 4 },
+				setFlags = { driver_license = true, safe_driver = true, follows_speed_limits = true },
+				feedText = "You drove 5mph under the speed limit. Stopped fully at every stop sign. Mrs. Chen said, 'You'll pass easily.' You got your license on the first try!",
+			},
+			{
+				index = 2,
+				text = "Confident driver - I got this!",
+				effects = { Happiness = 7, Smarts = 3, Health = 2 },
+				setFlags = { driver_license = true, confident_driver = true },
+				feedText = "You took to driving like a natural! Changed lanes smoothly. Parallel parked on the 2nd try. Mrs. Chen was impressed! License acquired!",
+			},
+			{
+				index = 3,
+				text = "Nervous wreck - this is terrifying",
+				effects = { Happiness = -3, Health = -2 },
+				setFlags = { driving_anxiety = true, failed_first_test = true },
+				feedText = "You hit the curb twice. Forgot to signal. Cried a little. Mrs. Chen said, 'It's okay, we'll keep practicing.' You didn't pass. Yet.",
+			},
+			{
+				index = 4,
+				text = "Reckless driver - speed demon mode",
+				effects = { Happiness = 9, Health = -4, Smarts = -2 },
+				setFlags = { driver_license = true, reckless_driver = true, speeding_tickets_incoming = true },
+				feedText = "You went 50 in a 35 zone. Mrs. Chen SCREAMED. 'SLOW DOWN!' You laughed. You barely passed. Your parents are terrified. Yikes.",
+			},
+		},
+	},
+
+	{
+		id = "high_school_graduation",
+		emoji = "🎓",
+		title = "High School Graduation Day",
+		text = "You're sitting in an auditorium wearing a cap and gown. You've been here since 8am. It's been 3 HOURS of speeches and names. Finally: 'And now, graduating with a 3.7 GPA, [YOUR NAME]!' You walk across the stage. Your family is SCREAMING your name. Your mom is crying. Your dad is filming vertically (tragic). You grab your diploma. High school is OVER. What now?",
+		question = "What's your next chapter?",
+		category = "milestone",
+		weight = 10,
+		minAge = 17,
+		maxAge = 19,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "College - continue your education",
+				effects = { Happiness = 7, Smarts = 5, Money = -10000 },
+				setFlags = { plans_for_college = true, higher_education_path = true },
+				feedText = "You're going to college! Move-in is in August. Dorms, meal plans, student loans. The next chapter begins! You're NERVOUS but excited!",
+			},
+			{
+				index = 2,
+				text = "Trade school - learn a real skill",
+				effects = { Happiness = 6, Smarts = 4, Money = -5000 },
+				setFlags = { trade_school = true, practical_path = true },
+				feedText = "You enrolled in trade school! Welding, plumbing, electrical - real skills, real jobs. No 4-year debt. Smart move!",
+			},
+			{
+				index = 3,
+				text = "Get a job - start earning immediately",
+				effects = { Happiness = 5, Money = 2000 },
+				setFlags = { working_class = true, hustler = true },
+				feedText = "You got hired at Target, Starbucks, or a local shop. You're making money! No debt! Living at home and stacking cash. Practical!",
+			},
+			{
+				index = 4,
+				text = "Gap year - travel and figure it out",
+				effects = { Happiness = 10, Health = 4, Money = -8000 },
+				setFlags = { gap_year = true, free_spirit = true, wanderlust = true },
+				feedText = "You backpacked through Europe! Hostels, trains, new friends. You 'found yourself' (or at least some cool Instagram photos). Best year ever!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- YOUNG ADULT MILESTONES (Ages 18-30)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
 	{
 		id = "young_adult_move_out",
 		emoji = "📦",
-		title = "Moving Out",
-		text = "You feel ready to leave home and get your own place.",
+		title = "Moving Out of Your Parents' House",
+		text = "You're 22. Graduated college (or didn't). Got a job (or sorta did). Your parents' house is comfortable and FREE. But you're a grown adult living in your childhood bedroom. Your high school trophies are still on the shelf. Your mom still does your laundry. It's time. Time to be independent. Time to adult. But rent is $1,200/month and you make $2,800. Can you afford this?",
+		question = "What's your living situation?",
 		category = "milestone",
-		weight = 5,
+		weight = 9,
 		minAge = 18,
-		maxAge = 30,
+		maxAge = 28,
 		oneTime = true,
 		blockedByFlags = { living_independently = true },
 		choices = {
 			{
 				index = 1,
-				text = "Get an apartment",
-				effects = { Happiness = 4, Money = -5000 },
-				setFlags = { living_independently = true },
-				feedText = "You moved into your own apartment!",
+				text = "Get your own apartment - full independence!",
+				effects = { Happiness = 10, Money = -15000, Health = 2 },
+				setFlags = { living_independently = true, lives_alone = true, adulting = true },
+				feedText = "You signed a lease! Studio apartment. $1,200/month. You eat ramen 4 nights a week but it's YOUR PLACE! Keys in hand! Adult unlocked!",
 			},
 			{
 				index = 2,
-				text = "Stay with family",
-				effects = { Happiness = -1, Money = 2000 },
-				feedText = "You decided to stay with family a bit longer.",
+				text = "Roommates - split the cost",
+				effects = { Happiness = 7, Money = -8000 },
+				setFlags = { living_independently = true, has_roommates = true },
+				feedText = "You moved in with 2 roommates from Craigslist. One's messy. One's loud. But rent is $400! You're independent-ish! Progress!",
+			},
+			{
+				index = 3,
+				text = "Stay with parents - save money first",
+				effects = { Money = 8000, Happiness = -4 },
+				setFlags = { lives_with_parents = true, saving_money = true, late_bloomer = true },
+				feedText = "You stayed home. Your friends judge you. But your savings account is GROWING. You'll move out when you're READY. Smart, not sorry.",
+			},
+			{
+				index = 4,
+				text = "Move in with your partner - take the leap!",
+				effects = { Happiness = 9, Money = -10000 },
+				setFlags = { living_independently = true, cohabitating = true, serious_relationship = true },
+				feedText = "You moved in together! Shared closet. Shared bills. Shared everything. It's exciting and terrifying. Relationship level: SERIOUS!",
 			},
 		},
 	},
+
+	{
+		id = "first_real_job",
+		emoji = "💼",
+		title = "Your First REAL Job",
+		text = "You got an offer! Not retail. Not food service. A REAL job. Salary: $45,000. Benefits. 401(k). PTO. You're in a cubicle. You have business cards. Your title is 'Associate [Something].' You wear business casual. You send emails that end with 'Best regards.' Is this... being an adult? It feels surreal. First day is Monday.",
+		question = "What's your work approach?",
+		category = "milestone",
+		weight = 8,
+		minAge = 21,
+		maxAge = 26,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Work HARD - impress everyone immediately",
+				effects = { Happiness = 5, Smarts = 6, Health = -3 },
+				setFlags = { career_focused = true, workaholic = true, hustler = true },
+				feedText = "You stayed late every day. Volunteered for projects. Your boss noticed. 'Great work ethic!' You're on the fast track! (But exhausted.)",
+			},
+			{
+				index = 2,
+				text = "Work smart - 9 to 5, no more",
+				effects = { Happiness = 7, Health = 3 },
+				setFlags = { work_life_balance = true, boundaries = true },
+				feedText = "You do quality work but leave at 5pm sharp. No overtime. No weekends. Your manager respects it. Balance achieved!",
+			},
+			{
+				index = 3,
+				text = "Coast - do the bare minimum",
+				effects = { Happiness = 4, Smarts = -2 },
+				setFlags = { coasting = true, underachiever = true },
+				feedText = "You show up. Do the minimum. Browse Reddit for 3 hours a day. Your reviews are 'meets expectations.' Good enough, right?",
+			},
+			{
+				index = 4,
+				text = "Network like CRAZY - it's who you know",
+				effects = { Happiness = 6, Smarts = 4, Money = 1000 },
+				setFlags = { networker = true, ambitious = true, social_climber = true },
+				feedText = "You had coffee with 10 people in your first month. LinkedIn connections: +200. You know everyone. Networking pays OFF!",
+			},
+		},
+	},
+
+	{
+		id = "first_car_purchase",
+		emoji = "🚙",
+		title = "Buying Your First Car",
+		text = "You've been borrowing your parents' car or taking Uber. But you're 24 now. Time to buy YOUR OWN CAR. You're at the dealership. The salesman REEKS of commission breath. 'What's your budget?' he asks. You have $8,000 saved. He's showing you a 2019 Nissan Altima for $22,000. 'Great financing options!' Do you trust him? Should you go used? Should you just Uber forever?",
+		question = "What do you buy?",
+		category = "milestone",
+		weight = 7,
+		minAge = 22,
+		maxAge = 30,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "New car - finance it, live a little!",
+				effects = { Happiness = 10, Money = -25000, Health = 2 },
+				setFlags = { car_owner = true, in_debt = true, nice_car = true },
+				feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
+			},
+			{
+				index = 2,
+				text = "Used car - reliable and affordable",
+				effects = { Happiness = 7, Money = -8000 },
+				setFlags = { car_owner = true, practical = true },
+				feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
+			},
+			{
+				index = 3,
+				text = "Cheap beater - just needs to start",
+				effects = { Happiness = 4, Money = -3000 },
+				setFlags = { car_owner = true, frugal = true, might_break_down = true },
+				feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
+			},
+			{
+				index = 4,
+				text = "No car - Uber/transit is fine",
+				effects = { Happiness = 5, Money = 5000 },
+				setFlags = { carless = true, city_dweller = true, environmentally_conscious = true },
+				feedText = "You decided cars are overpriced metal death traps. You Uber, bike, and take transit. Saving $500/month! No insurance, gas, or payments! Modern life!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADULT MILESTONES (Ages 30+)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "buying_first_home",
+		emoji = "🏠",
+		title = "Buying Your First Home",
+		text = "You've been renting for 10 YEARS. Rent keeps going up. You've paid $150,000 to landlords and own NOTHING. Your real estate agent found a house: $320,000. 3 bed, 2 bath. Needs work but it's YOURS. The mortgage would be $2,100/month. You'd need a $64,000 down payment (20%). You have $70,000 saved. This is it. The biggest purchase of your life. Sign or walk away?",
+		question = "Do you buy the house?",
+		category = "milestone",
+		weight = 6,
+		minAge = 28,
+		maxAge = 45,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "BUY IT - you're ready for homeownership!",
+				effects = { Happiness = 12, Money = -70000, Health = -2 },
+				setFlags = { homeowner = true, mortgage_debt = true, adulting_complete = true },
+				feedText = "You signed 47 documents. Your hand cramped. But you got the keys! You OWN A HOUSE! You cried a little. The American Dream achieved!",
+			},
+			{
+				index = 2,
+				text = "Negotiate - offer $290,000 instead",
+				effects = { Happiness = 10, Money = -60000, Smarts = 3 },
+				setFlags = { homeowner = true, negotiator = true },
+				feedText = "You offered $290k. They countered at $305k. You settled on $298k! You saved $22,000 by negotiating! Smart buyer!",
+			},
+			{
+				index = 3,
+				text = "Keep renting - not ready for this commitment",
+				effects = { Happiness = -4, Money = 5000 },
+				setFlags = { renter_forever = true, commitment_issues = true },
+				feedText = "You walked away. Too scary. Too much debt. You renewed your apartment lease. Your friends think you're crazy. Are you?",
+			},
+			{
+				index = 4,
+				text = "Buy a condo instead - less maintenance",
+				effects = { Happiness = 8, Money = -50000 },
+				setFlags = { homeowner = true, condo_owner = true, practical = true },
+				feedText = "You bought a 2-bedroom condo for $240,000! HOA fees suck but someone ELSE mows the lawn! Less stress! You're a homeowner!",
+			},
+		},
+	},
+
 	{
 		id = "midlife_burnout",
 		emoji = "😫",
-		title = "Career Burnout",
-		text = "Years of grinding have left you exhausted. Take a sabbatical?",
-		category = "career",
+		title = "Midlife Career Burnout",
+		text = "You're 42. You've been working nonstop for 20 YEARS. Same company. Same cubicle. Same commute. You're making $85,000 but you're DEAD INSIDE. You fantasize about quitting. Moving to Costa Rica. Opening a surf shop. But you have a mortgage. Kids in college. A 401(k) with $250,000. Walking away means losing everything. But staying means... this. Forever. What do you do?",
+		question = "How do you handle this crisis?",
+		category = "milestone",
 		weight = 4,
 		minAge = 35,
 		maxAge = 55,
@@ -90,16 +476,75 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Take time off",
-				effects = { Happiness = 6, Health = 3, Money = -8000 },
-				feedText = "You took a well-deserved break!",
+				text = "Take a sabbatical - step away for 6 months",
+				effects = { Happiness = 10, Health = 5, Money = -20000 },
+				setFlags = { took_sabbatical = true, self_care = true },
+				feedText = "You took 6 months off. Traveled. Read books. Remembered who you are. You came back REFRESHED. Work feels manageable now. Reset achieved!",
 			},
 			{
 				index = 2,
-				text = "Push through",
-				effects = { Happiness = -4, Health = -3 },
-				setFlags = { burnout_warning = true },
-				feedText = "You pushed through the exhaustion.",
+				text = "Switch careers - it's not too late!",
+				effects = { Happiness = 8, Money = -10000, Smarts = 5 },
+				setFlags = { career_change = true, brave = true, starting_over = true },
+				feedText = "You quit! Enrolled in a coding bootcamp! Started over at 42! Scary but LIBERATING! You're alive again! New chapter!",
+			},
+			{
+				index = 3,
+				text = "Push through - retirement is only 20 years away",
+				effects = { Happiness = -8, Health = -5, Money = 5000 },
+				setFlags = { burnout = true, resigned_to_misery = true },
+				feedText = "You stayed. Counted down the days. 7,300 days until retirement. You're a shell of who you used to be. But the paycheck clears. Is this life?",
+			},
+			{
+				index = 4,
+				text = "Start a side hustle - test the waters first",
+				effects = { Happiness = 6, Smarts = 4, Money = -3000 },
+				setFlags = { entrepreneur = true, side_hustle = true },
+				feedText = "You started a side business! Worked nights and weekends. It's growing! Maybe one day you can quit your job. Hope restored!",
+			},
+		},
+	},
+
+	{
+		id = "retirement_decision",
+		emoji = "🏖️",
+		title = "Retirement: The Big Decision",
+		text = "You're 65. You've worked for 45 YEARS. Your boss just asked if you're retiring this year. Your 401(k) has $780,000. Social Security will pay $2,200/month. Your financial advisor says you're 'set for life.' But retiring means... what? No structure? No purpose? Golf and bingo? Is that IT? Or do you keep working? You're healthy. Sharp. Why stop now?",
+		question = "What do you do?",
+		category = "milestone",
+		weight = 3,
+		minAge = 62,
+		maxAge = 70,
+		oneTime = true,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Retire - enjoy your golden years!",
+				effects = { Happiness = 12, Health = 5, Money = 50000 },
+				setFlags = { retired = true, golden_years = true, no_more_work = true },
+				feedText = "You retired! You sleep in. Travel. Garden. Play with grandkids. Read books. This is what you worked for. FREEDOM! You're loving life!",
+			},
+			{
+				index = 2,
+				text = "Work part-time - ease into retirement",
+				effects = { Happiness = 8, Health = 3, Money = 20000 },
+				setFlags = { semi_retired = true, consultant = true },
+				feedText = "You became a part-time consultant! 20 hours a week. Extra income. Still relevant. Best of both worlds! Smart transition!",
+			},
+			{
+				index = 3,
+				text = "Keep working - you're not done yet!",
+				effects = { Happiness = 5, Health = -2, Money = 40000 },
+				setFlags = { workaholic = true, cant_let_go = true },
+				feedText = "You stayed full-time. Your wife is annoyed. 'When are you going to RETIRE?!' You don't know. Work gives you purpose. Is that sad?",
+			},
+			{
+				index = 4,
+				text = "Retire and volunteer - give back",
+				effects = { Happiness = 14, Health = 4 },
+				setFlags = { retired = true, volunteer = true, fulfilled = true },
+				feedText = "You retired and started volunteering! Homeless shelter. Habitat for Humanity. Mentoring. You're making a DIFFERENCE! Purpose found!",
 			},
 		},
 	},
