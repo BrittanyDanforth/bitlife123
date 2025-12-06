@@ -49,13 +49,14 @@ local LifeStages = {
 -- Category mappings per life stage
 -- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
 -- Racing discovery can happen as young as age 10, hacker discovery at age 12
+-- CRITICAL FIX: Added "teen" to young_adult to catch late-teen events like graduation
 -- MINOR FIX: Improved comments for clarity on what each life stage allows
 local StageCategories = {
 	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
 	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
 	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
 	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 13-17: Full teen experience + part-time work
-	young_adult = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 18-34: Peak career years
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 18-34: Peak career years (include teen for graduation/late-teen events)
 	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 35-49: Established adult
 	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 50-64: Midlife
 	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Ages 65+: Retirement years (can own racing teams)

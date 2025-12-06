@@ -308,7 +308,13 @@ Teen.events = {
 		emoji = "🎓",
 		text = "You're graduating from high school!",
 		question = "How do you feel about your high school experience?",
-		minAge = 17, maxAge = 18,
+		-- CRITICAL FIX: Changed minAge to 17 only (player is still in "teen" stage at 17)
+		-- At age 18, player is in "young_adult" stage which doesn't pull "teen" events
+		-- The event should trigger during the age 17 → 18 transition
+		minAge = 17, maxAge = 17,
+		-- CRITICAL FIX: Added category = "milestones" to ensure this event triggers
+		-- from the milestones pool which is included in ALL life stages
+		category = "milestones",
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,

@@ -49,7 +49,7 @@ function LifeState.new(player)
 		Status = "none", -- none, enrolled, completed
 		Level = nil,
 		Progress = 0,
-		Duration = 0,
+		Duration = nil, -- CRITICAL FIX: nil instead of 0 to prevent divide-by-zero in progress calc
 		Institution = nil,
 		GPA = nil,
 		Debt = 0,

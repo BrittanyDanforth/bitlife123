@@ -1677,7 +1677,12 @@ function LifeBackend:updateEducationProgress(state)
 	
 	local eduData = state.EducationData
 	if eduData and eduData.Status == "enrolled" then
-		local duration = eduData.Duration or 4
+		-- CRITICAL FIX: Ensure duration is never 0 or nil to prevent instant graduation bug
+		-- Duration of 0 would cause 100/0 = infinity, triggering instant "graduation"
+		local duration = eduData.Duration
+		if not duration or duration <= 0 then
+			duration = 4 -- Default to 4 years if not set properly
+		end
 		local progressPerYear = 100 / duration
 		eduData.Progress = clamp((eduData.Progress or 0) + progressPerYear, 0, 100)
 		if eduData.Progress >= 100 then
@@ -1937,15 +1942,22 @@ function LifeBackend:replaceTextVariables(text, state)
 	end
 	
 	-- Mother/Father name replacement
+	-- CRITICAL FIX: More robust relationship name handling
+	local motherName = "Mom"
+	local fatherName = "Dad"
+	
 	if state.Relationships then
-		if state.Relationships.mother then
-			result = result:gsub("{{MOTHER_NAME}}", state.Relationships.mother.name or "Mom")
-			result = result:gsub("Your mother", state.Relationships.mother.name or "Your mother")
+		-- Try multiple ways to access relationships (in case of different storage formats)
+		local mother = state.Relationships.mother or state.Relationships["mother"]
+		local father = state.Relationships.father or state.Relationships["father"]
+		
+		if mother and type(mother) == "table" then
+			motherName = mother.name or mother.Name or "Mom"
 		end
-		if state.Relationships.father then
-			result = result:gsub("{{FATHER_NAME}}", state.Relationships.father.name or "Dad")
-			result = result:gsub("Your father", state.Relationships.father.name or "Your father")
+		if father and type(father) == "table" then
+			fatherName = father.name or father.Name or "Dad"
 		end
+		
 		-- CRITICAL FIX: Add friend name placeholder
 		-- Look for any friend in relationships
 		for relId, rel in pairs(state.Relationships) do
@@ -1955,6 +1967,16 @@ function LifeBackend:replaceTextVariables(text, state)
 			end
 		end
 	end
+	
+	-- CRITICAL FIX: Always replace placeholders (even if relationships table is missing)
+	-- This prevents {{FATHER_NAME}} from appearing literally in game text
+	result = result:gsub("{{MOTHER_NAME}}", motherName)
+	result = result:gsub("{{FATHER_NAME}}", fatherName)
+	result = result:gsub("Your mother", motherName)
+	result = result:gsub("Your father", fatherName)
+	result = result:gsub("your mother", motherName:lower())
+	result = result:gsub("your father", fatherName:lower())
+	
 	-- Fallback for friend name if no friend found
 	result = result:gsub("{{FRIEND_NAME}}", "your friend")
 	

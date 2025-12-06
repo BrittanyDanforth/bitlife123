@@ -2022,61 +2022,147 @@ showDeathOverlay = function(causeText, age)
 		row.Parent = DeathUI.statsFrame
 	end
 	
-	-- Generate achievements
+	-- Generate achievements (EXPANDED - BitLife-style comprehensive list)
 	local achievements = {}
 	
+	-- Age achievements
 	if finalAge >= 100 then
 		table.insert(achievements, { icon = "🎖️", text = "Centenarian - Lived 100+ years!" })
 	elseif finalAge >= 80 then
 		table.insert(achievements, { icon = "👴", text = "Golden Years - Lived to 80+" })
+	elseif finalAge >= 65 then
+		table.insert(achievements, { icon = "🧓", text = "Retiree - Made it to 65+" })
 	end
 	
-	if money >= 10000000 then
+	-- Early death achievements
+	if finalAge < 20 then
+		table.insert(achievements, { icon = "😢", text = "Gone Too Soon - Died before 20" })
+	elseif finalAge < 40 then
+		table.insert(achievements, { icon = "💔", text = "Life Cut Short - Died before 40" })
+	end
+	
+	-- Wealth achievements
+	if money >= 100000000 then
+		table.insert(achievements, { icon = "👑", text = "Billionaire Club - $100M+ net worth" })
+	elseif money >= 10000000 then
 		table.insert(achievements, { icon = "💎", text = "Mega Millionaire - $10M+ net worth" })
 	elseif money >= 1000000 then
 		table.insert(achievements, { icon = "💰", text = "Millionaire - $1M+ net worth" })
 	elseif money >= 100000 then
 		table.insert(achievements, { icon = "🏦", text = "Wealthy - $100K+ net worth" })
+	elseif money < 0 then
+		table.insert(achievements, { icon = "💸", text = "In Debt - Died owing money" })
+	elseif money < 1000 then
+		table.insert(achievements, { icon = "🪙", text = "Broke - Died nearly penniless" })
 	end
 	
+	-- Happiness achievements
 	if happiness >= 90 then
 		table.insert(achievements, { icon = "😊", text = "Joyful Life - 90%+ happiness" })
+	elseif happiness < 20 then
+		table.insert(achievements, { icon = "😞", text = "Miserable - Low happiness" })
 	end
 	
+	-- Intelligence achievements
+	if smarts >= 90 then
+		table.insert(achievements, { icon = "🧠", text = "Genius - 90%+ intelligence" })
+	end
+	
+	-- Looks achievements
+	if looks >= 90 then
+		table.insert(achievements, { icon = "😍", text = "Gorgeous - 90%+ looks" })
+	end
+	
+	-- Education achievements
 	if education == "phd" or education == "doctorate" then
 		table.insert(achievements, { icon = "📚", text = "Scholar - Earned a Doctorate" })
 	elseif education == "master" then
 		table.insert(achievements, { icon = "🎓", text = "Academic - Master's Degree" })
-	elseif education == "law" or education == "medical" then
-		table.insert(achievements, { icon = "⚖️", text = "Professional - Law/Medical Degree" })
+	elseif education == "law" then
+		table.insert(achievements, { icon = "⚖️", text = "Lawyer - Earned a Law Degree" })
+	elseif education == "medical" then
+		table.insert(achievements, { icon = "🏥", text = "Doctor - Earned a Medical Degree" })
+	elseif education == "bachelor" then
+		table.insert(achievements, { icon = "🎓", text = "Graduate - Bachelor's Degree" })
+	elseif education == "none" and finalAge >= 18 then
+		table.insert(achievements, { icon = "🚫", text = "School Dropout - No diploma" })
 	end
 	
-	if childCount >= 5 then
+	-- Family achievements
+	if childCount >= 10 then
+		table.insert(achievements, { icon = "🏆", text = "Super Parent - 10+ children" })
+	elseif childCount >= 5 then
 		table.insert(achievements, { icon = "👨‍👩‍👧‍👦", text = "Big Family - 5+ children" })
 	elseif childCount >= 1 then
 		table.insert(achievements, { icon = "👶", text = "Parent - Had children" })
 	end
 	
-	if marriageCount >= 1 then
+	if marriageCount >= 3 then
+		table.insert(achievements, { icon = "💍", text = "Serial Spouse - Married 3+ times" })
+	elseif marriageCount >= 1 then
 		table.insert(achievements, { icon = "💒", text = "Married - Found love" })
 	end
 	
-	if propertyCount >= 3 then
+	-- Property/Assets achievements
+	if propertyCount >= 5 then
+		table.insert(achievements, { icon = "🏰", text = "Property Baron - 5+ properties" })
+	elseif propertyCount >= 3 then
 		table.insert(achievements, { icon = "🏘️", text = "Real Estate Mogul - 3+ properties" })
+	elseif propertyCount >= 1 then
+		table.insert(achievements, { icon = "🏠", text = "Homeowner - Owned property" })
 	end
 	
-	if vehicleCount >= 5 then
+	if vehicleCount >= 10 then
+		table.insert(achievements, { icon = "🏎️", text = "Car Enthusiast - 10+ vehicles" })
+	elseif vehicleCount >= 5 then
 		table.insert(achievements, { icon = "🚗", text = "Car Collector - 5+ vehicles" })
 	end
 	
+	-- Fame achievements
 	if flags.famous or flags.celebrity then
 		table.insert(achievements, { icon = "⭐", text = "Famous - Became a celebrity" })
 	end
 	
+	-- Crime achievements
 	if flags.criminal_mastermind then
 		table.insert(achievements, { icon = "🦹", text = "Criminal Mastermind" })
 	end
+	if flags.served_time or flags.ex_convict then
+		table.insert(achievements, { icon = "⛓️", text = "Ex-Con - Served prison time" })
+	end
+	if flags.never_caught and flags.criminal_record then
+		table.insert(achievements, { icon = "🥷", text = "Ghost - Never caught" })
+	end
 	
+	-- Career achievements
+	if career and career ~= "Unemployed" and career ~= "" then
+		if flags.ceo or flags.executive then
+			table.insert(achievements, { icon = "👔", text = "Executive - Reached the top" })
+		elseif flags.retired then
+			table.insert(achievements, { icon = "🎉", text = "Retired - Earned retirement" })
+		end
+	else
+		table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+	end
+	
+	-- Special achievements from flags
+	if flags.war_hero then
+		table.insert(achievements, { icon = "🎖️", text = "War Hero - Served honorably" })
+	end
+	if flags.olympic_gold or flags.champion then
+		table.insert(achievements, { icon = "🏅", text = "Champion - Won a major competition" })
+	end
+	if flags.viral or flags.influencer then
+		table.insert(achievements, { icon = "📱", text = "Influencer - Went viral" })
+	end
+	if flags.good_person or flags.philanthropist then
+		table.insert(achievements, { icon = "😇", text = "Good Samaritan - Helped others" })
+	end
+	if flags.world_traveler then
+		table.insert(achievements, { icon = "✈️", text = "Globetrotter - Traveled the world" })
+	end
+	
+	-- Default achievement if none earned
 	if #achievements == 0 then
 		table.insert(achievements, { icon = "🌟", text = "Lived a Life - Every journey counts" })
 	end
@@ -2086,30 +2172,85 @@ showDeathOverlay = function(causeText, age)
 		badge.Parent = DeathUI.achieveFrame
 	end
 	
-	-- Generate epitaph
+	-- Generate epitaph (EXPANDED - more variety and context-specific)
 	local epitaphs = {
 		"A life well lived, remembered by many.",
 		"Gone but never forgotten.",
 		"Their story may end, but their legacy lives on.",
 		"Every moment was a gift.",
 		"Beloved by those who knew them.",
+		"Here lies one who made their mark on the world.",
+		"They came, they lived, they mattered.",
+		"In the end, it's not the years in your life that count, it's the life in your years.",
+		"Rest in peace, forever in our hearts.",
+		"Until we meet again.",
 	}
 	
-	if money >= 1000000 then
+	-- Context-specific epitaphs
+	if money >= 10000000 then
+		table.insert(epitaphs, "Died richer than most could dream.")
+		table.insert(epitaphs, "Their wealth was legendary, their legacy even more so.")
+	elseif money >= 1000000 then
 		table.insert(epitaphs, "They say money can't buy happiness, but they sure tried.")
 		table.insert(epitaphs, "Left behind a fortune and a legacy.")
-	end
-	if happiness >= 80 then
-		table.insert(epitaphs, "Lived life to the fullest with a smile.")
-		table.insert(epitaphs, "Happiness was their greatest treasure.")
-	end
-	if finalAge >= 90 then
-		table.insert(epitaphs, "A long life filled with countless memories.")
-	end
-	if childCount >= 3 then
-		table.insert(epitaphs, "Their greatest achievement: their family.")
+	elseif money < 100 then
+		table.insert(epitaphs, "Proved that money isn't everything.")
+		table.insert(epitaphs, "Rich in spirit, if not in wallet.")
 	end
 	
+	if happiness >= 90 then
+		table.insert(epitaphs, "Lived life to the fullest with a smile.")
+		table.insert(epitaphs, "Happiness was their greatest treasure.")
+		table.insert(epitaphs, "Found joy in every day.")
+	elseif happiness < 30 then
+		table.insert(epitaphs, "May they find peace at last.")
+		table.insert(epitaphs, "Rest now, the struggles are over.")
+	end
+	
+	if finalAge >= 100 then
+		table.insert(epitaphs, "A century of memories, a lifetime of love.")
+		table.insert(epitaphs, "Proved that age is just a number.")
+	elseif finalAge >= 90 then
+		table.insert(epitaphs, "A long life filled with countless memories.")
+		table.insert(epitaphs, "Witnessed history and made their own.")
+	elseif finalAge < 20 then
+		table.insert(epitaphs, "A candle that burned briefly but brightly.")
+		table.insert(epitaphs, "Young in years, old in wisdom.")
+	end
+	
+	if childCount >= 5 then
+		table.insert(epitaphs, "Their greatest achievement: their family.")
+		table.insert(epitaphs, "Surrounded by the love of many children.")
+	elseif childCount >= 1 then
+		table.insert(epitaphs, "Lives on through their children.")
+	end
+	
+	if marriageCount >= 3 then
+		table.insert(epitaphs, "Loved many, loved deeply.")
+	elseif marriageCount >= 1 then
+		table.insert(epitaphs, "Found true love in this lifetime.")
+	end
+	
+	if flags.famous or flags.celebrity then
+		table.insert(epitaphs, "A star that shone bright in the world.")
+		table.insert(epitaphs, "Famous in life, legendary in death.")
+	end
+	
+	if flags.criminal_record then
+		table.insert(epitaphs, "Lived life by their own rules.")
+		table.insert(epitaphs, "A complicated soul with a complicated past.")
+	end
+	
+	if education == "phd" or education == "doctorate" then
+		table.insert(epitaphs, "A brilliant mind, gone too soon.")
+		table.insert(epitaphs, "Their knowledge lives on in their work.")
+	end
+	
+	if propertyCount >= 3 then
+		table.insert(epitaphs, "Built an empire, brick by brick.")
+	end
+	
+	-- Random selection
 	DeathUI.epitaph.Text = "\"" .. epitaphs[math.random(1, #epitaphs)] .. "\""
 end
 

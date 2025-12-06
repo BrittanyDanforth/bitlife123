@@ -244,94 +244,84 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- CRITICAL FIX: Balance bar - properly integrated into the header area
-	-- Made to look like it's part of the header, not floating separately
+	-- CRITICAL FIX: Balance bar redesigned - seamlessly integrated below header
+	-- Uses a clean horizontal layout with minimal padding, feels like part of the header
 	self.balanceBar = Instance.new("Frame")
 	self.balanceBar.Name = "BalanceBar"
-	self.balanceBar.Size = UDim2.new(1, -24, 0, 56)
-	self.balanceBar.Position = UDim2.new(0, 12, 0, 110)
-	self.balanceBar.BackgroundColor3 = C.White
+	self.balanceBar.Size = UDim2.new(1, 0, 0, 48) -- Full width, compact height
+	self.balanceBar.Position = UDim2.new(0, 0, 0, 100) -- Right below header (header is ~100px)
+	self.balanceBar.BackgroundColor3 = C.TealDark -- Match header color for integration
+	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 14)
-	UI.stroke(self.balanceBar, 2, 0.7, C.TealPale)
 	
-	-- Add subtle shadow for depth
-	local balShadow = Instance.new("ImageLabel")
-	balShadow.Name = "Shadow"
-	balShadow.Size = UDim2.new(1, 16, 1, 12)
-	balShadow.Position = UDim2.new(0, -8, 0, 2)
-	balShadow.BackgroundTransparency = 1
-	balShadow.Image = "rbxassetid://5554236805"
-	balShadow.ImageColor3 = C.Black or Color3.fromRGB(0, 0, 0)
-	balShadow.ImageTransparency = 0.92
-	balShadow.ScaleType = Enum.ScaleType.Slice
-	balShadow.SliceCenter = Rect.new(23, 23, 277, 277)
-	balShadow.ZIndex = 83
-	balShadow.Parent = self.balanceBar
+	-- Gradient overlay for premium look (subtle fade from header to content)
+	local balGradient = Instance.new("UIGradient")
+	balGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.new(0.92, 0.92, 0.92))
+	})
+	balGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(1, 0.2)
+	})
+	balGradient.Rotation = 90
+	balGradient.Parent = self.balanceBar
 	
-	-- Accent left strip for visual integration
-	local accentStrip = Instance.new("Frame")
-	accentStrip.Name = "AccentStrip"
-	accentStrip.Size = UDim2.new(0, 4, 1, -16)
-	accentStrip.Position = UDim2.new(0, 8, 0, 8)
-	accentStrip.BackgroundColor3 = C.Teal
-	accentStrip.ZIndex = 85
-	accentStrip.Parent = self.balanceBar
-	UI.corner(accentStrip, 2)
-
-	-- Balance icon with background circle
-	local iconBg = Instance.new("Frame")
-	iconBg.Name = "IconBg"
-	iconBg.Size = UDim2.new(0, 40, 0, 40)
-	iconBg.Position = UDim2.new(0, 20, 0.5, -20)
-	iconBg.BackgroundColor3 = C.TealPale
-	iconBg.ZIndex = 85
-	iconBg.Parent = self.balanceBar
-	UI.corner(iconBg, 20)
+	-- Inner content container with horizontal layout
+	local balContent = Instance.new("Frame")
+	balContent.Name = "BalContent"
+	balContent.Size = UDim2.new(1, -24, 1, 0)
+	balContent.Position = UDim2.new(0, 12, 0, 0)
+	balContent.BackgroundTransparency = 1
+	balContent.ZIndex = 85
+	balContent.Parent = self.balanceBar
 	
+	-- Money bag icon - simple and clean
 	local balanceIcon = Instance.new("TextLabel")
 	balanceIcon.Name = "Icon"
-	balanceIcon.Size = UDim2.fromScale(1, 1)
+	balanceIcon.Size = UDim2.new(0, 32, 0, 32)
+	balanceIcon.Position = UDim2.new(0, 0, 0.5, -16)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 22
-	balanceIcon.Text = "💰"
+	balanceIcon.TextSize = 24
+	balanceIcon.Text = "💵"
 	balanceIcon.ZIndex = 86
-	balanceIcon.Parent = iconBg
-
-	-- Balance text container (label + value inline)
+	balanceIcon.Parent = balContent
+	
+	-- Balance label and value in column layout
 	local balanceLabel = Instance.new("TextLabel")
 	balanceLabel.Name = "Label"
-	balanceLabel.Size = UDim2.new(0, 90, 0, 18)
-	balanceLabel.Position = UDim2.new(0, 68, 0, 10)
+	balanceLabel.Size = UDim2.new(0, 100, 0, 14)
+	balanceLabel.Position = UDim2.new(0, 38, 0, 8)
 	balanceLabel.BackgroundTransparency = 1
 	balanceLabel.Font = F.Medium
-	balanceLabel.TextSize = 11
-	balanceLabel.TextColor3 = C.Gray500
+	balanceLabel.TextSize = 10
+	balanceLabel.TextColor3 = Color3.fromRGB(180, 220, 210) -- Lighter teal for contrast on dark bg
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	balanceLabel.Text = "YOUR BALANCE"
 	balanceLabel.ZIndex = 86
-	balanceLabel.Parent = self.balanceBar
+	balanceLabel.Parent = balContent
 
 	self.balanceValue = Instance.new("TextLabel")
 	self.balanceValue.Name = "Value"
-	self.balanceValue.Size = UDim2.new(0.6, 0, 0, 24)
-	self.balanceValue.Position = UDim2.new(0, 68, 0, 26)
+	self.balanceValue.Size = UDim2.new(0.6, 0, 0, 20)
+	self.balanceValue.Position = UDim2.new(0, 38, 0, 22)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 20
-	self.balanceValue.TextColor3 = C.TealDark
+	self.balanceValue.TextSize = 18
+	self.balanceValue.TextColor3 = C.White
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
 	self.balanceValue.ZIndex = 86
-	self.balanceValue.Parent = self.balanceBar
+	self.balanceValue.Parent = balContent
 
 	-- REMOVED: Casino button (per user request)
 	-- Casino/gambling feature removed from AssetsScreen
 
-	-- Tab bar - CRITICAL FIX: Adjusted position for properly sized balance bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 176, zIndex = 84 })
+	-- Tab bar - CRITICAL FIX: Adjusted position to flow from redesigned balance bar
+	-- Balance bar ends at Y=148 (100 + 48), so tab bar starts right below
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 156, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -349,8 +339,9 @@ function AssetsScreen:createUI()
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
 
-	-- Scroll area - CRITICAL FIX: Adjusted position for new balance bar
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 246, zIndex = 81 })
+	-- Scroll area - CRITICAL FIX: Adjusted position for compact balance bar + tab bar
+	-- Balance bar ends at ~148, tab bar is ~50px, so content starts at ~210
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 210, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()
