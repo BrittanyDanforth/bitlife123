@@ -1765,8 +1765,21 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 
 	local eventId = (eventDef.id or "event") .. "_" .. HttpService:GenerateGUID(false)
 	
+	-- CRITICAL FIX: Process getDynamicText for events with dynamic content
+	local eventText = eventDef.text
+	if eventDef.getDynamicText and type(eventDef.getDynamicText) == "function" then
+		local success, dynamicData = pcall(eventDef.getDynamicText, state)
+		if success and dynamicData then
+			if dynamicData.text then
+				eventText = dynamicData.text
+			end
+			-- Store dynamic data for use in choice resolution
+			eventDef._dynamicData = dynamicData
+		end
+	end
+	
 	-- CRITICAL FIX: Replace text variables with actual names
-	local processedText = self:replaceTextVariables(eventDef.text, state)
+	local processedText = self:replaceTextVariables(eventText, state)
 	local processedTitle = self:replaceTextVariables(eventDef.title, state)
 	local processedQuestion = self:replaceTextVariables(eventDef.question or "What will you do?", state)
 	
@@ -2467,20 +2480,9 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	self:applyStatChanges(state, deltas)
 
 	local resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
-	local resultData = {
-		showPopup = true,
-		emoji = "✨",
-		title = "Activity Complete",
-		body = resultMessage,
-		happiness = deltas.Happiness,
-		health = deltas.Health,
-		smarts = deltas.Smarts,
-		looks = deltas.Looks,
-		money = activity.cost and -activity.cost or 0,
-		wasSuccess = true,
-	}
-
-	self:pushState(player, resultMessage, resultData)
+	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
+	-- This was causing double popup issues in ActivitiesScreen
+	self:pushState(player, resultMessage)
 	return { success = true, message = resultMessage }
 end
 
@@ -2539,31 +2541,17 @@ function LifeBackend:handleCrime(player, crimeId)
 		
 		self:applyStatChanges(state, { Happiness = -10, Health = -5 })
 		local message = string.format("You were caught! Sentenced to %.1f years. You lost your job.", years)
-		self:pushState(player, message, {
-			showPopup = true,
-			emoji = "🚔",
-			title = "Busted!",
-			body = message,
-			wasSuccess = false,
-			happiness = -10,
-			health = -5,
-		})
+		-- CRITICAL FIX: Don't use showPopup - client shows its own result
+		self:pushState(player, message)
 		return { success = false, caught = true, message = message }
 	else
 		local payout = RANDOM:NextInteger(crime.reward[1], crime.reward[2])
 		self:addMoney(state, payout)
 		self:applyStatChanges(state, { Happiness = 4 })
 		local message = string.format("Crime succeeded! You gained %s.", formatMoney(payout))
-		self:pushState(player, message, {
-			showPopup = true,
-			emoji = "💰",
-			title = "Clean Getaway",
-			body = message,
-			money = payout,
-			happiness = 4,
-			wasSuccess = true,
-		})
-		return { success = true, caught = false, message = message }
+		-- CRITICAL FIX: Don't use showPopup - client shows its own result
+		self:pushState(player, message)
+		return { success = true, caught = false, message = message, money = payout }
 	end
 end
 
@@ -3028,14 +3016,10 @@ function LifeBackend:handleWork(player)
 	state.CareerInfo.promotionProgress = clamp((state.CareerInfo.promotionProgress or 0) + RANDOM:NextInteger(3, 6), 0, 100)
 
 	local message = string.format("Payday! You earned %s.", formatMoney(payday))
-	self:pushState(player, message, {
-		showPopup = true,
-		emoji = "💼",
-		title = "Work Complete",
-		body = message,
-		money = payday,
-	})
-	return { success = true, message = message }
+	-- CRITICAL FIX: Don't use showPopup here - client already shows result from return value
+	-- This was causing DOUBLE popup issue!
+	self:pushState(player, message)
+	return { success = true, message = message, money = payday }
 end
 
 function LifeBackend:handlePromotion(player)

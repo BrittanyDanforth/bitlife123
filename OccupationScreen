@@ -274,38 +274,39 @@ local Jobs = {
 	{ id = "fence", name = "Fence", company = "Underground Market", emoji = "💎", salary = 85000, minAge = 20, requirement = nil, category = "criminal", illegal = true, difficulty = 4 },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- HACKER / CYBER CAREERS - CRITICAL FIX: Added hacker job path!
+	-- HACKER / CYBER CAREERS - CRITICAL FIX: IDs must match server JobCatalog!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "script_kiddie", name = "Script Kiddie", company = "Basement", emoji = "💻", salary = 15000, minAge = 14, requirement = nil, category = "hacker", difficulty = 1, minStats = { Smarts = 35 } },
-	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🔓", salary = 45000, minAge = 16, requirement = nil, category = "hacker", difficulty = 3, minStats = { Smarts = 45 } },
-	{ id = "grey_hat", name = "Grey Hat Hacker", company = "Underground", emoji = "🎭", salary = 85000, minAge = 18, requirement = nil, category = "hacker", difficulty = 5, minStats = { Smarts = 55 } },
-	{ id = "penetration_tester", name = "Penetration Tester", company = "SecureTech", emoji = "🔐", salary = 95000, minAge = 20, requirement = "bachelor", category = "hacker", difficulty = 6, minStats = { Smarts = 60 } },
-	{ id = "black_hat", name = "Black Hat Hacker", company = "Anonymous", emoji = "🖤", salary = 150000, minAge = 18, requirement = nil, category = "hacker", illegal = true, difficulty = 7, minStats = { Smarts = 65 } },
-	{ id = "exploit_developer", name = "Exploit Developer", company = "Zero Day Labs", emoji = "💣", salary = 180000, minAge = 22, requirement = nil, category = "hacker", difficulty = 8, minStats = { Smarts = 75 } },
-	{ id = "cyber_crime_lord", name = "Cyber Crime Lord", company = "The Dark Network", emoji = "👑💻", salary = 500000, minAge = 28, requirement = nil, category = "hacker", illegal = true, difficulty = 10, minStats = { Smarts = 85 } },
-	{ id = "white_hat_lead", name = "White Hat Security Lead", company = "Fortune 500", emoji = "🛡️", salary = 200000, minAge = 28, requirement = "bachelor", category = "hacker", difficulty = 8, minStats = { Smarts = 75 } },
-	{ id = "security_researcher", name = "Security Researcher", company = "Bug Bounty Inc", emoji = "🔍", salary = 120000, minAge = 22, requirement = "bachelor", category = "hacker", difficulty = 6, minStats = { Smarts = 65 } },
+	-- Entry level hacking (shared path)
+	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 0, minAge = 14, requirement = nil, category = "hacker", difficulty = 1, minStats = { Smarts = 55 } },
+	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker", difficulty = 3, minStats = { Smarts = 65 } },
+	-- White Hat Path (in tech category on server)
+	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech", difficulty = 5, minStats = { Smarts = 70 } },
+	{ id = "security_consultant", name = "Security Consultant", company = "CyberGuard Inc", emoji = "🛡️", salary = 165000, minAge = 25, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 75 } },
+	{ id = "ciso", name = "Chief Information Security Officer", company = "Fortune 500", emoji = "🔐", salary = 420000, minAge = 32, requirement = "bachelor", category = "tech", difficulty = 9, minStats = { Smarts = 80 } },
+	-- Black Hat Path (Criminal - illegal)
+	{ id = "black_hat_hacker", name = "Black Hat Hacker", company = "Underground", emoji = "🎭", salary = 200000, minAge = 20, requirement = nil, category = "hacker", illegal = true, difficulty = 6, minStats = { Smarts = 70 } },
+	{ id = "elite_hacker", name = "Elite Hacker", company = "Anonymous Collective", emoji = "👤", salary = 500000, minAge = 25, requirement = nil, category = "hacker", illegal = true, difficulty = 8, minStats = { Smarts = 80 } },
+	{ id = "cyber_crime_boss", name = "Cyber Crime Boss", company = "The Syndicate", emoji = "💀", salary = 2000000, minAge = 30, requirement = nil, category = "hacker", illegal = true, difficulty = 9, minStats = { Smarts = 85 } },
+	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 28, requirement = nil, category = "hacker", illegal = true, difficulty = 10, minStats = { Smarts = 90 } },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- RACING CAREERS - Added for completeness
+	-- RACING CAREERS - CRITICAL FIX: IDs must match server JobCatalog!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Track", emoji = "🏎️", salary = 5000, minAge = 10, requirement = nil, category = "racing", difficulty = 2, minStats = { Health = 40 } },
-	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Circuit", emoji = "🏁", salary = 25000, minAge = 16, requirement = nil, category = "racing", difficulty = 4, minStats = { Health = 50 } },
-	{ id = "semi_pro_racer", name = "Semi-Pro Racer", company = "National Series", emoji = "🏎️", salary = 75000, minAge = 18, requirement = nil, category = "racing", difficulty = 6, minStats = { Health = 60 } },
-	{ id = "pro_racer", name = "Professional Racer", company = "Pro Racing League", emoji = "🏆", salary = 250000, minAge = 21, requirement = nil, category = "racing", difficulty = 8, minStats = { Health = 75 } },
-	{ id = "f1_driver", name = "F1 Driver", company = "Formula 1", emoji = "🏎️🏆", salary = 5000000, minAge = 21, requirement = nil, category = "racing", difficulty = 10, minStats = { Health = 85 } },
-	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Championship Team", emoji = "🏁👑", salary = 2000000, minAge = 35, requirement = nil, category = "racing", difficulty = 9, minStats = { Smarts = 60 } },
+	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Karting League", emoji = "🏎️", salary = 15000, minAge = 12, requirement = nil, category = "racing", difficulty = 2, minStats = { Health = 50 } },
+	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Racing Circuit", emoji = "🏎️", salary = 35000, minAge = 16, requirement = nil, category = "racing", difficulty = 4, minStats = { Health = 60 } },
+	{ id = "professional_racer", name = "Professional Racer", company = "National Racing Series", emoji = "🏁", salary = 150000, minAge = 18, requirement = nil, category = "racing", difficulty = 6, minStats = { Health = 70 } },
+	{ id = "f1_driver", name = "Formula 1 Driver", company = "F1 Racing Team", emoji = "🏆", salary = 2500000, minAge = 21, requirement = nil, category = "racing", difficulty = 9, minStats = { Health = 80 } },
+	{ id = "racing_legend", name = "Racing Legend", company = "Racing Hall of Fame", emoji = "👑", salary = 15000000, minAge = 28, requirement = nil, category = "racing", difficulty = 10, minStats = { Health = 75 } },
+	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Your Racing Team", emoji = "🏢", salary = 5000000, minAge = 35, requirement = nil, category = "racing", difficulty = 8, minStats = { Smarts = 55 } },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- ESPORTS / GAMING CAREERS
+	-- ESPORTS / GAMING CAREERS - CRITICAL FIX: IDs must match server!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports", difficulty = 1 },
-	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 45000, minAge = 16, requirement = nil, category = "esports", difficulty = 3 },
-	{ id = "amateur_esports", name = "Amateur Esports Player", company = "Local League", emoji = "🎮", salary = 25000, minAge = 16, requirement = nil, category = "esports", difficulty = 4 },
-	{ id = "pro_gamer", name = "Pro Esports Player", company = "Esports Org", emoji = "🏆🎮", salary = 150000, minAge = 18, requirement = nil, category = "esports", difficulty = 7, minStats = { Smarts = 50 } },
-	{ id = "esports_star", name = "Esports Superstar", company = "Top Esports Team", emoji = "⭐🎮", salary = 1000000, minAge = 18, requirement = nil, category = "esports", difficulty = 10, minStats = { Smarts = 60 } },
-	{ id = "esports_coach", name = "Esports Coach", company = "Pro Team", emoji = "📋🎮", salary = 85000, minAge = 22, requirement = nil, category = "esports", difficulty = 5 },
-	{ id = "game_streamer", name = "Famous Streamer", company = "Twitch Partner", emoji = "📺", salary = 500000, minAge = 18, requirement = nil, category = "esports", difficulty = 8, minStats = { Looks = 50 } },
+	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports", difficulty = 1, minStats = { Smarts = 40 } },
+	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 45000, minAge = 16, requirement = nil, category = "esports", difficulty = 3, minStats = { Smarts = 50 } },
+	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 150000, minAge = 16, requirement = nil, category = "esports", difficulty = 6, minStats = { Smarts = 60 } },
+	{ id = "esports_champion", name = "Esports Champion", company = "World Champions", emoji = "🏆", salary = 1500000, minAge = 18, requirement = nil, category = "esports", difficulty = 8, minStats = { Smarts = 70 } },
+	{ id = "gaming_legend", name = "Gaming Legend", company = "Hall of Fame", emoji = "👑", salary = 5000000, minAge = 22, requirement = nil, category = "esports", difficulty = 10 },
 }
 
 -- Education Data - Must match server's EducationOptions IDs!

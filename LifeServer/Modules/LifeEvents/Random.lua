@@ -875,6 +875,173 @@ Random.events = {
 			{ text = "Laughed it off - no big deal", effects = { Happiness = 5 }, setFlags = { thick_skinned = true }, feedText = "You didn't let it bother you. Strong move." },
 		},
 	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HOMELESS / FINANCIAL CRISIS EVENTS - For players who chose the bum life
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "eviction_notice",
+		title = "Eviction Notice",
+		emoji = "📋",
+		text = "You can't pay rent. Your landlord has given you an eviction notice.",
+		question = "What do you do?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.8, -- High chance if triggered
+		cooldown = 5,
+		-- Only triggers for people with bum_life flag or very low money
+		requiresFlags = { bum_life = true },
+		blockedByFlags = { homeless = true },
+
+		choices = {
+			{ 
+				text = "Beg family for help", 
+				effects = { Happiness = -8 }, 
+				feedText = "You swallowed your pride and asked family for help.",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("💕 Your family helped you out this time...")
+					else
+						state.Flags.homeless = true
+						state.Flags.at_risk_homeless = nil
+						state:AddFeed("😢 They couldn't help. You're on the streets now.")
+					end
+				end,
+			},
+			{ 
+				text = "Try to find any job fast", 
+				effects = { Happiness = -5 },
+				setFlags = { desperate_job_hunt = true },
+				feedText = "You're frantically looking for any work you can get.",
+			},
+			{ 
+				text = "Accept your fate", 
+				effects = { Happiness = -15, Health = -5 },
+				setFlags = { homeless = true },
+				feedText = "You've become homeless. Life on the streets is brutal.",
+				onResolve = function(state)
+					state.Flags.homeless = true
+					state.Flags.at_risk_homeless = nil
+					state.Flags.bum_life = nil
+				end,
+			},
+		},
+	},
+	{
+		id = "homeless_life",
+		title = "Life on the Streets",
+		emoji = "🏚️",
+		text = "Another day homeless. The streets are harsh and unforgiving.",
+		question = "How do you survive today?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.9,
+		cooldown = 1,
+		requiresFlags = { homeless = true },
+
+		choices = {
+			{ 
+				text = "Panhandle for money", 
+				effects = { Happiness = -5, Looks = -2 },
+				feedText = "You asked strangers for spare change.",
+				onResolve = function(state)
+					local earned = math.random(5, 50)
+					state.Money = (state.Money or 0) + earned
+					state:AddFeed(string.format("💰 You collected $%d from panhandling.", earned))
+				end,
+			},
+			{ 
+				text = "Search for food in dumpsters", 
+				effects = { Happiness = -8, Health = -3 },
+				feedText = "Dumpster diving for scraps. This is survival.",
+			},
+			{ 
+				text = "Go to a shelter", 
+				effects = { Happiness = 2, Health = 2 },
+				setFlags = { using_shelter = true },
+				feedText = "You found a warm bed at a shelter for the night.",
+			},
+			{ 
+				text = "Try to find work - ANY work", 
+				effects = { Happiness = 3 },
+				feedText = "You're determined to get off the streets.",
+				onResolve = function(state)
+					if math.random() < 0.3 then
+						state.Flags.homeless = nil
+						state.Flags.has_temp_housing = true
+						state.Money = (state.Money or 0) + 200
+						state:AddFeed("🎉 You found day labor work! Enough for a cheap room tonight.")
+					else
+						state:AddFeed("😔 No luck finding work today...")
+					end
+				end,
+			},
+			{ 
+				text = "Turn to crime to survive", 
+				effects = { Happiness = -2 },
+				setFlags = { desperate_criminal = true },
+				feedText = "Desperation is pushing you to dark choices...",
+				onResolve = function(state)
+					if math.random() < 0.4 then
+						state.Money = (state.Money or 0) + math.random(50, 200)
+						state:AddFeed("💵 You stole some money. Risky, but you needed it.")
+					else
+						state.InJail = true
+						state.JailYearsLeft = math.random(1, 3)
+						state:AddFeed("🚔 You got caught! Arrested for theft.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "homeless_recovery",
+		title = "A Second Chance",
+		emoji = "🌅",
+		text = "Someone offers you a chance to get back on your feet.",
+		question = "What kind of help is it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 10,
+		requiresFlags = { homeless = true },
+
+		choices = {
+			{ 
+				text = "Job training program", 
+				effects = { Happiness = 15, Smarts = 5 },
+				setFlags = { in_recovery_program = true },
+				feedText = "You're enrolled in a program to learn new skills!",
+				onResolve = function(state)
+					state.Flags.homeless = nil
+					state.Flags.recovering = true
+					state.Money = (state.Money or 0) + 500
+				end,
+			},
+			{ 
+				text = "Temporary housing assistance", 
+				effects = { Happiness = 20, Health = 10 },
+				feedText = "You have a roof over your head again!",
+				onResolve = function(state)
+					state.Flags.homeless = nil
+					state.Flags.has_temp_housing = true
+				end,
+			},
+			{ 
+				text = "A kind stranger helps you", 
+				effects = { Happiness = 25, Health = 5 },
+				feedText = "Faith in humanity restored! Someone truly helped you.",
+				onResolve = function(state)
+					state.Flags.homeless = nil
+					state.Money = (state.Money or 0) + 1000
+					state:AddFeed("💕 A kind stranger gave you money and connected you with resources.")
+				end,
+			},
+			{ 
+				text = "You're skeptical of the help", 
+				effects = { Happiness = -5 },
+				feedText = "You turned down the help. Trust is hard on the streets.",
+			},
+		},
+	},
 }
 
 return Random

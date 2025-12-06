@@ -46,15 +46,57 @@ Relationships.events = {
 		id = "new_friendship",
 		title = "Potential Friend",
 		emoji = "🤝",
-		text = "You've been hitting it off with someone you recently met.",
+		-- CRITICAL FIX: Dynamic friend name using {{FRIEND_NAME}} placeholder
+		text = "You've been hitting it off with {{FRIEND_NAME}}. You two seem to really click!",
 		question = "Could this be a new friendship?",
 		minAge = 13, maxAge = 80,
 		baseChance = 0.5,
 		cooldown = 2,
+		-- Dynamic text generation for the event
+		getDynamicText = function(state)
+			-- Generate a random name for the potential friend
+			local names = state.Gender == "male" 
+				and {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Chloe", "Grace", "Lily", "Harper", "Jake", "Alex", "Sam", "Jordan", "Taylor"}
+				or {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Jake", "Ethan", "Noah", "Emma", "Sam", "Jordan", "Taylor", "Morgan"}
+			local name = names[math.random(1, #names)]
+			return {
+				text = string.format("You've been hitting it off with %s. You two seem to really click!", name),
+				friendName = name,
+			}
+		end,
 		choices = {
-			{ text = "Definitely - let's hang out more", effects = { Happiness = 8 }, setFlags = { has_best_friend = true }, feedText = "You made a new friend!" },
-			{ text = "Take it slow", effects = { Happiness = 3 }, feedText = "You're cautiously optimistic." },
-			{ text = "I'm good on friends", effects = { }, feedText = "You have enough friends." },
+			{ 
+				text = "Definitely - let's hang out more!", 
+				effects = { Happiness = 8 }, 
+				setFlags = { has_best_friend = true },
+				feedText = "You made a new friend!",
+				-- CRITICAL FIX: Create the friend relationship with the dynamic name
+				onResolve = function(state, choice, event)
+					local friendName = "New Friend"
+					if event._dynamicData and event._dynamicData.friendName then
+						friendName = event._dynamicData.friendName
+					end
+					-- Create friend relationship
+					state.Relationships = state.Relationships or {}
+					local friendId = "friend_" .. tostring(os.clock()):gsub("%.", "")
+					state.Relationships[friendId] = {
+						id = friendId,
+						name = friendName,
+						type = "friend",
+						role = "Friend",
+						relationship = 70,
+						alive = true,
+						metAt = state.Age or 0,
+					}
+					-- Update the feedText with the actual name
+					choice.feedText = string.format("You became friends with %s!", friendName)
+					if state.AddFeed then
+						state:AddFeed(string.format("🤝 You made a new friend: %s!", friendName))
+					end
+				end,
+			},
+			{ text = "Take it slow", effects = { Happiness = 3 }, feedText = "You're cautiously optimistic about this friendship." },
+			{ text = "I'm good on friends right now", effects = { }, feedText = "You decided not to pursue this friendship." },
 		},
 	},
 

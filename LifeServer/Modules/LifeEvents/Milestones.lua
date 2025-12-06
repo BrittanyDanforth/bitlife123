@@ -486,6 +486,22 @@ Milestones.events = {
 				effects = { Happiness = 3 }, 
 				feedText = "You've got your own path in mind." 
 			},
+			-- CRITICAL FIX: Added lazy/bum option for player agency - can lead to homelessness!
+			{ 
+				text = "Nah, I'll just chill (be lazy)", 
+				effects = { Happiness = 3, Smarts = -2 }, 
+				setFlags = { lazy = true, unemployed_by_choice = true, bum_life = true }, 
+				feedText = "Work? That sounds like a lot of effort. You're gonna take it easy.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.lazy = true
+					state.Flags.bum_life = true
+					state.Flags.at_risk_homeless = true
+					if state.AddFeed then
+						state:AddFeed("⚠️ Without income, bills will pile up...")
+					end
+				end,
+			},
 		},
 		
 		-- CRITICAL FIX: REMOVED auto job assignment! Player should choose their own job!
