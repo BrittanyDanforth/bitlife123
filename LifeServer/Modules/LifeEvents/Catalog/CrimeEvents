@@ -12,7 +12,9 @@ local RANDOM = Random.new()
 
 -- Helper function to properly incarcerate a player
 local function incarceratePlayer(state, yearsMin, yearsMax, reason)
-	local years = RANDOM:NextNumber(yearsMin, yearsMax)
+	-- CRITICAL FIX: Use NextInteger, not NextNumber!
+	-- NextNumber() returns a 0-1 float, NextInteger(min, max) returns proper integer range
+	local years = RANDOM:NextInteger(yearsMin, yearsMax)
 	
 	state.InJail = true
 	state.JailYearsLeft = years

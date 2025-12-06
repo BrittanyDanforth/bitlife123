@@ -2898,7 +2898,9 @@ function LifeBackend:handleCrime(player, crimeId)
 	local caught = roll < (crime.risk + riskModifier)
 
 	if caught then
-		local years = RANDOM:NextNumber(crime.jail.min, crime.jail.max)
+		-- CRITICAL FIX: Use NextInteger, not NextNumber!
+		-- NextNumber() returns a 0-1 float, NextInteger(min, max) returns proper integer range
+		local years = RANDOM:NextInteger(crime.jail.min, crime.jail.max)
 		state.InJail = true
 		state.JailYearsLeft = years
 		state.Flags.in_prison = true

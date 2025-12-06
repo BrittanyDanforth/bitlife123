@@ -15,6 +15,10 @@
     ═══════════════════════════════════════════════════════════════════════════════
 ]]
 
+-- CRITICAL FIX: Define RANDOM instance for random number generation
+-- Without this, Random:NextNumber() calls would crash!
+local RANDOM = Random.new()
+
 local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- ENTRY-LEVEL CAREER (Ages 18-25)
@@ -337,7 +341,8 @@ local events = {
 				setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
 				feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
 				onResolve = function(state)
-					if Random:NextNumber() < 0.15 then
+					-- CRITICAL FIX: Use RANDOM instance, not Random class!
+					if RANDOM:NextNumber() < 0.15 then
 						if state.AddFeed then
 							state:AddFeed("3 years later: IPO! Your 0.5% equity is worth $650,000! You're RICH! You took the risk and it PAID OFF! You quit and bought a Tesla!")
 						end

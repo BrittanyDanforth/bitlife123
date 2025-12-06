@@ -1159,7 +1159,8 @@ Career.events = {
 	},
 },
 {
-	id = "side_hustle_opportunity",
+	-- CRITICAL FIX: Renamed from "side_hustle_opportunity" to avoid ID conflict with FastFoodEvents
+	id = "side_hustle_idea",
 	title = "Side Hustle Opportunity",
 	emoji = "💡",
 	text = "You've got an idea for a side business. It could bring in extra money, but it'll take time away from your main job and personal life.",
