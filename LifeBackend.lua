@@ -1728,13 +1728,19 @@ function LifeBackend:replaceTextVariables(text, state)
 	
 	-- Player name replacement  
 	local playerName = state.Name or "You"
+	local honorific = (state.Gender == "female") and "Ms." or "Mr."
+	
+	-- CRITICAL FIX: Replace combined patterns FIRST before individual replacements
+	result = result:gsub("Mr%./Ms%. %[YOUR NAME%]", honorific .. " " .. playerName)
+	result = result:gsub("Mr%./Ms%. {{NAME}}", honorific .. " " .. playerName)
+	result = result:gsub("Mr%./Ms%. {{PLAYER_NAME}}", honorific .. " " .. playerName)
+	
+	-- Then replace standalone patterns
 	result = result:gsub("{{PLAYER_NAME}}", playerName)
 	result = result:gsub("{{NAME}}", playerName)
-	-- CRITICAL FIX: Also replace [YOUR NAME] placeholder format
 	result = result:gsub("%[YOUR NAME%]", playerName)
 	result = result:gsub("%[your name%]", playerName)
-	result = result:gsub("Mr%./Ms%. %[YOUR NAME%]", "Mr./Ms. " .. playerName)
-	result = result:gsub("Mr%./Ms%.", (state.Gender == "female") and "Ms." or "Mr.")
+	result = result:gsub("Mr%./Ms%.", honorific)
 	
 	-- Age replacement
 	local age = state.Age or 0
@@ -2947,6 +2953,12 @@ function LifeBackend:handleJobApplication(player, jobId)
 	state.Flags.has_job = true
 	state.Flags.between_jobs = nil
 	state.Flags.unemployed = nil
+	
+	-- CRITICAL FIX: Set has_teen_job for jobs obtained before age 18
+	if (state.Age or 0) < 18 then
+		state.Flags.has_teen_job = true
+	end
+	
 	if state.Flags.retired then
 		state.Flags.retired = nil
 		state.Flags.semi_retired = nil

@@ -464,19 +464,84 @@ Career.events = {
 		id = "salary_negotiation",
 		title = "Salary Negotiation",
 		emoji = "💵",
-		text = "It's annual review time. You want a raise.",
-		question = "How do you approach the negotiation?",
+		text = "It's annual review time. You're thinking about asking for a raise.",
+		question = "How do you approach this negotiation?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
 
+		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach"
+		-- Actual raise amount is random based on stats + approach
 		choices = {
-			{ text = "Come prepared with market data", effects = { Money = 800, Smarts = 3 }, feedText = "Your research paid off. Nice raise!" },
-			{ text = "Ask confidently but wing it", effects = { Money = 400, Happiness = 3 }, feedText = "You got something, not as much as you hoped." },
-			{ text = "Accept what they offer", effects = { Money = 200, Happiness = -2 }, feedText = "You took the standard increase." },
-			{ text = "Threaten to leave", effects = { Money = 1000, Happiness = -3 }, setFlags = { hardball_negotiator = true }, feedText = "They matched your demands. Tense though." },
-			{ text = "Ask for more vacation instead", effects = { Happiness = 6, Health = 3 }, setFlags = { values_time_off = true }, feedText = "More days off is worth more than money!" },
+			{ 
+				text = "Come prepared with market data and achievements", 
+				effects = { Smarts = 1 },
+				onResolve = function(state, choice)
+					local smarts = (state.Stats and state.Stats.Smarts) or state.Smarts or 50
+					local performance = (state.CareerInfo and state.CareerInfo.performance) or 60
+					-- Preparation + smart + good performance = better odds
+					local successChance = 0.3 + (smarts / 200) + (performance / 200)
+					local roll = math.random()
+					if roll < successChance then
+						choice.effects = { Money = 800, Smarts = 2, Happiness = 5 }
+						choice.feedText = "Your research paid off! You got a solid raise!"
+					elseif roll < successChance + 0.3 then
+						choice.effects = { Money = 300, Happiness = 2 }
+						choice.feedText = "You got a small raise. Better than nothing."
+					else
+						choice.effects = { Happiness = -5 }
+						choice.feedText = "Denied. Budget constraints, they said."
+					end
+				end,
+			},
+			{ 
+				text = "Ask confidently but wing it", 
+				effects = {},
+				onResolve = function(state, choice)
+					local roll = math.random()
+					if roll < 0.25 then
+						choice.effects = { Money = 500, Happiness = 5 }
+						choice.feedText = "They respected your confidence! Raise granted."
+					elseif roll < 0.55 then
+						choice.effects = { Money = 150, Happiness = 1 }
+						choice.feedText = "You got a token increase."
+					else
+						choice.effects = { Happiness = -4 }
+						choice.feedText = "Denied. Should have prepared better."
+					end
+				end,
+			},
+			{ 
+				text = "Accept the standard cost-of-living increase", 
+				effects = { Money = 200, Happiness = -1 }, 
+				feedText = "You took the standard 2% increase." 
+			},
+			{ 
+				text = "Threaten to leave if no raise", 
+				effects = {},
+				onResolve = function(state, choice)
+					local roll = math.random()
+					if roll < 0.35 then
+						choice.effects = { Money = 1200, Happiness = 3 }
+						choice.setFlags = { hardball_negotiator = true }
+						choice.feedText = "They called your bluff and matched your demands!"
+					elseif roll < 0.6 then
+						choice.effects = { Money = 400 }
+						choice.feedText = "They offered a compromise. Tension remains."
+					else
+						choice.effects = { Happiness = -10 }
+						choice.setFlags = { burned_bridges = true }
+						choice.feedText = "They said 'go ahead and leave.' Backfired badly."
+					end
+				end,
+			},
+			{ 
+				text = "Ask for more vacation instead of money", 
+				effects = { Happiness = 5, Health = 2 }, 
+				setFlags = { values_time_off = true }, 
+				feedText = "More days off granted! Time is priceless." 
+			},
 		},
 	},
 	{
@@ -746,18 +811,64 @@ Career.events = {
 		id = "performance_review",
 		title = "Performance Review",
 		emoji = "📋",
-		text = "It's annual performance review time.",
-		question = "What did your review say?",
+		text = "It's annual performance review time. Your manager wants to discuss your progress.",
+		question = "How do you approach this review?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.6,
 		cooldown = 2,
 		requiresJob = true,
 
+		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach" 
+		-- Actual outcome is determined by stats + random chance via onResolve
 		choices = {
-			{ text = "Exceeds expectations!", effects = { Happiness = 10, Money = 800, Smarts = 2 }, setFlags = { top_performer = true }, feedText = "Amazing review! Raise incoming!" },
-			{ text = "Meets expectations", effects = { Happiness = 3, Money = 200 }, feedText = "Solid but not standout." },
-			{ text = "Needs improvement", effects = { Happiness = -8 }, setFlags = { on_pip = true }, feedText = "You're on a performance improvement plan now." },
-			{ text = "Blindsided by negative feedback", effects = { Happiness = -12, Smarts = -2 }, feedText = "The criticism came out of nowhere. Devastating." },
+			{ 
+				text = "Walk in confident with achievements prepared", 
+				effects = { Smarts = 1 },
+				onResolve = function(state, choice)
+					local smarts = (state.Stats and state.Stats.Smarts) or state.Smarts or 50
+					local happiness = (state.Stats and state.Stats.Happiness) or state.Happiness or 50
+					-- Prepared + smart employees get better reviews
+					local successChance = 0.3 + (smarts / 200) + (happiness / 300)
+					local roll = math.random()
+					if roll < successChance then
+						choice.effects = { Happiness = 10, Money = 800, Smarts = 2 }
+						choice.setFlags = { top_performer = true }
+						choice.feedText = "Exceeds expectations! Your preparation paid off!"
+					elseif roll < successChance + 0.35 then
+						choice.effects = { Happiness = 3, Money = 200 }
+						choice.feedText = "Meets expectations. Solid performance."
+					else
+						choice.effects = { Happiness = -5 }
+						choice.feedText = "Needs improvement. Time to step it up."
+					end
+				end,
+			},
+			{ 
+				text = "Go in casually and wing it", 
+				effects = {},
+				onResolve = function(state, choice)
+					local smarts = (state.Stats and state.Stats.Smarts) or state.Smarts or 50
+					-- Winging it has lower success chance
+					local successChance = 0.15 + (smarts / 300)
+					local roll = math.random()
+					if roll < successChance then
+						choice.effects = { Happiness = 8, Money = 500 }
+						choice.feedText = "Somehow you aced it! Lucky break."
+					elseif roll < successChance + 0.4 then
+						choice.effects = { Happiness = 1, Money = 100 }
+						choice.feedText = "Meets expectations. Could have been better."
+					else
+						choice.effects = { Happiness = -8 }
+						choice.setFlags = { on_pip = true }
+						choice.feedText = "Needs improvement. You're on a performance plan now."
+					end
+				end,
+			},
+			{ 
+				text = "Ask to reschedule - not feeling ready", 
+				effects = { Happiness = -3 },
+				feedText = "You postponed the review. The anxiety continues." 
+			},
 		},
 	},
 }

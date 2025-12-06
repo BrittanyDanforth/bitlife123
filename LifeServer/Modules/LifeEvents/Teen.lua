@@ -224,6 +224,9 @@ Teen.events = {
 		minAge = 15, maxAge = 17,
 		baseChance = 0.7,
 		cooldown = 3,
+		-- CRITICAL FIX: Block if player already has ANY job
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, coder = true, tech_experience = true },
+		requiresNoJob = true,
 		choices = {
 			{ text = "Work at a fast food place", effects = { Money = 200, Health = -2, Happiness = -1 }, setFlags = { has_teen_job = true, fast_food_experience = true }, feedText = "You got a job flipping burgers. Money incoming!" },
 			{ text = "Work at a retail store", effects = { Money = 180, Happiness = 1 }, setFlags = { has_teen_job = true, retail_experience = true }, feedText = "You're working retail. Learning about customers." },

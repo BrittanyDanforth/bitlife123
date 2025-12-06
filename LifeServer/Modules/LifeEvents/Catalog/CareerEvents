@@ -9,7 +9,8 @@ local events = {
 		minAge = 15,
 		maxAge = 30,
 		requiresNoJob = true,
-		blockedByFlags = { employed = true },
+		-- CRITICAL FIX: Block if player has ANY job or job-related flags
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, coder = true, tech_experience = true },
 		choices = {
 			{
 				index = 1,
