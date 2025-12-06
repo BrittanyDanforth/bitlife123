@@ -249,7 +249,7 @@ function AssetsScreen:createUI()
 	self.balanceBar = Instance.new("Frame")
 	self.balanceBar.Name = "BalanceBar"
 	self.balanceBar.Size = UDim2.new(1, -24, 0, 54) -- Full width minus margins
-	self.balanceBar.Position = UDim2.new(0, 12, 0, 108) -- Just below header (header is ~100px)
+	self.balanceBar.Position = UDim2.new(0, 12, 0, 130) -- Below header curve (header extends to ~120px)
 	self.balanceBar.BackgroundColor3 = C.White
 	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
@@ -318,8 +318,8 @@ function AssetsScreen:createUI()
 	-- Casino/gambling feature removed from AssetsScreen
 
 	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
-	-- Balance bar is at Y=108 with height 54, ends at Y=162. Tab bar starts at 170.
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 170, zIndex = 84 })
+	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 196, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -338,8 +338,8 @@ function AssetsScreen:createUI()
 	end
 
 	-- Scroll area - CRITICAL FIX: Positioned below tab bar
-	-- Tab bar is at Y=170 with ~50px height, so content starts at ~226
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 226, zIndex = 81 })
+	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 266, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()

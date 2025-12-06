@@ -219,6 +219,252 @@ local events = {
 	},
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HIGH-SPEED CAR RISK EVENTS (CRITICAL FIX: Random outcomes, real consequences!)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "highway_speed_demon",
+		emoji = "🏎️",
+		title = "Need for Speed",
+		text = "You're on an empty highway late at night. Your speedometer is climbing... 80... 90... 100 mph. The adrenaline is pumping.",
+		question = "How far do you push it?",
+		category = "assets",
+		weight = 4,
+		minAge = 18,
+		maxAge = 55,
+		baseChance = 0.2,
+		cooldown = 8,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local vehicle = getBestVehicle(state)
+			return vehicle and (vehicle.price or vehicle.value or 0) >= 25000 -- Need a fast car
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "FLOOR IT! See what this beast can do!",
+				effects = {},
+				feedText = "You pushed the pedal to the metal...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					local vehicle = getBestVehicle(state)
+					local vehicleName = vehicle and vehicle.name or "your car"
+					
+					if outcome < 0.30 then -- Pure thrill!
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.speed_demon = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🏎️ Hit 140 mph in %s! INCREDIBLE rush!", vehicleName))
+						end
+					elseif outcome < 0.50 then -- Cops!
+						local fine = RANDOM:NextInteger(800, 3000)
+						state.Money = math.max(0, (state.Money or 0) - fine)
+						state.Flags = state.Flags or {}
+						state.Flags.criminal_record = true
+						state.Flags.reckless_driving = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 BUSTED! Reckless endangerment: $%d fine, license suspended!", fine))
+						end
+					elseif outcome < 0.70 then -- Car trouble at high speed
+						local repairCost = RANDOM:NextInteger(2000, 8000)
+						state.Money = math.max(0, (state.Money or 0) - repairCost)
+						state:ModifyStat("Happiness", -10)
+						if state.AddFeed then
+							state:AddFeed(string.format("🔧 Engine blew at 130 mph! $%d in repairs. Lucky to be alive.", repairCost))
+						end
+					elseif outcome < 0.90 then -- Near miss
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Health", -5)
+						if state.AddFeed then
+							state:AddFeed("😰 Nearly hit a deer at 120 mph. Heart almost stopped. Never again.")
+						end
+					else -- CRASH
+						state:ModifyStat("Health", RANDOM:NextInteger(-40, -20))
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(10000, 30000))
+						state.Flags = state.Flags or {}
+						state.Flags.hospitalized = true
+						-- Destroy the car
+						if state.Assets and state.Assets.Vehicles then
+							for i, v in ipairs(state.Assets.Vehicles) do
+								if v == vehicle then
+									table.remove(state.Assets.Vehicles, i)
+									break
+								end
+							end
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("💥 TOTALED %s at 140 mph! Hospitalized for weeks. Lucky to survive.", vehicleName))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it at 90 - fast but reasonable",
+				effects = { Happiness = 8 },
+				feedText = "You enjoyed the speed responsibly.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.15 then
+						local fine = RANDOM:NextInteger(200, 500)
+						state.Money = math.max(0, (state.Money or 0) - fine)
+						if state.AddFeed then
+							state:AddFeed(string.format("🚨 Speeding ticket: $%d. Still worth it.", fine))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Slow down - not worth the risk",
+				effects = { Happiness = 2, Smarts = 3 },
+				feedText = "Smart choice. You've got too much to lose.",
+			},
+		},
+	},
+	
+	{
+		id = "car_vandalized",
+		emoji = "😡",
+		title = "Car Vandalized!",
+		text = "You come outside to find your car has been vandalized! Scratches, broken windows, the works.",
+		question = "How do you react?",
+		category = "assets",
+		weight = 3,
+		minAge = 18,
+		maxAge = 70,
+		baseChance = 0.1,
+		cooldown = 15,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local vehicle = getBestVehicle(state)
+			return vehicle and (vehicle.price or vehicle.value or 0) >= 20000
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "File a police report and insurance claim",
+				effects = { Happiness = -10 },
+				feedText = "You reported it...",
+				onResolve = function(state)
+					local deductible = RANDOM:NextInteger(500, 1500)
+					state.Money = math.max(0, (state.Money or 0) - deductible)
+					if RANDOM:NextNumber() < 0.2 then
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 Police caught them! Got $%d restitution.", deductible + RANDOM:NextInteger(500, 1000)))
+						end
+						state.Money = (state.Money or 0) + deductible + RANDOM:NextInteger(500, 1000)
+					else
+						if state.AddFeed then
+							state:AddFeed(string.format("📝 Insurance covered it. $%d deductible.", deductible))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Hunt down whoever did this",
+				effects = { Happiness = -5 },
+				feedText = "You went looking for the culprits...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.3 then
+						state:ModifyStat("Happiness", 10)
+						if state.AddFeed then
+							state:AddFeed("👊 Found them! They paid for repairs AND apologized. Justice!")
+						end
+					elseif outcome < 0.6 then
+						state:ModifyStat("Happiness", -10)
+						if state.AddFeed then
+							state:AddFeed("😔 Never found them. Frustrating.")
+						end
+					else
+						state:ModifyStat("Health", RANDOM:NextInteger(-15, -5))
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(1000, 3000))
+						if state.AddFeed then
+							state:AddFeed("👊 Confrontation went badly. Got hurt and car still damaged.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Just pay for repairs myself and move on",
+				effects = { Happiness = -8, Money = -2000 },
+				feedText = "You paid out of pocket. Life goes on.",
+			},
+		},
+	},
+	
+	{
+		id = "exotic_car_attention",
+		emoji = "👀",
+		title = "All Eyes on You",
+		text = "Everywhere you go, people stare at your exotic car. Someone wants to take a photo with it.",
+		question = "How do you handle the attention?",
+		category = "assets",
+		weight = 4,
+		minAge = 21,
+		maxAge = 65,
+		baseChance = 0.25,
+		cooldown = 6,
+		eligibility = function(state)
+			local vehicle = getBestVehicle(state)
+			return vehicle and (vehicle.price or vehicle.value or 0) >= 100000 -- Exotic car
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "Let them take photos - share the joy",
+				effects = { Happiness = 12 },
+				feedText = "You posed with fans...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.car_celebrity = true
+					if RANDOM:NextNumber() < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("📱 Photo went viral! You're car-famous now!")
+						end
+						state.Flags.viral = true
+					else
+						if state.AddFeed then
+							state:AddFeed("📸 Made someone's day. Feels good to share the dream.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Tell them to back off - this is MY car",
+				effects = { Happiness = 3 },
+				feedText = "You shooed them away.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.2 then
+						state:ModifyStat("Happiness", -10)
+						if state.AddFeed then
+							state:AddFeed("😤 They keyed your car as revenge. Karma.")
+						end
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(1000, 3000))
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Offer to let them sit in it",
+				effects = { Happiness = 8 },
+				feedText = "You made a kid's dream come true.",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state.Flags = state.Flags or {}
+					state.Flags.generous = true
+					if state.AddFeed then
+						state:AddFeed("😊 Their face lit up! Generosity feels good.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
 	-- PROPERTY ENJOYMENT EVENTS  
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{

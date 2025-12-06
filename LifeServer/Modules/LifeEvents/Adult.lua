@@ -1417,19 +1417,110 @@ Adult.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Lifetime achievement is now CONTEXTUAL based on actual life!
+		-- No more choosing your legacy - it's determined by what you did
 		id = "lifetime_achievement",
-		title = "Lifetime Achievement",
-		emoji = "🏆",
-		text = "You're being recognized for your life's work!",
-		question = "What are you being honored for?",
+		title = "Looking Back",
+		emoji = "🪞",
+		text = "As you've grown older, you find yourself reflecting on your life and what you've accomplished.",
+		question = "How do you feel about your journey?",
 		minAge = 60, maxAge = 90,
 		oneTime = true,
-
+		-- Dynamic eligibility check - only show if they actually DID something
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local hasCareer = state.CurrentJob or flags.retired or flags.ceo or flags.executive
+			local hasMoney = (state.Money or 0) >= 100000
+			local hasFamily = flags.married or flags.has_children
+			local hasLegacy = flags.famous or flags.philanthropist or flags.criminal_mastermind
+			local hasCrime = flags.criminal_record or flags.ex_convict
+			-- Only trigger if they have SOME kind of story to tell
+			return hasCareer or hasMoney or hasFamily or hasLegacy or hasCrime
+		end,
 		choices = {
-			{ text = "Career achievements", effects = { Happiness = 15, Money = 1000 }, setFlags = { honored = true, career_celebrated = true }, feedText = "Your professional contributions are legendary!" },
-			{ text = "Community service", effects = { Happiness = 18 }, setFlags = { honored = true, community_hero = true }, feedText = "You made your community a better place." },
-			{ text = "Family legacy", effects = { Happiness = 20 }, setFlags = { honored = true, family_patriarch = true }, feedText = "Your family honors you as the heart of the family." },
-			{ text = "Still working on my legacy", effects = { Happiness = 5, Smarts = 2 }, feedText = "You're not done making your mark yet!" },
+			{
+				text = "Accept the recognition gracefully",
+				effects = { Happiness = 10 },
+				feedText = "You've earned this moment.",
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					local achievements = {}
+					
+					-- Build contextual achievements list
+					if (state.Money or 0) >= 1000000 then
+						table.insert(achievements, "You built real wealth - a millionaire's legacy.")
+					elseif (state.Money or 0) >= 100000 then
+						table.insert(achievements, "You achieved financial security.")
+					elseif (state.Money or 0) < 1000 then
+						table.insert(achievements, "Money was never your priority.")
+					end
+					
+					if flags.ceo or flags.executive then
+						table.insert(achievements, "You reached the top of your career.")
+					elseif flags.retired then
+						table.insert(achievements, "You had a long, steady career.")
+					elseif state.CurrentJob then
+						table.insert(achievements, "You worked hard all your life.")
+					else
+						table.insert(achievements, "You walked your own path, career-free.")
+					end
+					
+					if flags.married and flags.has_children then
+						table.insert(achievements, "You built a family and a home.")
+					elseif flags.married then
+						table.insert(achievements, "You found love in this lifetime.")
+					elseif flags.has_children then
+						table.insert(achievements, "You raised children.")
+					end
+					
+					if flags.famous or flags.celebrity then
+						table.insert(achievements, "You became famous!")
+					end
+					
+					if flags.criminal_record then
+						table.insert(achievements, "You lived life on your own terms... legally or not.")
+					end
+					
+					if flags.philanthropist or flags.good_person then
+						table.insert(achievements, "You helped others along the way.")
+					end
+					
+					-- If no achievements, be honest
+					if #achievements == 0 then
+						table.insert(achievements, "Your journey was... quiet. But it was yours.")
+					end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.honored = true
+					
+					local summary = table.concat(achievements, " ")
+					if state.AddFeed then
+						state:AddFeed("🏆 " .. summary)
+					end
+				end,
+			},
+			{
+				text = "Feel content with the simple moments",
+				effects = { Happiness = 8 },
+				feedText = "Not every life needs to be extraordinary.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("☮️ You found peace in the ordinary. Sometimes that's enough.")
+					end
+				end,
+			},
+			{
+				text = "Regret the roads not taken",
+				effects = { Happiness = -5, Smarts = 2 },
+				feedText = "You wonder about what could have been...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_regrets = true
+					if state.AddFeed then
+						state:AddFeed("😔 Looking back, there are things you wish you'd done differently...")
+					end
+				end,
+			},
 		},
 	},
 	{

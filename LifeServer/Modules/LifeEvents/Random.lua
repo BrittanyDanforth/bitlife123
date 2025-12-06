@@ -409,20 +409,54 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Lost item is now RANDOM - you don't choose what you lost!
 		id = "lost_item",
 		title = "Where Did It Go?",
 		emoji = "🔍",
-		text = "You lost something important.",
-		question = "What was it?",
+		text = "You can't find something important. You've searched everywhere!",
+		question = "How hard do you search?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.3,
 		cooldown = 3,
 		choices = {
-			{ text = "Keys - found them eventually", effects = { Happiness = -3 }, feedText = "Stressful search, but they turned up." },
-			-- MINOR FIX: More descriptive feedText
-		{ text = "Wallet - had to cancel cards", effects = { Happiness = -5, Money = -50 }, feedText = "Lost your wallet. Had to cancel cards and replace everything. What a hassle!" },
-			{ text = "Something sentimental", effects = { Happiness = -7 }, feedText = "It can't be replaced..." },
-			{ text = "Something replaceable", effects = { Happiness = -2, Money = -30 }, feedText = "Annoying, but not the end of the world." },
+			{
+				text = "Tear the house apart looking",
+				effects = { Health = -2 },
+				feedText = "You searched everywhere...",
+				onResolve = function(state)
+					local items = {
+						{ text = "🔑 Your keys! Found them in the couch cushions. Phew!", happy = 2, money = 0 },
+						{ text = "💳 Your wallet was gone! Had to cancel cards and lost $50 cash.", happy = -8, money = -50 },
+						{ text = "📱 Your phone! It was in the fridge. How did that happen?", happy = -2, money = 0 },
+						{ text = "💍 Something sentimental... gone forever. Irreplaceable.", happy = -12, money = 0 },
+						{ text = "🎧 Your headphones. Never found them. Had to buy new ones.", happy = -5, money = -80 },
+					}
+					local item = items[math.random(1, #items)]
+					state:ModifyStat("Happiness", item.happy)
+					state.Money = math.max(0, (state.Money or 0) + item.money)
+					if state.AddFeed then state:AddFeed(item.text) end
+				end,
+			},
+			{
+				text = "Check the obvious spots and move on",
+				effects = {},
+				feedText = "Quick search...",
+				onResolve = function(state)
+					if math.random() < 0.4 then
+						state:ModifyStat("Happiness", 3)
+						if state.AddFeed then state:AddFeed("🔍 Found it quickly! Crisis averted.") end
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Money = math.max(0, (state.Money or 0) - math.random(20, 100))
+						if state.AddFeed then state:AddFeed("🔍 Never found it. Had to replace it.") end
+					end
+				end,
+			},
+			{
+				text = "Give up - it's probably gone",
+				effects = { Happiness = -4, Money = -50 },
+				feedText = "You gave up and accepted the loss.",
+			},
 		},
 	},
 	{
@@ -841,23 +875,94 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Animal attack is now RANDOM - no god mode choosing severity!
 		id = "injury_animal",
-		title = "Animal Attack!",
+		title = "Animal Encounter!",
 		emoji = "🐕",
-		text = "You were attacked by an animal!",
-		question = "What kind of animal?",
+		text = "An animal is acting aggressively towards you!",
+		question = "How do you react?",
 		minAge = 3, maxAge = 85,
 		baseChance = 0.1,
 		cooldown = 5,
 		category = "injury",
-
 		choices = {
-			{ text = "Dog bite on arm", effects = { Health = -12, Happiness = -8, Money = -200 }, setFlags = { dog_bite = true }, feedText = "A dog bit your arm badly. Needed treatment." },
-			{ text = "Dog bite on leg", effects = { Health = -10, Happiness = -7 }, setFlags = { dog_bite = true }, feedText = "Dog bit your leg. Painful but healing." },
-			{ text = "Cat scratch got infected", effects = { Health = -8, Happiness = -5, Money = -150 }, feedText = "Cat scratch turned into an infection. Antibiotics needed." },
-			{ text = "Bee/wasp sting - allergic reaction", effects = { Health = -20, Happiness = -12, Money = -500 }, setFlags = { allergic_reaction = true }, feedText = "Severe allergic reaction! Emergency treatment." },
-			{ text = "Snake bite", effects = { Health = -25, Happiness = -15, Money = -1000 }, setFlags = { snake_bite = true, hospitalized = true }, feedText = "Snake bite! Hospital stay for antivenin." },
-			{ text = "Minor scratch - cleaned it up", effects = { Health = -3, Happiness = -2 }, feedText = "Just a scratch. Cleaned and bandaged." },
+			{
+				text = "Try to back away slowly",
+				effects = {},
+				feedText = "You tried to escape...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						-- Escaped!
+						state:ModifyStat("Happiness", 5)
+						if state.AddFeed then state:AddFeed("🐕 You escaped without injury! Heart racing though.") end
+					else
+						-- Got hurt anyway
+						local attacks = {
+							{ health = -12, money = -200, text = "🐕 A dog bit your arm badly! Needed stitches and shots." },
+							{ health = -10, money = -150, text = "🐕 Dog bite on your leg! Painful but you'll recover." },
+							{ health = -8, money = -100, text = "🐱 Cat scratched you and it got infected. Antibiotics needed." },
+							{ health = -5, money = 0, text = "🐕 Minor bite, but your pride is hurt more than your body." },
+						}
+						local attack = attacks[math.random(1, #attacks)]
+						state:ModifyStat("Health", attack.health)
+						state:ModifyStat("Happiness", -8)
+						state.Money = math.max(0, (state.Money or 0) + attack.money)
+						state.Flags = state.Flags or {}
+						state.Flags.animal_attack_survivor = true
+						if state.AddFeed then state:AddFeed(attack.text) end
+					end
+				end,
+			},
+			{
+				text = "Stand your ground and yell",
+				effects = {},
+				feedText = "You showed no fear...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						-- It worked!
+						state:ModifyStat("Happiness", 8)
+						if state.AddFeed then state:AddFeed("🐕 It backed off! Dominance asserted!") end
+					elseif roll < 0.7 then
+						-- Minor injury
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -5)
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						if state.AddFeed then state:AddFeed("🐕 It bit you anyway! Minor wound but scary.") end
+					else
+						-- Severe attack
+						local attacks = {
+							{ health = -20, money = -500, text = "🐝 Bee sting! Severe allergic reaction! Emergency room!", flag = "allergic_reaction" },
+							{ health = -25, money = -1000, text = "🐍 Snake bite! Rushed to hospital for antivenin!", flag = "snake_bite" },
+							{ health = -15, money = -300, text = "🐕 Multiple bites! Had to get a rabies shot!", flag = "dog_attack_severe" },
+						}
+						local attack = attacks[math.random(1, #attacks)]
+						state:ModifyStat("Health", attack.health)
+						state:ModifyStat("Happiness", -15)
+						state.Money = math.max(0, (state.Money or 0) + attack.money)
+						state.Flags = state.Flags or {}
+						state.Flags[attack.flag] = true
+						if state.AddFeed then state:AddFeed(attack.text) end
+					end
+				end,
+			},
+			{
+				text = "Run as fast as you can",
+				effects = { Health = -2 },
+				feedText = "You sprinted away!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:ModifyStat("Happiness", 3)
+						if state.AddFeed then state:AddFeed("🏃 You outran it! Cardio pays off!") end
+					else
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -7)
+						if state.AddFeed then state:AddFeed("🐕 It chased you down and bit you! Should've stood your ground.") end
+					end
+				end,
+			},
 		},
 	},
 
@@ -1406,39 +1511,107 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Scam event is now RANDOM outcome - no god mode choice!
+		-- Player learns what happened AFTER choosing how to react (like BitLife)
 		id = "scam_victim",
-		title = "Scammed!",
-		emoji = "🎭",
-		text = "You fell for a scam!",
-		question = "What kind of scam was it?",
+		title = "Suspicious Message",
+		emoji = "📧",
+		text = "You received a message that seems too good to be true. Someone claims you've won a prize, inherited money, or has an 'amazing investment opportunity' for you.",
+		question = "How do you respond?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.1,
-		cooldown = 5,
-
+		baseChance = 0.12,
+		cooldown = 4,
 		choices = {
-			{ text = "Online shopping scam", effects = { Money = -500, Happiness = -8 }, feedText = "That website was fake. Money gone." },
-			{ text = "Investment fraud", effects = { Money = -10000, Happiness = -20, Smarts = -2 }, setFlags = { scam_victim = true }, feedText = "Lost thousands to a Ponzi scheme." },
-			{ text = "Romance scam", effects = { Money = -5000, Happiness = -25 }, setFlags = { heartbroken = true }, feedText = "They never loved you. Just wanted your money." },
-			{ text = "Identity theft", effects = { Money = -3000, Happiness = -15 }, setFlags = { identity_stolen = true }, feedText = "Your identity was stolen. Nightmare to fix." },
-			{ text = "Caught it in time", effects = { Money = -100, Happiness = -5, Smarts = 3 }, feedText = "You caught on before losing much. Lesson learned." },
+			{
+				text = "Investigate it - could be legit!",
+				effects = {},
+				feedText = "You looked into it...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					-- Smarter people are less likely to fall for it
+					local scamChance = 0.70 - (smarts / 200) -- 70% base chance, reduced by smarts
+					
+					if roll < scamChance then
+						-- Fell for it - random scam type
+						local scamTypes = {
+							{ loss = -500, text = "🎭 It was an online shopping scam! That website was completely fake. Money gone." },
+							{ loss = -2000, text = "🎭 Romance scam! They pretended to love you just to steal your money." },
+							{ loss = -3000, text = "🎭 Identity theft! They stole your personal information. Nightmare to fix." },
+							{ loss = -5000, text = "🎭 Investment fraud! It was a Ponzi scheme. Your money vanished." },
+							{ loss = -8000, text = "🎭 Nigerian prince scam! Can't believe you fell for the oldest trick." },
+						}
+						local scam = scamTypes[math.random(1, #scamTypes)]
+						state.Money = math.max(0, (state.Money or 0) + scam.loss)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.scam_victim = true
+						if state.AddFeed then state:AddFeed(scam.text) end
+					else
+						-- Caught it in time
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 3)
+						if state.AddFeed then state:AddFeed("🎭 You realized it was a scam just in time! Close call.") end
+					end
+				end,
+			},
+			{
+				text = "Delete it - obvious scam",
+				effects = { Smarts = 1, Happiness = 1 },
+				feedText = "Smart move. You deleted it without engaging.",
+				onResolve = function(state)
+					if state.AddFeed then state:AddFeed("🗑️ Deleted the suspicious message. Trust your instincts!") end
+				end,
+			},
+			{
+				text = "Report it as spam",
+				effects = { Smarts = 2 },
+				feedText = "You reported it and helped protect others.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.good_citizen = true
+					if state.AddFeed then state:AddFeed("🛡️ Reported the scam! You might have saved someone else from falling for it.") end
+				end,
+			},
 		},
 	},
 	{
+		-- CRITICAL FIX: Talent discovery is now RANDOM - no god mode choosing!
 		id = "talent_discovered",
 		title = "Hidden Talent!",
 		emoji = "✨",
-		text = "You discovered you have a hidden talent!",
-		question = "What is it?",
+		text = "Someone noticed you have a natural ability for something!",
+		question = "Do you want to explore this talent?",
 		minAge = 8, maxAge = 70,
 		baseChance = 0.15,
 		cooldown = 5,
-
 		choices = {
-			{ text = "Musical ability", effects = { Happiness = 12, Smarts = 3 }, setFlags = { musical_talent = true }, hintCareer = "entertainment", feedText = "You can really sing/play! Natural talent!" },
-			{ text = "Artistic skill", effects = { Happiness = 10, Smarts = 2 }, setFlags = { artistic_talent = true }, hintCareer = "creative", feedText = "You're a natural artist!" },
-			{ text = "Athletic ability", effects = { Happiness = 10, Health = 5 }, setFlags = { athletic_talent = true }, hintCareer = "sports", feedText = "You've got serious athletic potential!" },
-			{ text = "Writing ability", effects = { Happiness = 8, Smarts = 4 }, setFlags = { writing_talent = true }, hintCareer = "writing", feedText = "You have a gift with words!" },
-			{ text = "Leadership qualities", effects = { Happiness = 8, Smarts = 3 }, setFlags = { natural_leader = true }, hintCareer = "business", feedText = "People naturally follow your lead!" },
+			{
+				text = "Absolutely! Show me what I've got!",
+				effects = { Happiness = 10 },
+				feedText = "You're excited to discover your gift!",
+				onResolve = function(state)
+					local talents = {
+						{ flag = "musical_talent", text = "🎵 You have an amazing ear for music! You can really sing and play!", stat = "Smarts", bonus = 3 },
+						{ flag = "artistic_talent", text = "🎨 You're a natural artist! Your drawings and paintings are impressive!", stat = "Smarts", bonus = 2 },
+						{ flag = "athletic_talent", text = "🏃 You have incredible athletic potential! Fast, strong, coordinated!", stat = "Health", bonus = 5 },
+						{ flag = "writing_talent", text = "✍️ You have a gift with words! Your writing moves people!", stat = "Smarts", bonus = 4 },
+						{ flag = "natural_leader", text = "👔 People naturally follow your lead! You're a born leader!", stat = "Smarts", bonus = 3 },
+						{ flag = "cooking_talent", text = "👨‍🍳 You're an incredible cook! Everything you make tastes amazing!", stat = "Happiness", bonus = 5 },
+						{ flag = "tech_talent", text = "💻 You have a natural gift for technology! Computers make sense to you!", stat = "Smarts", bonus = 5 },
+					}
+					local talent = talents[math.random(1, #talents)]
+					state.Flags = state.Flags or {}
+					state.Flags[talent.flag] = true
+					state:ModifyStat(talent.stat, talent.bonus)
+					if state.AddFeed then state:AddFeed(talent.text) end
+				end,
+			},
+			{
+				text = "Not interested - I'm fine as I am",
+				effects = { Happiness = -2 },
+				feedText = "You shrugged it off. Not everyone wants to be special.",
+			},
 		},
 	},
 	{
@@ -2045,11 +2218,12 @@ Random.events = {
 	},
 	
 	{
+		-- CRITICAL FIX: Random unexpected skill - completely random, no god-mode choosing
 		id = "random_talent_discovery",
 		emoji = "🎯",
-		title = "Hidden Talent!",
-		text = "You tried something new and discovered you're surprisingly good at it!",
-		question = "What talent did you discover?",
+		title = "Unexpected Skill!",
+		text = "Someone challenged you to try something you've never done before. You surprised everyone, including yourself!",
+		question = "How do you feel about this discovery?",
 		category = "random",
 		weight = 4,
 		minAge = 10,
@@ -2057,35 +2231,33 @@ Random.events = {
 		baseChance = 0.15,
 		cooldown = 15,
 		oneTime = true,
-		
 		choices = {
 			{
 				index = 1,
-				text = "You can sing!",
-				effects = { Happiness = 12, Looks = 2 },
-				setFlags = { singing_talent = true },
-				feedText = "Your voice is amazing! People are impressed.",
+				text = "This is amazing! I want to develop this!",
+				effects = { Happiness = 12 },
+				feedText = "You're excited about your new discovery!",
+				onResolve = function(state)
+					local talents = {
+						{ flag = "singing_talent", text = "🎤 Turns out you can SING! Voice of an angel!" },
+						{ flag = "artistic_talent", text = "🎨 You're a natural artist! Your doodles are masterpieces!" },
+						{ flag = "cooking_talent", text = "👨‍🍳 Master chef potential! Your food is incredible!" },
+						{ flag = "athletic_talent", text = "🏃 Natural athlete! Speed, agility, coordination - you've got it!" },
+						{ flag = "dancing_talent", text = "💃 You can DANCE! Natural rhythm and grace!" },
+						{ flag = "comedy_talent", text = "😂 You're hilarious! Natural comedian!" },
+						{ flag = "mechanical_talent", text = "🔧 Mechanical genius! You can fix anything!" },
+					}
+					local talent = talents[math.random(1, #talents)]
+					state.Flags = state.Flags or {}
+					state.Flags[talent.flag] = true
+					if state.AddFeed then state:AddFeed(talent.text) end
+				end,
 			},
 			{
 				index = 2,
-				text = "You're great at art!",
-				effects = { Happiness = 10, Smarts = 3 },
-				setFlags = { artistic_talent = true },
-				feedText = "Your drawings are incredible! Hidden artist!",
-			},
-			{
-				index = 3,
-				text = "You're a natural at cooking!",
-				effects = { Happiness = 10, Health = 2 },
-				setFlags = { cooking_talent = true },
-				feedText = "Your food is amazing! Everyone wants your recipes.",
-			},
-			{
-				index = 4,
-				text = "You're surprisingly athletic!",
-				effects = { Happiness = 8, Health = 5 },
-				setFlags = { athletic_talent = true },
-				feedText = "You have natural athletic ability! Who knew?",
+				text = "Cool, but I'm happy with who I am",
+				effects = { Happiness = 5 },
+				feedText = "You noted it but didn't pursue it. That's okay!",
 			},
 		},
 	},
