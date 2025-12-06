@@ -69,6 +69,68 @@ local PrisonActivities = {
 	{ id = "prison_goodbehavior", name = "Good Behavior", emoji = "😇", effect = "-Sentence Time", minAge = 0 },
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BABY/TODDLER MISCHIEF (Ages 0-4) - Cause trouble like a little one!
+-- ═══════════════════════════════════════════════════════════════════════════
+local BabyMischief = {
+	{ id = "cry_loudly", name = "Cry Really Loud", emoji = "😭", effect = "+Attention", minAge = 0, maxAge = 4 },
+	{ id = "throw_food", name = "Throw Food", emoji = "🍝", effect = "Messy!", minAge = 0, maxAge = 4 },
+	{ id = "break_toy", name = "Break a Toy", emoji = "🧸", effect = "Oopsie!", minAge = 0, maxAge = 4 },
+	{ id = "draw_walls", name = "Draw on the Walls", emoji = "🖍️", effect = "Art Time!", minAge = 1, maxAge = 4 },
+	{ id = "refuse_nap", name = "Refuse to Nap", emoji = "😤", effect = "-Sleep +Happiness", minAge = 0, maxAge = 4 },
+	{ id = "tantrum", name = "Throw a Tantrum", emoji = "🤬", effect = "+Attention -Happiness", minAge = 1, maxAge = 4 },
+	{ id = "bite_sibling", name = "Bite Someone", emoji = "🦷", effect = "Mean!", minAge = 1, maxAge = 4 },
+	{ id = "hide_mom_keys", name = "Hide Mom's Keys", emoji = "🔑", effect = "Sneaky!", minAge = 2, maxAge = 4 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CHILD MISCHIEF (Ages 5-12) - Kid trouble!
+-- ═══════════════════════════════════════════════════════════════════════════
+local ChildMischief = {
+	{ id = "skip_chores", name = "Skip Your Chores", emoji = "🧹", effect = "-Trouble", minAge = 5, maxAge = 12 },
+	{ id = "prank_sibling", name = "Prank Your Sibling", emoji = "😈", effect = "Funny!", minAge = 5, maxAge = 12 },
+	{ id = "sneak_candy", name = "Sneak Candy", emoji = "🍬", effect = "+Happiness +Sugar", minAge = 5, maxAge = 12 },
+	{ id = "stay_up_late", name = "Stay Up Late", emoji = "🌙", effect = "No Sleep!", minAge = 5, maxAge = 12 },
+	{ id = "cheat_test", name = "Cheat on a Test", emoji = "📝", effect = "Risky!", minAge = 6, maxAge = 12, risk = 25 },
+	{ id = "talk_back", name = "Talk Back to Parents", emoji = "🗣️", effect = "Sassy!", minAge = 5, maxAge = 12 },
+	{ id = "blame_sibling", name = "Blame Your Sibling", emoji = "👉", effect = "Sneaky!", minAge = 5, maxAge = 12 },
+	{ id = "fake_sick", name = "Fake Being Sick", emoji = "🤒", effect = "No School!", minAge = 6, maxAge = 12 },
+	{ id = "toilet_paper_house", name = "TP Neighbor's House", emoji = "🧻", effect = "Mischief!", minAge = 8, maxAge = 12, risk = 15 },
+	{ id = "ring_doorbell_run", name = "Ding Dong Ditch", emoji = "🚪", effect = "Run!", minAge = 7, maxAge = 12, risk = 10 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- TEEN MISCHIEF (Ages 13-17) - Rebellious teen stuff
+-- ═══════════════════════════════════════════════════════════════════════════
+local TeenMischief = {
+	{ id = "sneak_out", name = "Sneak Out at Night", emoji = "🌃", effect = "Adventure!", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "skip_class", name = "Skip Class", emoji = "🏫", effect = "Freedom!", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "party_crash", name = "Crash a Party", emoji = "🎉", effect = "+Fun +Risk", minAge = 14, maxAge = 17, risk = 25 },
+	{ id = "fake_id", name = "Get a Fake ID", emoji = "🪪", effect = "Illegal!", minAge = 15, maxAge = 17, risk = 40 },
+	{ id = "vandalize", name = "Vandalize Something", emoji = "🎨", effect = "Bad!", minAge = 13, maxAge = 17, risk = 35 },
+	{ id = "bully", name = "Bully Someone", emoji = "😠", effect = "Mean!", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "steal_parents_car", name = "Steal Parents' Car", emoji = "🚗", effect = "Joyride!", minAge = 14, maxAge = 17, risk = 50 },
+	{ id = "break_curfew", name = "Break Curfew", emoji = "⏰", effect = "Late!", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "drink_underage", name = "Underage Drinking", emoji = "🍺", effect = "Party!", minAge = 14, maxAge = 17, risk = 30 },
+	{ id = "smoke", name = "Try Smoking", emoji = "🚬", effect = "-Health", minAge = 13, maxAge = 17, risk = 10 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-4)
+-- ═══════════════════════════════════════════════════════════════════════════
+local BabyFun = {
+	{ id = "play_toys", name = "Play with Toys", emoji = "🧸", effect = "+Happiness", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "watch_cartoons", name = "Watch Cartoons", emoji = "📺", effect = "+Happiness", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "play_peekaboo", name = "Play Peek-a-boo", emoji = "🙈", effect = "+Happiness", minAge = 0, maxAge = 2, cost = 0 },
+	{ id = "play_blocks", name = "Play with Blocks", emoji = "🧱", effect = "+Smarts +Fun", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "playground", name = "Go to Playground", emoji = "🛝", effect = "+Health +Happiness", minAge = 2, maxAge = 5, cost = 0 },
+	{ id = "coloring", name = "Color a Picture", emoji = "🖍️", effect = "+Happiness +Creativity", minAge = 2, maxAge = 5, cost = 0 },
+	{ id = "play_dolls", name = "Play with Dolls", emoji = "👶", effect = "+Happiness", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "bubbles", name = "Blow Bubbles", emoji = "🫧", effect = "+Happiness", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "nap_time", name = "Take a Nap", emoji = "😴", effect = "+Health +Energy", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "play_outside", name = "Play Outside", emoji = "🌳", effect = "+Health +Happiness", minAge = 1, maxAge = 5, cost = 0 },
+}
+
 -- Debug logging (set to false to reduce log spam)
 local DEBUG = false
 local function log(...)
@@ -322,81 +384,150 @@ function ActivitiesScreen:createUI()
 	self.overlay.Visible = false
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
+	
+	-- CRITICAL FIX: Use consistent layout constants like OccupationScreen
+	local HEADER_HEIGHT = 72
+	local INFO_HEIGHT = 44
+	local TAB_HEIGHT = 48
+	local GAP = 8
 
-	-- Premium header
-	local headerData = UI.createScreenHeader(self.overlay, {
-		title = "Activities",
-		color = C.Amber,
-		colorDark = C.AmberDark,
-		zIndex = 85
-	})
-	headerData.closeButton.MouseButton1Click:Connect(function() self:hide() end)
-	headerData.closeButton.MouseEnter:Connect(function()
-		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	-- Custom header (matches OccupationScreen for consistency)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
+	header.BackgroundColor3 = C.Gray100
+	header.BorderSizePixel = 0
+	header.ZIndex = 84
+	header.Parent = self.overlay
+
+	local headerBottom = Instance.new("Frame")
+	headerBottom.Name = "BottomBorder"
+	headerBottom.Size = UDim2.new(1, 0, 0, 1)
+	headerBottom.Position = UDim2.new(0, 0, 1, -1)
+	headerBottom.BackgroundColor3 = C.Gray200
+	headerBottom.BorderSizePixel = 0
+	headerBottom.ZIndex = 85
+	headerBottom.Parent = header
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Size = UDim2.new(1, -80, 1, 0)
+	titleLabel.Position = UDim2.new(0, 16, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 20
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = "🎯 Activities"
+	titleLabel.ZIndex = 85
+	titleLabel.Parent = header
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "CloseButton"
+	closeButton.Size = UDim2.new(0, 32, 0, 32)
+	closeButton.AnchorPoint = Vector2.new(1, 0.5)
+	closeButton.Position = UDim2.new(1, -16, 0.5, 0)
+	closeButton.BackgroundColor3 = C.White
+	closeButton.BackgroundTransparency = 0.1
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.TextSize = 16
+	closeButton.TextColor3 = C.Gray600
+	closeButton.Text = "✕"
+	closeButton.AutoButtonColor = false
+	closeButton.ZIndex = 86
+	closeButton.Parent = header
+	UI.corner(closeButton, 8)
+
+	closeButton.MouseButton1Click:Connect(function() self:hide() end)
+	closeButton.MouseEnter:Connect(function()
+		UI.tween(closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
 	end)
-	headerData.closeButton.MouseLeave:Connect(function()
-		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	closeButton.MouseLeave:Connect(function()
+		UI.tween(closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- Info bar (simplified - no shadow)
+	-- Content root (prevents UI cutoff issues)
+	self.contentRoot = Instance.new("Frame")
+	self.contentRoot.Name = "ContentRoot"
+	self.contentRoot.BackgroundTransparency = 1
+	self.contentRoot.ZIndex = 80
+	self.contentRoot.Size = UDim2.new(1, 0, 1, -HEADER_HEIGHT)
+	self.contentRoot.Position = UDim2.new(0, 0, 0, HEADER_HEIGHT)
+	self.contentRoot.Parent = self.overlay
+
+	local contentPad = Instance.new("UIPadding")
+	contentPad.PaddingLeft = UDim.new(0, 8)
+	contentPad.PaddingRight = UDim.new(0, 8)
+	contentPad.PaddingTop = UDim.new(0, GAP)
+	contentPad.PaddingBottom = UDim.new(0, 8)
+	contentPad.Parent = self.contentRoot
+
+	-- Layout calculations
+	local infoY = 0
+	local tabY = infoY + INFO_HEIGHT + GAP
+	local scrollY = tabY + TAB_HEIGHT + GAP
+
+	-- Info bar (positioned relative to contentRoot - FIXES CUT OFF ISSUE)
 	self.infoBar = Instance.new("Frame")
 	self.infoBar.Name = "InfoBar"
-	self.infoBar.Size = UDim2.new(1, -16, 0, 52)
-	self.infoBar.Position = UDim2.new(0, 8, 0, 116)
+	self.infoBar.Size = UDim2.new(1, 0, 0, INFO_HEIGHT)
+	self.infoBar.Position = UDim2.new(0, 0, 0, infoY)
 	self.infoBar.BackgroundColor3 = C.White
 	self.infoBar.ZIndex = 84
-	self.infoBar.Parent = self.overlay
-	UI.corner(self.infoBar, 14)
+	self.infoBar.Parent = self.contentRoot
+	UI.corner(self.infoBar, 12)
 	UI.stroke(self.infoBar, 1, 0.9, C.Gray200)
 
 	local infoLayout = Instance.new("UIListLayout")
 	infoLayout.FillDirection = Enum.FillDirection.Horizontal
 	infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	infoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	infoLayout.Padding = UDim.new(0, 10)
+	infoLayout.Padding = UDim.new(0, 8)
 	infoLayout.Parent = self.infoBar
 
 	self.ageChip = UI.createInfoChip(self.infoBar, {
 		name = "AgeChip", icon = "", text = "Age 18",
-		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 80
+		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 75
 	})
 	self.ageChip.icon.Text = ""
 	self.ageChip.text.Text = "Age 18"
-	self.ageChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.ageChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.ageChip.text.Position = UDim2.new(0, 6, 0, 0)
+	self.ageChip.text.Size = UDim2.new(1, -12, 1, 0)
 	self.ageChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.ageChip.text.TextScaled = true
 
 	self.moneyChip = UI.createInfoChip(self.infoBar, {
 		name = "MoneyChip", icon = "", text = "$1,000",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 90
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 85
 	})
 	self.moneyChip.icon.Text = ""
 	self.moneyChip.text.Text = "$1,000"
-	self.moneyChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.moneyChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.moneyChip.text.Position = UDim2.new(0, 6, 0, 0)
+	self.moneyChip.text.Size = UDim2.new(1, -12, 1, 0)
 	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.moneyChip.text.TextScaled = true
 
 	self.statusChip = UI.createInfoChip(self.infoBar, {
 		name = "StatusChip", icon = "", text = "Adult",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 90
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 85
 	})
 	self.statusChip.icon.Text = ""
 	self.statusChip.text.Text = "Adult"
-	self.statusChip.text.Position = UDim2.new(0, 6, 0, 0)
-	self.statusChip.text.Size = UDim2.new(1, -12, 1, 0)
+	self.statusChip.text.Position = UDim2.new(0, 4, 0, 0)
+	self.statusChip.text.Size = UDim2.new(1, -8, 1, 0)
 	self.statusChip.text.TextXAlignment = Enum.TextXAlignment.Center
-	self.statusChip.text.TextScaled = true -- Allow text to scale down if needed
+	self.statusChip.text.TextScaled = true
 
-	-- Tab bar
+	-- Tab bar (positioned relative to contentRoot)
 	self.tabBar = Instance.new("Frame")
 	self.tabBar.Name = "TabBar"
-	self.tabBar.Size = UDim2.new(1, -16, 0, 52)
-	self.tabBar.Position = UDim2.new(0, 8, 0, 176)
+	self.tabBar.Size = UDim2.new(1, 0, 0, TAB_HEIGHT)
+	self.tabBar.Position = UDim2.new(0, 0, 0, tabY)
 	self.tabBar.BackgroundColor3 = C.Gray100
 	self.tabBar.ZIndex = 84
-	self.tabBar.Parent = self.overlay
-	UI.corner(self.tabBar, 14)
-	UI.pad(self.tabBar, 5, 5, 5, 5)
+	self.tabBar.Parent = self.contentRoot
+	UI.corner(self.tabBar, 12)
+	UI.pad(self.tabBar, 4, 4, 4, 4)
 
 	local tabLayout = Instance.new("UIListLayout")
 	tabLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -408,18 +539,18 @@ function ActivitiesScreen:createUI()
 	self.tabBtns = {}
 	self:rebuildTabs()
 
-	-- Scroll area
+	-- Scroll area (positioned relative to contentRoot)
 	self.contentScroll = Instance.new("ScrollingFrame")
 	self.contentScroll.Name = "ContentScroll"
-	self.contentScroll.Size = UDim2.new(1, -16, 1, -250)
-	self.contentScroll.Position = UDim2.new(0, 8, 0, 240)
+	self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY)
+	self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY)
 	self.contentScroll.BackgroundTransparency = 1
 	self.contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	self.contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	self.contentScroll.ScrollBarThickness = 4
 	self.contentScroll.ScrollBarImageColor3 = C.Gray300
 	self.contentScroll.ZIndex = 81
-	self.contentScroll.Parent = self.overlay
+	self.contentScroll.Parent = self.contentRoot
 
 	local contentLayout = Instance.new("UIListLayout")
 	contentLayout.Padding = UDim.new(0, 12)
@@ -442,15 +573,50 @@ function ActivitiesScreen:rebuildTabs()
 	self.tabBtns = {}
 
 	local inJail = self:isInJail()
+	local age = self:getAge()
 	local tabs
 
 	if inJail then
+		-- PRISON MODE: Limited activities
 		tabs = {
 			{ id = "prison", text = "Prison", color = C.Gray700 },
 			{ id = "mindbody", text = "Exercise", color = C.Cyan },
 		}
 		self.currentTab = "prison"
+	elseif age < 5 then
+		-- BABY/TODDLER MODE (0-4): Only fun activities and mischief
+		tabs = {
+			{ id = "fun", text = "🎈 Play", color = C.Purple },
+			{ id = "mischief", text = "😈 Mischief", color = C.Red },
+		}
+		-- Default to fun for babies
+		if self.currentTab ~= "fun" and self.currentTab ~= "mischief" then
+			self.currentTab = "fun"
+		end
+	elseif age < 13 then
+		-- CHILD MODE (5-12): Fun, social, and mild mischief
+		tabs = {
+			{ id = "fun", text = "🎮 Fun", color = C.Purple },
+			{ id = "social", text = "👥 Social", color = C.Pink },
+			{ id = "mischief", text = "😈 Trouble", color = C.Red },
+		}
+		-- Switch to appropriate tab
+		if self.currentTab == "mindbody" or self.currentTab == "crime" then
+			self.currentTab = "fun"
+		end
+	elseif age < 18 then
+		-- TEEN MODE (13-17): Everything but serious crime
+		tabs = {
+			{ id = "mindbody", text = "💪 Mind", color = C.Cyan },
+			{ id = "social", text = "👥 Social", color = C.Pink },
+			{ id = "fun", text = "🎮 Fun", color = C.Purple },
+			{ id = "mischief", text = "😈 Trouble", color = C.Red },
+		}
+		if self.currentTab == "crime" then
+			self.currentTab = "mischief"
+		end
 	else
+		-- ADULT MODE (18+): Full activities
 		tabs = {
 			{ id = "mindbody", text = "Mind", color = C.Cyan },
 			{ id = "social", text = "Social", color = C.Pink },
@@ -465,10 +631,10 @@ function ActivitiesScreen:rebuildTabs()
 		local btn = Instance.new("TextButton")
 		btn.Name = tab.id
 		btn.Size = UDim2.new(tabWidth, 0, 1, 0)
-		btn.BackgroundColor3 = i == 1 and tab.color or C.White
+		btn.BackgroundColor3 = (self.currentTab == tab.id or (i == 1 and not self.tabBtns[self.currentTab])) and tab.color or C.White
 		btn.Font = F.Button
-		btn.TextSize = 14
-		btn.TextColor3 = i == 1 and C.White or C.Gray600
+		btn.TextSize = 13
+		btn.TextColor3 = (self.currentTab == tab.id or (i == 1 and not self.tabBtns[self.currentTab])) and C.White or C.Gray600
 		btn.Text = tab.text
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
@@ -478,6 +644,11 @@ function ActivitiesScreen:rebuildTabs()
 
 		self.tabBtns[tab.id] = { btn = btn, color = tab.color }
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
+	end
+	
+	-- If current tab doesn't exist, switch to first available
+	if not self.tabBtns[self.currentTab] then
+		self.currentTab = tabs[1].id
 	end
 end
 
@@ -567,7 +738,8 @@ function ActivitiesScreen:switchTab(tabId)
 	elseif tabId == "mindbody" then self:populateMindBody()
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
-	elseif tabId == "crime" then self:populateCrime() end
+	elseif tabId == "crime" then self:populateCrime()
+	elseif tabId == "mischief" then self:populateMischief() end
 	log("Tab content populated")
 end
 
@@ -698,6 +870,70 @@ end
 
 function ActivitiesScreen:populateFun()
 	self:updateInfoBar()
+	
+	local age = self:getAge()
+	
+	-- Determine which activities to show based on age
+	local activities
+	local headerText
+	local ageMessage
+	
+	if age < 5 then
+		-- Baby/Toddler fun activities
+		activities = {}
+		for _, item in ipairs(BabyFun) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "🎈 Playtime!"
+		ageMessage = "Things babies and toddlers love to do!"
+	else
+		-- Regular entertainment for older kids/adults
+		activities = {}
+		for _, item in ipairs(Entertainment) do
+			if age >= (item.minAge or 0) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "Entertainment"
+		ageMessage = nil
+	end
+
+	-- Age-appropriate message card for babies
+	if ageMessage then
+		local msgCard = Instance.new("Frame")
+		msgCard.Size = UDim2.new(1, 0, 0, 60)
+		msgCard.BackgroundColor3 = C.PurplePale or C.BluePale
+		msgCard.LayoutOrder = 0
+		msgCard.ZIndex = 82
+		msgCard.Parent = self.contentScroll
+		UI.corner(msgCard, 16)
+		UI.stroke(msgCard, 1, 0.7, C.Purple)
+
+		local msgIcon = Instance.new("TextLabel")
+		msgIcon.Size = UDim2.new(0, 40, 0, 40)
+		msgIcon.Position = UDim2.new(0, 12, 0.5, -20)
+		msgIcon.BackgroundTransparency = 1
+		msgIcon.Font = Enum.Font.GothamBold
+		msgIcon.TextSize = 32
+		msgIcon.Text = "👶"
+		msgIcon.ZIndex = 83
+		msgIcon.Parent = msgCard
+
+		local msgText = Instance.new("TextLabel")
+		msgText.Size = UDim2.new(1, -70, 1, -16)
+		msgText.Position = UDim2.new(0, 60, 0, 8)
+		msgText.BackgroundTransparency = 1
+		msgText.Font = F.Body
+		msgText.TextSize = 14
+		msgText.TextColor3 = C.PurpleDark or C.BlueDark
+		msgText.TextXAlignment = Enum.TextXAlignment.Left
+		msgText.TextWrapped = true
+		msgText.Text = ageMessage
+		msgText.ZIndex = 83
+		msgText.Parent = msgCard
+	end
 
 	local section = Instance.new("Frame")
 	section.Name = "FunSection"
@@ -737,7 +973,7 @@ function ActivitiesScreen:populateFun()
 	badgeLabel.Font = F.Button
 	badgeLabel.TextSize = 14
 	badgeLabel.TextColor3 = C.White
-	badgeLabel.Text = "Entertainment"
+	badgeLabel.Text = headerText
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
@@ -749,11 +985,11 @@ function ActivitiesScreen:populateFun()
 	countLabel.TextSize = 13
 	countLabel.TextColor3 = C.Gray400
 	countLabel.TextXAlignment = Enum.TextXAlignment.Left
-	countLabel.Text = #Entertainment .. " options"
+	countLabel.Text = #activities .. " options"
 	countLabel.ZIndex = 84
 	countLabel.Parent = header
 
-	for i, item in ipairs(Entertainment) do
+	for i, item in ipairs(activities) do
 		self:createActivityCard(section, item, i, C.Purple, C.PurplePale)
 	end
 end
@@ -843,6 +1079,310 @@ function ActivitiesScreen:populateCrime()
 	for i, item in ipairs(Crimes) do
 		self:createCrimeCard(section, item, i)
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- MISCHIEF TAB - Age-appropriate troublemaking!
+-- ═══════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateMischief()
+	self:updateInfoBar()
+	
+	local age = self:getAge()
+	
+	-- Determine which mischief activities based on age
+	local activities = {}
+	local headerText
+	local headerColor
+	local warningText
+	
+	if age < 5 then
+		-- Baby/Toddler mischief
+		for _, item in ipairs(BabyMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Baby Mischief"
+		headerColor = C.Red
+		warningText = "Be a little troublemaker! These are normal baby things... mostly."
+	elseif age < 13 then
+		-- Child mischief
+		for _, item in ipairs(ChildMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Kid Trouble"
+		headerColor = C.Red
+		warningText = "Being a kid means getting into trouble sometimes. Just don't get caught!"
+	else
+		-- Teen mischief
+		for _, item in ipairs(TeenMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Teen Rebellion"
+		headerColor = C.Red
+		warningText = "Being a teenager is about pushing limits. Some of these could get you in real trouble!"
+	end
+
+	-- Warning/Info card
+	local warningCard = Instance.new("Frame")
+	warningCard.Size = UDim2.new(1, 0, 0, 70)
+	warningCard.BackgroundColor3 = C.RedPale
+	warningCard.LayoutOrder = 0
+	warningCard.ZIndex = 82
+	warningCard.Parent = self.contentScroll
+	UI.corner(warningCard, 16)
+	UI.stroke(warningCard, 1, 0.7, C.Red)
+
+	local warnIcon = Instance.new("TextLabel")
+	warnIcon.Size = UDim2.new(0, 44, 0, 44)
+	warnIcon.Position = UDim2.new(0, 12, 0.5, -22)
+	warnIcon.BackgroundTransparency = 1
+	warnIcon.Font = Enum.Font.GothamBold
+	warnIcon.TextSize = 32
+	if age < 5 then
+		warnIcon.Text = "👶"
+	elseif age < 13 then
+		warnIcon.Text = "🧒"
+	else
+		warnIcon.Text = "😈"
+	end
+	warnIcon.ZIndex = 83
+	warnIcon.Parent = warningCard
+
+	local warnText = Instance.new("TextLabel")
+	warnText.Size = UDim2.new(1, -75, 1, -16)
+	warnText.Position = UDim2.new(0, 65, 0, 8)
+	warnText.BackgroundTransparency = 1
+	warnText.Font = F.Body
+	warnText.TextSize = 13
+	warnText.TextColor3 = C.RedDark
+	warnText.TextXAlignment = Enum.TextXAlignment.Left
+	warnText.TextWrapped = true
+	warnText.Text = warningText
+	warnText.ZIndex = 83
+	warnText.Parent = warningCard
+
+	-- Mischief section
+	local section = Instance.new("Frame")
+	section.Name = "MischiefSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 140, 0, 32)
+	badge.BackgroundColor3 = headerColor
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = headerText
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Size = UDim2.new(0, 80, 1, 0)
+	countLabel.Position = UDim2.new(0, 150, 0, 0)
+	countLabel.BackgroundTransparency = 1
+	countLabel.Font = F.Medium
+	countLabel.TextSize = 13
+	countLabel.TextColor3 = C.Gray400
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Text = #activities .. " options"
+	countLabel.ZIndex = 84
+	countLabel.Parent = header
+
+	-- Create cards for each mischief activity
+	for i, item in ipairs(activities) do
+		self:createMischiefCard(section, item, i)
+	end
+end
+
+-- Create a mischief activity card
+function ActivitiesScreen:createMischiefCard(parent, item, index)
+	local age = self:getAge()
+	local card = Instance.new("Frame")
+	card.Name = "MischiefCard_" .. item.id
+	card.Size = UDim2.new(1, 0, 0, 65)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = index
+	card.ZIndex = 84
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, 0.85, C.Gray200)
+
+	-- Emoji icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 48, 0, 48)
+	iconFrame.Position = UDim2.new(0, 8, 0.5, -24)
+	iconFrame.BackgroundColor3 = C.RedPale
+	iconFrame.ZIndex = 85
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 12)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.TextSize = 26
+	iconLabel.Text = item.emoji
+	iconLabel.ZIndex = 86
+	iconLabel.Parent = iconFrame
+
+	-- Name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, -130, 0, 22)
+	nameLabel.Position = UDim2.new(0, 65, 0, 10)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.SemiBold
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = C.Gray900
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = item.name
+	nameLabel.ZIndex = 85
+	nameLabel.Parent = card
+
+	-- Effect
+	local effectLabel = Instance.new("TextLabel")
+	effectLabel.Size = UDim2.new(1, -130, 0, 18)
+	effectLabel.Position = UDim2.new(0, 65, 0, 34)
+	effectLabel.BackgroundTransparency = 1
+	effectLabel.Font = F.Body
+	effectLabel.TextSize = 12
+	effectLabel.TextColor3 = C.Gray500
+	effectLabel.TextXAlignment = Enum.TextXAlignment.Left
+	effectLabel.Text = item.effect or ""
+	effectLabel.ZIndex = 85
+	effectLabel.Parent = card
+
+	-- Risk indicator if present
+	if item.risk and item.risk > 0 then
+		local riskLabel = Instance.new("TextLabel")
+		riskLabel.Size = UDim2.new(0, 50, 0, 20)
+		riskLabel.AnchorPoint = Vector2.new(1, 0.5)
+		riskLabel.Position = UDim2.new(1, -60, 0.5, 0)
+		riskLabel.BackgroundColor3 = C.RedPale
+		riskLabel.Font = F.Medium
+		riskLabel.TextSize = 11
+		riskLabel.TextColor3 = C.RedDark
+		riskLabel.Text = "⚠️" .. item.risk .. "%"
+		riskLabel.ZIndex = 85
+		riskLabel.Parent = card
+		UI.pill(riskLabel)
+	end
+
+	-- Do button
+	local doBtn = Instance.new("TextButton")
+	doBtn.Size = UDim2.new(0, 50, 0, 36)
+	doBtn.AnchorPoint = Vector2.new(1, 0.5)
+	doBtn.Position = UDim2.new(1, -8, 0.5, 0)
+	doBtn.BackgroundColor3 = C.Red
+	doBtn.Font = F.Button
+	doBtn.TextSize = 13
+	doBtn.TextColor3 = C.White
+	doBtn.Text = "Do It!"
+	doBtn.AutoButtonColor = false
+	doBtn.ZIndex = 86
+	doBtn.Parent = card
+	UI.corner(doBtn, 10)
+
+	doBtn.MouseEnter:Connect(function()
+		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark or C.Red })
+	end)
+	doBtn.MouseLeave:Connect(function()
+		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Red })
+	end)
+
+	doBtn.MouseButton1Click:Connect(function()
+		self:doMischief(item)
+	end)
+end
+
+-- Execute mischief activity
+function ActivitiesScreen:doMischief(item)
+	log("Doing mischief:", item.id, item.name)
+	
+	-- Use DoActivity remote for mischief (server handles it)
+	if DoActivity then
+		local result = DoActivity:InvokeServer(item.id)
+		if result then
+			if result.success then
+				self:showResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item.emoji)
+			else
+				self:showResult(false, result.message or "That didn't work out...", "😅")
+			end
+		else
+			-- Fallback for unimplemented activities
+			local messages = {
+				cry_loudly = "You cry SO LOUD! Everyone comes running!",
+				throw_food = "SPLAT! Food goes everywhere! Mom is NOT happy.",
+				break_toy = "Oops! The toy is in pieces now...",
+				draw_walls = "Your artistic masterpiece covers the whole wall!",
+				refuse_nap = "NO NAP! You're cranky but FREE!",
+				tantrum = "You SCREAM and kick! Maximum drama!",
+				bite_sibling = "CHOMP! Your sibling runs away crying!",
+				hide_mom_keys = "The keys are hidden REALLY well. Mom searches for an hour!",
+				skip_chores = "You sneak away from chores. Hope no one notices!",
+				prank_sibling = "GOTCHA! Your sibling falls for it!",
+				sneak_candy = "You grab candy when no one's looking. Sweet success!",
+				stay_up_late = "You watch TV under the covers until midnight!",
+				cheat_test = "You peek at your neighbor's paper...",
+				talk_back = "You give your parents some ATTITUDE!",
+				blame_sibling = "It wasn't ME, it was THEM!",
+				fake_sick = "Cough cough... you're suddenly 'too sick' for school!",
+				toilet_paper_house = "The neighbor's house is now decorated in TP!",
+				ring_doorbell_run = "DING DONG... and you're GONE!",
+				sneak_out = "You climb out the window into the night!",
+				skip_class = "You ditch class and hang out instead!",
+				party_crash = "You show up uninvited but act like you belong!",
+				fake_id = "You get a fake ID... hope it works!",
+				vandalize = "You leave your mark on something...",
+				bully = "You pick on someone smaller...",
+				steal_parents_car = "You take the car for a joyride!",
+				break_curfew = "It's way past curfew and you're still out!",
+				drink_underage = "You drink at a party... hope no one tells!",
+				smoke = "You try a cigarette. Gross!",
+			}
+			
+			local msg = messages[item.id] or ("You " .. string.lower(item.name) .. "!")
+			self:showResult(true, msg, item.emoji)
+		end
+	else
+		logWarn("DoActivity remote not found!")
+		self:showResult(false, "Something went wrong!", "❌")
+	end
+	
+	-- Update UI
+	self:updateInfoBar()
 end
 
 function ActivitiesScreen:populatePrison()

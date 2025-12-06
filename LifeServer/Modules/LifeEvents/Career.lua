@@ -111,8 +111,8 @@ Career.events = {
 		id = "work_achievement",
 		title = "Major Achievement",
 		emoji = "🏆",
-		text = "You accomplished something significant at work!",
-		question = "What was it?",
+		text = "Your manager says you have a chance to really shine today.",
+		question = "How do you approach this opportunity?",
 		minAge = 20, maxAge = 65,
 		baseChance = 0.3,
 		cooldown = 3,
@@ -125,12 +125,63 @@ Career.events = {
 		category = "career_success",
 		tags = { "achievement", "recognition", "job" },
 		careerTags = { "leadership" },
-
+		-- CRITICAL FIX: Random achievement outcome based on approach
 		choices = {
-			{ text = "Landed a big client/deal", effects = { Happiness = 10, Money = 1000, Smarts = 2 }, setFlags = { big_achiever = true }, feedText = "You closed a major deal!" },
-			{ text = "Solved a critical problem", effects = { Happiness = 8, Smarts = 5 }, setFlags = { problem_solver = true }, feedText = "You saved the day with your solution!" },
-			{ text = "Got recognized by leadership", effects = { Happiness = 10, Money = 500 }, feedText = "The executives noticed your work!" },
-			{ text = "Mentored someone successfully", effects = { Happiness = 8, Smarts = 2 }, setFlags = { mentor = true }, feedText = "You helped someone grow in their career!" },
+			{
+				text = "Go all out - maximum effort!",
+				effects = { Health = -2 },
+				feedText = "You gave it everything...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.40 + (smarts / 150)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.big_achiever = true
+						state:AddFeed("🏆 You knocked it out of the park! Major achievement!")
+					elseif roll < successChance + 0.30 then
+						state.Money = (state.Money or 0) + 300
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏆 Solid performance! Good job but not exceptional.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🏆 Despite your effort, it didn't go as planned. Disappointing.")
+					end
+				end,
+			},
+			{
+				text = "Play it smart and strategic",
+				effects = {},
+				feedText = "You approached it methodically...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.30 + (smarts / 120)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 800
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.problem_solver = true
+						state:AddFeed("🏆 Your strategic approach paid off beautifully!")
+					elseif roll < successChance + 0.35 then
+						state.Money = (state.Money or 0) + 200
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏆 It went okay. Nothing special but nothing wrong either.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏆 Your plan didn't work out. Back to the drawing board.")
+					end
+				end,
+			},
+			{
+				text = "Let others take the lead",
+				effects = { Happiness = 2 },
+				feedText = "You supported from the sidelines.",
+			},
 		},
 	},
 	{
@@ -320,8 +371,8 @@ Career.events = {
 		id = "business_opportunity",
 		title = "Business Opportunity",
 		emoji = "💰",
-		text = "Someone approaches you with a business opportunity.",
-		question = "Is it legit?",
+		text = "Someone approaches you with an exciting business opportunity. They promise big returns!",
+		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
@@ -332,12 +383,69 @@ Career.events = {
 		category = "entrepreneurship",
 		tags = { "business", "investment", "scam_risk", "money" },
 		careerTags = { "business" },
-
+		-- CRITICAL FIX: Random investment outcome - can't choose if scam/legit
 		choices = {
-			{ text = "It's a great opportunity! Invest!", effects = { Money = 3000, Happiness = 8 }, setFlags = { investor = true }, feedText = "You took a chance on the opportunity!" },
-			{ text = "Do thorough due diligence first", effects = { Smarts = 3, Money = 1000 }, feedText = "You researched carefully before deciding." },
-			{ text = "If it sounds too good to be true...", effects = { Happiness = 2, Smarts = 2 }, feedText = "You wisely passed on the 'opportunity.'" },
-			{ text = "It's a scam! Report it!", effects = { Smarts = 3 }, feedText = "You recognized and reported the scam." },
+			{
+				text = "Invest a significant amount",
+				effects = { Money = -3000 },
+				feedText = "You put your money on the line...",
+				onResolve = function(state)
+					local roll = math.random()
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					-- Smarter people slightly less likely to fall for scams
+					local scamChance = 0.35 - (smarts / 400)
+					if roll < scamChance then
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💰 It was a scam! You lost everything you invested!")
+					elseif roll < scamChance + 0.35 then
+						state.Money = (state.Money or 0) + 3500
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Made a modest return on the investment.")
+					else
+						state.Money = (state.Money or 0) + 8000
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state:AddFeed("💰 Great investment! You made serious money!")
+					end
+				end,
+			},
+			{
+				text = "Research it thoroughly first",
+				effects = { Smarts = 2 },
+				feedText = "You investigated before committing...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Your research revealed it was a scam! Good call.")
+					elseif roll < 0.60 then
+						state.Money = (state.Money or 0) + 2000
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state:AddFeed("💰 Legitimate opportunity! You invested and profited.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💰 Took too long researching - the opportunity passed.")
+					end
+				end,
+			},
+			{
+				text = "Decline - too risky",
+				effects = { Happiness = 2 },
+				feedText = "You played it safe...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("💰 Smart move - later heard others lost money on it.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💰 Others made good money on it. Maybe you were too cautious?")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -577,20 +685,77 @@ Career.events = {
 	},
 	{
 		id = "dream_job_offer",
-		title = "Dream Job Offer",
+		title = "Dream Job Offer?",
 		emoji = "✨",
-		text = "You got an offer for your dream job!",
-		question = "What's the catch?",
+		text = "You received an incredible job offer! But should you trust it?",
+		question = "How do you respond?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.2,
 		cooldown = 6,
 		requiresJob = true,
-
+		-- CRITICAL FIX: Random job offer legitimacy - can't choose if it's a scam
 		choices = {
-			{ text = "It's perfect! Take it!", effects = { Happiness = 15, Money = 1000 }, setFlags = { dream_job = true }, feedText = "You got your dream job! Incredible!" },
-			{ text = "Great job but requires relocating", effects = { Happiness = 8, Money = 800, Health = -3 }, setFlags = { dream_job = true, relocated = true }, feedText = "Worth the move for this opportunity!" },
-			{ text = "Amazing role but less pay", effects = { Happiness = 10, Money = -500 }, setFlags = { dream_job = true }, feedText = "Passion over pay. You're happier." },
-			{ text = "Too good to be true - scam", effects = { Happiness = -10 }, feedText = "It was fake. Crushing disappointment." },
+			{
+				text = "Accept immediately - this is my chance!",
+				effects = {},
+				feedText = "You jumped at the opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then -- 60% legitimate great job
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ It's real! You got your dream job! Incredible!")
+					elseif roll < 0.80 then -- 20% good but tradeoffs
+						state.Money = (state.Money or 0) + 300
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ Great job but required sacrifices. Worth it though!")
+					else -- 20% scam
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("✨ It was a scam! They just wanted personal information. Crushed.")
+					end
+				end,
+			},
+			{
+				text = "Research the company thoroughly first",
+				effects = { Smarts = 1 },
+				feedText = "You did your due diligence...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.10 then -- Small chance it was a scam you avoided
+						state:ModifyStat("Happiness", 3)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("✨ Good thing you researched - it was a scam! Crisis averted.")
+					elseif roll < 0.70 then -- Usually it's legit and you get it
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 14)
+						state.Flags = state.Flags or {}
+						state.Flags.dream_job = true
+						state:AddFeed("✨ Verified and accepted! Your dream job awaits!")
+					else -- Sometimes you're too slow
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("✨ Took too long researching - they gave the job to someone else!")
+					end
+				end,
+			},
+			{
+				text = "Decline - seems too good to be true",
+				effects = { Happiness = -3 },
+				feedText = "You passed on the opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("✨ Smart move - later heard it was a scam company!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("✨ It was actually legitimate... you missed a real opportunity.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -669,17 +834,84 @@ Career.events = {
 		title = "Big Presentation",
 		emoji = "📊",
 		text = "You have to present to the executive team!",
-		question = "How does it go?",
+		question = "How do you prepare?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-
+		-- CRITICAL FIX: Random presentation outcome based on preparation
 		choices = {
-			{ text = "Nailed it! Standing ovation", effects = { Happiness = 12, Money = 500, Smarts = 3 }, setFlags = { great_presenter = true }, feedText = "You crushed that presentation!" },
-			{ text = "Solid performance, good feedback", effects = { Happiness = 5, Smarts = 2 }, feedText = "You did well. Not perfect but strong." },
-			{ text = "Froze up - disaster", effects = { Happiness = -10, Smarts = -2 }, setFlags = { presentation_trauma = true }, feedText = "Total failure. Embarrassing." },
-			{ text = "Technical difficulties saved you", effects = { Happiness = 3 }, feedText = "The projector broke - presentation rescheduled!" },
+			{
+				text = "Practice extensively beforehand",
+				effects = { Health = -1 },
+				feedText = "You rehearsed for hours...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.45 + (smarts / 150)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.great_presenter = true
+						state:AddFeed("📊 Nailed it! Standing ovation from the executives!")
+					elseif roll < successChance + 0.35 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📊 Solid presentation. Good feedback all around.")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("📊 You stumbled a bit. Not great, but you recovered.")
+					end
+				end,
+			},
+			{
+				text = "Wing it - I know this stuff",
+				effects = {},
+				feedText = "You walked in confident...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.25 + (smarts / 200)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 600
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.natural_presenter = true
+						state:AddFeed("📊 Crushed it! Natural born presenter!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📊 It went okay. Got through it.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Smarts", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.presentation_trauma = true
+						state:AddFeed("📊 Froze up completely. Total disaster. Embarrassing.")
+					end
+				end,
+			},
+			{
+				text = "Ask a colleague to co-present",
+				effects = { Happiness = 2 },
+				feedText = "You presented together...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("📊 Good teamwork! The presentation went smoothly.")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📊 It was okay. Some confusion about who was saying what.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📊 Your colleague dropped the ball. Awkward...")
+					end
+				end,
+			},
 		},
 	},
 	{

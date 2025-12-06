@@ -30,73 +30,128 @@ Random.events = {
 		title = "Scratch Ticket",
 		emoji = "🎰",
 		text = "Someone gave you a scratch lottery ticket.",
-		question = "Let's see what you won!",
+		question = "How do you scratch it?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.3,
 		cooldown = 2,
+		-- CRITICAL FIX: Random outcome instead of player picking result
 		choices = {
-			{ text = "BIG WINNER!", effects = { Happiness = 20, Money = 5000 }, feedText = "Incredible! You won big!" },
-			{ text = "Small prize", effects = { Happiness = 5, Money = 50 }, feedText = "You won a little something!" },
-			{ text = "Nothing this time", effects = { Happiness = -2 }, feedText = "No luck. Better luck next time." },
+			{ 
+				text = "Scratch it excitedly!", 
+				effects = {},
+				feedText = "You scratch with anticipation...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.02 then -- 2% chance big winner
+						state.Money = (state.Money or 0) + 5000
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🎰 JACKPOT!!! You won $5,000! Incredible!")
+					elseif roll < 0.15 then -- 13% chance small prize
+						state.Money = (state.Money or 0) + math.random(20, 100)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎰 You won a small prize! Nice!")
+					else -- 85% nothing
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎰 Nothing. Better luck next time.")
+					end
+				end,
+			},
+			{ 
+				text = "Scratch it carefully and slowly", 
+				effects = {},
+				feedText = "You scratch methodically...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.02 then
+						state.Money = (state.Money or 0) + 5000
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🎰 JACKPOT!!! You won $5,000!")
+					elseif roll < 0.15 then
+						state.Money = (state.Money or 0) + math.random(20, 100)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎰 Small winner! A little cash.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎰 Not a winner. Oh well.")
+					end
+				end,
+			},
+			{ text = "Give it away - gambling isn't for me", effects = { Happiness = 2 }, feedText = "You gave the ticket to someone else." },
 		},
 	},
 	{
 		id = "inheritance",
 		title = "Unexpected Inheritance",
 		emoji = "📜",
-		text = "A distant relative you barely knew passed away and left you something.",
-		question = "What did you inherit?",
+		text = "A distant relative you barely knew passed away and left you something in their will.",
+		question = "The lawyer calls you about the inheritance...",
 		minAge = 25, maxAge = 80,
 		baseChance = 0.15,
 		cooldown = 10,
 		oneTime = true,
+		-- CRITICAL FIX: Random inheritance instead of player picking what they get
 		choices = {
 			{
-				text = "A substantial sum",
-				effects = { Happiness = 10, Money = 10000 },
-				feedText = "You inherited a nice sum of money!",
+				text = "Attend the will reading",
+				effects = {},
+				feedText = "You attended the reading of the will...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then -- 30% substantial money
+						local amount = math.random(5000, 25000)
+						state.Money = (state.Money or 0) + amount
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("📜 You inherited $%d! What a windfall!", amount))
+					elseif roll < 0.50 then -- 20% house
+						state.Flags = state.Flags or {}
+						state.Flags.inherited_property = true
+						state.Flags.homeowner = true
+						state.Flags.has_property = true
+						state:ModifyStat("Happiness", 10)
+						if state.AddAsset then
+							state:AddAsset("Properties", {
+								id = "inherited_house_" .. tostring(state.Age or 0),
+								name = "Inherited House",
+								emoji = "🏚️",
+								price = 0,
+								value = 120000,
+								income = 800,
+								isEventAcquired = true,
+							})
+						end
+						state:AddFeed("📜 You inherited a house! It needs some work but it's yours.")
+					elseif roll < 0.70 then -- 20% heirloom
+						state.Flags = state.Flags or {}
+						state.Flags.has_heirloom = true
+						state:ModifyStat("Happiness", 5)
+						if state.AddAsset then
+							state:AddAsset("Items", {
+								id = "family_heirloom_" .. tostring(state.Age or 0),
+								name = "Family Heirloom",
+								emoji = "🏺",
+								price = 0,
+								value = 2500,
+								isEventAcquired = true,
+							})
+						end
+						state:AddFeed("📜 You inherited a family heirloom. Interesting piece of history!")
+					elseif roll < 0.85 then -- 15% small amount
+						local amount = math.random(500, 2000)
+						state.Money = (state.Money or 0) + amount
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("📜 You inherited $%d. Every bit helps!", amount))
+					else -- 15% debt
+						local debt = math.random(1000, 5000)
+						state.Money = (state.Money or 0) - debt
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed(string.format("📜 Bad news... you inherited $%d in debt!", debt))
+					end
+				end,
 			},
-		{
-			text = "A quirky family heirloom",
-			effects = { Happiness = 5 },
-			setFlags = { has_heirloom = true },
-			feedText = "An interesting piece of family history.",
-			onResolve = function(state)
-				if state.AddAsset then
-					state:AddAsset("Items", {
-						id = "family_heirloom_" .. tostring(state.Age or 0),
-						name = "Family Heirloom",
-						emoji = "🏺",
-						price = 0,
-						value = 2500,
-						isEventAcquired = true,
-					})
-				end
-			end,
-		},
-		{
-			text = "An old house",
-			effects = { Happiness = 8 },
-			setFlags = { inherited_property = true, homeowner = true, has_property = true },
-			feedText = "You inherited a property!",
-			onResolve = function(state)
-				if state.AddAsset then
-					state:AddAsset("Properties", {
-						id = "inherited_house_" .. tostring(state.Age or 0),
-						name = "Inherited House",
-						emoji = "🏚️",
-						price = 0,
-						value = 120000,
-						income = 800,
-						isEventAcquired = true,
-					})
-				end
-			end,
-		},
 			{
-				text = "Some debt, unfortunately",
-				effects = { Happiness = -5, Money = -2000 },
-				feedText = "They left you with bills to pay.",
+				text = "Decline the inheritance",
+				effects = { Happiness = -2 },
+				feedText = "You declined to accept the inheritance. You never know what strings were attached.",
 			},
 		},
 	},
@@ -108,16 +163,62 @@ Random.events = {
 		id = "minor_accident",
 		title = "Ouch!",
 		emoji = "🤕",
-		text = "You had a minor accident.",
-		question = "What happened?",
+		text = "You had an accident!",
+		question = "Do you seek medical attention?",
 		minAge = 5, maxAge = 80,
 		baseChance = 0.3,
 		cooldown = 2,
+		-- CRITICAL FIX: Random injury type and severity
 		choices = {
-			{ text = "Tripped and fell", effects = { Health = -5, Happiness = -3 }, feedText = "You took a tumble. Bruises heal." },
-			{ text = "Cut yourself cooking", effects = { Health = -3, Smarts = 2 }, feedText = "Kitchen accidents happen." },
-			{ text = "Sports injury", effects = { Health = -8, Happiness = -2 }, setFlags = { sports_injury = true }, feedText = "You got hurt playing sports." },
-			{ text = "Stubbed toe badly", effects = { Health = -2, Happiness = -5 }, feedText = "The pain! It never gets easier!" },
+			{
+				text = "Go to the doctor",
+				effects = { Money = -100 },
+				feedText = "You went to see a doctor...",
+				onResolve = function(state)
+					local roll = math.random()
+					local injuries = {
+						{ type = "Tripped and fell", health = -5, hap = -3 },
+						{ type = "Cut yourself cooking", health = -3, hap = -2 },
+						{ type = "Sports injury", health = -8, hap = -2, flag = "sports_injury" },
+						{ type = "Stubbed toe badly", health = -2, hap = -5 },
+						{ type = "Bumped your head", health = -6, hap = -4 },
+						{ type = "Sprained your wrist", health = -7, hap = -3 },
+					}
+					local injury = injuries[math.random(#injuries)]
+					state:ModifyStat("Health", injury.health)
+					state:ModifyStat("Happiness", injury.hap)
+					if injury.flag then
+						state.Flags = state.Flags or {}
+						state.Flags[injury.flag] = true
+					end
+					-- Doctor visit helps a bit
+					state:ModifyStat("Health", 3)
+					state:AddFeed(string.format("🤕 %s. The doctor patched you up.", injury.type))
+				end,
+			},
+			{
+				text = "Tough it out",
+				effects = {},
+				feedText = "You decided to tough it out...",
+				onResolve = function(state)
+					local injuries = {
+						{ type = "Tripped and fell", health = -5, hap = -3 },
+						{ type = "Cut yourself cooking", health = -4, hap = -2 },
+						{ type = "Sports injury", health = -10, hap = -4, flag = "sports_injury" },
+						{ type = "Stubbed toe badly", health = -2, hap = -5 },
+						{ type = "Bumped your head", health = -8, hap = -5 },
+						{ type = "Sprained something", health = -9, hap = -4 },
+					}
+					local injury = injuries[math.random(#injuries)]
+					state:ModifyStat("Health", injury.health)
+					state:ModifyStat("Happiness", injury.hap)
+					if injury.flag then
+						state.Flags = state.Flags or {}
+						state.Flags[injury.flag] = true
+					end
+					state:AddFeed(string.format("🤕 %s. You're healing slowly without medical help.", injury.type))
+				end,
+			},
 		},
 	},
 	{
@@ -400,18 +501,89 @@ Random.events = {
 		title = "Bad Fall!",
 		emoji = "🤕",
 		text = "You took a nasty fall!",
-		question = "Where did you get hurt?",
+		question = "Do you go to the hospital?",
 		minAge = 3, maxAge = 85,
 		baseChance = 0.25,
 		cooldown = 2,
 		category = "injury",
-
+		-- CRITICAL FIX: Random injury location/severity
 		choices = {
-			{ text = "My head - hit it hard", effects = { Health = -15, Smarts = -2, Happiness = -10 }, setFlags = { head_injury = true }, feedText = "You hit your head badly. Doctors are concerned." },
-			{ text = "My arm - might be broken", effects = { Health = -12, Happiness = -8 }, setFlags = { broken_arm = true }, feedText = "You broke your arm! Months in a cast." },
-			{ text = "My leg - can't walk right", effects = { Health = -12, Happiness = -8 }, setFlags = { broken_leg = true }, feedText = "You broke your leg. Crutches for months." },
-			{ text = "My back - really hurts", effects = { Health = -18, Happiness = -12 }, setFlags = { back_injury = true }, feedText = "Back injury. This might be a long recovery." },
-			{ text = "Just some scrapes and bruises", effects = { Health = -5, Happiness = -3 }, feedText = "You got off lucky with minor injuries." },
+			{
+				text = "Go to the emergency room",
+				effects = { Money = -500 },
+				feedText = "You rushed to the ER...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.10 then -- 10% head injury
+						state:ModifyStat("Health", -12)
+						state:ModifyStat("Smarts", -2)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.head_injury = true
+						state:AddFeed("🤕 You hit your head badly. Doctors are monitoring you closely.")
+					elseif roll < 0.25 then -- 15% broken arm
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_arm = true
+						state:AddFeed("🤕 You broke your arm! Months in a cast.")
+					elseif roll < 0.40 then -- 15% broken leg
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_leg = true
+						state:AddFeed("🤕 You broke your leg. Crutches for months.")
+					elseif roll < 0.50 then -- 10% back injury
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.back_injury = true
+						state:AddFeed("🤕 Back injury. This might be a long recovery.")
+					else -- 50% minor
+						state:ModifyStat("Health", -4)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤕 Just some scrapes and bruises. You got lucky!")
+					end
+				end,
+			},
+			{
+				text = "Wait and see if it heals",
+				effects = {},
+				feedText = "You decided to wait it out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.15 then -- Worse outcomes when not treated
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Smarts", -2)
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.head_injury = true
+						state:AddFeed("🤕 Your head injury got worse. Should've gone to the hospital!")
+					elseif roll < 0.35 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_arm = true
+						state:AddFeed("🤕 Your arm is definitely broken. Healing crooked now.")
+					elseif roll < 0.55 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_leg = true
+						state:AddFeed("🤕 That leg is broken. Should've gotten it set properly.")
+					elseif roll < 0.65 then
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.back_injury = true
+						state:AddFeed("🤕 Back is messed up. This is going to be chronic.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤕 Just bruises. Healed up fine on your own.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -419,19 +591,93 @@ Random.events = {
 		title = "Sports Injury!",
 		emoji = "⚽",
 		text = "You got injured playing sports!",
-		question = "What happened?",
+		question = "How do you respond?",
 		minAge = 6, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 2,
 		category = "injury",
-
+		-- CRITICAL FIX: Random injury type and severity
 		choices = {
-			{ text = "Twisted my ankle badly", effects = { Health = -10, Happiness = -6 }, setFlags = { sprained_ankle = true }, feedText = "Nasty ankle sprain. You'll be off your feet for a while." },
-			{ text = "Knee injury - heard a pop", effects = { Health = -20, Happiness = -15, Money = -2000 }, setFlags = { acl_injury = true, needs_surgery = true }, feedText = "Torn ACL. Surgery is required." },
-			{ text = "Dislocated my shoulder", effects = { Health = -12, Happiness = -8, Money = -500 }, setFlags = { shoulder_injury = true }, feedText = "Shoulder popped out! Emergency room visit." },
-			{ text = "Got hit in the face", effects = { Health = -8, Looks = -3, Happiness = -7 }, setFlags = { facial_injury = true }, feedText = "Your face took the hit. Bruised and swollen." },
-			{ text = "Concussion from collision", effects = { Health = -15, Smarts = -3, Happiness = -10 }, setFlags = { concussion = true }, feedText = "Concussion. You need to take it easy." },
-			{ text = "Minor strain - tough it out", effects = { Health = -3, Happiness = -2 }, feedText = "You pushed through a minor strain." },
+			{
+				text = "Get medical attention immediately",
+				effects = { Money = -300 },
+				feedText = "You got checked out right away...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.15 then -- Ankle
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.sprained_ankle = true
+						state:AddFeed("⚽ Sprained ankle. A few weeks off your feet.")
+					elseif roll < 0.25 then -- ACL - serious
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Happiness", -12)
+						state.Money = (state.Money or 0) - 2000
+						state.Flags = state.Flags or {}
+						state.Flags.acl_injury = true
+						state.Flags.needs_surgery = true
+						state:AddFeed("⚽ Torn ACL! Surgery required. Season's over.")
+					elseif roll < 0.35 then -- Shoulder
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -7)
+						state.Flags = state.Flags or {}
+						state.Flags.shoulder_injury = true
+						state:AddFeed("⚽ Dislocated shoulder. Popped back in at the ER.")
+					elseif roll < 0.45 then -- Face
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Looks", -2)
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.facial_injury = true
+						state:AddFeed("⚽ Took one to the face. Bruised but healing.")
+					elseif roll < 0.55 then -- Concussion
+						state:ModifyStat("Health", -12)
+						state:ModifyStat("Smarts", -2)
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.concussion = true
+						state:AddFeed("⚽ Concussion. Doctor says take it easy.")
+					else -- Minor
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("⚽ Just a minor strain. Nothing serious!")
+					end
+				end,
+			},
+			{
+				text = "Walk it off - it's probably fine",
+				effects = {},
+				feedText = "You tried to play through it...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.20 then -- Ankle - worse without treatment
+						state:ModifyStat("Health", -12)
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.sprained_ankle = true
+						state:AddFeed("⚽ That ankle is really messed up now. Should've stopped playing.")
+					elseif roll < 0.35 then -- ACL
+						state:ModifyStat("Health", -22)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.acl_injury = true
+						state.Flags.needs_surgery = true
+						state:AddFeed("⚽ Something snapped in your knee. This is serious.")
+					elseif roll < 0.50 then -- Concussion undetected
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Smarts", -4)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.concussion = true
+						state:AddFeed("⚽ That was a concussion. Playing through it made it worse.")
+					else -- Lucked out
+						state:ModifyStat("Health", -4)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("⚽ Just a minor strain. Walked it off successfully.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -439,28 +685,99 @@ Random.events = {
 		title = "Car Accident!",
 		emoji = "🚗💥",
 		text = "You were in a car accident!",
-		question = "How bad was it?",
+		question = "The ambulance arrives. What do you do?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.1,
 		cooldown = 5,
 		category = "injury",
-
+		-- CRITICAL FIX: Random accident severity - player doesn't choose how hurt they are
 		choices = {
-			{ text = "Whiplash - neck hurts", effects = { Health = -10, Happiness = -8, Money = -300 }, setFlags = { whiplash = true }, feedText = "Whiplash from the accident. Painful but you'll recover." },
-			{ text = "Broken ribs", effects = { Health = -20, Happiness = -15, Money = -1000 }, setFlags = { broken_ribs = true }, feedText = "Broken ribs. Every breath hurts." },
-			{ text = "Serious head trauma", effects = { Health = -35, Smarts = -5, Happiness = -20, Money = -10000 }, setFlags = { traumatic_injury = true, hospitalized = true }, feedText = "Severe head trauma. Long hospital stay ahead." },
-			{ text = "Broken bones multiple places", effects = { Health = -30, Happiness = -20, Money = -5000 }, setFlags = { multiple_fractures = true, hospitalized = true }, feedText = "Multiple broken bones. Extensive recovery." },
-			{ text = "Just shaken up - walked away", effects = { Health = -3, Happiness = -5 }, feedText = "Miraculously, you walked away with just a scare." },
-			{ text = "The car is totaled but I'm fine", effects = { Money = -3000, Happiness = -8 }, setFlags = { lost_car = true }, feedText = "Your car is destroyed but you're alive.", onResolve = function(state)
-				-- Remove vehicle
-				local vehicles = state.Assets and state.Assets.Vehicles
-				if vehicles and #vehicles > 0 then
-					table.remove(vehicles, 1)
-				end
-				if state.Flags then
-					state.Flags.has_car = nil
-				end
-			end },
+			{
+				text = "Accept emergency care",
+				effects = { Money = -1000 },
+				feedText = "Paramedics rushed you to the hospital...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.05 then -- 5% severe trauma
+						state:ModifyStat("Health", -32)
+						state:ModifyStat("Smarts", -4)
+						state:ModifyStat("Happiness", -18)
+						state.Money = (state.Money or 0) - 8000
+						state.Flags = state.Flags or {}
+						state.Flags.traumatic_injury = true
+						state.Flags.hospitalized = true
+						state:AddFeed("🚗💥 Severe head trauma. You're in the ICU.")
+					elseif roll < 0.15 then -- 10% multiple fractures
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Happiness", -15)
+						state.Money = (state.Money or 0) - 4000
+						state.Flags = state.Flags or {}
+						state.Flags.multiple_fractures = true
+						state.Flags.hospitalized = true
+						state:AddFeed("🚗💥 Multiple broken bones. Long recovery ahead.")
+					elseif roll < 0.30 then -- 15% broken ribs
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_ribs = true
+						state:AddFeed("🚗💥 Broken ribs. Every breath hurts.")
+					elseif roll < 0.50 then -- 20% whiplash
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -6)
+						state.Flags = state.Flags or {}
+						state.Flags.whiplash = true
+						state:AddFeed("🚗💥 Whiplash. Neck is sore but you'll recover.")
+					elseif roll < 0.70 then -- 20% car totaled but okay
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", -8)
+						local vehicles = state.Assets and state.Assets.Vehicles
+						if vehicles and #vehicles > 0 then
+							table.remove(vehicles, 1)
+						end
+						if state.Flags then
+							state.Flags.has_car = nil
+						end
+						state:AddFeed("🚗💥 Car is totaled but you walked away mostly fine!")
+					else -- 30% walked away fine
+						state:ModifyStat("Health", -2)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🚗💥 Incredibly lucky! Just shaken up.")
+					end
+				end,
+			},
+			{
+				text = "Refuse treatment - I'm fine",
+				effects = {},
+				feedText = "You refused to go to the hospital...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.10 then -- Untreated injuries are worse
+						state:ModifyStat("Health", -40)
+						state:ModifyStat("Smarts", -5)
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.traumatic_injury = true
+						state.Flags.hospitalized = true
+						state:AddFeed("🚗💥 You collapsed later. Internal bleeding! Emergency surgery.")
+					elseif roll < 0.30 then
+						state:ModifyStat("Health", -30)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.multiple_fractures = true
+						state:AddFeed("🚗💥 Turns out multiple bones were broken. Bad decision.")
+					elseif roll < 0.50 then
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.broken_ribs = true
+						state:AddFeed("🚗💥 Those ribs were definitely broken. Ouch.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚗💥 You got lucky - nothing serious this time.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -625,17 +942,59 @@ Random.events = {
 		title = "The Scary Diagnosis",
 		emoji = "🎗️",
 		text = "You've found a concerning lump or had abnormal test results.",
-		question = "What's the outcome?",
+		question = "The doctor wants to run more tests...",
 		minAge = 25, maxAge = 90,
 		baseChance = 0.05,
 		cooldown = 10,
 		category = "illness",
-
+		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
-			{ text = "False alarm - benign", effects = { Happiness = 15, Health = 3 }, feedText = "Thank goodness, it was benign. What a relief!" },
-			{ text = "Early stage - treatable", effects = { Health = -20, Happiness = -15, Money = -10000 }, setFlags = { cancer_survivor = true }, feedText = "Cancer caught early. Treatment is working." },
-			{ text = "Serious but fighting", effects = { Health = -40, Happiness = -25, Money = -25000 }, setFlags = { battling_cancer = true }, feedText = "Serious diagnosis. The fight of your life." },
-			{ text = "Need more tests - waiting", effects = { Happiness = -15, Health = -5 }, setFlags = { health_scare = true }, feedText = "The waiting for results is agonizing." },
+			{
+				text = "Get tested immediately",
+				effects = { Money = -1000, Happiness = -10 },
+				feedText = "The waiting for results is agonizing...",
+				onResolve = function(state)
+					local roll = math.random()
+					local age = state.Age or 40
+					-- Older = slightly higher cancer risk
+					local cancerRisk = 0.15 + (age - 25) / 200
+					if roll < 0.50 then -- 50% false alarm
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Health", 5)
+						state:AddFeed("🎗️ It's benign! Thank goodness. What a relief!")
+					elseif roll < 0.50 + (cancerRisk * 0.6) then -- Variable early stage
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Happiness", -10)
+						state.Money = (state.Money or 0) - 8000
+						state.Flags = state.Flags or {}
+						state.Flags.cancer_survivor = true
+						state:AddFeed("🎗️ Cancer caught early. Treatment is working. You'll beat this.")
+					elseif roll < 0.50 + cancerRisk then -- Variable serious
+						state:ModifyStat("Health", -35)
+						state:ModifyStat("Happiness", -20)
+						state.Money = (state.Money or 0) - 20000
+						state.Flags = state.Flags or {}
+						state.Flags.battling_cancer = true
+						state:AddFeed("🎗️ Serious diagnosis. The fight of your life begins.")
+					else -- Need more tests
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.health_scare = true
+						state:AddFeed("🎗️ Results inconclusive. More tests needed...")
+					end
+				end,
+			},
+			{
+				text = "Delay the tests - I'm scared",
+				effects = { Happiness = -15 },
+				feedText = "You put off facing the truth...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.delayed_diagnosis = true
+					state.Flags.health_scare = true
+					state:AddFeed("🎗️ The uncertainty weighs on you. Should get tested soon...")
+				end,
+			},
 		},
 	},
 
@@ -669,24 +1028,88 @@ Random.events = {
 		id = "recovery_surgery",
 		title = "Surgery Day",
 		emoji = "🏥",
-		text = "You need surgery for your condition.",
-		question = "How does the surgery go?",
+		text = "You need surgery for your condition. The day has come.",
+		question = "Which hospital do you go to?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.5,
 		cooldown = 3,
 		requiresFlags = { needs_surgery = true },
 		category = "recovery",
-
+		-- CRITICAL FIX: Random surgery outcome - player doesn't choose success
 		choices = {
-			{ text = "Successful - smooth recovery ahead", effects = { Health = 10, Happiness = 8, Money = -5000 }, feedText = "Surgery was a success! Now to recover." },
-			{ text = "Minor complications but okay", effects = { Health = 5, Happiness = 2, Money = -7000 }, feedText = "Some complications but you pulled through." },
-			{ text = "Long surgery but successful", effects = { Health = 8, Happiness = 5, Money = -8000 }, feedText = "Marathon surgery but it worked!" },
-			{ text = "Need follow-up procedures", effects = { Health = 3, Happiness = -5, Money = -3000 }, setFlags = { needs_more_surgery = true }, feedText = "More procedures needed. Not done yet." },
+			{
+				text = "Top-rated hospital (expensive)",
+				effects = { Money = -10000 },
+				feedText = "You chose the best medical care available...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.needs_surgery = nil
+					if roll < 0.70 then
+						state:ModifyStat("Health", 15)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏥 Surgery was a complete success! Excellent care.")
+					elseif roll < 0.90 then
+						state:ModifyStat("Health", 8)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🏥 Minor complications but the skilled team handled it well.")
+					else
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", -5)
+						state.Flags.needs_more_surgery = true
+						state:AddFeed("🏥 Follow-up procedures needed. Not done yet.")
+					end
+				end,
+			},
+			{
+				text = "Regular hospital",
+				effects = { Money = -5000 },
+				feedText = "You went to a standard hospital...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.needs_surgery = nil
+					if roll < 0.55 then
+						state:ModifyStat("Health", 12)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏥 Surgery was successful! Recovery ahead.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🏥 Some complications but you pulled through.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -8)
+						state.Flags.needs_more_surgery = true
+						state:AddFeed("🏥 Serious complications. More surgery required.")
+					end
+				end,
+			},
+			{
+				text = "Cheapest option available",
+				effects = { Money = -2000 },
+				feedText = "You went with budget surgery...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.needs_surgery = nil
+					if roll < 0.40 then
+						state:ModifyStat("Health", 10)
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🏥 Got lucky! Surgery went fine despite the cut-rate care.")
+					elseif roll < 0.70 then
+						state:ModifyStat("Health", 2)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏥 Complications from the surgery. Cheap isn't always best.")
+					else
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -12)
+						state.Flags.needs_more_surgery = true
+						state:AddFeed("🏥 Surgery went badly. You get what you pay for...")
+					end
+				end,
+			},
 		},
-		onComplete = function(state)
-			state.Flags = state.Flags or {}
-			state.Flags.needs_surgery = nil
-		end,
 	},
 
 	-- ══════════════════════════════════════════════════════════════════════════════
@@ -754,37 +1177,179 @@ Random.events = {
 		id = "lawsuit",
 		title = "Legal Trouble",
 		emoji = "⚖️",
-		text = "You're involved in a lawsuit!",
-		question = "What's the situation?",
+		text = "You're being sued!",
+		question = "How do you handle this lawsuit?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
 		cooldown = 8,
-
+		-- CRITICAL FIX: Random lawsuit outcome - player doesn't choose to win
 		choices = {
-			{ text = "You're suing someone - and won!", effects = { Money = 15000, Happiness = 10, Smarts = 2 }, feedText = "You won your lawsuit! Justice served." },
-			{ text = "You're suing - but lost", effects = { Money = -5000, Happiness = -10 }, feedText = "Lost the case. Expensive and disappointing." },
-			{ text = "Being sued - you won", effects = { Money = -2000, Happiness = 5 }, feedText = "You defended yourself successfully!" },
-			{ text = "Being sued - you lost", effects = { Money = -20000, Happiness = -20 }, setFlags = { lawsuit_lost = true }, feedText = "You lost the lawsuit. Devastating." },
-			{ text = "Settled out of court", effects = { Money = -5000, Happiness = -3 }, feedText = "Settled to avoid trial. Could be worse." },
+			{
+				text = "Hire an expensive lawyer",
+				effects = { Money = -5000 },
+				feedText = "You hired the best attorney you could afford...",
+				onResolve = function(state)
+					local roll = math.random()
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					-- Better lawyers + smarts = better odds
+					local winChance = 0.50 + (smarts / 200)
+					if roll < winChance then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("⚖️ You won the case! Justice prevailed.")
+					elseif roll < winChance + 0.20 then
+						state.Money = (state.Money or 0) - 5000
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("⚖️ Settled out of court. Could've been worse.")
+					else
+						state.Money = (state.Money or 0) - 15000
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.lawsuit_lost = true
+						state:AddFeed("⚖️ You lost the lawsuit. Devastating financially.")
+					end
+				end,
+			},
+			{
+				text = "Use a public defender",
+				effects = { Money = -500 },
+				feedText = "You went with an affordable option...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("⚖️ Against the odds, you won! Good public defender.")
+					elseif roll < 0.50 then
+						state.Money = (state.Money or 0) - 8000
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚖️ Settled for a reasonable amount.")
+					else
+						state.Money = (state.Money or 0) - 20000
+						state:ModifyStat("Happiness", -18)
+						state.Flags = state.Flags or {}
+						state.Flags.lawsuit_lost = true
+						state:AddFeed("⚖️ You lost badly. Cheap lawyers cost more in the end.")
+					end
+				end,
+			},
+			{
+				text = "Represent yourself",
+				effects = {},
+				feedText = "You decided to be your own lawyer...",
+				onResolve = function(state)
+					local roll = math.random()
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local winChance = smarts / 250 -- Max 40% if genius
+					if roll < winChance then
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("⚖️ Incredible! You represented yourself and WON!")
+					elseif roll < 0.30 then
+						state.Money = (state.Money or 0) - 10000
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚖️ Forced to settle. Not great, not terrible.")
+					else
+						state.Money = (state.Money or 0) - 25000
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.lawsuit_lost = true
+						state:AddFeed("⚖️ As they say: a lawyer who represents themselves has a fool for a client.")
+					end
+				end,
+			},
 		},
 	},
 	{
 		id = "natural_disaster",
 		title = "Natural Disaster!",
 		emoji = "🌪️",
-		text = "A natural disaster struck your area!",
-		question = "How bad was the damage?",
+		text = "A natural disaster is bearing down on your area!",
+		question = "What do you do?",
 		minAge = 5, maxAge = 95,
 		baseChance = 0.05,
 		cooldown = 15,
 		category = "disaster",
-
+		-- CRITICAL FIX: Random disaster damage - player doesn't choose outcome
 		choices = {
-			{ text = "Home destroyed - lost everything", effects = { Money = -30000, Happiness = -25, Health = -5 }, setFlags = { disaster_survivor = true, homeless = true }, feedText = "Everything is gone. Starting over." },
-			{ text = "Significant damage but insured", effects = { Money = -5000, Happiness = -15 }, setFlags = { disaster_survivor = true }, feedText = "Major damage but insurance is covering most of it." },
-			{ text = "Minor damage - lucky", effects = { Money = -1000, Happiness = -5 }, feedText = "You got off relatively easy." },
-			{ text = "Completely untouched", effects = { Happiness = 5 }, feedText = "Your home was spared. Others weren't as lucky." },
-			{ text = "Helped rescue others - hero", effects = { Health = -5, Happiness = 15 }, setFlags = { local_hero = true }, feedText = "You helped save lives. True heroism." },
+			{
+				text = "Evacuate immediately",
+				effects = { Money = -500 },
+				feedText = "You fled to safety...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.disaster_survivor = true
+					if roll < 0.10 then
+						state.Money = (state.Money or 0) - 25000
+						state:ModifyStat("Happiness", -22)
+						state.Flags.homeless = true
+						state:AddFeed("🌪️ Home destroyed. Everything is gone, but you're alive.")
+					elseif roll < 0.30 then
+						state.Money = (state.Money or 0) - 8000
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("🌪️ Significant damage. Insurance will cover some of it.")
+					elseif roll < 0.60 then
+						state.Money = (state.Money or 0) - 1500
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌪️ Minor damage. You got lucky!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🌪️ Your home was completely untouched! Miraculous.")
+					end
+				end,
+			},
+			{
+				text = "Shelter in place",
+				effects = {},
+				feedText = "You hunkered down to ride out the storm...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.disaster_survivor = true
+					if roll < 0.15 then
+						state.Money = (state.Money or 0) - 30000
+						state:ModifyStat("Happiness", -25)
+						state:ModifyStat("Health", -15)
+						state.Flags.homeless = true
+						state:AddFeed("🌪️ Home destroyed with you in it! Injured and lost everything.")
+					elseif roll < 0.35 then
+						state.Money = (state.Money or 0) - 10000
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🌪️ Major damage. Got hurt in the chaos.")
+					elseif roll < 0.65 then
+						state.Money = (state.Money or 0) - 2000
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🌪️ Some damage but you're okay.")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🌪️ Rode it out safely. Home intact!")
+					end
+				end,
+			},
+			{
+				text = "Help evacuate neighbors first",
+				effects = { Health = -5 },
+				feedText = "You helped others escape...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.disaster_survivor = true
+					state.Flags.local_hero = true
+					if roll < 0.20 then
+						state.Money = (state.Money or 0) - 20000
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -10)
+						state:AddFeed("🌪️ You saved lives but your home is destroyed. A true hero.")
+					elseif roll < 0.50 then
+						state.Money = (state.Money or 0) - 5000
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🌪️ Saved your neighbors! Some damage to your place.")
+					else
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🌪️ You're a hero! Saved lives and your home was spared!")
+					end
+				end,
+			},
 		},
 	},
 	{

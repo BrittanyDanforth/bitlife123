@@ -308,8 +308,8 @@ Adult.events = {
 		id = "retirement_planning",
 		title = "Thinking About Retirement",
 		emoji = "📊",
-		text = "Retirement is on the horizon. Are you prepared?",
-		question = "What's your retirement outlook?",
+		text = "A financial advisor reviews your retirement readiness.",
+		question = "How does the assessment go?",
 		minAge = 50, maxAge = 62,
 		oneTime = true,
 
@@ -319,31 +319,63 @@ Adult.events = {
 		category = "money",
 		milestoneKey = "ADULT_RETIREMENT_PLANNING",
 		tags = { "retirement", "money_long_term" },
-
+		-- CRITICAL FIX: Retirement readiness based on life choices, not direct selection
 		choices = {
 			{
-				text = "Well prepared - saved consistently",
-				effects = { Happiness = 10, Money = 5000 },
-				setFlags = { retirement_ready = true },
-				feedText = "Your years of saving paid off!"
+				text = "Get a full retirement assessment",
+				effects = { Money = -200 },
+				feedText = "The advisor runs the numbers...",
+				onResolve = function(state)
+					-- Base readiness on accumulated wealth and smart decisions
+					local money = state.Money or 0
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local hasSaved = state.Flags and (state.Flags.saver or state.Flags.investor or state.Flags.retirement_saver)
+					local hasDebt = state.Flags and state.Flags.bad_credit
+					
+					local score = 0
+					if money > 50000 then score = score + 3 end
+					if money > 20000 then score = score + 2 end
+					if money > 5000 then score = score + 1 end
+					if smarts > 60 then score = score + 1 end
+					if hasSaved then score = score + 2 end
+					if hasDebt then score = score - 2 end
+					
+					if score >= 6 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + 5000
+						state.Flags = state.Flags or {}
+						state.Flags.retirement_ready = true
+						state:AddFeed("📊 Great news! You're well prepared for retirement!")
+					elseif score >= 3 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + 1000
+						state.Flags = state.Flags or {}
+						state.Flags.retirement_possible = true
+						state:AddFeed("📊 Moderately prepared. You'll be okay, but not lavish.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.must_keep_working = true
+						state:AddFeed("📊 Not looking good... you'll need to work longer.")
+					end
+				end,
 			},
 			{
-				text = "Moderately prepared",
-				effects = { Happiness = 5, Money = 1000 },
-				setFlags = { retirement_possible = true },
-				feedText = "You'll be okay, but not lavish."
-			},
-			{
-				text = "Not at all - need to work longer",
-				effects = { Happiness = -5 },
-				setFlags = { must_keep_working = true },
-				feedText = "Retirement will have to wait."
-			},
-			{
-				text = "Planning early retirement",
-				effects = { Happiness = 8, Money = -2000 },
-				setFlags = { early_retirement = true },
-				feedText = "You're cutting out early!"
+				text = "I'll figure it out myself",
+				effects = {},
+				feedText = "You decide to wing it...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.retirement_possible = true
+						state:AddFeed("📊 You think you'll be fine. Probably.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📊 The uncertainty about retirement weighs on you.")
+					end
+				end,
 			},
 		},
 	},
@@ -722,29 +754,126 @@ Adult.events = {
 		requiresFlags = { trying_for_baby = true },
 
 		choices = {
-			{ text = "It's exhausting but amazing", effects = { Happiness = 10, Health = -5, Money = -1000 }, setFlags = { has_child = true, parent = true }, feedText = "Sleep is a distant memory but you're in love." },
-			{ text = "Struggling with the transition", effects = { Happiness = 2, Health = -8, Money = -1000 }, setFlags = { has_child = true, parent = true, overwhelmed_parent = true }, feedText = "This is harder than you imagined." },
-			{ text = "Natural parent - taking to it well", effects = { Happiness = 15, Health = -3, Money = -1000 }, setFlags = { has_child = true, parent = true, natural_parent = true }, feedText = "You were born for this!" },
-			{ text = "Partner is doing most of the work", effects = { Happiness = 5, Money = -1000 }, setFlags = { has_child = true, parent = true }, feedText = "You're not pulling your weight..." },
+			{ 
+				text = "It's exhausting but amazing", 
+				effects = { Happiness = 10, Health = -5, Money = -1000 }, 
+				setFlags = { has_child = true, parent = true }, 
+				feedText = "Sleep is a distant memory but you're in love.",
+				-- CRITICAL FIX: Create actual child in Relationships table
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
+			{ 
+				text = "Struggling with the transition", 
+				effects = { Happiness = 2, Health = -8, Money = -1000 }, 
+				setFlags = { has_child = true, parent = true, overwhelmed_parent = true }, 
+				feedText = "This is harder than you imagined.",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 80,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
+			{ 
+				text = "Natural parent - taking to it well", 
+				effects = { Happiness = 15, Health = -3, Money = -1000 }, 
+				setFlags = { has_child = true, parent = true, natural_parent = true }, 
+				feedText = "You were born for this!",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
+			{ 
+				text = "Partner is doing most of the work", 
+				effects = { Happiness = 5, Money = -1000 }, 
+				setFlags = { has_child = true, parent = true }, 
+				feedText = "You're not pulling your weight...",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 90,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
 		},
-		onResolve = function(state)
-			-- Add the child to relationships
-			if state.AddRelationship then
-				state:AddRelationship("son", {
-					id = "child_" .. tostring(state.Age or 0),
-					name = "Baby",
-					type = "family",
-					age = 0,
-					relationship = 100,
-					alive = true,
-				})
-			end
-		end,
 	},
 
 	-- CAREER ADVANCEMENT (25-50)
+	-- CRITICAL FIX: Renamed from "career_crossroads" to avoid ID conflict with Career.lua
 	{
-		id = "career_crossroads",
+		id = "career_crossroads_midlife",
 		title = "Career Crossroads",
 		emoji = "🔀",
 		text = "You're at a crossroads in your career.",
@@ -761,8 +890,9 @@ Adult.events = {
 			{ text = "Focus on work-life balance", effects = { Happiness = 10, Health = 5, Money = -500 }, setFlags = { balanced_life = true }, feedText = "You prioritized quality of life." },
 		},
 	},
+	-- CRITICAL FIX: Renamed from "workplace_conflict" to avoid ID conflict with Career.lua
 	{
-		id = "workplace_conflict",
+		id = "workplace_conflict_serious",
 		title = "Workplace Conflict",
 		emoji = "😠",
 		text = "There's serious conflict with a coworker.",
@@ -803,47 +933,117 @@ Adult.events = {
 		title = "Layoffs Coming",
 		emoji = "📉",
 		text = "Your company is doing layoffs. You might be affected.",
-		question = "What happens?",
+		question = "How do you respond to the news?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 5,
 		requiresJob = true, -- Only trigger if you have a job
-
+		-- CRITICAL FIX: Random layoff outcome - you don't choose if you get laid off
 		choices = {
-			{ 
-				text = "You got laid off", 
-				effects = { Money = -500, Happiness = -10, Health = -3 }, 
-				setFlags = { unemployed = true, laid_off = true, between_jobs = true }, 
-				feedText = "You lost your job. Devastating.",
+			{
+				text = "Stay calm and keep working",
+				effects = {},
+				feedText = "You kept your head down during the chaos...",
 				onResolve = function(state)
-					if state.ClearCareer then
-						state:ClearCareer()
-					else
-						state.CurrentJob = nil
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					-- Smarter/better performers more likely to survive
+					local surviveChance = 0.55 + (smarts / 200)
+					if roll < surviveChance then
+						state:ModifyStat("Happiness", -3)
 						state.Flags = state.Flags or {}
-						state.Flags.has_job = nil
-						state.Flags.employed = nil
+						state.Flags.survivor_guilt = true
+						state:AddFeed("📉 You survived the cuts! But watched friends go. Guilt.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -3)
+						state.Money = (state.Money or 0) - 500
+						state.Flags = state.Flags or {}
+						state.Flags.unemployed = true
+						state.Flags.laid_off = true
+						state.Flags.between_jobs = true
+						if state.ClearCareer then
+							state:ClearCareer()
+						else
+							state.CurrentJob = nil
+							state.Flags.has_job = nil
+							state.Flags.employed = nil
+						end
+						state:AddFeed("📉 You got laid off. Devastating news.")
 					end
 				end,
 			},
-			{ text = "You survived the cuts", effects = { Happiness = -3 }, setFlags = { survivor_guilt = true }, feedText = "You kept your job but watched friends go. Guilt." },
-			{ 
-				text = "Took a severance package", 
-				effects = { Money = 3000, Happiness = -5 }, 
-				setFlags = { unemployed = true, between_jobs = true }, 
-				feedText = "You got paid to leave. Silver lining.",
+			{
+				text = "Start job hunting immediately",
+				effects = { Smarts = 1 },
+				feedText = "You started looking for a new job right away...",
 				onResolve = function(state)
-					if state.ClearCareer then
-						state:ClearCareer()
-					else
-						state.CurrentJob = nil
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local findJobChance = 0.40 + (smarts / 150)
+					if roll < findJobChance then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + 500
 						state.Flags = state.Flags or {}
-						state.Flags.has_job = nil
-						state.Flags.employed = nil
+						state.Flags.career_secure = true
+						state:AddFeed("📉 You found a new job before the layoffs hit! Proactive move.")
+					elseif roll < 0.75 then
+						state.Money = (state.Money or 0) + 2000
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.unemployed = true
+						state.Flags.between_jobs = true
+						if state.ClearCareer then
+							state:ClearCareer()
+						else
+							state.CurrentJob = nil
+							state.Flags.has_job = nil
+							state.Flags.employed = nil
+						end
+						state:AddFeed("📉 Laid off, but negotiated a good severance package.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.unemployed = true
+						state.Flags.laid_off = true
+						state.Flags.between_jobs = true
+						if state.ClearCareer then
+							state:ClearCareer()
+						else
+							state.CurrentJob = nil
+							state.Flags.has_job = nil
+							state.Flags.employed = nil
+						end
+						state:AddFeed("📉 Laid off before you could find something new.")
 					end
 				end,
 			},
-			{ text = "Already found something new", effects = { Happiness = 5, Money = 500 }, setFlags = { career_secure = true }, feedText = "You saw it coming and jumped ship early!" },
+			{
+				text = "Volunteer for the severance package",
+				effects = {},
+				feedText = "You raised your hand for the buyout...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.75 then
+						state.Money = (state.Money or 0) + 3000
+						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.unemployed = true
+						state.Flags.between_jobs = true
+						if state.ClearCareer then
+							state:ClearCareer()
+						else
+							state.CurrentJob = nil
+							state.Flags.has_job = nil
+							state.Flags.employed = nil
+						end
+						state:AddFeed("📉 Took the severance. Got paid to leave - silver lining.")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📉 They wanted you to stay! Guess you're more valuable than you thought.")
+					end
+				end,
+			},
 		},
 	},
 	{

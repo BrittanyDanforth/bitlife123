@@ -1113,23 +1113,35 @@ function OccupationScreen:switchTab(tabId)
 	log("Switching tab to:", tabId)
 	self.currentTab = tabId
 
+	-- CRITICAL FIX: Use calculated layout values matching createUI()
+	-- Layout constants (must match createUI):
+	local INFO_HEIGHT = 52
+	local TAB_HEIGHT = 52
+	local CATEGORY_HEIGHT = 44
+	local GAP = 8
+	
+	local tabY = INFO_HEIGHT + GAP  -- 60
+	local categoryY = tabY + TAB_HEIGHT + GAP  -- 120
+	local scrollY_withCategory = categoryY + CATEGORY_HEIGHT + GAP  -- 172
+	local scrollY_noCategory = tabY + TAB_HEIGHT + GAP  -- 120
+
 	if tabId == "jobs" then
 		log("Animating to Jobs tab")
 		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Blue, TextColor3 = C.White })
 		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
-		-- Show category bar and adjust content
+		-- Show category bar and adjust content (relative to contentRoot!)
 		self.categoryBar.Visible = true
-		self.contentScroll.Size = UDim2.new(1, -16, 1, -296)
-		self.contentScroll.Position = UDim2.new(0, 8, 0, 286)
+		self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY_withCategory)
+		self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY_withCategory)
 		self:populateJobs()
 	else
 		log("Animating to Education tab")
 		UI.tween(self.jobsTab, TweenInfo.new(0.15), { BackgroundColor3 = C.White, TextColor3 = C.Gray600 })
 		UI.tween(self.eduTab, TweenInfo.new(0.15), { BackgroundColor3 = C.Purple, TextColor3 = C.White })
-		-- Hide category bar and expand content
+		-- Hide category bar and expand content (relative to contentRoot!)
 		self.categoryBar.Visible = false
-		self.contentScroll.Size = UDim2.new(1, -16, 1, -250)
-		self.contentScroll.Position = UDim2.new(0, 8, 0, 240)
+		self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY_noCategory)
+		self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY_noCategory)
 		self:populateEducation()
 	end
 end

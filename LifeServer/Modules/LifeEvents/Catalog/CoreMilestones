@@ -329,8 +329,9 @@ local events = {
 		},
 	},
 
+	-- CRITICAL FIX: Renamed from "first_real_job" to avoid ID conflict with Milestones.lua
 	{
-		id = "first_real_job",
+		id = "first_real_job_career",
 		emoji = "💼",
 		title = "Your First REAL Job",
 		text = "You got an offer! Not retail. Not food service. A REAL job. Salary: $45,000. Benefits. 401(k). PTO. You're in a cubicle. You have business cards. Your title is 'Associate [Something].' You wear business casual. You send emails that end with 'Best regards.' Is this... being an adult? It feels surreal. First day is Monday.",

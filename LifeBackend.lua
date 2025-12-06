@@ -757,6 +757,71 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-5)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	play_toys = { stats = { Happiness = 4 }, feed = "played with toys", cost = 0 },
+	watch_cartoons = { stats = { Happiness = 3 }, feed = "watched cartoons", cost = 0 },
+	play_peekaboo = { stats = { Happiness = 5 }, feed = "played peekaboo", cost = 0 },
+	play_blocks = { stats = { Happiness = 3, Smarts = 2 }, feed = "played with blocks", cost = 0 },
+	playground = { stats = { Happiness = 5, Health = 2 }, feed = "went to the playground", cost = 0 },
+	coloring = { stats = { Happiness = 3 }, feed = "colored a picture", cost = 0 },
+	play_dolls = { stats = { Happiness = 3 }, feed = "played with dolls", cost = 0 },
+	bubbles = { stats = { Happiness = 4 }, feed = "blew bubbles", cost = 0 },
+	nap_time = { stats = { Health = 4, Happiness = 2 }, feed = "took a nap", cost = 0 },
+	play_outside = { stats = { Happiness = 4, Health = 3 }, feed = "played outside", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- BABY MISCHIEF (Ages 0-4) - CRITICAL FIX: Added to server catalog
+	-- ═══════════════════════════════════════════════════════════════════════════
+	cry_loudly = { stats = { Happiness = 2 }, feed = "cried really loud for attention", cost = 0 },
+	throw_food = { stats = { Happiness = 3 }, feed = "threw food everywhere", cost = 0 },
+	break_toy = { stats = { Happiness = -1 }, feed = "broke a toy", cost = 0 },
+	draw_walls = { stats = { Happiness = 4 }, feed = "drew on the walls", cost = 0 },
+	refuse_nap = { stats = { Happiness = 3, Health = -1 }, feed = "refused to take a nap", cost = 0 },
+	tantrum = { stats = { Happiness = -2 }, feed = "threw a tantrum", cost = 0 },
+	bite_sibling = { stats = { Happiness = 1 }, feed = "bit someone", cost = 0 },
+	hide_mom_keys = { stats = { Happiness = 4 }, feed = "hid mom's keys", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CHILD MISCHIEF (Ages 5-12) - CRITICAL FIX: Added to server catalog
+	-- ═══════════════════════════════════════════════════════════════════════════
+	skip_chores = { stats = { Happiness = 4, Smarts = -1 }, feed = "skipped chores", cost = 0 },
+	prank_sibling = { stats = { Happiness = 5 }, feed = "pranked a sibling", cost = 0 },
+	sneak_candy = { stats = { Happiness = 4, Health = -1 }, feed = "sneaked candy", cost = 0 },
+	stay_up_late = { stats = { Happiness = 3, Health = -2 }, feed = "stayed up past bedtime", cost = 0 },
+	cheat_test = { stats = { Happiness = -2 }, feed = "cheated on a test", cost = 0, setFlag = "cheater" },
+	talk_back = { stats = { Happiness = 1 }, feed = "talked back to parents", cost = 0 },
+	blame_sibling = { stats = { Happiness = 2 }, feed = "blamed a sibling", cost = 0 },
+	fake_sick = { stats = { Happiness = 4 }, feed = "faked being sick", cost = 0 },
+	toilet_paper_house = { stats = { Happiness = 5 }, feed = "toilet papered a house", cost = 0 },
+	ring_doorbell_run = { stats = { Happiness = 4, Health = 1 }, feed = "played ding dong ditch", cost = 0 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- TEEN MISCHIEF (Ages 13-17) - CRITICAL FIX: Added to server catalog
+	-- Activities have risk of getting caught with consequences
+	-- ═══════════════════════════════════════════════════════════════════════════
+	sneak_out = { stats = { Happiness = 6 }, feed = "snuck out at night", cost = 0, setFlag = "rebellious", 
+		risk = 25, riskConsequence = "your parents caught you coming back! Grounded!", riskFlag = "grounded" },
+	skip_class = { stats = { Happiness = 4, Smarts = -2 }, feed = "skipped class", cost = 0,
+		risk = 30, riskConsequence = "the school called your parents!", riskFlag = "truant" },
+	party_crash = { stats = { Happiness = 5 }, feed = "crashed a party", cost = 0,
+		risk = 20, riskConsequence = "you got kicked out!" },
+	fake_id = { stats = { Happiness = 2 }, feed = "got a fake ID", cost = 0, setFlag = "has_fake_id",
+		risk = 15, riskConsequence = "the bouncer confiscated it!" },
+	vandalize = { stats = { Happiness = 2 }, feed = "vandalized something", cost = 0, setFlag = "vandal",
+		risk = 35, riskConsequence = "someone saw you and called the cops!", riskFlag = "criminal_record" },
+	bully = { stats = { Happiness = -3 }, feed = "bullied someone", cost = 0, setFlag = "bully",
+		risk = 40, riskConsequence = "a teacher witnessed it! You're in big trouble." },
+	steal_parents_car = { stats = { Happiness = 6, Health = -2 }, feed = "took parents' car for a joyride", cost = 0,
+		risk = 30, riskConsequence = "you crashed it! Your parents are furious.", riskFlag = "in_trouble" },
+	break_curfew = { stats = { Happiness = 4 }, feed = "broke curfew", cost = 0,
+		risk = 20, riskConsequence = "your parents were waiting up for you!" },
+	drink_underage = { stats = { Happiness = 3, Health = -3 }, feed = "drank alcohol underage", cost = 0,
+		risk = 25, riskConsequence = "you got sick and your parents found out!" },
+	smoke = { stats = { Happiness = 1, Health = -4 }, feed = "tried smoking", cost = 0, setFlag = "smoker",
+		risk = 20, riskConsequence = "your parents smelled it on your clothes!" },
 }
 
 local CrimeCatalog = {
@@ -1489,7 +1554,14 @@ function LifeBackend:advanceRelationships(state)
 	-- Prison isolates you from loved ones, causing relationships to suffer
 	local isInJail = state.InJail
 	
-	for _, rel in pairs(state.Relationships) do
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Improved family death mechanics
+	-- Realistic death chances based on age, not just >95
+	-- Proper happiness impact and death notifications
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local familyDeaths = {}
+	
+	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
 			-- Normal fluctuation: -2 to +3
 			-- Jail fluctuation: -8 to -2 (always negative, relationships decay)
@@ -1514,12 +1586,85 @@ function LifeBackend:advanceRelationships(state)
 				end
 			end
 			
+			-- Age up the family member
 			rel.age = (rel.age or (state.Age + 20)) + 1
-			if rel.age > 95 and RANDOM:NextNumber() < 0.2 then
+			
+			-- CRITICAL FIX: Realistic death chances based on age for family members
+			-- More graduated death chances instead of just >95 = 20%
+			if rel.type == "family" or rel.isFamily then
+				local deathChance = 0
+				local relAge = rel.age or 0
+				
+				if relAge >= 100 then
+					deathChance = 0.50 -- 50% chance at 100+
+				elseif relAge >= 95 then
+					deathChance = 0.25 -- 25% chance at 95-99
+				elseif relAge >= 90 then
+					deathChance = 0.12 -- 12% chance at 90-94
+				elseif relAge >= 85 then
+					deathChance = 0.06 -- 6% chance at 85-89
+				elseif relAge >= 80 then
+					deathChance = 0.03 -- 3% chance at 80-84
+				elseif relAge >= 75 then
+					deathChance = 0.015 -- 1.5% chance at 75-79
+				elseif relAge >= 70 then
+					deathChance = 0.008 -- 0.8% chance at 70-74
+				elseif relAge >= 60 then
+					deathChance = 0.003 -- 0.3% chance at 60-69 (accidents, illness)
+				end
+				
+				if deathChance > 0 and RANDOM:NextNumber() < deathChance then
+					rel.alive = false
+					rel.deceased = true
+					rel.deathAge = relAge
+					table.insert(familyDeaths, {
+						name = rel.name or "A loved one",
+						role = rel.role or "family member",
+						age = relAge,
+						id = relId,
+					})
+				end
+			elseif rel.age > 95 and RANDOM:NextNumber() < 0.2 then
+				-- Non-family (old friends etc) still use simple check
 				rel.alive = false
+				rel.deceased = true
 				state.PendingFeed = (rel.name or "A loved one") .. " passed away."
 			end
 		end
+	end
+	
+	-- CRITICAL FIX: Handle family death notifications with proper emotional impact
+	if #familyDeaths > 0 then
+		local death = familyDeaths[1] -- Process one death at a time
+		local roleName = death.role or "family member"
+		local isCloseFamily = (death.id == "mother" or death.id == "father" or 
+			death.id:find("brother") or death.id:find("sister"))
+		
+		-- Happiness impact based on closeness
+		if state.ModifyStat then
+			if isCloseFamily then
+				state:ModifyStat("Happiness", -25)
+			else
+				state:ModifyStat("Happiness", -10)
+			end
+		else
+			state.Stats = state.Stats or {}
+			local impact = isCloseFamily and -25 or -10
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) + impact, 0, 100)
+		end
+		
+		local messages = {
+			"💔 %s (%s, age %d) has passed away. Rest in peace.",
+			"😢 Sadly, %s (%s) died at age %d.",
+			"🕯️ Your %s, %s, passed away at %d years old.",
+		}
+		local msgTemplate = messages[RANDOM:NextInteger(1, #messages)]
+		local formattedMsg = string.format(msgTemplate, death.name, roleName, death.age)
+		
+		state.PendingFeed = formattedMsg
+		state.Flags = state.Flags or {}
+		state.Flags.recently_bereaved = true
+		state.Flags["lost_" .. death.id] = true
 	end
 end
 
@@ -2499,12 +2644,51 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 
 	self:applyStatChanges(state, deltas)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle setFlag for activities (especially mischief activities)
+	-- Without this, flags like "cheater", "rebellious", "bully" won't be set
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	if activity.setFlag then
+		state.Flags[activity.setFlag] = true
+	end
+	
+	-- Handle multiple flags if needed
+	if activity.setFlags then
+		for flagName, flagValue in pairs(activity.setFlags) do
+			state.Flags[flagName] = flagValue
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Some mischief activities have risk of getting caught
+	-- E.g., vandalism, bullying, underage drinking may have consequences
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local resultMessage = ""
+	local gotCaught = false
+	
+	if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+		gotCaught = true
+		-- Risk-based consequence (usually for teen mischief)
+		if activity.riskConsequence then
+			resultMessage = string.format("You %s... but %s", activity.feed or "did it", activity.riskConsequence)
+		else
+			resultMessage = string.format("You %s... and got caught!", activity.feed or "did it")
+		end
+		-- Apply negative effects for getting caught
+		self:applyStatChanges(state, { Happiness = -5 })
+		if activity.riskFlag then
+			state.Flags[activity.riskFlag] = true
+		end
+	else
+		resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
+	end
 
-	local resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
 	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
 	-- This was causing double popup issues in ActivitiesScreen
 	self:pushState(player, resultMessage)
-	return { success = true, message = resultMessage }
+	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
 function LifeBackend:handleCrime(player, crimeId)

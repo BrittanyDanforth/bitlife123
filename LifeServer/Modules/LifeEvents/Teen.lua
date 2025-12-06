@@ -413,8 +413,10 @@ Teen.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- ADDITIONAL TEEN EVENTS - AAA QUALITY EXPANSION
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Renamed from "caught_cheating" to avoid ID conflict with Relationships.lua
+	-- That event is about cheating on partners, this is about cheating on tests
 	{
-		id = "caught_cheating",
+		id = "caught_cheating_test",
 		title = "Caught Cheating",
 		emoji = "📝",
 		text = "A teacher suspects you of cheating on a test.",
@@ -438,13 +440,73 @@ Teen.events = {
 		question = "What's your prom plan?",
 		minAge = 16, maxAge = 18,
 		oneTime = true,
-
+		-- CRITICAL FIX: Random promposal outcomes
 		choices = {
-			{ text = "Ask my crush in a big way", effects = { Happiness = 8, Money = -100 }, setFlags = { prom_date = true, romantic_gesture = true }, feedText = "Your promposal was epic! They said yes!" },
-			{ text = "Go with friends as a group", effects = { Happiness = 6 }, setFlags = { prom_group = true }, feedText = "Prom with friends was so much fun!" },
-			{ text = "Someone asks me!", effects = { Happiness = 9, Looks = 2 }, setFlags = { prom_date = true }, feedText = "You were asked to prom! What a moment!" },
-			{ text = "Skip prom entirely", effects = { Happiness = -2, Money = 200 }, setFlags = { skipped_prom = true }, feedText = "You decided prom wasn't worth the hype." },
-			{ text = "Go alone and have fun anyway", effects = { Happiness = 5 }, setFlags = { independent = true }, feedText = "You proved you don't need a date to have a great time!" },
+			{
+				text = "Ask my crush with a big promposal",
+				effects = { Money = -100 },
+				feedText = "You planned an elaborate promposal...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					local roll = math.random()
+					local successChance = 0.50 + (looks / 200) + (happiness / 300)
+					if state.Flags and (state.Flags.romantically_active or state.Flags.has_partner) then
+						successChance = successChance + 0.20
+					end
+					if roll < successChance then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.prom_date = true
+						state.Flags.romantic_gesture = true
+						state:AddFeed("💃 They said YES! Your promposal was epic!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💃 They said no... Rejection stings, but you're brave for trying.")
+					end
+				end,
+			},
+			{
+				text = "Go with friends as a group",
+				effects = { Happiness = 6 },
+				setFlags = { prom_group = true },
+				feedText = "Prom with friends was so much fun!",
+			},
+			{
+				text = "Wait and hope someone asks me",
+				effects = {},
+				feedText = "You waited hopefully...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					local askedChance = 0.30 + (looks / 150)
+					if state.Flags and (state.Flags.social_butterfly or state.Flags.popular) then
+						askedChance = askedChance + 0.20
+					end
+					if roll < askedChance then
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Looks", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.prom_date = true
+						state:AddFeed("💃 Someone asked you to prom! What a moment!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💃 Nobody asked... You ended up going with friends instead.")
+					end
+				end,
+			},
+			{
+				text = "Skip prom entirely",
+				effects = { Happiness = -2, Money = 200 },
+				setFlags = { skipped_prom = true },
+				feedText = "You decided prom wasn't worth the hype.",
+			},
+			{
+				text = "Go alone and own it",
+				effects = { Happiness = 5 },
+				setFlags = { independent = true },
+				feedText = "You proved you don't need a date to have a great time!",
+			},
 		},
 	},
 	{
@@ -666,16 +728,77 @@ Teen.events = {
 		id = "scholarship_opportunity",
 		title = "Scholarship Application",
 		emoji = "📜",
-		text = "You have a chance to apply for a major scholarship.",
-		question = "How much effort do you put in?",
+		text = "You have a chance to apply for a major scholarship. Deadline is this week!",
+		question = "How do you approach the application?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.4,
 		cooldown = 3,
-
+		-- CRITICAL FIX: Random scholarship outcome based on effort + stats
 		choices = {
-			{ text = "Go all out - essays, recommendations, the works", effects = { Smarts = 5, Happiness = -3, Money = 5000 }, setFlags = { scholarship_winner = true }, feedText = "Your hard work paid off! You won the scholarship!" },
-			{ text = "Put in a solid effort", effects = { Smarts = 3, Money = 1000 }, feedText = "You got an honorable mention and partial scholarship!" },
-			{ text = "Barely try on the application", effects = { Smarts = 1 }, feedText = "You didn't put in enough effort. Rejected." },
+			{
+				text = "Go all out - essays, recommendations, the works",
+				effects = { Smarts = 2, Happiness = -3 },
+				feedText = "You poured your heart into the application...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (smarts / 150)
+					if state.Flags and state.Flags.academic_path then successChance = successChance + 0.15 end
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 5000
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.scholarship_winner = true
+						state:AddFeed("📜 You won the scholarship! $5,000 for college!")
+					elseif roll < successChance + 0.25 then
+						state.Money = (state.Money or 0) + 1500
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("📜 Honorable mention - partial scholarship awarded!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📜 Despite your effort, you didn't win. Competition was tough.")
+					end
+				end,
+			},
+			{
+				text = "Put in a solid effort",
+				effects = { Smarts = 1 },
+				feedText = "You did your best within reason...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.20 + (smarts / 200)
+					if roll < successChance then
+						state.Money = (state.Money or 0) + 3000
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.scholarship_winner = true
+						state:AddFeed("📜 You won a scholarship! Nice!")
+					elseif roll < successChance + 0.25 then
+						state.Money = (state.Money or 0) + 800
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("📜 Small scholarship awarded! Better than nothing.")
+					else
+						state:AddFeed("📜 Didn't win this time. Keep trying!")
+					end
+				end,
+			},
+			{
+				text = "Barely try on the application",
+				effects = {},
+				feedText = "You rushed through it last minute...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.05 then -- 5% lucky win
+						state.Money = (state.Money or 0) + 2000
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📜 Somehow you won! Pure luck!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📜 Predictably rejected. Half-hearted effort shows.")
+					end
+				end,
+			},
 			{ text = "Don't bother applying", effects = { }, feedText = "You missed the opportunity entirely." },
 		},
 	},
