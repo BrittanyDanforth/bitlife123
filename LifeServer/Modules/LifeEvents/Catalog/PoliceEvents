@@ -340,11 +340,15 @@ local events = {
 		baseChance = 0.3,
 		cooldown = 20,
 		oneTime = true,
-		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { detective = true, in_prison = true },
+		-- CRITICAL FIX: Combined both eligibility checks into one function
+		-- Previously had DUPLICATE eligibility keys - second one was overwriting first!
 		eligibility = function(state)
+			-- Must be a police officer
+			if not isPoliceJob(state) then return false end
+			-- Must have some arrest experience
 			local arrests = state.CareerInfo and state.CareerInfo.arrests or 0
-			return arrests >= 5 -- Need some experience
+			return arrests >= 5
 		end,
 		
 		choices = {

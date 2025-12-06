@@ -50,16 +50,17 @@ local LifeStages = {
 -- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
 -- Racing discovery can happen as young as age 10, hacker discovery at age 12
 -- CRITICAL FIX: Added "teen" to young_adult to catch late-teen events like graduation
--- MINOR FIX: Improved comments for clarity on what each life stage allows
+-- CRITICAL FIX: Added career_street, career_police, and assets categories which were MISSING!
+-- These categories MUST be included or their events NEVER trigger!
 local StageCategories = {
 	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
 	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
 	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 13-17: Full teen experience + part-time work
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 18-34: Peak career years (include teen for graduation/late-teen events)
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service" }, -- Ages 35-49: Established adult
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker" }, -- Ages 50-64: Midlife
-	senior      = { "adult", "milestones", "relationships", "random", "career_racing" }, -- Ages 65+: Retirement years (can own racing teams)
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street" }, -- Ages 13-17: Full teen experience + part-time work + street hustle entry
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 18-34: Peak career years + all career paths + assets
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 35-49: Established adult + all paths
+	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife
+	senior      = { "adult", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years (can own racing teams)
 }
 
 function LifeEvents.getLifeStage(age)
@@ -734,6 +735,7 @@ function LifeEvents.buildYearQueue(state, options)
 		-- This ensures racing drivers get racing events, hackers get hacker events, etc.
 		local jobCategory = state.CurrentJob.category or ""
 		jobCategory = jobCategory:lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
 		
 		if jobCategory == "racing" then
 			local hasRacing = false
@@ -750,6 +752,48 @@ function LifeEvents.buildYearQueue(state, options)
 			end
 			if not hasHacker then
 				table.insert(categories, "career_hacker")
+			end
+		-- CRITICAL FIX: Add police career category for law enforcement jobs
+		elseif jobCategory == "government" or jobCategory == "law_enforcement" or 
+			   jobId:find("police") or jobId:find("detective") or jobId:find("officer") then
+			local hasPolice = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_police" then hasPolice = true break end
+			end
+			if not hasPolice then
+				table.insert(categories, "career_police")
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Add street hustler events if player has hustler flags
+	-- Even without a "job", hustlers should get their events
+	if state.Flags and (state.Flags.street_hustler or state.Flags.dealer or state.Flags.supplier) then
+		local hasStreet = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_street" then hasStreet = true break end
+		end
+		if not hasStreet then
+			table.insert(categories, "career_street")
+		end
+	end
+	
+	-- CRITICAL FIX: Add asset events if player owns any assets
+	if state.Assets then
+		local hasAssets = false
+		for assetType, assetList in pairs(state.Assets) do
+			if type(assetList) == "table" and #assetList > 0 then
+				hasAssets = true
+				break
+			end
+		end
+		if hasAssets then
+			local hasAssetCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "assets" then hasAssetCat = true break end
+			end
+			if not hasAssetCat then
+				table.insert(categories, "assets")
 			end
 		end
 	end
@@ -1412,7 +1456,38 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	if choice.onResolve and type(choice.onResolve) == "function" then
 		local success, err = pcall(function()
-			choice.onResolve(state, choice, eventDef, outcome)
+			-- CRITICAL FIX: Check if this choice has a minigame trigger
+			-- If so, the onResolve expects (state, minigameResult) signature
+			-- Otherwise, it uses the standard (state, choice, eventDef, outcome) signature
+			if choice.triggerMinigame then
+				-- Minigame events expect minigameResult as second parameter
+				-- The minigameResult should be passed in via outcome.minigameResult
+				-- For now, simulate a success/fail based on player stats if not provided
+				local minigameResult = outcome.minigameResult
+				if not minigameResult then
+					-- Fallback: Generate result based on player stats
+					local relevantStat = 50
+					if choice.triggerMinigame == "qte" then
+						relevantStat = (state.Stats and state.Stats.Health) or 50
+					elseif choice.triggerMinigame == "hacking" then
+						relevantStat = (state.Stats and state.Stats.Smarts) or 50
+					elseif choice.triggerMinigame == "heist" then
+						relevantStat = (state.Stats and state.Stats.Smarts) or 50
+					end
+					-- Success chance based on stat and difficulty
+					local difficulty = choice.minigameOptions and choice.minigameOptions.difficulty or "medium"
+					local difficultyMod = { easy = 0.2, medium = 0, hard = -0.2 }
+					local successChance = 0.5 + (relevantStat / 200) + (difficultyMod[difficulty] or 0)
+					minigameResult = {
+						success = RANDOM:NextNumber() < successChance,
+						score = relevantStat,
+					}
+				end
+				choice.onResolve(state, minigameResult)
+			else
+				-- Standard signature for non-minigame events
+				choice.onResolve(state, choice, eventDef, outcome)
+			end
 		end)
 		if not success then
 			warn("[EventEngine] onResolve handler error for event '" .. (eventDef.id or "unknown") .. "':", err)

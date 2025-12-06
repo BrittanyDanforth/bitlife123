@@ -52,7 +52,10 @@ local events = {
 		minAge = 12,
 		maxAge = 18,
 		requiresFlags = { racing_aspirant = true },
-		blockedByFlags = { employed = true },
+		-- CRITICAL FIX: Removed blockedByFlags = { employed = true } 
+		-- This was blocking ALL employed players including those with school jobs!
+		-- Racing can be a side activity, not a job blocker
+		blockedByFlags = { first_race_won = true, in_prison = true },
 		choices = {
 			{
 				index = 1,
