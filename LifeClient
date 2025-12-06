@@ -26,7 +26,12 @@ if ScreensFolder then
 		local child = ScreensFolder:FindFirstChild(name)
 		if child then
 			local s, r = pcall(require, child)
+			if not s then
+				warn("[LifeClient] ❌ Failed to require", name, ":", r)
+			end
 			return s and r or nil
+		else
+			warn("[LifeClient] ❌ Module not found:", name)
 		end
 		return nil
 	end
