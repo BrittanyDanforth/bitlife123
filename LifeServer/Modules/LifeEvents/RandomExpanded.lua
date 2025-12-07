@@ -122,15 +122,13 @@ RandomExpanded.events = {
 		tags = { "car", "problem", "inconvenience" },
 		
 		eligibility = function(state)
-			if state.Flags and (state.Flags.has_car or state.Flags.owns_car) then
+			-- CRITICAL FIX: Check flags OR check Assets.Vehicles table properly
+			if state.Flags and (state.Flags.has_car or state.Flags.owns_car or state.Flags.has_first_car) then
 				return true
 			end
-			if state.Assets then
-				for _, asset in ipairs(state.Assets) do
-					if asset.type == "car" or asset.type == "vehicle" then
-						return true
-					end
-				end
+			-- CRITICAL FIX: Assets is a dictionary, not an array - check Vehicles key
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				return true
 			end
 			return false, "Need a car to have a flat tire"
 		end,

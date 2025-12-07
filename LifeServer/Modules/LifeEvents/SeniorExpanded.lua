@@ -29,14 +29,20 @@ SeniorExpanded.events = {
 		eligibility = function(state)
 			local money = state.Money or 0
 			local health = (state.Stats and state.Stats.Health) or 50
-			if money < 1000 then
+			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($3000), not $1000
+			if money < 3000 then
 				return false, "Can't afford to travel"
 			end
 			if health < 30 then
 				return false, "Health doesn't permit travel"
 			end
+			-- CRITICAL FIX: Can't travel from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't travel from prison"
+			end
 			return true
 		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random travel outcome
 		choices = {

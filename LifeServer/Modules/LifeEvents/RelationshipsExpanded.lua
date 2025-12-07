@@ -338,11 +338,17 @@ RelationshipsExpanded.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 500 then
-				return false, "Can't afford a ring"
+			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($2000), not $500
+			if money < 2000 then
+				return false, "Can't afford an engagement ring"
+			end
+			-- CRITICAL FIX: Can't propose from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't propose from prison"
 			end
 			return true
 		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random proposal outcome
 		choices = {

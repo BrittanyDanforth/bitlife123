@@ -127,6 +127,7 @@ DailyLifeEvents.events = {
 		category = "daily",
 		tags = { "commute", "traffic", "work" },
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't commute from prison!
 		
 		-- CRITICAL: Random commute outcome
 		choices = {
@@ -167,6 +168,7 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "transit", "commute", "public" },
+		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: Can't take transit from prison!
 		
 		-- CRITICAL: Random transit outcome
 		choices = {
@@ -208,6 +210,7 @@ DailyLifeEvents.events = {
 		category = "daily",
 		tags = { "remote", "wfh", "work" },
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't WFH from prison!
 		
 		-- CRITICAL: Random WFH productivity
 		choices = {
@@ -301,6 +304,7 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "evening", "leisure", "home" },
+		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: No "after work" in prison!
 		
 		choices = {
 			{ text = "Exercise/gym", effects = { Health = 5, Happiness = 4, Money = -5 }, setFlags = { regular_exerciser = true }, feedText = "🏠 Post-work workout! Stress relief! Endorphins!" },
@@ -532,6 +536,7 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "groceries", "shopping", "food" },
+		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: Can't shop in prison!
 		
 		-- CRITICAL: Random grocery outcome
 		choices = {

@@ -241,6 +241,7 @@ HobbyEvents.events = {
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "gardening", "plants", "nature" },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't garden in prison/homeless!
 		
 		-- CRITICAL: Random gardening outcome
 		choices = {
@@ -624,6 +625,7 @@ HobbyEvents.events = {
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "outdoors", "nature", "adventure" },
+		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: Can't go hiking in prison!
 		
 		choices = {
 			{

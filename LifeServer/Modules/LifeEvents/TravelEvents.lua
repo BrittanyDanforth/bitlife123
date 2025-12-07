@@ -28,11 +28,17 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 300 then
+			-- CRITICAL FIX: Check for choice cost ($800), not $300
+			if money < 800 then
 				return false, "Can't afford a beach vacation"
+			end
+			-- CRITICAL FIX: Can't travel from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't travel from prison"
 			end
 			return true
 		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random vacation outcome
 		choices = {
@@ -79,11 +85,17 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 400 then
+			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($600 skiing), not $400
+			if money < 600 then
 				return false, "Can't afford mountain trip"
+			end
+			-- CRITICAL FIX: Can't travel from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't travel from prison"
 			end
 			return true
 		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{
@@ -151,11 +163,17 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 1500 then
+			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($3000), not $1500
+			if money < 3000 then
 				return false, "Can't afford international travel"
+			end
+			-- CRITICAL FIX: Can't travel from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't travel from prison"
 			end
 			return true
 		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random international trip outcome
 		choices = {

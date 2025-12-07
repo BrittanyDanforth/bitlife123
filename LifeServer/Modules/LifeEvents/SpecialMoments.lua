@@ -30,6 +30,11 @@ SpecialMoments.events = {
 		eligibility = function(state)
 			local money = state.Money or 0
 			local hasNoCar = not (state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0)
+			-- CRITICAL FIX: Check for CHEAPEST choice cost ($500 parent help), not $500 arbitrary
+			-- Also need to check flags for existing car ownership
+			if state.Flags and (state.Flags.has_car or state.Flags.has_first_car or state.Flags.owns_car) then
+				return false, "Already have a car"
+			end
 			if money < 500 or not hasNoCar then
 				return false, "Already have a car or not enough money"
 			end

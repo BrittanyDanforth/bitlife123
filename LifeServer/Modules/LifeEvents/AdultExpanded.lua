@@ -1344,17 +1344,14 @@ AdultExpanded.events = {
 		category = "expenses",
 		tags = { "car", "expenses", "adulting" },
 		
-		-- Check if has car first
+		-- CRITICAL FIX: Check if has car first - Assets is a dictionary not an array!
 		eligibility = function(state)
-			if state.Assets then
-				for _, asset in ipairs(state.Assets) do
-					if asset.type == "car" or asset.type == "vehicle" then
-						return true
-					end
-				end
+			-- Check flags first
+			if state.Flags and (state.Flags.has_car or state.Flags.owns_car or state.Flags.has_first_car) then
+				return true
 			end
-			-- Also check for flag
-			if state.Flags and (state.Flags.has_car or state.Flags.owns_car) then
+			-- CRITICAL FIX: Assets is a dictionary, check Vehicles key properly
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
 				return true
 			end
 			return false, "No car to have issues with"
