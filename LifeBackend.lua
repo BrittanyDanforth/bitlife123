@@ -2402,7 +2402,8 @@ function LifeBackend:generateYearSummary(state)
 	-- Prison
 	if state.InJail then
 		emoji = "🔒"
-		summaryParts = { string.format("Behind bars. %d years remaining.", state.JailYearsLeft or 0) }
+		-- MINOR FIX: Use %.1f for consistent decimal formatting
+		summaryParts = { string.format("Behind bars. %.1f years remaining.", state.JailYearsLeft or 0) }
 	end
 	
 	-- Combine parts (max 2-3 sentences to avoid clutter)
@@ -2704,6 +2705,50 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			effectsSummary = effectsSummary or {}
 			effectsSummary.Money = (effectsSummary.Money or 0) + reward
 		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Handle setFlags and clearFlags in the else branch too!
+		-- Without this, dynamically created events (like prison escape) won't have
+		-- their flags processed, causing players to stay stuck in prison, etc.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.Flags = state.Flags or {}
+		
+		-- Apply setFlags
+		if choice.setFlags then
+			for flagName, flagValue in pairs(choice.setFlags) do
+				state.Flags[flagName] = flagValue
+			end
+		end
+		
+		-- Apply clearFlags (remove flags)
+		if choice.clearFlags then
+			for flagName, _ in pairs(choice.clearFlags) do
+				state.Flags[flagName] = nil
+			end
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Call eventDef.onComplete for dynamically created events
+		-- This ensures custom logic (like freeing from prison) actually runs
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if eventDef.onComplete and type(eventDef.onComplete) == "function" then
+			local success, err = pcall(function()
+				eventDef.onComplete(state, choice, eventDef, {})
+			end)
+			if not success then
+				warn("[LifeBackend] onComplete handler error:", err)
+			end
+		end
+		
+		-- Also support choice-level onResolve in else branch
+		if choice.onResolve and type(choice.onResolve) == "function" then
+			local success, err = pcall(function()
+				choice.onResolve(state, choice, eventDef, {})
+			end)
+			if not success then
+				warn("[LifeBackend] choice.onResolve handler error:", err)
+			end
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2879,7 +2924,8 @@ function LifeBackend:handleCrime(player, crimeId)
 		return { success = false, message = "No life data loaded." }
 	end
 	if state.InJail then
-		return { success = false, message = "Serve your sentence first." }
+		-- MINOR FIX: More helpful error message
+		return { success = false, message = "You can't commit crimes while in prison. Serve your sentence first." }
 	end
 
 	local crime = CrimeCatalog[crimeId]
@@ -2984,7 +3030,8 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	-- to avoid DOUBLE POPUP bug
 	if action.jailIncrease then
 		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
-		local message = string.format("Your escape failed. %d years added to your sentence.", action.jailIncrease)
+		-- MINOR FIX: Use %.1f for consistent decimal formatting
+		local message = string.format("Your escape failed. %.1f years added to your sentence.", action.jailIncrease)
 		self:pushState(player, message)
 		return { success = false, message = message }
 	end
@@ -3011,35 +3058,45 @@ function LifeBackend:handlePrisonAction(player, actionId)
 			emoji = "🏃",
 			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
 			question = "What now?",
+			-- CRITICAL FIX: Mark source as "lifeevents" so EventEngine.completeEvent is called
+			-- This ensures setFlags, clearFlags, and onComplete are all processed correctly
+			source = "lifeevents",
 			choices = {
 				{ 
 					text = "Lay low and start fresh", 
-					deltas = { Happiness = 20 },
+					-- CRITICAL FIX: Use 'effects' instead of 'deltas' for EventEngine compatibility
+					effects = { Happiness = 20 },
 					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
 					clearFlags = { in_prison = true, incarcerated = true },
 					feedText = "You escaped prison! Now living as a fugitive.",
 				},
 				{ 
 					text = "Leave the country", 
-					deltas = { Happiness = 15, Money = -5000 },
+					effects = { Happiness = 15, Money = -5000 },
 					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
 					clearFlags = { in_prison = true, incarcerated = true },
 					feedText = "You escaped and fled to another country!",
 				},
 			},
-			-- CRITICAL: Actually free the player when event resolves
-			onResolve = function(state)
+			-- CRITICAL FIX: Use onComplete (not onResolve) - EventEngine supports onComplete at event level
+			-- This ensures the player is ACTUALLY freed from prison when they make a choice
+			onComplete = function(state, choice, eventDef, outcome)
 				state.InJail = false
 				state.JailYearsLeft = 0
 				state.Flags.in_prison = nil
 				state.Flags.incarcerated = nil
 				state.Flags.escaped_prisoner = true
 				state.Flags.fugitive = true
+				-- CRITICAL: Clear PendingFeed and YearLog to prevent old messages from mixing in
+				-- This stops unrelated events (like car theft) from appearing in the escape message
+				state.PendingFeed = nil
+				state.YearLog = {}
 			end,
 		}
 		
-		self:presentEvent(player, eventDef, "You attempted an escape...")
-		return { success = true, message = "Escape attempt underway..." }
+		-- CRITICAL FIX: Changed feedText from "You attempted an escape..." to accurate success message
+		self:presentEvent(player, eventDef, "🏃 You're making your escape!")
+		return { success = true, message = "Escape successful!" }
 	end
 
 	if (state.JailYearsLeft or 0) <= 0 then
@@ -3099,6 +3156,13 @@ local JobRejectionMessages = {
 		"We're looking for someone with a bit more availability.",
 		"Your interview went well, but another candidate edged you out.",
 		"Keep applying! The right opportunity will come.",
+	},
+	-- CRITICAL FIX: Messages for when criminal record affects job chances
+	criminalRecord = {
+		"The background check revealed some concerns.",
+		"We need to go with a candidate without legal issues.",
+		"Our policy requires a clean record for this position.",
+		"Your qualifications were good, but the background check was problematic.",
 	},
 }
 
@@ -3233,7 +3297,44 @@ function LifeBackend:handleJobApplication(player, jobId)
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.30, (appHistory.attempts or 0) * 0.10) -- -10% per previous rejection, max -30%
 	
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty, 0.05, 0.98)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Criminal record affects job applications!
+	-- Employers run background checks - having a record makes it much harder to get hired
+	-- Some jobs (law enforcement, government, finance) outright reject ex-convicts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local criminalPenalty = 0
+	if state.Flags and state.Flags.criminal_record then
+		-- Jobs that do strict background checks and won't hire ex-convicts
+		local strictBackgroundCheckJobs = {
+			"law", "government", "finance", "education", "healthcare", "military", "security"
+		}
+		
+		local isStrictJob = false
+		for _, category in ipairs(strictBackgroundCheckJobs) do
+			if job.category == category or (job.id and string.find(job.id:lower(), category)) then
+				isStrictJob = true
+				break
+			end
+		end
+		
+		if isStrictJob then
+			-- Strict background check jobs won't hire people with records
+			return {
+				success = false,
+				message = "Your background check revealed a criminal record. This position requires a clean record."
+			}
+		end
+		
+		-- Other jobs have a penalty but not automatic rejection
+		criminalPenalty = 0.30 -- 30% penalty for having a record
+		
+		-- Fugitives face even harsher penalties
+		if state.Flags.fugitive or state.Flags.escaped_prisoner then
+			criminalPenalty = 0.50 -- 50% penalty for being a fugitive
+		end
+	end
+	
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.05, 0.98)
 	
 	-- Entry-level jobs (no requirements, low salary) should be easier
 	if not job.requirement and (job.salary or 0) < 35000 then
@@ -3254,7 +3355,10 @@ function LifeBackend:handleJobApplication(player, jobId)
 	if not accepted then
 		-- Pick a rejection message based on situation
 		local messages
-		if difficulty >= 6 then
+		-- CRITICAL FIX: Show criminal record message if that's why they were rejected
+		if criminalPenalty > 0 and state.Flags and state.Flags.criminal_record then
+			messages = JobRejectionMessages.criminalRecord
+		elseif difficulty >= 6 then
 			messages = JobRejectionMessages.competitive
 		elseif job.minStats then
 			messages = JobRejectionMessages.lowStats
@@ -3611,7 +3715,9 @@ function LifeBackend:enrollEducation(player, programId)
 	end
 
 	if not self:meetsEducationRequirement(state, program.requirement) then
-		return { success = false, message = "You need to complete the prerequisite first." }
+		-- MINOR FIX: More helpful error message with specific requirement
+		local requiredText = program.requirement or "a prerequisite degree"
+		return { success = false, message = string.format("You need %s to enroll in %s.", requiredText, program.name) }
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════

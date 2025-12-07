@@ -256,7 +256,9 @@ local events = {
 						local partnerGender = state.Relationships.partner.gender or "female"
 						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
 						if state.AddFeed then
-							state:AddFeed("💍 " .. state.Relationships.partner.name .. " said YES!")
+							-- MINOR FIX: Added fallback for partner name
+							local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "Your partner"
+							state:AddFeed("💍 " .. partnerName .. " said YES!")
 						end
 					end
 				end,

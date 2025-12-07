@@ -432,7 +432,7 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		choices = {
-			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with them." },
+			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with your parents." },
 			{ text = "Set healthy boundaries", effects = { Happiness = 5, Smarts = 2 }, feedText = "You established boundaries." },
 			{ text = "Accept the distance", effects = { Happiness = 2 }, feedText = "Not all families are close." },
 			{ text = "Cut contact", effects = { Happiness = -5 }, setFlags = { estranged_from_parents = true }, feedText = "You distanced yourself completely." },

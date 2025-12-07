@@ -1388,10 +1388,12 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			if partner then
 				outcome.newRelationship = partner
 				-- Update feed text to include partner's name
+				-- MINOR FIX: Added fallback for partner name
+				local partnerName = partner.name or partner.Name or "someone special"
 				if outcome.feedText then
-					outcome.feedText = outcome.feedText .. " You started dating " .. partner.name .. "!"
+					outcome.feedText = outcome.feedText .. " You started dating " .. partnerName .. "!"
 				else
-					outcome.feedText = "You started dating " .. partner.name .. "!"
+					outcome.feedText = "You started dating " .. partnerName .. "!"
 				end
 			end
 		end
@@ -1440,7 +1442,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- Breakup events
 	if choice.setFlags and choice.setFlags.recently_single then
 		if state.Relationships and state.Relationships.partner then
-			local partnerName = state.Relationships.partner.name
+			-- MINOR FIX: Added fallback for partner name
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
 			state.Relationships.partner = nil
 			state.Flags.has_partner = nil
 			state.Flags.dating = nil
