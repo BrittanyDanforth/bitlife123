@@ -3053,51 +3053,56 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		
 		state.awaitingDecision = true
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: FREE THE PLAYER IMMEDIATELY when they win the minigame!
+		-- Don't wait for the choice - they already escaped by winning the minigame.
+		-- The event card is just asking what they do AFTER escaping.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+		state.Flags.escaped_prisoner = true
+		state.Flags.fugitive = true
+		state.PendingFeed = nil
+		state.YearLog = {}
+		
 		-- Player won the minigame - they escape successfully!
 		local eventDef = {
 			id = "prison_escape_success",
-			title = "Escape Successful!",
+			title = "🎉 Escape Successful!",
 			emoji = "🏃",
-			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
-			question = "What now?",
-			-- CRITICAL FIX: Mark source as "lifeevents" so EventEngine.completeEvent is called
-			-- This ensures setFlags, clearFlags, and onComplete are all processed correctly
+			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive - but you're FREE!",
+			question = "What's your plan now?",
+			-- CRITICAL FIX: Use "success" category so card shows GREEN border!
+			category = "success",
 			source = "lifeevents",
 			choices = {
 				{ 
 					text = "Lay low and start fresh", 
-					-- CRITICAL FIX: Use 'effects' instead of 'deltas' for EventEngine compatibility
 					effects = { Happiness = 20 },
 					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
-					clearFlags = { in_prison = true, incarcerated = true },
-					feedText = "You escaped prison! Now living as a fugitive.",
+					feedText = "🏃 You escaped prison! Now living as a fugitive.",
 				},
 				{ 
 					text = "Leave the country", 
 					effects = { Happiness = 15, Money = -5000 },
 					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
-					clearFlags = { in_prison = true, incarcerated = true },
-					feedText = "You escaped and fled to another country!",
+					feedText = "🏃 You escaped and fled to another country!",
 				},
 			},
-			-- CRITICAL FIX: Use onComplete (not onResolve) - EventEngine supports onComplete at event level
-			-- This ensures the player is ACTUALLY freed from prison when they make a choice
+			-- Backup onComplete just to make absolutely sure
 			onComplete = function(state, choice, eventDef, outcome)
+				-- Ensure flags are set (they should already be, but just in case)
 				state.InJail = false
 				state.JailYearsLeft = 0
 				state.Flags.in_prison = nil
 				state.Flags.incarcerated = nil
-				state.Flags.escaped_prisoner = true
-				state.Flags.fugitive = true
-				-- CRITICAL: Clear PendingFeed and YearLog to prevent old messages from mixing in
-				-- This stops unrelated events (like car theft) from appearing in the escape message
-				state.PendingFeed = nil
-				state.YearLog = {}
 			end,
 		}
 		
-		-- CRITICAL FIX: Changed feedText from "You attempted an escape..." to accurate success message
-		self:presentEvent(player, eventDef, "🏃 You're making your escape!")
+		-- CRITICAL FIX: Changed feedText to show success
+		self:presentEvent(player, eventDef, "🏃 You're FREE! You escaped!")
 		return { success = true, message = "Escape successful!" }
 	end
 

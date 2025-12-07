@@ -2291,6 +2291,25 @@ local CategoryColors = {
 
 	-- Milestone events - GOLD
 	milestone = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	
+	-- CRITICAL FIX: Success events - GREEN (for things like prison escape success!)
+	success = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	escape = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	positive = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	
+	-- CRITICAL FIX #2: More positive categories for green borders
+	promotion = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	graduation = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	achievement = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	lottery = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	inheritance = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	wedding = { shell = Color3.fromRGB(255, 182, 193), stroke = Color3.fromRGB(219, 112, 147), flash = Color3.fromRGB(255, 192, 203) }, -- Pink for wedding
+	birth = { shell = Color3.fromRGB(135, 206, 235), stroke = Color3.fromRGB(70, 130, 180), flash = Color3.fromRGB(176, 224, 230) }, -- Light blue for birth
+	
+	-- CRITICAL FIX #3: Negative categories for red borders (explicit)
+	failure = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	fired = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	arrested = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 
 	-- Default - RED (BitLife style)
 	default = { shell = C.Red, stroke = C.RedDark, flash = C.Blue },

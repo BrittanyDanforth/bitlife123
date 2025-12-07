@@ -72,6 +72,8 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
+		-- CRITICAL FIX #9: Can't have layoff threats while in prison!
+		blockedByFlags = { in_prison = true },
 
 		-- META
 		stage = STAGE,
@@ -659,13 +661,15 @@ Career.events = {
 		-- CRITICAL FIX: This was god-mode - player picked WHY they were fired!
 		-- Now the reason is random and player just responds to being fired
 		id = "fired",
-		title = "You're Fired!",
+		title = "❌ You're Fired!",
 		emoji = "📦",
 		text = "Your boss called you into the office... and fired you.",
 		question = "How do you react?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.15,
 		cooldown = 8,
+		-- CRITICAL FIX #8: Added "fired" category for red event card
+		category = "fired",
 		requiresJob = true,
 
 		choices = {

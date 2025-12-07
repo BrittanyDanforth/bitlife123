@@ -176,7 +176,7 @@ Relationships.events = {
 	},
 	{
 		id = "wedding_day",
-		title = "Wedding Day",
+		title = "💒 Wedding Day!",
 		emoji = "👰",
 		text = "The big day has arrived!",
 		question = "What kind of wedding do you have?",
@@ -184,6 +184,8 @@ Relationships.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		-- CRITICAL FIX #6: Added "wedding" category for pink event card
+		category = "wedding",
 		requiresPartner = true,
 		requiresFlags = { engaged = true },
 		choices = {

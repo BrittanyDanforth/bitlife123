@@ -93,6 +93,8 @@ Random.events = {
 		baseChance = 0.15,
 		cooldown = 10,
 		oneTime = true,
+		-- CRITICAL FIX #4: Added "inheritance" category for green/gold event card
+		category = "inheritance",
 		-- CRITICAL FIX: Random inheritance instead of player picking what they get
 		choices = {
 			{

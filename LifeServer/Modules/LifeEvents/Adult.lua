@@ -751,12 +751,14 @@ Adult.events = {
 	},
 	{
 		id = "new_baby",
-		title = "Baby Arrives!",
+		title = "👶 Baby Arrives!",
 		emoji = "🍼",
 		text = "You have a new baby! Life will never be the same.",
 		question = "How are you handling parenthood?",
 		minAge = 20, maxAge = 45,
 		oneTime = true,
+		-- CRITICAL FIX #7: Added "birth" category for light blue event card
+		category = "birth",
 		requiresFlags = { trying_for_baby = true },
 
 		choices = {
@@ -1359,13 +1361,15 @@ Adult.events = {
 	},
 	{
 		id = "winning_lottery",
-		title = "Lottery Win!",
+		title = "🎉 Lottery Win!",
 		emoji = "🎰",
 		text = "You won a significant lottery prize!",
 		question = "What do you do?",
 		minAge = 21, maxAge = 85,
 		baseChance = 0.02,
 		cooldown = 20,
+		-- CRITICAL FIX #5: Added "lottery" category for gold event card
+		category = "lottery",
 
 		choices = {
 			{ text = "Quit job and live large", effects = { Money = 500000, Happiness = 20, Health = -5 }, setFlags = { lottery_winner = true }, feedText = "You're rich! But maybe you went too hard." },

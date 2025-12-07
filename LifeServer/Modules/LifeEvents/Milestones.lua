@@ -294,7 +294,7 @@ Milestones.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "college_graduation",
-		title = "College Graduation",
+		title = "🎓 College Graduation!",
 		emoji = "🎓",
 		text = "You did it! Four years of hard work paid off.",
 		question = "How do you feel about graduating?",
@@ -307,7 +307,8 @@ Milestones.events = {
 		-- META
 		stage = "adult",
 		ageBand = "young_adult",
-		category = "education",
+		-- CRITICAL FIX #10: Added "graduation" category for gold event card
+		category = "graduation",
 		milestoneKey = "COLLEGE_GRADUATION",
 		tags = { "college", "degree", "career_setup" },
 		careerTags = { "career_general" },
