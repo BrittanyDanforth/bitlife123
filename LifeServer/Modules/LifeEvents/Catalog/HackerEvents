@@ -283,6 +283,7 @@ local events = {
 		requiresFlags = { senior_security = true },
 		requiresStats = { Smarts = 80 },
 		oneTime = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -305,9 +306,45 @@ local events = {
 			{
 				index = 2,
 				text = "Start my own security firm",
-				effects = { Happiness = 15, Money = -100000 },
+				-- CRITICAL FIX: Validate money before starting business
+				effects = {}, -- Money handled in onResolve
 				setFlags = { entrepreneur = true, security_founder = true },
-				feedText = "You started your own cybersecurity company!",
+				feedText = "Considering starting your own firm...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local startupCost = 100000
+					if money >= startupCost then
+						state.Money = money - startupCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("🏢 You invested $100K and started your own cybersecurity company!")
+						end
+					elseif money >= 50000 then
+						-- Smaller startup
+						state.Money = money - 50000
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("🏢 Started a smaller security firm with $50K. Bootstrap mode!")
+						end
+					elseif money >= 20000 then
+						-- Consulting
+						state.Money = money - 20000
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("💻 Started as a security consultant with $20K. Building up!")
+						end
+					else
+						-- Can't afford
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to start a business right now...")
+						end
+						-- Remove flags since we couldn't start
+						state.Flags = state.Flags or {}
+						state.Flags.entrepreneur = nil
+						state.Flags.security_founder = nil
+					end
+				end,
 			},
 		},
 	},
@@ -604,6 +641,7 @@ local events = {
 		minAge = 22,
 		maxAge = 60,
 		requiresFlags = { elite_hacker = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		cooldown = 4,
 		choices = {
 			{
@@ -633,15 +671,93 @@ local events = {
 			{
 				index = 2,
 				text = "Go into hiding",
-				effects = { Happiness = -10, Money = -50000 },
+				-- CRITICAL FIX: Validate money before going into hiding
+				effects = {}, -- Money handled in onResolve
 				setFlags = { in_hiding = true },
-				feedText = "You disappeared. Living off the grid now.",
+				feedText = "Considering going off the grid...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local hidingCost = 50000
+					if money >= hidingCost then
+						state.Money = money - hidingCost
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then
+							state:AddFeed("🏃 You disappeared and went off the grid. $50K to set up a new identity.")
+						end
+					elseif money >= 10000 then
+						state.Money = money - 10000
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Went into hiding cheaply. $10K. Living rough but safe.")
+						end
+					else
+						-- Can't afford to hide properly
+						if state.ModifyStat then 
+							state:ModifyStat("Happiness", -20)
+							state:ModifyStat("Health", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏃 Can't afford to hide properly. Living in fear...")
+						end
+					end
+				end,
 			},
 			{
 				index = 3,
 				text = "Pay them off",
-				effects = { Money = -200000 },
-				feedText = "Expensive, but they backed off... for now.",
+				-- CRITICAL FIX: Validate money before paying off rivals
+				effects = {}, -- Money handled in onResolve
+				feedText = "Trying to buy your way out...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local payoffCost = 200000
+					if money >= payoffCost then
+						state.Money = money - payoffCost
+						if state.AddFeed then
+							state:AddFeed("💰 Paid $200K to make them go away. Expensive peace.")
+						end
+					elseif money >= 100000 then
+						-- Partial payoff - risky
+						state.Money = money - 100000
+						local roll = math.random()
+						if roll < 0.6 then
+							if state.AddFeed then
+								state:AddFeed("💰 Paid $100K. They accepted... for now.")
+							end
+						else
+							if state.ModifyStat then state:ModifyStat("Health", -10) end
+							if state.AddFeed then
+								state:AddFeed("💰 $100K wasn't enough. They came after you anyway!")
+							end
+						end
+					elseif money >= 50000 then
+						state.Money = money - 50000
+						-- Very risky
+						local roll = math.random()
+						if roll < 0.3 then
+							if state.AddFeed then
+								state:AddFeed("💰 $50K barely satisfied them. You're on thin ice.")
+							end
+						else
+							if state.ModifyStat then 
+								state:ModifyStat("Health", -15)
+								state:ModifyStat("Happiness", -10)
+							end
+							if state.AddFeed then
+								state:AddFeed("💰 $50K wasn't enough. They attacked you!")
+							end
+						end
+					else
+						-- Can't afford
+						if state.ModifyStat then 
+							state:ModifyStat("Happiness", -15)
+							state:ModifyStat("Health", -20)
+						end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to pay them off. They destroyed you!")
+						end
+					end
+				end,
 			},
 		},
 	},

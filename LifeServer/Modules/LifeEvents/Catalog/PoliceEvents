@@ -297,14 +297,53 @@ local events = {
 			{
 				index = 2,
 				text = "Get a union lawyer immediately",
-				effects = { Happiness = 0, Money = -2000 },
-				feedText = "You lawyered up...",
+				-- CRITICAL FIX: Validate money before hiring lawyer
+				effects = {}, -- Money handled in onResolve
+				feedText = "Looking for a lawyer...",
 				onResolve = function(state)
-					state.Flags = state.Flags or {}
-					state.Flags.cleared_by_ia = true
-					state.Flags.complaint_filed = nil
-					if state.AddFeed then
-						state:AddFeed("⚖️ Your lawyer got the investigation dropped. Cost you, but worth it.")
+					local money = state.Money or 0
+					local lawyerCost = 2000
+					
+					if money >= lawyerCost then
+						state.Money = money - lawyerCost
+						state.Flags = state.Flags or {}
+						state.Flags.cleared_by_ia = true
+						state.Flags.complaint_filed = nil
+						if state.AddFeed then
+							state:AddFeed("⚖️ Your lawyer ($2000) got the investigation dropped. Worth it.")
+						end
+					elseif money >= 500 then
+						-- Budget lawyer - less effective
+						state.Money = money - 500
+						local roll = math.random()
+						if roll < 0.6 then
+							state.Flags = state.Flags or {}
+							state.Flags.cleared_by_ia = true
+							state.Flags.complaint_filed = nil
+							if state.AddFeed then
+								state:AddFeed("⚖️ Budget lawyer ($500) managed to help. Close call.")
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed("⚖️ Budget lawyer wasn't enough. Investigation continues...")
+							end
+						end
+					else
+						-- Can't afford lawyer - represent yourself
+						local roll = math.random()
+						if roll < 0.3 then
+							state.Flags = state.Flags or {}
+							state.Flags.cleared_by_ia = true
+							state.Flags.complaint_filed = nil
+							if state.AddFeed then
+								state:AddFeed("⚖️ Represented yourself and got lucky! Cleared.")
+							end
+						else
+							if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+							if state.AddFeed then
+								state:AddFeed("⚖️ Can't afford a lawyer. Going in alone...")
+							end
+						end
 					end
 				end,
 			},

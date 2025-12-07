@@ -222,6 +222,7 @@ Career.events = {
 		baseChance = 0.5,
 		cooldown = 5,
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		-- META
 		stage = STAGE,
@@ -233,7 +234,33 @@ Career.events = {
 		choices = {
 			{ text = "Push for a promotion", effects = { Smarts = 2, Money = 500, Happiness = 5 }, feedText = "You went for the promotion!" },
 			{ text = "Change companies for better pay", effects = { Money = 1000, Happiness = 3 }, setFlags = { job_hopper = true }, feedText = "You switched jobs for a raise!" },
-			{ text = "Pivot to a new career entirely", effects = { Smarts = 5, Money = -1000, Happiness = 5 }, setFlags = { career_changer = true }, feedText = "You're starting over in a new field!" },
+			{ 
+				text = "Pivot to a new career entirely", 
+				effects = { Smarts = 5, Happiness = 5 }, 
+				setFlags = { career_changer = true }, 
+				feedText = "Pivoting to a new career...",
+				-- CRITICAL FIX: Money validation for $1000 career change costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 1000 then
+						state.Money = money - 1000
+						if state.AddFeed then
+							state:AddFeed("🛤️ You're starting over in a new field! Invested $1000 in training!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Smarts", -1) end
+						if state.AddFeed then
+							state:AddFeed("🛤️ Budget career pivot! Self-teaching with online courses.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Smarts", -2) end
+						if state.AddFeed then
+							state:AddFeed("🛤️ Can't afford training. Starting from scratch with just determination!")
+						end
+					end
+				end,
+			},
 			{ text = "Stay the course", effects = { Happiness = 2 }, feedText = "You're content where you are." },
 		},
 	},
@@ -252,6 +279,7 @@ Career.events = {
 		cooldown = 5,
 		requiresJob = true,
 		requiresJobCategory = "tech",
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		-- META
 		stage = STAGE,
@@ -262,7 +290,42 @@ Career.events = {
 
 		choices = {
 			{ text = "Pitch it to your company", effects = { Happiness = 8, Money = 1000, Smarts = 3 }, feedText = "You pitched your big idea!" },
-			{ text = "Start your own company with it", effects = { Happiness = 10, Money = -3000 }, setFlags = { entrepreneur = true, startup_founder = true }, feedText = "You're going out on your own!" },
+			{ 
+				text = "Start your own company with it", 
+				effects = { Happiness = 10 }, 
+				setFlags = { entrepreneur = true, startup_founder = true }, 
+				feedText = "Starting your own company...",
+				-- CRITICAL FIX: Money validation for $3000 startup costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("💡 You founded your own tech startup! $3000 invested to get started!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💡 Bootstrapping a lean startup! Working from your garage with $1000.")
+						end
+					elseif money >= 200 then
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💡 Micro-startup! Just $200 for domain and hosting. Living the dream... barely.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("💡 Can't afford startup costs. Keeping it as a side project for now.")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.startup_founder = nil
+						state.Flags.side_hustler = true
+					end
+				end,
+			},
 			{ text = "Keep developing it as a side project", effects = { Smarts = 5, Health = -2 }, setFlags = { side_hustler = true }, feedText = "You're building something on the side." },
 			{ text = "Forget it, too risky", effects = { Happiness = -3 }, feedText = "The idea faded away..." },
 		},
@@ -834,12 +897,70 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
-		blockedByFlags = { married = true },
+		requiresSingle = true,
+		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Pursue it - love conquers all", effects = { Happiness = 10 }, setFlags = { office_romance = true, has_partner = true }, feedText = "You took a chance on love at work!" },
+			{ 
+				text = "Pursue it - love conquers all", 
+				effects = { Happiness = 10 }, 
+				setFlags = { office_romance = true, has_partner = true, dating = true }, 
+				feedText = "You took a chance on love at work!",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
+						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 70,
+						age = (state.Age or 30) + math.random(-5, 5),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "work",
+						isCoworker = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💕 You started dating %s from work!", partnerName))
+					end
+				end,
+			},
 			{ text = "Keep it strictly professional", effects = { Happiness = -3, Smarts = 2 }, feedText = "You kept boundaries. Smart but hard." },
-			{ text = "Transfer departments first", effects = { Happiness = 8 }, setFlags = { has_partner = true }, feedText = "You avoided conflicts of interest, then dated." },
+			{ 
+				text = "Transfer departments first", 
+				effects = { Happiness = 8 }, 
+				setFlags = { has_partner = true, dating = true }, 
+				feedText = "You transferred, then started dating!",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
+						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 65,
+						age = (state.Age or 30) + math.random(-5, 5),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "work",
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💕 After transferring, you started dating %s!", partnerName))
+					end
+				end,
+			},
 			{ text = "Flirt but don't commit", effects = { Happiness = 5 }, setFlags = { office_flirt = true }, feedText = "The tension is fun but risky." },
 		},
 	},
@@ -854,16 +975,62 @@ Career.events = {
 		cooldown = 4,
 		requiresJob = true,
 		requiresStats = { Health = { max = 40 } },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Take a medical leave", effects = { Health = 15, Happiness = 10, Money = -1000 }, setFlags = { took_leave = true }, feedText = "You needed the break desperately." },
+			{ 
+				text = "Take a medical leave", 
+				effects = { Health = 15, Happiness = 10 }, 
+				setFlags = { took_leave = true }, 
+				feedText = "Taking medical leave...",
+				-- CRITICAL FIX: Money validation for $1000 leave expenses
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 1000 then
+						state.Money = money - 1000
+						if state.AddFeed then
+							state:AddFeed("🔥 You took paid leave. The break is desperately needed.")
+						end
+					elseif money >= 300 then
+						state.Money = money - 300
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("🔥 Unpaid leave - tight budget but mental health is priceless.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("🔥 Can't afford time off. Taking sick days and resting at home.")
+						end
+					end
+				end,
+			},
 			{ text = "Push through - can't afford to stop", effects = { Health = -15, Happiness = -10 }, setFlags = { severe_burnout = true }, feedText = "You're destroying yourself..." },
 			{ 
 				text = "Quit without a plan", 
-				effects = { Happiness = 8, Health = 10, Money = -2000 }, 
+				effects = { Happiness = 8, Health = 10 }, 
 				setFlags = { between_jobs = true, sabbatical = true }, 
-				feedText = "You snapped and walked out. Freedom!",
+				feedText = "Walking out...",
+				-- CRITICAL FIX: Money validation for $2000 quitting buffer
 				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 2000 then
+						state.Money = money - 2000
+						if state.AddFeed then
+							state:AddFeed("🔥 You snapped and walked out! Freedom! Living on savings.")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("🔥 You quit! Money's tight but your sanity is worth it.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("🔥 You quit with no savings. Scary but you couldn't take it anymore.")
+						end
+					end
 					if state.ClearCareer then
 						state:ClearCareer()
 					else
@@ -874,7 +1041,28 @@ Career.events = {
 					end
 				end,
 			},
-			{ text = "Negotiate reduced hours", effects = { Health = 8, Happiness = 5, Money = -300 }, setFlags = { part_time = true }, feedText = "Your employer worked with you on balance." },
+			{ 
+				text = "Negotiate reduced hours", 
+				effects = { Health = 8, Happiness = 5 }, 
+				setFlags = { part_time = true }, 
+				feedText = "Negotiating reduced hours...",
+				-- CRITICAL FIX: Money validation for $300 salary reduction
+				onResolve = function(state)
+					local money = state.Money or 0
+					-- Reduced hours = reduced pay, represented as expense
+					if money >= 300 then
+						state.Money = money - 300
+						if state.AddFeed then
+							state:AddFeed("🔥 Your employer agreed to part-time! Balance restored.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("🔥 Reduced hours approved but money will be very tight.")
+						end
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -1056,9 +1244,35 @@ Career.events = {
 		baseChance = 0.25,
 		cooldown = 5,
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Jump in! High risk, high reward", effects = { Happiness = 10, Money = -500 }, setFlags = { startup_employee = true }, feedText = "You joined the startup! Equity could be huge!" },
+			{ 
+				text = "Jump in! High risk, high reward", 
+				effects = { Happiness = 10 }, 
+				setFlags = { startup_employee = true }, 
+				feedText = "Joining the startup...",
+				-- CRITICAL FIX: Money validation for $500 transition costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("🚀 You joined the startup! Took a pay cut but equity could be huge!")
+						end
+					elseif money >= 100 then
+						state.Money = money - 100
+						if state.AddFeed then
+							state:AddFeed("🚀 Joined the startup! Barely affording the transition but YOLO!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("🚀 Joined the startup! No savings buffer. Risky move!")
+						end
+					end
+				end,
+			},
 			{ text = "Too risky - stay corporate", effects = { Happiness = -2, Money = 200 }, feedText = "You played it safe." },
 			{ text = "Negotiate hard for equity", effects = { Happiness = 8, Smarts = 2 }, setFlags = { startup_employee = true, has_equity = true }, feedText = "You got a great equity package!" },
 			{ text = "The startup failed before you could join", effects = { Happiness = 3 }, feedText = "Dodged a bullet! They went under." },

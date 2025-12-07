@@ -123,8 +123,38 @@ Teen.events = {
 		minAge = 14, maxAge = 17,
 		baseChance = 0.7,
 		cooldown = 2,
+		requiresSingle = true,
 		choices = {
-			{ text = "Ask them out", effects = { Happiness = 8 }, setFlags = { romantically_active = true, has_partner = true, dating = true }, feedText = "You made a move! Heart pounding." },
+			{ 
+				text = "Ask them out", 
+				effects = { Happiness = 8 }, 
+				setFlags = { romantically_active = true, has_partner = true, dating = true }, 
+				feedText = "You made a move! Heart pounding...",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
+					local names = isMale 
+						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
+						or {"Emma", "Olivia", "Hannah", "Madison", "Chloe", "Alexis", "Taylor", "Savannah", "Kayla", "Hailey"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 70,
+						age = state.Age or 15,
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "high_school",
+						isClassmate = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💘 You're dating %s! High school sweethearts!", partnerName))
+					end
+				end,
+			},
 			{ text = "Drop hints and wait", effects = { Happiness = 2 }, feedText = "You're playing it cool, waiting for them to act." },
 			{ text = "Focus on being friends first", effects = { Happiness = 3 }, setFlags = { takes_it_slow = true }, feedText = "You're building a foundation of friendship." },
 			{ text = "I'm not ready for dating", effects = { Happiness = 2 }, feedText = "You're focused on other things right now." },
@@ -642,6 +672,7 @@ Teen.events = {
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
 		cooldown = 2,
+		requiresSingle = true,
 
 		choices = {
 			{ 
@@ -655,11 +686,31 @@ Teen.events = {
 						-- It works out!
 						state.Flags.has_partner = true
 						state.Flags.summer_love = true
+						state.Flags.dating = true
+						-- CRITICAL FIX: Actually create the partner object!
+						state.Relationships = state.Relationships or {}
+						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
+						local names = isMale 
+							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
+							or {"Lily", "Sophie", "Grace", "Chloe", "Zoe", "Bella", "Mia", "Emma", "Ava", "Harper"}
+						local partnerName = names[math.random(1, #names)]
+						state.Relationships.partner = {
+							id = "partner",
+							name = partnerName,
+							type = "romantic",
+							role = isMale and "Boyfriend" or "Girlfriend",
+							relationship = 65,
+							age = state.Age or 15,
+							gender = isMale and "male" or "female",
+							alive = true,
+							metThrough = "summer_vacation",
+							longDistance = true,
+						}
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", 10)
 						end
 						if state.AddFeed then
-							state:AddFeed("☀️ Your summer romance turned into something real!")
+							state:AddFeed(string.format("☀️ Your summer romance with %s turned into something real!", partnerName))
 						end
 					elseif roll <= 70 then
 						-- Fizzles out
@@ -1135,9 +1186,34 @@ Teen.events = {
 			},
 			{ 
 				text = "Ask to go to driving school instead", 
-				effects = { Money = -200 },
+				-- CRITICAL FIX: Validate money before driving school
+				effects = {}, -- Money handled in onResolve
 				setFlags = { driving_school = true },
-				feedText = "You signed up for professional driving lessons.",
+				feedText = "Looking into driving schools...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local schoolCost = 200
+					if money >= schoolCost then
+						state.Money = money - schoolCost
+						if state.AddFeed then
+							state:AddFeed("🚗 Signed up for professional driving lessons! ($200)")
+						end
+					else
+						-- Parents might pay
+						local roll = math.random()
+						if roll < 0.7 then
+							if state.AddFeed then
+								state:AddFeed("🚗 Your parents paid for driving school! Lucky!")
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed("🚗 Can't afford driving school. Learning from parents instead.")
+							end
+							state.Flags = state.Flags or {}
+							state.Flags.driving_school = nil
+						end
+					end
+				end,
 			},
 		},
 	},

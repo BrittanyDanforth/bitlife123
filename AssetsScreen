@@ -1396,8 +1396,16 @@ end
 function AssetsScreen:hide()
 	log("=== HIDING AssetsScreen ===")
 	UI.slideOutScreen(self.overlay, "right", function()
-		self.resultModal.overlay.Visible = false
-		self.gamblingOverlay.Visible = false
+		-- CRITICAL FIX: Add nil checks before accessing overlay properties
+		-- resultModal.overlay might not exist if modal wasn't initialized
+		if self.resultModal and self.resultModal.overlay then
+			self.resultModal.overlay.Visible = false
+		end
+		-- CRITICAL FIX: gamblingOverlay was removed (Casino feature disabled)
+		-- Add nil check to prevent "attempt to index nil" errors
+		if self.gamblingOverlay then
+			self.gamblingOverlay.Visible = false
+		end
 		log("✅ AssetsScreen hidden, modals cleaned up")
 	end)
 	self.isVisible = false

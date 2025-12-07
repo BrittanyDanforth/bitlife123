@@ -246,55 +246,165 @@ Random.events = {
 		choices = {
 			{
 				text = "Pay for repairs",
-				effects = { Money = -500, Happiness = -3 },
-				feedText = "Expensive repairs. Cars, right?",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Time to see what the damage is...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local repairCost = 500
+					if money >= repairCost then
+						state.Money = money - repairCost
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("🔧 Paid $500 for repairs. Expensive, but car is fixed!")
+						end
+					elseif money >= 200 then
+						-- Partial repair - cheaper option
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("🔧 Could only afford $200 for basic repairs. Hopefully it holds...")
+						end
+					else
+						-- Can't afford any repairs
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford repairs! Your car is broken down...")
+						end
+						-- Mark car as broken
+						state.Flags = state.Flags or {}
+						state.Flags.car_broken = true
+					end
+				end,
 			},
 			{
 				text = "Try to fix it yourself",
-				effects = { Money = -100, Smarts = 3, Health = -2 },
-				feedText = "You learned something, at least.",
+				-- CRITICAL FIX: Validate money for DIY parts
+				effects = {}, -- Money handled in onResolve
+				feedText = "Time to get your hands dirty...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local partsCost = 100
+					if money >= partsCost then
+						state.Money = money - partsCost
+						if state.ModifyStat then 
+							state:ModifyStat("Smarts", 3)
+							state:ModifyStat("Health", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("🔧 Bought $100 in parts and fixed it yourself! Learned something too.")
+						end
+					else
+						-- Try without parts
+						local roll = math.random()
+						if roll < 0.3 then
+							-- Lucky fix
+							if state.ModifyStat then state:ModifyStat("Smarts", 2) end
+							if state.AddFeed then
+								state:AddFeed("🔧 Fixed it with what you had! Lucky!")
+							end
+						else
+							-- Couldn't fix it
+							if state.ModifyStat then 
+								state:ModifyStat("Happiness", -5)
+								state:ModifyStat("Health", -3)
+							end
+							if state.AddFeed then
+								state:AddFeed("🔧 Couldn't fix it without proper parts...")
+							end
+							state.Flags = state.Flags or {}
+							state.Flags.car_broken = true
+						end
+					end
+				end,
 			},
-		{
-			text = "Junk it and buy a new car",
-			effects = { Money = -5000, Happiness = 5 },
-			feedText = "Time for an upgrade anyway!",
-			onResolve = function(state)
-				-- Remove old car (first one found)
-				local vehicles = state.Assets and state.Assets.Vehicles
-				if vehicles and #vehicles > 0 then
-					table.remove(vehicles, 1)
-				end
-				-- Add new car
-				if state.AddAsset then
-					state:AddAsset("Vehicles", {
-						id = "replacement_car_" .. tostring(state.Age or 0),
-						name = "New Reliable Car",
-						emoji = "🚗",
-						price = 5000,
-						value = 4500,
-						condition = 85,
-						isEventAcquired = true,
-					})
-				end
-			end,
-		},
-		{
-			text = "Sell it for scrap and take the bus",
-			effects = { Money = 300, Happiness = -5 },
-			feedText = "You sold the heap and went back to public transit.",
-			onResolve = function(state)
-				-- Remove first vehicle
-				local vehicles = state.Assets and state.Assets.Vehicles
-				if vehicles and #vehicles > 0 then
-					table.remove(vehicles, 1)
-				end
-				-- Clear vehicle flags if no vehicles left
-				if state.Flags and (not vehicles or #vehicles == 0) then
-					state.Flags.has_car = nil
-					state.Flags.has_vehicle = nil
-				end
-			end,
-		},
+			{
+				text = "Junk it and buy a new car",
+				-- CRITICAL FIX: Validate money for new car purchase
+				effects = {}, -- Money handled in onResolve
+				feedText = "Considering a new vehicle...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local newCarCost = 5000
+					if money >= newCarCost then
+						state.Money = money - newCarCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						-- Remove old car (first one found)
+						local vehicles = state.Assets and state.Assets.Vehicles
+						if vehicles and #vehicles > 0 then
+							table.remove(vehicles, 1)
+						end
+						-- Add new car
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "replacement_car_" .. tostring(state.Age or 0),
+								name = "New Reliable Car",
+								emoji = "🚗",
+								price = 5000,
+								value = 4500,
+								condition = 85,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚗 Bought a new car for $5000! Fresh start!")
+						end
+					elseif money >= 2000 then
+						-- Can only afford used car
+						state.Money = money - 2000
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						local vehicles = state.Assets and state.Assets.Vehicles
+						if vehicles and #vehicles > 0 then
+							table.remove(vehicles, 1)
+						end
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "used_car_" .. tostring(state.Age or 0),
+								name = "Used Car",
+								emoji = "🚗",
+								price = 2000,
+								value = 1500,
+								condition = 60,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚗 Could only afford a $2000 used car. Better than nothing!")
+						end
+					else
+						-- Can't afford new car
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford a new car! Stuck without wheels...")
+						end
+						-- Remove broken car
+						local vehicles = state.Assets and state.Assets.Vehicles
+						if vehicles and #vehicles > 0 then
+							table.remove(vehicles, 1)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.has_car = nil
+						state.Flags.has_vehicle = nil
+					end
+				end,
+			},
+			{
+				text = "Sell it for scrap and take the bus",
+				effects = { Money = 300, Happiness = -5 },
+				feedText = "You sold the heap and went back to public transit.",
+				onResolve = function(state)
+					-- Remove first vehicle
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then
+						table.remove(vehicles, 1)
+					end
+					-- Clear vehicle flags if no vehicles left
+					if state.Flags and (not vehicles or #vehicles == 0) then
+						state.Flags.has_car = nil
+						state.Flags.has_vehicle = nil
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -309,9 +419,69 @@ Random.events = {
 		-- CRITICAL FIX #6: Can't lose phone in prison (no phones!)
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
-			{ text = "Get the latest model", effects = { Money = -800, Happiness = 8 }, feedText = "New phone! It's shiny and does everything. $800 well spent!" },
-			{ text = "Get a basic replacement", effects = { Money = -200, Happiness = 2 }, feedText = "It works. That's what matters." },
-			{ text = "Fix the old one", effects = { Money = -100, Happiness = 3, Smarts = 2 }, feedText = "Good as new (almost)." },
+			-- CRITICAL FIX: Add money validation to prevent buying with no money
+			{ 
+				text = "Get the latest model", 
+				effects = {}, -- Money handled in onResolve to validate first
+				feedText = "You want the latest model...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 800 then
+						state.Money = money - 800
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("📱 New phone! It's shiny and does everything. $800 well spent!") end
+					elseif money >= 200 then
+						-- Can only afford basic model
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("📱 Couldn't afford the latest model, got a basic one instead.") end
+					else
+						-- Can't afford anything
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📱 Can't afford a new phone. Going phoneless for now...") end
+					end
+				end,
+			},
+			{ 
+				text = "Get a basic replacement", 
+				effects = {}, -- Money handled in onResolve to validate first
+				feedText = "You look for a basic replacement...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 200 then
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("📱 Got a basic replacement phone. It works. That's what matters.") end
+					else
+						-- Can't afford even the basic model
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📱 Can't even afford a basic phone. Living disconnected now...") end
+					end
+				end,
+			},
+			{ 
+				text = "Fix the old one", 
+				effects = {}, -- Money handled in onResolve to validate first
+				feedText = "You try to get it repaired...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 100 then
+						state.Money = money - 100
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 3)
+							state:ModifyStat("Smarts", 2)
+						end
+						if state.AddFeed then state:AddFeed("📱 Repaired your old phone. Good as new (almost). Saved $700!") end
+					else
+						-- Try DIY fix
+						if state.ModifyStat then
+							state:ModifyStat("Smarts", 3) -- Learn something at least
+							state:ModifyStat("Happiness", math.random() > 0.5 and 2 or -3)
+						end
+						if state.AddFeed then state:AddFeed("📱 No money for repairs. Tried fixing it yourself with YouTube tutorials...") end
+					end
+				end,
+			},
 			{ text = "Go without for a while", effects = { Happiness = -5 }, feedText = "Living disconnected. It's... different." },
 		},
 	},

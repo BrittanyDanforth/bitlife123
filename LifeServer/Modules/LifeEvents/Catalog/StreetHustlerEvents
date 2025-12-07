@@ -417,9 +417,36 @@ local events = {
 			{
 				index = 3,
 				text = "Move to a new city",
-				effects = { Happiness = -3, Money = -2000 },
+				-- CRITICAL FIX: Validate money before relocating
+				effects = {}, -- Money handled in onResolve
 				setFlags = { relocated = true },
-				feedText = "You relocated to start fresh somewhere new.",
+				feedText = "Considering relocating...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local moveCost = 2000
+					if money >= moveCost then
+						state.Money = money - moveCost
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Spent $2000 and relocated to a new city. Fresh start!")
+						end
+					elseif money >= 500 then
+						-- Budget move
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Moved cheap with just $500. Rough start but safe.")
+						end
+					else
+						-- Can't afford to move
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.laying_low = true
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to relocate. Laying low instead...")
+						end
+					end
+				end,
 			},
 			{
 				index = 4,
