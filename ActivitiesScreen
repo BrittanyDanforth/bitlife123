@@ -1888,11 +1888,31 @@ function ActivitiesScreen:createResultModal()
 		zIndex = 98
 	})
 
+	-- CRITICAL FIX #3: When dismissing result modal, ALWAYS rebuild tabs and update UI
+	-- This fixes the bug where Activities screen doesn't update after getting arrested!
+	local function onResultDismiss()
+		local inJail = self:isInJail()
+		log("Result modal dismissed - checking state. InJail:", inJail)
+		
+		-- Always rebuild tabs to reflect current state
+		self:rebuildTabs()
+		self:updateInfoBar()
+		
+		-- Switch to appropriate tab based on jail status
+		if inJail and self.currentTab ~= "prison" then
+			self.currentTab = "prison"
+		elseif not inJail and self.currentTab == "prison" then
+			self.currentTab = "mindbody"
+		end
+		
+		self:switchTab(self.currentTab)
+	end
+	
 	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+		UI.hideModal(self.resultModal, onResultDismiss)
 	end)
 	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+		UI.hideModal(self.resultModal, onResultDismiss)
 	end)
 end
 

@@ -506,6 +506,8 @@ Relationships.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresSingle = true,
+		-- CRITICAL FIX #5: Can't go on dates from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random first date outcome
 		choices = {
 			{
@@ -611,6 +613,8 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresSingle = true,
+		-- CRITICAL FIX #11: Can't speed date from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random speed dating outcome
 		choices = {
 			{
@@ -675,6 +679,8 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX #12: Can't go on blind dates from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random blind date outcome
 		choices = {
 			{

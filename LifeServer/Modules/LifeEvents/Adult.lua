@@ -189,6 +189,21 @@ Adult.events = {
 		question = "What's your approach?",
 		minAge = 25, maxAge = 50,
 		oneTime = true,
+		-- CRITICAL FIX #2: Don't show home buying if you have no money OR already own a home!
+		blockedByFlags = { homeowner = true, has_property = true, in_prison = true },
+		eligibility = function(state)
+			-- Need at least $5000 for cheapest option down payment
+			local money = state.Money or 0
+			if money < 5000 then
+				return false, "Not enough money for a down payment"
+			end
+			-- Can't already own property
+			local flags = state.Flags or {}
+			if flags.homeowner or flags.has_property then
+				return false, "Already owns a home"
+			end
+			return true
+		end,
 
 		-- META
 		stage = STAGE,

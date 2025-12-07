@@ -306,6 +306,8 @@ Random.events = {
 		minAge = 12, maxAge = 80,
 		baseChance = 0.3,
 		cooldown = 2,
+		-- CRITICAL FIX #6: Can't lose phone in prison (no phones!)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{ text = "Get the latest model", effects = { Money = -800, Happiness = 8 }, feedText = "New phone! It's shiny and does everything. $800 well spent!" },
 			{ text = "Get a basic replacement", effects = { Money = -200, Happiness = 2 }, feedText = "It works. That's what matters." },
@@ -557,6 +559,8 @@ Random.events = {
 		minAge = 18, maxAge = 75,
 		baseChance = 0.3,
 		cooldown = 3,
+		-- CRITICAL FIX #4: Can't travel from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		choices = {
 			{ text = "Absolutely, adventure awaits!", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!" },
 			{ text = "Go on a budget", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!" },
@@ -776,6 +780,15 @@ Random.events = {
 		baseChance = 0.1,
 		cooldown = 5,
 		category = "injury",
+		-- CRITICAL FIX #1: MUST have a car to get in a car accident!
+		requiresFlags = { has_car = true },
+		-- Also can be a passenger with a license
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Has a car OR has a license (could be in someone else's car)
+			return flags.has_car or flags.has_vehicle or flags.car_owner or flags.has_license
+		end,
+		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Random accident severity - player doesn't choose how hurt they are
 		choices = {
 			{
@@ -1006,22 +1019,112 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX #10: Was god-mode - player chose injury! Now random with response choices.
 		id = "injury_attack",
 		title = "Attacked!",
 		emoji = "👊",
-		text = "Someone attacked you!",
-		question = "How badly were you hurt?",
+		text = "Someone attacked you on the street!",
+		question = "What do you do?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.08,
 		cooldown = 6,
 		category = "injury",
+		blockedByFlags = { in_prison = true },
 
 		choices = {
-			{ text = "Black eye and bruises", effects = { Health = -10, Looks = -5, Happiness = -12 }, setFlags = { assault_victim = true }, feedText = "You were beaten up. Face is bruised badly." },
-			{ text = "Stabbed - rushed to hospital", effects = { Health = -40, Happiness = -25, Money = -5000 }, setFlags = { stabbing_victim = true, hospitalized = true }, feedText = "You were stabbed. Critical condition." },
-			{ text = "Knocked unconscious", effects = { Health = -20, Smarts = -2, Happiness = -15 }, setFlags = { assault_victim = true, concussion = true }, feedText = "Knocked out cold. Woke up in hospital." },
-			{ text = "Fought them off - minor injuries", effects = { Health = -8, Happiness = -5 }, setFlags = { self_defense = true }, feedText = "You defended yourself and escaped!" },
-			{ text = "Robbed and injured", effects = { Health = -12, Happiness = -15, Money = -500 }, setFlags = { robbery_victim = true }, feedText = "They took your stuff and hurt you." },
+			{ 
+				text = "Try to fight back", 
+				effects = {},
+				feedText = "You stood your ground...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local defense_bonus = health > 70 and 0.15 or 0
+					
+					if roll < (0.25 + defense_bonus) then
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.self_defense = true
+						state:AddFeed("👊 You fought back and escaped with minor injuries!")
+					elseif roll < 0.60 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Looks", -3)
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.assault_victim = true
+						state:AddFeed("👊 You got beaten up badly. Black eye and bruises.")
+					elseif roll < 0.85 then
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Smarts", -2)
+						state:ModifyStat("Happiness", -18)
+						state.Flags = state.Flags or {}
+						state.Flags.assault_victim = true
+						state.Flags.concussion = true
+						state:AddFeed("👊 Knocked unconscious. Woke up in the hospital.")
+					else
+						state:ModifyStat("Health", -40)
+						state:ModifyStat("Happiness", -25)
+						state.Money = math.max(0, (state.Money or 0) - 5000)
+						state.Flags = state.Flags or {}
+						state.Flags.stabbing_victim = true
+						state.Flags.hospitalized = true
+						state:AddFeed("👊 They had a knife. You were stabbed. Critical condition.")
+					end
+				end,
+			},
+			{ 
+				text = "Run away!", 
+				effects = {},
+				feedText = "You tried to escape...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					local escape_bonus = health > 60 and 0.20 or 0
+					
+					if roll < (0.50 + escape_bonus) then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👊 You got away! Heart pounding, but safe.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -10)
+						state.Money = math.max(0, (state.Money or 0) - math.random(100, 500))
+						state.Flags = state.Flags or {}
+						state.Flags.robbery_victim = true
+						state:AddFeed("👊 They caught up. Robbed you and roughed you up.")
+					else
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.assault_victim = true
+						state:AddFeed("👊 Tripped while running. They caught you and beat you up.")
+					end
+				end,
+			},
+			{ 
+				text = "Give them what they want", 
+				effects = {},
+				feedText = "You cooperated...",
+				onResolve = function(state)
+					local roll = math.random()
+					local money_lost = math.random(100, 800)
+					state.Money = math.max(0, (state.Money or 0) - money_lost)
+					
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.robbery_victim = true
+						state:AddFeed(string.format("👊 They took $%d and left. Shaken but okay.", money_lost))
+					else
+						state:ModifyStat("Health", -12)
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.robbery_victim = true
+						state.Flags.assault_victim = true
+						state:AddFeed("👊 They took your stuff AND beat you up anyway.")
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -1120,58 +1223,221 @@ Random.events = {
 	-- ILLNESS SYSTEM - BITLIFE STYLE SICKNESS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
+		-- CRITICAL FIX #7: Was god-mode - player chose severity! Now random.
 		id = "illness_flu",
 		title = "Flu Season Hit!",
 		emoji = "🤒",
 		text = "You caught the flu!",
-		question = "How bad is it?",
+		question = "How do you deal with it?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.35,
 		cooldown = 2,
 		category = "illness",
 
 		choices = {
-			{ text = "Miserable for a week", effects = { Health = -10, Happiness = -8 }, feedText = "A week in bed with the flu. Awful." },
-			{ text = "Mild case - over quickly", effects = { Health = -5, Happiness = -3 }, feedText = "Mild flu. You bounced back fast." },
-			{ text = "Turned into pneumonia", effects = { Health = -25, Happiness = -15, Money = -1000 }, setFlags = { pneumonia = true, hospitalized = true }, feedText = "Flu turned into pneumonia. Hospital stay." },
-			{ text = "Just a 24-hour bug", effects = { Health = -3, Happiness = -2 }, feedText = "Quick stomach bug. One bad day." },
+			{ 
+				text = "Rest at home and recover", 
+				effects = {},
+				feedText = "You stayed home to recover...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤒 Mild flu. A few days in bed and you bounced back.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🤒 Miserable flu. A week in bed feeling awful.")
+					elseif roll < 0.95 then
+						state:ModifyStat("Health", -18)
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.severe_illness = true
+						state:AddFeed("🤒 Severe flu knocked you out for two weeks.")
+					else
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Happiness", -15)
+						state.Money = math.max(0, (state.Money or 0) - 1000)
+						state.Flags = state.Flags or {}
+						state.Flags.pneumonia = true
+						state.Flags.hospitalized = true
+						state:AddFeed("🏥 Flu turned into pneumonia! Hospitalized.")
+					end
+				end,
+			},
+			{ 
+				text = "See a doctor immediately", 
+				effects = { Money = -100 },
+				feedText = "You went to the doctor...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🤒 Doctor helped! Quick recovery with medication.")
+					else
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤒 Doctor visit helped but you were still sick for a while.")
+					end
+				end,
+			},
+			{ 
+				text = "Push through it", 
+				effects = {},
+				feedText = "You tried to power through...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🤒 You managed to shake it off.")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.overworked = true
+						state:AddFeed("🤒 Bad idea. Made it much worse by not resting.")
+					end
+				end,
+			},
 		},
 	},
 	{
+		-- CRITICAL FIX #8: Was god-mode - player chose severity! Now random.
 		id = "illness_food_poisoning",
 		title = "Food Poisoning!",
 		emoji = "🤢",
-		text = "You got food poisoning!",
-		question = "How did you handle it?",
+		text = "You got food poisoning from something you ate!",
+		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.2,
 		cooldown = 2,
 		category = "illness",
 
 		choices = {
-			{ text = "Worst 24 hours of my life", effects = { Health = -10, Happiness = -12 }, feedText = "Brutal food poisoning. Never eating there again." },
-			{ text = "Mild but unpleasant", effects = { Health = -5, Happiness = -5 }, feedText = "Stomach issues for a day. Manageable." },
-			{ text = "Needed IV fluids at hospital", effects = { Health = -15, Happiness = -10, Money = -500 }, setFlags = { dehydrated = true }, feedText = "So dehydrated you needed the ER." },
-			{ text = "Passed quickly", effects = { Health = -3, Happiness = -3 }, feedText = "Over in a few hours. Lucky." },
+			{ 
+				text = "Wait it out at home", 
+				effects = {},
+				feedText = "You stayed near the bathroom...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤢 Over in a few hours. Lucky!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("🤢 Mild but unpleasant. Stomach issues for a day.")
+					elseif roll < 0.95 then
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("🤢 Worst 24 hours of your life. Never eating there again.")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -10)
+						state.Money = math.max(0, (state.Money or 0) - 500)
+						state.Flags = state.Flags or {}
+						state.Flags.dehydrated = true
+						state:AddFeed("🏥 So dehydrated you needed IV fluids at the ER!")
+					end
+				end,
+			},
+			{ 
+				text = "Go to urgent care", 
+				effects = { Money = -150 },
+				feedText = "You went to get checked out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.80 then
+						state:ModifyStat("Health", -4)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤢 Doctor gave you anti-nausea meds. Felt better soon.")
+					else
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("🤢 Needed fluids but you recovered faster with help.")
+					end
+				end,
+			},
 		},
 	},
 	{
+		-- CRITICAL FIX #9: Was god-mode - player chose condition! Now random with response choices.
 		id = "illness_mental_health",
 		title = "Mental Health Struggle",
 		emoji = "😔",
-		text = "You're struggling with your mental health.",
-		question = "What are you experiencing?",
+		text = "You've been struggling with your mental health lately.",
+		question = "What do you do about it?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.2,
 		cooldown = 3,
 		category = "mental_health",
 
 		choices = {
-			{ text = "Depression - everything feels heavy", effects = { Happiness = -20, Health = -5 }, setFlags = { depression = true }, feedText = "Depression hit hard. Seeking help is important." },
-			{ text = "Anxiety - constant worry", effects = { Happiness = -15, Health = -3, Smarts = -2 }, setFlags = { anxiety = true }, feedText = "Anxiety is overwhelming. Hard to focus." },
-			{ text = "Burnout - completely exhausted", effects = { Happiness = -15, Health = -10 }, setFlags = { burnout = true }, feedText = "Burnout. You need a real break." },
-			{ text = "Started therapy - feeling better", effects = { Happiness = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Therapy is helping. Progress takes time." },
-			{ text = "Medication is helping", effects = { Happiness = 8, Health = 3, Money = -200 }, setFlags = { on_medication = true }, feedText = "Medication made a real difference." },
+			{ 
+				text = "Seek professional help", 
+				effects = { Money = -300 },
+				feedText = "You reached out for help...",
+				onResolve = function(state)
+					local roll = math.random()
+					local conditions = {
+						{ name = "depression", text = "Depression was the diagnosis. Therapy is helping.", hap = -10, flag = "depression" },
+						{ name = "anxiety", text = "Anxiety disorder. Learning coping strategies.", hap = -8, flag = "anxiety" },
+						{ name = "burnout", text = "Severe burnout. You needed this break.", hap = -5, flag = "burnout" },
+					}
+					local condition = conditions[math.random(1, #conditions)]
+					state:ModifyStat("Happiness", condition.hap)
+					state.Flags = state.Flags or {}
+					state.Flags[condition.flag] = true
+					state.Flags.in_therapy = true
+					state:AddFeed("😔 " .. condition.text .. " Treatment is making a difference.")
+				end,
+			},
+			{ 
+				text = "Try to handle it yourself", 
+				effects = {},
+				feedText = "You tried to push through alone...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😔 You managed to cope. Exercise and friends helped.")
+					elseif roll < 0.60 then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.depression = true
+						state:AddFeed("😔 It got worse. Depression is real. Consider getting help.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:ModifyStat("Health", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.severe_depression = true
+						state:AddFeed("😔 Ignoring it made things much worse. Please seek help.")
+					end
+				end,
+			},
+			{ 
+				text = "Talk to friends and family", 
+				effects = {},
+				feedText = "You opened up to loved ones...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😔 Your support system helped you through a rough patch.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.anxiety = true
+						state:AddFeed("😔 They tried to help but you might need professional support.")
+					end
+				end,
+			},
 		},
 	},
 	{
