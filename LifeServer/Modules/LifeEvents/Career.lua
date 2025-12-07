@@ -21,14 +21,21 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Can't have workplace conflicts while in prison!
-		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Only for formal workplace jobs - street hustlers don't have "coworkers taking credit"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			freelancer = true,
+			self_employed = true,
+		},
 
 		-- META
 		stage = STAGE,
 		ageBand = "working_age",
 		category = "career_workplace",
-		tags = { "job", "conflict", "coworker", "office_politics" },
+		tags = { "job", "conflict", "coworker", "office_politics", "formal_job" },
 
 		choices = {
 			{ text = "Confront them directly", effects = { Happiness = 3 }, setFlags = { workplace_confrontation = true }, feedText = "You called them out. The tension is thick." },
@@ -47,13 +54,20 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Only for formal jobs with promotion structures
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		-- META
 		stage = STAGE,
 		ageBand = "working_age",
 		category = "career_growth",
-		tags = { "job", "promotion", "money", "advancement" },
+		tags = { "job", "promotion", "money", "advancement", "formal_job" },
 		careerTags = { "management" },
 
 		choices = {
@@ -72,14 +86,21 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
-		-- CRITICAL FIX #9: Can't have layoff threats while in prison!
-		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Only for formal company jobs - street hustlers don't get "laid off"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+			freelancer = true,
+		},
 
 		-- META
 		stage = STAGE,
 		ageBand = "working_age",
 		category = "career_risk",
-		tags = { "job", "layoffs", "risk", "stress" },
+		tags = { "job", "layoffs", "risk", "stress", "formal_job" },
 
 		choices = {
 			{ text = "Work extra hard to prove value", effects = { Health = -5, Smarts = 2, Money = 200 }, feedText = "You worked overtime to secure your position." },
@@ -98,12 +119,45 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 4,
 		requiresJob = true,
+		-- CRITICAL FIX: Only show for FORMAL jobs with actual managers/HR
+		-- Street hustlers, criminals, freelancers don't have "managers"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			freelancer = true,
+			self_employed = true,
+			entrepreneur = true,
+			full_time_entrepreneur = true,
+		},
+		-- Only triggers for formal workplace categories
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = state.CurrentJob.category or ""
+			local formalCategories = {
+				["office"] = true, ["tech"] = true, ["medical"] = true,
+				["finance"] = true, ["education"] = true, ["government"] = true,
+				["service"] = true, ["retail"] = true, ["trades"] = true,
+				["corporate"] = true, ["management"] = true, ["legal"] = true,
+			}
+			-- Block for illegal/informal job categories
+			local informalCategories = {
+				["crime"] = true, ["illegal"] = true, ["street"] = true,
+				["underground"] = true, ["hustler"] = true, ["criminal"] = true,
+			}
+			if informalCategories[jobCat:lower()] then
+				return false, "Informal jobs don't have managers"
+			end
+			-- Allow if job has a formal category OR if no category specified (assume formal)
+			return true
+		end,
 
 		-- META
 		stage = STAGE,
 		ageBand = "working_age",
 		category = "career_workplace",
-		tags = { "job", "manager", "stress", "conflict" },
+		tags = { "job", "manager", "stress", "conflict", "formal_job" },
 
 		choices = {
 			{ text = "Keep your head down", effects = { Happiness = -5, Health = -3 }, feedText = "You endured in silence." },
@@ -199,12 +253,19 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal corporate jobs - street hustlers don't get "business trips"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		-- META
 		stage = STAGE,
 		ageBand = "working_age",
 		category = "career_travel",
-		tags = { "job", "travel", "clients" },
+		tags = { "job", "travel", "clients", "formal_job" },
 
 		choices = {
 			{ text = "All business, impress the clients", effects = { Smarts = 3, Money = 300, Health = -2 }, feedText = "You crushed it professionally!" },
@@ -605,6 +666,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 5,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal office jobs - street hustlers don't get "remote work options"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		choices = {
 			{ text = "Go fully remote", effects = { Happiness = 8, Health = 3, Money = 200 }, setFlags = { works_from_home = true }, feedText = "No more commute! Working in your pajamas!" },
@@ -623,6 +691,13 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal workplace jobs
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		choices = {
 			{ 
@@ -656,6 +731,14 @@ Career.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with salaries and reviews
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach"
 		-- Actual raise amount is random based on stats + approach
@@ -744,6 +827,14 @@ Career.events = {
 		-- CRITICAL FIX #8: Added "fired" category for red event card
 		category = "fired",
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs - street hustlers don't get "fired"
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		choices = {
 			{ 
@@ -1077,6 +1168,14 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with coworkers
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		choices = {
 			{ 
@@ -1124,6 +1223,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal corporate jobs
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 		-- CRITICAL FIX: Random presentation outcome based on preparation
 		choices = {
 			{
@@ -1209,6 +1315,13 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal corporate jobs with senior leadership
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		choices = {
 			{ text = "Embrace it fully", effects = { Smarts = 5, Happiness = 8, Money = 500 }, setFlags = { has_mentor = true }, feedText = "Having a mentor accelerated your career!" },
@@ -1226,6 +1339,14 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with overtime expectations
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		choices = {
 			{ text = "Work the overtime for money", effects = { Money = 600, Health = -8, Happiness = -5 }, feedText = "The money is good but you're exhausted." },
@@ -1288,6 +1409,14 @@ Career.events = {
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with bosses watching
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		choices = {
 			{ text = "Online shopping during work", effects = { Happiness = -5 }, feedText = "Caught with Amazon open. Embarrassing warning." },
@@ -1306,6 +1435,14 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with coworkers
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+		},
 
 		choices = {
 			{ text = "Devastated - they made work fun", effects = { Happiness = -8 }, feedText = "Work will be so different without them." },
@@ -1324,6 +1461,13 @@ Career.events = {
 		baseChance = 0.15,
 		cooldown = 8,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with HR options
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		choices = {
 			{ text = "Report it to HR", effects = { Happiness = -5, Smarts = 2 }, setFlags = { reported_harassment = true }, feedText = "You made an official report." },
@@ -1342,6 +1486,13 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for legitimate professional careers
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+		},
 
 		choices = {
 			{ text = "Met incredible people", effects = { Happiness = 8, Smarts = 3 }, setFlags = { strong_network = true }, feedText = "The connections you made were invaluable!" },
@@ -1360,6 +1511,15 @@ Career.events = {
 		baseChance = 0.6,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with performance reviews
+		blockedByFlags = { 
+			in_prison = true, 
+			street_hustler = true, 
+			dealer = true, 
+			criminal_career = true,
+			self_employed = true,
+			freelancer = true,
+		},
 
 		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach" 
 		-- Actual outcome is determined by stats + random chance via onResolve
@@ -2043,6 +2203,954 @@ Career.events = {
 					if state.AddFeed then
 						state:AddFeed("🤷 The networking didn't help. Still passed over.")
 					end
+				end
+			end,
+		},
+	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ADDITIONAL CAREER EVENTS - EXPANDED VARIETY
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- RETAIL & SERVICE INDUSTRY
+{
+	id = "retail_holiday_rush",
+	title = "Holiday Rush",
+	emoji = "🎄",
+	text = "The holiday shopping season is here. Work is insane.",
+	question = "How do you handle the chaos?",
+	minAge = 18, maxAge = 55,
+	baseChance = 0.5,
+	cooldown = 2,
+	requiresJob = true,
+	requiresJobCategory = "retail",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_retail",
+	tags = { "retail", "holiday", "stress" },
+	
+	choices = {
+		{
+			text = "Extra shifts = extra money",
+			effects = {},
+			feedText = "You worked every shift available...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					state.Money = (state.Money or 0) + math.random(500, 1200)
+					state:ModifyStat("Health", -5)
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("🎄 Exhausted but your bank account is happy!")
+				else
+					state.Money = (state.Money or 0) + math.random(300, 600)
+					state:ModifyStat("Health", -8)
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed("🎄 Burned out. The money wasn't worth this.")
+				end
+			end,
+		},
+		{ text = "Stick to regular hours", effects = { Happiness = 3, Money = 200 }, feedText = "You maintained boundaries. Sanity preserved!" },
+		{ text = "Call in sick during peak", effects = { Happiness = 5, Money = -100 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
+	},
+},
+{
+	id = "retail_difficult_customer",
+	title = "Customer From Hell",
+	emoji = "😤",
+	text = "A customer is screaming at you over something that isn't your fault.",
+	question = "How do you handle this Karen/Kevin?",
+	minAge = 16, maxAge = 55,
+	baseChance = 0.6,
+	cooldown = 2,
+	requiresJob = true,
+	requiresJobCategory = "retail",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_retail",
+	tags = { "retail", "customer", "conflict" },
+	
+	-- CRITICAL FIX: Random outcome based on approach
+	choices = {
+		{
+			text = "Kill them with kindness",
+			effects = {},
+			feedText = "You smiled through the abuse...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.50 then
+					state:ModifyStat("Smarts", 2)
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("😤 They calmed down eventually. Patience is a virtue.")
+				elseif roll < 0.80 then
+					state:ModifyStat("Happiness", -3)
+					state:AddFeed("😤 They kept yelling. You survived. Barely.")
+				else
+					state:ModifyStat("Happiness", -6)
+					state.Flags = state.Flags or {}
+					state.Flags.retail_trauma = true
+					state:AddFeed("😤 They demanded your manager. You got written up for THEIR attitude.")
+				end
+			end,
+		},
+		{
+			text = "Get a manager involved",
+			effects = {},
+			feedText = "You called for backup...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("😤 Manager handled it. They were on your side!")
+				else
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("😤 Manager sided with the customer. Ugh.")
+				end
+			end,
+		},
+		{ text = "Snap back at them", effects = { Happiness = 5 }, setFlags = { got_written_up = true }, feedText = "You told them off! Worth it. But you're in trouble now." },
+		{ text = "Walk to the back and cry", effects = { Happiness = -5, Health = -2 }, feedText = "Retail breaks everyone eventually." },
+	},
+},
+
+-- TECH INDUSTRY
+{
+	id = "tech_crunch_time",
+	title = "Crunch Time",
+	emoji = "💻",
+	text = "Major deadline approaching. The team is working 80-hour weeks.",
+	question = "How do you handle the crunch?",
+	minAge = 20, maxAge = 50,
+	baseChance = 0.5,
+	cooldown = 3,
+	requiresJob = true,
+	requiresJobCategory = "tech",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_tech",
+	tags = { "tech", "deadline", "crunch", "stress" },
+	
+	choices = {
+		{
+			text = "Push through - this is what we signed up for",
+			effects = {},
+			feedText = "You pushed through the crunch...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.55 then
+					state.Money = (state.Money or 0) + math.random(2000, 5000)
+					state:ModifyStat("Smarts", 3)
+					state:ModifyStat("Health", -8)
+					state:ModifyStat("Happiness", 5)
+					state.Flags = state.Flags or {}
+					state.Flags.shipped_product = true
+					state:AddFeed("💻 Project shipped! Big bonus! But you need a vacation.")
+				else
+					state:ModifyStat("Health", -10)
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("💻 Project shipped but at what cost? You're burnt out.")
+				end
+			end,
+		},
+		{ text = "Set boundaries - work smarter not harder", effects = { Health = -3, Smarts = 3 }, setFlags = { work_life_balance = true }, feedText = "You maintained some sanity while contributing." },
+		{ text = "This is unsustainable - speak up", effects = { Happiness = 3, Smarts = 2 }, setFlags = { advocate_for_team = true }, feedText = "You raised concerns about sustainable work practices." },
+		{ text = "Time to update that resume", effects = { Happiness = 2 }, setFlags = { job_hunting = true }, feedText = "This culture isn't for you. Time to find a better environment." },
+	},
+},
+{
+	id = "tech_startup_equity",
+	title = "Startup Equity Offer",
+	emoji = "🚀",
+	text = "A startup offers you equity instead of a higher salary. Could be worth millions... or nothing.",
+	question = "Do you take the gamble?",
+	minAge = 22, maxAge = 45,
+	baseChance = 0.3,
+	cooldown = 5,
+	requiresJob = true,
+	requiresJobCategory = "tech",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_tech",
+	tags = { "tech", "startup", "equity", "gamble" },
+	
+	-- CRITICAL FIX: Random equity outcome - can't choose if startup succeeds!
+	choices = {
+		{
+			text = "Take the equity - bet on the future",
+			effects = { Money = -500 }, -- Lower immediate salary
+			feedText = "You bet on the startup...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.15 then
+					-- Jackpot!
+					state.Money = (state.Money or 0) + math.random(50000, 200000)
+					state:ModifyStat("Happiness", 20)
+					state.Flags = state.Flags or {}
+					state.Flags.startup_millionaire = true
+					state:AddFeed("🚀 THE STARTUP GOT ACQUIRED! Your equity is worth a fortune!")
+				elseif roll < 0.40 then
+					-- Modest success
+					state.Money = (state.Money or 0) + math.random(10000, 30000)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🚀 Startup did okay! Your equity has some value!")
+				elseif roll < 0.70 then
+					-- It's hanging on
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("🚀 Startup is struggling. Equity worth unknown. Still waiting.")
+				else
+					-- Failed
+					state:ModifyStat("Happiness", -10)
+					state.Flags = state.Flags or {}
+					state.Flags.startup_failure = true
+					state:AddFeed("🚀 Startup went bust. All that equity is worthless.")
+				end
+			end,
+		},
+		{ text = "Take more salary - need stability", effects = { Money = 500, Happiness = 3 }, feedText = "You chose the safer path. Cash is king." },
+		{ text = "Negotiate for both", effects = { Smarts = 2 }, feedText = "You pushed for more salary AND some equity. Smart negotiating!" },
+	},
+},
+{
+	id = "tech_side_project_success",
+	title = "Side Project Blows Up",
+	emoji = "📱",
+	text = "An app you built in your spare time is suddenly getting traction!",
+	question = "What do you do?",
+	minAge = 18, maxAge = 50,
+	baseChance = 0.15,
+	cooldown = 6,
+	requiresJob = true,
+	requiresJobCategory = "tech",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_tech",
+	tags = { "tech", "side_project", "success" },
+	
+	-- CRITICAL FIX: Random outcome based on what player does with it
+	choices = {
+		{
+			text = "Quit job and go all in",
+			effects = {},
+			feedText = "You bet everything on your project...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.30 then
+					state.Money = (state.Money or 0) + math.random(30000, 100000)
+					state:ModifyStat("Happiness", 15)
+					state.Flags = state.Flags or {}
+					state.Flags.successful_founder = true
+					state.Flags.self_employed = true
+					if state.ClearCareer then state:ClearCareer() end
+					state:AddFeed("📱 You're your own boss! The app took off!")
+				elseif roll < 0.55 then
+					state:ModifyStat("Happiness", 2)
+					state.Flags = state.Flags or {}
+					state.Flags.indie_developer = true
+					state.Flags.self_employed = true
+					if state.ClearCareer then state:ClearCareer() end
+					state:AddFeed("📱 Making enough to get by. Freedom has a price.")
+				else
+					state:ModifyStat("Happiness", -12)
+					state:ModifyStat("Money", -5000)
+					state.Flags = state.Flags or {}
+					state.Flags.unemployed = true
+					if state.ClearCareer then state:ClearCareer() end
+					state:AddFeed("📱 The app flopped after you quit. Should have kept your job.")
+				end
+			end,
+		},
+		{
+			text = "Keep day job, grow it slowly",
+			effects = {},
+			feedText = "You're playing it safe while building...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.50 then
+					state.Money = (state.Money or 0) + math.random(5000, 20000)
+					state:ModifyStat("Happiness", 8)
+					state.Flags = state.Flags or {}
+					state.Flags.side_income = true
+					state:AddFeed("📱 Nice side income! Best of both worlds!")
+				else
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("📱 Hard to balance both. App growing slowly.")
+				end
+			end,
+		},
+		{ text = "Sell the project now", effects = { Money = 10000, Happiness = 8 }, feedText = "Cashed out while it was hot! Nice exit!" },
+	},
+},
+
+-- MEDICAL FIELD
+{
+	id = "medical_code_blue",
+	title = "Code Blue",
+	emoji = "🏥",
+	text = "A patient is coding! Life or death moment.",
+	question = "You're there. What do you do?",
+	minAge = 24, maxAge = 65,
+	baseChance = 0.4,
+	cooldown = 3,
+	requiresJob = true,
+	requiresJobCategory = "medical",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_medical",
+	tags = { "medical", "emergency", "life_death" },
+	
+	-- CRITICAL FIX: Random patient outcome - you don't choose if they live
+	choices = {
+		{
+			text = "Jump in and help",
+			effects = {},
+			feedText = "You rushed to help...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				local successChance = 0.50 + (smarts / 200)
+				if roll < successChance then
+					state:ModifyStat("Happiness", 12)
+					state:ModifyStat("Smarts", 3)
+					state.Flags = state.Flags or {}
+					state.Flags.saved_a_life = true
+					state:AddFeed("🏥 Patient stabilized! You helped save a life!")
+				elseif roll < successChance + 0.25 then
+					state:ModifyStat("Happiness", -5)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🏥 Patient didn't make it. You did everything you could.")
+				else
+					state:ModifyStat("Happiness", -10)
+					state:ModifyStat("Health", -3)
+					state.Flags = state.Flags or {}
+					state.Flags.patient_loss_trauma = true
+					state:AddFeed("🏥 Lost the patient. This weighs heavy on you.")
+				end
+			end,
+		},
+		{
+			text = "Call for backup - follow protocol",
+			effects = {},
+			feedText = "You followed protocol...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					state:ModifyStat("Happiness", 6)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🏥 Team handled it. Patient made it. Protocol works.")
+				else
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed("🏥 Did what you could. Sometimes outcomes aren't good.")
+				end
+			end,
+		},
+		{
+			text = "Freeze - this is overwhelming",
+			effects = { Happiness = -8, Health = -3 },
+			setFlags = { medical_anxiety = true },
+			feedText = "You froze. Someone else stepped in. You feel terrible.",
+		},
+	},
+},
+{
+	id = "medical_malpractice_fear",
+	title = "Malpractice Concern",
+	emoji = "⚖️",
+	text = "A patient's family is threatening to sue over a bad outcome that wasn't your fault.",
+	question = "How do you handle this?",
+	minAge = 26, maxAge = 65,
+	baseChance = 0.2,
+	cooldown = 5,
+	requiresJob = true,
+	requiresJobCategory = "medical",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_medical",
+	tags = { "medical", "legal", "malpractice" },
+	
+	choices = {
+		{
+			text = "Document everything meticulously",
+			effects = { Smarts = 3, Happiness = -3 },
+			feedText = "You covered your bases with documentation...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.75 then
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("⚖️ Documentation saved you. Case dismissed!")
+				else
+					state.Money = math.max(0, (state.Money or 0) - 5000)
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("⚖️ Settled out of court. Insurance covered most but it stings.")
+				end
+			end,
+		},
+		{ text = "Let legal handle it", effects = { Happiness = -4 }, feedText = "Out of your hands. The anxiety is the worst part." },
+		{ text = "Consider leaving medicine", effects = { Happiness = -10 }, setFlags = { career_doubt = true }, feedText = "Is this worth the stress anymore?" },
+	},
+},
+
+-- TRADES & MANUAL LABOR
+{
+	id = "trades_worksite_injury",
+	title = "Worksite Accident",
+	emoji = "🔧",
+	text = "Someone got hurt on the job site today.",
+	question = "How do you respond?",
+	minAge = 18, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 4,
+	requiresJob = true,
+	requiresJobCategory = "trades",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_trades",
+	tags = { "trades", "safety", "injury" },
+	
+	-- CRITICAL FIX: Random injury severity - player doesn't pick who got hurt or how bad
+	choices = {
+		{
+			text = "Help immediately and call medics",
+			effects = {},
+			feedText = "You rushed to help...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.25 then
+					-- It was you who got hurt
+					state:ModifyStat("Health", -15)
+					state:ModifyStat("Happiness", -8)
+					state.Money = math.max(0, (state.Money or 0) - 500)
+					state:AddFeed("🔧 Turns out YOU were the one who got hurt. Out for a while.")
+				elseif roll < 0.60 then
+					-- Minor injury to coworker
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("🔧 Minor injury. Quick first aid. Back to work soon.")
+				else
+					-- Serious injury to coworker
+					state:ModifyStat("Happiness", -5)
+					state.Flags = state.Flags or {}
+					state.Flags.witnessed_injury = true
+					state:AddFeed("🔧 Serious injury. Ambulance came. Sobering day.")
+				end
+			end,
+		},
+		{
+			text = "Call for safety meeting",
+			effects = { Smarts = 2, Happiness = 2 },
+			setFlags = { safety_advocate = true },
+			feedText = "You pushed for better safety protocols.",
+		},
+		{
+			text = "Document for workers comp",
+			effects = { Smarts = 3 },
+			feedText = "Making sure everyone's covered properly.",
+		},
+	},
+},
+{
+	id = "trades_big_contract",
+	title = "Big Contract Opportunity",
+	emoji = "📋",
+	text = "A major client wants to hire you for a big project. Could be very lucrative.",
+	question = "Do you take it on?",
+	minAge = 22, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 4,
+	requiresJob = true,
+	requiresJobCategory = "trades",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_trades",
+	tags = { "trades", "contract", "opportunity" },
+	
+	-- CRITICAL FIX: Random contract outcome
+	choices = {
+		{
+			text = "Take the contract!",
+			effects = {},
+			feedText = "You took on the big job...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local health = (state.Stats and state.Stats.Health) or 50
+				local roll = math.random()
+				local successChance = 0.45 + (smarts / 200) + (health / 300)
+				if roll < successChance then
+					state.Money = (state.Money or 0) + math.random(5000, 15000)
+					state:ModifyStat("Happiness", 12)
+					state:ModifyStat("Health", -3)
+					state.Flags = state.Flags or {}
+					state.Flags.reputation_builder = true
+					state:AddFeed("📋 Nailed it! Huge payout and more jobs coming in!")
+				elseif roll < successChance + 0.25 then
+					state.Money = (state.Money or 0) + math.random(2000, 5000)
+					state:ModifyStat("Happiness", 3)
+					state:ModifyStat("Health", -5)
+					state:AddFeed("📋 Finished but some issues. Got paid, learned lessons.")
+				else
+					state.Money = math.max(0, (state.Money or 0) - 2000)
+					state:ModifyStat("Happiness", -10)
+					state:ModifyStat("Health", -5)
+					state.Flags = state.Flags or {}
+					state.Flags.contract_failure = true
+					state:AddFeed("📋 Disaster. Project went wrong. Out of pocket to fix it.")
+				end
+			end,
+		},
+		{ text = "Pass - too risky", effects = { Happiness = 2 }, feedText = "Played it safe. Stability has value." },
+		{ text = "Negotiate better terms first", effects = { Smarts = 2, Money = 1000 }, feedText = "Got better payment terms before starting. Smart!" },
+	},
+},
+
+-- EDUCATION
+{
+	id = "education_problem_student",
+	title = "Problem Student",
+	emoji = "👨‍🏫",
+	text = "A student is constantly disruptive and failing. But you sense there's something deeper going on.",
+	question = "How do you handle this?",
+	minAge = 24, maxAge = 65,
+	baseChance = 0.4,
+	cooldown = 3,
+	requiresJob = true,
+	requiresJobCategory = "education",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_education",
+	tags = { "education", "student", "challenge" },
+	
+	-- CRITICAL FIX: Random outcome based on approach
+	choices = {
+		{
+			text = "Take extra time to connect with them",
+			effects = {},
+			feedText = "You reached out to the struggling student...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				local successChance = 0.50 + (smarts / 200)
+				if roll < successChance then
+					state:ModifyStat("Happiness", 15)
+					state:ModifyStat("Smarts", 2)
+					state.Flags = state.Flags or {}
+					state.Flags.made_a_difference = true
+					state:AddFeed("👨‍🏫 Breakthrough! The student turned around. This is why you teach!")
+				elseif roll < successChance + 0.30 then
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("👨‍🏫 Some progress. Small wins matter in education.")
+				else
+					state:ModifyStat("Happiness", -3)
+					state:ModifyStat("Health", -2)
+					state:AddFeed("👨‍🏫 Despite your efforts, the student dropped out. Heartbreaking.")
+				end
+			end,
+		},
+		{ text = "Follow standard discipline procedures", effects = { Smarts = 1 }, feedText = "By the book. Some situations are beyond your control." },
+		{ text = "Refer to counseling services", effects = { Happiness = 2, Smarts = 2 }, feedText = "Got the right professionals involved. Smart approach." },
+		{ text = "Focus energy on students who want to learn", effects = { Happiness = 2 }, feedText = "You can't save everyone. Harsh but realistic." },
+	},
+},
+{
+	id = "education_parent_confrontation",
+	title = "Angry Parent",
+	emoji = "😠",
+	text = "A parent is furious about their child's grade. They're demanding you change it.",
+	question = "How do you respond?",
+	minAge = 24, maxAge = 65,
+	baseChance = 0.4,
+	cooldown = 2,
+	requiresJob = true,
+	requiresJobCategory = "education",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_education",
+	tags = { "education", "parent", "conflict" },
+	
+	choices = {
+		{
+			text = "Hold firm - the grade is earned",
+			effects = {},
+			feedText = "You stood by your assessment...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					state:ModifyStat("Happiness", 4)
+					state:ModifyStat("Smarts", 2)
+					state.Flags = state.Flags or {}
+					state.Flags.principled_teacher = true
+					state:AddFeed("😠 Parent backed down. Your principal supported you!")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("😠 Parent went to administration. Stressful but you stood your ground.")
+				end
+			end,
+		},
+		{ text = "Offer extra credit opportunity", effects = { Happiness = 3 }, feedText = "Diplomatic solution. Everyone saves face." },
+		{ text = "Cave and change the grade", effects = { Happiness = -8, Smarts = -2 }, setFlags = { pushover = true }, feedText = "You compromised your integrity. Feels awful." },
+		{ text = "Get administration involved", effects = { Happiness = 2 }, feedText = "Let the higher-ups handle it. That's what they're for." },
+	},
+},
+
+-- FINANCE
+{
+	id = "finance_ethical_dilemma",
+	title = "Ethical Gray Area",
+	emoji = "💰",
+	text = "Your firm wants you to sell a product that technically isn't illegal, but definitely isn't in clients' best interests.",
+	question = "What do you do?",
+	minAge = 24, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 5,
+	requiresJob = true,
+	requiresJobCategory = "finance",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_finance",
+	tags = { "finance", "ethics", "sales" },
+	
+	choices = {
+		{
+			text = "Refuse and put clients first",
+			effects = {},
+			feedText = "You refused the unethical sales...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.40 then
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.ethical_finance = true
+					state:AddFeed("💰 Management respected your stance. Integrity intact!")
+				elseif roll < 0.70 then
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("💰 They weren't happy but let it go. For now.")
+				else
+					state.Money = math.max(0, (state.Money or 0) - 2000)
+					state:ModifyStat("Happiness", -5)
+					state.Flags = state.Flags or {}
+					state.Flags.passed_over = true
+					state:AddFeed("💰 Passed over for promotion. Integrity has a cost.")
+				end
+			end,
+		},
+		{ text = "Play the game - hit targets", effects = { Money = 3000, Happiness = -5 }, setFlags = { sold_out = true }, feedText = "You made the sales. The bonus was nice. Your soul? Less so." },
+		{ text = "Document and report anonymously", effects = { Smarts = 2 }, setFlags = { whistleblower_potential = true }, feedText = "You're building a paper trail. Just in case." },
+		{ text = "Find a new firm with better values", effects = { Happiness = 5 }, setFlags = { job_hunting = true }, feedText = "Time to find a place that matches your ethics." },
+	},
+},
+
+-- CREATIVE/ENTERTAINMENT
+{
+	id = "creative_big_break",
+	title = "Big Break Opportunity",
+	emoji = "⭐",
+	text = "Someone important noticed your work! This could be your big break.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 55,
+	baseChance = 0.2,
+	cooldown = 5,
+	requiresJob = true,
+	requiresJobCategory = "creative",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_creative",
+	tags = { "creative", "opportunity", "fame" },
+	
+	-- CRITICAL FIX: Random big break outcome
+	choices = {
+		{
+			text = "Go all in - this is the moment!",
+			effects = {},
+			feedText = "You seized the opportunity...",
+			onResolve = function(state)
+				local looks = (state.Stats and state.Stats.Looks) or 50
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				local successChance = 0.30 + (looks / 200) + (smarts / 300)
+				if roll < successChance * 0.5 then
+					-- Major success
+					state.Money = (state.Money or 0) + math.random(20000, 50000)
+					state:ModifyStat("Happiness", 20)
+					state:ModifyStat("Looks", 3)
+					state.Flags = state.Flags or {}
+					state.Flags.famous = true
+					state.Flags.breakthrough_artist = true
+					state:AddFeed("⭐ BREAKTHROUGH! You're getting recognized everywhere!")
+				elseif roll < successChance then
+					-- Moderate success
+					state.Money = (state.Money or 0) + math.random(5000, 15000)
+					state:ModifyStat("Happiness", 12)
+					state.Flags = state.Flags or {}
+					state.Flags.rising_star = true
+					state:AddFeed("⭐ The opportunity paid off! Career momentum!")
+				elseif roll < 0.75 then
+					-- Didn't pan out
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("⭐ The 'big break' fizzled. Back to grinding.")
+				else
+					-- Disaster
+					state:ModifyStat("Happiness", -10)
+					state.Flags = state.Flags or {}
+					state.Flags.reputation_damaged = true
+					state:AddFeed("⭐ Bombed hard. Your reputation took a hit.")
+				end
+			end,
+		},
+		{ text = "Play it cool - don't seem desperate", effects = { Happiness = 3, Smarts = 2 }, feedText = "You stayed composed. Playing the long game." },
+		{ text = "Be authentic - take it or leave it", effects = { Happiness = 5 }, setFlags = { authentic = true }, feedText = "You were yourself. If it works, it works." },
+	},
+},
+{
+	id = "creative_creative_block",
+	title = "Creative Block",
+	emoji = "🎨",
+	text = "You've hit a wall. The creativity just isn't flowing.",
+	question = "How do you push through?",
+	minAge = 18, maxAge = 65,
+	baseChance = 0.5,
+	cooldown = 2,
+	requiresJob = true,
+	requiresJobCategory = "creative",
+	blockedByFlags = { in_prison = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_creative",
+	tags = { "creative", "block", "struggle" },
+	
+	choices = {
+		{
+			text = "Force yourself to create anyway",
+			effects = {},
+			feedText = "You pushed through the block...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.40 then
+					state:ModifyStat("Smarts", 3)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🎨 Breakthrough! Some of your best work came from the struggle!")
+				else
+					state:ModifyStat("Happiness", -4)
+					state:ModifyStat("Health", -2)
+					state:AddFeed("🎨 Mediocre output. The block won this round.")
+				end
+			end,
+		},
+		{ text = "Take a break and recharge", effects = { Happiness = 4, Health = 3 }, feedText = "Sometimes you need to step away to come back stronger." },
+		{ text = "Seek inspiration from others", effects = { Smarts = 2, Happiness = 3 }, feedText = "Consumed art, music, nature. Fresh ideas emerging!" },
+		{ text = "Change your environment", effects = { Happiness = 3, Money = -100 }, feedText = "New coffee shop, new ideas. Change of scenery helped!" },
+	},
+},
+
+-- GENERAL CAREER EVENTS
+{
+	id = "career_networking_event",
+	title = "Networking Event",
+	emoji = "🤝",
+	text = "There's a big industry networking event. Your boss expects you to attend.",
+	question = "How do you approach it?",
+	minAge = 22, maxAge = 60,
+	baseChance = 0.4,
+	cooldown = 3,
+	requiresJob = true,
+	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_networking",
+	tags = { "networking", "social", "career" },
+	
+	-- CRITICAL FIX: Random networking outcome
+	choices = {
+		{
+			text = "Work the room confidently",
+			effects = {},
+			feedText = "You networked like a pro...",
+			onResolve = function(state)
+				local looks = (state.Stats and state.Stats.Looks) or 50
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				local successChance = 0.40 + (looks / 200) + (smarts / 300)
+				if roll < successChance then
+					state:ModifyStat("Happiness", 8)
+					state:ModifyStat("Smarts", 2)
+					state.Money = (state.Money or 0) + 500
+					state.Flags = state.Flags or {}
+					state.Flags.strong_network = true
+					state:AddFeed("🤝 Made great connections! New opportunities incoming!")
+				elseif roll < successChance + 0.30 then
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("🤝 Met some people. Exchanged cards. We'll see.")
+				else
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("🤝 Awkward conversations. Networking isn't your strength.")
+				end
+			end,
+		},
+		{ text = "Stick close to people you know", effects = { Happiness = 2 }, feedText = "Comfort zone intact. Some light networking." },
+		{ text = "Leave early - hate these things", effects = { Happiness = 3, Smarts = -1 }, feedText = "You escaped! But missed opportunities." },
+		{ text = "Get too drunk at the open bar", effects = { Happiness = 4, Health = -2 }, setFlags = { embarrassed_self = true }, feedText = "You... might have said some things. Monday will be awkward." },
+	},
+},
+{
+	id = "career_sabbatical_consideration",
+	title = "Sabbatical Offer",
+	emoji = "🏖️",
+	text = "Your company offers a sabbatical program. You could take 3 months off, unpaid.",
+	question = "Do you take it?",
+	minAge = 30, maxAge = 55,
+	baseChance = 0.2,
+	cooldown = 6,
+	requiresJob = true,
+	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_decision",
+	tags = { "sabbatical", "break", "career" },
+	
+	-- CRITICAL FIX: Check if player can afford sabbatical
+	eligibility = function(state)
+		local money = state.Money or 0
+		if money < 3000 then
+			return false, "Can't afford 3 months without income"
+		end
+		return true
+	end,
+	
+	choices = {
+		{
+			text = "Take the sabbatical!",
+			effects = {},
+			feedText = "You took time off to recharge...",
+			onResolve = function(state)
+				local money = state.Money or 0
+				local cost = math.min(5000, money * 0.5)
+				state.Money = money - cost
+				state:ModifyStat("Happiness", 15)
+				state:ModifyStat("Health", 10)
+				state.Flags = state.Flags or {}
+				state.Flags.took_sabbatical = true
+				state.Flags.recharged = true
+				state:AddFeed(string.format("🏖️ Best 3 months of your life! Cost $%d but worth every penny.", math.floor(cost)))
+			end,
+		},
+		{ text = "Can't afford to not work", effects = { Happiness = -3 }, feedText = "Financial reality wins. Maybe someday." },
+		{ text = "Negotiate for paid sabbatical", effects = { Smarts = 2 }, feedText = "You pushed for paid time. They said they'd consider it." },
+	},
+},
+{
+	id = "career_raise_negotiation",
+	title = "Raise Negotiation",
+	emoji = "💵",
+	text = "Review time. You deserve more money. Time to ask for it.",
+	question = "How do you approach the negotiation?",
+	minAge = 22, maxAge = 60,
+	baseChance = 0.4,
+	cooldown = 2,
+	requiresJob = true,
+	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+	
+	stage = STAGE,
+	ageBand = "working_age",
+	category = "career_money",
+	tags = { "raise", "negotiation", "salary" },
+	
+	-- CRITICAL FIX: Random raise outcome based on approach
+	choices = {
+		{
+			text = "Come prepared with accomplishments",
+			effects = {},
+			feedText = "You made your case with data...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				local successChance = 0.50 + (smarts / 200)
+				if roll < successChance then
+					local raise = math.random(2000, 8000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 40000) + raise
+					end
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed(string.format("💵 GOT THE RAISE! +$%d! Your prep paid off!", raise))
+				elseif roll < successChance + 0.25 then
+					local raise = math.random(500, 2000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 40000) + raise
+					end
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed(string.format("💵 Got a partial raise: +$%d. Something is better than nothing.", raise))
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("💵 Denied. 'Budget constraints.' Frustrating.")
+				end
+			end,
+		},
+		{
+			text = "Wing it and hope for the best",
+			effects = {},
+			feedText = "You asked without much preparation...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.25 then
+					local raise = math.random(1000, 4000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 40000) + raise
+					end
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed(string.format("💵 Lucky! They said yes! +$%d!", raise))
+				else
+					state:ModifyStat("Happiness", -3)
+					state:AddFeed("💵 They asked for justification. You didn't have it. No raise.")
+				end
+			end,
+		},
+		{ text = "Accept whatever they offer", effects = { Happiness = -2 }, feedText = "You took what was given. Probably left money on the table." },
+		{ text = "Threaten to leave if no raise", effects = {}, feedText = "Risky move...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.30 then
+					local raise = math.random(4000, 10000)
+					state.Money = (state.Money or 0) + raise
+					if state.CurrentJob then
+						state.CurrentJob.salary = (state.CurrentJob.salary or 40000) + raise
+					end
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed(string.format("💵 They caved! BIG raise: +$%d!", raise))
+				elseif roll < 0.60 then
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("💵 They called your bluff. No raise. Awkward now.")
+				else
+					state.Flags = state.Flags or {}
+					state.Flags.on_thin_ice = true
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("💵 They told you to go ahead and leave then. Yikes.")
 				end
 			end,
 		},

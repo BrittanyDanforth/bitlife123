@@ -59,8 +59,8 @@ local StageCategories = {
 	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street" }, -- Ages 13-17: Full teen experience + part-time work + street hustle entry
 	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 18-34: Peak career years + all career paths + assets
 	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 35-49: Established adult + all paths
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife
-	senior      = { "adult", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years (can own racing teams)
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife + early senior events
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years - senior events now loaded!
 }
 
 function LifeEvents.getLifeStage(age)
@@ -190,6 +190,7 @@ function LifeEvents.init()
 		{ name = "Childhood",     category = "childhood" },
 		{ name = "Teen",          category = "teen" },
 		{ name = "Adult",         category = "adult" },
+		{ name = "Senior",        category = "senior" },              -- NEW: Senior/retirement events (ages 60+)
 		{ name = "Career",        category = "career" },
 		{ name = "Relationships", category = "relationships" },
 		{ name = "Milestones",    category = "milestones" },

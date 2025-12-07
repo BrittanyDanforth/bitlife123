@@ -1217,6 +1217,786 @@ Teen.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EXPANDED TEEN EVENTS - MORE VARIETY AND DEPTH
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_part_time_struggle",
+		title = "Work-Life Balance",
+		emoji = "⏰",
+		text = "Your part-time job is interfering with school and social life.",
+		question = "How do you handle this?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresFlags = { has_teen_job = true },
+		
+		choices = {
+			{ text = "Quit the job - school comes first", effects = { Smarts = 3, Happiness = 4 }, setFlags = { has_teen_job = false }, feedText = "You quit to focus on what matters. Good choice." },
+			{ text = "Cut back hours", effects = { Happiness = 3, Money = -50 }, feedText = "Finding balance with fewer work hours." },
+			{ text = "Power through - need the money", effects = { Health = -3, Money = 100 }, setFlags = { workaholic = true }, feedText = "You're exhausted but the paycheck is worth it... maybe." },
+			{ text = "Switch to a flexible job", effects = { Happiness = 3, Money = 50 }, feedText = "Found something with better hours!" },
+		},
+	},
+	{
+		id = "teen_crush_confession",
+		title = "Confession Time",
+		emoji = "💌",
+		text = "You've been holding in your feelings for someone special. It's eating you up inside.",
+		question = "Do you finally confess?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresSingle = true,
+		
+		-- CRITICAL FIX: Random confession outcome
+		choices = {
+			{
+				text = "Go for it - tell them everything",
+				effects = {},
+				feedText = "You gathered your courage and confessed...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (looks / 200) + (happiness / 300)
+					if state.Flags and (state.Flags.popular or state.Flags.attractive) then
+						successChance = successChance + 0.15
+					end
+					if roll < successChance then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.romantically_active = true
+						state.Flags.dating = true
+						-- Create partner
+						state.Relationships = state.Relationships or {}
+						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
+						local names = isMale 
+							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
+							or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
+						local partnerName = names[math.random(1, #names)]
+						state.Relationships.partner = {
+							id = "partner",
+							name = partnerName,
+							type = "romantic",
+							role = isMale and "Boyfriend" or "Girlfriend",
+							relationship = 75,
+							age = state.Age or 15,
+							gender = isMale and "male" or "female",
+							alive = true,
+							metThrough = "school",
+						}
+						state:AddFeed(string.format("💌 They said they like you too! You're now dating %s!", partnerName))
+					elseif roll < successChance + 0.25 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💌 They were flattered but want to stay friends. Ouch, but not terrible.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💌 Rejected... hard. They weren't kind about it. That really hurt.")
+					end
+				end,
+			},
+			{
+				text = "Write them a letter instead",
+				effects = {},
+				feedText = "You wrote a heartfelt letter...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("💌 The letter worked! They thought it was so romantic!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💌 They appreciated the letter but aren't interested that way.")
+					else
+						state:ModifyStat("Happiness", -7)
+						state:AddFeed("💌 They showed the letter to their friends... Mortifying.")
+					end
+				end,
+			},
+			{ text = "Keep it inside - too risky", effects = { Happiness = -4 }, setFlags = { fear_of_rejection = true }, feedText = "You'll always wonder what could have been..." },
+			{ text = "Drop hints and see if they notice", effects = { Happiness = 2 }, feedText = "You're being subtle. Maybe too subtle?" },
+		},
+	},
+	{
+		id = "teen_essay_contest",
+		title = "Essay Contest",
+		emoji = "✍️",
+		text = "Your English teacher nominated you for a prestigious essay contest!",
+		question = "What topic do you write about?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresStats = { Smarts = { min = 55 } },
+		
+		-- CRITICAL FIX: Random essay contest outcome
+		choices = {
+			{
+				text = "A personal story about overcoming challenges",
+				effects = { Smarts = 3 },
+				feedText = "You poured your heart into a personal essay...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local winChance = 0.30 + (smarts / 200)
+					if state.Flags and (state.Flags.bookworm or state.Flags.creative) then
+						winChance = winChance + 0.15
+					end
+					if roll < winChance then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.essay_winner = true
+						state:AddFeed("✍️ You won first place! $500 prize and recognition!")
+					elseif roll < winChance + 0.30 then
+						state.Money = (state.Money or 0) + 100
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("✍️ Honorable mention! Nice recognition.")
+					else
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("✍️ Didn't win, but the writing practice was valuable.")
+					end
+				end,
+			},
+			{
+				text = "An opinion piece on a social issue",
+				effects = { Smarts = 3 },
+				feedText = "You wrote a passionate opinion piece...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.activist_writer = true
+						state:AddFeed("✍️ Your essay sparked conversation and won!")
+					elseif roll < 0.50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("✍️ Well-received but not a winner.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("✍️ Judges found it too controversial.")
+					end
+				end,
+			},
+			{ text = "A creative fiction piece", effects = { Smarts = 2, Happiness = 4 }, setFlags = { fiction_writer = true }, hintCareer = "creative", feedText = "You enjoyed writing a creative story!" },
+			{ text = "Skip the contest - too much pressure", effects = { Happiness = -2 }, feedText = "You passed on the opportunity." },
+		},
+	},
+	{
+		id = "teen_car_purchase_dream",
+		title = "Dream Car",
+		emoji = "🚗",
+		text = "You've been saving up and finally have enough to buy a cheap car!",
+		question = "What kind of car do you look for?",
+		minAge = 16, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresFlags = { has_license = true },
+		-- CRITICAL FIX: Check money requirement!
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 1500 then
+				return false, "Not enough money for a car"
+			end
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "Cheap beater - just needs to run",
+				effects = {},
+				feedText = "You found a cheap car...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 1500 then
+						state.Money = money - 1500
+						local roll = math.random()
+						if roll < 0.50 then
+							state:ModifyStat("Happiness", 10)
+							state.Flags = state.Flags or {}
+							state.Flags.has_car = true
+							state.Flags.owns_car = true
+							state:AddAsset("old_car", {
+								id = "old_car",
+								type = "vehicle",
+								name = "Beater Car",
+								value = 1500,
+								description = "Your first car! It runs... mostly.",
+							})
+							state:AddFeed("🚗 You bought your first car for $1,500! Freedom!")
+						else
+							state:ModifyStat("Happiness", 5)
+							state.Flags = state.Flags or {}
+							state.Flags.has_car = true
+							state.Flags.owns_car = true
+							state.Flags.car_problems = true
+							state:AddAsset("old_car", {
+								id = "old_car",
+								type = "vehicle",
+								name = "Beater Car",
+								value = 800,
+								description = "Your first car. Needs constant repairs.",
+							})
+							state:AddFeed("🚗 Your new car already has problems... but it's yours!")
+						end
+					else
+						state:AddFeed("🚗 Don't have enough money saved yet.")
+					end
+				end,
+			},
+			{
+				text = "Something reliable but boring",
+				effects = {},
+				feedText = "Looking for reliability...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.has_car = true
+						state.Flags.owns_car = true
+						state:AddAsset("reliable_car", {
+							id = "reliable_car",
+							type = "vehicle",
+							name = "Reliable Car",
+							value = 3000,
+							description = "Not flashy, but it works!",
+						})
+						state:AddFeed("🚗 You bought a reliable car for $3,000! Smart choice.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🚗 Good reliable cars are out of your budget.")
+					end
+				end,
+			},
+			{ text = "Keep saving for something better", effects = { Happiness = -2, Money = 200 }, feedText = "Patience. You want something nice." },
+			{ text = "Parents offer to help pay", effects = { Happiness = 6 }, setFlags = { parents_helped_with_car = true }, feedText = "Your parents chipped in! Family car incoming." },
+		},
+	},
+	{
+		id = "teen_band_start",
+		title = "Starting a Band",
+		emoji = "🎸",
+		text = "You and your friends want to start a band together!",
+		question = "What role do you play?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 5,
+		
+		choices = {
+			{ text = "Lead vocals", effects = { Happiness = 8, Looks = 3 }, setFlags = { band_vocalist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the face of the band! Time to practice your stage presence." },
+			{ text = "Guitar", effects = { Happiness = 7, Smarts = 2 }, setFlags = { band_guitarist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're shredding! Learning new riffs every day." },
+			{ text = "Drums", effects = { Happiness = 6, Health = 2 }, setFlags = { band_drummer = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the heartbeat of the band!" },
+			{ text = "Bass", effects = { Happiness = 5, Smarts = 2 }, setFlags = { band_bassist = true, in_band = true }, hintCareer = "entertainment", feedText = "The underrated hero. Holding down the groove!" },
+			{ text = "Manager/organizer instead", effects = { Smarts = 4, Money = 20 }, setFlags = { band_manager = true }, hintCareer = "business", feedText = "You're handling the business side. Smart move!" },
+		},
+	},
+	{
+		id = "teen_band_gig",
+		title = "First Gig",
+		emoji = "🎤",
+		text = "Your band got offered your first real gig at a local venue!",
+		question = "How does the performance go?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { in_band = true },
+		
+		-- CRITICAL FIX: Random gig outcome
+		choices = {
+			{
+				text = "Give it everything you've got",
+				effects = {},
+				feedText = "You took the stage and played your hearts out...",
+				onResolve = function(state)
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					local successChance = 0.40 + (happiness / 200) + (looks / 300)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Looks", 3)
+						state.Money = (state.Money or 0) + 150
+						state.Flags = state.Flags or {}
+						state.Flags.successful_musician = true
+						state:AddFeed("🎤 AMAZING show! The crowd loved you! You got paid $150!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + 50
+						state:AddFeed("🎤 Decent set. Some people enjoyed it!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎤 Rough gig. Technical difficulties and missed notes. The crowd was lukewarm.")
+					end
+				end,
+			},
+			{
+				text = "Play it safe with familiar songs",
+				effects = {},
+				feedText = "You stuck to what you know...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 6)
+						state.Money = (state.Money or 0) + 75
+						state:AddFeed("🎤 Solid performance! Safe but good.")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🎤 Nothing special, but you got through it.")
+					end
+				end,
+			},
+			{ text = "Get stage fright and bail", effects = { Happiness = -10 }, setFlags = { stage_fright = true, in_band = false }, feedText = "You couldn't do it. The band might not forgive you." },
+		},
+	},
+	{
+		id = "teen_social_media_drama",
+		title = "Online Drama",
+		emoji = "💬",
+		text = "There's major drama happening in your social circle online!",
+		question = "What's your role in all this?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		choices = {
+			{ text = "Stay out of it completely", effects = { Happiness = 3 }, setFlags = { avoids_drama = true }, feedText = "Not your circus, not your monkeys. Smart." },
+			{ text = "Try to mediate and help", effects = { Happiness = 2, Smarts = 2 }, setFlags = { peacemaker = true }, feedText = "You tried to calm things down. Some appreciated it." },
+			{ text = "Take sides and defend a friend", effects = { Happiness = -2 }, setFlags = { loyal_friend = true }, feedText = "You backed up your friend. Made some enemies though." },
+			{ text = "Fuel the fire for entertainment", effects = { Happiness = 4 }, setFlags = { drama_starter = true }, feedText = "You made it worse... but it was entertaining." },
+		},
+	},
+	{
+		id = "teen_parent_conflict",
+		title = "Parent Problems",
+		emoji = "😤",
+		text = "You and your parents are fighting about something big.",
+		question = "What's the conflict about?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		choices = {
+			{ text = "Curfew and freedoms", effects = { Happiness = -4 }, setFlags = { curfew_fighter = true }, feedText = "You want more independence. They want to keep you safe." },
+			{ text = "Grades and school performance", effects = { Happiness = -3, Smarts = 2 }, feedText = "The lecture about grades was not fun." },
+			{ text = "Choice of friends", effects = { Happiness = -5 }, setFlags = { rebel = true }, feedText = "They don't approve of your friends. You don't care." },
+			{ text = "Screen time and phone usage", effects = { Happiness = -3 }, feedText = "Put down the phone, they said. For hours." },
+			{ text = "We actually resolved it like adults", effects = { Happiness = 3, Smarts = 2 }, setFlags = { mature_communicator = true }, feedText = "You talked it out. Growth!" },
+		},
+	},
+	{
+		id = "teen_anxiety_attack",
+		title = "Anxiety Strikes",
+		emoji = "😰",
+		text = "You're having an anxiety attack. Heart racing, can't breathe...",
+		question = "How do you cope?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 3,
+		
+		choices = {
+			{ text = "Practice breathing techniques", effects = { Happiness = 3, Health = 2 }, setFlags = { manages_anxiety = true }, feedText = "Deep breaths helped calm you down." },
+			{ text = "Call someone you trust", effects = { Happiness = 4 }, setFlags = { reaches_out = true }, feedText = "Talking to someone helped you feel less alone." },
+			{ text = "Hide it and push through", effects = { Happiness = -5, Health = -3 }, setFlags = { hides_struggles = true }, feedText = "You suffered in silence. Not healthy." },
+			{ text = "Leave the situation causing it", effects = { Happiness = 2 }, feedText = "Removing yourself from the trigger helped." },
+			{ text = "Talk to a professional", effects = { Happiness = 5, Health = 4, Money = -50 }, setFlags = { gets_help = true }, feedText = "Getting professional help was the right call." },
+		},
+	},
+	{
+		id = "teen_acne_struggle",
+		title = "Skin Problems",
+		emoji = "😣",
+		text = "Puberty hit your skin hard. Breakouts are ruining your confidence.",
+		question = "How do you deal with it?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "See a dermatologist",
+				effects = { Money = -80 },
+				feedText = "You got professional treatment...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Looks", 5)
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("😊 The treatment worked! Your skin is clearing up!")
+					else
+						state:ModifyStat("Looks", 2)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("😊 Slow progress, but it's getting better.")
+					end
+				end,
+			},
+			{ text = "Try over-the-counter products", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products." },
+			{ text = "Accept it as part of being a teen", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
+			{ text = "Cover it with makeup", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!" },
+		},
+	},
+	{
+		id = "teen_first_kiss",
+		title = "First Kiss",
+		emoji = "💋",
+		text = "There might be a chance for your first kiss...",
+		question = "How does it go?",
+		minAge = 13, maxAge = 17,
+		oneTime = true,
+		baseChance = 0.4,
+		
+		-- CRITICAL FIX: Random kiss outcome
+		choices = {
+			{
+				text = "Go for it!",
+				effects = {},
+				feedText = "You leaned in...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.had_first_kiss = true
+						state.Flags.romantic = true
+						state:AddFeed("💋 Your first kiss! Butterflies everywhere! It was perfect.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.had_first_kiss = true
+						state:AddFeed("💋 First kiss done! A little awkward but still memorable.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💋 They turned away. Rejected. Ouch.")
+					end
+				end,
+			},
+			{ text = "Wait for them to make the move", effects = { }, feedText = "You waited nervously...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.had_first_kiss = true
+						state:AddFeed("💋 They kissed you! Your first kiss!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💋 They didn't make a move. The moment passed.")
+					end
+				end,
+			},
+			{ text = "Chicken out", effects = { Happiness = -4 }, setFlags = { missed_opportunity = true }, feedText = "You couldn't do it. The moment was lost." },
+		},
+	},
+	{
+		id = "teen_hobby_discovery",
+		title = "New Interest",
+		emoji = "✨",
+		text = "You've discovered a new hobby that really excites you!",
+		question = "What hobby captured your interest?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 3,
+		
+		choices = {
+			{ text = "Photography", effects = { Happiness = 5, Smarts = 2 }, setFlags = { photographer = true }, hintCareer = "creative", feedText = "You're seeing the world through a new lens!" },
+			{ text = "Coding/Programming", effects = { Smarts = 6, Happiness = 4 }, setFlags = { codes = true }, hintCareer = "tech", feedText = "Building apps and websites is addictive!" },
+			{ text = "Fitness/Working out", effects = { Health = 6, Happiness = 4, Looks = 2 }, setFlags = { fitness_enthusiast = true }, feedText = "Getting stronger every day!" },
+			{ text = "Art/Drawing", effects = { Happiness = 5, Looks = 2 }, setFlags = { artist = true }, hintCareer = "creative", feedText = "You're creating amazing art!" },
+			{ text = "Writing stories", effects = { Smarts = 4, Happiness = 4 }, setFlags = { writer = true }, hintCareer = "creative", feedText = "Worlds are being born in your imagination!" },
+			{ text = "Playing an instrument", effects = { Smarts = 3, Happiness = 5 }, setFlags = { musician = true }, hintCareer = "entertainment", feedText = "Making music is your new passion!" },
+		},
+	},
+	{
+		id = "teen_bullying_witness",
+		title = "Witnessing Bullying",
+		emoji = "👊",
+		text = "You see someone getting bullied at school.",
+		question = "What do you do?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 3,
+		
+		choices = {
+			{ text = "Stand up for the victim", effects = { Happiness = 5 }, setFlags = { stands_up_to_bullies = true }, feedText = "You defended them. It took courage." },
+			{ text = "Report it to a teacher", effects = { Smarts = 2 }, setFlags = { reports_wrongdoing = true }, feedText = "You told an adult. They handled it." },
+			{ text = "Stay out of it", effects = { Happiness = -4 }, setFlags = { bystander = true }, feedText = "You did nothing. That guilt stays." },
+			{ text = "Befriend the victim later", effects = { Happiness = 3 }, setFlags = { kind = true }, feedText = "You checked on them afterward. They appreciated it." },
+			{ text = "Join in (terrible choice)", effects = { Happiness = -8 }, setFlags = { bully = true }, feedText = "You became part of the problem. Shameful." },
+		},
+	},
+	{
+		id = "teen_college_rejection",
+		title = "College Decision",
+		emoji = "📬",
+		text = "You got a response from a college you applied to!",
+		question = "What does the letter say?",
+		minAge = 17, maxAge = 18,
+		baseChance = 0.6,
+		cooldown = 2,
+		requiresFlags = { college_bound = true },
+		
+		-- CRITICAL FIX: Random college decision outcome based on stats!
+		choices = {
+			{
+				text = "Open the letter from your dream school",
+				effects = {},
+				feedText = "You nervously opened the envelope...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local acceptChance = 0.25 + (smarts / 150)
+					if state.Flags and state.Flags.academic_path then acceptChance = acceptChance + 0.15 end
+					if state.Flags and state.Flags.scholarship_winner then acceptChance = acceptChance + 0.10 end
+					if state.Flags and state.Flags.ivy_aspirations then acceptChance = acceptChance - 0.10 end
+					
+					if roll < acceptChance then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.accepted_dream_school = true
+						state:AddFeed("📬 ACCEPTED to your dream school!! This is incredible!")
+					elseif roll < acceptChance + 0.25 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.waitlisted = true
+						state:AddFeed("📬 Waitlisted. There's still hope!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📬 Rejected. It stings. But there are other options.")
+					end
+				end,
+			},
+			{
+				text = "Open the safety school letter",
+				effects = {},
+				feedText = "The backup plan...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.85 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.accepted_safety_school = true
+						state:AddFeed("📬 Accepted to your safety school! Good backup.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📬 Even the safety school rejected you. Time to reconsider plans.")
+					end
+				end,
+			},
+			{ text = "Too scared to open it yet", effects = { Happiness = -3 }, feedText = "The unopened letter is haunting you." },
+		},
+	},
+	{
+		id = "teen_volunteer_impact",
+		title = "Making a Difference",
+		emoji = "🌟",
+		text = "Your volunteer work is really making an impact in the community!",
+		question = "How do you feel about your contribution?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { volunteer = true },
+		
+		choices = {
+			{ text = "Inspired to do even more", effects = { Happiness = 8 }, setFlags = { dedicated_volunteer = true }, feedText = "You're making a real difference!" },
+			{ text = "Proud but it's a lot of work", effects = { Happiness = 4, Health = -2 }, feedText = "Rewarding but exhausting." },
+			{ text = "Considering a career helping others", effects = { Happiness = 6, Smarts = 2 }, setFlags = { wants_to_help = true }, hintCareer = "medical", feedText = "Maybe this is your calling?" },
+			{ text = "Need a break from volunteering", effects = { Happiness = 2, Health = 2 }, setFlags = { volunteer = false }, feedText = "Stepping back for self-care." },
+		},
+	},
+	{
+		id = "teen_sports_injury",
+		title = "Sports Injury",
+		emoji = "🤕",
+		text = "You got injured during practice or a game!",
+		question = "How serious is it?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresFlags = { varsity_athlete = true },
+		
+		-- CRITICAL FIX: Random injury severity
+		choices = {
+			{
+				text = "Wait for the doctor's diagnosis",
+				effects = {},
+				feedText = "The medical staff examines you...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Health", -3)
+						state:AddFeed("🤕 Minor sprain. Rest for a week and you'll be fine.")
+					elseif roll < 0.75 then
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.injured = true
+						state:AddFeed("🤕 Moderate injury. Out for the rest of the season.")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.seriously_injured = true
+						state.Flags.varsity_athlete = nil
+						state:AddFeed("🤕 Serious injury. Your athletic career might be affected.")
+					end
+				end,
+			},
+			{ text = "Try to play through the pain", effects = { Health = -10, Happiness = -3 }, setFlags = { plays_through_pain = true }, feedText = "You made it worse. Should have stopped." },
+			{ text = "Rest immediately and recover", effects = { Health = -5, Smarts = 2 }, feedText = "Smart decision. Rest will help." },
+		},
+	},
+	{
+		id = "teen_music_taste",
+		title = "Musical Identity",
+		emoji = "🎵",
+		text = "You've really developed your musical taste!",
+		question = "What kind of music defines you?",
+		minAge = 13, maxAge = 17,
+		oneTime = true,
+		baseChance = 0.6,
+		
+		choices = {
+			{ text = "Hip-hop and rap", effects = { Happiness = 4 }, setFlags = { likes_hiphop = true }, feedText = "The beats and lyrics speak to you." },
+			{ text = "Rock and alternative", effects = { Happiness = 4 }, setFlags = { likes_rock = true }, feedText = "Guitar riffs are your thing." },
+			{ text = "Pop music", effects = { Happiness = 4 }, setFlags = { likes_pop = true }, feedText = "Catchy hooks and big productions!" },
+			{ text = "Electronic and EDM", effects = { Happiness = 4 }, setFlags = { likes_edm = true }, feedText = "The bass drops hit different." },
+			{ text = "Everything - can't pick just one", effects = { Happiness = 5, Smarts = 1 }, setFlags = { eclectic_taste = true }, feedText = "Music is music. You appreciate it all." },
+		},
+	},
+	{
+		id = "teen_internet_argument",
+		title = "Internet Debate",
+		emoji = "💻",
+		text = "You're in a heated argument with someone online.",
+		question = "How do you handle it?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		choices = {
+			{ text = "Keep arguing until you 'win'", effects = { Happiness = -4, Health = -2 }, setFlags = { internet_warrior = true }, feedText = "You spent 3 hours on this. What did you win? Nothing." },
+			{ text = "Block and move on", effects = { Happiness = 3 }, setFlags = { knows_when_to_stop = true }, feedText = "Not worth your energy. Smart." },
+			{ text = "Actually have a productive conversation", effects = { Happiness = 4, Smarts = 3 }, setFlags = { good_communicator = true }, feedText = "Rare achievement: civil internet discourse!" },
+			{ text = "Let friends handle it", effects = { Happiness = 2 }, feedText = "Your friends jumped in. Chaotic but entertaining." },
+		},
+	},
+	{
+		id = "teen_fashion_evolution",
+		title = "Style Evolution",
+		emoji = "👕",
+		text = "You're experimenting with your personal style!",
+		question = "What style are you going for?",
+		minAge = 13, maxAge = 17,
+		oneTime = true,
+		baseChance = 0.5,
+		
+		choices = {
+			{ text = "Trendy and fashion-forward", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!" },
+			{ text = "Athletic and casual", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
+			{ text = "Alternative and unique", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
+			{ text = "Classic and understated", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
+			{ text = "Whatever's clean", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
+		},
+	},
+	{
+		id = "teen_sibling_dynamic",
+		title = "Sibling Situation",
+		emoji = "👫",
+		text = "Your relationship with your sibling is evolving as you both get older.",
+		question = "How is it going?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { has_younger_sibling = true },
+		
+		choices = {
+			{ text = "We're actually getting closer", effects = { Happiness = 6 }, setFlags = { close_with_sibling = true }, feedText = "The sibling bond is strengthening!" },
+			{ text = "Constant fighting", effects = { Happiness = -4 }, setFlags = { sibling_rivalry = true }, feedText = "Can't be in the same room without drama." },
+			{ text = "Teaching them things", effects = { Happiness = 4, Smarts = 2 }, setFlags = { mentors_sibling = true }, feedText = "You're passing down your wisdom!" },
+			{ text = "We just ignore each other", effects = { Happiness = 1 }, feedText = "Coexisting peacefully through avoidance." },
+		},
+	},
+	{
+		id = "teen_late_night_studying",
+		title = "All-Nighter",
+		emoji = "🌙",
+		text = "You have a huge test tomorrow and you're not prepared.",
+		question = "How do you approach tonight?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		-- CRITICAL FIX: Random test outcome based on study approach
+		choices = {
+			{
+				text = "Pull an all-nighter studying",
+				effects = { Health = -5 },
+				feedText = "You stayed up all night cramming...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🌙 The all-nighter paid off! You aced the test!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🌙 Passed, but barely. So tired.")
+					else
+						state:ModifyStat("Smarts", -2)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌙 Fell asleep during the test. The all-nighter backfired.")
+					end
+				end,
+			},
+			{
+				text = "Study until midnight then sleep",
+				effects = { Health = -2 },
+				feedText = "Balanced approach...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local passChance = 0.50 + (smarts / 150)
+					if roll < passChance then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🌙 Rested brain worked better! Good grade!")
+					else
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("🌙 Could have studied more, but you passed.")
+					end
+				end,
+			},
+			{
+				text = "Wing it - how bad could it be?",
+				effects = {},
+				feedText = "You showed up hoping for the best...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if smarts > 70 and roll < 0.40 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🌙 Your natural smarts carried you! Somehow did well!")
+					elseif roll < 0.25 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🌙 Got lucky with easy questions!")
+					else
+						state:ModifyStat("Smarts", -3)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🌙 Bombed the test. Should have studied.")
+					end
+				end,
+			},
+			{ text = "Accept the L", effects = { Smarts = -2, Happiness = -3 }, feedText = "You didn't even try. That zero hurts." },
+		},
+	},
 }
 
 return Teen

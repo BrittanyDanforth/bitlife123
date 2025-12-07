@@ -1435,6 +1435,1365 @@ Childhood.events = {
 			{ text = "Get scared of the thunder", effects = { Happiness = -3 }, setFlags = { fears_storms = true }, feedText = "The thunder was really scary!" },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EXTENDED CHILDHOOD EVENTS - MORE VARIETY AND DEPTH
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "learning_to_read",
+		title = "Learning to Read",
+		emoji = "📖",
+		text = "You're learning to read! The letters are starting to make sense.",
+		question = "How is your reading progress?",
+		minAge = 4, maxAge = 6,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "development",
+		milestoneKey = "CHILD_LEARNED_READ",
+		tags = { "literacy", "development", "skills" },
+		
+		choices = {
+			{
+				text = "Reading comes naturally!",
+				effects = {},
+				feedText = "You picked up a book...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (smarts / 150)
+					if roll < successChance then
+						state:ModifyStat("Smarts", 8)
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.advanced_reader = true
+						state.Flags.can_read = true
+						state:AddFeed("📖 You're reading above your grade level! Natural talent!")
+					elseif roll < successChance + 0.35 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.can_read = true
+						state:AddFeed("📖 You learned to read! A whole world of books opens up!")
+					else
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.can_read = true
+						state:AddFeed("📖 Reading is coming along. Practice makes perfect!")
+					end
+				end,
+			},
+			{
+				text = "It's a bit of a struggle",
+				effects = {},
+				feedText = "You're working hard at reading...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.persistent = true
+						state.Flags.can_read = true
+						state:AddFeed("📖 Hard work paid off! You're reading now!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.can_read = true
+						state:AddFeed("📖 Still learning, but you're getting there!")
+					else
+						state:ModifyStat("Smarts", 1)
+						state:ModifyStat("Happiness", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.reading_difficulty = true
+						state:AddFeed("📖 Reading is really hard for you. Extra help might be needed.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "first_day_kindergarten",
+		title = "First Day of Kindergarten",
+		emoji = "🎒",
+		text = "It's your very first day of kindergarten! Everything is new and exciting.",
+		question = "How do you feel about starting school?",
+		minAge = 5, maxAge = 5,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "school",
+		milestoneKey = "CHILD_KINDERGARTEN",
+		tags = { "school", "milestone", "social" },
+		
+		choices = {
+			{ text = "So excited to learn!", effects = { Happiness = 7, Smarts = 3 }, setFlags = { loves_school = true }, feedText = "You walked in with a big smile, ready for everything!" },
+			{ text = "Nervous but trying", effects = { Happiness = 2, Smarts = 2 }, setFlags = { school_nervous = true }, feedText = "The butterflies in your stomach calmed down by lunchtime." },
+			{ text = "Cried when parents left", effects = { Happiness = -4 }, setFlags = { separation_anxiety = true }, feedText = "It was hard, but you made it through the day." },
+			{ text = "Made friends immediately", effects = { Happiness = 8 }, setFlags = { social_butterfly = true }, feedText = "By recess, you already had a whole group of friends!" },
+		},
+	},
+	{
+		id = "potty_training",
+		title = "Big Kid Achievement",
+		emoji = "🚽",
+		text = "You've been working on using the potty like a big kid!",
+		question = "How is the potty training going?",
+		minAge = 2, maxAge = 4,
+		oneTime = true,
+		isMilestone = true,
+		
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "development",
+		milestoneKey = "CHILD_POTTY_TRAINED",
+		tags = { "development", "milestone", "growing_up" },
+		
+		choices = {
+			{
+				text = "I'm a natural!",
+				effects = {},
+				feedText = "Time to try...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.potty_trained = true
+						state:AddFeed("🚽 You got it! No more diapers!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.potty_trained = true
+						state:AddFeed("🚽 A few accidents but you're getting there!")
+					end
+				end,
+			},
+			{
+				text = "Still working on it",
+				effects = {},
+				feedText = "Practice makes perfect...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.potty_trained = true
+						state:AddFeed("🚽 Taking a little longer, but you did it!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🚽 Still in training. Everyone learns at their own pace.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "learned_numbers",
+		title = "Counting Fun",
+		emoji = "🔢",
+		text = "You're learning to count! Numbers are everywhere.",
+		question = "How high can you count?",
+		minAge = 3, maxAge = 5,
+		oneTime = true,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "development",
+		tags = { "numbers", "learning", "development" },
+		careerTags = { "finance", "science" },
+		
+		choices = {
+			{ text = "All the way to 100!", effects = { Smarts = 6, Happiness = 5 }, setFlags = { math_minded = true }, hintCareer = "finance", feedText = "You counted so high! Numbers are your friend." },
+			{ text = "To 20 with help", effects = { Smarts = 4, Happiness = 3 }, feedText = "Twenty fingers and toes to count on!" },
+			{ text = "Still learning", effects = { Smarts = 2, Happiness = 2 }, feedText = "One, two, three... you're getting there!" },
+		},
+	},
+	{
+		id = "temper_tantrum_public",
+		title = "Meltdown",
+		emoji = "😭",
+		text = "You're having a full meltdown in public!",
+		question = "What triggered it?",
+		minAge = 2, maxAge = 5,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "behavior",
+		tags = { "tantrum", "emotions", "public" },
+		
+		choices = {
+			{ text = "Wanted candy at checkout", effects = { Happiness = -3 }, feedText = "The candy display is evil. You didn't get any." },
+			{ text = "Too tired and overstimulated", effects = { Happiness = -4, Health = -1 }, feedText = "You were exhausted. Home and nap time it is." },
+			{ text = "Didn't want to leave the park", effects = { Happiness = -3 }, feedText = "Five more minutes was NOT enough." },
+			{ text = "Sibling annoyed you", effects = { Happiness = -2 }, setFlags = { sibling_rivalry = true }, feedText = "Your sibling always knows how to push your buttons." },
+		},
+	},
+	{
+		id = "first_haircut",
+		title = "First Haircut",
+		emoji = "✂️",
+		text = "Time for your very first haircut! The scissors look scary...",
+		question = "How do you handle your first haircut?",
+		minAge = 1, maxAge = 3,
+		oneTime = true,
+		isMilestone = true,
+		
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "development",
+		milestoneKey = "CHILD_FIRST_HAIRCUT",
+		tags = { "haircut", "milestone", "grooming" },
+		
+		choices = {
+			{ text = "Sit still like a big kid", effects = { Happiness = 5, Looks = 2 }, setFlags = { well_behaved = true }, feedText = "You were so brave! Parents saved a lock of hair." },
+			{ text = "Cry and squirm", effects = { Happiness = -3, Looks = 1 }, feedText = "It was traumatic but you got through it... eventually." },
+			{ text = "Watch cartoons and forget", effects = { Happiness = 3, Looks = 2 }, feedText = "You were distracted and it was over before you knew it!" },
+		},
+	},
+	{
+		id = "playground_friend",
+		title = "Playground Pal",
+		emoji = "🛝",
+		text = "You met a new kid at the playground!",
+		question = "What do you play together?",
+		minAge = 3, maxAge = 7,
+		baseChance = 0.6,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "social",
+		tags = { "friends", "playground", "play" },
+		
+		choices = {
+			{ text = "Tag - you're it!", effects = { Happiness = 5, Health = 3 }, feedText = "You ran around until you were both exhausted!" },
+			{ text = "Build a sandcastle together", effects = { Happiness = 4, Smarts = 2 }, setFlags = { cooperative = true }, feedText = "You made the best sandcastle ever!" },
+			{ text = "Swings - who can go higher?", effects = { Happiness = 5, Health = 2 }, feedText = "You touched the sky!" },
+			{ text = "Too shy to play", effects = { Happiness = -2 }, setFlags = { shy = true }, feedText = "Maybe next time you'll make a friend." },
+		},
+	},
+	{
+		id = "birthday_party",
+		title = "Birthday Celebration",
+		emoji = "🎂",
+		text = "It's your birthday! Time to celebrate!",
+		question = "What kind of party do you want?",
+		minAge = 3, maxAge = 12,
+		baseChance = 0.9,
+		cooldown = 1,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "celebration",
+		tags = { "birthday", "party", "celebration" },
+		
+		choices = {
+			{ text = "Big party with all my friends", effects = { Happiness = 10, Money = -30 }, setFlags = { party_person = true }, feedText = "Best birthday ever! So many friends and presents!" },
+			{ text = "Small family celebration", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
+			{ text = "Special outing instead", effects = { Happiness = 8, Money = -20 }, feedText = "An adventure for your birthday! So memorable." },
+			{ text = "Themed costume party", effects = { Happiness = 9, Looks = 2, Money = -25 }, setFlags = { loves_costumes = true }, feedText = "Everyone dressed up! It was magical." },
+		},
+	},
+	{
+		id = "school_picture_day",
+		title = "Picture Day",
+		emoji = "📸",
+		text = "It's school picture day! Time to look your best.",
+		question = "How does picture day go?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.8,
+		cooldown = 1,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "photos", "school", "appearance" },
+		-- CRITICAL FIX: Random picture outcome
+		choices = {
+			{
+				text = "Smile big!",
+				effects = {},
+				feedText = "You sat for your photo...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Looks", 1)
+						state:AddFeed("📸 Great photo! You're a natural in front of the camera!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📸 Decent photo. Could be worse!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📸 Awkward photo... you blinked. Or had spinach in your teeth.")
+					end
+				end,
+			},
+			{
+				text = "Make a silly face",
+				effects = {},
+				feedText = "You couldn't help yourself...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📸 The photographer actually captured your silly face! Mom isn't happy.")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📸 The photographer made you redo it. Normal face this time.")
+					end
+				end,
+			},
+			{
+				text = "Forgot it was picture day",
+				effects = { Happiness = -4, Looks = -2 },
+				feedText = "Wore your messiest clothes and hadn't brushed your hair. Classic.",
+			},
+		},
+	},
+	{
+		id = "field_trip",
+		title = "School Field Trip",
+		emoji = "🚌",
+		text = "Your class is going on a field trip!",
+		question = "Where is the field trip?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.6,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "field_trip", "learning", "adventure" },
+		careerTags = { "science", "creative" },
+		
+		choices = {
+			{ text = "The zoo!", effects = { Happiness = 8, Smarts = 2 }, setFlags = { animal_lover = true }, hintCareer = "veterinary", feedText = "You loved seeing all the animals! The monkeys were your favorite." },
+			{ text = "A museum", effects = { Happiness = 5, Smarts = 5 }, setFlags = { curious_mind = true }, hintCareer = "science", feedText = "So much to learn! You could have stayed all day." },
+			{ text = "A farm", effects = { Happiness = 6, Health = 2 }, feedText = "You pet a cow and saw baby chicks!" },
+			{ text = "A factory", effects = { Happiness = 4, Smarts = 3 }, feedText = "Interesting to see how things are made!" },
+		},
+	},
+	{
+		id = "learned_tie_shoes",
+		title = "Shoe Tying Champion",
+		emoji = "👟",
+		text = "You're learning to tie your own shoelaces!",
+		question = "How quickly do you master it?",
+		minAge = 4, maxAge = 7,
+		oneTime = true,
+		isMilestone = true,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "development",
+		milestoneKey = "CHILD_TIE_SHOES",
+		tags = { "skills", "independence", "motor_skills" },
+		
+		choices = {
+			{
+				text = "Bunny ears method!",
+				effects = {},
+				feedText = "You tried the bunny ears...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.can_tie_shoes = true
+						state:AddFeed("👟 You mastered the bunny ears! Independence unlocked!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.can_tie_shoes = true
+						state:AddFeed("👟 After many tries, you got it! Sort of...")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("👟 Still tricky. Velcro shoes to the rescue!")
+					end
+				end,
+			},
+			{
+				text = "The loop-swoop method",
+				effects = {},
+				feedText = "You tried the classic method...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if roll < 0.45 + (smarts / 200) then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.can_tie_shoes = true
+						state:AddFeed("👟 You're a shoe-tying pro!")
+					else
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.can_tie_shoes = true
+						state:AddFeed("👟 Took a while, but you figured it out!")
+					end
+				end,
+			},
+			{
+				text = "I prefer velcro",
+				effects = { Happiness = 2 },
+				feedText = "Velcro shoes are just easier. Maybe later on the laces.",
+			},
+		},
+	},
+	{
+		id = "school_lunch",
+		title = "The Cafeteria",
+		emoji = "🍽️",
+		text = "Lunchtime at school! The cafeteria is crowded.",
+		question = "What's your lunch routine?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "lunch", "social", "school" },
+		
+		choices = {
+			{ text = "Packed lunch from home", effects = { Happiness = 4, Health = 2 }, feedText = "Mom's sandwiches are the best!" },
+			{ text = "School hot lunch", effects = { Happiness = 3 }, feedText = "Mystery meat day... but the chocolate milk makes up for it!" },
+			{ text = "Trade food with friends", effects = { Happiness = 5, Smarts = 1 }, setFlags = { negotiator = true }, feedText = "Your snack for their dessert. Fair trade!" },
+			{ text = "Eat alone and read", effects = { Smarts = 3, Happiness = -1 }, setFlags = { loner = true }, feedText = "Quiet lunches with a good book." },
+		},
+	},
+	{
+		id = "chore_introduction",
+		title = "Chore Time",
+		emoji = "🧹",
+		text = "Your parents want you to start helping with chores around the house.",
+		question = "How do you respond to chore duty?",
+		minAge = 5, maxAge = 10,
+		oneTime = true,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "responsibility",
+		tags = { "chores", "responsibility", "family" },
+		
+		choices = {
+			{ text = "Happy to help!", effects = { Happiness = 3, Smarts = 2 }, setFlags = { helpful = true, does_chores = true }, feedText = "You're a big helper now! Maybe there's an allowance in your future..." },
+			{ text = "Complain but do them", effects = { Happiness = -2 }, setFlags = { does_chores = true }, feedText = "You grumbled but got it done. Responsibility is hard." },
+			{ text = "Do them badly so you won't be asked again", effects = { Smarts = 2 }, setFlags = { strategic = true }, feedText = "You did such a bad job they might not ask again... clever." },
+			{ text = "Refuse completely", effects = { Happiness = -4 }, setFlags = { defiant = true }, feedText = "You got in trouble for refusing. There are consequences..." },
+		},
+	},
+	{
+		id = "class_project_partner",
+		title = "Group Project",
+		emoji = "📊",
+		text = "You have a group project at school and need to work with a partner.",
+		question = "How does the partnership go?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "late_childhood",
+		category = "school",
+		tags = { "project", "teamwork", "school" },
+		-- CRITICAL FIX: Random group project outcome
+		choices = {
+			{
+				text = "Work together great!",
+				effects = {},
+				feedText = "You started the project...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.team_player = true
+						state:AddFeed("📊 Amazing teamwork! You got an A together!")
+					elseif roll < 0.80 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📊 Pretty good project! You learned to collaborate.")
+					else
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📊 Your partner wasn't great, but you made it work.")
+					end
+				end,
+			},
+			{
+				text = "Do all the work myself",
+				effects = {},
+				feedText = "You took charge...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Smarts", 6)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📊 Great grade but you're exhausted. Partners are supposed to help!")
+					else
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📊 Did all the work and the teacher noticed. Partner got in trouble.")
+					end
+				end,
+			},
+			{
+				text = "Let partner do most of it",
+				effects = {},
+				feedText = "You let your partner take the lead...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📊 Your partner was great! Good grade with minimal effort.")
+					elseif roll < 0.65 then
+						state:ModifyStat("Smarts", 1)
+						state:AddFeed("📊 Mediocre project. You should have helped more.")
+					else
+						state:ModifyStat("Smarts", -1)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📊 Bad grade. The teacher knew you didn't contribute.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "sick_day_school",
+		title = "Too Sick for School",
+		emoji = "🤒",
+		text = "You woke up not feeling well. Are you really sick or just don't want to go to school?",
+		question = "What's really going on?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "sick", "school", "health" },
+		-- CRITICAL FIX: Random health check - you can't perfectly fake being sick
+		choices = {
+			{
+				text = "Actually sick - fever and everything",
+				effects = {},
+				feedText = "Mom checks your temperature...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					-- Lower health = more likely to actually be sick
+					local sickChance = 0.70 - (health / 200)
+					if roll < sickChance then
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🤒 You really are sick! Soup, rest, and TV all day.")
+					else
+						state:ModifyStat("Happiness", -1)
+						state:AddFeed("🤒 Just a minor bug. You rest but feel better by afternoon.")
+					end
+				end,
+			},
+			{
+				text = "Faking it to skip school",
+				effects = {},
+				feedText = "You pretend to be sick...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local foolParentsChance = 0.30 + (smarts / 200)
+					if roll < foolParentsChance then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🤒 Success! A day of freedom! (Don't make it a habit.)")
+					elseif roll < foolParentsChance + 0.40 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤒 Parents didn't buy it. Off to school you go!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_faking = true
+						state:AddFeed("🤒 Busted! You got in big trouble for lying.")
+					end
+				end,
+			},
+			{
+				text = "Anxiety about school",
+				effects = { Happiness = -4 },
+				setFlags = { school_anxiety = true },
+				feedText = "You told your parents you're nervous about something at school. They listened.",
+			},
+		},
+	},
+	{
+		id = "homework_struggle",
+		title = "Homework Headache",
+		emoji = "📝",
+		text = "You're stuck on a really hard homework assignment!",
+		question = "How do you handle the difficult homework?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "homework", "challenge", "learning" },
+		
+		choices = {
+			{
+				text = "Keep trying until you get it",
+				effects = {},
+				feedText = "You kept working at it...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					if roll < 0.45 + (smarts / 200) then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.persistent = true
+						state:AddFeed("📝 You figured it out! That feeling of accomplishment is amazing!")
+					else
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📝 You tried hard but still struggled. At least you learned something.")
+					end
+				end,
+			},
+			{
+				text = "Ask parents for help",
+				effects = { Smarts = 3, Happiness = 2 },
+				feedText = "Your parents helped explain it. Teamwork!",
+			},
+			{
+				text = "Ask a friend for answers",
+				effects = {},
+				feedText = "You asked your friend...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📝 Your friend helped you understand it!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📝 Got the answers but didn't really learn anything...")
+					else
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_cheating = true
+						state:AddFeed("📝 Teacher noticed the answers were the same. You got in trouble!")
+					end
+				end,
+			},
+			{
+				text = "Give up and don't do it",
+				effects = { Smarts = -2, Happiness = -3 },
+				setFlags = { gives_up_easily = true },
+				feedText = "You handed in incomplete homework. The teacher wasn't happy.",
+			},
+		},
+	},
+	{
+		id = "recess_choices",
+		title = "Recess Time!",
+		emoji = "🛝",
+		text = "The bell rings - it's recess! What do you do?",
+		question = "How do you spend recess?",
+		minAge = 5, maxAge = 11,
+		baseChance = 0.7,
+		cooldown = 1,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "play",
+		tags = { "recess", "play", "social" },
+		
+		choices = {
+			{ text = "Play sports with friends", effects = { Health = 4, Happiness = 5 }, setFlags = { athletic = true }, feedText = "You ran around playing kickball until you were out of breath!" },
+			{ text = "Swing on the swings", effects = { Happiness = 5, Health = 2 }, feedText = "Higher and higher! You tried to touch the clouds." },
+			{ text = "Play imagination games", effects = { Happiness = 5, Smarts = 2 }, setFlags = { imaginative = true }, feedText = "You and your friends created epic adventures!" },
+			{ text = "Stay inside and read", effects = { Smarts = 4, Happiness = 2 }, setFlags = { bookworm = true }, feedText = "The library is quiet and peaceful during recess." },
+		},
+	},
+	{
+		id = "new_sibling_adjustment",
+		title = "Sibling Struggles",
+		emoji = "👶",
+		text = "Your younger sibling is driving you crazy!",
+		question = "What's the conflict about?",
+		minAge = 4, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { has_younger_sibling = true },
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "family",
+		tags = { "sibling", "conflict", "family" },
+		
+		choices = {
+			{ text = "They're touching my stuff!", effects = { Happiness = -4 }, setFlags = { protective_of_things = true }, feedText = "You had to hide your favorite toys. Annoying!" },
+			{ text = "They're getting all the attention", effects = { Happiness = -5 }, setFlags = { jealous = true }, feedText = "You feel invisible sometimes. It's not fair." },
+			{ text = "Actually started playing together", effects = { Happiness = 5 }, setFlags = { good_sibling = true }, feedText = "You discovered having a sibling can be fun!" },
+			{ text = "Had a big fight", effects = { Happiness = -6 }, feedText = "Things got heated. You both got in trouble." },
+		},
+	},
+	{
+		id = "learned_ride_scooter",
+		title = "Scooter Skills",
+		emoji = "🛴",
+		text = "You got a scooter! Time to learn to ride it.",
+		question = "How do you do on the scooter?",
+		minAge = 5, maxAge = 9,
+		baseChance = 0.5,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "skills",
+		tags = { "scooter", "balance", "outdoors" },
+		-- CRITICAL FIX: Random scooter learning outcome
+		choices = {
+			{
+				text = "Zoom around immediately",
+				effects = {},
+				feedText = "You pushed off and tried to go fast...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.scooter_pro = true
+						state:AddFeed("🛴 Natural talent! You're zooming around the neighborhood!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🛴 A few crashes but you got the hang of it!")
+					else
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🛴 Major wipeout! Scraped knee but you'll try again.")
+					end
+				end,
+			},
+			{
+				text = "Take it slow and careful",
+				effects = {},
+				feedText = "You started slow...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state:ModifyStat("Health", 2)
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.can_ride_scooter = true
+						state:AddFeed("🛴 You learned safely! Now you can cruise around.")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🛴 Still practicing but getting more confident!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "art_class_project",
+		title = "Art Class Creation",
+		emoji = "🎨",
+		text = "Art class project time! What do you create?",
+		question = "What's your masterpiece?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.6,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "creative",
+		tags = { "art", "creativity", "school" },
+		careerTags = { "creative" },
+		-- CRITICAL FIX: Random art outcome
+		choices = {
+			{
+				text = "A detailed drawing",
+				effects = {},
+				hintCareer = "creative",
+				feedText = "You focused on your drawing...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Looks", 3)
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.artistic_talent = true
+						state:AddFeed("🎨 Incredible! The teacher displayed it on the wall!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Looks", 1)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎨 Nice work! You're proud of your creation.")
+					else
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("🎨 It didn't turn out like you imagined, but you tried!")
+					end
+				end,
+			},
+			{
+				text = "A messy finger painting",
+				effects = { Happiness = 5, Looks = -1 },
+				feedText = "Paint everywhere! Including on you. But it was fun!",
+			},
+			{
+				text = "A creative sculpture",
+				effects = {},
+				feedText = "You built something with clay and paper...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎨 Your 3D creation impressed everyone!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎨 It fell apart a bit but the idea was cool!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_nurse_visit",
+		title = "Visit to the Nurse",
+		emoji = "🏥",
+		text = "You're at the school nurse's office!",
+		question = "Why did you need to see the nurse?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "nurse", "health", "school" },
+		-- CRITICAL FIX: Random nurse visit - you don't choose what happened to you
+		choices = {
+			{
+				text = "Playground injury",
+				effects = {},
+				feedText = "The nurse looks at your injury...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Health", -2)
+						state:AddFeed("🏥 Just a scrape! Band-aid and you're good to go.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🏥 Needed an ice pack for the bruise. No PE today.")
+					else
+						state:ModifyStat("Health", -8)
+						state:AddFeed("🏥 Had to call your parents. This needs more than a band-aid.")
+					end
+				end,
+			},
+			{
+				text = "Feeling sick during class",
+				effects = {},
+				feedText = "The nurse checks on you...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Health", -4)
+						state:AddFeed("🏥 Parents came to pick you up. Home to rest.")
+					elseif roll < 0.70 then
+						state:ModifyStat("Health", -2)
+						state:AddFeed("🏥 Just needed some water and rest. Back to class!")
+					else
+						state:AddFeed("🏥 False alarm. You felt better almost immediately.")
+					end
+				end,
+			},
+			{
+				text = "Headache",
+				effects = { Health = -2, Happiness = -1 },
+				feedText = "The nurse gave you some water and let you rest. Feeling better now.",
+			},
+		},
+	},
+	{
+		id = "classroom_disruption",
+		title = "Class Clown Moment",
+		emoji = "🤡",
+		text = "You did something silly that disrupted the whole class!",
+		question = "What happened?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "behavior",
+		tags = { "class_clown", "trouble", "school" },
+		-- CRITICAL FIX: Random consequences for disruption
+		choices = {
+			{
+				text = "Made everyone laugh",
+				effects = {},
+				feedText = "The class burst into laughter...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.class_clown = true
+						state:AddFeed("🤡 Even the teacher cracked a smile. You're the class hero!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🤡 Got a warning but it was worth it for the laughs.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤡 Teacher wasn't amused. Timeout for you!")
+					end
+				end,
+			},
+			{
+				text = "Made a huge mess",
+				effects = {},
+				feedText = "Things got messy...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🤡 Had to clean it up but no real consequences.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🤡 Big trouble! Note sent home to parents.")
+					end
+				end,
+			},
+			{
+				text = "Got sent to the principal",
+				effects = { Happiness = -5 },
+				setFlags = { troublemaker = true },
+				feedText = "That's a trip to the principal's office. Not fun.",
+			},
+		},
+	},
+	{
+		id = "learning_alphabet",
+		title = "ABC's",
+		emoji = "🔤",
+		text = "You're learning the alphabet! All 26 letters.",
+		question = "How quickly do you learn your ABC's?",
+		minAge = 2, maxAge = 5,
+		oneTime = true,
+		
+		stage = STAGE,
+		ageBand = "baby_toddler",
+		category = "development",
+		tags = { "alphabet", "learning", "development" },
+		
+		choices = {
+			{ text = "Sing the ABC song perfectly!", effects = { Smarts = 5, Happiness = 4 }, setFlags = { knows_alphabet = true }, feedText = "A-B-C-D-E-F-G... You've got it memorized!" },
+			{ text = "Know most of the letters", effects = { Smarts = 3, Happiness = 3 }, setFlags = { knows_alphabet = true }, feedText = "LMNOP is still a blur but you're getting there!" },
+			{ text = "Still learning", effects = { Smarts = 1, Happiness = 2 }, feedText = "Letters are tricky but practice makes perfect!" },
+		},
+	},
+	{
+		id = "playground_king",
+		title = "King of the Playground",
+		emoji = "👑",
+		text = "You've become one of the popular kids at recess!",
+		question = "How do you use your popularity?",
+		minAge = 6, maxAge = 11,
+		baseChance = 0.3,
+		cooldown = 4,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "social",
+		tags = { "popularity", "social", "leadership" },
+		
+		choices = {
+			{ text = "Include everyone in games", effects = { Happiness = 6 }, setFlags = { inclusive = true }, feedText = "You made sure nobody was left out. Everyone likes you!" },
+			{ text = "Only play with certain kids", effects = { Happiness = 3 }, setFlags = { exclusive = true }, feedText = "You stuck with your close group." },
+			{ text = "Pick teams for games", effects = { Happiness = 4, Smarts = 2 }, setFlags = { natural_leader = true }, feedText = "You became the one who organized everything!" },
+			{ text = "Use popularity to be mean", effects = { Happiness = -3 }, setFlags = { bully = true }, feedText = "Being mean to others didn't feel as good as you thought..." },
+		},
+	},
+	{
+		id = "pet_death",
+		title = "Losing a Pet",
+		emoji = "🌈",
+		text = "Your beloved pet passed away...",
+		question = "How do you cope with the loss?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.2,
+		cooldown = 6,
+		requiresFlags = { has_pet = true },
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "loss",
+		tags = { "death", "grief", "pets" },
+		
+		onResolve = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.has_pet = nil
+			state.Flags.has_dog = nil
+			state.Flags.has_cat = nil
+			state.Flags.has_fish = nil
+			state.Flags.has_small_pet = nil
+		end,
+		
+		choices = {
+			{ text = "Cry and mourn deeply", effects = { Happiness = -10 }, setFlags = { experienced_loss = true, mourning = true }, feedText = "You'll never forget your friend. It hurts so much." },
+			{ text = "Hold a little funeral", effects = { Happiness = -6 }, setFlags = { experienced_loss = true }, feedText = "You said goodbye properly. It helped a little." },
+			{ text = "Draw pictures to remember them", effects = { Happiness = -4, Smarts = 2 }, setFlags = { processes_through_art = true }, feedText = "Your drawings help keep their memory alive." },
+			{ text = "Ask for a new pet right away", effects = { Happiness = -3 }, feedText = "A new friend can help, but you still miss the old one." },
+		},
+	},
+	{
+		id = "grandparent_visit",
+		title = "Grandparent Time",
+		emoji = "👴",
+		text = "Your grandparents are visiting!",
+		question = "What do you do together?",
+		minAge = 3, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "family",
+		tags = { "grandparents", "family", "memories" },
+		
+		choices = {
+			{ text = "Listen to their stories", effects = { Happiness = 5, Smarts = 3 }, setFlags = { loves_grandparents = true }, feedText = "Their stories from the old days are fascinating!" },
+			{ text = "Bake cookies together", effects = { Happiness = 7 }, feedText = "Nothing beats grandma's cookies. You're learning the secret recipe!" },
+			{ text = "Play card games", effects = { Happiness = 5, Smarts = 2 }, feedText = "Go Fish! Or maybe they're teaching you poker..." },
+			{ text = "Get spoiled with treats and gifts", effects = { Happiness = 8, Money = 15 }, feedText = "Grandparents always spoil you! Extra dessert and pocket money." },
+		},
+	},
+	{
+		id = "caught_curse_word",
+		title = "Bad Word!",
+		emoji = "🤭",
+		text = "You said a bad word and an adult heard you!",
+		question = "What happened?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "behavior",
+		tags = { "swearing", "trouble", "learning" },
+		
+		choices = {
+			{ text = "Didn't know it was bad!", effects = { Happiness = -2 }, feedText = "You learned that word means something bad. Good to know!" },
+			{ text = "Repeated it from TV", effects = { Happiness = -3 }, feedText = "Maybe don't repeat everything you hear on TV..." },
+			{ text = "Heard it from an older kid", effects = { Happiness = -2 }, feedText = "Older kids know bad words. Now you do too." },
+			{ text = "Actually knew it was bad", effects = { Happiness = -5 }, setFlags = { rebellious = true }, feedText = "You knew better! Big trouble for that one." },
+		},
+	},
+	{
+		id = "childhood_fear",
+		title = "Facing a Fear",
+		emoji = "😨",
+		text = "You have to face one of your fears!",
+		question = "What are you afraid of?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "psychology",
+		tags = { "fear", "growth", "courage" },
+		-- CRITICAL FIX: Random outcome when facing fears
+		choices = {
+			{
+				text = "The dark",
+				effects = {},
+				feedText = "You faced the darkness...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.overcame_fear_dark = true
+						state:AddFeed("😨 You survived the dark! It's not so scary anymore.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.fears_dark = true
+						state:AddFeed("😨 Still scary! Nightlight stays on.")
+					end
+				end,
+			},
+			{
+				text = "Spiders",
+				effects = {},
+				feedText = "You encountered a spider...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("😨 You let the spider outside! Not so bad.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.fears_spiders = true
+						state:AddFeed("😨 NOPE! Spider fear confirmed. You screamed and ran.")
+					end
+				end,
+			},
+			{
+				text = "Heights",
+				effects = {},
+				feedText = "You had to climb high...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("😨 You looked down and didn't panic! Progress!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.fears_heights = true
+						state:AddFeed("😨 Too high! Froze up and needed help getting down.")
+					end
+				end,
+			},
+			{
+				text = "Dogs",
+				effects = {},
+				feedText = "You met a big dog...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.animal_lover = true
+						state:AddFeed("😨 The dog was friendly! You pet it and now want one!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.fears_dogs = true
+						state:AddFeed("😨 It barked at you! Dogs are still scary.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "making_up_stories",
+		title = "Storyteller",
+		emoji = "📖",
+		text = "You've been making up elaborate stories and sharing them!",
+		question = "What kind of stories do you tell?",
+		minAge = 5, maxAge = 11,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "creative",
+		tags = { "storytelling", "imagination", "creative" },
+		careerTags = { "creative", "entertainment" },
+		
+		choices = {
+			{ text = "Adventure stories with you as the hero", effects = { Happiness = 5, Smarts = 2 }, setFlags = { storyteller = true }, hintCareer = "creative", feedText = "Your epic tales have everyone listening!" },
+			{ text = "Lies that got out of control", effects = { Happiness = -3 }, setFlags = { compulsive_liar = true }, feedText = "Your 'stories' got you in trouble. Some were believed!" },
+			{ text = "Funny stories that make people laugh", effects = { Happiness = 6 }, setFlags = { funny = true }, hintCareer = "entertainment", feedText = "Your comedy stories are a hit!" },
+			{ text = "Scary stories at sleepovers", effects = { Happiness = 4 }, setFlags = { loves_horror = true }, feedText = "Your scary stories gave everyone nightmares!" },
+		},
+	},
+	{
+		id = "childhood_collection",
+		title = "Collector's Corner",
+		emoji = "🏆",
+		text = "You've started collecting something!",
+		question = "What do you collect?",
+		minAge = 6, maxAge = 12,
+		oneTime = true,
+		baseChance = 0.5,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "hobbies",
+		tags = { "collecting", "hobby", "organization" },
+		
+		choices = {
+			{ text = "Trading cards", effects = { Happiness = 5, Smarts = 2, Money = -15 }, setFlags = { card_collector = true }, feedText = "Your card collection is growing! Gotta catch em all!" },
+			{ text = "Rocks and minerals", effects = { Happiness = 4, Smarts = 4 }, setFlags = { rock_collector = true }, hintCareer = "science", feedText = "You're becoming a young geologist!" },
+			{ text = "Stuffed animals", effects = { Happiness = 6 }, setFlags = { plushie_collector = true }, feedText = "Your bed is covered in stuffed animals!" },
+			{ text = "Coins", effects = { Happiness = 3, Smarts = 3, Money = 10 }, setFlags = { coin_collector = true }, hintCareer = "finance", feedText = "Some of these old coins might be valuable!" },
+			{ text = "Bugs (or bug corpses)", effects = { Happiness = 4, Smarts = 3 }, setFlags = { bug_collector = true }, hintCareer = "science", feedText = "Eww but also cool! You're learning about insects." },
+		},
+	},
+	{
+		id = "sharing_lesson",
+		title = "Learning to Share",
+		emoji = "🤝",
+		text = "Someone wants to play with your favorite toy!",
+		question = "Do you share?",
+		minAge = 3, maxAge = 7,
+		baseChance = 0.6,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "early_childhood",
+		category = "social",
+		tags = { "sharing", "social_skills", "empathy" },
+		
+		choices = {
+			{ text = "Share happily", effects = { Happiness = 4, Smarts = 2 }, setFlags = { generous = true }, feedText = "Sharing is caring! You made a friend happy." },
+			{ text = "Share reluctantly", effects = { Happiness = 1 }, feedText = "You shared but kept a close eye on it the whole time." },
+			{ text = "Refuse to share", effects = { Happiness = 2 }, setFlags = { possessive = true }, feedText = "It's YOUR toy. They can play with something else." },
+			{ text = "Take turns instead", effects = { Happiness = 3, Smarts = 3 }, setFlags = { fair = true }, feedText = "Taking turns is a good compromise!" },
+		},
+	},
+	{
+		id = "first_loose_tooth_eating",
+		title = "Swallowed Tooth!",
+		emoji = "🦷",
+		text = "You were eating and accidentally swallowed your loose tooth!",
+		question = "What do you do about the tooth fairy?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.3,
+		cooldown = 5,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "health",
+		tags = { "tooth", "accident", "funny" },
+		
+		choices = {
+			{ text = "Write a letter to the tooth fairy", effects = { Happiness = 5, Money = 5 }, feedText = "The tooth fairy accepted your apology letter!" },
+			{ text = "Cry - no tooth fairy visit!", effects = { Happiness = -4 }, feedText = "It's okay, the tooth fairy understood." },
+			{ text = "Draw a picture of the tooth instead", effects = { Happiness = 4, Smarts = 2, Money = 5 }, feedText = "Creative solution! The tooth fairy appreciated the art." },
+			{ text = "Parents explain teeth dissolve safely", effects = { Happiness = 2, Smarts = 3 }, feedText = "Good to know you won't have a tooth in your tummy forever!" },
+		},
+	},
+	{
+		id = "caught_picking_nose",
+		title = "Embarrassing Moment",
+		emoji = "😳",
+		text = "You got caught doing something embarrassing!",
+		question = "What happened?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.4,
+		cooldown = 2,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "embarrassment",
+		tags = { "embarrassing", "social", "learning" },
+		
+		choices = {
+			{ text = "Picking your nose", effects = { Happiness = -3, Looks = -1 }, feedText = "Everyone saw! Use a tissue next time!" },
+			{ text = "Falling in front of everyone", effects = { Happiness = -3, Health = -1 }, feedText = "Epic wipeout! At least nothing was broken." },
+			{ text = "Calling the teacher 'Mom'", effects = { Happiness = -4 }, feedText = "The whole class laughed... you'll never live it down!" },
+			{ text = "Wetting your pants", effects = { Happiness = -6 }, setFlags = { embarrassed = true }, feedText = "The worst! But you survived and everyone eventually forgot." },
+		},
+	},
+	{
+		id = "first_cooking_attempt",
+		title = "Little Chef",
+		emoji = "👨‍🍳",
+		text = "You tried to make something in the kitchen!",
+		question = "What did you attempt to make?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "skills",
+		tags = { "cooking", "independence", "kitchen" },
+		-- CRITICAL FIX: Random cooking outcome
+		choices = {
+			{
+				text = "Cereal (the safe choice)",
+				effects = {},
+				feedText = "You poured yourself cereal...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.80 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.can_make_cereal = true
+						state:AddFeed("👨‍🍳 Success! You're officially independent at breakfast.")
+					else
+						state:ModifyStat("Happiness", -1)
+						state:AddFeed("👨‍🍳 Spilled milk everywhere but you cleaned it up. Learning!")
+					end
+				end,
+			},
+			{
+				text = "A sandwich",
+				effects = {},
+				feedText = "You attempted a sandwich...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state:ModifyStat("Happiness", 4)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.can_make_sandwich = true
+						state:AddFeed("👨‍🍳 Pretty good sandwich! Future chef potential!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👨‍🍳 Messy but edible. You'll get better with practice!")
+					end
+				end,
+			},
+			{
+				text = "Something on the stove (yikes)",
+				effects = {},
+				feedText = "You tried using the stove...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Smarts", 4)
+						state:AddFeed("👨‍🍳 Incredible! You actually made something good!")
+					elseif roll < 0.55 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👨‍🍳 Burnt but safe. Good learning experience.")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("👨‍🍳 Smoke alarm went off! Parents are not happy.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👨‍🍳 Got a minor burn. Kitchen privileges revoked!")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return Childhood

@@ -2020,6 +2020,758 @@ Adult.events = {
 			{ text = "Write your life story", effects = { Happiness = 8, Smarts = 3 }, setFlags = { memoir_complete = true }, feedText = "Your story is now preserved for generations." },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MORE MID-LIFE EVENTS (30-60) - EXPANDED VARIETY
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "car_breakdown",
+		title = "Car Troubles",
+		emoji = "🚗",
+		text = "Your car broke down unexpectedly!",
+		question = "How do you handle this?",
+		minAge = 18, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { has_car = true },
+		blockedByFlags = { in_prison = true },
+		
+		-- CRITICAL FIX: Random repair cost - player doesn't choose how serious the breakdown is
+		choices = {
+			{
+				text = "Take it to a mechanic",
+				effects = {},
+				feedText = "The mechanic takes a look...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local roll = math.random()
+					if roll < 0.30 then
+						-- Minor fix
+						local cost = math.min(200, money * 0.3)
+						state.Money = math.max(0, money - cost)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed(string.format("🔧 Minor issue. $%d repair.", math.floor(cost)))
+					elseif roll < 0.65 then
+						-- Moderate repair
+						local cost = math.min(800, money * 0.4)
+						state.Money = math.max(0, money - cost)
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed(string.format("🔧 Significant repair needed. $%d.", math.floor(cost)))
+					elseif roll < 0.90 then
+						-- Major repair
+						local cost = math.min(2000, money * 0.5)
+						state.Money = math.max(0, money - cost)
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed(string.format("🔧 Major repair! $%d. Ouch.", math.floor(cost)))
+					else
+						-- Totaled
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_car = nil
+						state.Flags.owns_car = nil
+						state:AddFeed("🚗 The car is totaled. Beyond repair. You need a new one.")
+					end
+				end,
+			},
+			{
+				text = "Try to fix it yourself",
+				effects = {},
+				feedText = "You rolled up your sleeves...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local fixChance = 0.30 + (smarts / 200)
+					if state.Flags and state.Flags.mechanic then fixChance = fixChance + 0.30 end
+					
+					if roll < fixChance then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🔧 You fixed it yourself! Saved a lot of money!")
+					elseif roll < fixChance + 0.30 then
+						local cost = 100
+						state.Money = math.max(0, (state.Money or 0) - cost)
+						state:AddFeed("🔧 Partial fix. Still needed some parts.")
+					else
+						local cost = 500
+						state.Money = math.max(0, (state.Money or 0) - cost)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔧 Made it worse. Had to pay a mechanic to fix your fix.")
+					end
+				end,
+			},
+			{
+				text = "Use public transit/rideshare instead",
+				effects = { Money = -100, Happiness = -2 },
+				feedText = "Getting by without the car for now...",
+			},
+		},
+	},
+	{
+		id = "neighbor_conflict",
+		title = "Neighbor Problems",
+		emoji = "🏠",
+		text = "There's an ongoing conflict with your neighbor.",
+		question = "What's the issue?",
+		minAge = 22, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true, homeless = true },
+		
+		choices = {
+			{ text = "They're too loud", effects = { Happiness = -4, Health = -2 }, setFlags = { bad_neighbors = true }, feedText = "The noise is driving you crazy." },
+			{ text = "Property line dispute", effects = { Happiness = -3, Money = -500 }, feedText = "Lawyers might get involved..." },
+			{ text = "Their pets are a nuisance", effects = { Happiness = -3 }, feedText = "Barking at all hours. Pets everywhere." },
+			{ text = "Actually, we resolved it", effects = { Happiness = 4 }, setFlags = { good_neighbors = true }, feedText = "Talked it out like adults. Good neighbors now!" },
+		},
+	},
+	{
+		id = "investment_opportunity",
+		title = "Investment Opportunity",
+		emoji = "📈",
+		text = "A friend tells you about an investment opportunity.",
+		question = "Do you invest?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Need money to invest
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 500 then
+				return false, "No money to invest"
+			end
+			return true
+		end,
+		
+		-- CRITICAL FIX: Random investment outcome - you don't choose if it succeeds!
+		choices = {
+			{
+				text = "Go big - invest a lot",
+				effects = {},
+				feedText = "You made a significant investment...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local investAmount = math.min(5000, money * 0.4)
+					state.Money = money - investAmount
+					
+					local roll = math.random()
+					if roll < 0.25 then
+						-- Big win
+						local returns = investAmount * 3
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state.Flags.good_investor = true
+						state:AddFeed(string.format("📈 JACKPOT! Investment tripled! +$%d!", math.floor(returns - investAmount)))
+					elseif roll < 0.55 then
+						-- Modest gain
+						local returns = investAmount * 1.3
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("📈 Nice return! +$%d profit.", math.floor(returns - investAmount)))
+					elseif roll < 0.80 then
+						-- Break even or small loss
+						local returns = investAmount * 0.8
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📈 Didn't work out. Lost a bit.")
+					else
+						-- Lost it all
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.bad_investor = true
+						state:AddFeed(string.format("📉 Scam! Lost $%d! Should have done research.", math.floor(investAmount)))
+					end
+				end,
+			},
+			{
+				text = "Invest a small amount to test",
+				effects = {},
+				feedText = "You made a small test investment...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local investAmount = math.min(500, money * 0.1)
+					state.Money = money - investAmount
+					
+					local roll = math.random()
+					if roll < 0.35 then
+						local returns = investAmount * 2
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed(string.format("📈 Small investment doubled! +$%d", math.floor(returns - investAmount)))
+					elseif roll < 0.65 then
+						local returns = investAmount * 1.1
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📈 Small gain. Nothing exciting.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed(string.format("📉 Lost the $%d. Smart to start small.", math.floor(investAmount)))
+					end
+				end,
+			},
+			{
+				text = "Pass - too risky",
+				effects = { Happiness = 2 },
+				setFlags = { cautious_investor = true },
+				feedText = "You trusted your gut and passed.",
+			},
+		},
+	},
+	{
+		id = "home_renovation",
+		title = "Home Renovation",
+		emoji = "🔨",
+		text = "Your home needs some updates.",
+		question = "What do you do?",
+		minAge = 28, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresFlags = { homeowner = true },
+		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Need money for renovations
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 500 then
+				return false, "No money for renovations"
+			end
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "DIY renovation project",
+				effects = {},
+				feedText = "You decided to do it yourself...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local money = state.Money or 0
+					local materialCost = math.min(1000, money * 0.2)
+					state.Money = money - materialCost
+					
+					local roll = math.random()
+					local successChance = 0.40 + (smarts / 200)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🔨 DIY success! Home looks great and you saved money!")
+					elseif roll < successChance + 0.30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔨 It's... okay. Not professional but functional.")
+					else
+						local fixCost = math.min(1500, (state.Money or 0) * 0.3)
+						state.Money = math.max(0, (state.Money or 0) - fixCost)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔨 Disaster. Had to hire someone to fix your mistakes.")
+					end
+				end,
+			},
+			{
+				text = "Hire professionals",
+				effects = {},
+				feedText = "You hired contractors...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local cost = math.min(5000, money * 0.4)
+					state.Money = math.max(0, money - cost)
+					
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("🔨 Professional job! Home looks amazing! ($%d)", math.floor(cost)))
+					elseif roll < 0.90 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🔨 Good job, some delays, but looks nice.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔨 Contractor issues. Took forever and cost more than quoted.")
+					end
+				end,
+			},
+			{
+				text = "Put it off for later",
+				effects = { Happiness = -2 },
+				feedText = "The home continues to age. You'll get to it eventually.",
+			},
+		},
+	},
+	{
+		id = "hobby_discovered",
+		title = "New Passion",
+		emoji = "✨",
+		text = "You've discovered a new hobby that brings you joy!",
+		question = "What captured your interest?",
+		minAge = 25, maxAge = 75,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "Gardening", effects = { Happiness = 6, Health = 3 }, setFlags = { gardener = true }, feedText = "Growing things is incredibly satisfying!" },
+			{ text = "Cooking/Baking", effects = { Happiness = 5, Health = 2 }, setFlags = { home_chef = true }, feedText = "You're becoming quite the chef!" },
+			{ text = "Photography", effects = { Happiness = 5, Smarts = 2, Money = -300 }, setFlags = { photographer = true }, feedText = "Capturing beautiful moments!" },
+			{ text = "Woodworking", effects = { Happiness = 5, Smarts = 3, Money = -200 }, setFlags = { woodworker = true }, feedText = "Making things with your hands is therapeutic." },
+			{ text = "Playing an instrument", effects = { Happiness = 6, Smarts = 3, Money = -400 }, setFlags = { musician_hobby = true }, feedText = "Music brings you so much joy!" },
+		},
+	},
+	{
+		id = "friendship_drifting",
+		title = "Friendships Fading",
+		emoji = "👋",
+		text = "You've noticed your friendships have been drifting apart.",
+		question = "What do you do about it?",
+		minAge = 30, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{ text = "Make effort to reconnect", effects = { Happiness = 8, Money = -100 }, setFlags = { maintains_friendships = true }, feedText = "You organized a reunion. Worth every moment!" },
+			{ text = "Accept it's natural", effects = { Happiness = -3 }, feedText = "People grow apart. It's sad but normal." },
+			{ text = "Focus on making new friends", effects = { Happiness = 5 }, setFlags = { social_adult = true }, feedText = "New friendships are forming at this stage of life!" },
+			{ text = "Become more of a loner", effects = { Happiness = -5 }, setFlags = { loner = true }, feedText = "You're okay being alone. Mostly." },
+		},
+	},
+	{
+		id = "charity_work",
+		title = "Giving Back",
+		emoji = "❤️",
+		text = "You feel called to give back to the community.",
+		question = "How do you contribute?",
+		minAge = 30, maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "Volunteer time regularly", effects = { Happiness = 10, Health = 2 }, setFlags = { volunteer_adult = true }, feedText = "Volunteering fills your heart!" },
+			{ 
+				text = "Make a significant donation", 
+				effects = {},
+				feedText = "You decided to donate...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local donation = math.min(5000, money * 0.2)
+					if donation >= 500 then
+						state.Money = money - donation
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.philanthropist = true
+						state:AddFeed(string.format("❤️ Donated $%d! Making a real difference!", math.floor(donation)))
+					elseif donation >= 100 then
+						state.Money = money - donation
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed(string.format("❤️ Donated $%d. Every bit helps!", math.floor(donation)))
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("❤️ Can't afford much right now, but the thought counts.")
+					end
+				end,
+			},
+			{ text = "Start a community initiative", effects = { Happiness = 8, Smarts = 3 }, setFlags = { community_leader = true }, feedText = "You started something meaningful in your neighborhood!" },
+			{ text = "Mentor young people", effects = { Happiness = 7, Smarts = 2 }, setFlags = { mentor = true }, feedText = "Passing on your knowledge to the next generation!" },
+		},
+	},
+	{
+		id = "unexpected_windfall",
+		title = "Unexpected Money",
+		emoji = "💵",
+		text = "You received some unexpected money!",
+		question = "Where did it come from?",
+		minAge = 20, maxAge = 75,
+		baseChance = 0.15,
+		cooldown = 6,
+		
+		-- CRITICAL FIX: Random windfall amount - player doesn't choose how much they get!
+		choices = {
+			{
+				text = "Tax refund!",
+				effects = {},
+				feedText = "The tax refund hit your account...",
+				onResolve = function(state)
+					local roll = math.random()
+					local amount = math.floor(roll * 2000 + 500) -- $500 to $2500
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed(string.format("💵 Tax refund: $%d! Nice surprise!", amount))
+				end,
+			},
+			{
+				text = "Old debt repaid",
+				effects = {},
+				feedText = "Someone finally paid you back...",
+				onResolve = function(state)
+					local roll = math.random()
+					local amount = math.floor(roll * 1500 + 200) -- $200 to $1700
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed(string.format("💵 They finally paid back $%d! Didn't think you'd see that again!", amount))
+				end,
+			},
+			{
+				text = "Work bonus",
+				effects = {},
+				requiresJob = true,
+				feedText = "Your boss called you in...",
+				onResolve = function(state)
+					local roll = math.random()
+					local amount = math.floor(roll * 3000 + 1000) -- $1000 to $4000
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed(string.format("💵 Surprise bonus: $%d! Hard work paying off!", amount))
+				end,
+			},
+			{
+				text = "Found money on the street",
+				effects = {},
+				feedText = "You saw something on the ground...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						local amount = math.floor(math.random() * 50 + 10) -- $10 to $60
+						state.Money = (state.Money or 0) + amount
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed(string.format("💵 Found $%d! Your lucky day!", amount))
+					else
+						local amount = math.floor(math.random() * 400 + 100) -- $100 to $500
+						state.Money = (state.Money or 0) + amount
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("💵 Found $%d in an envelope! Jackpot!", amount))
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "jury_duty",
+		title = "Jury Duty",
+		emoji = "⚖️",
+		text = "You've been summoned for jury duty.",
+		question = "How do you respond?",
+		minAge = 21, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true, criminal_record = true },
+		
+		choices = {
+			{
+				text = "Serve on the jury",
+				effects = {},
+				feedText = "You reported for jury duty...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 2)
+						state.Money = math.max(0, (state.Money or 0) - 100) -- Lost work time
+						state:AddFeed("⚖️ Served on a jury. Interesting experience!")
+					elseif roll < 0.70 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("⚖️ Selected for jury but case settled. Went home.")
+					else
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", -2)
+						state.Money = math.max(0, (state.Money or 0) - 300)
+						state:AddFeed("⚖️ Served on a long trial. Heavy responsibility.")
+					end
+				end,
+			},
+			{ text = "Get excused legitimately", effects = { Happiness = 2 }, feedText = "Had a valid reason to be excused. Phew!" },
+			{ text = "Actually find it interesting", effects = { Happiness = 5, Smarts = 4 }, setFlags = { civic_minded = true }, feedText = "Fascinating look at the justice system!" },
+		},
+	},
+	{
+		id = "health_routine_established",
+		title = "Health Check",
+		emoji = "🏃",
+		text = "Time to think about your health habits.",
+		question = "How are you taking care of yourself?",
+		minAge = 30, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "Started exercising regularly", effects = { Health = 8, Happiness = 5, Money = -200 }, setFlags = { exercises = true }, feedText = "Gym membership! Feeling stronger!" },
+			{ text = "Improved diet significantly", effects = { Health = 6, Happiness = 3, Money = -100 }, setFlags = { healthy_eater = true }, feedText = "Eating better. More energy!" },
+			{ text = "Both diet and exercise", effects = { Health = 12, Happiness = 7, Money = -300 }, setFlags = { health_focused = true }, feedText = "Complete lifestyle change! Looking and feeling great!" },
+			{ text = "Still neglecting health", effects = { Health = -5, Happiness = -2 }, setFlags = { unhealthy_habits = true }, feedText = "You know you should do better..." },
+		},
+	},
+	{
+		id = "pet_adoption",
+		title = "Pet Adoption",
+		emoji = "🐕",
+		text = "You're thinking about getting a pet!",
+		question = "What pet do you adopt?",
+		minAge = 22, maxAge = 75,
+		baseChance = 0.3,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true, has_pet = true },
+		
+		choices = {
+			{ text = "Adopt a dog", effects = { Happiness = 10, Health = 3, Money = -300 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Unconditional love awaits!" },
+			{ text = "Adopt a cat", effects = { Happiness = 8, Money = -150 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You adopted a cat! Independent but loving!" },
+			{ text = "Get a fish tank", effects = { Happiness = 4, Smarts = 1, Money = -100 }, setFlags = { has_pet = true, has_fish = true }, feedText = "Fish tank set up! Very relaxing to watch." },
+			{ text = "Rescue an older pet", effects = { Happiness = 12, Money = -200 }, setFlags = { has_pet = true, pet_rescuer = true }, feedText = "Gave a senior pet a loving home! You're their hero!" },
+			{ text = "Not the right time", effects = { Happiness = -2 }, feedText = "Maybe when life is more stable." },
+		},
+	},
+	{
+		id = "social_media_dilemma",
+		title = "Social Media Life",
+		emoji = "📱",
+		text = "Social media is taking up a lot of your time.",
+		question = "What's your relationship with social media?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 3,
+		
+		choices = {
+			{ text = "It's connecting me with people", effects = { Happiness = 4 }, setFlags = { social_online = true }, feedText = "Finding old friends and making new connections!" },
+			{ text = "It's making me anxious", effects = { Happiness = -5, Health = -2 }, setFlags = { social_media_anxiety = true }, feedText = "Comparison culture is toxic." },
+			{ text = "Taking a digital detox", effects = { Happiness = 8, Health = 3 }, setFlags = { digital_minimalist = true }, feedText = "Stepping away felt amazing!" },
+			{ text = "Using it for business/career", effects = { Smarts = 3, Money = 200 }, setFlags = { social_media_pro = true }, feedText = "Leveraging it professionally!" },
+		},
+	},
+	{
+		id = "career_plateau",
+		title = "Career Plateau",
+		emoji = "📊",
+		text = "Your career has hit a plateau. No promotions, no growth.",
+		question = "What do you do about it?",
+		minAge = 35, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresJob = true,
+		
+		choices = {
+			{
+				text = "Go back to school for new skills",
+				effects = {},
+				feedText = "You decided to learn new skills...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local tuitionCost = math.min(3000, money * 0.3)
+					if money >= 1000 then
+						state.Money = money - tuitionCost
+						state:ModifyStat("Smarts", 6)
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.continuing_education = true
+						state:AddFeed(string.format("📚 Going back to school! ($%d investment in yourself)", math.floor(tuitionCost)))
+					else
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("📚 Taking free online courses instead. Every bit helps!")
+					end
+				end,
+			},
+			{ text = "Start networking aggressively", effects = { Happiness = -2, Smarts = 2 }, setFlags = { networking = true }, feedText = "LinkedIn, conferences, coffee meetings..." },
+			{ text = "Accept it and focus on life outside work", effects = { Happiness = 5, Health = 2 }, setFlags = { work_life_balance = true }, feedText = "Work isn't everything. Finding joy elsewhere!" },
+			{ text = "Job search while employed", effects = { Smarts = 2 }, setFlags = { job_hunting = true }, feedText = "Quietly looking for better opportunities." },
+		},
+	},
+	{
+		id = "vacation_planning",
+		title = "Vacation Time",
+		emoji = "🏖️",
+		text = "You have vacation time saved up. Time to use it!",
+		question = "Where do you go?",
+		minAge = 22, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true, homeless = true },
+		-- CRITICAL FIX: Need at least some money for vacation
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 100 then
+				return false, "Can't afford any vacation"
+			end
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "Dream destination abroad",
+				effects = {},
+				feedText = "Planning the big trip...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local tripCost = math.min(5000, money * 0.4)
+					if tripCost >= 2000 then
+						state.Money = money - tripCost
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Health", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.well_traveled = true
+						state:AddFeed(string.format("🏖️ Amazing international trip! ($%d well spent!)", math.floor(tripCost)))
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏖️ Dream trip is out of budget right now...")
+					end
+				end,
+			},
+			{
+				text = "Road trip adventure",
+				effects = {},
+				feedText = "Loading up the car...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local tripCost = math.min(1000, money * 0.2)
+					if tripCost >= 300 then
+						state.Money = money - tripCost
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Health", 2)
+						state:AddFeed(string.format("🚗 Epic road trip! ($%d)", math.floor(tripCost)))
+					else
+						state.Money = math.max(0, money - 100)
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🚗 Short but sweet road trip!")
+					end
+				end,
+			},
+			{
+				text = "Staycation at home",
+				effects = { Happiness = 6, Health = 3, Money = -100 },
+				feedText = "Sometimes home is the best vacation. Relaxed and recharged!",
+			},
+			{
+				text = "Visit family",
+				effects = { Happiness = 8, Money = -300 },
+				feedText = "Quality time with family. Worth the trip!",
+			},
+		},
+	},
+	{
+		id = "sleep_problems",
+		title = "Sleep Struggles",
+		emoji = "😴",
+		text = "You've been having trouble sleeping.",
+		question = "What do you do about it?",
+		minAge = 28, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "See a sleep specialist",
+				effects = {},
+				feedText = "You saw a doctor about it...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local cost = math.min(500, money * 0.2)
+					if cost >= 200 then
+						state.Money = money - cost
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("😴 Got a sleep study. Solutions found!")
+					else
+						state:ModifyStat("Health", 2)
+						state:AddFeed("😴 Doctor gave some advice. Trying it out.")
+					end
+				end,
+			},
+			{ text = "Fix sleep hygiene habits", effects = { Health = 4, Happiness = 3 }, setFlags = { good_sleep_habits = true }, feedText = "No screens before bed. Regular schedule. It's helping!" },
+			{ text = "Try sleep supplements", effects = { Health = 2, Money = -50 }, feedText = "Melatonin and herbal teas. Some improvement." },
+			{ text = "Just deal with it", effects = { Health = -5, Happiness = -4 }, setFlags = { sleep_deprived = true }, feedText = "Running on fumes. This isn't sustainable." },
+		},
+	},
+	{
+		id = "family_reunion",
+		title = "Family Reunion",
+		emoji = "👨‍👩‍👧‍👦",
+		text = "There's a big family reunion coming up!",
+		question = "How do you feel about it?",
+		minAge = 25, maxAge = 75,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "Can't wait to see everyone!", effects = { Happiness = 10, Money = -200 }, setFlags = { family_connected = true }, feedText = "Catching up with relatives you haven't seen in years!" },
+			{ text = "Dreading the awkward questions", effects = { Happiness = -3 }, feedText = "So, when are you getting married? Having kids? Getting a real job?" },
+			{ text = "Skip it - too much drama", effects = { Happiness = 2 }, setFlags = { avoids_family = true }, feedText = "You made an excuse. Some family is best in small doses." },
+			{ text = "Organizing it yourself", effects = { Happiness = 5, Money = -500, Smarts = 2 }, setFlags = { family_planner = true }, feedText = "You're bringing everyone together!" },
+		},
+	},
+	{
+		id = "coworker_friendship",
+		title = "Work Friend",
+		emoji = "👥",
+		text = "You've become close friends with a coworker.",
+		question = "How does this friendship develop?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		
+		choices = {
+			{ text = "Best work friend ever", effects = { Happiness = 8 }, setFlags = { has_work_friend = true }, feedText = "Work is so much better with a good friend there!" },
+			{ text = "Hang out outside work too", effects = { Happiness = 6, Money = -50 }, setFlags = { work_friend_real_friend = true }, feedText = "The friendship extends beyond the office!" },
+			{ text = "Keep it professional", effects = { Happiness = 3 }, feedText = "Friendly at work, separate lives outside." },
+			{ text = "They left the company", effects = { Happiness = -4 }, feedText = "Lost your work buddy. The office isn't the same." },
+		},
+	},
+	{
+		id = "random_act_kindness",
+		title = "Random Kindness",
+		emoji = "💕",
+		text = "A stranger did something unexpectedly kind for you!",
+		question = "What happened?",
+		minAge = 18, maxAge = 85,
+		baseChance = 0.2,
+		cooldown = 4,
+		
+		choices = {
+			{ text = "Paid for your coffee", effects = { Happiness = 6, Money = 5 }, feedText = "A stranger ahead of you in line paid for your order!" },
+			{ text = "Helped you when you were stuck", effects = { Happiness = 8 }, feedText = "Someone stopped to help when you needed it most!" },
+			{ text = "Gave you a sincere compliment", effects = { Happiness = 5, Looks = 1 }, feedText = "A stranger's kind words made your day!" },
+			{ text = "Paid it forward", effects = { Happiness = 10, Money = -20 }, setFlags = { pays_it_forward = true }, feedText = "You were inspired to do something kind for someone else!" },
+		},
+	},
+	{
+		id = "hobby_competition",
+		title = "Competition Time",
+		emoji = "🏆",
+		text = "There's a competition related to one of your hobbies!",
+		question = "Do you enter?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		
+		-- CRITICAL FIX: Random competition outcome
+		choices = {
+			{
+				text = "Go for the win!",
+				effects = {},
+				feedText = "You entered the competition...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local winChance = 0.25 + (smarts / 200)
+					if roll < winChance * 0.5 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.competition_winner = true
+						state:AddFeed("🏆 FIRST PLACE! You won! What an achievement!")
+					elseif roll < winChance then
+						state.Money = (state.Money or 0) + 100
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏆 Top finisher! You placed well!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🏆 Didn't place, but it was fun to compete!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🏆 Got eliminated early. Humbling experience.")
+					end
+				end,
+			},
+			{ text = "Just participate for fun", effects = { Happiness = 5 }, feedText = "Not about winning - just enjoying the experience!" },
+			{ text = "Watch from the sidelines", effects = { Happiness = 2 }, feedText = "Enjoyed watching others compete." },
+		},
+	},
 }
 
 return Adult
