@@ -1331,7 +1331,16 @@ Adult.events = {
 		minAge = 40, maxAge = 70,
 		baseChance = 0.4,
 		cooldown = 3,
-
+		-- CRITICAL FIX: Can't do bucket list activities from prison or if homeless
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- CRITICAL FIX: Need at least $500 to think about bucket list (lowest option cost)
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 500 then
+				return false, "Can't afford bucket list activities"
+			end
+			return true
+		end,
 		choices = {
 			{ text = "Dream vacation trip", effects = { Happiness = 15, Money = -5000, Health = 3 }, setFlags = { traveled_world = true }, feedText = "The trip of a lifetime! Worth every penny." },
 			{ text = "Learn a new skill", effects = { Happiness = 8, Smarts = 5, Money = -500 }, setFlags = { lifelong_learner = true }, feedText = "You're never too old to learn something new!" },

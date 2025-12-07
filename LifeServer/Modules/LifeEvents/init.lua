@@ -338,6 +338,33 @@ local function canEventTrigger(event, state)
 		return false -- Dead players can't have events
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
+	-- Only allow health-related, medical, or high-priority events for very sick players
+	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local health = (state.Stats and state.Stats.Health) or state.Health or 50
+	if health <= 15 then
+		-- Player is critically ill - only allow relevant events
+		local eventCategory = event._category or event.category or ""
+		local eventId = event.id or ""
+		local allowedWhileDying = event.allowedWhileDying
+			or event.priority == "high"
+			or event.isMilestone
+			or eventCategory == "health"
+			or eventCategory == "medical"
+			or eventCategory == "death"
+			or string.find(eventId, "health")
+			or string.find(eventId, "illness")
+			or string.find(eventId, "death")
+			or string.find(eventId, "hospital")
+			or string.find(eventId, "doctor")
+		
+		if not allowedWhileDying then
+			return false -- Don't show random events to dying players
+		end
+	end
+	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
 	local cond = event.conditions or {}
 	local minAge = event.minAge or cond.minAge
@@ -1439,17 +1466,55 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Breakup events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Universal breakup handler
+	-- Any event that sets recently_single should FULLY clear all relationship state
+	-- This prevents bugs where player is "single" but still has has_partner flag
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if choice.setFlags and choice.setFlags.recently_single then
+		local partnerName = "your partner"
 		if state.Relationships and state.Relationships.partner then
-			-- MINOR FIX: Added fallback for partner name
-			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			
+			-- Move to ex-partner storage for potential "ex returns" events later
+			state.Relationships.last_ex = state.Relationships.partner
+			state.Relationships.last_ex.breakupAge = state.Age
 			state.Relationships.partner = nil
-			state.Flags.has_partner = nil
-			state.Flags.dating = nil
-			state.Flags.committed_relationship = nil
+		end
+		
+		-- Clear ALL relationship flags to prevent inconsistent state
+		state.Flags.has_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.office_romance = nil
+		state.Flags.long_distance = nil
+		
+		-- Ensure feedText includes the partner name
+		if not outcome.feedText or outcome.feedText == "" then
 			outcome.feedText = "You and " .. partnerName .. " broke up."
 		end
+	end
+	
+	-- MINOR FIX: Also handle divorce specifically (sets divorced flag)
+	if choice.setFlags and choice.setFlags.divorced then
+		local partnerName = "your spouse"
+		if state.Relationships and state.Relationships.partner then
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your spouse"
+			state.Relationships.ex_spouse = state.Relationships.partner
+			state.Relationships.ex_spouse.divorceAge = state.Age
+			state.Relationships.partner = nil
+		end
+		
+		-- Clear relationship flags
+		state.Flags.has_partner = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

@@ -381,6 +381,16 @@ Career.events = {
 		minAge = 22, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 4,
+		-- CRITICAL FIX #10: Can't invest if broke, can't be approached from prison
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- Need at least $3000 to invest (first choice costs $3000)
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 500 then
+				return false, "Too broke to be approached by investors"
+			end
+			return true
+		end,
 
 		-- META
 		stage = STAGE,

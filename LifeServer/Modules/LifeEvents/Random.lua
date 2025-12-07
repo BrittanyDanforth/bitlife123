@@ -561,6 +561,14 @@ Random.events = {
 		cooldown = 3,
 		-- CRITICAL FIX #4: Can't travel from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- CRITICAL FIX: Need at least $1000 to consider traveling (the adventure option costs $1000)
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 300 then
+				return false, "Can't afford to travel"
+			end
+			return true
+		end,
 		choices = {
 			{ text = "Absolutely, adventure awaits!", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!" },
 			{ text = "Go on a budget", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!" },

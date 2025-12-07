@@ -2448,6 +2448,69 @@ function LifeBackend:handleAgeUp(player)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #4: Pay pension to retired players
+	-- Retirees should receive annual pension income based on their career history
+	-- Without this, retired players had NO income and would slowly go broke!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags and state.Flags.retired then
+		local pensionAmount = 0
+		
+		-- Get pension from stored amount (set during retirement event)
+		if state.Flags.pension_amount and type(state.Flags.pension_amount) == "number" then
+			pensionAmount = state.Flags.pension_amount
+		else
+			-- Fallback: Calculate based on career info
+			if state.CareerInfo and state.CareerInfo.lastJob then
+				local lastSalary = state.CareerInfo.lastJob.salary or 30000
+				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
+			else
+				pensionAmount = 15000 -- Minimum pension
+			end
+			-- Store for future years
+			state.Flags.pension_amount = pensionAmount
+		end
+		
+		-- Pay the pension
+		if pensionAmount > 0 then
+			self:addMoney(state, pensionAmount)
+			debugPrint("Pension paid:", pensionAmount, "to retired player. New balance:", state.Money)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #9: Age children in Relationships each year
+	-- Without this, your 5-year-old son would still be 5 years old when you're 80!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.alive ~= false then
+				-- Age all living relationship members (except "partner" whose age is tracked separately in some cases)
+				if rel.age ~= nil and type(rel.age) == "number" then
+					rel.age = rel.age + 1
+					
+					-- ═══════════════════════════════════════════════════════════════════════
+					-- MINOR FIX: Elderly family members may pass away
+					-- ═══════════════════════════════════════════════════════════════════════
+					if rel.type == "family" and rel.role ~= "Partner" and rel.role ~= "Spouse" then
+						if rel.age >= 75 then
+							local deathChance = (rel.age - 75) / 100 -- 1% per year over 75
+							if RANDOM:NextNumber() < deathChance then
+								rel.alive = false
+								rel.deceased = true
+								rel.deathAge = rel.age
+								-- Log the death
+								self:logYearEvent(state, "family_death", 
+									string.format("Your %s, %s, passed away at age %d.", 
+										rel.role or "relative", rel.name or "family member", rel.age), "💔")
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Decrement jail sentence each year and auto-release when complete
 	-- Without this, prisoners would be stuck forever!
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2460,7 +2523,20 @@ function LifeBackend:handleAgeUp(player)
 			state.JailYearsLeft = 0
 			state.Flags.in_prison = nil
 			state.Flags.incarcerated = nil
-			state.PendingFeed = "🎉 You've been released from prison! Time served."
+			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
+			
+			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
+			-- If player was in college before going to jail, they can now re-enroll
+			-- ═══════════════════════════════════════════════════════════════════════
+			if state.EducationData and state.EducationData.StatusBeforeJail == "enrolled" then
+				state.EducationData.Status = "enrolled"
+				state.EducationData.StatusBeforeJail = nil
+				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+			else
+				state.PendingFeed = "🎉 You've been released from prison! Time served."
+			end
+			
 			debugPrint("Player released from prison after completing sentence:", player.Name)
 		else
 			state.PendingFeed = string.format("📅 Prison: %.1f years remaining.", state.JailYearsLeft)
