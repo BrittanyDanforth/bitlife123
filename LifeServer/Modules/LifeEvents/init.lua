@@ -190,11 +190,41 @@ function LifeEvents.init()
 		{ name = "Childhood",     category = "childhood" },
 		{ name = "Teen",          category = "teen" },
 		{ name = "Adult",         category = "adult" },
-		{ name = "Senior",        category = "senior" },              -- NEW: Senior/retirement events (ages 60+)
+		{ name = "Senior",        category = "senior" },              -- Senior/retirement events (ages 60+)
 		{ name = "Career",        category = "career" },
 		{ name = "Relationships", category = "relationships" },
 		{ name = "Milestones",    category = "milestones" },
 		{ name = "Random",        category = "random" },
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EXPANSION MODULES - 300+ new events total
+		-- All events use randomized outcomes - NO god mode
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "ChildhoodExpanded",  category = "childhood" },      -- 40+ new childhood events (ages 0-12)
+		{ name = "TeenExpanded",       category = "teen" },           -- 60+ new teen events (ages 13-17)
+		{ name = "AdultExpanded",      category = "adult" },          -- 60+ new adult events (ages 18-60)
+		{ name = "SeniorExpanded",     category = "senior" },         -- 35+ new senior events (ages 60+)
+		{ name = "RandomExpanded",     category = "random" },         -- 30+ new random life events (any age)
+		{ name = "JobSpecificEvents",  category = "career" },         -- 60+ job-specific events per career category
+		{ name = "RelationshipsExpanded", category = "relationships" }, -- 25+ expanded relationship events
+		{ name = "LifeExperiences",  category = "random" },        -- 30+ life experience events
+		{ name = "SchoolExpanded",   category = "childhood" },     -- 30+ school/education events
+		{ name = "CommunityEvents",  category = "random" },        -- 30+ community/social events
+		{ name = "FinancialEvents",  category = "random" },        -- 25+ financial events
+		{ name = "HealthEvents",     category = "health" },        -- 25+ health/wellness events
+		{ name = "TravelEvents",     category = "random" },        -- 15+ travel/vacation events
+		{ name = "FamilyEvents",     category = "family" },        -- 15+ family/parenting events
+		{ name = "HobbyEvents",      category = "hobbies" },       -- 20+ hobby/interest events
+		{ name = "SocialMediaEvents", category = "random" },       -- 12+ social media/online events
+		{ name = "PetEvents",        category = "pets" },          -- 12+ pet/animal events
+		{ name = "LegalEvents",      category = "legal" },         -- 12+ legal/justice events
+		{ name = "LifeChallenges",   category = "random" },        -- 18+ life challenge events
+		{ name = "SeasonalEvents",   category = "seasonal" },      -- 20+ seasonal/holiday events
+		{ name = "MiscEvents",       category = "random" },        -- 18+ miscellaneous events
+		{ name = "DailyLifeEvents",  category = "random" },        -- 22+ daily routine events
+		{ name = "SpecialMoments",   category = "milestone" },     -- 16+ special moment events
+		{ name = "ReputationEvents", category = "social" },        -- 10+ reputation/social events
+		{ name = "LuckEvents",       category = "random" },        -- 4+ luck/superstition events
 		
 		-- Catalog modules (organized event collections)
 		{ name = "CareerEvents",   category = "career" },
@@ -202,7 +232,7 @@ function LifeEvents.init()
 		{ name = "CrimeEvents",    category = "crime" },
 		{ name = "CoreMilestones", category = "milestones" },
 		
-		-- NEW: Specialized career paths with minigame integration
+		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
 		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
