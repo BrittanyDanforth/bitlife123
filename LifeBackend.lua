@@ -1779,8 +1779,10 @@ function LifeBackend:tickCareer(state)
 	end
 	
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
-	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
-	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
+	-- CRITICAL FIX: Performance can fluctuate more - not always improving
+	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-5, 5), 0, 100)
+	-- CRITICAL FIX: Removed automatic promotionProgress - it was causing promotion spam
+	-- Now promotions are based on yearsAtJob + performance + luck (see handlePromotion)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Track career skills based on job category
@@ -3576,8 +3578,9 @@ function LifeBackend:handleWork(player)
 	self:addMoney(state, payday)
 	self:applyStatChanges(state, { Happiness = RANDOM:NextInteger(-2, 2) })
 
-	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 4), 0, 100)
-	state.CareerInfo.promotionProgress = clamp((state.CareerInfo.promotionProgress or 0) + RANDOM:NextInteger(3, 6), 0, 100)
+	-- CRITICAL FIX: Working hard improves performance, but not guaranteed
+	-- Performance is the key metric for promotions now (see handlePromotion)
+	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 5), 0, 100)
 
 	local message = string.format("Payday! You earned %s.", formatMoney(payday))
 	-- CRITICAL FIX: Don't use showPopup here - client already shows result from return value
@@ -3594,16 +3597,58 @@ function LifeBackend:handlePromotion(player)
 
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
+	state.Flags = state.Flags or {}
 
-	if (info.promotionProgress or 0) < 80 then
-		return { success = false, message = "You need more experience before a promotion." }
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Promotions were happening every 1-2 years (way too fast!)
+	-- Now require: minimum years at job, good performance, AND random approval chance
+	-- This matches BitLife where promotions are rare and based on performance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Minimum 3 years at current position before eligible for promotion
+	local yearsAtJob = info.yearsAtJob or 0
+	if yearsAtJob < 3 then
+		return { success = false, message = string.format("You need more time in your current role. (%.0f/3 years)", yearsAtJob) }
+	end
+	
+	-- Need good performance (70+)
+	local performance = info.performance or 50
+	if performance < 70 then
+		return { success = false, message = string.format("Your performance needs improvement. (%d%% / 70%% required)", performance) }
+	end
+	
+	-- Cooldown: Can only request promotion once per year
+	local lastPromotionRequest = info.lastPromotionRequestAge or 0
+	if (state.Age or 0) <= lastPromotionRequest then
+		return { success = false, message = "You already asked this year. Try again next year." }
+	end
+	info.lastPromotionRequestAge = state.Age or 0
+	
+	-- Random chance based on performance - promotions aren't guaranteed!
+	-- 70% performance = 40% chance, 100% performance = 70% chance
+	local promotionChance = 0.1 + (performance / 100) * 0.6
+	local roll = RANDOM:NextNumber()
+	
+	if roll > promotionChance then
+		-- Denied!
+		local denialMessages = {
+			"Your manager said 'not this time.' Keep working hard.",
+			"The budget for promotions has been frozen. Try again next year.",
+			"They're looking for someone with more experience in leadership.",
+			"You're doing great, but there's no open positions above you right now.",
+		}
+		local msg = denialMessages[RANDOM:NextInteger(1, #denialMessages)]
+		return { success = false, message = msg }
 	end
 
+	-- Promotion granted!
 	info.promotionProgress = 0
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.2)
-	info.performance = clamp((info.performance or 60) + 10, 0, 100)
+	info.promotions = (info.promotions or 0) + 1
+	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15) -- 15% raise, not 20%
+	info.performance = clamp((info.performance or 60) + 5, 0, 100)
+	state.Flags.just_promoted = true
 
-	local feed = string.format("You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	local feed = string.format("🎉 You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -3617,24 +3662,38 @@ function LifeBackend:handleRaise(player)
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add cooldown to prevent raise spam
+	-- Can only ask for a raise once per year, similar to promotions
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local lastRaiseRequest = info.lastRaiseRequestAge or 0
+	if (state.Age or 0) <= lastRaiseRequest then
+		return { success = false, message = "You already asked for a raise this year. Try again next year." }
+	end
+	info.lastRaiseRequestAge = state.Age or 0
+
 	if (info.performance or 0) < 60 then
-		return { success = false, message = "Improve your performance before asking." }
+		return { success = false, message = "Improve your performance before asking. (Need 60%+)" }
 	end
 	if (info.raises or 0) >= 5 then
-		return { success = false, message = "You've maxed out raises for this role." }
+		return { success = false, message = "You've maxed out raises for this role. Need a promotion for more." }
 	end
 
-	local granted = RANDOM:NextNumber() > 0.3
+	-- CRITICAL FIX: Raise chance based on performance, not just 70% flat
+	local performance = info.performance or 60
+	local raiseChance = 0.3 + (performance / 100) * 0.4 -- 30-70% based on performance
+	local granted = RANDOM:NextNumber() < raiseChance
+	
 	if not granted then
 		info.performance = clamp((info.performance or 60) - 5, 0, 100)
-		return { success = false, message = "Raise denied. Maybe next quarter." }
+		return { success = false, message = "Raise denied. 'Budget constraints' they said. Maybe next year." }
 	end
 
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.1)
+	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
 	info.raises = (info.raises or 0) + 1
-	info.performance = clamp((info.performance or 60) + 5, 0, 100)
+	info.performance = clamp((info.performance or 60) + 3, 0, 100)
 
-	local feed = string.format("You negotiated a raise! Salary is %s.", formatMoney(state.CurrentJob.salary))
+	local feed = string.format("💰 Raise approved! Salary is now %s.", formatMoney(state.CurrentJob.salary))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

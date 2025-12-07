@@ -570,38 +570,118 @@ Teen.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked why they got detention!
+		-- Now reason is random, player chooses how to handle it
 		id = "detention",
 		title = "Detention",
 		emoji = "📚",
-		text = "You got detention!",
-		question = "What did you do?",
+		text = "The teacher handed you a detention slip. After school today.",
+		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.4,
 		cooldown = 2,
 
 		choices = {
-			{ text = "Talked back to a teacher", effects = { Happiness = 2 }, setFlags = { defiant = true }, feedText = "You spoke your mind. Worth it? Maybe." },
-			{ text = "Was late too many times", effects = { Happiness = -2 }, setFlags = { chronically_late = true }, feedText = "Time management isn't your strength." },
-			{ text = "Got into a fight", effects = { Health = -3, Happiness = -3 }, setFlags = { got_in_fight = true }, feedText = "Violence isn't the answer. Now you have detention AND a bruise." },
-			{ text = "Caught with phone in class", effects = { Happiness = -2 }, feedText = "Technology is distracting. Lesson learned." },
-			{ text = "Took the blame for a friend", effects = { Happiness = 3 }, setFlags = { loyal_friend = true }, feedText = "You're a good friend. They owe you one." },
+			{ 
+				text = "Accept it and show up", 
+				effects = { },
+				feedText = "You showed up to detention...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 25 then
+						-- Talked back
+						state.Flags.defiant = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("📚 Detention for talking back to a teacher. Worth it? Maybe.")
+						end
+					elseif roll <= 50 then
+						-- Late
+						state.Flags.chronically_late = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -3)
+						end
+						if state.AddFeed then
+							state:AddFeed("📚 Detention for being late too many times. Set more alarms!")
+						end
+					elseif roll <= 75 then
+						-- Phone
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("📚 Detention for using your phone in class. Busted!")
+						end
+					else
+						-- Made a friend in detention
+						state.Flags.detention_buddy = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 2)
+						end
+						if state.AddFeed then
+							state:AddFeed("📚 Detention wasn't so bad - you made a friend there!")
+						end
+					end
+				end,
+			},
+			{ text = "Skip detention", effects = { Happiness = 3 }, setFlags = { skipped_detention = true }, feedText = "You skipped detention. Might come back to bite you..." },
+			{ text = "Get your parents to get you out", effects = { Happiness = 1 }, feedText = "Your parents called the school. They got you out... this time." },
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked summer romance outcome!
+		-- Now outcome is random based on player choice
 		id = "summer_love",
 		title = "Summer Romance",
 		emoji = "☀️",
-		text = "You met someone special over summer vacation.",
-		question = "What happens with your summer fling?",
+		text = "You met someone special over summer vacation. They live in another town.",
+		question = "Do you want to try making it work?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
 		cooldown = 2,
 
 		choices = {
-			{ text = "It becomes a real relationship", effects = { Happiness = 10 }, setFlags = { has_partner = true, summer_love = true }, feedText = "Your summer romance turned into something real!" },
-			{ text = "Long distance doesn't work out", effects = { Happiness = -5 }, setFlags = { long_distance_failed = true }, feedText = "Distance proved too difficult. You're heartbroken." },
-			{ text = "It stays a perfect summer memory", effects = { Happiness = 6 }, setFlags = { nostalgic = true }, feedText = "Some things are meant to be a beautiful memory." },
-			{ text = "You ghost each other after summer", effects = { Happiness = -2 }, feedText = "Summer ended, and so did the texting." },
+			{ 
+				text = "Yes! Try long distance", 
+				effects = { },
+				feedText = "You wanted to make it work...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						-- It works out!
+						state.Flags.has_partner = true
+						state.Flags.summer_love = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 10)
+						end
+						if state.AddFeed then
+							state:AddFeed("☀️ Your summer romance turned into something real!")
+						end
+					elseif roll <= 70 then
+						-- Fizzles out
+						state.Flags.long_distance_failed = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("☀️ Long distance was too hard. It fizzled out.")
+						end
+					else
+						-- They ghost you
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("☀️ They stopped responding to your texts...")
+						end
+					end
+				end,
+			},
+			{ text = "No, let it be a summer memory", effects = { Happiness = 4 }, setFlags = { nostalgic = true }, feedText = "Some things are meant to be a beautiful memory." },
 		},
 	},
 	{

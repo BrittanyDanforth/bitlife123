@@ -287,6 +287,13 @@ local events = {
 		cooldown = 6,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Only show this event when player is ACTUALLY broke!
+		-- Player was getting this event with lots of money which makes no sense
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- Must be actually desperate - less than $500
+			return money < 500
+		end,
 		choices = {
 			{
 				index = 1,

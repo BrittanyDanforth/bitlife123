@@ -938,20 +938,56 @@ Relationships.events = {
 		end,
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked what drama happened!
+		-- Now drama type is random, player chooses how to respond
 		id = "friend_group_drama",
 		title = "Friend Group Drama",
 		emoji = "👯",
-		text = "Drama has erupted in your friend group.",
-		question = "What's happening?",
+		text = "Drama has erupted in your friend group. Two people are fighting.",
+		question = "What do you do?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
 
 		choices = {
-			{ text = "Two friends are fighting, picking sides", effects = { Happiness = -5 }, feedText = "You had to choose. Awkward." },
-			{ text = "Everyone is drifting apart", effects = { Happiness = -8 }, setFlags = { losing_friends = true }, feedText = "The group is falling apart." },
-			{ text = "Someone new is causing chaos", effects = { Happiness = -4 }, feedText = "The new person changed the dynamic." },
-			{ text = "You mediated and saved the group", effects = { Happiness = 8, Smarts = 2 }, feedText = "You brought everyone together!" },
+			{ 
+				text = "Try to mediate", 
+				effects = { },
+				feedText = "You tried to help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						-- Success
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 8)
+							state:ModifyStat("Smarts", 2)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 You mediated successfully! The group is stronger now.")
+						end
+					elseif roll <= 70 then
+						-- Got dragged into it
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 You got dragged into the drama. Had to pick a side.")
+						end
+					else
+						-- Made it worse
+						state.Flags.losing_friends = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 Your mediation backfired. Now everyone's mad.")
+						end
+					end
+				end,
+			},
+			{ text = "Stay out of it", effects = { Happiness = -2 }, feedText = "You stayed neutral. Some friends appreciated that." },
+			{ text = "Pick a side", effects = { Happiness = -4 }, feedText = "You chose a side. Hope it was the right one." },
 		},
 	},
 	{
@@ -1317,21 +1353,69 @@ Relationships.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: This was god-mode - player picked what trouble child got into!
+		-- Now the trouble is random and player chooses how to respond
 		id = "child_trouble",
 		title = "Child in Trouble",
 		emoji = "😰",
-		text = "Your child got into serious trouble.",
-		question = "What happened?",
+		text = "The school called. Your child got into trouble.",
+		question = "How do you handle it?",
 		minAge = 30, maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 5,
 		requiresFlags = { parent = true },
 
 		choices = {
-			{ text = "Caught doing something illegal", effects = { Happiness = -15, Money = -2000 }, setFlags = { child_delinquent = true }, feedText = "Legal fees and a lot of worry." },
-			{ text = "Failing at school", effects = { Happiness = -8 }, feedText = "Their grades are tanking." },
-			{ text = "Hanging with the wrong crowd", effects = { Happiness = -10 }, setFlags = { child_bad_influences = true }, feedText = "You're worried about their friends." },
-			{ text = "Caught in a lie", effects = { Happiness = -5 }, feedText = "Trust issues are developing." },
+			{ 
+				text = "Rush to the school immediately", 
+				effects = { },
+				feedText = "You dropped everything and rushed to school...",
+				onResolve = function(state)
+					-- CRITICAL FIX: Random trouble type
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if roll <= 25 then
+						-- Caught doing something illegal
+						state.Flags.child_delinquent = true
+						state.Money = (state.Money or 0) - 2000
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They were caught shoplifting! Legal fees and serious talks ahead.")
+						end
+					elseif roll <= 50 then
+						-- Failing at school
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 Their grades have been slipping badly. Time for intervention.")
+						end
+					elseif roll <= 75 then
+						-- Bad crowd
+						state.Flags.child_bad_influences = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They've been hanging with a troublesome crowd. You're worried.")
+						end
+					else
+						-- Fighting
+						state.Money = (state.Money or 0) - 500
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -12)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They got into a fight at school. Suspended for 3 days.")
+						end
+					end
+				end,
+			},
+			{ text = "Let your partner handle it", effects = { Happiness = -5 }, feedText = "You delegated this one." },
+			{ text = "Ignore the call - they'll figure it out", effects = { Happiness = -3 }, setFlags = { distant_parent = true }, feedText = "Maybe not your best parenting moment." },
 		},
 	},
 	{

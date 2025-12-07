@@ -403,19 +403,58 @@ Random.events = {
 	-- EVERYDAY LIFE
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
+		-- CRITICAL FIX: Was god-mode - player picked weather outcome!
+		-- Now weather is random, player just chooses how to react
 		id = "weather_event",
-		title = "Weather Watch",
+		title = "Weather Alert",
 		emoji = "🌦️",
-		text = "The weather is affecting your plans today.",
-		question = "What's happening?",
+		text = "There's unusual weather today that might affect your plans.",
+		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.3,
 		cooldown = 2,
 		choices = {
-			{ text = "Beautiful day - enjoyed it!", effects = { Happiness = 7, Health = 3 }, feedText = "Perfect weather made everything better!" },
-			{ text = "Rainy day - stayed in", effects = { Happiness = 3 }, feedText = "Cozy day indoors." },
-			{ text = "Snowstorm - adventure!", effects = { Happiness = 5, Health = 2 }, feedText = "You made the most of the snow!" },
-			{ text = "Heat wave - tough day", effects = { Happiness = -3, Health = -2 }, feedText = "The heat was brutal." },
+			{ 
+				text = "Make the most of it", 
+				effects = { },
+				feedText = "You checked the weather...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 7)
+							state:ModifyStat("Health", 3)
+						end
+						if state.AddFeed then
+							state:AddFeed("☀️ Beautiful day! You enjoyed every minute.")
+						end
+					elseif roll <= 60 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 3)
+						end
+						if state.AddFeed then
+							state:AddFeed("🌧️ Rainy day. Cozy time indoors.")
+						end
+					elseif roll <= 80 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 5)
+							state:ModifyStat("Health", 2)
+						end
+						if state.AddFeed then
+							state:AddFeed("❄️ Snow day! You had fun in the snow.")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -3)
+							state:ModifyStat("Health", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("🥵 Heat wave! Brutal day.")
+						end
+					end
+				end,
+			},
+			{ text = "Stay inside regardless", effects = { Happiness = 1 }, feedText = "You played it safe and stayed in." },
 		},
 	},
 	{
@@ -826,41 +865,140 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked how they got injured!
+		-- Now injury type is random, player responds to situation
 		id = "injury_work_accident",
 		title = "Workplace Accident!",
 		emoji = "🏭",
-		text = "You got injured at work!",
-		question = "What happened?",
+		text = "There's been an accident at work! You got hurt.",
+		question = "How do you handle it?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.15,
 		cooldown = 4,
 		category = "injury",
-		requiresJob = true, -- CRITICAL FIX: Can't have workplace accident without a job!
+		requiresJob = true,
 
 		choices = {
-			{ text = "Fell off a ladder", effects = { Health = -18, Happiness = -10, Money = 1000 }, setFlags = { workplace_injury = true }, feedText = "Ladder fall at work. Workers' comp is kicking in." },
-			{ text = "Repetitive strain injury", effects = { Health = -8, Happiness = -5 }, setFlags = { rsi = true }, feedText = "Carpal tunnel from work. Need to take breaks." },
-			{ text = "Heavy object fell on me", effects = { Health = -25, Happiness = -15, Money = 2000 }, setFlags = { workplace_injury = true, hospitalized = true }, feedText = "Crushed by equipment. Serious but compensated." },
-			{ text = "Chemical burn", effects = { Health = -15, Looks = -5, Happiness = -12 }, setFlags = { chemical_injury = true }, feedText = "Chemical burn. Scarring is likely." },
-			{ text = "Minor cut - first aid was enough", effects = { Health = -3, Happiness = -2 }, feedText = "Just a cut. Band-aid and back to work." },
+			{ 
+				text = "File for workers' compensation", 
+				effects = { },
+				feedText = "You filed a claim...",
+				onResolve = function(state)
+					-- Random injury type
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 20 then
+						-- Serious: ladder fall
+						state.Flags.workplace_injury = true
+						state.Money = (state.Money or 0) + 2000
+						if state.ModifyStat then
+							state:ModifyStat("Health", -18)
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏭 Fell off a ladder. Serious injury but workers' comp helped.")
+						end
+					elseif roll <= 40 then
+						-- RSI
+						state.Flags.rsi = true
+						if state.ModifyStat then
+							state:ModifyStat("Health", -8)
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏭 Repetitive strain injury diagnosed. Need to take breaks.")
+						end
+					elseif roll <= 55 then
+						-- Heavy object
+						state.Flags.workplace_injury = true
+						state.Flags.hospitalized = true
+						state.Money = (state.Money or 0) + 3000
+						if state.ModifyStat then
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Happiness", -15)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏭 Heavy equipment fell on you. Hospitalized but compensated.")
+						end
+					else
+						-- Minor cut
+						if state.ModifyStat then
+							state:ModifyStat("Health", -3)
+							state:ModifyStat("Happiness", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏭 Minor cut. First aid was enough.")
+						end
+					end
+				end,
+			},
+			{ text = "Tough it out - don't report it", effects = { Health = -10, Happiness = -5 }, feedText = "You didn't report it. Hopefully it heals on its own." },
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked how they got injured!
+		-- Now injury is random, player chooses how to respond
 		id = "injury_home_accident",
 		title = "Accident at Home!",
 		emoji = "🏠",
-		text = "You had an accident at home!",
-		question = "What happened?",
+		text = "You had an accident at home and got hurt!",
+		question = "What do you do?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.2,
 		cooldown = 2,
 		category = "injury",
 
 		choices = {
-			{ text = "Slipped in the bathroom", effects = { Health = -12, Happiness = -8 }, setFlags = { bathroom_fall = true }, feedText = "Slipped and fell in the bathroom. Ouch!" },
-			{ text = "Burned myself cooking", effects = { Health = -8, Looks = -2, Happiness = -5 }, feedText = "Kitchen burn. Not too bad, but painful." },
-			{ text = "Cut myself with a knife", effects = { Health = -10, Happiness = -6, Money = -200 }, feedText = "Deep cut. Needed stitches." },
-			{ text = "Fell down the stairs", effects = { Health = -20, Happiness = -12 }, setFlags = { stair_fall = true }, feedText = "Tumbled down the stairs. Major bruising." },
+			{ 
+				text = "Get medical attention", 
+				effects = { },
+				feedText = "You assessed the damage...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 25 then
+						-- Bathroom slip
+						state.Flags.bathroom_fall = true
+						if state.ModifyStat then
+							state:ModifyStat("Health", -12)
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏠 Slipped in the bathroom. Bruised but okay.")
+						end
+					elseif roll <= 50 then
+						-- Cooking burn
+						if state.ModifyStat then
+							state:ModifyStat("Health", -8)
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏠 Burned yourself cooking. Painful but will heal.")
+						end
+					elseif roll <= 75 then
+						-- Cut
+						state.Money = (state.Money or 0) - 200
+						if state.ModifyStat then
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -6)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏠 Deep cut. Needed stitches at urgent care.")
+						end
+					else
+						-- Stairs
+						state.Flags.stair_fall = true
+						if state.ModifyStat then
+							state:ModifyStat("Health", -20)
+							state:ModifyStat("Happiness", -12)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏠 Fell down the stairs. Major bruising!")
+						end
+					end
+				end,
+			},
+			{ text = "Walk it off", effects = { Health = -8, Happiness = -3 }, feedText = "You toughed it out. Hopefully nothing's broken." },
 			{ text = "Furniture fell on me", effects = { Health = -15, Happiness = -8 }, feedText = "Furniture accident. That bookshelf was heavy!" },
 			{ text = "Stubbed toe - broken", effects = { Health = -5, Happiness = -8 }, setFlags = { broken_toe = true }, feedText = "Broken toe! Such a small thing, so much pain!" },
 		},
@@ -1324,21 +1462,86 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked break-in outcome!
+		-- Now outcome is random, player chooses response
 		id = "home_invasion",
 		title = "Break-In!",
 		emoji = "🚨",
-		text = "Someone broke into your home!",
-		question = "What happened?",
+		text = "You hear breaking glass in your home at night. Someone's breaking in!",
+		question = "What do you do?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.05,
 		cooldown = 10,
 		category = "crime",
 
 		choices = {
-			{ text = "Caught them in the act - fight!", effects = { Health = -15, Happiness = -10 }, setFlags = { home_invasion = true, self_defense = true }, feedText = "You confronted the intruder. Got hurt but they fled." },
-			{ text = "They stole valuables while you slept", effects = { Money = -5000, Happiness = -15 }, setFlags = { burglarized = true }, feedText = "They took everything valuable. You feel violated." },
-			{ text = "Alarm scared them off", effects = { Happiness = -8 }, feedText = "The alarm worked. Nothing taken but you're shaken." },
-			{ text = "Hid and called police", effects = { Happiness = -12 }, setFlags = { home_invasion = true }, feedText = "Police caught them. You're safe but traumatized." },
+			{ 
+				text = "Call 911 and hide", 
+				effects = { },
+				feedText = "You called the police...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						-- Police arrive in time
+						state.Flags.home_invasion = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("🚨 Police caught them! You're safe but shaken.")
+						end
+					elseif roll <= 70 then
+						-- Alarm/noise scared them off
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("🚨 They heard you call and fled. Nothing taken!")
+						end
+					else
+						-- They got away with stuff
+						state.Flags.burglarized = true
+						state.Money = (state.Money or 0) - math.random(2000, 5000)
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+						if state.AddFeed then
+							state:AddFeed("🚨 They got away with valuables before police arrived.")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Confront the intruder", 
+				effects = { },
+				feedText = "You confronted them...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						-- They flee
+						state.Flags.self_defense = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("🚨 They ran when they saw you! Nothing taken.")
+						end
+					else
+						-- Altercation
+						state.Flags.home_invasion = true
+						state.Flags.self_defense = true
+						if state.ModifyStat then
+							state:ModifyStat("Health", -15)
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("🚨 You fought them off but got hurt. They fled.")
+						end
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -1660,21 +1863,63 @@ Random.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked what embarrassment happened!
+		-- Now embarrassment is random, player chooses how to react
 		id = "public_embarrassment",
 		title = "Public Humiliation",
 		emoji = "😳",
-		text = "Something incredibly embarrassing happened to you in public!",
-		question = "What happened?",
+		text = "Something incredibly embarrassing just happened to you in public!",
+		question = "How do you handle it?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.15,
 		cooldown = 3,
 
 		choices = {
-			{ text = "Wardrobe malfunction", effects = { Happiness = -10, Looks = -3 }, feedText = "Everyone saw... everything. Mortifying." },
-			{ text = "Said something embarrassing", effects = { Happiness = -8, Smarts = -2 }, feedText = "You can't believe you said that. Cringe." },
-			{ text = "Tripped and fell spectacularly", effects = { Happiness = -7, Health = -3 }, feedText = "Epic fall. Someone definitely recorded it." },
-			{ text = "Got caught in a lie publicly", effects = { Happiness = -12 }, setFlags = { reputation_damaged = true }, feedText = "Your lie was exposed. Reputation hit." },
-			{ text = "Laughed it off - no big deal", effects = { Happiness = 5 }, setFlags = { thick_skinned = true }, feedText = "You didn't let it bother you. Strong move." },
+			{ 
+				text = "Try to play it cool", 
+				effects = { },
+				feedText = "You tried to recover...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 25 then
+						-- Wardrobe malfunction
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("😳 Wardrobe malfunction. Everyone saw. Mortifying!")
+						end
+					elseif roll <= 50 then
+						-- Tripped
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -7)
+							state:ModifyStat("Health", -3)
+						end
+						if state.AddFeed then
+							state:AddFeed("😳 Epic fall in front of everyone. Someone recorded it.")
+						end
+					elseif roll <= 75 then
+						-- Said something dumb
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("😳 You said something SO dumb. Cringe for days.")
+						end
+					else
+						-- Actually recovered well!
+						state.Flags.thick_skinned = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 3)
+						end
+						if state.AddFeed then
+							state:AddFeed("😎 You played it off perfectly! Nobody noticed.")
+						end
+					end
+				end,
+			},
+			{ text = "Run away immediately", effects = { Happiness = -5 }, feedText = "You fled the scene. Smart move." },
 		},
 	},
 

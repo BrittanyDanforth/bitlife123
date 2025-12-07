@@ -656,25 +656,74 @@ Career.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: This was god-mode - player picked WHY they were fired!
+		-- Now the reason is random and player just responds to being fired
 		id = "fired",
 		title = "You're Fired!",
 		emoji = "📦",
 		text = "Your boss called you into the office... and fired you.",
-		question = "What happened?",
+		question = "How do you react?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.15,
 		cooldown = 8,
 		requiresJob = true,
 
 		choices = {
-			{ text = "Performance issues - saw it coming", effects = { Happiness = -15, Money = -500 }, setFlags = { fired = true, between_jobs = true }, feedText = "You knew it was coming. Still hurts." },
-			{ text = "Politics - someone threw you under the bus", effects = { Happiness = -20 }, setFlags = { fired = true, betrayed = true, between_jobs = true }, feedText = "Backstabbed at work. Devastating." },
-			{ text = "Company downsizing - not your fault", effects = { Happiness = -10, Money = 2000 }, setFlags = { laid_off = true, between_jobs = true }, feedText = "Severance helps, but still a blow." },
-			{ text = "You quit before they could fire you", effects = { Happiness = -5, Money = -200 }, setFlags = { between_jobs = true, quit_before_fired = true }, feedText = "You saw the writing on the wall and quit first." },
+			{ 
+				text = "Accept it and leave gracefully", 
+				effects = { },
+				feedText = "You were called into the office...",
+				onResolve = function(state)
+					-- CRITICAL FIX: Random reason for firing
+					local performance = (state.CareerInfo and state.CareerInfo.performance) or 50
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if performance < 40 or roll <= 30 then
+						-- Performance issues
+						state.Flags.fired = true
+						state.Flags.between_jobs = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+						state.Money = (state.Money or 0) - 500
+						if state.AddFeed then
+							state:AddFeed("📦 Fired for performance issues. You saw it coming.")
+						end
+					elseif roll <= 55 then
+						-- Company downsizing (severance)
+						state.Flags.laid_off = true
+						state.Flags.between_jobs = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						state.Money = (state.Money or 0) + 2000
+						if state.AddFeed then
+							state:AddFeed("📦 Laid off due to downsizing. At least you got severance.")
+						end
+					else
+						-- Politics / backstabbing
+						state.Flags.fired = true
+						state.Flags.betrayed = true
+						state.Flags.between_jobs = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -20)
+						end
+						if state.AddFeed then
+							state:AddFeed("📦 Someone threw you under the bus. Devastating.")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Argue and make a scene", 
+				effects = { Happiness = -25 }, 
+				setFlags = { burned_bridges = true, between_jobs = true },
+				feedText = "You lost it. Burned bridges. No reference letter for you.",
+			},
 		},
 		onComplete = function(state)
 			-- CRITICAL FIX: Clear both Career and CurrentJob
-			-- The system uses CurrentJob for job checks, Career is legacy
 			if state.ClearCareer then
 				state:ClearCareer()
 			else
@@ -815,21 +864,52 @@ Career.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: This was a god-mode event where player picked outcome!
+		-- Now you meet a coworker and whether friendship works out is random
 		id = "office_friendship",
-		title = "Work Best Friend",
+		title = "New Coworker Connection",
 		emoji = "🤝",
-		text = "You've become really close with a coworker.",
-		question = "How does this friendship develop?",
+		text = "You've started chatting more with a coworker during lunch breaks. You two seem to click.",
+		question = "Do you want to pursue this friendship?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
 
 		choices = {
-			{ text = "Work BFF - lunch every day", effects = { Happiness = 8 }, setFlags = { has_work_friend = true }, feedText = "Work is so much better with a friend!" },
-			{ text = "They become a real life friend too", effects = { Happiness = 10 }, setFlags = { has_best_friend = true }, feedText = "A true friendship beyond work." },
-			{ text = "They got promoted - things changed", effects = { Happiness = -5 }, feedText = "The power dynamic ruined the friendship." },
-			{ text = "They left the company", effects = { Happiness = -3 }, feedText = "Work feels lonelier now." },
+			{ 
+				text = "Yes, invite them to hang out", 
+				effects = { },
+				feedText = "You asked if they wanted to grab lunch...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.has_work_friend = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 8)
+						end
+						if state.AddFeed then
+							state:AddFeed("🤝 Work BFF achieved! Lunch dates every day now.")
+						end
+					elseif roll <= 75 then
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 3)
+						end
+						if state.AddFeed then
+							state:AddFeed("🤝 They're friendly but keep things professional.")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -2)
+						end
+						if state.AddFeed then
+							state:AddFeed("😕 Awkward - they didn't seem interested. Oh well.")
+						end
+					end
+				end,
+			},
+			{ text = "Keep it professional", effects = { Happiness = 1 }, feedText = "You prefer to keep work and personal life separate." },
 		},
 	},
 	{
@@ -1273,11 +1353,13 @@ Career.events = {
 	},
 },
 {
+	-- CRITICAL FIX: This was a god-mode event where player chose if they won!
+	-- Now uses random outcome based on performance like BitLife
 	id = "workplace_recognition",
-	title = "You Got Recognized!",
+	title = "Award Ceremony",
 	emoji = "🏆",
-	text = "Your work has been noticed! You're being considered for an employee recognition award.",
-	question = "How does this play out?",
+	text = "Your work has been noticed! You're nominated for an employee recognition award. The ceremony is tonight.",
+	question = "Will you attend?",
 	minAge = 22, maxAge = 55,
 	baseChance = 0.3,
 	cooldown = 3,
@@ -1290,10 +1372,46 @@ Career.events = {
 	tags = { "job", "recognition", "achievement", "success" },
 	
 	choices = {
-		{ text = "Win the award - full ceremony!", effects = { Happiness = 15, Money = 500, Smarts = 3 }, setFlags = { award_winner = true, recognized = true }, feedText = "You won! Standing ovation. Your parents are so proud!" },
-		{ text = "Runner-up - still honored", effects = { Happiness = 7, Money = 200 }, setFlags = { recognized = true }, feedText = "Second place. Still an honor. Still a little disappointed." },
-		{ text = "Win but it creates jealousy", effects = { Happiness = 10, Money = 500 }, setFlags = { office_jealousy = true }, feedText = "You won but some coworkers are salty about it." },
-		{ text = "Humbly deflect the recognition", effects = { Happiness = 5, Smarts = 2 }, setFlags = { humble = true }, feedText = "You credited your team. Everyone respects that." },
+		{ 
+			text = "Attend the ceremony", 
+			effects = { },
+			feedText = "You attended the ceremony...",
+			onResolve = function(state)
+				-- CRITICAL FIX: Random outcome, not player choice!
+				local performance = (state.CareerInfo and state.CareerInfo.performance) or 50
+				local roll = math.random(1, 100)
+				if roll <= performance * 0.5 then
+					state.Flags = state.Flags or {}
+					state.Flags.award_winner = true
+					state.Flags.recognized = true
+					state.Money = (state.Money or 0) + 500
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", 15)
+					end
+					if state.AddFeed then
+						state:AddFeed("🏆 You WON! Standing ovation!")
+					end
+				elseif roll <= performance * 0.8 then
+					state.Flags = state.Flags or {}
+					state.Flags.recognized = true
+					state.Money = (state.Money or 0) + 200
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", 7)
+					end
+					if state.AddFeed then
+						state:AddFeed("🥈 Runner-up. Still an honor!")
+					end
+				else
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -3)
+					end
+					if state.AddFeed then
+						state:AddFeed("😕 Someone else won. Maybe next year.")
+					end
+				end
+			end,
+		},
+		{ text = "Skip it - too nervous", effects = { Happiness = -2 }, feedText = "You skipped the ceremony. Wonder if you would have won..." },
 	},
 },
 
