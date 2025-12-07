@@ -567,6 +567,7 @@ local events = {
 		maxAge = 50,
 		requiresJob = true,
 		requiresJobCategory = "racing",
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -587,20 +588,62 @@ local events = {
 			{
 				index = 2,
 				text = "Become a team owner",
-				effects = { Happiness = 12, Money = -2000000 },
-				feedText = "You're starting your own racing team!",
+				-- CRITICAL FIX: Validate money before $2M team purchase
+				effects = {}, -- Money handled in onResolve
+				feedText = "Considering starting a racing team...",
 				onResolve = function(state)
-					if state.SetCareer then
-						state:SetCareer({
-							id = "racing_team_owner",
-							name = "Racing Team Owner",
-							company = "Your Racing Team",
-							salary = 5000000,
-							category = "racing",
-						})
+					local money = state.Money or 0
+					local teamCost = 2000000
+					
+					if money >= teamCost then
+						state.Money = money - teamCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.SetCareer then
+							state:SetCareer({
+								id = "racing_team_owner",
+								name = "Racing Team Owner",
+								company = "Your Racing Team",
+								salary = 5000000,
+								category = "racing",
+							})
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.team_owner = true
+						if state.AddFeed then
+							state:AddFeed("🏎️ You invested $2M and became a racing team owner!")
+						end
+					elseif money >= 500000 then
+						-- Smaller team / investor partnership
+						state.Money = money - 500000
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.SetCareer then
+							state:SetCareer({
+								id = "racing_team_partner",
+								name = "Racing Team Partner",
+								company = "Racing Partnership",
+								salary = 1000000,
+								category = "racing",
+							})
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.team_partner = true
+						if state.AddFeed then
+							state:AddFeed("🏎️ Became a minority team partner with $500K investment!")
+						end
+					else
+						-- Can't afford - retire instead
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						local totalEarnings = state.Money or 0
+						state.Flags = state.Flags or {}
+						state.Flags.pension_amount = math.floor(totalEarnings * 0.05)
+						state.Flags.retired = true
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+						if state.AddFeed then
+							state:AddFeed("🏁 Can't afford a team. Retired as a racing legend instead!")
+						end
 					end
-					state.Flags = state.Flags or {}
-					state.Flags.team_owner = true
 				end,
 			},
 			{

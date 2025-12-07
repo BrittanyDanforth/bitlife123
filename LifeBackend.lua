@@ -1779,8 +1779,10 @@ function LifeBackend:tickCareer(state)
 	end
 	
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
-	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-3, 4), 0, 100)
-	info.promotionProgress = clamp((info.promotionProgress or 0) + RANDOM:NextInteger(2, 6), 0, 100)
+	-- CRITICAL FIX: Performance can fluctuate more - not always improving
+	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-5, 5), 0, 100)
+	-- CRITICAL FIX: Removed automatic promotionProgress - it was causing promotion spam
+	-- Now promotions are based on yearsAtJob + performance + luck (see handlePromotion)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Track career skills based on job category
@@ -2402,7 +2404,8 @@ function LifeBackend:generateYearSummary(state)
 	-- Prison
 	if state.InJail then
 		emoji = "🔒"
-		summaryParts = { string.format("Behind bars. %d years remaining.", state.JailYearsLeft or 0) }
+		-- MINOR FIX: Use %.1f for consistent decimal formatting
+		summaryParts = { string.format("Behind bars. %.1f years remaining.", state.JailYearsLeft or 0) }
 	end
 	
 	-- Combine parts (max 2-3 sentences to avoid clutter)
@@ -2445,6 +2448,69 @@ function LifeBackend:handleAgeUp(player)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #4: Pay pension to retired players
+	-- Retirees should receive annual pension income based on their career history
+	-- Without this, retired players had NO income and would slowly go broke!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags and state.Flags.retired then
+		local pensionAmount = 0
+		
+		-- Get pension from stored amount (set during retirement event)
+		if state.Flags.pension_amount and type(state.Flags.pension_amount) == "number" then
+			pensionAmount = state.Flags.pension_amount
+		else
+			-- Fallback: Calculate based on career info
+			if state.CareerInfo and state.CareerInfo.lastJob then
+				local lastSalary = state.CareerInfo.lastJob.salary or 30000
+				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
+			else
+				pensionAmount = 15000 -- Minimum pension
+			end
+			-- Store for future years
+			state.Flags.pension_amount = pensionAmount
+		end
+		
+		-- Pay the pension
+		if pensionAmount > 0 then
+			self:addMoney(state, pensionAmount)
+			debugPrint("Pension paid:", pensionAmount, "to retired player. New balance:", state.Money)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #9: Age children in Relationships each year
+	-- Without this, your 5-year-old son would still be 5 years old when you're 80!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.alive ~= false then
+				-- Age all living relationship members (except "partner" whose age is tracked separately in some cases)
+				if rel.age ~= nil and type(rel.age) == "number" then
+					rel.age = rel.age + 1
+					
+					-- ═══════════════════════════════════════════════════════════════════════
+					-- MINOR FIX: Elderly family members may pass away
+					-- ═══════════════════════════════════════════════════════════════════════
+					if rel.type == "family" and rel.role ~= "Partner" and rel.role ~= "Spouse" then
+						if rel.age >= 75 then
+							local deathChance = (rel.age - 75) / 100 -- 1% per year over 75
+							if RANDOM:NextNumber() < deathChance then
+								rel.alive = false
+								rel.deceased = true
+								rel.deathAge = rel.age
+								-- Log the death
+								self:logYearEvent(state, "family_death", 
+									string.format("Your %s, %s, passed away at age %d.", 
+										rel.role or "relative", rel.name or "family member", rel.age), "💔")
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Decrement jail sentence each year and auto-release when complete
 	-- Without this, prisoners would be stuck forever!
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2457,7 +2523,20 @@ function LifeBackend:handleAgeUp(player)
 			state.JailYearsLeft = 0
 			state.Flags.in_prison = nil
 			state.Flags.incarcerated = nil
-			state.PendingFeed = "🎉 You've been released from prison! Time served."
+			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
+			
+			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
+			-- If player was in college before going to jail, they can now re-enroll
+			-- ═══════════════════════════════════════════════════════════════════════
+			if state.EducationData and state.EducationData.StatusBeforeJail == "enrolled" then
+				state.EducationData.Status = "enrolled"
+				state.EducationData.StatusBeforeJail = nil
+				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+			else
+				state.PendingFeed = "🎉 You've been released from prison! Time served."
+			end
+			
 			debugPrint("Player released from prison after completing sentence:", player.Name)
 		else
 			state.PendingFeed = string.format("📅 Prison: %.1f years remaining.", state.JailYearsLeft)
@@ -2704,6 +2783,50 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			effectsSummary = effectsSummary or {}
 			effectsSummary.Money = (effectsSummary.Money or 0) + reward
 		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Handle setFlags and clearFlags in the else branch too!
+		-- Without this, dynamically created events (like prison escape) won't have
+		-- their flags processed, causing players to stay stuck in prison, etc.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.Flags = state.Flags or {}
+		
+		-- Apply setFlags
+		if choice.setFlags then
+			for flagName, flagValue in pairs(choice.setFlags) do
+				state.Flags[flagName] = flagValue
+			end
+		end
+		
+		-- Apply clearFlags (remove flags)
+		if choice.clearFlags then
+			for flagName, _ in pairs(choice.clearFlags) do
+				state.Flags[flagName] = nil
+			end
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Call eventDef.onComplete for dynamically created events
+		-- This ensures custom logic (like freeing from prison) actually runs
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if eventDef.onComplete and type(eventDef.onComplete) == "function" then
+			local success, err = pcall(function()
+				eventDef.onComplete(state, choice, eventDef, {})
+			end)
+			if not success then
+				warn("[LifeBackend] onComplete handler error:", err)
+			end
+		end
+		
+		-- Also support choice-level onResolve in else branch
+		if choice.onResolve and type(choice.onResolve) == "function" then
+			local success, err = pcall(function()
+				choice.onResolve(state, choice, eventDef, {})
+			end)
+			if not success then
+				warn("[LifeBackend] choice.onResolve handler error:", err)
+			end
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2879,7 +3002,8 @@ function LifeBackend:handleCrime(player, crimeId)
 		return { success = false, message = "No life data loaded." }
 	end
 	if state.InJail then
-		return { success = false, message = "Serve your sentence first." }
+		-- MINOR FIX: More helpful error message
+		return { success = false, message = "You can't commit crimes while in prison. Serve your sentence first." }
 	end
 
 	local crime = CrimeCatalog[crimeId]
@@ -2984,7 +3108,8 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	-- to avoid DOUBLE POPUP bug
 	if action.jailIncrease then
 		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
-		local message = string.format("Your escape failed. %d years added to your sentence.", action.jailIncrease)
+		-- MINOR FIX: Use %.1f for consistent decimal formatting
+		local message = string.format("Your escape failed. %.1f years added to your sentence.", action.jailIncrease)
 		self:pushState(player, message)
 		return { success = false, message = message }
 	end
@@ -3004,42 +3129,57 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		
 		state.awaitingDecision = true
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: FREE THE PLAYER IMMEDIATELY when they win the minigame!
+		-- Don't wait for the choice - they already escaped by winning the minigame.
+		-- The event card is just asking what they do AFTER escaping.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+		state.Flags.escaped_prisoner = true
+		state.Flags.fugitive = true
+		state.PendingFeed = nil
+		state.YearLog = {}
+		
 		-- Player won the minigame - they escape successfully!
 		local eventDef = {
 			id = "prison_escape_success",
-			title = "Escape Successful!",
+			title = "🎉 Escape Successful!",
 			emoji = "🏃",
-			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive.",
-			question = "What now?",
+			text = "Against all odds, you made it over the wall and into freedom! You're now a fugitive - but you're FREE!",
+			question = "What's your plan now?",
+			-- CRITICAL FIX: Use "success" category so card shows GREEN border!
+			category = "success",
+			source = "lifeevents",
 			choices = {
 				{ 
 					text = "Lay low and start fresh", 
-					deltas = { Happiness = 20 },
+					effects = { Happiness = 20 },
 					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
-					clearFlags = { in_prison = true, incarcerated = true },
-					feedText = "You escaped prison! Now living as a fugitive.",
+					feedText = "🏃 You escaped prison! Now living as a fugitive.",
 				},
 				{ 
 					text = "Leave the country", 
-					deltas = { Happiness = 15, Money = -5000 },
+					effects = { Happiness = 15, Money = -5000 },
 					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
-					clearFlags = { in_prison = true, incarcerated = true },
-					feedText = "You escaped and fled to another country!",
+					feedText = "🏃 You escaped and fled to another country!",
 				},
 			},
-			-- CRITICAL: Actually free the player when event resolves
-			onResolve = function(state)
+			-- Backup onComplete just to make absolutely sure
+			onComplete = function(state, choice, eventDef, outcome)
+				-- Ensure flags are set (they should already be, but just in case)
 				state.InJail = false
 				state.JailYearsLeft = 0
 				state.Flags.in_prison = nil
 				state.Flags.incarcerated = nil
-				state.Flags.escaped_prisoner = true
-				state.Flags.fugitive = true
 			end,
 		}
 		
-		self:presentEvent(player, eventDef, "You attempted an escape...")
-		return { success = true, message = "Escape attempt underway..." }
+		-- CRITICAL FIX: Changed feedText to show success
+		self:presentEvent(player, eventDef, "🏃 You're FREE! You escaped!")
+		return { success = true, message = "Escape successful!" }
 	end
 
 	if (state.JailYearsLeft or 0) <= 0 then
@@ -3099,6 +3239,13 @@ local JobRejectionMessages = {
 		"We're looking for someone with a bit more availability.",
 		"Your interview went well, but another candidate edged you out.",
 		"Keep applying! The right opportunity will come.",
+	},
+	-- CRITICAL FIX: Messages for when criminal record affects job chances
+	criminalRecord = {
+		"The background check revealed some concerns.",
+		"We need to go with a candidate without legal issues.",
+		"Our policy requires a clean record for this position.",
+		"Your qualifications were good, but the background check was problematic.",
 	},
 }
 
@@ -3233,7 +3380,44 @@ function LifeBackend:handleJobApplication(player, jobId)
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.30, (appHistory.attempts or 0) * 0.10) -- -10% per previous rejection, max -30%
 	
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty, 0.05, 0.98)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Criminal record affects job applications!
+	-- Employers run background checks - having a record makes it much harder to get hired
+	-- Some jobs (law enforcement, government, finance) outright reject ex-convicts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local criminalPenalty = 0
+	if state.Flags and state.Flags.criminal_record then
+		-- Jobs that do strict background checks and won't hire ex-convicts
+		local strictBackgroundCheckJobs = {
+			"law", "government", "finance", "education", "healthcare", "military", "security"
+		}
+		
+		local isStrictJob = false
+		for _, category in ipairs(strictBackgroundCheckJobs) do
+			if job.category == category or (job.id and string.find(job.id:lower(), category)) then
+				isStrictJob = true
+				break
+			end
+		end
+		
+		if isStrictJob then
+			-- Strict background check jobs won't hire people with records
+			return {
+				success = false,
+				message = "Your background check revealed a criminal record. This position requires a clean record."
+			}
+		end
+		
+		-- Other jobs have a penalty but not automatic rejection
+		criminalPenalty = 0.30 -- 30% penalty for having a record
+		
+		-- Fugitives face even harsher penalties
+		if state.Flags.fugitive or state.Flags.escaped_prisoner then
+			criminalPenalty = 0.50 -- 50% penalty for being a fugitive
+		end
+	end
+	
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.05, 0.98)
 	
 	-- Entry-level jobs (no requirements, low salary) should be easier
 	if not job.requirement and (job.salary or 0) < 35000 then
@@ -3254,7 +3438,10 @@ function LifeBackend:handleJobApplication(player, jobId)
 	if not accepted then
 		-- Pick a rejection message based on situation
 		local messages
-		if difficulty >= 6 then
+		-- CRITICAL FIX: Show criminal record message if that's why they were rejected
+		if criminalPenalty > 0 and state.Flags and state.Flags.criminal_record then
+			messages = JobRejectionMessages.criminalRecord
+		elseif difficulty >= 6 then
 			messages = JobRejectionMessages.competitive
 		elseif job.minStats then
 			messages = JobRejectionMessages.lowStats
@@ -3472,8 +3659,9 @@ function LifeBackend:handleWork(player)
 	self:addMoney(state, payday)
 	self:applyStatChanges(state, { Happiness = RANDOM:NextInteger(-2, 2) })
 
-	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 4), 0, 100)
-	state.CareerInfo.promotionProgress = clamp((state.CareerInfo.promotionProgress or 0) + RANDOM:NextInteger(3, 6), 0, 100)
+	-- CRITICAL FIX: Working hard improves performance, but not guaranteed
+	-- Performance is the key metric for promotions now (see handlePromotion)
+	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 5), 0, 100)
 
 	local message = string.format("Payday! You earned %s.", formatMoney(payday))
 	-- CRITICAL FIX: Don't use showPopup here - client already shows result from return value
@@ -3490,16 +3678,58 @@ function LifeBackend:handlePromotion(player)
 
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
+	state.Flags = state.Flags or {}
 
-	if (info.promotionProgress or 0) < 80 then
-		return { success = false, message = "You need more experience before a promotion." }
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Promotions were happening every 1-2 years (way too fast!)
+	-- Now require: minimum years at job, good performance, AND random approval chance
+	-- This matches BitLife where promotions are rare and based on performance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Minimum 3 years at current position before eligible for promotion
+	local yearsAtJob = info.yearsAtJob or 0
+	if yearsAtJob < 3 then
+		return { success = false, message = string.format("You need more time in your current role. (%.0f/3 years)", yearsAtJob) }
+	end
+	
+	-- Need good performance (70+)
+	local performance = info.performance or 50
+	if performance < 70 then
+		return { success = false, message = string.format("Your performance needs improvement. (%d%% / 70%% required)", performance) }
+	end
+	
+	-- Cooldown: Can only request promotion once per year
+	local lastPromotionRequest = info.lastPromotionRequestAge or 0
+	if (state.Age or 0) <= lastPromotionRequest then
+		return { success = false, message = "You already asked this year. Try again next year." }
+	end
+	info.lastPromotionRequestAge = state.Age or 0
+	
+	-- Random chance based on performance - promotions aren't guaranteed!
+	-- 70% performance = 40% chance, 100% performance = 70% chance
+	local promotionChance = 0.1 + (performance / 100) * 0.6
+	local roll = RANDOM:NextNumber()
+	
+	if roll > promotionChance then
+		-- Denied!
+		local denialMessages = {
+			"Your manager said 'not this time.' Keep working hard.",
+			"The budget for promotions has been frozen. Try again next year.",
+			"They're looking for someone with more experience in leadership.",
+			"You're doing great, but there's no open positions above you right now.",
+		}
+		local msg = denialMessages[RANDOM:NextInteger(1, #denialMessages)]
+		return { success = false, message = msg }
 	end
 
+	-- Promotion granted!
 	info.promotionProgress = 0
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.2)
-	info.performance = clamp((info.performance or 60) + 10, 0, 100)
+	info.promotions = (info.promotions or 0) + 1
+	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15) -- 15% raise, not 20%
+	info.performance = clamp((info.performance or 60) + 5, 0, 100)
+	state.Flags.just_promoted = true
 
-	local feed = string.format("You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	local feed = string.format("🎉 You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -3513,24 +3743,38 @@ function LifeBackend:handleRaise(player)
 	state.CareerInfo = state.CareerInfo or {}
 	local info = state.CareerInfo
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add cooldown to prevent raise spam
+	-- Can only ask for a raise once per year, similar to promotions
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local lastRaiseRequest = info.lastRaiseRequestAge or 0
+	if (state.Age or 0) <= lastRaiseRequest then
+		return { success = false, message = "You already asked for a raise this year. Try again next year." }
+	end
+	info.lastRaiseRequestAge = state.Age or 0
+
 	if (info.performance or 0) < 60 then
-		return { success = false, message = "Improve your performance before asking." }
+		return { success = false, message = "Improve your performance before asking. (Need 60%+)" }
 	end
 	if (info.raises or 0) >= 5 then
-		return { success = false, message = "You've maxed out raises for this role." }
+		return { success = false, message = "You've maxed out raises for this role. Need a promotion for more." }
 	end
 
-	local granted = RANDOM:NextNumber() > 0.3
+	-- CRITICAL FIX: Raise chance based on performance, not just 70% flat
+	local performance = info.performance or 60
+	local raiseChance = 0.3 + (performance / 100) * 0.4 -- 30-70% based on performance
+	local granted = RANDOM:NextNumber() < raiseChance
+	
 	if not granted then
 		info.performance = clamp((info.performance or 60) - 5, 0, 100)
-		return { success = false, message = "Raise denied. Maybe next quarter." }
+		return { success = false, message = "Raise denied. 'Budget constraints' they said. Maybe next year." }
 	end
 
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.1)
+	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
 	info.raises = (info.raises or 0) + 1
-	info.performance = clamp((info.performance or 60) + 5, 0, 100)
+	info.performance = clamp((info.performance or 60) + 3, 0, 100)
 
-	local feed = string.format("You negotiated a raise! Salary is %s.", formatMoney(state.CurrentJob.salary))
+	local feed = string.format("💰 Raise approved! Salary is now %s.", formatMoney(state.CurrentJob.salary))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -3611,7 +3855,9 @@ function LifeBackend:enrollEducation(player, programId)
 	end
 
 	if not self:meetsEducationRequirement(state, program.requirement) then
-		return { success = false, message = "You need to complete the prerequisite first." }
+		-- MINOR FIX: More helpful error message with specific requirement
+		local requiredText = program.requirement or "a prerequisite degree"
+		return { success = false, message = string.format("You need %s to enroll in %s.", requiredText, program.name) }
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════

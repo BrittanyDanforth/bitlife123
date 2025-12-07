@@ -111,7 +111,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -119,6 +119,28 @@ local events = {
 				effects = { Happiness = 10 },
 				setFlags = { has_partner = true, dating = true, met_cute = true },
 				feedText = "You hit it off! Numbers exchanged!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon"} or
+						{"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 70,
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("💕 You started dating " .. partnerName .. "!")
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -144,7 +166,7 @@ local events = {
 		minAge = 18,
 		maxAge = 45,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -152,6 +174,28 @@ local events = {
 				effects = { Happiness = 8, Health = 2 },
 				setFlags = { has_partner = true, dating = true },
 				feedText = "Great workout and a date!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Jake", "Tyler", "Marcus", "Derek", "Chad", "Brett", "Kyle"} or
+						{"Jessica", "Ashley", "Brittany", "Tiffany", "Samantha", "Nicole", "Taylor"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 65,
+						age = (state.Age or 25) + math.random(-4, 4),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("💪 You started dating " .. partnerName .. " from the gym!")
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -172,7 +216,7 @@ local events = {
 		minAge = 20,
 		maxAge = 55,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -180,6 +224,28 @@ local events = {
 				effects = { Happiness = 8 },
 				setFlags = { has_partner = true, dating = true },
 				feedText = "The blind date was a success!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Daniel", "Matthew", "Andrew", "Nathan", "Kevin", "Brian", "Eric"} or
+						{"Rachel", "Jennifer", "Amanda", "Stephanie", "Michelle", "Heather", "Lauren"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 60,
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🙈 The blind date worked! You're now dating " .. partnerName .. "!")
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -206,7 +272,7 @@ local events = {
 		minAge = 22,
 		maxAge = 45,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
@@ -214,6 +280,28 @@ local events = {
 				effects = { Happiness = 10 },
 				setFlags = { has_partner = true, dating = true },
 				feedText = "You found someone special!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Josh", "Adam", "Sean", "Justin", "Patrick", "Aaron", "Jeremy"} or
+						{"Melissa", "Rebecca", "Christina", "Sara", "Danielle", "Katie", "Amber"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 55,
+						age = (state.Age or 28) + math.random(-6, 6),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("⏱️ Speed dating success! You're now dating " .. partnerName .. "!")
+					end
+				end,
 			},
 			{
 				index = 2,
@@ -243,20 +331,43 @@ local events = {
 		minAge = 21,
 		requiresPartner = true,
 		requiresFlags = { dating = true },
-		blockedByFlags = { engaged = true, married = true },
+		blockedByFlags = { engaged = true, married = true, in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
 				text = "Propose",
-				effects = { Happiness = 15, Money = -3000 },
+				-- CRITICAL FIX: Validate money before deducting for ring
+				effects = {}, -- Money handled in onResolve
 				setFlags = { engaged = true },
-				feedText = "You proposed and they said yes!",
+				feedText = "Getting ready to propose...",
 				onResolve = function(state)
+					local money = state.Money or 0
+					local ringCost = 3000
+					
 					if state.Relationships and state.Relationships.partner then
 						local partnerGender = state.Relationships.partner.gender or "female"
 						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
-						if state.AddFeed then
-							state:AddFeed("💍 " .. state.Relationships.partner.name .. " said YES!")
+						local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "Your partner"
+						
+						if money >= ringCost then
+							state.Money = money - ringCost
+							if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! Beautiful ring!")
+							end
+						elseif money >= 500 then
+							-- Budget ring
+							state.Money = money - 500
+							if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! Modest ring, but full of love!")
+							end
+						else
+							-- No ring proposal
+							if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! No ring yet, but love is all you need!")
+							end
 						end
 					end
 				end,
@@ -278,19 +389,70 @@ local events = {
 		weight = 5,
 		minAge = 20,
 		requiresPartner = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- CRITICAL FIX: Need at least some money for even the cheapest option
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 200 then
+				return false, "Can't afford any vacation right now"
+			end
+			return true
+		end,
 		choices = {
 			{
 				index = 1,
 				text = "Book a tropical paradise",
-				effects = { Happiness = 15, Money = -3000 },
-				feedText = "Best vacation ever! Your relationship is stronger than ever.",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning the trip...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local tripCost = 3000
+					if money >= tripCost then
+						state.Money = money - tripCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("🏝️ Best vacation ever! Your relationship is stronger than ever.")
+						end
+					elseif money >= 1500 then
+						-- Budget version
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("🏝️ Went on a budget trip. Still had a great time!")
+						end
+					else
+						-- Can't afford it
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😔 Can't afford that trip right now... had to cancel.")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Staycation together",
-				effects = { Happiness = 8, Money = -200 },
-				feedText = "Cozy time at home. Perfect.",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning a cozy staycation...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local stayCost = 200
+					if money >= stayCost then
+						state.Money = money - stayCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🏠 Cozy staycation together. Perfect!")
+						end
+					else
+						-- Free staycation
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("🏠 No-budget staycation. Quality time together!")
+						end
+					end
+				end,
 			},
 			{
 				index = 3,
@@ -310,13 +472,38 @@ local events = {
 		minAge = 18,
 		cooldown = 2,
 		requiresPartner = true,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
 				text = "Plan something special",
-				effects = { Happiness = 12, Money = -500 },
-				feedText = "A beautiful celebration of your love!",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning a celebration...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local celebCost = 500
+					if money >= celebCost then
+						state.Money = money - celebCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then
+							state:AddFeed("🎂 A beautiful celebration of your love!")
+						end
+					elseif money >= 100 then
+						-- Budget celebration
+						state.Money = money - 100
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🎂 Small but thoughtful anniversary celebration!")
+						end
+					else
+						-- Free celebration
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("🎂 Celebrated with what you had. Love doesn't need money!")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,

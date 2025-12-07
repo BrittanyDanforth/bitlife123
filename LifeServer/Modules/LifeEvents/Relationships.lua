@@ -23,7 +23,35 @@ Relationships.events = {
 		-- CRITICAL FIX: Can't use dating apps from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
-			{ text = "Swipe right!", effects = { Happiness = 8 }, setFlags = { has_partner = true, dating = true }, feedText = "You matched with someone great!" },
+			{ 
+				text = "Swipe right!", 
+				effects = { Happiness = 8 }, 
+				setFlags = { has_partner = true, dating = true }, 
+				feedText = "You matched with someone great!",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan"}
+						or {"Sarah", "Jessica", "Emily", "Ashley", "Amanda", "Samantha", "Lauren", "Megan", "Rachel", "Nicole"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 65,
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "dating_app",
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💕 You matched with %s on the app!", partnerName))
+					end
+				end,
+			},
 			{ text = "Be super selective", effects = { Smarts = 2, Happiness = 3 }, feedText = "You're picky, but quality over quantity." },
 			{ text = "Dating apps aren't for me", effects = { Happiness = 2 }, feedText = "You prefer meeting people organically." },
 		},
@@ -41,7 +69,36 @@ Relationships.events = {
 		-- CRITICAL FIX: Can't have chance encounters in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
-			{ text = "Go talk to them", effects = { Happiness = 10, Looks = 2 }, setFlags = { has_partner = true, dating = true, met_cute = true }, feedText = "You made the first move!" },
+			{ 
+				text = "Go talk to them", 
+				effects = { Happiness = 10, Looks = 2 }, 
+				setFlags = { has_partner = true, dating = true, met_cute = true }, 
+				feedText = "You made the first move!",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek"}
+						or {"Michelle", "Stephanie", "Christina", "Jennifer", "Elizabeth", "Heather", "Amber", "Melissa", "Rebecca", "Tiffany"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 75, -- Higher initial attraction for love at first sight!
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "chance_encounter",
+						metCute = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💘 You hit it off with %s immediately!", partnerName))
+					end
+				end,
+			},
 			{ text = "Smile and hope they approach", effects = { Happiness = 5 }, feedText = "You shared a moment but didn't pursue." },
 			{ text = "Too nervous to act", effects = { Happiness = -3 }, feedText = "The moment passed. What if...?" },
 		},
@@ -168,15 +225,73 @@ Relationships.events = {
 		oneTime = true,
 		requiresPartner = true,
 		requiresFlags = { lives_with_partner = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Need at least $100 for simplest proposal
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 100 then
+				return false, "Can't afford a ring right now"
+			end
+			return true
+		end,
 		choices = {
-			{ text = "Yes - plan the perfect proposal", effects = { Happiness = 15, Money = -2000 }, setFlags = { engaged = true }, feedText = "They said yes! You're engaged!" },
-			{ text = "Simple and intimate", effects = { Happiness = 12, Money = -500 }, setFlags = { engaged = true }, feedText = "A quiet, perfect moment. You're engaged!" },
+			{ 
+				text = "Yes - plan the perfect proposal", 
+				effects = { Happiness = 15 }, 
+				setFlags = { engaged = true }, 
+				feedText = "Planning the perfect proposal...",
+				-- CRITICAL FIX: Money validation for $2000 proposal
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 2000 then
+						state.Money = money - 2000
+						if state.AddFeed then
+							state:AddFeed("💍 Perfect proposal with a beautiful ring! They said YES!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("💍 You proposed with a modest but lovely ring. They said YES!")
+						end
+					else
+						state.Money = math.max(0, money - 100)
+						if state.AddFeed then
+							state:AddFeed("💍 You proposed with a simple ring. The love matters, not the price! They said YES!")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Simple and intimate", 
+				effects = { Happiness = 12 }, 
+				setFlags = { engaged = true }, 
+				feedText = "A quiet, perfect moment...",
+				-- CRITICAL FIX: Money validation for $500 proposal
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("💍 Simple, intimate, perfect. They said YES! You're engaged!")
+						end
+					elseif money >= 100 then
+						state.Money = money - 100
+						if state.AddFeed then
+							state:AddFeed("💍 A heartfelt proposal. The ring was humble but the moment was priceless. They said YES!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💍 You proposed without a ring - just pure love. They said YES!")
+						end
+					end
+				end,
+			},
 			{ text = "Not yet", effects = { Happiness = 2 }, feedText = "The timing isn't right." },
 		},
 	},
 	{
 		id = "wedding_day",
-		title = "Wedding Day",
+		title = "💒 Wedding Day!",
 		emoji = "👰",
 		text = "The big day has arrived!",
 		question = "What kind of wedding do you have?",
@@ -184,13 +299,149 @@ Relationships.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		-- CRITICAL FIX #6: Added "wedding" category for pink event card
+		category = "wedding",
 		requiresPartner = true,
 		requiresFlags = { engaged = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Need at least $50 for courthouse wedding
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 50 then
+				return false, "Can't afford any wedding right now"
+			end
+			return true
+		end,
 		choices = {
-			{ text = "Grand celebration", effects = { Happiness = 20, Money = -10000 }, setFlags = { married = true }, feedText = "An unforgettable wedding! You're married!" },
-			{ text = "Intimate ceremony", effects = { Happiness = 15, Money = -2000 }, setFlags = { married = true }, feedText = "A beautiful, small wedding. You're married!" },
-			{ text = "Courthouse wedding", effects = { Happiness = 10, Money = -200 }, setFlags = { married = true }, feedText = "Quick and official. You're married!" },
-			{ text = "Elope!", effects = { Happiness = 12, Money = -1000 }, setFlags = { married = true, eloped = true }, feedText = "You eloped! Romantic and spontaneous!" },
+			{ 
+				text = "Grand celebration", 
+				effects = { Happiness = 20 }, 
+				setFlags = { married = true }, 
+				feedText = "Planning a grand wedding...",
+				-- CRITICAL FIX: Money validation for $10000 wedding
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("💒 An unforgettable grand wedding! You're married!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💒 A beautiful wedding, though scaled back a bit. You're married!")
+						end
+					else
+						state.Money = math.max(0, money - 2000)
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💒 Budget wedding - but the love is what matters! You're married!")
+						end
+					end
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+				end,
+			},
+			{ 
+				text = "Intimate ceremony", 
+				effects = { Happiness = 15 }, 
+				setFlags = { married = true }, 
+				feedText = "Planning an intimate ceremony...",
+				-- CRITICAL FIX: Money validation for $2000 wedding
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 2000 then
+						state.Money = money - 2000
+						if state.AddFeed then
+							state:AddFeed("💒 A beautiful, small wedding. You're married!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("💒 A modest but lovely ceremony. You're married!")
+						end
+					else
+						state.Money = math.max(0, money - 200)
+						if state.AddFeed then
+							state:AddFeed("💒 Simple ceremony with close family. You're married!")
+						end
+					end
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+				end,
+			},
+			{ 
+				text = "Courthouse wedding", 
+				effects = { Happiness = 10 }, 
+				setFlags = { married = true }, 
+				feedText = "Courthouse wedding...",
+				-- CRITICAL FIX: Money validation for $200 wedding
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 200 then
+						state.Money = money - 200
+						if state.AddFeed then
+							state:AddFeed("💒 Quick and official. You're married!")
+						end
+					else
+						state.Money = math.max(0, money - 50)
+						if state.AddFeed then
+							state:AddFeed("💒 Just the filing fee. Officially married!")
+						end
+					end
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+				end,
+			},
+			{ 
+				text = "Elope!", 
+				effects = { Happiness = 12 }, 
+				setFlags = { married = true, eloped = true }, 
+				feedText = "Eloping...",
+				-- CRITICAL FIX: Money validation for $1000 elopement
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 1000 then
+						state.Money = money - 1000
+						if state.AddFeed then
+							state:AddFeed("💒 You eloped! Romantic and spontaneous!")
+						end
+					elseif money >= 300 then
+						state.Money = money - 300
+						if state.AddFeed then
+							state:AddFeed("💒 Budget elopement - just as romantic!")
+						end
+					else
+						state.Money = math.max(0, money - 100)
+						if state.AddFeed then
+							state:AddFeed("💒 Spontaneous elopement with almost nothing - true love!")
+						end
+					end
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+				end,
+			},
 		},
 	},
 
@@ -297,14 +548,42 @@ Relationships.events = {
 		oneTime = true,
 		requiresPartner = true,
 		requiresFlags = { married = true },
+		-- CRITICAL FIX: Need at least $1000 to have a baby
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 1000 then
+				return false, "Can't afford to start a family right now"
+			end
+			return true
+		end,
 		choices = {
 			{ 
 				text = "Let's have a baby!", 
-				effects = { Happiness = 15, Money = -3000 }, 
+				effects = { Happiness = 15 }, 
 				setFlags = { has_child = true, parent = true }, 
-				feedText = "Congratulations! You're having a baby!",
-				-- CRITICAL FIX: Actually create the child in Relationships table!
+				feedText = "Starting a family...",
+				-- CRITICAL FIX: Money validation for $3000 baby costs
 				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("👶 Prepared the nursery! Ready for baby!")
+						end
+					elseif money >= 1500 then
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("👶 Budget baby prep! Hand-me-downs and thrift stores!")
+						end
+					else
+						state.Money = math.max(0, money - 1000)
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("👶 Bare minimum baby prep. Tight budget but lots of love!")
+						end
+					end
+					-- Actually create the child
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
@@ -332,11 +611,32 @@ Relationships.events = {
 			},
 			{ 
 				text = "Adopt a child", 
-				effects = { Happiness = 15, Money = -5000 }, 
+				effects = { Happiness = 15 }, 
 				setFlags = { has_child = true, parent = true, adopted = true }, 
-				feedText = "You adopted a child! What a beautiful choice!",
-				-- CRITICAL FIX: Actually create the adopted child in Relationships table!
+				feedText = "Adopting a child...",
+				-- CRITICAL FIX: Money validation for $5000 adoption costs
 				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("💕 Full adoption process complete!")
+						end
+					elseif money >= 2500 then
+						state.Money = money - 2500
+						state.Flags = state.Flags or {}
+						state.Flags.foster_to_adopt = true
+						if state.AddFeed then
+							state:AddFeed("💕 Foster-to-adopt program! Lower costs, same love!")
+						end
+					else
+						state.Money = math.max(0, money - 1000)
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💕 Financial hardship adoption assistance helped!")
+						end
+					end
+					-- Actually create the adopted child
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
@@ -432,7 +732,7 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		choices = {
-			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with them." },
+			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with your parents." },
 			{ text = "Set healthy boundaries", effects = { Happiness = 5, Smarts = 2 }, feedText = "You established boundaries." },
 			{ text = "Accept the distance", effects = { Happiness = 2 }, feedText = "Not all families are close." },
 			{ text = "Cut contact", effects = { Happiness = -5 }, setFlags = { estranged_from_parents = true }, feedText = "You distanced yourself completely." },
@@ -504,6 +804,8 @@ Relationships.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresSingle = true,
+		-- CRITICAL FIX #5: Can't go on dates from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random first date outcome
 		choices = {
 			{
@@ -591,9 +893,40 @@ Relationships.events = {
 		minAge = 18, maxAge = 55,
 		baseChance = 0.2,
 		cooldown = 5,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Give them another chance", effects = { Happiness = 5 }, setFlags = { back_with_ex = true, has_partner = true }, feedText = "You're giving it another shot..." },
+			{ 
+				text = "Give them another chance", 
+				effects = { Happiness = 5 }, 
+				setFlags = { back_with_ex = true, has_partner = true, dating = true }, 
+				feedText = "You're giving it another shot...",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"Jason", "Kyle", "Brian", "Steven", "Patrick", "Nathan", "Cody", "Trevor", "Austin", "Zach"}
+						or {"Katie", "Brittany", "Amy", "Kelly", "Angela", "Danielle", "Holly", "Lindsey", "Brooke", "Whitney"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 55, -- Lower initial - trust needs rebuilding
+						age = (state.Age or 25) + math.random(-3, 3),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "rekindled_ex",
+						isEx = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("💫 You and %s are giving it another try...", partnerName))
+					end
+				end,
+			},
 			{ text = "Catch up but keep boundaries", effects = { Happiness = 3 }, feedText = "You caught up. Closure feels good." },
 			{ text = "Block and ignore", effects = { Happiness = 5 }, setFlags = { over_ex = true }, feedText = "You're completely over them. Blocked!" },
 			{ text = "Petty revenge - show them what they lost", effects = { Happiness = 8, Looks = 2 }, feedText = "You looked amazing. Their loss!" },
@@ -609,6 +942,8 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresSingle = true,
+		-- CRITICAL FIX #11: Can't speed date from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random speed dating outcome
 		choices = {
 			{
@@ -673,6 +1008,8 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 3,
 		requiresSingle = true,
+		-- CRITICAL FIX #12: Can't go on blind dates from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random blind date outcome
 		choices = {
 			{
@@ -851,10 +1188,73 @@ Relationships.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresPartner = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Romantic getaway", effects = { Happiness = 15, Money = -1500, Health = 3 }, feedText = "A perfect anniversary trip!" },
-			{ text = "Fancy dinner", effects = { Happiness = 10, Money = -300 }, feedText = "Romantic dinner at your favorite spot." },
+			{ 
+				text = "Romantic getaway", 
+				effects = { Happiness = 15, Health = 3 }, 
+				feedText = "Planning a romantic getaway...",
+				-- CRITICAL FIX: Money validation for $1500 trip
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 1500 then
+						state.Money = money - 1500
+						if state.AddFeed then
+							state:AddFeed("💕 A perfect anniversary trip! Memories made!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💕 A nice local getaway - budget but romantic!")
+						end
+					elseif money >= 100 then
+						state.Money = money - 100
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💕 Staycation anniversary - cheap but together!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("💕 Couldn't afford a trip. Stayed home and watched movies.")
+						end
+					end
+				end,
+			},
+			{ 
+				text = "Fancy dinner", 
+				effects = { Happiness = 10 }, 
+				feedText = "Planning a fancy dinner...",
+				-- CRITICAL FIX: Money validation for $300 dinner
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 300 then
+						state.Money = money - 300
+						if state.AddFeed then
+							state:AddFeed("💕 Romantic dinner at your favorite upscale spot!")
+						end
+					elseif money >= 100 then
+						state.Money = money - 100
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("💕 Nice dinner at a mid-range restaurant. Still special!")
+						end
+					elseif money >= 30 then
+						state.Money = money - 30
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("💕 Fast food anniversary... but at least you're together!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("💕 Cooked at home. Budget tight but love is free.")
+						end
+					end
+				end,
+			},
 			{ text = "Thoughtful homemade gift", effects = { Happiness = 12, Smarts = 2 }, feedText = "Your handmade gift meant everything to them." },
 			{ text = "You forgot...", effects = { Happiness = -15 }, setFlags = { forgot_anniversary = true }, feedText = "You forgot your anniversary. Big trouble." },
 		},
@@ -938,20 +1338,56 @@ Relationships.events = {
 		end,
 	},
 	{
+		-- CRITICAL FIX: Was god-mode - player picked what drama happened!
+		-- Now drama type is random, player chooses how to respond
 		id = "friend_group_drama",
 		title = "Friend Group Drama",
 		emoji = "👯",
-		text = "Drama has erupted in your friend group.",
-		question = "What's happening?",
+		text = "Drama has erupted in your friend group. Two people are fighting.",
+		question = "What do you do?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
 
 		choices = {
-			{ text = "Two friends are fighting, picking sides", effects = { Happiness = -5 }, feedText = "You had to choose. Awkward." },
-			{ text = "Everyone is drifting apart", effects = { Happiness = -8 }, setFlags = { losing_friends = true }, feedText = "The group is falling apart." },
-			{ text = "Someone new is causing chaos", effects = { Happiness = -4 }, feedText = "The new person changed the dynamic." },
-			{ text = "You mediated and saved the group", effects = { Happiness = 8, Smarts = 2 }, feedText = "You brought everyone together!" },
+			{ 
+				text = "Try to mediate", 
+				effects = { },
+				feedText = "You tried to help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						-- Success
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 8)
+							state:ModifyStat("Smarts", 2)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 You mediated successfully! The group is stronger now.")
+						end
+					elseif roll <= 70 then
+						-- Got dragged into it
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -5)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 You got dragged into the drama. Had to pick a side.")
+						end
+					else
+						-- Made it worse
+						state.Flags.losing_friends = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("👯 Your mediation backfired. Now everyone's mad.")
+						end
+					end
+				end,
+			},
+			{ text = "Stay out of it", effects = { Happiness = -2 }, feedText = "You stayed neutral. Some friends appreciated that." },
+			{ text = "Pick a side", effects = { Happiness = -4 }, feedText = "You chose a side. Hope it was the right one." },
 		},
 	},
 	{
@@ -1180,10 +1616,47 @@ Relationships.events = {
 		cooldown = 5,
 		requiresPartner = true,
 		requiresFlags = { trying_for_baby = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
 			{ text = "Keep trying naturally", effects = { Happiness = -5 }, feedText = "The waiting and hoping continues." },
-			{ text = "Pursue fertility treatments", effects = { Happiness = -3, Money = -10000 }, setFlags = { fertility_treatment = true }, feedText = "You're exploring medical options." },
+			{ 
+				text = "Pursue fertility treatments", 
+				effects = { Happiness = -3 }, 
+				setFlags = { fertility_treatment = true }, 
+				feedText = "Exploring fertility treatments...",
+				-- CRITICAL FIX: Money validation for $10000 fertility treatments
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("💔 Full IVF treatment started. $10,000 invested in your dream.")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						state.Flags = state.Flags or {}
+						state.Flags.partial_fertility = true
+						if state.AddFeed then
+							state:AddFeed("💔 Basic fertility treatments started. Hoping it works!")
+						end
+					elseif money >= 1500 then
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💔 Fertility medications and monitoring only. Budget option.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("💔 Can't afford treatments. Looking into clinical trials and grants...")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.fertility_treatment = nil
+						state.Flags.seeking_fertility_help = true
+					end
+				end,
+			},
 			{ text = "Consider adoption", effects = { Happiness = 3 }, setFlags = { considering_adoption = true }, feedText = "There are other ways to build a family." },
 			{ text = "Accept it might not happen", effects = { Happiness = -8 }, setFlags = { accepted_childless = true }, feedText = "Coming to terms with this possibility." },
 		},
@@ -1317,21 +1790,69 @@ Relationships.events = {
 		},
 	},
 	{
+		-- CRITICAL FIX: This was god-mode - player picked what trouble child got into!
+		-- Now the trouble is random and player chooses how to respond
 		id = "child_trouble",
 		title = "Child in Trouble",
 		emoji = "😰",
-		text = "Your child got into serious trouble.",
-		question = "What happened?",
+		text = "The school called. Your child got into trouble.",
+		question = "How do you handle it?",
 		minAge = 30, maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 5,
 		requiresFlags = { parent = true },
 
 		choices = {
-			{ text = "Caught doing something illegal", effects = { Happiness = -15, Money = -2000 }, setFlags = { child_delinquent = true }, feedText = "Legal fees and a lot of worry." },
-			{ text = "Failing at school", effects = { Happiness = -8 }, feedText = "Their grades are tanking." },
-			{ text = "Hanging with the wrong crowd", effects = { Happiness = -10 }, setFlags = { child_bad_influences = true }, feedText = "You're worried about their friends." },
-			{ text = "Caught in a lie", effects = { Happiness = -5 }, feedText = "Trust issues are developing." },
+			{ 
+				text = "Rush to the school immediately", 
+				effects = { },
+				feedText = "You dropped everything and rushed to school...",
+				onResolve = function(state)
+					-- CRITICAL FIX: Random trouble type
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if roll <= 25 then
+						-- Caught doing something illegal
+						state.Flags.child_delinquent = true
+						state.Money = (state.Money or 0) - 2000
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They were caught shoplifting! Legal fees and serious talks ahead.")
+						end
+					elseif roll <= 50 then
+						-- Failing at school
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 Their grades have been slipping badly. Time for intervention.")
+						end
+					elseif roll <= 75 then
+						-- Bad crowd
+						state.Flags.child_bad_influences = true
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They've been hanging with a troublesome crowd. You're worried.")
+						end
+					else
+						-- Fighting
+						state.Money = (state.Money or 0) - 500
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -12)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 They got into a fight at school. Suspended for 3 days.")
+						end
+					end
+				end,
+			},
+			{ text = "Let your partner handle it", effects = { Happiness = -5 }, feedText = "You delegated this one." },
+			{ text = "Ignore the call - they'll figure it out", effects = { Happiness = -3 }, setFlags = { distant_parent = true }, feedText = "Maybe not your best parenting moment." },
 		},
 	},
 	{
@@ -1360,10 +1881,40 @@ Relationships.events = {
 		minAge = 25, maxAge = 65,
 		baseChance = 0.2,
 		cooldown = 6,
-		blockedByFlags = { married = true },
+		requiresSingle = true,
+		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Give love another chance", effects = { Happiness = 10 }, setFlags = { has_partner = true, rekindled_love = true }, feedText = "Second time's the charm?" },
+			{ 
+				text = "Give love another chance", 
+				effects = { Happiness = 10 }, 
+				setFlags = { has_partner = true, rekindled_love = true, dating = true }, 
+				feedText = "Second time's the charm?",
+				-- CRITICAL FIX: Actually create the partner object!
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = math.random() > 0.5
+					local names = isMale 
+						and {"Richard", "Thomas", "Gregory", "Peter", "Jeffrey", "Mark", "Timothy", "Douglas", "Scott", "Gary"}
+						or {"Patricia", "Linda", "Barbara", "Susan", "Margaret", "Karen", "Carol", "Nancy", "Betty", "Sandra"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 60,
+						age = (state.Age or 35) + math.random(-5, 5),
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "rekindled_flame",
+						rekindled = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("🔥 You rekindled your romance with %s!", partnerName))
+					end
+				end,
+			},
 			{ text = "Too much history - say no", effects = { Happiness = 2, Smarts = 2 }, feedText = "You've moved on and won't go back." },
 			{ text = "Be friends only", effects = { Happiness = 5 }, feedText = "Friendship is all you can offer now." },
 			{ text = "It reawakens old pain", effects = { Happiness = -8 }, feedText = "Some doors are best left closed." },
@@ -1379,11 +1930,74 @@ Relationships.events = {
 		baseChance = 0.3,
 		cooldown = 10,
 		requiresFlags = { married = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 
 		choices = {
-			{ text = "Grand vow renewal ceremony", effects = { Happiness = 15, Money = -5000 }, feedText = "A beautiful celebration of your love!" },
+			{ 
+				text = "Grand vow renewal ceremony", 
+				effects = { Happiness = 15 }, 
+				feedText = "Planning a grand vow renewal...",
+				-- CRITICAL FIX: Money validation for $5000 ceremony
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("💍 A beautiful celebration of your love! Vows renewed!")
+						end
+					elseif money >= 2000 then
+						state.Money = money - 2000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("💍 A lovely ceremony, scaled back but meaningful!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💍 Small gathering to renew vows. Budget but heartfelt!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("💍 Just the two of you renewing vows privately. Free but perfect.")
+						end
+					end
+				end,
+			},
 			{ text = "Intimate just-us moment", effects = { Happiness = 12 }, feedText = "Private and perfect." },
-			{ text = "Destination vow renewal", effects = { Happiness = 18, Money = -8000 }, feedText = "Renewed your vows in paradise!" },
+			{ 
+				text = "Destination vow renewal", 
+				effects = { Happiness = 18 }, 
+				feedText = "Planning a destination vow renewal...",
+				-- CRITICAL FIX: Money validation for $8000 destination
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("💍 Renewed your vows in paradise! Dream trip!")
+						end
+					elseif money >= 4000 then
+						state.Money = money - 4000
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("💍 Vow renewal at a nice resort - not paradise but wonderful!")
+						end
+					elseif money >= 1500 then
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("💍 Budget destination vow renewal - a nearby beach town!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("💍 Couldn't afford the trip. Renewed vows in your backyard instead.")
+						end
+					end
+				end,
+			},
 			{ text = "Not necessary - we know we love each other", effects = { Happiness = 5 }, feedText = "Actions speak louder than ceremonies." },
 		},
 	},

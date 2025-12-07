@@ -108,10 +108,19 @@ local events = {
 		maxAge = 50,
 		baseChance = 0.25,
 		cooldown = 5,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
+			-- Must own at least one vehicle
+			if not hasAssetType(state, "Vehicles") then
+				return false, "You don't own a car"
+			end
+			-- Must have a decent car worth at least $30,000
 			local vehicle = getBestVehicle(state)
-			return vehicle and (vehicle.price or vehicle.value or 0) >= 30000 -- Need a decent car
+			if not vehicle then
+				return false, "You don't own a car"
+			end
+			return (vehicle.price or vehicle.value or 0) >= 30000, "Need a better car to race"
 		end,
 		
 		choices = {
@@ -181,10 +190,19 @@ local events = {
 		maxAge = 60,
 		baseChance = 0.2,
 		cooldown = 10,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
+			-- Must own at least one vehicle
+			if not hasAssetType(state, "Vehicles") then
+				return false, "You don't own a car"
+			end
+			-- Must have a nice car worth at least $50,000
 			local vehicle = getBestVehicle(state)
-			return vehicle and (vehicle.price or vehicle.value or 0) >= 50000 -- Need a nice car
+			if not vehicle then
+				return false, "You don't own a car"
+			end
+			return (vehicle.price or vehicle.value or 0) >= 50000, "Need a nicer car to show off"
 		end,
 		
 		choices = {
@@ -233,10 +251,19 @@ local events = {
 		maxAge = 55,
 		baseChance = 0.2,
 		cooldown = 8,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
+			-- Must own at least one vehicle
+			if not hasAssetType(state, "Vehicles") then
+				return false, "You don't own a car"
+			end
+			-- Must have a fast car worth at least $25,000
 			local vehicle = getBestVehicle(state)
-			return vehicle and (vehicle.price or vehicle.value or 0) >= 25000 -- Need a fast car
+			if not vehicle then
+				return false, "You don't own a car"
+			end
+			return (vehicle.price or vehicle.value or 0) >= 25000, "Need a faster car"
 		end,
 		choices = {
 			{
@@ -335,10 +362,18 @@ local events = {
 		maxAge = 70,
 		baseChance = 0.1,
 		cooldown = 15,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must FIRST check if player owns ANY car
 		eligibility = function(state)
+			-- Must own at least one vehicle
+			if not hasAssetType(state, "Vehicles") then
+				return false, "You don't own a car"
+			end
 			local vehicle = getBestVehicle(state)
-			return vehicle and (vehicle.price or vehicle.value or 0) >= 20000
+			if not vehicle then
+				return false, "You don't own a car"
+			end
+			return (vehicle.price or vehicle.value or 0) >= 20000, "No car to vandalize"
 		end,
 		choices = {
 			{
@@ -408,9 +443,19 @@ local events = {
 		maxAge = 65,
 		baseChance = 0.25,
 		cooldown = 6,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
+			-- Must own at least one vehicle
+			if not hasAssetType(state, "Vehicles") then
+				return false, "You don't own a car"
+			end
+			-- Must have an exotic car worth at least $100,000
 			local vehicle = getBestVehicle(state)
-			return vehicle and (vehicle.price or vehicle.value or 0) >= 100000 -- Exotic car
+			if not vehicle then
+				return false, "You don't own a car"
+			end
+			return (vehicle.price or vehicle.value or 0) >= 100000, "Need an exotic car"
 		end,
 		choices = {
 			{
@@ -550,9 +595,17 @@ local events = {
 		maxAge = 70,
 		baseChance = 0.2,
 		cooldown = 20,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Must own a property AND have enough money for cheapest option
 		eligibility = function(state)
-			return hasAssetType(state, "Properties") and (state.Money or 0) >= 10000
+			if not hasAssetType(state, "Properties") then
+				return false, "You don't own property to renovate"
+			end
+			local money = state.Money or 0
+			if money < 5000 then
+				return false, "Can't afford renovations right now"
+			end
+			return true
 		end,
 		
 		choices = {
@@ -608,19 +661,31 @@ local events = {
 		maxAge = 70,
 		baseChance = 0.25,
 		cooldown = 8,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Verify player actually HAS assets before checking value
 		eligibility = function(state)
+			-- First check if player has ANY assets at all
+			if not state.Assets then
+				return false, "You don't own any valuable assets"
+			end
+			
 			local totalValue = 0
-			if state.Assets then
-				for assetType, assets in pairs(state.Assets) do
-					if type(assets) == "table" then
-						for _, asset in ipairs(assets) do
-							totalValue = totalValue + (asset.value or asset.price or 0)
-						end
+			local hasAnyAssets = false
+			
+			for assetType, assets in pairs(state.Assets) do
+				if type(assets) == "table" and #assets > 0 then
+					hasAnyAssets = true
+					for _, asset in ipairs(assets) do
+						totalValue = totalValue + (asset.value or asset.price or 0)
 					end
 				end
 			end
-			return totalValue >= 100000 -- Need significant assets
+			
+			if not hasAnyAssets then
+				return false, "You don't own any valuable assets"
+			end
+			
+			return totalValue >= 100000, "Need more valuable assets to attract envy"
 		end,
 		
 		choices = {
@@ -1255,11 +1320,17 @@ local events = {
 		maxAge = 70,
 		baseChance = 0.3,
 		cooldown = 4,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- CRITICAL FIX: Ensure player actually owns something worth showing off
 		eligibility = function(state)
 			local hasItems = hasAssetType(state, "Items")
 			local hasVehicles = hasAssetType(state, "Vehicles")
-			return hasItems or hasVehicles
+			local hasProperties = hasAssetType(state, "Properties")
+			
+			if not (hasItems or hasVehicles or hasProperties) then
+				return false, "You don't have anything to show off"
+			end
+			return true
 		end,
 		
 		choices = {

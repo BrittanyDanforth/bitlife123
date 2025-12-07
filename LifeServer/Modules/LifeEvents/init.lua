@@ -59,8 +59,8 @@ local StageCategories = {
 	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street" }, -- Ages 13-17: Full teen experience + part-time work + street hustle entry
 	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 18-34: Peak career years + all career paths + assets
 	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 35-49: Established adult + all paths
-	middle_age  = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife
-	senior      = { "adult", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years (can own racing teams)
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife + early senior events
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years - senior events now loaded!
 }
 
 function LifeEvents.getLifeStage(age)
@@ -190,10 +190,41 @@ function LifeEvents.init()
 		{ name = "Childhood",     category = "childhood" },
 		{ name = "Teen",          category = "teen" },
 		{ name = "Adult",         category = "adult" },
+		{ name = "Senior",        category = "senior" },              -- Senior/retirement events (ages 60+)
 		{ name = "Career",        category = "career" },
 		{ name = "Relationships", category = "relationships" },
 		{ name = "Milestones",    category = "milestones" },
 		{ name = "Random",        category = "random" },
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EXPANSION MODULES - 300+ new events total
+		-- All events use randomized outcomes - NO god mode
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "ChildhoodExpanded",  category = "childhood" },      -- 40+ new childhood events (ages 0-12)
+		{ name = "TeenExpanded",       category = "teen" },           -- 60+ new teen events (ages 13-17)
+		{ name = "AdultExpanded",      category = "adult" },          -- 60+ new adult events (ages 18-60)
+		{ name = "SeniorExpanded",     category = "senior" },         -- 35+ new senior events (ages 60+)
+		{ name = "RandomExpanded",     category = "random" },         -- 30+ new random life events (any age)
+		{ name = "JobSpecificEvents",  category = "career" },         -- 60+ job-specific events per career category
+		{ name = "RelationshipsExpanded", category = "relationships" }, -- 25+ expanded relationship events
+		{ name = "LifeExperiences",  category = "random" },        -- 30+ life experience events
+		{ name = "SchoolExpanded",   category = "childhood" },     -- 30+ school/education events
+		{ name = "CommunityEvents",  category = "random" },        -- 30+ community/social events
+		{ name = "FinancialEvents",  category = "random" },        -- 25+ financial events
+		{ name = "HealthEvents",     category = "health" },        -- 25+ health/wellness events
+		{ name = "TravelEvents",     category = "random" },        -- 15+ travel/vacation events
+		{ name = "FamilyEvents",     category = "family" },        -- 15+ family/parenting events
+		{ name = "HobbyEvents",      category = "hobbies" },       -- 20+ hobby/interest events
+		{ name = "SocialMediaEvents", category = "random" },       -- 12+ social media/online events
+		{ name = "PetEvents",        category = "pets" },          -- 12+ pet/animal events
+		{ name = "LegalEvents",      category = "legal" },         -- 12+ legal/justice events
+		{ name = "LifeChallenges",   category = "random" },        -- 18+ life challenge events
+		{ name = "SeasonalEvents",   category = "seasonal" },      -- 20+ seasonal/holiday events
+		{ name = "MiscEvents",       category = "random" },        -- 18+ miscellaneous events
+		{ name = "DailyLifeEvents",  category = "random" },        -- 22+ daily routine events
+		{ name = "SpecialMoments",   category = "milestone" },     -- 16+ special moment events
+		{ name = "ReputationEvents", category = "social" },        -- 10+ reputation/social events
+		{ name = "LuckEvents",       category = "random" },        -- 4+ luck/superstition events
 		
 		-- Catalog modules (organized event collections)
 		{ name = "CareerEvents",   category = "career" },
@@ -201,7 +232,7 @@ function LifeEvents.init()
 		{ name = "CrimeEvents",    category = "crime" },
 		{ name = "CoreMilestones", category = "milestones" },
 		
-		-- NEW: Specialized career paths with minigame integration
+		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
 		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
@@ -336,6 +367,33 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if state.IsDead or flags.dead or (state.Stats and state.Stats.Health and state.Stats.Health <= 0) then
 		return false -- Dead players can't have events
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
+	-- Only allow health-related, medical, or high-priority events for very sick players
+	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local health = (state.Stats and state.Stats.Health) or state.Health or 50
+	if health <= 15 then
+		-- Player is critically ill - only allow relevant events
+		local eventCategory = event._category or event.category or ""
+		local eventId = event.id or ""
+		local allowedWhileDying = event.allowedWhileDying
+			or event.priority == "high"
+			or event.isMilestone
+			or eventCategory == "health"
+			or eventCategory == "medical"
+			or eventCategory == "death"
+			or string.find(eventId, "health")
+			or string.find(eventId, "illness")
+			or string.find(eventId, "death")
+			or string.find(eventId, "hospital")
+			or string.find(eventId, "doctor")
+		
+		if not allowedWhileDying then
+			return false -- Don't show random events to dying players
+		end
 	end
 	
 	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
@@ -1388,10 +1446,12 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			if partner then
 				outcome.newRelationship = partner
 				-- Update feed text to include partner's name
+				-- MINOR FIX: Added fallback for partner name
+				local partnerName = partner.name or partner.Name or "someone special"
 				if outcome.feedText then
-					outcome.feedText = outcome.feedText .. " You started dating " .. partner.name .. "!"
+					outcome.feedText = outcome.feedText .. " You started dating " .. partnerName .. "!"
 				else
-					outcome.feedText = "You started dating " .. partner.name .. "!"
+					outcome.feedText = "You started dating " .. partnerName .. "!"
 				end
 			end
 		end
@@ -1437,16 +1497,55 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
-	-- Breakup events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Universal breakup handler
+	-- Any event that sets recently_single should FULLY clear all relationship state
+	-- This prevents bugs where player is "single" but still has has_partner flag
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if choice.setFlags and choice.setFlags.recently_single then
+		local partnerName = "your partner"
 		if state.Relationships and state.Relationships.partner then
-			local partnerName = state.Relationships.partner.name
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			
+			-- Move to ex-partner storage for potential "ex returns" events later
+			state.Relationships.last_ex = state.Relationships.partner
+			state.Relationships.last_ex.breakupAge = state.Age
 			state.Relationships.partner = nil
-			state.Flags.has_partner = nil
-			state.Flags.dating = nil
-			state.Flags.committed_relationship = nil
+		end
+		
+		-- Clear ALL relationship flags to prevent inconsistent state
+		state.Flags.has_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.office_romance = nil
+		state.Flags.long_distance = nil
+		
+		-- Ensure feedText includes the partner name
+		if not outcome.feedText or outcome.feedText == "" then
 			outcome.feedText = "You and " .. partnerName .. " broke up."
 		end
+	end
+	
+	-- MINOR FIX: Also handle divorce specifically (sets divorced flag)
+	if choice.setFlags and choice.setFlags.divorced then
+		local partnerName = "your spouse"
+		if state.Relationships and state.Relationships.partner then
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your spouse"
+			state.Relationships.ex_spouse = state.Relationships.partner
+			state.Relationships.ex_spouse.divorceAge = state.Age
+			state.Relationships.partner = nil
+		end
+		
+		-- Clear relationship flags
+		state.Flags.has_partner = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

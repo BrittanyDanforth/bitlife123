@@ -214,6 +214,14 @@ Milestones.events = {
 		minAge = 16, maxAge = 25,
 		oneTime = true,
 		requiresFlags = { has_license = true },
+		blockedByFlags = { has_car = true, has_vehicle = true, car_owner = true, in_prison = true },
+		-- CRITICAL FIX: Need at least some money or a generous family!
+		eligibility = function(state)
+			-- Either has enough for cheapest car OR might get a family gift
+			local money = state.Money or 0
+			-- $200 minimum or family might help
+			return money >= 200 or true -- Family gift option always available
+		end,
 
 		-- META
 		stage = "teen",
@@ -225,40 +233,132 @@ Milestones.events = {
 		choices = {
 			{
 				text = "A beat-up used car",
-				effects = { Happiness = 7, Money = -500 },
+				effects = { Happiness = 7 },
 				setFlags = { has_car = true, has_vehicle = true },
-				feedText = "It's not pretty, but it's yours!",
+				feedText = "Looking for a beater...",
+				-- CRITICAL FIX: Money validation for $500 beater
 				onResolve = function(state)
-					-- Use LifeState:AddAsset directly instead of EventEngine
-					if state.AddAsset then
-						state:AddAsset("Vehicles", {
-							id = "beater_car_" .. tostring(state.Age or 0),
-							name = "Beat-up Used Car",
-							emoji = "🚙",
-							price = 500,
-							value = 400,
-							condition = 35,
-							isEventAcquired = true,
-						})
+					local money = state.Money or 0
+					if money >= 500 then
+						state.Money = money - 500
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "beater_car_" .. tostring(state.Age or 0),
+								name = "Beat-up Used Car",
+								emoji = "🚙",
+								price = 500,
+								value = 400,
+								condition = 35,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚙 It's not pretty, but it's yours!")
+						end
+					elseif money >= 200 then
+						state.Money = money - 200
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "junker_car_" .. tostring(state.Age or 0),
+								name = "Barely Running Junker",
+								emoji = "🚙",
+								price = 200,
+								value = 100,
+								condition = 15,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚙 It barely runs, but wheels are wheels!")
+						end
+					else
+						-- Can't afford, parents help with loan
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						state.Flags = state.Flags or {}
+						state.Flags.owes_parents = true
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "loaner_car_" .. tostring(state.Age or 0),
+								name = "Parents' Loaner Car",
+								emoji = "🚙",
+								price = 0,
+								value = 800,
+								condition = 40,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚙 Parents loaned you the old family car. You owe them!")
+						end
 					end
 				end,
 			},
 			{
 				text = "A decent reliable car",
-				effects = { Happiness = 8, Money = -3000 },
+				effects = { Happiness = 8 },
 				setFlags = { has_car = true, has_vehicle = true },
-				feedText = "A solid first car!",
+				feedText = "Looking for something reliable...",
+				-- CRITICAL FIX: Money validation for $3000 car
 				onResolve = function(state)
-					if state.AddAsset then
-						state:AddAsset("Vehicles", {
-							id = "reliable_car_" .. tostring(state.Age or 0),
-							name = "Reliable Used Car",
-							emoji = "🚗",
-							price = 3000,
-							value = 2500,
-							condition = 65,
-							isEventAcquired = true,
-						})
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "reliable_car_" .. tostring(state.Age or 0),
+								name = "Reliable Used Car",
+								emoji = "🚗",
+								price = 3000,
+								value = 2500,
+								condition = 65,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚗 A solid first car!")
+						end
+					elseif money >= 1500 then
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "older_car_" .. tostring(state.Age or 0),
+								name = "Older Used Car",
+								emoji = "🚗",
+								price = 1500,
+								value = 1200,
+								condition = 50,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚗 Older than hoped but still decent!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddAsset then
+							state:AddAsset("Vehicles", {
+								id = "beater_compromise_" .. tostring(state.Age or 0),
+								name = "Beat-up Used Car",
+								emoji = "🚙",
+								price = 500,
+								value = 400,
+								condition = 35,
+								isEventAcquired = true,
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🚙 Can't afford reliable - settling for a beater.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford a car right now...")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.has_car = nil
+						state.Flags.has_vehicle = nil
 					end
 				end,
 			},
@@ -294,7 +394,7 @@ Milestones.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "college_graduation",
-		title = "College Graduation",
+		title = "🎓 College Graduation!",
 		emoji = "🎓",
 		text = "You did it! Four years of hard work paid off.",
 		question = "How do you feel about graduating?",
@@ -307,7 +407,8 @@ Milestones.events = {
 		-- META
 		stage = "adult",
 		ageBand = "young_adult",
-		category = "education",
+		-- CRITICAL FIX #10: Added "graduation" category for gold event card
+		category = "graduation",
 		milestoneKey = "COLLEGE_GRADUATION",
 		tags = { "college", "degree", "career_setup" },
 		careerTags = { "career_general" },

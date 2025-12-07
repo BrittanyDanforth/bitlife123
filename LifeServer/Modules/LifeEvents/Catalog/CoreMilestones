@@ -255,16 +255,77 @@ local events = {
 			{
 				index = 1,
 				text = "College - continue your education",
-				effects = { Happiness = 7, Smarts = 5, Money = -10000 },
+				effects = { Happiness = 7, Smarts = 5 },
 				setFlags = { plans_for_college = true, higher_education_path = true },
-				feedText = "You're going to college! Move-in is in August. Dorms, meal plans, student loans. The next chapter begins! You're NERVOUS but excited!",
+				feedText = "Planning for college...",
+				-- CRITICAL FIX: Money validation for $10000 college costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("🎓 You're going to college! Dorms, meal plans, student loans. New chapter begins!")
+						end
+					elseif money >= 3000 then
+						-- Community college / scholarship route
+						state.Money = money - 3000
+						state.Flags = state.Flags or {}
+						state.Flags.community_college = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Community college for now - transfer to 4-year later! Smart savings!")
+						end
+					elseif money >= 500 then
+						-- Financial aid / full scholarship
+						state.Money = money - 500
+						state.Flags = state.Flags or {}
+						state.Flags.financial_aid = true
+						state.Flags.student_loans = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Financial aid and student loans approved! You're going to college!")
+						end
+					else
+						-- Parents helping / work-study
+						state.Flags = state.Flags or {}
+						state.Flags.work_study = true
+						state.Flags.student_loans = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Work-study program and loans. Working your way through college!")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Trade school - learn a real skill",
-				effects = { Happiness = 6, Smarts = 4, Money = -5000 },
+				effects = { Happiness = 6, Smarts = 4 },
 				setFlags = { trade_school = true, practical_path = true },
-				feedText = "You enrolled in trade school! Welding, plumbing, electrical - real skills, real jobs. No 4-year debt. Smart move!",
+				feedText = "Enrolling in trade school...",
+				-- CRITICAL FIX: Money validation for $5000 trade school
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("🎓 Enrolled in trade school! Real skills, real jobs. No 4-year debt!")
+						end
+					elseif money >= 2000 then
+						state.Money = money - 2000
+						if state.AddFeed then
+							state:AddFeed("🎓 Apprenticeship program! Learning on the job with some classes.")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("🎓 Financial aid for trade school approved! Practical path!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.apprentice = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Starting as an apprentice - learning on the job, earning while learning!")
+						end
+					end
+				end,
 			},
 			{
 				index = 3,
@@ -276,9 +337,36 @@ local events = {
 			{
 				index = 4,
 				text = "Gap year - travel and figure it out",
-				effects = { Happiness = 10, Health = 4, Money = -8000 },
+				effects = { Happiness = 10, Health = 4 },
 				setFlags = { gap_year = true, free_spirit = true, wanderlust = true },
-				feedText = "You backpacked through Europe! Hostels, trains, new friends. You 'found yourself' (or at least some cool Instagram photos). Best year ever!",
+				feedText = "Planning a gap year...",
+				-- CRITICAL FIX: Money validation for $8000 gap year travel
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("🎓 Backpacking through Europe! Hostels, trains, new friends. Best year ever!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("🎓 Road trip across the country! Budget adventure but amazing!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("🎓 Staycation gap year - exploring local areas and working odd jobs!")
+						end
+					else
+						-- No money = volunteering gap year
+						state.Flags = state.Flags or {}
+						state.Flags.volunteer_gap_year = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Volunteer gap year! Free room and board while helping others!")
+						end
+					end
+				end,
 			},
 		},
 	},
@@ -299,21 +387,87 @@ local events = {
 		minAge = 18,
 		maxAge = 28,
 		oneTime = true,
-		blockedByFlags = { living_independently = true },
+		blockedByFlags = { living_independently = true, in_prison = true },
 		choices = {
 			{
 				index = 1,
 				text = "Get your own apartment - full independence!",
-				effects = { Happiness = 10, Money = -15000, Health = 2 },
+				effects = { Happiness = 10, Health = 2 },
 				setFlags = { living_independently = true, lives_alone = true, adulting = true },
-				feedText = "You signed a lease! Studio apartment. $1,200/month. You eat ramen 4 nights a week but it's YOUR PLACE! Keys in hand! Adult unlocked!",
+				feedText = "Looking for your own apartment...",
+				-- CRITICAL FIX: Money validation for $15000 apartment costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 15000 then
+						state.Money = money - 15000
+						if state.AddFeed then
+							state:AddFeed("📦 Nice apartment in a good area! First month, last month, security deposit done!")
+						end
+					elseif money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("📦 Studio apartment! Small but yours. Ramen 4 nights a week. Worth it!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("📦 Cheap basement apartment. Not ideal but FREEDOM!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						state.Flags = state.Flags or {}
+						state.Flags.lives_alone = nil
+						state.Flags.has_roommates = true
+						if state.AddFeed then
+							state:AddFeed("📦 Can't afford alone - found a roommate situation last minute!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.living_independently = nil
+						state.Flags.lives_with_parents = true
+						if state.AddFeed then
+							state:AddFeed("📦 Can't afford to move out yet. Staying home a bit longer...")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Roommates - split the cost",
-				effects = { Happiness = 7, Money = -8000 },
+				effects = { Happiness = 7 },
 				setFlags = { living_independently = true, has_roommates = true },
-				feedText = "You moved in with 2 roommates from Craigslist. One's messy. One's loud. But rent is $400! You're independent-ish! Progress!",
+				feedText = "Finding roommates...",
+				-- CRITICAL FIX: Money validation for $8000 roommate costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("📦 Nice place with roommates! $400/month rent! Independent-ish!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("📦 Budget place with roommates. Tiny room but affordable!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("📦 Cramped apartment with 3 roommates. Privacy? What's that?")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						state.Flags = state.Flags or {}
+						state.Flags.couch_surfing = true
+						if state.AddFeed then
+							state:AddFeed("📦 Couch surfing with friends until you can afford a real place.")
+						end
+					end
+				end,
 			},
 			{
 				index = 3,
@@ -325,9 +479,36 @@ local events = {
 			{
 				index = 4,
 				text = "Move in with your partner - take the leap!",
-				effects = { Happiness = 9, Money = -10000 },
+				effects = { Happiness = 9 },
 				setFlags = { living_independently = true, cohabitating = true, serious_relationship = true },
-				feedText = "You moved in together! Shared closet. Shared bills. Shared everything. It's exciting and terrifying. Relationship level: SERIOUS!",
+				feedText = "Moving in with partner...",
+				-- CRITICAL FIX: Money validation for $10000 cohabitation costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("📦 Moved in together! Nice place, shared bills. Relationship level: SERIOUS!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("📦 Cozy apartment together! Small but romantic!")
+						end
+					elseif money >= 2000 then
+						state.Money = money - 2000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("📦 Tiny place together. Love conquers square footage!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						-- If broke, partner might cover more
+						if state.AddFeed then
+							state:AddFeed("📦 Your partner covered most costs. Bit awkward but grateful!")
+						end
+					end
+				end,
 			},
 		},
 	},
@@ -495,20 +676,80 @@ local events = {
 		minAge = 35,
 		maxAge = 55,
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
 				index = 1,
 				text = "Take a sabbatical - step away for 6 months",
-				effects = { Happiness = 10, Health = 5, Money = -20000 },
+				effects = { Happiness = 10, Health = 5 },
 				setFlags = { took_sabbatical = true, self_care = true },
-				feedText = "You took 6 months off. Traveled. Read books. Remembered who you are. You came back REFRESHED. Work feels manageable now. Reset achieved!",
+				feedText = "Planning a sabbatical...",
+				-- CRITICAL FIX: Money validation for $20000 sabbatical
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 20000 then
+						state.Money = money - 20000
+						if state.AddFeed then
+							state:AddFeed("😫 You took 6 months off! Traveled. Read books. REFRESHED! Reset achieved!")
+						end
+					elseif money >= 10000 then
+						state.Money = money - 10000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("😫 3-month sabbatical. Shorter but still rejuvenating!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("😫 One month off. Not much but better than nothing!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("😫 Just a week of staycation. Some rest at least.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("😫 Can't afford time off. Using sick days for a mental health break.")
+						end
+					end
+				end,
 			},
 			{
 				index = 2,
 				text = "Switch careers - it's not too late!",
-				effects = { Happiness = 8, Money = -10000, Smarts = 5 },
+				effects = { Happiness = 8, Smarts = 5 },
 				setFlags = { career_change = true, brave = true, starting_over = true },
-				feedText = "You quit! Enrolled in a coding bootcamp! Started over at 42! Scary but LIBERATING! You're alive again! New chapter!",
+				feedText = "Switching careers...",
+				-- CRITICAL FIX: Money validation for $10000 career change
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("😫 You quit! Enrolled in bootcamp! Starting over is LIBERATING!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("😫 Part-time courses while job hunting. Transition happening!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😫 Free online courses and self-teaching. Budget career change!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("😫 Can't afford training but networking for new opportunities!")
+						end
+					end
+				end,
 			},
 			{
 				index = 3,
@@ -520,9 +761,35 @@ local events = {
 			{
 				index = 4,
 				text = "Start a side hustle - test the waters first",
-				effects = { Happiness = 6, Smarts = 4, Money = -3000 },
+				effects = { Happiness = 6, Smarts = 4 },
 				setFlags = { entrepreneur = true, side_hustle = true },
-				feedText = "You started a side business! Worked nights and weekends. It's growing! Maybe one day you can quit your job. Hope restored!",
+				feedText = "Starting a side hustle...",
+				-- CRITICAL FIX: Money validation for $3000 side business
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("😫 Side business launched! Nights and weekends. Hope restored!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.AddFeed then
+							state:AddFeed("😫 Lean side hustle! Minimal investment, maximum effort!")
+						end
+					elseif money >= 200 then
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("😫 Micro-hustle! Just a domain and some social media. Baby steps!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😫 Freelancing with what you have. No investment, just sweat equity!")
+						end
+					end
+				end,
 			},
 		},
 	},
