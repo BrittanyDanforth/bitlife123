@@ -1402,6 +1402,11 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	card.Parent = parent
 	UI.corner(card, 16)
 	UI.stroke(card, 1, 0.7, accentColor)
+	
+	-- CRITICAL UI FIX: Add subtle shadow for polished look
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, 0.92)
+	end
 
 	-- Avatar
 	local avatarFrame = Instance.new("Frame")

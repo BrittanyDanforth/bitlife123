@@ -9,6 +9,51 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local OccupationScreen = {}
 OccupationScreen.__index = OccupationScreen
 
@@ -991,6 +1036,29 @@ function OccupationScreen:createUI()
 	self.eduTab.ZIndex = 85
 	self.eduTab.Parent = self.tabBar
 	UI.corner(self.eduTab, 10)
+	
+	-- CRITICAL UI FIX: Add hover effects to tab buttons
+	self.jobsTab.MouseEnter:Connect(function()
+		if self.currentTab ~= "jobs" then
+			UI.tween(self.jobsTab, TweenInfo.new(0.12), { BackgroundColor3 = C.BluePale })
+		end
+	end)
+	self.jobsTab.MouseLeave:Connect(function()
+		if self.currentTab ~= "jobs" then
+			UI.tween(self.jobsTab, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end
+	end)
+	
+	self.eduTab.MouseEnter:Connect(function()
+		if self.currentTab ~= "education" then
+			UI.tween(self.eduTab, TweenInfo.new(0.12), { BackgroundColor3 = C.PurplePale })
+		end
+	end)
+	self.eduTab.MouseLeave:Connect(function()
+		if self.currentTab ~= "education" then
+			UI.tween(self.eduTab, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end
+	end)
 
 	self.jobsTab.MouseButton1Click:Connect(function() self:switchTab("jobs") end)
 	self.eduTab.MouseButton1Click:Connect(function() self:switchTab("education") end)
@@ -1259,7 +1327,7 @@ function OccupationScreen:populateJobs()
 	end
 
 	-- Current job section (if employed and not in jail)
-	if currentJob then
+	if currentJob and not inJail then
 		local currentSection = Instance.new("Frame")
 		currentSection.Name = "CurrentJobSection"
 		currentSection.Size = UDim2.new(1, 0, 0, 0)
@@ -1309,6 +1377,63 @@ function OccupationScreen:populateJobs()
 		else
 			log("No job data found for currentJob:", currentJob)
 		end
+	elseif not currentJob and not inJail then
+		-- CRITICAL UI FIX: Show "Unemployed" status card when player has no job
+		local unemployedCard = Instance.new("Frame")
+		unemployedCard.Name = "UnemployedCard"
+		unemployedCard.Size = UDim2.new(1, 0, 0, 95)
+		unemployedCard.BackgroundColor3 = C.AmberPale or Color3.fromRGB(254, 243, 199)
+		unemployedCard.LayoutOrder = 0
+		unemployedCard.ZIndex = 82
+		unemployedCard.Parent = self.contentScroll
+		UI.corner(unemployedCard, 18)
+		UI.stroke(unemployedCard, 2, 0.5, C.Amber or Color3.fromRGB(245, 158, 11))
+		
+		-- Icon
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 55, 0, 55)
+		iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+		iconFrame.BackgroundColor3 = C.Amber or Color3.fromRGB(245, 158, 11)
+		iconFrame.ZIndex = 83
+		iconFrame.Parent = unemployedCard
+		UI.corner(iconFrame, 12)
+		
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = 28
+		iconLabel.Text = "🔍"
+		iconLabel.TextColor3 = C.White
+		iconLabel.ZIndex = 84
+		iconLabel.Parent = iconFrame
+		
+		-- Header text
+		local headerText = Instance.new("TextLabel")
+		headerText.Size = UDim2.new(1, -85, 0, 24)
+		headerText.Position = UDim2.new(0, 80, 0, 16)
+		headerText.BackgroundTransparency = 1
+		headerText.Font = F.Title
+		headerText.TextSize = 18
+		headerText.TextColor3 = C.AmberDark or Color3.fromRGB(217, 119, 6)
+		headerText.TextXAlignment = Enum.TextXAlignment.Left
+		headerText.Text = "Currently Unemployed"
+		headerText.ZIndex = 83
+		headerText.Parent = unemployedCard
+		
+		-- Sub text
+		local subText = Instance.new("TextLabel")
+		subText.Size = UDim2.new(1, -85, 0, 35)
+		subText.Position = UDim2.new(0, 80, 0, 42)
+		subText.BackgroundTransparency = 1
+		subText.Font = F.Body
+		subText.TextSize = 13
+		subText.TextColor3 = C.Gray600 or Color3.fromRGB(75, 85, 99)
+		subText.TextXAlignment = Enum.TextXAlignment.Left
+		subText.TextWrapped = true
+		subText.Text = "Browse available jobs below and apply for positions that match your qualifications!"
+		subText.ZIndex = 83
+		subText.Parent = unemployedCard
 	end
 
 	-- Available jobs section
@@ -1426,6 +1551,12 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	card.ZIndex = 83
 	card.Parent = parent
 	UI.corner(card, 18)
+	UI.stroke(card, 2, 0.3, C.Green)
+	
+	-- CRITICAL UI FIX: Add shadow for depth
+	if UI.createShadow then
+		UI.createShadow(card, 3, 12, C.Black, 0.88)
+	end
 
 	-- ═══════════════════════════════════════════════════════════
 	-- TOP SECTION: Job Info with Icon
@@ -2172,6 +2303,11 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, 1, canApply and 0.7 or 0.88, canApply and C.Blue or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow for polished look
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canApply and 0.92 or 0.96)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -2518,7 +2654,12 @@ function OccupationScreen:createCurrentEducationCard(parent, eduLevel, eduInfo, 
 	card.ZIndex = 82
 	card.Parent = parent
 	UI.corner(card, 18)
-	UI.stroke(card, 1, 0.9, C.Purple)
+	UI.stroke(card, 2, 0.5, C.Purple)
+	
+	-- CRITICAL UI FIX: Add shadow for depth
+	if UI.createShadow then
+		UI.createShadow(card, 3, 12, C.Black, 0.88)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -2775,6 +2916,11 @@ function OccupationScreen:createEducationCard(parent, edu, order, age, money, ed
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, 1, canEnroll and 0.7 or 0.88, canEnroll and C.Purple or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canEnroll and 0.92 or 0.96)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -3546,11 +3692,20 @@ function OccupationScreen:executeQuit(quitStyle)
 	log("Server response:", result and "received" or "nil")
 	
 	if result and result.success then
-		-- CRITICAL FIX: Immediately clear local job state so UI refreshes correctly
+		-- CRITICAL FIX #1: Immediately and thoroughly clear ALL local job state
 		if self.playerState then
 			self.playerState.CurrentJob = nil
+			self.playerState.Job = nil
+			-- Clear career-related state too
+			if self.playerState.Career then
+				self.playerState.Career.current = nil
+			end
 		end
-		self.careerInfo = nil -- Clear cached career info
+		
+		-- CRITICAL FIX #2: Clear ALL cached career info
+		self.careerInfo = nil
+		self.cachedJobData = nil
+		self.educationInfo = nil
 		
 		local emoji = "👋"
 		local title = "You quit!"
@@ -3566,26 +3721,44 @@ function OccupationScreen:executeQuit(quitStyle)
 		
 		self:showResult(true, message, emoji)
 		
-		-- CRITICAL FIX: Force complete UI refresh after quitting
-		-- Not just populateJobs but entire career info and tab state
-		task.delay(0.1, function()
+		-- CRITICAL FIX #3: Force IMMEDIATE UI refresh before delay
+		-- Clear content scroll to prevent stale job card from showing
+		for _, child in ipairs(self.contentScroll:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+		
+		-- CRITICAL FIX #4: Complete UI refresh with multiple fallbacks
+		task.delay(0.15, function()
 			if self.isVisible then
-				-- Clear ALL cached career state
+				-- Clear ALL cached career state again (in case of race conditions)
 				self.careerInfo = nil
 				self.cachedJobData = nil
 				
-				-- Force refresh career info from server
+				-- Force refresh career info from server (expect nil/empty response)
 				if GetCareerInfo then
-					self.careerInfo = GetCareerInfo:InvokeServer()
+					local newCareerInfo = GetCareerInfo:InvokeServer()
+					if newCareerInfo then
+						self.careerInfo = newCareerInfo
+					end
 				end
 				
-				-- Refresh the job list
-				self:populateJobs()
+				-- CRITICAL FIX #5: Explicitly switch to jobs tab first to rebuild UI
+				if self.currentTab == "jobs" or self.currentTab == "career" then
+					-- Force rebuild by clearing and re-populating
+					for _, child in ipairs(self.contentScroll:GetChildren()) do
+						if child:IsA("Frame") then child:Destroy() end
+					end
+					self:populateJobs()
+				else
+					self:switchTab("jobs")
+				end
 				
-				-- Switch to career tab to show unemployed state
-				self:switchTab("career")
+				-- CRITICAL FIX #6: Update any header/info bars
+				if self.updateInfoBar then
+					self:updateInfoBar()
+				end
 				
-				log("✅ UI fully refreshed after quit")
+				log("✅ UI fully refreshed after quit - job state cleared")
 			end
 		end)
 	else
@@ -4123,10 +4296,20 @@ function OccupationScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "OK" or "X")
-	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	
+	-- CRITICAL UI FIX: Better default emojis
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" then
+		displayEmoji = success and "🎉" or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" then
+		displayEmoji = "❌"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- CRITICAL UI FIX: More descriptive titles
+	self.resultModal.titleLabel.Text = success and "Great News!" or "Uh oh..."
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
-	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.messageLabel.Text = message or (success and "Everything worked out!" or "Something went wrong...")
 	self.resultModal.okButton.BackgroundColor3 = shellColor
 
 	UI.showModal(self.resultModal)

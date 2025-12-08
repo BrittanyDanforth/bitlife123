@@ -9,6 +9,58 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Pink       = C.Pink       or Color3.fromRGB(236, 72, 153)
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Cyan       = C.Cyan       or Color3.fromRGB(6, 182, 212)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Orange     = C.Orange     or Color3.fromRGB(249, 115, 22)
+C.Yellow     = C.Yellow     or Color3.fromRGB(234, 179, 8)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+
+-- Dark variants
+C.PinkDark   = C.PinkDark   or Color3.fromRGB(190, 24, 93)
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.CyanDark   = C.CyanDark   or Color3.fromRGB(14, 116, 144)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.PinkPale   = C.PinkPale   or Color3.fromRGB(252, 231, 243)
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.CyanPale   = C.CyanPale   or Color3.fromRGB(224, 242, 254)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local ActivitiesScreen = {}
 ActivitiesScreen.__index = ActivitiesScreen
 
@@ -1610,8 +1662,20 @@ end
 function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, paleColor)
 	local age = self:getAge()
 	local money = self:getMoney()
+	local flags = self:getFlags()
 	local cost = item.cost or 0
-	local canDo = age >= item.minAge and money >= cost and not self:isInJail()
+	
+	-- CRITICAL FIX: Check for activity-specific flags like requiresFlag and maxAge
+	local meetsFlag = true
+	if item.requiresFlag then
+		meetsFlag = flags[item.requiresFlag] == true
+	end
+	local meetsMaxAge = true
+	if item.maxAge then
+		meetsMaxAge = age <= item.maxAge
+	end
+	
+	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
 
 	local card = Instance.new("Frame")
 	card.Name = item.id
@@ -1622,6 +1686,11 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, 1, canDo and 0.7 or 0.88, canDo and accentColor or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow for polished look
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canDo and 0.92 or 0.96)
+	end
 
 	-- Icon frame with emoji
 	local iconFrame = Instance.new("Frame")
@@ -1761,6 +1830,11 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, canDo and 1 or 1, canDo and 0.7 or 0.88, canDo and C.Red or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canDo and 0.92 or 0.96)
+	end
 
 	-- Icon with emoji
 	local iconFrame = Instance.new("Frame")
@@ -1897,7 +1971,12 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	card.ZIndex = 83
 	card.Parent = parent
 	UI.corner(card, 14)
-	UI.stroke(card, 1, 0.88, C.Gray200)
+	UI.stroke(card, 1, canDo and 0.7 or 0.88, canDo and C.Gray600 or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, 0.94)
+	end
 
 	-- Icon with emoji
 	local iconFrame = Instance.new("Frame")
@@ -2837,10 +2916,20 @@ function ActivitiesScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "OK" or "X")
-	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	
+	-- CRITICAL UI FIX: Better default emojis
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" or displayEmoji == "Done!" then
+		displayEmoji = success and "✨" or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" or displayEmoji == "Failed" then
+		displayEmoji = "❌"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- CRITICAL UI FIX: More descriptive titles
+	self.resultModal.titleLabel.Text = success and "Activity Complete!" or "Uh oh..."
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
-	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.messageLabel.Text = message or (success and "You did it!" or "Something went wrong...")
 	self.resultModal.okButton.BackgroundColor3 = shellColor
 
 	UI.showModal(self.resultModal)

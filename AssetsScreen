@@ -9,6 +9,56 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Teal       = C.Teal       or Color3.fromRGB(20, 184, 166)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.Gold       = C.Gold       or Color3.fromRGB(251, 191, 36)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.TealDark   = C.TealDark   or Color3.fromRGB(13, 148, 136)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+C.GoldDark   = C.GoldDark   or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.TealPale   = C.TealPale   or Color3.fromRGB(204, 251, 241)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
@@ -979,6 +1029,11 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, 2, 0.4, C.Green)
+	
+	-- CRITICAL UI FIX: Add subtle shadow for depth
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, 0.92)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -1109,6 +1164,11 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	card.Parent = parent
 	UI.corner(card, 16)
 	UI.stroke(card, alreadyOwns and 2 or 1, alreadyOwns and 0.3 or 0.88, alreadyOwns and C.Green or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow for polished look
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, alreadyOwns and 0.88 or 0.94)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
