@@ -1664,6 +1664,7 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	local money = self:getMoney()
 	local flags = self:getFlags()
 	local cost = item.cost or 0
+	local accentDark = accentColor:Lerp(C.Black, 0.2)
 	
 	-- CRITICAL FIX: Check for activity-specific flags like requiresFlag and maxAge
 	local meetsFlag = true
@@ -1677,143 +1678,328 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	
 	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
 
-	local card = Instance.new("Frame")
-	card.Name = item.id
-	card.Size = UDim2.new(1, 0, 0, 85)
-	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
-	UI.corner(card, 14)
-	UI.stroke(card, 1, canDo and 0.7 or 0.88, canDo and accentColor or C.Gray200)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL UI FIX: Add subtle shadow for polished look
-	if UI.createShadow then
-		UI.createShadow(card, 2, 8, C.Black, canDo and 0.92 or 0.96)
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 95)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = canDo and 0.92 or 0.96
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 18)
+	
+	-- Colored shell (accent border)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = canDo and accentColor or C.Gray300
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 16)
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 14)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if canDo then
+		local pressArea = Instance.new("TextButton")
+		pressArea.Name = "PressArea"
+		pressArea.Size = UDim2.fromScale(1, 1)
+		pressArea.BackgroundTransparency = 1
+		pressArea.Text = ""
+		pressArea.ZIndex = 90
+		pressArea.Parent = container
+		
+		local isHovering = false
+		local isPressed = false
+		
+		pressArea.MouseEnter:Connect(function()
+			if isPressed then return end
+			isHovering = true
+			-- Premium hover: lift and brighten
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 99)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.85,
+				Position = UDim2.new(0, 3, 0, 4)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = paleColor:Lerp(C.White, 0.85) })
+		end)
+		
+		pressArea.MouseLeave:Connect(function()
+			isHovering = false
+			isPressed = false
+			-- Return to normal
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 95)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.92,
+				Position = UDim2.new(0, 2, 0, 2)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		
+		pressArea.MouseButton1Down:Connect(function()
+			isPressed = true
+			-- Press down effect
+			UI.tween(container, TweenInfo.new(0.08), {
+				Size = UDim2.new(1, 0, 0, 91)
+			})
+			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = accentDark:Lerp(C.Black, 0.1) })
+		end)
+		
+		pressArea.MouseButton1Up:Connect(function()
+			isPressed = false
+			if isHovering then
+				UI.tween(container, TweenInfo.new(0.1), {
+					Size = UDim2.new(1, 0, 0, 99)
+				})
+				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = accentDark })
+			end
+		end)
 	end
 
-	-- Icon frame with emoji
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with gradient and ring)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Icon ring
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 62, 0, 62)
+	iconRing.Position = UDim2.new(0, 10, 0.5, -31)
+	iconRing.BackgroundColor3 = canDo and accentColor or C.Gray400
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 16)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 54, 0, 54)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -27)
-	iconFrame.BackgroundColor3 = paleColor
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
-	UI.corner(iconFrame, 12)
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
+	iconFrame.BackgroundColor3 = canDo and paleColor or C.Gray200
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
+	UI.corner(iconFrame, 14)
+	
+	-- Gradient for premium look
+	if canDo then
+		local iconGrad = Instance.new("UIGradient")
+		iconGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, paleColor:Lerp(C.White, 0.3)),
+		})
+		iconGrad.Rotation = 135
+		iconGrad.Parent = iconFrame
+	end
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 28
-	iconLabel.TextColor3 = accentColor
+	iconLabel.TextSize = 30
+	iconLabel.TextColor3 = canDo and accentColor or C.Gray500
+	iconLabel.TextTransparency = canDo and 0 or 0.3
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- TITLE & DETAILS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Title (bolder)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
-	titleLabel.Position = UDim2.new(0, 78, 0, 12)
+	titleLabel.Size = UDim2.new(0.45, 0, 0, 24)
+	titleLabel.Position = UDim2.new(0, 84, 0, 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 16
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Effect badge
+	-- Effect badge (more prominent)
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, cost > 0 and 135 or 105, 0, 24)
-	effectBadge.Position = UDim2.new(0, 78, 0, 38)
-	effectBadge.BackgroundColor3 = cost > 0 and C.AmberPale or C.GreenPale
-	effectBadge.ZIndex = 84
+	effectBadge.Size = UDim2.new(0, cost > 0 and 140 or 110, 0, 26)
+	effectBadge.Position = UDim2.new(0, 84, 0, 34)
+	effectBadge.BackgroundColor3 = canDo and (cost > 0 and C.AmberPale or C.GreenPale) or C.Gray100
+	effectBadge.ZIndex = 85
 	effectBadge.Parent = card
 	UI.pill(effectBadge)
 
 	local effectLabel = Instance.new("TextLabel")
 	effectLabel.Size = UDim2.fromScale(1, 1)
 	effectLabel.BackgroundTransparency = 1
-	effectLabel.Font = F.Medium
+	effectLabel.Font = F.Button
 	effectLabel.TextSize = 11
-	effectLabel.TextColor3 = cost > 0 and C.AmberDark or C.GreenDark
-	effectLabel.Text = item.effect .. (cost > 0 and " | $" .. cost or "")
-	effectLabel.ZIndex = 85
+	effectLabel.TextColor3 = canDo and (cost > 0 and C.AmberDark or C.GreenDark) or C.Gray500
+	effectLabel.Text = item.effect .. (cost > 0 and " | 💵$" .. cost or "")
+	effectLabel.ZIndex = 86
 	effectLabel.Parent = effectBadge
 
-	-- Minigame indicator
+	-- Minigame badge (more visible)
 	if item.hasMinigame then
+		local miniBadge = Instance.new("Frame")
+		miniBadge.Size = UDim2.new(0, 75, 0, 20)
+		miniBadge.Position = UDim2.new(0, 84, 0, 64)
+		miniBadge.BackgroundColor3 = canDo and C.PurplePale or C.Gray100
+		miniBadge.ZIndex = 85
+		miniBadge.Parent = card
+		UI.pill(miniBadge)
+		
 		local miniLabel = Instance.new("TextLabel")
-		miniLabel.Size = UDim2.new(0, 80, 0, 16)
-		miniLabel.Position = UDim2.new(0, 78, 0, 65)
+		miniLabel.Size = UDim2.fromScale(1, 1)
 		miniLabel.BackgroundTransparency = 1
-		miniLabel.Font = F.Body
-		miniLabel.TextSize = 11
-		miniLabel.TextColor3 = C.Purple
-		miniLabel.TextXAlignment = Enum.TextXAlignment.Left
-		miniLabel.Text = "Minigame!"
-		miniLabel.ZIndex = 84
-		miniLabel.Parent = card
+		miniLabel.Font = F.Button
+		miniLabel.TextSize = 10
+		miniLabel.TextColor3 = canDo and C.Purple or C.Gray500
+		miniLabel.Text = "🎮 Minigame"
+		miniLabel.ZIndex = 86
+		miniLabel.Parent = miniBadge
 	end
 
-	-- Effectiveness indicator (shows how your stats affect this activity)
+	-- Effectiveness indicator
 	if canDo then
 		local effectEmoji, effectColor = self:getEffectivenessIndicator(item.id)
 		if effectEmoji and effectColor then
 			local effectIndicator = Instance.new("Frame")
-			effectIndicator.Size = UDim2.new(0, 28, 0, 28)
-			effectIndicator.Position = UDim2.new(1, -90, 0, 10)
-			effectIndicator.BackgroundColor3 = effectColor
-			effectIndicator.BackgroundTransparency = 0.85
-			effectIndicator.ZIndex = 84
+			effectIndicator.Size = UDim2.new(0, 30, 0, 30)
+			effectIndicator.Position = UDim2.new(1, -100, 0, 8)
+			effectIndicator.BackgroundColor3 = effectColor:Lerp(C.White, 0.7)
+			effectIndicator.ZIndex = 85
 			effectIndicator.Parent = card
-			UI.corner(effectIndicator, 14)
+			UI.corner(effectIndicator, 15)
 
-			local effectLabel = Instance.new("TextLabel")
-			effectLabel.Size = UDim2.fromScale(1, 1)
-			effectLabel.BackgroundTransparency = 1
-			effectLabel.Font = F.Body
-			effectLabel.TextSize = 14
-			effectLabel.TextColor3 = effectColor
-			effectLabel.Text = effectEmoji
-			effectLabel.ZIndex = 85
-			effectLabel.Parent = effectIndicator
+			local effectLbl = Instance.new("TextLabel")
+			effectLbl.Size = UDim2.fromScale(1, 1)
+			effectLbl.BackgroundTransparency = 1
+			effectLbl.Font = F.Body
+			effectLbl.TextSize = 15
+			effectLbl.TextColor3 = effectColor
+			effectLbl.Text = effectEmoji
+			effectLbl.ZIndex = 86
+			effectLbl.Parent = effectIndicator
 		end
 	end
 
-	-- Action button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ACTION BUTTON (premium with shadow)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
 	local actionBtn = Instance.new("TextButton")
-	actionBtn.Size = UDim2.new(0, 68, 0, 42)
+	actionBtn.Name = "ActionBtn"
+	actionBtn.Size = UDim2.new(0, 75, 0, 50)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
-	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	actionBtn.Position = UDim2.new(1, -8, 0.5, 0)
 	actionBtn.BackgroundColor3 = canDo and accentColor or C.Gray300
 	actionBtn.Font = F.Button
-	actionBtn.TextSize = 14
+	actionBtn.TextSize = 15
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 88
 	actionBtn.Parent = card
-	UI.corner(actionBtn, 12)
+	UI.corner(actionBtn, 14)
+	
+	-- Button shadow
+	if canDo then
+		local btnShadow = Instance.new("Frame")
+		btnShadow.Size = UDim2.new(1, 4, 1, 4)
+		btnShadow.Position = UDim2.new(0, 2, 0, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 87
+		btnShadow.Parent = actionBtn
+		UI.corner(btnShadow, 14)
+		btnShadow.ZIndex = actionBtn.ZIndex - 1
+	end
 
 	if canDo then
-		actionBtn.Text = "Go!"
+		local isLoading = false
+		actionBtn.Text = item.hasMinigame and "🎮 Play" or "→ Go!"
+		
 		actionBtn.MouseEnter:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor:Lerp(C.Black, 0.15) })
+			if isLoading then return end
+			UI.tween(actionBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				BackgroundColor3 = accentDark,
+				Size = UDim2.new(0, 80, 0, 54)
+			})
 		end)
 		actionBtn.MouseLeave:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			if isLoading then return end
+			UI.tween(actionBtn, TweenInfo.new(0.12), {
+				BackgroundColor3 = accentColor,
+				Size = UDim2.new(0, 75, 0, 50)
+			})
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
-			if item.hasMinigame then
-				self:showMinigame(item, accentColor)
-			else
-				self:doActivity(item)
-			end
+			if isLoading then return end
+			isLoading = true
+			
+			-- Loading state
+			actionBtn.Text = "⏳..."
+			UI.tween(actionBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+			
+			task.spawn(function()
+				task.wait(0.1)
+				if item.hasMinigame then
+					self:showMinigame(item, accentColor)
+				else
+					self:doActivity(item)
+				end
+				
+				-- Reset after completion
+				task.wait(0.5)
+				if actionBtn and actionBtn.Parent then
+					isLoading = false
+					actionBtn.Text = item.hasMinigame and "🎮 Play" or "→ Go!"
+					actionBtn.BackgroundColor3 = accentColor
+				end
+			end)
 		end)
 	else
-		actionBtn.Text = age < item.minAge and "Age " .. item.minAge or (money < cost and "Need $" or "Jailed")
+		local btnText = "🔒 "
+		if age < item.minAge then
+			btnText = btnText .. "Age " .. item.minAge
+		elseif money < cost then
+			btnText = "💵 Need $"
+		elseif self:isInJail() then
+			btnText = "⛓️ Jailed"
+		elseif not meetsFlag then
+			btnText = "🔒 Locked"
+		else
+			btnText = "🔒 N/A"
+		end
+		actionBtn.Text = btnText
 	end
 end
 
