@@ -154,10 +154,58 @@ LifeExperiences.events = {
 		end,
 		
 		choices = {
-			{ text = "Visited dream destination", effects = { Happiness = 15, Money = -1500 }, setFlags = { traveled_dream_place = true }, feedText = "✅ The trip of a lifetime! Everything you imagined!" },
-			{ text = "Met a personal hero", effects = { Happiness = 12, Money = -200 }, setFlags = { met_hero = true }, feedText = "✅ They were even better in person. Inspired!" },
-			{ text = "Learned a lifelong dream skill", effects = { Happiness = 10, Smarts = 5, Money = -300 }, setFlags = { learned_dream_skill = true }, feedText = "✅ Finally! Something you always wanted to do!" },
-			{ text = "Accomplished a physical feat", effects = { Happiness = 12, Health = 3, Money = -500 }, setFlags = { physical_achievement = true }, feedText = "✅ Your body did that! Marathon/climb/swim - DONE!" },
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Visited dream destination ($1,500)", 
+				effects = { Happiness = 15, Money = -1500 }, 
+				setFlags = { traveled_dream_place = true }, 
+				feedText = "✅ The trip of a lifetime! Everything you imagined!",
+				eligibility = function(state)
+					if (state.Money or 0) < 1500 then
+						return false, "Can't afford $1,500 dream trip"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Met a personal hero ($200)", 
+				effects = { Happiness = 12, Money = -200 }, 
+				setFlags = { met_hero = true }, 
+				feedText = "✅ They were even better in person. Inspired!",
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford $200 to meet hero"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Learned a lifelong dream skill ($300)", 
+				effects = { Happiness = 10, Smarts = 5, Money = -300 }, 
+				setFlags = { learned_dream_skill = true }, 
+				feedText = "✅ Finally! Something you always wanted to do!",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 for classes"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Accomplished a physical feat ($500)", 
+				effects = { Happiness = 12, Health = 3, Money = -500 }, 
+				setFlags = { physical_achievement = true }, 
+				feedText = "✅ Your body did that! Marathon/climb/swim - DONE!",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 entry fees"
+					end
+					return true
+				end,
+			},
 		},
 	},
 	

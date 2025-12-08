@@ -253,9 +253,16 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random summer outcome
 		choices = {
 			{
-				text = "Beach vacation",
+				-- CRITICAL FIX: Show price and add eligibility check
+				text = "Beach vacation ($500)",
 				effects = { Money = -500 },
 				feedText = "Heading to the shore...",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 beach vacation"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
@@ -270,8 +277,19 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Staycation", effects = { Happiness = 8, Money = -50, Health = 2 }, feedText = "☀️ Local exploration! Saved money, still relaxed!" },
-			{ text = "Summer camp/program", effects = { Money = -300, Happiness = 10, Smarts = 3 }, feedText = "☀️ Amazing summer experience! Made memories!" },
+			{ text = "Staycation ($50)", effects = { Happiness = 8, Money = -50, Health = 2 }, feedText = "☀️ Local exploration! Saved money, still relaxed!" },
+			{ 
+				-- CRITICAL FIX: Show price and add eligibility check
+				text = "Summer camp/program ($300)", 
+				effects = { Money = -300, Happiness = 10, Smarts = 3 }, 
+				feedText = "☀️ Amazing summer experience! Made memories!",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 summer camp"
+					end
+					return true
+				end,
+			},
 			{ text = "Working all summer", effects = { Happiness = -2, Money = 500 }, feedText = "☀️ No vacation. But bank account looking good." },
 		},
 	},
@@ -510,9 +528,16 @@ SeasonalEvents.events = {
 		
 		choices = {
 			{
-				text = "Throw a huge party",
+				-- CRITICAL FIX: Show price and add eligibility check
+				text = "Throw a huge party ($300)",
 				effects = { Money = -300 },
 				feedText = "Major celebration...",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 party"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -526,7 +551,19 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Big trip to celebrate", effects = { Money = -500, Happiness = 15, Smarts = 2 }, setFlags = { birthday_trip = true }, feedText = "🎉 Dream destination for milestone! Treated yourself big!" },
+			{ 
+				-- CRITICAL FIX: Show price and add eligibility check
+				text = "Big trip to celebrate ($500)", 
+				effects = { Money = -500, Happiness = 15, Smarts = 2 }, 
+				setFlags = { birthday_trip = true }, 
+				feedText = "🎉 Dream destination for milestone! Treated yourself big!",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 birthday trip"
+					end
+					return true
+				end,
+			},
 			{ text = "Crisis about getting older", effects = { Happiness = -6, Smarts = 3 }, feedText = "🎉 Existential dread. Where did the time go? Reflecting." },
 			{ text = "Just another number", effects = { Happiness = 4 }, feedText = "🎉 Age is just a number. Not making a big deal." },
 		},
@@ -569,7 +606,18 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Weekend getaway", effects = { Money = -300, Happiness = 15, Health = 2 }, feedText = "💕 Couple's trip! Quality time! Relationship goals!" },
+			{ 
+				-- CRITICAL FIX: Show price and add eligibility check
+				text = "Weekend getaway ($300)", 
+				effects = { Money = -300, Happiness = 15, Health = 2 }, 
+				feedText = "💕 Couple's trip! Quality time! Relationship goals!",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 weekend getaway"
+					end
+					return true
+				end,
+			},
 			{ text = "Forgot the anniversary", effects = { Happiness = -8 }, setFlags = { forgot_anniversary = true }, feedText = "💕 OH NO! Completely forgot! In the doghouse now!" },
 			{ text = "Simple but meaningful", effects = { Happiness = 8, Money = -30 }, feedText = "💕 Thoughtful gift and quality time. Love isn't expensive." },
 		},

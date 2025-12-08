@@ -37,9 +37,16 @@ PetEvents.events = {
 		-- CRITICAL: Pet selection and outcome
 		choices = {
 			{
-				text = "Adopt a dog",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Adopt a dog ($300)",
 				effects = { Money = -300 },
 				feedText = "Bringing home a pup...",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 dog adoption"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.75 then
@@ -56,9 +63,16 @@ PetEvents.events = {
 				end,
 			},
 			{
-				text = "Adopt a cat",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Adopt a cat ($200)",
 				effects = { Money = -200 },
 				feedText = "New feline overlord...",
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford $200 cat adoption"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -368,9 +382,16 @@ PetEvents.events = {
 		-- CRITICAL: Random health scare outcome
 		choices = {
 			{
-				text = "Rush to emergency vet",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Rush to emergency vet ($300)",
 				effects = { Money = -300 },
 				feedText = "Emergency vet visit...",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 emergency vet visit"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -414,8 +435,19 @@ PetEvents.events = {
 		end,
 		
 		choices = {
-			{ text = "Extra love and comfort", effects = { Happiness = 6, Money = -50 }, feedText = "🐕‍🦺 Making their senior years the best. Soft beds, gentle walks." },
-			{ text = "Expensive treatments", effects = { Happiness = 4, Money = -500 }, feedText = "🐕‍🦺 Whatever it takes for more time. Money well spent." },
+			{ text = "Extra love and comfort ($50)", effects = { Happiness = 6, Money = -50 }, feedText = "🐕‍🦺 Making their senior years the best. Soft beds, gentle walks." },
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Expensive treatments ($500)", 
+				effects = { Happiness = 4, Money = -500 }, 
+				feedText = "🐕‍🦺 Whatever it takes for more time. Money well spent.",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 pet treatments"
+					end
+					return true
+				end,
+			},
 			{ text = "Accept the circle of life", effects = { Happiness = 2, Smarts = 2 }, feedText = "🐕‍🦺 Cherishing every moment. Quality of life matters." },
 		},
 	},

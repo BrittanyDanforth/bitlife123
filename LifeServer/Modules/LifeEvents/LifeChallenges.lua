@@ -31,9 +31,16 @@ LifeChallenges.events = {
 		-- CRITICAL: Random addiction recovery outcome
 		choices = {
 			{
-				text = "Seek professional help",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Seek professional help ($500)",
 				effects = { Money = -500 },
 				feedText = "Getting into treatment...",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 for professional help"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
@@ -252,9 +259,16 @@ LifeChallenges.events = {
 		-- CRITICAL: Random burnout recovery
 		choices = {
 			{
-				text = "Take extended leave",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Take extended leave ($500)",
 				effects = { Money = -500 },
 				feedText = "Stepping back completely...",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 for extended leave"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then

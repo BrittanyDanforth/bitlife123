@@ -334,13 +334,20 @@ local events = {
 		maxAge = 45,
 		requiresJob = true,
 		choices = {
-			{
-				index = 1,
-				text = "TAKE IT - bet on yourself!",
-				effects = { Happiness = 10, Money = -20000 },
-				setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
-				feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
-				onResolve = function(state)
+		{
+			index = 1,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "TAKE IT - bet on yourself! (need $20K savings)",
+			effects = { Happiness = 10, Money = -20000 },
+			setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
+			feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
+			eligibility = function(state)
+				if (state.Money or 0) < 20000 then
+					return false, "Need $20,000 savings to take this risk"
+				end
+				return true
+			end,
+			onResolve = function(state)
 					-- CRITICAL FIX: Use RANDOM instance, not Random class!
 					if RANDOM:NextNumber() < 0.15 then
 						if state.AddFeed then
@@ -435,13 +442,20 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 4,
-				text = "Quit and start your own company",
-				effects = { Happiness = 12, Money = -50000 },
-				setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
-				feedText = "You quit and started your own business! Risky but FREE!",
-				onResolve = function(state)
+		{
+			index = 4,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "Quit and start your own company (need $50K)",
+			effects = { Happiness = 12, Money = -50000 },
+			setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
+			feedText = "You quit and started your own business! Risky but FREE!",
+			eligibility = function(state)
+				if (state.Money or 0) < 50000 then
+					return false, "Need $50,000 to start a business"
+				end
+				return true
+			end,
+			onResolve = function(state)
 					state.CurrentJob = nil
 					state.Flags = state.Flags or {}
 					state.Flags.entrepreneur = true
@@ -528,13 +542,20 @@ local events = {
 				setFlags = { workaholic = true, cant_let_go = true },
 				feedText = "You stayed full-time. Your spouse is annoyed. Your doctor says 'SLOW DOWN.' But work gives you purpose. You don't know who you are without it. Existential crisis masked as dedication.",
 			},
-			{
-				index = 4,
-				text = "Retire and start a passion project/business",
-				effects = { Happiness = 14, Money = -20000, Health = 6 },
-				setFlags = { retired = true, entrepreneur = true, fulfilled = true },
-				feedText = "You retired from your JOB but started a woodworking business! Passion project! You make custom furniture. Sold $30K year one! You're doing what you LOVE! Retirement = new beginning!",
-			},
+		{
+			index = 4,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "Retire and start a passion project/business (need $20K)",
+			effects = { Happiness = 14, Money = -20000, Health = 6 },
+			setFlags = { retired = true, entrepreneur = true, fulfilled = true },
+			feedText = "You retired from your JOB but started a woodworking business! Passion project! You make custom furniture. Sold $30K year one! You're doing what you LOVE! Retirement = new beginning!",
+			eligibility = function(state)
+				if (state.Money or 0) < 20000 then
+					return false, "Need $20,000 to start a passion project business"
+				end
+				return true
+			end,
+		},
 		},
 	},
 	
