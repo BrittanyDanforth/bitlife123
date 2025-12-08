@@ -1516,9 +1516,10 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if isAlive then
+		-- CRITICAL FIX: Reduced width to not cover the Chat button on the right
 		local pressArea = Instance.new("TextButton")
 		pressArea.Name = "PressArea"
-		pressArea.Size = UDim2.fromScale(1, 1)
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
 		pressArea.BackgroundTransparency = 1
 		pressArea.Text = ""
 		pressArea.ZIndex = 92
@@ -1735,21 +1736,20 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	interactBtn.TextColor3 = isAlive and C.White or C.Gray500
 	interactBtn.Text = isAlive and "💬 Chat" or "✝️ Gone"
 	interactBtn.AutoButtonColor = false
-	interactBtn.ZIndex = 88
+	interactBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (92) so clicks work
 	interactBtn.Parent = card
 	UI.corner(interactBtn, 14)
 	
-	-- Button shadow
+	-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
 	if isAlive then
 		local btnShadow = Instance.new("Frame")
 		btnShadow.Size = UDim2.new(1, 4, 1, 4)
 		btnShadow.Position = UDim2.new(0, 2, 0, 2)
 		btnShadow.BackgroundColor3 = accentDark
 		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 87
+		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (92)
 		btnShadow.Parent = interactBtn
 		UI.corner(btnShadow, 14)
-		btnShadow.ZIndex = interactBtn.ZIndex - 1
 	end
 
 	if isAlive then

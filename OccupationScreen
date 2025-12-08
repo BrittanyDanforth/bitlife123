@@ -2601,9 +2601,10 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	
 	if canApply then
 		-- Create invisible button overlay for press detection
+		-- CRITICAL FIX: Reduced width to not cover the Apply button on the right
 		local pressArea = Instance.new("TextButton")
 		pressArea.Name = "PressArea"
-		pressArea.Size = UDim2.fromScale(1, 1)
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
 		pressArea.BackgroundTransparency = 1
 		pressArea.Text = ""
 		pressArea.ZIndex = 90
@@ -2822,21 +2823,20 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	end
 	applyBtn.Text = btnEmoji .. " " .. btnText
 	applyBtn.AutoButtonColor = false
-	applyBtn.ZIndex = 87
+	applyBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
 	applyBtn.Parent = card
 	UI.corner(applyBtn, 14)
 	
-	-- Button shadow for depth
+	-- Button shadow for depth (CRITICAL FIX: ZIndex adjusted for button layering)
 	if canApply then
 		local btnShadow = Instance.new("Frame")
 		btnShadow.Size = UDim2.new(1, 4, 1, 4)
 		btnShadow.Position = UDim2.new(0, 2, 0, 2)
 		btnShadow.BackgroundColor3 = C.BlueDark
 		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 86
+		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
 		btnShadow.Parent = applyBtn
 		UI.corner(btnShadow, 14)
-		btnShadow.ZIndex = applyBtn.ZIndex - 1
 	end
 
 	if canApply then

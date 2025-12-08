@@ -1727,9 +1727,10 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if canDo then
+		-- CRITICAL FIX: Reduced width to not cover the action button on the right
 		local pressArea = Instance.new("TextButton")
 		pressArea.Name = "PressArea"
-		pressArea.Size = UDim2.fromScale(1, 1)
+		pressArea.Size = UDim2.new(1, -95, 1, 0)  -- Leave 95px for button
 		pressArea.BackgroundTransparency = 1
 		pressArea.Text = ""
 		pressArea.ZIndex = 90
@@ -1926,21 +1927,20 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	actionBtn.TextSize = 15
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 88
+	actionBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 14)
 	
-	-- Button shadow
+	-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
 	if canDo then
 		local btnShadow = Instance.new("Frame")
 		btnShadow.Size = UDim2.new(1, 4, 1, 4)
 		btnShadow.Position = UDim2.new(0, 2, 0, 2)
 		btnShadow.BackgroundColor3 = accentDark
 		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 87
+		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
 		btnShadow.Parent = actionBtn
 		UI.corner(btnShadow, 14)
-		btnShadow.ZIndex = actionBtn.ZIndex - 1
 	end
 
 	if canDo then

@@ -1195,9 +1195,10 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	-- PREMIUM HOVER & PRESS EFFECTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL FIX: Reduced width to not cover the Sell button on the right
 	local pressArea = Instance.new("TextButton")
 	pressArea.Name = "PressArea"
-	pressArea.Size = UDim2.fromScale(1, 1)
+	pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
 	pressArea.BackgroundTransparency = 1
 	pressArea.Text = ""
 	pressArea.ZIndex = 90
@@ -1352,20 +1353,19 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	sellBtn.TextColor3 = C.White
 	sellBtn.Text = "💰 Sell"
 	sellBtn.AutoButtonColor = false
-	sellBtn.ZIndex = 88
+	sellBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
 	sellBtn.Parent = card
 	UI.corner(sellBtn, 12)
 	
-	-- Button shadow
+	-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
 	local btnShadow = Instance.new("Frame")
 	btnShadow.Size = UDim2.new(1, 4, 1, 4)
 	btnShadow.Position = UDim2.new(0, 2, 0, 2)
 	btnShadow.BackgroundColor3 = C.AmberDark
 	btnShadow.BackgroundTransparency = 0.6
-	btnShadow.ZIndex = 87
+	btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
 	btnShadow.Parent = sellBtn
 	UI.corner(btnShadow, 12)
-	btnShadow.ZIndex = sellBtn.ZIndex - 1
 	
 	local isLoading = false
 
@@ -1487,9 +1487,10 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if canBuy then
+		-- CRITICAL FIX: Reduced width to not cover the Buy button on the right
 		local pressArea = Instance.new("TextButton")
 		pressArea.Name = "PressArea"
-		pressArea.Size = UDim2.fromScale(1, 1)
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
 		pressArea.BackgroundTransparency = 1
 		pressArea.Text = ""
 		pressArea.ZIndex = 90
@@ -1704,21 +1705,20 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 		buyBtn.TextSize = 15
 		buyBtn.TextColor3 = canBuy and C.White or C.Gray500
 		buyBtn.AutoButtonColor = false
-		buyBtn.ZIndex = 88
+		buyBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
 		buyBtn.Parent = card
 		UI.corner(buyBtn, 14)
 		
-		-- Button shadow
+		-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
 		if canBuy then
 			local btnShadow = Instance.new("Frame")
 			btnShadow.Size = UDim2.new(1, 4, 1, 4)
 			btnShadow.Position = UDim2.new(0, 2, 0, 2)
 			btnShadow.BackgroundColor3 = accentDark
 			btnShadow.BackgroundTransparency = 0.6
-			btnShadow.ZIndex = 87
+			btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
 			btnShadow.Parent = buyBtn
 			UI.corner(btnShadow, 14)
-			btnShadow.ZIndex = buyBtn.ZIndex - 1
 		end
 
 		if canBuy then
