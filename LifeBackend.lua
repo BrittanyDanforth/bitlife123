@@ -1352,8 +1352,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoActivity.OnServerInvoke = function(player, activityId, bonus)
 		return self:handleActivity(player, activityId, bonus)
 	end
-	self.remotes.CommitCrime.OnServerInvoke = function(player, crimeId)
-		return self:handleCrime(player, crimeId)
+	self.remotes.CommitCrime.OnServerInvoke = function(player, crimeId, minigameBonus)
+		return self:handleCrime(player, crimeId, minigameBonus)
 	end
 	self.remotes.DoPrisonAction.OnServerInvoke = function(player, actionId)
 		return self:handlePrisonAction(player, actionId)
@@ -3142,7 +3142,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
-function LifeBackend:handleCrime(player, crimeId)
+function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "No life data loaded." }
@@ -3162,6 +3162,17 @@ function LifeBackend:handleCrime(player, crimeId)
 	local riskModifier = 0
 	if state.Flags.criminal_tendencies then
 		riskModifier = riskModifier - 10
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Minigame bonus reduces risk of getting caught!
+	-- Completing the heist minigame (like cracking a safe) gives you an advantage
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if minigameBonus == true then
+		riskModifier = riskModifier - 20  -- 20% less likely to get caught
+	elseif minigameBonus == false and crime.hasMinigame then
+		-- Failed minigame for a crime that has one = higher risk
+		riskModifier = riskModifier + 15  -- 15% more likely to get caught
 	end
 
 	local roll = RANDOM:NextInteger(0, 100)
@@ -4011,6 +4022,18 @@ function LifeBackend:enrollEducation(player, programId)
 	local program = EducationCatalog[programId]
 	if not program then
 		return { success = false, message = "Unknown education program." }
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Prevent multiple education enrollments!
+	-- You can't be enrolled in two programs at once - just like real life
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.EducationData and state.EducationData.Status == "enrolled" then
+		local currentProgram = state.EducationData.Institution or "a program"
+		return { 
+			success = false, 
+			message = string.format("You're already enrolled in %s! Complete it first or drop out.", currentProgram)
+		}
 	end
 
 	-- CRITICAL FIX: Check minimum age for enrollment

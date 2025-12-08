@@ -2166,21 +2166,48 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	UI.corner(actionBtn, 12)
 
 	if canDo then
-		actionBtn.Text = "🔓 Commit"
+		-- CRITICAL FIX: Show minigame indicator for crimes that have minigames (e.g., bank robbery)
+		actionBtn.Text = item.hasMinigame and "🎮 Heist" or "🔓 Commit"
+		local isLoading = false
+		
 		actionBtn.MouseEnter:Connect(function()
+			if isLoading then return end
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.RedDark })
 			if btnShadow then
 				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 86, 0, 52) })
 			end
 		end)
 		actionBtn.MouseLeave:Connect(function()
+			if isLoading then return end
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Red })
 			if btnShadow then
 				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 82, 0, 48) })
 			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
-			self:doCrime(item)
+			if isLoading then return end
+			isLoading = true
+			actionBtn.Text = "⏳..."
+			
+			-- CRITICAL FIX: Check for minigame BEFORE committing crime
+			task.spawn(function()
+				task.wait(0.1)
+				if item.hasMinigame then
+					-- Show crime minigame (bank robbery heist)
+					self:showCrimeMinigame(item)
+				else
+					-- Normal crime - no minigame
+					self:doCrime(item)
+				end
+				
+				-- Reset button
+				task.wait(0.5)
+				if actionBtn and actionBtn.Parent then
+					isLoading = false
+					actionBtn.Text = item.hasMinigame and "🎮 Heist" or "🔓 Commit"
+					actionBtn.BackgroundColor3 = C.Red
+				end
+			end)
 		end)
 	else
 		actionBtn.Text = age < item.minAge and "Age " .. item.minAge .. "+" or "Jailed"
@@ -2756,9 +2783,12 @@ function ActivitiesScreen:createMinigameModal()
 	self.exitPos = { row = 8, col = 1 }
 	self.movesLeft = 20
 
-	-- Tap handler
+	-- Tap handler (CRITICAL FIX: Also handles crime_tap for crime minigames)
 	self.tapArea.MouseButton1Click:Connect(function()
-		if not self.minigameActive or self.minigameType ~= "tap" then return end
+		-- CRITICAL FIX: Accept both "tap" and "crime_tap" minigame types
+		if not self.minigameActive then return end
+		if self.minigameType ~= "tap" and self.minigameType ~= "crime_tap" then return end
+		
 		self.tapCount = self.tapCount + 1
 		self.tapCounter.Text = self.tapCount .. " / " .. self.tapGoal
 
@@ -2775,7 +2805,12 @@ function ActivitiesScreen:createMinigameModal()
 		-- Win check
 		if self.tapCount >= self.tapGoal then
 			self.minigameActive = false
-			self:completeMinigame(true)
+			-- CRITICAL FIX: Route to correct completion handler
+			if self.minigameType == "crime_tap" then
+				self:completeCrimeMinigame(true)
+			else
+				self:completeMinigame(true)
+			end
 		end
 	end)
 end
@@ -3198,6 +3233,113 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 			self:completeMinigame(self.tapCount >= self.tapGoal * 0.5)
 		end
 	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Crime Minigame (Bank Robbery Heist!)
+-- This was never being called because crime cards skipped minigame check
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:showCrimeMinigame(item)
+	log("=== STARTING CRIME MINIGAME ===")
+	log("Crime:", item.id, "Name:", item.name)
+
+	self.currentMinigameItem = item
+	self.minigameAccent = C.Red
+	self.minigameType = "crime_tap"  -- Special type for crime
+	self.tapCount = 0
+	self.tapGoal = item.id == "bank_robbery" and 30 or 20  -- Bank robbery is harder
+	self.minigameActive = true
+
+	-- Show tap elements, hide escape elements
+	self.tapArea.Visible = true
+	self.progressBg.Visible = true
+	self.escapeGrid.Visible = false
+	self.dirButtons.Visible = false
+
+	-- Crime-specific minigame titles
+	local title
+	if item.id == "bank_robbery" then
+		title = "🏦 TAP TO CRACK THE SAFE!"
+	else
+		title = "🔓 TAP TO COMPLETE THE HEIST!"
+	end
+
+	self.minigameTitle.Text = title
+	self.tapArea.Text = "TAP!"
+	self.tapArea.BackgroundColor3 = C.Red
+	self.progressFill.BackgroundColor3 = C.Red
+	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.tapCounter.Text = "0 / " .. self.tapGoal
+	
+	local instructions = item.id == "bank_robbery" and "Crack the vault before security arrives!" or "Tap fast to complete the heist!"
+	self.minigameInstructions.Text = instructions
+
+	self.minigameOverlay.Visible = true
+	self.minigameCard.Position = UDim2.new(0.5, 0, 0.5, 50)
+	self.minigameCard.BackgroundTransparency = 1
+
+	UI.tween(self.minigameCard, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+
+	-- Timeout - shorter for crime (8 seconds - alarm triggered!)
+	task.delay(8, function()
+		if self.minigameActive and self.minigameOverlay.Visible and self.minigameType == "crime_tap" then
+			self.minigameActive = false
+			-- Crime timeout = caught!
+			self:completeCrimeMinigame(self.tapCount >= self.tapGoal)
+		end
+	end)
+end
+
+function ActivitiesScreen:completeCrimeMinigame(success)
+	log("=== CRIME MINIGAME COMPLETE ===")
+	log("Success:", success)
+
+	task.delay(0.3, function()
+		self.minigameOverlay.Visible = false
+
+		-- Reset UI elements
+		self.escapeGrid.Visible = false
+		self.dirButtons.Visible = false
+		self.tapArea.Visible = true
+		self.progressBg.Visible = true
+
+		if success then
+			-- Player completed the heist minigame - bonus success chance!
+			log("Heist minigame success! Calling server with bonus...")
+			self:doCrimeWithBonus(self.currentMinigameItem, true)
+		else
+			-- Player failed minigame - higher chance of getting caught
+			log("Heist minigame failed! Calling server without bonus...")
+			self:doCrimeWithBonus(self.currentMinigameItem, false)
+		end
+	end)
+end
+
+function ActivitiesScreen:doCrimeWithBonus(item, bonus)
+	log("=== COMMITTING CRIME (WITH MINIGAME RESULT) ===")
+	log("Crime:", item.id, "Bonus:", bonus)
+
+	if not CommitCrime then
+		logWarn("CommitCrime remote not available!")
+		self:showResult(false, "Server not available", "Error")
+		return
+	end
+
+	-- Pass bonus flag to server - indicates minigame success
+	local result = CommitCrime:InvokeServer(item.id, bonus)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
+		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
+		self:showResult(result.success, result.message, emoji)
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error", "Error")
+	end
 end
 
 function ActivitiesScreen:completeMinigame(success)
