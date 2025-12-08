@@ -1725,6 +1725,21 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	-- INTERACT BUTTON (premium styling with shadow)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow
+	if isAlive then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "InteractBtnShadow"
+		btnShadow.Size = UDim2.new(0, 89, 0, 56)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -8, 0.5, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 94
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 14)
+	end
+
 	local interactBtn = Instance.new("TextButton")
 	interactBtn.Name = "InteractBtn"
 	interactBtn.Size = UDim2.new(0, 85, 0, 52)
@@ -1736,21 +1751,9 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	interactBtn.TextColor3 = isAlive and C.White or C.Gray500
 	interactBtn.Text = isAlive and "💬 Chat" or "✝️ Gone"
 	interactBtn.AutoButtonColor = false
-	interactBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (92) so clicks work
+	interactBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	interactBtn.Parent = card
 	UI.corner(interactBtn, 14)
-	
-	-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
-	if isAlive then
-		local btnShadow = Instance.new("Frame")
-		btnShadow.Size = UDim2.new(1, 4, 1, 4)
-		btnShadow.Position = UDim2.new(0, 2, 0, 2)
-		btnShadow.BackgroundColor3 = accentDark
-		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (92)
-		btnShadow.Parent = interactBtn
-		UI.corner(btnShadow, 14)
-	end
 
 	if isAlive then
 		local isLoading = false
@@ -1761,6 +1764,9 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 				BackgroundColor3 = accentDark,
 				Size = UDim2.new(0, 90, 0, 56)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 94, 0, 60) })
+			end
 		end)
 		interactBtn.MouseLeave:Connect(function()
 			if isLoading then return end
@@ -1768,6 +1774,9 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 				BackgroundColor3 = accentColor,
 				Size = UDim2.new(0, 85, 0, 52)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 89, 0, 56) })
+			end
 		end)
 		interactBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
@@ -2117,19 +2126,20 @@ function RelationshipsScreen:createActionButton(action, order, accentColor, pale
 	UI.stroke(card, 1, canAfford and 0.7 or 0.88, canAfford and accentColor or C.Gray200)
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.6, 0, 0, 24)
+	nameLabel.Size = UDim2.new(0.6, -70, 0, 24)  -- CRITICAL FIX: Adjusted width
 	nameLabel.Position = UDim2.new(0, 16, 0, 8)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = F.Title
-	nameLabel.TextSize = 15
+	nameLabel.TextSize = 14  -- Slightly smaller for longer names
 	nameLabel.TextColor3 = canAfford and C.Gray900 or C.Gray500
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd  -- CRITICAL FIX: Prevent overflow
 	nameLabel.Text = action.name or "Action"
 	nameLabel.ZIndex = 98
 	nameLabel.Parent = card
 
 	local effectLabel = Instance.new("TextLabel")
-	effectLabel.Size = UDim2.new(0.6, 0, 0, 20)
+	effectLabel.Size = UDim2.new(0.6, -70, 0, 20)  -- CRITICAL FIX: Adjusted width
 	effectLabel.Position = UDim2.new(0, 16, 0, 34)
 	effectLabel.BackgroundTransparency = 1
 	effectLabel.Font = F.Body
@@ -2313,6 +2323,19 @@ function RelationshipsScreen:createResultModal()
 	messageLabel.Parent = card
 	self.resultModal.messageLabel = messageLabel
 	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.PinkDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
 	-- OK Button
 	local okBtn = Instance.new("TextButton")
 	okBtn.Name = "OkBtn"
@@ -2330,27 +2353,23 @@ function RelationshipsScreen:createResultModal()
 	UI.corner(okBtn, 14)
 	self.resultModal.okButton = okBtn
 	
-	-- Button shadow
-	local btnShadow = Instance.new("Frame")
-	btnShadow.Size = UDim2.new(1, 4, 1, 4)
-	btnShadow.Position = UDim2.new(0, 2, 0, 2)
-	btnShadow.BackgroundColor3 = C.PinkDark
-	btnShadow.BackgroundTransparency = 0.5
-	btnShadow.ZIndex = 102
-	btnShadow.Parent = okBtn
-	UI.corner(btnShadow, 14)
-	
-	-- Button hover
+	-- Button hover (CRITICAL FIX: Also animate shadow)
 	okBtn.MouseEnter:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 			Size = UDim2.new(0.72, 0, 0, 56),
 			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
 		})
 	end)
 	okBtn.MouseLeave:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12), {
 			Size = UDim2.new(0.7, 0, 0, 52),
 			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
 		})
 	end)
 	

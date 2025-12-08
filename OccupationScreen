@@ -2694,15 +2694,16 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	iconLabel.ZIndex = 86
 	iconLabel.Parent = iconFrame
 
-	-- Title (bolder, clearer)
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 24)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 24)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 82, 0, 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 16
+	titleLabel.TextSize = 15  -- Slightly smaller for longer job names
 	titleLabel.TextColor3 = canApply and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = job.name
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
@@ -2796,6 +2797,21 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	diffLabel.ZIndex = 86
 	diffLabel.Parent = diffBadge
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow
+	if canApply then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ApplyBtnShadow"
+		btnShadow.Size = UDim2.new(0, 84, 0, 54)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -8, 0.5, 2)
+		btnShadow.BackgroundColor3 = C.BlueDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 94
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 14)
+	end
+
 	-- Apply button (MUCH more prominent, with loading state support)
 	local applyBtn = Instance.new("TextButton")
 	applyBtn.Name = "ApplyBtn"
@@ -2823,21 +2839,9 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	end
 	applyBtn.Text = btnEmoji .. " " .. btnText
 	applyBtn.AutoButtonColor = false
-	applyBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
+	applyBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	applyBtn.Parent = card
 	UI.corner(applyBtn, 14)
-	
-	-- Button shadow for depth (CRITICAL FIX: ZIndex adjusted for button layering)
-	if canApply then
-		local btnShadow = Instance.new("Frame")
-		btnShadow.Size = UDim2.new(1, 4, 1, 4)
-		btnShadow.Position = UDim2.new(0, 2, 0, 2)
-		btnShadow.BackgroundColor3 = C.BlueDark
-		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
-		btnShadow.Parent = applyBtn
-		UI.corner(btnShadow, 14)
-	end
 
 	if canApply then
 		local isLoading = false
@@ -2848,6 +2852,9 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 				BackgroundColor3 = C.BlueDark,
 				Size = UDim2.new(0, 86, 0, 54)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 58) })
+			end
 		end)
 		applyBtn.MouseLeave:Connect(function()
 			if isLoading then return end
@@ -2855,6 +2862,9 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 				BackgroundColor3 = C.Blue,
 				Size = UDim2.new(0, 80, 0, 50)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 84, 0, 54) })
+			end
 		end)
 		applyBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
@@ -3377,15 +3387,16 @@ function OccupationScreen:createEducationCard(parent, edu, order, age, money, ed
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 84, 0, 12)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = canEnroll and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = edu.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
@@ -4028,6 +4039,19 @@ function OccupationScreen:createResultModal()
 	messageLabel.Parent = card
 	self.resultModal.messageLabel = messageLabel
 	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
 	-- OK Button
 	local okBtn = Instance.new("TextButton")
 	okBtn.Name = "OkBtn"
@@ -4045,27 +4069,23 @@ function OccupationScreen:createResultModal()
 	UI.corner(okBtn, 14)
 	self.resultModal.okButton = okBtn
 	
-	-- Button shadow
-	local btnShadow = Instance.new("Frame")
-	btnShadow.Size = UDim2.new(1, 4, 1, 4)
-	btnShadow.Position = UDim2.new(0, 2, 0, 2)
-	btnShadow.BackgroundColor3 = C.GreenDark
-	btnShadow.BackgroundTransparency = 0.5
-	btnShadow.ZIndex = 102
-	btnShadow.Parent = okBtn
-	UI.corner(btnShadow, 14)
-	
-	-- Button hover
+	-- Button hover (CRITICAL FIX: Also animate shadow)
 	okBtn.MouseEnter:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 			Size = UDim2.new(0.72, 0, 0, 56),
 			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
 		})
 	end)
 	okBtn.MouseLeave:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12), {
 			Size = UDim2.new(0.7, 0, 0, 52),
 			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
 		})
 	end)
 	

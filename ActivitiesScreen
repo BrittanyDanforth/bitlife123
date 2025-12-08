@@ -1836,22 +1836,29 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	-- TITLE & DETAILS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- Title (bolder)
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.45, 0, 0, 24)
+	titleLabel.Size = UDim2.new(0.5, -90, 0, 24)  -- Adjusted width to fit better
 	titleLabel.Position = UDim2.new(0, 84, 0, 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 16
+	titleLabel.TextSize = 15  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Effect badge (more prominent)
+	-- Effect badge (CRITICAL FIX: Dynamic width for longer text)
+	local effectText = item.effect
+	local displayEffect = effectText
+	if cost > 0 then
+		displayEffect = effectText .. " 💵$" .. cost
+	end
+	
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, cost > 0 and 140 or 110, 0, 26)
+	effectBadge.Size = UDim2.new(0, math.min(180, #displayEffect * 7 + 16), 0, 24)  -- Dynamic width based on text
 	effectBadge.Position = UDim2.new(0, 84, 0, 34)
 	effectBadge.BackgroundColor3 = canDo and (cost > 0 and C.AmberPale or C.GreenPale) or C.Gray100
 	effectBadge.ZIndex = 85
@@ -1861,10 +1868,11 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	local effectLabel = Instance.new("TextLabel")
 	effectLabel.Size = UDim2.fromScale(1, 1)
 	effectLabel.BackgroundTransparency = 1
-	effectLabel.Font = F.Button
-	effectLabel.TextSize = 11
+	effectLabel.Font = F.Medium
+	effectLabel.TextSize = 10  -- Smaller to fit better
 	effectLabel.TextColor3 = canDo and (cost > 0 and C.AmberDark or C.GreenDark) or C.Gray500
-	effectLabel.Text = item.effect .. (cost > 0 and " | 💵$" .. cost or "")
+	effectLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	effectLabel.Text = displayEffect
 	effectLabel.ZIndex = 86
 	effectLabel.Parent = effectBadge
 
@@ -1917,6 +1925,21 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	-- ACTION BUTTON (premium with shadow)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child, so emoji shows properly)
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 79, 0, 54)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 94
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 14)
+	end
+
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Name = "ActionBtn"
 	actionBtn.Size = UDim2.new(0, 75, 0, 50)
@@ -1927,21 +1950,9 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	actionBtn.TextSize = 15
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 95  -- CRITICAL FIX: Higher than pressArea (90) so clicks work
+	actionBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 14)
-	
-	-- Button shadow (CRITICAL FIX: ZIndex adjusted for button layering)
-	if canDo then
-		local btnShadow = Instance.new("Frame")
-		btnShadow.Size = UDim2.new(1, 4, 1, 4)
-		btnShadow.Position = UDim2.new(0, 2, 0, 2)
-		btnShadow.BackgroundColor3 = accentDark
-		btnShadow.BackgroundTransparency = 0.6
-		btnShadow.ZIndex = 94  -- Below button (95) but above pressArea (90)
-		btnShadow.Parent = actionBtn
-		UI.corner(btnShadow, 14)
-	end
 
 	if canDo then
 		local isLoading = false
@@ -1953,6 +1964,11 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 				BackgroundColor3 = accentDark,
 				Size = UDim2.new(0, 80, 0, 54)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), {
+					Size = UDim2.new(0, 84, 0, 58)
+				})
+			end
 		end)
 		actionBtn.MouseLeave:Connect(function()
 			if isLoading then return end
@@ -1960,6 +1976,11 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 				BackgroundColor3 = accentColor,
 				Size = UDim2.new(0, 75, 0, 50)
 			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), {
+					Size = UDim2.new(0, 79, 0, 54)
+				})
+			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
@@ -2041,15 +2062,16 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 80, 0, 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller to fit better
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
@@ -2114,6 +2136,21 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 		end
 	end
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 82, 0, 48)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
+		btnShadow.BackgroundColor3 = C.RedDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 84
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 12)
+	end
+
 	-- Action button
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 78, 0, 44)
@@ -2124,17 +2161,23 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	actionBtn.TextSize = 13
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 85  -- Higher than shadow
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 12)
 
 	if canDo then
-		actionBtn.Text = "Commit"
+		actionBtn.Text = "🔓 Commit"
 		actionBtn.MouseEnter:Connect(function()
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.RedDark })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 86, 0, 52) })
+			end
 		end)
 		actionBtn.MouseLeave:Connect(function()
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Red })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 82, 0, 48) })
+			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
 			self:doCrime(item)
@@ -2183,26 +2226,27 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 80, 0, 12)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller to fit better
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
 
-	-- Badge
+	-- Badge (CRITICAL FIX: Dynamic width for longer text)
 	local badgeText = item.risk and ("Risk: " .. item.risk .. "%") or item.effect
 	local badgeBg = item.risk and C.RedPale or C.GreenPale
 	local badgeColor = item.risk and C.RedDark or C.GreenDark
 
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, 115, 0, 24)
+	effectBadge.Size = UDim2.new(0, math.min(140, #badgeText * 7 + 16), 0, 24)  -- Dynamic width
 	effectBadge.Position = UDim2.new(0, 80, 0, 38)
 	effectBadge.BackgroundColor3 = badgeBg
 	effectBadge.ZIndex = 84
@@ -2219,22 +2263,52 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	effectLabel.ZIndex = 85
 	effectLabel.Parent = effectBadge
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so text shows properly)
+	local accentColor = canDo and (item.risk and C.Red or C.Amber) or C.Gray300
+	local accentDark = canDo and (item.risk and C.RedDark or C.AmberDark) or C.Gray400
+	
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 72, 0, 46)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 84
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 12)
+	end
+
 	-- Action button
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 68, 0, 42)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
-	actionBtn.BackgroundColor3 = canDo and (item.risk and C.Red or C.Amber) or C.Gray300
+	actionBtn.BackgroundColor3 = accentColor
 	actionBtn.Font = F.Button
 	actionBtn.TextSize = 14
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
-	actionBtn.Text = canDo and "Go!" or "Need $"
+	actionBtn.Text = canDo and "→ Go!" or "Need $"
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 85  -- Higher than shadow
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 12)
 
 	if canDo then
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 76, 0, 50) })
+			end
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 72, 0, 46) })
+			end
+		end)
 		actionBtn.MouseButton1Click:Connect(function()
 			self:doPrisonActivity(item)
 		end)
@@ -2363,6 +2437,19 @@ function ActivitiesScreen:createResultModal()
 	messageLabel.Parent = card
 	self.resultModal.messageLabel = messageLabel
 	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child, so it renders behind)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
 	-- OK Button (premium styling)
 	local okBtn = Instance.new("TextButton")
 	okBtn.Name = "OkBtn"
@@ -2380,27 +2467,23 @@ function ActivitiesScreen:createResultModal()
 	UI.corner(okBtn, 14)
 	self.resultModal.okButton = okBtn
 	
-	-- Button shadow
-	local btnShadow = Instance.new("Frame")
-	btnShadow.Size = UDim2.new(1, 4, 1, 4)
-	btnShadow.Position = UDim2.new(0, 2, 0, 2)
-	btnShadow.BackgroundColor3 = C.GreenDark
-	btnShadow.BackgroundTransparency = 0.5
-	btnShadow.ZIndex = 102
-	btnShadow.Parent = okBtn
-	UI.corner(btnShadow, 14)
-	
-	-- Button hover effects
+	-- Button hover effects (CRITICAL FIX: Also animate shadow)
 	okBtn.MouseEnter:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 			Size = UDim2.new(0.72, 0, 0, 56),
 			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
 		})
 	end)
 	okBtn.MouseLeave:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12), {
 			Size = UDim2.new(0.7, 0, 0, 52),
 			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
 		})
 	end)
 	
