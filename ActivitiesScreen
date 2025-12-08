@@ -1603,7 +1603,10 @@ function ActivitiesScreen:populatePrison()
 	sentenceText.Font = F.Medium
 	sentenceText.TextSize = 12
 	sentenceText.TextColor3 = C.RedDark
-	sentenceText.Text = jailYears > 0 and string.format("%.1f years left", jailYears) or "Sentence pending"
+	-- CRITICAL FIX: Use consistent integer formatting for jail years display
+	-- Ceiling ensures partial years show as full year (2.3 years -> 3 years left)
+	local displayYears = math.ceil(jailYears)
+	sentenceText.Text = jailYears > 0 and string.format("%d years left", displayYears) or "Sentence pending"
 	sentenceText.ZIndex = 84
 	sentenceText.Parent = sentenceBadge
 

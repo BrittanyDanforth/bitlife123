@@ -1522,25 +1522,32 @@ function LifeBackend:createInitialState(player)
 	end
 	
 	-- Siblings (random chance)
+	-- CRITICAL FIX: Siblings should only exist at birth if they're OLDER than player
+	-- Younger siblings are born later (via events or age-up). At age 0, only older
+	-- siblings with positive age offsets should exist.
 	local numSiblings = RANDOM:NextInteger(0, 3)
+	local siblingCount = 0
 	for i = 1, numSiblings do
 		local isBrother = RANDOM:NextNumber() > 0.5
-		local siblingAge = RANDOM:NextInteger(-5, 8) -- Can be older or younger
-		local siblingId = (isBrother and "brother_" or "sister_") .. tostring(i)
-		local siblingRole = siblingAge > 0 and (isBrother and "Older Brother" or "Older Sister") 
-			or (isBrother and "Younger Brother" or "Younger Sister")
-		
+		-- CRITICAL FIX: Only create older siblings at birth (positive offsets 1-8 years older)
+		-- Younger siblings will be created via "new sibling born" events
+		local siblingAgeOffset = RANDOM:NextInteger(1, 8) -- Only older siblings at birth
+		siblingCount = siblingCount + 1
+		local siblingId = (isBrother and "brother_" or "sister_") .. tostring(siblingCount)
+		local siblingRole = isBrother and "Older Brother" or "Older Sister"
+
 		state.Relationships[siblingId] = {
 			id = siblingId,
 			name = randomName(isBrother and "male" or "female"),
 			type = "family",
 			role = siblingRole,
 			relationship = 55 + RANDOM:NextInteger(-10, 20),
-			age = math.max(1, siblingAge), -- Sibling age relative to player (stored as absolute later)
+			-- CRITICAL FIX: Age is the actual sibling age (playerAge 0 + offset = offset)
+			age = siblingAgeOffset,
 			gender = isBrother and "male" or "female",
 			alive = true,
 			isFamily = true,
-			ageOffset = siblingAge, -- Store the offset for updating later
+			ageOffset = siblingAgeOffset, -- Store the offset for reference
 		}
 	end
 	
@@ -2507,7 +2514,8 @@ function LifeBackend:generateYearSummary(state)
 	if state.InJail then
 		emoji = "🔒"
 		-- MINOR FIX: Use %.1f for consistent decimal formatting
-		summaryParts = { string.format("Behind bars. %.1f years remaining.", state.JailYearsLeft or 0) }
+		-- CRITICAL FIX: Use consistent integer formatting for jail years display
+		summaryParts = { string.format("Behind bars. %d years remaining.", math.ceil(state.JailYearsLeft or 0)) }
 	end
 	
 	-- Combine parts (max 2-3 sentences to avoid clutter)
@@ -2641,7 +2649,8 @@ function LifeBackend:handleAgeUp(player)
 			
 			debugPrint("Player released from prison after completing sentence:", player.Name)
 		else
-			state.PendingFeed = string.format("📅 Prison: %.1f years remaining.", state.JailYearsLeft)
+			-- CRITICAL FIX: Use consistent integer formatting for jail years display
+			state.PendingFeed = string.format("📅 Prison: %d years remaining.", math.ceil(state.JailYearsLeft))
 		end
 	end
 
@@ -3048,7 +3057,19 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- CRITICAL FIX: Check if blocked by existing flag (e.g., can't get license if already have one)
 	state.Flags = state.Flags or {}
 	if activity.blockedByFlag and state.Flags[activity.blockedByFlag] then
-		return { success = false, message = "You've already done this!" }
+		-- CRITICAL FIX: Provide specific error messages for education double enrollment
+		local blockMessages = {
+			has_license = "You already have a driver's license!",
+			has_ged = "You already have a GED!",
+			has_diploma = "You already have a high school diploma!",
+			in_college = "You're already enrolled in college! Complete or drop out first.",
+			in_university = "You're already enrolled in university! Complete or drop out first.",
+			in_med_school = "You're already enrolled in medical school! Complete or drop out first.",
+			in_law_school = "You're already enrolled in law school! Complete or drop out first.",
+			in_business_school = "You're already enrolled in business school! Complete or drop out first.",
+		}
+		local message = blockMessages[activity.blockedByFlag] or "You've already done this!"
+		return { success = false, message = message }
 	end
 	
 	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
@@ -3265,6 +3286,11 @@ function LifeBackend:handlePrisonAction(player, actionId)
 	-- to avoid DOUBLE POPUP bug
 	if action.jailIncrease then
 		state.JailYearsLeft = (state.JailYearsLeft or 0) + action.jailIncrease
+		-- CRITICAL FIX: Apply stats for failed escape (Health -5, Happiness -10)
+		-- This was missing - stats were defined but never applied!
+		if action.stats then
+			self:applyStatChanges(state, action.stats)
+		end
 		-- MINOR FIX: Use %.1f for consistent decimal formatting
 		local message = string.format("Your escape failed. %.1f years added to your sentence.", action.jailIncrease)
 		self:pushState(player, message)

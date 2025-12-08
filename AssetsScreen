@@ -396,6 +396,26 @@ function AssetsScreen:getOwnedList(assetType)
 	return {}
 end
 
+-- CRITICAL FIX: Added getFlags() helper to check player flags (for license, jail status, etc.)
+function AssetsScreen:getFlags()
+	local state = self.playerState
+	if not state then return {} end
+	return state.Flags or {}
+end
+
+-- CRITICAL FIX: Added isInJail() check to prevent purchases while incarcerated
+function AssetsScreen:isInJail()
+	local state = self.playerState
+	if not state then return false end
+	return state.InJail == true
+end
+
+-- CRITICAL FIX: Added hasDriversLicense() check for vehicle purchases
+function AssetsScreen:hasDriversLicense()
+	local flags = self:getFlags()
+	return flags.has_license == true or flags.drivers_license == true
+end
+
 function AssetsScreen:createUI()
 	-- Main overlay
 	self.overlay = Instance.new("Frame")
@@ -1612,7 +1632,17 @@ function AssetsScreen:sellAsset(item, itemType)
 		return
 	end
 
-	local result = SellAsset:InvokeServer(item.id, itemType)
+	-- CRITICAL FIX: Add pcall protection for remote invoke to handle network errors
+	local ok, result = pcall(function()
+		return SellAsset:InvokeServer(item.id, itemType)
+	end)
+
+	if not ok then
+		log("Sell remote call failed:", result)
+		self:showResult(false, "Network error. Please try again.", "❌")
+		return
+	end
+
 	if result then
 		log("Sell result:", result.success, result.message)
 		self:showResult(result.success, result.message, result.success and "💰" or "😔")
@@ -1631,7 +1661,16 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	local meetsAge = age >= minAge
 	local canAfford = money >= item.price
 	local alreadyOwns = assets[item.id] ~= nil
-	local canBuy = meetsAge and canAfford and not alreadyOwns
+
+	-- CRITICAL FIX: Check jail status - can't purchase while incarcerated
+	local inJail = self:isInJail()
+
+	-- CRITICAL FIX: Check driver's license for vehicle purchases (minAge 16+)
+	local needsLicense = (itemType == "vehicle" and minAge >= 16)
+	local hasLicense = self:hasDriversLicense()
+	local meetsLicenseReq = not needsLicense or hasLicense
+
+	local canBuy = meetsAge and canAfford and not alreadyOwns and not inJail and meetsLicenseReq
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
@@ -1968,10 +2007,17 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 			end)
 		else
 			local btnText = "🔒 "
-			if not meetsAge then
+			-- CRITICAL FIX: Show specific reason why purchase is blocked
+			if inJail then
+				btnText = "🔒 In Jail"
+			elseif not meetsAge then
 				btnText = btnText .. "Age " .. minAge
-			else
+			elseif needsLicense and not hasLicense then
+				btnText = "🚗 No License"
+			elseif not canAfford then
 				btnText = "💵 Need $"
+			else
+				btnText = "🔒 Owned"
 			end
 			buyBtn.Text = btnText
 		end
@@ -1989,7 +2035,17 @@ function AssetsScreen:buyAsset(item, itemType)
 		return
 	end
 
-	local result = remote:InvokeServer(item.id)
+	-- CRITICAL FIX: Add pcall protection for remote invoke to handle network errors
+	local ok, result = pcall(function()
+		return remote:InvokeServer(item.id)
+	end)
+
+	if not ok then
+		log("Remote call failed:", result)
+		self:showResult(false, "Network error. Please try again.", "❌")
+		return
+	end
+
 	if result then
 		self:showResult(result.success, result.message, result.success and "🎉" or "😔")
 		

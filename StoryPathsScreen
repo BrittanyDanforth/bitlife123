@@ -227,6 +227,13 @@ function StoryPathsScreen:getStat(stat)
 	return state[stat] or (state.Stats and state.Stats[stat]) or 0
 end
 
+-- CRITICAL FIX: Added getEducation() helper for education requirement validation
+function StoryPathsScreen:getEducation()
+	local state = self.playerState
+	if not state then return "none" end
+	return state.Education or (state.EducationData and state.EducationData.Level) or "none"
+end
+
 function StoryPathsScreen:createUI()
 	-- Main overlay
 	self.overlay = Instance.new("Frame")
@@ -479,6 +486,22 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	-- Check requirements
 	local reqsMet = true
 	local reqText = ""
+
+	-- CRITICAL FIX: Check education requirement (e.g., Political path requires "bachelor")
+	if path.requirements.education then
+		local playerEdu = self:getEducation()
+		local requiredEdu = path.requirements.education
+		-- Education rank check (none < high_school < community < bachelor < master < law/medical < phd)
+		local eduRanks = { none = 0, high_school = 1, community = 2, bachelor = 3, master = 4, law = 5, medical = 5, phd = 6 }
+		local playerRank = eduRanks[playerEdu] or 0
+		local requiredRank = eduRanks[requiredEdu] or 0
+		if playerRank < requiredRank then
+			reqsMet = false
+			local eduNames = { bachelor = "Bachelor's Degree", master = "Master's Degree", law = "Law Degree", medical = "Medical Degree" }
+			reqText = "Need " .. (eduNames[requiredEdu] or requiredEdu)
+		end
+	end
+
 	if path.requirements.smarts and self:getStat("Smarts") < path.requirements.smarts then
 		reqsMet = false
 		reqText = "Need " .. path.requirements.smarts .. " Smarts"
@@ -486,6 +509,12 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	if path.requirements.looks and self:getStat("Looks") < path.requirements.looks then
 		reqsMet = false
 		reqText = "Need " .. path.requirements.looks .. " Looks"
+	end
+
+	-- CRITICAL FIX: Check happiness requirement (Royal path requires happiness = 60)
+	if path.requirements.happiness and self:getStat("Happiness") < path.requirements.happiness then
+		reqsMet = false
+		reqText = "Need " .. path.requirements.happiness .. " Happiness"
 	end
 
 	local card = Instance.new("Frame")
@@ -1201,7 +1230,17 @@ function StoryPathsScreen:startPath(pathId)
 	end
 
 	log("Invoking server StartPath...")
-	local result = StartPath:InvokeServer(pathId)
+	-- CRITICAL FIX: Add pcall protection for remote invoke to handle network errors
+	local ok, result = pcall(function()
+		return StartPath:InvokeServer(pathId)
+	end)
+
+	if not ok then
+		logWarn("StartPath remote call failed:", result)
+		self:showResult(false, "Network error. Please try again.", "X")
+		return
+	end
+
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -1225,7 +1264,17 @@ function StoryPathsScreen:doPathAction(pathId, actionId)
 	end
 
 	log("Invoking server DoPathAction...")
-	local result = DoPathAction:InvokeServer(pathId, actionId)
+	-- CRITICAL FIX: Add pcall protection for remote invoke to handle network errors
+	local ok, result = pcall(function()
+		return DoPathAction:InvokeServer(pathId, actionId)
+	end)
+
+	if not ok then
+		logWarn("DoPathAction remote call failed:", result)
+		self:showResult(false, "Network error. Please try again.", "X")
+		return
+	end
+
 	log("Server response:", result and "received" or "nil")
 
 	if result then

@@ -1448,7 +1448,9 @@ function OccupationScreen:populateJobs()
 		subText.TextColor3 = C.Gray400
 		subText.TextXAlignment = Enum.TextXAlignment.Left
 		subText.TextWrapped = true
-		subText.Text = jailYears > 0 and string.format("%.1f years remaining. You can't work while in prison.", jailYears) or "You can't work while in prison."
+		-- CRITICAL FIX: Use consistent integer formatting for jail years display
+		local displayYears = math.ceil(jailYears)
+		subText.Text = jailYears > 0 and string.format("%d years remaining. You can't work while in prison.", displayYears) or "You can't work while in prison."
 		subText.ZIndex = 83
 		subText.Parent = prisonCard
 	end
