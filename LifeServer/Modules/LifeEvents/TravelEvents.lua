@@ -43,9 +43,17 @@ TravelEvents.events = {
 		-- CRITICAL: Random vacation outcome
 		choices = {
 			{
-				text = "Book the trip!",
+				-- MINOR FIX: Show price in choice text
+				text = "Book the trip! ($800)",
 				effects = { Money = -800 },
 				feedText = "Heading to the beach...",
+				-- MINOR FIX: Add eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 800 then
+						return false, "Can't afford $800 vacation"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -65,7 +73,15 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Budget staycation instead", effects = { Money = -100, Happiness = 5, Health = 2 }, feedText = "🏖️ Relaxing at home. Not as exciting but restful." },
+			-- MINOR FIX: Show price in choice text
+		{ text = "Budget staycation ($100)", effects = { Money = -100, Happiness = 5, Health = 2 }, feedText = "🏖️ Relaxing at home. Not as exciting but restful.",
+			eligibility = function(state)
+				if (state.Money or 0) < 100 then
+					return false, "Can't afford $100 staycation"
+				end
+				return true
+			end,
+		},
 			{ text = "Skip it - save money", effects = { Happiness = -2 }, feedText = "🏖️ Money over memories. Maybe next time." },
 		},
 	},
@@ -99,9 +115,16 @@ TravelEvents.events = {
 		
 		choices = {
 			{
-				text = "Hiking adventure",
+				-- MINOR FIX: Show price in choice text
+				text = "Hiking adventure ($400)",
 				effects = { Money = -400, Health = 5 },
 				feedText = "Hitting the trails...",
+				eligibility = function(state)
+					if (state.Money or 0) < 400 then
+						return false, "Can't afford $400 trip"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -122,9 +145,16 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Skiing/snowboarding",
+				-- MINOR FIX: Show price in choice text
+				text = "Skiing/snowboarding ($600)",
 				effects = { Money = -600 },
 				feedText = "Hitting the slopes...",
+				eligibility = function(state)
+					if (state.Money or 0) < 600 then
+						return false, "Can't afford $600 ski trip"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -144,7 +174,15 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Cozy cabin retreat", effects = { Money = -350, Happiness = 10, Health = 3 }, feedText = "🏔️ Fire crackling, mountains visible, pure peace." },
+			-- MINOR FIX: Show price in choice text
+		{ text = "Cozy cabin retreat ($350)", effects = { Money = -350, Happiness = 10, Health = 3 }, feedText = "🏔️ Fire crackling, mountains visible, pure peace.",
+			eligibility = function(state)
+				if (state.Money or 0) < 350 then
+					return false, "Can't afford $350 retreat"
+				end
+				return true
+			end,
+		},
 		},
 	},
 	{
@@ -178,9 +216,16 @@ TravelEvents.events = {
 		-- CRITICAL: Random international trip outcome
 		choices = {
 			{
-				text = "Europe tour",
+				-- MINOR FIX: Show price in choice text
+				text = "Europe tour ($3,000)",
 				effects = { Money = -3000 },
 				feedText = "Exploring Europe...",
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford $3,000 Europe trip"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
@@ -201,9 +246,16 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Asian adventure",
+				-- MINOR FIX: Show price in choice text
+				text = "Asian adventure ($2,500)",
 				effects = { Money = -2500 },
 				feedText = "Exploring Asia...",
+				eligibility = function(state)
+					if (state.Money or 0) < 2500 then
+						return false, "Can't afford $2,500 Asia trip"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then

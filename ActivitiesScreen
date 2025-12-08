@@ -35,6 +35,21 @@ local MindBody = {
 	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true },
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- EDUCATION (Like BitLife!) - Go back to school, get GED, etc.
+-- ═══════════════════════════════════════════════════════════════════════════
+local Education = {
+	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school" },
+	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "Back to School!", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
+	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma" },
+	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma" },
+	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000 },
+	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000 },
+	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree" },
+	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree" },
+	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree" },
+}
+
 local Social = {
 	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0 },
 	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0 },
@@ -606,22 +621,22 @@ function ActivitiesScreen:rebuildTabs()
 			self.currentTab = "fun"
 		end
 	elseif age < 18 then
-		-- TEEN MODE (13-17): Everything but serious crime
+		-- TEEN MODE (13-17): Everything but serious crime + Education!
 		tabs = {
 			{ id = "mindbody", text = "💪 Mind", color = C.Cyan },
+			{ id = "education", text = "📚 School", color = C.Amber },
 			{ id = "social", text = "👥 Social", color = C.Pink },
-			{ id = "fun", text = "🎮 Fun", color = C.Purple },
 			{ id = "mischief", text = "😈 Trouble", color = C.Red },
 		}
 		if self.currentTab == "crime" then
 			self.currentTab = "mischief"
 		end
 	else
-		-- ADULT MODE (18+): Full activities
+		-- ADULT MODE (18+): Full activities + Education for second chances!
 		tabs = {
 			{ id = "mindbody", text = "Mind", color = C.Cyan },
+			{ id = "education", text = "📚 Learn", color = C.Amber },
 			{ id = "social", text = "Social", color = C.Pink },
-			{ id = "fun", text = "Fun", color = C.Purple },
 			{ id = "crime", text = "Crime", color = C.Red },
 		}
 	end
@@ -737,6 +752,7 @@ function ActivitiesScreen:switchTab(tabId)
 	log("Populating tab content...")
 	if tabId == "prison" then self:populatePrison()
 	elseif tabId == "mindbody" then self:populateMindBody()
+	elseif tabId == "education" then self:populateEducation()
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
 	elseif tabId == "crime" then self:populateCrime()
@@ -804,6 +820,85 @@ function ActivitiesScreen:populateMindBody()
 
 	for i, item in ipairs(MindBody) do
 		self:createActivityCard(section, item, i, C.Cyan, C.CyanPale)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- EDUCATION TAB (Like BitLife!) - Go back to school, get GED, etc.
+-- ═══════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateEducation()
+	self:updateInfoBar()
+
+	local section = Instance.new("Frame")
+	section.Name = "EducationSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 120, 0, 32)
+	badge.BackgroundColor3 = C.Amber
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "📚 Education"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Size = UDim2.new(0, 120, 1, 0)
+	countLabel.Position = UDim2.new(0, 130, 0, 0)
+	countLabel.BackgroundTransparency = 1
+	countLabel.Font = F.Medium
+	countLabel.TextSize = 13
+	countLabel.TextColor3 = C.Gray400
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Text = #Education .. " programs"
+	countLabel.ZIndex = 84
+	countLabel.Parent = header
+
+	-- Info text for dropouts
+	local infoText = Instance.new("TextLabel")
+	infoText.Size = UDim2.new(1, 0, 0, 40)
+	infoText.BackgroundTransparency = 1
+	infoText.Font = F.Body
+	infoText.TextSize = 12
+	infoText.TextColor3 = C.Gray500
+	infoText.TextWrapped = true
+	infoText.TextXAlignment = Enum.TextXAlignment.Left
+	infoText.Text = "💡 Dropped out? Get your GED or return to school! Need a degree? Apply to college, trade school, or professional programs!"
+	infoText.LayoutOrder = 1
+	infoText.ZIndex = 83
+	infoText.Parent = section
+
+	for i, item in ipairs(Education) do
+		self:createActivityCard(section, item, i + 1, C.Amber, C.AmberPale)
 	end
 end
 

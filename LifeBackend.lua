@@ -758,6 +758,98 @@ local ActivityCatalog = {
 		requiresAge = 16,
 		blockedByFlag = "has_license", -- Can't get a license if you already have one
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- EDUCATION ACTIVITIES (Like BitLife!) - Go back to school, get GED, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════
+	get_ged = {
+		stats = { Smarts = 10, Happiness = 8 },
+		feed = "got your GED! High school equivalent achieved!",
+		cost = 150,
+		requiresAge = 16,
+		requiresFlag = "dropped_out_high_school",
+		blockedByFlag = "has_ged",
+		setFlags = { has_ged = true, has_ged_or_diploma = true },
+		oneTime = true,
+	},
+	return_high_school = {
+		stats = { Smarts = 5, Happiness = 3 },
+		feed = "returned to high school to finish your education!",
+		cost = 0,
+		requiresAge = 14,
+		maxAge = 21,
+		requiresFlag = "dropped_out_high_school",
+		blockedByFlag = "has_diploma",
+		setFlags = { returning_student = true, in_school = true, dropped_out_high_school = nil },
+		oneTime = true,
+	},
+	community_college = {
+		stats = { Smarts = 8, Happiness = 5 },
+		feed = "enrolled in community college!",
+		cost = 2000,
+		requiresAge = 18,
+		requiresFlag = "has_ged_or_diploma",
+		blockedByFlag = "in_college",
+		setFlags = { in_college = true, community_college = true },
+		oneTime = true,
+	},
+	university = {
+		stats = { Smarts = 10, Happiness = 6 },
+		feed = "enrolled in university! 4-year degree program!",
+		cost = 5000,
+		requiresAge = 18,
+		requiresFlag = "has_ged_or_diploma",
+		blockedByFlag = "in_university",
+		setFlags = { in_university = true, in_college = true },
+		oneTime = true,
+	},
+	trade_school = {
+		stats = { Smarts = 6, Happiness = 5 },
+		feed = "enrolled in trade school! Learning practical skills!",
+		cost = 3000,
+		requiresAge = 18,
+		setFlags = { in_trade_school = true, learning_trade = true },
+		oneTime = true,
+	},
+	coding_bootcamp = {
+		stats = { Smarts = 12, Happiness = 4 },
+		feed = "enrolled in a coding bootcamp! Tech skills incoming!",
+		cost = 8000,
+		requiresAge = 18,
+		setFlags = { coding_bootcamp = true, tech_skills = true },
+		oneTime = true,
+	},
+	medical_school = {
+		stats = { Smarts = 15, Happiness = 3, Health = -5 },
+		feed = "enrolled in medical school! Becoming a doctor!",
+		cost = 50000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_med_school",
+		setFlags = { in_med_school = true },
+		oneTime = true,
+	},
+	law_school = {
+		stats = { Smarts = 14, Happiness = 2 },
+		feed = "enrolled in law school! Becoming a lawyer!",
+		cost = 40000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_law_school",
+		setFlags = { in_law_school = true },
+		oneTime = true,
+	},
+	business_school = {
+		stats = { Smarts = 12, Happiness = 4, Money = -500 },
+		feed = "enrolled in business school! Getting your MBA!",
+		cost = 35000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_business_school",
+		setFlags = { in_business_school = true },
+		oneTime = true,
+	},
+	
 	party = { stats = { Happiness = 5 }, feed = "partied with friends", cost = 0 },
 	hangout = { stats = { Happiness = 3 }, feed = "hung out with friends", cost = 0 },
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
@@ -2948,10 +3040,31 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = string.format("You must be at least %d years old.", activity.requiresAge) }
 	end
 	
+	-- CRITICAL FIX: Check maximum age for activities (like returning to high school)
+	if activity.maxAge and (state.Age or 0) > activity.maxAge then
+		return { success = false, message = string.format("You're too old for this! (Max age: %d)", activity.maxAge) }
+	end
+	
 	-- CRITICAL FIX: Check if blocked by existing flag (e.g., can't get license if already have one)
 	state.Flags = state.Flags or {}
 	if activity.blockedByFlag and state.Flags[activity.blockedByFlag] then
 		return { success = false, message = "You've already done this!" }
+	end
+	
+	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
+	if activity.requiresFlag then
+		if not state.Flags[activity.requiresFlag] then
+			-- Provide helpful messages based on which flag is missing
+			local helpfulMessage = "You don't meet the requirements for this."
+			if activity.requiresFlag == "dropped_out_high_school" then
+				helpfulMessage = "This is only for people who dropped out of high school."
+			elseif activity.requiresFlag == "has_ged_or_diploma" then
+				helpfulMessage = "You need a high school diploma or GED first."
+			elseif activity.requiresFlag == "has_degree" then
+				helpfulMessage = "You need a college degree first."
+			end
+			return { success = false, message = helpfulMessage }
+		end
 	end
 	
 	-- CRITICAL FIX: Check if this is a one-time activity that was already completed

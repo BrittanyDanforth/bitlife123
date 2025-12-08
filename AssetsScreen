@@ -1276,6 +1276,45 @@ function AssetsScreen:buyAsset(item, itemType)
 	local result = remote:InvokeServer(item.id)
 	if result then
 		self:showResult(result.success, result.message, result.success and "🎉" or "😔")
+		
+		-- CRITICAL FIX: Refresh the assets screen after successful purchase
+		-- Without this, purchased items don't show in "owned" sections!
+		if result.success then
+			-- Update local state with the new asset
+			self.playerState = self.playerState or {}
+			self.playerState.Assets = self.playerState.Assets or {}
+			
+			local assetTypeName
+			if itemType == "property" then
+				assetTypeName = "Properties"
+			elseif itemType == "vehicle" then
+				assetTypeName = "Vehicles"
+			else
+				assetTypeName = "Items"
+			end
+			
+			self.playerState.Assets[assetTypeName] = self.playerState.Assets[assetTypeName] or {}
+			table.insert(self.playerState.Assets[assetTypeName], {
+				id = item.id,
+				name = item.name,
+				emoji = item.emoji,
+				value = item.price,
+				price = item.price,
+			})
+			
+			-- Deduct money locally to keep UI in sync
+			if self.playerState.Money then
+				self.playerState.Money = self.playerState.Money - item.price
+			end
+			
+			-- Refresh the current tab to show the owned item
+			task.delay(0.5, function()
+				if self.isVisible then
+					self:switchTab(self.currentTab)
+					log("✅ Refreshed assets screen after purchase")
+				end
+			end)
+		end
 	else
 		self:showResult(false, "Server error", "❌")
 	end

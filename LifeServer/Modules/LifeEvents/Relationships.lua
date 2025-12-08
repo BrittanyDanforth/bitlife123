@@ -560,7 +560,8 @@ Relationships.events = {
 			{ 
 				text = "Let's have a baby!", 
 				effects = { Happiness = 15 }, 
-				setFlags = { has_child = true, parent = true }, 
+				-- CRITICAL FIX: Set both has_child and has_children for consistency
+				setFlags = { has_child = true, has_children = true, parent = true }, 
 				feedText = "Starting a family...",
 				-- CRITICAL FIX: Money validation for $3000 baby costs
 				onResolve = function(state)
@@ -612,7 +613,8 @@ Relationships.events = {
 			{ 
 				text = "Adopt a child", 
 				effects = { Happiness = 15 }, 
-				setFlags = { has_child = true, parent = true, adopted = true }, 
+				-- CRITICAL FIX: Set both has_child and has_children for consistency
+				setFlags = { has_child = true, has_children = true, parent = true, adopted = true }, 
 				feedText = "Adopting a child...",
 				-- CRITICAL FIX: Money validation for $5000 adoption costs
 				onResolve = function(state)

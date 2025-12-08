@@ -3566,10 +3566,26 @@ function OccupationScreen:executeQuit(quitStyle)
 		
 		self:showResult(true, message, emoji)
 		
-		-- Force refresh the job list after showing result
+		-- CRITICAL FIX: Force complete UI refresh after quitting
+		-- Not just populateJobs but entire career info and tab state
 		task.delay(0.1, function()
 			if self.isVisible then
+				-- Clear ALL cached career state
+				self.careerInfo = nil
+				self.cachedJobData = nil
+				
+				-- Force refresh career info from server
+				if GetCareerInfo then
+					self.careerInfo = GetCareerInfo:InvokeServer()
+				end
+				
+				-- Refresh the job list
 				self:populateJobs()
+				
+				-- Switch to career tab to show unemployed state
+				self:switchTab("career")
+				
+				log("✅ UI fully refreshed after quit")
 			end
 		end)
 	else

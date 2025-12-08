@@ -849,7 +849,8 @@ RelationshipsExpanded.events = {
 		minAge = 45, maxAge = 70,
 		oneTime = true,
 		-- CRITICAL FIX: Must have children for empty nest event!
-		requiresFlags = { has_children = true },
+		-- Changed to has_child which is what child events actually set
+		requiresFlags = { has_child = true },
 		blockedByFlags = { no_children = true, childfree = true },
 		stage = STAGE,
 		ageBand = "adult",

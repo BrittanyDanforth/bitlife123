@@ -94,6 +94,60 @@ Teen.events = {
 			{ text = "Accept a lower grade", effects = { Happiness = -2, Smarts = -1 }, feedText = "The project suffered, but you avoided conflict." },
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: High School Dropout Event (like BitLife)
+	-- This allows the GED and Return to School activities to work
+	-- ═══════════════════════════════════════════════════════════════════════════
+	{
+		id = "considering_dropping_out",
+		title = "Thinking About Dropping Out",
+		emoji = "🚪",
+		text = "School has been really hard lately. You're struggling with classes, maybe with teachers, maybe with other students. Some days you wonder if you should just quit.",
+		question = "What do you do?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.2, -- Rare but possible
+		cooldown = 3,
+		requiresFlags = { in_high_school = true },
+		blockedByFlags = { honor_student = true, academic_path = true },
+		choices = {
+			{
+				text = "Drop out of high school",
+				effects = { Happiness = 5, Smarts = -10 },
+				setFlags = { dropped_out_high_school = true, in_high_school = nil, dropout = true },
+				feedText = "You dropped out of high school. You can always get your GED later...",
+				onResolve = function(state)
+					state.Education = "none"
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "dropped_out"
+					state.EducationData.Level = "none"
+					state.Flags = state.Flags or {}
+					state.Flags.dropped_out_high_school = true
+					state.Flags.in_high_school = nil
+					if state.AddFeed then
+						state:AddFeed("📕 You dropped out of high school. You can get your GED or return later through Activities!")
+					end
+				end,
+			},
+			{
+				text = "Get help from a counselor",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { sought_help = true },
+				feedText = "You talked to someone about your struggles. It helped a lot.",
+			},
+			{
+				text = "Push through - just one more year",
+				effects = { Smarts = 5, Health = -2, Happiness = -3 },
+				setFlags = { persistent = true },
+				feedText = "You decided to stick it out. It's hard, but you'll make it.",
+			},
+			{
+				text = "Try an alternative program",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { alternative_education = true },
+				feedText = "You switched to an alternative learning program that fits you better.",
+			},
+		},
+	},
 	{
 		id = "academic_pressure",
 		title = "Under Pressure",
@@ -356,6 +410,9 @@ Teen.events = {
 			state.Flags = state.Flags or {}
 			state.Flags.graduated_high_school = true
 			state.Flags.high_school_graduate = true
+			-- CRITICAL FIX: Set has_ged_or_diploma for education activities
+			state.Flags.has_diploma = true
+			state.Flags.has_ged_or_diploma = true
 			-- Update education data
 			if state.EducationData then
 				state.EducationData.Status = "completed"

@@ -420,6 +420,9 @@ Milestones.events = {
 			state.Flags.college_grad = true
 			state.Flags.bachelor_degree = true
 			state.Flags.college_graduate = true
+			-- CRITICAL FIX: Set flags needed for education activities
+			state.Flags.has_degree = true
+			state.Flags.has_ged_or_diploma = true
 			if state.EducationData then
 				state.EducationData.Status = "completed"
 				state.EducationData.Level = "bachelor"

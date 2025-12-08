@@ -51,7 +51,10 @@ HobbyEvents.events = {
 				end,
 			},
 			{ text = "Join a band/ensemble", effects = { Happiness = 8, Smarts = 2 }, setFlags = { in_a_band = true }, feedText = "🎵 Making music with others! Collaborative magic!" },
-			{ text = "Take lessons", effects = { Money = -100, Happiness = 6, Smarts = 4 }, feedText = "🎵 Professional instruction accelerating learning!" },
+			-- MINOR FIX: Show price in choice text
+		{ text = "Take lessons ($100)", effects = { Money = -100, Happiness = 6, Smarts = 4 }, feedText = "🎵 Professional instruction accelerating learning!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford $100 lessons" end,
+		},
 		},
 	},
 	{
@@ -205,7 +208,10 @@ HobbyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Upgrade equipment", effects = { Money = -500, Happiness = 6, Smarts = 2 }, feedText = "📷 New camera! Better lenses! The gear helps!" },
+			-- MINOR FIX: Show price in choice text
+		{ text = "Upgrade equipment ($500)", effects = { Money = -500, Happiness = 6, Smarts = 2 }, feedText = "📷 New camera! Better lenses! The gear helps!",
+			eligibility = function(state) return (state.Money or 0) >= 500, "Can't afford $500 upgrade" end,
+		},
 			{ text = "Enter a photo contest", effects = { Money = -20 }, feedText = "Submitting to contest...",
 				onResolve = function(state)
 					local roll = math.random()
@@ -392,7 +398,10 @@ HobbyEvents.events = {
 				end,
 			},
 			{ text = "Try hot yoga", effects = { Health = 4, Happiness = 6, Money = -20 }, feedText = "🧘 Sweating out toxins! Intense but cleansing!" },
-			{ text = "Yoga retreat", effects = { Money = -300, Happiness = 12, Health = 5 }, setFlags = { yoga_retreat = true }, feedText = "🧘 Weekend of peace and practice! Transformed!" },
+			-- MINOR FIX: Show price in choice text
+		{ text = "Yoga retreat ($300)", effects = { Money = -300, Happiness = 12, Health = 5 }, setFlags = { yoga_retreat = true }, feedText = "🧘 Weekend of peace and practice! Transformed!",
+			eligibility = function(state) return (state.Money or 0) >= 300, "Can't afford $300 retreat" end,
+		},
 		},
 	},
 	
