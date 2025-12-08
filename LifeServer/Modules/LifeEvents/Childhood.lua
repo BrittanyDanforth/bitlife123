@@ -315,9 +315,34 @@ Childhood.events = {
 		careerTags = { "social_work" },
 
 		choices = {
-			{ text = "Stand up to them", effects = { Happiness = 5 }, setFlags = { brave = true }, feedText = "You stood up to the bully. It was scary, but you earned respect." },
+			{ 
+				text = "👊 FIGHT the bully!",
+				effects = {},
+				feedText = "You decided to fight back...",
+				-- CRITICAL FIX: Fight minigame for childhood bully confrontation!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					
+					if won then
+						-- Beat the bully!
+						state.Flags.brave = true
+						state.Flags.fighter = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("👊 You WON the fight! The bully never bothered anyone again. You're a HERO!")
+					else
+						-- Lost the fight
+						state.Flags.brave = true
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("👊 You lost the fight, but you were brave for trying. The bully respects you now.")
+					end
+				end,
+			},
+			{ text = "Stand up verbally", effects = { Happiness = 5 }, setFlags = { brave = true }, feedText = "You stood up to the bully with words. It was scary, but you earned respect." },
 			{ text = "Tell a teacher", effects = { Happiness = 2, Smarts = 2 }, setFlags = { trusts_authority = true }, feedText = "You told an adult. The bully got in trouble." },
-			{ text = "Avoid them completely", effects = { Happiness = -3 }, setFlags = { conflict_avoidant = true }, feedText = "You learned which hallways to avoid. Safety first." },
 			{ text = "Try to befriend them", effects = { Smarts = 3 }, setFlags = { peacemaker = true }, hintCareer = "social_work", feedText = "You tried to understand why they're mean. Sometimes kindness works." },
 		},
 	},

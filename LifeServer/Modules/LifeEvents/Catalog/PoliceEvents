@@ -505,34 +505,29 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Rush in immediately - every second counts",
-				effects = { Happiness = 5 },
-				feedText = "You ran toward danger...",
-				onResolve = function(state)
-					local outcome = RANDOM:NextNumber()
-					if outcome < 0.4 then
-						-- Hero outcome
-						state.Flags = state.Flags or {}
+				text = "⚡ RUSH IN - Stop the threat!",
+				effects = {},
+				feedText = "You charged into danger...",
+				-- CRITICAL FIX: QTE minigame for intense police action!
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					
+					if won then
+						-- HERO - You stopped the shooter!
 						state.Flags.hero_cop = true
 						state.Flags.medal_of_valor = true
-						if state.AddFeed then
-							state:AddFeed("🦸 You stopped the shooter and saved lives! Medal of Valor incoming!")
-						end
-					elseif outcome < 0.7 then
-						-- Injured but survived
-						if state.ModifyStat then
-							state:ModifyStat("Health", RANDOM:NextInteger(-25, -10))
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.wounded_in_line = true
-						if state.AddFeed then
-							state:AddFeed("🏥 You were wounded but survived. You're a hero.")
-						end
+						state:ModifyStat("Happiness", 20)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("⚡🦸 You NEUTRALIZED the threat! Lives SAVED! MEDAL OF VALOR! You're a LEGEND!")
 					else
-						-- Situation resolved by others
-						if state.AddFeed then
-							state:AddFeed("✅ By the time you got there, the situation was resolved. Everyone safe.")
-						end
+						-- Injured trying to help
+						state.Flags.wounded_in_line = true
+						state:ModifyStat("Health", -30)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚡🏥 You were shot while rushing in. Survived, but badly wounded. A hero regardless.")
 					end
 				end,
 			},

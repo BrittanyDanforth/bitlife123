@@ -1797,11 +1797,36 @@ Teen.events = {
 		cooldown = 3,
 		
 		choices = {
-			{ text = "Stand up for the victim", effects = { Happiness = 5 }, setFlags = { stands_up_to_bullies = true }, feedText = "You defended them. It took courage." },
+			{ 
+				text = "👊 Stand up and FIGHT!", 
+				effects = {},
+				setFlags = { stands_up_to_bullies = true },
+				feedText = "You physically intervened...",
+				-- CRITICAL FIX: Fight minigame for standing up to bullies!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					if won then
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.hero = true
+						state.Flags.fighter = true
+						state:AddFeed("👊 You beat the bully! Everyone cheered. You're a hero!")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.brave = true
+						state:AddFeed("👊 You got beat up, but you stood your ground. Respect earned.")
+					end
+				end,
+			},
+			{ text = "Verbally confront the bully", effects = { Happiness = 5 }, setFlags = { stands_up_to_bullies = true }, feedText = "You defended them with words. It took courage." },
 			{ text = "Report it to a teacher", effects = { Smarts = 2 }, setFlags = { reports_wrongdoing = true }, feedText = "You told an adult. They handled it." },
 			{ text = "Stay out of it", effects = { Happiness = -4 }, setFlags = { bystander = true }, feedText = "You did nothing. That guilt stays." },
 			{ text = "Befriend the victim later", effects = { Happiness = 3 }, setFlags = { kind = true }, feedText = "You checked on them afterward. They appreciated it." },
-			{ text = "Join in (terrible choice)", effects = { Happiness = -8 }, setFlags = { bully = true }, feedText = "You became part of the problem. Shameful." },
 		},
 	},
 	{
@@ -1954,7 +1979,30 @@ Teen.events = {
 		cooldown = 2,
 		
 		choices = {
-			{ text = "Keep arguing until you 'win'", effects = { Happiness = -4, Health = -2 }, setFlags = { internet_warrior = true }, feedText = "You spent 3 hours on this. What did you win? Nothing." },
+			{ 
+				text = "🎤 DESTROY them with FACTS!", 
+				effects = {},
+				feedText = "You engaged in debate...",
+				-- CRITICAL FIX: Debate minigame for internet arguments!
+				triggerMinigame = "debate",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					if won then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.debate_champion = true
+						state:AddFeed("🎤 You absolutely DESTROYED them! Screenshot saved. Victory!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:ModifyStat("Health", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.internet_warrior = true
+						state:AddFeed("💻 You lost the argument. They screenshotted your L. Embarrassing.")
+					end
+				end,
+			},
 			{ text = "Block and move on", effects = { Happiness = 3 }, setFlags = { knows_when_to_stop = true }, feedText = "Not worth your energy. Smart." },
 			{ text = "Actually have a productive conversation", effects = { Happiness = 4, Smarts = 3 }, setFlags = { good_communicator = true }, feedText = "Rare achievement: civil internet discourse!" },
 			{ text = "Let friends handle it", effects = { Happiness = 2 }, feedText = "Your friends jumped in. Chaotic but entertaining." },

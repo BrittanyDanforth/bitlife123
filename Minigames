@@ -2766,4 +2766,57 @@ function Minigames:getAvailableGames()
 	}
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- RARE AUTO PURGE TRIGGER
+-- Ultra-rare random event (0.5% chance) that triggers The Purge survival game
+-- ═══════════════════════════════════════════════════════════════════════════════
+function Minigames:enableRareAutoPurge(config)
+	config = config or {}
+	local chance = config.chance or 0.005 -- 0.5% default
+	local interval = config.interval or 120 -- Check every 2 minutes
+	local totalScenarios = config.totalScenarios or 10
+	local introCps = config.introCps or 38
+	local onComplete = config.onComplete
+	
+	-- Stop existing auto thread if running
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+	end
+	
+	print("[Minigames] 😈 Enabling rare auto Purge trigger (", chance * 100, "% chance every", interval, "seconds)")
+	
+	self._purgeAutoThread = task.spawn(function()
+		while true do
+			task.wait(interval)
+			
+			-- Don't interrupt other active games
+			if self.activeGame == nil then
+				local roll = math.random()
+				if roll <= chance then
+					print("[Minigames] 😈🔥 RARE PURGE EVENT TRIGGERED! Roll:", roll, "Threshold:", chance)
+					
+					self:startPurge(function(won, stats)
+						print("[Minigames] 😈 Purge completed. Won:", won)
+						if onComplete then
+							onComplete(won, stats)
+						end
+					end, {
+						totalScenarios = totalScenarios,
+						introCps = introCps,
+					})
+				end
+			end
+		end
+	end)
+end
+
+function Minigames:disableRareAutoPurge()
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+		print("[Minigames] 😈 Disabled rare auto Purge trigger")
+	end
+end
+
 return Minigames

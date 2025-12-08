@@ -1976,31 +1976,38 @@ Random.events = {
 				end,
 			},
 			{ 
-				text = "Confront the intruder", 
+				text = "👊 CONFRONT the intruder!", 
 				effects = { },
 				feedText = "You confronted them...",
-				onResolve = function(state)
-					local roll = math.random(1, 100)
+				-- CRITICAL FIX: Fight minigame for home invasion confrontation!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					state.Flags = state.Flags or {}
-					if roll <= 50 then
-						-- They flee
+					
+					if won then
+						-- You defeated the intruder!
 						state.Flags.self_defense = true
+						state.Flags.home_defender = true
 						if state.ModifyStat then
-							state:ModifyStat("Happiness", -5)
+							state:ModifyStat("Health", -5)
+							state:ModifyStat("Happiness", 5)
 						end
 						if state.AddFeed then
-							state:AddFeed("🚨 They ran when they saw you! Nothing taken.")
+							state:AddFeed("🚨👊 You BEAT the intruder! They fled bleeding. Hero!")
 						end
 					else
-						-- Altercation
+						-- The intruder was too much
 						state.Flags.home_invasion = true
-						state.Flags.self_defense = true
+						state.Flags.assault_victim = true
 						if state.ModifyStat then
-							state:ModifyStat("Health", -15)
-							state:ModifyStat("Happiness", -10)
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Happiness", -15)
 						end
+						state.Money = math.max(0, (state.Money or 0) - math.random(1000, 3000))
 						if state.AddFeed then
-							state:AddFeed("🚨 You fought them off but got hurt. They fled.")
+							state:AddFeed("🚨👊 They overpowered you, took your stuff, and left you hurt.")
 						end
 					end
 				end,

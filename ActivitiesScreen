@@ -76,15 +76,17 @@ local DoPrisonAction = getRemote("DoPrisonAction")
 -- Activity Data - Must match server's Activities IDs!
 local MindBody = {
 	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0 },
-	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true },
-	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0 },
-	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true },
+	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0 },
 	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0 },
 	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200 },
 	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
-	-- CRITICAL FIX: Added driver's license activity (like BitLife)
-	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true },
+	-- CRITICAL FIX: Driver's license with QTE driving test minigame
+	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Martial arts with fight minigame
+	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "fight" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -105,34 +107,40 @@ local Education = {
 local Social = {
 	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0 },
 	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0 },
-	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50 },
+	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
 	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300 },
+	-- NEW: Karaoke with debate minigame
+	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 }
 
 local Entertainment = {
 	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+Happiness", minAge = 2, cost = 0 },
-	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0 },
+	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20 },
 	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150 },
 	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000 },
+	-- NEW: Arcade with diverse minigames
+	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+Happiness +Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
 }
 
 -- Crime IDs MUST match server's Crimes table exactly!
+-- CRITICAL FIX: Added diverse minigames for different crimes
 local Crimes = {
 	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
 	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
-	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10 },
-	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16 },
-	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16 },
-	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true },
+	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
+	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
+	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true, minigameType = "heist" },
 }
 
+-- CRITICAL FIX: Prison activities with appropriate minigames
 local PrisonActivities = {
-	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true },
-	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0 },
+	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true, minigameType = "prison_escape" },
+	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "prison_study", name = "Get GED", emoji = "📚", effect = "+Smarts", minAge = 0 },
-	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+Respect -Health", minAge = 0 },
-	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85 },
+	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+Respect -Health", minAge = 0, hasMinigame = true, minigameType = "fight" },
+	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85, hasMinigame = true, minigameType = "fight" },
 	{ id = "prison_snitch", name = "Snitch", emoji = "🐀", effect = "-Sentence +Risk", minAge = 0 },
 	{ id = "prison_appeal", name = "Appeal Sentence", emoji = "⚖️", effect = "Legal Help", minAge = 0, cost = 5000 },
 	{ id = "prison_goodbehavior", name = "Good Behavior", emoji = "😇", effect = "-Sentence Time", minAge = 0 },
@@ -3174,11 +3182,52 @@ function ActivitiesScreen:countWalls()
 end
 
 function ActivitiesScreen:showMinigame(item, accentColor)
-	log("=== STARTING TAP MINIGAME ===")
-	log("Item:", item.id, "Accent:", tostring(accentColor))
+	log("=== STARTING ACTIVITY MINIGAME ===")
+	log("Item:", item.id, "MinigameType:", item.minigameType or "tap", "Accent:", tostring(accentColor))
 
 	self.currentMinigameItem = item
 	self.minigameAccent = accentColor
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use proper minigame system based on activity type!
+	-- Different activities use different minigames for variety
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local minigameType = item.minigameType or "mash"  -- Default to mash (tap)
+	
+	-- Try to use the global Minigames module if available
+	local MinigamesModule = game.ReplicatedStorage:FindFirstChild("Minigames")
+	if MinigamesModule then
+		local success, Minigames = pcall(function() return require(MinigamesModule) end)
+		if success and Minigames and Minigames.new then
+			-- Create minigames instance if needed
+			if not self._minigamesInstance then
+				local ok, mg = pcall(function() return Minigames.new(self.screenGui) end)
+				if ok and mg then
+					self._minigamesInstance = mg
+				end
+			end
+			
+			if self._minigamesInstance and self._minigamesInstance.play then
+				log("Using Minigames module for:", minigameType)
+				self._minigamesInstance:play(minigameType, function(won, stats)
+					log("Minigame result - Won:", won)
+					if won then
+						self:doActivity(item, true)  -- Bonus for winning minigame
+					else
+						self:showResult(false, "You didn't complete the challenge. No gains today!", "😅")
+					end
+				end, {
+					difficulty = item.id == "gym" and "medium" or "easy",
+					taps = item.id == "gym" and 25 or 15,
+				})
+				return
+			end
+		end
+	end
+	
+	-- Fallback to built-in tap minigame if Minigames module not available
+	log("Falling back to built-in tap minigame")
 	self.minigameType = "tap"
 	self.tapCount = 0
 	self.tapGoal = item.id == "gym" and 25 or 15
@@ -3190,7 +3239,7 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.escapeGrid.Visible = false
 	self.dirButtons.Visible = false
 
-	-- CRITICAL FIX: Proper minigame titles for each activity type
+	-- Proper minigame titles for each activity type
 	local title
 	if item.id == "gym" then
 		title = "💪 Tap to Workout!"
@@ -3198,6 +3247,10 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 		title = "📚 Tap to Study!"
 	elseif item.id == "drivers_license" then
 		title = "🚗 Tap to Pass Your Driving Test!"
+	elseif item.id == "meditate" then
+		title = "🧘 Tap at the Right Moment!"
+	elseif item.id == "martial_arts" then
+		title = "🥋 Tap to Practice!"
 	else
 		title = "👆 Tap to Complete!"
 	end
@@ -3208,10 +3261,12 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.progressFill.BackgroundColor3 = accentColor
 	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
 	self.tapCounter.Text = "0 / " .. self.tapGoal
-	-- CRITICAL FIX: Proper instructions for each activity type
+	
 	local instructions
 	if item.id == "drivers_license" then
 		instructions = "Tap to answer driving test questions!"
+	elseif item.id == "meditate" then
+		instructions = "Tap when the circle is centered!"
 	else
 		instructions = "Tap as fast as you can!"
 	end
@@ -3241,13 +3296,52 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ActivitiesScreen:showCrimeMinigame(item)
 	log("=== STARTING CRIME MINIGAME ===")
-	log("Crime:", item.id, "Name:", item.name)
+	log("Crime:", item.id, "MinigameType:", item.minigameType or "heist")
 
 	self.currentMinigameItem = item
 	self.minigameAccent = C.Red
-	self.minigameType = "crime_tap"  -- Special type for crime
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use proper minigame system based on crime type!
+	-- Different crimes use different minigames:
+	-- - Bank Robbery/Burglary -> Heist (crack the safe)
+	-- - GTA -> Getaway (escape the cops)
+	-- - Pickpocket -> QTE (quick reaction)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local minigameType = item.minigameType or "heist"  -- Default to heist
+	
+	-- Try to use the global Minigames module if available
+	local MinigamesModule = game.ReplicatedStorage:FindFirstChild("Minigames")
+	if MinigamesModule then
+		local success, Minigames = pcall(function() return require(MinigamesModule) end)
+		if success and Minigames and Minigames.new then
+			-- Create minigames instance if needed
+			if not self._minigamesInstance then
+				local ok, mg = pcall(function() return Minigames.new(self.screenGui) end)
+				if ok and mg then
+					self._minigamesInstance = mg
+				end
+			end
+			
+			if self._minigamesInstance and self._minigamesInstance.play then
+				log("Using Minigames module for crime:", minigameType)
+				self._minigamesInstance:play(minigameType, function(won, stats)
+					log("Crime minigame result - Won:", won)
+					self:doCrimeWithBonus(item, won)
+				end, {
+					difficulty = item.risk and item.risk >= 60 and "hard" or "medium",
+				})
+				return
+			end
+		end
+	end
+	
+	-- Fallback to built-in tap minigame if Minigames module not available
+	log("Falling back to built-in crime tap minigame")
+	self.minigameType = "crime_tap"
 	self.tapCount = 0
-	self.tapGoal = item.id == "bank_robbery" and 30 or 20  -- Bank robbery is harder
+	self.tapGoal = item.id == "bank_robbery" and 30 or 20
 	self.minigameActive = true
 
 	-- Show tap elements, hide escape elements
@@ -3260,6 +3354,12 @@ function ActivitiesScreen:showCrimeMinigame(item)
 	local title
 	if item.id == "bank_robbery" then
 		title = "🏦 TAP TO CRACK THE SAFE!"
+	elseif item.id == "burglary" then
+		title = "🏠 TAP TO BREAK IN!"
+	elseif item.id == "gta" then
+		title = "🚗 TAP TO HOTWIRE THE CAR!"
+	elseif item.id == "pickpocket" then
+		title = "👛 TAP AT THE RIGHT MOMENT!"
 	else
 		title = "🔓 TAP TO COMPLETE THE HEIST!"
 	end
@@ -3271,7 +3371,7 @@ function ActivitiesScreen:showCrimeMinigame(item)
 	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
 	self.tapCounter.Text = "0 / " .. self.tapGoal
 	
-	local instructions = item.id == "bank_robbery" and "Crack the vault before security arrives!" or "Tap fast to complete the heist!"
+	local instructions = item.id == "bank_robbery" and "Crack the vault before security arrives!" or "Tap fast to complete the crime!"
 	self.minigameInstructions.Text = instructions
 
 	self.minigameOverlay.Visible = true
@@ -3287,7 +3387,6 @@ function ActivitiesScreen:showCrimeMinigame(item)
 	task.delay(8, function()
 		if self.minigameActive and self.minigameOverlay.Visible and self.minigameType == "crime_tap" then
 			self.minigameActive = false
-			-- Crime timeout = caught!
 			self:completeCrimeMinigame(self.tapCount >= self.tapGoal)
 		end
 	end)

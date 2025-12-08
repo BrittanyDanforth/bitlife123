@@ -1086,11 +1086,44 @@ Relationships.events = {
 
 		choices = {
 			{ 
-				text = "Confront them and break up", 
+				text = "😤 EXPLOSIVE CONFRONTATION!", 
+				effects = {}, 
+				setFlags = { cheated_on = true },
+				feedText = "You confronted them explosively...",
+				-- CRITICAL FIX: Confrontation minigame for dramatic cheating reveal!
+				triggerMinigame = "confrontation",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					
+					if won then
+						-- You won the confrontation - they're remorseful
+						state:ModifyStat("Happiness", -12)
+						state.Flags.recently_single = true
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+						state.Flags.married = nil
+						state.Flags.engaged = nil
+						if state.Relationships then state.Relationships.partner = nil end
+						state:AddFeed("😤 You DESTROYED them with words. They cried. You left with your head held high.")
+					else
+						-- Lost confrontation - they turned it around on you
+						state:ModifyStat("Happiness", -25)
+						state.Flags.recently_single = true
+						state.Flags.has_partner = nil
+						state.Flags.dating = nil
+						state.Flags.married = nil
+						if state.Relationships then state.Relationships.partner = nil end
+						state:AddFeed("😤 They somehow made YOU feel bad. Gaslighting expert. You left feeling worse.")
+					end
+				end,
+			},
+			{ 
+				text = "Confront them calmly and break up", 
 				effects = { Happiness = -20 }, 
 				setFlags = { cheated_on = true, recently_single = true }, 
 				feedText = "Your trust is shattered. Relationship over.",
-				-- CRITICAL FIX: Properly clear all relationship flags
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.has_partner = nil
@@ -1105,13 +1138,11 @@ Relationships.events = {
 				end,
 			},
 			{ text = "Try to work through it", effects = { Happiness = -15, Smarts = 2 }, setFlags = { cheated_on = true, rebuilding_trust = true }, feedText = "Trying to salvage the relationship..." },
-			{ text = "Revenge affair", effects = { Happiness = -10 }, setFlags = { cheater = true, toxic_relationship = true }, feedText = "Two wrongs don't make a right, but..." },
 			{ 
 				text = "Walk away silently", 
 				effects = { Happiness = -12 }, 
 				setFlags = { cheated_on = true, recently_single = true }, 
 				feedText = "You left without a word. Dignity intact.",
-				-- CRITICAL FIX: Properly clear all relationship flags
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.has_partner = nil

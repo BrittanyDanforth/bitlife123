@@ -63,8 +63,31 @@ SchoolExpanded.events = {
 		category = "academics",
 		tags = { "spelling", "competition", "school" },
 		
-		-- CRITICAL: Random spelling bee outcome
+		-- CRITICAL: Spelling bee competition with minigame
 		choices = {
+			{
+				text = "⚡ COMPETE to WIN!",
+				effects = {},
+				feedText = "Stepping up to the microphone...",
+				-- CRITICAL FIX: QTE minigame for spelling bee!
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					
+					if won then
+						state:ModifyStat("Happiness", 18)
+						state:ModifyStat("Smarts", 6)
+						state.Flags.spelling_champion = true
+						state:AddFeed("🐝🏆 CHAMPION! You spelled every word perfectly! You're a LEGEND!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🐝 You made it far but stumbled on 'onomatopoeia'. Good try!")
+					end
+				end,
+			},
 			{
 				text = "Study hard and compete",
 				effects = {},

@@ -3329,7 +3329,40 @@ storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",  
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
-	if ok and mg then minigamesInstance = mg end
+	if ok and mg then 
+		minigamesInstance = mg
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Enable rare auto Purge event (0.5% chance every 90 seconds)
+		-- The Purge is an ultra-rare survival event that can happen at any time!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if mg.enableRareAutoPurge then
+			mg:enableRareAutoPurge({
+				chance = 0.005,      -- 0.5% chance
+				interval = 90,       -- Check every 90 seconds (1.5 min)
+				totalScenarios = 10, -- 10 survival scenarios
+				onComplete = function(won, stats)
+					print("[LifeClient] 😈 Purge event completed! Won:", won)
+					-- Purge outcomes affect player stats
+					if currentState then
+						local statDelta = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
+						for stat, delta in pairs(statDelta) do
+							if currentState[stat] then
+								currentState[stat] = math.clamp(currentState[stat] + delta, 0, 100)
+							end
+						end
+						-- Add feed message
+						local feedMsg = won 
+							and "😈 You survived The Purge! (+Health, +Happiness)"
+							or "💀 You died in The Purge... (Lost Health & Happiness)"
+						currentState.Feed = currentState.Feed or {}
+						table.insert(currentState.Feed, feedMsg)
+						refreshInfo()
+					end
+				end,
+			})
+		end
+	end
 end
 
 ----------------------------------------------------------------
