@@ -2242,39 +2242,213 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 end
 
 function ActivitiesScreen:createResultModal()
-	self.resultModal = UI.createModalCard(self.screenGui, {
-		name = "ActivitiesResult",
-		accentColor = C.Green,
-		accentDark = C.GreenDark,
-		accentPale = C.GreenPale,
-		zIndex = 98
-	})
-
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	self.resultModal = {}
+	
+	-- Close/dim overlay
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "ResultModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.35
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 98
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.resultModal.closeArea = closeArea
+	self.resultModal.overlay = closeArea  -- Alias for compatibility
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "ResultModalContainer"
+	container.Size = UDim2.new(0, 340, 0, 320)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 99
+	container.Parent = closeArea
+	self.resultModal.container = container
+	
+	-- Premium shadow
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 12, 1, 12)
+	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 99
+	shadow.Parent = container
+	UI.corner(shadow, 28)
+	
+	-- Colored shell (accent border)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 100
+	shell.Parent = container
+	UI.corner(shell, 26)
+	self.resultModal.shell = shell
+	
+	-- Shell stroke for extra polish
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = C.GreenDark
+	shellStroke.Thickness = 2
+	shellStroke.Transparency = 0.5
+	shellStroke.Parent = shell
+	self.resultModal.shellStroke = shellStroke
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Emoji frame (circular background)
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.BackgroundColor3 = C.GreenPale
+	emojiFrame.ZIndex = 102
+	emojiFrame.Parent = card
+	UI.corner(emojiFrame, 40)
+	self.resultModal.emojiFrame = emojiFrame
+	
+	-- Emoji label
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 44
+	emojiLabel.Text = "🎉"
+	emojiLabel.ZIndex = 103
+	emojiLabel.Parent = emojiFrame
+	self.resultModal.emojiLabel = emojiLabel
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 22
+	titleLabel.TextColor3 = C.GreenDark
+	titleLabel.Text = "Activity Complete!"
+	titleLabel.ZIndex = 102
+	titleLabel.Parent = card
+	self.resultModal.titleLabel = titleLabel
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 15
+	messageLabel.TextColor3 = C.Gray700
+	messageLabel.TextWrapped = true
+	messageLabel.Text = "You did it!"
+	messageLabel.ZIndex = 102
+	messageLabel.Parent = card
+	self.resultModal.messageLabel = messageLabel
+	
+	-- OK Button (premium styling)
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OkBtn"
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.BackgroundColor3 = C.Green
+	okBtn.Font = F.Button
+	okBtn.TextSize = 17
+	okBtn.TextColor3 = C.White
+	okBtn.Text = "👍 Awesome!"
+	okBtn.AutoButtonColor = false
+	okBtn.ZIndex = 103
+	okBtn.Parent = card
+	UI.corner(okBtn, 14)
+	self.resultModal.okButton = okBtn
+	
+	-- Button shadow
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Size = UDim2.new(1, 4, 1, 4)
+	btnShadow.Position = UDim2.new(0, 2, 0, 2)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = okBtn
+	UI.corner(btnShadow, 14)
+	
+	-- Button hover effects
+	okBtn.MouseEnter:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0.72, 0, 0, 56),
+			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+	end)
+	okBtn.MouseLeave:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 0, 0, 52),
+			BackgroundColor3 = shell.BackgroundColor3
+		})
+	end)
+	
 	-- CRITICAL FIX #3: When dismissing result modal, ALWAYS rebuild tabs and update UI
-	-- This fixes the bug where Activities screen doesn't update after getting arrested!
 	local function onResultDismiss()
 		local inJail = self:isInJail()
 		log("Result modal dismissed - checking state. InJail:", inJail)
-		
-		-- Always rebuild tabs to reflect current state
 		self:rebuildTabs()
 		self:updateInfoBar()
-		
-		-- Switch to appropriate tab based on jail status
 		if inJail and self.currentTab ~= "prison" then
 			self.currentTab = "prison"
 		elseif not inJail and self.currentTab == "prison" then
 			self.currentTab = "mindbody"
 		end
-		
 		self:switchTab(self.currentTab)
 	end
 	
-	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, onResultDismiss)
+	-- Custom show/hide methods
+	self.resultModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, 320, 0, 300)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, 340, 0, 320)
+		})
+	end
+	
+	self.resultModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
+	
+	closeArea.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onResultDismiss)
 	end)
-	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, onResultDismiss)
+	okBtn.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onResultDismiss)
 	end)
 end
 
@@ -3109,16 +3283,34 @@ function ActivitiesScreen:showResult(success, message, emoji)
 		displayEmoji = success and "✨" or "😔"
 	elseif displayEmoji == "X" or displayEmoji == "Error" or displayEmoji == "Failed" then
 		displayEmoji = "❌"
+	elseif displayEmoji == "Success!" then
+		displayEmoji = "💰"
+	elseif displayEmoji == "Caught!" then
+		displayEmoji = "🚔"
+	elseif displayEmoji == "Chaos!" then
+		displayEmoji = "🔥"
+	elseif displayEmoji == "Snitched!" then
+		displayEmoji = "🤫"
 	end
 	self.resultModal.emojiLabel.Text = displayEmoji
 	
-	-- CRITICAL UI FIX: More descriptive titles
-	self.resultModal.titleLabel.Text = success and "Activity Complete!" or "Uh oh..."
+	-- CRITICAL UI FIX: More descriptive titles based on context
+	local title = success and "Activity Complete!" or "Uh oh..."
+	if emoji == "Caught!" then title = "Busted!" end
+	if emoji == "Chaos!" then title = "Prison Riot!" end
+	
+	self.resultModal.titleLabel.Text = title
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
 	self.resultModal.messageLabel.Text = message or (success and "You did it!" or "Something went wrong...")
 	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Awesome!" or "😔 Okay..."
 
-	UI.showModal(self.resultModal)
+	-- Use custom show method if available, fallback to UI.showModal
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
 end
 
 function ActivitiesScreen:show()
