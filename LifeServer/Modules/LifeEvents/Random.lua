@@ -1868,7 +1868,9 @@ Random.events = {
 	-- ADDITIONAL RANDOM LIFE EVENTS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "pet_adoption",
+		-- CRITICAL FIX: Renamed from "pet_adoption" to avoid duplicate ID conflict
+		-- Adult.lua has another version
+		id = "pet_adoption_random",
 		title = "Furry Friend",
 		emoji = "🐕",
 		text = "You're thinking about getting a pet!",
@@ -1885,7 +1887,9 @@ Random.events = {
 		},
 	},
 	{
-		id = "pet_loss",
+		-- CRITICAL FIX: Renamed from "pet_loss" to avoid duplicate ID conflict
+		-- PetEvents.lua has a more detailed version
+		id = "pet_loss_simple",
 		title = "Goodbye, Friend",
 		emoji = "🌈",
 		text = "Your beloved pet has passed away.",

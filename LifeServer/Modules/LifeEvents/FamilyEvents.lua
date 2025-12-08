@@ -306,7 +306,8 @@ FamilyEvents.events = {
 	-- EXTENDED FAMILY
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "family_reunion",
+		-- CRITICAL FIX: Renamed from "family_reunion" to avoid duplicate ID conflict
+		id = "family_reunion_extended",
 		title = "Family Reunion",
 		emoji = "👨‍👩‍👧‍👦",
 		text = "Big family reunion happening!",

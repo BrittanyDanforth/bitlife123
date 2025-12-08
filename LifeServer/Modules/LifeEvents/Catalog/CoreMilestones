@@ -213,14 +213,16 @@ local events = {
 				index = 1,
 				text = "Cautious driver - safety first always",
 				effects = { Happiness = 4, Smarts = 5, Health = 4 },
-				setFlags = { driver_license = true, safe_driver = true, follows_speed_limits = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, safe_driver = true, follows_speed_limits = true },
 				feedText = "You drove 5mph under the speed limit. Stopped fully at every stop sign. Mrs. Chen said, 'You'll pass easily.' You got your license on the first try!",
 			},
 			{
 				index = 2,
 				text = "Confident driver - I got this!",
 				effects = { Happiness = 7, Smarts = 3, Health = 2 },
-				setFlags = { driver_license = true, confident_driver = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, confident_driver = true },
 				feedText = "You took to driving like a natural! Changed lanes smoothly. Parallel parked on the 2nd try. Mrs. Chen was impressed! License acquired!",
 			},
 			{
@@ -234,7 +236,8 @@ local events = {
 				index = 4,
 				text = "Reckless driver - speed demon mode",
 				effects = { Happiness = 9, Health = -4, Smarts = -2 },
-				setFlags = { driver_license = true, reckless_driver = true, speeding_tickets_incoming = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, reckless_driver = true, speeding_tickets_incoming = true },
 				feedText = "You went 50 in a 35 zone. Mrs. Chen SCREAMED. 'SLOW DOWN!' You laughed. You barely passed. Your parents are terrified. Yikes.",
 			},
 		},
@@ -578,27 +581,30 @@ local events = {
 			return (state.Money or 0) >= 2000 -- Need at least enough for cheapest option
 		end,
 		choices = {
-			{
-				index = 1,
-				text = "New car - finance it, live a little!",
-				effects = { Happiness = 10, Money = -25000, Health = 2 },
-				setFlags = { car_owner = true, in_debt = true, nice_car = true },
-				feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
-			},
-			{
-				index = 2,
-				text = "Used car - reliable and affordable",
-				effects = { Happiness = 7, Money = -8000 },
-				setFlags = { car_owner = true, practical = true },
-				feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
-			},
-			{
-				index = 3,
-				text = "Cheap beater - just needs to start",
-				effects = { Happiness = 4, Money = -3000 },
-				setFlags = { car_owner = true, frugal = true, might_break_down = true },
-				feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
-			},
+		{
+			index = 1,
+			text = "New car - finance it, live a little!",
+			effects = { Happiness = 10, Money = -25000, Health = 2 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, in_debt = true, nice_car = true },
+			feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
+		},
+		{
+			index = 2,
+			text = "Used car - reliable and affordable",
+			effects = { Happiness = 7, Money = -8000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, practical = true },
+			feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
+		},
+		{
+			index = 3,
+			text = "Cheap beater - just needs to start",
+			effects = { Happiness = 4, Money = -3000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, frugal = true, might_break_down = true },
+			feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
+		},
 			{
 				index = 4,
 				text = "No car - Uber/transit is fine",

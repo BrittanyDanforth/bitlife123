@@ -214,10 +214,19 @@ Adult.events = {
 
 		choices = {
 			{
-				text = "Buy a starter home",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Buy a starter home ($85,000 - $5,000 down)",
 				effects = { Happiness = 10, Money = -5000 },
 				setFlags = { homeowner = true, has_property = true },
 				feedText = "You bought your first home! A big milestone!",
+				-- CRITICAL FIX: Check if player can afford down payment
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 5000 then
+						return false, "Can't afford the $5,000 down payment"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					-- Use LifeState:AddAsset method directly (if available)
 					if state.AddAsset then
@@ -234,10 +243,19 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Stretch for your dream home",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Stretch for your dream home ($350,000 - $15,000 down)",
 				effects = { Happiness = 15, Money = -15000, Health = -3 },
 				setFlags = { homeowner = true, has_property = true, high_mortgage = true },
 				feedText = "You got your dream home! But the mortgage is steep.",
+				-- CRITICAL FIX: Check if player can afford down payment
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 15000 then
+						return false, "Can't afford the $15,000 down payment"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					if state.AddAsset then
 						state:AddAsset("Properties", {
@@ -253,15 +271,24 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Keep renting for now",
+				text = "Keep renting for now (Free)",
 				effects = { Money = 500 },
 				feedText = "You'll rent a bit longer. More flexibility.",
 			},
 			{
-				text = "Move to a cheaper area",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Move to a cheaper area ($65,000 - $3,000 down)",
 				effects = { Happiness = 5, Money = -3000 },
 				setFlags = { homeowner = true, has_property = true, relocated = true },
 				feedText = "You moved somewhere more affordable!",
+				-- CRITICAL FIX: Check if player can afford down payment
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 3000 then
+						return false, "Can't afford the $3,000 down payment"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					if state.AddAsset then
 						state:AddAsset("Properties", {
@@ -1588,7 +1615,18 @@ Adult.events = {
 		question = "How do you feel about it?",
 		minAge = 45, maxAge = 60,
 		oneTime = true,
+		-- CRITICAL FIX: Require ANY child-related flag
 		requiresFlags = { has_child = true },
+		blockedByFlags = { no_children = true, childfree = true },
+		
+		-- CRITICAL FIX: Add eligibility function to double-check
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.has_child or flags.has_children or flags.parent) then
+				return false, "Need children for this event"
+			end
+			return true
+		end,
 
 		choices = {
 			{ text = "Lonely - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nester = true, lonely = true }, feedText = "The house feels so empty now." },

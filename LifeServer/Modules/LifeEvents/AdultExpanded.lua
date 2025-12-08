@@ -1114,7 +1114,7 @@ AdultExpanded.events = {
 		id = "adult_having_children",
 		title = "Children Discussion",
 		emoji = "👶",
-		text = "The question of having children comes up.",
+		text = "The question of having children comes up with your partner.",
 		question = "What are your thoughts on kids?",
 		minAge = 25, maxAge = 45,
 		baseChance = 0.3,
@@ -1123,6 +1123,18 @@ AdultExpanded.events = {
 		ageBand = "adult",
 		category = "family",
 		tags = { "children", "family", "future" },
+		-- CRITICAL FIX: Must have a partner to discuss having children!
+		requiresFlags = { has_partner = true },
+		blockedByFlags = { single = true, recently_single = true, divorced = true },
+		
+		-- CRITICAL FIX: Double-check with eligibility
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.has_partner or flags.married or flags.engaged or flags.dating or flags.committed_relationship) then
+				return false, "Need a partner to discuss children"
+			end
+			return true
+		end,
 		
 		choices = {
 			{ text = "Definitely want kids", effects = { Happiness = 3 }, setFlags = { wants_kids = true }, feedText = "Can't wait to be a parent. It's the dream." },

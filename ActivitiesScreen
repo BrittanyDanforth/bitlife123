@@ -31,6 +31,8 @@ local MindBody = {
 	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0 },
 	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200 },
 	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
+	-- CRITICAL FIX: Added driver's license activity (like BitLife)
+	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true },
 }
 
 local Social = {
@@ -2536,7 +2538,17 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.escapeGrid.Visible = false
 	self.dirButtons.Visible = false
 
-	local title = item.id == "gym" and "💪 Tap to Workout!" or "📚 Tap to Study!"
+	-- CRITICAL FIX: Proper minigame titles for each activity type
+	local title
+	if item.id == "gym" then
+		title = "💪 Tap to Workout!"
+	elseif item.id == "study" then
+		title = "📚 Tap to Study!"
+	elseif item.id == "drivers_license" then
+		title = "🚗 Tap to Pass Your Driving Test!"
+	else
+		title = "👆 Tap to Complete!"
+	end
 
 	self.minigameTitle.Text = title
 	self.tapArea.Text = "TAP!"
@@ -2544,7 +2556,14 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.progressFill.BackgroundColor3 = accentColor
 	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
 	self.tapCounter.Text = "0 / " .. self.tapGoal
-	self.minigameInstructions.Text = "Tap as fast as you can!"
+	-- CRITICAL FIX: Proper instructions for each activity type
+	local instructions
+	if item.id == "drivers_license" then
+		instructions = "Tap to answer driving test questions!"
+	else
+		instructions = "Tap as fast as you can!"
+	end
+	self.minigameInstructions.Text = instructions
 
 	self.minigameOverlay.Visible = true
 	self.minigameCard.Position = UDim2.new(0.5, 0, 0.5, 50)

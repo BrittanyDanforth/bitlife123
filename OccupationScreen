@@ -3440,18 +3440,19 @@ function OccupationScreen:createQuitConfirmModal()
 	salaryLabel.Parent = self.quitConfirmModal.shell
 	self.quitConfirmModal.salaryLabel = salaryLabel
 	
-	-- CRITICAL FIX: Made shell much taller to fit all buttons properly (was 420, now 480)
-	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 480)
-	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -240)
+	-- CRITICAL FIX #2: Made shell even taller to ensure all buttons visible (was 480, now 520)
+	-- Also adjusted position to center properly on screen
+	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 520)
+	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -260)
 	
 	-- Remove default OK button, add choice buttons
 	self.quitConfirmModal.okButton.Visible = false
 	
-	-- CRITICAL FIX: Choice container much taller and repositioned (was 200, now 260)
+	-- CRITICAL FIX #2: Choice container even taller and better positioned (was 260, now 300)
 	local choiceContainer = Instance.new("Frame")
 	choiceContainer.Name = "ChoiceContainer"
-	choiceContainer.Size = UDim2.new(1, -32, 0, 260)
-	choiceContainer.Position = UDim2.new(0, 16, 0, 180)
+	choiceContainer.Size = UDim2.new(1, -32, 0, 300)
+	choiceContainer.Position = UDim2.new(0, 16, 0, 175)
 	choiceContainer.BackgroundTransparency = 1
 	choiceContainer.ZIndex = 105
 	choiceContainer.Parent = self.quitConfirmModal.shell
@@ -4118,6 +4119,14 @@ end
 function OccupationScreen:show()
 	log("=== SHOWING OccupationScreen ===")
 	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+	
+	-- CRITICAL FIX: Clear cached career info if player is unemployed (fired/quit)
+	-- This ensures the UI shows correct state after being fired
+	if not self:getCurrentJob() then
+		log("No current job - clearing cached career info to ensure fresh UI")
+		self.careerInfo = nil
+	end
+	
 	self:updateInfoBar()
 	self:switchTab(self.currentTab)
 	UI.slideInScreen(self.overlay, "right")

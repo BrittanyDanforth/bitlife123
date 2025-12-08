@@ -1409,9 +1409,17 @@ Teen.events = {
 		
 		choices = {
 			{
-				text = "Cheap beater - just needs to run",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Cheap beater - just needs to run ($1,500)",
 				effects = {},
 				feedText = "You found a cheap car...",
+				-- CRITICAL FIX: Add per-choice eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 1500 then
+						return false, "Can't afford $1,500 for a car"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local money = state.Money or 0
 					if money >= 1500 then
@@ -1451,9 +1459,17 @@ Teen.events = {
 				end,
 			},
 			{
-				text = "Something reliable but boring",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Something reliable but boring ($3,000)",
 				effects = {},
 				feedText = "Looking for reliability...",
+				-- CRITICAL FIX: Add per-choice eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford $3,000 for a car"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local money = state.Money or 0
 					if money >= 3000 then

@@ -2564,7 +2564,9 @@ Career.events = {
 	},
 },
 {
-	id = "medical_malpractice_fear",
+	-- CRITICAL FIX: Renamed from "medical_malpractice_fear" to avoid duplicate ID conflict
+	-- CareerEvents has another version
+	id = "medical_malpractice_concern",
 	title = "Malpractice Concern",
 	emoji = "⚖️",
 	text = "A patient's family is threatening to sue over a bad outcome that wasn't your fault.",

@@ -820,7 +820,9 @@ SchoolExpanded.events = {
 		},
 	},
 	{
-		id = "college_graduation",
+		-- CRITICAL FIX: Renamed from "college_graduation" to avoid duplicate ID conflict
+		-- Milestones.lua has a more complete version
+		id = "college_graduation_simple",
 		title = "College Graduation",
 		emoji = "🎓",
 		text = "You made it! Graduation day!",

@@ -584,7 +584,9 @@ local events = {
 	},
 	
 	{
-		id = "home_renovation",
+		-- CRITICAL FIX: Renamed from "home_renovation" to avoid duplicate ID conflict
+		-- Adult.lua has another version
+		id = "home_renovation_asset",
 		emoji = "🏠",
 		title = "Home Improvement",
 		text = "Your place could use some upgrades. Time to renovate?",
@@ -611,10 +613,17 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Kitchen remodel - modern and sleek",
+				text = "Kitchen remodel - modern and sleek ($15,000)",
 				effects = { Happiness = 10, Money = -15000 },
 				setFlags = { renovated_home = true },
 				feedText = "You upgraded your kitchen! Property value increased.",
+				-- CRITICAL FIX: Per-choice affordability check
+				eligibility = function(state)
+					if (state.Money or 0) < 15000 then
+						return false, "Can't afford a $15,000 kitchen remodel"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					-- Increase property value
 					if state.Assets and state.Assets.Properties then
@@ -626,16 +635,30 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Add a pool/hot tub",
+				text = "Add a pool/hot tub ($25,000)",
 				effects = { Happiness = 15, Money = -25000 },
 				setFlags = { has_pool = true },
 				feedText = "Pool installed! Summer's going to be great.",
+				-- CRITICAL FIX: Per-choice affordability check
+				eligibility = function(state)
+					if (state.Money or 0) < 25000 then
+						return false, "Can't afford a $25,000 pool installation"
+					end
+					return true
+				end,
 			},
 			{
 				index = 3,
-				text = "New furniture and decor",
+				text = "New furniture and decor ($5,000)",
 				effects = { Happiness = 8, Money = -5000 },
 				feedText = "Your place looks amazing now!",
+				-- CRITICAL FIX: Per-choice affordability check
+				eligibility = function(state)
+					if (state.Money or 0) < 5000 then
+						return false, "Can't afford $5,000 for furniture"
+					end
+					return true
+				end,
 			},
 			{
 				index = 4,
@@ -1039,18 +1062,32 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 2,
-				text = "Fix it yourself",
-				effects = { Health = -5, Happiness = -5, Money = -3000 },
-				feedText = "You spent weekends repairing flood damage. Exhausting but saved money.",
-			},
-			{
-				index = 3,
-				text = "Hire professional restoration",
-				effects = { Money = -8000 },
-				feedText = "Professionals fixed everything. Expensive but quick.",
-			},
+		{
+			index = 2,
+			-- CRITICAL FIX: Show price and add eligibility check
+			text = "Fix it yourself ($3,000 in materials)",
+			effects = { Health = -5, Happiness = -5, Money = -3000 },
+			feedText = "You spent weekends repairing flood damage. Exhausting but saved money.",
+			eligibility = function(state)
+				if (state.Money or 0) < 3000 then
+					return false, "Can't afford $3,000 for repair materials"
+				end
+				return true
+			end,
+		},
+		{
+			index = 3,
+			-- CRITICAL FIX: Show price and add eligibility check
+			text = "Hire professional restoration ($8,000)",
+			effects = { Money = -8000 },
+			feedText = "Professionals fixed everything. Expensive but quick.",
+			eligibility = function(state)
+				if (state.Money or 0) < 8000 then
+					return false, "Can't afford $8,000 for professional restoration"
+				end
+				return true
+			end,
+		},
 		},
 	},
 	{

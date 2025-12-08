@@ -1517,7 +1517,9 @@ Childhood.events = {
 		},
 	},
 	{
-		id = "first_day_kindergarten",
+		-- CRITICAL FIX: Renamed from "first_day_kindergarten" to avoid duplicate ID conflict
+		-- CoreMilestones has a more elaborate version of this event
+		id = "kindergarten_simple",
 		title = "First Day of Kindergarten",
 		emoji = "🎒",
 		text = "It's your very first day of kindergarten! Everything is new and exciting.",

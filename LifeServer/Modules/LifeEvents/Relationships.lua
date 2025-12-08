@@ -739,7 +739,8 @@ Relationships.events = {
 		},
 	},
 	{
-		id = "family_reunion",
+		-- CRITICAL FIX: Renamed from "family_reunion" to avoid duplicate ID conflict
+		id = "family_gathering_simple",
 		title = "Family Gathering",
 		emoji = "🎊",
 		text = "There's a big family reunion happening.",

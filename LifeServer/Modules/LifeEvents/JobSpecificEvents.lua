@@ -593,7 +593,9 @@ JobSpecificEvents.events = {
 		},
 	},
 	{
-		id = "tech_side_project_success",
+		-- CRITICAL FIX: Renamed from "tech_side_project_success" to avoid duplicate ID conflict
+		-- Career.lua has a more detailed version
+		id = "tech_side_project_takeoff",
 		title = "Side Project",
 		emoji = "💻",
 		text = "Your side project is getting attention!",
@@ -758,7 +760,9 @@ JobSpecificEvents.events = {
 	-- MEDICAL JOBS (Healthcare Professionals)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "medical_code_blue",
+		-- CRITICAL FIX: Renamed from "medical_code_blue" to avoid duplicate ID conflict
+		-- Career.lua has another version
+		id = "medical_code_blue_emergency",
 		title = "Code Blue!",
 		emoji = "🚨",
 		text = "Emergency! A patient is crashing!",
@@ -1131,7 +1135,9 @@ JobSpecificEvents.events = {
 	-- CREATIVE JOBS (Art, Media, Entertainment)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "creative_big_break",
+		-- CRITICAL FIX: Renamed from "creative_big_break" to avoid duplicate ID conflict
+		-- Career.lua has another version
+		id = "creative_big_break_opportunity",
 		title = "Big Break Opportunity",
 		emoji = "⭐",
 		text = "An opportunity could be your big break!",
@@ -1185,7 +1191,9 @@ JobSpecificEvents.events = {
 		},
 	},
 	{
-		id = "creative_creative_block",
+		-- CRITICAL FIX: Renamed from "creative_creative_block" to avoid duplicate ID conflict
+		-- Career.lua has another version
+		id = "creative_block_frustration",
 		title = "Creative Block",
 		emoji = "🧱",
 		text = "You're completely blocked. No ideas. Nothing.",
@@ -1514,7 +1522,9 @@ JobSpecificEvents.events = {
 	-- MILITARY/GOVERNMENT JOBS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "military_deployment",
+		-- CRITICAL FIX: Renamed from "military_deployment" to avoid duplicate ID conflict
+		-- CareerEvents has another version
+		id = "military_deployment_orders",
 		title = "Deployment Orders",
 		emoji = "🎖️",
 		text = "You've received deployment orders.",

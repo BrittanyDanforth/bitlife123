@@ -848,10 +848,22 @@ RelationshipsExpanded.events = {
 		question = "How do you handle the empty nest?",
 		minAge = 45, maxAge = 70,
 		oneTime = true,
+		-- CRITICAL FIX: Must have children for empty nest event!
+		requiresFlags = { has_children = true },
+		blockedByFlags = { no_children = true, childfree = true },
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
 		tags = { "children", "empty_nest", "transition" },
+		
+		-- CRITICAL FIX: Also check eligibility function for child count
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.has_children or flags.has_child or flags.parent) then
+				return false, "Need children for this event"
+			end
+			return true
+		end,
 		
 		choices = {
 			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Walk around naked! Travel!" },
