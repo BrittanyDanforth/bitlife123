@@ -1539,9 +1539,23 @@ local function buildEventModal()
 	EventUI.overlay.ZIndex = 60
 	EventUI.overlay.Parent = screenGui
 
-	-- TINY PHONE FIX: More compact modal width and constrain max height
+	-- MOBILE FIX: Responsive modal sizing for ALL mobile devices
 	local eventWidth = modalWidth(360)
-	local maxEventHeight = Device.IS_TINY_PHONE and (Device.ViewportSize.Y - 100) or (Device.ViewportSize.Y - 120)
+	local maxEventHeight
+	if Device.IS_TINY_PHONE then
+		maxEventHeight = Device.ViewportSize.Y - 80
+	elseif Device.IS_SMALL_PHONE then
+		maxEventHeight = Device.ViewportSize.Y - 100
+	elseif Device.IS_MOBILE then
+		maxEventHeight = Device.ViewportSize.Y - 120
+	else
+		maxEventHeight = Device.ViewportSize.Y - 140
+	end
+	
+	-- Calculate responsive corner radii and margins
+	local eventCornerRadius = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 18 or px(24))
+	local shellMargin = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 4)
+	local cardMargin = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or 8)
 	
 	EventUI.shadowFrame = Instance.new("Frame")
 	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
@@ -1552,15 +1566,14 @@ local function buildEventModal()
 	EventUI.shadowFrame.BackgroundTransparency = 0.88
 	EventUI.shadowFrame.ZIndex = 61
 	EventUI.shadowFrame.Parent = EventUI.overlay
-	corner(EventUI.shadowFrame, Device.IS_TINY_PHONE and 14 or px(24))
+	corner(EventUI.shadowFrame, eventCornerRadius)
 	
 	-- Add size constraint to prevent modal from being too tall
 	local eventSizeConstraint = Instance.new("UISizeConstraint")
 	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
 	eventSizeConstraint.Parent = EventUI.shadowFrame
 
-	-- BitLife-style colored shell (outer border) - thinner on tiny phones
-	local shellMargin = Device.IS_TINY_PHONE and 2 or 4
+	-- BitLife-style colored shell (outer border) - responsive sizing
 	EventUI.shell = Instance.new("Frame")
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
@@ -1568,14 +1581,13 @@ local function buildEventModal()
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
 	EventUI.shell.Parent = EventUI.shadowFrame
-	corner(EventUI.shell, Device.IS_TINY_PHONE and 12 or px(22))
+	corner(EventUI.shell, Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 16 or px(22)))
 	stroke(EventUI.shell, Device.IS_TINY_PHONE and 1 or 2, 0.3, C.RedDark)
 	if not Device.IS_TINY_PHONE then
-		createShadow(EventUI.shell, 6, px(20), C.Black, 0.85)
+		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
 	end
 
-	-- inner white card - clean BitLife style, thinner borders on tiny
-	local cardMargin = Device.IS_TINY_PHONE and 4 or 8
+	-- inner white card - clean BitLife style, responsive sizing
 	EventUI.card = Instance.new("Frame")
 	EventUI.card.Name = "EventCard"
 	EventUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
@@ -1583,7 +1595,7 @@ local function buildEventModal()
 	EventUI.card.BackgroundColor3 = C.White
 	EventUI.card.ZIndex = 63
 	EventUI.card.Parent = EventUI.shell
-	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or px(20))
+	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
 
 	local eventLayout = Instance.new("UIListLayout")
 	eventLayout.Padding = UDim.new(0, 0)
@@ -1665,10 +1677,10 @@ local function buildEventModal()
 	titleSection.ZIndex = 64
 	titleSection.Parent = EventUI.card
 
-	-- TINY PHONE FIX: Tighter padding
-	local titlePadTop = Device.IS_TINY_PHONE and 8 or padSize(16)
-	local titlePadBottom = Device.IS_TINY_PHONE and 4 or padSize(8)
-	local titlePadSide = Device.IS_TINY_PHONE and 8 or padSize(16)
+	-- MOBILE FIX: Responsive tighter padding
+	local titlePadTop = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or padSize(16))
+	local titlePadBottom = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(8))
+	local titlePadSide = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or padSize(16))
 	local titlePadding = Instance.new("UIPadding")
 	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
 	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
@@ -1682,25 +1694,27 @@ local function buildEventModal()
 	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or padSize(10))
 	titleLayout.Parent = titleSection
 
-	-- TINY PHONE FIX: Much smaller emoji
-	local eventEmojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 44 or px(64))
+	-- MOBILE FIX: Responsive emoji sizing
+	local eventEmojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
+	local eventEmojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
 	EventUI.emoji = Instance.new("TextLabel")
 	EventUI.emoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
 	EventUI.emoji.BackgroundTransparency = 1
 	EventUI.emoji.Font = F.Body
-	EventUI.emoji.TextSize = Device.IS_TINY_PHONE and 28 or textSize(52)
+	EventUI.emoji.TextSize = eventEmojiTextSize
 	EventUI.emoji.Text = "🙂"
 	EventUI.emoji.LayoutOrder = 1
 	EventUI.emoji.ZIndex = 65
 	EventUI.emoji.Parent = titleSection
 
-	-- TINY PHONE FIX: Smaller title text
+	-- MOBILE FIX: Responsive title text
+	local eventTitleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.title.BackgroundTransparency = 1
 	EventUI.title.Font = F.Title
-	EventUI.title.TextSize = Device.IS_TINY_PHONE and 16 or textSize(26)
+	EventUI.title.TextSize = eventTitleTextSize
 	EventUI.title.TextColor3 = C.Gray900
 	EventUI.title.Text = "Life Event"
 	EventUI.title.TextWrapped = true
@@ -1709,7 +1723,7 @@ local function buildEventModal()
 	EventUI.title.ZIndex = 65
 	EventUI.title.Parent = titleSection
 
-	-- body + "What will you do?" question - TINY PHONE FIX
+	-- body + "What will you do?" question - MOBILE FIX: Responsive sizing
 	local bodySection = Instance.new("Frame")
 	bodySection.Size = UDim2.new(1, 0, 0, 0)
 	bodySection.AutomaticSize = Enum.AutomaticSize.Y
@@ -1717,46 +1731,48 @@ local function buildEventModal()
 	bodySection.LayoutOrder = 3
 	bodySection.ZIndex = 64
 	bodySection.Parent = EventUI.card
-	local bodyPadSide = Device.IS_TINY_PHONE and 10 or padSize(28)
-	local bodyPadBottom = Device.IS_TINY_PHONE and 6 or padSize(12)
+	local bodyPadSide = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or padSize(28))
+	local bodyPadBottom = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(12))
 	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
 	local bodyLayout = Instance.new("UIListLayout")
 	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or padSize(10))
+	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
-	-- TINY PHONE FIX: Smaller body text with tighter line height
+	-- MOBILE FIX: Responsive body text with tighter line height
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.body.BackgroundTransparency = 1
 	EventUI.body.Font = F.Body
-	EventUI.body.TextSize = Device.IS_TINY_PHONE and 12 or textSize(20)
+	EventUI.body.TextSize = eventBodyTextSize
 	EventUI.body.TextColor3 = C.Gray600
 	EventUI.body.TextWrapped = true
 	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
-	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or 1.5
+	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or (Device.IS_SMALL_PHONE and 1.3 or 1.5)
 	EventUI.body.RichText = true
 	EventUI.body.Text = ""
 	EventUI.body.LayoutOrder = 1
 	EventUI.body.ZIndex = 65
 	EventUI.body.Parent = bodySection
 
-	-- TINY PHONE FIX: Smaller question text
+	-- MOBILE FIX: Responsive question text
+	local eventQuestionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.question.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.question.BackgroundTransparency = 1
 	EventUI.question.Font = F.Title
-	EventUI.question.TextSize = Device.IS_TINY_PHONE and 11 or textSize(18)
+	EventUI.question.TextSize = eventQuestionTextSize
 	EventUI.question.TextColor3 = C.Gray800
 	EventUI.question.Text = "What will you do?"
 	EventUI.question.TextXAlignment = Enum.TextXAlignment.Center
 	EventUI.question.TextWrapped = true
-	EventUI.question.LineHeight = Device.IS_TINY_PHONE and 1.1 or 1.25
+	EventUI.question.LineHeight = Device.IS_TINY_PHONE and 1.1 or (Device.IS_SMALL_PHONE and 1.15 or 1.25)
 	EventUI.question.LayoutOrder = 2
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
@@ -2651,12 +2667,19 @@ showEvent = function(payload)
 
 		local choiceHandlers = {}
 
+		-- MOBILE FIX: Responsive choice button sizing
+		local choiceBtnHeight = Device.IS_TINY_PHONE and 40 or (Device.IS_SMALL_PHONE and 46 or 58)
+		local choiceBtnTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or 16)
+		local choiceBtnCorner = Device.IS_TINY_PHONE and 10 or 14
+		local choiceBtnPadH = Device.IS_TINY_PHONE and 8 or 12
+		local choiceBtnPadV = Device.IS_TINY_PHONE and 4 or 6
+		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
+			btn.Size = UDim2.new(1, 0, 0, choiceBtnHeight)
 			btn.BackgroundColor3 = C.Blue
 			btn.Font = F.Button
-			btn.TextSize = 16  -- Slightly smaller for longer text
+			btn.TextSize = choiceBtnTextSize
 			btn.TextColor3 = C.White
 			btn.Text = choice.text
 			btn.AutoButtonColor = false
@@ -2669,10 +2692,10 @@ showEvent = function(payload)
 			btn.TextYAlignment = Enum.TextYAlignment.Center
 			btn.Parent = choicesSection
 
-			corner(btn, 14)
-			stroke(btn, 2, 0.5, C.BlueLight)
+			corner(btn, choiceBtnCorner)
+			stroke(btn, Device.IS_TINY_PHONE and 1 or 2, 0.5, C.BlueLight)
 			-- Add padding so text doesn't touch edges
-			pad(btn, 12, 12, 6, 6)
+			pad(btn, choiceBtnPadH, choiceBtnPadH, choiceBtnPadV, choiceBtnPadV)
 
 			if choice.minigame then
 				btn.Text = "🎮 " .. choice.text
