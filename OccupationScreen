@@ -1242,7 +1242,7 @@ function OccupationScreen:createUI()
 	self.eduTab.Font = F.Button
 	self.eduTab.TextSize = TAB_TEXT_SIZE
 	self.eduTab.TextColor3 = C.Gray600
-	self.eduTab.Text = IS_TINY_PHONE and "🎓 Edu" or "Education"
+	self.eduTab.Text = "Education"
 	self.eduTab.AutoButtonColor = false
 	self.eduTab.LayoutOrder = 2
 	self.eduTab.ZIndex = 85
@@ -3886,17 +3886,17 @@ function OccupationScreen:createEducationInfoModal()
 	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL: Responsive sizing constants
-	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 12) or (IS_SMALL_PHONE and (ViewportSize.X - 20) or math.min(ViewportSize.X * 0.92, 400))
-	local MODAL_HEIGHT = IS_TINY_PHONE and math.min(ViewportSize.Y - 60, 340) or (IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 400) or math.min(ViewportSize.Y - 100, 460))
-	local HEADER_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 64)
-	local CARD_MARGIN = IS_TINY_PHONE and 3 or (IS_SMALL_PHONE and 4 or 8)
-	local CORNER_RAD = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 24)
-	local PADDING = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
-	local TITLE_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 14 or 18)
-	local LABEL_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
-	local SECTION_TITLE_SIZE = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 13 or 15)
-	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 28 or 30)
+	-- CRITICAL: Proper modal sizing - NOT too skinny!
+	local MODAL_WIDTH = math.min(400, ViewportSize.X - 24) -- 24px total margin
+	local MODAL_HEIGHT = math.min(460, ViewportSize.Y - 80)
+	local HEADER_HEIGHT = IS_SMALL_PHONE and 50 or 64
+	local CARD_MARGIN = IS_SMALL_PHONE and 5 or 8
+	local CORNER_RAD = IS_SMALL_PHONE and 18 or 24
+	local PADDING = IS_SMALL_PHONE and 10 or 12
+	local TITLE_SIZE = IS_SMALL_PHONE and 15 or 18
+	local LABEL_SIZE = IS_SMALL_PHONE and 11 or 12
+	local SECTION_TITLE_SIZE = IS_SMALL_PHONE and 13 or 15
+	local CLOSE_BTN_SIZE = IS_SMALL_PHONE and 30 or 32
 
 	self.educationInfoOverlay = Instance.new("Frame")
 	self.educationInfoOverlay.Name = "EducationInfoOverlay"
@@ -4199,9 +4199,9 @@ function OccupationScreen:createResultModal()
 	
 	self.resultModal = {}
 	
-	-- CRITICAL: Responsive sizing constants
-	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 24) or (IS_SMALL_PHONE and 300 or 340)
-	local MODAL_HEIGHT = IS_TINY_PHONE and 220 or (IS_SMALL_PHONE and 260 or 320)
+	-- CRITICAL: Proper modal sizing - NOT too skinny!
+	local MODAL_WIDTH = math.min(340, ViewportSize.X - 32) -- 32px total margin
+	local MODAL_HEIGHT = math.min(320, ViewportSize.Y - 100)
 	local CARD_MARGIN = IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 10)
 	local CORNER_RAD = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 22 or 26)
 	local EMOJI_SIZE = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 80)
@@ -4495,9 +4495,9 @@ function OccupationScreen:createQuitConfirmModal()
 	-- CRITICAL UI FIX: Mobile-optimized Quit Modal
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL UI FIX: Scale modal for mobile
-	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 16) or (IS_SMALL_PHONE and (ViewportSize.X - 24) or 360)
-	local MODAL_HEIGHT = IS_TINY_PHONE and 420 or (IS_SMALL_PHONE and 480 or 540)
+	-- CRITICAL UI FIX: Proper modal sizing - NOT too skinny!
+	local MODAL_WIDTH = math.min(360, ViewportSize.X - 24) -- Always 24px margin on each side
+	local MODAL_HEIGHT = math.min(540, ViewportSize.Y - 60)
 	local MODAL_PAD = IS_TINY_PHONE and 10 or 16
 	local EMOJI_SIZE = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 40 or 48)
 	local TITLE_SIZE = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 20 or 24)
@@ -5227,17 +5227,17 @@ function OccupationScreen:createCareerInfoModal()
 	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL: Responsive sizing constants
-	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 12) or (IS_SMALL_PHONE and (ViewportSize.X - 20) or math.min(ViewportSize.X * 0.92, 400))
-	local MODAL_HEIGHT = IS_TINY_PHONE and math.min(ViewportSize.Y - 60, 360) or (IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 420) or math.min(ViewportSize.Y - 100, 520))
-	local HEADER_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 60)
-	local CARD_MARGIN = IS_TINY_PHONE and 3 or (IS_SMALL_PHONE and 4 or 8)
-	local CORNER_RAD = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 24)
-	local PADDING = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
-	local TITLE_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 14 or 17)
-	local LABEL_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 12)
-	local SECTION_HEADER_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 14)
-	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 32 or 30)
+	-- CRITICAL: Proper modal sizing - NOT too skinny!
+	local MODAL_WIDTH = math.min(400, ViewportSize.X - 24) -- 24px total margin
+	local MODAL_HEIGHT = math.min(520, ViewportSize.Y - 80)
+	local HEADER_HEIGHT = IS_SMALL_PHONE and 48 or 60
+	local CARD_MARGIN = IS_SMALL_PHONE and 5 or 8
+	local CORNER_RAD = IS_SMALL_PHONE and 18 or 24
+	local PADDING = IS_SMALL_PHONE and 10 or 12
+	local TITLE_SIZE = IS_SMALL_PHONE and 15 or 17
+	local LABEL_SIZE = IS_SMALL_PHONE and 11 or 12
+	local SECTION_HEADER_SIZE = IS_SMALL_PHONE and 12 or 14
+	local CLOSE_BTN_SIZE = IS_SMALL_PHONE and 30 or 32
 
 	self.careerInfoOverlay = Instance.new("Frame")
 	self.careerInfoOverlay.Name = "CareerInfoOverlay"
