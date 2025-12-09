@@ -1740,7 +1740,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	roleLabel.Size = UDim2.fromScale(1, 1)
 	roleLabel.BackgroundTransparency = 1
 	roleLabel.Font = F.Button
-	roleLabel.TextSize = 11
+	roleLabel.TextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
 	roleLabel.TextColor3 = isAlive and accentColor or C.Gray500
 	-- Show divorced/separated/deceased status
 	local roleText = person.role or ""
@@ -1760,22 +1760,31 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	local relPct   = math.clamp((person.relationship or 50) / 100, 0, 1)
 	local relColor = (relPct >= 0.7 and C.Green) or (relPct >= 0.4 and C.Amber) or C.Red
 
-	-- Relationship label
+	-- CRITICAL UI FIX: Scaled relationship bar positions
+	local relLabelY = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 68)
+	local relBarY = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 68 or 84)
+	local relBarHeight = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 12)
+	local relBadgeWidth = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 36 or 40)
+	local relBadgeHeight = IS_TINY_PHONE and 16 or (IS_SMALL_PHONE and 18 or 20)
+	local relTextSize = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
+
+	-- Relationship label - SCALED
 	local relTitleLabel = Instance.new("TextLabel")
-	relTitleLabel.Size = UDim2.new(0.15, 0, 0, 14)
-	relTitleLabel.Position = UDim2.new(0, 90, 0, 68)
+	relTitleLabel.Size = UDim2.new(0.2, 0, 0, IS_TINY_PHONE and 12 or 14)
+	relTitleLabel.Position = UDim2.new(0, TEXT_START, 0, relLabelY)
 	relTitleLabel.BackgroundTransparency = 1
 	relTitleLabel.Font = F.Body
-	relTitleLabel.TextSize = 10
+	relTitleLabel.TextSize = relTextSize
 	relTitleLabel.TextColor3 = C.Gray400
 	relTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	relTitleLabel.Text = "Relationship"
+	relTitleLabel.Text = IS_TINY_PHONE and "Rel." or "Relationship"
 	relTitleLabel.ZIndex = 85
 	relTitleLabel.Parent = card
 
+	-- Relationship bar - SCALED
 	local relBarBg = Instance.new("Frame")
-	relBarBg.Size = UDim2.new(0.30, 0, 0, 12)
-	relBarBg.Position = UDim2.new(0, 90, 0, 84)
+	relBarBg.Size = UDim2.new(IS_TINY_PHONE and 0.25 or 0.30, 0, 0, relBarHeight)
+	relBarBg.Position = UDim2.new(0, TEXT_START, 0, relBarY)
 	relBarBg.BackgroundColor3 = C.Gray200
 	relBarBg.ZIndex = 85
 	relBarBg.Parent = card
@@ -1788,10 +1797,11 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	relBarFill.Parent = relBarBg
 	UI.pill(relBarFill)
 
-	-- Percentage badge (next to bar)
+	-- Percentage badge (next to bar) - SCALED
+	local relBadgeX = TEXT_START + (IS_TINY_PHONE and 75 or (IS_SMALL_PHONE and 95 or 115))
 	local relBadge = Instance.new("Frame")
-	relBadge.Size = UDim2.new(0, 40, 0, 20)
-	relBadge.Position = UDim2.new(0, 200, 0, 80)
+	relBadge.Size = UDim2.new(0, relBadgeWidth, 0, relBadgeHeight)
+	relBadge.Position = UDim2.new(0, relBadgeX, 0, relBarY - (IS_TINY_PHONE and 1 or 2))
 	relBadge.BackgroundColor3 = relColor:Lerp(C.White, 0.7)
 	relBadge.ZIndex = 85
 	relBadge.Parent = card
@@ -1801,41 +1811,47 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	relLabel.Size = UDim2.fromScale(1, 1)
 	relLabel.BackgroundTransparency = 1
 	relLabel.Font = F.Button
-	relLabel.TextSize = 11
+	relLabel.TextSize = IS_TINY_PHONE and 9 or 11
 	relLabel.TextColor3 = relColor:Lerp(C.Black, 0.3)
 	relLabel.Text = string.format("%d%%", math.floor(person.relationship or 50))
 	relLabel.ZIndex = 86
 	relLabel.Parent = relBadge
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- INTERACT BUTTON (premium styling with shadow)
+	-- INTERACT BUTTON (premium styling with shadow) - SCALED
 	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- CRITICAL UI FIX: Scaled button sizes
+	local INTERACT_BTN_WIDTH = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 65 or 85)
+	local INTERACT_BTN_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 52)
+	local INTERACT_BTN_MARGIN = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local INTERACT_BTN_FONT = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 12 or 14)
 
 	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
 	local btnShadow
 	if isAlive then
 		btnShadow = Instance.new("Frame")
 		btnShadow.Name = "InteractBtnShadow"
-		btnShadow.Size = UDim2.new(0, 89, 0, 56)
+		btnShadow.Size = UDim2.new(0, INTERACT_BTN_WIDTH + 4, 0, INTERACT_BTN_HEIGHT + 4)
 		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
-		btnShadow.Position = UDim2.new(1, -8, 0.5, 2)
+		btnShadow.Position = UDim2.new(1, -INTERACT_BTN_MARGIN + 2, 0.5, 2)
 		btnShadow.BackgroundColor3 = accentDark
 		btnShadow.BackgroundTransparency = 0.6
 		btnShadow.ZIndex = 94
 		btnShadow.Parent = card
-		UI.corner(btnShadow, 14)
+		UI.corner(btnShadow, IS_TINY_PHONE and 8 or 14)
 	end
 
 	local interactBtn = Instance.new("TextButton")
 	interactBtn.Name = "InteractBtn"
-	interactBtn.Size = UDim2.new(0, 85, 0, 52)
+	interactBtn.Size = UDim2.new(0, INTERACT_BTN_WIDTH, 0, INTERACT_BTN_HEIGHT)
 	interactBtn.AnchorPoint = Vector2.new(1, 0.5)
-	interactBtn.Position = UDim2.new(1, -10, 0.5, 0)
+	interactBtn.Position = UDim2.new(1, -INTERACT_BTN_MARGIN, 0.5, 0)
 	interactBtn.BackgroundColor3 = isAlive and accentColor or C.Gray300
 	interactBtn.Font = F.Button
-	interactBtn.TextSize = 14
+	interactBtn.TextSize = INTERACT_BTN_FONT
 	interactBtn.TextColor3 = isAlive and C.White or C.Gray500
-	interactBtn.Text = isAlive and "💬 Chat" or "✝️ Gone"
+	interactBtn.Text = isAlive and (IS_TINY_PHONE and "💬" or "💬 Chat") or "✝️"
 	interactBtn.AutoButtonColor = false
 	interactBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	interactBtn.Parent = card

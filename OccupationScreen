@@ -2045,6 +2045,10 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	actionLayout1.Padding = UDim.new(0, IS_TINY_PHONE and 3 or (IS_SMALL_PHONE and 4 or 8))
 	actionLayout1.Parent = actionRow1
 
+	-- CRITICAL FIX: Always show text on buttons, just shorter on small phones
+	local workBtnText = IS_TINY_PHONE and "💼 Work" or "💼 Work"
+	local infoBtnText = IS_TINY_PHONE and "📋 Info" or "📋 Career Info"
+	
 	-- Do Work button (CRITICAL FIX: added shadow + loading state) - MOBILE FIX
 	local workBtn = Instance.new("TextButton")
 	workBtn.Size = UDim2.new(0.48, 0, 0, actionBtnHeight)
@@ -2052,7 +2056,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	workBtn.Font = F.Button
 	workBtn.TextSize = actionBtnTextSize
 	workBtn.TextColor3 = C.White
-	workBtn.Text = IS_SMALL_PHONE and "💼" or "💼 Work"
+	workBtn.Text = workBtnText
 	workBtn.AutoButtonColor = false
 	workBtn.LayoutOrder = 1
 	workBtn.ZIndex = 85
@@ -2085,7 +2089,6 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 			BackgroundColor3 = C.Green 
 		})
 	end)
-	local workBtnText = IS_SMALL_PHONE and "💼" or "💼 Work"
 	workBtn.MouseButton1Click:Connect(function()
 		if workBtnLoading then return end
 		workBtnLoading = true
@@ -2110,7 +2113,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	infoBtn.Font = F.Button
 	infoBtn.TextSize = actionBtnTextSize
 	infoBtn.TextColor3 = C.White
-	infoBtn.Text = IS_SMALL_PHONE and "📋" or "📋 Career Info"
+	infoBtn.Text = infoBtnText
 	infoBtn.AutoButtonColor = false
 	infoBtn.LayoutOrder = 2
 	infoBtn.ZIndex = 85
@@ -2226,6 +2229,10 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 		end)
 	end
 
+	-- CRITICAL FIX: Always show text on buttons
+	local raiseBtnText = IS_TINY_PHONE and "💰 Raise" or "💰 Raise"
+	local quitBtnText = IS_TINY_PHONE and "🚪 Quit" or "🚪 Quit"
+	
 	-- Request Raise button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestRaise = performance >= 60 and raises < 5
 	local raiseBtn = Instance.new("TextButton")
@@ -2234,7 +2241,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	raiseBtn.Font = F.Button
 	raiseBtn.TextSize = row2BtnTextSize
 	raiseBtn.TextColor3 = canRequestRaise and C.White or C.Gray500
-	raiseBtn.Text = IS_SMALL_PHONE and "💰" or "💰 Raise"
+	raiseBtn.Text = raiseBtnText
 	raiseBtn.AutoButtonColor = false
 	raiseBtn.LayoutOrder = 2
 	raiseBtn.ZIndex = 85
@@ -2254,7 +2261,6 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 		
 		local raiseBtnLoading = false
 		local raiseHoverHeight = actionRow2Height + 4
-		local raiseBtnText = IS_SMALL_PHONE and "💰" or "💰 Raise"
 		raiseBtn.MouseEnter:Connect(function()
 			if raiseBtnLoading then return end
 			UI.tween(raiseBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
@@ -2295,7 +2301,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	quitBtn.Font = F.Button
 	quitBtn.TextSize = IS_SMALL_PHONE and 10 or 12
 	quitBtn.TextColor3 = C.White
-	quitBtn.Text = IS_SMALL_PHONE and "🚪" or "🚪 Quit"
+	quitBtn.Text = quitBtnText
 	quitBtn.AutoButtonColor = false
 	quitBtn.LayoutOrder = 3
 	quitBtn.ZIndex = 85
@@ -4394,9 +4400,17 @@ end
 
 function OccupationScreen:createQuitConfirmModal()
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL REVAMP: Premium Quit Modal with Shell Structure (like LifeClient popup)
-	-- Overlay -> Container -> Shadow -> Shell -> Inner Card
+	-- CRITICAL UI FIX: Mobile-optimized Quit Modal
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL UI FIX: Scale modal for mobile
+	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 16) or (IS_SMALL_PHONE and (ViewportSize.X - 24) or 360)
+	local MODAL_HEIGHT = IS_TINY_PHONE and 420 or (IS_SMALL_PHONE and 480 or 540)
+	local MODAL_PAD = IS_TINY_PHONE and 10 or 16
+	local EMOJI_SIZE = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 40 or 48)
+	local TITLE_SIZE = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 20 or 24)
+	local JOB_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
+	local BODY_SIZE = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 12 or 14)
 	
 	-- Modal container object
 	self.quitConfirmModal = {}
@@ -4414,10 +4428,10 @@ function OccupationScreen:createQuitConfirmModal()
 	closeArea.Parent = self.screenGui
 	self.quitConfirmModal.closeArea = closeArea
 	
-	-- Container for all modal elements
+	-- Container for all modal elements - SCALED
 	local container = Instance.new("Frame")
 	container.Name = "QuitModalContainer"
-	container.Size = UDim2.new(0, 360, 0, 540)
+	container.Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -4425,16 +4439,17 @@ function OccupationScreen:createQuitConfirmModal()
 	container.Parent = closeArea
 	self.quitConfirmModal.container = container
 	
-	-- Premium shadow
+	-- Premium shadow - SCALED
+	local shadowOffset = IS_TINY_PHONE and 3 or 5
 	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
-	shadow.Size = UDim2.new(1, 10, 1, 10)
-	shadow.Position = UDim2.new(0, 5, 0, 5)
+	shadow.Size = UDim2.new(1, shadowOffset * 2, 1, shadowOffset * 2)
+	shadow.Position = UDim2.new(0, shadowOffset, 0, shadowOffset)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = 0.75
 	shadow.ZIndex = 101
 	shadow.Parent = container
-	UI.corner(shadow, 26)
+	UI.corner(shadow, IS_TINY_PHONE and 18 or 26)
 	
 	-- Amber accent shell
 	local shell = Instance.new("Frame")
@@ -4443,65 +4458,71 @@ function OccupationScreen:createQuitConfirmModal()
 	shell.BackgroundColor3 = C.Amber
 	shell.ZIndex = 102
 	shell.Parent = container
-	UI.corner(shell, 24)
+	UI.corner(shell, IS_TINY_PHONE and 16 or 24)
 	self.quitConfirmModal.shell = shell
 	
-	-- Inner white card
+	-- Inner white card - SCALED
+	local cardPad = IS_TINY_PHONE and 3 or 4
 	local card = Instance.new("Frame")
 	card.Name = "Card"
-	card.Size = UDim2.new(1, -8, 1, -8)
-	card.Position = UDim2.new(0, 4, 0, 4)
+	card.Size = UDim2.new(1, -cardPad * 2, 1, -cardPad * 2)
+	card.Position = UDim2.new(0, cardPad, 0, cardPad)
 	card.BackgroundColor3 = C.White
 	card.ZIndex = 103
 	card.Parent = shell
-	UI.corner(card, 22)
+	UI.corner(card, IS_TINY_PHONE and 14 or 22)
 	
-	-- Header with emoji
+	-- Header with emoji - SCALED
+	local emojiY = IS_TINY_PHONE and 8 or 15
 	local emojiLabel = Instance.new("TextLabel")
-	emojiLabel.Size = UDim2.new(1, 0, 0, 60)
-	emojiLabel.Position = UDim2.new(0, 0, 0, 15)
+	emojiLabel.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 40 or 60)
+	emojiLabel.Position = UDim2.new(0, 0, 0, emojiY)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = 48
+	emojiLabel.TextSize = EMOJI_SIZE
 	emojiLabel.Text = "🤔"
 	emojiLabel.ZIndex = 104
 	emojiLabel.Parent = card
 	
-	-- Title
+	-- Title - SCALED
+	local titleY = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 62 or 75)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, 32)
-	titleLabel.Position = UDim2.new(0, 16, 0, 75)
+	titleLabel.Size = UDim2.new(1, -MODAL_PAD * 2, 0, IS_TINY_PHONE and 24 or 32)
+	titleLabel.Position = UDim2.new(0, MODAL_PAD, 0, titleY)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 24
+	titleLabel.TextSize = TITLE_SIZE
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.Text = "Quit Your Job?"
 	titleLabel.ZIndex = 104
 	titleLabel.Parent = card
 	
-	-- Job name label (will be updated dynamically)
+	-- Job name label (will be updated dynamically) - SCALED
+	local jobY = IS_TINY_PHONE and 78 or (IS_SMALL_PHONE and 95 or 115)
 	local jobLabel = Instance.new("TextLabel")
 	jobLabel.Name = "JobLabel"
-	jobLabel.Size = UDim2.new(1, -32, 0, 30)
-	jobLabel.Position = UDim2.new(0, 16, 0, 115)
+	jobLabel.Size = UDim2.new(1, -MODAL_PAD * 2, 0, IS_TINY_PHONE and 22 or 30)
+	jobLabel.Position = UDim2.new(0, MODAL_PAD, 0, jobY)
 	jobLabel.BackgroundTransparency = 1
 	jobLabel.Font = F.Title
-	jobLabel.TextSize = 17
+	jobLabel.TextSize = JOB_SIZE
 	jobLabel.TextColor3 = C.Gray800
 	jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+	jobLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	jobLabel.Text = "💼 Your Job"
 	jobLabel.ZIndex = 104
 	jobLabel.Parent = card
 	self.quitConfirmModal.jobLabel = jobLabel
 	
-	-- Salary and years label
+	-- Salary and years label - SCALED
+	local salaryY = IS_TINY_PHONE and 102 or (IS_SMALL_PHONE and 125 or 145)
 	local salaryLabel = Instance.new("TextLabel")
 	salaryLabel.Name = "SalaryLabel"
-	salaryLabel.Size = UDim2.new(1, -32, 0, 22)
-	salaryLabel.Position = UDim2.new(0, 16, 0, 145)
+	salaryLabel.Size = UDim2.new(1, -MODAL_PAD * 2, 0, IS_TINY_PHONE and 18 or 22)
+	salaryLabel.Position = UDim2.new(0, MODAL_PAD, 0, salaryY)
 	salaryLabel.BackgroundTransparency = 1
 	salaryLabel.Font = F.Body
-	salaryLabel.TextSize = 14
+	salaryLabel.TextSize = BODY_SIZE
 	salaryLabel.TextColor3 = C.Gray500
 	salaryLabel.TextXAlignment = Enum.TextXAlignment.Center
 	salaryLabel.Text = "💰 $0/year • 0 years"
@@ -4509,86 +4530,97 @@ function OccupationScreen:createQuitConfirmModal()
 	salaryLabel.Parent = card
 	self.quitConfirmModal.salaryLabel = salaryLabel
 	
-	-- Warning message
+	-- Warning message - SCALED
+	local warningY = IS_TINY_PHONE and 122 or (IS_SMALL_PHONE and 150 or 175)
 	local warningLabel = Instance.new("TextLabel")
-	warningLabel.Size = UDim2.new(1, -32, 0, 40)
-	warningLabel.Position = UDim2.new(0, 16, 0, 175)
+	warningLabel.Size = UDim2.new(1, -MODAL_PAD * 2, 0, IS_TINY_PHONE and 30 or 40)
+	warningLabel.Position = UDim2.new(0, MODAL_PAD, 0, warningY)
 	warningLabel.BackgroundTransparency = 1
 	warningLabel.Font = F.Medium
-	warningLabel.TextSize = 12
+	warningLabel.TextSize = IS_TINY_PHONE and 10 or 12
 	warningLabel.TextColor3 = C.AmberDark
 	warningLabel.TextWrapped = true
-	warningLabel.Text = "⚠️ How would you like to leave? Your choice affects your reputation!"
+	warningLabel.Text = IS_TINY_PHONE and "⚠️ How would you like to leave?" or "⚠️ How would you like to leave? Your choice affects your reputation!"
 	warningLabel.ZIndex = 104
 	warningLabel.Parent = card
 	
-	-- Choice container
+	-- Choice container - SCALED
+	local choiceY = IS_TINY_PHONE and 155 or (IS_SMALL_PHONE and 195 or 220)
+	local choiceHeight = IS_TINY_PHONE and 245 or (IS_SMALL_PHONE and 270 or 300)
+	local choiceBtnHeight = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 52 or 58)
+	local choiceBtnTextSize = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 15)
+	local choiceDescSize = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
+	local choicePadding = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	
 	local choiceContainer = Instance.new("Frame")
 	choiceContainer.Name = "ChoiceContainer"
-	choiceContainer.Size = UDim2.new(1, -32, 0, 300)
-	choiceContainer.Position = UDim2.new(0, 16, 0, 220)
+	choiceContainer.Size = UDim2.new(1, -MODAL_PAD * 2, 0, choiceHeight)
+	choiceContainer.Position = UDim2.new(0, MODAL_PAD, 0, choiceY)
 	choiceContainer.BackgroundTransparency = 1
 	choiceContainer.ZIndex = 104
 	choiceContainer.Parent = card
 	
 	local choiceLayout = Instance.new("UIListLayout")
-	choiceLayout.Padding = UDim.new(0, 10)
+	choiceLayout.Padding = UDim.new(0, choicePadding)
 	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choiceLayout.Parent = choiceContainer
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- PREMIUM CHOICE BUTTONS (with shadows and hover effects)
+	-- PREMIUM CHOICE BUTTONS (with shadows and hover effects) - SCALED
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	local function createChoiceButton(text, color, colorDark, layoutOrder, emoji, description)
 		local btnContainer = Instance.new("Frame")
 		btnContainer.Name = "BtnContainer" .. layoutOrder
-		btnContainer.Size = UDim2.new(1, 0, 0, 58)
+		btnContainer.Size = UDim2.new(1, 0, 0, choiceBtnHeight)
 		btnContainer.BackgroundTransparency = 1
 		btnContainer.LayoutOrder = layoutOrder
 		btnContainer.ZIndex = 105
 		btnContainer.Parent = choiceContainer
 		
-		-- Button shadow
+		-- Button shadow - SCALED
+		local shadowPad = IS_TINY_PHONE and 2 or 4
 		local btnShadow = Instance.new("Frame")
-		btnShadow.Size = UDim2.new(1, 4, 1, 4)
-		btnShadow.Position = UDim2.new(0, 2, 0, 2)
+		btnShadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+		btnShadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
 		btnShadow.BackgroundColor3 = colorDark
 		btnShadow.BackgroundTransparency = 0.5
 		btnShadow.ZIndex = 105
 		btnShadow.Parent = btnContainer
-		UI.corner(btnShadow, 14)
+		UI.corner(btnShadow, IS_TINY_PHONE and 10 or 14)
 		
 		local btn = Instance.new("TextButton")
 		btn.Name = "Choice" .. layoutOrder
 		btn.Size = UDim2.new(1, 0, 1, 0)
 		btn.BackgroundColor3 = color
 		btn.Font = F.Button
-		btn.TextSize = 15
+		btn.TextSize = choiceBtnTextSize
 		btn.TextColor3 = C.White
 		btn.Text = emoji .. " " .. text
 		btn.AutoButtonColor = false
 		btn.ZIndex = 106
 		btn.Parent = btnContainer
-		UI.corner(btn, 12)
+		UI.corner(btn, IS_TINY_PHONE and 8 or 12)
 		
-		-- Description label under button text
-		local descLabel = Instance.new("TextLabel")
-		descLabel.Size = UDim2.new(1, 0, 0, 14)
-		descLabel.Position = UDim2.new(0, 0, 0.65, 0)
-		descLabel.BackgroundTransparency = 1
-		descLabel.Font = F.Body
-		descLabel.TextSize = 10
-		descLabel.TextColor3 = C.White:Lerp(color, 0.3)
-		descLabel.Text = description
-		descLabel.ZIndex = 107
-		descLabel.Parent = btn
-		
-		-- Adjust main button text position
-		btn.TextYAlignment = Enum.TextYAlignment.Top
-		local textPad = Instance.new("UIPadding")
-		textPad.PaddingTop = UDim.new(0, 10)
-		textPad.Parent = btn
+		-- Description label under button text - SCALED (hidden on tiny phones)
+		if not IS_TINY_PHONE then
+			local descLabel = Instance.new("TextLabel")
+			descLabel.Size = UDim2.new(1, 0, 0, 14)
+			descLabel.Position = UDim2.new(0, 0, 0.65, 0)
+			descLabel.BackgroundTransparency = 1
+			descLabel.Font = F.Body
+			descLabel.TextSize = choiceDescSize
+			descLabel.TextColor3 = C.White:Lerp(color, 0.3)
+			descLabel.Text = description
+			descLabel.ZIndex = 107
+			descLabel.Parent = btn
+			
+			-- Adjust main button text position
+			btn.TextYAlignment = Enum.TextYAlignment.Top
+			local textPad = Instance.new("UIPadding")
+			textPad.PaddingTop = UDim.new(0, IS_SMALL_PHONE and 8 or 10)
+			textPad.Parent = btn
+		end
 		
 		-- Hover effects
 		local isLoading = false
@@ -4695,17 +4727,20 @@ function OccupationScreen:createQuitConfirmModal()
 		hideQuitModal()
 	end)
 	
-	-- Custom show/hide for premium animation
+	-- Custom show/hide for premium animation - SCALED
+	local animStartSize = UDim2.new(0, MODAL_WIDTH - 20, 0, MODAL_HEIGHT - 30)
+	local animEndSize = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
+	
 	self.quitConfirmModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
 		container.Position = UDim2.new(0.5, 0, 0.5, 50)
-		container.Size = UDim2.new(0, 340, 0, 510)
+		container.Size = animStartSize
 		
 		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.3 })
 		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, 360, 0, 540)
+			Size = animEndSize
 		})
 	end
 	
@@ -4713,7 +4748,7 @@ function OccupationScreen:createQuitConfirmModal()
 		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
 		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			Position = UDim2.new(0.5, 0, 0.5, 30),
-			Size = UDim2.new(0, 340, 0, 510)
+			Size = animStartSize
 		})
 		task.delay(0.15, function()
 			closeArea.Visible = false
