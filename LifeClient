@@ -1557,6 +1557,7 @@ local function buildEventModal()
 	local shellMargin = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 4)
 	local cardMargin = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or 8)
 	
+	-- Shadow frame: fixed width, autosize height
 	EventUI.shadowFrame = Instance.new("Frame")
 	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
 	EventUI.shadowFrame.AutomaticSize = Enum.AutomaticSize.Y
@@ -1573,10 +1574,11 @@ local function buildEventModal()
 	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
 	eventSizeConstraint.Parent = EventUI.shadowFrame
 
-	-- BitLife-style colored shell (outer border) - responsive sizing
+	-- Shell: autosize height (no Y scale) - fixes button overflow
 	EventUI.shell = Instance.new("Frame")
 	EventUI.shell.Name = "EventShell"
-	EventUI.shell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
+	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
+	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -1587,13 +1589,15 @@ local function buildEventModal()
 		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
 	end
 
-	-- inner white card - clean BitLife style, responsive sizing
+	-- Card: autosize height (no Y scale) - fixes button overflow
 	EventUI.card = Instance.new("Frame")
 	EventUI.card.Name = "EventCard"
-	EventUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	EventUI.card.Size = UDim2.new(1, -cardMargin, 0, 0)
+	EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	EventUI.card.BackgroundColor3 = C.White
 	EventUI.card.ZIndex = 63
+	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
 	EventUI.card.Parent = EventUI.shell
 	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
 
@@ -1777,14 +1781,28 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- choices - TINY PHONE FIX: Tighter spacing
-	EventUI.choicesSection = Instance.new("Frame")
+	-- choices - Scrollable for many options, auto-sizes for few
+	-- Give it a reasonable max height so modal doesn't grow forever
+	local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
+	
+	EventUI.choicesSection = Instance.new("ScrollingFrame")
+	EventUI.choicesSection.Name = "ChoicesScroll"
 	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.ScrollBarThickness = Device.IS_MOBILE and 4 or 3
+	EventUI.choicesSection.ScrollBarImageColor3 = C.Gray400
+	EventUI.choicesSection.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.CanvasSize = UDim2.new(0, 0, 0, 0)
+	EventUI.choicesSection.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
+	
+	-- Constrain max height so it scrolls instead of overflowing
+	local choicesSizeConstraint = Instance.new("UISizeConstraint")
+	choicesSizeConstraint.MaxSize = Vector2.new(math.huge, maxChoicesH)
+	choicesSizeConstraint.Parent = EventUI.choicesSection
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
@@ -2669,8 +2687,8 @@ showEvent = function(payload)
 
 		local choiceHandlers = {}
 
-		-- MOBILE FIX: Much smaller choice buttons that fit the card properly
-		local choiceBtnHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
+		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
+		local baseMinHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
 		local choiceBtnTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
 		local choiceBtnCorner = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or 12)
 		local choiceBtnPadH = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 10)
@@ -2678,7 +2696,9 @@ showEvent = function(payload)
 		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, 0, 0, choiceBtnHeight)
+			-- KEY: Let height auto-expand for long text
+			btn.Size = UDim2.new(1, 0, 0, 0)
+			btn.AutomaticSize = Enum.AutomaticSize.Y
 			btn.BackgroundColor3 = C.Blue
 			btn.Font = F.Button
 			btn.TextSize = choiceBtnTextSize
@@ -2687,9 +2707,7 @@ showEvent = function(payload)
 			btn.AutoButtonColor = false
 			btn.LayoutOrder = i
 			btn.ZIndex = 65
-			-- CRITICAL FIX: Enable text wrapping and truncation to prevent cutoff
 			btn.TextWrapped = true
-			btn.TextTruncate = Enum.TextTruncate.AtEnd
 			btn.TextXAlignment = Enum.TextXAlignment.Center
 			btn.TextYAlignment = Enum.TextYAlignment.Center
 			btn.Parent = choicesSection
@@ -2699,11 +2717,16 @@ showEvent = function(payload)
 			-- Add padding so text doesn't touch edges
 			pad(btn, choiceBtnPadH, choiceBtnPadH, choiceBtnPadV, choiceBtnPadV)
 
+			-- Enforce minimum tap height
+			local sizeConstraint = Instance.new("UISizeConstraint")
+			sizeConstraint.MinSize = Vector2.new(0, btnHeight(baseMinHeight))
+			sizeConstraint.Parent = btn
+
 			if choice.minigame then
 				btn.Text = "🎮 " .. choice.text
 			end
 
-			-- CRITICAL FIX: Simpler hover effect that doesn't change size (prevents layout jumps)
+			-- Hover color only (no size change to prevent layout jumps)
 			btn.MouseEnter:Connect(function()
 				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark })
 			end)
