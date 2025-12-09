@@ -99,6 +99,12 @@ function LifeState.new(player)
 	-- Flags (story/behavior tracking)
 	self.Flags = {}
 	
+	-- CRITICAL FIX: Pet data for pet lifecycle tracking
+	self.PetData = {}
+	
+	-- CRITICAL FIX: Child count for family tracking
+	self.ChildCount = 0
+	
 	-- Career hints from childhood choices
 	self.CareerHints = {}
 	
@@ -628,6 +634,12 @@ function LifeState:Serialize()
 		
 		-- Fame
 		Fame = self.Fame,
+		
+		-- CRITICAL FIX: Pet data for pet lifecycle (needed for pet age display)
+		PetData = self.PetData,
+		
+		-- CRITICAL FIX: Child count for family display
+		ChildCount = self.ChildCount,
 		
 		-- Event History (needed for client to show recent events)
 		EventHistory = {
