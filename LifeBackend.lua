@@ -1984,6 +1984,424 @@ function LifeBackend:collectPropertyIncome(state)
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #10: Vehicle Depreciation System
+-- Vehicles lose value over time (10-15% per year) based on condition
+-- Without this, cars never lose value and can be sold for purchase price forever
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:tickVehicleDepreciation(state)
+	state.Assets = state.Assets or {}
+	local vehicles = state.Assets.Vehicles or {}
+	
+	if #vehicles == 0 then
+		return
+	end
+	
+	for _, vehicle in ipairs(vehicles) do
+		if vehicle.value and vehicle.value > 0 then
+			-- Depreciation rate: 10-15% per year, modified by condition
+			local baseDepreciation = 0.12 -- 12% base
+			local conditionMod = vehicle.condition and (1 - vehicle.condition / 200) or 1 -- Poor condition = faster depreciation
+			local depreciationRate = baseDepreciation * conditionMod
+			
+			-- Calculate depreciation
+			local depreciationAmount = math.floor(vehicle.value * depreciationRate)
+			vehicle.value = math.max(500, vehicle.value - depreciationAmount) -- Minimum $500 scrap value
+			
+			-- Condition also degrades slightly each year (1-5%)
+			if vehicle.condition then
+				vehicle.condition = math.max(0, vehicle.condition - RANDOM:NextInteger(1, 5))
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #11: Investment Value Fluctuation
+-- Investments should gain or lose value each year based on market conditions
+-- Without this, investments are just static numbers
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:tickInvestments(state)
+	state.Assets = state.Assets or {}
+	local investments = state.Assets.Investments or {}
+	local crypto = state.Assets.Crypto or {}
+	
+	-- Stock/bond investments: -10% to +15% annually
+	for _, inv in ipairs(investments) do
+		if inv.value and inv.value > 0 then
+			local changePercent = RANDOM:NextNumber() * 0.25 - 0.10 -- -10% to +15%
+			local changeAmount = math.floor(inv.value * changePercent)
+			inv.value = math.max(0, inv.value + changeAmount)
+		end
+	end
+	
+	-- Crypto: more volatile, -30% to +50% annually
+	for _, coin in ipairs(crypto) do
+		if coin.value and coin.value > 0 then
+			local changePercent = RANDOM:NextNumber() * 0.80 - 0.30 -- -30% to +50%
+			local changeAmount = math.floor(coin.value * changePercent)
+			coin.value = math.max(0, coin.value + changeAmount)
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #12: Annual Cost of Living Expenses
+-- Players should have annual expenses that scale with lifestyle
+-- Without this, money only goes up, never down from basic living costs
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyLivingExpenses(state)
+	-- Don't apply expenses if player is under 18 (parents support them)
+	if (state.Age or 0) < 18 then
+		return
+	end
+	
+	-- Don't apply expenses in prison (state provides housing/food)
+	if state.InJail then
+		return
+	end
+	
+	local baseCost = 8000 -- $8,000/year minimum for basic living
+	local totalExpenses = baseCost
+	
+	-- Add housing costs if no owned property
+	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
+	if not hasProperty then
+		totalExpenses = totalExpenses + 12000 -- Rent: $1,000/month
+	end
+	
+	-- Add vehicle maintenance if owns vehicles
+	local numVehicles = state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles or 0
+	if numVehicles > 0 then
+		totalExpenses = totalExpenses + (numVehicles * 2000) -- $2,000/year per vehicle
+	end
+	
+	-- Family costs
+	local childCount = state.ChildCount or 0
+	if childCount > 0 then
+		totalExpenses = totalExpenses + (childCount * 5000) -- $5,000/year per child
+	end
+	
+	-- Healthcare costs increase with age
+	if (state.Age or 0) > 50 then
+		local ageFactor = ((state.Age or 50) - 50) / 10
+		totalExpenses = totalExpenses + math.floor(2000 * ageFactor)
+	end
+	
+	-- Apply expenses (but don't go below 0)
+	local currentMoney = state.Money or 0
+	if currentMoney >= totalExpenses then
+		state.Money = currentMoney - totalExpenses
+	else
+		-- Can't afford full expenses - go broke but not negative
+		state.Money = 0
+		state.Flags = state.Flags or {}
+		state.Flags.struggling_financially = true
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #13: Health Decay from Unhealthy Habits
+-- Smoking, drinking, and other bad habits should actually affect health
+-- Without this, flags like "smoker" are just cosmetic
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyHabitEffects(state)
+	state.Stats = state.Stats or {}
+	state.Flags = state.Flags or {}
+	
+	local healthChange = 0
+	local happinessChange = 0
+	
+	-- Smoking: -1 to -3 health per year, cumulative damage
+	if state.Flags.smoker then
+		healthChange = healthChange - RANDOM:NextInteger(1, 3)
+		-- 5% chance per year of serious illness from smoking
+		if RANDOM:NextNumber() < 0.05 then
+			state.Flags.smoking_related_illness = true
+			healthChange = healthChange - 10
+		end
+	end
+	
+	-- Heavy drinking: -1 to -2 health, -2 to +1 happiness (addiction)
+	if state.Flags.heavy_drinker then
+		healthChange = healthChange - RANDOM:NextInteger(1, 2)
+		happinessChange = happinessChange + RANDOM:NextInteger(-2, 1)
+		-- 3% chance of liver problems
+		if RANDOM:NextNumber() < 0.03 then
+			state.Flags.liver_problems = true
+			healthChange = healthChange - 8
+		end
+	end
+	
+	-- Substance abuse: serious health impact
+	if state.Flags.substance_issue or state.Flags.drug_addiction then
+		healthChange = healthChange - RANDOM:NextInteger(2, 5)
+		happinessChange = happinessChange - RANDOM:NextInteger(1, 3)
+	end
+	
+	-- Fitness enthusiast: positive health
+	if state.Flags.fitness_enthusiast then
+		healthChange = healthChange + RANDOM:NextInteger(1, 2)
+	end
+	
+	-- Apply changes
+	if healthChange ~= 0 then
+		state.Stats.Health = clamp((state.Stats.Health or 50) + healthChange, 0, 100)
+		state.Health = state.Stats.Health
+	end
+	
+	if happinessChange ~= 0 then
+		state.Stats.Happiness = clamp((state.Stats.Happiness or 50) + happinessChange, 0, 100)
+		state.Happiness = state.Stats.Happiness
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #14: Fame Decay System
+-- Fame should gradually decrease without maintenance
+-- Without this, once famous always famous
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:tickFame(state)
+	local fame = state.Fame or 0
+	if fame <= 0 then
+		return
+	end
+	
+	-- Fame naturally decays 5-10% per year without maintenance
+	local decayRate = RANDOM:NextNumber() * 0.05 + 0.05 -- 5-10%
+	local decayAmount = math.floor(fame * decayRate)
+	
+	-- Active careers that maintain fame slow decay
+	if state.CurrentJob then
+		local jobId = state.CurrentJob.id or ""
+		local fameMaintainingJobs = {
+			"actor", "singer", "athlete", "influencer", "model", 
+			"tv_host", "youtuber", "politician", "celebrity"
+		}
+		for _, job in ipairs(fameMaintainingJobs) do
+			if jobId:find(job) then
+				decayAmount = math.floor(decayAmount * 0.3) -- 70% slower decay
+				break
+			end
+		end
+	end
+	
+	state.Fame = math.max(0, fame - decayAmount)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #15: Education Debt Interest
+-- Student loans should accrue interest annually
+-- Without this, college debt never grows
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyDebtInterest(state)
+	if not state.EducationData or not state.EducationData.Debt then
+		return
+	end
+	
+	local debt = state.EducationData.Debt
+	if debt <= 0 then
+		return
+	end
+	
+	-- 5% annual interest on student loans
+	local interest = math.floor(debt * 0.05)
+	state.EducationData.Debt = debt + interest
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #16: Pet Lifecycle System
+-- Pets age and eventually pass away (dogs ~12-15 years, cats ~15-20 years)
+-- Without this, pets live forever once acquired
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:tickPetLifecycle(state)
+	state.Flags = state.Flags or {}
+	state.PetData = state.PetData or {}
+	
+	-- Initialize pet ages if not set
+	if state.Flags.has_dog and not state.PetData.dogAge then
+		state.PetData.dogAge = 1 -- Assume recently adopted
+		state.PetData.dogName = state.PetData.dogName or "Buddy"
+	end
+	if state.Flags.has_cat and not state.PetData.catAge then
+		state.PetData.catAge = 1
+		state.PetData.catName = state.PetData.catName or "Whiskers"
+	end
+	
+	-- Age dogs and check for death (lifespan 10-15 years)
+	if state.Flags.has_dog and state.PetData.dogAge then
+		state.PetData.dogAge = state.PetData.dogAge + 1
+		local dogAge = state.PetData.dogAge
+		if dogAge >= 10 then
+			local deathChance = (dogAge - 10) / 10 -- Increases each year after 10
+			if RANDOM:NextNumber() < deathChance then
+				state.Flags.has_dog = nil
+				state.Flags.lost_dog = true
+				state.PetData.dogAge = nil
+				local dogName = state.PetData.dogName or "your dog"
+				self:logYearEvent(state, "pet_death", 
+					string.format("💔 %s passed away after %d wonderful years together.", dogName, dogAge), "🐕")
+				state.Stats = state.Stats or {}
+				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 15, 0, 100)
+			end
+		end
+	end
+	
+	-- Age cats and check for death (lifespan 12-20 years)
+	if state.Flags.has_cat and state.PetData.catAge then
+		state.PetData.catAge = state.PetData.catAge + 1
+		local catAge = state.PetData.catAge
+		if catAge >= 12 then
+			local deathChance = (catAge - 12) / 15 -- Cats live longer
+			if RANDOM:NextNumber() < deathChance then
+				state.Flags.has_cat = nil
+				state.Flags.lost_cat = true
+				state.PetData.catAge = nil
+				local catName = state.PetData.catName or "your cat"
+				self:logYearEvent(state, "pet_death", 
+					string.format("💔 %s passed away at age %d. A faithful companion.", catName, catAge), "🐱")
+				state.Stats = state.Stats or {}
+				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 12, 0, 100)
+			end
+		end
+	end
+	
+	-- Small pets have shorter lifespans (2-5 years)
+	if state.Flags.has_small_pet and state.PetData.smallPetAge then
+		state.PetData.smallPetAge = state.PetData.smallPetAge + 1
+		if state.PetData.smallPetAge >= 3 then
+			local deathChance = (state.PetData.smallPetAge - 2) / 5
+			if RANDOM:NextNumber() < deathChance then
+				state.Flags.has_small_pet = nil
+				state.PetData.smallPetAge = nil
+				self:logYearEvent(state, "pet_death", "💔 Your small pet passed away.", "🐹")
+				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 5, 0, 100)
+			end
+		end
+	elseif state.Flags.has_small_pet and not state.PetData.smallPetAge then
+		state.PetData.smallPetAge = 1
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #17: Career Skills Tracking
+-- Skills gained from jobs should persist and affect future job applications
+-- Without this, experience in a field doesn't help career progression
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:updateCareerSkills(state)
+	if not state.CurrentJob then
+		return
+	end
+	
+	state.CareerInfo = state.CareerInfo or {}
+	state.CareerInfo.skills = state.CareerInfo.skills or {}
+	
+	local job = state.CurrentJob
+	local category = job.category or "general"
+	
+	-- Gain 1-3 skill points in current category each year
+	local skillGain = RANDOM:NextInteger(1, 3)
+	state.CareerInfo.skills[category] = (state.CareerInfo.skills[category] or 0) + skillGain
+	
+	-- Cap skills at 100
+	state.CareerInfo.skills[category] = math.min(100, state.CareerInfo.skills[category])
+	
+	-- Also gain general "work experience" stat
+	state.CareerInfo.skills.general = (state.CareerInfo.skills.general or 0) + 1
+	state.CareerInfo.skills.general = math.min(100, state.CareerInfo.skills.general)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #18: Relationship Decay Without Interaction
+-- Relationships that aren't maintained should slowly decrease
+-- Without this, relationships stay at 100 forever once maxed
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyRelationshipDecay(state)
+	if not state.Relationships then
+		return
+	end
+	
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.alive ~= false then
+			-- Relationships naturally decay 1-3 points per year without interaction
+			local decay = RANDOM:NextInteger(1, 3)
+			
+			-- Close family decays slower
+			if rel.isFamily or rel.type == "family" then
+				decay = math.floor(decay * 0.5)
+			end
+			
+			-- Partners decay faster if not married (less commitment)
+			if rel.type == "romantic" and not state.Flags.married then
+				decay = decay + 1
+			end
+			
+			rel.relationship = math.max(0, (rel.relationship or 50) - decay)
+			
+			-- Very low relationships may end naturally
+			if rel.relationship <= 10 and rel.type == "friend" then
+				if RANDOM:NextNumber() < 0.2 then -- 20% chance friendship fades
+					rel.alive = false
+					rel.ended = true
+					rel.endReason = "drifted_apart"
+				end
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #19: Property Appreciation/Depreciation
+-- Property values should change based on market conditions
+-- Without this, properties are just static values
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:tickPropertyValues(state)
+	state.Assets = state.Assets or {}
+	local properties = state.Assets.Properties or {}
+	
+	if #properties == 0 then
+		return
+	end
+	
+	for _, prop in ipairs(properties) do
+		if prop.value and prop.value > 0 then
+			-- Properties generally appreciate 2-5% per year, sometimes decline 1-2%
+			local changePercent = RANDOM:NextNumber() * 0.06 - 0.01 -- -1% to +5%
+			local changeAmount = math.floor(prop.value * changePercent)
+			prop.value = math.max(1000, prop.value + changeAmount) -- Minimum $1,000 value
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #20: Bankruptcy Protection System
+-- Players with massive debt should face consequences
+-- Without this, players can accumulate infinite negative consequences
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:checkBankruptcy(state)
+	local totalDebt = 0
+	
+	-- Calculate total debt
+	if state.EducationData and state.EducationData.Debt then
+		totalDebt = totalDebt + state.EducationData.Debt
+	end
+	
+	-- Check if player is in severe financial distress
+	local money = state.Money or 0
+	local netWorth = computeNetWorth(state)
+	
+	-- If net worth is severely negative and player has no income
+	if netWorth < -100000 and not state.CurrentJob and money <= 0 then
+		state.Flags = state.Flags or {}
+		if not state.Flags.declared_bankruptcy then
+			-- First time - opportunity to declare bankruptcy
+			state.Flags.financial_crisis = true
+			self:logYearEvent(state, "financial", 
+				"⚠️ You're in severe financial distress. Consider your options carefully.", "💸")
+		end
+	end
+end
+
 function LifeBackend:generateEvent(player, state)
 	local triggers = {}
 	if state.Age < 13 then
@@ -2548,6 +2966,17 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	self:tickVehicleDepreciation(state) -- CRITICAL FIX #10: Vehicles lose value over time
+	self:tickInvestments(state) -- CRITICAL FIX #11: Investments fluctuate in value
+	self:applyLivingExpenses(state) -- CRITICAL FIX #12: Annual cost of living
+	self:applyHabitEffects(state) -- CRITICAL FIX #13: Health effects from habits
+	self:tickFame(state) -- CRITICAL FIX #14: Fame decays without maintenance
+	self:applyDebtInterest(state) -- CRITICAL FIX #15: Student loan interest
+	self:tickPetLifecycle(state) -- CRITICAL FIX #16: Pets age and can pass away
+	self:updateCareerSkills(state) -- CRITICAL FIX #17: Track career skills
+	self:applyRelationshipDecay(state) -- CRITICAL FIX #18: Relationships decay without maintenance
+	self:tickPropertyValues(state) -- CRITICAL FIX #19: Property values change
+	self:checkBankruptcy(state) -- CRITICAL FIX #20: Check for financial distress
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #4: Pay pension to retired players
