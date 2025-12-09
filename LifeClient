@@ -1782,23 +1782,17 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- choices - Scrollable for many options with FIXED height (no AutomaticSize on ScrollingFrame!)
-	local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
-	
-	EventUI.choicesSection = Instance.new("ScrollingFrame")
-	EventUI.choicesSection.Name = "ChoicesScroll"
-	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, maxChoicesH)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.None  -- CRITICAL: No AutomaticSize on ScrollingFrame
+	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
+	-- The card expands to show ALL buttons without scrolling
+	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Name = "ChoicesContainer"
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
 	EventUI.choicesSection.BackgroundTransparency = 1
-	EventUI.choicesSection.ScrollBarThickness = Device.IS_MOBILE and 4 or 3
-	EventUI.choicesSection.ScrollBarImageColor3 = C.Gray400
-	EventUI.choicesSection.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	EventUI.choicesSection.CanvasSize = UDim2.new(0, 0, 0, 0)
-	EventUI.choicesSection.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
-	-- NO UISizeConstraint needed - we use fixed height
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
@@ -2761,18 +2755,7 @@ showEvent = function(payload)
 			table.insert(EventUI.activeChoiceButtons, btn)
 		end
 
-		-- Auto-fit scroll area when there are only 1-2 choices (so it doesn't look like empty box)
-		task.defer(function()
-			local layout = choicesSection:FindFirstChildOfClass("UIListLayout")
-			if not layout then return end
-
-			local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
-			local contentH = layout.AbsoluteContentSize.Y
-
-			-- Add breathing room for padding, clamp between min tap target and max
-			local desired = math.clamp(contentH + 16, 50, maxChoicesH)
-			choicesSection.Size = UDim2.new(1, 0, 0, desired)
-		end)
+		-- CRITICAL FIX: No scroll adjustment needed - card auto-expands to fit all buttons (BitLife-style)
 
 		-- Only show Surprise Me when there are 2+ choices
 		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false
