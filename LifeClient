@@ -1460,250 +1460,276 @@ end
 -- PREMIUM EVENT MODAL (BitLife-style red card) - MOBILE FIX
 ----------------------------------------------------------------
 
-local eventOverlay = Instance.new("Frame")
-eventOverlay.Name = "EventOverlay"
-eventOverlay.Size = UDim2.fromScale(1, 1)
-eventOverlay.BackgroundColor3 = C.Black
-eventOverlay.BackgroundTransparency = 0.45
-eventOverlay.Visible = false
-eventOverlay.ZIndex = 60
-eventOverlay.Parent = screenGui
+-- EventUI table to store event modal references and reduce local variable count
+local EventUI = {
+	activeChoiceButtons = {},
+	currentEventId = nil,
+	surpriseConnection = nil,
+	currentHideTween = nil,
+}
 
--- MOBILE FIX: Responsive event modal width
-local eventWidth = modalWidth(360)
-local eventShadowFrame = Instance.new("Frame")
-eventShadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
-eventShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
-eventShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-eventShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
-eventShadowFrame.BackgroundColor3 = C.Black
-eventShadowFrame.BackgroundTransparency = 0.88
-eventShadowFrame.ZIndex = 61
-eventShadowFrame.Parent = eventOverlay
-corner(eventShadowFrame, px(24))
+-- Builder function to create event modal UI
+local function buildEventModal()
+	EventUI.overlay = Instance.new("Frame")
+	EventUI.overlay.Name = "EventOverlay"
+	EventUI.overlay.Size = UDim2.fromScale(1, 1)
+	EventUI.overlay.BackgroundColor3 = C.Black
+	EventUI.overlay.BackgroundTransparency = 0.45
+	EventUI.overlay.Visible = false
+	EventUI.overlay.ZIndex = 60
+	EventUI.overlay.Parent = screenGui
 
--- BitLife-style colored shell (outer border) - premium look
-local eventShell = Instance.new("Frame")
-eventShell.Name = "EventShell"
-eventShell.Size = UDim2.new(1, -4, 1, -4)
-eventShell.Position = UDim2.new(0, 2, 0, 2)
-eventShell.BackgroundColor3 = C.Red
-eventShell.ZIndex = 62
-eventShell.Parent = eventShadowFrame
-corner(eventShell, px(22))
-stroke(eventShell, 2, 0.3, C.RedDark)
-createShadow(eventShell, 6, px(20), C.Black, 0.85)
+	-- MOBILE FIX: Responsive event modal width
+	local eventWidth = modalWidth(360)
+	EventUI.shadowFrame = Instance.new("Frame")
+	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
+	EventUI.shadowFrame.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	EventUI.shadowFrame.Position = UDim2.fromScale(0.5, 0.5)
+	EventUI.shadowFrame.BackgroundColor3 = C.Black
+	EventUI.shadowFrame.BackgroundTransparency = 0.88
+	EventUI.shadowFrame.ZIndex = 61
+	EventUI.shadowFrame.Parent = EventUI.overlay
+	corner(EventUI.shadowFrame, px(24))
 
--- inner white card - clean BitLife style
-local eventCard = Instance.new("Frame")
-eventCard.Name = "EventCard"
-eventCard.Size = UDim2.new(1, -8, 1, -8)
-eventCard.Position = UDim2.new(0, 4, 0, 4)
-eventCard.BackgroundColor3 = C.White
-eventCard.ZIndex = 63
-eventCard.Parent = eventShell
-corner(eventCard, px(20))
+	-- BitLife-style colored shell (outer border) - premium look
+	EventUI.shell = Instance.new("Frame")
+	EventUI.shell.Name = "EventShell"
+	EventUI.shell.Size = UDim2.new(1, -4, 1, -4)
+	EventUI.shell.Position = UDim2.new(0, 2, 0, 2)
+	EventUI.shell.BackgroundColor3 = C.Red
+	EventUI.shell.ZIndex = 62
+	EventUI.shell.Parent = EventUI.shadowFrame
+	corner(EventUI.shell, px(22))
+	stroke(EventUI.shell, 2, 0.3, C.RedDark)
+	createShadow(EventUI.shell, 6, px(20), C.Black, 0.85)
 
-local eventLayout = Instance.new("UIListLayout")
-eventLayout.Padding = UDim.new(0, 0)
-eventLayout.Parent = eventCard
+	-- inner white card - clean BitLife style
+	EventUI.card = Instance.new("Frame")
+	EventUI.card.Name = "EventCard"
+	EventUI.card.Size = UDim2.new(1, -8, 1, -8)
+	EventUI.card.Position = UDim2.new(0, 4, 0, 4)
+	EventUI.card.BackgroundColor3 = C.White
+	EventUI.card.ZIndex = 63
+	EventUI.card.Parent = EventUI.shell
+	corner(EventUI.card, px(20))
 
--- MOBILE FIX: Responsive header height
-local eventHeaderHeight = IS_SMALL_PHONE and 60 or px(76)
-local eventHeader = Instance.new("Frame")
-eventHeader.Name = "Header"
-eventHeader.Size = UDim2.new(1, 0, 0, eventHeaderHeight)
-eventHeader.BackgroundColor3 = C.White
-eventHeader.LayoutOrder = 1
-eventHeader.Visible = false
-eventHeader.ZIndex = 64
-eventHeader.Parent = eventCard
-pad(eventHeader, padSize(20), padSize(20), padSize(16), padSize(12))
+	local eventLayout = Instance.new("UIListLayout")
+	eventLayout.Padding = UDim.new(0, 0)
+	eventLayout.Parent = EventUI.card
 
--- MOBILE FIX: Responsive avatar
-local eventAvatarSize = IS_SMALL_PHONE and 40 or px(50)
-local eventAvatar = Instance.new("Frame")
-eventAvatar.Size = UDim2.new(0, eventAvatarSize, 0, eventAvatarSize)
-eventAvatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
-eventAvatar.ZIndex = 65
-eventAvatar.Parent = eventHeader
-corner(eventAvatar, eventAvatarSize/2)
-stroke(eventAvatar, 2, 0.3, C.Red)
+	-- MOBILE FIX: Responsive header height
+	local eventHeaderHeight = IS_SMALL_PHONE and 60 or px(76)
+	EventUI.header = Instance.new("Frame")
+	EventUI.header.Name = "Header"
+	EventUI.header.Size = UDim2.new(1, 0, 0, eventHeaderHeight)
+	EventUI.header.BackgroundColor3 = C.White
+	EventUI.header.LayoutOrder = 1
+	EventUI.header.Visible = false
+	EventUI.header.ZIndex = 64
+	EventUI.header.Parent = EventUI.card
+	pad(EventUI.header, padSize(20), padSize(20), padSize(16), padSize(12))
 
-local eventAvatarEmoji = Instance.new("TextLabel")
-eventAvatarEmoji.Size = UDim2.fromScale(1, 1)
-eventAvatarEmoji.BackgroundTransparency = 1
-eventAvatarEmoji.Font = F.Body
-eventAvatarEmoji.TextSize = textSize(26)
-eventAvatarEmoji.Text = "👤"
-eventAvatarEmoji.ZIndex = 66
-eventAvatarEmoji.Parent = eventAvatar
+	-- MOBILE FIX: Responsive avatar
+	local eventAvatarSize = IS_SMALL_PHONE and 40 or px(50)
+	EventUI.avatar = Instance.new("Frame")
+	EventUI.avatar.Size = UDim2.new(0, eventAvatarSize, 0, eventAvatarSize)
+	EventUI.avatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
+	EventUI.avatar.ZIndex = 65
+	EventUI.avatar.Parent = EventUI.header
+	corner(EventUI.avatar, eventAvatarSize/2)
+	stroke(EventUI.avatar, 2, 0.3, C.Red)
 
-local eventNameLbl = Instance.new("TextLabel")
-eventNameLbl.Size = UDim2.new(0.6, 0, 0, px(22))
-eventNameLbl.Position = UDim2.new(0, eventAvatarSize + padSize(10), 0, padSize(8))
-eventNameLbl.BackgroundTransparency = 1
-eventNameLbl.Font = F.Title
-eventNameLbl.TextSize = textSize(16)
-eventNameLbl.TextColor3 = C.Gray900
-eventNameLbl.TextXAlignment = Enum.TextXAlignment.Left
-eventNameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-eventNameLbl.Text = "Person Name"
-eventNameLbl.ZIndex = 65
-eventNameLbl.Parent = eventHeader
+	EventUI.avatarEmoji = Instance.new("TextLabel")
+	EventUI.avatarEmoji.Size = UDim2.fromScale(1, 1)
+	EventUI.avatarEmoji.BackgroundTransparency = 1
+	EventUI.avatarEmoji.Font = F.Body
+	EventUI.avatarEmoji.TextSize = textSize(26)
+	EventUI.avatarEmoji.Text = "👤"
+	EventUI.avatarEmoji.ZIndex = 66
+	EventUI.avatarEmoji.Parent = EventUI.avatar
 
--- MOBILE FIX: Responsive relation banner
-local relationBannerWidth = IS_SMALL_PHONE and 90 or px(115)
-local relationBanner = Instance.new("Frame")
-relationBanner.Size = UDim2.new(0, relationBannerWidth, 0, px(26))
-relationBanner.AnchorPoint = Vector2.new(1, 0)
-relationBanner.Position = UDim2.new(1, 0, 0, padSize(8))
-relationBanner.BackgroundColor3 = C.Red
-relationBanner.ZIndex = 65
-relationBanner.Parent = eventHeader
-pill(relationBanner)
+	EventUI.nameLbl = Instance.new("TextLabel")
+	EventUI.nameLbl.Size = UDim2.new(0.6, 0, 0, px(22))
+	EventUI.nameLbl.Position = UDim2.new(0, eventAvatarSize + padSize(10), 0, padSize(8))
+	EventUI.nameLbl.BackgroundTransparency = 1
+	EventUI.nameLbl.Font = F.Title
+	EventUI.nameLbl.TextSize = textSize(16)
+	EventUI.nameLbl.TextColor3 = C.Gray900
+	EventUI.nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+	EventUI.nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+	EventUI.nameLbl.Text = "Person Name"
+	EventUI.nameLbl.ZIndex = 65
+	EventUI.nameLbl.Parent = EventUI.header
 
-local relationLbl = Instance.new("TextLabel")
-relationLbl.Size = UDim2.fromScale(1, 0.9)
-relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
-relationLbl.BackgroundTransparency = 1
-relationLbl.Font = F.Button
-relationLbl.TextSize = textSize(11)
-relationLbl.TextColor3 = C.White
-relationLbl.Text = "Classmate"
-relationLbl.ZIndex = 66
-relationLbl.Parent = relationBanner
+	-- MOBILE FIX: Responsive relation banner
+	local relationBannerWidth = IS_SMALL_PHONE and 90 or px(115)
+	EventUI.relationBanner = Instance.new("Frame")
+	EventUI.relationBanner.Size = UDim2.new(0, relationBannerWidth, 0, px(26))
+	EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
+	EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(8))
+	EventUI.relationBanner.BackgroundColor3 = C.Red
+	EventUI.relationBanner.ZIndex = 65
+	EventUI.relationBanner.Parent = EventUI.header
+	pill(EventUI.relationBanner)
 
--- title section (emoji + event title) - BitLife style with proper sizing
-local titleSection = Instance.new("Frame")
-titleSection.Size = UDim2.new(1, 0, 0, 0)
-titleSection.AutomaticSize = Enum.AutomaticSize.Y
-titleSection.BackgroundTransparency = 1
-titleSection.LayoutOrder = 2
-titleSection.ZIndex = 64
-titleSection.Parent = eventCard
+	EventUI.relationLbl = Instance.new("TextLabel")
+	EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
+	EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
+	EventUI.relationLbl.BackgroundTransparency = 1
+	EventUI.relationLbl.Font = F.Button
+	EventUI.relationLbl.TextSize = textSize(11)
+	EventUI.relationLbl.TextColor3 = C.White
+	EventUI.relationLbl.Text = "Classmate"
+	EventUI.relationLbl.ZIndex = 66
+	EventUI.relationLbl.Parent = EventUI.relationBanner
 
--- MOBILE FIX: Responsive padding
-local titlePadding = Instance.new("UIPadding")
-titlePadding.PaddingTop = UDim.new(0, padSize(16))
-titlePadding.PaddingBottom = UDim.new(0, padSize(8))
-titlePadding.PaddingLeft = UDim.new(0, padSize(16))
-titlePadding.PaddingRight = UDim.new(0, padSize(16))
-titlePadding.Parent = titleSection
+	-- title section (emoji + event title) - BitLife style with proper sizing
+	local titleSection = Instance.new("Frame")
+	titleSection.Size = UDim2.new(1, 0, 0, 0)
+	titleSection.AutomaticSize = Enum.AutomaticSize.Y
+	titleSection.BackgroundTransparency = 1
+	titleSection.LayoutOrder = 2
+	titleSection.ZIndex = 64
+	titleSection.Parent = EventUI.card
 
-local titleLayout = Instance.new("UIListLayout")
-titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-titleLayout.Padding = UDim.new(0, padSize(10))
-titleLayout.Parent = titleSection
+	-- MOBILE FIX: Responsive padding
+	local titlePadding = Instance.new("UIPadding")
+	titlePadding.PaddingTop = UDim.new(0, padSize(16))
+	titlePadding.PaddingBottom = UDim.new(0, padSize(8))
+	titlePadding.PaddingLeft = UDim.new(0, padSize(16))
+	titlePadding.PaddingRight = UDim.new(0, padSize(16))
+	titlePadding.Parent = titleSection
 
--- MOBILE FIX: Responsive emoji size
-local eventEmojiSize = IS_SMALL_PHONE and 48 or px(64)
-local eventEmoji = Instance.new("TextLabel")
-eventEmoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
-eventEmoji.BackgroundTransparency = 1
-eventEmoji.Font = F.Body
-eventEmoji.TextSize = textSize(52)
-eventEmoji.Text = "🙂"
-eventEmoji.LayoutOrder = 1
-eventEmoji.ZIndex = 65
-eventEmoji.Parent = titleSection
+	local titleLayout = Instance.new("UIListLayout")
+	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	titleLayout.Padding = UDim.new(0, padSize(10))
+	titleLayout.Parent = titleSection
 
--- MOBILE FIX: Event title with responsive text size
-local eventTitle = Instance.new("TextLabel")
-eventTitle.Size = UDim2.new(1, 0, 0, 0)
-eventTitle.AutomaticSize = Enum.AutomaticSize.Y
-eventTitle.BackgroundTransparency = 1
-eventTitle.Font = F.Title
-eventTitle.TextSize = textSize(26)
-eventTitle.TextColor3 = C.Gray900
-eventTitle.Text = "Life Event"
-eventTitle.TextWrapped = true
-eventTitle.TextXAlignment = Enum.TextXAlignment.Center
-eventTitle.LayoutOrder = 2
-eventTitle.ZIndex = 65
-eventTitle.Parent = titleSection
+	-- MOBILE FIX: Responsive emoji size
+	local eventEmojiSize = IS_SMALL_PHONE and 48 or px(64)
+	EventUI.emoji = Instance.new("TextLabel")
+	EventUI.emoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
+	EventUI.emoji.BackgroundTransparency = 1
+	EventUI.emoji.Font = F.Body
+	EventUI.emoji.TextSize = textSize(52)
+	EventUI.emoji.Text = "🙂"
+	EventUI.emoji.LayoutOrder = 1
+	EventUI.emoji.ZIndex = 65
+	EventUI.emoji.Parent = titleSection
 
--- body + "What will you do?" question - MOBILE FIX
-local bodySection = Instance.new("Frame")
-bodySection.Size = UDim2.new(1, 0, 0, 0)
-bodySection.AutomaticSize = Enum.AutomaticSize.Y
-bodySection.BackgroundTransparency = 1
-bodySection.LayoutOrder = 3
-bodySection.ZIndex = 64
-bodySection.Parent = eventCard
-pad(bodySection, padSize(28), padSize(28), 0, padSize(12))
+	-- MOBILE FIX: Event title with responsive text size
+	EventUI.title = Instance.new("TextLabel")
+	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.title.BackgroundTransparency = 1
+	EventUI.title.Font = F.Title
+	EventUI.title.TextSize = textSize(26)
+	EventUI.title.TextColor3 = C.Gray900
+	EventUI.title.Text = "Life Event"
+	EventUI.title.TextWrapped = true
+	EventUI.title.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.title.LayoutOrder = 2
+	EventUI.title.ZIndex = 65
+	EventUI.title.Parent = titleSection
 
-local bodyLayout = Instance.new("UIListLayout")
-bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-bodyLayout.Padding = UDim.new(0, padSize(10))
-bodyLayout.Parent = bodySection
+	-- body + "What will you do?" question - MOBILE FIX
+	local bodySection = Instance.new("Frame")
+	bodySection.Size = UDim2.new(1, 0, 0, 0)
+	bodySection.AutomaticSize = Enum.AutomaticSize.Y
+	bodySection.BackgroundTransparency = 1
+	bodySection.LayoutOrder = 3
+	bodySection.ZIndex = 64
+	bodySection.Parent = EventUI.card
+	pad(bodySection, padSize(28), padSize(28), 0, padSize(12))
 
--- MOBILE FIX: Responsive body text size
-local eventBody = Instance.new("TextLabel")
-eventBody.Size = UDim2.new(1, 0, 0, 0)
-eventBody.AutomaticSize = Enum.AutomaticSize.Y
-eventBody.BackgroundTransparency = 1
-eventBody.Font = F.Body
-eventBody.TextSize = textSize(20)
-eventBody.TextColor3 = C.Gray600
-eventBody.TextWrapped = true
-eventBody.TextXAlignment = Enum.TextXAlignment.Center
-eventBody.LineHeight = 1.5
-eventBody.RichText = true
-eventBody.Text = ""
-eventBody.LayoutOrder = 1
-eventBody.ZIndex = 65
-eventBody.Parent = bodySection
+	local bodyLayout = Instance.new("UIListLayout")
+	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	bodyLayout.Padding = UDim.new(0, padSize(10))
+	bodyLayout.Parent = bodySection
 
--- MOBILE FIX: Responsive question text size
-local eventQuestion = Instance.new("TextLabel")
-eventQuestion.Name = "EventQuestion"
-eventQuestion.Size = UDim2.new(1, 0, 0, 0)
-eventQuestion.AutomaticSize = Enum.AutomaticSize.Y
-eventQuestion.BackgroundTransparency = 1
-eventQuestion.Font = F.Title
-eventQuestion.TextSize = textSize(18)
-eventQuestion.TextColor3 = C.Gray800
-eventQuestion.Text = "What will you do?"
-eventQuestion.TextXAlignment = Enum.TextXAlignment.Center
-eventQuestion.TextWrapped = true
-eventQuestion.LineHeight = 1.25
-eventQuestion.LayoutOrder = 2
-eventQuestion.ZIndex = 65
-eventQuestion.Parent = bodySection
+	-- MOBILE FIX: Responsive body text size
+	EventUI.body = Instance.new("TextLabel")
+	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.body.BackgroundTransparency = 1
+	EventUI.body.Font = F.Body
+	EventUI.body.TextSize = textSize(20)
+	EventUI.body.TextColor3 = C.Gray600
+	EventUI.body.TextWrapped = true
+	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.body.LineHeight = 1.5
+	EventUI.body.RichText = true
+	EventUI.body.Text = ""
+	EventUI.body.LayoutOrder = 1
+	EventUI.body.ZIndex = 65
+	EventUI.body.Parent = bodySection
 
--- choices - MOBILE FIX
-local choicesSection = Instance.new("Frame")
-choicesSection.Size = UDim2.new(1, 0, 0, 0)
-choicesSection.AutomaticSize = Enum.AutomaticSize.Y
-choicesSection.BackgroundTransparency = 1
-choicesSection.LayoutOrder = 4
-choicesSection.ZIndex = 64
-choicesSection.Parent = eventCard
+	-- MOBILE FIX: Responsive question text size
+	EventUI.question = Instance.new("TextLabel")
+	EventUI.question.Name = "EventQuestion"
+	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.question.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.question.BackgroundTransparency = 1
+	EventUI.question.Font = F.Title
+	EventUI.question.TextSize = textSize(18)
+	EventUI.question.TextColor3 = C.Gray800
+	EventUI.question.Text = "What will you do?"
+	EventUI.question.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.question.TextWrapped = true
+	EventUI.question.LineHeight = 1.25
+	EventUI.question.LayoutOrder = 2
+	EventUI.question.ZIndex = 65
+	EventUI.question.Parent = bodySection
 
-pad(choicesSection, padSize(22), padSize(22), padSize(4), padSize(24))
+	-- choices - MOBILE FIX
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.LayoutOrder = 4
+	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.Parent = EventUI.card
 
-local choicesLayout = Instance.new("UIListLayout")
-choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-choicesLayout.Padding = UDim.new(0, padSize(10))
-choicesLayout.Parent = choicesSection
+	pad(EventUI.choicesSection, padSize(22), padSize(22), padSize(4), padSize(24))
 
-local activeChoiceButtons = {}
-local currentEventId       = nil
-local surpriseConnection   = nil
-local currentHideTween     = nil
+	local choicesLayout = Instance.new("UIListLayout")
+	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choicesLayout.Padding = UDim.new(0, padSize(10))
+	choicesLayout.Parent = EventUI.choicesSection
+end
+
+-- Build the event modal immediately
+buildEventModal()
+
+-- Aliases for read-only backward compatibility with existing code
+local eventOverlay = EventUI.overlay
+local eventShadowFrame = EventUI.shadowFrame
+local eventShell = EventUI.shell
+local eventCard = EventUI.card
+local eventHeader = EventUI.header
+local eventAvatar = EventUI.avatar
+local eventAvatarEmoji = EventUI.avatarEmoji
+local eventNameLbl = EventUI.nameLbl
+local relationBanner = EventUI.relationBanner
+local relationLbl = EventUI.relationLbl
+local eventEmoji = EventUI.emoji
+local eventTitle = EventUI.title
+local eventBody = EventUI.body
+local eventQuestion = EventUI.question
+local choicesSection = EventUI.choicesSection
 
 local function clearChoices()
-	for _, b in ipairs(activeChoiceButtons) do
+	for _, b in ipairs(EventUI.activeChoiceButtons) do
 		b:Destroy()
 	end
-	table.clear(activeChoiceButtons)
+	table.clear(EventUI.activeChoiceButtons)
 
-	if surpriseConnection then
-		surpriseConnection:Disconnect()
-		surpriseConnection = nil
+	if EventUI.surpriseConnection then
+		EventUI.surpriseConnection:Disconnect()
+		EventUI.surpriseConnection = nil
 	end
 end
 
@@ -1736,283 +1762,289 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════════════
 local DeathUI = {}
 
-DeathUI.overlay = Instance.new("Frame")
-DeathUI.overlay.Name = "DeathOverlay"
-DeathUI.overlay.Size = UDim2.fromScale(1, 1)
-DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-DeathUI.overlay.BackgroundTransparency = 0
-DeathUI.overlay.Visible = false
-DeathUI.overlay.ZIndex = 120
-DeathUI.overlay.Parent = screenGui
+-- Builder function to reduce local variable count in module scope
+local function buildDeathUI()
+	DeathUI.overlay = Instance.new("Frame")
+	DeathUI.overlay.Name = "DeathOverlay"
+	DeathUI.overlay.Size = UDim2.fromScale(1, 1)
+	DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.overlay.BackgroundTransparency = 0
+	DeathUI.overlay.Visible = false
+	DeathUI.overlay.ZIndex = 120
+	DeathUI.overlay.Parent = screenGui
 
--- Scrollable container for all content - MOBILE FIX: Thicker scrollbar for touch
-DeathUI.scroll = Instance.new("ScrollingFrame")
-DeathUI.scroll.Name = "DeathScroll"
-DeathUI.scroll.Size = UDim2.fromScale(1, 1)
-DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-DeathUI.scroll.BackgroundTransparency = 1
-DeathUI.scroll.ScrollBarThickness = IS_MOBILE and 8 or 4
-DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
-DeathUI.scroll.ZIndex = 121
-DeathUI.scroll.Parent = DeathUI.overlay
+	-- Scrollable container for all content - MOBILE FIX: Thicker scrollbar for touch
+	DeathUI.scroll = Instance.new("ScrollingFrame")
+	DeathUI.scroll.Name = "DeathScroll"
+	DeathUI.scroll.Size = UDim2.fromScale(1, 1)
+	DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	DeathUI.scroll.BackgroundTransparency = 1
+	DeathUI.scroll.ScrollBarThickness = IS_MOBILE and 8 or 4
+	DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
+	DeathUI.scroll.ZIndex = 121
+	DeathUI.scroll.Parent = DeathUI.overlay
 
-local deathScrollLayout = Instance.new("UIListLayout")
-deathScrollLayout.Padding = UDim.new(0, 0)
-deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-deathScrollLayout.Parent = DeathUI.scroll
+	local deathScrollLayout = Instance.new("UIListLayout")
+	deathScrollLayout.Padding = UDim.new(0, 0)
+	deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	deathScrollLayout.Parent = DeathUI.scroll
 
--- MOBILE FIX: Responsive header height
-local deathHeaderHeight = IS_SMALL_PHONE and 220 or px(280)
-DeathUI.headerSection = Instance.new("Frame")
-DeathUI.headerSection.Name = "Header"
-DeathUI.headerSection.Size = UDim2.new(1, 0, 0, deathHeaderHeight)
-DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
-DeathUI.headerSection.ZIndex = 121
-DeathUI.headerSection.LayoutOrder = 1
-DeathUI.headerSection.Parent = DeathUI.scroll
+	-- MOBILE FIX: Responsive header height
+	local deathHeaderHeight = IS_SMALL_PHONE and 220 or px(280)
+	DeathUI.headerSection = Instance.new("Frame")
+	DeathUI.headerSection.Name = "Header"
+	DeathUI.headerSection.Size = UDim2.new(1, 0, 0, deathHeaderHeight)
+	DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+	DeathUI.headerSection.ZIndex = 121
+	DeathUI.headerSection.LayoutOrder = 1
+	DeathUI.headerSection.Parent = DeathUI.scroll
 
--- MOBILE FIX: Responsive gravestone emoji
-local deathEmojiSize = IS_SMALL_PHONE and 70 or px(100)
-DeathUI.emojiFrame = Instance.new("Frame")
-DeathUI.emojiFrame.Size = UDim2.new(0, deathEmojiSize, 0, deathEmojiSize)
-DeathUI.emojiFrame.Position = UDim2.new(0.5, -deathEmojiSize/2, 0, padSize(30))
-DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
-DeathUI.emojiFrame.ZIndex = 122
-DeathUI.emojiFrame.Parent = DeathUI.headerSection
-corner(DeathUI.emojiFrame, deathEmojiSize/2)
+	-- MOBILE FIX: Responsive gravestone emoji
+	local deathEmojiSize = IS_SMALL_PHONE and 70 or px(100)
+	DeathUI.emojiFrame = Instance.new("Frame")
+	DeathUI.emojiFrame.Size = UDim2.new(0, deathEmojiSize, 0, deathEmojiSize)
+	DeathUI.emojiFrame.Position = UDim2.new(0.5, -deathEmojiSize/2, 0, padSize(30))
+	DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
+	DeathUI.emojiFrame.ZIndex = 122
+	DeathUI.emojiFrame.Parent = DeathUI.headerSection
+	corner(DeathUI.emojiFrame, deathEmojiSize/2)
 
-local deathEmojiLabel = Instance.new("TextLabel")
-deathEmojiLabel.Size = UDim2.fromScale(1, 1)
-deathEmojiLabel.BackgroundTransparency = 1
-deathEmojiLabel.Font = F.Body
-deathEmojiLabel.TextSize = textSize(56)
-deathEmojiLabel.Text = "⚰️"
-deathEmojiLabel.ZIndex = 123
-deathEmojiLabel.Parent = DeathUI.emojiFrame
+	local deathEmojiLabel = Instance.new("TextLabel")
+	deathEmojiLabel.Size = UDim2.fromScale(1, 1)
+	deathEmojiLabel.BackgroundTransparency = 1
+	deathEmojiLabel.Font = F.Body
+	deathEmojiLabel.TextSize = textSize(56)
+	deathEmojiLabel.Text = "⚰️"
+	deathEmojiLabel.ZIndex = 123
+	deathEmojiLabel.Parent = DeathUI.emojiFrame
 
--- MOBILE FIX: Responsive RIP label positioning
-local ripLabelY = deathEmojiSize + padSize(40)
-local ripLabel = Instance.new("TextLabel")
-ripLabel.Name = "RIP"
-ripLabel.Size = UDim2.new(1, 0, 0, px(28))
-ripLabel.Position = UDim2.new(0, 0, 0, ripLabelY)
-ripLabel.BackgroundTransparency = 1
-ripLabel.Font = F.Medium
-ripLabel.TextSize = textSize(14)
-ripLabel.TextColor3 = C.Gray400
-ripLabel.Text = "REST IN PEACE"
-ripLabel.ZIndex = 122
-ripLabel.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive RIP label positioning
+	local ripLabelY = deathEmojiSize + padSize(40)
+	local ripLabel = Instance.new("TextLabel")
+	ripLabel.Name = "RIP"
+	ripLabel.Size = UDim2.new(1, 0, 0, px(28))
+	ripLabel.Position = UDim2.new(0, 0, 0, ripLabelY)
+	ripLabel.BackgroundTransparency = 1
+	ripLabel.Font = F.Medium
+	ripLabel.TextSize = textSize(14)
+	ripLabel.TextColor3 = C.Gray400
+	ripLabel.Text = "REST IN PEACE"
+	ripLabel.ZIndex = 122
+	ripLabel.Parent = DeathUI.headerSection
 
--- MOBILE FIX: Responsive name text
-local titleLabelY = ripLabelY + px(28)
-DeathUI.title = Instance.new("TextLabel")
-DeathUI.title.Size = UDim2.new(1, -padSize(32), 0, px(36))
-DeathUI.title.Position = UDim2.new(0, padSize(16), 0, titleLabelY)
-DeathUI.title.BackgroundTransparency = 1
-DeathUI.title.Font = F.Title
-DeathUI.title.TextSize = textSize(28)
-DeathUI.title.TextColor3 = C.White
-DeathUI.title.TextWrapped = true
-DeathUI.title.Text = "Name Here"
-DeathUI.title.ZIndex = 122
-DeathUI.title.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive name text
+	local titleLabelY = ripLabelY + px(28)
+	DeathUI.title = Instance.new("TextLabel")
+	DeathUI.title.Size = UDim2.new(1, -padSize(32), 0, px(36))
+	DeathUI.title.Position = UDim2.new(0, padSize(16), 0, titleLabelY)
+	DeathUI.title.BackgroundTransparency = 1
+	DeathUI.title.Font = F.Title
+	DeathUI.title.TextSize = textSize(28)
+	DeathUI.title.TextColor3 = C.White
+	DeathUI.title.TextWrapped = true
+	DeathUI.title.Text = "Name Here"
+	DeathUI.title.ZIndex = 122
+	DeathUI.title.Parent = DeathUI.headerSection
 
--- MOBILE FIX: Responsive lifespan text
-local lifespanY = titleLabelY + px(36)
-DeathUI.lifespan = Instance.new("TextLabel")
-DeathUI.lifespan.Name = "Lifespan"
-DeathUI.lifespan.Size = UDim2.new(1, 0, 0, px(24))
-DeathUI.lifespan.Position = UDim2.new(0, 0, 0, lifespanY)
-DeathUI.lifespan.BackgroundTransparency = 1
-DeathUI.lifespan.Font = F.Body
-DeathUI.lifespan.TextSize = textSize(16)
-DeathUI.lifespan.TextColor3 = C.Gray300
-DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
-DeathUI.lifespan.ZIndex = 122
-DeathUI.lifespan.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive lifespan text
+	local lifespanY = titleLabelY + px(36)
+	DeathUI.lifespan = Instance.new("TextLabel")
+	DeathUI.lifespan.Name = "Lifespan"
+	DeathUI.lifespan.Size = UDim2.new(1, 0, 0, px(24))
+	DeathUI.lifespan.Position = UDim2.new(0, 0, 0, lifespanY)
+	DeathUI.lifespan.BackgroundTransparency = 1
+	DeathUI.lifespan.Font = F.Body
+	DeathUI.lifespan.TextSize = textSize(16)
+	DeathUI.lifespan.TextColor3 = C.Gray300
+	DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
+	DeathUI.lifespan.ZIndex = 122
+	DeathUI.lifespan.Parent = DeathUI.headerSection
 
--- Cause of death
-DeathUI.cause = Instance.new("TextLabel")
-DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
-DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
-DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.cause.BackgroundTransparency = 1
-DeathUI.cause.Font = F.Body
-DeathUI.cause.TextSize = 14
-DeathUI.cause.TextColor3 = C.Gray400
-DeathUI.cause.TextWrapped = true
-DeathUI.cause.Text = "Cause of death"
-DeathUI.cause.ZIndex = 122
-DeathUI.cause.Parent = DeathUI.headerSection
+	-- Cause of death
+	DeathUI.cause = Instance.new("TextLabel")
+	DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
+	DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
+	DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.cause.BackgroundTransparency = 1
+	DeathUI.cause.Font = F.Body
+	DeathUI.cause.TextSize = 14
+	DeathUI.cause.TextColor3 = C.Gray400
+	DeathUI.cause.TextWrapped = true
+	DeathUI.cause.Text = "Cause of death"
+	DeathUI.cause.ZIndex = 122
+	DeathUI.cause.Parent = DeathUI.headerSection
 
--- Stats container
-DeathUI.statsSection = Instance.new("Frame")
-DeathUI.statsSection.Name = "StatsSection"
-DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
-DeathUI.statsSection.ZIndex = 121
-DeathUI.statsSection.LayoutOrder = 2
-DeathUI.statsSection.Parent = DeathUI.scroll
+	-- Stats container
+	DeathUI.statsSection = Instance.new("Frame")
+	DeathUI.statsSection.Name = "StatsSection"
+	DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.statsSection.ZIndex = 121
+	DeathUI.statsSection.LayoutOrder = 2
+	DeathUI.statsSection.Parent = DeathUI.scroll
 
-local statsSectionPad = Instance.new("UIPadding")
-statsSectionPad.PaddingTop = UDim.new(0, 20)
-statsSectionPad.PaddingBottom = UDim.new(0, 20)
-statsSectionPad.PaddingLeft = UDim.new(0, 16)
-statsSectionPad.PaddingRight = UDim.new(0, 16)
-statsSectionPad.Parent = DeathUI.statsSection
+	local statsSectionPad = Instance.new("UIPadding")
+	statsSectionPad.PaddingTop = UDim.new(0, 20)
+	statsSectionPad.PaddingBottom = UDim.new(0, 20)
+	statsSectionPad.PaddingLeft = UDim.new(0, 16)
+	statsSectionPad.PaddingRight = UDim.new(0, 16)
+	statsSectionPad.Parent = DeathUI.statsSection
 
-local statsSectionLayout = Instance.new("UIListLayout")
-statsSectionLayout.Padding = UDim.new(0, 12)
-statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-statsSectionLayout.Parent = DeathUI.statsSection
+	local statsSectionLayout = Instance.new("UIListLayout")
+	statsSectionLayout.Padding = UDim.new(0, 12)
+	statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	statsSectionLayout.Parent = DeathUI.statsSection
 
--- Stats title
-local statsTitle = Instance.new("TextLabel")
-statsTitle.Name = "StatsTitle"
-statsTitle.Size = UDim2.new(1, 0, 0, 28)
-statsTitle.BackgroundTransparency = 1
-statsTitle.Font = F.Title
-statsTitle.TextSize = 18
-statsTitle.TextColor3 = C.White
-statsTitle.TextXAlignment = Enum.TextXAlignment.Left
-statsTitle.Text = "📊 LIFE STATISTICS"
-statsTitle.LayoutOrder = 0
-statsTitle.ZIndex = 122
-statsTitle.Parent = DeathUI.statsSection
+	-- Stats title
+	local statsTitle = Instance.new("TextLabel")
+	statsTitle.Name = "StatsTitle"
+	statsTitle.Size = UDim2.new(1, 0, 0, 28)
+	statsTitle.BackgroundTransparency = 1
+	statsTitle.Font = F.Title
+	statsTitle.TextSize = 18
+	statsTitle.TextColor3 = C.White
+	statsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	statsTitle.Text = "📊 LIFE STATISTICS"
+	statsTitle.LayoutOrder = 0
+	statsTitle.ZIndex = 122
+	statsTitle.Parent = DeathUI.statsSection
 
-DeathUI.statsFrame = Instance.new("Frame")
-DeathUI.statsFrame.Name = "StatsFrame"
-DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.statsFrame.BackgroundTransparency = 1
-DeathUI.statsFrame.LayoutOrder = 1
-DeathUI.statsFrame.ZIndex = 122
-DeathUI.statsFrame.Parent = DeathUI.statsSection
+	DeathUI.statsFrame = Instance.new("Frame")
+	DeathUI.statsFrame.Name = "StatsFrame"
+	DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsFrame.BackgroundTransparency = 1
+	DeathUI.statsFrame.LayoutOrder = 1
+	DeathUI.statsFrame.ZIndex = 122
+	DeathUI.statsFrame.Parent = DeathUI.statsSection
 
-local deathStatsLayout = Instance.new("UIListLayout")
-deathStatsLayout.Padding = UDim.new(0, 8)
-deathStatsLayout.Parent = DeathUI.statsFrame
+	local deathStatsLayout = Instance.new("UIListLayout")
+	deathStatsLayout.Padding = UDim.new(0, 8)
+	deathStatsLayout.Parent = DeathUI.statsFrame
 
--- Achievements section
-DeathUI.achievementsSection = Instance.new("Frame")
-DeathUI.achievementsSection.Name = "AchievementsSection"
-DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
-DeathUI.achievementsSection.ZIndex = 121
-DeathUI.achievementsSection.LayoutOrder = 3
-DeathUI.achievementsSection.Parent = DeathUI.scroll
+	-- Achievements section
+	DeathUI.achievementsSection = Instance.new("Frame")
+	DeathUI.achievementsSection.Name = "AchievementsSection"
+	DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
+	DeathUI.achievementsSection.ZIndex = 121
+	DeathUI.achievementsSection.LayoutOrder = 3
+	DeathUI.achievementsSection.Parent = DeathUI.scroll
 
-local achievePad = Instance.new("UIPadding")
-achievePad.PaddingTop = UDim.new(0, 16)
-achievePad.PaddingBottom = UDim.new(0, 16)
-achievePad.PaddingLeft = UDim.new(0, 16)
-achievePad.PaddingRight = UDim.new(0, 16)
-achievePad.Parent = DeathUI.achievementsSection
+	local achievePad = Instance.new("UIPadding")
+	achievePad.PaddingTop = UDim.new(0, 16)
+	achievePad.PaddingBottom = UDim.new(0, 16)
+	achievePad.PaddingLeft = UDim.new(0, 16)
+	achievePad.PaddingRight = UDim.new(0, 16)
+	achievePad.Parent = DeathUI.achievementsSection
 
-local achieveLayout = Instance.new("UIListLayout")
-achieveLayout.Padding = UDim.new(0, 10)
-achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
-achieveLayout.Parent = DeathUI.achievementsSection
+	local achieveLayout = Instance.new("UIListLayout")
+	achieveLayout.Padding = UDim.new(0, 10)
+	achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	achieveLayout.Parent = DeathUI.achievementsSection
 
-local achieveTitle = Instance.new("TextLabel")
-achieveTitle.Name = "AchieveTitle"
-achieveTitle.Size = UDim2.new(1, 0, 0, 24)
-achieveTitle.BackgroundTransparency = 1
-achieveTitle.Font = F.Title
-achieveTitle.TextSize = 16
-achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
-achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
-achieveTitle.Text = "🏆 ACHIEVEMENTS"
-achieveTitle.LayoutOrder = 0
-achieveTitle.ZIndex = 122
-achieveTitle.Parent = DeathUI.achievementsSection
+	local achieveTitle = Instance.new("TextLabel")
+	achieveTitle.Name = "AchieveTitle"
+	achieveTitle.Size = UDim2.new(1, 0, 0, 24)
+	achieveTitle.BackgroundTransparency = 1
+	achieveTitle.Font = F.Title
+	achieveTitle.TextSize = 16
+	achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+	achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
+	achieveTitle.Text = "🏆 ACHIEVEMENTS"
+	achieveTitle.LayoutOrder = 0
+	achieveTitle.ZIndex = 122
+	achieveTitle.Parent = DeathUI.achievementsSection
 
-DeathUI.achieveFrame = Instance.new("Frame")
-DeathUI.achieveFrame.Name = "AchieveFrame"
-DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.achieveFrame.BackgroundTransparency = 1
-DeathUI.achieveFrame.LayoutOrder = 1
-DeathUI.achieveFrame.ZIndex = 122
-DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
+	DeathUI.achieveFrame = Instance.new("Frame")
+	DeathUI.achieveFrame.Name = "AchieveFrame"
+	DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achieveFrame.BackgroundTransparency = 1
+	DeathUI.achieveFrame.LayoutOrder = 1
+	DeathUI.achieveFrame.ZIndex = 122
+	DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
 
-local achieveListLayout = Instance.new("UIListLayout")
-achieveListLayout.Padding = UDim.new(0, 6)
-achieveListLayout.Parent = DeathUI.achieveFrame
+	local achieveListLayout = Instance.new("UIListLayout")
+	achieveListLayout.Padding = UDim.new(0, 6)
+	achieveListLayout.Parent = DeathUI.achieveFrame
 
--- Epitaph section
-DeathUI.epitaphSection = Instance.new("Frame")
-DeathUI.epitaphSection.Name = "EpitaphSection"
-DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
-DeathUI.epitaphSection.ZIndex = 121
-DeathUI.epitaphSection.LayoutOrder = 4
-DeathUI.epitaphSection.Parent = DeathUI.scroll
+	-- Epitaph section
+	DeathUI.epitaphSection = Instance.new("Frame")
+	DeathUI.epitaphSection.Name = "EpitaphSection"
+	DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.epitaphSection.ZIndex = 121
+	DeathUI.epitaphSection.LayoutOrder = 4
+	DeathUI.epitaphSection.Parent = DeathUI.scroll
 
-local epitaphPad = Instance.new("UIPadding")
-epitaphPad.PaddingTop = UDim.new(0, 16)
-epitaphPad.PaddingBottom = UDim.new(0, 24)
-epitaphPad.PaddingLeft = UDim.new(0, 20)
-epitaphPad.PaddingRight = UDim.new(0, 20)
-epitaphPad.Parent = DeathUI.epitaphSection
+	local epitaphPad = Instance.new("UIPadding")
+	epitaphPad.PaddingTop = UDim.new(0, 16)
+	epitaphPad.PaddingBottom = UDim.new(0, 24)
+	epitaphPad.PaddingLeft = UDim.new(0, 20)
+	epitaphPad.PaddingRight = UDim.new(0, 20)
+	epitaphPad.Parent = DeathUI.epitaphSection
 
-DeathUI.epitaph = Instance.new("TextLabel")
-DeathUI.epitaph.Name = "Epitaph"
-DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.epitaph.BackgroundTransparency = 1
-DeathUI.epitaph.Font = F.Body
-DeathUI.epitaph.TextSize = 14
-DeathUI.epitaph.TextColor3 = C.Gray400
-DeathUI.epitaph.TextWrapped = true
-DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
-DeathUI.epitaph.Text = ""
-DeathUI.epitaph.ZIndex = 122
-DeathUI.epitaph.Parent = DeathUI.epitaphSection
+	DeathUI.epitaph = Instance.new("TextLabel")
+	DeathUI.epitaph.Name = "Epitaph"
+	DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaph.BackgroundTransparency = 1
+	DeathUI.epitaph.Font = F.Body
+	DeathUI.epitaph.TextSize = 14
+	DeathUI.epitaph.TextColor3 = C.Gray400
+	DeathUI.epitaph.TextWrapped = true
+	DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
+	DeathUI.epitaph.Text = ""
+	DeathUI.epitaph.ZIndex = 122
+	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
--- Restart button section
-DeathUI.buttonSection = Instance.new("Frame")
-DeathUI.buttonSection.Name = "ButtonSection"
-DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
-DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-DeathUI.buttonSection.ZIndex = 121
-DeathUI.buttonSection.LayoutOrder = 5
-DeathUI.buttonSection.Parent = DeathUI.scroll
+	-- Restart button section
+	DeathUI.buttonSection = Instance.new("Frame")
+	DeathUI.buttonSection.Name = "ButtonSection"
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
+	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.buttonSection.ZIndex = 121
+	DeathUI.buttonSection.LayoutOrder = 5
+	DeathUI.buttonSection.Parent = DeathUI.scroll
 
-DeathUI.restart = Instance.new("TextButton")
-DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
-DeathUI.restart.BackgroundColor3 = C.Green
-DeathUI.restart.Font = F.Button
-DeathUI.restart.TextSize = 20
-DeathUI.restart.TextColor3 = C.White
-DeathUI.restart.Text = "🔄 Start New Life"
-DeathUI.restart.AutoButtonColor = false
-DeathUI.restart.ZIndex = 122
-DeathUI.restart.Parent = DeathUI.buttonSection
-corner(DeathUI.restart, 16)
+	DeathUI.restart = Instance.new("TextButton")
+	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
+	DeathUI.restart.BackgroundColor3 = C.Green
+	DeathUI.restart.Font = F.Button
+	DeathUI.restart.TextSize = 20
+	DeathUI.restart.TextColor3 = C.White
+	DeathUI.restart.Text = "🔄 Start New Life"
+	DeathUI.restart.AutoButtonColor = false
+	DeathUI.restart.ZIndex = 122
+	DeathUI.restart.Parent = DeathUI.buttonSection
+	corner(DeathUI.restart, 16)
 
-DeathUI.restart.MouseEnter:Connect(function()
-	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
-end)
-DeathUI.restart.MouseLeave:Connect(function()
-	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
-end)
+	DeathUI.restart.MouseEnter:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+	end)
+	DeathUI.restart.MouseLeave:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+	end)
 
-local ResetLife = remotesFolder:FindFirstChild("ResetLife")
+	local ResetLife = remotesFolder:FindFirstChild("ResetLife")
 
-DeathUI.restart.MouseButton1Click:Connect(function()
-	if ResetLife then
-		DeathUI.restart.Text = "Starting new life..."
-		ResetLife:FireServer()
-	end
-end)
+	DeathUI.restart.MouseButton1Click:Connect(function()
+		if ResetLife then
+			DeathUI.restart.Text = "Starting new life..."
+			ResetLife:FireServer()
+		end
+	end)
+end
+
+-- Build the Death UI immediately
+buildDeathUI()
 
 -- Helper to create a stat row
 local function createDeathStatRow(icon, label, value, color, order)
@@ -2503,15 +2535,15 @@ showEvent = function(payload)
 	end
 
 	-- Cancel any in-progress hide animation to prevent race conditions
-	if currentHideTween then
-		currentHideTween:Cancel()
-		currentHideTween = nil
+	if EventUI.currentHideTween then
+		EventUI.currentHideTween:Cancel()
+		EventUI.currentHideTween = nil
 	end
 
 	-- Wrap in pcall to catch errors and ensure awaitingEvent gets reset
 	local success, errorMsg = pcall(function()
 		awaitingEvent = true
-		currentEventId = payload.id
+		EventUI.currentEventId = payload.id
 		clearChoices()
 
 		-- Get category-based colors
@@ -2578,10 +2610,10 @@ showEvent = function(payload)
 			local minigameType = choice.minigame
 
 			local function handleChoice()
-				if not currentEventId then return end
+				if not EventUI.currentEventId then return end
 
 				if minigameType and minigamesInstance then
-					pendingMinigameEventId     = currentEventId
+					pendingMinigameEventId     = EventUI.currentEventId
 					pendingMinigameChoiceIndex = choiceIndex
 					hideEvent()
 
@@ -2594,18 +2626,18 @@ showEvent = function(payload)
 						pendingMinigameChoiceIndex = nil
 					end)
 				else
-					SubmitChoice:FireServer(currentEventId, choiceIndex)
+					SubmitChoice:FireServer(EventUI.currentEventId, choiceIndex)
 					hideEvent()
 				end
 			end
 
 			btn.MouseButton1Click:Connect(handleChoice)
 			table.insert(choiceHandlers, handleChoice)
-			table.insert(activeChoiceButtons, btn)
+			table.insert(EventUI.activeChoiceButtons, btn)
 		end
 
-		surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
-			if currentEventId and #choiceHandlers > 0 then
+		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
+			if EventUI.currentEventId and #choiceHandlers > 0 then
 				local handler = choiceHandlers[math.random(1, #choiceHandlers)]
 				handler()
 			end
@@ -2629,24 +2661,24 @@ showEvent = function(payload)
 	if not success then
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
 		awaitingEvent = false
-		currentEventId = nil
+		EventUI.currentEventId = nil
 		eventOverlay.Visible = false
 	end
 end
 
 hideEvent = function()
 	awaitingEvent  = false
-	currentEventId = nil
+	EventUI.currentEventId = nil
 
 	-- Create the hide tween and track it
-	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
+	EventUI.currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
 	tween(eventShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 	tween(eventCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
-	currentHideTween.Completed:Connect(function()
+	EventUI.currentHideTween.Completed:Connect(function()
 		-- Only hide overlay if we're not currently showing a new event
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
@@ -2662,7 +2694,7 @@ hideEvent = function()
 			eventHeader.Visible = false
 		end
 
-		currentHideTween = nil
+		EventUI.currentHideTween = nil
 	end)
 end
 
@@ -3408,7 +3440,7 @@ ageButton.MouseButton1Click:Connect(function()
 	-- something went wrong - reset the flag
 	if awaitingEvent and not eventOverlay.Visible then
 		awaitingEvent = false
-		currentEventId = nil
+		EventUI.currentEventId = nil
 	end
 
 	-- Block age up if waiting for event choice
@@ -3521,7 +3553,7 @@ task.spawn(function()
 				-- Check if the event overlay is actually visible
 				if not eventOverlay.Visible then
 					awaitingEvent = false
-					currentEventId = nil
+					EventUI.currentEventId = nil
 					lastAwaitingEventTime = nil
 				end
 			end
