@@ -1552,10 +1552,10 @@ local function buildEventModal()
 		maxEventHeight = Device.ViewportSize.Y - 140
 	end
 	
-	-- Calculate responsive corner radii and margins
+	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
 	local eventCornerRadius = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 18 or px(24))
-	local shellMargin = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 4)
-	local cardMargin = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or 8)
+	local shellMargin = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or 4)
+	local cardMargin = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 8)
 	
 	-- Shadow frame: fixed width, autosize height
 	EventUI.shadowFrame = Instance.new("Frame")
@@ -1781,14 +1781,13 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- choices - Scrollable for many options, auto-sizes for few
-	-- Give it a reasonable max height so modal doesn't grow forever
+	-- choices - Scrollable for many options with FIXED height (no AutomaticSize on ScrollingFrame!)
 	local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
 	
 	EventUI.choicesSection = Instance.new("ScrollingFrame")
 	EventUI.choicesSection.Name = "ChoicesScroll"
-	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, maxChoicesH)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.None  -- CRITICAL: No AutomaticSize on ScrollingFrame
 	EventUI.choicesSection.BackgroundTransparency = 1
 	EventUI.choicesSection.ScrollBarThickness = Device.IS_MOBILE and 4 or 3
 	EventUI.choicesSection.ScrollBarImageColor3 = C.Gray400
@@ -1798,11 +1797,7 @@ local function buildEventModal()
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
-	
-	-- Constrain max height so it scrolls instead of overflowing
-	local choicesSizeConstraint = Instance.new("UISizeConstraint")
-	choicesSizeConstraint.MaxSize = Vector2.new(math.huge, maxChoicesH)
-	choicesSizeConstraint.Parent = EventUI.choicesSection
+	-- NO UISizeConstraint needed - we use fixed height
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
@@ -2763,6 +2758,22 @@ showEvent = function(payload)
 			table.insert(choiceHandlers, handleChoice)
 			table.insert(EventUI.activeChoiceButtons, btn)
 		end
+
+		-- Auto-fit scroll area when there are only 1-2 choices (so it doesn't look like empty box)
+		task.defer(function()
+			local layout = choicesSection:FindFirstChildOfClass("UIListLayout")
+			if not layout then return end
+
+			local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
+			local contentH = layout.AbsoluteContentSize.Y
+
+			-- Add breathing room for padding, clamp between min tap target and max
+			local desired = math.clamp(contentH + 16, 50, maxChoicesH)
+			choicesSection.Size = UDim2.new(1, 0, 0, desired)
+		end)
+
+		-- Only show Surprise Me when there are 2+ choices
+		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false
 
 		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
 			if EventUI.currentEventId and #choiceHandlers > 0 then
