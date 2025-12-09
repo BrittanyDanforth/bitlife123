@@ -73,31 +73,49 @@ local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 
 local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 local ViewportSize = Camera.ViewportSize
 
+-- CRITICAL UI FIX: More aggressive scaling for small phones
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.60 end  -- CRITICAL: More aggressive for tiny phones
-	if minDim < 400 then return 0.70 end
+	if minDim < 350 then return 0.55 end  -- SUPER TINY phones
+	if minDim < 380 then return 0.65 end  -- TINY phones like iPhone SE
+	if minDim < 400 then return 0.72 end  -- Small phones
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
--- CRITICAL FIX: Better text sizing for tiny phones
+
+-- CRITICAL FIX: Better text sizing for tiny phones - more readable
 local function textSize(baseSize) 
-	local minSize = IS_TINY_PHONE and 9 or 10
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	return math.max(minSize, math.floor(baseSize * getScale())) 
 end
-local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+
+-- CRITICAL FIX: More padding/spacing on small screens to reduce bunching
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+
+-- CRITICAL FIX: Card heights that scale properly
+local function cardHeight(baseHeight)
+	if IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.7)) end
+	if IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.85)) end
+	return baseHeight
+end
+
 -- CRITICAL FIX: Proper minimum touch target for tiny phones
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	local minTarget = IS_TINY_PHONE and 38 or 44
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
 	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
+
 local function cardWidth()
-	if IS_TINY_PHONE then return ViewportSize.X - 12 end
-	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
+	if IS_TINY_PHONE then return ViewportSize.X - 8 end
+	if IS_SMALL_PHONE then return ViewportSize.X - 12 end
 	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
 	return 350
 end
@@ -1519,25 +1537,33 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	-- Container -> Shadow -> Shell -> Inner Card
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL UI FIX: Scale card heights for small phones
+	local PERSON_CARD_HEIGHT = IS_TINY_PHONE and 80 or (IS_SMALL_PHONE and 92 or 110)
+	local AVATAR_SIZE = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 68)
+	local AVATAR_MARGIN = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local TEXT_START = AVATAR_MARGIN + AVATAR_SIZE + (IS_TINY_PHONE and 6 or 12)
+	local cornerRad = IS_TINY_PHONE and 12 or 20
+	
 	-- Container (holds everything, manages layout)
 	local container = Instance.new("Frame")
 	container.Name = person.id .. "_Container"
-	container.Size = UDim2.new(1, 0, 0, 110)
+	container.Size = UDim2.new(1, 0, 0, PERSON_CARD_HEIGHT)
 	container.BackgroundTransparency = 1
 	container.LayoutOrder = order
 	container.ZIndex = 82
 	container.Parent = parent
 	
-	-- Shadow layer (premium depth effect)
+	-- Shadow layer (premium depth effect) - SCALED
+	local shadowOffset = IS_TINY_PHONE and 1 or 2
 	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
-	shadow.Size = UDim2.new(1, 4, 1, 4)
-	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.Size = UDim2.new(1, shadowOffset * 2, 1, shadowOffset * 2)
+	shadow.Position = UDim2.new(0, shadowOffset, 0, shadowOffset)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = isAlive and 0.92 or 0.96
 	shadow.ZIndex = 82
 	shadow.Parent = container
-	UI.corner(shadow, 20)
+	UI.corner(shadow, cornerRad)
 	
 	-- Colored shell (accent border)
 	local shell = Instance.new("Frame")
@@ -1546,27 +1572,32 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	shell.BackgroundColor3 = isAlive and accentColor or C.Gray400
 	shell.ZIndex = 83
 	shell.Parent = container
-	UI.corner(shell, 18)
+	UI.corner(shell, IS_TINY_PHONE and 10 or 18)
 	
-	-- Inner white card
+	-- Inner white card - SCALED padding
+	local cardPad = IS_TINY_PHONE and 2 or 3
 	local card = Instance.new("Frame")
 	card.Name = "Card"
-	card.Size = UDim2.new(1, -6, 1, -6)
-	card.Position = UDim2.new(0, 3, 0, 3)
+	card.Size = UDim2.new(1, -cardPad * 2, 1, -cardPad * 2)
+	card.Position = UDim2.new(0, cardPad, 0, cardPad)
 	card.BackgroundColor3 = C.White
 	card.ZIndex = 84
 	card.Parent = shell
-	UI.corner(card, 16)
+	UI.corner(card, IS_TINY_PHONE and 8 or 16)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PREMIUM HOVER & PRESS EFFECTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL UI FIX: Use scaled heights for hover/press effects
+	local hoverHeight = PERSON_CARD_HEIGHT + 4
+	local pressHeight = PERSON_CARD_HEIGHT - 4
+
 	if isAlive then
-		-- CRITICAL FIX: Reduced width to not cover the Chat button on the right
+		-- CRITICAL FIX: Reduced width to not cover the Chat button on the right (SCALED)
 		local pressArea = Instance.new("TextButton")
 		pressArea.Name = "PressArea"
-		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+		pressArea.Size = UDim2.new(1, IS_TINY_PHONE and -50 or -100, 1, 0)  -- Leave space for button
 		pressArea.BackgroundTransparency = 1
 		pressArea.Text = ""
 		pressArea.ZIndex = 92
@@ -1580,12 +1611,12 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 			isHovering = true
 			-- Premium hover: lift and brighten
 			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-				Size = UDim2.new(1, 0, 0, 114)
+				Size = UDim2.new(1, 0, 0, hoverHeight)
 			})
 			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
 			UI.tween(shadow, TweenInfo.new(0.12), {
 				BackgroundTransparency = 0.85,
-				Position = UDim2.new(0, 3, 0, 4)
+				Position = UDim2.new(0, shadowOffset + 1, 0, shadowOffset + 2)
 			})
 			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = paleColor:Lerp(C.White, 0.85) })
 		end)
@@ -1595,12 +1626,12 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 			isPressed = false
 			-- Return to normal
 			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-				Size = UDim2.new(1, 0, 0, 110)
+				Size = UDim2.new(1, 0, 0, PERSON_CARD_HEIGHT)
 			})
 			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
 			UI.tween(shadow, TweenInfo.new(0.12), {
 				BackgroundTransparency = 0.92,
-				Position = UDim2.new(0, 2, 0, 2)
+				Position = UDim2.new(0, shadowOffset, 0, shadowOffset)
 			})
 			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
 		end)
@@ -1609,7 +1640,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 			isPressed = true
 			-- Press down effect
 			UI.tween(container, TweenInfo.new(0.08), {
-				Size = UDim2.new(1, 0, 0, 106)
+				Size = UDim2.new(1, 0, 0, pressHeight)
 			})
 			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = accentDark:Lerp(C.Black, 0.1) })
 		end)
@@ -1618,7 +1649,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 			isPressed = false
 			if isHovering then
 				UI.tween(container, TweenInfo.new(0.1), {
-					Size = UDim2.new(1, 0, 0, 114)
+					Size = UDim2.new(1, 0, 0, hoverHeight)
 				})
 				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = accentDark })
 			end
@@ -1626,25 +1657,26 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- AVATAR (with ring effect for alive, grayed for deceased)
+	-- AVATAR (with ring effect for alive, grayed for deceased) - SCALED
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Avatar ring (colored border around avatar)
+	-- Avatar ring (colored border around avatar) - SCALED
 	local avatarRing = Instance.new("Frame")
-	avatarRing.Size = UDim2.new(0, 68, 0, 68)
-	avatarRing.Position = UDim2.new(0, 10, 0.5, -34)
+	avatarRing.Size = UDim2.new(0, AVATAR_SIZE, 0, AVATAR_SIZE)
+	avatarRing.Position = UDim2.new(0, AVATAR_MARGIN, 0.5, -AVATAR_SIZE / 2)
 	avatarRing.BackgroundColor3 = isAlive and accentColor or C.Gray400
 	avatarRing.ZIndex = 85
 	avatarRing.Parent = card
-	UI.corner(avatarRing, 18)
+	UI.corner(avatarRing, IS_TINY_PHONE and 10 or 18)
 	
+	local avatarPad = IS_TINY_PHONE and 2 or 3
 	local avatarFrame = Instance.new("Frame")
-	avatarFrame.Size = UDim2.new(1, -6, 1, -6)
-	avatarFrame.Position = UDim2.new(0, 3, 0, 3)
+	avatarFrame.Size = UDim2.new(1, -avatarPad * 2, 1, -avatarPad * 2)
+	avatarFrame.Position = UDim2.new(0, avatarPad, 0, avatarPad)
 	avatarFrame.BackgroundColor3 = isAlive and paleColor or C.Gray200
 	avatarFrame.ZIndex = 86
 	avatarFrame.Parent = avatarRing
-	UI.corner(avatarFrame, 16)
+	UI.corner(avatarFrame, IS_TINY_PHONE and 8 or 16)
 	
 	-- Gradient on avatar for depth
 	if isAlive then
@@ -1663,7 +1695,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	avatarLabel.Size = UDim2.fromScale(1, 1)
 	avatarLabel.BackgroundTransparency = 1
 	avatarLabel.Font = F.Body
-	avatarLabel.TextSize = 34
+	avatarLabel.TextSize = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 28 or 34)
 	avatarLabel.TextColor3 = isAlive and accentColor or C.Gray500
 	avatarLabel.TextTransparency = isAlive and 0 or 0.3
 	avatarLabel.Text = emoji
@@ -1671,16 +1703,23 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	avatarLabel.Parent = avatarFrame
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NAME & DETAILS (repositioned for new layout)
+	-- NAME & DETAILS (repositioned for new layout) - SCALED
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- Name (bolder)
+	-- CRITICAL UI FIX: Scaled text and position for small phones
+	local NAME_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
+	local BADGE_HEIGHT = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 22 or 26)
+	local BADGE_WIDTH = IS_TINY_PHONE and 65 or (IS_SMALL_PHONE and 80 or 95)
+	local nameY = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local roleY = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 32 or 36)
+
+	-- Name (bolder) - SCALED
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.4, 0, 0, 24)
-	nameLabel.Position = UDim2.new(0, 90, 0, 10)
+	nameLabel.Size = UDim2.new(1, -TEXT_START - (IS_TINY_PHONE and 50 or 100), 0, IS_TINY_PHONE and 18 or 24)
+	nameLabel.Position = UDim2.new(0, TEXT_START, 0, nameY)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = F.Title
-	nameLabel.TextSize = 17
+	nameLabel.TextSize = NAME_SIZE
 	nameLabel.TextColor3 = isAlive and C.Gray900 or C.Gray500
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Text = person.name
@@ -1688,10 +1727,10 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	nameLabel.ZIndex = 85
 	nameLabel.Parent = card
 
-	-- Role badge (more prominent)
+	-- Role badge (more prominent) - SCALED
 	local roleBadge = Instance.new("Frame")
-	roleBadge.Size = UDim2.new(0, 95, 0, 26)
-	roleBadge.Position = UDim2.new(0, 90, 0, 36)
+	roleBadge.Size = UDim2.new(0, BADGE_WIDTH, 0, BADGE_HEIGHT)
+	roleBadge.Position = UDim2.new(0, TEXT_START, 0, roleY)
 	roleBadge.BackgroundColor3 = isAlive and paleColor or C.Gray200
 	roleBadge.ZIndex = 85
 	roleBadge.Parent = card

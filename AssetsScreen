@@ -71,33 +71,58 @@ local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 
 local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 local ViewportSize = Camera.ViewportSize
 
+-- CRITICAL UI FIX: More aggressive scaling for small phones
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.60 end  -- CRITICAL: More aggressive for tiny phones
-	if minDim < 400 then return 0.70 end
+	if minDim < 350 then return 0.55 end  -- SUPER TINY phones
+	if minDim < 380 then return 0.65 end  -- TINY phones like iPhone SE
+	if minDim < 400 then return 0.72 end  -- Small phones
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
--- CRITICAL FIX: Better text sizing for tiny phones
+
+-- CRITICAL FIX: Better text sizing for tiny phones - more readable
 local function textSize(baseSize) 
-	local minSize = IS_TINY_PHONE and 9 or 10
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	return math.max(minSize, math.floor(baseSize * getScale())) 
 end
-local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+
+-- CRITICAL FIX: More padding/spacing on small screens to reduce bunching
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+
+-- CRITICAL FIX: Card heights that scale properly
+local function cardHeight(baseHeight)
+	if IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.7)) end
+	if IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.85)) end
+	return baseHeight
+end
+
 -- CRITICAL FIX: Proper minimum touch target for tiny phones
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	local minTarget = IS_TINY_PHONE and 38 or 44
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
 	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
+
 local function cardWidth()
-	if IS_TINY_PHONE then return ViewportSize.X - 12 end
-	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
-	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
+	if IS_TINY_PHONE then return ViewportSize.X - 8 end
+	if IS_SMALL_PHONE then return ViewportSize.X - 12 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 20, 350) end
 	return 350
+end
+
+-- CRITICAL FIX: Icon sizes that scale for small phones
+local function iconSize(base)
+	if IS_TINY_PHONE then return math.max(36, math.floor(base * 0.62)) end
+	if IS_SMALL_PHONE then return math.max(42, math.floor(base * 0.75)) end
+	return base
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
