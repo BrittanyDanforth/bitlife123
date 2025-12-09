@@ -1395,27 +1395,40 @@ ageGrad.Color = ColorSequence.new({
 ageGrad.Rotation = 90
 ageGrad.Parent = ageButton
 
+-- Age button content - use vertical layout for proper stacking
+local ageBtnContent = Instance.new("Frame")
+ageBtnContent.Size = UDim2.fromScale(1, 1)
+ageBtnContent.BackgroundTransparency = 1
+ageBtnContent.ZIndex = 17
+ageBtnContent.Parent = ageButton
+
+local ageBtnLayout = Instance.new("UIListLayout")
+ageBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ageBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+ageBtnLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and -2 or 0)
+ageBtnLayout.Parent = ageBtnContent
+
 local agePlus = Instance.new("TextLabel")
-agePlus.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 20 or px(32))
-agePlus.Position = UDim2.new(0, 0, 0, Device.IS_TINY_PHONE and 6 or padSize(12))
+agePlus.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 22 or px(32))
 agePlus.BackgroundTransparency = 1
 agePlus.Font = F.Title
-agePlus.TextSize = Device.IS_TINY_PHONE and 22 or textSize(32)
+agePlus.TextSize = Device.IS_TINY_PHONE and 24 or textSize(32)
 agePlus.TextColor3 = C.White
 agePlus.Text = "+"
+agePlus.LayoutOrder = 1
 agePlus.ZIndex = 17
-agePlus.Parent = ageButton
+agePlus.Parent = ageBtnContent
 
 local ageText = Instance.new("TextLabel")
-ageText.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 12 or 18)
-ageText.Position = UDim2.new(0, 0, 0, Device.IS_TINY_PHONE and 28 or 44)
+ageText.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 14 or 18)
 ageText.BackgroundTransparency = 1
 ageText.Font = F.Button
-ageText.TextSize = Device.IS_TINY_PHONE and 10 or 16
+ageText.TextSize = Device.IS_TINY_PHONE and 11 or 16
 ageText.TextColor3 = C.White
 ageText.Text = "Age"
+ageText.LayoutOrder = 2
 ageText.ZIndex = 17
-ageText.Parent = ageButton
+ageText.Parent = ageBtnContent
 
 local tutorialRing = Instance.new("Frame")
 tutorialRing.Size = UDim2.new(1, Device.IS_TINY_PHONE and 20 or 30, 1, Device.IS_TINY_PHONE and 20 or 30)
@@ -1440,33 +1453,36 @@ tutorialOverlay.ZIndex = 40
 tutorialOverlay.Parent = screenGui
 
 local tutTextCont = Instance.new("Frame")
-tutTextCont.Size = UDim2.new(0.85, 0, 0, 100)
-tutTextCont.AnchorPoint = Vector2.new(0.5, 0.5)
-tutTextCont.Position = UDim2.new(0.5, 0, 0.35, 0)
+tutTextCont.Size = UDim2.new(0.85, 0, 0, 0)
+tutTextCont.AutomaticSize = Enum.AutomaticSize.Y
+tutTextCont.AnchorPoint = Vector2.new(0.5, 1)
+-- Position above the age button (which is near bottom of screen)
+tutTextCont.Position = UDim2.new(0.5, 0, 1, Device.IS_TINY_PHONE and -140 or -180)
 tutTextCont.BackgroundTransparency = 1
 tutTextCont.Parent = tutorialOverlay
 
 local tutLayout = Instance.new("UIListLayout")
 tutLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-tutLayout.Padding = UDim.new(0, 6)
+tutLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or 8)
 tutLayout.Parent = tutTextCont
 
+-- Tutorial text FIRST, then pointing finger at the bottom (pointing DOWN to Age button)
 local tutLines = {
-	"👇",
-	"Tap the AGE button to grow older!",
-	"Make choices as events happen.",
-	"Live your best (or worst) life!",
+	{ text = "Tap the AGE button to grow older!", isEmoji = false },
+	{ text = "Make choices as events happen.", isEmoji = false },
+	{ text = "Live your best (or worst) life!", isEmoji = false },
+	{ text = "👇", isEmoji = true },  -- Finger at BOTTOM pointing DOWN to Age button
 }
-for i, line in ipairs(tutLines) do
+for i, lineData in ipairs(tutLines) do
 	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(1, 0, 0, i == 1 and 40 or 28)
+	lbl.Size = UDim2.new(1, 0, 0, lineData.isEmoji and 40 or (Device.IS_TINY_PHONE and 22 or 28))
 	lbl.BackgroundTransparency = 1
-	lbl.Font = i == 1 and F.Body or F.Title
-	lbl.TextSize = i == 1 and 36 or 20  -- BIGGER text
+	lbl.Font = lineData.isEmoji and F.Body or F.Title
+	lbl.TextSize = lineData.isEmoji and 36 or (Device.IS_TINY_PHONE and 16 or 20)
 	lbl.TextColor3 = C.Gray900  -- DARK text for visibility
 	lbl.TextStrokeColor3 = C.White
 	lbl.TextStrokeTransparency = 0.5  -- White outline for contrast
-	lbl.Text = line
+	lbl.Text = lineData.text
 	lbl.LayoutOrder = i
 	lbl.Parent = tutTextCont
 end
@@ -1523,8 +1539,10 @@ local function buildEventModal()
 	EventUI.overlay.ZIndex = 60
 	EventUI.overlay.Parent = screenGui
 
-	-- TINY PHONE FIX: More compact modal width
+	-- TINY PHONE FIX: More compact modal width and constrain max height
 	local eventWidth = modalWidth(360)
+	local maxEventHeight = Device.IS_TINY_PHONE and (Device.ViewportSize.Y - 100) or (Device.ViewportSize.Y - 120)
+	
 	EventUI.shadowFrame = Instance.new("Frame")
 	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
 	EventUI.shadowFrame.AutomaticSize = Enum.AutomaticSize.Y
@@ -1535,6 +1553,11 @@ local function buildEventModal()
 	EventUI.shadowFrame.ZIndex = 61
 	EventUI.shadowFrame.Parent = EventUI.overlay
 	corner(EventUI.shadowFrame, Device.IS_TINY_PHONE and 14 or px(24))
+	
+	-- Add size constraint to prevent modal from being too tall
+	local eventSizeConstraint = Instance.new("UISizeConstraint")
+	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
+	eventSizeConstraint.Parent = EventUI.shadowFrame
 
 	-- BitLife-style colored shell (outer border) - thinner on tiny phones
 	local shellMargin = Device.IS_TINY_PHONE and 2 or 4

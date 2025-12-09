@@ -2333,70 +2333,77 @@ function OccupationScreen:createJobInfoModal()
 		self:hideJobInfoModal()
 	end)
 
+	-- MOBILE FIX: Responsive modal sizing
+	local jobModalHeight = IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 340) or 380
+	local jobModalWidth = IS_SMALL_PHONE and 0.96 or 0.9
+
 	-- Shadow frame (premium effect)
 	local shadowFrame = Instance.new("Frame")
 	shadowFrame.Name = "ShadowFrame"
-	shadowFrame.Size = UDim2.new(0.9, 6, 0, 386)
+	shadowFrame.Size = UDim2.new(jobModalWidth, 6, 0, jobModalHeight + 6)
 	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
 	shadowFrame.BackgroundColor3 = C.Black
 	shadowFrame.BackgroundTransparency = 0.75
 	shadowFrame.ZIndex = 96
 	shadowFrame.Parent = self.jobInfoOverlay
-	UI.corner(shadowFrame, 26)
+	UI.corner(shadowFrame, IS_SMALL_PHONE and 18 or 26)
 	self.jobInfoShadow = shadowFrame
 
 	-- Colored shell (premium BitLife look)
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
-	shell.Size = UDim2.new(0.9, 0, 0, 380)
+	shell.Size = UDim2.new(jobModalWidth, 0, 0, jobModalHeight)
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
 	shell.Position = UDim2.fromScale(0.5, 0.5)
 	shell.BackgroundColor3 = C.Blue
 	shell.ZIndex = 97
 	shell.Parent = self.jobInfoOverlay
-	UI.corner(shell, 24)
+	UI.corner(shell, IS_SMALL_PHONE and 16 or 24)
 	self.jobInfoShell = shell
 
 	-- Shell border stroke
-	local shellStroke = UI.stroke(shell, 2, 0.3, C.BlueDark)
+	local shellStroke = UI.stroke(shell, IS_SMALL_PHONE and 1 or 2, 0.3, C.BlueDark)
 	self.jobInfoShellStroke = shellStroke
 
 	-- Inner white card
+	local jobCardMargin = IS_SMALL_PHONE and 4 or 8
 	self.jobInfoCard = Instance.new("Frame")
 	self.jobInfoCard.Name = "Card"
-	self.jobInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.jobInfoCard.Size = UDim2.new(1, -jobCardMargin, 1, -jobCardMargin)
 	self.jobInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.jobInfoCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.jobInfoCard.BackgroundColor3 = C.White
 	self.jobInfoCard.ZIndex = 98
 	self.jobInfoCard.Parent = shell
-	UI.corner(self.jobInfoCard, 20)
+	UI.corner(self.jobInfoCard, IS_SMALL_PHONE and 14 or 20)
 
-	-- Header (blue accent at top)
+	-- Header (blue accent at top) - MOBILE FIX: Smaller header
+	local jobHeaderHeight = IS_SMALL_PHONE and 50 or 75
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, 75)
+	header.Size = UDim2.new(1, 0, 0, jobHeaderHeight)
 	header.BackgroundColor3 = C.Blue
 	header.ZIndex = 99
 	header.Parent = self.jobInfoCard
-	UI.corner(header, 20)
+	UI.corner(header, IS_SMALL_PHONE and 14 or 20)
 
 	local headerFix = Instance.new("Frame")
 	headerFix.Name = "HeaderFix"
-	headerFix.Size = UDim2.new(1, 0, 0, 30)
-	headerFix.Position = UDim2.new(0, 0, 1, -30)
+	headerFix.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 20 or 30)
+	headerFix.Position = UDim2.new(0, 0, 1, IS_SMALL_PHONE and -20 or -30)
 	headerFix.BackgroundColor3 = C.Blue
 	headerFix.BorderSizePixel = 0
 	headerFix.ZIndex = 99
 	headerFix.Parent = header
 
-	-- Close button
+	-- Close button - MOBILE FIX: Larger tap target
+	local jobCloseBtnSize = IS_SMALL_PHONE and 38 or 32
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Name = "CloseButton"
-	closeBtn.Size = UDim2.new(0, 32, 0, 32)
-	closeBtn.AnchorPoint = Vector2.new(1, 0)
-	closeBtn.Position = UDim2.new(1, -10, 0, 10)
+	closeBtn.Size = UDim2.new(0, jobCloseBtnSize, 0, jobCloseBtnSize)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+	closeBtn.Position = UDim2.new(1, IS_SMALL_PHONE and -6 or -10, 0.5, 0)
 	closeBtn.BackgroundColor3 = C.White
 	closeBtn.BackgroundTransparency = 0.1
 	closeBtn.Font = Enum.Font.GothamBold
@@ -4924,29 +4931,33 @@ function OccupationScreen:createCareerInfoModal()
 		self:hideCareerInfoModal()
 	end)
 
+	-- MOBILE FIX: Make modal height responsive and scrollable
+	local modalHeight = IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 420) or math.min(ViewportSize.Y - 100, 520)
+	local modalWidth = IS_SMALL_PHONE and 0.96 or 0.92
+
 	-- Shadow frame (premium effect)
 	local shadowFrame = Instance.new("Frame")
 	shadowFrame.Name = "ShadowFrame"
-	shadowFrame.Size = UDim2.new(0.92, 6, 0, 526)
+	shadowFrame.Size = UDim2.new(modalWidth, 6, 0, modalHeight + 6)
 	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
 	shadowFrame.BackgroundColor3 = C.Black
 	shadowFrame.BackgroundTransparency = 0.75
 	shadowFrame.ZIndex = 96
 	shadowFrame.Parent = self.careerInfoOverlay
-	UI.corner(shadowFrame, 26)
+	UI.corner(shadowFrame, IS_SMALL_PHONE and 18 or 26)
 	self.careerInfoShadow = shadowFrame
 
 	-- Colored shell (premium BitLife look)
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
-	shell.Size = UDim2.new(0.92, 0, 0, 520)
+	shell.Size = UDim2.new(modalWidth, 0, 0, modalHeight)
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
 	shell.Position = UDim2.fromScale(0.5, 0.5)
 	shell.BackgroundColor3 = C.Blue
 	shell.ZIndex = 97
 	shell.Parent = self.careerInfoOverlay
-	UI.corner(shell, 24)
+	UI.corner(shell, IS_SMALL_PHONE and 16 or 24)
 	self.careerInfoShell = shell
 
 	-- Shell border stroke
@@ -4954,29 +4965,31 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoShellStroke = shellStroke
 
 	-- Inner white card (inside shell)
+	local cardMargin = IS_SMALL_PHONE and 4 or 8
 	self.careerInfoCard = Instance.new("Frame")
 	self.careerInfoCard.Name = "Card"
-	self.careerInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.careerInfoCard.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
 	self.careerInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.careerInfoCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.careerInfoCard.BackgroundColor3 = C.White
 	self.careerInfoCard.ZIndex = 98
 	self.careerInfoCard.Parent = shell
-	UI.corner(self.careerInfoCard, 20)
+	UI.corner(self.careerInfoCard, IS_SMALL_PHONE and 14 or 20)
 
-	-- Header (colored accent banner)
+	-- Header (colored accent banner) - MOBILE FIX: Smaller header
+	local headerHeight = IS_SMALL_PHONE and 44 or 60
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, 60)
+	header.Size = UDim2.new(1, 0, 0, headerHeight)
 	header.BackgroundColor3 = C.Blue
 	header.ZIndex = 99
 	header.Parent = self.careerInfoCard
-	UI.corner(header, 20)
+	UI.corner(header, IS_SMALL_PHONE and 14 or 20)
 
 	local headerFix = Instance.new("Frame")
 	headerFix.Name = "HeaderFix"
-	headerFix.Size = UDim2.new(1, 0, 0, 25)
-	headerFix.Position = UDim2.new(0, 0, 1, -25)
+	headerFix.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 18 or 25)
+	headerFix.Position = UDim2.new(0, 0, 1, IS_SMALL_PHONE and -18 or -25)
 	headerFix.BackgroundColor3 = C.Blue
 	headerFix.BorderSizePixel = 0
 	headerFix.ZIndex = 99
@@ -4984,20 +4997,22 @@ function OccupationScreen:createCareerInfoModal()
 
 	local headerTitle = Instance.new("TextLabel")
 	headerTitle.Size = UDim2.new(1, -50, 1, 0)
-	headerTitle.Position = UDim2.new(0, 0, 0, 0)
+	headerTitle.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 0, 0, 0)
 	headerTitle.BackgroundTransparency = 1
 	headerTitle.Font = F.Title
-	headerTitle.TextSize = 17
+	headerTitle.TextSize = IS_SMALL_PHONE and 14 or 17
 	headerTitle.TextColor3 = C.White
-	headerTitle.Text = "📋 Career Information"
+	headerTitle.Text = "📋 Career Info"
 	headerTitle.ZIndex = 100
 	headerTitle.Parent = header
 
+	-- MOBILE FIX: Larger, more visible close button
+	local closeBtnSize = IS_SMALL_PHONE and 36 or 30
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Name = "CloseButton"
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.AnchorPoint = Vector2.new(1, 0)
-	closeBtn.Position = UDim2.new(1, -8, 0, 8)
+	closeBtn.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+	closeBtn.Position = UDim2.new(1, IS_SMALL_PHONE and -6 or -8, 0.5, 0)
 	closeBtn.BackgroundColor3 = C.White
 	closeBtn.BackgroundTransparency = 0.1
 	closeBtn.Font = Enum.Font.GothamBold
