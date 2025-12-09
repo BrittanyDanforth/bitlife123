@@ -2593,6 +2593,7 @@ Random.events = {
 		requiresNoJob = true, -- Only for unemployed
 		blockedByFlags = { in_prison = true },
 		
+		-- CRITICAL FIX #30: Job offers should use career skills and education
 		choices = {
 			{
 				index = 1,
@@ -2600,28 +2601,86 @@ Random.events = {
 				effects = { Happiness = 5 },
 				feedText = "You went to the interview...",
 				onResolve = function(state)
+					-- Get player skills and education for better job matching
+					local skills = (state.CareerInfo and state.CareerInfo.skills) or {}
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local education = state.EducationData and state.EducationData.level
+					
+					-- CRITICAL FIX: Calculate total skill level
+					local totalSkills = 0
+					for _, level in pairs(skills) do
+						totalSkills = totalSkills + (level or 0)
+					end
+					
+					-- Success chance based on smarts + skills + education
+					local baseChance = 0.50
+					local smartsBonus = smarts / 300 -- Up to +0.33
+					local skillsBonus = math.min(totalSkills / 30, 0.2) -- Up to +0.2
+					local educationBonus = 0
+					if education == "bachelor" or education == "bachelors" then
+						educationBonus = 0.1
+					elseif education == "master" or education == "masters" then
+						educationBonus = 0.15
+					elseif education == "doctorate" or education == "phd" then
+						educationBonus = 0.2
+					end
+					
+					local successChance = math.min(0.95, baseChance + smartsBonus + skillsBonus + educationBonus)
+					
+					-- Entry level jobs for anyone
+					local entryJobs = {
+						{ name = "Office Assistant", salary = 32000, category = "entry" },
+						{ name = "Customer Service Rep", salary = 30000, category = "service" },
+						{ name = "Retail Associate", salary = 28000, category = "entry" },
+						{ name = "Data Entry Clerk", salary = 34000, category = "entry" },
+						{ name = "Receptionist", salary = 31000, category = "service" },
+					}
+					
+					-- Better jobs for skilled/educated players
+					local skilledJobs = {
+						{ name = "Administrative Coordinator", salary = 42000, category = "office" },
+						{ name = "Sales Representative", salary = 40000, category = "sales" },
+						{ name = "Junior Analyst", salary = 48000, category = "office" },
+						{ name = "Project Assistant", salary = 44000, category = "office" },
+					}
+					
+					-- Tech jobs for players with technical skills
+					local techJobs = {
+						{ name = "IT Support Specialist", salary = 52000, category = "tech" },
+						{ name = "Junior Developer", salary = 58000, category = "tech" },
+						{ name = "QA Tester", salary = 50000, category = "tech" },
+					}
+					
 					local roll = math.random()
-					if roll < 0.7 then -- 70% chance to get job
-						local jobs = {
-							{ name = "Office Assistant", salary = 32000, category = "entry" },
-							{ name = "Customer Service Rep", salary = 30000, category = "service" },
-							{ name = "Retail Associate", salary = 28000, category = "entry" },
-							{ name = "Data Entry Clerk", salary = 34000, category = "entry" },
-							{ name = "Receptionist", salary = 31000, category = "service" },
-						}
-						local job = jobs[math.random(1, #jobs)]
+					if roll < successChance then
+						local job
+						local techSkill = skills.Technical or 0
+						local analyticalSkill = skills.Analytical or 0
+						
+						-- Match job to skills
+						if techSkill >= 5 and math.random() < 0.7 then
+							job = techJobs[math.random(1, #techJobs)]
+						elseif (totalSkills >= 8 or education) and math.random() < 0.6 then
+							job = skilledJobs[math.random(1, #skilledJobs)]
+						else
+							job = entryJobs[math.random(1, #entryJobs)]
+						end
+						
+						-- Salary bonus for skills
+						local salaryBonus = 1 + (totalSkills / 100) + (smarts - 50) / 200
+						
 						state.CurrentJob = {
 							id = "random_" .. math.random(1000, 9999),
 							name = job.name,
 							company = "Local Business",
-							salary = job.salary,
+							salary = math.floor(job.salary * salaryBonus),
 							category = job.category,
 						}
 						state.Flags = state.Flags or {}
 						state.Flags.employed = true
 						state.Flags.has_job = true
 						if state.AddFeed then
-							state:AddFeed(string.format("🎉 You got the job! %s - $%d/year", job.name, job.salary))
+							state:AddFeed(string.format("🎉 You got the job! %s - $%d/year", job.name, state.CurrentJob.salary))
 						end
 					else
 						if state.AddFeed then

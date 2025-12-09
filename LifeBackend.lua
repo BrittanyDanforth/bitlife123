@@ -2210,6 +2210,45 @@ function LifeBackend:applyDebtInterest(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #36: Annual Education Costs
+-- Students need to pay for room, board, books, etc. while enrolled
+-- Without this, college is just a one-time tuition payment
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyEducationCosts(state)
+	local eduData = state.EducationData
+	if not eduData or eduData.Status ~= "enrolled" then
+		return
+	end
+	
+	-- Annual costs vary by education level
+	local level = eduData.Level or ""
+	local annualCosts = {
+		community = 3000, -- Living expenses while at community college
+		bachelor = 8000, -- Room, board, books at university
+		master = 6000, -- Graduate students have some funding
+		law = 5000, -- Law school has less room/board (often living at home)
+		medical = 10000, -- Med students need equipment, books
+		phd = 3000, -- PhD students get stipends
+	}
+	
+	local cost = annualCosts[level] or 2000
+	local money = state.Money or 0
+	
+	if money >= cost then
+		state.Money = money - cost
+	else
+		-- Can't afford - add to debt
+		local shortfall = cost - money
+		state.Money = 0
+		eduData.Debt = (eduData.Debt or 0) + shortfall
+		state.Flags = state.Flags or {}
+		state.Flags.has_student_loans = true
+		self:logYearEvent(state, "education",
+			string.format("📚 Took out $%d in loans for education expenses.", shortfall), "📝")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #16: Pet Lifecycle System
 -- Pets age and eventually pass away (dogs ~12-15 years, cats ~15-20 years)
 -- Without this, pets live forever once acquired
@@ -2386,18 +2425,546 @@ function LifeBackend:checkBankruptcy(state)
 		totalDebt = totalDebt + state.EducationData.Debt
 	end
 	
+	-- CRITICAL FIX #21: Include credit card debt and mortgage in total debt calculation
+	state.Flags = state.Flags or {}
+	if state.Flags.credit_card_debt then
+		totalDebt = totalDebt + (state.Flags.credit_card_debt or 0)
+	end
+	if state.Flags.mortgage_debt then
+		totalDebt = totalDebt + (state.Flags.mortgage_debt or 0)
+	end
+	
 	-- Check if player is in severe financial distress
 	local money = state.Money or 0
 	local netWorth = computeNetWorth(state)
 	
 	-- If net worth is severely negative and player has no income
 	if netWorth < -100000 and not state.CurrentJob and money <= 0 then
-		state.Flags = state.Flags or {}
 		if not state.Flags.declared_bankruptcy then
 			-- First time - opportunity to declare bankruptcy
 			state.Flags.financial_crisis = true
 			self:logYearEvent(state, "financial", 
 				"⚠️ You're in severe financial distress. Consider your options carefully.", "💸")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #21: Credit Card Debt Interest
+-- Credit card debt should accrue 15-25% annual interest (much higher than student loans)
+-- Without this, players can rack up credit card debt without consequences
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyCreditCardInterest(state)
+	state.Flags = state.Flags or {}
+	
+	local ccDebt = state.Flags.credit_card_debt or 0
+	if ccDebt <= 0 then
+		return
+	end
+	
+	-- Credit card interest is brutal: 18-25% APR
+	local interestRate = 0.18 + (RANDOM:NextNumber() * 0.07) -- 18-25%
+	local interest = math.floor(ccDebt * interestRate)
+	state.Flags.credit_card_debt = ccDebt + interest
+	
+	-- Minimum payment required ($25 or 2% of balance, whichever is higher)
+	local minPayment = math.max(25, math.floor(ccDebt * 0.02))
+	local money = state.Money or 0
+	
+	if money >= minPayment then
+		state.Money = money - minPayment
+		state.Flags.credit_card_debt = math.max(0, state.Flags.credit_card_debt - minPayment)
+	else
+		-- Missed payment - extra penalties
+		state.Flags.credit_card_debt = state.Flags.credit_card_debt + 35 -- Late fee
+		state.Flags.bad_credit = true
+		self:logYearEvent(state, "financial", 
+			"💳 Missed credit card payment! Late fees and credit damage.", "💸")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #22: Business Income Collection
+-- Owned businesses should generate (or lose) income annually
+-- Without this, businesses are static investments
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectBusinessIncome(state)
+	state.Assets = state.Assets or {}
+	local businesses = state.Assets.Businesses or {}
+	
+	if #businesses == 0 then
+		return
+	end
+	
+	local totalIncome = 0
+	
+	for _, biz in ipairs(businesses) do
+		if biz.value and biz.value > 0 then
+			-- Business income is volatile: -20% to +40% of value annually
+			local performanceMultiplier = RANDOM:NextNumber() * 0.60 - 0.20 -- -20% to +40%
+			local annualIncome = math.floor(biz.value * performanceMultiplier * 0.15) -- 15% base return
+			
+			-- Track business performance
+			biz.lastYearProfit = annualIncome
+			
+			if annualIncome > 0 then
+				totalIncome = totalIncome + annualIncome
+				-- Good year - business grows
+				biz.value = math.floor(biz.value * (1 + RANDOM:NextNumber() * 0.05)) -- Up to 5% growth
+			elseif annualIncome < 0 then
+				-- Bad year - might need to inject cash or business shrinks
+				biz.value = math.max(100, math.floor(biz.value * (1 - RANDOM:NextNumber() * 0.1))) -- Up to 10% decline
+			end
+		end
+	end
+	
+	if totalIncome > 0 then
+		state.Money = (state.Money or 0) + totalIncome
+		self:logYearEvent(state, "business", 
+			string.format("📊 Your businesses generated $%s in profit!", formatMoney(totalIncome)), "💼")
+	elseif totalIncome < 0 then
+		-- Business losses
+		local loss = math.abs(totalIncome)
+		if (state.Money or 0) >= loss then
+			state.Money = state.Money - loss
+			self:logYearEvent(state, "business", 
+				string.format("📊 Your businesses lost $%s this year.", formatMoney(loss)), "📉")
+		else
+			self:logYearEvent(state, "business", 
+				"📊 Your businesses are struggling. Consider your options.", "📉")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #23: Mortgage Payment Tracking
+-- Home mortgages should require monthly payments
+-- Without this, owning a home has no ongoing cost
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyMortgagePayments(state)
+	state.Flags = state.Flags or {}
+	
+	local mortgageDebt = state.Flags.mortgage_debt or 0
+	if mortgageDebt <= 0 then
+		return
+	end
+	
+	-- Mortgage interest is typically 3-7% APR
+	local interestRate = 0.05 -- 5% average
+	local monthlyInterest = math.floor(mortgageDebt * interestRate / 12)
+	local monthlyPrincipal = math.floor(mortgageDebt / 360) -- 30-year mortgage
+	local annualPayment = (monthlyInterest + monthlyPrincipal) * 12
+	
+	local money = state.Money or 0
+	
+	if money >= annualPayment then
+		state.Money = money - annualPayment
+		state.Flags.mortgage_debt = math.max(0, mortgageDebt - (monthlyPrincipal * 12))
+		
+		if state.Flags.mortgage_debt <= 0 then
+			state.Flags.mortgage_debt = nil
+			state.Flags.mortgage_paid_off = true
+			self:logYearEvent(state, "housing", 
+				"🏠 Congratulations! You paid off your mortgage!", "🎉")
+		end
+	else
+		-- Can't afford mortgage
+		state.Flags.mortgage_trouble = true
+		self:logYearEvent(state, "housing", 
+			"🏠 Warning: Struggling to make mortgage payments!", "⚠️")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #24: Partner Aging
+-- Partners should age along with the player
+-- Without this, partners stay the same age forever
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:ageRelationships(state)
+	if not state.Relationships then
+		return
+	end
+	
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.alive ~= false then
+			-- Age everyone by 1 year
+			if rel.age then
+				rel.age = rel.age + 1
+			end
+			
+			-- Children also age and grow
+			if rel.isChild and rel.age then
+				-- Update child role based on age
+				if rel.age >= 18 then
+					rel.role = rel.gender == "male" and "Adult Son" or "Adult Daughter"
+					rel.isChild = nil
+					rel.isAdult = true
+				elseif rel.age >= 13 then
+					rel.role = rel.gender == "male" and "Teenage Son" or "Teenage Daughter"
+				end
+			end
+			
+			-- Elderly relatives might pass away
+			if rel.isFamily and rel.age and rel.age >= 75 then
+				local deathChance = (rel.age - 75) / 50 -- Increases with age
+				if RANDOM:NextNumber() < deathChance then
+					rel.alive = false
+					rel.deathAge = rel.age
+					rel.deathYear = state.Year
+					state.Flags = state.Flags or {}
+					state.Flags.family_loss = true
+					self:logYearEvent(state, "family_loss",
+						string.format("💔 %s (%s) passed away at age %d.", rel.name or "A family member", rel.role or "relative", rel.age), "😢")
+					
+					-- Impact happiness
+					state.Stats = state.Stats or {}
+					state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 10, 0, 100)
+				end
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #25: Health Insurance Costs
+-- Adults without employer health insurance should pay for it
+-- Without this, healthcare has no ongoing cost except emergencies
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyHealthInsuranceCosts(state)
+	-- Only applies to adults
+	if (state.Age or 0) < 18 then
+		return
+	end
+	
+	-- Skip if in prison (state provides healthcare)
+	if state.InJail then
+		return
+	end
+	
+	state.Flags = state.Flags or {}
+	
+	-- Check if employed (employer provides insurance)
+	if state.CurrentJob then
+		-- Employed - partial insurance cost
+		local employeeShare = 2400 -- $200/month employee contribution
+		if (state.Money or 0) >= employeeShare then
+			state.Money = state.Money - employeeShare
+		end
+		state.Flags.has_health_insurance = true
+		return
+	end
+	
+	-- Unemployed - need to buy own insurance or go without
+	if state.Flags.has_health_insurance then
+		-- Self-paid insurance: ~$6000/year for individual
+		local insuranceCost = 6000
+		if state.Age >= 50 then
+			insuranceCost = 9000 -- Higher premiums for older adults
+		end
+		
+		if (state.Money or 0) >= insuranceCost then
+			state.Money = state.Money - insuranceCost
+		else
+			-- Can't afford insurance
+			state.Flags.has_health_insurance = nil
+			state.Flags.uninsured = true
+		end
+	else
+		-- Uninsured - risk of catastrophic costs
+		state.Flags.uninsured = true
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #31: Car Loan Payment System
+-- Vehicle purchases can be financed with loans that need monthly payments
+-- Without this, car loans are just flags with no financial impact
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyCarLoanPayments(state)
+	state.Flags = state.Flags or {}
+	
+	local carLoanBalance = state.Flags.car_loan_balance or 0
+	if carLoanBalance <= 0 then
+		return
+	end
+	
+	-- Car loan interest is typically 4-10% APR
+	local interestRate = state.Flags.bad_credit and 0.12 or 0.06 -- Higher rate if bad credit
+	local monthlyPayment = state.Flags.car_loan_payment or math.floor(carLoanBalance / 48) -- 4-year loan default
+	local annualInterest = math.floor(carLoanBalance * interestRate)
+	local annualPayment = monthlyPayment * 12
+	
+	local money = state.Money or 0
+	
+	if money >= annualPayment then
+		state.Money = money - annualPayment
+		-- Principal reduction (payment minus interest portion)
+		local principalPaid = math.max(0, annualPayment - annualInterest)
+		state.Flags.car_loan_balance = math.max(0, carLoanBalance - principalPaid)
+		
+		if state.Flags.car_loan_balance <= 0 then
+			state.Flags.car_loan_balance = nil
+			state.Flags.car_loan_payment = nil
+			state.Flags.has_car_loan = nil
+			self:logYearEvent(state, "financial",
+				"🚗 Car loan paid off! The vehicle is fully yours!", "🎉")
+		end
+	else
+		-- Can't afford car payment
+		state.Flags.car_payment_trouble = true
+		-- Repo risk
+		local repoChance = 0.20
+		if RANDOM:NextNumber() < repoChance then
+			-- Car repossessed
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				-- Remove the financed vehicle
+				for i, v in ipairs(state.Assets.Vehicles) do
+					if v.financed then
+						table.remove(state.Assets.Vehicles, i)
+						break
+					end
+				end
+			end
+			state.Flags.car_loan_balance = nil
+			state.Flags.car_loan_payment = nil
+			state.Flags.has_car_loan = nil
+			state.Flags.car_repossessed = true
+			state.Flags.bad_credit = true
+			self:logYearEvent(state, "financial",
+				"🚗 Car repossessed! Couldn't make the payments.", "😔")
+		else
+			self:logYearEvent(state, "financial",
+				"🚗 Warning: Struggling to make car payments!", "⚠️")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #32: Addiction System with Consequences
+-- Addictions should have escalating consequences over time
+-- Without this, addictions are just flags with no gameplay impact
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:processAddictions(state)
+	state.Flags = state.Flags or {}
+	state.Stats = state.Stats or {}
+	
+	local addictions = {
+		smoking = {
+			healthCost = 2,
+			moneyCost = 1500, -- Pack-a-day habit
+			quitDifficulty = 0.15,
+		},
+		heavy_drinking = {
+			healthCost = 3,
+			happinessCost = 2,
+			moneyCost = 2500,
+			quitDifficulty = 0.12,
+		},
+		alcoholic = {
+			healthCost = 5,
+			happinessCost = 4,
+			moneyCost = 4000,
+			quitDifficulty = 0.08,
+			canLoseJob = true,
+		},
+		gambling_addiction = {
+			happinessCost = 5,
+			moneyCost = function(state) return math.floor((state.Money or 0) * 0.20) end, -- 20% of wealth
+			quitDifficulty = 0.10,
+		},
+		drug_user = {
+			healthCost = 4,
+			happinessCost = 3,
+			moneyCost = 3000,
+			quitDifficulty = 0.10,
+			canGetArrested = true,
+		},
+		hard_drugs = {
+			healthCost = 8,
+			happinessCost = 6,
+			smartsCost = 2,
+			moneyCost = 8000,
+			quitDifficulty = 0.05,
+			canGetArrested = true,
+			canOverdose = true,
+		},
+	}
+	
+	for addictionName, addiction in pairs(addictions) do
+		if state.Flags[addictionName] then
+			-- Apply health cost
+			if addiction.healthCost then
+				state.Stats.Health = clamp((state.Stats.Health or 50) - addiction.healthCost, 0, 100)
+			end
+			
+			-- Apply happiness cost
+			if addiction.happinessCost then
+				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - addiction.happinessCost, 0, 100)
+			end
+			
+			-- Apply smarts cost (brain damage from hard drugs)
+			if addiction.smartsCost then
+				state.Stats.Smarts = clamp((state.Stats.Smarts or 50) - addiction.smartsCost, 0, 100)
+			end
+			
+			-- Apply money cost
+			local moneyCost = addiction.moneyCost
+			if type(moneyCost) == "function" then
+				moneyCost = moneyCost(state)
+			end
+			state.Money = math.max(0, (state.Money or 0) - moneyCost)
+			
+			-- Chance to lose job
+			if addiction.canLoseJob and state.CurrentJob and RANDOM:NextNumber() < 0.15 then
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+				state.Flags.fired_for_addiction = true
+				self:logYearEvent(state, "career",
+					"💼 Lost job due to addiction problems.", "😔")
+			end
+			
+			-- Chance to get arrested (drugs)
+			if addiction.canGetArrested and RANDOM:NextNumber() < 0.08 then
+				state.Flags.arrested = true
+				state.Flags.criminal_record = true
+				self:logYearEvent(state, "legal",
+					"🚔 Arrested for drug possession!", "⚠️")
+			end
+			
+			-- Chance to overdose (hard drugs)
+			if addiction.canOverdose and RANDOM:NextNumber() < 0.03 then
+				state.Stats.Health = clamp((state.Stats.Health or 50) - 30, 0, 100)
+				if state.Stats.Health <= 0 then
+					state.Flags.dead = true
+					state.DeathReason = "Drug overdose"
+				else
+					state.Flags.overdose_survivor = true
+					self:logYearEvent(state, "health",
+						"💊 Overdosed but survived. Wake-up call.", "🏥")
+				end
+			end
+			
+			-- Random chance to try to quit
+			if RANDOM:NextNumber() < addiction.quitDifficulty then
+				state.Flags[addictionName] = nil
+				state.Flags[addictionName .. "_recovered"] = true
+				self:logYearEvent(state, "health",
+					string.format("🎉 Overcame %s! A new chapter begins.", addictionName:gsub("_", " ")), "💪")
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #35: Natural Death System
+-- Players should be able to die from old age or very low health
+-- Without this, players are effectively immortal
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:checkNaturalDeath(state)
+	-- Already dead
+	if state.Flags and state.Flags.dead then
+		return
+	end
+	
+	state.Stats = state.Stats or {}
+	state.Flags = state.Flags or {}
+	local age = state.Age or 0
+	local health = state.Stats.Health or 50
+	
+	-- Health-based death (very low health)
+	if health <= 0 then
+		state.Flags.dead = true
+		state.DeathReason = state.DeathReason or "Health complications"
+		state.DeathAge = age
+		state.DeathYear = state.Year
+		return
+	end
+	
+	-- Critical health warning
+	if health <= 10 then
+		self:logYearEvent(state, "health",
+			"⚠️ Health is critical! Seek medical attention immediately.", "🏥")
+	end
+	
+	-- Age-based death chance (increases with age)
+	if age >= 65 then
+		local baseMortality = 0 -- No random death before 65
+		
+		-- Life expectancy calculations
+		-- 65-70: Very low chance
+		-- 70-80: Low chance
+		-- 80-90: Moderate chance
+		-- 90-100: High chance
+		-- 100+: Very high chance
+		
+		if age >= 65 and age < 70 then
+			baseMortality = 0.005 -- 0.5% per year
+		elseif age >= 70 and age < 80 then
+			baseMortality = 0.02 -- 2% per year
+		elseif age >= 80 and age < 90 then
+			baseMortality = 0.06 -- 6% per year
+		elseif age >= 90 and age < 100 then
+			baseMortality = 0.15 -- 15% per year
+		elseif age >= 100 then
+			baseMortality = 0.30 -- 30% per year
+		end
+		
+		-- Health modifies mortality
+		-- Good health (>70) reduces mortality by 50%
+		-- Poor health (<30) increases mortality by 100%
+		local healthModifier = 1.0
+		if health > 70 then
+			healthModifier = 0.5
+		elseif health < 30 then
+			healthModifier = 2.0
+		end
+		
+		-- Lifestyle factors
+		local lifestyleModifier = 1.0
+		if state.Flags.fitness_enthusiast or state.Flags.healthy_lifestyle then
+			lifestyleModifier = lifestyleModifier * 0.7 -- 30% reduction
+		end
+		if state.Flags.smoking or state.Flags.heavy_drinking then
+			lifestyleModifier = lifestyleModifier * 1.5 -- 50% increase
+		end
+		if state.Flags.hard_drugs or state.Flags.alcoholic then
+			lifestyleModifier = lifestyleModifier * 2.0 -- 100% increase
+		end
+		
+		local finalMortality = baseMortality * healthModifier * lifestyleModifier
+		
+		if RANDOM:NextNumber() < finalMortality then
+			state.Flags.dead = true
+			state.DeathAge = age
+			state.DeathYear = state.Year
+			
+			-- Generate death reason based on age/health
+			local deathReasons
+			if age >= 90 then
+				deathReasons = {
+					"Natural causes",
+					"Passed peacefully in sleep",
+					"Old age",
+					"Heart gave out",
+				}
+			elseif health < 30 then
+				deathReasons = {
+					"Health complications",
+					"Organ failure",
+					"Medical emergency",
+					"Chronic illness",
+				}
+			else
+				deathReasons = {
+					"Natural causes",
+					"Heart attack",
+					"Stroke",
+					"Unexpected illness",
+				}
+			end
+			
+			state.DeathReason = deathReasons[RANDOM:NextInteger(1, #deathReasons)]
 		end
 	end
 end
@@ -2972,11 +3539,20 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHabitEffects(state) -- CRITICAL FIX #13: Health effects from habits
 	self:tickFame(state) -- CRITICAL FIX #14: Fame decays without maintenance
 	self:applyDebtInterest(state) -- CRITICAL FIX #15: Student loan interest
+	self:applyEducationCosts(state) -- CRITICAL FIX #36: Annual education costs
 	self:tickPetLifecycle(state) -- CRITICAL FIX #16: Pets age and can pass away
 	self:updateCareerSkills(state) -- CRITICAL FIX #17: Track career skills
 	self:applyRelationshipDecay(state) -- CRITICAL FIX #18: Relationships decay without maintenance
 	self:tickPropertyValues(state) -- CRITICAL FIX #19: Property values change
 	self:checkBankruptcy(state) -- CRITICAL FIX #20: Check for financial distress
+	self:applyCreditCardInterest(state) -- CRITICAL FIX #21: Credit card debt grows with interest
+	self:collectBusinessIncome(state) -- CRITICAL FIX #22: Business income/losses
+	self:applyMortgagePayments(state) -- CRITICAL FIX #23: Mortgage payments
+	self:ageRelationships(state) -- CRITICAL FIX #24: Partners and family age with player
+	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
+	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
+	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
+	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #4: Pay pension to retired players

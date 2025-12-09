@@ -339,111 +339,127 @@ Relationships.events = {
 							state:AddFeed("💒 Budget wedding - but the love is what matters! You're married!")
 						end
 					end
-					-- Update partner to spouse
-					if state.Relationships and state.Relationships.partner then
-						local partner = state.Relationships.partner
-						partner.role = partner.gender == "male" and "Husband" or "Wife"
+				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
+				if state.Relationships and state.Relationships.partner then
+					local partner = state.Relationships.partner
+					partner.role = partner.gender == "male" and "Husband" or "Wife"
+					partner.type = "spouse" -- Update relationship type
+					partner.marriedYear = state.Year
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				state.Flags.married = true -- Ensure flag is set even if setFlags fails
+				state.Flags.dating = nil -- No longer just dating
+			end,
+		},
+		{ 
+			text = "Intimate ceremony", 
+			effects = { Happiness = 15 }, 
+			setFlags = { married = true }, 
+			feedText = "Planning an intimate ceremony...",
+			-- CRITICAL FIX: Money validation for $2000 wedding
+			onResolve = function(state)
+				local money = state.Money or 0
+				if money >= 2000 then
+					state.Money = money - 2000
+					if state.AddFeed then
+						state:AddFeed("💒 A beautiful, small wedding. You're married!")
 					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
-			{ 
-				text = "Intimate ceremony", 
-				effects = { Happiness = 15 }, 
-				setFlags = { married = true }, 
-				feedText = "Planning an intimate ceremony...",
-				-- CRITICAL FIX: Money validation for $2000 wedding
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 2000 then
-						state.Money = money - 2000
-						if state.AddFeed then
-							state:AddFeed("💒 A beautiful, small wedding. You're married!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("💒 A modest but lovely ceremony. You're married!")
-						end
-					else
-						state.Money = math.max(0, money - 200)
-						if state.AddFeed then
-							state:AddFeed("💒 Simple ceremony with close family. You're married!")
-						end
+				elseif money >= 500 then
+					state.Money = money - 500
+					if state.AddFeed then
+						state:AddFeed("💒 A modest but lovely ceremony. You're married!")
 					end
-					-- Update partner to spouse
-					if state.Relationships and state.Relationships.partner then
-						local partner = state.Relationships.partner
-						partner.role = partner.gender == "male" and "Husband" or "Wife"
+				else
+					state.Money = math.max(0, money - 200)
+					if state.AddFeed then
+						state:AddFeed("💒 Simple ceremony with close family. You're married!")
 					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
-			{ 
-				text = "Courthouse wedding", 
-				effects = { Happiness = 10 }, 
-				setFlags = { married = true }, 
-				feedText = "Courthouse wedding...",
-				-- CRITICAL FIX: Money validation for $200 wedding
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 200 then
-						state.Money = money - 200
-						if state.AddFeed then
-							state:AddFeed("💒 Quick and official. You're married!")
-						end
-					else
-						state.Money = math.max(0, money - 50)
-						if state.AddFeed then
-							state:AddFeed("💒 Just the filing fee. Officially married!")
-						end
+				end
+				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
+				if state.Relationships and state.Relationships.partner then
+					local partner = state.Relationships.partner
+					partner.role = partner.gender == "male" and "Husband" or "Wife"
+					partner.type = "spouse"
+					partner.marriedYear = state.Year
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				state.Flags.married = true
+				state.Flags.dating = nil
+			end,
+		},
+		{ 
+			text = "Courthouse wedding", 
+			effects = { Happiness = 10 }, 
+			setFlags = { married = true }, 
+			feedText = "Courthouse wedding...",
+			-- CRITICAL FIX: Money validation for $200 wedding
+			onResolve = function(state)
+				local money = state.Money or 0
+				if money >= 200 then
+					state.Money = money - 200
+					if state.AddFeed then
+						state:AddFeed("💒 Quick and official. You're married!")
 					end
-					-- Update partner to spouse
-					if state.Relationships and state.Relationships.partner then
-						local partner = state.Relationships.partner
-						partner.role = partner.gender == "male" and "Husband" or "Wife"
+				else
+					state.Money = math.max(0, money - 50)
+					if state.AddFeed then
+						state:AddFeed("💒 Just the filing fee. Officially married!")
 					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
-			{ 
-				text = "Elope!", 
-				effects = { Happiness = 12 }, 
-				setFlags = { married = true, eloped = true }, 
-				feedText = "Eloping...",
-				-- CRITICAL FIX: Money validation for $1000 elopement
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 1000 then
-						state.Money = money - 1000
-						if state.AddFeed then
-							state:AddFeed("💒 You eloped! Romantic and spontaneous!")
-						end
-					elseif money >= 300 then
-						state.Money = money - 300
-						if state.AddFeed then
-							state:AddFeed("💒 Budget elopement - just as romantic!")
-						end
-					else
-						state.Money = math.max(0, money - 100)
-						if state.AddFeed then
-							state:AddFeed("💒 Spontaneous elopement with almost nothing - true love!")
-						end
+				end
+				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
+				if state.Relationships and state.Relationships.partner then
+					local partner = state.Relationships.partner
+					partner.role = partner.gender == "male" and "Husband" or "Wife"
+					partner.type = "spouse"
+					partner.marriedYear = state.Year
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				state.Flags.married = true
+				state.Flags.dating = nil
+			end,
+		},
+		{ 
+			text = "Elope!", 
+			effects = { Happiness = 12 }, 
+			setFlags = { married = true, eloped = true }, 
+			feedText = "Eloping...",
+			-- CRITICAL FIX: Money validation for $1000 elopement
+			onResolve = function(state)
+				local money = state.Money or 0
+				if money >= 1000 then
+					state.Money = money - 1000
+					if state.AddFeed then
+						state:AddFeed("💒 You eloped! Romantic and spontaneous!")
 					end
-					-- Update partner to spouse
-					if state.Relationships and state.Relationships.partner then
-						local partner = state.Relationships.partner
-						partner.role = partner.gender == "male" and "Husband" or "Wife"
+				elseif money >= 300 then
+					state.Money = money - 300
+					if state.AddFeed then
+						state:AddFeed("💒 Budget elopement - just as romantic!")
 					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
+				else
+					state.Money = math.max(0, money - 100)
+					if state.AddFeed then
+						state:AddFeed("💒 Spontaneous elopement with almost nothing - true love!")
+					end
+				end
+				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
+				if state.Relationships and state.Relationships.partner then
+					local partner = state.Relationships.partner
+					partner.role = partner.gender == "male" and "Husband" or "Wife"
+					partner.type = "spouse"
+					partner.marriedYear = state.Year
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				state.Flags.married = true
+				state.Flags.dating = nil
+			end,
 		},
 	},
+},
 
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP CHALLENGES
