@@ -455,6 +455,28 @@ local function canEventTrigger(event, state)
 	if minAge and age < minAge then return false end
 	if maxAge and age > maxAge then return false end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Enforce ageBand restrictions!
+	-- Many events set ageBand but it was NEVER enforced, letting kids get adult events
+	-- like stock investing, gambling, bankruptcy, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local ageBand = event.ageBand
+	if ageBand and ageBand ~= "any" then
+		if ageBand == "child" then
+			if age > 12 then return false end
+		elseif ageBand == "teen" then
+			if age < 13 or age > 17 then return false end
+		elseif ageBand == "adult" then
+			if age < 18 then return false end
+		elseif ageBand == "senior" then
+			if age < 65 then return false end
+		elseif ageBand == "young_adult" then
+			if age < 18 or age > 35 then return false end
+		elseif ageBand == "middle_age" then
+			if age < 35 or age > 64 then return false end
+		end
+	end
+	
 	-- One-time event already completed
 	if event.oneTime and history.completed[event.id] then
 		return false

@@ -2220,8 +2220,12 @@ function LifeBackend:applyEducationCosts(state)
 		return
 	end
 	
-	-- Annual costs vary by education level
+	-- CRITICAL FIX: Only apply education costs to POST-HIGH-SCHOOL education!
+	-- Elementary, middle school, and high school are FREE (public school)
+	-- This was incorrectly charging 5-year-olds for "education expenses"
 	local level = eduData.Level or ""
+	
+	-- These are the ONLY levels that have costs (college and beyond)
 	local annualCosts = {
 		community = 3000, -- Living expenses while at community college
 		bachelor = 8000, -- Room, board, books at university
@@ -2231,7 +2235,20 @@ function LifeBackend:applyEducationCosts(state)
 		phd = 3000, -- PhD students get stipends
 	}
 	
-	local cost = annualCosts[level] or 2000
+	-- CRITICAL: If the level is not in our costs table, it's FREE education (K-12)
+	-- Do NOT charge for elementary, middle_school, high_school, or unknown levels
+	local cost = annualCosts[level]
+	if not cost then
+		-- This is K-12 education or unknown - no cost!
+		return
+	end
+	
+	-- Also verify age - college shouldn't start before 18
+	local age = state.Age or 0
+	if age < 18 then
+		return
+	end
+	
 	local money = state.Money or 0
 	
 	if money >= cost then
