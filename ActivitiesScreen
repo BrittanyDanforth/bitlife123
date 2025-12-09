@@ -1457,19 +1457,20 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 	end
 
 	-- Do button
+	-- MOBILE UI FIX: Increased button size from 50x36 to 60x48 for better touch targets
 	local doBtn = Instance.new("TextButton")
-	doBtn.Size = UDim2.new(0, 50, 0, 36)
+	doBtn.Size = UDim2.new(0, 60, 0, 48)
 	doBtn.AnchorPoint = Vector2.new(1, 0.5)
 	doBtn.Position = UDim2.new(1, -8, 0.5, 0)
 	doBtn.BackgroundColor3 = C.Red
 	doBtn.Font = F.Button
-	doBtn.TextSize = 13
+	doBtn.TextSize = 14
 	doBtn.TextColor3 = C.White
 	doBtn.Text = "Do It!"
 	doBtn.AutoButtonColor = false
 	doBtn.ZIndex = 86
 	doBtn.Parent = card
-	UI.corner(doBtn, 10)
+	UI.corner(doBtn, 12)
 
 	doBtn.MouseEnter:Connect(function()
 		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark or C.Red })
@@ -2148,11 +2149,12 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	end
 
 	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	-- MOBILE UI FIX: Updated shadow size to match larger button
 	local btnShadow
 	if canDo then
 		btnShadow = Instance.new("Frame")
 		btnShadow.Name = "ActionBtnShadow"
-		btnShadow.Size = UDim2.new(0, 82, 0, 48)
+		btnShadow.Size = UDim2.new(0, 84, 0, 54)
 		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
 		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
 		btnShadow.BackgroundColor3 = C.RedDark
@@ -2163,13 +2165,14 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	end
 
 	-- Action button
+	-- MOBILE UI FIX: Increased button height from 44px to 50px for better touch
 	local actionBtn = Instance.new("TextButton")
-	actionBtn.Size = UDim2.new(0, 78, 0, 44)
+	actionBtn.Size = UDim2.new(0, 80, 0, 50)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
 	actionBtn.BackgroundColor3 = canDo and C.Red or C.Gray300
 	actionBtn.Font = F.Button
-	actionBtn.TextSize = 13
+	actionBtn.TextSize = 14
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
 	actionBtn.ZIndex = 85  -- Higher than shadow
@@ -2305,11 +2308,12 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	local accentColor = canDo and (item.risk and C.Red or C.Amber) or C.Gray300
 	local accentDark = canDo and (item.risk and C.RedDark or C.AmberDark) or C.Gray400
 	
+	-- MOBILE UI FIX: Updated shadow size to match larger button
 	local btnShadow
 	if canDo then
 		btnShadow = Instance.new("Frame")
 		btnShadow.Name = "ActionBtnShadow"
-		btnShadow.Size = UDim2.new(0, 72, 0, 46)
+		btnShadow.Size = UDim2.new(0, 76, 0, 52)
 		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
 		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
 		btnShadow.BackgroundColor3 = accentDark
@@ -2320,13 +2324,14 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	end
 
 	-- Action button
+	-- MOBILE UI FIX: Increased button height from 42px to 48px for better touch
 	local actionBtn = Instance.new("TextButton")
-	actionBtn.Size = UDim2.new(0, 68, 0, 42)
+	actionBtn.Size = UDim2.new(0, 72, 0, 48)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
 	actionBtn.BackgroundColor3 = accentColor
 	actionBtn.Font = F.Button
-	actionBtn.TextSize = 14
+	actionBtn.TextSize = 15
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.Text = canDo and "→ Go!" or "Need $"
 	actionBtn.AutoButtonColor = false
@@ -2741,38 +2746,42 @@ function ActivitiesScreen:createMinigameModal()
 
 	-- CRITICAL FIX: Direction buttons repositioned to not cover text
 	-- Grid is 280px ending at Y=340, so buttons start at Y=355
+	-- MOBILE UI FIX: Increased frame size to accommodate larger buttons
 	self.dirButtons = Instance.new("Frame")
 	self.dirButtons.Name = "DirectionButtons"
-	self.dirButtons.Size = UDim2.new(0, 150, 0, 100)
+	self.dirButtons.Size = UDim2.new(0, 180, 0, 120)
 	self.dirButtons.AnchorPoint = Vector2.new(0.5, 0)
-	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 360)
+	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 355)
 	self.dirButtons.BackgroundTransparency = 1
 	self.dirButtons.Visible = false
 	self.dirButtons.ZIndex = 98
 	self.dirButtons.Parent = card
 
+	-- MOBILE UI FIX: Increased direction button sizes from 40x40 to 52x52 for better touch
 	local dirData = {
-		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -22, 0, 0) },
-		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -22, 0, 55) },
-		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 27) },
-		{ dir = "right", text = "➡️", pos = UDim2.new(1, -44, 0, 27) },
+		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -26, 0, 0) },
+		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -26, 0, 60) },
+		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 28) },
+		{ dir = "right", text = "➡️", pos = UDim2.new(1, -52, 0, 28) },
 	}
 
 	self.dirBtns = {}
 	for _, d in ipairs(dirData) do
 		local btn = Instance.new("TextButton")
 		btn.Name = d.dir
-		btn.Size = UDim2.new(0, 40, 0, 40)
+		-- MOBILE UI FIX: Larger touch target (52x52)
+		btn.Size = UDim2.new(0, 52, 0, 52)
 		btn.Position = d.pos
 		btn.BackgroundColor3 = C.Gray600
 		btn.Font = F.Body
-		btn.TextSize = 22
+		-- MOBILE UI FIX: Larger arrow icons
+		btn.TextSize = 28
 		btn.TextColor3 = C.White
 		btn.Text = d.text
 		btn.AutoButtonColor = false
 		btn.ZIndex = 99
 		btn.Parent = self.dirButtons
-		UI.corner(btn, 10)
+		UI.corner(btn, 12)
 		self.dirBtns[d.dir] = btn
 
 		btn.MouseButton1Click:Connect(function()

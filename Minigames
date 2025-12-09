@@ -322,25 +322,29 @@ function Minigames:createDebateGame()
 	corner(self.debateQuestion, 12)
 
 	-- Answer buttons container
+	-- MOBILE UI FIX: Increased container height to accommodate larger buttons
 	self.debateAnswers = Instance.new("Frame")
-	self.debateAnswers.Size = UDim2.new(0.9, 0, 0, 200)
+	self.debateAnswers.Size = UDim2.new(0.92, 0, 0, 250)
 	self.debateAnswers.AnchorPoint = Vector2.new(0.5, 0)
-	self.debateAnswers.Position = UDim2.new(0.5, 0, 0, 270)
+	self.debateAnswers.Position = UDim2.new(0.5, 0, 0, 265)
 	self.debateAnswers.BackgroundTransparency = 1
 	self.debateAnswers.ZIndex = 202
 	self.debateAnswers.Parent = self.debateCard
 
 	local answerLayout = Instance.new("UIListLayout")
-	answerLayout.Padding = UDim.new(0, 10)
+	-- MOBILE UI FIX: Increased padding between buttons for easier tapping
+	answerLayout.Padding = UDim.new(0, 12)
 	answerLayout.Parent = self.debateAnswers
 
 	self.debateAnswerBtns = {}
 	for i = 1, 4 do
 		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, 0, 0, 44)
+		-- MOBILE UI FIX: Increased height from 44px to 52px for better touch targets
+		btn.Size = UDim2.new(1, 0, 0, 52)
 		btn.BackgroundColor3 = C.Blue
 		btn.Font = F.Button
-		btn.TextSize = 14
+		-- MOBILE UI FIX: Increased text size from 14 to 16 for readability
+		btn.TextSize = 16
 		btn.TextColor3 = C.White
 		btn.Text = "Answer " .. i
 		btn.TextWrapped = true
@@ -348,7 +352,7 @@ function Minigames:createDebateGame()
 		btn.LayoutOrder = i
 		btn.ZIndex = 203
 		btn.Parent = self.debateAnswers
-		corner(btn, 12)
+		corner(btn, 14)
 
 		self.debateAnswerBtns[i] = btn
 	end
@@ -678,17 +682,19 @@ function Minigames:createHeistGame()
 	end
 
 	-- Number pad
+	-- MOBILE UI FIX: Increased numpad height for larger touch targets
 	self.heistNumpad = Instance.new("Frame")
-	self.heistNumpad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.heistNumpad.Size = UDim2.new(0.88, 0, 0, 220)
 	self.heistNumpad.AnchorPoint = Vector2.new(0.5, 0)
-	self.heistNumpad.Position = UDim2.new(0.5, 0, 0, 225)
+	self.heistNumpad.Position = UDim2.new(0.5, 0, 0, 220)
 	self.heistNumpad.BackgroundTransparency = 1
 	self.heistNumpad.ZIndex = 202
 	self.heistNumpad.Parent = self.heistCard
 
 	local numpadLayout = Instance.new("UIGridLayout")
-	numpadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
-	numpadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	-- MOBILE UI FIX: Increased cell size for better touch targets (min 48px)
+	numpadLayout.CellSize = UDim2.new(0.28, 0, 0.22, 0)
+	numpadLayout.CellPadding = UDim2.new(0.03, 0, 0.04, 0)
 	numpadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	numpadLayout.Parent = self.heistNumpad
 
@@ -698,14 +704,16 @@ function Minigames:createHeistGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = (num == "✓" and C.Green) or (num == "⌫" and C.Red) or C.Gray600
 		btn.Font = F.Title
-		btn.TextSize = 24
+		-- MOBILE UI FIX: Increased text size from 24 to 28 for better visibility
+		btn.TextSize = 28
 		btn.TextColor3 = C.White
 		btn.Text = num
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
 		btn.ZIndex = 203
 		btn.Parent = self.heistNumpad
-		corner(btn, 12)
+		-- MOBILE UI FIX: Increased corner radius for modern look
+		corner(btn, 14)
 
 		self.heistNumBtns[num] = btn
 	end
@@ -966,17 +974,19 @@ function Minigames:createGetawayGame()
 	self.copProgressFill.Parent = self.getawayProgressBg
 	pill(self.copProgressFill)
 
+	-- MOBILE UI FIX: Increased grid size for larger touch targets
 	self.getawayGrid = Instance.new("Frame")
-	self.getawayGrid.Size = UDim2.new(0.9, 0, 0, 260)
+	self.getawayGrid.Size = UDim2.new(0.92, 0, 0, 280)
 	self.getawayGrid.AnchorPoint = Vector2.new(0.5, 0)
-	self.getawayGrid.Position = UDim2.new(0.5, 0, 0, 150)
+	self.getawayGrid.Position = UDim2.new(0.5, 0, 0, 145)
 	self.getawayGrid.BackgroundTransparency = 1
 	self.getawayGrid.ZIndex = 202
 	self.getawayGrid.Parent = self.getawayCard
 
 	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.new(0.3, 0, 0.3, 0)
-	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	-- MOBILE UI FIX: Increased cell size for 60px+ touch targets
+	gridLayout.CellSize = UDim2.new(0.29, 0, 0.29, 0)
+	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.035, 0)
 	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	gridLayout.Parent = self.getawayGrid
 
@@ -986,7 +996,8 @@ function Minigames:createGetawayGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Gray600
 		btn.Font = F.Title
-		btn.TextSize = 36
+		-- MOBILE UI FIX: Increased arrow text size from 36 to 42 for visibility
+		btn.TextSize = 42
 		btn.TextColor3 = C.White
 		btn.Text = dir
 		btn.AutoButtonColor = false
@@ -1435,17 +1446,19 @@ function Minigames:createPrisonEscapeGame()
 	guardLabel.Parent = self.guardAlertBg
 
 	-- Arrow grid
+	-- MOBILE UI FIX: Increased grid size for larger touch targets
 	self.prisonGrid = Instance.new("Frame")
-	self.prisonGrid.Size = UDim2.new(0.9, 0, 0, 260)
+	self.prisonGrid.Size = UDim2.new(0.92, 0, 0, 280)
 	self.prisonGrid.AnchorPoint = Vector2.new(0.5, 0)
-	self.prisonGrid.Position = UDim2.new(0.5, 0, 0, 165)
+	self.prisonGrid.Position = UDim2.new(0.5, 0, 0, 160)
 	self.prisonGrid.BackgroundTransparency = 1
 	self.prisonGrid.ZIndex = 202
 	self.prisonGrid.Parent = self.prisonCard
 
 	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.new(0.3, 0, 0.3, 0)
-	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	-- MOBILE UI FIX: Increased cell size for 65px+ touch targets
+	gridLayout.CellSize = UDim2.new(0.29, 0, 0.29, 0)
+	gridLayout.CellPadding = UDim2.new(0.025, 0, 0.035, 0)
 	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	gridLayout.Parent = self.prisonGrid
 
@@ -1455,7 +1468,8 @@ function Minigames:createPrisonEscapeGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Gray600
 		btn.Font = F.Title
-		btn.TextSize = 36
+		-- MOBILE UI FIX: Increased text size from 36 to 42 for visibility
+		btn.TextSize = 42
 		btn.TextColor3 = C.White
 		btn.Text = arrow
 		btn.AutoButtonColor = false
@@ -1900,17 +1914,19 @@ function Minigames:createHackingGame()
 	self.hackProgressLabel.Parent = self.hackCard
 
 	-- Keypad
+	-- MOBILE UI FIX: Increased keypad size for larger touch targets
 	self.hackKeypad = Instance.new("Frame")
-	self.hackKeypad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.hackKeypad.Size = UDim2.new(0.88, 0, 0, 210)
 	self.hackKeypad.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackKeypad.Position = UDim2.new(0.5, 0, 0, 300)
+	self.hackKeypad.Position = UDim2.new(0.5, 0, 0, 295)
 	self.hackKeypad.BackgroundTransparency = 1
 	self.hackKeypad.ZIndex = 202
 	self.hackKeypad.Parent = self.hackCard
 
 	local keypadLayout = Instance.new("UIGridLayout")
-	keypadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
-	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	-- MOBILE UI FIX: Increased cell size for 50px+ touch targets
+	keypadLayout.CellSize = UDim2.new(0.28, 0, 0.22, 0)
+	keypadLayout.CellPadding = UDim2.new(0.03, 0, 0.04, 0)
 	keypadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	keypadLayout.Parent = self.hackKeypad
 
@@ -1920,14 +1936,16 @@ function Minigames:createHackingGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = (key == "✓" and C.Green) or (key == "⌫" and C.Red) or Color3.fromRGB(0, 60, 45)
 		btn.Font = F.Title
-		btn.TextSize = 24
+		-- MOBILE UI FIX: Increased text size from 24 to 28 for visibility
+		btn.TextSize = 28
 		btn.TextColor3 = C.White
 		btn.Text = key
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
 		btn.ZIndex = 203
 		btn.Parent = self.hackKeypad
-		corner(btn, 12)
+		-- MOBILE UI FIX: Increased corner radius
+		corner(btn, 14)
 
 		self.hackKeyBtns[key] = btn
 	end
