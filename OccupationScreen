@@ -1969,10 +1969,15 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 1: Work & Career Info
 	-- ═══════════════════════════════════════════════════════════
+	-- MOBILE FIX: Responsive button sizes
+	local actionBtnHeight = IS_SMALL_PHONE and 32 or 42
+	local actionBtnTextSize = IS_SMALL_PHONE and 11 or 14
+	local actionBtnCorner = IS_SMALL_PHONE and 8 or 12
+	local actionRow1YPos = IS_SMALL_PHONE and 175 or 225
 
 	local actionRow1 = Instance.new("Frame")
-	actionRow1.Size = UDim2.new(1, -28, 0, 40)
-	actionRow1.Position = UDim2.new(0, 14, 0, 225)
+	actionRow1.Size = UDim2.new(1, IS_SMALL_PHONE and -16 or -28, 0, actionBtnHeight)
+	actionRow1.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 14, 0, actionRow1YPos)
 	actionRow1.BackgroundTransparency = 1
 	actionRow1.ZIndex = 84
 	actionRow1.Parent = card
@@ -1980,52 +1985,54 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local actionLayout1 = Instance.new("UIListLayout")
 	actionLayout1.FillDirection = Enum.FillDirection.Horizontal
 	actionLayout1.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	actionLayout1.Padding = UDim.new(0, 8)
+	actionLayout1.Padding = UDim.new(0, IS_SMALL_PHONE and 4 or 8)
 	actionLayout1.Parent = actionRow1
 
-	-- Do Work button (CRITICAL FIX: added shadow + loading state)
+	-- Do Work button (CRITICAL FIX: added shadow + loading state) - MOBILE FIX
 	local workBtn = Instance.new("TextButton")
-	workBtn.Size = UDim2.new(0.48, 0, 0, 42)
+	workBtn.Size = UDim2.new(0.48, 0, 0, actionBtnHeight)
 	workBtn.BackgroundColor3 = C.Green
 	workBtn.Font = F.Button
-	workBtn.TextSize = 14
+	workBtn.TextSize = actionBtnTextSize
 	workBtn.TextColor3 = C.White
-	workBtn.Text = "💼 Work"
+	workBtn.Text = IS_SMALL_PHONE and "💼" or "💼 Work"
 	workBtn.AutoButtonColor = false
 	workBtn.LayoutOrder = 1
 	workBtn.ZIndex = 85
 	workBtn.Parent = actionRow1
-	UI.corner(workBtn, 12)
+	UI.corner(workBtn, actionBtnCorner)
 	
 	-- Button shadow
 	local workBtnShadow = Instance.new("Frame")
-	workBtnShadow.Size = UDim2.new(1, 4, 1, 4)
-	workBtnShadow.Position = UDim2.new(0, 2, 0, 2)
+	workBtnShadow.Size = UDim2.new(1, IS_SMALL_PHONE and 2 or 4, 1, IS_SMALL_PHONE and 2 or 4)
+	workBtnShadow.Position = UDim2.new(0, IS_SMALL_PHONE and 1 or 2, 0, IS_SMALL_PHONE and 1 or 2)
 	workBtnShadow.BackgroundColor3 = C.GreenDark
 	workBtnShadow.BackgroundTransparency = 0.5
 	workBtnShadow.ZIndex = 84
 	workBtnShadow.Parent = workBtn
-	UI.corner(workBtnShadow, 12)
+	UI.corner(workBtnShadow, actionBtnCorner)
 
 	local workBtnLoading = false
+	local workBtnHoverHeight = actionBtnHeight + 4
 	workBtn.MouseEnter:Connect(function()
 		if workBtnLoading then return end
 		UI.tween(workBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-			Size = UDim2.new(0.48, 0, 0, 46),
+			Size = UDim2.new(0.48, 0, 0, workBtnHoverHeight),
 			BackgroundColor3 = C.GreenDark 
 		})
 	end)
 	workBtn.MouseLeave:Connect(function()
 		if workBtnLoading then return end
 		UI.tween(workBtn, TweenInfo.new(0.12), { 
-			Size = UDim2.new(0.48, 0, 0, 42),
+			Size = UDim2.new(0.48, 0, 0, actionBtnHeight),
 			BackgroundColor3 = C.Green 
 		})
 	end)
+	local workBtnText = IS_SMALL_PHONE and "💼" or "💼 Work"
 	workBtn.MouseButton1Click:Connect(function()
 		if workBtnLoading then return end
 		workBtnLoading = true
-		workBtn.Text = "⏳..."
+		workBtn.Text = "⏳"
 		UI.tween(workBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
 		
 		task.spawn(function()
@@ -2033,45 +2040,46 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 			task.wait(0.5)
 			if workBtn and workBtn.Parent then
 				workBtnLoading = false
-				workBtn.Text = "💼 Work"
+				workBtn.Text = workBtnText
 				workBtn.BackgroundColor3 = C.Green
 			end
 		end)
 	end)
 
-	-- Career Info button (CRITICAL FIX: added shadow + hover effect)
+	-- Career Info button (CRITICAL FIX: added shadow + hover effect) - MOBILE FIX
 	local infoBtn = Instance.new("TextButton")
-	infoBtn.Size = UDim2.new(0.48, 0, 0, 42)
+	infoBtn.Size = UDim2.new(0.48, 0, 0, actionBtnHeight)
 	infoBtn.BackgroundColor3 = C.Blue
 	infoBtn.Font = F.Button
-	infoBtn.TextSize = 14
+	infoBtn.TextSize = actionBtnTextSize
 	infoBtn.TextColor3 = C.White
-	infoBtn.Text = "📋 Career Info"
+	infoBtn.Text = IS_SMALL_PHONE and "📋" or "📋 Career Info"
 	infoBtn.AutoButtonColor = false
 	infoBtn.LayoutOrder = 2
 	infoBtn.ZIndex = 85
 	infoBtn.Parent = actionRow1
-	UI.corner(infoBtn, 12)
+	UI.corner(infoBtn, actionBtnCorner)
 	
 	-- Button shadow
 	local infoBtnShadow = Instance.new("Frame")
-	infoBtnShadow.Size = UDim2.new(1, 4, 1, 4)
-	infoBtnShadow.Position = UDim2.new(0, 2, 0, 2)
+	infoBtnShadow.Size = UDim2.new(1, IS_SMALL_PHONE and 2 or 4, 1, IS_SMALL_PHONE and 2 or 4)
+	infoBtnShadow.Position = UDim2.new(0, IS_SMALL_PHONE and 1 or 2, 0, IS_SMALL_PHONE and 1 or 2)
 	infoBtnShadow.BackgroundColor3 = C.BlueDark
 	infoBtnShadow.BackgroundTransparency = 0.5
 	infoBtnShadow.ZIndex = 84
 	infoBtnShadow.Parent = infoBtn
-	UI.corner(infoBtnShadow, 12)
+	UI.corner(infoBtnShadow, actionBtnCorner)
 
+	local infoBtnHoverHeight = actionBtnHeight + 4
 	infoBtn.MouseEnter:Connect(function()
 		UI.tween(infoBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-			Size = UDim2.new(0.48, 0, 0, 46),
+			Size = UDim2.new(0.48, 0, 0, infoBtnHoverHeight),
 			BackgroundColor3 = C.BlueDark 
 		})
 	end)
 	infoBtn.MouseLeave:Connect(function()
 		UI.tween(infoBtn, TweenInfo.new(0.12), { 
-			Size = UDim2.new(0.48, 0, 0, 42),
+			Size = UDim2.new(0.48, 0, 0, actionBtnHeight),
 			BackgroundColor3 = C.Blue 
 		})
 	end)
@@ -2082,10 +2090,14 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 2: Promotion, Raise, Quit
 	-- ═══════════════════════════════════════════════════════════
+	-- MOBILE FIX: Responsive row 2 sizing
+	local actionRow2Height = IS_SMALL_PHONE and 30 or 40
+	local actionRow2YPos = IS_SMALL_PHONE and 212 or 270
+	local row2BtnTextSize = IS_SMALL_PHONE and 9 or 12
 
 	local actionRow2 = Instance.new("Frame")
-	actionRow2.Size = UDim2.new(1, -28, 0, 40)
-	actionRow2.Position = UDim2.new(0, 14, 0, 270)
+	actionRow2.Size = UDim2.new(1, IS_SMALL_PHONE and -16 or -28, 0, actionRow2Height)
+	actionRow2.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 14, 0, actionRow2YPos)
 	actionRow2.BackgroundTransparency = 1
 	actionRow2.ZIndex = 84
 	actionRow2.Parent = card
@@ -2093,54 +2105,56 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local actionLayout2 = Instance.new("UIListLayout")
 	actionLayout2.FillDirection = Enum.FillDirection.Horizontal
 	actionLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	actionLayout2.Padding = UDim.new(0, 6)
+	actionLayout2.Padding = UDim.new(0, IS_SMALL_PHONE and 4 or 6)
 	actionLayout2.Parent = actionRow2
 
-	-- Request Promotion button (CRITICAL FIX: premium styling + loading state)
+	-- Request Promotion button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestPromo = hasPromotion and promotionProgress >= 80
 	local promoBtn = Instance.new("TextButton")
-	promoBtn.Size = UDim2.new(0.32, 0, 0, 40)
+	promoBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
 	promoBtn.BackgroundColor3 = canRequestPromo and C.Purple or C.Gray300
 	promoBtn.Font = F.Button
-	promoBtn.TextSize = 12
+	promoBtn.TextSize = row2BtnTextSize
 	promoBtn.TextColor3 = canRequestPromo and C.White or C.Gray500
-	promoBtn.Text = "🚀 Promote"
+	promoBtn.Text = IS_SMALL_PHONE and "🚀" or "🚀 Promote"
 	promoBtn.AutoButtonColor = false
 	promoBtn.LayoutOrder = 1
 	promoBtn.ZIndex = 85
 	promoBtn.Parent = actionRow2
-	UI.corner(promoBtn, 10)
+	UI.corner(promoBtn, IS_SMALL_PHONE and 8 or 10)
 
 	if canRequestPromo then
-		-- Button shadow
+		-- Button shadow - MOBILE FIX
 		local promoBtnShadow = Instance.new("Frame")
-		promoBtnShadow.Size = UDim2.new(1, 3, 1, 3)
-		promoBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+		promoBtnShadow.Size = UDim2.new(1, IS_SMALL_PHONE and 2 or 3, 1, IS_SMALL_PHONE and 2 or 3)
+		promoBtnShadow.Position = UDim2.new(0, IS_SMALL_PHONE and 1 or 1.5, 0, IS_SMALL_PHONE and 1 or 1.5)
 		promoBtnShadow.BackgroundColor3 = C.PurpleDark
 		promoBtnShadow.BackgroundTransparency = 0.5
 		promoBtnShadow.ZIndex = 84
 		promoBtnShadow.Parent = promoBtn
-		UI.corner(promoBtnShadow, 10)
+		UI.corner(promoBtnShadow, IS_SMALL_PHONE and 8 or 10)
 		
 		local promoBtnLoading = false
+		local promoHoverHeight = actionRow2Height + 4
+		local promoBtnText = IS_SMALL_PHONE and "🚀" or "🚀 Promote"
 		promoBtn.MouseEnter:Connect(function()
 			if promoBtnLoading then return end
 			UI.tween(promoBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-				Size = UDim2.new(0.32, 0, 0, 44),
+				Size = UDim2.new(0.32, 0, 0, promoHoverHeight),
 				BackgroundColor3 = C.PurpleDark 
 			})
 		end)
 		promoBtn.MouseLeave:Connect(function()
 			if promoBtnLoading then return end
 			UI.tween(promoBtn, TweenInfo.new(0.12), { 
-				Size = UDim2.new(0.32, 0, 0, 40),
+				Size = UDim2.new(0.32, 0, 0, actionRow2Height),
 				BackgroundColor3 = C.Purple 
 			})
 		end)
 		promoBtn.MouseButton1Click:Connect(function()
 			if promoBtnLoading then return end
 			promoBtnLoading = true
-			promoBtn.Text = "⏳..."
+			promoBtn.Text = "⏳"
 			UI.tween(promoBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
 			
 			task.spawn(function()
@@ -2148,58 +2162,60 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 				task.wait(0.5)
 				if promoBtn and promoBtn.Parent then
 					promoBtnLoading = false
-					promoBtn.Text = "🚀 Promote"
+					promoBtn.Text = promoBtnText
 					promoBtn.BackgroundColor3 = C.Purple
 				end
 			end)
 		end)
 	end
 
-	-- Request Raise button (CRITICAL FIX: premium styling + loading state)
+	-- Request Raise button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestRaise = performance >= 60 and raises < 5
 	local raiseBtn = Instance.new("TextButton")
-	raiseBtn.Size = UDim2.new(0.32, 0, 0, 40)
+	raiseBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
 	raiseBtn.BackgroundColor3 = canRequestRaise and C.Amber or C.Gray300
 	raiseBtn.Font = F.Button
-	raiseBtn.TextSize = 12
+	raiseBtn.TextSize = row2BtnTextSize
 	raiseBtn.TextColor3 = canRequestRaise and C.White or C.Gray500
-	raiseBtn.Text = "💰 Raise"
+	raiseBtn.Text = IS_SMALL_PHONE and "💰" or "💰 Raise"
 	raiseBtn.AutoButtonColor = false
 	raiseBtn.LayoutOrder = 2
 	raiseBtn.ZIndex = 85
 	raiseBtn.Parent = actionRow2
-	UI.corner(raiseBtn, 10)
+	UI.corner(raiseBtn, IS_SMALL_PHONE and 8 or 10)
 
 	if canRequestRaise then
-		-- Button shadow
+		-- Button shadow - MOBILE FIX
 		local raiseBtnShadow = Instance.new("Frame")
-		raiseBtnShadow.Size = UDim2.new(1, 3, 1, 3)
-		raiseBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+		raiseBtnShadow.Size = UDim2.new(1, IS_SMALL_PHONE and 2 or 3, 1, IS_SMALL_PHONE and 2 or 3)
+		raiseBtnShadow.Position = UDim2.new(0, IS_SMALL_PHONE and 1 or 1.5, 0, IS_SMALL_PHONE and 1 or 1.5)
 		raiseBtnShadow.BackgroundColor3 = C.AmberDark
 		raiseBtnShadow.BackgroundTransparency = 0.5
 		raiseBtnShadow.ZIndex = 84
 		raiseBtnShadow.Parent = raiseBtn
-		UI.corner(raiseBtnShadow, 10)
+		UI.corner(raiseBtnShadow, IS_SMALL_PHONE and 8 or 10)
 		
 		local raiseBtnLoading = false
+		local raiseHoverHeight = actionRow2Height + 4
+		local raiseBtnText = IS_SMALL_PHONE and "💰" or "💰 Raise"
 		raiseBtn.MouseEnter:Connect(function()
 			if raiseBtnLoading then return end
 			UI.tween(raiseBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-				Size = UDim2.new(0.32, 0, 0, 44),
+				Size = UDim2.new(0.32, 0, 0, raiseHoverHeight),
 				BackgroundColor3 = C.AmberDark 
 			})
 		end)
 		raiseBtn.MouseLeave:Connect(function()
 			if raiseBtnLoading then return end
 			UI.tween(raiseBtn, TweenInfo.new(0.12), { 
-				Size = UDim2.new(0.32, 0, 0, 40),
+				Size = UDim2.new(0.32, 0, 0, actionRow2Height),
 				BackgroundColor3 = C.Amber 
 			})
 		end)
 		raiseBtn.MouseButton1Click:Connect(function()
 			if raiseBtnLoading then return end
 			raiseBtnLoading = true
-			raiseBtn.Text = "⏳..."
+			raiseBtn.Text = "⏳"
 			UI.tween(raiseBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
 			
 			task.spawn(function()
@@ -2207,46 +2223,49 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 				task.wait(0.5)
 				if raiseBtn and raiseBtn.Parent then
 					raiseBtnLoading = false
-					raiseBtn.Text = "💰 Raise"
+					raiseBtn.Text = raiseBtnText
 					raiseBtn.BackgroundColor3 = C.Amber
 				end
 			end)
 		end)
 	end
 
-	-- Quit Job button (CRITICAL FIX: premium styling with shadow + hover)
+	-- Quit Job button (CRITICAL FIX: premium styling with shadow + hover) - MOBILE FIX
+	local quitBtnHeight = IS_SMALL_PHONE and 30 or 40
 	local quitBtn = Instance.new("TextButton")
-	quitBtn.Size = UDim2.new(0.32, 0, 0, 40)
+	quitBtn.Size = UDim2.new(0.32, 0, 0, quitBtnHeight)
 	quitBtn.BackgroundColor3 = C.Red
 	quitBtn.Font = F.Button
-	quitBtn.TextSize = 12
+	quitBtn.TextSize = IS_SMALL_PHONE and 10 or 12
 	quitBtn.TextColor3 = C.White
-	quitBtn.Text = "🚪 Quit"
+	quitBtn.Text = IS_SMALL_PHONE and "🚪" or "🚪 Quit"
 	quitBtn.AutoButtonColor = false
 	quitBtn.LayoutOrder = 3
 	quitBtn.ZIndex = 85
 	quitBtn.Parent = actionRow2
-	UI.corner(quitBtn, 10)
+	UI.corner(quitBtn, IS_SMALL_PHONE and 8 or 10)
 	
 	-- Button shadow
 	local quitBtnShadow = Instance.new("Frame")
-	quitBtnShadow.Size = UDim2.new(1, 3, 1, 3)
-	quitBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+	quitBtnShadow.Size = UDim2.new(1, IS_SMALL_PHONE and 2 or 3, 1, IS_SMALL_PHONE and 2 or 3)
+	quitBtnShadow.Position = UDim2.new(0, IS_SMALL_PHONE and 1 or 1.5, 0, IS_SMALL_PHONE and 1 or 1.5)
 	quitBtnShadow.BackgroundColor3 = C.RedDark
 	quitBtnShadow.BackgroundTransparency = 0.5
 	quitBtnShadow.ZIndex = 84
 	quitBtnShadow.Parent = quitBtn
-	UI.corner(quitBtnShadow, 10)
+	UI.corner(quitBtnShadow, IS_SMALL_PHONE and 8 or 10)
 
+	-- MOBILE FIX: Responsive hover sizes
+	local quitHoverHeight = quitBtnHeight + 4
 	quitBtn.MouseEnter:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-			Size = UDim2.new(0.32, 0, 0, 44),
+			Size = UDim2.new(0.32, 0, 0, quitHoverHeight),
 			BackgroundColor3 = C.RedDark 
 		})
 	end)
 	quitBtn.MouseLeave:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12), { 
-			Size = UDim2.new(0.32, 0, 0, 40),
+			Size = UDim2.new(0.32, 0, 0, quitBtnHeight),
 			BackgroundColor3 = C.Red 
 		})
 	end)
@@ -2426,85 +2445,90 @@ function OccupationScreen:createJobInfoModal()
 	end)
 
 	-- Title
+	-- MOBILE FIX: Responsive header title
 	local headerTitle = Instance.new("TextLabel")
-	headerTitle.Size = UDim2.new(1, 0, 1, 0)
-	headerTitle.Position = UDim2.new(0, 0, 0, 0)
+	headerTitle.Size = UDim2.new(1, IS_SMALL_PHONE and -44 or 0, 1, 0)
+	headerTitle.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 0, 0, 0)
 	headerTitle.BackgroundTransparency = 1
 	headerTitle.Font = F.Title
-	headerTitle.TextSize = 22
+	headerTitle.TextSize = IS_SMALL_PHONE and 14 or 22
 	headerTitle.TextColor3 = C.White
-	headerTitle.Text = "📋 Job Information"
+	headerTitle.Text = IS_SMALL_PHONE and "📋 Job Info" or "📋 Job Information"
 	headerTitle.ZIndex = 99
 	headerTitle.Parent = header
 
-	-- Content
+	-- Content - MOBILE FIX: Responsive sizing
+	local jobContentPad = IS_SMALL_PHONE and 10 or 16
+	local jobContentTop = IS_SMALL_PHONE and 58 or 95
 	local content = Instance.new("Frame")
-	content.Size = UDim2.new(1, -32, 1, -105)
-	content.Position = UDim2.new(0, 16, 0, 95)
+	content.Size = UDim2.new(1, -jobContentPad*2, 1, -jobContentTop - 10)
+	content.Position = UDim2.new(0, jobContentPad, 0, jobContentTop)
 	content.BackgroundTransparency = 1
 	content.ZIndex = 98
 	content.Parent = self.jobInfoCard
 
 	local contentLayout = Instance.new("UIListLayout")
-	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.Padding = UDim.new(0, IS_SMALL_PHONE and 6 or 12)
 	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	contentLayout.Parent = content
 
-	-- Emoji
+	-- Emoji - MOBILE FIX: Smaller on mobile
+	local jobEmojiSize = IS_SMALL_PHONE and 44 or 70
 	self.jobInfoEmoji = Instance.new("TextLabel")
-	self.jobInfoEmoji.Size = UDim2.new(0, 70, 0, 70)
+	self.jobInfoEmoji.Size = UDim2.new(0, jobEmojiSize, 0, jobEmojiSize)
 	self.jobInfoEmoji.BackgroundTransparency = 1
 	self.jobInfoEmoji.Font = F.Body
-	self.jobInfoEmoji.TextSize = 55
+	self.jobInfoEmoji.TextSize = IS_SMALL_PHONE and 32 or 55
 	self.jobInfoEmoji.Text = "💼"
 	self.jobInfoEmoji.LayoutOrder = 1
 	self.jobInfoEmoji.ZIndex = 99
 	self.jobInfoEmoji.Parent = content
 
-	-- Job title
+	-- Job title - MOBILE FIX: Smaller text
 	self.jobInfoTitle = Instance.new("TextLabel")
-	self.jobInfoTitle.Size = UDim2.new(1, 0, 0, 30)
+	self.jobInfoTitle.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 22 or 30)
 	self.jobInfoTitle.BackgroundTransparency = 1
 	self.jobInfoTitle.Font = F.Title
-	self.jobInfoTitle.TextSize = 22
+	self.jobInfoTitle.TextSize = IS_SMALL_PHONE and 16 or 22
 	self.jobInfoTitle.TextColor3 = C.Gray900
 	self.jobInfoTitle.Text = "Job Title"
 	self.jobInfoTitle.LayoutOrder = 2
 	self.jobInfoTitle.ZIndex = 99
 	self.jobInfoTitle.Parent = content
 
-	-- Company
+	-- Company - MOBILE FIX
 	self.jobInfoCompany = Instance.new("TextLabel")
-	self.jobInfoCompany.Size = UDim2.new(1, 0, 0, 22)
+	self.jobInfoCompany.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 16 or 22)
 	self.jobInfoCompany.BackgroundTransparency = 1
 	self.jobInfoCompany.Font = F.Body
-	self.jobInfoCompany.TextSize = 14
+	self.jobInfoCompany.TextSize = IS_SMALL_PHONE and 11 or 14
 	self.jobInfoCompany.TextColor3 = C.Gray500
 	self.jobInfoCompany.Text = "at Company Name"
 	self.jobInfoCompany.LayoutOrder = 3
 	self.jobInfoCompany.ZIndex = 99
 	self.jobInfoCompany.Parent = content
 
-	-- Info badges container
+	-- Info badges container - MOBILE FIX: Smaller container
+	local badgeContainerHeight = IS_SMALL_PHONE and 60 or 85
 	local badgeContainer = Instance.new("Frame")
-	badgeContainer.Size = UDim2.new(1, 0, 0, 85)
+	badgeContainer.Size = UDim2.new(1, 0, 0, badgeContainerHeight)
 	badgeContainer.BackgroundColor3 = C.Gray50
 	badgeContainer.LayoutOrder = 4
 	badgeContainer.ZIndex = 98
 	badgeContainer.Parent = content
-	UI.corner(badgeContainer, 14)
-	UI.pad(badgeContainer, 14, 14, 12, 12)
+	UI.corner(badgeContainer, IS_SMALL_PHONE and 10 or 14)
+	UI.pad(badgeContainer, IS_SMALL_PHONE and 8 or 14, IS_SMALL_PHONE and 8 or 14, IS_SMALL_PHONE and 6 or 12, IS_SMALL_PHONE and 6 or 12)
 
 	local badgeLayout = Instance.new("UIListLayout")
-	badgeLayout.Padding = UDim.new(0, 8)
+	badgeLayout.Padding = UDim.new(0, IS_SMALL_PHONE and 4 or 8)
 	badgeLayout.Parent = badgeContainer
 
-	-- Salary
+	-- Salary - MOBILE FIX
 	self.jobInfoSalary = Instance.new("TextLabel")
-	self.jobInfoSalary.Size = UDim2.new(1, 0, 0, 22)
+	self.jobInfoSalary.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 16 or 22)
 	self.jobInfoSalary.BackgroundTransparency = 1
 	self.jobInfoSalary.Font = F.Title
-	self.jobInfoSalary.TextSize = 16
+	self.jobInfoSalary.TextSize = IS_SMALL_PHONE and 12 or 16
 	self.jobInfoSalary.TextColor3 = C.GreenDark
 	self.jobInfoSalary.TextXAlignment = Enum.TextXAlignment.Left
 	self.jobInfoSalary.Text = "💵 $50,000/year"
@@ -2512,12 +2536,12 @@ function OccupationScreen:createJobInfoModal()
 	self.jobInfoSalary.ZIndex = 99
 	self.jobInfoSalary.Parent = badgeContainer
 
-	-- Education
+	-- Education - MOBILE FIX
 	self.jobInfoEdu = Instance.new("TextLabel")
-	self.jobInfoEdu.Size = UDim2.new(1, 0, 0, 20)
+	self.jobInfoEdu.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 20)
 	self.jobInfoEdu.BackgroundTransparency = 1
 	self.jobInfoEdu.Font = F.Body
-	self.jobInfoEdu.TextSize = 13
+	self.jobInfoEdu.TextSize = IS_SMALL_PHONE and 10 or 13
 	self.jobInfoEdu.TextColor3 = C.Gray600
 	self.jobInfoEdu.TextXAlignment = Enum.TextXAlignment.Left
 	self.jobInfoEdu.Text = "📚 Requires: High School"
@@ -2525,25 +2549,25 @@ function OccupationScreen:createJobInfoModal()
 	self.jobInfoEdu.ZIndex = 99
 	self.jobInfoEdu.Parent = badgeContainer
 
-	-- Min age
+	-- Min age - MOBILE FIX
 	self.jobInfoAge = Instance.new("TextLabel")
-	self.jobInfoAge.Size = UDim2.new(1, 0, 0, 20)
+	self.jobInfoAge.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 20)
 	self.jobInfoAge.BackgroundTransparency = 1
 	self.jobInfoAge.Font = F.Body
-	self.jobInfoAge.TextSize = 13
+	self.jobInfoAge.TextSize = IS_SMALL_PHONE and 10 or 13
 	self.jobInfoAge.TextColor3 = C.Gray600
 	self.jobInfoAge.TextXAlignment = Enum.TextXAlignment.Left
-	self.jobInfoAge.Text = "🎂 Minimum Age: 16"
+	self.jobInfoAge.Text = "🎂 Min Age: 16"
 	self.jobInfoAge.LayoutOrder = 3
 	self.jobInfoAge.ZIndex = 99
 	self.jobInfoAge.Parent = badgeContainer
 
-	-- Description
+	-- Description - MOBILE FIX
 	self.jobInfoDesc = Instance.new("TextLabel")
-	self.jobInfoDesc.Size = UDim2.new(1, 0, 0, 40)
+	self.jobInfoDesc.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 28 or 40)
 	self.jobInfoDesc.BackgroundTransparency = 1
 	self.jobInfoDesc.Font = F.Body
-	self.jobInfoDesc.TextSize = 13
+	self.jobInfoDesc.TextSize = IS_SMALL_PHONE and 10 or 13
 	self.jobInfoDesc.TextColor3 = C.Gray500
 	self.jobInfoDesc.TextWrapped = true
 	self.jobInfoDesc.Text = "Description..."
@@ -2856,15 +2880,17 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 		UI.corner(btnShadow, 14)
 	end
 
-	-- Apply button (MUCH more prominent, with loading state support)
+	-- Apply button (MUCH more prominent, with loading state support) - MOBILE FIX
+	local applyBtnWidth = IS_SMALL_PHONE and 56 or 80
+	local applyBtnHeight = IS_SMALL_PHONE and 36 or 50
 	local applyBtn = Instance.new("TextButton")
 	applyBtn.Name = "ApplyBtn"
-	applyBtn.Size = UDim2.new(0, 80, 0, 50)
+	applyBtn.Size = UDim2.new(0, applyBtnWidth, 0, applyBtnHeight)
 	applyBtn.AnchorPoint = Vector2.new(1, 0.5)
-	applyBtn.Position = UDim2.new(1, -10, 0.5, 0)
+	applyBtn.Position = UDim2.new(1, IS_SMALL_PHONE and -6 or -10, 0.5, 0)
 	applyBtn.BackgroundColor3 = canApply and C.Blue or C.Gray300
 	applyBtn.Font = F.Button
-	applyBtn.TextSize = 15
+	applyBtn.TextSize = IS_SMALL_PHONE and 11 or 15
 	applyBtn.TextColor3 = canApply and C.White or C.Gray500
 	-- Button text based on why they can't apply
 	local btnText = "Apply"
@@ -2889,25 +2915,30 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 
 	if canApply then
 		local isLoading = false
+		-- MOBILE FIX: Responsive hover sizes
+		local hoverWidth = applyBtnWidth + 6
+		local hoverHeight = applyBtnHeight + 4
+		local shadowHoverWidth = applyBtnWidth + 10
+		local shadowHoverHeight = applyBtnHeight + 8
 		
 		applyBtn.MouseEnter:Connect(function()
 			if isLoading then return end
 			UI.tween(applyBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
 				BackgroundColor3 = C.BlueDark,
-				Size = UDim2.new(0, 86, 0, 54)
+				Size = UDim2.new(0, hoverWidth, 0, hoverHeight)
 			})
 			if btnShadow then
-				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 58) })
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, shadowHoverWidth, 0, shadowHoverHeight) })
 			end
 		end)
 		applyBtn.MouseLeave:Connect(function()
 			if isLoading then return end
 			UI.tween(applyBtn, TweenInfo.new(0.12), { 
 				BackgroundColor3 = C.Blue,
-				Size = UDim2.new(0, 80, 0, 50)
+				Size = UDim2.new(0, applyBtnWidth, 0, applyBtnHeight)
 			})
 			if btnShadow then
-				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 84, 0, 54) })
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, applyBtnWidth + 4, 0, applyBtnHeight + 4) })
 			end
 		end)
 		applyBtn.MouseButton1Click:Connect(function()
@@ -5034,39 +5065,45 @@ function OccupationScreen:createCareerInfoModal()
 		self:hideCareerInfoModal()
 	end)
 
-	-- Content scroll
+	-- Content scroll - MOBILE FIX: Responsive positioning based on header height
+	local contentTopOffset = IS_SMALL_PHONE and 50 or 65
+	local contentBottomPad = IS_SMALL_PHONE and 56 or 72
+	local contentPadding = IS_SMALL_PHONE and 6 or 8
+	
 	local content = Instance.new("ScrollingFrame")
 	content.Name = "ContentScroll"
-	content.Size = UDim2.new(1, -16, 1, -72)
-	content.Position = UDim2.new(0, 8, 0, 65)
+	content.Size = UDim2.new(1, -contentPadding*2, 1, -contentTopOffset - 8)
+	content.Position = UDim2.new(0, contentPadding, 0, contentTopOffset)
 	content.BackgroundTransparency = 1
 	content.CanvasSize = UDim2.new(0, 0, 0, 0)
 	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	content.ScrollBarThickness = 3
+	content.ScrollBarThickness = IS_SMALL_PHONE and 4 or 3
 	content.ScrollBarImageColor3 = C.Gray300
 	content.ZIndex = 99
 	content.Parent = self.careerInfoCard
 
 	local contentLayout = Instance.new("UIListLayout")
-	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.Padding = UDim.new(0, IS_SMALL_PHONE and 8 or 12)
 	contentLayout.Parent = content
 
-	-- Summary section
+	-- Summary section - MOBILE FIX: Smaller on mobile
+	local summarySectionHeight = IS_SMALL_PHONE and 44 or 55
 	local summarySection = Instance.new("Frame")
-	summarySection.Size = UDim2.new(1, 0, 0, 55)
+	summarySection.Size = UDim2.new(1, 0, 0, summarySectionHeight)
 	summarySection.BackgroundColor3 = C.Gray50
 	summarySection.LayoutOrder = 1
 	summarySection.ZIndex = 99
 	summarySection.Parent = content
-	UI.corner(summarySection, 12)
-	UI.pad(summarySection, 12, 12, 10, 10)
+	UI.corner(summarySection, IS_SMALL_PHONE and 8 or 12)
+	UI.pad(summarySection, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
 
+	local labelTextSize = IS_SMALL_PHONE and 10 or 12
 	self.careerInfoExpLabel = Instance.new("TextLabel")
-	self.careerInfoExpLabel.Size = UDim2.new(1, 0, 0, 18)
-	self.careerInfoExpLabel.Position = UDim2.new(0, 12, 0, 8)
+	self.careerInfoExpLabel.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 18)
+	self.careerInfoExpLabel.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 12, 0, IS_SMALL_PHONE and 4 or 8)
 	self.careerInfoExpLabel.BackgroundTransparency = 1
 	self.careerInfoExpLabel.Font = F.Medium
-	self.careerInfoExpLabel.TextSize = 12
+	self.careerInfoExpLabel.TextSize = labelTextSize
 	self.careerInfoExpLabel.TextColor3 = C.Gray700
 	self.careerInfoExpLabel.TextXAlignment = Enum.TextXAlignment.Left
 	self.careerInfoExpLabel.Text = "📊 Total Experience: 0 years"
@@ -5074,26 +5111,29 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoExpLabel.Parent = summarySection
 
 	self.careerInfoPerfLabel = Instance.new("TextLabel")
-	self.careerInfoPerfLabel.Size = UDim2.new(1, 0, 0, 18)
-	self.careerInfoPerfLabel.Position = UDim2.new(0, 12, 0, 28)
+	self.careerInfoPerfLabel.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 18)
+	self.careerInfoPerfLabel.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 12, 0, IS_SMALL_PHONE and 22 or 28)
 	self.careerInfoPerfLabel.BackgroundTransparency = 1
 	self.careerInfoPerfLabel.Font = F.Medium
-	self.careerInfoPerfLabel.TextSize = 12
+	self.careerInfoPerfLabel.TextSize = labelTextSize
 	self.careerInfoPerfLabel.TextColor3 = C.Gray700
 	self.careerInfoPerfLabel.TextXAlignment = Enum.TextXAlignment.Left
 	self.careerInfoPerfLabel.Text = "⭐ Current Performance: 75%"
 	self.careerInfoPerfLabel.ZIndex = 100
 	self.careerInfoPerfLabel.Parent = summarySection
 
-	-- Skills section
+	-- Skills section - MOBILE FIX: Smaller headers
+	local sectionHeaderSize = IS_SMALL_PHONE and 18 or 24
+	local sectionHeaderTextSize = IS_SMALL_PHONE and 11 or 14
+	
 	local skillsHeader = Instance.new("TextLabel")
-	skillsHeader.Size = UDim2.new(1, 0, 0, 24)
+	skillsHeader.Size = UDim2.new(1, 0, 0, sectionHeaderSize)
 	skillsHeader.BackgroundTransparency = 1
 	skillsHeader.Font = F.Title
-	skillsHeader.TextSize = 14
+	skillsHeader.TextSize = sectionHeaderTextSize
 	skillsHeader.TextColor3 = C.Gray800
 	skillsHeader.TextXAlignment = Enum.TextXAlignment.Left
-	skillsHeader.Text = "💼 Career Skills"
+	skillsHeader.Text = "💼 Skills"
 	skillsHeader.LayoutOrder = 2
 	skillsHeader.ZIndex = 99
 	skillsHeader.Parent = content
@@ -5105,18 +5145,18 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoSkillsContainer.LayoutOrder = 3
 	self.careerInfoSkillsContainer.ZIndex = 99
 	self.careerInfoSkillsContainer.Parent = content
-	UI.corner(self.careerInfoSkillsContainer, 12)
-	UI.pad(self.careerInfoSkillsContainer, 12, 12, 10, 10)
+	UI.corner(self.careerInfoSkillsContainer, IS_SMALL_PHONE and 8 or 12)
+	UI.pad(self.careerInfoSkillsContainer, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
 
 	-- History section
 	local historyHeader = Instance.new("TextLabel")
-	historyHeader.Size = UDim2.new(1, 0, 0, 24)
+	historyHeader.Size = UDim2.new(1, 0, 0, sectionHeaderSize)
 	historyHeader.BackgroundTransparency = 1
 	historyHeader.Font = F.Title
-	historyHeader.TextSize = 14
+	historyHeader.TextSize = sectionHeaderTextSize
 	historyHeader.TextColor3 = C.Gray800
 	historyHeader.TextXAlignment = Enum.TextXAlignment.Left
-	historyHeader.Text = "📜 Career History"
+	historyHeader.Text = "📜 History"
 	historyHeader.LayoutOrder = 4
 	historyHeader.ZIndex = 99
 	historyHeader.Parent = content
@@ -5128,8 +5168,8 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoHistoryContainer.LayoutOrder = 5
 	self.careerInfoHistoryContainer.ZIndex = 99
 	self.careerInfoHistoryContainer.Parent = content
-	UI.corner(self.careerInfoHistoryContainer, 12)
-	UI.pad(self.careerInfoHistoryContainer, 12, 12, 10, 10)
+	UI.corner(self.careerInfoHistoryContainer, IS_SMALL_PHONE and 8 or 12)
+	UI.pad(self.careerInfoHistoryContainer, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
 
 	log("Career info modal created")
 end
