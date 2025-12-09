@@ -94,6 +94,60 @@ Teen.events = {
 			{ text = "Accept a lower grade", effects = { Happiness = -2, Smarts = -1 }, feedText = "The project suffered, but you avoided conflict." },
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: High School Dropout Event (like BitLife)
+	-- This allows the GED and Return to School activities to work
+	-- ═══════════════════════════════════════════════════════════════════════════
+	{
+		id = "considering_dropping_out",
+		title = "Thinking About Dropping Out",
+		emoji = "🚪",
+		text = "School has been really hard lately. You're struggling with classes, maybe with teachers, maybe with other students. Some days you wonder if you should just quit.",
+		question = "What do you do?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.2, -- Rare but possible
+		cooldown = 3,
+		requiresFlags = { in_high_school = true },
+		blockedByFlags = { honor_student = true, academic_path = true },
+		choices = {
+			{
+				text = "Drop out of high school",
+				effects = { Happiness = 5, Smarts = -10 },
+				setFlags = { dropped_out_high_school = true, in_high_school = nil, dropout = true },
+				feedText = "You dropped out of high school. You can always get your GED later...",
+				onResolve = function(state)
+					state.Education = "none"
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "dropped_out"
+					state.EducationData.Level = "none"
+					state.Flags = state.Flags or {}
+					state.Flags.dropped_out_high_school = true
+					state.Flags.in_high_school = nil
+					if state.AddFeed then
+						state:AddFeed("📕 You dropped out of high school. You can get your GED or return later through Activities!")
+					end
+				end,
+			},
+			{
+				text = "Get help from a counselor",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { sought_help = true },
+				feedText = "You talked to someone about your struggles. It helped a lot.",
+			},
+			{
+				text = "Push through - just one more year",
+				effects = { Smarts = 5, Health = -2, Happiness = -3 },
+				setFlags = { persistent = true },
+				feedText = "You decided to stick it out. It's hard, but you'll make it.",
+			},
+			{
+				text = "Try an alternative program",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { alternative_education = true },
+				feedText = "You switched to an alternative learning program that fits you better.",
+			},
+		},
+	},
 	{
 		id = "academic_pressure",
 		title = "Under Pressure",
@@ -356,6 +410,9 @@ Teen.events = {
 			state.Flags = state.Flags or {}
 			state.Flags.graduated_high_school = true
 			state.Flags.high_school_graduate = true
+			-- CRITICAL FIX: Set has_ged_or_diploma for education activities
+			state.Flags.has_diploma = true
+			state.Flags.has_ged_or_diploma = true
 			-- Update education data
 			if state.EducationData then
 				state.EducationData.Status = "completed"
@@ -1409,9 +1466,17 @@ Teen.events = {
 		
 		choices = {
 			{
-				text = "Cheap beater - just needs to run",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Cheap beater - just needs to run ($1,500)",
 				effects = {},
 				feedText = "You found a cheap car...",
+				-- CRITICAL FIX: Add per-choice eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 1500 then
+						return false, "Can't afford $1,500 for a car"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local money = state.Money or 0
 					if money >= 1500 then
@@ -1451,9 +1516,17 @@ Teen.events = {
 				end,
 			},
 			{
-				text = "Something reliable but boring",
+				-- CRITICAL FIX: Show price in choice text!
+				text = "Something reliable but boring ($3,000)",
 				effects = {},
 				feedText = "Looking for reliability...",
+				-- CRITICAL FIX: Add per-choice eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford $3,000 for a car"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local money = state.Money or 0
 					if money >= 3000 then
@@ -1724,11 +1797,36 @@ Teen.events = {
 		cooldown = 3,
 		
 		choices = {
-			{ text = "Stand up for the victim", effects = { Happiness = 5 }, setFlags = { stands_up_to_bullies = true }, feedText = "You defended them. It took courage." },
+			{ 
+				text = "👊 Stand up and FIGHT!", 
+				effects = {},
+				setFlags = { stands_up_to_bullies = true },
+				feedText = "You physically intervened...",
+				-- CRITICAL FIX: Fight minigame for standing up to bullies!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					if won then
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.hero = true
+						state.Flags.fighter = true
+						state:AddFeed("👊 You beat the bully! Everyone cheered. You're a hero!")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.brave = true
+						state:AddFeed("👊 You got beat up, but you stood your ground. Respect earned.")
+					end
+				end,
+			},
+			{ text = "Verbally confront the bully", effects = { Happiness = 5 }, setFlags = { stands_up_to_bullies = true }, feedText = "You defended them with words. It took courage." },
 			{ text = "Report it to a teacher", effects = { Smarts = 2 }, setFlags = { reports_wrongdoing = true }, feedText = "You told an adult. They handled it." },
 			{ text = "Stay out of it", effects = { Happiness = -4 }, setFlags = { bystander = true }, feedText = "You did nothing. That guilt stays." },
 			{ text = "Befriend the victim later", effects = { Happiness = 3 }, setFlags = { kind = true }, feedText = "You checked on them afterward. They appreciated it." },
-			{ text = "Join in (terrible choice)", effects = { Happiness = -8 }, setFlags = { bully = true }, feedText = "You became part of the problem. Shameful." },
 		},
 	},
 	{
@@ -1881,7 +1979,30 @@ Teen.events = {
 		cooldown = 2,
 		
 		choices = {
-			{ text = "Keep arguing until you 'win'", effects = { Happiness = -4, Health = -2 }, setFlags = { internet_warrior = true }, feedText = "You spent 3 hours on this. What did you win? Nothing." },
+			{ 
+				text = "🎤 DESTROY them with FACTS!", 
+				effects = {},
+				feedText = "You engaged in debate...",
+				-- CRITICAL FIX: Debate minigame for internet arguments!
+				triggerMinigame = "debate",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					if won then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.debate_champion = true
+						state:AddFeed("🎤 You absolutely DESTROYED them! Screenshot saved. Victory!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:ModifyStat("Health", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.internet_warrior = true
+						state:AddFeed("💻 You lost the argument. They screenshotted your L. Embarrassing.")
+					end
+				end,
+			},
 			{ text = "Block and move on", effects = { Happiness = 3 }, setFlags = { knows_when_to_stop = true }, feedText = "Not worth your energy. Smart." },
 			{ text = "Actually have a productive conversation", effects = { Happiness = 4, Smarts = 3 }, setFlags = { good_communicator = true }, feedText = "Rare achievement: civil internet discourse!" },
 			{ text = "Let friends handle it", effects = { Happiness = 2 }, feedText = "Your friends jumped in. Chaotic but entertaining." },

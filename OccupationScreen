@@ -9,6 +9,212 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local ViewportSize = Camera.ViewportSize
+
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.65 end
+	if minDim < 400 then return 0.75 end
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
+local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	return IS_MOBILE and math.max(44, scaled) or scaled
+end
+local function cardWidth()
+	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
+	return 350
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PREMIUM EMPTY STATE CARD HELPER
+-- Creates a polished empty state card with icon, message, and optional action
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function createPremiumEmptyCard(parent, options)
+	options = options or {}
+	local emoji = options.emoji or "📭"
+	local title = options.title or "Nothing Here"
+	local message = options.message or "No items to display."
+	local accentColor = options.accentColor or C.Gray400
+	local layoutOrder = options.layoutOrder or 1
+	local actionText = options.actionText
+	local actionCallback = options.actionCallback
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "EmptyStateCard"
+	container.Size = UDim2.new(1, 0, 0, actionText and 180 or 150)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = layoutOrder
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.94
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Shell (subtle accent)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = accentColor:Lerp(C.White, 0.6)
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -4, 1, -4)
+	card.Position = UDim2.new(0, 2, 0, 2)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 16)
+	
+	-- Emoji icon with circle background
+	local iconCircle = Instance.new("Frame")
+	iconCircle.Size = UDim2.new(0, 60, 0, 60)
+	iconCircle.AnchorPoint = Vector2.new(0.5, 0)
+	iconCircle.Position = UDim2.new(0.5, 0, 0, 16)
+	iconCircle.BackgroundColor3 = accentColor:Lerp(C.White, 0.85)
+	iconCircle.ZIndex = 85
+	iconCircle.Parent = card
+	UI.corner(iconCircle, 30)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 28
+	iconLabel.Text = emoji
+	iconLabel.ZIndex = 86
+	iconLabel.Parent = iconCircle
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 24)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 82)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 16
+	titleLabel.TextColor3 = C.Gray700
+	titleLabel.Text = title
+	titleLabel.ZIndex = 85
+	titleLabel.Parent = card
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 32)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 106)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 13
+	messageLabel.TextColor3 = C.Gray500
+	messageLabel.TextWrapped = true
+	messageLabel.Text = message
+	messageLabel.ZIndex = 85
+	messageLabel.Parent = card
+	
+	-- Optional action button
+	if actionText and actionCallback then
+		local actionBtn = Instance.new("TextButton")
+		actionBtn.Size = UDim2.new(0.6, 0, 0, 36)
+		actionBtn.AnchorPoint = Vector2.new(0.5, 0)
+		actionBtn.Position = UDim2.new(0.5, 0, 0, 142)
+		actionBtn.BackgroundColor3 = accentColor
+		actionBtn.Font = F.Button
+		actionBtn.TextSize = 13
+		actionBtn.TextColor3 = C.White
+		actionBtn.Text = actionText
+		actionBtn.AutoButtonColor = false
+		actionBtn.ZIndex = 86
+		actionBtn.Parent = card
+		UI.corner(actionBtn, 10)
+		
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), {
+				BackgroundColor3 = accentColor:Lerp(C.Black, 0.15)
+			})
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+		end)
+		actionBtn.MouseButton1Click:Connect(actionCallback)
+	end
+	
+	return container
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local OccupationScreen = {}
 OccupationScreen.__index = OccupationScreen
 
@@ -809,13 +1015,12 @@ function OccupationScreen:createUI()
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
 
-	-- CRITICAL FIX: Use consistent header and layout like RelationshipsScreen
-	-- This fixes UI cutoff issues on various devices/screens
-	local HEADER_HEIGHT = 72
-	local INFO_HEIGHT = 52
-	local TAB_HEIGHT = 52
-	local CATEGORY_HEIGHT = 44
-	local GAP = 8
+	-- MOBILE FIX: Responsive layout constants
+	local HEADER_HEIGHT = IS_SMALL_PHONE and 56 or px(72)
+	local INFO_HEIGHT = IS_SMALL_PHONE and 44 or px(52)
+	local TAB_HEIGHT = btnHeight(52)
+	local CATEGORY_HEIGHT = btnHeight(44)
+	local GAP = padSize(8)
 
 	-- Custom header (consistent with RelationshipsScreen)
 	local header = Instance.new("Frame")
@@ -835,34 +1040,37 @@ function OccupationScreen:createUI()
 	headerBottom.ZIndex = 85
 	headerBottom.Parent = header
 
+	-- MOBILE FIX: Responsive title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "Title"
-	titleLabel.Size = UDim2.new(1, -80, 1, 0)
-	titleLabel.Position = UDim2.new(0, 16, 0, 0)
+	titleLabel.Size = UDim2.new(1, -px(80), 1, 0)
+	titleLabel.Position = UDim2.new(0, padSize(16), 0, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 20
+	titleLabel.TextSize = textSize(20)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.Text = "💼 Career & Education"
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = header
 
+	-- MOBILE FIX: Touch-friendly close button
+	local closeBtnSize = btnHeight(32)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
-	closeButton.Size = UDim2.new(0, 32, 0, 32)
+	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
 	closeButton.AnchorPoint = Vector2.new(1, 0.5)
-	closeButton.Position = UDim2.new(1, -16, 0.5, 0)
+	closeButton.Position = UDim2.new(1, -padSize(16), 0.5, 0)
 	closeButton.BackgroundColor3 = C.White
 	closeButton.BackgroundTransparency = 0.1
 	closeButton.Font = Enum.Font.GothamBold
-	closeButton.TextSize = 16
+	closeButton.TextSize = textSize(16)
 	closeButton.TextColor3 = C.Gray600
 	closeButton.Text = "✕"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header
-	UI.corner(closeButton, 8)
+	UI.corner(closeButton, px(8))
 
 	closeButton.MouseButton1Click:Connect(function() self:hide() end)
 	closeButton.MouseEnter:Connect(function()
@@ -874,7 +1082,7 @@ function OccupationScreen:createUI()
 
 	self.header = header
 
-	-- CRITICAL FIX: Content root (prevents UI cutoff issues)
+	-- Content root (prevents UI cutoff issues)
 	self.contentRoot = Instance.new("Frame")
 	self.contentRoot.Name = "ContentRoot"
 	self.contentRoot.BackgroundTransparency = 1
@@ -883,9 +1091,10 @@ function OccupationScreen:createUI()
 	self.contentRoot.Position = UDim2.new(0, 0, 0, HEADER_HEIGHT)
 	self.contentRoot.Parent = self.overlay
 
+	-- MOBILE FIX: Responsive padding
 	local contentPad = Instance.new("UIPadding")
-	contentPad.PaddingLeft = UDim.new(0, 8)
-	contentPad.PaddingRight = UDim.new(0, 8)
+	contentPad.PaddingLeft = UDim.new(0, padSize(8))
+	contentPad.PaddingRight = UDim.new(0, padSize(8))
 	contentPad.PaddingTop = UDim.new(0, 0)
 	contentPad.PaddingBottom = UDim.new(0, 8)
 	contentPad.Parent = self.contentRoot
@@ -991,6 +1200,29 @@ function OccupationScreen:createUI()
 	self.eduTab.ZIndex = 85
 	self.eduTab.Parent = self.tabBar
 	UI.corner(self.eduTab, 10)
+	
+	-- CRITICAL UI FIX: Add hover effects to tab buttons
+	self.jobsTab.MouseEnter:Connect(function()
+		if self.currentTab ~= "jobs" then
+			UI.tween(self.jobsTab, TweenInfo.new(0.12), { BackgroundColor3 = C.BluePale })
+		end
+	end)
+	self.jobsTab.MouseLeave:Connect(function()
+		if self.currentTab ~= "jobs" then
+			UI.tween(self.jobsTab, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end
+	end)
+	
+	self.eduTab.MouseEnter:Connect(function()
+		if self.currentTab ~= "education" then
+			UI.tween(self.eduTab, TweenInfo.new(0.12), { BackgroundColor3 = C.PurplePale })
+		end
+	end)
+	self.eduTab.MouseLeave:Connect(function()
+		if self.currentTab ~= "education" then
+			UI.tween(self.eduTab, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end
+	end)
 
 	self.jobsTab.MouseButton1Click:Connect(function() self:switchTab("jobs") end)
 	self.eduTab.MouseButton1Click:Connect(function() self:switchTab("education") end)
@@ -1259,7 +1491,7 @@ function OccupationScreen:populateJobs()
 	end
 
 	-- Current job section (if employed and not in jail)
-	if currentJob then
+	if currentJob and not inJail then
 		local currentSection = Instance.new("Frame")
 		currentSection.Name = "CurrentJobSection"
 		currentSection.Size = UDim2.new(1, 0, 0, 0)
@@ -1309,6 +1541,63 @@ function OccupationScreen:populateJobs()
 		else
 			log("No job data found for currentJob:", currentJob)
 		end
+	elseif not currentJob and not inJail then
+		-- CRITICAL UI FIX: Show "Unemployed" status card when player has no job
+		local unemployedCard = Instance.new("Frame")
+		unemployedCard.Name = "UnemployedCard"
+		unemployedCard.Size = UDim2.new(1, 0, 0, 95)
+		unemployedCard.BackgroundColor3 = C.AmberPale or Color3.fromRGB(254, 243, 199)
+		unemployedCard.LayoutOrder = 0
+		unemployedCard.ZIndex = 82
+		unemployedCard.Parent = self.contentScroll
+		UI.corner(unemployedCard, 18)
+		UI.stroke(unemployedCard, 2, 0.5, C.Amber or Color3.fromRGB(245, 158, 11))
+		
+		-- Icon
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 55, 0, 55)
+		iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+		iconFrame.BackgroundColor3 = C.Amber or Color3.fromRGB(245, 158, 11)
+		iconFrame.ZIndex = 83
+		iconFrame.Parent = unemployedCard
+		UI.corner(iconFrame, 12)
+		
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = 28
+		iconLabel.Text = "🔍"
+		iconLabel.TextColor3 = C.White
+		iconLabel.ZIndex = 84
+		iconLabel.Parent = iconFrame
+		
+		-- Header text
+		local headerText = Instance.new("TextLabel")
+		headerText.Size = UDim2.new(1, -85, 0, 24)
+		headerText.Position = UDim2.new(0, 80, 0, 16)
+		headerText.BackgroundTransparency = 1
+		headerText.Font = F.Title
+		headerText.TextSize = 18
+		headerText.TextColor3 = C.AmberDark or Color3.fromRGB(217, 119, 6)
+		headerText.TextXAlignment = Enum.TextXAlignment.Left
+		headerText.Text = "Currently Unemployed"
+		headerText.ZIndex = 83
+		headerText.Parent = unemployedCard
+		
+		-- Sub text
+		local subText = Instance.new("TextLabel")
+		subText.Size = UDim2.new(1, -85, 0, 35)
+		subText.Position = UDim2.new(0, 80, 0, 42)
+		subText.BackgroundTransparency = 1
+		subText.Font = F.Body
+		subText.TextSize = 13
+		subText.TextColor3 = C.Gray600 or Color3.fromRGB(75, 85, 99)
+		subText.TextXAlignment = Enum.TextXAlignment.Left
+		subText.TextWrapped = true
+		subText.Text = "Browse available jobs below and apply for positions that match your qualifications!"
+		subText.ZIndex = 83
+		subText.Parent = unemployedCard
 	end
 
 	-- Available jobs section
@@ -1390,19 +1679,21 @@ function OccupationScreen:populateJobs()
 		jobsShown = jobsShown + 1
 	end
 
-	-- Show message if no jobs in category
+	-- CRITICAL FIX: Premium empty state card
 	if jobsShown == 0 then
-		local emptyLabel = Instance.new("TextLabel")
-		emptyLabel.Size = UDim2.new(1, 0, 0, 60)
-		emptyLabel.BackgroundTransparency = 1
-		emptyLabel.Font = F.Body
-		emptyLabel.TextSize = 14
-		emptyLabel.TextColor3 = C.Gray400
-		emptyLabel.Text = "No jobs available in this category for your qualifications."
-		emptyLabel.TextWrapped = true
-		emptyLabel.LayoutOrder = 1
-		emptyLabel.ZIndex = 84
-		emptyLabel.Parent = section
+		createPremiumEmptyCard(section, {
+			emoji = "📭",
+			title = "No Jobs Available",
+			message = "No jobs in this category match your current age, education, or stats.",
+			accentColor = C.Blue,
+			layoutOrder = 1,
+			actionText = "📚 Try Education Tab",
+			actionCallback = function()
+				if self.switchTab then
+					self:switchTab("education")
+				end
+			end
+		})
 	end
 end
 
@@ -1426,6 +1717,12 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	card.ZIndex = 83
 	card.Parent = parent
 	UI.corner(card, 18)
+	UI.stroke(card, 2, 0.3, C.Green)
+	
+	-- CRITICAL UI FIX: Add shadow for depth
+	if UI.createShadow then
+		UI.createShadow(card, 3, 12, C.Black, 0.88)
+	end
 
 	-- ═══════════════════════════════════════════════════════════
 	-- TOP SECTION: Job Info with Icon
@@ -1686,49 +1983,97 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	actionLayout1.Padding = UDim.new(0, 8)
 	actionLayout1.Parent = actionRow1
 
-	-- Do Work button
+	-- Do Work button (CRITICAL FIX: added shadow + loading state)
 	local workBtn = Instance.new("TextButton")
-	workBtn.Size = UDim2.new(0.48, 0, 0, 38)
+	workBtn.Size = UDim2.new(0.48, 0, 0, 42)
 	workBtn.BackgroundColor3 = C.Green
 	workBtn.Font = F.Button
-	workBtn.TextSize = 13
+	workBtn.TextSize = 14
 	workBtn.TextColor3 = C.White
 	workBtn.Text = "💼 Work"
 	workBtn.AutoButtonColor = false
 	workBtn.LayoutOrder = 1
 	workBtn.ZIndex = 85
 	workBtn.Parent = actionRow1
-	UI.corner(workBtn, 10)
+	UI.corner(workBtn, 12)
+	
+	-- Button shadow
+	local workBtnShadow = Instance.new("Frame")
+	workBtnShadow.Size = UDim2.new(1, 4, 1, 4)
+	workBtnShadow.Position = UDim2.new(0, 2, 0, 2)
+	workBtnShadow.BackgroundColor3 = C.GreenDark
+	workBtnShadow.BackgroundTransparency = 0.5
+	workBtnShadow.ZIndex = 84
+	workBtnShadow.Parent = workBtn
+	UI.corner(workBtnShadow, 12)
 
+	local workBtnLoading = false
 	workBtn.MouseEnter:Connect(function()
-		UI.tween(workBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+		if workBtnLoading then return end
+		UI.tween(workBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+			Size = UDim2.new(0.48, 0, 0, 46),
+			BackgroundColor3 = C.GreenDark 
+		})
 	end)
 	workBtn.MouseLeave:Connect(function()
-		UI.tween(workBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+		if workBtnLoading then return end
+		UI.tween(workBtn, TweenInfo.new(0.12), { 
+			Size = UDim2.new(0.48, 0, 0, 42),
+			BackgroundColor3 = C.Green 
+		})
 	end)
 	workBtn.MouseButton1Click:Connect(function()
-		self:doWork()
+		if workBtnLoading then return end
+		workBtnLoading = true
+		workBtn.Text = "⏳..."
+		UI.tween(workBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+		
+		task.spawn(function()
+			self:doWork()
+			task.wait(0.5)
+			if workBtn and workBtn.Parent then
+				workBtnLoading = false
+				workBtn.Text = "💼 Work"
+				workBtn.BackgroundColor3 = C.Green
+			end
+		end)
 	end)
 
-	-- Career Info button
+	-- Career Info button (CRITICAL FIX: added shadow + hover effect)
 	local infoBtn = Instance.new("TextButton")
-	infoBtn.Size = UDim2.new(0.48, 0, 0, 38)
+	infoBtn.Size = UDim2.new(0.48, 0, 0, 42)
 	infoBtn.BackgroundColor3 = C.Blue
 	infoBtn.Font = F.Button
-	infoBtn.TextSize = 13
+	infoBtn.TextSize = 14
 	infoBtn.TextColor3 = C.White
 	infoBtn.Text = "📋 Career Info"
 	infoBtn.AutoButtonColor = false
 	infoBtn.LayoutOrder = 2
 	infoBtn.ZIndex = 85
 	infoBtn.Parent = actionRow1
-	UI.corner(infoBtn, 10)
+	UI.corner(infoBtn, 12)
+	
+	-- Button shadow
+	local infoBtnShadow = Instance.new("Frame")
+	infoBtnShadow.Size = UDim2.new(1, 4, 1, 4)
+	infoBtnShadow.Position = UDim2.new(0, 2, 0, 2)
+	infoBtnShadow.BackgroundColor3 = C.BlueDark
+	infoBtnShadow.BackgroundTransparency = 0.5
+	infoBtnShadow.ZIndex = 84
+	infoBtnShadow.Parent = infoBtn
+	UI.corner(infoBtnShadow, 12)
 
 	infoBtn.MouseEnter:Connect(function()
-		UI.tween(infoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
+		UI.tween(infoBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+			Size = UDim2.new(0.48, 0, 0, 46),
+			BackgroundColor3 = C.BlueDark 
+		})
 	end)
 	infoBtn.MouseLeave:Connect(function()
-		UI.tween(infoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
+		UI.tween(infoBtn, TweenInfo.new(0.12), { 
+			Size = UDim2.new(0.48, 0, 0, 42),
+			BackgroundColor3 = C.Blue 
+		})
 	end)
 	infoBtn.MouseButton1Click:Connect(function()
 		self:showCareerInfoModal()
@@ -1751,13 +2096,13 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	actionLayout2.Padding = UDim.new(0, 6)
 	actionLayout2.Parent = actionRow2
 
-	-- Request Promotion button (only if promotion available and progress >= 80)
+	-- Request Promotion button (CRITICAL FIX: premium styling + loading state)
 	local canRequestPromo = hasPromotion and promotionProgress >= 80
 	local promoBtn = Instance.new("TextButton")
-	promoBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	promoBtn.Size = UDim2.new(0.32, 0, 0, 40)
 	promoBtn.BackgroundColor3 = canRequestPromo and C.Purple or C.Gray300
 	promoBtn.Font = F.Button
-	promoBtn.TextSize = 11
+	promoBtn.TextSize = 12
 	promoBtn.TextColor3 = canRequestPromo and C.White or C.Gray500
 	promoBtn.Text = "🚀 Promote"
 	promoBtn.AutoButtonColor = false
@@ -1767,24 +2112,56 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	UI.corner(promoBtn, 10)
 
 	if canRequestPromo then
+		-- Button shadow
+		local promoBtnShadow = Instance.new("Frame")
+		promoBtnShadow.Size = UDim2.new(1, 3, 1, 3)
+		promoBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+		promoBtnShadow.BackgroundColor3 = C.PurpleDark
+		promoBtnShadow.BackgroundTransparency = 0.5
+		promoBtnShadow.ZIndex = 84
+		promoBtnShadow.Parent = promoBtn
+		UI.corner(promoBtnShadow, 10)
+		
+		local promoBtnLoading = false
 		promoBtn.MouseEnter:Connect(function()
-			UI.tween(promoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.PurpleDark })
+			if promoBtnLoading then return end
+			UI.tween(promoBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+				Size = UDim2.new(0.32, 0, 0, 44),
+				BackgroundColor3 = C.PurpleDark 
+			})
 		end)
 		promoBtn.MouseLeave:Connect(function()
-			UI.tween(promoBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Purple })
+			if promoBtnLoading then return end
+			UI.tween(promoBtn, TweenInfo.new(0.12), { 
+				Size = UDim2.new(0.32, 0, 0, 40),
+				BackgroundColor3 = C.Purple 
+			})
 		end)
 		promoBtn.MouseButton1Click:Connect(function()
-			self:requestPromotion()
+			if promoBtnLoading then return end
+			promoBtnLoading = true
+			promoBtn.Text = "⏳..."
+			UI.tween(promoBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+			
+			task.spawn(function()
+				self:requestPromotion()
+				task.wait(0.5)
+				if promoBtn and promoBtn.Parent then
+					promoBtnLoading = false
+					promoBtn.Text = "🚀 Promote"
+					promoBtn.BackgroundColor3 = C.Purple
+				end
+			end)
 		end)
 	end
 
-	-- Request Raise button (only if performance >= 60 and raises < 5)
+	-- Request Raise button (CRITICAL FIX: premium styling + loading state)
 	local canRequestRaise = performance >= 60 and raises < 5
 	local raiseBtn = Instance.new("TextButton")
-	raiseBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	raiseBtn.Size = UDim2.new(0.32, 0, 0, 40)
 	raiseBtn.BackgroundColor3 = canRequestRaise and C.Amber or C.Gray300
 	raiseBtn.Font = F.Button
-	raiseBtn.TextSize = 11
+	raiseBtn.TextSize = 12
 	raiseBtn.TextColor3 = canRequestRaise and C.White or C.Gray500
 	raiseBtn.Text = "💰 Raise"
 	raiseBtn.AutoButtonColor = false
@@ -1794,23 +2171,55 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	UI.corner(raiseBtn, 10)
 
 	if canRequestRaise then
+		-- Button shadow
+		local raiseBtnShadow = Instance.new("Frame")
+		raiseBtnShadow.Size = UDim2.new(1, 3, 1, 3)
+		raiseBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+		raiseBtnShadow.BackgroundColor3 = C.AmberDark
+		raiseBtnShadow.BackgroundTransparency = 0.5
+		raiseBtnShadow.ZIndex = 84
+		raiseBtnShadow.Parent = raiseBtn
+		UI.corner(raiseBtnShadow, 10)
+		
+		local raiseBtnLoading = false
 		raiseBtn.MouseEnter:Connect(function()
-			UI.tween(raiseBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.AmberDark })
+			if raiseBtnLoading then return end
+			UI.tween(raiseBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+				Size = UDim2.new(0.32, 0, 0, 44),
+				BackgroundColor3 = C.AmberDark 
+			})
 		end)
 		raiseBtn.MouseLeave:Connect(function()
-			UI.tween(raiseBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Amber })
+			if raiseBtnLoading then return end
+			UI.tween(raiseBtn, TweenInfo.new(0.12), { 
+				Size = UDim2.new(0.32, 0, 0, 40),
+				BackgroundColor3 = C.Amber 
+			})
 		end)
 		raiseBtn.MouseButton1Click:Connect(function()
-			self:requestRaise()
+			if raiseBtnLoading then return end
+			raiseBtnLoading = true
+			raiseBtn.Text = "⏳..."
+			UI.tween(raiseBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+			
+			task.spawn(function()
+				self:requestRaise()
+				task.wait(0.5)
+				if raiseBtn and raiseBtn.Parent then
+					raiseBtnLoading = false
+					raiseBtn.Text = "💰 Raise"
+					raiseBtn.BackgroundColor3 = C.Amber
+				end
+			end)
 		end)
 	end
 
-	-- Quit Job button
+	-- Quit Job button (CRITICAL FIX: premium styling with shadow + hover)
 	local quitBtn = Instance.new("TextButton")
-	quitBtn.Size = UDim2.new(0.32, 0, 0, 38)
+	quitBtn.Size = UDim2.new(0.32, 0, 0, 40)
 	quitBtn.BackgroundColor3 = C.Red
 	quitBtn.Font = F.Button
-	quitBtn.TextSize = 11
+	quitBtn.TextSize = 12
 	quitBtn.TextColor3 = C.White
 	quitBtn.Text = "🚪 Quit"
 	quitBtn.AutoButtonColor = false
@@ -1818,12 +2227,28 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	quitBtn.ZIndex = 85
 	quitBtn.Parent = actionRow2
 	UI.corner(quitBtn, 10)
+	
+	-- Button shadow
+	local quitBtnShadow = Instance.new("Frame")
+	quitBtnShadow.Size = UDim2.new(1, 3, 1, 3)
+	quitBtnShadow.Position = UDim2.new(0, 1.5, 0, 1.5)
+	quitBtnShadow.BackgroundColor3 = C.RedDark
+	quitBtnShadow.BackgroundTransparency = 0.5
+	quitBtnShadow.ZIndex = 84
+	quitBtnShadow.Parent = quitBtn
+	UI.corner(quitBtnShadow, 10)
 
 	quitBtn.MouseEnter:Connect(function()
-		UI.tween(quitBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.RedDark })
+		UI.tween(quitBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+			Size = UDim2.new(0.32, 0, 0, 44),
+			BackgroundColor3 = C.RedDark 
+		})
 	end)
 	quitBtn.MouseLeave:Connect(function()
-		UI.tween(quitBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Red })
+		UI.tween(quitBtn, TweenInfo.new(0.12), { 
+			Size = UDim2.new(0.32, 0, 0, 40),
+			BackgroundColor3 = C.Red 
+		})
 	end)
 	quitBtn.MouseButton1Click:Connect(function()
 		self:quitJob()
@@ -2163,65 +2588,180 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	-- Can't apply if in jail
 	local canApply = meetsAge and meetsEdu and not inJail
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
+	-- Outer shell with colored accent + inner white card + layered shadow
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds shadow + shell + card)
+	local container = Instance.new("Frame")
+	container.Name = job.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 100)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth effect)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = canApply and 0.92 or 0.96
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 18)
+	
+	-- Colored shell (accent border - blue for available, gray for locked)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = canApply and C.Blue or C.Gray300
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 16)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = job.id
-	card.Size = UDim2.new(1, 0, 0, 90)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
+	card.ZIndex = 84
+	card.Parent = shell
 	UI.corner(card, 14)
-	UI.stroke(card, 1, canApply and 0.7 or 0.88, canApply and C.Blue or C.Gray200)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Hover & Press Effects
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if canApply then
+		-- Create invisible button overlay for press detection
+		-- CRITICAL FIX: Reduced width to not cover the Apply button on the right
+		local pressArea = Instance.new("TextButton")
+		pressArea.Name = "PressArea"
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+		pressArea.BackgroundTransparency = 1
+		pressArea.Text = ""
+		pressArea.ZIndex = 90
+		pressArea.Parent = container
+		
+		local isHovering = false
+		local isPressed = false
+		
+		pressArea.MouseEnter:Connect(function()
+			if isPressed then return end
+			isHovering = true
+			-- Premium hover: scale up slightly, brighten shell, lift shadow
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 104)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.85,
+				Position = UDim2.new(0, 3, 0, 4)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.BluePale:Lerp(C.White, 0.85) })
+		end)
+		
+		pressArea.MouseLeave:Connect(function()
+			isHovering = false
+			isPressed = false
+			-- Return to normal
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 100)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.92,
+				Position = UDim2.new(0, 2, 0, 2)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		
+		pressArea.MouseButton1Down:Connect(function()
+			isPressed = true
+			-- Press down effect: scale down slightly, darken
+			UI.tween(container, TweenInfo.new(0.08), {
+				Size = UDim2.new(1, 0, 0, 96)
+			})
+			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = C.BlueDark:Lerp(C.Black, 0.1) })
+		end)
+		
+		pressArea.MouseButton1Up:Connect(function()
+			isPressed = false
+			if isHovering then
+				-- Return to hover state
+				UI.tween(container, TweenInfo.new(0.1), {
+					Size = UDim2.new(1, 0, 0, 104)
+				})
+				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark })
+			end
+		end)
+	end
 
-	-- Icon
+	-- Icon (inside inner card)
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 56, 0, 56)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -28)
+	iconFrame.Size = UDim2.new(0, 58, 0, 58)
+	iconFrame.Position = UDim2.new(0, 12, 0.5, -29)
 	iconFrame.BackgroundColor3 = canApply and C.BluePale or C.Gray100
-	iconFrame.ZIndex = 84
+	iconFrame.ZIndex = 85
 	iconFrame.Parent = card
-	UI.corner(iconFrame, 12)
+	UI.corner(iconFrame, 14)
+	
+	-- Subtle gradient on icon for depth
+	if canApply then
+		local iconGrad = Instance.new("UIGradient")
+		iconGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 240, 255)),
+		})
+		iconGrad.Rotation = 135
+		iconGrad.Parent = iconFrame
+	end
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 28
+	iconLabel.TextSize = 30
 	iconLabel.Text = job.emoji
 	iconLabel.TextTransparency = canApply and 0 or 0.3
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 86
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
-	titleLabel.Position = UDim2.new(0, 80, 0, 12)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 24)  -- Adjusted width with margin
+	titleLabel.Position = UDim2.new(0, 82, 0, 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 15  -- Slightly smaller for longer job names
 	titleLabel.TextColor3 = canApply and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = job.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Salary badge
+	-- Salary badge (more prominent)
 	local salaryBadge = Instance.new("Frame")
-	salaryBadge.Size = UDim2.new(0, 85, 0, 24)
-	salaryBadge.Position = UDim2.new(0, 80, 0, 36)
-	salaryBadge.BackgroundColor3 = C.GreenPale
-	salaryBadge.ZIndex = 84
+	salaryBadge.Size = UDim2.new(0, 90, 0, 26)
+	salaryBadge.Position = UDim2.new(0, 82, 0, 36)
+	salaryBadge.BackgroundColor3 = canApply and C.GreenPale or C.Gray100
+	salaryBadge.ZIndex = 85
 	salaryBadge.Parent = card
 	UI.pill(salaryBadge)
 
 	local salaryLabel = Instance.new("TextLabel")
 	salaryLabel.Size = UDim2.fromScale(1, 1)
 	salaryLabel.BackgroundTransparency = 1
-	salaryLabel.Font = F.Medium
-	salaryLabel.TextSize = 11
-	salaryLabel.TextColor3 = C.GreenDark
-	salaryLabel.Text = UI.formatMoney(job.salary) .. "/yr"
-	salaryLabel.ZIndex = 85
+	salaryLabel.Font = F.Button
+	salaryLabel.TextSize = 12
+	salaryLabel.TextColor3 = canApply and C.GreenDark or C.Gray500
+	salaryLabel.Text = "💵 " .. UI.formatMoney(job.salary)
+	salaryLabel.ZIndex = 86
 	salaryLabel.Parent = salaryBadge
 
 	-- Requirements - CRITICAL FIX: Show job difficulty so players know what to expect
@@ -2245,66 +2785,145 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 		if job.requirement == "medical" or job.requirement == "law" then difficulty = math.max(difficulty, 7) end
 	end
 	
-	-- Difficulty emoji based on 1-10 scale
-	local diffEmoji = ""
-	if difficulty >= 7 then
-		diffEmoji = "⭐⭐⭐" -- Very hard (7-10)
+	-- Difficulty display with colored badge
+	local diffColor = C.Gray400
+	local diffText = "Easy"
+	if difficulty >= 8 then
+		diffColor = C.Red
+		diffText = "Expert"
+	elseif difficulty >= 6 then
+		diffColor = C.Amber
+		diffText = "Hard"
 	elseif difficulty >= 4 then
-		diffEmoji = "⭐⭐" -- Moderate (4-6)
+		diffColor = C.Blue
+		diffText = "Medium"
 	elseif difficulty >= 2 then
-		diffEmoji = "⭐" -- Easy-medium (2-3)
+		diffColor = C.Green
+		diffText = "Easy"
 	end
-	-- Difficulty 1 = no stars (easy entry-level)
 
+	-- Requirements row (age + difficulty badge)
 	local reqLabel = Instance.new("TextLabel")
-	reqLabel.Size = UDim2.new(0.45, 0, 0, 18)
-	reqLabel.Position = UDim2.new(0, 80, 0, 62)
+	reqLabel.Size = UDim2.new(0.25, 0, 0, 18)
+	reqLabel.Position = UDim2.new(0, 82, 0, 66)
 	reqLabel.BackgroundTransparency = 1
 	reqLabel.Font = F.Body
 	reqLabel.TextSize = 11
 	reqLabel.TextColor3 = canApply and C.Gray400 or C.Red
 	reqLabel.TextXAlignment = Enum.TextXAlignment.Left
-	reqLabel.Text = reqText .. (diffEmoji ~= "" and "  " .. diffEmoji or "")
-	reqLabel.ZIndex = 84
+	reqLabel.Text = reqText
+	reqLabel.ZIndex = 85
 	reqLabel.Parent = card
+	
+	-- Difficulty badge (compact, colored)
+	local diffBadge = Instance.new("Frame")
+	diffBadge.Size = UDim2.new(0, 55, 0, 18)
+	diffBadge.Position = UDim2.new(0, 172, 0, 66)
+	diffBadge.BackgroundColor3 = canApply and diffColor:Lerp(C.White, 0.7) or C.Gray100
+	diffBadge.ZIndex = 85
+	diffBadge.Parent = card
+	UI.pill(diffBadge)
+	
+	local diffLabel = Instance.new("TextLabel")
+	diffLabel.Size = UDim2.fromScale(1, 1)
+	diffLabel.BackgroundTransparency = 1
+	diffLabel.Font = F.Medium
+	diffLabel.TextSize = 9
+	diffLabel.TextColor3 = canApply and diffColor:Lerp(C.Black, 0.3) or C.Gray500
+	diffLabel.Text = diffText
+	diffLabel.ZIndex = 86
+	diffLabel.Parent = diffBadge
 
-	-- Apply button
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow
+	if canApply then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ApplyBtnShadow"
+		btnShadow.Size = UDim2.new(0, 84, 0, 54)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -8, 0.5, 2)
+		btnShadow.BackgroundColor3 = C.BlueDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 94
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 14)
+	end
+
+	-- Apply button (MUCH more prominent, with loading state support)
 	local applyBtn = Instance.new("TextButton")
-	applyBtn.Size = UDim2.new(0, 72, 0, 44)
+	applyBtn.Name = "ApplyBtn"
+	applyBtn.Size = UDim2.new(0, 80, 0, 50)
 	applyBtn.AnchorPoint = Vector2.new(1, 0.5)
-	applyBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	applyBtn.Position = UDim2.new(1, -10, 0.5, 0)
 	applyBtn.BackgroundColor3 = canApply and C.Blue or C.Gray300
 	applyBtn.Font = F.Button
-	applyBtn.TextSize = 14
+	applyBtn.TextSize = 15
 	applyBtn.TextColor3 = canApply and C.White or C.Gray500
 	-- Button text based on why they can't apply
 	local btnText = "Apply"
+	local btnEmoji = "→"
 	if not canApply then
 		if inJail then
 			btnText = "Jailed"
+			btnEmoji = "⛓️"
 		elseif not meetsAge then
 			btnText = "Age " .. job.minAge
+			btnEmoji = "🔒"
 		else
 			btnText = "Locked"
+			btnEmoji = "🔒"
 		end
 	end
-	applyBtn.Text = btnText
+	applyBtn.Text = btnEmoji .. " " .. btnText
 	applyBtn.AutoButtonColor = false
-	applyBtn.ZIndex = 84
+	applyBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	applyBtn.Parent = card
-	UI.corner(applyBtn, 12)
+	UI.corner(applyBtn, 14)
 
 	if canApply then
+		local isLoading = false
+		
 		applyBtn.MouseEnter:Connect(function()
-			UI.tween(applyBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.BlueDark })
-			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.BluePale:Lerp(C.White, 0.7) })
+			if isLoading then return end
+			UI.tween(applyBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+				BackgroundColor3 = C.BlueDark,
+				Size = UDim2.new(0, 86, 0, 54)
+			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 58) })
+			end
 		end)
 		applyBtn.MouseLeave:Connect(function()
-			UI.tween(applyBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Blue })
-			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+			if isLoading then return end
+			UI.tween(applyBtn, TweenInfo.new(0.12), { 
+				BackgroundColor3 = C.Blue,
+				Size = UDim2.new(0, 80, 0, 50)
+			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 84, 0, 54) })
+			end
 		end)
 		applyBtn.MouseButton1Click:Connect(function()
-			self:applyForJob(job.id)
+			if isLoading then return end
+			isLoading = true
+			
+			-- Loading state
+			applyBtn.Text = "⏳..."
+			UI.tween(applyBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+			
+			-- Slight delay for visual feedback
+			task.spawn(function()
+				task.wait(0.1)
+				self:applyForJob(job.id)
+				
+				-- Reset after completion (in case modal doesn't show)
+				task.wait(0.5)
+				if applyBtn and applyBtn.Parent then
+					isLoading = false
+					applyBtn.Text = btnEmoji .. " " .. btnText
+					applyBtn.BackgroundColor3 = C.Blue
+				end
+			end)
 		end)
 	end
 end
@@ -2518,7 +3137,12 @@ function OccupationScreen:createCurrentEducationCard(parent, eduLevel, eduInfo, 
 	card.ZIndex = 82
 	card.Parent = parent
 	UI.corner(card, 18)
-	UI.stroke(card, 1, 0.9, C.Purple)
+	UI.stroke(card, 2, 0.5, C.Purple)
+	
+	-- CRITICAL UI FIX: Add shadow for depth
+	if UI.createShadow then
+		UI.createShadow(card, 3, 12, C.Black, 0.88)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -2775,6 +3399,11 @@ function OccupationScreen:createEducationCard(parent, edu, order, age, money, ed
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, 1, canEnroll and 0.7 or 0.88, canEnroll and C.Purple or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canEnroll and 0.92 or 0.96)
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -2795,15 +3424,16 @@ function OccupationScreen:createEducationCard(parent, edu, order, age, money, ed
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 84, 0, 12)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = canEnroll and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = edu.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
@@ -3327,19 +3957,210 @@ function OccupationScreen:hideEducationInfoModal()
 end
 
 function OccupationScreen:createResultModal()
-	self.resultModal = UI.createModalCard(self.screenGui, {
-		name = "OccupationResult",
-		accentColor = C.Green,
-		accentDark = C.GreenDark,
-		accentPale = C.GreenPale,
-		zIndex = 98
-	})
-
-	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	self.resultModal = {}
+	
+	-- Close/dim overlay
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "ResultModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.35
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 98
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.resultModal.closeArea = closeArea
+	self.resultModal.overlay = closeArea
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "ResultModalContainer"
+	container.Size = UDim2.new(0, 340, 0, 320)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 99
+	container.Parent = closeArea
+	self.resultModal.container = container
+	
+	-- Premium shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 12, 1, 12)
+	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 99
+	shadow.Parent = container
+	UI.corner(shadow, 28)
+	
+	-- Colored shell
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 100
+	shell.Parent = container
+	UI.corner(shell, 26)
+	self.resultModal.shell = shell
+	
+	-- Shell stroke
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = C.GreenDark
+	shellStroke.Thickness = 2
+	shellStroke.Transparency = 0.5
+	shellStroke.Parent = shell
+	self.resultModal.shellStroke = shellStroke
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Emoji frame
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.BackgroundColor3 = C.GreenPale
+	emojiFrame.ZIndex = 102
+	emojiFrame.Parent = card
+	UI.corner(emojiFrame, 40)
+	self.resultModal.emojiFrame = emojiFrame
+	
+	-- Emoji label
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 44
+	emojiLabel.Text = "💼"
+	emojiLabel.ZIndex = 103
+	emojiLabel.Parent = emojiFrame
+	self.resultModal.emojiLabel = emojiLabel
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 22
+	titleLabel.TextColor3 = C.GreenDark
+	titleLabel.Text = "Great News!"
+	titleLabel.ZIndex = 102
+	titleLabel.Parent = card
+	self.resultModal.titleLabel = titleLabel
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 15
+	messageLabel.TextColor3 = C.Gray700
+	messageLabel.TextWrapped = true
+	messageLabel.Text = "Everything worked out!"
+	messageLabel.ZIndex = 102
+	messageLabel.Parent = card
+	self.resultModal.messageLabel = messageLabel
+	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
+	-- OK Button
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OkBtn"
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.BackgroundColor3 = C.Green
+	okBtn.Font = F.Button
+	okBtn.TextSize = 17
+	okBtn.TextColor3 = C.White
+	okBtn.Text = "👍 Great!"
+	okBtn.AutoButtonColor = false
+	okBtn.ZIndex = 103
+	okBtn.Parent = card
+	UI.corner(okBtn, 14)
+	self.resultModal.okButton = okBtn
+	
+	-- Button hover (CRITICAL FIX: Also animate shadow)
+	okBtn.MouseEnter:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0.72, 0, 0, 56),
+			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
+		})
 	end)
-	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	okBtn.MouseLeave:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 0, 0, 52),
+			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
+		})
+	end)
+	
+	-- Custom show/hide
+	self.resultModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, 320, 0, 300)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, 340, 0, 320)
+		})
+	end
+	
+	self.resultModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
+	
+	local function onDismiss()
+		self:switchTab(self.currentTab)
+	end
+	
+	closeArea.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
+	end)
+	okBtn.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
 	end)
 end
 
@@ -3397,144 +4218,347 @@ function OccupationScreen:showQuitConfirmation()
 	self.quitConfirmModal.jobLabel.Text = "💼 " .. jobName
 	self.quitConfirmModal.salaryLabel.Text = string.format("💰 %s/year • %s", UI.formatMoney(salary), yearsText)
 	
-	-- Show the modal
-	UI.showModal(self.quitConfirmModal)
+	-- Show the modal using custom show method or fallback to UI.showModal
+	if self.quitConfirmModal.show then
+		self.quitConfirmModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.quitConfirmModal)
+	else
+		-- Fallback: just make it visible
+		if self.quitConfirmModal.closeArea then
+			self.quitConfirmModal.closeArea.Visible = true
+		end
+	end
 end
 
 function OccupationScreen:createQuitConfirmModal()
-	-- CRITICAL FIX: Simplified message and taller modal to fit all buttons
-	self.quitConfirmModal = UI.createModalCard(self.screenGui, {
-		title = "Quit Your Job?",
-		message = "Are you sure?", -- Shortened message
-		emoji = "🤔",
-		shellColor = C.Amber,
-		strokeColor = C.AmberDark,
-	})
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Quit Modal with Shell Structure (like LifeClient popup)
+	-- Overlay -> Container -> Shadow -> Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Add job info labels - repositioned for smaller message
+	-- Modal container object
+	self.quitConfirmModal = {}
+	
+	-- Close/dim area (full screen overlay)
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "QuitModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.3
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 100
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.quitConfirmModal.closeArea = closeArea
+	
+	-- Container for all modal elements
+	local container = Instance.new("Frame")
+	container.Name = "QuitModalContainer"
+	container.Size = UDim2.new(0, 360, 0, 540)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 101
+	container.Parent = closeArea
+	self.quitConfirmModal.container = container
+	
+	-- Premium shadow
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 10, 1, 10)
+	shadow.Position = UDim2.new(0, 5, 0, 5)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.75
+	shadow.ZIndex = 101
+	shadow.Parent = container
+	UI.corner(shadow, 26)
+	
+	-- Amber accent shell
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Amber
+	shell.ZIndex = 102
+	shell.Parent = container
+	UI.corner(shell, 24)
+	self.quitConfirmModal.shell = shell
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -8, 1, -8)
+	card.Position = UDim2.new(0, 4, 0, 4)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 103
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Header with emoji
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.new(1, 0, 0, 60)
+	emojiLabel.Position = UDim2.new(0, 0, 0, 15)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 48
+	emojiLabel.Text = "🤔"
+	emojiLabel.ZIndex = 104
+	emojiLabel.Parent = card
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.Position = UDim2.new(0, 16, 0, 75)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 24
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = "Quit Your Job?"
+	titleLabel.ZIndex = 104
+	titleLabel.Parent = card
+	
+	-- Job name label (will be updated dynamically)
 	local jobLabel = Instance.new("TextLabel")
 	jobLabel.Name = "JobLabel"
-	jobLabel.Size = UDim2.new(1, -32, 0, 24)
+	jobLabel.Size = UDim2.new(1, -32, 0, 30)
 	jobLabel.Position = UDim2.new(0, 16, 0, 115)
 	jobLabel.BackgroundTransparency = 1
 	jobLabel.Font = F.Title
-	jobLabel.TextSize = 16
+	jobLabel.TextSize = 17
 	jobLabel.TextColor3 = C.Gray800
 	jobLabel.TextXAlignment = Enum.TextXAlignment.Center
 	jobLabel.Text = "💼 Your Job"
-	jobLabel.ZIndex = 105
-	jobLabel.Parent = self.quitConfirmModal.shell
+	jobLabel.ZIndex = 104
+	jobLabel.Parent = card
 	self.quitConfirmModal.jobLabel = jobLabel
 	
+	-- Salary and years label
 	local salaryLabel = Instance.new("TextLabel")
 	salaryLabel.Name = "SalaryLabel"
-	salaryLabel.Size = UDim2.new(1, -32, 0, 20)
-	salaryLabel.Position = UDim2.new(0, 16, 0, 139)
+	salaryLabel.Size = UDim2.new(1, -32, 0, 22)
+	salaryLabel.Position = UDim2.new(0, 16, 0, 145)
 	salaryLabel.BackgroundTransparency = 1
 	salaryLabel.Font = F.Body
-	salaryLabel.TextSize = 13
+	salaryLabel.TextSize = 14
 	salaryLabel.TextColor3 = C.Gray500
 	salaryLabel.TextXAlignment = Enum.TextXAlignment.Center
 	salaryLabel.Text = "💰 $0/year • 0 years"
-	salaryLabel.ZIndex = 105
-	salaryLabel.Parent = self.quitConfirmModal.shell
+	salaryLabel.ZIndex = 104
+	salaryLabel.Parent = card
 	self.quitConfirmModal.salaryLabel = salaryLabel
 	
-	-- CRITICAL FIX: Made shell much taller to fit all buttons properly (was 420, now 480)
-	self.quitConfirmModal.shell.Size = UDim2.new(0, 340, 0, 480)
-	self.quitConfirmModal.shell.Position = UDim2.new(0.5, -170, 0.5, -240)
+	-- Warning message
+	local warningLabel = Instance.new("TextLabel")
+	warningLabel.Size = UDim2.new(1, -32, 0, 40)
+	warningLabel.Position = UDim2.new(0, 16, 0, 175)
+	warningLabel.BackgroundTransparency = 1
+	warningLabel.Font = F.Medium
+	warningLabel.TextSize = 12
+	warningLabel.TextColor3 = C.AmberDark
+	warningLabel.TextWrapped = true
+	warningLabel.Text = "⚠️ How would you like to leave? Your choice affects your reputation!"
+	warningLabel.ZIndex = 104
+	warningLabel.Parent = card
 	
-	-- Remove default OK button, add choice buttons
-	self.quitConfirmModal.okButton.Visible = false
-	
-	-- CRITICAL FIX: Choice container much taller and repositioned (was 200, now 260)
+	-- Choice container
 	local choiceContainer = Instance.new("Frame")
 	choiceContainer.Name = "ChoiceContainer"
-	choiceContainer.Size = UDim2.new(1, -32, 0, 260)
-	choiceContainer.Position = UDim2.new(0, 16, 0, 180)
+	choiceContainer.Size = UDim2.new(1, -32, 0, 300)
+	choiceContainer.Position = UDim2.new(0, 16, 0, 220)
 	choiceContainer.BackgroundTransparency = 1
-	choiceContainer.ZIndex = 105
-	choiceContainer.Parent = self.quitConfirmModal.shell
+	choiceContainer.ZIndex = 104
+	choiceContainer.Parent = card
 	
 	local choiceLayout = Instance.new("UIListLayout")
-	choiceLayout.Padding = UDim.new(0, 8)
+	choiceLayout.Padding = UDim.new(0, 10)
 	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choiceLayout.Parent = choiceContainer
 	
-	-- Choice 1: Resign professionally - CRITICAL FIX: Taller button to prevent cutoff
-	local choice1 = Instance.new("TextButton")
-	choice1.Size = UDim2.new(1, 0, 0, 48)
-	choice1.BackgroundColor3 = C.Green
-	choice1.Font = F.Medium
-	choice1.TextSize = 14
-	choice1.TextColor3 = C.White
-	choice1.Text = "✅ Resign professionally"
-	choice1.ZIndex = 106
-	choice1.LayoutOrder = 1
-	choice1.Parent = choiceContainer
-	UI.corner(choice1, 10)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM CHOICE BUTTONS (with shadows and hover effects)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local function createChoiceButton(text, color, colorDark, layoutOrder, emoji, description)
+		local btnContainer = Instance.new("Frame")
+		btnContainer.Name = "BtnContainer" .. layoutOrder
+		btnContainer.Size = UDim2.new(1, 0, 0, 58)
+		btnContainer.BackgroundTransparency = 1
+		btnContainer.LayoutOrder = layoutOrder
+		btnContainer.ZIndex = 105
+		btnContainer.Parent = choiceContainer
+		
+		-- Button shadow
+		local btnShadow = Instance.new("Frame")
+		btnShadow.Size = UDim2.new(1, 4, 1, 4)
+		btnShadow.Position = UDim2.new(0, 2, 0, 2)
+		btnShadow.BackgroundColor3 = colorDark
+		btnShadow.BackgroundTransparency = 0.5
+		btnShadow.ZIndex = 105
+		btnShadow.Parent = btnContainer
+		UI.corner(btnShadow, 14)
+		
+		local btn = Instance.new("TextButton")
+		btn.Name = "Choice" .. layoutOrder
+		btn.Size = UDim2.new(1, 0, 1, 0)
+		btn.BackgroundColor3 = color
+		btn.Font = F.Button
+		btn.TextSize = 15
+		btn.TextColor3 = C.White
+		btn.Text = emoji .. " " .. text
+		btn.AutoButtonColor = false
+		btn.ZIndex = 106
+		btn.Parent = btnContainer
+		UI.corner(btn, 12)
+		
+		-- Description label under button text
+		local descLabel = Instance.new("TextLabel")
+		descLabel.Size = UDim2.new(1, 0, 0, 14)
+		descLabel.Position = UDim2.new(0, 0, 0.65, 0)
+		descLabel.BackgroundTransparency = 1
+		descLabel.Font = F.Body
+		descLabel.TextSize = 10
+		descLabel.TextColor3 = C.White:Lerp(color, 0.3)
+		descLabel.Text = description
+		descLabel.ZIndex = 107
+		descLabel.Parent = btn
+		
+		-- Adjust main button text position
+		btn.TextYAlignment = Enum.TextYAlignment.Top
+		local textPad = Instance.new("UIPadding")
+		textPad.PaddingTop = UDim.new(0, 10)
+		textPad.Parent = btn
+		
+		-- Hover effects
+		local isLoading = false
+		btn.MouseEnter:Connect(function()
+			if isLoading then return end
+			UI.tween(btnContainer, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 62)
+			})
+			UI.tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = colorDark })
+		end)
+		btn.MouseLeave:Connect(function()
+			if isLoading then return end
+			UI.tween(btnContainer, TweenInfo.new(0.12), {
+				Size = UDim2.new(1, 0, 0, 58)
+			})
+			UI.tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = color })
+		end)
+		
+		return btn, function()
+			isLoading = true
+			btn.Text = "⏳..."
+			UI.tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+		end
+	end
+	
+	-- Choice 1: Resign professionally
+	local choice1, loading1 = createChoiceButton(
+		"Resign Professionally",
+		C.Green,
+		C.GreenDark,
+		1,
+		"✅",
+		"+reputation, good reference"
+	)
+	-- Helper to hide the modal (use custom hide or fallback)
+	local function hideQuitModal(callback)
+		if self.quitConfirmModal.hide then
+			self.quitConfirmModal.hide(callback)
+		elseif UI.hideModal then
+			UI.hideModal(self.quitConfirmModal, callback)
+		else
+			closeArea.Visible = false
+			if callback then callback() end
+		end
+	end
+	
 	choice1.MouseButton1Click:Connect(function()
-		UI.hideModal(self.quitConfirmModal, function()
+		loading1()
+		task.wait(0.1)
+		hideQuitModal(function()
 			self:executeQuit("professional")
 		end)
 	end)
 	
-	-- Choice 2: Quit dramatically - CRITICAL FIX: Taller button
-	local choice2 = Instance.new("TextButton")
-	choice2.Size = UDim2.new(1, 0, 0, 48)
-	choice2.BackgroundColor3 = C.Amber
-	choice2.Font = F.Medium
-	choice2.TextSize = 14
-	choice2.TextColor3 = C.White
-	choice2.Text = "🔥 Quit dramatically"
-	choice2.ZIndex = 106
-	choice2.LayoutOrder = 2
-	choice2.Parent = choiceContainer
-	UI.corner(choice2, 10)
+	-- Choice 2: Quit dramatically
+	local choice2, loading2 = createChoiceButton(
+		"Quit Dramatically",
+		C.Amber,
+		C.AmberDark,
+		2,
+		"🔥",
+		"viral moment, -reputation"
+	)
 	choice2.MouseButton1Click:Connect(function()
-		UI.hideModal(self.quitConfirmModal, function()
+		loading2()
+		task.wait(0.1)
+		hideQuitModal(function()
 			self:executeQuit("dramatic")
 		end)
 	end)
 	
-	-- Choice 3: Ghost them - CRITICAL FIX: Taller button
-	local choice3 = Instance.new("TextButton")
-	choice3.Size = UDim2.new(1, 0, 0, 48)
-	choice3.BackgroundColor3 = C.Purple
-	choice3.Font = F.Medium
-	choice3.TextSize = 14
-	choice3.TextColor3 = C.White
-	choice3.Text = "👻 Ghost them"
-	choice3.ZIndex = 106
-	choice3.LayoutOrder = 3
-	choice3.Parent = choiceContainer
-	UI.corner(choice3, 10)
+	-- Choice 3: Ghost them
+	local choice3, loading3 = createChoiceButton(
+		"Ghost Them",
+		C.Purple,
+		C.PurpleDark or C.Purple:Lerp(C.Black, 0.2),
+		3,
+		"👻",
+		"no notice, bad reference"
+	)
 	choice3.MouseButton1Click:Connect(function()
-		UI.hideModal(self.quitConfirmModal, function()
+		loading3()
+		task.wait(0.1)
+		hideQuitModal(function()
 			self:executeQuit("ghost")
 		end)
 	end)
 	
-	-- Choice 4: Stay at job - CRITICAL FIX: Taller button
-	local choice4 = Instance.new("TextButton")
-	choice4.Size = UDim2.new(1, 0, 0, 48)
-	choice4.BackgroundColor3 = C.Gray500
-	choice4.Font = F.Medium
-	choice4.TextSize = 14
-	choice4.TextColor3 = C.White
-	choice4.Text = "🤔 Nevermind, stay"
-	choice4.ZIndex = 106
-	choice4.LayoutOrder = 4
-	choice4.Parent = choiceContainer
-	UI.corner(choice4, 10)
+	-- Choice 4: Cancel / Stay
+	local choice4, _ = createChoiceButton(
+		"Nevermind, Stay",
+		C.Gray500,
+		C.Gray600,
+		4,
+		"🤔",
+		"keep your job"
+	)
 	choice4.MouseButton1Click:Connect(function()
-		UI.hideModal(self.quitConfirmModal)
+		hideQuitModal()
 	end)
 	
-	-- Close area
-	self.quitConfirmModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.quitConfirmModal)
+	-- Close area click handler
+	closeArea.MouseButton1Click:Connect(function()
+		hideQuitModal()
 	end)
+	
+	-- Custom show/hide for premium animation
+	self.quitConfirmModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 50)
+		container.Size = UDim2.new(0, 340, 0, 510)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.3 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, 360, 0, 540)
+		})
+	end
+	
+	self.quitConfirmModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 30),
+			Size = UDim2.new(0, 340, 0, 510)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
 end
 
 function OccupationScreen:executeQuit(quitStyle)
@@ -3545,11 +4569,20 @@ function OccupationScreen:executeQuit(quitStyle)
 	log("Server response:", result and "received" or "nil")
 	
 	if result and result.success then
-		-- CRITICAL FIX: Immediately clear local job state so UI refreshes correctly
+		-- CRITICAL FIX #1: Immediately and thoroughly clear ALL local job state
 		if self.playerState then
 			self.playerState.CurrentJob = nil
+			self.playerState.Job = nil
+			-- Clear career-related state too
+			if self.playerState.Career then
+				self.playerState.Career.current = nil
+			end
 		end
-		self.careerInfo = nil -- Clear cached career info
+		
+		-- CRITICAL FIX #2: Clear ALL cached career info
+		self.careerInfo = nil
+		self.cachedJobData = nil
+		self.educationInfo = nil
 		
 		local emoji = "👋"
 		local title = "You quit!"
@@ -3565,10 +4598,44 @@ function OccupationScreen:executeQuit(quitStyle)
 		
 		self:showResult(true, message, emoji)
 		
-		-- Force refresh the job list after showing result
-		task.delay(0.1, function()
+		-- CRITICAL FIX #3: Force IMMEDIATE UI refresh before delay
+		-- Clear content scroll to prevent stale job card from showing
+		for _, child in ipairs(self.contentScroll:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+		
+		-- CRITICAL FIX #4: Complete UI refresh with multiple fallbacks
+		task.delay(0.15, function()
 			if self.isVisible then
-				self:populateJobs()
+				-- Clear ALL cached career state again (in case of race conditions)
+				self.careerInfo = nil
+				self.cachedJobData = nil
+				
+				-- Force refresh career info from server (expect nil/empty response)
+				if GetCareerInfo then
+					local newCareerInfo = GetCareerInfo:InvokeServer()
+					if newCareerInfo then
+						self.careerInfo = newCareerInfo
+					end
+				end
+				
+				-- CRITICAL FIX #5: Explicitly switch to jobs tab first to rebuild UI
+				if self.currentTab == "jobs" or self.currentTab == "career" then
+					-- Force rebuild by clearing and re-populating
+					for _, child in ipairs(self.contentScroll:GetChildren()) do
+						if child:IsA("Frame") then child:Destroy() end
+					end
+					self:populateJobs()
+				else
+					self:switchTab("jobs")
+				end
+				
+				-- CRITICAL FIX #6: Update any header/info bars
+				if self.updateInfoBar then
+					self:updateInfoBar()
+				end
+				
+				log("✅ UI fully refreshed after quit - job state cleared")
 			end
 		end)
 	else
@@ -4106,18 +5173,54 @@ function OccupationScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "OK" or "X")
-	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	
+	-- CRITICAL UI FIX: Better default emojis
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" then
+		displayEmoji = success and "🎉" or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" then
+		displayEmoji = "❌"
+	elseif displayEmoji == "Hired!" then
+		displayEmoji = "🎉"
+	elseif displayEmoji == "Rejected" then
+		displayEmoji = "😔"
+	elseif displayEmoji == "Enrolled!" then
+		displayEmoji = "📚"
+	elseif displayEmoji == "Failed" then
+		displayEmoji = "📋"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- CRITICAL UI FIX: More descriptive titles
+	local title = success and "Great News!" or "Uh oh..."
+	if emoji == "Hired!" then title = "You're Hired!" end
+	if emoji == "Enrolled!" then title = "Enrolled!" end
+	
+	self.resultModal.titleLabel.Text = title
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
-	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.messageLabel.Text = message or (success and "Everything worked out!" or "Something went wrong...")
 	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Great!" or "😔 Okay..."
 
-	UI.showModal(self.resultModal)
+	-- Use custom show method if available
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
 end
 
 function OccupationScreen:show()
 	log("=== SHOWING OccupationScreen ===")
 	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+	
+	-- CRITICAL FIX: Clear cached career info if player is unemployed (fired/quit)
+	-- This ensures the UI shows correct state after being fired
+	if not self:getCurrentJob() then
+		log("No current job - clearing cached career info to ensure fresh UI")
+		self.careerInfo = nil
+	end
+	
 	self:updateInfoBar()
 	self:switchTab(self.currentTab)
 	UI.slideInScreen(self.overlay, "right")

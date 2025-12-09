@@ -1328,6 +1328,28 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		return nil
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check per-choice eligibility BEFORE applying effects
+	-- This prevents players from selecting choices they can't afford or aren't qualified for
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.eligibility and type(choice.eligibility) == "function" then
+		local success, eligible, failReason = pcall(choice.eligibility, state)
+		if success then
+			if eligible == false then
+				warn("[EventEngine] Choice eligibility failed:", eventDef.id, "choice:", choiceIndex, "reason:", failReason or "unknown")
+				return {
+					success = false,
+					failed = true,
+					failReason = failReason or "You can't select this option right now.",
+					eventId = eventDef.id,
+					choiceIndex = choiceIndex,
+				}
+			end
+		else
+			warn("[EventEngine] Choice eligibility function error:", eligible)
+		end
+	end
+	
 	-- Initialize outcome
 	local outcome = {
 		eventId = eventDef.id,

@@ -332,9 +332,16 @@ SocialMediaEvents.events = {
 		-- CRITICAL: Random shopping outcome
 		choices = {
 			{
-				text = "Buy all the things",
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Buy all the things ($200)",
 				effects = { Money = -200 },
 				feedText = "Click, click, checkout...",
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford $200 shopping spree"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then

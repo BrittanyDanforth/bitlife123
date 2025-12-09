@@ -420,6 +420,9 @@ Milestones.events = {
 			state.Flags.college_grad = true
 			state.Flags.bachelor_degree = true
 			state.Flags.college_graduate = true
+			-- CRITICAL FIX: Set flags needed for education activities
+			state.Flags.has_degree = true
+			state.Flags.has_ged_or_diploma = true
 			if state.EducationData then
 				state.EducationData.Status = "completed"
 				state.EducationData.Level = "bachelor"
@@ -850,7 +853,19 @@ Milestones.events = {
 		choices = {
 			{ text = "Life begins at 40", effects = { Happiness = 10 }, feedText = "The best is yet to come!" },
 			{ text = "Time for a midlife check-in", effects = { Smarts = 3, Happiness = 5 }, feedText = "You're reflecting on where you are." },
-			{ text = "Buy a sports car", effects = { Happiness = 8, Money = -5000 }, setFlags = { midlife_crisis = true }, feedText = "Midlife crisis? Or just having fun?" },
+			-- CRITICAL FIX: Show price in choice text and add eligibility check!
+			{ 
+				text = "Buy a sports car ($5,000)", 
+				effects = { Happiness = 8, Money = -5000 }, 
+				setFlags = { midlife_crisis = true }, 
+				feedText = "Midlife crisis? Or just having fun?",
+				eligibility = function(state)
+					if (state.Money or 0) < 5000 then
+						return false, "Can't afford a $5,000 sports car"
+					end
+					return true
+				end,
+			},
 			{ text = "Content with where I am", effects = { Happiness = 8 }, feedText = "You're at peace with your life." },
 		},
 	},

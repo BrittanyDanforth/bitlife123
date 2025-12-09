@@ -748,6 +748,108 @@ local ActivityCatalog = {
 	yoga = { stats = { Health = 3, Happiness = 3 }, feed = "did yoga", cost = 0 },
 	spa = { stats = { Happiness = 6, Looks = 3 }, feed = "enjoyed a spa day", cost = 200 },
 	salon = { stats = { Looks = 4, Happiness = 2 }, feed = "visited the salon", cost = 80 },
+	-- CRITICAL FIX: Driver's license activity - sets all license flags
+	drivers_license = { 
+		stats = { Happiness = 5, Smarts = 2 }, 
+		feed = "got your driver's license!", 
+		cost = 50,
+		setFlags = { has_license = true, drivers_license = true, driver_license = true },
+		oneTime = true, -- Can only do this once
+		requiresAge = 16,
+		blockedByFlag = "has_license", -- Can't get a license if you already have one
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- EDUCATION ACTIVITIES (Like BitLife!) - Go back to school, get GED, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════
+	get_ged = {
+		stats = { Smarts = 10, Happiness = 8 },
+		feed = "got your GED! High school equivalent achieved!",
+		cost = 150,
+		requiresAge = 16,
+		requiresFlag = "dropped_out_high_school",
+		blockedByFlag = "has_ged",
+		setFlags = { has_ged = true, has_ged_or_diploma = true },
+		oneTime = true,
+	},
+	return_high_school = {
+		stats = { Smarts = 5, Happiness = 3 },
+		feed = "returned to high school to finish your education!",
+		cost = 0,
+		requiresAge = 14,
+		maxAge = 21,
+		requiresFlag = "dropped_out_high_school",
+		blockedByFlag = "has_diploma",
+		setFlags = { returning_student = true, in_school = true, dropped_out_high_school = nil },
+		oneTime = true,
+	},
+	community_college = {
+		stats = { Smarts = 8, Happiness = 5 },
+		feed = "enrolled in community college!",
+		cost = 2000,
+		requiresAge = 18,
+		requiresFlag = "has_ged_or_diploma",
+		blockedByFlag = "in_college",
+		setFlags = { in_college = true, community_college = true },
+		oneTime = true,
+	},
+	university = {
+		stats = { Smarts = 10, Happiness = 6 },
+		feed = "enrolled in university! 4-year degree program!",
+		cost = 5000,
+		requiresAge = 18,
+		requiresFlag = "has_ged_or_diploma",
+		blockedByFlag = "in_university",
+		setFlags = { in_university = true, in_college = true },
+		oneTime = true,
+	},
+	trade_school = {
+		stats = { Smarts = 6, Happiness = 5 },
+		feed = "enrolled in trade school! Learning practical skills!",
+		cost = 3000,
+		requiresAge = 18,
+		setFlags = { in_trade_school = true, learning_trade = true },
+		oneTime = true,
+	},
+	coding_bootcamp = {
+		stats = { Smarts = 12, Happiness = 4 },
+		feed = "enrolled in a coding bootcamp! Tech skills incoming!",
+		cost = 8000,
+		requiresAge = 18,
+		setFlags = { coding_bootcamp = true, tech_skills = true },
+		oneTime = true,
+	},
+	medical_school = {
+		stats = { Smarts = 15, Happiness = 3, Health = -5 },
+		feed = "enrolled in medical school! Becoming a doctor!",
+		cost = 50000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_med_school",
+		setFlags = { in_med_school = true },
+		oneTime = true,
+	},
+	law_school = {
+		stats = { Smarts = 14, Happiness = 2 },
+		feed = "enrolled in law school! Becoming a lawyer!",
+		cost = 40000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_law_school",
+		setFlags = { in_law_school = true },
+		oneTime = true,
+	},
+	business_school = {
+		stats = { Smarts = 12, Happiness = 4, Money = -500 },
+		feed = "enrolled in business school! Getting your MBA!",
+		cost = 35000,
+		requiresAge = 22,
+		requiresFlag = "has_degree",
+		blockedByFlag = "in_business_school",
+		setFlags = { in_business_school = true },
+		oneTime = true,
+	},
+	
 	party = { stats = { Happiness = 5 }, feed = "partied with friends", cost = 0 },
 	hangout = { stats = { Happiness = 3 }, feed = "hung out with friends", cost = 0 },
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
@@ -1250,8 +1352,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoActivity.OnServerInvoke = function(player, activityId, bonus)
 		return self:handleActivity(player, activityId, bonus)
 	end
-	self.remotes.CommitCrime.OnServerInvoke = function(player, crimeId)
-		return self:handleCrime(player, crimeId)
+	self.remotes.CommitCrime.OnServerInvoke = function(player, crimeId, minigameBonus)
+		return self:handleCrime(player, crimeId, minigameBonus)
 	end
 	self.remotes.DoPrisonAction.OnServerInvoke = function(player, actionId)
 		return self:handlePrisonAction(player, actionId)
@@ -2933,6 +3035,44 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = "Unknown activity." }
 	end
 
+	-- CRITICAL FIX: Check age requirement for activities (like driver's license)
+	if activity.requiresAge and (state.Age or 0) < activity.requiresAge then
+		return { success = false, message = string.format("You must be at least %d years old.", activity.requiresAge) }
+	end
+	
+	-- CRITICAL FIX: Check maximum age for activities (like returning to high school)
+	if activity.maxAge and (state.Age or 0) > activity.maxAge then
+		return { success = false, message = string.format("You're too old for this! (Max age: %d)", activity.maxAge) }
+	end
+	
+	-- CRITICAL FIX: Check if blocked by existing flag (e.g., can't get license if already have one)
+	state.Flags = state.Flags or {}
+	if activity.blockedByFlag and state.Flags[activity.blockedByFlag] then
+		return { success = false, message = "You've already done this!" }
+	end
+	
+	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
+	if activity.requiresFlag then
+		if not state.Flags[activity.requiresFlag] then
+			-- Provide helpful messages based on which flag is missing
+			local helpfulMessage = "You don't meet the requirements for this."
+			if activity.requiresFlag == "dropped_out_high_school" then
+				helpfulMessage = "This is only for people who dropped out of high school."
+			elseif activity.requiresFlag == "has_ged_or_diploma" then
+				helpfulMessage = "You need a high school diploma or GED first."
+			elseif activity.requiresFlag == "has_degree" then
+				helpfulMessage = "You need a college degree first."
+			end
+			return { success = false, message = helpfulMessage }
+		end
+	end
+	
+	-- CRITICAL FIX: Check if this is a one-time activity that was already completed
+	state.CompletedActivities = state.CompletedActivities or {}
+	if activity.oneTime and state.CompletedActivities[activityId] then
+		return { success = false, message = "You can only do this once!" }
+	end
+
 	if activity.cost and activity.cost > 0 and (state.Money or 0) < activity.cost then
 		return { success = false, message = "You can't afford that right now." }
 	end
@@ -2989,6 +3129,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	else
 		resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
 	end
+	
+	-- CRITICAL FIX: Track one-time activities so they can't be repeated
+	if activity.oneTime then
+		state.CompletedActivities = state.CompletedActivities or {}
+		state.CompletedActivities[activityId] = true
+	end
 
 	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
 	-- This was causing double popup issues in ActivitiesScreen
@@ -2996,7 +3142,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
-function LifeBackend:handleCrime(player, crimeId)
+function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "No life data loaded." }
@@ -3016,6 +3162,17 @@ function LifeBackend:handleCrime(player, crimeId)
 	local riskModifier = 0
 	if state.Flags.criminal_tendencies then
 		riskModifier = riskModifier - 10
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Minigame bonus reduces risk of getting caught!
+	-- Completing the heist minigame (like cracking a safe) gives you an advantage
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if minigameBonus == true then
+		riskModifier = riskModifier - 20  -- 20% less likely to get caught
+	elseif minigameBonus == false and crime.hasMinigame then
+		-- Failed minigame for a crime that has one = higher risk
+		riskModifier = riskModifier + 15  -- 15% more likely to get caught
 	end
 
 	local roll = RANDOM:NextInteger(0, 100)
@@ -3340,45 +3497,60 @@ function LifeBackend:handleJobApplication(player, jobId)
 		}
 	end
 	
-	-- Calculate acceptance chance based on multiple factors
-	local baseChance = 0.90 -- 90% base for entry level jobs with no requirements
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Realistic job application system
+	-- Job acceptance should NOT be automatic - difficulty matters!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local difficulty = job.difficulty or 1
 	
-	-- Reduce chance based on job difficulty (1-10 scale)
-	-- difficulty 1 = easy entry job, difficulty 10 = near impossible (star athlete, CEO)
-	if difficulty >= 8 then
-		baseChance = 0.15 -- Elite jobs are very hard to get
+	-- Base chance calculation - MUCH more realistic now
+	-- Scale: 1-10 difficulty where 10 is nearly impossible
+	local baseChance
+	if difficulty >= 10 then
+		baseChance = 0.03 -- 3% - Near impossible (Movie Star, President, Pro Athlete)
+	elseif difficulty >= 9 then
+		baseChance = 0.08 -- 8% - Elite (CTO, Senator, Music Icon)
+	elseif difficulty >= 8 then
+		baseChance = 0.12 -- 12% - Very competitive (CEO, Hollywood Actor)
+	elseif difficulty >= 7 then
+		baseChance = 0.20 -- 20% - Highly competitive (CMO, Recording Artist)
 	elseif difficulty >= 6 then
-		baseChance = 0.35 -- Competitive positions
+		baseChance = 0.30 -- 30% - Competitive (Detective, Pro Musician)
+	elseif difficulty >= 5 then
+		baseChance = 0.40 -- 40% - Above average difficulty
 	elseif difficulty >= 4 then
-		baseChance = 0.55 -- Moderate difficulty
+		baseChance = 0.50 -- 50% - Moderate difficulty
+	elseif difficulty >= 3 then
+		baseChance = 0.60 -- 60% - Some competition
 	elseif difficulty >= 2 then
-		baseChance = 0.75 -- Entry-level but some competition
+		baseChance = 0.70 -- 70% - Entry-level with competition
+	else
+		baseChance = 0.80 -- 80% - Basic entry jobs anyone can get
 	end
 	
-	-- Boost chance based on relevant experience
+	-- Experience bonus - REDUCED from original to prevent god-mode
 	state.CareerInfo = state.CareerInfo or {}
 	local yearsExperience = state.CareerInfo.totalYearsWorked or 0
-	local experienceBonus = math.min(0.20, yearsExperience * 0.02) -- Up to +20% for 10+ years experience
+	local experienceBonus = math.min(0.10, yearsExperience * 0.01) -- Up to +10% for 10+ years experience (was +20%)
 	
-	-- Boost if applying to same category as previous job
+	-- Industry experience bonus - REDUCED
 	if state.Career and state.Career.track == job.category then
-		experienceBonus = experienceBonus + 0.15 -- Industry experience helps!
+		experienceBonus = experienceBonus + 0.08 -- Industry experience helps (was +15%)
 	end
 	
-	-- Boost based on Smarts for office/tech jobs, Health for physical jobs
+	-- Stat bonus - REDUCED to prevent stats from overriding difficulty
 	state.Stats = state.Stats or {}
 	local statBonus = 0
 	if job.category == "tech" or job.category == "office" or job.category == "science" or job.category == "law" or job.category == "finance" then
 		local smarts = state.Stats.Smarts or state.Smarts or 50
-		statBonus = (smarts - 50) / 200 -- +/-25% based on Smarts
+		statBonus = math.clamp((smarts - 50) / 400, -0.10, 0.10) -- +/-10% based on Smarts (was +/-25%)
 	elseif job.category == "military" or job.category == "sports" or job.category == "trades" then
 		local health = state.Stats.Health or state.Health or 50
-		statBonus = (health - 50) / 200 -- +/-25% based on Health
+		statBonus = math.clamp((health - 50) / 400, -0.10, 0.10) -- +/-10% based on Health (was +/-25%)
 	end
 	
 	-- Previous rejection penalty (companies remember bad interviews)
-	local rejectionPenalty = math.min(0.30, (appHistory.attempts or 0) * 0.10) -- -10% per previous rejection, max -30%
+	local rejectionPenalty = math.min(0.20, (appHistory.attempts or 0) * 0.08) -- -8% per previous rejection, max -20%
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Criminal record affects job applications!
@@ -3417,11 +3589,16 @@ function LifeBackend:handleJobApplication(player, jobId)
 		end
 	end
 	
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.05, 0.98)
+	-- CRITICAL FIX: Cap maximum chance based on difficulty
+	-- Even with perfect stats, difficult jobs should remain difficult
+	local maxChance = 1.0 - (difficulty * 0.05) -- difficulty 10 caps at 50%, difficulty 1 caps at 95%
+	maxChance = math.clamp(maxChance, 0.30, 0.95)
 	
-	-- Entry-level jobs (no requirements, low salary) should be easier
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
+	
+	-- Entry-level jobs (no requirements, low salary) - still have some chance of rejection
 	if not job.requirement and (job.salary or 0) < 35000 then
-		finalChance = math.max(finalChance, 0.80) -- At least 80% chance for basic jobs
+		finalChance = math.max(finalChance, 0.65) -- At least 65% chance for basic jobs (was 80%!)
 	end
 	
 	-- Roll for success
@@ -3847,6 +4024,18 @@ function LifeBackend:enrollEducation(player, programId)
 		return { success = false, message = "Unknown education program." }
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Prevent multiple education enrollments!
+	-- You can't be enrolled in two programs at once - just like real life
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.EducationData and state.EducationData.Status == "enrolled" then
+		local currentProgram = state.EducationData.Institution or "a program"
+		return { 
+			success = false, 
+			message = string.format("You're already enrolled in %s! Complete it first or drop out.", currentProgram)
+		}
+	end
+
 	-- CRITICAL FIX: Check minimum age for enrollment
 	local playerAge = state.Age or 0
 	local minAge = program.minAge or 18
@@ -3962,8 +4151,10 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		minAge = asset.minAge or 16 -- Must be 16+ for vehicles
 
 		-- Vehicle-specific: require driver's license
-		local hasLicense = state.Flags and (state.Flags.has_license or state.Flags.drivers_license)
+		-- CRITICAL FIX: Check ALL possible license flag names for consistency
+		local hasLicense = state.Flags and (state.Flags.has_license or state.Flags.drivers_license or state.Flags.driver_license)
 		if not hasLicense then
+			debugPrint("  FAILED: No driver's license")
 			return { success = false, message = "You need a driver's license first!" }
 		end
 	elseif assetType == "Items" then

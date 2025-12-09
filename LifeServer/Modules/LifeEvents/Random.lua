@@ -1211,43 +1211,56 @@ Random.events = {
 
 		choices = {
 			{ 
-				text = "Try to fight back", 
+				text = "👊 FIGHT BACK!", 
 				effects = {},
 				feedText = "You stood your ground...",
-				onResolve = function(state)
-					local health = (state.Stats and state.Stats.Health) or 50
-					local roll = math.random()
-					local defense_bonus = health > 70 and 0.15 or 0
+				-- CRITICAL FIX: Trigger fight minigame for confrontational choice!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					-- If minigame was played, use its result
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					
-					if roll < (0.25 + defense_bonus) then
+					if won then
+						-- Player won the fight!
 						state:ModifyStat("Health", -8)
-						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
 						state.Flags.self_defense = true
-						state:AddFeed("👊 You fought back and escaped with minor injuries!")
-					elseif roll < 0.60 then
-						state:ModifyStat("Health", -15)
-						state:ModifyStat("Looks", -3)
-						state:ModifyStat("Happiness", -12)
-						state.Flags = state.Flags or {}
-						state.Flags.assault_victim = true
-						state:AddFeed("👊 You got beaten up badly. Black eye and bruises.")
-					elseif roll < 0.85 then
-						state:ModifyStat("Health", -25)
-						state:ModifyStat("Smarts", -2)
-						state:ModifyStat("Happiness", -18)
-						state.Flags = state.Flags or {}
-						state.Flags.assault_victim = true
-						state.Flags.concussion = true
-						state:AddFeed("👊 Knocked unconscious. Woke up in the hospital.")
+						state.Flags.fighter = true
+						state:AddFeed("👊 You won the fight! They won't mess with you again!")
 					else
-						state:ModifyStat("Health", -40)
-						state:ModifyStat("Happiness", -25)
-						state.Money = math.max(0, (state.Money or 0) - 5000)
-						state.Flags = state.Flags or {}
-						state.Flags.stabbing_victim = true
-						state.Flags.hospitalized = true
-						state:AddFeed("👊 They had a knife. You were stabbed. Critical condition.")
+						-- Player lost the fight - severity based on their health
+						local health = (state.Stats and state.Stats.Health) or 50
+						local severity = math.random(1, 100)
+						
+						if severity < 60 then
+							-- Minor loss
+							state:ModifyStat("Health", -15)
+							state:ModifyStat("Looks", -3)
+							state:ModifyStat("Happiness", -12)
+							state.Flags = state.Flags or {}
+							state.Flags.assault_victim = true
+							state:AddFeed("👊 You got beaten up badly. Black eye and bruises.")
+						elseif severity < 85 then
+							-- Moderate loss
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Smarts", -2)
+							state:ModifyStat("Happiness", -18)
+							state.Flags = state.Flags or {}
+							state.Flags.assault_victim = true
+							state.Flags.concussion = true
+							state:AddFeed("👊 Knocked unconscious. Woke up in the hospital.")
+						else
+							-- Severe loss
+							state:ModifyStat("Health", -40)
+							state:ModifyStat("Happiness", -25)
+							state.Money = math.max(0, (state.Money or 0) - 5000)
+							state.Flags = state.Flags or {}
+							state.Flags.stabbing_victim = true
+							state.Flags.hospitalized = true
+							state:AddFeed("👊 They had a knife. You were stabbed. Critical condition.")
+						end
 					end
 				end,
 			},
@@ -1868,7 +1881,9 @@ Random.events = {
 	-- ADDITIONAL RANDOM LIFE EVENTS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "pet_adoption",
+		-- CRITICAL FIX: Renamed from "pet_adoption" to avoid duplicate ID conflict
+		-- Adult.lua has another version
+		id = "pet_adoption_random",
 		title = "Furry Friend",
 		emoji = "🐕",
 		text = "You're thinking about getting a pet!",
@@ -1885,7 +1900,9 @@ Random.events = {
 		},
 	},
 	{
-		id = "pet_loss",
+		-- CRITICAL FIX: Renamed from "pet_loss" to avoid duplicate ID conflict
+		-- PetEvents.lua has a more detailed version
+		id = "pet_loss_simple",
 		title = "Goodbye, Friend",
 		emoji = "🌈",
 		text = "Your beloved pet has passed away.",
@@ -1959,31 +1976,38 @@ Random.events = {
 				end,
 			},
 			{ 
-				text = "Confront the intruder", 
+				text = "👊 CONFRONT the intruder!", 
 				effects = { },
 				feedText = "You confronted them...",
-				onResolve = function(state)
-					local roll = math.random(1, 100)
+				-- CRITICAL FIX: Fight minigame for home invasion confrontation!
+				triggerMinigame = "fight",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					state.Flags = state.Flags or {}
-					if roll <= 50 then
-						-- They flee
+					
+					if won then
+						-- You defeated the intruder!
 						state.Flags.self_defense = true
+						state.Flags.home_defender = true
 						if state.ModifyStat then
-							state:ModifyStat("Happiness", -5)
+							state:ModifyStat("Health", -5)
+							state:ModifyStat("Happiness", 5)
 						end
 						if state.AddFeed then
-							state:AddFeed("🚨 They ran when they saw you! Nothing taken.")
+							state:AddFeed("🚨👊 You BEAT the intruder! They fled bleeding. Hero!")
 						end
 					else
-						-- Altercation
+						-- The intruder was too much
 						state.Flags.home_invasion = true
-						state.Flags.self_defense = true
+						state.Flags.assault_victim = true
 						if state.ModifyStat then
-							state:ModifyStat("Health", -15)
-							state:ModifyStat("Happiness", -10)
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Happiness", -15)
 						end
+						state.Money = math.max(0, (state.Money or 0) - math.random(1000, 3000))
 						if state.AddFeed then
-							state:AddFeed("🚨 You fought them off but got hurt. They fled.")
+							state:AddFeed("🚨👊 They overpowered you, took your stuff, and left you hurt.")
 						end
 					end
 				end,

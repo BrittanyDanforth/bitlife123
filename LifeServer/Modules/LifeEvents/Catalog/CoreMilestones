@@ -213,14 +213,16 @@ local events = {
 				index = 1,
 				text = "Cautious driver - safety first always",
 				effects = { Happiness = 4, Smarts = 5, Health = 4 },
-				setFlags = { driver_license = true, safe_driver = true, follows_speed_limits = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, safe_driver = true, follows_speed_limits = true },
 				feedText = "You drove 5mph under the speed limit. Stopped fully at every stop sign. Mrs. Chen said, 'You'll pass easily.' You got your license on the first try!",
 			},
 			{
 				index = 2,
 				text = "Confident driver - I got this!",
 				effects = { Happiness = 7, Smarts = 3, Health = 2 },
-				setFlags = { driver_license = true, confident_driver = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, confident_driver = true },
 				feedText = "You took to driving like a natural! Changed lanes smoothly. Parallel parked on the 2nd try. Mrs. Chen was impressed! License acquired!",
 			},
 			{
@@ -234,7 +236,8 @@ local events = {
 				index = 4,
 				text = "Reckless driver - speed demon mode",
 				effects = { Happiness = 9, Health = -4, Smarts = -2 },
-				setFlags = { driver_license = true, reckless_driver = true, speeding_tickets_incoming = true },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, reckless_driver = true, speeding_tickets_incoming = true },
 				feedText = "You went 50 in a 35 zone. Mrs. Chen SCREAMED. 'SLOW DOWN!' You laughed. You barely passed. Your parents are terrified. Yikes.",
 			},
 		},
@@ -251,6 +254,15 @@ local events = {
 		minAge = 17,
 		maxAge = 19,
 		oneTime = true,
+		-- CRITICAL FIX: Set graduation flags on any choice
+		onComplete = function(state, choice, eventDef, outcome)
+			state.Education = state.Education or "high_school"
+			state.Flags = state.Flags or {}
+			state.Flags.graduated_high_school = true
+			state.Flags.high_school_graduate = true
+			state.Flags.has_diploma = true
+			state.Flags.has_ged_or_diploma = true
+		end,
 		choices = {
 			{
 				index = 1,
@@ -578,27 +590,54 @@ local events = {
 			return (state.Money or 0) >= 2000 -- Need at least enough for cheapest option
 		end,
 		choices = {
-			{
-				index = 1,
-				text = "New car - finance it, live a little!",
-				effects = { Happiness = 10, Money = -25000, Health = 2 },
-				setFlags = { car_owner = true, in_debt = true, nice_car = true },
-				feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
-			},
-			{
-				index = 2,
-				text = "Used car - reliable and affordable",
-				effects = { Happiness = 7, Money = -8000 },
-				setFlags = { car_owner = true, practical = true },
-				feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
-			},
-			{
-				index = 3,
-				text = "Cheap beater - just needs to start",
-				effects = { Happiness = 4, Money = -3000 },
-				setFlags = { car_owner = true, frugal = true, might_break_down = true },
-				feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
-			},
+		{
+			index = 1,
+			-- CRITICAL FIX: Show price in choice text
+			text = "New car - finance it! ($25,000)",
+			effects = { Happiness = 10, Money = -25000, Health = 2 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, in_debt = true, nice_car = true },
+			feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 25000 then
+					return false, "Can't afford a $25,000 car"
+				end
+				return true
+			end,
+		},
+		{
+			index = 2,
+			-- CRITICAL FIX: Show price in choice text
+			text = "Used car - reliable ($8,000)",
+			effects = { Happiness = 7, Money = -8000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, practical = true },
+			feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 8000 then
+					return false, "Can't afford an $8,000 car"
+				end
+				return true
+			end,
+		},
+		{
+			index = 3,
+			-- CRITICAL FIX: Show price in choice text
+			text = "Cheap beater ($3,000)",
+			effects = { Happiness = 4, Money = -3000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, frugal = true, might_break_down = true },
+			feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 3000 then
+					return false, "Can't afford a $3,000 car"
+				end
+				return true
+			end,
+		},
 			{
 				index = 4,
 				text = "No car - Uber/transit is fine",
@@ -635,17 +674,33 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "BUY IT - you're ready for homeownership!",
+				-- CRITICAL FIX: Show price in choice text
+				text = "BUY IT - full price! ($70,000)",
 				effects = { Happiness = 12, Money = -70000, Health = -2 },
 				setFlags = { homeowner = true, mortgage_debt = true, adulting_complete = true },
 				feedText = "You signed all the documents. But you got the keys! You OWN A HOUSE! The dream achieved!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 70000 then
+						return false, "Can't afford $70,000 for a house"
+					end
+					return true
+				end,
 			},
 			{
 				index = 2,
-				text = "Negotiate for a better price",
+				-- CRITICAL FIX: Show price in choice text
+				text = "Negotiate for a better price ($60,000)",
 				effects = { Happiness = 10, Money = -60000, Smarts = 3 },
 				setFlags = { homeowner = true, negotiator = true },
 				feedText = "You negotiated! Saved thousands by not accepting the first offer. Smart buyer!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 60000 then
+						return false, "Can't afford $60,000 for a house"
+					end
+					return true
+				end,
 			},
 			{
 				index = 3,
@@ -656,10 +711,18 @@ local events = {
 			},
 			{
 				index = 4,
-				text = "Buy a condo instead - less maintenance",
+				-- CRITICAL FIX: Show price in choice text
+				text = "Buy a condo instead ($50,000)",
 				effects = { Happiness = 8, Money = -50000 },
 				setFlags = { homeowner = true, condo_owner = true, practical = true },
 				feedText = "You bought a condo! HOA fees but someone ELSE does maintenance. You're a homeowner!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 50000 then
+						return false, "Can't afford $50,000 for a condo"
+					end
+					return true
+				end,
 			},
 		},
 	},

@@ -343,6 +343,103 @@ local function createShadow(parent, offset, blur, color, transparency)
 end
 
 ----------------------------------------------------------------
+-- MOBILE RESPONSIVE SYSTEM
+-- Detects device type and provides responsive sizing helpers
+-- OPTIMIZED for tiny phones like iPhone 6 (375x667)
+----------------------------------------------------------------
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+-- Device detection - more granular for tiny phones
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 450 or Camera.ViewportSize.Y < 750)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+
+-- Viewport tracking
+local ViewportSize = Camera.ViewportSize
+local function updateViewport()
+	ViewportSize = Camera.ViewportSize
+	IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	IS_TABLET = IS_MOBILE and (ViewportSize.X >= 768 or ViewportSize.Y >= 768)
+	IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (ViewportSize.X < 450 or ViewportSize.Y < 750)
+	IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (ViewportSize.X <= 380 or ViewportSize.Y <= 680)
+end
+Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
+
+-- Responsive sizing helpers - MORE AGGRESSIVE for tiny phones
+local function getScale()
+	-- Base scale on smaller dimension for consistent mobile experience
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim <= 320 then return 0.50 end  -- Extremely tiny (iPhone SE 1st gen)
+	if minDim <= 375 then return 0.58 end  -- Tiny phone (iPhone 6/7/8, SE)
+	if minDim <= 400 then return 0.68 end  -- Small phone
+	if minDim <= 450 then return 0.78 end  -- Medium-small phone
+	if minDim <= 550 then return 0.88 end  -- Medium phone
+	if minDim < 768 then return 0.95 end   -- Large phone / small tablet
+	return 1.0  -- Tablet / Desktop
+end
+
+-- Scale pixel values for mobile
+local function px(baseValue)
+	return math.floor(baseValue * getScale())
+end
+
+-- Get responsive text size - with better minimums for tiny screens
+local function textSize(baseSize)
+	local scale = getScale()
+	local scaled = math.floor(baseSize * scale)
+	-- Minimum readable text sizes - smaller OK on tiny phones
+	local minSize = IS_TINY_PHONE and 9 or 10
+	if scaled < minSize then scaled = minSize end
+	return scaled
+end
+
+-- Get responsive padding - more compact on tiny phones
+local function padSize(base)
+	if IS_TINY_PHONE then
+		return math.max(2, math.floor(base * 0.5))
+	end
+	return math.max(4, math.floor(base * getScale()))
+end
+
+-- Minimum tap target size (44px per Apple/Google guidelines, but 40 OK on tiny)
+local MIN_TAP_TARGET = IS_TINY_PHONE and 40 or 44
+
+-- Get touch-friendly button height
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = IS_TINY_PHONE and 38 or MIN_TAP_TARGET
+	if IS_MOBILE and scaled < minTarget then
+		return minTarget
+	end
+	return scaled
+end
+
+-- Get responsive modal width (percentage of screen with max)
+local function modalWidth(maxWidth)
+	if IS_TINY_PHONE then
+		return ViewportSize.X - 12  -- 6px margin each side on tiny phones
+	elseif IS_SMALL_PHONE then
+		return ViewportSize.X - 16  -- 8px margin each side
+	end
+	return math.min(ViewportSize.X * 0.92, maxWidth or 400)
+end
+
+-- Get responsive card width
+local function cardWidth(maxWidth)
+	if IS_TINY_PHONE then
+		return ViewportSize.X - 12  -- 6px margin each side
+	elseif IS_SMALL_PHONE then
+		return ViewportSize.X - 16  -- 8px margin each side
+	elseif IS_MOBILE then
+		return math.min(ViewportSize.X - 24, maxWidth or 350)
+	end
+	return maxWidth or 350
+end
+
+----------------------------------------------------------------
 -- SCREEN GUI
 ----------------------------------------------------------------
 
@@ -455,9 +552,12 @@ local function createResultPopup()
 	resultOverlay.ZIndex = 80
 	resultOverlay.Parent = screenGui
 
-	-- Shadow frame (matches event modal)
+	-- TINY PHONE FIX: More compact popup width
+	local popupWidth = modalWidth(320)
+	
+	-- Shadow frame (matches event modal) - thinner borders on tiny phones
 	resultShadowFrame = Instance.new("Frame")
-	resultShadowFrame.Size = UDim2.new(0, 320, 0, 0)
+	resultShadowFrame.Size = UDim2.new(0, popupWidth, 0, 0)
 	resultShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
 	resultShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	resultShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
@@ -465,55 +565,61 @@ local function createResultPopup()
 	resultShadowFrame.BackgroundTransparency = 0.92
 	resultShadowFrame.ZIndex = 81
 	resultShadowFrame.Parent = resultOverlay
-	corner(resultShadowFrame, 28)
+	corner(resultShadowFrame, IS_TINY_PHONE and 14 or px(28))
 
-	-- Green/Red shell (outer border - matches event style)
+	-- Green/Red shell - thinner on tiny phones
+	local shellMargin = IS_TINY_PHONE and 2 or 6
 	resultShell = Instance.new("Frame")
 	resultShell.Name = "ResultShell"
-	resultShell.Size = UDim2.new(1, -6, 1, -6)
-	resultShell.Position = UDim2.new(0, 3, 0, 3)
+	resultShell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
+	resultShell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	resultShell.BackgroundColor3 = C.Green
 	resultShell.ZIndex = 82
 	resultShell.Parent = resultShadowFrame
-	corner(resultShell, 26)
-	stroke(resultShell, 2, 0.4, C.GreenDark)
-	createShadow(resultShell, 4, 16, C.Black, 0.9)
+	corner(resultShell, IS_TINY_PHONE and 12 or px(26))
+	stroke(resultShell, IS_TINY_PHONE and 1 or 2, 0.4, C.GreenDark)
+	if not IS_TINY_PHONE then
+		createShadow(resultShell, 4, px(16), C.Black, 0.9)
+	end
 
-	-- Inner white card
+	-- Inner white card - thinner on tiny phones
+	local cardMargin = IS_TINY_PHONE and 4 or 10
 	resultCard = Instance.new("Frame")
 	resultCard.Name = "ResultCard"
-	resultCard.Size = UDim2.new(1, -10, 1, -10)
-	resultCard.Position = UDim2.new(0, 5, 0, 5)
+	resultCard.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	resultCard.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	resultCard.BackgroundColor3 = C.White
 	resultCard.ZIndex = 83
 	resultCard.Parent = resultShell
-	corner(resultCard, 22)
+	corner(resultCard, IS_TINY_PHONE and 10 or px(22))
 
 	local cardLayout = Instance.new("UIListLayout")
 	cardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	cardLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder -- CRITICAL FIX: Explicit sort order
-	cardLayout.Padding = UDim.new(0, 12)
+	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	cardLayout.Padding = UDim.new(0, IS_TINY_PHONE and 6 or padSize(12))
 	cardLayout.Parent = resultCard
-	pad(resultCard, 20, 20, 20, 20)
+	local cardPad = IS_TINY_PHONE and 10 or padSize(20)
+	pad(resultCard, cardPad, cardPad, cardPad, cardPad)
 
-	-- Emoji
+	-- Emoji - TINY PHONE FIX: Much smaller emoji
+	local emojiSize = IS_TINY_PHONE and 36 or px(60)
 	resultEmoji = Instance.new("TextLabel")
-	resultEmoji.Size = UDim2.new(0, 60, 0, 60)
+	resultEmoji.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	resultEmoji.BackgroundTransparency = 1
 	resultEmoji.Font = F.Body
-	resultEmoji.TextSize = 48
+	resultEmoji.TextSize = IS_TINY_PHONE and 28 or textSize(48)
 	resultEmoji.Text = "✨"
 	resultEmoji.LayoutOrder = 1
 	resultEmoji.ZIndex = 84
 	resultEmoji.Parent = resultCard
 
-	-- Title
+	-- Title - TINY PHONE FIX: Smaller text
 	resultTitle = Instance.new("TextLabel")
-	resultTitle.Size = UDim2.new(1, 0, 0, 32)
+	resultTitle.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 20 or px(32))
 	resultTitle.BackgroundTransparency = 1
 	resultTitle.Font = F.Title
-	resultTitle.TextSize = 24
+	resultTitle.TextSize = IS_TINY_PHONE and 15 or textSize(24)
 	resultTitle.TextColor3 = C.Gray900
 	resultTitle.Text = "Result"
 	resultTitle.TextWrapped = true
@@ -521,24 +627,24 @@ local function createResultPopup()
 	resultTitle.ZIndex = 84
 	resultTitle.Parent = resultCard
 
-	-- Body
+	-- Body - TINY PHONE FIX: Smaller text with tighter line height
 	resultBody = Instance.new("TextLabel")
 	resultBody.Size = UDim2.new(1, 0, 0, 0)
 	resultBody.AutomaticSize = Enum.AutomaticSize.Y
 	resultBody.BackgroundTransparency = 1
 	resultBody.Font = F.Body
-	resultBody.TextSize = 16
+	resultBody.TextSize = IS_TINY_PHONE and 11 or textSize(16)
 	resultBody.TextColor3 = C.Gray600
 	resultBody.TextWrapped = true
 	resultBody.TextXAlignment = Enum.TextXAlignment.Center
-	resultBody.LineHeight = 1.4
+	resultBody.LineHeight = IS_TINY_PHONE and 1.2 or 1.4
 	resultBody.RichText = true
 	resultBody.Text = ""
 	resultBody.LayoutOrder = 3
 	resultBody.ZIndex = 84
 	resultBody.Parent = resultCard
 
-	-- Stats container
+	-- Stats container - tighter on tiny phones
 	resultStatsPreview = Instance.new("Frame")
 	resultStatsPreview.Name = "StatsPreview"
 	resultStatsPreview.Size = UDim2.new(1, 0, 0, 0)
@@ -549,22 +655,23 @@ local function createResultPopup()
 	resultStatsPreview.Parent = resultCard
 
 	local statsLayout = Instance.new("UIListLayout")
-	statsLayout.Padding = UDim.new(0, 4)
+	statsLayout.Padding = UDim.new(0, IS_TINY_PHONE and 2 or padSize(4))
 	statsLayout.Parent = resultStatsPreview
 
-	-- OK Button - CRITICAL FIX: Made more prominent and at bottom with higher LayoutOrder
+	-- OK Button - TINY PHONE FIX: Smaller but still tappable
+	local okBtnHeight = IS_TINY_PHONE and 38 or btnHeight(52)
 	resultOkBtn = Instance.new("TextButton")
-	resultOkBtn.Size = UDim2.new(1, 0, 0, 52)
+	resultOkBtn.Size = UDim2.new(1, 0, 0, okBtnHeight)
 	resultOkBtn.BackgroundColor3 = C.Green
 	resultOkBtn.Font = F.Button
-	resultOkBtn.TextSize = 18
+	resultOkBtn.TextSize = IS_TINY_PHONE and 13 or textSize(18)
 	resultOkBtn.TextColor3 = C.White
 	resultOkBtn.Text = "Continue"
 	resultOkBtn.AutoButtonColor = false
-	resultOkBtn.LayoutOrder = 99 -- High number ensures it's always last
+	resultOkBtn.LayoutOrder = 99
 	resultOkBtn.ZIndex = 84
 	resultOkBtn.Parent = resultCard
-	corner(resultOkBtn, 12)
+	corner(resultOkBtn, IS_TINY_PHONE and 8 or px(12))
 
 	resultOkBtn.MouseEnter:Connect(function()
 		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
@@ -781,102 +888,110 @@ end
 -- HEADER BAR (Offset to avoid Roblox logo)
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: More compact header
+local headerHeight = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(70))
+local headerTopOffset = IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
 local headerBar = Instance.new("Frame")
 headerBar.Name = "Header"
-headerBar.Size = UDim2.new(1, -16, 0, 70)
-headerBar.Position = UDim2.new(0, 8, 0, 44)
+headerBar.Size = UDim2.new(1, -padSize(12), 0, headerHeight)
+headerBar.Position = UDim2.new(0, padSize(6), 0, headerTopOffset)
 headerBar.BackgroundColor3 = C.White
 headerBar.ZIndex = 5
 headerBar.Parent = mainContainer
-corner(headerBar, 18)
+corner(headerBar, IS_TINY_PHONE and 12 or px(18))
 
--- subtle shadow
+-- subtle shadow - skip on tiny phones for cleaner look
 local headerShadow = Instance.new("Frame")
-headerShadow.Size = UDim2.new(1, 4, 0, 74)
-headerShadow.Position = UDim2.new(0, 6, 0, 46)
+headerShadow.Size = UDim2.new(1, 4, 0, headerHeight + 4)
+headerShadow.Position = UDim2.new(0, padSize(4), 0, headerTopOffset + 2)
 headerShadow.BackgroundColor3 = C.Black
-headerShadow.BackgroundTransparency = 0.95
+headerShadow.BackgroundTransparency = IS_TINY_PHONE and 0.98 or 0.95
 headerShadow.ZIndex = 4
 headerShadow.Parent = mainContainer
-corner(headerShadow, 20)
+corner(headerShadow, IS_TINY_PHONE and 14 or px(20))
 
--- avatar circle
+-- TINY PHONE FIX: Smaller avatar
+local avatarSize = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 38 or px(50))
 local avatarCircle = Instance.new("Frame")
-avatarCircle.Size = UDim2.new(0, 50, 0, 50)
-avatarCircle.Position = UDim2.new(0, 14, 0.5, -25)
+avatarCircle.Size = UDim2.new(0, avatarSize, 0, avatarSize)
+avatarCircle.Position = UDim2.new(0, IS_TINY_PHONE and 8 or padSize(14), 0.5, -avatarSize/2)
 avatarCircle.BackgroundColor3 = C.BluePale
 avatarCircle.ZIndex = 6
 avatarCircle.Parent = headerBar
-corner(avatarCircle, 25)
-stroke(avatarCircle, 2, 0.5, C.BlueLight)
+corner(avatarCircle, avatarSize/2)
+stroke(avatarCircle, IS_TINY_PHONE and 1 or 2, 0.5, C.BlueLight)
 
 local avatarEmoji = Instance.new("TextLabel")
 avatarEmoji.Size = UDim2.fromScale(1, 1)
 avatarEmoji.BackgroundTransparency = 1
 avatarEmoji.Font = F.Body
-avatarEmoji.TextSize = 26
+avatarEmoji.TextSize = IS_TINY_PHONE and 18 or textSize(26)
 avatarEmoji.Text = "👶"
 avatarEmoji.ZIndex = 7
 avatarEmoji.Parent = avatarCircle
 
--- name + age
+-- TINY PHONE FIX: Tighter name container
+local nameOffset = avatarSize + (IS_TINY_PHONE and 12 or padSize(24))
 local nameContainer = Instance.new("Frame")
-nameContainer.Size = UDim2.new(0.5, -90, 1, 0)
-nameContainer.Position = UDim2.new(0, 74, 0, 0)
+nameContainer.Size = UDim2.new(0.5, -nameOffset, 1, 0)
+nameContainer.Position = UDim2.new(0, nameOffset, 0, 0)
 nameContainer.BackgroundTransparency = 1
 nameContainer.ZIndex = 6
 nameContainer.Parent = headerBar
 
 local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, 0, 0, 24)
-nameLabel.Position = UDim2.new(0, 0, 0.5, -14)
+nameLabel.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 16 or px(24))
+nameLabel.Position = UDim2.new(0, 0, 0.5, IS_TINY_PHONE and -10 or px(-14))
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = F.Title
-nameLabel.TextSize = 17
+nameLabel.TextSize = IS_TINY_PHONE and 13 or textSize(17)
 nameLabel.TextColor3 = C.Gray900
 nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 nameLabel.Text = "New Life"
 nameLabel.ZIndex = 7
 nameLabel.Parent = nameContainer
 
 local ageYearLabel = Instance.new("TextLabel")
-ageYearLabel.Size = UDim2.new(1, 0, 0, 16)
-ageYearLabel.Position = UDim2.new(0, 0, 0.5, 8)
+ageYearLabel.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 12 or px(16))
+ageYearLabel.Position = UDim2.new(0, 0, 0.5, IS_TINY_PHONE and 4 or padSize(8))
 ageYearLabel.BackgroundTransparency = 1
 ageYearLabel.Font = F.Body
-ageYearLabel.TextSize = 12
+ageYearLabel.TextSize = IS_TINY_PHONE and 10 or textSize(12)
 ageYearLabel.TextColor3 = C.Gray500
 ageYearLabel.TextXAlignment = Enum.TextXAlignment.Left
 ageYearLabel.Text = "Age 0 • 2025"
 ageYearLabel.ZIndex = 7
 ageYearLabel.Parent = nameContainer
 
--- money display
+-- TINY PHONE FIX: Smaller money display
+local moneyWidth = IS_TINY_PHONE and 70 or (IS_SMALL_PHONE and 85 or px(110))
+local moneyHeight = IS_TINY_PHONE and 32 or btnHeight(44)
 local moneyContainer = Instance.new("Frame")
-moneyContainer.Size = UDim2.new(0, 110, 0, 44)
+moneyContainer.Size = UDim2.new(0, moneyWidth, 0, moneyHeight)
 moneyContainer.AnchorPoint = Vector2.new(1, 0.5)
-moneyContainer.Position = UDim2.new(1, -12, 0.5, 0)
+moneyContainer.Position = UDim2.new(1, IS_TINY_PHONE and -6 or -padSize(12), 0.5, 0)
 moneyContainer.BackgroundColor3 = C.GreenPale
 moneyContainer.ZIndex = 6
 moneyContainer.Parent = headerBar
-corner(moneyContainer, 14)
-stroke(moneyContainer, 2, 0.6, C.Green)
+corner(moneyContainer, IS_TINY_PHONE and 8 or px(14))
+stroke(moneyContainer, IS_TINY_PHONE and 1 or 2, 0.6, C.Green)
 
 local moneyIcon = Instance.new("TextLabel")
-moneyIcon.Size = UDim2.new(0, 30, 1, 0)
+moneyIcon.Size = UDim2.new(0, IS_TINY_PHONE and 20 or px(30), 1, 0)
 moneyIcon.BackgroundTransparency = 1
 moneyIcon.Font = F.Body
-moneyIcon.TextSize = 20
+moneyIcon.TextSize = IS_TINY_PHONE and 14 or textSize(20)
 moneyIcon.Text = "💵"
 moneyIcon.ZIndex = 7
 moneyIcon.Parent = moneyContainer
 
 local moneyLabel = Instance.new("TextLabel")
-moneyLabel.Size = UDim2.new(1, -34, 1, 0)
-moneyLabel.Position = UDim2.new(0, 30, 0, 0)
+moneyLabel.Size = UDim2.new(1, IS_TINY_PHONE and -22 or -px(34), 1, 0)
+moneyLabel.Position = UDim2.new(0, IS_TINY_PHONE and 20 or px(30), 0, 0)
 moneyLabel.BackgroundTransparency = 1
 moneyLabel.Font = F.Title
-moneyLabel.TextSize = 15
+moneyLabel.TextSize = textSize(15)
 moneyLabel.TextColor3 = C.GreenDark
 moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 moneyLabel.Text = "$0"
@@ -884,30 +999,38 @@ moneyLabel.ZIndex = 7
 moneyLabel.Parent = moneyContainer
 
 ----------------------------------------------------------------
--- LIFE FEED AREA
+-- LIFE FEED AREA - TINY PHONE FIX: More compact layout
 ----------------------------------------------------------------
+
+-- Calculate feed container position based on header
+local feedTop = headerTopOffset + headerHeight + (IS_TINY_PHONE and 4 or padSize(8))
+-- Nav height varies by device - smaller on tiny phones
+local navHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 55 or px(65))
+local feedBottomOffset = navHeight + (IS_TINY_PHONE and 115 or px(170)) -- Nav + stats + age button
 
 local feedContainer = Instance.new("Frame")
 feedContainer.Name = "FeedContainer"
-feedContainer.Size = UDim2.new(1, -16, 1, -290)
-feedContainer.Position = UDim2.new(0, 8, 0, 122)
+feedContainer.Size = UDim2.new(1, -padSize(12), 1, -feedTop - feedBottomOffset)
+feedContainer.Position = UDim2.new(0, padSize(6), 0, feedTop)
 feedContainer.BackgroundColor3 = C.White
 feedContainer.ZIndex = 3
 feedContainer.Parent = mainContainer
-corner(feedContainer, 16)
-pad(feedContainer, 14, 14, 12, 12)
+corner(feedContainer, IS_TINY_PHONE and 10 or px(16))
+local feedPad = IS_TINY_PHONE and 8 or padSize(14)
+pad(feedContainer, feedPad, feedPad, IS_TINY_PHONE and 6 or padSize(12), IS_TINY_PHONE and 6 or padSize(12))
 
 local feedScroll = Instance.new("ScrollingFrame")
 feedScroll.Size = UDim2.fromScale(1, 1)
 feedScroll.BackgroundTransparency = 1
 feedScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 feedScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-feedScroll.ScrollBarThickness = 3
+feedScroll.ScrollBarThickness = IS_MOBILE and 6 or 3  -- MOBILE FIX: Thicker scrollbar for touch
 feedScroll.ScrollBarImageColor3 = C.Gray300
+feedScroll.ScrollingDirection = Enum.ScrollingDirection.Y
 feedScroll.Parent = feedContainer
 
 local feedLayout = Instance.new("UIListLayout")
-feedLayout.Padding = UDim.new(0, 8)
+feedLayout.Padding = UDim.new(0, padSize(8))
 feedLayout.SortOrder = Enum.SortOrder.LayoutOrder
 feedLayout.Parent = feedScroll
 
@@ -954,83 +1077,92 @@ local function addFeedEntry(text)
 end
 
 ----------------------------------------------------------------
--- BOTTOM SECTION: Stats + Nav + Age Button
+-- BOTTOM SECTION: Stats + Nav + Age Button - TINY PHONE FIX
 ----------------------------------------------------------------
+
+-- TINY PHONE FIX: Smaller stats row
+local statsRowHeight = IS_TINY_PHONE and 38 or 52
+local statsRowBottom = IS_TINY_PHONE and 68 or 88
+local statsGap = IS_TINY_PHONE and 35 or 55
 
 local statsRow = Instance.new("Frame")
 statsRow.Name = "StatsRow"
-statsRow.Size = UDim2.new(1, -16, 0, 52)
+statsRow.Size = UDim2.new(1, -12, 0, statsRowHeight)
 statsRow.AnchorPoint = Vector2.new(0.5, 1)
-statsRow.Position = UDim2.new(0.5, 0, 1, -88)
+statsRow.Position = UDim2.new(0.5, 0, 1, -statsRowBottom)
 statsRow.BackgroundColor3 = C.White
 statsRow.ZIndex = 8
 statsRow.Parent = mainContainer
-corner(statsRow, 14)
+corner(statsRow, IS_TINY_PHONE and 10 or 14)
 stroke(statsRow, 1, 0.85, C.Gray200)
 
 -- left stats
 local statsLeft = Instance.new("Frame")
 statsLeft.Name = "StatsLeft"
-statsLeft.Size = UDim2.new(0.5, -55, 1, 0)
+statsLeft.Size = UDim2.new(0.5, -statsGap, 1, 0)
 statsLeft.Position = UDim2.new(0, 0, 0, 0)
 statsLeft.BackgroundTransparency = 1
 statsLeft.ZIndex = 9
 statsLeft.Parent = statsRow
-pad(statsLeft, 8, 8, 6, 6)
+pad(statsLeft, IS_TINY_PHONE and 4 or 8, IS_TINY_PHONE and 4 or 8, IS_TINY_PHONE and 4 or 6, IS_TINY_PHONE and 4 or 6)
 
 local statsLeftLayout = Instance.new("UIListLayout")
 statsLeftLayout.FillDirection = Enum.FillDirection.Horizontal
 statsLeftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 statsLeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-statsLeftLayout.Padding = UDim.new(0, 6)
+statsLeftLayout.Padding = UDim.new(0, IS_TINY_PHONE and 3 or 6)
 statsLeftLayout.Parent = statsLeft
 
 -- right stats
 local statsRight = Instance.new("Frame")
 statsRight.Name = "StatsRight"
-statsRight.Size = UDim2.new(0.5, -55, 1, 0)
-statsRight.Position = UDim2.new(0.5, 55, 0, 0)
+statsRight.Size = UDim2.new(0.5, -statsGap, 1, 0)
+statsRight.Position = UDim2.new(0.5, statsGap, 0, 0)
 statsRight.BackgroundTransparency = 1
 statsRight.ZIndex = 9
 statsRight.Parent = statsRow
-pad(statsRight, 8, 8, 6, 6)
+pad(statsRight, IS_TINY_PHONE and 4 or 8, IS_TINY_PHONE and 4 or 8, IS_TINY_PHONE and 4 or 6, IS_TINY_PHONE and 4 or 6)
 
 local statsRightLayout = Instance.new("UIListLayout")
 statsRightLayout.FillDirection = Enum.FillDirection.Horizontal
 statsRightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 statsRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-statsRightLayout.Padding = UDim.new(0, 6)
+statsRightLayout.Padding = UDim.new(0, IS_TINY_PHONE and 3 or 6)
 statsRightLayout.Parent = statsRight
 
 local statCards = {}
 
+-- TINY PHONE FIX: Smaller stat cards
+local statCardWidth = IS_TINY_PHONE and 56 or 76
+local statCardHeight = IS_TINY_PHONE and 30 or 40
+
 local function createStatCard(info, parent, order)
 	local statCard = Instance.new("Frame")
 	statCard.Name = "Stat_" .. info.key
-	statCard.Size = UDim2.new(0, 76, 0, 40)
+	statCard.Size = UDim2.new(0, statCardWidth, 0, statCardHeight)
 	statCard.BackgroundColor3 = C.Gray50
 	statCard.LayoutOrder = order
 	statCard.ZIndex = 10
 	statCard.Parent = parent
-	corner(statCard, 10)
+	corner(statCard, IS_TINY_PHONE and 6 or 10)
 
 	local iconLbl = Instance.new("TextLabel")
-	iconLbl.Size = UDim2.new(0, 22, 0, 22)
-	iconLbl.Position = UDim2.new(0, 4, 0, 3)
+	iconLbl.Size = UDim2.new(0, IS_TINY_PHONE and 16 or 22, 0, IS_TINY_PHONE and 16 or 22)
+	iconLbl.Position = UDim2.new(0, IS_TINY_PHONE and 2 or 4, 0, IS_TINY_PHONE and 2 or 3)
 	iconLbl.BackgroundTransparency = 1
 	iconLbl.Font = F.Body
-	iconLbl.TextSize = 15
+	iconLbl.TextSize = IS_TINY_PHONE and 11 or 15
 	iconLbl.Text = info.icon
 	iconLbl.ZIndex = 11
 	iconLbl.Parent = statCard
 
 	local percentLbl = Instance.new("TextLabel")
 	percentLbl.Name = "Percent"
-	percentLbl.Size = UDim2.new(0, 38, 0, 16)
-	percentLbl.Position = UDim2.new(0, 26, 0, 4)
+	percentLbl.Size = UDim2.new(0, IS_TINY_PHONE and 28 or 38, 0, IS_TINY_PHONE and 12 or 16)
+	percentLbl.Position = UDim2.new(0, IS_TINY_PHONE and 18 or 26, 0, IS_TINY_PHONE and 2 or 4)
 	percentLbl.BackgroundTransparency = 1
 	percentLbl.Font = F.Title
-	percentLbl.TextSize = 12
+	percentLbl.TextSize = IS_TINY_PHONE and 9 or 12
 	percentLbl.TextColor3 = info.col
 	percentLbl.TextXAlignment = Enum.TextXAlignment.Left
 	percentLbl.Text = "100%"
@@ -1038,12 +1170,12 @@ local function createStatCard(info, parent, order)
 	percentLbl.Parent = statCard
 
 	local barBg = Instance.new("Frame")
-	barBg.Size = UDim2.new(1, -10, 0, 6)
-	barBg.Position = UDim2.new(0, 5, 1, -11)
+	barBg.Size = UDim2.new(1, IS_TINY_PHONE and -6 or -10, 0, IS_TINY_PHONE and 4 or 6)
+	barBg.Position = UDim2.new(0, IS_TINY_PHONE and 3 or 5, 1, IS_TINY_PHONE and -7 or -11)
 	barBg.BackgroundColor3 = C.Gray200
 	barBg.ZIndex = 11
 	barBg.Parent = statCard
-	corner(barBg, 3)
+	corner(barBg, IS_TINY_PHONE and 2 or 3)
 
 	local barFill = Instance.new("Frame")
 	barFill.Name = "Fill"
@@ -1051,7 +1183,7 @@ local function createStatCard(info, parent, order)
 	barFill.BackgroundColor3 = info.col
 	barFill.ZIndex = 12
 	barFill.Parent = barBg
-	corner(barFill, 3)
+	corner(barFill, IS_TINY_PHONE and 2 or 3)
 
 	statCards[info.key] = {
 		percentLabel = percentLbl,
@@ -1067,12 +1199,14 @@ createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight,
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
 
 ----------------------------------------------------------------
--- NAV BAR
+-- NAV BAR - TINY PHONE FIX: More compact
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: Much smaller nav bar
+local navBarHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 60 or px(80))
 local navBar = Instance.new("Frame")
 navBar.Name = "NavBar"
-navBar.Size = UDim2.new(1, 0, 0, 80)
+navBar.Size = UDim2.new(1, 0, 0, navBarHeight)
 navBar.AnchorPoint = Vector2.new(0.5, 1)
 navBar.Position = UDim2.new(0.5, 0, 1, 0)
 navBar.BackgroundColor3 = C.NavBlue
@@ -1087,43 +1221,52 @@ navGrad.Color = ColorSequence.new({
 navGrad.Rotation = 90
 navGrad.Parent = navBar
 
+-- TINY PHONE FIX: Smaller center gap for age button
+local ageBtnGap = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 36 or px(50))
 local navLeft = Instance.new("Frame")
 navLeft.Name = "NavLeft"
-navLeft.Size = UDim2.new(0.5, -50, 1, 0)
+navLeft.Size = UDim2.new(0.5, -ageBtnGap, 1, 0)
 navLeft.Position = UDim2.new(0, 0, 0, 0)
 navLeft.BackgroundTransparency = 1
 navLeft.ZIndex = 7
 navLeft.Parent = navBar
-pad(navLeft, 8, 15, 6, 20)
+local navPadSide = IS_TINY_PHONE and 4 or padSize(8)
+local navPadTop = IS_TINY_PHONE and 4 or padSize(6)
+local navPadBottom = IS_TINY_PHONE and 12 or padSize(20)
+pad(navLeft, navPadSide, IS_TINY_PHONE and 8 or padSize(15), navPadTop, navPadBottom)
 
 local navLeftLayout = Instance.new("UIListLayout")
 navLeftLayout.FillDirection = Enum.FillDirection.Horizontal
 navLeftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 navLeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-navLeftLayout.Padding = UDim.new(0, 6)
+navLeftLayout.Padding = UDim.new(0, IS_TINY_PHONE and 2 or padSize(6))
 navLeftLayout.Parent = navLeft
 
 local navRight = Instance.new("Frame")
 navRight.Name = "NavRight"
-navRight.Size = UDim2.new(0.5, -50, 1, 0)
-navRight.Position = UDim2.new(0.5, 50, 0, 0)
+navRight.Size = UDim2.new(0.5, -ageBtnGap, 1, 0)
+navRight.Position = UDim2.new(0.5, ageBtnGap, 0, 0)
 navRight.BackgroundTransparency = 1
 navRight.ZIndex = 7
 navRight.Parent = navBar
-pad(navRight, 15, 8, 6, 20)
+pad(navRight, IS_TINY_PHONE and 8 or padSize(15), navPadSide, navPadTop, navPadBottom)
 
 local navRightLayout = Instance.new("UIListLayout")
 navRightLayout.FillDirection = Enum.FillDirection.Horizontal
 navRightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 navRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-navRightLayout.Padding = UDim.new(0, 6)
+navRightLayout.Padding = UDim.new(0, IS_TINY_PHONE and 2 or padSize(6))
 navRightLayout.Parent = navRight
 
 local navBtnRefs = {}
 
+-- TINY PHONE FIX: Smaller nav buttons
+local navBtnWidth = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or px(56))
+local navBtnHeight = IS_TINY_PHONE and 32 or btnHeight(48)
+
 local function createNavButton(info, parent, order)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 56, 0, 48)
+	btn.Size = UDim2.new(0, navBtnWidth, 0, navBtnHeight)
 	btn.BackgroundTransparency = 1
 	btn.AutoButtonColor = false
 	btn.LayoutOrder = order
@@ -1134,24 +1277,24 @@ local function createNavButton(info, parent, order)
 	local btnLayout = Instance.new("UIListLayout")
 	btnLayout.FillDirection = Enum.FillDirection.Vertical
 	btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	btnLayout.Padding = UDim.new(0, 1)
+	btnLayout.Padding = UDim.new(0, IS_TINY_PHONE and 0 or 1)
 	btnLayout.Parent = btn
 
 	local iconLbl = Instance.new("TextLabel")
-	iconLbl.Size = UDim2.new(1, 0, 0, 24)
+	iconLbl.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 16 or px(24))
 	iconLbl.BackgroundTransparency = 1
 	iconLbl.Font = F.Body
-	iconLbl.TextSize = 20
+	iconLbl.TextSize = IS_TINY_PHONE and 14 or textSize(20)
 	iconLbl.TextColor3 = C.White
 	iconLbl.Text = info.icon
 	iconLbl.ZIndex = 9
 	iconLbl.Parent = btn
 
 	local textLbl = Instance.new("TextLabel")
-	textLbl.Size = UDim2.new(1, 0, 0, 14)
+	textLbl.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 10 or px(14))
 	textLbl.BackgroundTransparency = 1
 	textLbl.Font = F.Medium
-	textLbl.TextSize = 10
+	textLbl.TextSize = IS_TINY_PHONE and 8 or textSize(10)
 	textLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
 	textLbl.Text = info.text
 	textLbl.ZIndex = 9
@@ -1191,38 +1334,43 @@ createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"},
 createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
 
 ----------------------------------------------------------------
--- AGE BUTTON
+-- AGE BUTTON - TINY PHONE FIX: More compact
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: Much smaller age button
+local ageBtnSize = IS_TINY_PHONE and 54 or (IS_SMALL_PHONE and 65 or px(90))
+local ageBtnOffset = IS_TINY_PHONE and 6 or padSize(10)
 local ageBtnContainer = Instance.new("Frame")
-ageBtnContainer.Size = UDim2.new(0, 90, 0, 90)
+ageBtnContainer.Size = UDim2.new(0, ageBtnSize, 0, ageBtnSize)
 ageBtnContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -70)
+ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -(navBarHeight/2 + ageBtnOffset))
 ageBtnContainer.BackgroundTransparency = 1
 ageBtnContainer.ZIndex = 15
 ageBtnContainer.Parent = mainContainer
 
 local ageOuterRing = Instance.new("Frame")
-ageOuterRing.Size = UDim2.new(1, 8, 1, 8)
+ageOuterRing.Size = UDim2.new(1, IS_TINY_PHONE and 4 or 8, 1, IS_TINY_PHONE and 4 or 8)
 ageOuterRing.AnchorPoint = Vector2.new(0.5, 0.5)
 ageOuterRing.Position = UDim2.fromScale(0.5, 0.5)
 ageOuterRing.BackgroundColor3 = C.White
 ageOuterRing.ZIndex = 15
 ageOuterRing.Parent = ageBtnContainer
-corner(ageOuterRing, 50)
+corner(ageOuterRing, ageBtnSize/2)
 
+local ageShadowSize = IS_TINY_PHONE and 10 or 16
 local ageShadow = Instance.new("Frame")
-ageShadow.Size = UDim2.new(1, 16, 1, 16)
+ageShadow.Size = UDim2.new(1, ageShadowSize, 1, ageShadowSize)
 ageShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-ageShadow.Position = UDim2.new(0.5, 0, 0.5, 4)
+ageShadow.Position = UDim2.new(0.5, 0, 0.5, IS_TINY_PHONE and 2 or 4)
 ageShadow.BackgroundColor3 = C.Black
 ageShadow.BackgroundTransparency = 0.9
 ageShadow.ZIndex = 14
 ageShadow.Parent = ageBtnContainer
-corner(ageShadow, 54)
+corner(ageShadow, ageBtnSize/2 + (IS_TINY_PHONE and 2 or 4))
 
+local ageBtnMargin = IS_TINY_PHONE and 4 or 6
 local ageButton = Instance.new("TextButton")
-ageButton.Size = UDim2.new(1, -6, 1, -6)
+ageButton.Size = UDim2.new(1, -ageBtnMargin, 1, -ageBtnMargin)
 ageButton.AnchorPoint = Vector2.new(0.5, 0.5)
 ageButton.Position = UDim2.fromScale(0.5, 0.5)
 ageButton.BackgroundColor3 = C.Green
@@ -1230,8 +1378,8 @@ ageButton.AutoButtonColor = false
 ageButton.Text = ""
 ageButton.ZIndex = 16
 ageButton.Parent = ageBtnContainer
-corner(ageButton, 45)
-stroke(ageButton, 3, 0, C.GreenRing)
+corner(ageButton, ageBtnSize/2 - (IS_TINY_PHONE and 2 or 3))
+stroke(ageButton, IS_TINY_PHONE and 2 or 3, 0, C.GreenRing)
 
 local ageGrad = Instance.new("UIGradient")
 ageGrad.Color = ColorSequence.new({
@@ -1242,29 +1390,29 @@ ageGrad.Rotation = 90
 ageGrad.Parent = ageButton
 
 local agePlus = Instance.new("TextLabel")
-agePlus.Size = UDim2.new(1, 0, 0, 32)
-agePlus.Position = UDim2.new(0, 0, 0, 12)
+agePlus.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 20 or px(32))
+agePlus.Position = UDim2.new(0, 0, 0, IS_TINY_PHONE and 6 or padSize(12))
 agePlus.BackgroundTransparency = 1
 agePlus.Font = F.Title
-agePlus.TextSize = 32
+agePlus.TextSize = IS_TINY_PHONE and 22 or textSize(32)
 agePlus.TextColor3 = C.White
 agePlus.Text = "+"
 agePlus.ZIndex = 17
 agePlus.Parent = ageButton
 
 local ageText = Instance.new("TextLabel")
-ageText.Size = UDim2.new(1, 0, 0, 18)
-ageText.Position = UDim2.new(0, 0, 0, 44)
+ageText.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 12 or 18)
+ageText.Position = UDim2.new(0, 0, 0, IS_TINY_PHONE and 28 or 44)
 ageText.BackgroundTransparency = 1
 ageText.Font = F.Button
-ageText.TextSize = 16
+ageText.TextSize = IS_TINY_PHONE and 10 or 16
 ageText.TextColor3 = C.White
 ageText.Text = "Age"
 ageText.ZIndex = 17
 ageText.Parent = ageButton
 
 local tutorialRing = Instance.new("Frame")
-tutorialRing.Size = UDim2.new(1, 30, 1, 30)
+tutorialRing.Size = UDim2.new(1, IS_TINY_PHONE and 20 or 30, 1, IS_TINY_PHONE and 20 or 30)
 tutorialRing.AnchorPoint = Vector2.new(0.5, 0.5)
 tutorialRing.Position = UDim2.fromScale(0.5, 0.5)
 tutorialRing.BackgroundTransparency = 1
@@ -1347,253 +1495,301 @@ hideTutorial = function()
 end
 
 ----------------------------------------------------------------
--- PREMIUM EVENT MODAL (BitLife-style red card)
+-- PREMIUM EVENT MODAL (BitLife-style red card) - MOBILE FIX
 ----------------------------------------------------------------
 
-local eventOverlay = Instance.new("Frame")
-eventOverlay.Name = "EventOverlay"
-eventOverlay.Size = UDim2.fromScale(1, 1)
-eventOverlay.BackgroundColor3 = C.Black
-eventOverlay.BackgroundTransparency = 0.45
-eventOverlay.Visible = false
-eventOverlay.ZIndex = 60
-eventOverlay.Parent = screenGui
+-- EventUI table to store event modal references and reduce local variable count
+local EventUI = {
+	activeChoiceButtons = {},
+	currentEventId = nil,
+	surpriseConnection = nil,
+	currentHideTween = nil,
+}
 
--- outer shadow frame - WIDER for better title display
-local eventShadowFrame = Instance.new("Frame")
-eventShadowFrame.Size = UDim2.new(0, 360, 0, 0)  -- Wider (was 340)
-eventShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
-eventShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-eventShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
-eventShadowFrame.BackgroundColor3 = C.Black
-eventShadowFrame.BackgroundTransparency = 0.88  -- Slightly more visible shadow
-eventShadowFrame.ZIndex = 61
-eventShadowFrame.Parent = eventOverlay
-corner(eventShadowFrame, 24)
+-- Builder function to create event modal UI
+local function buildEventModal()
+	EventUI.overlay = Instance.new("Frame")
+	EventUI.overlay.Name = "EventOverlay"
+	EventUI.overlay.Size = UDim2.fromScale(1, 1)
+	EventUI.overlay.BackgroundColor3 = C.Black
+	EventUI.overlay.BackgroundTransparency = 0.45
+	EventUI.overlay.Visible = false
+	EventUI.overlay.ZIndex = 60
+	EventUI.overlay.Parent = screenGui
 
--- BitLife-style colored shell (outer border) - premium look
-local eventShell = Instance.new("Frame")
-eventShell.Name = "EventShell"
-eventShell.Size = UDim2.new(1, -4, 1, -4)
-eventShell.Position = UDim2.new(0, 2, 0, 2)
-eventShell.BackgroundColor3 = C.Red  -- BitLife signature red
-eventShell.ZIndex = 62
-eventShell.Parent = eventShadowFrame
-corner(eventShell, 22)
-stroke(eventShell, 2, 0.3, C.RedDark)
-createShadow(eventShell, 6, 20, C.Black, 0.85)  -- Better shadow
+	-- TINY PHONE FIX: More compact modal width
+	local eventWidth = modalWidth(360)
+	EventUI.shadowFrame = Instance.new("Frame")
+	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
+	EventUI.shadowFrame.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	EventUI.shadowFrame.Position = UDim2.fromScale(0.5, 0.5)
+	EventUI.shadowFrame.BackgroundColor3 = C.Black
+	EventUI.shadowFrame.BackgroundTransparency = 0.88
+	EventUI.shadowFrame.ZIndex = 61
+	EventUI.shadowFrame.Parent = EventUI.overlay
+	corner(EventUI.shadowFrame, IS_TINY_PHONE and 14 or px(24))
 
--- inner white card - clean BitLife style
-local eventCard = Instance.new("Frame")
-eventCard.Name = "EventCard"
-eventCard.Size = UDim2.new(1, -8, 1, -8)
-eventCard.Position = UDim2.new(0, 4, 0, 4)
-eventCard.BackgroundColor3 = C.White
-eventCard.ZIndex = 63
-eventCard.Parent = eventShell
-corner(eventCard, 20)
+	-- BitLife-style colored shell (outer border) - thinner on tiny phones
+	local shellMargin = IS_TINY_PHONE and 2 or 4
+	EventUI.shell = Instance.new("Frame")
+	EventUI.shell.Name = "EventShell"
+	EventUI.shell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
+	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
+	EventUI.shell.BackgroundColor3 = C.Red
+	EventUI.shell.ZIndex = 62
+	EventUI.shell.Parent = EventUI.shadowFrame
+	corner(EventUI.shell, IS_TINY_PHONE and 12 or px(22))
+	stroke(EventUI.shell, IS_TINY_PHONE and 1 or 2, 0.3, C.RedDark)
+	if not IS_TINY_PHONE then
+		createShadow(EventUI.shell, 6, px(20), C.Black, 0.85)
+	end
 
-local eventLayout = Instance.new("UIListLayout")
-eventLayout.Padding = UDim.new(0, 0)
-eventLayout.Parent = eventCard
+	-- inner white card - clean BitLife style, thinner borders on tiny
+	local cardMargin = IS_TINY_PHONE and 4 or 8
+	EventUI.card = Instance.new("Frame")
+	EventUI.card.Name = "EventCard"
+	EventUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	EventUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
+	EventUI.card.BackgroundColor3 = C.White
+	EventUI.card.ZIndex = 63
+	EventUI.card.Parent = EventUI.shell
+	corner(EventUI.card, IS_TINY_PHONE and 10 or px(20))
 
--- header with avatar + relation tag
-local eventHeader = Instance.new("Frame")
-eventHeader.Name = "Header"
-eventHeader.Size = UDim2.new(1, 0, 0, 76)
-eventHeader.BackgroundColor3 = C.White
-eventHeader.LayoutOrder = 1
-eventHeader.Visible = false
-eventHeader.ZIndex = 64
-eventHeader.Parent = eventCard
-pad(eventHeader, 20, 20, 16, 12)
+	local eventLayout = Instance.new("UIListLayout")
+	eventLayout.Padding = UDim.new(0, 0)
+	eventLayout.Parent = EventUI.card
 
-local eventAvatar = Instance.new("Frame")
-eventAvatar.Size = UDim2.new(0, 50, 0, 50)
-eventAvatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
-eventAvatar.ZIndex = 65
-eventAvatar.Parent = eventHeader
-corner(eventAvatar, 25)
-stroke(eventAvatar, 2, 0.3, C.Red)
+	-- TINY PHONE FIX: Much smaller header
+	local eventHeaderHeight = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 54 or px(76))
+	EventUI.header = Instance.new("Frame")
+	EventUI.header.Name = "Header"
+	EventUI.header.Size = UDim2.new(1, 0, 0, eventHeaderHeight)
+	EventUI.header.BackgroundColor3 = C.White
+	EventUI.header.LayoutOrder = 1
+	EventUI.header.Visible = false
+	EventUI.header.ZIndex = 64
+	EventUI.header.Parent = EventUI.card
+	pad(EventUI.header, padSize(16), padSize(16), padSize(10), padSize(8))
 
-local eventAvatarEmoji = Instance.new("TextLabel")
-eventAvatarEmoji.Size = UDim2.fromScale(1, 1)
-eventAvatarEmoji.BackgroundTransparency = 1
-eventAvatarEmoji.Font = F.Body
-eventAvatarEmoji.TextSize = 26
-eventAvatarEmoji.Text = "👤"
-eventAvatarEmoji.ZIndex = 66
-eventAvatarEmoji.Parent = eventAvatar
+	-- TINY PHONE FIX: Smaller avatar
+	local eventAvatarSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 36 or px(50))
+	EventUI.avatar = Instance.new("Frame")
+	EventUI.avatar.Size = UDim2.new(0, eventAvatarSize, 0, eventAvatarSize)
+	EventUI.avatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
+	EventUI.avatar.ZIndex = 65
+	EventUI.avatar.Parent = EventUI.header
+	corner(EventUI.avatar, eventAvatarSize/2)
+	stroke(EventUI.avatar, IS_TINY_PHONE and 1 or 2, 0.3, C.Red)
 
-local eventNameLbl = Instance.new("TextLabel")
-eventNameLbl.Size = UDim2.new(0.6, 0, 0, 22)
-eventNameLbl.Position = UDim2.new(0, 60, 0, 8)
-eventNameLbl.BackgroundTransparency = 1
-eventNameLbl.Font = F.Title
-eventNameLbl.TextSize = 16
-eventNameLbl.TextColor3 = C.Gray900
-eventNameLbl.TextXAlignment = Enum.TextXAlignment.Left
-eventNameLbl.Text = "Person Name"
-eventNameLbl.ZIndex = 65
-eventNameLbl.Parent = eventHeader
+	EventUI.avatarEmoji = Instance.new("TextLabel")
+	EventUI.avatarEmoji.Size = UDim2.fromScale(1, 1)
+	EventUI.avatarEmoji.BackgroundTransparency = 1
+	EventUI.avatarEmoji.Font = F.Body
+	EventUI.avatarEmoji.TextSize = IS_TINY_PHONE and 16 or textSize(26)
+	EventUI.avatarEmoji.Text = "👤"
+	EventUI.avatarEmoji.ZIndex = 66
+	EventUI.avatarEmoji.Parent = EventUI.avatar
 
-local relationBanner = Instance.new("Frame")
-relationBanner.Size = UDim2.new(0, 115, 0, 26)
-relationBanner.AnchorPoint = Vector2.new(1, 0)
-relationBanner.Position = UDim2.new(1, 0, 0, 8)
-relationBanner.BackgroundColor3 = C.Red
-relationBanner.ZIndex = 65
-relationBanner.Parent = eventHeader
-pill(relationBanner)
+	EventUI.nameLbl = Instance.new("TextLabel")
+	EventUI.nameLbl.Size = UDim2.new(0.6, 0, 0, IS_TINY_PHONE and 16 or px(22))
+	EventUI.nameLbl.Position = UDim2.new(0, eventAvatarSize + padSize(8), 0, padSize(4))
+	EventUI.nameLbl.BackgroundTransparency = 1
+	EventUI.nameLbl.Font = F.Title
+	EventUI.nameLbl.TextSize = IS_TINY_PHONE and 11 or textSize(16)
+	EventUI.nameLbl.TextColor3 = C.Gray900
+	EventUI.nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+	EventUI.nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+	EventUI.nameLbl.Text = "Person Name"
+	EventUI.nameLbl.ZIndex = 65
+	EventUI.nameLbl.Parent = EventUI.header
 
-local relationLbl = Instance.new("TextLabel")
-relationLbl.Size = UDim2.fromScale(1, 0.9)
-relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
-relationLbl.BackgroundTransparency = 1
-relationLbl.Font = F.Button
-relationLbl.TextSize = 11
-relationLbl.TextColor3 = C.White
-relationLbl.Text = "Classmate"
-relationLbl.ZIndex = 66
-relationLbl.Parent = relationBanner
+	-- TINY PHONE FIX: Smaller relation banner
+	local relationBannerWidth = IS_TINY_PHONE and 65 or (IS_SMALL_PHONE and 80 or px(115))
+	local relationBannerHeight = IS_TINY_PHONE and 18 or px(26)
+	EventUI.relationBanner = Instance.new("Frame")
+	EventUI.relationBanner.Size = UDim2.new(0, relationBannerWidth, 0, relationBannerHeight)
+	EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
+	EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
+	EventUI.relationBanner.BackgroundColor3 = C.Red
+	EventUI.relationBanner.ZIndex = 65
+	EventUI.relationBanner.Parent = EventUI.header
+	pill(EventUI.relationBanner)
 
--- title section (emoji + event title) - BitLife style with proper sizing
-local titleSection = Instance.new("Frame")
-titleSection.Size = UDim2.new(1, 0, 0, 0)
-titleSection.AutomaticSize = Enum.AutomaticSize.Y  -- EXPAND to fit content
-titleSection.BackgroundTransparency = 1
-titleSection.LayoutOrder = 2
-titleSection.ZIndex = 64
-titleSection.Parent = eventCard
+	EventUI.relationLbl = Instance.new("TextLabel")
+	EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
+	EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
+	EventUI.relationLbl.BackgroundTransparency = 1
+	EventUI.relationLbl.Font = F.Button
+	EventUI.relationLbl.TextSize = IS_TINY_PHONE and 9 or textSize(11)
+	EventUI.relationLbl.TextColor3 = C.White
+	EventUI.relationLbl.Text = "Classmate"
+	EventUI.relationLbl.ZIndex = 66
+	EventUI.relationLbl.Parent = EventUI.relationBanner
 
--- Add padding to title section so emoji doesn't clip at top
-local titlePadding = Instance.new("UIPadding")
-titlePadding.PaddingTop = UDim.new(0, 16)
-titlePadding.PaddingBottom = UDim.new(0, 8)
-titlePadding.PaddingLeft = UDim.new(0, 16)
-titlePadding.PaddingRight = UDim.new(0, 16)
-titlePadding.Parent = titleSection
+	-- title section (emoji + event title) - TINY PHONE FIX: Much more compact
+	local titleSection = Instance.new("Frame")
+	titleSection.Size = UDim2.new(1, 0, 0, 0)
+	titleSection.AutomaticSize = Enum.AutomaticSize.Y
+	titleSection.BackgroundTransparency = 1
+	titleSection.LayoutOrder = 2
+	titleSection.ZIndex = 64
+	titleSection.Parent = EventUI.card
 
-local titleLayout = Instance.new("UIListLayout")
-titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top  -- Top align so it stacks properly
-titleLayout.Padding = UDim.new(0, 10)
-titleLayout.Parent = titleSection
+	-- TINY PHONE FIX: Tighter padding
+	local titlePadTop = IS_TINY_PHONE and 8 or padSize(16)
+	local titlePadBottom = IS_TINY_PHONE and 4 or padSize(8)
+	local titlePadSide = IS_TINY_PHONE and 8 or padSize(16)
+	local titlePadding = Instance.new("UIPadding")
+	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
+	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
+	titlePadding.PaddingLeft = UDim.new(0, titlePadSide)
+	titlePadding.PaddingRight = UDim.new(0, titlePadSide)
+	titlePadding.Parent = titleSection
 
--- Emoji container with proper sizing
-local eventEmoji = Instance.new("TextLabel")
-eventEmoji.Size = UDim2.new(0, 64, 0, 64)  -- Slightly smaller for balance
-eventEmoji.BackgroundTransparency = 1
-eventEmoji.Font = F.Body
-eventEmoji.TextSize = 52  -- Balanced emoji size
-eventEmoji.Text = "🙂"
-eventEmoji.LayoutOrder = 1
-eventEmoji.ZIndex = 65
-eventEmoji.Parent = titleSection
+	local titleLayout = Instance.new("UIListLayout")
+	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	titleLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or padSize(10))
+	titleLayout.Parent = titleSection
 
--- Event title - AutomaticSize so it NEVER clips!
-local eventTitle = Instance.new("TextLabel")
-eventTitle.Size = UDim2.new(1, 0, 0, 0)  -- Full width, auto height
-eventTitle.AutomaticSize = Enum.AutomaticSize.Y  -- EXPAND for long titles
-eventTitle.BackgroundTransparency = 1
-eventTitle.Font = F.Title
-eventTitle.TextSize = 26  -- Slightly smaller for better fit
-eventTitle.TextColor3 = C.Gray900
-eventTitle.Text = "Life Event"
-eventTitle.TextWrapped = true  -- Wrap long titles to multiple lines
-eventTitle.TextXAlignment = Enum.TextXAlignment.Center
-eventTitle.LayoutOrder = 2
-eventTitle.ZIndex = 65
-eventTitle.Parent = titleSection
+	-- TINY PHONE FIX: Much smaller emoji
+	local eventEmojiSize = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 44 or px(64))
+	EventUI.emoji = Instance.new("TextLabel")
+	EventUI.emoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
+	EventUI.emoji.BackgroundTransparency = 1
+	EventUI.emoji.Font = F.Body
+	EventUI.emoji.TextSize = IS_TINY_PHONE and 28 or textSize(52)
+	EventUI.emoji.Text = "🙂"
+	EventUI.emoji.LayoutOrder = 1
+	EventUI.emoji.ZIndex = 65
+	EventUI.emoji.Parent = titleSection
 
--- body + "What will you do?" question
-local bodySection = Instance.new("Frame")
-bodySection.Size = UDim2.new(1, 0, 0, 0)
-bodySection.AutomaticSize = Enum.AutomaticSize.Y
-bodySection.BackgroundTransparency = 1
-bodySection.LayoutOrder = 3
-bodySection.ZIndex = 64
-bodySection.Parent = eventCard
-pad(bodySection, 28, 28, 0, 12)
+	-- TINY PHONE FIX: Smaller title text
+	EventUI.title = Instance.new("TextLabel")
+	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.title.BackgroundTransparency = 1
+	EventUI.title.Font = F.Title
+	EventUI.title.TextSize = IS_TINY_PHONE and 16 or textSize(26)
+	EventUI.title.TextColor3 = C.Gray900
+	EventUI.title.Text = "Life Event"
+	EventUI.title.TextWrapped = true
+	EventUI.title.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.title.LayoutOrder = 2
+	EventUI.title.ZIndex = 65
+	EventUI.title.Parent = titleSection
 
-local bodyLayout = Instance.new("UIListLayout")
-bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-bodyLayout.Padding = UDim.new(0, 10)
-bodyLayout.Parent = bodySection
+	-- body + "What will you do?" question - TINY PHONE FIX
+	local bodySection = Instance.new("Frame")
+	bodySection.Size = UDim2.new(1, 0, 0, 0)
+	bodySection.AutomaticSize = Enum.AutomaticSize.Y
+	bodySection.BackgroundTransparency = 1
+	bodySection.LayoutOrder = 3
+	bodySection.ZIndex = 64
+	bodySection.Parent = EventUI.card
+	local bodyPadSide = IS_TINY_PHONE and 10 or padSize(28)
+	local bodyPadBottom = IS_TINY_PHONE and 6 or padSize(12)
+	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
-local eventBody = Instance.new("TextLabel")
-eventBody.Size = UDim2.new(1, 0, 0, 0)
-eventBody.AutomaticSize = Enum.AutomaticSize.Y
-eventBody.BackgroundTransparency = 1
-eventBody.Font = F.Body
-eventBody.TextSize = 20  -- 20% BIGGER (was 16)
-eventBody.TextColor3 = C.Gray600
-eventBody.TextWrapped = true
-eventBody.TextXAlignment = Enum.TextXAlignment.Center
-eventBody.LineHeight = 1.5
-eventBody.RichText = true
-eventBody.Text = ""
-eventBody.LayoutOrder = 1
-eventBody.ZIndex = 65
-eventBody.Parent = bodySection
+	local bodyLayout = Instance.new("UIListLayout")
+	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	bodyLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or padSize(10))
+	bodyLayout.Parent = bodySection
 
--- FIXED QUESTION LABEL: wraps + auto height so long questions stay inside card
-local eventQuestion = Instance.new("TextLabel")
-eventQuestion.Name = "EventQuestion"
-eventQuestion.Size = UDim2.new(1, 0, 0, 0)
-eventQuestion.AutomaticSize = Enum.AutomaticSize.Y
-eventQuestion.BackgroundTransparency = 1
-eventQuestion.Font = F.Title
-eventQuestion.TextSize = 18  -- BIGGER (was 15)
-eventQuestion.TextColor3 = C.Gray800
-eventQuestion.Text = "What will you do?"
-eventQuestion.TextXAlignment = Enum.TextXAlignment.Center
-eventQuestion.TextWrapped = true
-eventQuestion.LineHeight = 1.25
-eventQuestion.LayoutOrder = 2
-eventQuestion.ZIndex = 65
-eventQuestion.Parent = bodySection
+	-- TINY PHONE FIX: Smaller body text with tighter line height
+	EventUI.body = Instance.new("TextLabel")
+	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.body.BackgroundTransparency = 1
+	EventUI.body.Font = F.Body
+	EventUI.body.TextSize = IS_TINY_PHONE and 12 or textSize(20)
+	EventUI.body.TextColor3 = C.Gray600
+	EventUI.body.TextWrapped = true
+	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.body.LineHeight = IS_TINY_PHONE and 1.2 or 1.5
+	EventUI.body.RichText = true
+	EventUI.body.Text = ""
+	EventUI.body.LayoutOrder = 1
+	EventUI.body.ZIndex = 65
+	EventUI.body.Parent = bodySection
 
--- choices
-local choicesSection = Instance.new("Frame")
-choicesSection.Size = UDim2.new(1, 0, 0, 0)
-choicesSection.AutomaticSize = Enum.AutomaticSize.Y
-choicesSection.BackgroundTransparency = 1
-choicesSection.LayoutOrder = 4
-choicesSection.ZIndex = 64
-choicesSection.Parent = eventCard
+	-- TINY PHONE FIX: Smaller question text
+	EventUI.question = Instance.new("TextLabel")
+	EventUI.question.Name = "EventQuestion"
+	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.question.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.question.BackgroundTransparency = 1
+	EventUI.question.Font = F.Title
+	EventUI.question.TextSize = IS_TINY_PHONE and 11 or textSize(18)
+	EventUI.question.TextColor3 = C.Gray800
+	EventUI.question.Text = "What will you do?"
+	EventUI.question.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.question.TextWrapped = true
+	EventUI.question.LineHeight = IS_TINY_PHONE and 1.1 or 1.25
+	EventUI.question.LayoutOrder = 2
+	EventUI.question.ZIndex = 65
+	EventUI.question.Parent = bodySection
 
-pad(choicesSection, 22, 22, 4, 24)
+	-- choices - TINY PHONE FIX: Tighter spacing
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.LayoutOrder = 4
+	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.Parent = EventUI.card
 
-local choicesLayout = Instance.new("UIListLayout")
-choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-choicesLayout.Padding = UDim.new(0, 10)
-choicesLayout.Parent = choicesSection
+	local choicePadSide = IS_TINY_PHONE and 8 or padSize(22)
+	local choicePadTop = IS_TINY_PHONE and 2 or padSize(4)
+	local choicePadBottom = IS_TINY_PHONE and 10 or padSize(24)
+	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
-local activeChoiceButtons = {}
-local currentEventId       = nil
-local surpriseConnection   = nil
-local currentHideTween     = nil  -- Track hide animation to cancel on new event
+	local choicesLayout = Instance.new("UIListLayout")
+	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choicesLayout.Padding = UDim.new(0, IS_TINY_PHONE and 5 or padSize(10))
+	choicesLayout.Parent = EventUI.choicesSection
+end
+
+-- Build the event modal immediately
+buildEventModal()
+
+-- Aliases for read-only backward compatibility with existing code
+local eventOverlay = EventUI.overlay
+local eventShadowFrame = EventUI.shadowFrame
+local eventShell = EventUI.shell
+local eventCard = EventUI.card
+local eventHeader = EventUI.header
+local eventAvatar = EventUI.avatar
+local eventAvatarEmoji = EventUI.avatarEmoji
+local eventNameLbl = EventUI.nameLbl
+local relationBanner = EventUI.relationBanner
+local relationLbl = EventUI.relationLbl
+local eventEmoji = EventUI.emoji
+local eventTitle = EventUI.title
+local eventBody = EventUI.body
+local eventQuestion = EventUI.question
+local choicesSection = EventUI.choicesSection
 
 local function clearChoices()
-	for _, b in ipairs(activeChoiceButtons) do
+	for _, b in ipairs(EventUI.activeChoiceButtons) do
 		b:Destroy()
 	end
-	table.clear(activeChoiceButtons)
+	table.clear(EventUI.activeChoiceButtons)
 
-	if surpriseConnection then
-		surpriseConnection:Disconnect()
-		surpriseConnection = nil
+	if EventUI.surpriseConnection then
+		EventUI.surpriseConnection:Disconnect()
+		EventUI.surpriseConnection = nil
 	end
 end
 
--- Surprise me (bottom link)
+-- MOBILE FIX: Touch-friendly surprise button
 local surpriseBtn = Instance.new("TextButton")
-surpriseBtn.Size = UDim2.new(1, 0, 0, 36)
+surpriseBtn.Size = UDim2.new(1, 0, 0, btnHeight(36))
 surpriseBtn.BackgroundTransparency = 1
 surpriseBtn.Font = F.Medium
-surpriseBtn.TextSize = 14
+surpriseBtn.TextSize = textSize(14)
 surpriseBtn.TextColor3 = C.Gray400
 surpriseBtn.Text = "✨ Surprise me!"
 surpriseBtn.AutoButtonColor = false
@@ -1609,7 +1805,7 @@ surpriseBtn.MouseLeave:Connect(function()
 end)
 
 ----------------------------------------------------------------
--- DEATH OVERLAY
+-- DEATH OVERLAY - MOBILE FIX: Responsive death screen
 ----------------------------------------------------------------
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -1617,278 +1813,289 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════════════
 local DeathUI = {}
 
-DeathUI.overlay = Instance.new("Frame")
-DeathUI.overlay.Name = "DeathOverlay"
-DeathUI.overlay.Size = UDim2.fromScale(1, 1)
-DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-DeathUI.overlay.BackgroundTransparency = 0
-DeathUI.overlay.Visible = false
-DeathUI.overlay.ZIndex = 120
-DeathUI.overlay.Parent = screenGui
+-- Builder function to reduce local variable count in module scope
+local function buildDeathUI()
+	DeathUI.overlay = Instance.new("Frame")
+	DeathUI.overlay.Name = "DeathOverlay"
+	DeathUI.overlay.Size = UDim2.fromScale(1, 1)
+	DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.overlay.BackgroundTransparency = 0
+	DeathUI.overlay.Visible = false
+	DeathUI.overlay.ZIndex = 120
+	DeathUI.overlay.Parent = screenGui
 
--- Scrollable container for all content
-DeathUI.scroll = Instance.new("ScrollingFrame")
-DeathUI.scroll.Name = "DeathScroll"
-DeathUI.scroll.Size = UDim2.fromScale(1, 1)
-DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-DeathUI.scroll.BackgroundTransparency = 1
-DeathUI.scroll.ScrollBarThickness = 4
-DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
-DeathUI.scroll.ZIndex = 121
-DeathUI.scroll.Parent = DeathUI.overlay
+	-- Scrollable container for all content - MOBILE FIX: Thicker scrollbar for touch
+	DeathUI.scroll = Instance.new("ScrollingFrame")
+	DeathUI.scroll.Name = "DeathScroll"
+	DeathUI.scroll.Size = UDim2.fromScale(1, 1)
+	DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	DeathUI.scroll.BackgroundTransparency = 1
+	DeathUI.scroll.ScrollBarThickness = IS_MOBILE and 8 or 4
+	DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
+	DeathUI.scroll.ZIndex = 121
+	DeathUI.scroll.Parent = DeathUI.overlay
 
-local deathScrollLayout = Instance.new("UIListLayout")
-deathScrollLayout.Padding = UDim.new(0, 0)
-deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-deathScrollLayout.Parent = DeathUI.scroll
+	local deathScrollLayout = Instance.new("UIListLayout")
+	deathScrollLayout.Padding = UDim.new(0, 0)
+	deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	deathScrollLayout.Parent = DeathUI.scroll
 
--- Header section with gravestone
-DeathUI.headerSection = Instance.new("Frame")
-DeathUI.headerSection.Name = "Header"
-DeathUI.headerSection.Size = UDim2.new(1, 0, 0, 280)
-DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
-DeathUI.headerSection.ZIndex = 121
-DeathUI.headerSection.LayoutOrder = 1
-DeathUI.headerSection.Parent = DeathUI.scroll
+	-- MOBILE FIX: Responsive header height
+	local deathHeaderHeight = IS_SMALL_PHONE and 220 or px(280)
+	DeathUI.headerSection = Instance.new("Frame")
+	DeathUI.headerSection.Name = "Header"
+	DeathUI.headerSection.Size = UDim2.new(1, 0, 0, deathHeaderHeight)
+	DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+	DeathUI.headerSection.ZIndex = 121
+	DeathUI.headerSection.LayoutOrder = 1
+	DeathUI.headerSection.Parent = DeathUI.scroll
 
--- Gravestone emoji
-DeathUI.emojiFrame = Instance.new("Frame")
-DeathUI.emojiFrame.Size = UDim2.new(0, 100, 0, 100)
-DeathUI.emojiFrame.Position = UDim2.new(0.5, -50, 0, 30)
-DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
-DeathUI.emojiFrame.ZIndex = 122
-DeathUI.emojiFrame.Parent = DeathUI.headerSection
-corner(DeathUI.emojiFrame, 50)
+	-- MOBILE FIX: Responsive gravestone emoji
+	local deathEmojiSize = IS_SMALL_PHONE and 70 or px(100)
+	DeathUI.emojiFrame = Instance.new("Frame")
+	DeathUI.emojiFrame.Size = UDim2.new(0, deathEmojiSize, 0, deathEmojiSize)
+	DeathUI.emojiFrame.Position = UDim2.new(0.5, -deathEmojiSize/2, 0, padSize(30))
+	DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
+	DeathUI.emojiFrame.ZIndex = 122
+	DeathUI.emojiFrame.Parent = DeathUI.headerSection
+	corner(DeathUI.emojiFrame, deathEmojiSize/2)
 
-local deathEmojiLabel = Instance.new("TextLabel")
-deathEmojiLabel.Size = UDim2.fromScale(1, 1)
-deathEmojiLabel.BackgroundTransparency = 1
-deathEmojiLabel.Font = F.Body
-deathEmojiLabel.TextSize = 56
-deathEmojiLabel.Text = "⚰️"
-deathEmojiLabel.ZIndex = 123
-deathEmojiLabel.Parent = DeathUI.emojiFrame
+	local deathEmojiLabel = Instance.new("TextLabel")
+	deathEmojiLabel.Size = UDim2.fromScale(1, 1)
+	deathEmojiLabel.BackgroundTransparency = 1
+	deathEmojiLabel.Font = F.Body
+	deathEmojiLabel.TextSize = textSize(56)
+	deathEmojiLabel.Text = "⚰️"
+	deathEmojiLabel.ZIndex = 123
+	deathEmojiLabel.Parent = DeathUI.emojiFrame
 
--- "REST IN PEACE" header
-local ripLabel = Instance.new("TextLabel")
-ripLabel.Name = "RIP"
-ripLabel.Size = UDim2.new(1, 0, 0, 28)
-ripLabel.Position = UDim2.new(0, 0, 0, 140)
-ripLabel.BackgroundTransparency = 1
-ripLabel.Font = F.Medium
-ripLabel.TextSize = 14
-ripLabel.TextColor3 = C.Gray400
-ripLabel.Text = "REST IN PEACE"
-ripLabel.ZIndex = 122
-ripLabel.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive RIP label positioning
+	local ripLabelY = deathEmojiSize + padSize(40)
+	local ripLabel = Instance.new("TextLabel")
+	ripLabel.Name = "RIP"
+	ripLabel.Size = UDim2.new(1, 0, 0, px(28))
+	ripLabel.Position = UDim2.new(0, 0, 0, ripLabelY)
+	ripLabel.BackgroundTransparency = 1
+	ripLabel.Font = F.Medium
+	ripLabel.TextSize = textSize(14)
+	ripLabel.TextColor3 = C.Gray400
+	ripLabel.Text = "REST IN PEACE"
+	ripLabel.ZIndex = 122
+	ripLabel.Parent = DeathUI.headerSection
 
--- Name and lifespan
-DeathUI.title = Instance.new("TextLabel")
-DeathUI.title.Size = UDim2.new(1, 0, 0, 36)
-DeathUI.title.Position = UDim2.new(0, 0, 0, 168)
-DeathUI.title.BackgroundTransparency = 1
-DeathUI.title.Font = F.Title
-DeathUI.title.TextSize = 28
-DeathUI.title.TextColor3 = C.White
-DeathUI.title.TextWrapped = true
-DeathUI.title.Text = "Name Here"
-DeathUI.title.ZIndex = 122
-DeathUI.title.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive name text
+	local titleLabelY = ripLabelY + px(28)
+	DeathUI.title = Instance.new("TextLabel")
+	DeathUI.title.Size = UDim2.new(1, -padSize(32), 0, px(36))
+	DeathUI.title.Position = UDim2.new(0, padSize(16), 0, titleLabelY)
+	DeathUI.title.BackgroundTransparency = 1
+	DeathUI.title.Font = F.Title
+	DeathUI.title.TextSize = textSize(28)
+	DeathUI.title.TextColor3 = C.White
+	DeathUI.title.TextWrapped = true
+	DeathUI.title.Text = "Name Here"
+	DeathUI.title.ZIndex = 122
+	DeathUI.title.Parent = DeathUI.headerSection
 
--- Birth - Death years
-DeathUI.lifespan = Instance.new("TextLabel")
-DeathUI.lifespan.Name = "Lifespan"
-DeathUI.lifespan.Size = UDim2.new(1, 0, 0, 24)
-DeathUI.lifespan.Position = UDim2.new(0, 0, 0, 204)
-DeathUI.lifespan.BackgroundTransparency = 1
-DeathUI.lifespan.Font = F.Body
-DeathUI.lifespan.TextSize = 16
-DeathUI.lifespan.TextColor3 = C.Gray300
-DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
-DeathUI.lifespan.ZIndex = 122
-DeathUI.lifespan.Parent = DeathUI.headerSection
+	-- MOBILE FIX: Responsive lifespan text
+	local lifespanY = titleLabelY + px(36)
+	DeathUI.lifespan = Instance.new("TextLabel")
+	DeathUI.lifespan.Name = "Lifespan"
+	DeathUI.lifespan.Size = UDim2.new(1, 0, 0, px(24))
+	DeathUI.lifespan.Position = UDim2.new(0, 0, 0, lifespanY)
+	DeathUI.lifespan.BackgroundTransparency = 1
+	DeathUI.lifespan.Font = F.Body
+	DeathUI.lifespan.TextSize = textSize(16)
+	DeathUI.lifespan.TextColor3 = C.Gray300
+	DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
+	DeathUI.lifespan.ZIndex = 122
+	DeathUI.lifespan.Parent = DeathUI.headerSection
 
--- Cause of death
-DeathUI.cause = Instance.new("TextLabel")
-DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
-DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
-DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.cause.BackgroundTransparency = 1
-DeathUI.cause.Font = F.Body
-DeathUI.cause.TextSize = 14
-DeathUI.cause.TextColor3 = C.Gray400
-DeathUI.cause.TextWrapped = true
-DeathUI.cause.Text = "Cause of death"
-DeathUI.cause.ZIndex = 122
-DeathUI.cause.Parent = DeathUI.headerSection
+	-- Cause of death
+	DeathUI.cause = Instance.new("TextLabel")
+	DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
+	DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
+	DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.cause.BackgroundTransparency = 1
+	DeathUI.cause.Font = F.Body
+	DeathUI.cause.TextSize = 14
+	DeathUI.cause.TextColor3 = C.Gray400
+	DeathUI.cause.TextWrapped = true
+	DeathUI.cause.Text = "Cause of death"
+	DeathUI.cause.ZIndex = 122
+	DeathUI.cause.Parent = DeathUI.headerSection
 
--- Stats container
-DeathUI.statsSection = Instance.new("Frame")
-DeathUI.statsSection.Name = "StatsSection"
-DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
-DeathUI.statsSection.ZIndex = 121
-DeathUI.statsSection.LayoutOrder = 2
-DeathUI.statsSection.Parent = DeathUI.scroll
+	-- Stats container
+	DeathUI.statsSection = Instance.new("Frame")
+	DeathUI.statsSection.Name = "StatsSection"
+	DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.statsSection.ZIndex = 121
+	DeathUI.statsSection.LayoutOrder = 2
+	DeathUI.statsSection.Parent = DeathUI.scroll
 
-local statsSectionPad = Instance.new("UIPadding")
-statsSectionPad.PaddingTop = UDim.new(0, 20)
-statsSectionPad.PaddingBottom = UDim.new(0, 20)
-statsSectionPad.PaddingLeft = UDim.new(0, 16)
-statsSectionPad.PaddingRight = UDim.new(0, 16)
-statsSectionPad.Parent = DeathUI.statsSection
+	local statsSectionPad = Instance.new("UIPadding")
+	statsSectionPad.PaddingTop = UDim.new(0, 20)
+	statsSectionPad.PaddingBottom = UDim.new(0, 20)
+	statsSectionPad.PaddingLeft = UDim.new(0, 16)
+	statsSectionPad.PaddingRight = UDim.new(0, 16)
+	statsSectionPad.Parent = DeathUI.statsSection
 
-local statsSectionLayout = Instance.new("UIListLayout")
-statsSectionLayout.Padding = UDim.new(0, 12)
-statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-statsSectionLayout.Parent = DeathUI.statsSection
+	local statsSectionLayout = Instance.new("UIListLayout")
+	statsSectionLayout.Padding = UDim.new(0, 12)
+	statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	statsSectionLayout.Parent = DeathUI.statsSection
 
--- Stats title
-local statsTitle = Instance.new("TextLabel")
-statsTitle.Name = "StatsTitle"
-statsTitle.Size = UDim2.new(1, 0, 0, 28)
-statsTitle.BackgroundTransparency = 1
-statsTitle.Font = F.Title
-statsTitle.TextSize = 18
-statsTitle.TextColor3 = C.White
-statsTitle.TextXAlignment = Enum.TextXAlignment.Left
-statsTitle.Text = "📊 LIFE STATISTICS"
-statsTitle.LayoutOrder = 0
-statsTitle.ZIndex = 122
-statsTitle.Parent = DeathUI.statsSection
+	-- Stats title
+	local statsTitle = Instance.new("TextLabel")
+	statsTitle.Name = "StatsTitle"
+	statsTitle.Size = UDim2.new(1, 0, 0, 28)
+	statsTitle.BackgroundTransparency = 1
+	statsTitle.Font = F.Title
+	statsTitle.TextSize = 18
+	statsTitle.TextColor3 = C.White
+	statsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	statsTitle.Text = "📊 LIFE STATISTICS"
+	statsTitle.LayoutOrder = 0
+	statsTitle.ZIndex = 122
+	statsTitle.Parent = DeathUI.statsSection
 
-DeathUI.statsFrame = Instance.new("Frame")
-DeathUI.statsFrame.Name = "StatsFrame"
-DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.statsFrame.BackgroundTransparency = 1
-DeathUI.statsFrame.LayoutOrder = 1
-DeathUI.statsFrame.ZIndex = 122
-DeathUI.statsFrame.Parent = DeathUI.statsSection
+	DeathUI.statsFrame = Instance.new("Frame")
+	DeathUI.statsFrame.Name = "StatsFrame"
+	DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsFrame.BackgroundTransparency = 1
+	DeathUI.statsFrame.LayoutOrder = 1
+	DeathUI.statsFrame.ZIndex = 122
+	DeathUI.statsFrame.Parent = DeathUI.statsSection
 
-local deathStatsLayout = Instance.new("UIListLayout")
-deathStatsLayout.Padding = UDim.new(0, 8)
-deathStatsLayout.Parent = DeathUI.statsFrame
+	local deathStatsLayout = Instance.new("UIListLayout")
+	deathStatsLayout.Padding = UDim.new(0, 8)
+	deathStatsLayout.Parent = DeathUI.statsFrame
 
--- Achievements section
-DeathUI.achievementsSection = Instance.new("Frame")
-DeathUI.achievementsSection.Name = "AchievementsSection"
-DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
-DeathUI.achievementsSection.ZIndex = 121
-DeathUI.achievementsSection.LayoutOrder = 3
-DeathUI.achievementsSection.Parent = DeathUI.scroll
+	-- Achievements section
+	DeathUI.achievementsSection = Instance.new("Frame")
+	DeathUI.achievementsSection.Name = "AchievementsSection"
+	DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
+	DeathUI.achievementsSection.ZIndex = 121
+	DeathUI.achievementsSection.LayoutOrder = 3
+	DeathUI.achievementsSection.Parent = DeathUI.scroll
 
-local achievePad = Instance.new("UIPadding")
-achievePad.PaddingTop = UDim.new(0, 16)
-achievePad.PaddingBottom = UDim.new(0, 16)
-achievePad.PaddingLeft = UDim.new(0, 16)
-achievePad.PaddingRight = UDim.new(0, 16)
-achievePad.Parent = DeathUI.achievementsSection
+	local achievePad = Instance.new("UIPadding")
+	achievePad.PaddingTop = UDim.new(0, 16)
+	achievePad.PaddingBottom = UDim.new(0, 16)
+	achievePad.PaddingLeft = UDim.new(0, 16)
+	achievePad.PaddingRight = UDim.new(0, 16)
+	achievePad.Parent = DeathUI.achievementsSection
 
-local achieveLayout = Instance.new("UIListLayout")
-achieveLayout.Padding = UDim.new(0, 10)
-achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
-achieveLayout.Parent = DeathUI.achievementsSection
+	local achieveLayout = Instance.new("UIListLayout")
+	achieveLayout.Padding = UDim.new(0, 10)
+	achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	achieveLayout.Parent = DeathUI.achievementsSection
 
-local achieveTitle = Instance.new("TextLabel")
-achieveTitle.Name = "AchieveTitle"
-achieveTitle.Size = UDim2.new(1, 0, 0, 24)
-achieveTitle.BackgroundTransparency = 1
-achieveTitle.Font = F.Title
-achieveTitle.TextSize = 16
-achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
-achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
-achieveTitle.Text = "🏆 ACHIEVEMENTS"
-achieveTitle.LayoutOrder = 0
-achieveTitle.ZIndex = 122
-achieveTitle.Parent = DeathUI.achievementsSection
+	local achieveTitle = Instance.new("TextLabel")
+	achieveTitle.Name = "AchieveTitle"
+	achieveTitle.Size = UDim2.new(1, 0, 0, 24)
+	achieveTitle.BackgroundTransparency = 1
+	achieveTitle.Font = F.Title
+	achieveTitle.TextSize = 16
+	achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+	achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
+	achieveTitle.Text = "🏆 ACHIEVEMENTS"
+	achieveTitle.LayoutOrder = 0
+	achieveTitle.ZIndex = 122
+	achieveTitle.Parent = DeathUI.achievementsSection
 
-DeathUI.achieveFrame = Instance.new("Frame")
-DeathUI.achieveFrame.Name = "AchieveFrame"
-DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.achieveFrame.BackgroundTransparency = 1
-DeathUI.achieveFrame.LayoutOrder = 1
-DeathUI.achieveFrame.ZIndex = 122
-DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
+	DeathUI.achieveFrame = Instance.new("Frame")
+	DeathUI.achieveFrame.Name = "AchieveFrame"
+	DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achieveFrame.BackgroundTransparency = 1
+	DeathUI.achieveFrame.LayoutOrder = 1
+	DeathUI.achieveFrame.ZIndex = 122
+	DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
 
-local achieveListLayout = Instance.new("UIListLayout")
-achieveListLayout.Padding = UDim.new(0, 6)
-achieveListLayout.Parent = DeathUI.achieveFrame
+	local achieveListLayout = Instance.new("UIListLayout")
+	achieveListLayout.Padding = UDim.new(0, 6)
+	achieveListLayout.Parent = DeathUI.achieveFrame
 
--- Epitaph section
-DeathUI.epitaphSection = Instance.new("Frame")
-DeathUI.epitaphSection.Name = "EpitaphSection"
-DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
-DeathUI.epitaphSection.ZIndex = 121
-DeathUI.epitaphSection.LayoutOrder = 4
-DeathUI.epitaphSection.Parent = DeathUI.scroll
+	-- Epitaph section
+	DeathUI.epitaphSection = Instance.new("Frame")
+	DeathUI.epitaphSection.Name = "EpitaphSection"
+	DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.epitaphSection.ZIndex = 121
+	DeathUI.epitaphSection.LayoutOrder = 4
+	DeathUI.epitaphSection.Parent = DeathUI.scroll
 
-local epitaphPad = Instance.new("UIPadding")
-epitaphPad.PaddingTop = UDim.new(0, 16)
-epitaphPad.PaddingBottom = UDim.new(0, 24)
-epitaphPad.PaddingLeft = UDim.new(0, 20)
-epitaphPad.PaddingRight = UDim.new(0, 20)
-epitaphPad.Parent = DeathUI.epitaphSection
+	local epitaphPad = Instance.new("UIPadding")
+	epitaphPad.PaddingTop = UDim.new(0, 16)
+	epitaphPad.PaddingBottom = UDim.new(0, 24)
+	epitaphPad.PaddingLeft = UDim.new(0, 20)
+	epitaphPad.PaddingRight = UDim.new(0, 20)
+	epitaphPad.Parent = DeathUI.epitaphSection
 
-DeathUI.epitaph = Instance.new("TextLabel")
-DeathUI.epitaph.Name = "Epitaph"
-DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
-DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
-DeathUI.epitaph.BackgroundTransparency = 1
-DeathUI.epitaph.Font = F.Body
-DeathUI.epitaph.TextSize = 14
-DeathUI.epitaph.TextColor3 = C.Gray400
-DeathUI.epitaph.TextWrapped = true
-DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
-DeathUI.epitaph.Text = ""
-DeathUI.epitaph.ZIndex = 122
-DeathUI.epitaph.Parent = DeathUI.epitaphSection
+	DeathUI.epitaph = Instance.new("TextLabel")
+	DeathUI.epitaph.Name = "Epitaph"
+	DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaph.BackgroundTransparency = 1
+	DeathUI.epitaph.Font = F.Body
+	DeathUI.epitaph.TextSize = 14
+	DeathUI.epitaph.TextColor3 = C.Gray400
+	DeathUI.epitaph.TextWrapped = true
+	DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
+	DeathUI.epitaph.Text = ""
+	DeathUI.epitaph.ZIndex = 122
+	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
--- Restart button section
-DeathUI.buttonSection = Instance.new("Frame")
-DeathUI.buttonSection.Name = "ButtonSection"
-DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
-DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-DeathUI.buttonSection.ZIndex = 121
-DeathUI.buttonSection.LayoutOrder = 5
-DeathUI.buttonSection.Parent = DeathUI.scroll
+	-- Restart button section
+	DeathUI.buttonSection = Instance.new("Frame")
+	DeathUI.buttonSection.Name = "ButtonSection"
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
+	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.buttonSection.ZIndex = 121
+	DeathUI.buttonSection.LayoutOrder = 5
+	DeathUI.buttonSection.Parent = DeathUI.scroll
 
-DeathUI.restart = Instance.new("TextButton")
-DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
-DeathUI.restart.BackgroundColor3 = C.Green
-DeathUI.restart.Font = F.Button
-DeathUI.restart.TextSize = 20
-DeathUI.restart.TextColor3 = C.White
-DeathUI.restart.Text = "🔄 Start New Life"
-DeathUI.restart.AutoButtonColor = false
-DeathUI.restart.ZIndex = 122
-DeathUI.restart.Parent = DeathUI.buttonSection
-corner(DeathUI.restart, 16)
+	DeathUI.restart = Instance.new("TextButton")
+	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
+	DeathUI.restart.BackgroundColor3 = C.Green
+	DeathUI.restart.Font = F.Button
+	DeathUI.restart.TextSize = 20
+	DeathUI.restart.TextColor3 = C.White
+	DeathUI.restart.Text = "🔄 Start New Life"
+	DeathUI.restart.AutoButtonColor = false
+	DeathUI.restart.ZIndex = 122
+	DeathUI.restart.Parent = DeathUI.buttonSection
+	corner(DeathUI.restart, 16)
 
-DeathUI.restart.MouseEnter:Connect(function()
-	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
-end)
-DeathUI.restart.MouseLeave:Connect(function()
-	tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
-end)
+	DeathUI.restart.MouseEnter:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+	end)
+	DeathUI.restart.MouseLeave:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+	end)
 
-local ResetLife = remotesFolder:FindFirstChild("ResetLife")
+	local ResetLife = remotesFolder:FindFirstChild("ResetLife")
 
-DeathUI.restart.MouseButton1Click:Connect(function()
-	if ResetLife then
-		DeathUI.restart.Text = "Starting new life..."
-		ResetLife:FireServer()
-	end
-end)
+	DeathUI.restart.MouseButton1Click:Connect(function()
+		if ResetLife then
+			DeathUI.restart.Text = "Starting new life..."
+			ResetLife:FireServer()
+		end
+	end)
+end
+
+-- Build the Death UI immediately
+buildDeathUI()
 
 -- Helper to create a stat row
 local function createDeathStatRow(icon, label, value, color, order)
@@ -2379,15 +2586,15 @@ showEvent = function(payload)
 	end
 
 	-- Cancel any in-progress hide animation to prevent race conditions
-	if currentHideTween then
-		currentHideTween:Cancel()
-		currentHideTween = nil
+	if EventUI.currentHideTween then
+		EventUI.currentHideTween:Cancel()
+		EventUI.currentHideTween = nil
 	end
 
 	-- Wrap in pcall to catch errors and ensure awaitingEvent gets reset
 	local success, errorMsg = pcall(function()
 		awaitingEvent = true
-		currentEventId = payload.id
+		EventUI.currentEventId = payload.id
 		clearChoices()
 
 		-- Get category-based colors
@@ -2454,10 +2661,10 @@ showEvent = function(payload)
 			local minigameType = choice.minigame
 
 			local function handleChoice()
-				if not currentEventId then return end
+				if not EventUI.currentEventId then return end
 
 				if minigameType and minigamesInstance then
-					pendingMinigameEventId     = currentEventId
+					pendingMinigameEventId     = EventUI.currentEventId
 					pendingMinigameChoiceIndex = choiceIndex
 					hideEvent()
 
@@ -2470,18 +2677,18 @@ showEvent = function(payload)
 						pendingMinigameChoiceIndex = nil
 					end)
 				else
-					SubmitChoice:FireServer(currentEventId, choiceIndex)
+					SubmitChoice:FireServer(EventUI.currentEventId, choiceIndex)
 					hideEvent()
 				end
 			end
 
 			btn.MouseButton1Click:Connect(handleChoice)
 			table.insert(choiceHandlers, handleChoice)
-			table.insert(activeChoiceButtons, btn)
+			table.insert(EventUI.activeChoiceButtons, btn)
 		end
 
-		surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
-			if currentEventId and #choiceHandlers > 0 then
+		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
+			if EventUI.currentEventId and #choiceHandlers > 0 then
 				local handler = choiceHandlers[math.random(1, #choiceHandlers)]
 				handler()
 			end
@@ -2505,24 +2712,24 @@ showEvent = function(payload)
 	if not success then
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
 		awaitingEvent = false
-		currentEventId = nil
+		EventUI.currentEventId = nil
 		eventOverlay.Visible = false
 	end
 end
 
 hideEvent = function()
 	awaitingEvent  = false
-	currentEventId = nil
+	EventUI.currentEventId = nil
 
 	-- Create the hide tween and track it
-	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
+	EventUI.currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
 	tween(eventShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 	tween(eventCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
-	currentHideTween.Completed:Connect(function()
+	EventUI.currentHideTween.Completed:Connect(function()
 		-- Only hide overlay if we're not currently showing a new event
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
@@ -2538,7 +2745,7 @@ hideEvent = function()
 			eventHeader.Visible = false
 		end
 
-		currentHideTween = nil
+		EventUI.currentHideTween = nil
 	end)
 end
 
@@ -3284,7 +3491,7 @@ ageButton.MouseButton1Click:Connect(function()
 	-- something went wrong - reset the flag
 	if awaitingEvent and not eventOverlay.Visible then
 		awaitingEvent = false
-		currentEventId = nil
+		EventUI.currentEventId = nil
 	end
 
 	-- Block age up if waiting for event choice
@@ -3329,7 +3536,40 @@ storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",  
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
-	if ok and mg then minigamesInstance = mg end
+	if ok and mg then 
+		minigamesInstance = mg
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Enable rare auto Purge event (0.5% chance every 90 seconds)
+		-- The Purge is an ultra-rare survival event that can happen at any time!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if mg.enableRareAutoPurge then
+			mg:enableRareAutoPurge({
+				chance = 0.005,      -- 0.5% chance
+				interval = 90,       -- Check every 90 seconds (1.5 min)
+				totalScenarios = 10, -- 10 survival scenarios
+				onComplete = function(won, stats)
+					print("[LifeClient] 😈 Purge event completed! Won:", won)
+					-- Purge outcomes affect player stats
+					if currentState then
+						local statDelta = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
+						for stat, delta in pairs(statDelta) do
+							if currentState[stat] then
+								currentState[stat] = math.clamp(currentState[stat] + delta, 0, 100)
+							end
+						end
+						-- Add feed message
+						local feedMsg = won 
+							and "😈 You survived The Purge! (+Health, +Happiness)"
+							or "💀 You died in The Purge... (Lost Health & Happiness)"
+						currentState.Feed = currentState.Feed or {}
+						table.insert(currentState.Feed, feedMsg)
+						refreshInfo()
+					end
+				end,
+			})
+		end
+	end
 end
 
 ----------------------------------------------------------------
@@ -3364,7 +3604,7 @@ task.spawn(function()
 				-- Check if the event overlay is actually visible
 				if not eventOverlay.Visible then
 					awaitingEvent = false
-					currentEventId = nil
+					EventUI.currentEventId = nil
 					lastAwaitingEventTime = nil
 				end
 			end

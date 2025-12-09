@@ -103,6 +103,32 @@ local function disconnectAll(tbl)
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- TYPEWRITER EFFECT - For dramatic text reveals (Purge, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════
+local function typeText(label, fullText, cps, tokenTbl)
+	cps = cps or 45
+	if not label then return end
+	label.Text = ""
+
+	-- tokenTbl is a tiny mutable table used to cancel old typing
+	if tokenTbl then
+		tokenTbl.id = (tokenTbl.id or 0) + 1
+	end
+	local myId = tokenTbl and tokenTbl.id or 0
+
+	local len = utf8.len(fullText) or #fullText
+	for i = 1, len do
+		if tokenTbl and tokenTbl.id ~= myId then
+			return -- cancelled
+		end
+
+		local sub = string.sub(fullText, 1, i)
+		label.Text = sub
+		task.wait(1 / cps)
+	end
+end
+
 function Minigames.new(screenGui)
 	local self = setmetatable({}, Minigames)
 	self.screenGui = screenGui
@@ -127,6 +153,13 @@ function Minigames.new(screenGui)
 
 	self._hackKeyConnections = {}
 	self._hackTimerConnection = nil
+	
+	-- PURGE minigame connections
+	self._purgeChoiceConnections = {}
+	self._purgeBeginConnection = nil
+	self._purgeContinueConnection = nil
+	self._purgeAutoThread = nil
+	self._purgeTypingToken = { id = 0 }
 
 	-- Build UI once
 	self:createDebateGame()
@@ -136,6 +169,7 @@ function Minigames.new(screenGui)
 	self:createPrisonEscapeGame()
 	self:createMashGame()
 	self:createHackingGame()
+	self:createPurgeGame()
 
 	return self
 end
@@ -2029,8 +2063,572 @@ function Minigames:endHacking(success)
 end
 
 ----------------------------------------------------------------
+-- PURGE MINIGAME (Rare Survival Event)
+----------------------------------------------------------------
+
+function Minigames:createPurgeGame()
+	-- Overlay
+	self.purgeOverlay = Instance.new("Frame")
+	self.purgeOverlay.Size = UDim2.fromScale(1, 1)
+	self.purgeOverlay.BackgroundColor3 = C.Black
+	self.purgeOverlay.BackgroundTransparency = 0.15
+	self.purgeOverlay.Visible = false
+	self.purgeOverlay.ZIndex = 210
+	self.purgeOverlay.Parent = self.screenGui
+
+	-- INTRO CARD
+	self.purgeIntroCard = Instance.new("Frame")
+	self.purgeIntroCard.Size = UDim2.new(0.94, 0, 0.8, 0)
+	self.purgeIntroCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeIntroCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeIntroCard.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	self.purgeIntroCard.ZIndex = 211
+	self.purgeIntroCard.Parent = self.purgeOverlay
+	corner(self.purgeIntroCard, 22)
+	stroke(self.purgeIntroCard, 2, 0, C.Red)
+
+	local introHeader = Instance.new("TextLabel")
+	introHeader.Size = UDim2.new(1, 0, 0, 60)
+	introHeader.BackgroundTransparency = 1
+	introHeader.Font = F.Title
+	introHeader.TextSize = 28
+	introHeader.TextColor3 = C.Red
+	introHeader.Text = "😈 The Purge"
+	introHeader.ZIndex = 212
+	introHeader.TextXAlignment = Enum.TextXAlignment.Center
+	introHeader.Parent = self.purgeIntroCard
+
+	-- Body text (typewriter)
+	self.purgeIntroBody = Instance.new("TextLabel")
+	self.purgeIntroBody.Size = UDim2.new(0.9, 0, 0.5, 0)
+	self.purgeIntroBody.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeIntroBody.Position = UDim2.new(0.5, 0, 0, 90)
+	self.purgeIntroBody.BackgroundTransparency = 1
+	self.purgeIntroBody.Font = F.Medium
+	self.purgeIntroBody.TextSize = 18
+	self.purgeIntroBody.TextColor3 = C.Red
+	self.purgeIntroBody.TextWrapped = true
+	self.purgeIntroBody.Text = ""
+	self.purgeIntroBody.ZIndex = 212
+	self.purgeIntroBody.Parent = self.purgeIntroCard
+
+	-- Begin button
+	self.purgeBeginBtn = Instance.new("TextButton")
+	self.purgeBeginBtn.Size = UDim2.new(0.9, 0, 0, 64)
+	self.purgeBeginBtn.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeBeginBtn.Position = UDim2.new(0.5, 0, 0.75, 0)
+	self.purgeBeginBtn.BackgroundColor3 = C.Red
+	self.purgeBeginBtn.Font = F.Button
+	self.purgeBeginBtn.TextSize = 22
+	self.purgeBeginBtn.TextColor3 = C.White
+	self.purgeBeginBtn.Text = "🚨 BEGIN APOCALYPSE 🚨"
+	self.purgeBeginBtn.AutoButtonColor = false
+	self.purgeBeginBtn.ZIndex = 212
+	self.purgeBeginBtn.Parent = self.purgeIntroCard
+	corner(self.purgeBeginBtn, 16)
+
+	-- GAME CARD
+	self.purgeGameCard = Instance.new("Frame")
+	self.purgeGameCard.Size = UDim2.new(0.94, 0, 0.85, 0)
+	self.purgeGameCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeGameCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeGameCard.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+	self.purgeGameCard.Visible = false
+	self.purgeGameCard.ZIndex = 211
+	self.purgeGameCard.Parent = self.purgeOverlay
+	corner(self.purgeGameCard, 22)
+	stroke(self.purgeGameCard, 2, 0, C.Red)
+
+	-- Title row
+	local gameTitle = Instance.new("TextLabel")
+	gameTitle.Size = UDim2.new(1, 0, 0, 50)
+	gameTitle.BackgroundTransparency = 1
+	gameTitle.Font = F.Title
+	gameTitle.TextSize = 24
+	gameTitle.TextColor3 = C.Red
+	gameTitle.Text = "😈 The Purge"
+	gameTitle.ZIndex = 212
+	gameTitle.TextXAlignment = Enum.TextXAlignment.Center
+	gameTitle.Parent = self.purgeGameCard
+
+	-- HP label
+	self.purgeHpLabel = Instance.new("TextLabel")
+	self.purgeHpLabel.Size = UDim2.new(0.9, 0, 0, 22)
+	self.purgeHpLabel.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeHpLabel.Position = UDim2.new(0.5, 0, 0, 58)
+	self.purgeHpLabel.BackgroundTransparency = 1
+	self.purgeHpLabel.Font = F.Button
+	self.purgeHpLabel.TextSize = 16
+	self.purgeHpLabel.TextColor3 = C.White
+	self.purgeHpLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeHpLabel.Text = "❤️ HP: 100 / 100"
+	self.purgeHpLabel.ZIndex = 212
+	self.purgeHpLabel.Parent = self.purgeGameCard
+
+	-- HP bar bg
+	self.purgeHpBg = Instance.new("Frame")
+	self.purgeHpBg.Size = UDim2.new(0.9, 0, 0, 18)
+	self.purgeHpBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeHpBg.Position = UDim2.new(0.5, 0, 0, 84)
+	self.purgeHpBg.BackgroundColor3 = C.Gray800
+	self.purgeHpBg.ZIndex = 212
+	self.purgeHpBg.Parent = self.purgeGameCard
+	pill(self.purgeHpBg)
+
+	-- HP fill
+	self.purgeHpFill = Instance.new("Frame")
+	self.purgeHpFill.Size = UDim2.new(1, 0, 1, 0)
+	self.purgeHpFill.BackgroundColor3 = C.Green
+	self.purgeHpFill.ZIndex = 213
+	self.purgeHpFill.Parent = self.purgeHpBg
+	pill(self.purgeHpFill)
+
+	-- Progress label
+	self.purgeProgressLabel = Instance.new("TextLabel")
+	self.purgeProgressLabel.Size = UDim2.new(0.9, 0, 0, 22)
+	self.purgeProgressLabel.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeProgressLabel.Position = UDim2.new(0.5, 0, 0, 110)
+	self.purgeProgressLabel.BackgroundTransparency = 1
+	self.purgeProgressLabel.Font = F.Medium
+	self.purgeProgressLabel.TextSize = 14
+	self.purgeProgressLabel.TextColor3 = C.Gray300
+	self.purgeProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeProgressLabel.Text = "📊 Progress: 0 / 15 Scenarios Completed"
+	self.purgeProgressLabel.ZIndex = 212
+	self.purgeProgressLabel.Parent = self.purgeGameCard
+
+	-- Scenario box
+	self.purgeScenarioBox = Instance.new("TextLabel")
+	self.purgeScenarioBox.Size = UDim2.new(0.9, 0, 0, 150)
+	self.purgeScenarioBox.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeScenarioBox.Position = UDim2.new(0.5, 0, 0, 140)
+	self.purgeScenarioBox.BackgroundColor3 = C.Gray900
+	self.purgeScenarioBox.Font = F.Medium
+	self.purgeScenarioBox.TextSize = 16
+	self.purgeScenarioBox.TextColor3 = C.White
+	self.purgeScenarioBox.TextWrapped = true
+	self.purgeScenarioBox.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeScenarioBox.TextYAlignment = Enum.TextYAlignment.Top
+	self.purgeScenarioBox.Text = ""
+	self.purgeScenarioBox.ZIndex = 212
+	self.purgeScenarioBox.Parent = self.purgeGameCard
+	corner(self.purgeScenarioBox, 14)
+	pad(self.purgeScenarioBox, 14, 14, 12, 12)
+
+	-- Choices container
+	self.purgeChoicesFrame = Instance.new("Frame")
+	self.purgeChoicesFrame.Size = UDim2.new(0.9, 0, 0, 210)
+	self.purgeChoicesFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeChoicesFrame.Position = UDim2.new(0.5, 0, 0, 305)
+	self.purgeChoicesFrame.BackgroundTransparency = 1
+	self.purgeChoicesFrame.ZIndex = 212
+	self.purgeChoicesFrame.Parent = self.purgeGameCard
+
+	local choiceLayout = Instance.new("UIListLayout")
+	choiceLayout.Padding = UDim.new(0, 10)
+	choiceLayout.Parent = self.purgeChoicesFrame
+
+	self.purgeChoiceBtns = {}
+	for i = 1, 3 do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, 56)
+		btn.BackgroundColor3 = Color3.fromRGB(80, 15, 25)
+		btn.Font = F.Button
+		btn.TextSize = 16
+		btn.TextColor3 = C.White
+		btn.TextWrapped = true
+		btn.Text = "Choice " .. i
+		btn.AutoButtonColor = false
+		btn.ZIndex = 213
+		btn.Parent = self.purgeChoicesFrame
+		corner(btn, 14)
+		self.purgeChoiceBtns[i] = btn
+	end
+
+	local warn = Instance.new("TextLabel")
+	warn.Size = UDim2.new(1, 0, 0, 22)
+	warn.BackgroundTransparency = 1
+	warn.Font = F.Button
+	warn.TextSize = 14
+	warn.TextColor3 = C.Amber
+	warn.Text = "⚠️ Choose Wisely - Wrong choices will cost you HP!"
+	warn.ZIndex = 212
+	warn.Parent = self.purgeChoicesFrame
+
+	-- DEATH CARD
+	self.purgeDeathCard = Instance.new("Frame")
+	self.purgeDeathCard.Size = UDim2.new(0.94, 0, 0.7, 0)
+	self.purgeDeathCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeDeathCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeDeathCard.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	self.purgeDeathCard.Visible = false
+	self.purgeDeathCard.ZIndex = 211
+	self.purgeDeathCard.Parent = self.purgeOverlay
+	corner(self.purgeDeathCard, 22)
+	stroke(self.purgeDeathCard, 2, 0, C.Red)
+
+	local diedTitle = Instance.new("TextLabel")
+	diedTitle.Size = UDim2.new(1, 0, 0, 60)
+	diedTitle.BackgroundTransparency = 1
+	diedTitle.Font = F.Title
+	diedTitle.TextSize = 30
+	diedTitle.TextColor3 = C.Red
+	diedTitle.Text = "💀 YOU DIED"
+	diedTitle.ZIndex = 212
+	diedTitle.Parent = self.purgeDeathCard
+
+	self.purgeDeathBody = Instance.new("TextLabel")
+	self.purgeDeathBody.Size = UDim2.new(0.9, 0, 0, 80)
+	self.purgeDeathBody.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeDeathBody.Position = UDim2.new(0.5, 0, 0, 80)
+	self.purgeDeathBody.BackgroundTransparency = 1
+	self.purgeDeathBody.Font = F.Medium
+	self.purgeDeathBody.TextSize = 18
+	self.purgeDeathBody.TextColor3 = C.Red
+	self.purgeDeathBody.TextWrapped = true
+	self.purgeDeathBody.Text = "You have perished in The Purge!\nCause of Death: Became a victim of the purge"
+	self.purgeDeathBody.ZIndex = 212
+	self.purgeDeathBody.Parent = self.purgeDeathCard
+
+	self.purgeContinueBtn = Instance.new("TextButton")
+	self.purgeContinueBtn.Size = UDim2.new(0.9, 0, 0, 56)
+	self.purgeContinueBtn.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeContinueBtn.Position = UDim2.new(0.5, 0, 0.75, 0)
+	self.purgeContinueBtn.BackgroundColor3 = C.Red
+	self.purgeContinueBtn.Font = F.Button
+	self.purgeContinueBtn.TextSize = 20
+	self.purgeContinueBtn.TextColor3 = C.White
+	self.purgeContinueBtn.Text = "Continue"
+	self.purgeContinueBtn.AutoButtonColor = false
+	self.purgeContinueBtn.ZIndex = 212
+	self.purgeContinueBtn.Parent = self.purgeDeathCard
+	corner(self.purgeContinueBtn, 14)
+
+	-- Scenario data
+	self.purgeScenarios = {
+		{
+			text = "You see a family being chased by an armed gang. They're heading toward your location. Helping them means revealing your position.",
+			choices = {
+				{ text = "Let them in and help defend", hpDelta = -10, good = true },
+				{ text = "Stay hidden - don't reveal yourself", hpDelta = 0, good = true },
+				{ text = "Create a distraction to help them escape", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "A purge gang offers a deal: join them and you'll be protected. Refusing might make you their next target.",
+			choices = {
+				{ text = "Join them for protection", hpDelta = -25, good = false },
+				{ text = "Refuse and prepare to defend", hpDelta = -10, good = true },
+				{ text = "Pretend to join but plan to escape", hpDelta = -20, good = false },
+			}
+		},
+		{
+			text = "Your barricade is holding, but you hear footsteps on the roof. Something's not right.",
+			choices = {
+				{ text = "Move to a secondary safe room", hpDelta = 0, good = true },
+				{ text = "Power off everything and go silent", hpDelta = -5, good = true },
+				{ text = "Check the cameras and reposition", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "A neighbor is pounding at your door begging for help. Loud noise attracts attention.",
+			choices = {
+				{ text = "Ignore them completely", hpDelta = 0, good = true },
+				{ text = "Let them in immediately", hpDelta = -20, good = false },
+				{ text = "Signal them to hide elsewhere", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "You spot a supply cache in a store across the street. The area is exposed.",
+			choices = {
+				{ text = "Go now - speed over stealth", hpDelta = -20, good = false },
+				{ text = "Wait and watch, then move", hpDelta = -5, good = true },
+				{ text = "Skip it - too risky", hpDelta = 0, good = true },
+			}
+		},
+		{
+			text = "Someone is trying to pick your back door lock. You have seconds to act.",
+			choices = {
+				{ text = "Ambush them immediately", hpDelta = -15, good = false },
+				{ text = "Retreat and reinforce inner doors", hpDelta = -5, good = true },
+				{ text = "Make noise to scare them off", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "A fire starts in a nearby building. Smoke may drift into your ventilation soon.",
+			choices = {
+				{ text = "Seal vents and relocate rooms", hpDelta = -5, good = true },
+				{ text = "Investigate outside", hpDelta = -25, good = false },
+				{ text = "Use a wet cloth mask and stay put", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "You find a lone injured stranger who dropped a backpack of supplies.",
+			choices = {
+				{ text = "Take supplies and move on", hpDelta = -5, good = true },
+				{ text = "Help them fully and escort them", hpDelta = -20, good = false },
+				{ text = "Leave a small supply and point them away", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "Your phone lights up: 'Safe house two streets over.' Could be a trap.",
+			choices = {
+				{ text = "Go straight there", hpDelta = -20, good = false },
+				{ text = "Ignore it", hpDelta = 0, good = true },
+				{ text = "Observe from distance first", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "A drone-like buzzing passes above your street. You're unsure who controls it.",
+			choices = {
+				{ text = "Turn off lights and reduce movement", hpDelta = 0, good = true },
+				{ text = "Go outside to look", hpDelta = -25, good = false },
+				{ text = "Signal with a flashlight", hpDelta = -20, good = false },
+			}
+		},
+		{
+			text = "Final stretch. Sirens in the distance signal the last hour. Stay focused.",
+			choices = {
+				{ text = "Maintain strict silence and wait", hpDelta = 0, good = true },
+				{ text = "Celebrate early and relax security", hpDelta = -25, good = false },
+				{ text = "Re-check all locks and routes", hpDelta = -5, good = true },
+			}
+		},
+	}
+end
+
+local function _purgeDisconnectAll(self)
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+	disconnect(self._purgeBeginConnection)
+	self._purgeBeginConnection = nil
+	disconnect(self._purgeContinueConnection)
+	self._purgeContinueConnection = nil
+end
+
+function Minigames:startPurge(callback, options)
+	options = options or {}
+	self.callback = callback
+	self.activeGame = "purge"
+	self.purgeOverlay.Visible = true
+
+	-- Reset state
+	self.purgeHp = 100
+	self.purgeMaxHp = 100
+	self.purgeIndex = 0
+	self.purgeTotal = options.totalScenarios or 10
+
+	-- Shuffle scenarios
+	local pool = {}
+	for _, s in ipairs(self.purgeScenarios) do
+		table.insert(pool, s)
+	end
+	for i = #pool, 2, -1 do
+		local j = math.random(i)
+		pool[i], pool[j] = pool[j], pool[i]
+	end
+	self.purgeRun = {}
+	for i = 1, math.min(self.purgeTotal, #pool) do
+		table.insert(self.purgeRun, pool[i])
+	end
+
+	-- Show intro first
+	self.purgeIntroCard.Visible = true
+	self.purgeGameCard.Visible = false
+	self.purgeDeathCard.Visible = false
+
+	_purgeDisconnectAll(self)
+
+	-- Intro typewriter
+	local introText =
+		"😈 THE PURGE HAS COMMENCED 😈\n\n" ..
+		"For the next 24 hours, all crime is legal...\n\n" ..
+		"No police. No emergency services. No rules...\n\n" ..
+		"Trust no one. Fear everything.\n\n" ..
+		"Welcome to The Purge."
+	typeText(self.purgeIntroBody, introText, options.introCps or 38, self._purgeTypingToken)
+
+	self._purgeBeginConnection = self.purgeBeginBtn.MouseButton1Click:Connect(function()
+		if self.activeGame ~= "purge" then return end
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = true
+		self:purgeUpdateHud()
+		self:purgeNextScenario()
+	end)
+end
+
+function Minigames:purgeUpdateHud()
+	local hp = math.max(0, self.purgeHp)
+	self.purgeHpLabel.Text = "❤️ HP: " .. hp .. " / " .. self.purgeMaxHp
+
+	local ratio = hp / self.purgeMaxHp
+	local color = (ratio <= 0.25 and C.Red) or (ratio <= 0.55 and C.Amber) or C.Green
+	self.purgeHpFill.BackgroundColor3 = color
+
+	tween(self.purgeHpFill, TweenInfo.new(0.15), {
+		Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0),
+	})
+end
+
+function Minigames:purgeNextScenario()
+	self.purgeIndex = self.purgeIndex + 1
+
+	if self.purgeIndex > #self.purgeRun then
+		self:endPurge(true)
+		return
+	end
+
+	local s = self.purgeRun[self.purgeIndex]
+	self.purgeProgressLabel.Text =
+		"📊 Progress: " .. (self.purgeIndex - 1) .. " / " .. #self.purgeRun .. " Scenarios Completed"
+
+	-- Reset button colors
+	for _, btn in ipairs(self.purgeChoiceBtns) do
+		btn.BackgroundColor3 = Color3.fromRGB(80, 15, 25)
+	end
+
+	-- Typewriter scenario
+	typeText(self.purgeScenarioBox, s.text, 48, self._purgeTypingToken)
+
+	-- Rebind choices
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+
+	for i = 1, 3 do
+		local cData = s.choices[i]
+		local btn = self.purgeChoiceBtns[i]
+		if cData then
+			btn.Visible = true
+			btn.Text = cData.text
+
+			self._purgeChoiceConnections[i] = btn.MouseButton1Click:Connect(function()
+				self:purgeHandleChoice(i)
+			end)
+		else
+			btn.Visible = false
+		end
+	end
+end
+
+function Minigames:purgeHandleChoice(i)
+	if self.activeGame ~= "purge" then return end
+	local s = self.purgeRun[self.purgeIndex]
+	if not s then return end
+	local cData = s.choices[i]
+	if not cData then return end
+
+	-- Visual feedback
+	for idx, btn in ipairs(self.purgeChoiceBtns) do
+		if btn.Visible then
+			if idx == i then
+				btn.BackgroundColor3 = cData.good and C.Green or C.Red
+			else
+				btn.BackgroundColor3 = Color3.fromRGB(60, 10, 18)
+			end
+		end
+	end
+
+	-- Apply HP change
+	self.purgeHp = math.clamp(self.purgeHp + (cData.hpDelta or 0), 0, self.purgeMaxHp)
+	self:purgeUpdateHud()
+
+	-- Death check
+	if self.purgeHp <= 0 then
+		task.delay(0.35, function()
+			if self.activeGame == "purge" then
+				self:purgeShowDeath()
+			end
+		end)
+		return
+	end
+
+	-- Next scenario
+	task.delay(0.45, function()
+		if self.activeGame == "purge" then
+			self:purgeNextScenario()
+		end
+	end)
+end
+
+function Minigames:purgeShowDeath()
+	self.purgeIntroCard.Visible = false
+	self.purgeGameCard.Visible = false
+	self.purgeDeathCard.Visible = true
+
+	_purgeDisconnectAll(self)
+
+	self._purgeContinueConnection = self.purgeContinueBtn.MouseButton1Click:Connect(function()
+		self:endPurge(false)
+	end)
+end
+
+function Minigames:endPurge(won)
+	self.activeGame = nil
+	if self.purgeOverlay then
+		self.purgeOverlay.Visible = false
+	end
+	self.purgeIntroCard.Visible = false
+	self.purgeGameCard.Visible = false
+	self.purgeDeathCard.Visible = false
+
+	_purgeDisconnectAll(self)
+
+	if self.callback then
+		self.callback(won, {
+			hp = self.purgeHp or 0,
+			completed = math.max(0, (self.purgeIndex or 1) - 1),
+			total = self.purgeRun and #self.purgeRun or 0,
+		})
+		self.callback = nil
+	end
+end
+
+----------------------------------------------------------------
 -- PUBLIC API
 ----------------------------------------------------------------
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- FIGHT MINIGAME - Quick Time Events with a fighting theme
+-- Used for confrontational choices in events
+-- ═══════════════════════════════════════════════════════════════════════════
+function Minigames:startFight(callback, options)
+	options = options or {}
+	print("[Minigames] 👊 Starting FIGHT minigame!")
+	
+	-- Use enhanced QTE for fights with fight-specific options
+	self:startQTE(function(won, stats)
+		-- Add fight-specific result processing
+		local fightResult = {
+			won = won,
+			knockouts = stats and stats.hits or 0,
+			damage_taken = won and math.random(5, 15) or math.random(20, 40),
+			technique = won and "Victorious!" or "Got beat up...",
+		}
+		if callback then
+			callback(won, fightResult)
+		end
+	end, options.difficulty or "medium")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CONFRONTATION MINIGAME - Dialog-based confrontation with timed responses
+-- ═══════════════════════════════════════════════════════════════════════════
+function Minigames:startConfrontation(callback, options)
+	options = options or {}
+	print("[Minigames] 😤 Starting CONFRONTATION minigame!")
+	
+	-- Use debate system for verbal confrontations
+	self:startDebate(function(won, stats)
+		local confrontResult = {
+			won = won,
+			intimidation = won and "They backed down!" or "They didn't budge.",
+			respect_change = won and math.random(5, 15) or math.random(-10, -5),
+		}
+		if callback then
+			callback(won, confrontResult)
+		end
+	end)
+end
 
 function Minigames:play(gameType, callback, options)
 	options = options or {}
@@ -2055,6 +2653,15 @@ function Minigames:play(gameType, callback, options)
 		elseif gameType == "typing" then
 			-- Typing minigame - use mash as fallback
 			self:startMash(callback, options)
+		elseif gameType == "fight" then
+			-- CRITICAL FIX: Fight minigame for confrontational events
+			self:startFight(callback, options)
+		elseif gameType == "confrontation" then
+			-- CRITICAL FIX: Confrontation minigame for verbal conflicts
+			self:startConfrontation(callback, options)
+		elseif gameType == "purge" then
+			-- THE PURGE: Rare survival event minigame
+			self:startPurge(callback, options)
 		else
 			warn("[Minigames] ⚠️ Unknown minigame type:", gameType, "- auto-failing")
 			if callback then
@@ -2123,6 +2730,24 @@ function Minigames:cancel()
 		self._hackTimerConnection = nil
 	end
 
+	-- Purge cleanup
+	if self.purgeOverlay then self.purgeOverlay.Visible = false end
+	if self.purgeIntroCard then self.purgeIntroCard.Visible = false end
+	if self.purgeGameCard then self.purgeGameCard.Visible = false end
+	if self.purgeDeathCard then self.purgeDeathCard.Visible = false end
+
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+	disconnect(self._purgeBeginConnection)
+	self._purgeBeginConnection = nil
+	disconnect(self._purgeContinueConnection)
+	self._purgeContinueConnection = nil
+
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+	end
+
 	self.callback = nil
 end
 
@@ -2135,7 +2760,63 @@ function Minigames:getAvailableGames()
 		{ id = "prison_escape", name = "Prison Escape", emoji = "🔐", description = "Navigate the maze" },
 		{ id = "mash", name = "Mash", emoji = "👆", description = "Tap as fast as you can" },
 		{ id = "hacking", name = "Hacking", emoji = "💻", description = "Type codes to breach systems" },
+		{ id = "fight", name = "Fight", emoji = "👊", description = "Physical confrontation QTE" },
+		{ id = "confrontation", name = "Confrontation", emoji = "😤", description = "Verbal showdown" },
+		{ id = "purge", name = "The Purge", emoji = "😈", description = "Rare survival decision run" },
 	}
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- RARE AUTO PURGE TRIGGER
+-- Ultra-rare random event (0.5% chance) that triggers The Purge survival game
+-- ═══════════════════════════════════════════════════════════════════════════════
+function Minigames:enableRareAutoPurge(config)
+	config = config or {}
+	local chance = config.chance or 0.005 -- 0.5% default
+	local interval = config.interval or 120 -- Check every 2 minutes
+	local totalScenarios = config.totalScenarios or 10
+	local introCps = config.introCps or 38
+	local onComplete = config.onComplete
+	
+	-- Stop existing auto thread if running
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+	end
+	
+	print("[Minigames] 😈 Enabling rare auto Purge trigger (", chance * 100, "% chance every", interval, "seconds)")
+	
+	self._purgeAutoThread = task.spawn(function()
+		while true do
+			task.wait(interval)
+			
+			-- Don't interrupt other active games
+			if self.activeGame == nil then
+				local roll = math.random()
+				if roll <= chance then
+					print("[Minigames] 😈🔥 RARE PURGE EVENT TRIGGERED! Roll:", roll, "Threshold:", chance)
+					
+					self:startPurge(function(won, stats)
+						print("[Minigames] 😈 Purge completed. Won:", won)
+						if onComplete then
+							onComplete(won, stats)
+						end
+					end, {
+						totalScenarios = totalScenarios,
+						introCps = introCps,
+					})
+				end
+			end
+		end
+	end)
+end
+
+function Minigames:disableRareAutoPurge()
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+		print("[Minigames] 😈 Disabled rare auto Purge trigger")
+	end
 end
 
 return Minigames

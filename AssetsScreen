@@ -9,6 +9,217 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Teal       = C.Teal       or Color3.fromRGB(20, 184, 166)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.Gold       = C.Gold       or Color3.fromRGB(251, 191, 36)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.TealDark   = C.TealDark   or Color3.fromRGB(13, 148, 136)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+C.GoldDark   = C.GoldDark   or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.TealPale   = C.TealPale   or Color3.fromRGB(204, 251, 241)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local ViewportSize = Camera.ViewportSize
+
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.65 end
+	if minDim < 400 then return 0.75 end
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
+local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	return IS_MOBILE and math.max(44, scaled) or scaled
+end
+local function cardWidth()
+	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
+	return 350
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PREMIUM EMPTY STATE CARD HELPER
+-- Creates a polished empty state card with icon, message, and optional action
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function createPremiumEmptyCard(parent, options)
+	options = options or {}
+	local emoji = options.emoji or "📭"
+	local title = options.title or "Nothing Here"
+	local message = options.message or "No items to display."
+	local accentColor = options.accentColor or C.Gray400
+	local layoutOrder = options.layoutOrder or 1
+	local actionText = options.actionText
+	local actionCallback = options.actionCallback
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "EmptyStateCard"
+	container.Size = UDim2.new(1, 0, 0, actionText and 170 or 140)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = layoutOrder
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.94
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Shell (subtle accent)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = accentColor:Lerp(C.White, 0.6)
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -4, 1, -4)
+	card.Position = UDim2.new(0, 2, 0, 2)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 16)
+	
+	-- Emoji icon with circle background
+	local iconCircle = Instance.new("Frame")
+	iconCircle.Size = UDim2.new(0, 56, 0, 56)
+	iconCircle.AnchorPoint = Vector2.new(0.5, 0)
+	iconCircle.Position = UDim2.new(0.5, 0, 0, 14)
+	iconCircle.BackgroundColor3 = accentColor:Lerp(C.White, 0.85)
+	iconCircle.ZIndex = 85
+	iconCircle.Parent = card
+	UI.corner(iconCircle, 28)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 26
+	iconLabel.Text = emoji
+	iconLabel.ZIndex = 86
+	iconLabel.Parent = iconCircle
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 22)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 74)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 15
+	titleLabel.TextColor3 = C.Gray700
+	titleLabel.Text = title
+	titleLabel.ZIndex = 85
+	titleLabel.Parent = card
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 28)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 96)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 12
+	messageLabel.TextColor3 = C.Gray500
+	messageLabel.TextWrapped = true
+	messageLabel.Text = message
+	messageLabel.ZIndex = 85
+	messageLabel.Parent = card
+	
+	-- Optional action button
+	if actionText and actionCallback then
+		local actionBtn = Instance.new("TextButton")
+		actionBtn.Size = UDim2.new(0.6, 0, 0, 32)
+		actionBtn.AnchorPoint = Vector2.new(0.5, 0)
+		actionBtn.Position = UDim2.new(0.5, 0, 0, 128)
+		actionBtn.BackgroundColor3 = accentColor
+		actionBtn.Font = F.Button
+		actionBtn.TextSize = 12
+		actionBtn.TextColor3 = C.White
+		actionBtn.Text = actionText
+		actionBtn.AutoButtonColor = false
+		actionBtn.ZIndex = 86
+		actionBtn.Parent = card
+		UI.corner(actionBtn, 8)
+		
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), {
+				BackgroundColor3 = accentColor:Lerp(C.Black, 0.15)
+			})
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+		end)
+		actionBtn.MouseButton1Click:Connect(actionCallback)
+	end
+	
+	return container
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
@@ -350,19 +561,210 @@ function AssetsScreen:createUI()
 end
 
 function AssetsScreen:createResultModal()
-	self.resultModal = UI.createModalCard(self.screenGui, {
-		name = "AssetsResult",
-		accentColor = C.Green,
-		accentDark = C.GreenDark,
-		accentPale = C.GreenPale,
-		zIndex = 96
-	})
-
-	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	self.resultModal = {}
+	
+	-- Close/dim overlay
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "ResultModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.35
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 96
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.resultModal.closeArea = closeArea
+	self.resultModal.overlay = closeArea
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "ResultModalContainer"
+	container.Size = UDim2.new(0, 340, 0, 320)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 97
+	container.Parent = closeArea
+	self.resultModal.container = container
+	
+	-- Premium shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 12, 1, 12)
+	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 97
+	shadow.Parent = container
+	UI.corner(shadow, 28)
+	
+	-- Colored shell
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 98
+	shell.Parent = container
+	UI.corner(shell, 26)
+	self.resultModal.shell = shell
+	
+	-- Shell stroke
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = C.GreenDark
+	shellStroke.Thickness = 2
+	shellStroke.Transparency = 0.5
+	shellStroke.Parent = shell
+	self.resultModal.shellStroke = shellStroke
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 99
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Emoji frame
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.BackgroundColor3 = C.GreenPale
+	emojiFrame.ZIndex = 100
+	emojiFrame.Parent = card
+	UI.corner(emojiFrame, 40)
+	self.resultModal.emojiFrame = emojiFrame
+	
+	-- Emoji label
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 44
+	emojiLabel.Text = "🛒"
+	emojiLabel.ZIndex = 101
+	emojiLabel.Parent = emojiFrame
+	self.resultModal.emojiLabel = emojiLabel
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 22
+	titleLabel.TextColor3 = C.GreenDark
+	titleLabel.Text = "Purchase Complete!"
+	titleLabel.ZIndex = 100
+	titleLabel.Parent = card
+	self.resultModal.titleLabel = titleLabel
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 15
+	messageLabel.TextColor3 = C.Gray700
+	messageLabel.TextWrapped = true
+	messageLabel.Text = ""
+	messageLabel.ZIndex = 100
+	messageLabel.Parent = card
+	self.resultModal.messageLabel = messageLabel
+	
+	-- OK Button
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 100
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OkBtn"
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.BackgroundColor3 = C.Green
+	okBtn.Font = F.Button
+	okBtn.TextSize = 17
+	okBtn.TextColor3 = C.White
+	okBtn.Text = "👍 Nice!"
+	okBtn.AutoButtonColor = false
+	okBtn.ZIndex = 101
+	okBtn.Parent = card
+	UI.corner(okBtn, 14)
+	self.resultModal.okButton = okBtn
+	
+	-- Button hover (CRITICAL FIX: Also animate shadow)
+	okBtn.MouseEnter:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0.72, 0, 0, 56),
+			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
+		})
 	end)
-	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	okBtn.MouseLeave:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 0, 0, 52),
+			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
+		})
+	end)
+	
+	-- Custom show/hide
+	self.resultModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, 320, 0, 300)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, 340, 0, 320)
+		})
+	end
+	
+	self.resultModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
+	
+	local function onDismiss()
+		self:switchTab(self.currentTab)
+	end
+	
+	closeArea.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
+	end)
+	okBtn.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
 	end)
 end
 
@@ -970,53 +1372,165 @@ end
 function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accentColor, paleColor)
 	log("Creating owned asset card:", item.name, "type:", itemType)
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Owned Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Green Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = "Owned_" .. item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 95)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.88
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Green shell (shows ownership)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = "Owned_" .. item.id
-	card.Size = UDim2.new(1, 0, 0, 85)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
-	UI.corner(card, 14)
-	UI.stroke(card, 2, 0.4, C.Green)
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 16)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX: Reduced width to not cover the Sell button on the right
+	local pressArea = Instance.new("TextButton")
+	pressArea.Name = "PressArea"
+	pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+	pressArea.BackgroundTransparency = 1
+	pressArea.Text = ""
+	pressArea.ZIndex = 90
+	pressArea.Parent = container
+	
+	local isHovering = false
+	local isPressed = false
+	
+	pressArea.MouseEnter:Connect(function()
+		if isPressed then return end
+		isHovering = true
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(1, 0, 0, 99)
+		})
+		UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+		UI.tween(shadow, TweenInfo.new(0.12), {
+			BackgroundTransparency = 0.82,
+			Position = UDim2.new(0, 3, 0, 4)
+		})
+		UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenPale:Lerp(C.White, 0.85) })
+	end)
+	
+	pressArea.MouseLeave:Connect(function()
+		isHovering = false
+		isPressed = false
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(1, 0, 0, 95)
+		})
+		UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+		UI.tween(shadow, TweenInfo.new(0.12), {
+			BackgroundTransparency = 0.88,
+			Position = UDim2.new(0, 2, 0, 2)
+		})
+		UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+	end)
+	
+	pressArea.MouseButton1Down:Connect(function()
+		isPressed = true
+		UI.tween(container, TweenInfo.new(0.08), {
+			Size = UDim2.new(1, 0, 0, 91)
+		})
+		UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = C.GreenDark:Lerp(C.Black, 0.1) })
+	end)
+	
+	pressArea.MouseButton1Up:Connect(function()
+		isPressed = false
+		if isHovering then
+			UI.tween(container, TweenInfo.new(0.1), {
+				Size = UDim2.new(1, 0, 0, 99)
+			})
+			UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
+		end
+	end)
 
-	-- Icon
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with green ownership ring)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 60, 0, 60)
+	iconRing.Position = UDim2.new(0, 10, 0.5, -30)
+	iconRing.BackgroundColor3 = C.GreenDark
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 16)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 55, 0, 55)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -27.5)
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
 	iconFrame.BackgroundColor3 = C.GreenPale
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
 	UI.corner(iconFrame, 14)
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 30
+	iconLabel.TextSize = 32
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CONTENT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.45, 0, 0, 24)
-	titleLabel.Position = UDim2.new(0, 80, 0, 14)
+	titleLabel.Size = UDim2.new(0.45, -85, 0, 26)  -- Adjusted width with margin
+	titleLabel.Position = UDim2.new(0, 80, 0, 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 15  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Owned badge
+	-- Owned badge (prominent)
 	local ownedBadge = Instance.new("Frame")
-	ownedBadge.Size = UDim2.new(0, 75, 0, 24)
-	ownedBadge.Position = UDim2.new(0, 80, 0, 40)
+	ownedBadge.Size = UDim2.new(0, 85, 0, 26)
+	ownedBadge.Position = UDim2.new(0, 80, 0, 36)
 	ownedBadge.BackgroundColor3 = C.Green
-	ownedBadge.ZIndex = 84
+	ownedBadge.ZIndex = 85
 	ownedBadge.Parent = card
 	UI.pill(ownedBadge)
 
@@ -1024,50 +1538,102 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	ownedLabel.Size = UDim2.fromScale(1, 1)
 	ownedLabel.BackgroundTransparency = 1
 	ownedLabel.Font = F.Button
-	ownedLabel.TextSize = 11
+	ownedLabel.TextSize = 12
 	ownedLabel.TextColor3 = C.White
 	ownedLabel.Text = "✓ OWNED"
-	ownedLabel.ZIndex = 85
+	ownedLabel.ZIndex = 86
 	ownedLabel.Parent = ownedBadge
 
-	-- Value (sell price = 70% of purchase price)
+	-- Value badge (sell price = 70% of purchase price)
 	local sellPrice = math.floor(item.price * 0.7)
+	local valueBadge = Instance.new("Frame")
+	valueBadge.Size = UDim2.new(0, 100, 0, 22)
+	valueBadge.Position = UDim2.new(0, 80, 0, 64)
+	valueBadge.BackgroundColor3 = C.Gray100
+	valueBadge.ZIndex = 85
+	valueBadge.Parent = card
+	UI.pill(valueBadge)
+	
 	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Size = UDim2.new(0.3, 0, 0, 18)
-	valueLabel.Position = UDim2.new(0, 80, 0, 66)
+	valueLabel.Size = UDim2.fromScale(1, 1)
 	valueLabel.BackgroundTransparency = 1
-	valueLabel.Font = F.Body
+	valueLabel.Font = F.Medium
 	valueLabel.TextSize = 11
-	valueLabel.TextColor3 = C.Gray500
-	valueLabel.TextXAlignment = Enum.TextXAlignment.Left
-	valueLabel.Text = "Value: " .. UI.formatMoney(sellPrice)
-	valueLabel.ZIndex = 84
-	valueLabel.Parent = card
+	valueLabel.TextColor3 = C.Gray600
+	valueLabel.Text = "💎 Value: " .. UI.formatMoney(sellPrice)
+	valueLabel.ZIndex = 86
+	valueLabel.Parent = valueBadge
 
-	-- Sell button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SELL BUTTON (premium with shadow)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "SellBtnShadow"
+	btnShadow.Size = UDim2.new(0, 84, 0, 54)
+	btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+	btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+	btnShadow.BackgroundColor3 = C.AmberDark
+	btnShadow.BackgroundTransparency = 0.6
+	btnShadow.ZIndex = 94
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 12)
+	
 	local sellBtn = Instance.new("TextButton")
-	sellBtn.Size = UDim2.new(0, 70, 0, 40)
+	sellBtn.Name = "SellBtn"
+	sellBtn.Size = UDim2.new(0, 80, 0, 50)
 	sellBtn.AnchorPoint = Vector2.new(1, 0.5)
-	sellBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	sellBtn.Position = UDim2.new(1, -8, 0.5, 0)
 	sellBtn.BackgroundColor3 = C.Amber
 	sellBtn.Font = F.Button
-	sellBtn.TextSize = 13
+	sellBtn.TextSize = 14
 	sellBtn.TextColor3 = C.White
 	sellBtn.Text = "💰 Sell"
 	sellBtn.AutoButtonColor = false
-	sellBtn.ZIndex = 84
+	sellBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	sellBtn.Parent = card
-	UI.corner(sellBtn, 10)
+	UI.corner(sellBtn, 12)
+	
+	local isLoading = false
 
 	sellBtn.MouseEnter:Connect(function()
-		UI.tween(sellBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.AmberDark })
+		if isLoading then return end
+		UI.tween(sellBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+			Size = UDim2.new(0, 85, 0, 54),
+			BackgroundColor3 = C.AmberDark 
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 89, 0, 58) })
 	end)
 	sellBtn.MouseLeave:Connect(function()
-		UI.tween(sellBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Amber })
+		if isLoading then return end
+		UI.tween(sellBtn, TweenInfo.new(0.12), { 
+			Size = UDim2.new(0, 80, 0, 50),
+			BackgroundColor3 = C.Amber 
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 84, 0, 54) })
 	end)
 	sellBtn.MouseButton1Click:Connect(function()
+		if isLoading then return end
+		isLoading = true
 		log("Sell clicked for:", item.id, "type:", itemType)
-		self:sellAsset(item, itemType)
+		
+		-- Loading state
+		sellBtn.Text = "⏳..."
+		UI.tween(sellBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+		
+		task.spawn(function()
+			task.wait(0.1)
+			self:sellAsset(item, itemType)
+			
+			-- Reset after completion
+			task.wait(0.5)
+			if sellBtn and sellBtn.Parent then
+				isLoading = false
+				sellBtn.Text = "💰 Sell"
+				sellBtn.BackgroundColor3 = C.Amber
+			end
+		end)
 	end)
 end
 
@@ -1093,6 +1659,7 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	local age = self:getAge()
 	local money = self:getMoney()
 	local assets = self:getAssets()
+	local accentDark = accentColor:Lerp(C.Black, 0.2)
 
 	local minAge = item.minAge or 0
 	local meetsAge = age >= minAge
@@ -1100,45 +1667,168 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	local alreadyOwns = assets[item.id] ~= nil
 	local canBuy = meetsAge and canAfford and not alreadyOwns
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 115)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = alreadyOwns and 0.88 or (canBuy and 0.92 or 0.96)
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Colored shell (accent border - green if owned, accent if can buy, gray otherwise)
+	local shellColor = alreadyOwns and C.Green or (canBuy and accentColor or C.Gray300)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = shellColor
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = item.id
-	card.Size = UDim2.new(1, 0, 0, 105)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
+	card.ZIndex = 84
+	card.Parent = shell
 	UI.corner(card, 16)
-	UI.stroke(card, alreadyOwns and 2 or 1, alreadyOwns and 0.3 or 0.88, alreadyOwns and C.Green or C.Gray200)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS (only for buyable items)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if canBuy then
+		-- CRITICAL FIX: Reduced width to not cover the Buy button on the right
+		local pressArea = Instance.new("TextButton")
+		pressArea.Name = "PressArea"
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+		pressArea.BackgroundTransparency = 1
+		pressArea.Text = ""
+		pressArea.ZIndex = 90
+		pressArea.Parent = container
+		
+		local isHovering = false
+		local isPressed = false
+		
+		pressArea.MouseEnter:Connect(function()
+			if isPressed then return end
+			isHovering = true
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 119)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.85,
+				Position = UDim2.new(0, 3, 0, 4)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = paleColor:Lerp(C.White, 0.85) })
+		end)
+		
+		pressArea.MouseLeave:Connect(function()
+			isHovering = false
+			isPressed = false
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 115)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.92,
+				Position = UDim2.new(0, 2, 0, 2)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		
+		pressArea.MouseButton1Down:Connect(function()
+			isPressed = true
+			UI.tween(container, TweenInfo.new(0.08), {
+				Size = UDim2.new(1, 0, 0, 111)
+			})
+			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = accentDark:Lerp(C.Black, 0.1) })
+		end)
+		
+		pressArea.MouseButton1Up:Connect(function()
+			isPressed = false
+			if isHovering then
+				UI.tween(container, TweenInfo.new(0.1), {
+					Size = UDim2.new(1, 0, 0, 119)
+				})
+				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = accentDark })
+			end
+		end)
+	end
 
-	-- Icon
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with ring for owned items)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Icon ring (shows ownership status)
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 68, 0, 68)
+	iconRing.Position = UDim2.new(0, 12, 0.5, -34)
+	iconRing.BackgroundColor3 = alreadyOwns and C.Green or (canBuy and accentColor or C.Gray400)
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 18)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 62, 0, 62)
-	iconFrame.Position = UDim2.new(0, 16, 0.5, -31)
-	iconFrame.BackgroundColor3 = alreadyOwns and C.GreenPale or paleColor
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
+	iconFrame.BackgroundColor3 = alreadyOwns and C.GreenPale or (canBuy and paleColor or C.Gray200)
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
 	UI.corner(iconFrame, 16)
-
-	if not alreadyOwns then
-		UI.gradient(iconFrame, paleColor, paleColor:Lerp(C.White, 0.3), 135)
+	
+	-- Gradient for premium look
+	if canBuy and not alreadyOwns then
+		local iconGrad = Instance.new("UIGradient")
+		iconGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, paleColor:Lerp(C.White, 0.3)),
+		})
+		iconGrad.Rotation = 135
+		iconGrad.Parent = iconFrame
 	end
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 34
+	iconLabel.TextSize = 36
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.TextTransparency = (not canBuy and not alreadyOwns) and 0.3 or 0
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Owned badge
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CONTENT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Owned badge (prominent)
 	if alreadyOwns then
 		local badge = Instance.new("Frame")
-		badge.Size = UDim2.new(0, 85, 0, 24)
-		badge.Position = UDim2.new(0, 92, 0, 10)
+		badge.Size = UDim2.new(0, 90, 0, 26)
+		badge.Position = UDim2.new(0, 92, 0, 8)
 		badge.BackgroundColor3 = C.Green
-		badge.ZIndex = 85
+		badge.ZIndex = 86
 		badge.Parent = card
 		UI.pill(badge)
 
@@ -1146,118 +1836,178 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 		badgeLabel.Size = UDim2.fromScale(1, 1)
 		badgeLabel.BackgroundTransparency = 1
 		badgeLabel.Font = F.Button
-		badgeLabel.TextSize = 11
+		badgeLabel.TextSize = 12
 		badgeLabel.TextColor3 = C.White
 		badgeLabel.Text = "✓ OWNED"
-		badgeLabel.ZIndex = 86
+		badgeLabel.ZIndex = 87
 		badgeLabel.Parent = badge
 	end
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 24)
-	titleLabel.Position = UDim2.new(0, 92, 0, alreadyOwns and 36 or 14)
+	titleLabel.Size = UDim2.new(0.5, -95, 0, 26)  -- Adjusted width with margin
+	titleLabel.Position = UDim2.new(0, 92, 0, alreadyOwns and 36 or 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 16
+	titleLabel.TextSize = 16  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Badges
-	local badgeY = alreadyOwns and 64 or 42
+	-- Badges row
+	local badgeY = alreadyOwns and 66 or 40
 
-	-- Price badge
+	-- Price badge (more prominent)
 	local priceBadge = Instance.new("Frame")
-	priceBadge.Size = UDim2.new(0, 85, 0, 26)
+	priceBadge.Size = UDim2.new(0, 95, 0, 28)
 	priceBadge.Position = UDim2.new(0, 92, 0, badgeY)
 	priceBadge.BackgroundColor3 = canAfford and C.GreenPale or C.RedPale
-	priceBadge.ZIndex = 84
+	priceBadge.ZIndex = 85
 	priceBadge.Parent = card
 	UI.pill(priceBadge)
 
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.fromScale(1, 1)
 	priceLabel.BackgroundTransparency = 1
-	priceLabel.Font = F.Medium
+	priceLabel.Font = F.Button
 	priceLabel.TextSize = 12
 	priceLabel.TextColor3 = canAfford and C.GreenDark or C.RedDark
 	priceLabel.Text = "💵 " .. UI.formatMoney(item.price)
-	priceLabel.ZIndex = 85
+	priceLabel.ZIndex = 86
 	priceLabel.Parent = priceBadge
 
 	-- Income badge (for property)
 	if item.income then
 		local incomeBadge = Instance.new("Frame")
-		incomeBadge.Size = UDim2.new(0, 85, 0, 26)
-		incomeBadge.Position = UDim2.new(0, 182, 0, badgeY)
+		incomeBadge.Size = UDim2.new(0, 95, 0, 28)
+		incomeBadge.Position = UDim2.new(0, 192, 0, badgeY)
 		incomeBadge.BackgroundColor3 = C.AmberPale
-		incomeBadge.ZIndex = 84
+		incomeBadge.ZIndex = 85
 		incomeBadge.Parent = card
 		UI.pill(incomeBadge)
 
 		local incomeLabel = Instance.new("TextLabel")
 		incomeLabel.Size = UDim2.fromScale(1, 1)
 		incomeLabel.BackgroundTransparency = 1
-		incomeLabel.Font = F.Medium
+		incomeLabel.Font = F.Button
 		incomeLabel.TextSize = 11
 		incomeLabel.TextColor3 = C.AmberDark
-		incomeLabel.Text = "+" .. UI.formatMoney(item.income) .. "/yr"
-		incomeLabel.ZIndex = 85
+		incomeLabel.Text = "📈 +" .. UI.formatMoney(item.income) .. "/yr"
+		incomeLabel.ZIndex = 86
 		incomeLabel.Parent = incomeBadge
 	end
 
 	-- Age requirement
 	if not alreadyOwns and minAge > 0 then
+		local reqBadge = Instance.new("Frame")
+		reqBadge.Size = UDim2.new(0, 60, 0, 20)
+		reqBadge.Position = UDim2.new(0, 92, 0, badgeY + 32)
+		reqBadge.BackgroundColor3 = meetsAge and C.Gray100 or C.RedPale
+		reqBadge.ZIndex = 85
+		reqBadge.Parent = card
+		UI.pill(reqBadge)
+		
 		local reqLabel = Instance.new("TextLabel")
-		reqLabel.Size = UDim2.new(0.3, 0, 0, 18)
-		reqLabel.Position = UDim2.new(0, 92, 0, badgeY + 30)
+		reqLabel.Size = UDim2.fromScale(1, 1)
 		reqLabel.BackgroundTransparency = 1
-		reqLabel.Font = F.Body
-		reqLabel.TextSize = 11
-		reqLabel.TextColor3 = meetsAge and C.Gray500 or C.Red
-		reqLabel.TextXAlignment = Enum.TextXAlignment.Left
-		reqLabel.Text = "Age " .. minAge .. "+"
-		reqLabel.ZIndex = 84
-		reqLabel.Parent = card
+		reqLabel.Font = F.Medium
+		reqLabel.TextSize = 10
+		reqLabel.TextColor3 = meetsAge and C.Gray500 or C.RedDark
+		reqLabel.Text = "🎂 Age " .. minAge
+		reqLabel.ZIndex = 86
+		reqLabel.Parent = reqBadge
 	end
 
-	-- Buy button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BUY BUTTON (premium with shadow)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	if not alreadyOwns then
+		-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+		local btnShadow
+		if canBuy then
+			btnShadow = Instance.new("Frame")
+			btnShadow.Name = "BuyBtnShadow"
+			btnShadow.Size = UDim2.new(0, 89, 0, 58)
+			btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+			btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+			btnShadow.BackgroundColor3 = accentDark
+			btnShadow.BackgroundTransparency = 0.6
+			btnShadow.ZIndex = 94
+			btnShadow.Parent = card
+			UI.corner(btnShadow, 14)
+		end
+
 		local buyBtn = Instance.new("TextButton")
-		buyBtn.Size = UDim2.new(0, 78, 0, 46)
+		buyBtn.Name = "BuyBtn"
+		buyBtn.Size = UDim2.new(0, 85, 0, 54)
 		buyBtn.AnchorPoint = Vector2.new(1, 0.5)
-		buyBtn.Position = UDim2.new(1, -14, 0.5, 0)
+		buyBtn.Position = UDim2.new(1, -8, 0.5, 0)
 		buyBtn.BackgroundColor3 = canBuy and accentColor or C.Gray300
 		buyBtn.Font = F.Button
-		buyBtn.TextSize = 14
+		buyBtn.TextSize = 15
 		buyBtn.TextColor3 = canBuy and C.White or C.Gray500
 		buyBtn.AutoButtonColor = false
-		buyBtn.ZIndex = 84
+		buyBtn.ZIndex = 95  -- Higher than shadow and pressArea
 		buyBtn.Parent = card
 		UI.corner(buyBtn, 14)
 
 		if canBuy then
-			buyBtn.Text = "Buy"
+			local isLoading = false
+			buyBtn.Text = "🛒 Buy"
+			
 			buyBtn.MouseEnter:Connect(function()
-				UI.tween(buyBtn, TweenInfo.new(0.12), { 
-					Size = UDim2.new(0, 84, 0, 50),
-					BackgroundColor3 = accentColor:Lerp(C.Black, 0.15)
+				if isLoading then return end
+				UI.tween(buyBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+					Size = UDim2.new(0, 90, 0, 58),
+					BackgroundColor3 = accentDark
 				})
+				if btnShadow then
+					UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 94, 0, 62) })
+				end
 			end)
 			buyBtn.MouseLeave:Connect(function()
+				if isLoading then return end
 				UI.tween(buyBtn, TweenInfo.new(0.12), { 
-					Size = UDim2.new(0, 78, 0, 46),
+					Size = UDim2.new(0, 85, 0, 54),
 					BackgroundColor3 = accentColor
 				})
+				if btnShadow then
+					UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 89, 0, 58) })
+				end
 			end)
 			buyBtn.MouseButton1Click:Connect(function()
-				self:buyAsset(item, itemType)
+				if isLoading then return end
+				isLoading = true
+				
+				-- Loading state
+				buyBtn.Text = "⏳..."
+				UI.tween(buyBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+				
+				task.spawn(function()
+					task.wait(0.1)
+					self:buyAsset(item, itemType)
+					
+					-- Reset after completion
+					task.wait(0.5)
+					if buyBtn and buyBtn.Parent then
+						isLoading = false
+						buyBtn.Text = "🛒 Buy"
+						buyBtn.BackgroundColor3 = accentColor
+					end
+				end)
 			end)
 		else
-			buyBtn.Text = not meetsAge and "Age " .. minAge or "Need $"
+			local btnText = "🔒 "
+			if not meetsAge then
+				btnText = btnText .. "Age " .. minAge
+			else
+				btnText = "💵 Need $"
+			end
+			buyBtn.Text = btnText
 		end
 	end
 end
@@ -1276,6 +2026,45 @@ function AssetsScreen:buyAsset(item, itemType)
 	local result = remote:InvokeServer(item.id)
 	if result then
 		self:showResult(result.success, result.message, result.success and "🎉" or "😔")
+		
+		-- CRITICAL FIX: Refresh the assets screen after successful purchase
+		-- Without this, purchased items don't show in "owned" sections!
+		if result.success then
+			-- Update local state with the new asset
+			self.playerState = self.playerState or {}
+			self.playerState.Assets = self.playerState.Assets or {}
+			
+			local assetTypeName
+			if itemType == "property" then
+				assetTypeName = "Properties"
+			elseif itemType == "vehicle" then
+				assetTypeName = "Vehicles"
+			else
+				assetTypeName = "Items"
+			end
+			
+			self.playerState.Assets[assetTypeName] = self.playerState.Assets[assetTypeName] or {}
+			table.insert(self.playerState.Assets[assetTypeName], {
+				id = item.id,
+				name = item.name,
+				emoji = item.emoji,
+				value = item.price,
+				price = item.price,
+			})
+			
+			-- Deduct money locally to keep UI in sync
+			if self.playerState.Money then
+				self.playerState.Money = self.playerState.Money - item.price
+			end
+			
+			-- Refresh the current tab to show the owned item
+			task.delay(0.5, function()
+				if self.isVisible then
+					self:switchTab(self.currentTab)
+					log("✅ Refreshed assets screen after purchase")
+				end
+			end)
+		end
 	else
 		self:showResult(false, "Server error", "❌")
 	end
@@ -1374,13 +2163,28 @@ function AssetsScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "🎉" or "😔")
+	
+	-- Better emoji handling
+	local displayEmoji = emoji
+	if not displayEmoji then
+		displayEmoji = success and "🎉" or "😔"
+	elseif displayEmoji == "💰" then
+		displayEmoji = "💸"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
 	self.resultModal.titleLabel.Text = success and "Purchase Complete!" or "Uh oh..."
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
 	self.resultModal.messageLabel.Text = message or ""
 	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Nice!" or "😔 Okay..."
 
-	UI.showModal(self.resultModal)
+	-- Use custom show method if available
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
 end
 
 function AssetsScreen:show()

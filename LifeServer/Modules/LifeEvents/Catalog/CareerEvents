@@ -41,11 +41,55 @@ local events = {
 		choices = {
 			{
 				index = 1,
+				text = "🎤 ACE the interview with confidence!",
+				effects = {},
+				feedText = "Time to prove yourself...",
+				-- CRITICAL FIX: Debate minigame for job interviews!
+				triggerMinigame = "debate",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					
+					if won then
+						-- Aced the interview!
+						local salary = 42000 + math.random(0, 10) * 1000 -- 42k-52k (better for acing it!)
+						if state.SetCareer then
+							state:SetCareer({
+								id = "entry_career",
+								name = "Associate",
+								company = "Local Company",
+								salary = salary,
+								category = "entry",
+							})
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.got_first_real_job = true
+						state.Flags.career_started = true
+						state.Flags.employed = true
+						state.Flags.has_job = true
+						state.Flags.interview_ace = true
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 3)
+						if state.AddFeed then
+							state:AddFeed(string.format("🎤 You CRUSHED the interview! Salary: $%d! They loved you!", salary))
+						end
+					else
+						-- Bombed the interview
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.interview_failed = true
+						if state.AddFeed then
+							state:AddFeed("🎤 You froze up during the interview. 'We'll be in touch.' (They won't.)")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
 				text = "Be yourself - authentic and honest",
 				effects = { Happiness = 7, Smarts = 3 },
 				feedText = "You were genuine and authentic. The interviewer loved it. OFFER LETTER INCOMING!",
 				onResolve = function(state)
-					-- CRITICAL FIX: Set dynamic salary instead of hardcoded
 					local salary = 38000 + math.random(0, 10) * 1000 -- 38k-48k
 					if state.SetCareer then
 						state:SetCareer({
@@ -65,13 +109,6 @@ local events = {
 						state:AddFeed(string.format("🎉 You got the job! Salary: $%d. Your career begins NOW!", salary))
 					end
 				end,
-			},
-			{
-				index = 2,
-				text = "Overprepare - memorize everything",
-				effects = { Happiness = 6, Smarts = 5 },
-				setFlags = { overachiever = true, prepared = true },
-				feedText = "You researched for 10 hours. Knew the company's quarterly earnings. Memorized answers. TOO POLISHED. They said 'We'll let you know.' Rejection email came 3 days later. Overshot it.",
 			},
 			{
 				index = 3,
@@ -103,23 +140,43 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Confront her directly - professionally",
+				text = "😤 PUBLIC CONFRONTATION in the meeting!",
+				effects = {},
+				feedText = "You're about to make a scene...",
+				-- CRITICAL FIX: Confrontation minigame for office drama!
+				triggerMinigame = "confrontation",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					
+					if won then
+						-- You DESTROYED her in the meeting
+						state:ModifyStat("Happiness", 15)
+						state.Flags.confrontational = true
+						state.Flags.office_legend = true
+						state:AddFeed("😤 You EXPOSED her in front of EVERYONE. She started crying. Boss saw the truth. YOU'RE A LEGEND NOW.")
+					else
+						-- It backfired spectacularly
+						state:ModifyStat("Happiness", -15)
+						state.Flags.office_troublemaker = true
+						state:AddFeed("😤 Your confrontation backfired. You looked unprofessional. HR wants to 'talk to you'. Jessica smirked.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Confront her privately - professionally",
 				effects = { Happiness = 3, Smarts = 4 },
 				setFlags = { confrontational = true, direct = true },
 				feedText = "You pulled her aside. 'This needs to stop.' She denied everything. Got defensive. But she knows you're onto her. She backed off slightly. Small win.",
 			},
 			{
-				index = 2,
+				index = 3,
 				text = "Document EVERYTHING - build a case",
 				effects = { Happiness = -2, Smarts = 6 },
 				setFlags = { strategic = true, paper_trail = true },
 				feedText = "You started saving emails. Screenshots. Dates. Times. 3 months later: You presented a 20-page doc to HR. She got written up! Revenge served cold. Professional style.",
-			},
-			{
-				index = 3,
-				text = "Go to your boss - escalate it",
-				effects = { Happiness = -4 },
-				feedText = "You told your boss. He said 'Just work it out between yourselves.' USELESS. Nothing changed. Jessica smirked at you. You're on your own.",
 			},
 			{
 				index = 4,
@@ -334,13 +391,20 @@ local events = {
 		maxAge = 45,
 		requiresJob = true,
 		choices = {
-			{
-				index = 1,
-				text = "TAKE IT - bet on yourself!",
-				effects = { Happiness = 10, Money = -20000 },
-				setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
-				feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
-				onResolve = function(state)
+		{
+			index = 1,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "TAKE IT - bet on yourself! (need $20K savings)",
+			effects = { Happiness = 10, Money = -20000 },
+			setFlags = { risk_taker = true, startup_employee = true, might_get_rich = true },
+			feedText = "You took the leap! $75K + equity! The office is a WeWork with ping pong. Hours are BRUTAL. But exciting! In 3 years? Either rich or unemployed. Let's see!",
+			eligibility = function(state)
+				if (state.Money or 0) < 20000 then
+					return false, "Need $20,000 savings to take this risk"
+				end
+				return true
+			end,
+			onResolve = function(state)
 					-- CRITICAL FIX: Use RANDOM instance, not Random class!
 					if RANDOM:NextNumber() < 0.15 then
 						if state.AddFeed then
@@ -435,13 +499,20 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 4,
-				text = "Quit and start your own company",
-				effects = { Happiness = 12, Money = -50000 },
-				setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
-				feedText = "You quit and started your own business! Risky but FREE!",
-				onResolve = function(state)
+		{
+			index = 4,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "Quit and start your own company (need $50K)",
+			effects = { Happiness = 12, Money = -50000 },
+			setFlags = { entrepreneur = true, risk_taker = true, own_boss = true },
+			feedText = "You quit and started your own business! Risky but FREE!",
+			eligibility = function(state)
+				if (state.Money or 0) < 50000 then
+					return false, "Need $50,000 to start a business"
+				end
+				return true
+			end,
+			onResolve = function(state)
 					state.CurrentJob = nil
 					state.Flags = state.Flags or {}
 					state.Flags.entrepreneur = true
@@ -528,13 +599,20 @@ local events = {
 				setFlags = { workaholic = true, cant_let_go = true },
 				feedText = "You stayed full-time. Your spouse is annoyed. Your doctor says 'SLOW DOWN.' But work gives you purpose. You don't know who you are without it. Existential crisis masked as dedication.",
 			},
-			{
-				index = 4,
-				text = "Retire and start a passion project/business",
-				effects = { Happiness = 14, Money = -20000, Health = 6 },
-				setFlags = { retired = true, entrepreneur = true, fulfilled = true },
-				feedText = "You retired from your JOB but started a woodworking business! Passion project! You make custom furniture. Sold $30K year one! You're doing what you LOVE! Retirement = new beginning!",
-			},
+		{
+			index = 4,
+			-- CRITICAL FIX: Show cost and add eligibility check for major expense
+			text = "Retire and start a passion project/business (need $20K)",
+			effects = { Happiness = 14, Money = -20000, Health = 6 },
+			setFlags = { retired = true, entrepreneur = true, fulfilled = true },
+			feedText = "You retired from your JOB but started a woodworking business! Passion project! You make custom furniture. Sold $30K year one! You're doing what you LOVE! Retirement = new beginning!",
+			eligibility = function(state)
+				if (state.Money or 0) < 20000 then
+					return false, "Need $20,000 to start a passion project business"
+				end
+				return true
+			end,
+		},
 		},
 	},
 	
