@@ -1074,17 +1074,17 @@ function OccupationScreen:createUI()
 	headerBottom.ZIndex = 85
 	headerBottom.Parent = header
 
-	-- MOBILE FIX: Responsive title
+	-- CRITICAL UI FIX #8: Shorter title for tiny phones
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "Title"
 	titleLabel.Size = UDim2.new(1, -px(80), 1, 0)
-	titleLabel.Position = UDim2.new(0, padSize(16), 0, 0)
+	titleLabel.Position = UDim2.new(0, padSize(IS_TINY_PHONE and 8 or 16), 0, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = textSize(20)
+	titleLabel.TextSize = textSize(IS_TINY_PHONE and 16 or 20)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextColor3 = C.Gray900
-	titleLabel.Text = "💼 Career & Education"
+	titleLabel.Text = IS_TINY_PHONE and "💼 Career" or "💼 Career & Education"
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = header
 
@@ -1154,38 +1154,47 @@ function OccupationScreen:createUI()
 	infoLayout.FillDirection = Enum.FillDirection.Horizontal
 	infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	infoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	infoLayout.Padding = UDim.new(0, 10)
+	infoLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or 10)
 	infoLayout.Parent = self.infoBar
+
+	-- CRITICAL UI FIX #6: Scaled info chips for mobile
+	local AGE_CHIP_WIDTH = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 65 or 75)
+	local MONEY_CHIP_WIDTH = IS_TINY_PHONE and 70 or (IS_SMALL_PHONE and 80 or 90)
+	local JOB_CHIP_WIDTH = IS_TINY_PHONE and 75 or (IS_SMALL_PHONE and 90 or 100)
+	local CHIP_PAD = IS_TINY_PHONE and 6 or 10
 
 	self.ageChip = UI.createInfoChip(self.infoBar, {
 		name = "AgeChip", icon = "Age", text = "18",
-		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 75
+		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = AGE_CHIP_WIDTH
 	})
 	self.ageChip.icon.Text = ""
 	self.ageChip.text.Text = "Age 18"
-	self.ageChip.text.Position = UDim2.new(0, 10, 0, 0)
-	self.ageChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.ageChip.text.Position = UDim2.new(0, CHIP_PAD, 0, 0)
+	self.ageChip.text.Size = UDim2.new(1, -CHIP_PAD * 2, 1, 0)
 	self.ageChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.ageChip.text.TextSize = IS_TINY_PHONE and 10 or 12
 
 	self.moneyChip = UI.createInfoChip(self.infoBar, {
 		name = "MoneyChip", icon = "$", text = "$0",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 90
+		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = MONEY_CHIP_WIDTH
 	})
 	self.moneyChip.icon.Text = ""
 	self.moneyChip.text.Text = "$0"
-	self.moneyChip.text.Position = UDim2.new(0, 10, 0, 0)
-	self.moneyChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.moneyChip.text.Position = UDim2.new(0, CHIP_PAD, 0, 0)
+	self.moneyChip.text.Size = UDim2.new(1, -CHIP_PAD * 2, 1, 0)
 	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.moneyChip.text.TextSize = IS_TINY_PHONE and 10 or 12
 
 	self.jobChip = UI.createInfoChip(self.infoBar, {
 		name = "JobChip", icon = "Job", text = "None",
-		bgColor = C.AmberPale, textColor = C.AmberDark, order = 3, width = 100
+		bgColor = C.AmberPale, textColor = C.AmberDark, order = 3, width = JOB_CHIP_WIDTH
 	})
 	self.jobChip.icon.Text = ""
-	self.jobChip.text.Text = "Unemployed"
-	self.jobChip.text.Position = UDim2.new(0, 10, 0, 0)
-	self.jobChip.text.Size = UDim2.new(1, -20, 1, 0)
+	self.jobChip.text.Text = IS_TINY_PHONE and "No Job" or "Unemployed"
+	self.jobChip.text.Position = UDim2.new(0, CHIP_PAD, 0, 0)
+	self.jobChip.text.Size = UDim2.new(1, -CHIP_PAD * 2, 1, 0)
 	self.jobChip.text.TextXAlignment = Enum.TextXAlignment.Center
+	self.jobChip.text.TextSize = IS_TINY_PHONE and 10 or 12
 
 	-- Tab bar (positioned relative to contentRoot)
 	self.tabBar = Instance.new("Frame")
@@ -1202,8 +1211,12 @@ function OccupationScreen:createUI()
 	tabLayout.FillDirection = Enum.FillDirection.Horizontal
 	tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabLayout.Padding = UDim.new(0, 8)
+	tabLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or 8)
 	tabLayout.Parent = self.tabBar
+
+	-- CRITICAL UI FIX #7: Scaled tab buttons for mobile
+	local TAB_TEXT_SIZE = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 13 or 15)
+	local TAB_CORNER = IS_TINY_PHONE and 8 or 10
 
 	-- Jobs tab
 	self.jobsTab = Instance.new("TextButton")
@@ -1211,14 +1224,14 @@ function OccupationScreen:createUI()
 	self.jobsTab.Size = UDim2.new(0.46, 0, 1, 0)
 	self.jobsTab.BackgroundColor3 = C.Blue
 	self.jobsTab.Font = F.Button
-	self.jobsTab.TextSize = 15
+	self.jobsTab.TextSize = TAB_TEXT_SIZE
 	self.jobsTab.TextColor3 = C.White
-	self.jobsTab.Text = "Jobs"
+	self.jobsTab.Text = IS_TINY_PHONE and "💼 Jobs" or "Jobs"
 	self.jobsTab.AutoButtonColor = false
 	self.jobsTab.LayoutOrder = 1
 	self.jobsTab.ZIndex = 85
 	self.jobsTab.Parent = self.tabBar
-	UI.corner(self.jobsTab, 10)
+	UI.corner(self.jobsTab, TAB_CORNER)
 
 	-- Education tab
 	self.eduTab = Instance.new("TextButton")
@@ -1226,9 +1239,9 @@ function OccupationScreen:createUI()
 	self.eduTab.Size = UDim2.new(0.46, 0, 1, 0)
 	self.eduTab.BackgroundColor3 = C.White
 	self.eduTab.Font = F.Button
-	self.eduTab.TextSize = 15
+	self.eduTab.TextSize = TAB_TEXT_SIZE
 	self.eduTab.TextColor3 = C.Gray600
-	self.eduTab.Text = "Education"
+	self.eduTab.Text = IS_TINY_PHONE and "🎓 Edu" or "Education"
 	self.eduTab.AutoButtonColor = false
 	self.eduTab.LayoutOrder = 2
 	self.eduTab.ZIndex = 85
@@ -1278,21 +1291,27 @@ function OccupationScreen:createUI()
 	categoryLayout.FillDirection = Enum.FillDirection.Horizontal
 	categoryLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	categoryLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	categoryLayout.Padding = UDim.new(0, 8)
+	categoryLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or 8)
 	categoryLayout.Parent = self.categoryBar
+
+	-- CRITICAL UI FIX #5: Scaled category chips for mobile
+	local CHIP_HEIGHT = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 30 or 34)
+	local CHIP_TEXT_SIZE = IS_TINY_PHONE and 10 or 12
 
 	-- Create category chips
 	self.categoryChips = {}
 	for i, category in ipairs(JobCategories) do
 		local chip = Instance.new("TextButton")
 		chip.Name = category.id
-		chip.Size = UDim2.new(0, 0, 0, 34)
+		chip.Size = UDim2.new(0, 0, 0, CHIP_HEIGHT)
 		chip.AutomaticSize = Enum.AutomaticSize.X
 		chip.BackgroundColor3 = i == 1 and C.Blue or C.Gray100
 		chip.Font = F.Medium
-		chip.TextSize = 12
+		chip.TextSize = CHIP_TEXT_SIZE
 		chip.TextColor3 = i == 1 and C.White or C.Gray600
-		chip.Text = "  " .. category.emoji .. " " .. category.name .. "  "
+		-- Shorter text on tiny phones
+		local chipText = IS_TINY_PHONE and (category.emoji .. " " .. (category.name:sub(1, 8) .. (category.name:len() > 8 and ".." or ""))) or ("  " .. category.emoji .. " " .. category.name .. "  ")
+		chip.Text = chipText
 		chip.AutoButtonColor = false
 		chip.LayoutOrder = i
 		chip.ZIndex = 85
@@ -1373,11 +1392,18 @@ function OccupationScreen:updateInfoBar()
 			end
 		end
 
-		self.jobChip.text.Text = jobName
+		-- CRITICAL UI FIX #9: Truncate job names on tiny phones
+		local displayName = jobName
+		if IS_TINY_PHONE and jobName:len() > 10 then
+			displayName = jobName:sub(1, 9) .. ".."
+		elseif IS_SMALL_PHONE and jobName:len() > 12 then
+			displayName = jobName:sub(1, 11) .. ".."
+		end
+		self.jobChip.text.Text = displayName
 		self.jobChip.chip.BackgroundColor3 = C.GreenPale
 		self.jobChip.text.TextColor3 = C.GreenDark
 	else
-		self.jobChip.text.Text = "Unemployed"
+		self.jobChip.text.Text = IS_TINY_PHONE and "No Job" or "Unemployed"
 		self.jobChip.chip.BackgroundColor3 = C.AmberPale
 		self.jobChip.text.TextColor3 = C.AmberDark
 	end
@@ -1387,17 +1413,17 @@ function OccupationScreen:switchTab(tabId)
 	log("Switching tab to:", tabId)
 	self.currentTab = tabId
 
-	-- CRITICAL FIX: Use calculated layout values matching createUI()
+	-- CRITICAL UI FIX #4: Responsive layout values matching createUI() for mobile
 	-- Layout constants (must match createUI):
-	local INFO_HEIGHT = 52
-	local TAB_HEIGHT = 52
-	local CATEGORY_HEIGHT = 44
-	local GAP = 8
+	local INFO_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 52)
+	local TAB_HEIGHT = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 52)
+	local CATEGORY_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
+	local GAP = IS_TINY_PHONE and 4 or 8
 	
-	local tabY = INFO_HEIGHT + GAP  -- 60
-	local categoryY = tabY + TAB_HEIGHT + GAP  -- 120
-	local scrollY_withCategory = categoryY + CATEGORY_HEIGHT + GAP  -- 172
-	local scrollY_noCategory = tabY + TAB_HEIGHT + GAP  -- 120
+	local tabY = INFO_HEIGHT + GAP
+	local categoryY = tabY + TAB_HEIGHT + GAP
+	local scrollY_withCategory = categoryY + CATEGORY_HEIGHT + GAP
+	local scrollY_noCategory = tabY + TAB_HEIGHT + GAP
 
 	if tabId == "jobs" then
 		log("Animating to Jobs tab")
@@ -3738,7 +3764,14 @@ function OccupationScreen:showEducationInfoModal()
 	local institution = self:getEducationInstitution() or ""
 	local status = self:getEducationStatus()
 
-	self.educationInfoTitle.Text = levelName
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX #3: Scaled text and grade items for mobile
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local GRADE_ROW_HEIGHT = IS_TINY_PHONE and 24 or (IS_SMALL_PHONE and 28 or 32)
+	local GRADE_TEXT_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
+	local NO_GRADES_SIZE = IS_TINY_PHONE and 10 or 12
+
+	self.educationInfoTitle.Text = IS_TINY_PHONE and (levelName:sub(1, 20) .. (levelName:len() > 20 and "..." or "")) or levelName
 	if institution ~= "" then
 		self.educationInfoSubtitle.Text = institution
 	else
@@ -3752,20 +3785,20 @@ function OccupationScreen:showEducationInfoModal()
 	end
 
 	if progress then
-		self.educationInfoProgressLabel.Text = string.format("📈 Progress: %.0f%% complete", progress)
+		self.educationInfoProgressLabel.Text = IS_TINY_PHONE and string.format("📈 %.0f%% done", progress) or string.format("📈 Progress: %.0f%% complete", progress)
 	else
 		self.educationInfoProgressLabel.Text = "📈 Progress: —"
 	end
 
 	if debt > 0 then
-		self.educationInfoDebtLabel.Text = "💸 Student Debt: " .. UI.formatMoney(debt)
+		self.educationInfoDebtLabel.Text = IS_TINY_PHONE and ("💸 " .. UI.formatMoney(debt)) or ("💸 Student Debt: " .. UI.formatMoney(debt))
 	else
-		self.educationInfoDebtLabel.Text = "💸 Student Debt: None"
+		self.educationInfoDebtLabel.Text = IS_TINY_PHONE and "💸 No Debt" or "💸 Student Debt: None"
 	end
 
 	self.educationInfoStatusLabel.Text = "Status: " .. status:gsub("^%l", string.upper)
 
-	-- Transcript list
+	-- Transcript list - SCALED
 	for _, child in ipairs(self.educationInfoGradesContainer:GetChildren()) do
 		if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
 			child:Destroy()
@@ -3774,45 +3807,47 @@ function OccupationScreen:showEducationInfoModal()
 
 	if #grades == 0 then
 		local noGrades = Instance.new("TextLabel")
-		noGrades.Size = UDim2.new(1, 0, 0, 40)
+		noGrades.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 32 or 40)
 		noGrades.BackgroundTransparency = 1
 		noGrades.Font = F.Body
-		noGrades.TextSize = 12
+		noGrades.TextSize = NO_GRADES_SIZE
 		noGrades.TextColor3 = C.Gray400
 		noGrades.TextWrapped = true
-		noGrades.Text = "No detailed grades yet. Your school performance is still tracked and will affect jobs, scholarships, and events."
+		noGrades.Text = IS_TINY_PHONE and "No grades yet. School affects jobs & events." or "No detailed grades yet. Your school performance is still tracked and will affect jobs, scholarships, and events."
 		noGrades.ZIndex = 100
 		noGrades.Parent = self.educationInfoGradesContainer
 	else
 		for i, term in ipairs(grades) do
 			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, 0, 0, 32)
-			row.BackgroundColor3 = C.Gray50
+			row.Size = UDim2.new(1, 0, 0, GRADE_ROW_HEIGHT)
+			row.BackgroundColor3 = C.White
 			row.ZIndex = 99
 			row.Parent = self.educationInfoGradesContainer
-			UI.corner(row, 10)
+			UI.corner(row, IS_TINY_PHONE and 6 or 10)
 
 			local termName = Instance.new("TextLabel")
-			termName.Size = UDim2.new(0.6, 0, 1, 0)
+			termName.Size = UDim2.new(0.55, 0, 1, 0)
+			termName.Position = UDim2.new(0, IS_TINY_PHONE and 6 or 8, 0, 0)
 			termName.BackgroundTransparency = 1
 			termName.Font = F.Body
-			termName.TextSize = 11
+			termName.TextSize = GRADE_TEXT_SIZE
 			termName.TextColor3 = C.Gray800
 			termName.TextXAlignment = Enum.TextXAlignment.Left
+			termName.TextTruncate = Enum.TextTruncate.AtEnd
 			termName.Text = term.term or term.name or ("Term " .. tostring(i))
 			termName.ZIndex = 100
 			termName.Parent = row
 
 			local termGpa = Instance.new("TextLabel")
-			termGpa.Size = UDim2.new(0.4, -8, 1, 0)
-			termGpa.Position = UDim2.new(0.6, 8, 0, 0)
+			termGpa.Size = UDim2.new(0.40, -10, 1, 0)
+			termGpa.Position = UDim2.new(0.58, 0, 0, 0)
 			termGpa.BackgroundTransparency = 1
 			termGpa.Font = F.Medium
-			termGpa.TextSize = 11
+			termGpa.TextSize = GRADE_TEXT_SIZE
 			termGpa.TextColor3 = C.PurpleDark
 			termGpa.TextXAlignment = Enum.TextXAlignment.Right
 			if term.gpa then
-				termGpa.Text = string.format("GPA %.2f", term.gpa)
+				termGpa.Text = string.format("%.2f", term.gpa)
 			elseif term.grade then
 				termGpa.Text = tostring(term.grade)
 			else
@@ -3845,6 +3880,23 @@ end
 function OccupationScreen:createEducationInfoModal()
 	log("Creating education info modal...")
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX #2: Complete mobile overhaul for Education Info Modal
+	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL: Responsive sizing constants
+	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 12) or (IS_SMALL_PHONE and (ViewportSize.X - 20) or math.min(ViewportSize.X * 0.92, 400))
+	local MODAL_HEIGHT = IS_TINY_PHONE and math.min(ViewportSize.Y - 60, 340) or (IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 400) or math.min(ViewportSize.Y - 100, 460))
+	local HEADER_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 64)
+	local CARD_MARGIN = IS_TINY_PHONE and 3 or (IS_SMALL_PHONE and 4 or 8)
+	local CORNER_RAD = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 24)
+	local PADDING = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
+	local TITLE_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 14 or 18)
+	local LABEL_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	local SECTION_TITLE_SIZE = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 13 or 15)
+	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 28 or 30)
+
 	self.educationInfoOverlay = Instance.new("Frame")
 	self.educationInfoOverlay.Name = "EducationInfoOverlay"
 	self.educationInfoOverlay.Size = UDim2.fromScale(1, 1)
@@ -3864,85 +3916,91 @@ function OccupationScreen:createEducationInfoModal()
 		self:hideEducationInfoModal()
 	end)
 
+	-- Shadow frame - SCALED
+	local shadowOffset = IS_TINY_PHONE and 2 or (IS_SMALL_PHONE and 3 or 5)
 	local shadowFrame = Instance.new("Frame")
 	shadowFrame.Name = "ShadowFrame"
-	shadowFrame.Size = UDim2.new(0.92, 6, 0, 460)
+	shadowFrame.Size = UDim2.new(0, MODAL_WIDTH + shadowOffset * 2, 0, MODAL_HEIGHT + shadowOffset * 2)
 	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadowFrame.Position = UDim2.new(0.5, shadowOffset, 0.5, shadowOffset)
 	shadowFrame.BackgroundColor3 = C.Black
 	shadowFrame.BackgroundTransparency = 0.75
 	shadowFrame.ZIndex = 96
 	shadowFrame.Parent = self.educationInfoOverlay
-	UI.corner(shadowFrame, 26)
+	UI.corner(shadowFrame, CORNER_RAD)
 	self.educationInfoShadow = shadowFrame
 
+	-- Shell - SCALED
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
-	shell.Size = UDim2.new(0.92, 0, 0, 454)
+	shell.Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
 	shell.Position = UDim2.fromScale(0.5, 0.5)
 	shell.BackgroundColor3 = C.Purple
 	shell.ZIndex = 97
 	shell.Parent = self.educationInfoOverlay
-	UI.corner(shell, 24)
+	UI.corner(shell, CORNER_RAD - 2)
 	self.educationInfoShell = shell
 
-	-- Inner card
+	-- Inner card - SCALED
 	self.educationInfoCard = Instance.new("Frame")
 	self.educationInfoCard.Name = "Card"
-	self.educationInfoCard.Size = UDim2.new(1, -8, 1, -8)
+	self.educationInfoCard.Size = UDim2.new(1, -CARD_MARGIN * 2, 1, -CARD_MARGIN * 2)
 	self.educationInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.educationInfoCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.educationInfoCard.BackgroundColor3 = C.White
 	self.educationInfoCard.ZIndex = 98
 	self.educationInfoCard.Parent = shell
-	UI.corner(self.educationInfoCard, 20)
+	UI.corner(self.educationInfoCard, CORNER_RAD - 4)
 
-	-- Header
+	-- Header - SCALED
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, 64)
+	header.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
 	header.BackgroundColor3 = C.Purple
 	header.ZIndex = 99
 	header.Parent = self.educationInfoCard
-	UI.corner(header, 20)
+	UI.corner(header, CORNER_RAD - 4)
 
+	local headerFixHeight = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 26)
 	local headerFix = Instance.new("Frame")
 	headerFix.Name = "HeaderFix"
-	headerFix.Size = UDim2.new(1, 0, 0, 26)
-	headerFix.Position = UDim2.new(0, 0, 1, -26)
+	headerFix.Size = UDim2.new(1, 0, 0, headerFixHeight)
+	headerFix.Position = UDim2.new(0, 0, 1, -headerFixHeight)
 	headerFix.BackgroundColor3 = C.Purple
 	headerFix.BorderSizePixel = 0
 	headerFix.ZIndex = 99
 	headerFix.Parent = header
 
+	-- Title - SCALED
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -50, 0, 24)
-	title.Position = UDim2.new(0, 12, 0, 10)
+	title.Size = UDim2.new(1, -CLOSE_BTN_SIZE - 16, 1, 0)
+	title.Position = UDim2.new(0, PADDING, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = F.Title
-	title.TextSize = 18
+	title.TextSize = TITLE_SIZE
 	title.TextColor3 = C.White
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "🎓 Education Details"
+	title.Text = IS_TINY_PHONE and "🎓 Education" or "🎓 Education Details"
 	title.ZIndex = 100
 	title.Parent = header
 
+	-- Close button - SCALED
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Name = "CloseButton"
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.AnchorPoint = Vector2.new(1, 0)
-	closeBtn.Position = UDim2.new(1, -8, 0, 8)
+	closeBtn.Size = UDim2.new(0, CLOSE_BTN_SIZE, 0, CLOSE_BTN_SIZE)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+	closeBtn.Position = UDim2.new(1, -PADDING/2, 0.5, 0)
 	closeBtn.BackgroundColor3 = C.White
 	closeBtn.BackgroundTransparency = 0.1
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 13
+	closeBtn.TextSize = IS_TINY_PHONE and 10 or 13
 	closeBtn.TextColor3 = C.Purple
 	closeBtn.Text = "✕"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 101
 	closeBtn.Parent = header
-	UI.corner(closeBtn, 15)
+	UI.corner(closeBtn, CLOSE_BTN_SIZE / 2)
 
 	closeBtn.MouseEnter:Connect(function()
 		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
@@ -3954,84 +4012,92 @@ function OccupationScreen:createEducationInfoModal()
 		self:hideEducationInfoModal()
 	end)
 
-	-- Content scroll
+	-- Content scroll - SCALED
+	local contentTopOffset = HEADER_HEIGHT + (IS_TINY_PHONE and 4 or 6)
 	local content = Instance.new("ScrollingFrame")
 	content.Name = "ContentScroll"
-	content.Size = UDim2.new(1, -16, 1, -72)
-	content.Position = UDim2.new(0, 8, 0, 68)
+	content.Size = UDim2.new(1, -PADDING * 2, 1, -contentTopOffset - PADDING)
+	content.Position = UDim2.new(0, PADDING, 0, contentTopOffset)
 	content.BackgroundTransparency = 1
 	content.CanvasSize = UDim2.new(0, 0, 0, 0)
 	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	-- CRITICAL FIX: Scroll bar too thin for mobile - increase for touch-friendly scrolling
-	content.ScrollBarThickness = IS_MOBILE and 6 or 4
+	content.ScrollBarThickness = IS_TINY_PHONE and 2 or (IS_MOBILE and 5 or 4)
 	content.ScrollBarImageColor3 = C.Gray300
 	content.ZIndex = 99
 	content.Parent = self.educationInfoCard
 
 	local contentLayout = Instance.new("UIListLayout")
-	contentLayout.Padding = UDim.new(0, 12)
+	contentLayout.Padding = UDim.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12))
 	contentLayout.Parent = content
 
-	-- Summary card
+	-- Summary card - SCALED
+	local summaryHeight = IS_TINY_PHONE and 64 or (IS_SMALL_PHONE and 72 or 84)
 	local summary = Instance.new("Frame")
-	summary.Size = UDim2.new(1, 0, 0, 84)
+	summary.Size = UDim2.new(1, 0, 0, summaryHeight)
 	summary.BackgroundColor3 = C.Gray50
 	summary.LayoutOrder = 1
 	summary.ZIndex = 99
 	summary.Parent = content
-	UI.corner(summary, 12)
-	UI.pad(summary, 12, 12, 8, 8)
+	UI.corner(summary, IS_TINY_PHONE and 8 or 12)
 
+	local summaryPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
 	self.educationInfoTitle = Instance.new("TextLabel")
-	self.educationInfoTitle.Size = UDim2.new(1, 0, 0, 20)
+	self.educationInfoTitle.Size = UDim2.new(1, -summaryPad * 2, 0, IS_TINY_PHONE and 16 or 20)
+	self.educationInfoTitle.Position = UDim2.new(0, summaryPad, 0, summaryPad)
 	self.educationInfoTitle.BackgroundTransparency = 1
 	self.educationInfoTitle.Font = F.Title
-	self.educationInfoTitle.TextSize = 15
+	self.educationInfoTitle.TextSize = SECTION_TITLE_SIZE
 	self.educationInfoTitle.TextColor3 = C.Gray900
 	self.educationInfoTitle.TextXAlignment = Enum.TextXAlignment.Left
 	self.educationInfoTitle.Text = "Current Education"
 	self.educationInfoTitle.ZIndex = 100
 	self.educationInfoTitle.Parent = summary
 
+	local subtitleY = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 26 or 32)
 	self.educationInfoSubtitle = Instance.new("TextLabel")
-	self.educationInfoSubtitle.Size = UDim2.new(1, 0, 0, 18)
-	self.educationInfoSubtitle.Position = UDim2.new(0, 0, 0, 22)
+	self.educationInfoSubtitle.Size = UDim2.new(1, -summaryPad * 2, 0, IS_TINY_PHONE and 14 or 18)
+	self.educationInfoSubtitle.Position = UDim2.new(0, summaryPad, 0, subtitleY)
 	self.educationInfoSubtitle.BackgroundTransparency = 1
 	self.educationInfoSubtitle.Font = F.Body
-	self.educationInfoSubtitle.TextSize = 12
+	self.educationInfoSubtitle.TextSize = LABEL_SIZE
 	self.educationInfoSubtitle.TextColor3 = C.Gray600
 	self.educationInfoSubtitle.TextXAlignment = Enum.TextXAlignment.Left
 	self.educationInfoSubtitle.Text = ""
 	self.educationInfoSubtitle.ZIndex = 100
 	self.educationInfoSubtitle.Parent = summary
 
+	local statusY = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 46 or 54)
 	self.educationInfoStatusLabel = Instance.new("TextLabel")
-	self.educationInfoStatusLabel.Size = UDim2.new(1, 0, 0, 18)
-	self.educationInfoStatusLabel.Position = UDim2.new(0, 0, 0, 44)
+	self.educationInfoStatusLabel.Size = UDim2.new(1, -summaryPad * 2, 0, IS_TINY_PHONE and 14 or 18)
+	self.educationInfoStatusLabel.Position = UDim2.new(0, summaryPad, 0, statusY)
 	self.educationInfoStatusLabel.BackgroundTransparency = 1
 	self.educationInfoStatusLabel.Font = F.Body
-	self.educationInfoStatusLabel.TextSize = 12
+	self.educationInfoStatusLabel.TextSize = LABEL_SIZE
 	self.educationInfoStatusLabel.TextColor3 = C.Gray600
 	self.educationInfoStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 	self.educationInfoStatusLabel.Text = "Status: enrolled"
 	self.educationInfoStatusLabel.ZIndex = 100
 	self.educationInfoStatusLabel.Parent = summary
 
-	-- GPA / progress / debt
+	-- GPA / progress / debt card - SCALED
+	local statsHeight = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 68 or 80)
 	local statsCard = Instance.new("Frame")
-	statsCard.Size = UDim2.new(1, 0, 0, 80)
+	statsCard.Size = UDim2.new(1, 0, 0, statsHeight)
 	statsCard.BackgroundColor3 = C.Gray50
 	statsCard.LayoutOrder = 2
 	statsCard.ZIndex = 99
 	statsCard.Parent = content
-	UI.corner(statsCard, 12)
-	UI.pad(statsCard, 12, 12, 8, 8)
+	UI.corner(statsCard, IS_TINY_PHONE and 8 or 12)
 
+	local statsLabelHeight = IS_TINY_PHONE and 14 or 18
+	local statsLineSpacing = IS_TINY_PHONE and 16 or 20
+	
 	self.educationInfoGpaLabel = Instance.new("TextLabel")
-	self.educationInfoGpaLabel.Size = UDim2.new(1, 0, 0, 18)
+	self.educationInfoGpaLabel.Size = UDim2.new(1, -summaryPad * 2, 0, statsLabelHeight)
+	self.educationInfoGpaLabel.Position = UDim2.new(0, summaryPad, 0, summaryPad)
 	self.educationInfoGpaLabel.BackgroundTransparency = 1
 	self.educationInfoGpaLabel.Font = F.Medium
-	self.educationInfoGpaLabel.TextSize = 12
+	self.educationInfoGpaLabel.TextSize = LABEL_SIZE
 	self.educationInfoGpaLabel.TextColor3 = C.Gray700
 	self.educationInfoGpaLabel.TextXAlignment = Enum.TextXAlignment.Left
 	self.educationInfoGpaLabel.Text = "🎓 GPA: —"
@@ -4039,11 +4105,11 @@ function OccupationScreen:createEducationInfoModal()
 	self.educationInfoGpaLabel.Parent = statsCard
 
 	self.educationInfoProgressLabel = Instance.new("TextLabel")
-	self.educationInfoProgressLabel.Size = UDim2.new(1, 0, 0, 18)
-	self.educationInfoProgressLabel.Position = UDim2.new(0, 0, 0, 20)
+	self.educationInfoProgressLabel.Size = UDim2.new(1, -summaryPad * 2, 0, statsLabelHeight)
+	self.educationInfoProgressLabel.Position = UDim2.new(0, summaryPad, 0, summaryPad + statsLineSpacing)
 	self.educationInfoProgressLabel.BackgroundTransparency = 1
 	self.educationInfoProgressLabel.Font = F.Medium
-	self.educationInfoProgressLabel.TextSize = 12
+	self.educationInfoProgressLabel.TextSize = LABEL_SIZE
 	self.educationInfoProgressLabel.TextColor3 = C.Gray700
 	self.educationInfoProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
 	self.educationInfoProgressLabel.Text = "📈 Progress: —"
@@ -4051,23 +4117,24 @@ function OccupationScreen:createEducationInfoModal()
 	self.educationInfoProgressLabel.Parent = statsCard
 
 	self.educationInfoDebtLabel = Instance.new("TextLabel")
-	self.educationInfoDebtLabel.Size = UDim2.new(1, 0, 0, 18)
-	self.educationInfoDebtLabel.Position = UDim2.new(0, 0, 0, 40)
+	self.educationInfoDebtLabel.Size = UDim2.new(1, -summaryPad * 2, 0, statsLabelHeight)
+	self.educationInfoDebtLabel.Position = UDim2.new(0, summaryPad, 0, summaryPad + statsLineSpacing * 2)
 	self.educationInfoDebtLabel.BackgroundTransparency = 1
 	self.educationInfoDebtLabel.Font = F.Medium
-	self.educationInfoDebtLabel.TextSize = 12
+	self.educationInfoDebtLabel.TextSize = LABEL_SIZE
 	self.educationInfoDebtLabel.TextColor3 = C.Gray700
 	self.educationInfoDebtLabel.TextXAlignment = Enum.TextXAlignment.Left
-	self.educationInfoDebtLabel.Text = "💸 Student Debt: —"
+	self.educationInfoDebtLabel.Text = "💸 Debt: —"
 	self.educationInfoDebtLabel.ZIndex = 100
 	self.educationInfoDebtLabel.Parent = statsCard
 
-	-- Transcript
+	-- Transcript header - SCALED
+	local transcriptHeaderHeight = IS_TINY_PHONE and 18 or 24
 	local transcriptHeader = Instance.new("TextLabel")
-	transcriptHeader.Size = UDim2.new(1, 0, 0, 24)
+	transcriptHeader.Size = UDim2.new(1, 0, 0, transcriptHeaderHeight)
 	transcriptHeader.BackgroundTransparency = 1
 	transcriptHeader.Font = F.Title
-	transcriptHeader.TextSize = 14
+	transcriptHeader.TextSize = IS_TINY_PHONE and 11 or 14
 	transcriptHeader.TextColor3 = C.Gray800
 	transcriptHeader.TextXAlignment = Enum.TextXAlignment.Left
 	transcriptHeader.Text = "📑 Transcript"
@@ -4075,6 +4142,7 @@ function OccupationScreen:createEducationInfoModal()
 	transcriptHeader.ZIndex = 99
 	transcriptHeader.Parent = content
 
+	-- Grades container - SCALED
 	self.educationInfoGradesContainer = Instance.new("Frame")
 	self.educationInfoGradesContainer.Size = UDim2.new(1, 0, 0, 0)
 	self.educationInfoGradesContainer.AutomaticSize = Enum.AutomaticSize.Y
@@ -4082,15 +4150,19 @@ function OccupationScreen:createEducationInfoModal()
 	self.educationInfoGradesContainer.LayoutOrder = 4
 	self.educationInfoGradesContainer.ZIndex = 99
 	self.educationInfoGradesContainer.Parent = content
-	UI.corner(self.educationInfoGradesContainer, 12)
-	UI.pad(self.educationInfoGradesContainer, 12, 12, 8, 8)
+	UI.corner(self.educationInfoGradesContainer, IS_TINY_PHONE and 8 or 12)
+	UI.pad(self.educationInfoGradesContainer, summaryPad, summaryPad, summaryPad, summaryPad)
 
 	local gradesLayout = Instance.new("UIListLayout")
-	gradesLayout.Padding = UDim.new(0, 6)
+	gradesLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or 6)
 	gradesLayout.Parent = self.educationInfoGradesContainer
 
+	-- Store modal dimensions for animations
+	self.educationInfoModalWidth = MODAL_WIDTH
+	self.educationInfoModalHeight = MODAL_HEIGHT
+
 	self.educationInfoModal = true
-	log("Education info modal created")
+	log("Education info modal created with mobile optimization")
 end
 
 function OccupationScreen:hideEducationInfoModal()
@@ -4120,10 +4192,29 @@ end
 
 function OccupationScreen:createResultModal()
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- CRITICAL UI FIX #1: Complete mobile overhaul for Result Modal
+	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	self.resultModal = {}
+	
+	-- CRITICAL: Responsive sizing constants
+	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 24) or (IS_SMALL_PHONE and 300 or 340)
+	local MODAL_HEIGHT = IS_TINY_PHONE and 220 or (IS_SMALL_PHONE and 260 or 320)
+	local CARD_MARGIN = IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 10)
+	local CORNER_RAD = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 22 or 26)
+	local EMOJI_SIZE = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 80)
+	local EMOJI_TOP = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 12 or 20)
+	local EMOJI_TEXT_SIZE = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 32 or 44)
+	local TITLE_TOP = IS_TINY_PHONE and 62 or (IS_SMALL_PHONE and 72 or 108)
+	local TITLE_SIZE = IS_TINY_PHONE and 15 or (IS_SMALL_PHONE and 17 or 22)
+	local TITLE_HEIGHT = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 24 or 32)
+	local MSG_TOP = IS_TINY_PHONE and 88 or (IS_SMALL_PHONE and 100 or 145)
+	local MSG_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 15)
+	local MSG_HEIGHT = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 60 or 70)
+	local BTN_TOP = IS_TINY_PHONE and 150 or (IS_SMALL_PHONE and 170 or 230)
+	local BTN_HEIGHT = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 44 or 52)
+	local BTN_TEXT_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
 	
 	-- Close/dim overlay
 	local closeArea = Instance.new("TextButton")
@@ -4139,13 +4230,10 @@ function OccupationScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea
 	
-	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
-	local modalWidth = IS_TINY_PHONE and 280 or 340
-	local modalHeight = IS_TINY_PHONE and 260 or 320
-	
+	-- Container
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	container.Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -4154,7 +4242,7 @@ function OccupationScreen:createResultModal()
 	self.resultModal.container = container
 	
 	-- Premium shadow
-	local shadowPad = IS_TINY_PHONE and 8 or 12
+	local shadowPad = IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 12)
 	local shadow = Instance.new("Frame")
 	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
 	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
@@ -4162,7 +4250,7 @@ function OccupationScreen:createResultModal()
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 99
 	shadow.Parent = container
-	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
+	UI.corner(shadow, CORNER_RAD)
 	
 	-- Colored shell
 	local shell = Instance.new("Frame")
@@ -4171,36 +4259,35 @@ function OccupationScreen:createResultModal()
 	shell.BackgroundColor3 = C.Green
 	shell.ZIndex = 100
 	shell.Parent = container
-	UI.corner(shell, 26)
+	UI.corner(shell, CORNER_RAD)
 	self.resultModal.shell = shell
 	
 	-- Shell stroke
 	local shellStroke = Instance.new("UIStroke")
 	shellStroke.Color = C.GreenDark
-	shellStroke.Thickness = 2
+	shellStroke.Thickness = IS_TINY_PHONE and 1 or 2
 	shellStroke.Transparency = 0.5
 	shellStroke.Parent = shell
 	self.resultModal.shellStroke = shellStroke
 	
 	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -10, 1, -10)
-	card.Position = UDim2.new(0, 5, 0, 5)
+	card.Size = UDim2.new(1, -CARD_MARGIN * 2, 1, -CARD_MARGIN * 2)
+	card.Position = UDim2.new(0, CARD_MARGIN, 0, CARD_MARGIN)
 	card.BackgroundColor3 = C.White
 	card.ZIndex = 101
 	card.Parent = shell
-	UI.corner(card, 22)
+	UI.corner(card, CORNER_RAD - 4)
 	
-	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
-	local emojiSize = IS_TINY_PHONE and 56 or 80
+	-- Emoji frame
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
+	emojiFrame.Size = UDim2.new(0, EMOJI_SIZE, 0, EMOJI_SIZE)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, EMOJI_TOP)
 	emojiFrame.BackgroundColor3 = C.GreenPale
 	emojiFrame.ZIndex = 102
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, emojiSize/2)
+	UI.corner(emojiFrame, EMOJI_SIZE/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -4208,20 +4295,20 @@ function OccupationScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
+	emojiLabel.TextSize = EMOJI_TEXT_SIZE
 	emojiLabel.Text = "💼"
 	emojiLabel.ZIndex = 103
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
+	-- Title
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
+	titleLabel.Size = UDim2.new(1, -16, 0, TITLE_HEIGHT)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, TITLE_TOP)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
+	titleLabel.TextSize = TITLE_SIZE
 	titleLabel.TextColor3 = C.GreenDark
 	titleLabel.Text = "Great News!"
 	titleLabel.ZIndex = 102
@@ -4230,12 +4317,12 @@ function OccupationScreen:createResultModal()
 	
 	-- Message
 	local messageLabel = Instance.new("TextLabel")
-	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.Size = UDim2.new(1, -16, 0, MSG_HEIGHT)
 	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
-	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, MSG_TOP)
 	messageLabel.BackgroundTransparency = 1
 	messageLabel.Font = F.Body
-	messageLabel.TextSize = 15
+	messageLabel.TextSize = MSG_SIZE
 	messageLabel.TextColor3 = C.Gray700
 	messageLabel.TextWrapped = true
 	messageLabel.Text = "Everything worked out!"
@@ -4243,67 +4330,71 @@ function OccupationScreen:createResultModal()
 	messageLabel.Parent = card
 	self.resultModal.messageLabel = messageLabel
 	
-	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	-- Button shadow
+	local btnShadowHeight = BTN_HEIGHT + 4
 	local btnShadow = Instance.new("Frame")
 	btnShadow.Name = "OkBtnShadow"
-	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.Size = UDim2.new(0.75, 4, 0, btnShadowHeight)
 	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
-	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, BTN_TOP + 2)
 	btnShadow.BackgroundColor3 = C.GreenDark
 	btnShadow.BackgroundTransparency = 0.5
 	btnShadow.ZIndex = 102
 	btnShadow.Parent = card
-	UI.corner(btnShadow, 14)
+	UI.corner(btnShadow, IS_TINY_PHONE and 10 or 14)
 	self.resultModal.okBtnShadow = btnShadow
 	
 	-- OK Button
 	local okBtn = Instance.new("TextButton")
 	okBtn.Name = "OkBtn"
-	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.Size = UDim2.new(0.75, 0, 0, BTN_HEIGHT)
 	okBtn.AnchorPoint = Vector2.new(0.5, 0)
-	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.Position = UDim2.new(0.5, 0, 0, BTN_TOP)
 	okBtn.BackgroundColor3 = C.Green
 	okBtn.Font = F.Button
-	okBtn.TextSize = 17
+	okBtn.TextSize = BTN_TEXT_SIZE
 	okBtn.TextColor3 = C.White
-	okBtn.Text = "👍 Great!"
+	okBtn.Text = IS_TINY_PHONE and "👍 OK" or "👍 Great!"
 	okBtn.AutoButtonColor = false
 	okBtn.ZIndex = 103
 	okBtn.Parent = card
-	UI.corner(okBtn, 14)
+	UI.corner(okBtn, IS_TINY_PHONE and 10 or 14)
 	self.resultModal.okButton = okBtn
 	
-	-- Button hover (CRITICAL FIX: Also animate shadow)
+	-- Button hover effects
 	okBtn.MouseEnter:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-			Size = UDim2.new(0.72, 0, 0, 56),
+			Size = UDim2.new(0.77, 0, 0, BTN_HEIGHT + 4),
 			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
 		})
 		UI.tween(btnShadow, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.72, 4, 0, 60)
+			Size = UDim2.new(0.77, 4, 0, btnShadowHeight + 4)
 		})
 	end)
 	okBtn.MouseLeave:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.7, 0, 0, 52),
+			Size = UDim2.new(0.75, 0, 0, BTN_HEIGHT),
 			BackgroundColor3 = shell.BackgroundColor3
 		})
 		UI.tween(btnShadow, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.7, 4, 0, 56)
+			Size = UDim2.new(0.75, 4, 0, btnShadowHeight)
 		})
 	end)
 	
-	-- Custom show/hide (CRITICAL FIX: IS_TINY_PHONE responsive animation sizes)
+	-- Show/hide animations
+	local animStartW = MODAL_WIDTH - 20
+	local animStartH = MODAL_HEIGHT - 20
+	
 	self.resultModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
 		container.Position = UDim2.new(0.5, 0, 0.5, 40)
-		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
+		container.Size = UDim2.new(0, animStartW, 0, animStartH)
 		
 		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
 		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
+			Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
 		})
 	end
 	
@@ -4311,7 +4402,7 @@ function OccupationScreen:createResultModal()
 		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
 		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			Position = UDim2.new(0.5, 0, 0.5, 25),
-			Size = UDim2.new(0, 320, 0, 300)
+			Size = UDim2.new(0, animStartW, 0, animStartH)
 		})
 		task.delay(0.15, function()
 			closeArea.Visible = false
@@ -4938,40 +5029,52 @@ function OccupationScreen:showCareerInfoModal()
 	local performance = self:getCareerPerformance()
 	local totalExp = self.careerInfo and self.careerInfo.totalExperience or 0
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX: Scaled skill rows for mobile
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local SKILL_ROW_HEIGHT = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 20 or 24)
+	local SKILL_LABEL_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
+	local SKILL_BAR_HEIGHT = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 7 or 8)
+	local SKILL_VALUE_SIZE = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
+	local SKILL_PADDING = IS_TINY_PHONE and 4 or 6
+
 	-- Populate skills
 	self.careerInfoSkillsContainer:ClearAllChildren()
 
 	local skillLayout = Instance.new("UIListLayout")
-	skillLayout.Padding = UDim.new(0, 6)
+	skillLayout.Padding = UDim.new(0, SKILL_PADDING)
 	skillLayout.Parent = self.careerInfoSkillsContainer
 
 	local skillOrder = {"Technical", "Creative", "Social", "Physical", "Analytical", "Leadership"}
 	local skillEmojis = {Technical = "💻", Creative = "🎨", Social = "🗣️", Physical = "💪", Analytical = "📊", Leadership = "👑"}
+	-- Shorter names for tiny phones
+	local skillShortNames = {Technical = "Tech", Creative = "Creative", Social = "Social", Physical = "Physical", Analytical = "Analyt.", Leadership = "Leader"}
 
 	for i, skillName in ipairs(skillOrder) do
 		local skillValue = skills[skillName] or 0
 
 		local skillRow = Instance.new("Frame")
-		skillRow.Size = UDim2.new(1, 0, 0, 24)
+		skillRow.Size = UDim2.new(1, 0, 0, SKILL_ROW_HEIGHT)
 		skillRow.BackgroundTransparency = 1
 		skillRow.LayoutOrder = i
 		skillRow.ZIndex = 100
 		skillRow.Parent = self.careerInfoSkillsContainer
 
+		local displayName = IS_TINY_PHONE and skillShortNames[skillName] or skillName
 		local skillLabel = Instance.new("TextLabel")
-		skillLabel.Size = UDim2.new(0.45, 0, 1, 0)
+		skillLabel.Size = UDim2.new(IS_TINY_PHONE and 0.38 or 0.45, 0, 1, 0)
 		skillLabel.BackgroundTransparency = 1
 		skillLabel.Font = F.Body
-		skillLabel.TextSize = 11
+		skillLabel.TextSize = SKILL_LABEL_SIZE
 		skillLabel.TextColor3 = C.Gray700
 		skillLabel.TextXAlignment = Enum.TextXAlignment.Left
-		skillLabel.Text = (skillEmojis[skillName] or "📈") .. " " .. skillName
+		skillLabel.Text = (skillEmojis[skillName] or "📈") .. " " .. displayName
 		skillLabel.ZIndex = 100
 		skillLabel.Parent = skillRow
 
 		local skillBarBg = Instance.new("Frame")
-		skillBarBg.Size = UDim2.new(0.4, 0, 0, 8)
-		skillBarBg.Position = UDim2.new(0.45, 0, 0.5, -4)
+		skillBarBg.Size = UDim2.new(IS_TINY_PHONE and 0.42 or 0.40, 0, 0, SKILL_BAR_HEIGHT)
+		skillBarBg.Position = UDim2.new(IS_TINY_PHONE and 0.40 or 0.45, 0, 0.5, -SKILL_BAR_HEIGHT/2)
 		skillBarBg.BackgroundColor3 = C.Gray200
 		skillBarBg.ZIndex = 100
 		skillBarBg.Parent = skillRow
@@ -4985,11 +5088,11 @@ function OccupationScreen:showCareerInfoModal()
 		UI.pill(skillBarFill)
 
 		local skillValueLabel = Instance.new("TextLabel")
-		skillValueLabel.Size = UDim2.new(0.12, 0, 1, 0)
-		skillValueLabel.Position = UDim2.new(0.88, 0, 0, 0)
+		skillValueLabel.Size = UDim2.new(IS_TINY_PHONE and 0.15 or 0.12, 0, 1, 0)
+		skillValueLabel.Position = UDim2.new(IS_TINY_PHONE and 0.85 or 0.88, 0, 0, 0)
 		skillValueLabel.BackgroundTransparency = 1
 		skillValueLabel.Font = F.Medium
-		skillValueLabel.TextSize = 10
+		skillValueLabel.TextSize = SKILL_VALUE_SIZE
 		skillValueLabel.TextColor3 = C.Gray500
 		skillValueLabel.TextXAlignment = Enum.TextXAlignment.Right
 		skillValueLabel.Text = tostring(math.floor(skillValue))
@@ -4997,19 +5100,30 @@ function OccupationScreen:showCareerInfoModal()
 		skillValueLabel.Parent = skillRow
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX: Scaled history items for mobile
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local HISTORY_CARD_HEIGHT = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 44 or 50)
+	local HISTORY_TITLE_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	local HISTORY_COMPANY_SIZE = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
+	local HISTORY_BADGE_WIDTH = IS_TINY_PHONE and 42 or (IS_SMALL_PHONE and 48 or 55)
+	local HISTORY_BADGE_HEIGHT = IS_TINY_PHONE and 16 or (IS_SMALL_PHONE and 18 or 20)
+	local HISTORY_BADGE_SIZE = IS_TINY_PHONE and 7 or (IS_SMALL_PHONE and 8 or 9)
+	local HISTORY_PAD = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+
 	-- Populate career history
 	self.careerInfoHistoryContainer:ClearAllChildren()
 
 	local historyLayout = Instance.new("UIListLayout")
-	historyLayout.Padding = UDim.new(0, 8)
+	historyLayout.Padding = UDim.new(0, IS_TINY_PHONE and 5 or 8)
 	historyLayout.Parent = self.careerInfoHistoryContainer
 
 	if #history == 0 then
 		local noHistory = Instance.new("TextLabel")
-		noHistory.Size = UDim2.new(1, 0, 0, 30)
+		noHistory.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 22 or 30)
 		noHistory.BackgroundTransparency = 1
 		noHistory.Font = F.Body
-		noHistory.TextSize = 12
+		noHistory.TextSize = IS_TINY_PHONE and 10 or 12
 		noHistory.TextColor3 = C.Gray400
 		noHistory.Text = "No previous jobs"
 		noHistory.ZIndex = 100
@@ -5017,19 +5131,19 @@ function OccupationScreen:showCareerInfoModal()
 	else
 		for i, historyItem in ipairs(history) do
 			local historyCard = Instance.new("Frame")
-			historyCard.Size = UDim2.new(1, 0, 0, 50)
-			historyCard.BackgroundColor3 = C.Gray50
+			historyCard.Size = UDim2.new(1, 0, 0, HISTORY_CARD_HEIGHT)
+			historyCard.BackgroundColor3 = C.White
 			historyCard.LayoutOrder = #history - i + 1 -- Most recent first
 			historyCard.ZIndex = 99
 			historyCard.Parent = self.careerInfoHistoryContainer
-			UI.corner(historyCard, 8)
+			UI.corner(historyCard, IS_TINY_PHONE and 6 or 8)
 
 			local historyTitle = Instance.new("TextLabel")
-			historyTitle.Size = UDim2.new(0.7, 0, 0, 20)
-			historyTitle.Position = UDim2.new(0, 10, 0, 6)
+			historyTitle.Size = UDim2.new(1, -HISTORY_BADGE_WIDTH - HISTORY_PAD * 2, 0, IS_TINY_PHONE and 14 or 20)
+			historyTitle.Position = UDim2.new(0, HISTORY_PAD, 0, IS_TINY_PHONE and 4 or 6)
 			historyTitle.BackgroundTransparency = 1
 			historyTitle.Font = F.Medium
-			historyTitle.TextSize = 12
+			historyTitle.TextSize = HISTORY_TITLE_SIZE
 			historyTitle.TextColor3 = C.Gray800
 			historyTitle.TextXAlignment = Enum.TextXAlignment.Left
 			historyTitle.TextTruncate = Enum.TextTruncate.AtEnd
@@ -5038,13 +5152,14 @@ function OccupationScreen:showCareerInfoModal()
 			historyTitle.Parent = historyCard
 
 			local historyCompany = Instance.new("TextLabel")
-			historyCompany.Size = UDim2.new(0.7, 0, 0, 16)
-			historyCompany.Position = UDim2.new(0, 10, 0, 26)
+			historyCompany.Size = UDim2.new(1, -HISTORY_PAD * 2, 0, IS_TINY_PHONE and 12 or 16)
+			historyCompany.Position = UDim2.new(0, HISTORY_PAD, 0, IS_TINY_PHONE and 20 or 26)
 			historyCompany.BackgroundTransparency = 1
 			historyCompany.Font = F.Body
-			historyCompany.TextSize = 10
+			historyCompany.TextSize = HISTORY_COMPANY_SIZE
 			historyCompany.TextColor3 = C.Gray500
 			historyCompany.TextXAlignment = Enum.TextXAlignment.Left
+			historyCompany.TextTruncate = Enum.TextTruncate.AtEnd
 			historyCompany.Text = (historyItem.company or "Company") .. " • " .. string.format("%.1f yrs", historyItem.yearsWorked or 0)
 			historyCompany.ZIndex = 100
 			historyCompany.Parent = historyCard
@@ -5054,8 +5169,8 @@ function OccupationScreen:showCareerInfoModal()
 			local reason = historyItem.reason or "quit"
 
 			local reasonBadge = Instance.new("Frame")
-			reasonBadge.Size = UDim2.new(0, 55, 0, 20)
-			reasonBadge.Position = UDim2.new(1, -65, 0.5, -10)
+			reasonBadge.Size = UDim2.new(0, HISTORY_BADGE_WIDTH, 0, HISTORY_BADGE_HEIGHT)
+			reasonBadge.Position = UDim2.new(1, -HISTORY_BADGE_WIDTH - HISTORY_PAD, 0.5, -HISTORY_BADGE_HEIGHT/2)
 			reasonBadge.BackgroundColor3 = reasonColors[reason] or C.Gray300
 			reasonBadge.ZIndex = 100
 			reasonBadge.Parent = historyCard
@@ -5065,17 +5180,22 @@ function OccupationScreen:showCareerInfoModal()
 			reasonLabel.Size = UDim2.fromScale(1, 1)
 			reasonLabel.BackgroundTransparency = 1
 			reasonLabel.Font = F.Medium
-			reasonLabel.TextSize = 9
+			reasonLabel.TextSize = HISTORY_BADGE_SIZE
 			reasonLabel.TextColor3 = C.White
-			reasonLabel.Text = (reasonEmojis[reason] or "•") .. " " .. (reason:gsub("^%l", string.upper))
+			reasonLabel.Text = IS_TINY_PHONE and (reasonEmojis[reason] or "•") or ((reasonEmojis[reason] or "•") .. " " .. (reason:gsub("^%l", string.upper)))
 			reasonLabel.ZIndex = 101
 			reasonLabel.Parent = reasonBadge
 		end
 	end
 
-	-- Update summary labels
-	self.careerInfoExpLabel.Text = "📊 Total Experience: " .. string.format("%.1f years", totalExp)
-	self.careerInfoPerfLabel.Text = "⭐ Current Performance: " .. math.floor(performance) .. "%"
+	-- Update summary labels - SCALED TEXT
+	if IS_TINY_PHONE then
+		self.careerInfoExpLabel.Text = "📊 Exp: " .. string.format("%.1f yrs", totalExp)
+		self.careerInfoPerfLabel.Text = "⭐ Perf: " .. math.floor(performance) .. "%"
+	else
+		self.careerInfoExpLabel.Text = "📊 Total Experience: " .. string.format("%.1f years", totalExp)
+		self.careerInfoPerfLabel.Text = "⭐ Current Performance: " .. math.floor(performance) .. "%"
+	end
 
 	-- Show modal with premium animation
 	self.careerInfoOverlay.Visible = true
@@ -5101,6 +5221,23 @@ end
 function OccupationScreen:createCareerInfoModal()
 	log("Creating career info modal...")
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX: Complete mobile overhaul for Career Info Modal
+	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL: Responsive sizing constants
+	local MODAL_WIDTH = IS_TINY_PHONE and (ViewportSize.X - 12) or (IS_SMALL_PHONE and (ViewportSize.X - 20) or math.min(ViewportSize.X * 0.92, 400))
+	local MODAL_HEIGHT = IS_TINY_PHONE and math.min(ViewportSize.Y - 60, 360) or (IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 420) or math.min(ViewportSize.Y - 100, 520))
+	local HEADER_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or 60)
+	local CARD_MARGIN = IS_TINY_PHONE and 3 or (IS_SMALL_PHONE and 4 or 8)
+	local CORNER_RAD = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 24)
+	local PADDING = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
+	local TITLE_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 14 or 17)
+	local LABEL_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 12)
+	local SECTION_HEADER_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 14)
+	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 32 or 30)
+
 	self.careerInfoOverlay = Instance.new("Frame")
 	self.careerInfoOverlay.Name = "CareerInfoOverlay"
 	self.careerInfoOverlay.Size = UDim2.fromScale(1, 1)
@@ -5120,98 +5257,96 @@ function OccupationScreen:createCareerInfoModal()
 		self:hideCareerInfoModal()
 	end)
 
-	-- MOBILE FIX: Make modal height responsive and scrollable
-	local modalHeight = IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 420) or math.min(ViewportSize.Y - 100, 520)
-	local modalWidth = IS_SMALL_PHONE and 0.96 or 0.92
-
-	-- Shadow frame (premium effect)
+	-- Shadow frame (premium effect) - SCALED
+	local shadowOffset = IS_TINY_PHONE and 2 or (IS_SMALL_PHONE and 3 or 5)
 	local shadowFrame = Instance.new("Frame")
 	shadowFrame.Name = "ShadowFrame"
-	shadowFrame.Size = UDim2.new(modalWidth, 6, 0, modalHeight + 6)
+	shadowFrame.Size = UDim2.new(0, MODAL_WIDTH + shadowOffset * 2, 0, MODAL_HEIGHT + shadowOffset * 2)
 	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadowFrame.Position = UDim2.new(0.5, shadowOffset, 0.5, shadowOffset)
 	shadowFrame.BackgroundColor3 = C.Black
 	shadowFrame.BackgroundTransparency = 0.75
 	shadowFrame.ZIndex = 96
 	shadowFrame.Parent = self.careerInfoOverlay
-	UI.corner(shadowFrame, IS_SMALL_PHONE and 18 or 26)
+	UI.corner(shadowFrame, CORNER_RAD)
 	self.careerInfoShadow = shadowFrame
 
-	-- Colored shell (premium BitLife look)
+	-- Colored shell (premium BitLife look) - SCALED
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
-	shell.Size = UDim2.new(modalWidth, 0, 0, modalHeight)
+	shell.Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
 	shell.Position = UDim2.fromScale(0.5, 0.5)
 	shell.BackgroundColor3 = C.Blue
 	shell.ZIndex = 97
 	shell.Parent = self.careerInfoOverlay
-	UI.corner(shell, IS_SMALL_PHONE and 16 or 24)
+	UI.corner(shell, CORNER_RAD - 2)
 	self.careerInfoShell = shell
 
-	-- Shell border stroke
-	local shellStroke = UI.stroke(shell, 2, 0.3, C.BlueDark)
+	-- Shell border stroke - SCALED
+	local shellStroke = UI.stroke(shell, IS_TINY_PHONE and 1 or 2, 0.3, C.BlueDark)
 	self.careerInfoShellStroke = shellStroke
 
-	-- Inner white card (inside shell)
-	local cardMargin = IS_SMALL_PHONE and 4 or 8
+	-- Inner white card (inside shell) - SCALED
 	self.careerInfoCard = Instance.new("Frame")
 	self.careerInfoCard.Name = "Card"
-	self.careerInfoCard.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	self.careerInfoCard.Size = UDim2.new(1, -CARD_MARGIN * 2, 1, -CARD_MARGIN * 2)
 	self.careerInfoCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.careerInfoCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.careerInfoCard.BackgroundColor3 = C.White
 	self.careerInfoCard.ZIndex = 98
 	self.careerInfoCard.Parent = shell
-	UI.corner(self.careerInfoCard, IS_SMALL_PHONE and 14 or 20)
+	UI.corner(self.careerInfoCard, CORNER_RAD - 4)
 
-	-- Header (colored accent banner) - MOBILE FIX: Smaller header
-	local headerHeight = IS_SMALL_PHONE and 44 or 60
+	-- Header (colored accent banner) - SCALED
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, headerHeight)
+	header.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
 	header.BackgroundColor3 = C.Blue
 	header.ZIndex = 99
 	header.Parent = self.careerInfoCard
-	UI.corner(header, IS_SMALL_PHONE and 14 or 20)
+	UI.corner(header, CORNER_RAD - 4)
 
+	-- Header bottom fix (covers rounded corners at bottom of header)
+	local headerFixHeight = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 25)
 	local headerFix = Instance.new("Frame")
 	headerFix.Name = "HeaderFix"
-	headerFix.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 18 or 25)
-	headerFix.Position = UDim2.new(0, 0, 1, IS_SMALL_PHONE and -18 or -25)
+	headerFix.Size = UDim2.new(1, 0, 0, headerFixHeight)
+	headerFix.Position = UDim2.new(0, 0, 1, -headerFixHeight)
 	headerFix.BackgroundColor3 = C.Blue
 	headerFix.BorderSizePixel = 0
 	headerFix.ZIndex = 99
 	headerFix.Parent = header
 
+	-- Header title - SCALED
 	local headerTitle = Instance.new("TextLabel")
-	headerTitle.Size = UDim2.new(1, -50, 1, 0)
-	headerTitle.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 0, 0, 0)
+	headerTitle.Size = UDim2.new(1, -CLOSE_BTN_SIZE - 16, 1, 0)
+	headerTitle.Position = UDim2.new(0, PADDING, 0, 0)
 	headerTitle.BackgroundTransparency = 1
 	headerTitle.Font = F.Title
-	headerTitle.TextSize = IS_SMALL_PHONE and 14 or 17
+	headerTitle.TextSize = TITLE_SIZE
 	headerTitle.TextColor3 = C.White
-	headerTitle.Text = "📋 Career Info"
+	headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+	headerTitle.Text = IS_TINY_PHONE and "📋 Career" or "📋 Career Info"
 	headerTitle.ZIndex = 100
 	headerTitle.Parent = header
 
-	-- MOBILE FIX: Larger, more visible close button
-	local closeBtnSize = IS_SMALL_PHONE and 36 or 30
+	-- Close button - SCALED
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Name = "CloseButton"
-	closeBtn.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
+	closeBtn.Size = UDim2.new(0, CLOSE_BTN_SIZE, 0, CLOSE_BTN_SIZE)
 	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
-	closeBtn.Position = UDim2.new(1, IS_SMALL_PHONE and -6 or -8, 0.5, 0)
+	closeBtn.Position = UDim2.new(1, -PADDING/2, 0.5, 0)
 	closeBtn.BackgroundColor3 = C.White
 	closeBtn.BackgroundTransparency = 0.1
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 13
+	closeBtn.TextSize = IS_TINY_PHONE and 11 or 13
 	closeBtn.TextColor3 = C.Blue
 	closeBtn.Text = "✕"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 101
 	closeBtn.Parent = header
-	UI.corner(closeBtn, 15)
+	UI.corner(closeBtn, CLOSE_BTN_SIZE / 2)
 
 	closeBtn.MouseEnter:Connect(function()
 		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
@@ -5223,72 +5358,69 @@ function OccupationScreen:createCareerInfoModal()
 		self:hideCareerInfoModal()
 	end)
 
-	-- Content scroll - MOBILE FIX: Responsive positioning based on header height
-	local contentTopOffset = IS_SMALL_PHONE and 50 or 65
-	local contentBottomPad = IS_SMALL_PHONE and 56 or 72
-	local contentPadding = IS_SMALL_PHONE and 6 or 8
-	
+	-- Content scroll - SCALED
+	local contentTopOffset = HEADER_HEIGHT + (IS_TINY_PHONE and 4 or 6)
 	local content = Instance.new("ScrollingFrame")
 	content.Name = "ContentScroll"
-	content.Size = UDim2.new(1, -contentPadding*2, 1, -contentTopOffset - 8)
-	content.Position = UDim2.new(0, contentPadding, 0, contentTopOffset)
+	content.Size = UDim2.new(1, -PADDING * 2, 1, -contentTopOffset - PADDING)
+	content.Position = UDim2.new(0, PADDING, 0, contentTopOffset)
 	content.BackgroundTransparency = 1
 	content.CanvasSize = UDim2.new(0, 0, 0, 0)
 	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	content.ScrollBarThickness = IS_SMALL_PHONE and 4 or 3
+	content.ScrollBarThickness = IS_TINY_PHONE and 2 or (IS_SMALL_PHONE and 3 or 4)
 	content.ScrollBarImageColor3 = C.Gray300
 	content.ZIndex = 99
 	content.Parent = self.careerInfoCard
 
 	local contentLayout = Instance.new("UIListLayout")
-	contentLayout.Padding = UDim.new(0, IS_SMALL_PHONE and 8 or 12)
+	contentLayout.Padding = UDim.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12))
 	contentLayout.Parent = content
 
-	-- Summary section - MOBILE FIX: Smaller on mobile
-	local summarySectionHeight = IS_SMALL_PHONE and 44 or 55
+	-- Summary section - SCALED
+	local summarySectionHeight = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 44 or 55)
 	local summarySection = Instance.new("Frame")
 	summarySection.Size = UDim2.new(1, 0, 0, summarySectionHeight)
 	summarySection.BackgroundColor3 = C.Gray50
 	summarySection.LayoutOrder = 1
 	summarySection.ZIndex = 99
 	summarySection.Parent = content
-	UI.corner(summarySection, IS_SMALL_PHONE and 8 or 12)
-	UI.pad(summarySection, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
+	UI.corner(summarySection, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12))
 
-	local labelTextSize = IS_SMALL_PHONE and 10 or 12
+	-- Summary labels - SCALED
+	local summaryPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
+	local labelHeight = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 16 or 18)
+	
 	self.careerInfoExpLabel = Instance.new("TextLabel")
-	self.careerInfoExpLabel.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 18)
-	self.careerInfoExpLabel.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 12, 0, IS_SMALL_PHONE and 4 or 8)
+	self.careerInfoExpLabel.Size = UDim2.new(1, -summaryPad * 2, 0, labelHeight)
+	self.careerInfoExpLabel.Position = UDim2.new(0, summaryPad, 0, IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 8))
 	self.careerInfoExpLabel.BackgroundTransparency = 1
 	self.careerInfoExpLabel.Font = F.Medium
-	self.careerInfoExpLabel.TextSize = labelTextSize
+	self.careerInfoExpLabel.TextSize = LABEL_SIZE
 	self.careerInfoExpLabel.TextColor3 = C.Gray700
 	self.careerInfoExpLabel.TextXAlignment = Enum.TextXAlignment.Left
-	self.careerInfoExpLabel.Text = "📊 Total Experience: 0 years"
+	self.careerInfoExpLabel.Text = IS_TINY_PHONE and "📊 Exp: 0 yrs" or "📊 Total Experience: 0 years"
 	self.careerInfoExpLabel.ZIndex = 100
 	self.careerInfoExpLabel.Parent = summarySection
 
 	self.careerInfoPerfLabel = Instance.new("TextLabel")
-	self.careerInfoPerfLabel.Size = UDim2.new(1, 0, 0, IS_SMALL_PHONE and 14 or 18)
-	self.careerInfoPerfLabel.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 12, 0, IS_SMALL_PHONE and 22 or 28)
+	self.careerInfoPerfLabel.Size = UDim2.new(1, -summaryPad * 2, 0, labelHeight)
+	self.careerInfoPerfLabel.Position = UDim2.new(0, summaryPad, 0, IS_TINY_PHONE and 20 or (IS_SMALL_PHONE and 24 or 28))
 	self.careerInfoPerfLabel.BackgroundTransparency = 1
 	self.careerInfoPerfLabel.Font = F.Medium
-	self.careerInfoPerfLabel.TextSize = labelTextSize
+	self.careerInfoPerfLabel.TextSize = LABEL_SIZE
 	self.careerInfoPerfLabel.TextColor3 = C.Gray700
 	self.careerInfoPerfLabel.TextXAlignment = Enum.TextXAlignment.Left
-	self.careerInfoPerfLabel.Text = "⭐ Current Performance: 75%"
+	self.careerInfoPerfLabel.Text = IS_TINY_PHONE and "⭐ Perf: 75%" or "⭐ Current Performance: 75%"
 	self.careerInfoPerfLabel.ZIndex = 100
 	self.careerInfoPerfLabel.Parent = summarySection
 
-	-- Skills section - MOBILE FIX: Smaller headers
-	local sectionHeaderSize = IS_SMALL_PHONE and 18 or 24
-	local sectionHeaderTextSize = IS_SMALL_PHONE and 11 or 14
-	
+	-- Skills section header - SCALED
+	local sectionHeaderHeight = IS_TINY_PHONE and 16 or (IS_SMALL_PHONE and 18 or 24)
 	local skillsHeader = Instance.new("TextLabel")
-	skillsHeader.Size = UDim2.new(1, 0, 0, sectionHeaderSize)
+	skillsHeader.Size = UDim2.new(1, 0, 0, sectionHeaderHeight)
 	skillsHeader.BackgroundTransparency = 1
 	skillsHeader.Font = F.Title
-	skillsHeader.TextSize = sectionHeaderTextSize
+	skillsHeader.TextSize = SECTION_HEADER_SIZE
 	skillsHeader.TextColor3 = C.Gray800
 	skillsHeader.TextXAlignment = Enum.TextXAlignment.Left
 	skillsHeader.Text = "💼 Skills"
@@ -5296,6 +5428,7 @@ function OccupationScreen:createCareerInfoModal()
 	skillsHeader.ZIndex = 99
 	skillsHeader.Parent = content
 
+	-- Skills container - SCALED
 	self.careerInfoSkillsContainer = Instance.new("Frame")
 	self.careerInfoSkillsContainer.Size = UDim2.new(1, 0, 0, 0)
 	self.careerInfoSkillsContainer.AutomaticSize = Enum.AutomaticSize.Y
@@ -5303,15 +5436,17 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoSkillsContainer.LayoutOrder = 3
 	self.careerInfoSkillsContainer.ZIndex = 99
 	self.careerInfoSkillsContainer.Parent = content
-	UI.corner(self.careerInfoSkillsContainer, IS_SMALL_PHONE and 8 or 12)
-	UI.pad(self.careerInfoSkillsContainer, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
+	UI.corner(self.careerInfoSkillsContainer, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12))
+	
+	local skillsPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
+	UI.pad(self.careerInfoSkillsContainer, skillsPad, skillsPad, skillsPad, skillsPad)
 
-	-- History section
+	-- History section header - SCALED
 	local historyHeader = Instance.new("TextLabel")
-	historyHeader.Size = UDim2.new(1, 0, 0, sectionHeaderSize)
+	historyHeader.Size = UDim2.new(1, 0, 0, sectionHeaderHeight)
 	historyHeader.BackgroundTransparency = 1
 	historyHeader.Font = F.Title
-	historyHeader.TextSize = sectionHeaderTextSize
+	historyHeader.TextSize = SECTION_HEADER_SIZE
 	historyHeader.TextColor3 = C.Gray800
 	historyHeader.TextXAlignment = Enum.TextXAlignment.Left
 	historyHeader.Text = "📜 History"
@@ -5319,6 +5454,7 @@ function OccupationScreen:createCareerInfoModal()
 	historyHeader.ZIndex = 99
 	historyHeader.Parent = content
 
+	-- History container - SCALED
 	self.careerInfoHistoryContainer = Instance.new("Frame")
 	self.careerInfoHistoryContainer.Size = UDim2.new(1, 0, 0, 0)
 	self.careerInfoHistoryContainer.AutomaticSize = Enum.AutomaticSize.Y
@@ -5326,10 +5462,14 @@ function OccupationScreen:createCareerInfoModal()
 	self.careerInfoHistoryContainer.LayoutOrder = 5
 	self.careerInfoHistoryContainer.ZIndex = 99
 	self.careerInfoHistoryContainer.Parent = content
-	UI.corner(self.careerInfoHistoryContainer, IS_SMALL_PHONE and 8 or 12)
-	UI.pad(self.careerInfoHistoryContainer, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 8 or 12, IS_SMALL_PHONE and 6 or 10, IS_SMALL_PHONE and 6 or 10)
+	UI.corner(self.careerInfoHistoryContainer, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12))
+	UI.pad(self.careerInfoHistoryContainer, skillsPad, skillsPad, skillsPad, skillsPad)
 
-	log("Career info modal created")
+	-- Store modal dimensions for animations
+	self.careerInfoModalWidth = MODAL_WIDTH
+	self.careerInfoModalHeight = MODAL_HEIGHT
+
+	log("Career info modal created with mobile optimization")
 end
 
 function OccupationScreen:hideCareerInfoModal()
