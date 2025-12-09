@@ -92,10 +92,11 @@ local function padSize(base)
 	return math.floor(base * getScale())
 end
 
--- CRITICAL FIX: Card heights that scale properly
+-- CRITICAL FIX: Card heights - RESTORED proper sizing (don't over-shrink!)
 local function cardHeight(baseHeight)
-	if IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.7)) end
-	if IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.85)) end
+	-- Cards should NOT shrink too much - they need to remain usable and readable
+	if IS_TINY_PHONE then return math.max(90, math.floor(baseHeight * 0.9)) end
+	if IS_SMALL_PHONE then return math.max(95, math.floor(baseHeight * 0.95)) end
 	return baseHeight
 end
 
@@ -1769,9 +1770,9 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local hasPromotion = serverJob and serverJob.promotesTo
 
 	-- ═══════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Scale entire card for small phones
+	-- CRITICAL UI FIX: Proper card sizing (don't over-shrink!)
 	-- ═══════════════════════════════════════════════════════════
-	local CARD_HEIGHT = IS_TINY_PHONE and 240 or (IS_SMALL_PHONE and 280 or 340)
+	local CARD_HEIGHT = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 340)
 	local ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 60)
 	local MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 14)
 	local TITLE_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
@@ -2713,8 +2714,8 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	-- Outer shell with colored accent + inner white card + layered shadow
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL UI FIX: Scale card height for small phones
-	local JOB_CARD_HEIGHT = cardHeight(100)
+	-- CRITICAL UI FIX: Proper job card height (don't over-shrink!)
+	local JOB_CARD_HEIGHT = IS_TINY_PHONE and 95 or (IS_SMALL_PHONE and 98 or 100)
 	local JOB_ICON_SIZE = iconSize(58)
 	local JOB_ICON_MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 12)
 	
@@ -3285,9 +3286,9 @@ function OccupationScreen:createCurrentEducationCard(parent, eduLevel, eduInfo, 
 	end
 
 	-- ═══════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Scale education card for small phones
+	-- CRITICAL UI FIX: Proper education card sizing (don't over-shrink!)
 	-- ═══════════════════════════════════════════════════════════
-	local EDU_CARD_HEIGHT = IS_TINY_PHONE and 140 or (IS_SMALL_PHONE and 160 or 190)
+	local EDU_CARD_HEIGHT = IS_TINY_PHONE and 170 or (IS_SMALL_PHONE and 180 or 190)
 	local EDU_ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 50 or 60)
 	local EDU_MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 14)
 	local EDU_TEXT_START = EDU_MARGIN + EDU_ICON_SIZE + (IS_TINY_PHONE and 6 or 12)
@@ -3561,9 +3562,9 @@ function OccupationScreen:createEducationCard(parent, edu, order, age, money, ed
 	local canEnroll = meetsAge and meetsReq and not enrolled
 
 	-- ═══════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Scale education option cards for small phones
+	-- CRITICAL UI FIX: Proper education option card height (don't over-shrink!)
 	-- ═══════════════════════════════════════════════════════════
-	local EDU_CARD_HEIGHT = IS_TINY_PHONE and 70 or (IS_SMALL_PHONE and 80 or 95)
+	local EDU_CARD_HEIGHT = IS_TINY_PHONE and 90 or (IS_SMALL_PHONE and 92 or 95)
 	local EDU_ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 58)
 	local EDU_MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 12)
 	local EDU_TEXT_START = EDU_MARGIN + EDU_ICON_SIZE + (IS_TINY_PHONE and 6 or 10)
@@ -5030,9 +5031,9 @@ function OccupationScreen:showCareerInfoModal()
 	local totalExp = self.careerInfo and self.careerInfo.totalExperience or 0
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Scaled skill rows for mobile
+	-- CRITICAL UI FIX: Properly sized skill rows for mobile
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local SKILL_ROW_HEIGHT = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 20 or 24)
+	local SKILL_ROW_HEIGHT = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 23 or 24)
 	local SKILL_LABEL_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
 	local SKILL_BAR_HEIGHT = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 7 or 8)
 	local SKILL_VALUE_SIZE = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
@@ -5101,9 +5102,9 @@ function OccupationScreen:showCareerInfoModal()
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Scaled history items for mobile
+	-- CRITICAL UI FIX: Properly sized history items for mobile
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local HISTORY_CARD_HEIGHT = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 44 or 50)
+	local HISTORY_CARD_HEIGHT = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 48 or 50)
 	local HISTORY_TITLE_SIZE = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	local HISTORY_COMPANY_SIZE = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
 	local HISTORY_BADGE_WIDTH = IS_TINY_PHONE and 42 or (IS_SMALL_PHONE and 48 or 55)
