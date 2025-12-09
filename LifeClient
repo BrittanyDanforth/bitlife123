@@ -1786,14 +1786,16 @@ local function buildEventModal()
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
 
-	local choicePadSide = Device.IS_TINY_PHONE and 8 or padSize(22)
-	local choicePadTop = Device.IS_TINY_PHONE and 2 or padSize(4)
-	local choicePadBottom = Device.IS_TINY_PHONE and 10 or padSize(24)
+	-- MOBILE FIX: Tighter choice section padding
+	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
+	local choicePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(4))
+	local choicePadBottom = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 12 or padSize(24))
 	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 5 or padSize(10))
+	-- MOBILE FIX: Tighter spacing between buttons
+	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
 
@@ -2667,12 +2669,12 @@ showEvent = function(payload)
 
 		local choiceHandlers = {}
 
-		-- MOBILE FIX: Responsive choice button sizing
-		local choiceBtnHeight = Device.IS_TINY_PHONE and 40 or (Device.IS_SMALL_PHONE and 46 or 58)
-		local choiceBtnTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or 16)
-		local choiceBtnCorner = Device.IS_TINY_PHONE and 10 or 14
-		local choiceBtnPadH = Device.IS_TINY_PHONE and 8 or 12
-		local choiceBtnPadV = Device.IS_TINY_PHONE and 4 or 6
+		-- MOBILE FIX: Much smaller choice buttons that fit the card properly
+		local choiceBtnHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
+		local choiceBtnTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
+		local choiceBtnCorner = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or 12)
+		local choiceBtnPadH = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 10)
+		local choiceBtnPadV = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or 5)
 		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
@@ -2693,7 +2695,7 @@ showEvent = function(payload)
 			btn.Parent = choicesSection
 
 			corner(btn, choiceBtnCorner)
-			stroke(btn, Device.IS_TINY_PHONE and 1 or 2, 0.5, C.BlueLight)
+			stroke(btn, 1, 0.5, C.BlueLight)
 			-- Add padding so text doesn't touch edges
 			pad(btn, choiceBtnPadH, choiceBtnPadH, choiceBtnPadV, choiceBtnPadV)
 
