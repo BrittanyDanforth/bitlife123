@@ -59,28 +59,37 @@ C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
+-- CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
 local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 local ViewportSize = Camera.ViewportSize
 
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.65 end
-	if minDim < 400 then return 0.75 end
+	if minDim < 350 then return 0.60 end  -- CRITICAL: More aggressive for tiny phones
+	if minDim < 400 then return 0.70 end
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
-local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
-local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Better text sizing for tiny phones
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 9 or 10
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Proper minimum touch target for tiny phones
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	return IS_MOBILE and math.max(44, scaled) or scaled
+	local minTarget = IS_TINY_PHONE and 38 or 44
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
 local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 12 end
 	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
 	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
 	return 350
@@ -1015,12 +1024,12 @@ function OccupationScreen:createUI()
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
 
-	-- MOBILE FIX: Responsive layout constants
-	local HEADER_HEIGHT = IS_SMALL_PHONE and 56 or px(72)
-	local INFO_HEIGHT = IS_SMALL_PHONE and 44 or px(52)
-	local TAB_HEIGHT = btnHeight(52)
-	local CATEGORY_HEIGHT = btnHeight(44)
-	local GAP = padSize(8)
+	-- MOBILE FIX: Responsive layout constants (CRITICAL: IS_TINY_PHONE support)
+	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
+	local INFO_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or px(52))
+	local TAB_HEIGHT = IS_TINY_PHONE and 40 or btnHeight(52)
+	local CATEGORY_HEIGHT = IS_TINY_PHONE and 36 or btnHeight(44)
+	local GAP = IS_TINY_PHONE and 4 or padSize(8)
 
 	-- Custom header (consistent with RelationshipsScreen)
 	local header = Instance.new("Frame")
@@ -3839,7 +3848,8 @@ function OccupationScreen:createEducationInfoModal()
 	content.BackgroundTransparency = 1
 	content.CanvasSize = UDim2.new(0, 0, 0, 0)
 	content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	content.ScrollBarThickness = 3
+	-- CRITICAL FIX: Scroll bar too thin for mobile - increase for touch-friendly scrolling
+	content.ScrollBarThickness = IS_MOBILE and 6 or 4
 	content.ScrollBarImageColor3 = C.Gray300
 	content.ZIndex = 99
 	content.Parent = self.educationInfoCard
@@ -4015,10 +4025,13 @@ function OccupationScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea
 	
-	-- Container
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, 340, 0, 320)
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -4027,14 +4040,15 @@ function OccupationScreen:createResultModal()
 	self.resultModal.container = container
 	
 	-- Premium shadow
+	local shadowPad = IS_TINY_PHONE and 8 or 12
 	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 12, 1, 12)
-	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 99
 	shadow.Parent = container
-	UI.corner(shadow, 28)
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
 	
 	-- Colored shell
 	local shell = Instance.new("Frame")
@@ -4063,15 +4077,16 @@ function OccupationScreen:createResultModal()
 	card.Parent = shell
 	UI.corner(card, 22)
 	
-	-- Emoji frame
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
 	emojiFrame.BackgroundColor3 = C.GreenPale
 	emojiFrame.ZIndex = 102
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, 40)
+	UI.corner(emojiFrame, emojiSize/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -4079,20 +4094,20 @@ function OccupationScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = 44
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
 	emojiLabel.Text = "💼"
 	emojiLabel.ZIndex = 103
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 22
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
 	titleLabel.TextColor3 = C.GreenDark
 	titleLabel.Text = "Great News!"
 	titleLabel.ZIndex = 102
@@ -4164,17 +4179,17 @@ function OccupationScreen:createResultModal()
 		})
 	end)
 	
-	-- Custom show/hide
+	-- Custom show/hide (CRITICAL FIX: IS_TINY_PHONE responsive animation sizes)
 	self.resultModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
 		container.Position = UDim2.new(0.5, 0, 0.5, 40)
-		container.Size = UDim2.new(0, 320, 0, 300)
+		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
 		
 		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
 		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, 340, 0, 320)
+			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
 		})
 	end
 	

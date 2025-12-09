@@ -66,28 +66,37 @@ C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
+-- CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
 local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 local ViewportSize = Camera.ViewportSize
 
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.65 end
-	if minDim < 400 then return 0.75 end
+	if minDim < 350 then return 0.60 end  -- CRITICAL: More aggressive for tiny phones
+	if minDim < 400 then return 0.70 end
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
-local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
-local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Better text sizing for tiny phones
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 9 or 10
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Proper minimum touch target for tiny phones
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	return IS_MOBILE and math.max(44, scaled) or scaled
+	local minTarget = IS_TINY_PHONE and 38 or 44
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
 local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 12 end
 	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
 	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
 	return 350
@@ -567,9 +576,9 @@ function RelationshipsScreen:createUI()
 	self.overlay.Parent = self.screenGui
 
 	----------------------------------------------------------------
-	-- HEADER - MOBILE FIX: Responsive sizing
+	-- HEADER - MOBILE FIX: Responsive sizing (CRITICAL: IS_TINY_PHONE support)
 	----------------------------------------------------------------
-	local HEADER_HEIGHT = IS_SMALL_PHONE and 56 or px(72)
+	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
@@ -650,11 +659,11 @@ function RelationshipsScreen:createUI()
 	pad.Parent = self.contentRoot
 
 	----------------------------------------------------------------
-	-- LAYOUT CONSTANTS (inside contentRoot)
+	-- LAYOUT CONSTANTS (inside contentRoot) - CRITICAL FIX: IS_TINY_PHONE support
 	----------------------------------------------------------------
-	local INFO_HEIGHT   = 52
-	local TAB_HEIGHT    = 52
-	local GAP           = 8
+	local INFO_HEIGHT   = IS_TINY_PHONE and 38 or 52
+	local TAB_HEIGHT    = IS_TINY_PHONE and 40 or 52
+	local GAP           = IS_TINY_PHONE and 4 or 8
 
 	local infoY   = 0                           -- first row
 	local tabY    = infoY   + INFO_HEIGHT + GAP -- second row
@@ -1863,29 +1872,32 @@ function RelationshipsScreen:createInteractionModal()
 		self:hideInteractionModal()
 	end)
 
-	-- Shadow
+	-- Shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 0.96 or 0.92  -- Wider on tiny phones
+	local modalHeight = IS_TINY_PHONE and 360 or 450
+	
 	local shadowFrame = Instance.new("Frame")
 	shadowFrame.Name = "ShadowFrame"
-	shadowFrame.Size = UDim2.new(0.92, 6, 0, 456)
+	shadowFrame.Size = UDim2.new(modalWidth, 6, 0, modalHeight + 6)
 	shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	shadowFrame.Position = UDim2.new(0.5, 3, 0.5, 3)
 	shadowFrame.BackgroundColor3 = C.Black
 	shadowFrame.BackgroundTransparency = 0.75
 	shadowFrame.ZIndex = 94
 	shadowFrame.Parent = self.interactOverlay
-	UI.corner(shadowFrame, 26)
+	UI.corner(shadowFrame, IS_TINY_PHONE and 18 or 26)
 	self.interactShadow = shadowFrame
 
-	-- Colored shell
+	-- Colored shell (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
-	shell.Size = UDim2.new(0.92, 0, 0, 450)
+	shell.Size = UDim2.new(modalWidth, 0, 0, modalHeight)
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
 	shell.Position = UDim2.fromScale(0.5, 0.5)
 	shell.BackgroundColor3 = C.Pink
 	shell.ZIndex = 95
 	shell.Parent = self.interactOverlay
-	UI.corner(shell, 24)
+	UI.corner(shell, IS_TINY_PHONE and 16 or 24)
 	self.interactShell = shell
 
 	local shellStroke = UI.stroke(shell, 2, 0.3, C.PinkDark)
@@ -2262,10 +2274,13 @@ function RelationshipsScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea
 	
-	-- Container
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, 340, 0, 320)
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -2273,10 +2288,11 @@ function RelationshipsScreen:createResultModal()
 	container.Parent = closeArea
 	self.resultModal.container = container
 	
-	-- Premium shadow
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
 	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 12, 1, 12)
-	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 99
@@ -2310,15 +2326,16 @@ function RelationshipsScreen:createResultModal()
 	card.Parent = shell
 	UI.corner(card, 22)
 	
-	-- Emoji frame
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
 	emojiFrame.BackgroundColor3 = C.PinkPale
 	emojiFrame.ZIndex = 102
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, 40)
+	UI.corner(emojiFrame, emojiSize/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -2326,20 +2343,20 @@ function RelationshipsScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = 44
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
 	emojiLabel.Text = "💕"
 	emojiLabel.ZIndex = 103
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 22
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
 	titleLabel.TextColor3 = C.PinkDark
 	titleLabel.Text = "Interaction"
 	titleLabel.ZIndex = 102

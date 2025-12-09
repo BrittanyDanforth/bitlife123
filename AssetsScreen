@@ -64,28 +64,37 @@ C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
+-- CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
 local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 local ViewportSize = Camera.ViewportSize
 
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.65 end
-	if minDim < 400 then return 0.75 end
+	if minDim < 350 then return 0.60 end  -- CRITICAL: More aggressive for tiny phones
+	if minDim < 400 then return 0.70 end
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
-local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
-local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Better text sizing for tiny phones
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 9 or 10
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Proper minimum touch target for tiny phones
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	return IS_MOBILE and math.max(44, scaled) or scaled
+	local minTarget = IS_TINY_PHONE and 38 or 44
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
 local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 12 end
 	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
 	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
 	return 350
@@ -457,10 +466,15 @@ function AssetsScreen:createUI()
 
 	-- CRITICAL FIX: Balance bar - clean card design that fits naturally below header
 	-- Uses a white card with teal accent, positioned to look integrated
+	-- CRITICAL FIX: IS_TINY_PHONE responsive sizing
+	local balanceBarHeight = IS_TINY_PHONE and 42 or 54
+	local balanceBarY = IS_TINY_PHONE and 100 or 130
+	local balanceBarMargin = IS_TINY_PHONE and 8 or 12
+	
 	self.balanceBar = Instance.new("Frame")
 	self.balanceBar.Name = "BalanceBar"
-	self.balanceBar.Size = UDim2.new(1, -24, 0, 54) -- Full width minus margins
-	self.balanceBar.Position = UDim2.new(0, 12, 0, 130) -- Below header curve (header extends to ~120px)
+	self.balanceBar.Size = UDim2.new(1, -balanceBarMargin * 2, 0, balanceBarHeight) -- Full width minus margins
+	self.balanceBar.Position = UDim2.new(0, balanceBarMargin, 0, balanceBarY) -- Below header curve (header extends to ~120px)
 	self.balanceBar.BackgroundColor3 = C.White
 	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
@@ -530,7 +544,9 @@ function AssetsScreen:createUI()
 
 	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
 	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 196, zIndex = 84 })
+	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
+	local tabBarY = IS_TINY_PHONE and 150 or 196
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = tabBarY, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -550,7 +566,9 @@ function AssetsScreen:createUI()
 
 	-- Scroll area - CRITICAL FIX: Positioned below tab bar
 	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 266, zIndex = 81 })
+	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
+	local contentScrollY = IS_TINY_PHONE and 200 or 266
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = contentScrollY, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()
@@ -581,10 +599,13 @@ function AssetsScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea
 	
-	-- Container
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, 340, 0, 320)
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -592,15 +613,16 @@ function AssetsScreen:createResultModal()
 	container.Parent = closeArea
 	self.resultModal.container = container
 	
-	-- Premium shadow
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
 	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 12, 1, 12)
-	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 97
 	shadow.Parent = container
-	UI.corner(shadow, 28)
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
 	
 	-- Colored shell
 	local shell = Instance.new("Frame")
@@ -629,15 +651,16 @@ function AssetsScreen:createResultModal()
 	card.Parent = shell
 	UI.corner(card, 22)
 	
-	-- Emoji frame
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
 	emojiFrame.BackgroundColor3 = C.GreenPale
 	emojiFrame.ZIndex = 100
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, 40)
+	UI.corner(emojiFrame, emojiSize/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -645,20 +668,20 @@ function AssetsScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = 44
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
 	emojiLabel.Text = "🛒"
 	emojiLabel.ZIndex = 101
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 22
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
 	titleLabel.TextColor3 = C.GreenDark
 	titleLabel.Text = "Purchase Complete!"
 	titleLabel.ZIndex = 100

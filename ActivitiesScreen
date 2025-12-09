@@ -66,30 +66,38 @@ C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 
--- Device detection
+-- Device detection (CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE)
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
 local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
 
 local ViewportSize = Camera.ViewportSize
 
 local function getScale()
 	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
-	if minDim < 350 then return 0.65 end
-	if minDim < 400 then return 0.75 end
+	if minDim < 350 then return 0.60 end  -- CRITICAL FIX: More aggressive scaling for tiny phones
+	if minDim < 400 then return 0.70 end
 	if minDim < 500 then return 0.85 end
 	if minDim < 768 then return 0.95 end
 	return 1.0
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
-local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
-local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Better text size scaling for tiny phones
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 9 or 10
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+local function padSize(base) return math.max(IS_TINY_PHONE and 2 or 4, math.floor(base * getScale())) end
+-- CRITICAL FIX: Proper minimum touch target for tiny phones (38px instead of 44px to fit more)
 local function btnHeight(baseHeight) 
 	local scaled = math.floor(baseHeight * getScale())
-	return IS_MOBILE and math.max(44, scaled) or scaled
+	local minTarget = IS_TINY_PHONE and 38 or 44
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
 end
 local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 12 end  -- CRITICAL FIX: Tighter margins for tiny phones
 	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
 	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
 	return 350
@@ -498,11 +506,11 @@ function ActivitiesScreen:createUI()
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
 	
-	-- MOBILE FIX: Responsive layout constants
-	local HEADER_HEIGHT = IS_SMALL_PHONE and 56 or px(72)
-	local INFO_HEIGHT = IS_SMALL_PHONE and 36 or px(44)
-	local TAB_HEIGHT = btnHeight(48)
-	local GAP = padSize(8)
+	-- MOBILE FIX: Responsive layout constants (CRITICAL: Added IS_TINY_PHONE support)
+	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
+	local INFO_HEIGHT = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 36 or px(44))
+	local TAB_HEIGHT = IS_TINY_PHONE and 38 or btnHeight(48)
+	local GAP = IS_TINY_PHONE and 4 or padSize(8)
 
 	-- Custom header (matches OccupationScreen for consistency)
 	local header = Instance.new("Frame")
@@ -536,13 +544,13 @@ function ActivitiesScreen:createUI()
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = header
 
-	-- MOBILE FIX: Touch-friendly close button
-	local closeBtnSize = btnHeight(32)
+	-- MOBILE FIX: Touch-friendly close button (CRITICAL: IS_TINY_PHONE support)
+	local closeBtnSize = IS_TINY_PHONE and 28 or btnHeight(32)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
 	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
 	closeButton.AnchorPoint = Vector2.new(1, 0.5)
-	closeButton.Position = UDim2.new(1, -padSize(16), 0.5, 0)
+	closeButton.Position = UDim2.new(1, IS_TINY_PHONE and -8 or -padSize(16), 0.5, 0)
 	closeButton.BackgroundColor3 = C.White
 	closeButton.BackgroundTransparency = 0.1
 	closeButton.Font = Enum.Font.GothamBold
@@ -2411,10 +2419,13 @@ function ActivitiesScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea  -- Alias for compatibility
 	
-	-- Container
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, 340, 0, 320)
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -2422,16 +2433,17 @@ function ActivitiesScreen:createResultModal()
 	container.Parent = closeArea
 	self.resultModal.container = container
 	
-	-- Premium shadow
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
 	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
-	shadow.Size = UDim2.new(1, 12, 1, 12)
-	shadow.Position = UDim2.new(0, 6, 0, 6)
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
 	shadow.BackgroundColor3 = C.Black
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 99
 	shadow.Parent = container
-	UI.corner(shadow, 28)
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
 	
 	-- Colored shell (accent border)
 	local shell = Instance.new("Frame")
@@ -2461,15 +2473,16 @@ function ActivitiesScreen:createResultModal()
 	card.Parent = shell
 	UI.corner(card, 22)
 	
-	-- Emoji frame (circular background)
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, 80, 0, 80)
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, 20)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
 	emojiFrame.BackgroundColor3 = C.GreenPale
 	emojiFrame.ZIndex = 102
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, 40)
+	UI.corner(emojiFrame, emojiSize/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -2477,20 +2490,20 @@ function ActivitiesScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = 44
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
 	emojiLabel.Text = "🎉"
 	emojiLabel.ZIndex = 103
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -32, 0, 32)
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, 108)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 22
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
 	titleLabel.TextColor3 = C.GreenDark
 	titleLabel.Text = "Activity Complete!"
 	titleLabel.ZIndex = 102
@@ -2576,17 +2589,17 @@ function ActivitiesScreen:createResultModal()
 		self:switchTab(self.currentTab)
 	end
 	
-	-- Custom show/hide methods
+	-- Custom show/hide methods (CRITICAL FIX: IS_TINY_PHONE responsive animation sizes)
 	self.resultModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
 		container.Position = UDim2.new(0.5, 0, 0.5, 40)
-		container.Size = UDim2.new(0, 320, 0, 300)
+		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
 		
 		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
 		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, 340, 0, 320)
+			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
 		})
 	end
 	
