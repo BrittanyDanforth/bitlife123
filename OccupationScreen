@@ -2442,9 +2442,9 @@ function OccupationScreen:createJobInfoModal()
 		self:hideJobInfoModal()
 	end)
 
-	-- MOBILE FIX: Responsive modal sizing
-	local jobModalHeight = IS_SMALL_PHONE and math.min(ViewportSize.Y - 80, 340) or 380
-	local jobModalWidth = IS_SMALL_PHONE and 0.96 or 0.9
+	-- MOBILE FIX: Responsive modal sizing (simple fixed sizes like AssetsScreen)
+	local jobModalHeight = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 340 or 380)
+	local jobModalWidth = IS_TINY_PHONE and 0.95 or (IS_SMALL_PHONE and 0.96 or 0.9)
 
 	-- Shadow frame (premium effect)
 	local shadowFrame = Instance.new("Frame")
@@ -3883,20 +3883,20 @@ function OccupationScreen:createEducationInfoModal()
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL UI FIX #2: Complete mobile overhaul for Education Info Modal
-	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
+	-- Matching AssetsScreen/RelationshipsScreen - simple fixed sizes!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL: Proper modal sizing - NOT too skinny!
-	local MODAL_WIDTH = math.min(400, ViewportSize.X - 24) -- 24px total margin
-	local MODAL_HEIGHT = math.min(460, ViewportSize.Y - 80)
-	local HEADER_HEIGHT = IS_SMALL_PHONE and 50 or 64
-	local CARD_MARGIN = IS_SMALL_PHONE and 5 or 8
-	local CORNER_RAD = IS_SMALL_PHONE and 18 or 24
-	local PADDING = IS_SMALL_PHONE and 10 or 12
-	local TITLE_SIZE = IS_SMALL_PHONE and 15 or 18
-	local LABEL_SIZE = IS_SMALL_PHONE and 11 or 12
-	local SECTION_TITLE_SIZE = IS_SMALL_PHONE and 13 or 15
-	local CLOSE_BTN_SIZE = IS_SMALL_PHONE and 30 or 32
+	-- CRITICAL FIX: Simple fixed sizes like other screens - NOT math.min calculations!
+	local MODAL_WIDTH = IS_TINY_PHONE and 320 or 400
+	local MODAL_HEIGHT = IS_TINY_PHONE and 380 or 460
+	local HEADER_HEIGHT = IS_TINY_PHONE and 44 or 64
+	local CARD_MARGIN = IS_TINY_PHONE and 4 or 8
+	local CORNER_RAD = IS_TINY_PHONE and 16 or 24
+	local PADDING = IS_TINY_PHONE and 8 or 12
+	local TITLE_SIZE = IS_TINY_PHONE and 14 or 18
+	local LABEL_SIZE = IS_TINY_PHONE and 10 or 12
+	local SECTION_TITLE_SIZE = IS_TINY_PHONE and 12 or 15
+	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 28 or 32
 
 	self.educationInfoOverlay = Instance.new("Frame")
 	self.educationInfoOverlay.Name = "EducationInfoOverlay"
@@ -4193,29 +4193,10 @@ end
 
 function OccupationScreen:createResultModal()
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX #1: Complete mobile overhaul for Result Modal
-	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
+	-- CRITICAL REVAMP: Premium Result Modal (matching AssetsScreen/RelationshipsScreen)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	self.resultModal = {}
-	
-	-- CRITICAL: Proper modal sizing - NOT too skinny!
-	local MODAL_WIDTH = math.min(340, ViewportSize.X - 32) -- 32px total margin
-	local MODAL_HEIGHT = math.min(320, ViewportSize.Y - 100)
-	local CARD_MARGIN = IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 10)
-	local CORNER_RAD = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 22 or 26)
-	local EMOJI_SIZE = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 80)
-	local EMOJI_TOP = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 12 or 20)
-	local EMOJI_TEXT_SIZE = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 32 or 44)
-	local TITLE_TOP = IS_TINY_PHONE and 62 or (IS_SMALL_PHONE and 72 or 108)
-	local TITLE_SIZE = IS_TINY_PHONE and 15 or (IS_SMALL_PHONE and 17 or 22)
-	local TITLE_HEIGHT = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 24 or 32)
-	local MSG_TOP = IS_TINY_PHONE and 88 or (IS_SMALL_PHONE and 100 or 145)
-	local MSG_SIZE = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 15)
-	local MSG_HEIGHT = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 60 or 70)
-	local BTN_TOP = IS_TINY_PHONE and 150 or (IS_SMALL_PHONE and 170 or 230)
-	local BTN_HEIGHT = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 44 or 52)
-	local BTN_TEXT_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
 	
 	-- Close/dim overlay
 	local closeArea = Instance.new("TextButton")
@@ -4231,10 +4212,13 @@ function OccupationScreen:createResultModal()
 	self.resultModal.closeArea = closeArea
 	self.resultModal.overlay = closeArea
 	
-	-- Container
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing - matching AssetsScreen)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
 	local container = Instance.new("Frame")
 	container.Name = "ResultModalContainer"
-	container.Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
 	container.AnchorPoint = Vector2.new(0.5, 0.5)
 	container.Position = UDim2.fromScale(0.5, 0.5)
 	container.BackgroundTransparency = 1
@@ -4242,8 +4226,8 @@ function OccupationScreen:createResultModal()
 	container.Parent = closeArea
 	self.resultModal.container = container
 	
-	-- Premium shadow
-	local shadowPad = IS_TINY_PHONE and 4 or (IS_SMALL_PHONE and 6 or 12)
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
 	local shadow = Instance.new("Frame")
 	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
 	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
@@ -4251,7 +4235,7 @@ function OccupationScreen:createResultModal()
 	shadow.BackgroundTransparency = 0.7
 	shadow.ZIndex = 99
 	shadow.Parent = container
-	UI.corner(shadow, CORNER_RAD)
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
 	
 	-- Colored shell
 	local shell = Instance.new("Frame")
@@ -4260,35 +4244,36 @@ function OccupationScreen:createResultModal()
 	shell.BackgroundColor3 = C.Green
 	shell.ZIndex = 100
 	shell.Parent = container
-	UI.corner(shell, CORNER_RAD)
+	UI.corner(shell, 26)
 	self.resultModal.shell = shell
 	
 	-- Shell stroke
 	local shellStroke = Instance.new("UIStroke")
 	shellStroke.Color = C.GreenDark
-	shellStroke.Thickness = IS_TINY_PHONE and 1 or 2
+	shellStroke.Thickness = 2
 	shellStroke.Transparency = 0.5
 	shellStroke.Parent = shell
 	self.resultModal.shellStroke = shellStroke
 	
 	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -CARD_MARGIN * 2, 1, -CARD_MARGIN * 2)
-	card.Position = UDim2.new(0, CARD_MARGIN, 0, CARD_MARGIN)
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
 	card.BackgroundColor3 = C.White
 	card.ZIndex = 101
 	card.Parent = shell
-	UI.corner(card, CORNER_RAD - 4)
+	UI.corner(card, 22)
 	
-	-- Emoji frame
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
 	local emojiFrame = Instance.new("Frame")
-	emojiFrame.Size = UDim2.new(0, EMOJI_SIZE, 0, EMOJI_SIZE)
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
-	emojiFrame.Position = UDim2.new(0.5, 0, 0, EMOJI_TOP)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
 	emojiFrame.BackgroundColor3 = C.GreenPale
 	emojiFrame.ZIndex = 102
 	emojiFrame.Parent = card
-	UI.corner(emojiFrame, EMOJI_SIZE/2)
+	UI.corner(emojiFrame, emojiSize/2)
 	self.resultModal.emojiFrame = emojiFrame
 	
 	-- Emoji label
@@ -4296,20 +4281,20 @@ function OccupationScreen:createResultModal()
 	emojiLabel.Size = UDim2.fromScale(1, 1)
 	emojiLabel.BackgroundTransparency = 1
 	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = EMOJI_TEXT_SIZE
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
 	emojiLabel.Text = "💼"
 	emojiLabel.ZIndex = 103
 	emojiLabel.Parent = emojiFrame
 	self.resultModal.emojiLabel = emojiLabel
 	
-	-- Title
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -16, 0, TITLE_HEIGHT)
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
 	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
-	titleLabel.Position = UDim2.new(0.5, 0, 0, TITLE_TOP)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = TITLE_SIZE
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
 	titleLabel.TextColor3 = C.GreenDark
 	titleLabel.Text = "Great News!"
 	titleLabel.ZIndex = 102
@@ -4318,12 +4303,12 @@ function OccupationScreen:createResultModal()
 	
 	-- Message
 	local messageLabel = Instance.new("TextLabel")
-	messageLabel.Size = UDim2.new(1, -16, 0, MSG_HEIGHT)
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
 	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
-	messageLabel.Position = UDim2.new(0.5, 0, 0, MSG_TOP)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
 	messageLabel.BackgroundTransparency = 1
 	messageLabel.Font = F.Body
-	messageLabel.TextSize = MSG_SIZE
+	messageLabel.TextSize = 15
 	messageLabel.TextColor3 = C.Gray700
 	messageLabel.TextWrapped = true
 	messageLabel.Text = "Everything worked out!"
@@ -4331,71 +4316,67 @@ function OccupationScreen:createResultModal()
 	messageLabel.Parent = card
 	self.resultModal.messageLabel = messageLabel
 	
-	-- Button shadow
-	local btnShadowHeight = BTN_HEIGHT + 4
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
 	local btnShadow = Instance.new("Frame")
 	btnShadow.Name = "OkBtnShadow"
-	btnShadow.Size = UDim2.new(0.75, 4, 0, btnShadowHeight)
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
 	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
-	btnShadow.Position = UDim2.new(0.5, 2, 0, BTN_TOP + 2)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
 	btnShadow.BackgroundColor3 = C.GreenDark
 	btnShadow.BackgroundTransparency = 0.5
 	btnShadow.ZIndex = 102
 	btnShadow.Parent = card
-	UI.corner(btnShadow, IS_TINY_PHONE and 10 or 14)
+	UI.corner(btnShadow, 14)
 	self.resultModal.okBtnShadow = btnShadow
 	
 	-- OK Button
 	local okBtn = Instance.new("TextButton")
 	okBtn.Name = "OkBtn"
-	okBtn.Size = UDim2.new(0.75, 0, 0, BTN_HEIGHT)
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
 	okBtn.AnchorPoint = Vector2.new(0.5, 0)
-	okBtn.Position = UDim2.new(0.5, 0, 0, BTN_TOP)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
 	okBtn.BackgroundColor3 = C.Green
 	okBtn.Font = F.Button
-	okBtn.TextSize = BTN_TEXT_SIZE
+	okBtn.TextSize = 17
 	okBtn.TextColor3 = C.White
-	okBtn.Text = IS_TINY_PHONE and "👍 OK" or "👍 Great!"
+	okBtn.Text = "👍 Great!"
 	okBtn.AutoButtonColor = false
 	okBtn.ZIndex = 103
 	okBtn.Parent = card
-	UI.corner(okBtn, IS_TINY_PHONE and 10 or 14)
+	UI.corner(okBtn, 14)
 	self.resultModal.okButton = okBtn
 	
-	-- Button hover effects
+	-- Button hover (CRITICAL FIX: Also animate shadow)
 	okBtn.MouseEnter:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-			Size = UDim2.new(0.77, 0, 0, BTN_HEIGHT + 4),
+			Size = UDim2.new(0.72, 0, 0, 56),
 			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
 		})
 		UI.tween(btnShadow, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.77, 4, 0, btnShadowHeight + 4)
+			Size = UDim2.new(0.72, 4, 0, 60)
 		})
 	end)
 	okBtn.MouseLeave:Connect(function()
 		UI.tween(okBtn, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.75, 0, 0, BTN_HEIGHT),
+			Size = UDim2.new(0.7, 0, 0, 52),
 			BackgroundColor3 = shell.BackgroundColor3
 		})
 		UI.tween(btnShadow, TweenInfo.new(0.12), {
-			Size = UDim2.new(0.75, 4, 0, btnShadowHeight)
+			Size = UDim2.new(0.7, 4, 0, 56)
 		})
 	end)
 	
-	-- Show/hide animations
-	local animStartW = MODAL_WIDTH - 20
-	local animStartH = MODAL_HEIGHT - 20
-	
+	-- Custom show/hide (matching AssetsScreen)
 	self.resultModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
 		container.Position = UDim2.new(0.5, 0, 0.5, 40)
-		container.Size = UDim2.new(0, animStartW, 0, animStartH)
+		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
 		
 		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
 		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, MODAL_WIDTH, 0, MODAL_HEIGHT)
+			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
 		})
 	end
 	
@@ -4403,7 +4384,7 @@ function OccupationScreen:createResultModal()
 		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
 		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			Position = UDim2.new(0.5, 0, 0.5, 25),
-			Size = UDim2.new(0, animStartW, 0, animStartH)
+			Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
 		})
 		task.delay(0.15, function()
 			closeArea.Visible = false
@@ -4492,17 +4473,17 @@ end
 
 function OccupationScreen:createQuitConfirmModal()
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL UI FIX: Mobile-optimized Quit Modal
+	-- CRITICAL UI FIX: Mobile-optimized Quit Modal (matching AssetsScreen/RelationshipsScreen)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL UI FIX: Proper modal sizing - NOT too skinny!
-	local MODAL_WIDTH = math.min(360, ViewportSize.X - 24) -- Always 24px margin on each side
-	local MODAL_HEIGHT = math.min(540, ViewportSize.Y - 60)
+	-- CRITICAL FIX: Simple fixed sizes like other screens - NOT math.min calculations!
+	local MODAL_WIDTH = IS_TINY_PHONE and 300 or 360
+	local MODAL_HEIGHT = IS_TINY_PHONE and 420 or 520
 	local MODAL_PAD = IS_TINY_PHONE and 10 or 16
-	local EMOJI_SIZE = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 40 or 48)
-	local TITLE_SIZE = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 20 or 24)
-	local JOB_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
-	local BODY_SIZE = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 12 or 14)
+	local EMOJI_SIZE = IS_TINY_PHONE and 32 or 48
+	local TITLE_SIZE = IS_TINY_PHONE and 18 or 24
+	local JOB_SIZE = IS_TINY_PHONE and 14 or 17
+	local BODY_SIZE = IS_TINY_PHONE and 11 or 14
 	
 	-- Modal container object
 	self.quitConfirmModal = {}
@@ -5224,20 +5205,20 @@ function OccupationScreen:createCareerInfoModal()
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL UI FIX: Complete mobile overhaul for Career Info Modal
-	-- Properly scales for IS_TINY_PHONE, IS_SMALL_PHONE, and desktop
+	-- Matching AssetsScreen/RelationshipsScreen - simple fixed sizes!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL: Proper modal sizing - NOT too skinny!
-	local MODAL_WIDTH = math.min(400, ViewportSize.X - 24) -- 24px total margin
-	local MODAL_HEIGHT = math.min(520, ViewportSize.Y - 80)
-	local HEADER_HEIGHT = IS_SMALL_PHONE and 48 or 60
-	local CARD_MARGIN = IS_SMALL_PHONE and 5 or 8
-	local CORNER_RAD = IS_SMALL_PHONE and 18 or 24
-	local PADDING = IS_SMALL_PHONE and 10 or 12
-	local TITLE_SIZE = IS_SMALL_PHONE and 15 or 17
-	local LABEL_SIZE = IS_SMALL_PHONE and 11 or 12
-	local SECTION_HEADER_SIZE = IS_SMALL_PHONE and 12 or 14
-	local CLOSE_BTN_SIZE = IS_SMALL_PHONE and 30 or 32
+	-- CRITICAL FIX: Simple fixed sizes like other screens - NOT math.min calculations!
+	local MODAL_WIDTH = IS_TINY_PHONE and 320 or 400
+	local MODAL_HEIGHT = IS_TINY_PHONE and 420 or 520
+	local HEADER_HEIGHT = IS_TINY_PHONE and 44 or 60
+	local CARD_MARGIN = IS_TINY_PHONE and 4 or 8
+	local CORNER_RAD = IS_TINY_PHONE and 16 or 24
+	local PADDING = IS_TINY_PHONE and 8 or 12
+	local TITLE_SIZE = IS_TINY_PHONE and 14 or 17
+	local LABEL_SIZE = IS_TINY_PHONE and 10 or 12
+	local SECTION_HEADER_SIZE = IS_TINY_PHONE and 11 or 14
+	local CLOSE_BTN_SIZE = IS_TINY_PHONE and 28 or 32
 
 	self.careerInfoOverlay = Instance.new("Frame")
 	self.careerInfoOverlay.Name = "CareerInfoOverlay"
