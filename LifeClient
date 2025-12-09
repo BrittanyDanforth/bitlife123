@@ -2756,67 +2756,69 @@ hideEvent = function()
 end
 
 ----------------------------------------------------------------
--- INTRO (gender + name)
+-- INTRO (gender + name) - Consolidated into IntroUI table to reduce local register usage
 ----------------------------------------------------------------
 
-local introOverlay = Instance.new("Frame")
-introOverlay.Size = UDim2.fromScale(1, 1)
-introOverlay.BackgroundColor3 = C.Black
-introOverlay.BackgroundTransparency = 0.5
-introOverlay.Visible = false
-introOverlay.ZIndex = 70
-introOverlay.Parent = screenGui
+local IntroUI = {}
 
-local introContent = Instance.new("Frame")
-introContent.Size = UDim2.new(0.9, 0, 0, 0)
-introContent.AutomaticSize = Enum.AutomaticSize.Y
-introContent.AnchorPoint = Vector2.new(0.5, 0.5)
-introContent.Position = UDim2.fromScale(0.5, 0.5)
-introContent.BackgroundTransparency = 1
-introContent.ZIndex = 71
-introContent.Parent = introOverlay
+IntroUI.overlay = Instance.new("Frame")
+IntroUI.overlay.Size = UDim2.fromScale(1, 1)
+IntroUI.overlay.BackgroundColor3 = C.Black
+IntroUI.overlay.BackgroundTransparency = 0.5
+IntroUI.overlay.Visible = false
+IntroUI.overlay.ZIndex = 70
+IntroUI.overlay.Parent = screenGui
 
-local introLayout = Instance.new("UIListLayout")
-introLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-introLayout.Padding = UDim.new(0, 20)
-introLayout.Parent = introContent
+IntroUI.content = Instance.new("Frame")
+IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
+IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+IntroUI.content.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroUI.content.Position = UDim2.fromScale(0.5, 0.5)
+IntroUI.content.BackgroundTransparency = 1
+IntroUI.content.ZIndex = 71
+IntroUI.content.Parent = IntroUI.overlay
 
-local genderTitle = Instance.new("TextLabel")
-genderTitle.Size = UDim2.new(1, 0, 0, 36)
-genderTitle.BackgroundTransparency = 1
-genderTitle.Font = F.Title
-genderTitle.TextSize = 24
-genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
-genderTitle.Text = "Start by picking a gender"
-genderTitle.LayoutOrder = 1
-genderTitle.ZIndex = 72
-genderTitle.Parent = introContent
+IntroUI.layout = Instance.new("UIListLayout")
+IntroUI.layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.layout.Padding = UDim.new(0, 20)
+IntroUI.layout.Parent = IntroUI.content
 
-local genderBtns = Instance.new("Frame")
-genderBtns.Size = UDim2.new(1, 0, 0, 140)
-genderBtns.BackgroundTransparency = 1
-genderBtns.LayoutOrder = 2
-genderBtns.ZIndex = 71
-genderBtns.Parent = introContent
+IntroUI.genderTitle = Instance.new("TextLabel")
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 36)
+IntroUI.genderTitle.BackgroundTransparency = 1
+IntroUI.genderTitle.Font = F.Title
+IntroUI.genderTitle.TextSize = 24
+IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
+IntroUI.genderTitle.Text = "Start by picking a gender"
+IntroUI.genderTitle.LayoutOrder = 1
+IntroUI.genderTitle.ZIndex = 72
+IntroUI.genderTitle.Parent = IntroUI.content
 
-local genderBtnLayout = Instance.new("UIListLayout")
-genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-genderBtnLayout.Padding = UDim.new(0, 14)
-genderBtnLayout.Parent = genderBtns
+IntroUI.genderBtns = Instance.new("Frame")
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 140)
+IntroUI.genderBtns.BackgroundTransparency = 1
+IntroUI.genderBtns.LayoutOrder = 2
+IntroUI.genderBtns.ZIndex = 71
+IntroUI.genderBtns.Parent = IntroUI.content
 
-local nameBtns = Instance.new("Frame")
-nameBtns.Name = "NameBtns"
-nameBtns.Size = UDim2.new(1, 0, 0, 200)
-nameBtns.BackgroundTransparency = 1
-nameBtns.Visible = false
-nameBtns.LayoutOrder = 3
-nameBtns.ZIndex = 71
-nameBtns.Parent = introContent
+IntroUI.genderBtnLayout = Instance.new("UIListLayout")
+IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 14)
+IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
-local nameBtnLayout = Instance.new("UIListLayout")
-nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-nameBtnLayout.Padding = UDim.new(0, 12)
-nameBtnLayout.Parent = nameBtns
+IntroUI.nameBtns = Instance.new("Frame")
+IntroUI.nameBtns.Name = "NameBtns"
+IntroUI.nameBtns.Size = UDim2.new(1, 0, 0, 200)
+IntroUI.nameBtns.BackgroundTransparency = 1
+IntroUI.nameBtns.Visible = false
+IntroUI.nameBtns.LayoutOrder = 3
+IntroUI.nameBtns.ZIndex = 71
+IntroUI.nameBtns.Parent = IntroUI.content
+
+IntroUI.nameBtnLayout = Instance.new("UIListLayout")
+IntroUI.nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.nameBtnLayout.Padding = UDim.new(0, 12)
+IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
 -- Name pools for randomization - EXPANDED for variety (100+ names each)
 -- Consolidated into single table to reduce local register usage (Luau limit is 200)
@@ -2932,7 +2934,7 @@ for i = 1, 3 do
 	nameBtn.AutoButtonColor = false
 	nameBtn.LayoutOrder = i
 	nameBtn.ZIndex = 72
-	nameBtn.Parent = nameBtns
+	nameBtn.Parent = IntroUI.nameBtns
 	pill(nameBtn)
 	stroke(nameBtn, 2, 0.6, C.White)
 
@@ -2967,7 +2969,7 @@ end
 updateNameButtons = function()
 	local names = selectedGender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
 	local emoji = selectedGender == "Male" and "👨" or "👩"
-	for _, child in ipairs(nameBtns:GetChildren()) do
+	for _, child in ipairs(IntroUI.nameBtns:GetChildren()) do
 		if child:IsA("TextButton") then
 			local idx = tonumber(child.Name:match("%d+"))
 			if idx and names[idx] then
@@ -2992,7 +2994,7 @@ for _, g in ipairs(genderData) do
 	btn.Text = g.icon .. " " .. g.gender
 	btn.AutoButtonColor = false
 	btn.ZIndex = 72
-	btn.Parent = genderBtns
+	btn.Parent = IntroUI.genderBtns
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
 
@@ -3006,21 +3008,21 @@ for _, g in ipairs(genderData) do
 
 	btn.MouseButton1Click:Connect(function()
 		selectedGender = g.gender
-		genderTitle.Text = "Now, pick someone to become"
+		IntroUI.genderTitle.Text = "Now, pick someone to become"
 
 		-- Smooth fade transition from gender to names
-		for _, genderBtn in ipairs(genderBtns:GetChildren()) do
+		for _, genderBtn in ipairs(IntroUI.genderBtns:GetChildren()) do
 			if genderBtn:IsA("TextButton") then
 				tween(genderBtn, TweenInfo.new(0.15), { BackgroundTransparency = 1, TextTransparency = 1 })
 			end
 		end
 
 		task.delay(0.15, function()
-			genderBtns.Visible = false
-			nameBtns.Visible  = true
+			IntroUI.genderBtns.Visible = false
+			IntroUI.nameBtns.Visible  = true
 
 			-- Reset gender buttons for next time
-			for _, genderBtn in ipairs(genderBtns:GetChildren()) do
+			for _, genderBtn in ipairs(IntroUI.genderBtns:GetChildren()) do
 				if genderBtn:IsA("TextButton") then
 					genderBtn.BackgroundTransparency = 0
 					genderBtn.TextTransparency = 0
@@ -3030,7 +3032,7 @@ for _, g in ipairs(genderData) do
 			updateNameButtons()
 
 			-- Fade in name buttons
-			for _, nameBtn in ipairs(nameBtns:GetChildren()) do
+			for _, nameBtn in ipairs(IntroUI.nameBtns:GetChildren()) do
 				if nameBtn:IsA("TextButton") then
 					nameBtn.BackgroundTransparency = 1
 					nameBtn.TextTransparency = 1
@@ -3048,18 +3050,18 @@ showIntro = function()
 	generateRandomNames()
 
 	-- Reset intro UI state
-	introOverlay.Visible = true
-	introOverlay.BackgroundTransparency = 0.5
-	introContent.Position = UDim2.fromScale(0.5, 0.5)
+	IntroUI.overlay.Visible = true
+	IntroUI.overlay.BackgroundTransparency = 0.5
+	IntroUI.content.Position = UDim2.fromScale(0.5, 0.5)
 
 	showBlur()
-	genderTitle.Text = "Start by picking a gender"
-	genderBtns.Visible = true
-	nameBtns.Visible = false
+	IntroUI.genderTitle.Text = "Start by picking a gender"
+	IntroUI.genderBtns.Visible = true
+	IntroUI.nameBtns.Visible = false
 
 	-- Fade in animation
-	introContent.Position = UDim2.new(0.5, 0, 0.55, 0)
-	tween(introContent, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+	IntroUI.content.Position = UDim2.new(0.5, 0, 0.55, 0)
+	tween(IntroUI.content, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.fromScale(0.5, 0.5)
 	})
 end
@@ -3068,17 +3070,17 @@ hideIntro = function()
 	-- Smooth fade out animation
 	local fadeTime = 0.25
 
-	tween(introContent, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+	tween(IntroUI.content, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, 0.45, 0)
 	})
-	tween(introOverlay, TweenInfo.new(fadeTime), {
+	tween(IntroUI.overlay, TweenInfo.new(fadeTime), {
 		BackgroundTransparency = 1
 	})
 
 	hideBlur()
 
 	task.delay(fadeTime, function()
-		introOverlay.Visible = false
+		IntroUI.overlay.Visible = false
 		if not hasShownAgeHint then
 			task.delay(0.3, showTutorial)
 		end
@@ -3379,7 +3381,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- Check if intro should be shown (shouldn't normally happen here, but safety check)
 	if not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
-	elseif currentState.Name and introOverlay.Visible then
+	elseif currentState.Name and IntroUI.overlay.Visible then
 		hideIntro()
 	end
 end)
