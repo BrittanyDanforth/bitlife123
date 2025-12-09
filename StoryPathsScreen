@@ -52,6 +52,40 @@ C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
 C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local ViewportSize = Camera.ViewportSize
+
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.65 end
+	if minDim < 400 then return 0.75 end
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+local function textSize(baseSize) return math.max(10, math.floor(baseSize * getScale())) end
+local function padSize(base) return math.max(4, math.floor(base * getScale())) end
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	return IS_MOBILE and math.max(44, scaled) or scaled
+end
+local function cardWidth()
+	if IS_SMALL_PHONE then return ViewportSize.X - 16 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 24, 350) end
+	return 350
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 
 local StoryPathsScreen = {}
 StoryPathsScreen.__index = StoryPathsScreen
