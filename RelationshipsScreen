@@ -567,9 +567,9 @@ function RelationshipsScreen:createUI()
 	self.overlay.Parent = self.screenGui
 
 	----------------------------------------------------------------
-	-- HEADER (BitLife-style, we fully control the height here)
+	-- HEADER - MOBILE FIX: Responsive sizing
 	----------------------------------------------------------------
-	local HEADER_HEIGHT = 72
+	local HEADER_HEIGHT = IS_SMALL_PHONE and 56 or px(72)
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
@@ -588,34 +588,37 @@ function RelationshipsScreen:createUI()
 	headerBottom.ZIndex = 85
 	headerBottom.Parent = header
 
+	-- MOBILE FIX: Responsive title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "Title"
-	titleLabel.Size = UDim2.new(1, -80, 1, 0)
-	titleLabel.Position = UDim2.new(0, 16, 0, 0)
+	titleLabel.Size = UDim2.new(1, -px(80), 1, 0)
+	titleLabel.Position = UDim2.new(0, padSize(16), 0, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 20
+	titleLabel.TextSize = textSize(20)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.Text = "Relationships"
 	titleLabel.ZIndex = 86
 	titleLabel.Parent = header
 
+	-- MOBILE FIX: Touch-friendly close button
+	local closeBtnSize = btnHeight(32)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
-	closeButton.Size = UDim2.new(0, 32, 0, 32)
+	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
 	closeButton.AnchorPoint = Vector2.new(1, 0.5)
-	closeButton.Position = UDim2.new(1, -16, 0.5, 0)
+	closeButton.Position = UDim2.new(1, -padSize(16), 0.5, 0)
 	closeButton.BackgroundColor3 = C.White
 	closeButton.BackgroundTransparency = 0.1
 	closeButton.Font = Enum.Font.GothamBold
-	closeButton.TextSize = 16
+	closeButton.TextSize = textSize(16)
 	closeButton.TextColor3 = C.Gray600
 	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 87
 	closeButton.Parent = header
-	UI.corner(closeButton, 16)
+	UI.corner(closeButton, px(16))
 
 	closeButton.MouseButton1Click:Connect(function()
 		self:hide()
@@ -638,11 +641,12 @@ function RelationshipsScreen:createUI()
 	self.contentRoot.Position = UDim2.new(0, 0, 0, HEADER_HEIGHT)
 	self.contentRoot.Parent = self.overlay
 
+	-- MOBILE FIX: Responsive padding
 	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft   = UDim.new(0, 8)
-	pad.PaddingRight  = UDim.new(0, 8)
-	pad.PaddingTop    = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 12)
+	pad.PaddingLeft   = UDim.new(0, padSize(8))
+	pad.PaddingRight  = UDim.new(0, padSize(8))
+	pad.PaddingTop    = UDim.new(0, padSize(8))
+	pad.PaddingBottom = UDim.new(0, padSize(12))
 	pad.Parent = self.contentRoot
 
 	----------------------------------------------------------------
