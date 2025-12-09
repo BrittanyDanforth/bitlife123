@@ -1603,6 +1603,7 @@ local function buildEventModal()
 
 	local eventLayout = Instance.new("UIListLayout")
 	eventLayout.Padding = UDim.new(0, 0)
+	eventLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	eventLayout.Parent = EventUI.card
 
 	-- TINY PHONE FIX: Much smaller header
@@ -1807,6 +1808,7 @@ local function buildEventModal()
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Tighter spacing between buttons
 	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
 	choicesLayout.Parent = EventUI.choicesSection
