@@ -374,19 +374,16 @@ local function updateViewport()
 end
 Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
 
--- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL UI FIX: More aggressive scaling for small phones - prevents bunching
--- ═══════════════════════════════════════════════════════════════════════════════
+-- Responsive sizing helpers - MORE AGGRESSIVE for tiny phones
 local function getScale()
 	-- Base scale on smaller dimension for consistent mobile experience
 	local minDim = math.min(Device.ViewportSize.X, Device.ViewportSize.Y)
-	if minDim <= 320 then return 0.48 end  -- Extremely tiny (iPhone SE 1st gen)
-	if minDim <= 350 then return 0.55 end  -- Super tiny
-	if minDim <= 380 then return 0.62 end  -- Tiny phone (iPhone 6/7/8, SE)
-	if minDim <= 400 then return 0.70 end  -- Small phone
-	if minDim <= 450 then return 0.80 end  -- Medium-small phone
-	if minDim <= 550 then return 0.90 end  -- Medium phone
-	if minDim < 768 then return 0.96 end   -- Large phone / small tablet
+	if minDim <= 320 then return 0.50 end  -- Extremely tiny (iPhone SE 1st gen)
+	if minDim <= 375 then return 0.58 end  -- Tiny phone (iPhone 6/7/8, SE)
+	if minDim <= 400 then return 0.68 end  -- Small phone
+	if minDim <= 450 then return 0.78 end  -- Medium-small phone
+	if minDim <= 550 then return 0.88 end  -- Medium phone
+	if minDim < 768 then return 0.95 end   -- Large phone / small tablet
 	return 1.0  -- Tablet / Desktop
 end
 
@@ -395,71 +392,55 @@ local function px(baseValue)
 	return math.floor(baseValue * getScale())
 end
 
--- CRITICAL FIX: Better text sizing for tiny phones - more readable
+-- Get responsive text size - with better minimums for tiny screens
 local function textSize(baseSize)
 	local scale = getScale()
 	local scaled = math.floor(baseSize * scale)
-	-- Minimum readable text sizes - larger for readability
-	local minSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 11 or 12)
+	-- Minimum readable text sizes - smaller OK on tiny phones
+	local minSize = Device.IS_TINY_PHONE and 9 or 10
 	if scaled < minSize then scaled = minSize end
 	return scaled
 end
 
--- CRITICAL FIX: More padding/spacing on small screens to reduce bunching
+-- Get responsive padding - more compact on tiny phones
 local function padSize(base)
 	if Device.IS_TINY_PHONE then
-		return math.max(4, math.floor(base * 0.55))
-	elseif Device.IS_SMALL_PHONE then
-		return math.max(5, math.floor(base * 0.70))
+		return math.max(2, math.floor(base * 0.5))
 	end
-	return math.max(6, math.floor(base * getScale()))
+	return math.max(4, math.floor(base * getScale()))
 end
 
--- CRITICAL FIX: Card heights that scale properly
-local function cardHeight(baseHeight)
-	if Device.IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.68)) end
-	if Device.IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.82)) end
-	return baseHeight
-end
-
--- Minimum tap target size (44px per Apple/Google guidelines, but smaller OK on tiny)
-local MIN_TAP_TARGET = Device.IS_TINY_PHONE and 36 or (Device.IS_SMALL_PHONE and 40 or 44)
+-- Minimum tap target size (44px per Apple/Google guidelines, but 40 OK on tiny)
+local MIN_TAP_TARGET = Device.IS_TINY_PHONE and 40 or 44
 
 -- Get touch-friendly button height
 local function btnHeight(baseHeight)
 	local scaled = math.floor(baseHeight * getScale())
-	local minTarget = Device.IS_TINY_PHONE and 36 or MIN_TAP_TARGET
+	local minTarget = Device.IS_TINY_PHONE and 38 or MIN_TAP_TARGET
 	if Device.IS_MOBILE and scaled < minTarget then
 		return minTarget
 	end
 	return scaled
 end
 
--- CRITICAL FIX: Icon sizes that scale for small phones
-local function iconSize(base)
-	if Device.IS_TINY_PHONE then return math.max(32, math.floor(base * 0.60)) end
-	if Device.IS_SMALL_PHONE then return math.max(38, math.floor(base * 0.72)) end
-	return base
-end
-
--- Get responsive modal width (percentage of screen with max) - TIGHTER MARGINS
+-- Get responsive modal width (percentage of screen with max)
 local function modalWidth(maxWidth)
 	if Device.IS_TINY_PHONE then
-		return Device.ViewportSize.X - 8  -- 4px margin each side on tiny phones
+		return Device.ViewportSize.X - 12  -- 6px margin each side on tiny phones
 	elseif Device.IS_SMALL_PHONE then
-		return Device.ViewportSize.X - 12  -- 6px margin each side
+		return Device.ViewportSize.X - 16  -- 8px margin each side
 	end
 	return math.min(Device.ViewportSize.X * 0.92, maxWidth or 400)
 end
 
--- Get responsive card width - TIGHTER MARGINS
+-- Get responsive card width
 local function cardWidth(maxWidth)
 	if Device.IS_TINY_PHONE then
-		return Device.ViewportSize.X - 8  -- 4px margin each side
-	elseif Device.IS_SMALL_PHONE then
 		return Device.ViewportSize.X - 12  -- 6px margin each side
+	elseif Device.IS_SMALL_PHONE then
+		return Device.ViewportSize.X - 16  -- 8px margin each side
 	elseif Device.IS_MOBILE then
-		return math.min(Device.ViewportSize.X - 20, maxWidth or 350)
+		return math.min(Device.ViewportSize.X - 24, maxWidth or 350)
 	end
 	return maxWidth or 350
 end
