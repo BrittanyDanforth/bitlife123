@@ -375,6 +375,7 @@ function MobSystem:doOperation(lifeState, operationId)
 		local rankUpMsg = self:checkRankUp(lifeState)
 		if rankUpMsg then
 			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
 		end
 	else
 		-- Failed operation

@@ -1,3 +1,34 @@
+function LifeBackend:checkGamepassOwnership(player, gamepassKey)
+	if not player then
+		return false
+	end
+
+	local success, owns = pcall(function()
+		return GamepassSystem:checkOwnership(player, gamepassKey)
+	end)
+
+	if not success then
+		warn(string.format("[LifeBackend] Failed to check %s ownership: %s", tostring(gamepassKey), tostring(owns)))
+		return false
+	end
+
+	return owns
+end
+
+function LifeBackend:promptGamepassPurchase(player, gamepassKey)
+	if not player then
+		return
+	end
+
+	local success, err = pcall(function()
+		GamepassSystem:promptGamepass(player, gamepassKey)
+	end)
+
+	if not success then
+		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(err)))
+	end
+end
+
 --[[
 	LifeBackend.lua
 
@@ -23,6 +54,8 @@ assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer
 
 local LifeState = require(ModulesFolder:WaitForChild("LifeState"))
 local LifeStageSystem = require(ModulesFolder:WaitForChild("LifeStageSystem"))
+local GamepassSystem = require(ModulesFolder:WaitForChild("GamepassSystem"))
+local MobSystem = require(ModulesFolder:WaitForChild("MobSystem"))
 local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 local EventEngine = LifeEvents.EventEngine
@@ -139,8 +172,11 @@ local EducationDisplayNames = {
 	associate = "Associate's Degree",
 	bachelor = "Bachelor's Degree",
 	bachelors = "Bachelor's Degree",
+	trade = "Trade School Certification",
+	bootcamp = "Coding Bootcamp",
 	master = "Master's Degree",
 	masters = "Master's Degree",
+	business = "MBA",
 	law = "Law Degree (J.D.)",
 	medical = "Medical Degree (M.D.)",
 	doctorate = "Doctorate (Ph.D.)",
@@ -152,6 +188,133 @@ local function formatEducation(educationLevel)
 		return "No Formal Education"
 	end
 	return EducationDisplayNames[educationLevel:lower()] or educationLevel:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
+end
+
+local function appendFeed(state, message)
+	if not state or not message or message == "" then
+		return
+	end
+	if state.PendingFeed and state.PendingFeed ~= "" then
+		state.PendingFeed = state.PendingFeed .. " " .. message
+	else
+		state.PendingFeed = message
+	end
+end
+
+local function safeLower(value)
+	if type(value) ~= "string" then
+		return ""
+	end
+	return string.lower(value)
+end
+
+local familyKeywords = { "mother", "father", "mom", "dad", "sister", "brother", "sibling", "grand", "son", "daughter", "child", "parent", "aunt", "uncle", "cousin" }
+local romanceKeywords = { "husband", "wife", "spouse", "partner", "boyfriend", "girlfriend", "fiancé", "fiance", "lover" }
+
+local function isFamilyRelationship(rel, relId)
+	if type(rel) ~= "table" then
+		return false
+	end
+	if rel.isFamily or rel.is_family then
+		return true
+	end
+	local relType = safeLower(rel.type)
+	if relType == "family" then
+		return true
+	end
+	local role = safeLower(rel.role or "")
+	for _, keyword in ipairs(familyKeywords) do
+		if role:find(keyword, 1, true) then
+			return true
+		end
+	end
+	if relId then
+		local idLower = safeLower(tostring(relId))
+		for _, keyword in ipairs(familyKeywords) do
+			if idLower:find(keyword, 1, true) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function isRomanticRelationship(rel)
+	if type(rel) ~= "table" then
+		return false
+	end
+	local relType = safeLower(rel.type)
+	if relType == "romance" or relType == "partner" or relType == "spouse" then
+		return true
+	end
+	local role = safeLower(rel.role or "")
+	for _, keyword in ipairs(romanceKeywords) do
+		if role:find(keyword, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+local function pruneRelationshipsForAge(state, targetAge)
+	if not state or not state.Relationships then
+		return
+	end
+
+	local toRemove = {}
+	local shouldClearPartner = false
+
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" then
+			local familyRel = isFamilyRelationship(rel, relId)
+			local romanticRel = isRomanticRelationship(rel)
+
+			if targetAge < 13 and romanticRel then
+				table.insert(toRemove, relId)
+				if state.Relationships.partner and state.Relationships.partner.id == rel.id then
+					shouldClearPartner = true
+				end
+			elseif targetAge < 10 and not familyRel then
+				table.insert(toRemove, relId)
+			end
+		end
+	end
+
+	for _, relId in ipairs(toRemove) do
+		state.Relationships[relId] = nil
+	end
+
+	if shouldClearPartner or (state.Relationships.partner and state.Relationships.partner.id and not state.Relationships[state.Relationships.partner.id]) then
+		state.Relationships.partner = nil
+		state.Flags = state.Flags or {}
+		state.Flags.has_partner = nil
+		state.Flags.dating = nil
+		state.Flags.married = nil
+	end
+end
+
+local function resetMobStateForAge(state, targetAge)
+	if not state or targetAge >= 18 then
+		return
+	end
+
+	local mobState = MobSystem and MobSystem:getMobState(state) or (state.MobState or {})
+	mobState.inMob = false
+	mobState.familyId = nil
+	mobState.familyName = nil
+	mobState.familyEmoji = nil
+	mobState.rankIndex = 1
+	mobState.rankLevel = 1
+	mobState.rankName = nil
+	mobState.rankEmoji = nil
+	mobState.respect = 0
+	mobState.heat = 0
+	mobState.loyalty = 100
+	mobState.operationsCompleted = 0
+	mobState.operationsFailed = 0
+	mobState.earnings = 0
+
+	state.MobState = mobState
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -792,6 +955,8 @@ local ActivityCatalog = {
 		requiresFlag = "has_ged_or_diploma",
 		blockedByFlag = "in_college",
 		setFlags = { in_college = true, community_college = true },
+		educationProgram = "community",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	university = {
@@ -802,6 +967,8 @@ local ActivityCatalog = {
 		requiresFlag = "has_ged_or_diploma",
 		blockedByFlag = "in_university",
 		setFlags = { in_university = true, in_college = true },
+		educationProgram = "bachelor",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	trade_school = {
@@ -810,6 +977,8 @@ local ActivityCatalog = {
 		cost = 3000,
 		requiresAge = 18,
 		setFlags = { in_trade_school = true, learning_trade = true },
+		educationProgram = "trade",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	coding_bootcamp = {
@@ -818,6 +987,8 @@ local ActivityCatalog = {
 		cost = 8000,
 		requiresAge = 18,
 		setFlags = { coding_bootcamp = true, tech_skills = true },
+		educationProgram = "bootcamp",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	medical_school = {
@@ -828,6 +999,8 @@ local ActivityCatalog = {
 		requiresFlag = "has_degree",
 		blockedByFlag = "in_med_school",
 		setFlags = { in_med_school = true },
+		educationProgram = "medical",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	law_school = {
@@ -838,6 +1011,8 @@ local ActivityCatalog = {
 		requiresFlag = "has_degree",
 		blockedByFlag = "in_law_school",
 		setFlags = { in_law_school = true },
+		educationProgram = "law",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	business_school = {
@@ -848,6 +1023,8 @@ local ActivityCatalog = {
 		requiresFlag = "has_degree",
 		blockedByFlag = "in_business_school",
 		setFlags = { in_business_school = true },
+		educationProgram = "business",
+		skipCompletionTracking = true,
 		oneTime = true,
 	},
 	
@@ -1005,7 +1182,10 @@ local EducationCatalog = {
 	-- CRITICAL FIX: Added minAge to prevent underage enrollment
 	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school", minAge = 18 },
 	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school", minAge = 18 },
+	trade = { name = "Trade School", cost = 30000, duration = 2, requirement = "high_school", minAge = 18 },
+	bootcamp = { name = "Coding Bootcamp", cost = 12000, duration = 1, requirement = "high_school", minAge = 18 },
 	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor", minAge = 22 },
+	business = { name = "MBA Program", cost = 90000, duration = 2, requirement = "bachelor", minAge = 22 },
 	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor", minAge = 22 },
 	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor", minAge = 22 },
 	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master", minAge = 24 },
@@ -1015,8 +1195,11 @@ local EducationRanks = {
 	none = 0,
 	high_school = 1,
 	community = 2,
+	trade = 2,
+	bootcamp = 2,
 	bachelor = 3,
 	master = 4,
+	business = 4,
 	law = 5,
 	medical = 5,
 	phd = 6,
@@ -1883,16 +2066,30 @@ function LifeBackend:updateEducationProgress(state)
 				if level == "high_school" then
 					state.Flags.graduated_high_school = true
 					state.Flags.high_school_graduate = true
+				elseif level == "trade" then
+					state.Flags.trade_certified = true
+				elseif level == "bootcamp" then
+					state.Flags.bootcamp_graduate = true
 				elseif level == "bachelor" or level == "community" or level == "associate" then
 					state.Flags.college_graduate = true
+					if level == "bachelor" then
+						state.Flags.has_degree = true
+					end
+				elseif level == "business" then
+					state.Flags.masters_degree = true
+					state.Flags.has_degree = true
 				elseif level == "master" then
 					state.Flags.masters_degree = true
+					state.Flags.has_degree = true
 				elseif level == "law" then
 					state.Flags.law_degree = true
+					state.Flags.has_degree = true
 				elseif level == "medical" then
 					state.Flags.medical_degree = true
+					state.Flags.has_degree = true
 				elseif level == "phd" or level == "doctorate" then
 					state.Flags.doctorate = true
+					state.Flags.has_degree = true
 				end
 			end
 		end
@@ -3604,6 +3801,14 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
 	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
+	local mobEvents = MobSystem:onYearPass(state)
+	if mobEvents and #mobEvents > 0 then
+		for _, event in ipairs(mobEvents) do
+			if event.message then
+				appendFeed(state, event.message)
+			end
+		end
+	end
 	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4090,6 +4295,8 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = "Unknown activity." }
 	end
 
+	local isEducationActivity = activity.educationProgram ~= nil
+
 	-- CRITICAL FIX: Check age requirement for activities (like driver's license)
 	if activity.requiresAge and (state.Age or 0) < activity.requiresAge then
 		return { success = false, message = string.format("You must be at least %d years old.", activity.requiresAge) }
@@ -4124,15 +4331,16 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- CRITICAL FIX: Check if this is a one-time activity that was already completed
 	state.CompletedActivities = state.CompletedActivities or {}
-	if activity.oneTime and state.CompletedActivities[activityId] then
+	if activity.oneTime and not activity.skipCompletionTracking and state.CompletedActivities[activityId] then
 		return { success = false, message = "You can only do this once!" }
 	end
 
-	if activity.cost and activity.cost > 0 and (state.Money or 0) < activity.cost then
+	local shouldChargeCost = (not isEducationActivity) and activity.cost and activity.cost > 0
+	if shouldChargeCost and (state.Money or 0) < activity.cost then
 		return { success = false, message = "You can't afford that right now." }
 	end
 
-	if activity.cost and activity.cost > 0 then
+	if shouldChargeCost then
 		self:addMoney(state, -activity.cost)
 	end
 
@@ -4168,25 +4376,33 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	local resultMessage = ""
 	local gotCaught = false
 	
-	if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
-		gotCaught = true
-		-- Risk-based consequence (usually for teen mischief)
-		if activity.riskConsequence then
-			resultMessage = string.format("You %s... but %s", activity.feed or "did it", activity.riskConsequence)
-		else
-			resultMessage = string.format("You %s... and got caught!", activity.feed or "did it")
+	if isEducationActivity then
+		local enrollResult = self:enrollEducation(player, activity.educationProgram, { skipPush = true })
+		if not enrollResult or not enrollResult.success then
+			return enrollResult or { success = false, message = "Unable to enroll right now." }
 		end
-		-- Apply negative effects for getting caught
-		self:applyStatChanges(state, { Happiness = -5 })
-		if activity.riskFlag then
-			state.Flags[activity.riskFlag] = true
-		end
+		resultMessage = enrollResult.message or "You enrolled in a new program."
 	else
-		resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
+		if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+			gotCaught = true
+			-- Risk-based consequence (usually for teen mischief)
+			if activity.riskConsequence then
+				resultMessage = string.format("You %s... but %s", activity.feed or "did it", activity.riskConsequence)
+			else
+				resultMessage = string.format("You %s... and got caught!", activity.feed or "did it")
+			end
+			-- Apply negative effects for getting caught
+			self:applyStatChanges(state, { Happiness = -5 })
+			if activity.riskFlag then
+				state.Flags[activity.riskFlag] = true
+			end
+		else
+			resultMessage = string.format("You %s.", activity.feed or "enjoyed the day")
+		end
 	end
 	
 	-- CRITICAL FIX: Track one-time activities so they can't be repeated
-	if activity.oneTime then
+	if activity.oneTime and not activity.skipCompletionTracking and not isEducationActivity then
 		state.CompletedActivities = state.CompletedActivities or {}
 		state.CompletedActivities[activityId] = true
 	end
@@ -5068,11 +5284,14 @@ function LifeBackend:getEducationInfo(player)
 	}
 end
 
-function LifeBackend:enrollEducation(player, programId)
+function LifeBackend:enrollEducation(player, programId, options)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data missing." }
 	end
+
+	options = options or {}
+	local skipPush = options.skipPush == true
 
 	local program = EducationCatalog[programId]
 	if not program then
@@ -5152,7 +5371,9 @@ function LifeBackend:enrollEducation(player, programId)
 	else
 		feed = string.format("You enrolled in %s! Paid tuition in full.", program.name)
 	end
-	self:pushState(player, feed)
+	if not skipPush then
+		self:pushState(player, feed)
+	end
 	return { success = true, message = feed }
 end
 
@@ -5937,53 +6158,30 @@ function LifeBackend:handleJoinMob(player, familyId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	
-	-- Check age
-	if state.Age < 18 then
-		return { success = false, message = "You must be 18+ to join the mob." }
+
+	local canJoin, reason = MobSystem:canJoinMob(state)
+	if not canJoin then
+		return { success = false, message = reason or "You can't join the mob right now." }
 	end
-	
-	-- Check if in jail
-	if state.InJail then
-		return { success = false, message = "You can't join from jail!" }
+
+	if not self:checkGamepassOwnership(player, "MAFIA") then
+		self:promptGamepassPurchase(player, "MAFIA")
+		return {
+			success = false,
+			message = "Organized crime requires the Mafia gamepass.",
+			needsGamepass = true,
+		}
 	end
-	
-	-- Check if already in mob
-	if state.MobState and state.MobState.inMob then
-		return { success = false, message = "You're already in a crime family!" }
+
+	local success, message = MobSystem:joinFamily(state, familyId)
+	if not success then
+		return { success = false, message = message or "The family rejected you." }
 	end
-	
-	-- Validate family
-	local family = MobFamilies[familyId]
-	if not family then
-		return { success = false, message = "Unknown crime family." }
-	end
-	
-	-- Initialize mob state if needed
-	if not state.MobState then
-		state.MobState = {}
-	end
-	
-	-- Join the family
-	local firstRank = family.ranks[1]
-	state.MobState.inMob = true
-	state.MobState.familyId = familyId
-	state.MobState.familyName = family.name
-	state.MobState.familyEmoji = family.emoji
-	state.MobState.rankLevel = 1
-	state.MobState.rankName = firstRank.name
-	state.MobState.rankEmoji = firstRank.emoji
-	state.MobState.respect = 0
-	state.MobState.heat = 0
-	state.MobState.loyalty = 100
-	state.MobState.yearsInMob = 0
-	state.MobState.operationsCompleted = 0
-	state.MobState.earnings = 0
-	
-	local msg = "You've joined " .. family.name .. " as a " .. firstRank.name .. "!"
+
+	local msg = message or "You've joined the crime family."
 	self:pushState(player, msg)
 	
-	return { success = true, message = msg }
+	return { success = true, message = msg, mobState = MobSystem:serialize(state) }
 end
 
 function LifeBackend:handleLeaveMob(player)
@@ -5991,39 +6189,17 @@ function LifeBackend:handleLeaveMob(player)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	
-	if not state.MobState or not state.MobState.inMob then
-		return { success = false, message = "You're not in a crime family." }
+
+	local success, message, consequences = MobSystem:leaveFamily(state)
+	if not success then
+		return { success = false, message = message or "You can't leave right now." }
 	end
-	
-	local familyName = state.MobState.familyName or "the family"
-	local rankLevel = state.MobState.rankLevel or 1
-	
-	-- Higher ranks = harder to leave alive
-	if rankLevel >= 3 then
-		local deathChance = rankLevel * 10 -- 30% at rank 3, 40% at rank 4, 50% at rank 5
-		if RANDOM:NextInteger(1, 100) <= deathChance then
-			-- CRITICAL FIX: If they "fail" to leave, don't kick them out!
-			-- They're still in the mob - they just got caught trying to leave
-			-- Lower their respect/loyalty as punishment
-			state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 50)
-			state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 0) - 30)
-			
-			return { success = false, message = "The family caught you trying to leave. You're in deep trouble... 😰" }
-		end
+
+	if type(consequences) == "table" and #consequences > 0 then
+		appendFeed(state, table.concat(consequences, " "))
 	end
-	
-	-- Successfully left
-	state.MobState.inMob = false
-	state.MobState.familyId = nil
-	state.MobState.familyName = nil
-	state.MobState.familyEmoji = nil
-	state.MobState.rankLevel = 1
-	state.MobState.rankName = nil
-	state.MobState.rankEmoji = nil
-	state.MobState.respect = 0
-	
-	local msg = "You've left " .. familyName .. ". Watch your back..."
+
+	local msg = message or "You left the family. Watch your back..."
 	self:pushState(player, msg)
 	
 	return { success = true, message = msg }
@@ -6034,224 +6210,40 @@ function LifeBackend:handleMobOperation(player, operationId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	
-	if not state.MobState or not state.MobState.inMob then
-		return { success = false, message = "You're not in a crime family." }
-	end
-	
-	if state.InJail then
-		return { success = false, message = "You can't do operations from jail!" }
-	end
-	
-	-- Find operation
-	local operation = nil
-	for _, op in ipairs(MobOperations) do
-		if op.id == operationId then
-			operation = op
-			break
-		end
-	end
-	
-	if not operation then
-		return { success = false, message = "Unknown operation." }
-	end
-	
-	-- Check rank requirement
-	local currentRank = state.MobState.rankLevel or 1
-	if currentRank < operation.minRank then
-		return { success = false, message = "You need a higher rank for this operation." }
-	end
-	
-	-- Calculate success
-	local baseChance = 100 - operation.risk
-	local rankBonus = currentRank * 5
-	local successChance = math.min(95, baseChance + rankBonus)
-	
-	local roll = RANDOM:NextInteger(1, 100)
-	local success = roll <= successChance
-	
+	local success, message, opResult = MobSystem:doOperation(state, operationId)
 	if success then
-		-- Calculate rewards
-		local money = RANDOM:NextInteger(operation.minReward, operation.maxReward)
-		local respect = operation.respect + RANDOM:NextInteger(0, 10)
-		local heat = math.floor(operation.risk / 10)
-		
-		-- Apply rewards
-		self:addMoney(state, money)
-		state.MobState.respect = (state.MobState.respect or 0) + respect
-		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
-		state.MobState.earnings = (state.MobState.earnings or 0) + money
-		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
-		
-		-- Check for rank up
-		local family = MobFamilies[state.MobState.familyId]
-		if family then
-			local nextRankIdx = (state.MobState.rankLevel or 1) + 1
-			if nextRankIdx <= #family.ranks then
-				local nextRank = family.ranks[nextRankIdx]
-				if state.MobState.respect >= nextRank.respect then
-					state.MobState.rankLevel = nextRankIdx
-					state.MobState.rankName = nextRank.name
-					state.MobState.rankEmoji = nextRank.emoji
-					
-					local msg = string.format("%s completed! +$%d +%d respect. 🎉 Promoted to %s %s!", 
-						operation.name, money, respect, nextRank.emoji, nextRank.name)
-					self:pushState(player, msg)
-					return { success = true, message = msg, money = money, respect = respect, promoted = true }
-				end
-			end
-		end
-		
-		local msg = string.format("%s completed! +$%d +%d respect.", operation.name, money, respect)
-		self:pushState(player, msg)
-		return { success = true, message = msg, money = money, respect = respect }
-	else
-		-- Failed
-		local heat = math.floor(operation.risk / 5)
-		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
-		
-		-- Chance of arrest
-		local arrestChance = operation.risk / 2
-		if RANDOM:NextInteger(1, 100) <= arrestChance then
-			local jailYears = math.ceil(operation.risk / 20)
-			state.InJail = true
-			state.JailYearsLeft = jailYears
-			
-			-- CRITICAL FIX: Set proper jail flags like regular crime does
-			state.Flags = state.Flags or {}
-			state.Flags.in_prison = true
-			state.Flags.incarcerated = true
-			
-			-- CRITICAL FIX: Lose job when going to prison
-			if state.CurrentJob then
-				state.CareerInfo = state.CareerInfo or {}
-				state.CareerInfo.lastJobBeforeJail = {
-					id = state.CurrentJob.id,
-					name = state.CurrentJob.name,
-					company = state.CurrentJob.company,
-					salary = state.CurrentJob.salary,
-				}
-				state.CurrentJob = nil
-				state.Flags.employed = nil
-				state.Flags.has_job = nil
-			end
-			
-			-- CRITICAL FIX: Pause education during incarceration
-			if state.EducationData and state.EducationData.Status == "enrolled" then
-				state.EducationData.StatusBeforeJail = "enrolled"
-				state.EducationData.Status = "suspended"
-			end
-			
-			local msg = string.format("%s failed! Caught and sentenced to %d years!", operation.name, jailYears)
-			self:pushState(player, msg)
-			return { success = false, message = msg, arrested = true }
-		end
-		
-		local msg = operation.name .. " failed! You barely escaped."
-		self:pushState(player, msg)
-		return { success = false, message = msg }
+		local resp = {
+			success = true,
+			message = message or "Operation complete!",
+			money = opResult and opResult.money,
+			respect = opResult and opResult.respect,
+			promoted = opResult and opResult.promoted,
+		}
+		self:pushState(player, resp.message)
+		return resp
 	end
+
+	local resultPayload = {
+		success = false,
+		message = message or "The operation failed.",
+		arrested = opResult and opResult.arrested,
+	}
+
+	if opResult and opResult.arrested then
+		self:pushState(player, resultPayload.message)
+	end
+
+	return resultPayload
 end
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- GAMEPASS SYSTEM
--- Configure your actual Roblox gamepass IDs here
--- Create gamepasses in Roblox Creator Dashboard and put the IDs below
--- ═══════════════════════════════════════════════════════════════════════════════
-local GAMEPASS_IDS = {
-	MAFIA = 0,          -- Replace with your actual Mafia/Organized Crime gamepass ID
-	TIME_MACHINE = 0,   -- Replace with your actual Time Machine gamepass ID
-	BITIZEN = 0,        -- Replace with your actual Bitizen gamepass ID
-	GOD_MODE = 0,       -- Replace with your actual God Mode gamepass ID
-}
-
--- Track gamepass ownership cache (refreshes on check)
-local gamepassCache = {}
-
-function LifeBackend:checkGamepassOwnership(player, gamepassKey)
-	local gamepassId = GAMEPASS_IDS[gamepassKey]
-	
-	-- If no gamepass ID is configured (still 0), return true for testing
-	-- IMPORTANT: Set actual IDs above when deploying!
-	if not gamepassId or gamepassId == 0 then
-		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Allowing access for testing.", gamepassKey))
-		return true -- Allow access when not configured (for testing)
-	end
-	
-	-- Check cache first
-	local cacheKey = player.UserId .. "_" .. gamepassKey
-	if gamepassCache[cacheKey] ~= nil then
-		return gamepassCache[cacheKey]
-	end
-	
-	-- Actually check with MarketplaceService
-	local success, owns = pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamepassId)
-	end)
-	
-	if success then
-		gamepassCache[cacheKey] = owns
-		debugPrint(string.format("Player %s %s gamepass %s (ID: %d)", 
-			player.Name, owns and "OWNS" or "doesn't own", gamepassKey, gamepassId))
-		return owns
-	else
-		warn(string.format("[LifeBackend] Failed to check gamepass ownership: %s", tostring(owns)))
-		return false
-	end
-end
-
-function LifeBackend:promptGamepassPurchase(player, gamepassKey)
-	local gamepassId = GAMEPASS_IDS[gamepassKey]
-	
-	if not gamepassId or gamepassId == 0 then
-		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Cannot prompt purchase.", gamepassKey))
-		-- For testing, just notify the player
-		self:pushState(player, "🔓 Feature unlocked for testing! (No gamepass configured)")
-		return
-	end
-	
-	-- Actually prompt the purchase
-	local success, err = pcall(function()
-		MarketplaceService:PromptGamePassPurchase(player, gamepassId)
-	end)
-	
-	if not success then
-		warn(string.format("[LifeBackend] Failed to prompt gamepass purchase: %s", tostring(err)))
-	else
-		debugPrint(string.format("Prompted player %s to purchase gamepass %s (ID: %d)", 
-			player.Name, gamepassKey, gamepassId))
-	end
-end
-
--- Listen for gamepass purchases to update cache
-local function onGamepassPurchased(player, gamepassId, wasPurchased)
-	if wasPurchased then
-		-- Find which gamepass was purchased and update cache
-		for key, id in pairs(GAMEPASS_IDS) do
-			if id == gamepassId then
-				local cacheKey = player.UserId .. "_" .. key
-				gamepassCache[cacheKey] = true
-				debugPrint(string.format("Player %s purchased gamepass %s!", player.Name, key))
-				break
-			end
-		end
-	end
-end
-
--- Connect the purchase handler
-pcall(function()
-	MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchased)
-end)
 
 function LifeBackend:handleTimeMachine(player, yearsBack)
 	-- CRITICAL FIX: Check gamepass ownership first
-	local hasGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
-	if not hasGamepass then
+	if not self:checkGamepassOwnership(player, "TIME_MACHINE") then
 		-- Prompt purchase and return error
 		self:promptGamepassPurchase(player, "TIME_MACHINE")
 		return { 
 			success = false, 
-			message = "👑 Time Machine is a premium feature!", 
+			message = "👑 Time Machine requires the Time Machine pass.", 
 			needsGamepass = true,
 			gamepassKey = "TIME_MACHINE"
 		}
@@ -6322,6 +6314,9 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 			end
 		end
 	end
+
+	pruneRelationshipsForAge(state, targetAge)
+	resetMobStateForAge(state, targetAge)
 	
 	-- Reset some stats based on age
 	if targetAge == 0 then
