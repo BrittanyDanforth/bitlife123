@@ -48,6 +48,59 @@ local Entertainment = {
 	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000 },
 }
 
+-- ═══════════════════════════════════════════════════════════
+-- GAMEPASS SYSTEM
+-- ═══════════════════════════════════════════════════════════
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+
+-- Gamepass IDs (replace with actual Roblox gamepass IDs)
+local GAMEPASSES = {
+	MOB_LIFE = 0, -- Mob Life Pack - unlocks organized crime
+	CRIME_BOSS = 0, -- Crime Boss Pack - bonus crime features
+	VIP = 0, -- VIP Pack - all premium features
+	DOUBLE_MONEY = 0, -- Double Money from crimes
+	REDUCED_SENTENCE = 0, -- Reduced prison sentences
+}
+
+-- Cache for gamepass ownership (checked once per session)
+local gamepassCache = {}
+
+local function checkGamepass(gamepassId)
+	if gamepassId == 0 then return true end -- Free if ID not set
+	local player = Players.LocalPlayer
+	if not player then return false end
+
+	local cacheKey = tostring(gamepassId)
+	if gamepassCache[cacheKey] ~= nil then
+		return gamepassCache[cacheKey]
+	end
+
+	local success, owns = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamepassId)
+	end)
+
+	if success then
+		gamepassCache[cacheKey] = owns
+		return owns
+	end
+	return false
+end
+
+local function promptGamepass(gamepassId)
+	if gamepassId == 0 then return end
+	local player = Players.LocalPlayer
+	if player then
+		pcall(function()
+			MarketplaceService:PromptGamePassPurchase(player, gamepassId)
+		end)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- CRIME DATA
+-- ═══════════════════════════════════════════════════════════
+
 -- Crime IDs MUST match server's Crimes table exactly!
 local Crimes = {
 	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
@@ -56,6 +109,67 @@ local Crimes = {
 	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16 },
 	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16 },
 	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true },
+}
+
+-- ═══════════════════════════════════════════════════════════
+-- ORGANIZED CRIME / MOB SYSTEM
+-- ═══════════════════════════════════════════════════════════
+
+-- Mob Ranks (progression system)
+local MobRanks = {
+	{ id = "none", name = "Civilian", emoji = "👤", level = 0 },
+	{ id = "associate", name = "Associate", emoji = "🤝", level = 1, requirement = "Join a mob family" },
+	{ id = "soldier", name = "Soldier", emoji = "🔫", level = 2, requirement = "Complete 5 mob jobs" },
+	{ id = "capo", name = "Capo", emoji = "💼", level = 3, requirement = "Earn $100K for the family" },
+	{ id = "underboss", name = "Underboss", emoji = "🕶️", level = 4, requirement = "Control 3 territories" },
+	{ id = "boss", name = "Boss", emoji = "👑", level = 5, requirement = "Eliminate the current boss" },
+}
+
+-- Mob Families (can join one)
+local MobFamilies = {
+	{ id = "cosa_nostra", name = "Cosa Nostra", emoji = "🇮🇹", style = "Italian Mafia", bonus = "+Respect" },
+	{ id = "yakuza", name = "Yakuza", emoji = "🇯🇵", style = "Japanese Syndicate", bonus = "+Discipline" },
+	{ id = "cartel", name = "El Cartel", emoji = "🇲🇽", style = "Drug Cartel", bonus = "+Drug Profits" },
+	{ id = "bratva", name = "Bratva", emoji = "🇷🇺", style = "Russian Mob", bonus = "+Intimidation" },
+	{ id = "triad", name = "Triad", emoji = "🇨🇳", style = "Chinese Organization", bonus = "+Connections" },
+	{ id = "irish_mob", name = "Irish Mob", emoji = "🍀", style = "Irish Crime Family", bonus = "+Loyalty" },
+}
+
+-- Organized Crime Activities (Mob-specific)
+local OrganizedCrime = {
+	-- Entry level - Join the mob
+	{ id = "join_mob", name = "Join a Mob Family", emoji = "🤝", effect = "Become an Associate", minAge = 18, category = "recruitment", requiresMob = false },
+	{ id = "leave_mob", name = "Leave the Family", emoji = "🚪", effect = "Dangerous!", minAge = 18, risk = 70, category = "recruitment", requiresMob = true },
+
+	-- Associate level activities
+	{ id = "extortion", name = "Extortion", emoji = "💰", risk = 35, reward = "$500-$5K", minAge = 18, category = "racket", rankRequired = 1 },
+	{ id = "protection_racket", name = "Protection Racket", emoji = "🛡️", risk = 40, reward = "$1K-$10K/week", minAge = 18, category = "racket", rankRequired = 1 },
+	{ id = "loan_sharking", name = "Loan Sharking", emoji = "🦈", risk = 30, reward = "$2K-$20K", minAge = 18, category = "racket", rankRequired = 1 },
+	{ id = "numbers_game", name = "Run Numbers", emoji = "🎰", risk = 25, reward = "$500-$3K", minAge = 18, category = "racket", rankRequired = 1 },
+
+	-- Soldier level activities
+	{ id = "drug_trafficking", name = "Drug Trafficking", emoji = "💊", risk = 55, reward = "$10K-$100K", minAge = 18, category = "trafficking", rankRequired = 2 },
+	{ id = "arms_dealing", name = "Arms Dealing", emoji = "🔫", risk = 60, reward = "$20K-$200K", minAge = 21, category = "trafficking", rankRequired = 2 },
+	{ id = "hijacking", name = "Truck Hijacking", emoji = "🚛", risk = 50, reward = "$15K-$80K", minAge = 18, category = "heist", rankRequired = 2, hasMinigame = true },
+	{ id = "collect_debt", name = "Collect a Debt", emoji = "👊", risk = 40, reward = "$1K-$5K", minAge = 18, category = "enforcement", rankRequired = 2 },
+
+	-- Capo level activities
+	{ id = "run_crew", name = "Run Your Crew", emoji = "👥", effect = "+Income +Respect", minAge = 21, category = "management", rankRequired = 3 },
+	{ id = "territory_takeover", name = "Territory Takeover", emoji = "🗺️", risk = 65, reward = "New Territory", minAge = 21, category = "war", rankRequired = 3, hasMinigame = true },
+	{ id = "money_laundering", name = "Money Laundering", emoji = "🧺", risk = 35, reward = "Clean $50K-$500K", minAge = 21, category = "finance", rankRequired = 3 },
+	{ id = "bribe_official", name = "Bribe an Official", emoji = "🏛️", risk = 30, reward = "-Heat", minAge = 21, cost = 25000, category = "corruption", rankRequired = 3 },
+
+	-- Underboss level activities
+	{ id = "hit_job", name = "Order a Hit", emoji = "🎯", risk = 75, reward = "Eliminate Rival", minAge = 25, cost = 50000, category = "enforcement", rankRequired = 4 },
+	{ id = "mob_war", name = "Start Mob War", emoji = "⚔️", risk = 85, reward = "Territory/Power", minAge = 25, category = "war", rankRequired = 4, hasMinigame = true },
+	{ id = "smuggling_ring", name = "Run Smuggling Ring", emoji = "📦", risk = 50, reward = "$100K-$1M/year", minAge = 25, category = "trafficking", rankRequired = 4 },
+	{ id = "corrupt_cops", name = "Corrupt Police Force", emoji = "👮", risk = 40, reward = "-Arrest Risk", minAge = 25, cost = 100000, category = "corruption", rankRequired = 4 },
+
+	-- Boss level activities
+	{ id = "sit_down", name = "Call a Sit-Down", emoji = "🤵", effect = "Resolve Disputes", minAge = 30, category = "diplomacy", rankRequired = 5 },
+	{ id = "expand_empire", name = "Expand Empire", emoji = "🌎", risk = 60, reward = "New City", minAge = 30, cost = 500000, category = "expansion", rankRequired = 5 },
+	{ id = "political_control", name = "Control Politicians", emoji = "🏛️", risk = 45, reward = "Legal Protection", minAge = 30, cost = 1000000, category = "corruption", rankRequired = 5 },
+	{ id = "retire", name = "Retire (Pass the Torch)", emoji = "🏖️", effect = "End Mob Life", minAge = 50, category = "retirement", rankRequired = 5 },
 }
 
 local PrisonActivities = {
@@ -313,6 +427,95 @@ function ActivitiesScreen:getCrimeRiskIndicator()
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════
+-- MOB STATE HELPERS
+-- ═══════════════════════════════════════════════════════════
+
+function ActivitiesScreen:isInMob()
+	local state = self.playerState
+	if not state then return false end
+	return state.MobFamily ~= nil or (state.Flags and state.Flags.mob_member == true)
+end
+
+function ActivitiesScreen:getMobFamily()
+	local state = self.playerState
+	if not state then return nil end
+	local familyId = state.MobFamily or (state.Flags and state.Flags.mob_family)
+	if familyId then
+		for _, family in ipairs(MobFamilies) do
+			if family.id == familyId then return family end
+		end
+	end
+	return nil
+end
+
+function ActivitiesScreen:getMobRank()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.MobRank or (state.Flags and state.Flags.mob_rank) or 0
+end
+
+function ActivitiesScreen:getMobRankInfo()
+	local rankLevel = self:getMobRank()
+	for _, rank in ipairs(MobRanks) do
+		if rank.level == rankLevel then return rank end
+	end
+	return MobRanks[1] -- Default to Civilian
+end
+
+function ActivitiesScreen:getMobRespect()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.MobRespect or (state.Flags and state.Flags.mob_respect) or 0
+end
+
+function ActivitiesScreen:getMobHeat()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.MobHeat or (state.Flags and state.Flags.mob_heat) or 0
+end
+
+function ActivitiesScreen:getTerritories()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.Territories or (state.Flags and state.Flags.territories) or 0
+end
+
+function ActivitiesScreen:getCrewSize()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.CrewSize or (state.Flags and state.Flags.crew_size) or 0
+end
+
+function ActivitiesScreen:canDoMobActivity(item)
+	local age = self:getAge()
+	local money = self:getMoney()
+	local inMob = self:isInMob()
+	local mobRank = self:getMobRank()
+	local cost = item.cost or 0
+
+	-- Age check
+	if age < item.minAge then return false, "Age " .. item.minAge .. "+" end
+
+	-- Money check
+	if money < cost then return false, "Need $" .. cost end
+
+	-- Jail check
+	if self:isInJail() then return false, "In Jail" end
+
+	-- Mob membership check
+	if item.requiresMob == true and not inMob then return false, "Join Mob First" end
+	if item.requiresMob == false and inMob then return false, "Already in Mob" end
+
+	-- Rank check
+	if item.rankRequired and mobRank < item.rankRequired then
+		local reqRank = MobRanks[item.rankRequired + 1]
+		return false, "Need: " .. (reqRank and reqRank.name or "Higher Rank")
+	end
+
+	return true, nil
+end
+
 function ActivitiesScreen:createUI()
 	-- Main overlay
 	self.overlay = Instance.new("Frame")
@@ -455,6 +658,7 @@ function ActivitiesScreen:rebuildTabs()
 			{ id = "social", text = "Social", color = C.Pink },
 			{ id = "fun", text = "Fun", color = C.Purple },
 			{ id = "crime", text = "Crime", color = C.Red },
+			{ id = "mob", text = "Mob", color = C.Gray800 },
 		}
 	end
 
@@ -521,7 +725,8 @@ function ActivitiesScreen:switchTab(tabId)
 	elseif tabId == "mindbody" then self:populateMindBody()
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
-	elseif tabId == "crime" then self:populateCrime() end
+	elseif tabId == "crime" then self:populateCrime()
+	elseif tabId == "mob" then self:populateMob() end
 	log("Tab content populated")
 end
 
@@ -796,6 +1001,615 @@ function ActivitiesScreen:populateCrime()
 
 	for i, item in ipairs(Crimes) do
 		self:createCrimeCard(section, item, i)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- MOB TAB - ORGANIZED CRIME
+-- ═══════════════════════════════════════════════════════════
+
+function ActivitiesScreen:populateMob()
+	self:updateInfoBar()
+
+	local inMob = self:isInMob()
+	local mobFamily = self:getMobFamily()
+	local mobRank = self:getMobRank()
+	local mobRankInfo = self:getMobRankInfo()
+	local respect = self:getMobRespect()
+	local heat = self:getMobHeat()
+	local territories = self:getTerritories()
+	local crewSize = self:getCrewSize()
+
+	-- Mob Status Header Card
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, inMob and 130 or 95)
+	headerCard.BackgroundColor3 = inMob and C.Gray900 or C.Gray700
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+
+	-- Mob emoji icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 60, 0, 60)
+	iconFrame.Position = UDim2.new(0, 16, 0, 16)
+	iconFrame.BackgroundColor3 = inMob and (mobFamily and C.Red or C.Gray600) or C.Gray600
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 14)
+
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body
+	headerIcon.TextSize = 36
+	headerIcon.Text = inMob and (mobFamily and mobFamily.emoji or "🤵") or "🤵"
+	headerIcon.TextColor3 = C.White
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -95, 0, 26)
+	headerText.Position = UDim2.new(0, 88, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title
+	headerText.TextSize = 20
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = inMob and (mobFamily and mobFamily.name or "The Family") or "Organized Crime"
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+
+	-- Rank badge
+	local rankBadge = Instance.new("Frame")
+	rankBadge.Size = UDim2.new(0, 120, 0, 26)
+	rankBadge.Position = UDim2.new(0, 88, 0, 42)
+	rankBadge.BackgroundColor3 = inMob and C.AmberPale or C.Gray200
+	rankBadge.ZIndex = 83
+	rankBadge.Parent = headerCard
+	UI.pill(rankBadge)
+
+	local rankText = Instance.new("TextLabel")
+	rankText.Size = UDim2.fromScale(1, 1)
+	rankText.BackgroundTransparency = 1
+	rankText.Font = F.Medium
+	rankText.TextSize = 12
+	rankText.TextColor3 = inMob and C.AmberDark or C.Gray600
+	rankText.Text = mobRankInfo.emoji .. " " .. mobRankInfo.name
+	rankText.ZIndex = 84
+	rankText.Parent = rankBadge
+
+	-- Mob stats (only if in mob)
+	if inMob then
+		-- Stats row
+		local statsRow = Instance.new("Frame")
+		statsRow.Size = UDim2.new(1, -32, 0, 40)
+		statsRow.Position = UDim2.new(0, 16, 0, 80)
+		statsRow.BackgroundTransparency = 1
+		statsRow.ZIndex = 83
+		statsRow.Parent = headerCard
+
+		local statsLayout = Instance.new("UIListLayout")
+		statsLayout.FillDirection = Enum.FillDirection.Horizontal
+		statsLayout.Padding = UDim.new(0, 8)
+		statsLayout.Parent = statsRow
+
+		-- Respect stat
+		local respectChip = Instance.new("Frame")
+		respectChip.Size = UDim2.new(0, 80, 0, 32)
+		respectChip.BackgroundColor3 = C.GreenPale
+		respectChip.LayoutOrder = 1
+		respectChip.ZIndex = 84
+		respectChip.Parent = statsRow
+		UI.pill(respectChip)
+
+		local respectLabel = Instance.new("TextLabel")
+		respectLabel.Size = UDim2.fromScale(1, 1)
+		respectLabel.BackgroundTransparency = 1
+		respectLabel.Font = F.Medium
+		respectLabel.TextSize = 11
+		respectLabel.TextColor3 = C.GreenDark
+		respectLabel.Text = "🤝 " .. respect
+		respectLabel.ZIndex = 85
+		respectLabel.Parent = respectChip
+
+		-- Heat stat
+		local heatChip = Instance.new("Frame")
+		heatChip.Size = UDim2.new(0, 70, 0, 32)
+		heatChip.BackgroundColor3 = heat > 50 and C.RedPale or C.AmberPale
+		heatChip.LayoutOrder = 2
+		heatChip.ZIndex = 84
+		heatChip.Parent = statsRow
+		UI.pill(heatChip)
+
+		local heatLabel = Instance.new("TextLabel")
+		heatLabel.Size = UDim2.fromScale(1, 1)
+		heatLabel.BackgroundTransparency = 1
+		heatLabel.Font = F.Medium
+		heatLabel.TextSize = 11
+		heatLabel.TextColor3 = heat > 50 and C.RedDark or C.AmberDark
+		heatLabel.Text = "🔥 " .. heat
+		heatLabel.ZIndex = 85
+		heatLabel.Parent = heatChip
+
+		-- Territories
+		local territoryChip = Instance.new("Frame")
+		territoryChip.Size = UDim2.new(0, 60, 0, 32)
+		territoryChip.BackgroundColor3 = C.BluePale
+		territoryChip.LayoutOrder = 3
+		territoryChip.ZIndex = 84
+		territoryChip.Parent = statsRow
+		UI.pill(territoryChip)
+
+		local territoryLabel = Instance.new("TextLabel")
+		territoryLabel.Size = UDim2.fromScale(1, 1)
+		territoryLabel.BackgroundTransparency = 1
+		territoryLabel.Font = F.Medium
+		territoryLabel.TextSize = 11
+		territoryLabel.TextColor3 = C.BlueDark
+		territoryLabel.Text = "🗺️ " .. territories
+		territoryLabel.ZIndex = 85
+		territoryLabel.Parent = territoryChip
+
+		-- Crew
+		local crewChip = Instance.new("Frame")
+		crewChip.Size = UDim2.new(0, 60, 0, 32)
+		crewChip.BackgroundColor3 = C.PurplePale
+		crewChip.LayoutOrder = 4
+		crewChip.ZIndex = 84
+		crewChip.Parent = statsRow
+		UI.pill(crewChip)
+
+		local crewLabel = Instance.new("TextLabel")
+		crewLabel.Size = UDim2.fromScale(1, 1)
+		crewLabel.BackgroundTransparency = 1
+		crewLabel.Font = F.Medium
+		crewLabel.TextSize = 11
+		crewLabel.TextColor3 = C.PurpleDark
+		crewLabel.Text = "👥 " .. crewSize
+		crewLabel.ZIndex = 85
+		crewLabel.Parent = crewChip
+	else
+		-- Not in mob - show description
+		local headerSub = Instance.new("TextLabel")
+		headerSub.Size = UDim2.new(1, -95, 0, 20)
+		headerSub.Position = UDim2.new(0, 88, 0, 70)
+		headerSub.BackgroundTransparency = 1
+		headerSub.Font = F.Body
+		headerSub.TextSize = 13
+		headerSub.TextColor3 = C.Gray400
+		headerSub.TextXAlignment = Enum.TextXAlignment.Left
+		headerSub.Text = "Join a crime family..."
+		headerSub.ZIndex = 83
+		headerSub.Parent = headerCard
+	end
+
+	-- Organized Crime Activities Section
+	local section = Instance.new("Frame")
+	section.Name = "MobSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 145, 0, 32)
+	badge.BackgroundColor3 = C.Gray800
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "🤵 Organized Crime"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	-- Create cards for each organized crime activity
+	for i, item in ipairs(OrganizedCrime) do
+		self:createMobCard(section, item, i)
+	end
+end
+
+function ActivitiesScreen:createMobCard(parent, item, order)
+	local canDo, reason = self:canDoMobActivity(item)
+	local inMob = self:isInMob()
+
+	-- Special handling for join/leave mob
+	local isJoinMob = item.id == "join_mob"
+	local isLeaveMob = item.id == "leave_mob"
+
+	-- Skip join_mob if already in mob, skip leave_mob if not in mob
+	if isJoinMob and inMob then return end
+	if isLeaveMob and not inMob then return end
+
+	-- Skip activities that require mob membership if not in mob (except join_mob)
+	if item.rankRequired and not inMob then return end
+
+	local card = Instance.new("Frame")
+	card.Name = item.id
+	card.Size = UDim2.new(1, 0, 0, 95)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = order
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, canDo and 1 or 1, canDo and 0.6 or 0.88, canDo and C.Gray700 or C.Gray200)
+
+	-- Icon with emoji
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 58, 0, 58)
+	iconFrame.Position = UDim2.new(0, 12, 0.5, -29)
+	iconFrame.BackgroundColor3 = canDo and C.Gray100 or C.Gray50
+	iconFrame.ZIndex = 84
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 12)
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 30
+	iconLabel.TextColor3 = canDo and C.Gray800 or C.Gray400
+	iconLabel.Text = item.emoji
+	iconLabel.ZIndex = 85
+	iconLabel.Parent = iconFrame
+
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Position = UDim2.new(0, 82, 0, 10)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 15
+	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = item.name
+	titleLabel.ZIndex = 84
+	titleLabel.Parent = card
+
+	-- Risk/Effect badge
+	local badgeText = item.risk and ("Risk: " .. item.risk .. "%") or (item.effect or "")
+	local badgeBg = item.risk and (item.risk >= 60 and C.RedPale or item.risk >= 40 and C.AmberPale or C.GreenPale) or C.GreenPale
+	local badgeColor = item.risk and (item.risk >= 60 and C.RedDark or item.risk >= 40 and C.AmberDark or C.GreenDark) or C.GreenDark
+
+	local effectBadge = Instance.new("Frame")
+	effectBadge.Size = UDim2.new(0, math.max(90, #badgeText * 6 + 24), 0, 24)
+	effectBadge.Position = UDim2.new(0, 82, 0, 35)
+	effectBadge.BackgroundColor3 = badgeBg
+	effectBadge.ZIndex = 84
+	effectBadge.Parent = card
+	UI.pill(effectBadge)
+
+	local effectLabel = Instance.new("TextLabel")
+	effectLabel.Size = UDim2.fromScale(1, 1)
+	effectLabel.BackgroundTransparency = 1
+	effectLabel.Font = F.Medium
+	effectLabel.TextSize = 11
+	effectLabel.TextColor3 = badgeColor
+	effectLabel.Text = badgeText .. (item.cost and item.cost > 0 and " | $" .. item.cost or "")
+	effectLabel.ZIndex = 85
+	effectLabel.Parent = effectBadge
+
+	-- Reward text (if exists)
+	if item.reward then
+		local rewardLabel = Instance.new("TextLabel")
+		rewardLabel.Size = UDim2.new(0.4, 0, 0, 18)
+		rewardLabel.Position = UDim2.new(0, 82, 0, 62)
+		rewardLabel.BackgroundTransparency = 1
+		rewardLabel.Font = F.Body
+		rewardLabel.TextSize = 12
+		rewardLabel.TextColor3 = C.Gray500
+		rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
+		rewardLabel.Text = "💰 " .. item.reward
+		rewardLabel.ZIndex = 84
+		rewardLabel.Parent = card
+	end
+
+	-- Rank requirement indicator
+	if item.rankRequired then
+		local reqRank = MobRanks[item.rankRequired + 1]
+		if reqRank then
+			local rankIndicator = Instance.new("TextLabel")
+			rankIndicator.Size = UDim2.new(0, 80, 0, 16)
+			rankIndicator.Position = UDim2.new(0, 82, 0, item.reward and 78 or 62)
+			rankIndicator.BackgroundTransparency = 1
+			rankIndicator.Font = F.Body
+			rankIndicator.TextSize = 10
+			rankIndicator.TextColor3 = C.Gray400
+			rankIndicator.TextXAlignment = Enum.TextXAlignment.Left
+			rankIndicator.Text = reqRank.emoji .. " " .. reqRank.name .. "+"
+			rankIndicator.ZIndex = 84
+			rankIndicator.Parent = card
+		end
+	end
+
+	-- Action button
+	local actionBtn = Instance.new("TextButton")
+	actionBtn.Size = UDim2.new(0, 80, 0, 46)
+	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
+	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	actionBtn.BackgroundColor3 = canDo and (isJoinMob and C.Green or C.Gray800) or C.Gray300
+	actionBtn.Font = F.Button
+	actionBtn.TextSize = 13
+	actionBtn.TextColor3 = canDo and C.White or C.Gray500
+	actionBtn.AutoButtonColor = false
+	actionBtn.ZIndex = 84
+	actionBtn.Parent = card
+	UI.corner(actionBtn, 12)
+
+	if canDo then
+		actionBtn.Text = isJoinMob and "Join" or (isLeaveMob and "Leave" or "Do It")
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = isJoinMob and C.GreenDark or C.Gray900 })
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = isJoinMob and C.Green or C.Gray800 })
+		end)
+		actionBtn.MouseButton1Click:Connect(function()
+			if isJoinMob then
+				self:showJoinMobModal()
+			else
+				self:doMobActivity(item)
+			end
+		end)
+	else
+		actionBtn.Text = reason or "Locked"
+	end
+end
+
+function ActivitiesScreen:showJoinMobModal()
+	-- Create modal for choosing mob family
+	if self.mobModal then
+		self.mobModal.Visible = true
+		return
+	end
+
+	-- Modal overlay
+	self.mobModal = Instance.new("Frame")
+	self.mobModal.Name = "MobModal"
+	self.mobModal.Size = UDim2.fromScale(1, 1)
+	self.mobModal.BackgroundColor3 = C.Black
+	self.mobModal.BackgroundTransparency = 0.4
+	self.mobModal.ZIndex = 98
+	self.mobModal.Parent = self.screenGui
+
+	-- Modal card
+	local modalCard = Instance.new("Frame")
+	modalCard.Size = UDim2.new(0.92, 0, 0, 520)
+	modalCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	modalCard.Position = UDim2.fromScale(0.5, 0.5)
+	modalCard.BackgroundColor3 = C.White
+	modalCard.ZIndex = 99
+	modalCard.Parent = self.mobModal
+	UI.corner(modalCard, 24)
+
+	-- Title
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, 0, 60)
+	title.BackgroundColor3 = C.Gray900
+	title.Font = F.Title
+	title.TextSize = 22
+	title.TextColor3 = C.White
+	title.Text = "🤵 Choose Your Family"
+	title.ZIndex = 100
+	title.Parent = modalCard
+	UI.corner(title, 24)
+
+	-- Fix corner overlap
+	local titleFix = Instance.new("Frame")
+	titleFix.Size = UDim2.new(1, 0, 0, 30)
+	titleFix.Position = UDim2.new(0, 0, 0, 35)
+	titleFix.BackgroundColor3 = C.Gray900
+	titleFix.ZIndex = 100
+	titleFix.Parent = title
+
+	-- Scroll for families
+	local familyScroll = Instance.new("ScrollingFrame")
+	familyScroll.Size = UDim2.new(1, -24, 1, -130)
+	familyScroll.Position = UDim2.new(0, 12, 0, 70)
+	familyScroll.BackgroundTransparency = 1
+	familyScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	familyScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	familyScroll.ScrollBarThickness = 4
+	familyScroll.ZIndex = 100
+	familyScroll.Parent = modalCard
+
+	local familyLayout = Instance.new("UIListLayout")
+	familyLayout.Padding = UDim.new(0, 10)
+	familyLayout.Parent = familyScroll
+
+	-- Create family cards
+	for i, family in ipairs(MobFamilies) do
+		local familyCard = Instance.new("TextButton")
+		familyCard.Name = family.id
+		familyCard.Size = UDim2.new(1, 0, 0, 70)
+		familyCard.BackgroundColor3 = C.Gray50
+		familyCard.Font = F.Body
+		familyCard.TextSize = 1
+		familyCard.TextTransparency = 1
+		familyCard.Text = ""
+		familyCard.AutoButtonColor = false
+		familyCard.LayoutOrder = i
+		familyCard.ZIndex = 101
+		familyCard.Parent = familyScroll
+		UI.corner(familyCard, 14)
+		UI.stroke(familyCard, 1, 0.85, C.Gray200)
+
+		-- Family emoji
+		local emoji = Instance.new("TextLabel")
+		emoji.Size = UDim2.new(0, 50, 0, 50)
+		emoji.Position = UDim2.new(0, 10, 0.5, -25)
+		emoji.BackgroundColor3 = C.Gray100
+		emoji.Font = F.Body
+		emoji.TextSize = 28
+		emoji.Text = family.emoji
+		emoji.ZIndex = 102
+		emoji.Parent = familyCard
+		UI.corner(emoji, 10)
+
+		-- Family name
+		local name = Instance.new("TextLabel")
+		name.Size = UDim2.new(0.5, 0, 0, 22)
+		name.Position = UDim2.new(0, 70, 0, 10)
+		name.BackgroundTransparency = 1
+		name.Font = F.Title
+		name.TextSize = 16
+		name.TextColor3 = C.Gray900
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.Text = family.name
+		name.ZIndex = 102
+		name.Parent = familyCard
+
+		-- Style
+		local style = Instance.new("TextLabel")
+		style.Size = UDim2.new(0.6, 0, 0, 18)
+		style.Position = UDim2.new(0, 70, 0, 32)
+		style.BackgroundTransparency = 1
+		style.Font = F.Body
+		style.TextSize = 12
+		style.TextColor3 = C.Gray500
+		style.TextXAlignment = Enum.TextXAlignment.Left
+		style.Text = family.style
+		style.ZIndex = 102
+		style.Parent = familyCard
+
+		-- Bonus
+		local bonus = Instance.new("TextLabel")
+		bonus.Size = UDim2.new(0, 100, 0, 18)
+		bonus.Position = UDim2.new(0, 70, 0, 50)
+		bonus.BackgroundTransparency = 1
+		bonus.Font = F.Medium
+		bonus.TextSize = 11
+		bonus.TextColor3 = C.Green
+		bonus.TextXAlignment = Enum.TextXAlignment.Left
+		bonus.Text = family.bonus
+		bonus.ZIndex = 102
+		bonus.Parent = familyCard
+
+		familyCard.MouseEnter:Connect(function()
+			UI.tween(familyCard, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
+		end)
+		familyCard.MouseLeave:Connect(function()
+			UI.tween(familyCard, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray50 })
+		end)
+		familyCard.MouseButton1Click:Connect(function()
+			self:joinMobFamily(family)
+		end)
+	end
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(1, -24, 0, 48)
+	closeBtn.Position = UDim2.new(0, 12, 1, -60)
+	closeBtn.BackgroundColor3 = C.Gray300
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = 16
+	closeBtn.TextColor3 = C.Gray700
+	closeBtn.Text = "Cancel"
+	closeBtn.ZIndex = 100
+	closeBtn.Parent = modalCard
+	UI.corner(closeBtn, 12)
+
+	closeBtn.MouseButton1Click:Connect(function()
+		self.mobModal.Visible = false
+	end)
+end
+
+function ActivitiesScreen:joinMobFamily(family)
+	log("Joining mob family:", family.name)
+
+	-- Hide modal
+	if self.mobModal then
+		self.mobModal.Visible = false
+	end
+
+	-- Fire remote to server
+	local DoMobAction = remotesFolder and remotesFolder:FindFirstChild("DoMobAction")
+	if DoMobAction then
+		DoMobAction:FireServer("join_mob", { family = family.id })
+	else
+		-- Fallback: use generic activity remote
+		if DoActivity then
+			DoActivity:FireServer("join_mob", { family = family.id })
+		end
+	end
+
+	-- Show result (server will send actual result)
+	self:showMobResult({
+		title = "Welcome to " .. family.name,
+		body = "You are now an Associate of the " .. family.name .. ". Prove your loyalty and rise through the ranks!",
+		emoji = family.emoji,
+		isPositive = true,
+	})
+end
+
+function ActivitiesScreen:doMobActivity(item)
+	log("Doing mob activity:", item.name)
+
+	-- Fire remote to server
+	local DoMobAction = remotesFolder and remotesFolder:FindFirstChild("DoMobAction")
+	if DoMobAction then
+		DoMobAction:FireServer(item.id, {})
+	else
+		-- Fallback: use CommitCrime remote for risky activities
+		if item.risk and CommitCrime then
+			CommitCrime:FireServer(item.id)
+		elseif DoActivity then
+			DoActivity:FireServer(item.id)
+		end
+	end
+end
+
+function ActivitiesScreen:showMobResult(data)
+	-- Use existing result modal or create one
+	if self.resultModal then
+		local isPositive = data.isPositive ~= false
+
+		-- Update modal colors
+		local shellColor = isPositive and C.Green or C.Red
+		if self.resultModal.shell then
+			self.resultModal.shell.BackgroundColor3 = shellColor
+		end
+		if self.resultModal.okButton then
+			self.resultModal.okButton.BackgroundColor3 = shellColor
+		end
+
+		-- Update content
+		if self.resultModal.emoji then
+			self.resultModal.emoji.Text = data.emoji or (isPositive and "✨" or "😢")
+		end
+		if self.resultModal.title then
+			self.resultModal.title.Text = data.title or "Result"
+		end
+		if self.resultModal.body then
+			self.resultModal.body.Text = data.body or ""
+		end
+
+		-- Show modal
+		UI.showModal(self.resultModal)
 	end
 end
 
