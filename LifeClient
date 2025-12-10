@@ -102,13 +102,16 @@ local function getRemote(name, timeout)
 	return remote
 end
 
-local RequestAgeUp   = getRemote("RequestAgeUp")
-local PresentEvent   = getRemote("PresentEvent")
-local SubmitChoice   = getRemote("SubmitChoice")
-local SyncState      = getRemote("SyncState")
-local SetLifeInfo    = getRemote("SetLifeInfo")
-local MinigameResult = getRemote("MinigameResult", 2)
-local MinigameStart  = getRemote("MinigameStart", 2)
+local RequestAgeUp     = getRemote("RequestAgeUp")
+local PresentEvent     = getRemote("PresentEvent")
+local SubmitChoice     = getRemote("SubmitChoice")
+local SyncState        = getRemote("SyncState")
+local SetLifeInfo      = getRemote("SetLifeInfo")
+local MinigameResult   = getRemote("MinigameResult", 2)
+local MinigameStart    = getRemote("MinigameStart", 2)
+local CheckGamepass    = getRemote("CheckGamepass", 2)
+local PromptGamepass   = getRemote("PromptGamepass", 2)
+local GodModeEdit      = getRemote("GodModeEdit", 2)
 
 ----------------------------------------------------------------
 -- STATE
@@ -136,6 +139,26 @@ local occupationScreenInstance, assetsScreenInstance, relationshipsScreenInstanc
 local minigamesInstance
 local pendingMinigameEventId     = nil
 local pendingMinigameChoiceIndex = nil
+local hasGodMode = false
+local godModeOverlay = nil
+local godModeButton = nil
+local destroyGodModeModal
+local showGodModeModal
+
+local function refreshGodModeStatus()
+	if not CheckGamepass then
+		return hasGodMode
+	end
+	local success, owns = pcall(function()
+		return CheckGamepass:InvokeServer("GOD_MODE")
+	end)
+	if success then
+		hasGodMode = owns == true
+	end
+	return hasGodMode
+end
+
+refreshGodModeStatus()
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -1203,6 +1226,339 @@ createStatCard({ key = "Happiness", icon = "😀", col = C.Green  }, statsLeft, 
 createStatCard({ key = "Health",    icon = "❤️", col = C.Red    }, statsLeft, 2)
 createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight, 1)
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
+
+destroyGodModeModal = destroyGodModeModal or function() end
+showGodModeModal = showGodModeModal or function() end
+
+local function updateGodModeButtonAppearance()
+	if not godModeButton then
+		return
+	end
+	if hasGodMode then
+		godModeButton.Text = "⚡ God Mode"
+		godModeButton.TextColor3 = C.Gray800
+		godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+	else
+		godModeButton.Text = "🔓 Unlock God Mode"
+		godModeButton.TextColor3 = C.Gray500
+		godModeButton.BackgroundColor3 = C.Gray200
+	end
+end
+
+godModeButton = Instance.new("TextButton")
+godModeButton.Name = "GodModeButton"
+godModeButton.Size = UDim2.new(0, Device.IS_TINY_PHONE and 140 or 180, 0, Device.IS_TINY_PHONE and 26 or 32)
+godModeButton.AnchorPoint = Vector2.new(0.5, 1)
+godModeButton.Position = UDim2.new(0.5, 0, 0, -4)
+godModeButton.BackgroundColor3 = C.Gray200
+godModeButton.Font = F.Button
+godModeButton.TextSize = textSize(12)
+godModeButton.AutoButtonColor = false
+godModeButton.Text = ""
+godModeButton.ZIndex = 90
+godModeButton.Parent = statsRow
+UI.corner(godModeButton, 12)
+
+updateGodModeButtonAppearance()
+
+godModeButton.MouseButton1Click:Connect(function()
+	if hasGodMode then
+		showGodModeModal()
+	else
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		task.delay(1, function()
+			refreshGodModeStatus()
+			updateGodModeButtonAppearance()
+		end)
+	end
+end)
+
+destroyGodModeModal = function()
+	if godModeOverlay then
+		godModeOverlay:Destroy()
+		godModeOverlay = nil
+	end
+end
+
+showGodModeModal = function()
+	if not hasGodMode then
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		return
+	end
+
+	destroyGodModeModal()
+
+	godModeOverlay = Instance.new("Frame")
+	godModeOverlay.Name = "GodModeOverlay"
+	godModeOverlay.Size = UDim2.fromScale(1, 1)
+	godModeOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+	godModeOverlay.BackgroundTransparency = 0.35
+	godModeOverlay.ZIndex = 150
+	godModeOverlay.Parent = mainContainer
+
+	local modal = Instance.new("Frame")
+	modal.Name = "GodModeModal"
+	modal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 280 or 360, 0, 0)
+	modal.AutomaticSize = Enum.AutomaticSize.Y
+	modal.AnchorPoint = Vector2.new(0.5, 0.5)
+	modal.Position = UDim2.new(0.5, 0, 0.5, 0)
+	modal.BackgroundColor3 = C.White
+	modal.ZIndex = 151
+	modal.Parent = godModeOverlay
+	corner(modal, 16)
+	stroke(modal, 1, 0.85, C.Gray200)
+	pad(modal, 14, 14, 14, 14)
+
+	local modalLayout = Instance.new("UIListLayout")
+	modalLayout.FillDirection = Enum.FillDirection.Vertical
+	modalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	modalLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	modalLayout.Padding = UDim.new(0, 8)
+	modalLayout.Parent = modal
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 0, textSize(18) + 6)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(18)
+	titleLabel.TextColor3 = C.Gray800
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = "God Mode Editor"
+	titleLabel.ZIndex = 152
+	titleLabel.Parent = modal
+
+	local subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 6)
+	subtitleLabel.BackgroundTransparency = 1
+	subtitleLabel.Font = F.Body
+	subtitleLabel.TextSize = textSize(11)
+	subtitleLabel.TextColor3 = C.Gray500
+	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subtitleLabel.TextWrapped = true
+	subtitleLabel.Text = "Edit your stats, name, and job instantly. Values are clamped between 0 and 100."
+	subtitleLabel.ZIndex = 152
+	subtitleLabel.Parent = modal
+
+	local function createInputRow(labelText, defaultText, placeholder, numeric)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 0)
+		row.AutomaticSize = Enum.AutomaticSize.Y
+		row.BackgroundTransparency = 1
+		row.ZIndex = 152
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
+		label.BackgroundTransparency = 1
+		label.Font = F.Medium
+		label.TextSize = textSize(11)
+		label.TextColor3 = C.Gray600
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = labelText
+		label.Parent = row
+
+		local input = Instance.new("TextBox")
+		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 26 or 32)
+		input.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
+		input.Font = F.Body
+		input.TextSize = textSize(12)
+		input.TextColor3 = C.Gray800
+		input.ClearTextOnFocus = false
+		input.Text = defaultText or ""
+		input.PlaceholderText = placeholder or ""
+		input.TextXAlignment = Enum.TextXAlignment.Left
+		input.Parent = row
+		corner(input, 8)
+		stroke(input, 1, 0.9, C.Gray200)
+		pad(input, 8, 8, 4, 4)
+
+		if numeric then
+			input.Text = tostring(defaultText or 0)
+		end
+
+		return row, input
+	end
+
+	local currentName = currentState.Name or player.Name or ""
+	local nameRow, nameInput = createInputRow("Name", currentName, "Enter a new name")
+	nameRow.Parent = modal
+
+	local statsGrid = Instance.new("Frame")
+	statsGrid.Name = "StatsGrid"
+	statsGrid.Size = UDim2.new(1, 0, 0, 0)
+	statsGrid.AutomaticSize = Enum.AutomaticSize.Y
+	statsGrid.BackgroundTransparency = 1
+	statsGrid.ZIndex = 152
+	statsGrid.Parent = modal
+
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+	gridLayout.CellSize = UDim2.new(0.5, -4, 0, Device.IS_TINY_PHONE and 60 or 70)
+	gridLayout.Parent = statsGrid
+
+	local statInputs = {}
+	local statList = {
+		{ label = "Happiness", key = "Happiness", value = currentState.Happiness or 50 },
+		{ label = "Health", key = "Health", value = currentState.Health or 100 },
+		{ label = "Smarts", key = "Smarts", value = currentState.Smarts or 50 },
+		{ label = "Looks", key = "Looks", value = currentState.Looks or 50 },
+	}
+
+	for _, stat in ipairs(statList) do
+		local card = Instance.new("Frame")
+		card.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
+		card.ZIndex = 153
+		card.Parent = statsGrid
+		UI.corner(card, 10)
+		UI.stroke(card, 1, 0.9, C.Gray200)
+		pad(card, 8, 8, 6, 6)
+
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, 0, 0, textSize(11) + 2)
+		title.BackgroundTransparency = 1
+		title.Font = F.Medium
+		title.TextSize = textSize(11)
+		title.TextColor3 = C.Gray600
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.Text = stat.label
+		title.Parent = card
+
+		local input = Instance.new("TextBox")
+		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 24 or 28)
+		input.Position = UDim2.new(0, 0, 0, textSize(11) + 6)
+		input.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		input.Font = F.Body
+		input.TextSize = textSize(12)
+		input.TextColor3 = C.Gray800
+		input.TextXAlignment = Enum.TextXAlignment.Left
+		input.ClearTextOnFocus = false
+		input.Text = tostring(stat.value)
+		input.Parent = card
+		corner(input, 6)
+		stroke(input, 1, 0.9, C.Gray200)
+		pad(input, 6, 6, 2, 2)
+
+		statInputs[stat.key] = input
+	end
+
+	local careerRow, careerInput = createInputRow("Career (ID or name)", "", "e.g. police_officer or clear")
+	careerRow.Parent = modal
+
+	local moneyRow, moneyInput = createInputRow("Money", tostring(currentState.Money or 0), "Optional", true)
+	moneyRow.Parent = modal
+
+	local errorLabel = Instance.new("TextLabel")
+	errorLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
+	errorLabel.BackgroundTransparency = 1
+	errorLabel.Font = F.Body
+	errorLabel.TextSize = textSize(11)
+	errorLabel.TextColor3 = C.Red
+	errorLabel.TextXAlignment = Enum.TextXAlignment.Left
+	errorLabel.Text = ""
+	errorLabel.ZIndex = 152
+	errorLabel.Parent = modal
+
+	local buttonBar = Instance.new("Frame")
+	buttonBar.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 32 or 40)
+	buttonBar.BackgroundTransparency = 1
+	buttonBar.ZIndex = 152
+	buttonBar.Parent = modal
+
+	local buttonLayout = Instance.new("UIListLayout")
+	buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+	buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	buttonLayout.Padding = UDim.new(0, 8)
+	buttonLayout.Parent = buttonBar
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 70 or 90, 1, 0)
+	closeBtn.BackgroundColor3 = C.Gray200
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(12)
+	closeBtn.TextColor3 = C.Gray700
+	closeBtn.Text = "Cancel"
+	closeBtn.AutoButtonColor = false
+	closeBtn.Parent = buttonBar
+	corner(closeBtn, 8)
+
+	local applyBtn = Instance.new("TextButton")
+	applyBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 120 or 150, 1, 0)
+	applyBtn.BackgroundColor3 = Color3.fromRGB(249, 200, 10)
+	applyBtn.Font = F.Button
+	applyBtn.TextSize = textSize(13)
+	applyBtn.TextColor3 = C.Black
+	applyBtn.Text = "Apply Changes"
+	applyBtn.AutoButtonColor = false
+	applyBtn.Parent = buttonBar
+	corner(applyBtn, 8)
+
+	closeBtn.MouseButton1Click:Connect(destroyGodModeModal)
+
+	applyBtn.MouseButton1Click:Connect(function()
+		errorLabel.Text = ""
+		local payload = { stats = {} }
+		local trimmedName = nameInput.Text and nameInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+		if trimmedName ~= "" and trimmedName ~= (currentState.Name or "") then
+			payload.name = trimmedName
+		end
+
+		for key, input in pairs(statInputs) do
+			local value = tonumber(input.Text)
+			if value then
+				payload.stats[key] = value
+			end
+		end
+
+		local moneyValue = tonumber(moneyInput.Text)
+		if moneyValue then
+			payload.money = moneyValue
+		end
+
+		local careerText = careerInput.Text and careerInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+		if careerText ~= "" then
+			if careerText:lower() == "clear" or careerText:lower() == "none" then
+				payload.clearCareer = true
+			else
+				payload.careerId = careerText
+			end
+		end
+
+		local hasChanges = payload.name or payload.money or payload.careerId or payload.clearCareer
+		if payload.stats and next(payload.stats) ~= nil then
+			hasChanges = true
+		else
+			payload.stats = nil
+		end
+
+		if not hasChanges then
+			errorLabel.Text = "Enter at least one change."
+			return
+		end
+
+		if not GodModeEdit then
+			errorLabel.Text = "Server not ready for God Mode edits."
+			return
+		end
+
+		applyBtn.Text = "Saving..."
+		applyBtn.AutoButtonColor = false
+
+		local ok, result = pcall(function()
+			return GodModeEdit:InvokeServer(payload)
+		end)
+
+		if ok and result and result.success then
+			addFeedEntry(result.message or "God Mode updated.")
+			destroyGodModeModal()
+		else
+			errorLabel.Text = (result and result.message) or "Unable to apply changes."
+			applyBtn.Text = "Apply Changes"
+		end
+	end)
+end
 
 ----------------------------------------------------------------
 -- NAV BAR - TINY PHONE FIX: More compact
@@ -3292,6 +3648,9 @@ function updateFromState()
 			Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0),
 		})
 	end
+
+	refreshGodModeStatus()
+	updateGodModeButtonAppearance()
 end
 
 ----------------------------------------------------------------

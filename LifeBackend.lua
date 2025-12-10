@@ -879,6 +879,27 @@ for _, job in ipairs(JobCatalogList) do
 	JobCatalog[job.id] = job
 end
 
+function LifeBackend:findJobByInput(query)
+	if not query or query == "" then
+		return nil
+	end
+	query = tostring(query):lower()
+	if JobCatalog[query] then
+		return JobCatalog[query]
+	end
+	for _, job in pairs(JobCatalog) do
+		if job.id and job.id:lower() == query then
+			return job
+		end
+	end
+	for _, job in pairs(JobCatalog) do
+		if job.name and job.name:lower():find(query, 1, true) then
+			return job
+		end
+	end
+	return nil
+end
+
 local CareerTracks = {
 	office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "project_manager", "operations_director", "coo" },
 	tech = { "it_support", "junior_developer", "developer", "senior_developer", "tech_lead", "software_architect", "cto" },
@@ -1281,6 +1302,105 @@ local StoryPathActions = {
 	},
 }
 
+function LifeBackend:buildCareerEvent(state)
+	local job = state and state.CurrentJob
+	if not job or not job.id then
+		return nil
+	end
+	local jobId = string.lower(job.id)
+	-- Police-focused events
+	if jobId:find("police") or jobId:find("detective") then
+		local template = chooseRandom(PoliceCareerEvents)
+		if not template then
+			return nil
+		end
+		local eventDef = deepCopy(template)
+		eventDef.id = template.id .. "_" .. tostring(RANDOM:NextInteger(1000, 999999))
+		eventDef.source = "career_police"
+		return eventDef
+	end
+
+	return nil
+end
+
+local PoliceCareerEvents = {
+	{
+		id = "police_patrol",
+		title = "Suspicious Van",
+		emoji = "🚓",
+		text = "During a late-night patrol you spot a dark van idling behind a closed electronics store.",
+		question = "How do you handle it?",
+		choices = {
+			{
+				text = "Call for backup and box them in",
+				deltas = { Happiness = -1 },
+				setFlags = { police_cautious = true },
+				feedText = "You waited for backup and safely arrested the crew.",
+			},
+			{
+				text = "Approach alone with confidence",
+				deltas = { Health = -5, Happiness = 3 },
+				setFlags = { police_hero = true },
+				feedText = "You confronted the suspects solo and earned respect.",
+			},
+			{
+				text = "Let it slide",
+				deltas = { Happiness = -3 },
+				setFlags = { police_corrupt = true },
+				feedText = "You pretended not to notice the van.",
+			},
+		},
+	},
+	{
+		id = "police_bribe",
+		title = "Traffic Stop Temptation",
+		emoji = "🚔",
+		text = "You pull over a wealthy executive who quietly offers an envelope to forget about the speeding.",
+		question = "Take the envelope?",
+		choices = {
+			{
+				text = "Refuse and write the ticket",
+				deltas = { Happiness = 2 },
+				setFlags = { police_reputable = true, police_corrupt = nil },
+				feedText = "You refused the bribe and wrote the ticket.",
+			},
+			{
+				text = "Accept the cash",
+				deltas = { Money = 2500, Happiness = 1 },
+				setFlags = { police_corrupt = true },
+				feedText = "You pocketed the envelope. Internal Affairs is now curious.",
+			},
+		},
+	},
+	{
+		id = "police_riot",
+		title = "Crowd Control",
+		emoji = "🛡️",
+		text = "A protest turns heated. Barricades are shaking and the crowd is chanting your name.",
+		question = "What tactic do you try?",
+		choices = {
+			{
+				text = "Defuse with calm orders",
+				deltas = { Happiness = 3 },
+				setFlags = { police_mediator = true },
+				feedText = "You kept things calm and prevented violence.",
+			},
+			{
+				text = "Charge the line",
+				deltas = { Health = -10, Happiness = -2 },
+				setFlags = { police_hero = true },
+				feedText = "You pushed the line back but took some hits.",
+			},
+			{
+				text = "Wait for SWAT",
+				deltas = { Happiness = -1 },
+				setFlags = { police_cautious = true },
+				feedText = "You held position until SWAT arrived.",
+			},
+		},
+	},
+}
+
 -- ============================================================================
 -- Event Catalog (contextual story events, per category)
 -- ============================================================================
@@ -1539,6 +1659,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
+	self.remotes.GodModeEdit = self:createRemote("GodModeEdit", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -1647,6 +1768,10 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
 		return self:handleTimeMachine(player, yearsBack)
+	end
+
+	self.remotes.GodModeEdit.OnServerInvoke = function(player, payload)
+		return self:handleGodModeEdit(player, payload)
 	end
 end
 
@@ -1829,6 +1954,8 @@ function LifeBackend:serializeState(state)
 		debugPrint("  Properties:", #serialized.Assets.Properties)
 		debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
 		debugPrint("  Items:", #serialized.Assets.Items)
+
+		serialized.MobState = MobSystem:serialize(state)
 	end
 	
 	return serialized
@@ -3943,6 +4070,15 @@ function LifeBackend:handleAgeUp(player)
 		local eventDef = yearlyEvents[1]
 		eventDef.source = "lifeevents"
 		table.insert(queue, eventDef)
+	end
+
+	local careerEvent = self:buildCareerEvent(state)
+	if careerEvent then
+		if #queue == 0 then
+			table.insert(queue, careerEvent)
+		elseif RANDOM:NextNumber() < 0.4 then
+			queue[1] = careerEvent
+		end
 	end
 
 	if #queue == 0 then
@@ -6081,78 +6217,7 @@ end
 -- ============================================================================
 
 -- Crime family definitions
-local MobFamilies = {
-	italian = {
-		name = "Italian Mafia",
-		fullName = "La Cosa Nostra", 
-		emoji = "🇮🇹",
-		ranks = {
-			{ name = "Associate", emoji = "👤", respect = 0 },
-			{ name = "Soldier", emoji = "🔫", respect = 100 },
-			{ name = "Caporegime", emoji = "💰", respect = 500 },
-			{ name = "Underboss", emoji = "🎩", respect = 2000 },
-			{ name = "Boss", emoji = "👑", respect = 10000 },
-		},
-	},
-	russian = {
-		name = "Russian Bratva",
-		fullName = "The Brotherhood",
-		emoji = "🇷🇺",
-		ranks = {
-			{ name = "Shestyorka", emoji = "👤", respect = 0 },
-			{ name = "Bratok", emoji = "🔫", respect = 100 },
-			{ name = "Brigadier", emoji = "💰", respect = 500 },
-			{ name = "Avtoritet", emoji = "🎩", respect = 2000 },
-			{ name = "Pakhan", emoji = "👑", respect = 10000 },
-		},
-	},
-	yakuza = {
-		name = "Japanese Yakuza",
-		fullName = "Yamaguchi-gumi",
-		emoji = "🇯🇵",
-		ranks = {
-			{ name = "Shatei", emoji = "👤", respect = 0 },
-			{ name = "Wakashu", emoji = "🔫", respect = 100 },
-			{ name = "Shateigashira", emoji = "💰", respect = 500 },
-			{ name = "Wakagashira", emoji = "🎩", respect = 2000 },
-			{ name = "Oyabun", emoji = "👑", respect = 10000 },
-		},
-	},
-	cartel = {
-		name = "Mexican Cartel",
-		fullName = "Cartel de Sinaloa",
-		emoji = "🇲🇽",
-		ranks = {
-			{ name = "Halcon", emoji = "👤", respect = 0 },
-			{ name = "Sicario", emoji = "🔫", respect = 100 },
-			{ name = "Lugarteniente", emoji = "💰", respect = 500 },
-			{ name = "Capo", emoji = "🎩", respect = 2000 },
-			{ name = "El Jefe", emoji = "👑", respect = 10000 },
-		},
-	},
-	triad = {
-		name = "Chinese Triad",
-		fullName = "14K Triad",
-		emoji = "🇨🇳",
-		ranks = {
-			{ name = "Blue Lantern", emoji = "👤", respect = 0 },
-			{ name = "49er", emoji = "🔫", respect = 100 },
-			{ name = "Red Pole", emoji = "💰", respect = 500 },
-			{ name = "Deputy", emoji = "🎩", respect = 2000 },
-			{ name = "Dragon Head", emoji = "👑", respect = 10000 },
-		},
-	},
-}
-
 -- Mob operations
-local MobOperations = {
-	{ id = "protection", name = "Protection Racket", risk = 20, minReward = 500, maxReward = 2000, respect = 5, minRank = 1 },
-	{ id = "gambling", name = "Run Gambling Ring", risk = 30, minReward = 1000, maxReward = 5000, respect = 10, minRank = 1 },
-	{ id = "smuggling", name = "Smuggle Goods", risk = 40, minReward = 2000, maxReward = 10000, respect = 20, minRank = 2 },
-	{ id = "heist", name = "Plan a Heist", risk = 60, minReward = 10000, maxReward = 100000, respect = 50, minRank = 3 },
-	{ id = "hitjob", name = "Hit Job", risk = 80, minReward = 5000, maxReward = 25000, respect = 100, minRank = 4 },
-}
-
 function LifeBackend:handleJoinMob(player, familyId)
 	local state = self:getState(player)
 	if not state then
@@ -6234,6 +6299,98 @@ function LifeBackend:handleMobOperation(player, operationId)
 	end
 
 	return resultPayload
+end
+
+function LifeBackend:handleGodModeEdit(player, payload)
+	payload = payload or {}
+	if not self:checkGamepassOwnership(player, "GOD_MODE") then
+		self:promptGamepassPurchase(player, "GOD_MODE")
+		return {
+			success = false,
+			message = "⚡ God Mode requires the God Mode gamepass.",
+			needsGamepass = true,
+		}
+	end
+
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+
+	local summaries = {}
+	local statsPayload = payload.stats or {}
+
+	local function applyStat(key, value)
+		if value == nil then
+			return
+		end
+		local num = tonumber(value)
+		if not num then
+			return
+		end
+		num = clamp(math.floor(num + 0.5), 0, 100)
+		state.Stats = state.Stats or {}
+		state.Stats[key] = num
+		state[key] = num
+		table.insert(summaries, string.format("%s set to %d%%", key, num))
+	end
+
+	applyStat("Happiness", statsPayload.Happiness or payload.Happiness)
+	applyStat("Health", statsPayload.Health or payload.Health)
+	applyStat("Smarts", statsPayload.Smarts or payload.Smarts)
+	applyStat("Looks", statsPayload.Looks or payload.Looks)
+
+	if payload.name and type(payload.name) == "string" then
+		local trimmed = payload.name:gsub("^%s+", ""):gsub("%s+$", "")
+		if trimmed ~= "" then
+			state.Name = trimmed:sub(1, 40)
+			table.insert(summaries, "Name updated")
+		end
+	end
+
+	if payload.gender and type(payload.gender) == "string" then
+		local gender = payload.gender:lower()
+		if gender == "male" or gender == "female" or gender == "nonbinary" then
+			state.Gender = gender
+			table.insert(summaries, "Gender updated")
+		end
+	end
+
+	if payload.money ~= nil then
+		local money = tonumber(payload.money)
+		if money then
+			state.Money = math.max(0, math.floor(money))
+			table.insert(summaries, "Money set to " .. formatMoney(state.Money))
+		end
+	end
+
+	if payload.clearCareer then
+		if state.CurrentJob then
+			state:ClearCareer()
+			table.insert(summaries, "Career cleared")
+		end
+	elseif payload.careerId and type(payload.careerId) == "string" and payload.careerId ~= "" then
+		local jobData = self:findJobByInput(payload.careerId)
+		if jobData then
+			state:SetCareer(jobData)
+			table.insert(summaries, "Career set to " .. jobData.name)
+		else
+			return { success = false, message = "Couldn't find a career matching '" .. payload.careerId .. "'." }
+		end
+	end
+
+	if #summaries == 0 then
+		return { success = false, message = "No God Mode changes were provided." }
+	end
+
+	state.Flags = state.Flags or {}
+	state.Flags.god_mode_last_used = os.time()
+
+	local feedText = "⚡ God Mode update: " .. table.concat(summaries, " • ")
+	appendFeed(state, feedText)
+	self:pushState(player, feedText)
+
+	return { success = true, message = feedText, changes = summaries }
 end
 
 function LifeBackend:handleTimeMachine(player, yearsBack)
