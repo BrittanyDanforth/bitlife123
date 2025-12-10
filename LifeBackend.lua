@@ -6171,11 +6171,13 @@ local gamepassCache = {}
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
 	local gamepassId = GAMEPASS_IDS[gamepassKey]
 	
-	-- If no gamepass ID is configured (still 0), return true for testing
-	-- IMPORTANT: Set actual IDs above when deploying!
+	-- CRITICAL FIX: If no gamepass ID is configured, return FALSE (not free access!)
+	-- Developers MUST configure actual gamepass IDs before features work
 	if not gamepassId or gamepassId == 0 then
-		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Allowing access for testing.", gamepassKey))
-		return true -- Allow access when not configured (for testing)
+		warn(string.format("[LifeBackend] ⚠️ Gamepass '%s' has ID=0 - NOT CONFIGURED! Player cannot access this premium feature until you set the actual Roblox Gamepass ID in GAMEPASS_IDS table.", gamepassKey))
+		-- Return false - players cannot access unconfigured premium features
+		-- This forces developers to properly set up gamepass IDs
+		return false
 	end
 	
 	-- Check cache first
@@ -6204,10 +6206,15 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey)
 	local gamepassId = GAMEPASS_IDS[gamepassKey]
 	
 	if not gamepassId or gamepassId == 0 then
-		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Cannot prompt purchase.", gamepassKey))
-		-- For testing, just notify the player
-		self:pushState(player, "🔓 Feature unlocked for testing! (No gamepass configured)")
-		return
+		warn(string.format("[LifeBackend] ⚠️ Cannot prompt purchase - Gamepass '%s' has ID=0. Please configure the actual Roblox Gamepass ID in GAMEPASS_IDS table!", gamepassKey))
+		-- CRITICAL FIX: Show a proper message to the player that premium isn't set up
+		-- Don't silently unlock the feature - that defeats the purpose of monetization
+		local state = self:getState(player)
+		if state then
+			state.PendingFeed = "👑 Premium feature not yet available. Please try again later!"
+			self:pushState(player)
+		end
+		return false
 	end
 	
 	-- Actually prompt the purchase
