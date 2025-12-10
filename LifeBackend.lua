@@ -1355,7 +1355,10 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoMobOperation = self:createRemote("DoMobOperation", "RemoteFunction")
 	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
+	self.remotes.PromptProduct = self:createRemote("PromptProduct", "RemoteEvent") -- CRITICAL FIX #17: Add dev product prompt
+	self.remotes.ProductPurchased = self:createRemote("ProductPurchased", "RemoteEvent") -- Notify client of successful product purchase
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
+	self.remotes.UseTimeMachineProduct = self:createRemote("UseTimeMachineProduct", "RemoteFunction") -- For confirmed product purchases
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -1462,8 +1465,19 @@ function LifeBackend:setupRemotes()
 		self:promptGamepassPurchase(player, gamepassKey)
 	end)
 	
+	-- CRITICAL FIX #18: Handle dev product prompts for Time Machine
+	self.remotes.PromptProduct.OnServerEvent:Connect(function(player, productKey)
+		self:promptProductPurchase(player, productKey)
+	end)
+	
 	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
-		return self:handleTimeMachine(player, yearsBack)
+		return self:handleTimeMachine(player, yearsBack, false)
+	end
+	
+	-- CRITICAL FIX #19: Handle confirmed Time Machine product purchases
+	self.remotes.UseTimeMachineProduct.OnServerInvoke = function(player, yearsBack)
+		-- This is called after a successful product purchase
+		return self:handleTimeMachine(player, yearsBack, true)
 	end
 end
 
@@ -5983,7 +5997,26 @@ function LifeBackend:handleJoinMob(player, familyId)
 	local msg = "You've joined " .. family.name .. " as a " .. firstRank.name .. "!"
 	self:pushState(player, msg)
 	
-	return { success = true, message = msg }
+	-- CRITICAL FIX #11: Return the mob state so client can update its local state
+	return { 
+		success = true, 
+		message = msg,
+		mobState = {
+			inMob = state.MobState.inMob,
+			familyId = state.MobState.familyId,
+			familyName = state.MobState.familyName,
+			familyEmoji = state.MobState.familyEmoji,
+			rankLevel = state.MobState.rankLevel,
+			rankName = state.MobState.rankName,
+			rankEmoji = state.MobState.rankEmoji,
+			respect = state.MobState.respect,
+			heat = state.MobState.heat,
+			loyalty = state.MobState.loyalty,
+			yearsInMob = state.MobState.yearsInMob,
+			operationsCompleted = state.MobState.operationsCompleted,
+			earnings = state.MobState.earnings,
+		}
+	}
 end
 
 function LifeBackend:handleLeaveMob(player)
@@ -6009,7 +6042,11 @@ function LifeBackend:handleLeaveMob(player)
 			state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 50)
 			state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 0) - 30)
 			
-			return { success = false, message = "The family caught you trying to leave. You're in deep trouble... 😰" }
+			return { 
+				success = false, 
+				message = "The family caught you trying to leave. You're in deep trouble... 😰",
+				mobState = state.MobState -- Return current state so client knows they're still in
+			}
 		end
 	end
 	
@@ -6026,7 +6063,26 @@ function LifeBackend:handleLeaveMob(player)
 	local msg = "You've left " .. familyName .. ". Watch your back..."
 	self:pushState(player, msg)
 	
-	return { success = true, message = msg }
+	-- CRITICAL FIX #12: Return cleared mob state so client updates
+	return { 
+		success = true, 
+		message = msg,
+		mobState = {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			familyEmoji = nil,
+			rankLevel = 1,
+			rankName = nil,
+			rankEmoji = nil,
+			respect = 0,
+			heat = 0,
+			loyalty = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			earnings = 0,
+		}
+	}
 end
 
 function LifeBackend:handleMobOperation(player, operationId)
@@ -6097,14 +6153,16 @@ function LifeBackend:handleMobOperation(player, operationId)
 					local msg = string.format("%s completed! +$%d +%d respect. 🎉 Promoted to %s %s!", 
 						operation.name, money, respect, nextRank.emoji, nextRank.name)
 					self:pushState(player, msg)
-					return { success = true, message = msg, money = money, respect = respect, promoted = true }
+					-- CRITICAL FIX #14: Return all state changes so client can update
+					return { success = true, message = msg, money = money, respect = respect, heat = heat, promoted = true, newRank = nextRank.name, newRankEmoji = nextRank.emoji }
 				end
 			end
 		end
 		
 		local msg = string.format("%s completed! +$%d +%d respect.", operation.name, money, respect)
 		self:pushState(player, msg)
-		return { success = true, message = msg, money = money, respect = respect }
+		-- CRITICAL FIX #13: Return heat so client can update UI
+		return { success = true, message = msg, money = money, respect = respect, heat = heat }
 	else
 		-- Failed
 		local heat = math.floor(operation.risk / 5)
@@ -6223,6 +6281,44 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey)
 	end
 end
 
+-- CRITICAL FIX #20: Dev Product IDs for Time Machine
+local PRODUCT_IDS = {
+	TIME_5_YEARS = 0,   -- Replace with actual dev product ID
+	TIME_10_YEARS = 0,  -- Replace with actual dev product ID
+	TIME_20_YEARS = 0,  -- Replace with actual dev product ID
+	TIME_30_YEARS = 0,  -- Replace with actual dev product ID
+	TIME_BABY = 0,      -- Replace with actual dev product ID
+	MONEY_SMALL = 0,    -- $10,000 inheritance
+	MONEY_MEDIUM = 0,   -- $100,000 inheritance
+	MONEY_LARGE = 0,    -- $1,000,000 inheritance
+	STAT_BOOST = 0,     -- +20 to all stats
+}
+
+function LifeBackend:promptProductPurchase(player, productKey)
+	local productId = PRODUCT_IDS[productKey]
+	
+	if not productId or productId == 0 then
+		debugPrint(string.format("⚠️ Product '%s' has no ID configured. Cannot prompt purchase.", productKey))
+		-- For testing, notify the player but don't give free access
+		self:pushState(player, "⚠️ This product is not yet configured for purchase. (ID=0)")
+		return false
+	end
+	
+	-- Actually prompt the purchase
+	local success, err = pcall(function()
+		MarketplaceService:PromptProductPurchase(player, productId)
+	end)
+	
+	if not success then
+		warn(string.format("[LifeBackend] Failed to prompt product purchase: %s", tostring(err)))
+		return false
+	else
+		debugPrint(string.format("Prompted player %s to purchase product %s (ID: %d)", 
+			player.Name, productKey, productId))
+		return true
+	end
+end
+
 -- Listen for gamepass purchases to update cache
 local function onGamepassPurchased(player, gamepassId, wasPurchased)
 	if wasPurchased then
@@ -6243,18 +6339,164 @@ pcall(function()
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchased)
 end)
 
-function LifeBackend:handleTimeMachine(player, yearsBack)
-	-- CRITICAL FIX: Check gamepass ownership first
+-- CRITICAL FIX #21: Track pending Time Machine purchases
+local pendingTimeMachinePurchases = {} -- [playerId] = { productKey, yearsBack }
+
+-- CRITICAL FIX #22: ProcessReceipt callback for developer products (Time Machine, Money, etc.)
+local function processReceipt(receiptInfo)
+	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
+	if not player then
+		-- Player left, can't process
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	
+	local productId = receiptInfo.ProductId
+	
+	-- Find which product was purchased
+	local productKey = nil
+	for key, id in pairs(PRODUCT_IDS) do
+		if id == productId and id ~= 0 then
+			productKey = key
+			break
+		end
+	end
+	
+	if not productKey then
+		warn("[LifeBackend] Unknown product ID purchased:", productId)
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	
+	-- Handle the product based on its type
+	if productKey:find("TIME_") then
+		-- Time Machine product - mark as pending for next UseTimeMachineProduct call
+		pendingTimeMachinePurchases[player.UserId] = pendingTimeMachinePurchases[player.UserId] or {}
+		pendingTimeMachinePurchases[player.UserId][productKey] = true
+		
+		-- Fire a client event to notify them
+		local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
+		if remotesFolder then
+			local productPurchased = remotesFolder:FindFirstChild("ProductPurchased")
+			if productPurchased then
+				productPurchased:FireClient(player, productKey)
+			end
+		end
+		
+		debugPrint(string.format("Player %s purchased Time Machine product: %s", player.Name, productKey))
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+		
+	elseif productKey == "MONEY_SMALL" then
+		-- Grant $10,000
+		local state = backendSingleton and backendSingleton:getState(player)
+		if state then
+			backendSingleton:addMoney(state, 10000)
+			backendSingleton:pushState(player, "💵 You received $10,000 inheritance!")
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+		
+	elseif productKey == "MONEY_MEDIUM" then
+		-- Grant $100,000
+		local state = backendSingleton and backendSingleton:getState(player)
+		if state then
+			backendSingleton:addMoney(state, 100000)
+			backendSingleton:pushState(player, "💰 You received $100,000 inheritance!")
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+		
+	elseif productKey == "MONEY_LARGE" then
+		-- Grant $1,000,000
+		local state = backendSingleton and backendSingleton:getState(player)
+		if state then
+			backendSingleton:addMoney(state, 1000000)
+			backendSingleton:pushState(player, "🤑 You received $1,000,000 inheritance!")
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+		
+	elseif productKey == "STAT_BOOST" then
+		-- +20 to all stats
+		local state = backendSingleton and backendSingleton:getState(player)
+		if state then
+			state.Happiness = math.min(100, (state.Happiness or 50) + 20)
+			state.Health = math.min(100, (state.Health or 50) + 20)
+			state.Smarts = math.min(100, (state.Smarts or 50) + 20)
+			state.Looks = math.min(100, (state.Looks or 50) + 20)
+			if state.Stats then
+				state.Stats.Happiness = state.Happiness
+				state.Stats.Health = state.Health
+				state.Stats.Smarts = state.Smarts
+				state.Stats.Looks = state.Looks
+			end
+			backendSingleton:pushState(player, "📈 +20 to all stats!")
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+	
+	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+-- Connect the receipt processor (only once!)
+pcall(function()
+	MarketplaceService.ProcessReceipt = processReceipt
+end)
+
+-- Helper to check if player has pending time machine purchase
+function LifeBackend:hasPendingTimeMachinePurchase(player, productKey)
+	local pending = pendingTimeMachinePurchases[player.UserId]
+	if pending and pending[productKey] then
+		pending[productKey] = nil -- Consume the purchase
+		return true
+	end
+	return false
+end
+
+-- CRITICAL FIX #15: Map years back to dev product keys
+local TIME_MACHINE_PRODUCTS = {
+	[5] = "TIME_5_YEARS",
+	[10] = "TIME_10_YEARS", 
+	[20] = "TIME_20_YEARS",
+	[30] = "TIME_30_YEARS",
+	[-1] = "TIME_BABY", -- -1 means restart as baby
+}
+
+function LifeBackend:handleTimeMachine(player, yearsBack, confirmedPurchase)
+	-- CRITICAL FIX #16: Time Machine uses DEV PRODUCTS for individual uses, not gamepass
+	-- The gamepass provides unlimited free access; products are for one-time use
+	
 	local hasGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+	
 	if not hasGamepass then
-		-- Prompt purchase and return error
-		self:promptGamepassPurchase(player, "TIME_MACHINE")
-		return { 
-			success = false, 
-			message = "👑 Time Machine is a premium feature!", 
-			needsGamepass = true,
-			gamepassKey = "TIME_MACHINE"
-		}
+		-- User doesn't have gamepass - they need to purchase individual products
+		local productKey = TIME_MACHINE_PRODUCTS[yearsBack]
+		
+		if not productKey then
+			return {
+				success = false,
+				message = "Invalid time travel option.",
+			}
+		end
+		
+		-- Check if they have a pending purchase for this product
+		if confirmedPurchase then
+			local hasPurchase = self:hasPendingTimeMachinePurchase(player, productKey)
+			if not hasPurchase then
+				return {
+					success = false,
+					message = "Purchase not found. Please try again.",
+					needsProduct = true,
+					productKey = productKey,
+					yearsBack = yearsBack,
+				}
+			end
+			-- Has pending purchase - continue with time travel
+		else
+			-- Not a confirmed purchase - return info about the product needed
+			return {
+				success = false,
+				message = "⏰ This requires a purchase!",
+				needsProduct = true,
+				productKey = productKey,
+				yearsBack = yearsBack,
+			}
+		end
 	end
 	
 	local state = self:getState(player)

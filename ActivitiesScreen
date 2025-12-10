@@ -1787,15 +1787,45 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 		end)
 		if success and result and result.success then
 			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
-			self:switchTab("crime") -- Refresh
+			
+			-- CRITICAL FIX #9: Update local mob state after joining
+			if result.mobState then
+				self.playerState.MobState = result.mobState
+				log("Updated local MobState after joining:", result.mobState.familyId, result.mobState.inMob)
+			else
+				-- Fallback: Create a basic mob state if server didn't return one
+				self.playerState.MobState = self.playerState.MobState or {}
+				self.playerState.MobState.inMob = true
+				self.playerState.MobState.familyId = familyId
+				self.playerState.MobState.rankIndex = 1
+				self.playerState.MobState.respect = 0
+				self.playerState.MobState.heat = 0
+				self.playerState.MobState.loyalty = 50
+				log("Created fallback MobState for:", familyId)
+			end
+			
+			-- Refresh the crime tab to show mob activities
+			task.defer(function()
+				self:switchTab("crime")
+			end)
 		elseif success and result then
 			self:showResult(false, result.message or "The family rejected you.", "❌")
 		else
 			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
-		-- Fallback for testing
+		-- Fallback for testing: Create a local mob state
+		self.playerState.MobState = self.playerState.MobState or {}
+		self.playerState.MobState.inMob = true
+		self.playerState.MobState.familyId = familyId
+		self.playerState.MobState.rankIndex = 1
+		self.playerState.MobState.respect = 0
+		self.playerState.MobState.heat = 0
+		self.playerState.MobState.loyalty = 50
 		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		task.defer(function()
+			self:switchTab("crime")
+		end)
 	end
 end
 
@@ -1809,14 +1839,33 @@ function ActivitiesScreen:attemptLeaveMob()
 		end)
 		if success and result and result.success then
 			self:showResult(true, result.message or "You've left the family. Watch your back...", "🚪")
-			self:switchTab("crime") -- Refresh
+			
+			-- CRITICAL FIX #10: Clear local mob state after leaving
+			if self.playerState.MobState then
+				self.playerState.MobState.inMob = false
+				self.playerState.MobState.familyId = nil
+				log("Cleared local MobState after leaving")
+			end
+			
+			-- Refresh the crime tab to show join options
+			task.defer(function()
+				self:switchTab("crime")
+			end)
 		elseif success and result then
 			self:showResult(false, result.message or "You can't leave... not alive anyway.", "💀")
 		else
 			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
+		-- Fallback for testing
+		if self.playerState.MobState then
+			self.playerState.MobState.inMob = false
+			self.playerState.MobState.familyId = nil
+		end
 		self:showResult(true, "You've left the crime family. They won't forget this...", "🚪")
+		task.defer(function()
+			self:switchTab("crime")
+		end)
 	end
 end
 
@@ -1832,10 +1881,13 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
 			self:showResult(true, msg, "💰")
 			
-			-- CRITICAL FIX: Update local mob state after operation
-			if self.state and self.state.MobState then
+			-- CRITICAL FIX #8: Use playerState instead of state (consistency fix)
+			if self.playerState and self.playerState.MobState then
 				if result.respect then
-					self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+					self.playerState.MobState.respect = (self.playerState.MobState.respect or 0) + result.respect
+				end
+				if result.heat then
+					self.playerState.MobState.heat = (self.playerState.MobState.heat or 0) + result.heat
 				end
 				if result.promoted then
 					-- Refresh tab to show new rank
@@ -1863,8 +1915,9 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 end
 
 function ActivitiesScreen:getMobState()
-	if self.state and self.state.MobState then
-		return self.state.MobState
+	-- CRITICAL FIX #7: Use playerState instead of state (consistency fix)
+	if self.playerState and self.playerState.MobState then
+		return self.playerState.MobState
 	end
 	return nil
 end

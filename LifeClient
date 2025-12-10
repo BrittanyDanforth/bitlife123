@@ -2154,6 +2154,8 @@ local function buildDeathUI()
 	tmPad.PaddingRight = UDim.new(0, 6)
 	tmPad.Parent = tmContainer
 	
+	-- CRITICAL FIX #23: Store Time Machine buttons for later reset
+	DeathUI.timeMachineButtons = {}
 	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
 	for i, opt in ipairs(tmOptions) do
 		local tmBtn = Instance.new("TextButton")
@@ -2168,6 +2170,9 @@ local function buildDeathUI()
 		tmBtn.ZIndex = 123
 		tmBtn.Parent = tmContainer
 		corner(tmBtn, 8)
+		
+		-- Store reference with original text for reset
+		DeathUI.timeMachineButtons[i] = { button = tmBtn, originalText = "👑 " .. opt[2], yearsBack = opt[1] }
 		
 		tmBtn.MouseButton1Click:Connect(function()
 			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
@@ -2198,8 +2203,22 @@ local function buildDeathUI()
 					if updateFromState then
 						updateFromState()
 					end
+				elseif ok and result and result.needsProduct then
+					-- CRITICAL FIX #24: Handle dev product purchase flow
+					-- Player needs to purchase a product - prompt for product
+					local PromptProduct = remotesFolder:FindFirstChild("PromptProduct")
+					if PromptProduct then
+						PromptProduct:FireServer(result.productKey)
+					end
+					tmBtn.Text = "💳 " .. opt[2]
+					-- Flash the button to indicate purchase prompt
+					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+					task.delay(0.3, function()
+						tmBtn.Text = "👑 " .. opt[2]
+						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
+					end)
 				elseif ok and result and result.needsGamepass then
-					-- Player needs to purchase the gamepass - server already prompted
+					-- Legacy: Player needs to purchase the gamepass - server already prompted
 					tmBtn.Text = "👑 " .. opt[2]
 					-- Flash the button to indicate it needs purchase
 					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
@@ -2318,6 +2337,17 @@ showDeathOverlay = function(causeText, age)
 	DeathUI.overlay.Visible = true
 	DeathUI.restart.Text = "🔄 Start New Life"
 	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
+
+	-- CRITICAL FIX #25: Reset Time Machine buttons to their original state
+	-- This fixes the hourglass bug where buttons showed ⏳ after dying a second time
+	if DeathUI.timeMachineButtons then
+		for _, btnData in ipairs(DeathUI.timeMachineButtons) do
+			if btnData.button and btnData.originalText then
+				btnData.button.Text = btnData.originalText
+				btnData.button.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+			end
+		end
+	end
 
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
@@ -3565,6 +3595,58 @@ if ShowResult then
 				addFeedEntry(data.feedText)
 			end
 		end)
+	end)
+end
+
+-- CRITICAL FIX #26: Listen for product purchases (Time Machine dev products)
+local ProductPurchased = remotesFolder:FindFirstChild("ProductPurchased")
+if ProductPurchased then
+	ProductPurchased.OnClientEvent:Connect(function(productKey)
+		-- Handle Time Machine product purchases
+		if productKey and productKey:find("TIME_") then
+			-- Map product key to years back
+			local yearsBackMap = {
+				TIME_5_YEARS = 5,
+				TIME_10_YEARS = 10,
+				TIME_20_YEARS = 20,
+				TIME_30_YEARS = 30,
+				TIME_BABY = -1,
+			}
+			
+			local yearsBack = yearsBackMap[productKey]
+			if yearsBack then
+				-- Automatically trigger the Time Machine with confirmed purchase
+				local UseTimeMachineProduct = remotesFolder:FindFirstChild("UseTimeMachineProduct")
+				if UseTimeMachineProduct then
+					local ok, result = pcall(function()
+						return UseTimeMachineProduct:InvokeServer(yearsBack)
+					end)
+					
+					if ok and result and result.success then
+						-- Success! Hide death overlay and refresh
+						hideDeathOverlay()
+						
+						if result.newAge then
+							currentState.Age = result.newAge
+							currentState.Health = 100
+							currentState.Stats = currentState.Stats or {}
+							currentState.Stats.Health = 100
+							
+							if currentState.Flags then
+								currentState.Flags.dead = nil
+							end
+						end
+						
+						if updateFromState then
+							updateFromState()
+						end
+						
+						-- Show success message
+						addFeedEntry("⏰ Time traveled back to age " .. (result.newAge or "0") .. "!")
+					end
+				end
+			end
+		end
 	end)
 end
 
