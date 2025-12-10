@@ -1607,10 +1607,10 @@ local function buildEventModal()
 	eventLayout.Parent = EventUI.card
 
 	-- TINY PHONE FIX: Much smaller header
-	local eventHeaderHeight = Device.IS_TINY_PHONE and 44 or (Device.IS_SMALL_PHONE and 54 or px(76))
+	local EventUI.headerHeight = Device.IS_TINY_PHONE and 44 or (Device.IS_SMALL_PHONE and 54 or px(76))
 	EventUI.header = Instance.new("Frame")
 	EventUI.header.Name = "Header"
-	EventUI.header.Size = UDim2.new(1, 0, 0, eventHeaderHeight)
+	EventUI.header.Size = UDim2.new(1, 0, 0, EventUI.headerHeight)
 	EventUI.header.BackgroundColor3 = C.White
 	EventUI.header.LayoutOrder = 1
 	EventUI.header.Visible = false
@@ -1619,13 +1619,13 @@ local function buildEventModal()
 	pad(EventUI.header, padSize(16), padSize(16), padSize(10), padSize(8))
 
 	-- TINY PHONE FIX: Smaller avatar
-	local eventAvatarSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
+	local EventUI.avatarSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
 	EventUI.avatar = Instance.new("Frame")
-	EventUI.avatar.Size = UDim2.new(0, eventAvatarSize, 0, eventAvatarSize)
+	EventUI.avatar.Size = UDim2.new(0, EventUI.avatarSize, 0, EventUI.avatarSize)
 	EventUI.avatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
 	EventUI.avatar.ZIndex = 65
 	EventUI.avatar.Parent = EventUI.header
-	corner(EventUI.avatar, eventAvatarSize/2)
+	corner(EventUI.avatar, EventUI.avatarSize/2)
 	stroke(EventUI.avatar, Device.IS_TINY_PHONE and 1 or 2, 0.3, C.Red)
 
 	EventUI.avatarEmoji = Instance.new("TextLabel")
@@ -1639,7 +1639,7 @@ local function buildEventModal()
 
 	EventUI.nameLbl = Instance.new("TextLabel")
 	EventUI.nameLbl.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 16 or px(22))
-	EventUI.nameLbl.Position = UDim2.new(0, eventAvatarSize + padSize(8), 0, padSize(4))
+	EventUI.nameLbl.Position = UDim2.new(0, EventUI.avatarSize + padSize(8), 0, padSize(4))
 	EventUI.nameLbl.BackgroundTransparency = 1
 	EventUI.nameLbl.Font = F.Title
 	EventUI.nameLbl.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
@@ -1651,27 +1651,27 @@ local function buildEventModal()
 	EventUI.nameLbl.Parent = EventUI.header
 
 	-- TINY PHONE FIX: Smaller relation banner
-	local relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
-	local relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
-	EventUI.relationBanner = Instance.new("Frame")
-	EventUI.relationBanner.Size = UDim2.new(0, relationBannerWidth, 0, relationBannerHeight)
-	EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
-	EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
-	EventUI.relationBanner.BackgroundColor3 = C.Red
-	EventUI.relationBanner.ZIndex = 65
-	EventUI.relationBanner.Parent = EventUI.header
-	pill(EventUI.relationBanner)
+	local EventUI.relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
+	local EventUI.relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
+	EventUI.EventUI.relationBanner = Instance.new("Frame")
+	EventUI.EventUI.relationBanner.Size = UDim2.new(0, EventUI.relationBannerWidth, 0, EventUI.relationBannerHeight)
+	EventUI.EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
+	EventUI.EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
+	EventUI.EventUI.relationBanner.BackgroundColor3 = C.Red
+	EventUI.EventUI.relationBanner.ZIndex = 65
+	EventUI.EventUI.relationBanner.Parent = EventUI.header
+	pill(EventUI.EventUI.relationBanner)
 
-	EventUI.relationLbl = Instance.new("TextLabel")
-	EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
-	EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
-	EventUI.relationLbl.BackgroundTransparency = 1
-	EventUI.relationLbl.Font = F.Button
-	EventUI.relationLbl.TextSize = Device.IS_TINY_PHONE and 9 or textSize(11)
-	EventUI.relationLbl.TextColor3 = C.White
-	EventUI.relationLbl.Text = "Classmate"
-	EventUI.relationLbl.ZIndex = 66
-	EventUI.relationLbl.Parent = EventUI.relationBanner
+	EventUI.EventUI.relationLbl = Instance.new("TextLabel")
+	EventUI.EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
+	EventUI.EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
+	EventUI.EventUI.relationLbl.BackgroundTransparency = 1
+	EventUI.EventUI.relationLbl.Font = F.Button
+	EventUI.EventUI.relationLbl.TextSize = Device.IS_TINY_PHONE and 9 or textSize(11)
+	EventUI.EventUI.relationLbl.TextColor3 = C.White
+	EventUI.EventUI.relationLbl.Text = "Classmate"
+	EventUI.EventUI.relationLbl.ZIndex = 66
+	EventUI.EventUI.relationLbl.Parent = EventUI.EventUI.relationBanner
 
 	-- title section (emoji + event title) - TINY PHONE FIX: Much more compact
 	local titleSection = Instance.new("Frame")
@@ -1700,26 +1700,26 @@ local function buildEventModal()
 	titleLayout.Parent = titleSection
 
 	-- MOBILE FIX: Responsive emoji sizing
-	local eventEmojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
-	local eventEmojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
+	local EventUI.emojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
+	local EventUI.emojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
 	EventUI.emoji = Instance.new("TextLabel")
-	EventUI.emoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
+	EventUI.emoji.Size = UDim2.new(0, EventUI.emojiSize, 0, EventUI.emojiSize)
 	EventUI.emoji.BackgroundTransparency = 1
 	EventUI.emoji.Font = F.Body
-	EventUI.emoji.TextSize = eventEmojiTextSize
+	EventUI.emoji.TextSize = EventUI.emojiTextSize
 	EventUI.emoji.Text = "🙂"
 	EventUI.emoji.LayoutOrder = 1
 	EventUI.emoji.ZIndex = 65
 	EventUI.emoji.Parent = titleSection
 
 	-- MOBILE FIX: Responsive title text
-	local eventTitleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
+	local EventUI.titleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.title.BackgroundTransparency = 1
 	EventUI.title.Font = F.Title
-	EventUI.title.TextSize = eventTitleTextSize
+	EventUI.title.TextSize = EventUI.titleTextSize
 	EventUI.title.TextColor3 = C.Gray900
 	EventUI.title.Text = "Life Event"
 	EventUI.title.TextWrapped = true
@@ -1747,13 +1747,13 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- MOBILE FIX: Responsive body text with tighter line height
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
+	local EventUI.bodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.body.BackgroundTransparency = 1
 	EventUI.body.Font = F.Body
-	EventUI.body.TextSize = eventBodyTextSize
+	EventUI.body.TextSize = EventUI.bodyTextSize
 	EventUI.body.TextColor3 = C.Gray600
 	EventUI.body.TextWrapped = true
 	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
@@ -1765,14 +1765,14 @@ local function buildEventModal()
 	EventUI.body.Parent = bodySection
 
 	-- MOBILE FIX: Responsive question text
-	local eventQuestionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
+	local EventUI.questionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.question.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.question.BackgroundTransparency = 1
 	EventUI.question.Font = F.Title
-	EventUI.question.TextSize = eventQuestionTextSize
+	EventUI.question.TextSize = EventUI.questionTextSize
 	EventUI.question.TextColor3 = C.Gray800
 	EventUI.question.Text = "What will you do?"
 	EventUI.question.TextXAlignment = Enum.TextXAlignment.Center
@@ -1785,48 +1785,34 @@ local function buildEventModal()
 	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
 	-- The card expands to show ALL buttons without scrolling
 	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
-	EventUI.choicesSection = Instance.new("Frame")
-	EventUI.choicesSection.Name = "ChoicesContainer"
-	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
-	EventUI.choicesSection.BackgroundTransparency = 1
-	EventUI.choicesSection.LayoutOrder = 4
-	EventUI.choicesSection.ZIndex = 64
-	EventUI.choicesSection.Parent = EventUI.card
+	EventUI.EventUI.choicesSection = Instance.new("Frame")
+	EventUI.EventUI.choicesSection.Name = "ChoicesContainer"
+	EventUI.EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
+	EventUI.EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.EventUI.choicesSection.LayoutOrder = 4
+	EventUI.EventUI.choicesSection.ZIndex = 64
+	EventUI.EventUI.choicesSection.Parent = EventUI.card
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
 	local choicePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(4))
 	local choicePadBottom = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 12 or padSize(24))
-	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
+	pad(EventUI.EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Tighter spacing between buttons
 	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
-	choicesLayout.Parent = EventUI.choicesSection
+	choicesLayout.Parent = EventUI.EventUI.choicesSection
 end
 
 -- Build the event modal immediately
 buildEventModal()
 
--- Aliases for read-only backward compatibility with existing code
-local eventOverlay = EventUI.overlay
-local eventShadowFrame = EventUI.shadowFrame
-local eventShell = EventUI.shell
-local eventCard = EventUI.card
-local eventHeader = EventUI.header
-local eventAvatar = EventUI.avatar
-local eventAvatarEmoji = EventUI.avatarEmoji
-local eventNameLbl = EventUI.nameLbl
-local relationBanner = EventUI.relationBanner
-local relationLbl = EventUI.relationLbl
-local eventEmoji = EventUI.emoji
-local eventTitle = EventUI.title
-local eventBody = EventUI.body
-local eventQuestion = EventUI.question
-local choicesSection = EventUI.choicesSection
+-- CRITICAL FIX: Reduced module-level locals by using direct table access
+-- Use EventUI.overlay, EventUI.shell, etc. instead of aliases
 
 local function clearChoices()
 	for _, b in ipairs(EventUI.activeChoiceButtons) do
@@ -1851,7 +1837,7 @@ surpriseBtn.Text = "✨ Surprise me!"
 surpriseBtn.AutoButtonColor = false
 surpriseBtn.LayoutOrder = 100
 surpriseBtn.ZIndex = 65
-surpriseBtn.Parent = choicesSection
+surpriseBtn.Parent = EventUI.choicesSection
 
 surpriseBtn.MouseEnter:Connect(function()
 	surpriseBtn.TextColor3 = C.Blue
@@ -2781,23 +2767,23 @@ showEvent = function(payload)
 		local isDisaster = isDisasterEvent(payload)
 
 		-- Apply themed shell color
-		eventShell.BackgroundColor3 = colors.shell
-		local shellStroke = eventShell:FindFirstChildOfClass("UIStroke")
+		EventUI.shell.BackgroundColor3 = colors.shell
+		local shellStroke = EventUI.shell:FindFirstChildOfClass("UIStroke")
 		if shellStroke then
 			shellStroke.Color = colors.stroke
 		end
 
 		-- header
-		eventHeader.Visible = payload.showRelationship or false
+		EventUI.header.Visible = payload.showRelationship or false
 		if payload.showRelationship and payload.relationName then
-			eventNameLbl.Text = payload.relationName
-			relationLbl.Text  = payload.relationship or "Friend"
+			EventUI.nameLbl.Text = payload.relationName
+			EventUI.relationLbl.Text  = payload.relationship or "Friend"
 		end
 
-		eventEmoji.Text     = payload.emoji or "🙂"
-		eventTitle.Text     = payload.title or "Life Event"
-		eventBody.Text      = payload.text or ""
-		eventQuestion.Text  = payload.question or "What will you do?"
+		EventUI.emoji.Text     = payload.emoji or "🙂"
+		EventUI.title.Text     = payload.title or "Life Event"
+		EventUI.body.Text      = payload.text or ""
+		EventUI.question.Text  = payload.question or "What will you do?"
 
 		local choiceHandlers = {}
 
@@ -2824,7 +2810,7 @@ showEvent = function(payload)
 			btn.TextWrapped = true
 			btn.TextXAlignment = Enum.TextXAlignment.Center
 			btn.TextYAlignment = Enum.TextYAlignment.Center
-			btn.Parent = choicesSection
+			btn.Parent = EventUI.choicesSection
 
 			corner(btn, choiceBtnCorner)
 			stroke(btn, 1, 0.5, C.BlueLight)
@@ -2890,18 +2876,18 @@ showEvent = function(payload)
 			end
 		end)
 
-		eventOverlay.Visible = true
-		eventShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
-		eventShadowFrame.BackgroundTransparency = 1
-		eventShell.BackgroundTransparency = 1
-		eventCard.BackgroundTransparency = 1
+		EventUI.overlay.Visible = true
+		EventUI.shadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
+		EventUI.shadowFrame.BackgroundTransparency = 1
+		EventUI.shell.BackgroundTransparency = 1
+		EventUI.card.BackgroundTransparency = 1
 
-		tween(eventShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundTransparency = 0.92,
 		})
-		tween(eventShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-		tween(eventCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(EventUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(EventUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
 
 	-- Handle errors in showEvent
@@ -2909,7 +2895,7 @@ showEvent = function(payload)
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
 		awaitingEvent = false
 		EventUI.currentEventId = nil
-		eventOverlay.Visible = false
+		EventUI.overlay.Visible = false
 	end
 end
 
@@ -2918,27 +2904,27 @@ hideEvent = function()
 	EventUI.currentEventId = nil
 
 	-- Create the hide tween and track it
-	EventUI.currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
+	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
-	tween(eventShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-	tween(eventCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.shell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
 	EventUI.currentHideTween.Completed:Connect(function()
 		-- Only hide overlay if we're not currently showing a new event
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
-			eventOverlay.Visible = false
+			EventUI.overlay.Visible = false
 
 			-- Reset event UI elements for next event
-			eventEmoji.Text = "🙂"
-			eventTitle.Text = ""
-			eventBody.Text = ""
-			eventAvatarEmoji.Text = "👤"
-			eventNameLbl.Text = ""
-			relationLbl.Text = ""
-			eventHeader.Visible = false
+			EventUI.emoji.Text = "🙂"
+			EventUI.title.Text = ""
+			EventUI.body.Text = ""
+			EventUI.avatarEmoji.Text = "👤"
+			EventUI.nameLbl.Text = ""
+			EventUI.relationLbl.Text = ""
+			EventUI.header.Visible = false
 		end
 
 		EventUI.currentHideTween = nil
@@ -3577,77 +3563,56 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 end)
 
 -- New: ShowResult remote for explicit result popups
-local ShowResult = remotesFolder:FindFirstChild("ShowResult")
-if ShowResult then
-	ShowResult.OnClientEvent:Connect(function(data)
-		showResultPopup({
-			emoji = data.emoji or "📋",
-			title = data.title or "Result",
-			body = data.body or "Something happened...",
-			happiness = data.happiness,
-			health = data.health,
-			smarts = data.smarts,
-			looks = data.looks,
-			money = data.money,
-		}, function()
-			-- Callback when popup closed
-			if data.feedText then
-				addFeedEntry(data.feedText)
-			end
+-- CRITICAL FIX: Use do block to avoid adding to module-level local count
+do
+	local sr = remotesFolder:FindFirstChild("ShowResult")
+	if sr then
+		sr.OnClientEvent:Connect(function(data)
+			showResultPopup({
+				emoji = data.emoji or "📋",
+				title = data.title or "Result",
+				body = data.body or "Something happened...",
+				happiness = data.happiness,
+				health = data.health,
+				smarts = data.smarts,
+				looks = data.looks,
+				money = data.money,
+			}, function()
+				if data.feedText then
+					addFeedEntry(data.feedText)
+				end
+			end)
 		end)
-	end)
-end
-
--- CRITICAL FIX #26: Listen for product purchases (Time Machine dev products)
-local ProductPurchased = remotesFolder:FindFirstChild("ProductPurchased")
-if ProductPurchased then
-	ProductPurchased.OnClientEvent:Connect(function(productKey)
-		-- Handle Time Machine product purchases
-		if productKey and productKey:find("TIME_") then
-			-- Map product key to years back
-			local yearsBackMap = {
-				TIME_5_YEARS = 5,
-				TIME_10_YEARS = 10,
-				TIME_20_YEARS = 20,
-				TIME_30_YEARS = 30,
-				TIME_BABY = -1,
-			}
-			
-			local yearsBack = yearsBackMap[productKey]
-			if yearsBack then
-				-- Automatically trigger the Time Machine with confirmed purchase
-				local UseTimeMachineProduct = remotesFolder:FindFirstChild("UseTimeMachineProduct")
-				if UseTimeMachineProduct then
-					local ok, result = pcall(function()
-						return UseTimeMachineProduct:InvokeServer(yearsBack)
-					end)
-					
-					if ok and result and result.success then
-						-- Success! Hide death overlay and refresh
-						hideDeathOverlay()
-						
-						if result.newAge then
-							currentState.Age = result.newAge
-							currentState.Health = 100
-							currentState.Stats = currentState.Stats or {}
-							currentState.Stats.Health = 100
-							
-							if currentState.Flags then
-								currentState.Flags.dead = nil
+	end
+	
+	-- CRITICAL FIX #26: Listen for product purchases (Time Machine dev products)
+	local pp = remotesFolder:FindFirstChild("ProductPurchased")
+	if pp then
+		pp.OnClientEvent:Connect(function(productKey)
+			if productKey and productKey:find("TIME_") then
+				local ybMap = { TIME_5_YEARS = 5, TIME_10_YEARS = 10, TIME_20_YEARS = 20, TIME_30_YEARS = 30, TIME_BABY = -1 }
+				local yb = ybMap[productKey]
+				if yb then
+					local tmRemote = remotesFolder:FindFirstChild("UseTimeMachineProduct")
+					if tmRemote then
+						local ok, res = pcall(function() return tmRemote:InvokeServer(yb) end)
+						if ok and res and res.success then
+							hideDeathOverlay()
+							if res.newAge then
+								currentState.Age = res.newAge
+								currentState.Health = 100
+								currentState.Stats = currentState.Stats or {}
+								currentState.Stats.Health = 100
+								if currentState.Flags then currentState.Flags.dead = nil end
 							end
+							if updateFromState then updateFromState() end
+							addFeedEntry("⏰ Time traveled back to age " .. (res.newAge or "0") .. "!")
 						end
-						
-						if updateFromState then
-							updateFromState()
-						end
-						
-						-- Show success message
-						addFeedEntry("⏰ Time traveled back to age " .. (result.newAge or "0") .. "!")
 					end
 				end
 			end
-		end
-	end)
+		end)
+	end
 end
 
 PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
@@ -3684,7 +3649,7 @@ end)
 
 if MinigameStart then
 	MinigameStart.OnClientEvent:Connect(function(config)
-		if eventOverlay.Visible then
+		if EventUI.overlay.Visible then
 			hideEvent()
 		end
 
@@ -3743,7 +3708,7 @@ end
 ageButton.MouseButton1Click:Connect(function()
 	-- Safety check: if awaitingEvent is true but the event overlay is NOT visible,
 	-- something went wrong - reset the flag
-	if awaitingEvent and not eventOverlay.Visible then
+	if awaitingEvent and not EventUI.overlay.Visible then
 		awaitingEvent = false
 		EventUI.currentEventId = nil
 	end
@@ -3788,40 +3753,32 @@ relationshipsScreenInstance = safeNew(RelationshipsScreen, "RelationshipsScreen"
 activitiesScreenInstance    = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
 
-if MinigamesModule then
-	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
-	if ok and mg then 
-		minigamesInstance = mg
-		
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Enable rare auto Purge event (0.5% chance every 90 seconds)
-		-- The Purge is an ultra-rare survival event that can happen at any time!
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		if mg.enableRareAutoPurge then
-			mg:enableRareAutoPurge({
-				chance = 0.005,      -- 0.5% chance
-				interval = 90,       -- Check every 90 seconds (1.5 min)
-				totalScenarios = 10, -- 10 survival scenarios
-				onComplete = function(won, stats)
-					print("[LifeClient] 😈 Purge event completed! Won:", won)
-					-- Purge outcomes affect player stats
-					if currentState then
-						local statDelta = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
-						for stat, delta in pairs(statDelta) do
-							if currentState[stat] then
-								currentState[stat] = math.clamp(currentState[stat] + delta, 0, 100)
+-- CRITICAL FIX: Wrap in do block to scope local variables and avoid local limit
+do
+	if MinigamesModule then
+		local ok, mgInst = pcall(function() return MinigamesModule.new(screenGui) end)
+		if ok and mgInst then 
+			minigamesInstance = mgInst
+			
+			-- Enable rare auto Purge event (0.5% chance every 90 seconds)
+			if mgInst.enableRareAutoPurge then
+				mgInst:enableRareAutoPurge({
+					chance = 0.005,
+					interval = 90,
+					totalScenarios = 10,
+					onComplete = function(won)
+						if currentState then
+							local d = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
+							for s, v in pairs(d) do
+								if currentState[s] then currentState[s] = math.clamp(currentState[s] + v, 0, 100) end
 							end
+							currentState.Feed = currentState.Feed or {}
+							table.insert(currentState.Feed, won and "😈 Survived The Purge!" or "💀 Died in The Purge...")
+							refreshInfo()
 						end
-						-- Add feed message
-						local feedMsg = won 
-							and "😈 You survived The Purge! (+Health, +Happiness)"
-							or "💀 You died in The Purge... (Lost Health & Happiness)"
-						currentState.Feed = currentState.Feed or {}
-						table.insert(currentState.Feed, feedMsg)
-						refreshInfo()
-					end
-				end,
-			})
+					end,
+				})
+			end
 		end
 	end
 end
@@ -3856,7 +3813,7 @@ task.spawn(function()
 				lastAwaitingEventTime = tick()
 			elseif tick() - lastAwaitingEventTime > STUCK_THRESHOLD then
 				-- Check if the event overlay is actually visible
-				if not eventOverlay.Visible then
+				if not EventUI.overlay.Visible then
 					awaitingEvent = false
 					EventUI.currentEventId = nil
 					lastAwaitingEventTime = nil
