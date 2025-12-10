@@ -1653,25 +1653,25 @@ local function buildEventModal()
 	-- TINY PHONE FIX: Smaller relation banner
 	EventUI.relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
 	EventUI.relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
-	EventUI.EventUI.relationBanner = Instance.new("Frame")
-	EventUI.EventUI.relationBanner.Size = UDim2.new(0, EventUI.relationBannerWidth, 0, EventUI.relationBannerHeight)
-	EventUI.EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
-	EventUI.EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
-	EventUI.EventUI.relationBanner.BackgroundColor3 = C.Red
-	EventUI.EventUI.relationBanner.ZIndex = 65
-	EventUI.EventUI.relationBanner.Parent = EventUI.header
-	pill(EventUI.EventUI.relationBanner)
+	EventUI.relationBanner = Instance.new("Frame")
+	EventUI.relationBanner.Size = UDim2.new(0, EventUI.relationBannerWidth, 0, EventUI.relationBannerHeight)
+	EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
+	EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
+	EventUI.relationBanner.BackgroundColor3 = C.Red
+	EventUI.relationBanner.ZIndex = 65
+	EventUI.relationBanner.Parent = EventUI.header
+	pill(EventUI.relationBanner)
 
-	EventUI.EventUI.relationLbl = Instance.new("TextLabel")
-	EventUI.EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
-	EventUI.EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
-	EventUI.EventUI.relationLbl.BackgroundTransparency = 1
-	EventUI.EventUI.relationLbl.Font = F.Button
-	EventUI.EventUI.relationLbl.TextSize = Device.IS_TINY_PHONE and 9 or textSize(11)
-	EventUI.EventUI.relationLbl.TextColor3 = C.White
-	EventUI.EventUI.relationLbl.Text = "Classmate"
-	EventUI.EventUI.relationLbl.ZIndex = 66
-	EventUI.EventUI.relationLbl.Parent = EventUI.EventUI.relationBanner
+	EventUI.relationLbl = Instance.new("TextLabel")
+	EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
+	EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
+	EventUI.relationLbl.BackgroundTransparency = 1
+	EventUI.relationLbl.Font = F.Button
+	EventUI.relationLbl.TextSize = Device.IS_TINY_PHONE and 9 or textSize(11)
+	EventUI.relationLbl.TextColor3 = C.White
+	EventUI.relationLbl.Text = "Classmate"
+	EventUI.relationLbl.ZIndex = 66
+	EventUI.relationLbl.Parent = EventUI.relationBanner
 
 	-- title section (emoji + event title) - TINY PHONE FIX: Much more compact
 	local titleSection = Instance.new("Frame")
@@ -1785,27 +1785,27 @@ local function buildEventModal()
 	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
 	-- The card expands to show ALL buttons without scrolling
 	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
-	EventUI.EventUI.choicesSection = Instance.new("Frame")
-	EventUI.EventUI.choicesSection.Name = "ChoicesContainer"
-	EventUI.EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
-	EventUI.EventUI.choicesSection.BackgroundTransparency = 1
-	EventUI.EventUI.choicesSection.LayoutOrder = 4
-	EventUI.EventUI.choicesSection.ZIndex = 64
-	EventUI.EventUI.choicesSection.Parent = EventUI.card
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Name = "ChoicesContainer"
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
+	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.LayoutOrder = 4
+	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.Parent = EventUI.card
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
 	local choicePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(4))
 	local choicePadBottom = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 12 or padSize(24))
-	pad(EventUI.EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
+	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Tighter spacing between buttons
 	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
-	choicesLayout.Parent = EventUI.EventUI.choicesSection
+	choicesLayout.Parent = EventUI.choicesSection
 end
 
 -- Build the event modal immediately
