@@ -120,6 +120,26 @@ function LifeState.new(player)
 	-- Fame (0-100)
 	self.Fame = 0
 	
+	-- PREMIUM FEATURE: Organized Crime/Mob State
+	self.MobState = {
+		inMob = false,
+		familyId = nil,
+		familyName = nil,
+		familyEmoji = nil,
+		rankLevel = 1,
+		rankName = "Associate",
+		rankEmoji = "👤",
+		respect = 0,
+		notoriety = 0,
+		heat = 0,
+		loyalty = 100,
+		kills = 0,
+		earnings = 0,
+		yearsInMob = 0,
+		operationsCompleted = 0,
+		operationsFailed = 0,
+	}
+	
 	-- Event History (for preventing repeats)
 	self.EventHistory = {
 		occurrences = {},
@@ -640,6 +660,9 @@ function LifeState:Serialize()
 		
 		-- CRITICAL FIX: Child count for family display
 		ChildCount = self.ChildCount,
+		
+		-- PREMIUM FEATURE: Mob State for organized crime
+		MobState = self.MobState,
 		
 		-- Event History (needed for client to show recent events)
 		EventHistory = {
