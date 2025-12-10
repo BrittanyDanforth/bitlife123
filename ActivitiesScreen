@@ -1316,6 +1316,12 @@ function ActivitiesScreen:populateCrime()
 end
 
 function ActivitiesScreen:createOrganizedCrimeSection()
+	-- CRITICAL FIX #1: Only show organized crime for adults (18+)
+	local age = self:getAge()
+	if age < 18 then
+		return -- Don't show organized crime to minors
+	end
+	
 	local mobState = self:getMobState()
 	local isInMob = mobState and mobState.inMob
 	
@@ -1497,6 +1503,11 @@ function ActivitiesScreen:createJoinMobCard(parent)
 end
 
 function ActivitiesScreen:createMobStatusCard(parent, mobState)
+	-- CRITICAL FIX #6: Nil safety for mobState
+	if not mobState then
+		return
+	end
+	
 	local card = Instance.new("Frame")
 	card.Name = "MobStatusCard"
 	card.Size = UDim2.new(1, 0, 0, 100)
@@ -1575,6 +1586,11 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 end
 
 function ActivitiesScreen:createMobOperationsCards(parent, mobState)
+	-- CRITICAL FIX #5: Nil safety for mobState
+	if not mobState then
+		return
+	end
+	
 	-- Get available operations based on rank
 	local operations = {
 		{ id = "protection", name = "Protection Racket", emoji = "💰", risk = 20, reward = "$500-$2K", minRank = 1 },
@@ -1584,7 +1600,7 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 		{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = "$5K-$25K", minRank = 4 },
 	}
 	
-	local currentRank = mobState.rankLevel or 1
+	local currentRank = (mobState and mobState.rankLevel) or 1
 	
 	for i, op in ipairs(operations) do
 		local unlocked = currentRank >= op.minRank
@@ -1698,12 +1714,17 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 	log("Attempting to join mob:", familyId)
 	local JoinMob = getRemote("JoinMob")
 	if JoinMob then
-		local result = JoinMob:InvokeServer(familyId)
-		if result and result.success then
+		-- CRITICAL FIX #4: Add pcall protection
+		local success, result = pcall(function()
+			return JoinMob:InvokeServer(familyId)
+		end)
+		if success and result and result.success then
 			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
 			self:switchTab("crime") -- Refresh
+		elseif success and result then
+			self:showResult(false, result.message or "The family rejected you.", "❌")
 		else
-			self:showResult(false, result and result.message or "The family rejected you.", "❌")
+			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
 		-- Fallback for testing
@@ -1715,12 +1736,17 @@ function ActivitiesScreen:attemptLeaveMob()
 	log("Attempting to leave mob")
 	local LeaveMob = getRemote("LeaveMob")
 	if LeaveMob then
-		local result = LeaveMob:InvokeServer()
-		if result and result.success then
+		-- CRITICAL FIX #4: Add pcall protection
+		local success, result = pcall(function()
+			return LeaveMob:InvokeServer()
+		end)
+		if success and result and result.success then
 			self:showResult(true, result.message or "You've left the family. Watch your back...", "🚪")
 			self:switchTab("crime") -- Refresh
+		elseif success and result then
+			self:showResult(false, result.message or "You can't leave... not alive anyway.", "💀")
 		else
-			self:showResult(false, result and result.message or "You can't leave... not alive anyway.", "💀")
+			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
 		self:showResult(true, "You've left the crime family. They won't forget this...", "🚪")
@@ -1731,15 +1757,20 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 	log("Doing mob operation:", opId)
 	local DoMobOp = getRemote("DoMobOperation")
 	if DoMobOp then
-		local result = DoMobOp:InvokeServer(opId)
-		if result and result.success then
+		-- CRITICAL FIX #3: Add pcall protection for server calls
+		local success, result = pcall(function()
+			return DoMobOp:InvokeServer(opId)
+		end)
+		if success and result and result.success then
 			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
 			self:showResult(true, msg, "💰")
+		elseif success and result then
+			self:showResult(false, result.message or "The operation failed...", "❌")
 		else
-			self:showResult(false, result and result.message or "The operation failed...", "❌")
+			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
-		-- Fallback
+		-- Fallback for testing
 		self:showResult(true, opName .. " completed! You earned cash and respect.", "💰")
 	end
 	self:updateInfoBar()
@@ -1754,12 +1785,15 @@ function ActivitiesScreen:getMobState()
 end
 
 function ActivitiesScreen:checkGamepassOwnership(gamepassKey)
-	-- Check with server or local cache
-	-- For now return false - actual implementation checks MarketplaceService
+	-- CRITICAL FIX #2: Add pcall protection for remote calls
 	local CheckGamepass = getRemote("CheckGamepass")
 	if CheckGamepass then
-		local owns = CheckGamepass:InvokeServer(gamepassKey)
-		return owns == true
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer(gamepassKey)
+		end)
+		if success then
+			return owns == true
+		end
 	end
 	return false
 end

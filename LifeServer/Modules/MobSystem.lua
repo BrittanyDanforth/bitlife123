@@ -233,12 +233,23 @@ function MobSystem:joinFamily(lifeState, familyId)
 	end
 	
 	local mobState = self:getMobState(lifeState)
+	-- CRITICAL FIX #7: Set all state fields that client expects
 	mobState.inMob = true
 	mobState.familyId = familyId
+	mobState.familyName = family.name
+	mobState.familyEmoji = family.emoji
 	mobState.rankIndex = 1
+	mobState.rankLevel = 1
+	mobState.rankName = family.ranks[1].name
+	mobState.rankEmoji = family.ranks[1].emoji
 	mobState.respect = 0
 	mobState.loyalty = 100
+	mobState.heat = 0
 	mobState.yearsInMob = 0
+	mobState.operationsCompleted = 0
+	mobState.operationsFailed = 0
+	mobState.earnings = 0
+	mobState.kills = 0
 	
 	return true, "You've joined " .. family.name .. " as a " .. family.ranks[1].name .. "!"
 end
@@ -435,7 +446,11 @@ function MobSystem:checkRankUp(lifeState)
 	end
 	
 	if mobState.respect >= nextRank.respect then
+		-- CRITICAL FIX #9: Update all rank fields for client consistency
 		mobState.rankIndex = mobState.rankIndex + 1
+		mobState.rankLevel = mobState.rankIndex
+		mobState.rankName = nextRank.name
+		mobState.rankEmoji = nextRank.emoji
 		return string.format(
 			"🎉 You've been promoted to %s %s!",
 			nextRank.emoji,

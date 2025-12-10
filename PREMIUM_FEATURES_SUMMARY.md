@@ -84,14 +84,6 @@ Time travel system for death screen.
 
 ### Client-Side (`/workspace/`)
 
-#### `PremiumUI.lua`
-Client UI components for premium features.
-- Premium Store modal
-- Time Machine death screen
-- Mob family selection UI
-- God Mode stat editor
-- BitLife-style purchase prompts
-
 #### `ActivitiesScreen` (Modified)
 Integrated Organized Crime into Crime tab.
 - "Organized Crime" section with crown icon
@@ -182,11 +174,10 @@ Create these RemoteEvents/Functions in `ReplicatedStorage.LifeRemotes`:
 - [x] GamepassSystem module created
 - [x] MobSystem module created  
 - [x] TimeMachine module created
-- [x] PremiumUI client module created
 - [x] Organized Crime in Activities Crime tab
-- [x] BitLife-style purchase prompts
+- [x] BitLife-style purchase prompts (inline in ActivitiesScreen)
+- [x] MobState added to LifeState with serialization
 - [ ] Create actual Roblox gamepasses
 - [ ] Set up server remotes
-- [ ] Add MobState to LifeState serialization
 - [ ] Integrate Time Machine with death flow
 - [ ] Add God Mode button to stats UI
