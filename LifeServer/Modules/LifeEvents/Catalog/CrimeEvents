@@ -11,7 +11,41 @@
 local RANDOM = Random.new()
 
 -- Helper function to properly incarcerate a player
+-- CRITICAL FIX: Now handles juvenile detention for minors automatically!
 local function incarceratePlayer(state, yearsMin, yearsMax, reason)
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Juveniles (under 18) get juvenile detention, not adult prison!
+	-- - Shorter sentences (max 1 year in juvie)
+	-- - No adult prison record
+	-- - Sets juvenile_record flag instead of full criminal_record
+	-- - Doesn't lose job (they likely don't have one anyway)
+	-- This matches real-life juvenile justice systems
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if age < 18 then
+		-- Juvenile detention is much shorter - max 1 year, often just months
+		local juvieTime = math.min(yearsMax * 0.25, 1) -- Quarter of adult time, max 1 year
+		juvieTime = math.max(0.25, juvieTime) -- At least 3 months
+		
+		state.InJail = true
+		state.JailYearsLeft = juvieTime
+		state.Flags = state.Flags or {}
+		state.Flags.in_prison = true
+		state.Flags.incarcerated = true
+		state.Flags.juvenile_record = true -- NOT criminal_record - sealed at 18
+		state.Flags.was_in_juvie = true
+		
+		-- Education might be suspended
+		if state.EducationData and state.EducationData.Status == "enrolled" then
+			state.EducationData.StatusBeforeJail = "enrolled"
+			state.EducationData.Status = "suspended"
+		end
+		
+		return juvieTime, true -- Second return value indicates juvenile
+	end
+	
+	-- Adult incarceration (18+)
 	-- CRITICAL FIX: Use NextInteger, not NextNumber!
 	-- NextNumber() returns a 0-1 float, NextInteger(min, max) returns proper integer range
 	local years = RANDOM:NextInteger(yearsMin, yearsMax)
@@ -43,7 +77,7 @@ local function incarceratePlayer(state, yearsMin, yearsMax, reason)
 		state.EducationData.Status = "suspended"
 	end
 	
-	return years
+	return years, false -- Second return value indicates adult prison
 end
 
 local events = {

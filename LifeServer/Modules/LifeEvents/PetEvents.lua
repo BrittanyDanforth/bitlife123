@@ -49,16 +49,22 @@ PetEvents.events = {
 				end,
 				onResolve = function(state)
 					local roll = math.random()
+					-- CRITICAL FIX: Initialize PetData for lifecycle tracking
+					state.PetData = state.PetData or {}
+					local dogNames = {"Max", "Buddy", "Charlie", "Rocky", "Cooper", "Duke", "Bear", "Tucker", "Jack", "Zeus", "Bailey", "Luna", "Daisy", "Sadie", "Bella"}
+					state.PetData.dogName = dogNames[math.random(1, #dogNames)]
+					state.PetData.dogAge = 1 -- Start at age 1
+					
 					if roll < 0.75 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
-						state:AddFeed("🐾 BEST FRIEND! Your new dog loves you unconditionally!")
+						state:AddFeed(string.format("🐾 BEST FRIEND! %s loves you unconditionally!", state.PetData.dogName))
 					else
 						state:ModifyStat("Happiness", 8)
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
-						state:AddFeed("🐾 Puppy adjustment period. Challenging but worth it!")
+						state:AddFeed(string.format("🐾 %s is adjusting. Puppy phase is challenging but worth it!", state.PetData.dogName))
 					end
 				end,
 			},
@@ -75,20 +81,37 @@ PetEvents.events = {
 				end,
 				onResolve = function(state)
 					local roll = math.random()
+					-- CRITICAL FIX: Initialize PetData for lifecycle tracking
+					state.PetData = state.PetData or {}
+					local catNames = {"Whiskers", "Luna", "Mittens", "Shadow", "Oliver", "Simba", "Cleo", "Tiger", "Milo", "Smokey", "Oreo", "Ginger", "Felix", "Nala", "Tigger"}
+					state.PetData.catName = catNames[math.random(1, #catNames)]
+					state.PetData.catAge = 1 -- Start at age 1
+					
 					if roll < 0.70 then
 						state:ModifyStat("Happiness", 12)
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
-						state:AddFeed("🐾 Purrfect companion! Cat has chosen you as servant!")
+						state:AddFeed(string.format("🐾 Purrfect companion! %s has chosen you as servant!", state.PetData.catName))
 					else
 						state:ModifyStat("Happiness", 6)
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
-						state:AddFeed("🐾 Cat is aloof but you love them anyway!")
+						state:AddFeed(string.format("🐾 %s is aloof but you love them anyway!", state.PetData.catName))
 					end
 				end,
 			},
-			{ text = "Get a small pet", effects = { Money = -100, Happiness = 8 }, setFlags = { has_small_pet = true }, feedText = "🐾 Hamster/fish/bird! Low maintenance joy!" },
+			{ 
+			text = "Get a small pet", 
+			effects = { Money = -100, Happiness = 8 }, 
+			setFlags = { has_small_pet = true }, 
+			feedText = "🐾 Hamster/fish/bird! Low maintenance joy!",
+			-- CRITICAL FIX: Initialize PetData for small pet lifecycle tracking
+			onResolve = function(state)
+				state.PetData = state.PetData or {}
+				state.PetData.smallPetAge = 1
+				state.PetData.smallPetName = "Little Buddy"
+			end,
+		},
 			{ text = "Not ready for a pet", effects = { Happiness = 2 }, feedText = "🐾 Pets are a big commitment. Maybe later." },
 		},
 	},

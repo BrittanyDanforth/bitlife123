@@ -16,6 +16,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local ModulesFolder = script:FindFirstChild("Modules") or script.Parent:FindFirstChild("Modules")
 assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer/Modules.")
@@ -859,6 +860,10 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	-- CRITICAL FIX: Missing activities from client (caused "Unknown activity" error)
+	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
+	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
+	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-5)
@@ -927,12 +932,24 @@ local ActivityCatalog = {
 }
 
 local CrimeCatalog = {
+	-- PETTY CRIMES (low risk)
 	porch_pirate = { risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 } },
 	shoplift = { risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 } },
 	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 } },
+	-- PROPERTY CRIMES (medium risk)
 	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 } },
 	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 } },
+	-- MAJOR CRIMES (high risk)
 	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 } },
+	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
+	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
+	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
+	drug_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
+	car_theft = { risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 } },
+	arson = { risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 } },
+	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
+	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
+	murder = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
 }
 
 local PrisonActions = {
@@ -1331,6 +1348,14 @@ function LifeBackend:setupRemotes()
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
 	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
+	
+	-- PREMIUM FEATURES: Organized Crime remotes
+	self.remotes.JoinMob = self:createRemote("JoinMob", "RemoteFunction")
+	self.remotes.LeaveMob = self:createRemote("LeaveMob", "RemoteFunction")
+	self.remotes.DoMobOperation = self:createRemote("DoMobOperation", "RemoteFunction")
+	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
+	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
+	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -1415,6 +1440,31 @@ function LifeBackend:setupRemotes()
 	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
 		self:resetLife(player)
 	end)
+	
+	-- PREMIUM FEATURES: Organized Crime handlers
+	self.remotes.JoinMob.OnServerInvoke = function(player, familyId)
+		return self:handleJoinMob(player, familyId)
+	end
+	
+	self.remotes.LeaveMob.OnServerInvoke = function(player)
+		return self:handleLeaveMob(player)
+	end
+	
+	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId)
+		return self:handleMobOperation(player, operationId)
+	end
+	
+	self.remotes.CheckGamepass.OnServerInvoke = function(player, gamepassKey)
+		return self:checkGamepassOwnership(player, gamepassKey)
+	end
+	
+	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey)
+		self:promptGamepassPurchase(player, gamepassKey)
+	end)
+	
+	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
+		return self:handleTimeMachine(player, yearsBack)
+	end
 end
 
 function LifeBackend:createInitialState(player)
@@ -2210,6 +2260,62 @@ function LifeBackend:applyDebtInterest(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #36: Annual Education Costs
+-- Students need to pay for room, board, books, etc. while enrolled
+-- Without this, college is just a one-time tuition payment
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyEducationCosts(state)
+	local eduData = state.EducationData
+	if not eduData or eduData.Status ~= "enrolled" then
+		return
+	end
+	
+	-- CRITICAL FIX: Only apply education costs to POST-HIGH-SCHOOL education!
+	-- Elementary, middle school, and high school are FREE (public school)
+	-- This was incorrectly charging 5-year-olds for "education expenses"
+	local level = eduData.Level or ""
+	
+	-- These are the ONLY levels that have costs (college and beyond)
+	local annualCosts = {
+		community = 3000, -- Living expenses while at community college
+		bachelor = 8000, -- Room, board, books at university
+		master = 6000, -- Graduate students have some funding
+		law = 5000, -- Law school has less room/board (often living at home)
+		medical = 10000, -- Med students need equipment, books
+		phd = 3000, -- PhD students get stipends
+	}
+	
+	-- CRITICAL: If the level is not in our costs table, it's FREE education (K-12)
+	-- Do NOT charge for elementary, middle_school, high_school, or unknown levels
+	local cost = annualCosts[level]
+	if not cost then
+		-- This is K-12 education or unknown - no cost!
+		return
+	end
+	
+	-- Also verify age - college shouldn't start before 18
+	local age = state.Age or 0
+	if age < 18 then
+		return
+	end
+	
+	local money = state.Money or 0
+	
+	if money >= cost then
+		state.Money = money - cost
+	else
+		-- Can't afford - add to debt
+		local shortfall = cost - money
+		state.Money = 0
+		eduData.Debt = (eduData.Debt or 0) + shortfall
+		state.Flags = state.Flags or {}
+		state.Flags.has_student_loans = true
+		self:logYearEvent(state, "education",
+			string.format("📚 Took out $%d in loans for education expenses.", shortfall), "📝")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #16: Pet Lifecycle System
 -- Pets age and eventually pass away (dogs ~12-15 years, cats ~15-20 years)
 -- Without this, pets live forever once acquired
@@ -2386,18 +2492,531 @@ function LifeBackend:checkBankruptcy(state)
 		totalDebt = totalDebt + state.EducationData.Debt
 	end
 	
+	-- CRITICAL FIX #21: Include credit card debt and mortgage in total debt calculation
+	state.Flags = state.Flags or {}
+	if state.Flags.credit_card_debt then
+		totalDebt = totalDebt + (state.Flags.credit_card_debt or 0)
+	end
+	if state.Flags.mortgage_debt then
+		totalDebt = totalDebt + (state.Flags.mortgage_debt or 0)
+	end
+	
 	-- Check if player is in severe financial distress
 	local money = state.Money or 0
 	local netWorth = computeNetWorth(state)
 	
 	-- If net worth is severely negative and player has no income
 	if netWorth < -100000 and not state.CurrentJob and money <= 0 then
-		state.Flags = state.Flags or {}
 		if not state.Flags.declared_bankruptcy then
 			-- First time - opportunity to declare bankruptcy
 			state.Flags.financial_crisis = true
 			self:logYearEvent(state, "financial", 
 				"⚠️ You're in severe financial distress. Consider your options carefully.", "💸")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #21: Credit Card Debt Interest
+-- Credit card debt should accrue 15-25% annual interest (much higher than student loans)
+-- Without this, players can rack up credit card debt without consequences
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyCreditCardInterest(state)
+	state.Flags = state.Flags or {}
+	
+	local ccDebt = state.Flags.credit_card_debt or 0
+	if ccDebt <= 0 then
+		return
+	end
+	
+	-- Credit card interest is brutal: 18-25% APR
+	local interestRate = 0.18 + (RANDOM:NextNumber() * 0.07) -- 18-25%
+	local interest = math.floor(ccDebt * interestRate)
+	state.Flags.credit_card_debt = ccDebt + interest
+	
+	-- Minimum payment required ($25 or 2% of balance, whichever is higher)
+	local minPayment = math.max(25, math.floor(ccDebt * 0.02))
+	local money = state.Money or 0
+	
+	if money >= minPayment then
+		state.Money = money - minPayment
+		state.Flags.credit_card_debt = math.max(0, state.Flags.credit_card_debt - minPayment)
+	else
+		-- Missed payment - extra penalties
+		state.Flags.credit_card_debt = state.Flags.credit_card_debt + 35 -- Late fee
+		state.Flags.bad_credit = true
+		self:logYearEvent(state, "financial", 
+			"💳 Missed credit card payment! Late fees and credit damage.", "💸")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #22: Business Income Collection
+-- Owned businesses should generate (or lose) income annually
+-- Without this, businesses are static investments
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectBusinessIncome(state)
+	state.Assets = state.Assets or {}
+	local businesses = state.Assets.Businesses or {}
+	
+	if #businesses == 0 then
+		return
+	end
+	
+	local totalIncome = 0
+	
+	for _, biz in ipairs(businesses) do
+		if biz.value and biz.value > 0 then
+			-- Business income is volatile: -20% to +40% of value annually
+			local performanceMultiplier = RANDOM:NextNumber() * 0.60 - 0.20 -- -20% to +40%
+			local annualIncome = math.floor(biz.value * performanceMultiplier * 0.15) -- 15% base return
+			
+			-- Track business performance
+			biz.lastYearProfit = annualIncome
+			
+			if annualIncome > 0 then
+				totalIncome = totalIncome + annualIncome
+				-- Good year - business grows
+				biz.value = math.floor(biz.value * (1 + RANDOM:NextNumber() * 0.05)) -- Up to 5% growth
+			elseif annualIncome < 0 then
+				-- Bad year - might need to inject cash or business shrinks
+				biz.value = math.max(100, math.floor(biz.value * (1 - RANDOM:NextNumber() * 0.1))) -- Up to 10% decline
+			end
+		end
+	end
+	
+	if totalIncome > 0 then
+		state.Money = (state.Money or 0) + totalIncome
+		self:logYearEvent(state, "business", 
+			string.format("📊 Your businesses generated $%s in profit!", formatMoney(totalIncome)), "💼")
+	elseif totalIncome < 0 then
+		-- Business losses
+		local loss = math.abs(totalIncome)
+		if (state.Money or 0) >= loss then
+			state.Money = state.Money - loss
+			self:logYearEvent(state, "business", 
+				string.format("📊 Your businesses lost $%s this year.", formatMoney(loss)), "📉")
+		else
+			self:logYearEvent(state, "business", 
+				"📊 Your businesses are struggling. Consider your options.", "📉")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #23: Mortgage Payment Tracking
+-- Home mortgages should require monthly payments
+-- Without this, owning a home has no ongoing cost
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyMortgagePayments(state)
+	state.Flags = state.Flags or {}
+	
+	local mortgageDebt = state.Flags.mortgage_debt or 0
+	if mortgageDebt <= 0 then
+		return
+	end
+	
+	-- Mortgage interest is typically 3-7% APR
+	local interestRate = 0.05 -- 5% average
+	local monthlyInterest = math.floor(mortgageDebt * interestRate / 12)
+	local monthlyPrincipal = math.floor(mortgageDebt / 360) -- 30-year mortgage
+	local annualPayment = (monthlyInterest + monthlyPrincipal) * 12
+	
+	local money = state.Money or 0
+	
+	if money >= annualPayment then
+		state.Money = money - annualPayment
+		state.Flags.mortgage_debt = math.max(0, mortgageDebt - (monthlyPrincipal * 12))
+		
+		if state.Flags.mortgage_debt <= 0 then
+			state.Flags.mortgage_debt = nil
+			state.Flags.mortgage_paid_off = true
+			self:logYearEvent(state, "housing", 
+				"🏠 Congratulations! You paid off your mortgage!", "🎉")
+		end
+	else
+		-- Can't afford mortgage
+		state.Flags.mortgage_trouble = true
+		self:logYearEvent(state, "housing", 
+			"🏠 Warning: Struggling to make mortgage payments!", "⚠️")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #24: Update Child Roles As They Grow
+-- Children should transition from "Son/Daughter" to "Teenage" to "Adult"
+-- 
+-- NOTE: Aging and death checks are ONLY done in advanceRelationships() now!
+-- Previously this function duplicated that work, causing:
+--   1. Family members aging 2x per year
+--   2. Family members getting 2x death rolls per year
+-- This was why parents died when the player was only 21-23 years old!
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:ageRelationships(state)
+	if not state.Relationships then
+		return
+	end
+	
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.alive ~= false then
+			-- REMOVED: Duplicate aging - advanceRelationships() already ages everyone
+			-- REMOVED: Duplicate death checks - advanceRelationships() already handles this
+			
+			-- Children grow up and their role description changes
+			if rel.isChild and rel.age then
+				-- Update child role based on age
+				if rel.age >= 18 then
+					rel.role = rel.gender == "male" and "Adult Son" or "Adult Daughter"
+					rel.isChild = nil
+					rel.isAdult = true
+				elseif rel.age >= 13 then
+					rel.role = rel.gender == "male" and "Teenage Son" or "Teenage Daughter"
+				end
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #25: Health Insurance Costs
+-- Adults without employer health insurance should pay for it
+-- Without this, healthcare has no ongoing cost except emergencies
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyHealthInsuranceCosts(state)
+	-- Only applies to adults
+	if (state.Age or 0) < 18 then
+		return
+	end
+	
+	-- Skip if in prison (state provides healthcare)
+	if state.InJail then
+		return
+	end
+	
+	state.Flags = state.Flags or {}
+	
+	-- Check if employed (employer provides insurance)
+	if state.CurrentJob then
+		-- Employed - partial insurance cost
+		local employeeShare = 2400 -- $200/month employee contribution
+		if (state.Money or 0) >= employeeShare then
+			state.Money = state.Money - employeeShare
+		end
+		state.Flags.has_health_insurance = true
+		return
+	end
+	
+	-- Unemployed - need to buy own insurance or go without
+	if state.Flags.has_health_insurance then
+		-- Self-paid insurance: ~$6000/year for individual
+		local insuranceCost = 6000
+		if state.Age >= 50 then
+			insuranceCost = 9000 -- Higher premiums for older adults
+		end
+		
+		if (state.Money or 0) >= insuranceCost then
+			state.Money = state.Money - insuranceCost
+		else
+			-- Can't afford insurance
+			state.Flags.has_health_insurance = nil
+			state.Flags.uninsured = true
+		end
+	else
+		-- Uninsured - risk of catastrophic costs
+		state.Flags.uninsured = true
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #31: Car Loan Payment System
+-- Vehicle purchases can be financed with loans that need monthly payments
+-- Without this, car loans are just flags with no financial impact
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyCarLoanPayments(state)
+	state.Flags = state.Flags or {}
+	
+	local carLoanBalance = state.Flags.car_loan_balance or 0
+	if carLoanBalance <= 0 then
+		return
+	end
+	
+	-- Car loan interest is typically 4-10% APR
+	local interestRate = state.Flags.bad_credit and 0.12 or 0.06 -- Higher rate if bad credit
+	local monthlyPayment = state.Flags.car_loan_payment or math.floor(carLoanBalance / 48) -- 4-year loan default
+	local annualInterest = math.floor(carLoanBalance * interestRate)
+	local annualPayment = monthlyPayment * 12
+	
+	local money = state.Money or 0
+	
+	if money >= annualPayment then
+		state.Money = money - annualPayment
+		-- Principal reduction (payment minus interest portion)
+		local principalPaid = math.max(0, annualPayment - annualInterest)
+		state.Flags.car_loan_balance = math.max(0, carLoanBalance - principalPaid)
+		
+		if state.Flags.car_loan_balance <= 0 then
+			state.Flags.car_loan_balance = nil
+			state.Flags.car_loan_payment = nil
+			state.Flags.has_car_loan = nil
+			self:logYearEvent(state, "financial",
+				"🚗 Car loan paid off! The vehicle is fully yours!", "🎉")
+		end
+	else
+		-- Can't afford car payment
+		state.Flags.car_payment_trouble = true
+		-- Repo risk
+		local repoChance = 0.20
+		if RANDOM:NextNumber() < repoChance then
+			-- Car repossessed
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				-- Remove the financed vehicle
+				for i, v in ipairs(state.Assets.Vehicles) do
+					if v.financed then
+						table.remove(state.Assets.Vehicles, i)
+						break
+					end
+				end
+			end
+			state.Flags.car_loan_balance = nil
+			state.Flags.car_loan_payment = nil
+			state.Flags.has_car_loan = nil
+			state.Flags.car_repossessed = true
+			state.Flags.bad_credit = true
+			self:logYearEvent(state, "financial",
+				"🚗 Car repossessed! Couldn't make the payments.", "😔")
+		else
+			self:logYearEvent(state, "financial",
+				"🚗 Warning: Struggling to make car payments!", "⚠️")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #32: Addiction System with Consequences
+-- Addictions should have escalating consequences over time
+-- Without this, addictions are just flags with no gameplay impact
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:processAddictions(state)
+	state.Flags = state.Flags or {}
+	state.Stats = state.Stats or {}
+	
+	local addictions = {
+		smoking = {
+			healthCost = 2,
+			moneyCost = 1500, -- Pack-a-day habit
+			quitDifficulty = 0.15,
+		},
+		heavy_drinking = {
+			healthCost = 3,
+			happinessCost = 2,
+			moneyCost = 2500,
+			quitDifficulty = 0.12,
+		},
+		alcoholic = {
+			healthCost = 5,
+			happinessCost = 4,
+			moneyCost = 4000,
+			quitDifficulty = 0.08,
+			canLoseJob = true,
+		},
+		gambling_addiction = {
+			happinessCost = 5,
+			moneyCost = function(state) return math.floor((state.Money or 0) * 0.20) end, -- 20% of wealth
+			quitDifficulty = 0.10,
+		},
+		drug_user = {
+			healthCost = 4,
+			happinessCost = 3,
+			moneyCost = 3000,
+			quitDifficulty = 0.10,
+			canGetArrested = true,
+		},
+		hard_drugs = {
+			healthCost = 8,
+			happinessCost = 6,
+			smartsCost = 2,
+			moneyCost = 8000,
+			quitDifficulty = 0.05,
+			canGetArrested = true,
+			canOverdose = true,
+		},
+	}
+	
+	for addictionName, addiction in pairs(addictions) do
+		if state.Flags[addictionName] then
+			-- Apply health cost
+			if addiction.healthCost then
+				state.Stats.Health = clamp((state.Stats.Health or 50) - addiction.healthCost, 0, 100)
+			end
+			
+			-- Apply happiness cost
+			if addiction.happinessCost then
+				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - addiction.happinessCost, 0, 100)
+			end
+			
+			-- Apply smarts cost (brain damage from hard drugs)
+			if addiction.smartsCost then
+				state.Stats.Smarts = clamp((state.Stats.Smarts or 50) - addiction.smartsCost, 0, 100)
+			end
+			
+			-- Apply money cost
+			local moneyCost = addiction.moneyCost
+			if type(moneyCost) == "function" then
+				moneyCost = moneyCost(state)
+			end
+			state.Money = math.max(0, (state.Money or 0) - moneyCost)
+			
+			-- Chance to lose job
+			if addiction.canLoseJob and state.CurrentJob and RANDOM:NextNumber() < 0.15 then
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+				state.Flags.fired_for_addiction = true
+				self:logYearEvent(state, "career",
+					"💼 Lost job due to addiction problems.", "😔")
+			end
+			
+			-- Chance to get arrested (drugs)
+			if addiction.canGetArrested and RANDOM:NextNumber() < 0.08 then
+				state.Flags.arrested = true
+				state.Flags.criminal_record = true
+				self:logYearEvent(state, "legal",
+					"🚔 Arrested for drug possession!", "⚠️")
+			end
+			
+			-- Chance to overdose (hard drugs)
+			if addiction.canOverdose and RANDOM:NextNumber() < 0.03 then
+				state.Stats.Health = clamp((state.Stats.Health or 50) - 30, 0, 100)
+				if state.Stats.Health <= 0 then
+					state.Flags.dead = true
+					state.DeathReason = "Drug overdose"
+				else
+					state.Flags.overdose_survivor = true
+					self:logYearEvent(state, "health",
+						"💊 Overdosed but survived. Wake-up call.", "🏥")
+				end
+			end
+			
+			-- Random chance to try to quit
+			if RANDOM:NextNumber() < addiction.quitDifficulty then
+				state.Flags[addictionName] = nil
+				state.Flags[addictionName .. "_recovered"] = true
+				self:logYearEvent(state, "health",
+					string.format("🎉 Overcame %s! A new chapter begins.", addictionName:gsub("_", " ")), "💪")
+			end
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #35: Natural Death System
+-- Players should be able to die from old age or very low health
+-- Without this, players are effectively immortal
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:checkNaturalDeath(state)
+	-- Already dead
+	if state.Flags and state.Flags.dead then
+		return
+	end
+	
+	state.Stats = state.Stats or {}
+	state.Flags = state.Flags or {}
+	local age = state.Age or 0
+	local health = state.Stats.Health or 50
+	
+	-- Health-based death (very low health)
+	if health <= 0 then
+		state.Flags.dead = true
+		state.DeathReason = state.DeathReason or "Health complications"
+		state.DeathAge = age
+		state.DeathYear = state.Year
+		return
+	end
+	
+	-- Critical health warning
+	if health <= 10 then
+		self:logYearEvent(state, "health",
+			"⚠️ Health is critical! Seek medical attention immediately.", "🏥")
+	end
+	
+	-- Age-based death chance (increases with age)
+	if age >= 65 then
+		local baseMortality = 0 -- No random death before 65
+		
+		-- Life expectancy calculations
+		-- 65-70: Very low chance
+		-- 70-80: Low chance
+		-- 80-90: Moderate chance
+		-- 90-100: High chance
+		-- 100+: Very high chance
+		
+		if age >= 65 and age < 70 then
+			baseMortality = 0.005 -- 0.5% per year
+		elseif age >= 70 and age < 80 then
+			baseMortality = 0.02 -- 2% per year
+		elseif age >= 80 and age < 90 then
+			baseMortality = 0.06 -- 6% per year
+		elseif age >= 90 and age < 100 then
+			baseMortality = 0.15 -- 15% per year
+		elseif age >= 100 then
+			baseMortality = 0.30 -- 30% per year
+		end
+		
+		-- Health modifies mortality
+		-- Good health (>70) reduces mortality by 50%
+		-- Poor health (<30) increases mortality by 100%
+		local healthModifier = 1.0
+		if health > 70 then
+			healthModifier = 0.5
+		elseif health < 30 then
+			healthModifier = 2.0
+		end
+		
+		-- Lifestyle factors
+		local lifestyleModifier = 1.0
+		if state.Flags.fitness_enthusiast or state.Flags.healthy_lifestyle then
+			lifestyleModifier = lifestyleModifier * 0.7 -- 30% reduction
+		end
+		if state.Flags.smoking or state.Flags.heavy_drinking then
+			lifestyleModifier = lifestyleModifier * 1.5 -- 50% increase
+		end
+		if state.Flags.hard_drugs or state.Flags.alcoholic then
+			lifestyleModifier = lifestyleModifier * 2.0 -- 100% increase
+		end
+		
+		local finalMortality = baseMortality * healthModifier * lifestyleModifier
+		
+		if RANDOM:NextNumber() < finalMortality then
+			state.Flags.dead = true
+			state.DeathAge = age
+			state.DeathYear = state.Year
+			
+			-- Generate death reason based on age/health
+			local deathReasons
+			if age >= 90 then
+				deathReasons = {
+					"Natural causes",
+					"Passed peacefully in sleep",
+					"Old age",
+					"Heart gave out",
+				}
+			elseif health < 30 then
+				deathReasons = {
+					"Health complications",
+					"Organ failure",
+					"Medical emergency",
+					"Chronic illness",
+				}
+			else
+				deathReasons = {
+					"Natural causes",
+					"Heart attack",
+					"Stroke",
+					"Unexpected illness",
+				}
+			end
+			
+			state.DeathReason = deathReasons[RANDOM:NextInteger(1, #deathReasons)]
 		end
 	end
 end
@@ -2972,11 +3591,36 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHabitEffects(state) -- CRITICAL FIX #13: Health effects from habits
 	self:tickFame(state) -- CRITICAL FIX #14: Fame decays without maintenance
 	self:applyDebtInterest(state) -- CRITICAL FIX #15: Student loan interest
+	self:applyEducationCosts(state) -- CRITICAL FIX #36: Annual education costs
 	self:tickPetLifecycle(state) -- CRITICAL FIX #16: Pets age and can pass away
 	self:updateCareerSkills(state) -- CRITICAL FIX #17: Track career skills
 	self:applyRelationshipDecay(state) -- CRITICAL FIX #18: Relationships decay without maintenance
 	self:tickPropertyValues(state) -- CRITICAL FIX #19: Property values change
 	self:checkBankruptcy(state) -- CRITICAL FIX #20: Check for financial distress
+	self:applyCreditCardInterest(state) -- CRITICAL FIX #21: Credit card debt grows with interest
+	self:collectBusinessIncome(state) -- CRITICAL FIX #22: Business income/losses
+	self:applyMortgagePayments(state) -- CRITICAL FIX #23: Mortgage payments
+	self:ageRelationships(state) -- CRITICAL FIX #24: Partners and family age with player
+	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
+	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
+	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
+	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: IMMEDIATELY handle death if checkNaturalDeath marked player as dead
+	-- Without this, player dies but never sees the death screen!
+	-- The bug was: checkNaturalDeath sets Flags.dead=true but Health could still be >0
+	-- So the health check at the end of handleAgeUp would pass, continuing normal flow
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags and state.Flags.dead then
+		state.Health = 0
+		state.Stats = state.Stats or {}
+		state.Stats.Health = 0
+		local deathFeed = string.format("💀 Age %d: %s", state.Age, state.DeathReason or "You passed away.")
+		state.awaitingDecision = false
+		self:completeAgeCycle(player, state, deathFeed)
+		return
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #4: Pay pension to retired players
@@ -3009,37 +3653,15 @@ function LifeBackend:handleAgeUp(player)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #9: Age children in Relationships each year
-	-- Without this, your 5-year-old son would still be 5 years old when you're 80!
+	-- CRITICAL FIX: Removed duplicate family aging and death logic!
+	-- Family members are ALREADY aged and checked for death in advanceRelationships()
+	-- Having it here too caused:
+	--   1. Family members aging 2 years per player year (double speed!)
+	--   2. Family members getting TWO death rolls per year (stacking mortality!)
+	-- This was why the user's parents died when player was only 21-23 years old!
+	-- The detailed death logic in advanceRelationships (lines 1767-1807) is preserved
+	-- which has proper graduated death chances based on age.
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if state.Relationships then
-		for relId, rel in pairs(state.Relationships) do
-			if type(rel) == "table" and rel.alive ~= false then
-				-- Age all living relationship members (except "partner" whose age is tracked separately in some cases)
-				if rel.age ~= nil and type(rel.age) == "number" then
-					rel.age = rel.age + 1
-					
-					-- ═══════════════════════════════════════════════════════════════════════
-					-- MINOR FIX: Elderly family members may pass away
-					-- ═══════════════════════════════════════════════════════════════════════
-					if rel.type == "family" and rel.role ~= "Partner" and rel.role ~= "Spouse" then
-						if rel.age >= 75 then
-							local deathChance = (rel.age - 75) / 100 -- 1% per year over 75
-							if RANDOM:NextNumber() < deathChance then
-								rel.alive = false
-								rel.deceased = true
-								rel.deathAge = rel.age
-								-- Log the death
-								self:logYearEvent(state, "family_death", 
-									string.format("Your %s, %s, passed away at age %d.", 
-										rel.role or "relative", rel.name or "family member", rel.age), "💔")
-							end
-						end
-					end
-				end
-			end
-		end
-	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Decrement jail sentence each year and auto-release when complete
@@ -3147,7 +3769,11 @@ end
 
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 	local deathInfo
-	if state.Health and state.Health <= 0 then
+	-- CRITICAL FIX: Check Flags.dead FIRST (set by checkNaturalDeath)
+	-- This ensures natural deaths from old age are properly handled
+	if state.Flags and state.Flags.dead then
+		deathInfo = { died = true, cause = state.DeathReason or state.CauseOfDeath or "Natural causes" }
+	elseif state.Health and state.Health <= 0 then
 		deathInfo = { died = true, cause = "Health Failure" }
 	else
 		deathInfo = LifeStageSystem.checkDeath(state)
@@ -5227,6 +5853,522 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 		self:applyStatChanges(state, { Happiness = -2 })
 	end
 	self:pushState(player, won and "You crushed the minigame!" or "You failed the minigame.")
+end
+
+-- ============================================================================
+-- PREMIUM FEATURES: Organized Crime / Mob System
+-- ============================================================================
+
+-- Crime family definitions
+local MobFamilies = {
+	italian = {
+		name = "Italian Mafia",
+		fullName = "La Cosa Nostra", 
+		emoji = "🇮🇹",
+		ranks = {
+			{ name = "Associate", emoji = "👤", respect = 0 },
+			{ name = "Soldier", emoji = "🔫", respect = 100 },
+			{ name = "Caporegime", emoji = "💰", respect = 500 },
+			{ name = "Underboss", emoji = "🎩", respect = 2000 },
+			{ name = "Boss", emoji = "👑", respect = 10000 },
+		},
+	},
+	russian = {
+		name = "Russian Bratva",
+		fullName = "The Brotherhood",
+		emoji = "🇷🇺",
+		ranks = {
+			{ name = "Shestyorka", emoji = "👤", respect = 0 },
+			{ name = "Bratok", emoji = "🔫", respect = 100 },
+			{ name = "Brigadier", emoji = "💰", respect = 500 },
+			{ name = "Avtoritet", emoji = "🎩", respect = 2000 },
+			{ name = "Pakhan", emoji = "👑", respect = 10000 },
+		},
+	},
+	yakuza = {
+		name = "Japanese Yakuza",
+		fullName = "Yamaguchi-gumi",
+		emoji = "🇯🇵",
+		ranks = {
+			{ name = "Shatei", emoji = "👤", respect = 0 },
+			{ name = "Wakashu", emoji = "🔫", respect = 100 },
+			{ name = "Shateigashira", emoji = "💰", respect = 500 },
+			{ name = "Wakagashira", emoji = "🎩", respect = 2000 },
+			{ name = "Oyabun", emoji = "👑", respect = 10000 },
+		},
+	},
+	cartel = {
+		name = "Mexican Cartel",
+		fullName = "Cartel de Sinaloa",
+		emoji = "🇲🇽",
+		ranks = {
+			{ name = "Halcon", emoji = "👤", respect = 0 },
+			{ name = "Sicario", emoji = "🔫", respect = 100 },
+			{ name = "Lugarteniente", emoji = "💰", respect = 500 },
+			{ name = "Capo", emoji = "🎩", respect = 2000 },
+			{ name = "El Jefe", emoji = "👑", respect = 10000 },
+		},
+	},
+	triad = {
+		name = "Chinese Triad",
+		fullName = "14K Triad",
+		emoji = "🇨🇳",
+		ranks = {
+			{ name = "Blue Lantern", emoji = "👤", respect = 0 },
+			{ name = "49er", emoji = "🔫", respect = 100 },
+			{ name = "Red Pole", emoji = "💰", respect = 500 },
+			{ name = "Deputy", emoji = "🎩", respect = 2000 },
+			{ name = "Dragon Head", emoji = "👑", respect = 10000 },
+		},
+	},
+}
+
+-- Mob operations
+local MobOperations = {
+	{ id = "protection", name = "Protection Racket", risk = 20, minReward = 500, maxReward = 2000, respect = 5, minRank = 1 },
+	{ id = "gambling", name = "Run Gambling Ring", risk = 30, minReward = 1000, maxReward = 5000, respect = 10, minRank = 1 },
+	{ id = "smuggling", name = "Smuggle Goods", risk = 40, minReward = 2000, maxReward = 10000, respect = 20, minRank = 2 },
+	{ id = "heist", name = "Plan a Heist", risk = 60, minReward = 10000, maxReward = 100000, respect = 50, minRank = 3 },
+	{ id = "hitjob", name = "Hit Job", risk = 80, minReward = 5000, maxReward = 25000, respect = 100, minRank = 4 },
+}
+
+function LifeBackend:handleJoinMob(player, familyId)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Check age
+	if state.Age < 18 then
+		return { success = false, message = "You must be 18+ to join the mob." }
+	end
+	
+	-- Check if in jail
+	if state.InJail then
+		return { success = false, message = "You can't join from jail!" }
+	end
+	
+	-- Check if already in mob
+	if state.MobState and state.MobState.inMob then
+		return { success = false, message = "You're already in a crime family!" }
+	end
+	
+	-- Validate family
+	local family = MobFamilies[familyId]
+	if not family then
+		return { success = false, message = "Unknown crime family." }
+	end
+	
+	-- Initialize mob state if needed
+	if not state.MobState then
+		state.MobState = {}
+	end
+	
+	-- Join the family
+	local firstRank = family.ranks[1]
+	state.MobState.inMob = true
+	state.MobState.familyId = familyId
+	state.MobState.familyName = family.name
+	state.MobState.familyEmoji = family.emoji
+	state.MobState.rankLevel = 1
+	state.MobState.rankName = firstRank.name
+	state.MobState.rankEmoji = firstRank.emoji
+	state.MobState.respect = 0
+	state.MobState.heat = 0
+	state.MobState.loyalty = 100
+	state.MobState.yearsInMob = 0
+	state.MobState.operationsCompleted = 0
+	state.MobState.earnings = 0
+	
+	local msg = "You've joined " .. family.name .. " as a " .. firstRank.name .. "!"
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg }
+end
+
+function LifeBackend:handleLeaveMob(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	if not state.MobState or not state.MobState.inMob then
+		return { success = false, message = "You're not in a crime family." }
+	end
+	
+	local familyName = state.MobState.familyName or "the family"
+	local rankLevel = state.MobState.rankLevel or 1
+	
+	-- Higher ranks = harder to leave alive
+	if rankLevel >= 3 then
+		local deathChance = rankLevel * 10 -- 30% at rank 3, 40% at rank 4, 50% at rank 5
+		if RANDOM:NextInteger(1, 100) <= deathChance then
+			-- CRITICAL FIX: If they "fail" to leave, don't kick them out!
+			-- They're still in the mob - they just got caught trying to leave
+			-- Lower their respect/loyalty as punishment
+			state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 50)
+			state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 0) - 30)
+			
+			return { success = false, message = "The family caught you trying to leave. You're in deep trouble... 😰" }
+		end
+	end
+	
+	-- Successfully left
+	state.MobState.inMob = false
+	state.MobState.familyId = nil
+	state.MobState.familyName = nil
+	state.MobState.familyEmoji = nil
+	state.MobState.rankLevel = 1
+	state.MobState.rankName = nil
+	state.MobState.rankEmoji = nil
+	state.MobState.respect = 0
+	
+	local msg = "You've left " .. familyName .. ". Watch your back..."
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg }
+end
+
+function LifeBackend:handleMobOperation(player, operationId)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	if not state.MobState or not state.MobState.inMob then
+		return { success = false, message = "You're not in a crime family." }
+	end
+	
+	if state.InJail then
+		return { success = false, message = "You can't do operations from jail!" }
+	end
+	
+	-- Find operation
+	local operation = nil
+	for _, op in ipairs(MobOperations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return { success = false, message = "Unknown operation." }
+	end
+	
+	-- Check rank requirement
+	local currentRank = state.MobState.rankLevel or 1
+	if currentRank < operation.minRank then
+		return { success = false, message = "You need a higher rank for this operation." }
+	end
+	
+	-- Calculate success
+	local baseChance = 100 - operation.risk
+	local rankBonus = currentRank * 5
+	local successChance = math.min(95, baseChance + rankBonus)
+	
+	local roll = RANDOM:NextInteger(1, 100)
+	local success = roll <= successChance
+	
+	if success then
+		-- Calculate rewards
+		local money = RANDOM:NextInteger(operation.minReward, operation.maxReward)
+		local respect = operation.respect + RANDOM:NextInteger(0, 10)
+		local heat = math.floor(operation.risk / 10)
+		
+		-- Apply rewards
+		self:addMoney(state, money)
+		state.MobState.respect = (state.MobState.respect or 0) + respect
+		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
+		state.MobState.earnings = (state.MobState.earnings or 0) + money
+		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
+		
+		-- Check for rank up
+		local family = MobFamilies[state.MobState.familyId]
+		if family then
+			local nextRankIdx = (state.MobState.rankLevel or 1) + 1
+			if nextRankIdx <= #family.ranks then
+				local nextRank = family.ranks[nextRankIdx]
+				if state.MobState.respect >= nextRank.respect then
+					state.MobState.rankLevel = nextRankIdx
+					state.MobState.rankName = nextRank.name
+					state.MobState.rankEmoji = nextRank.emoji
+					
+					local msg = string.format("%s completed! +$%d +%d respect. 🎉 Promoted to %s %s!", 
+						operation.name, money, respect, nextRank.emoji, nextRank.name)
+					self:pushState(player, msg)
+					return { success = true, message = msg, money = money, respect = respect, promoted = true }
+				end
+			end
+		end
+		
+		local msg = string.format("%s completed! +$%d +%d respect.", operation.name, money, respect)
+		self:pushState(player, msg)
+		return { success = true, message = msg, money = money, respect = respect }
+	else
+		-- Failed
+		local heat = math.floor(operation.risk / 5)
+		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
+		
+		-- Chance of arrest
+		local arrestChance = operation.risk / 2
+		if RANDOM:NextInteger(1, 100) <= arrestChance then
+			local jailYears = math.ceil(operation.risk / 20)
+			state.InJail = true
+			state.JailYearsLeft = jailYears
+			
+			-- CRITICAL FIX: Set proper jail flags like regular crime does
+			state.Flags = state.Flags or {}
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			
+			-- CRITICAL FIX: Lose job when going to prison
+			if state.CurrentJob then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJobBeforeJail = {
+					id = state.CurrentJob.id,
+					name = state.CurrentJob.name,
+					company = state.CurrentJob.company,
+					salary = state.CurrentJob.salary,
+				}
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+			
+			-- CRITICAL FIX: Pause education during incarceration
+			if state.EducationData and state.EducationData.Status == "enrolled" then
+				state.EducationData.StatusBeforeJail = "enrolled"
+				state.EducationData.Status = "suspended"
+			end
+			
+			local msg = string.format("%s failed! Caught and sentenced to %d years!", operation.name, jailYears)
+			self:pushState(player, msg)
+			return { success = false, message = msg, arrested = true }
+		end
+		
+		local msg = operation.name .. " failed! You barely escaped."
+		self:pushState(player, msg)
+		return { success = false, message = msg }
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GAMEPASS SYSTEM
+-- Configure your actual Roblox gamepass IDs here
+-- Create gamepasses in Roblox Creator Dashboard and put the IDs below
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GAMEPASS_IDS = {
+	MAFIA = 0,          -- Replace with your actual Mafia/Organized Crime gamepass ID
+	TIME_MACHINE = 0,   -- Replace with your actual Time Machine gamepass ID
+	BITIZEN = 0,        -- Replace with your actual Bitizen gamepass ID
+	GOD_MODE = 0,       -- Replace with your actual God Mode gamepass ID
+}
+
+-- Track gamepass ownership cache (refreshes on check)
+local gamepassCache = {}
+
+function LifeBackend:checkGamepassOwnership(player, gamepassKey)
+	local gamepassId = GAMEPASS_IDS[gamepassKey]
+	
+	-- If no gamepass ID is configured (still 0), return true for testing
+	-- IMPORTANT: Set actual IDs above when deploying!
+	if not gamepassId or gamepassId == 0 then
+		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Allowing access for testing.", gamepassKey))
+		return true -- Allow access when not configured (for testing)
+	end
+	
+	-- Check cache first
+	local cacheKey = player.UserId .. "_" .. gamepassKey
+	if gamepassCache[cacheKey] ~= nil then
+		return gamepassCache[cacheKey]
+	end
+	
+	-- Actually check with MarketplaceService
+	local success, owns = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamepassId)
+	end)
+	
+	if success then
+		gamepassCache[cacheKey] = owns
+		debugPrint(string.format("Player %s %s gamepass %s (ID: %d)", 
+			player.Name, owns and "OWNS" or "doesn't own", gamepassKey, gamepassId))
+		return owns
+	else
+		warn(string.format("[LifeBackend] Failed to check gamepass ownership: %s", tostring(owns)))
+		return false
+	end
+end
+
+function LifeBackend:promptGamepassPurchase(player, gamepassKey)
+	local gamepassId = GAMEPASS_IDS[gamepassKey]
+	
+	if not gamepassId or gamepassId == 0 then
+		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Cannot prompt purchase.", gamepassKey))
+		-- For testing, just notify the player
+		self:pushState(player, "🔓 Feature unlocked for testing! (No gamepass configured)")
+		return
+	end
+	
+	-- Actually prompt the purchase
+	local success, err = pcall(function()
+		MarketplaceService:PromptGamePassPurchase(player, gamepassId)
+	end)
+	
+	if not success then
+		warn(string.format("[LifeBackend] Failed to prompt gamepass purchase: %s", tostring(err)))
+	else
+		debugPrint(string.format("Prompted player %s to purchase gamepass %s (ID: %d)", 
+			player.Name, gamepassKey, gamepassId))
+	end
+end
+
+-- Listen for gamepass purchases to update cache
+local function onGamepassPurchased(player, gamepassId, wasPurchased)
+	if wasPurchased then
+		-- Find which gamepass was purchased and update cache
+		for key, id in pairs(GAMEPASS_IDS) do
+			if id == gamepassId then
+				local cacheKey = player.UserId .. "_" .. key
+				gamepassCache[cacheKey] = true
+				debugPrint(string.format("Player %s purchased gamepass %s!", player.Name, key))
+				break
+			end
+		end
+	end
+end
+
+-- Connect the purchase handler
+pcall(function()
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchased)
+end)
+
+function LifeBackend:handleTimeMachine(player, yearsBack)
+	-- CRITICAL FIX: Check gamepass ownership first
+	local hasGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+	if not hasGamepass then
+		-- Prompt purchase and return error
+		self:promptGamepassPurchase(player, "TIME_MACHINE")
+		return { 
+			success = false, 
+			message = "👑 Time Machine is a premium feature!", 
+			needsGamepass = true,
+			gamepassKey = "TIME_MACHINE"
+		}
+	end
+	
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	local currentAge = state.Age
+	local targetAge = yearsBack == -1 and 0 or (currentAge - yearsBack)
+	
+	if targetAge < 0 then
+		targetAge = 0
+	end
+	
+	local yearsRewound = currentAge - targetAge
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1: Reset death state - player is no longer dead!
+	-- Without this, player would still be "dead" after using Time Machine
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	state.Flags.dead = nil
+	state.DeathReason = nil
+	state.DeathAge = nil
+	state.DeathYear = nil
+	state.CauseOfDeath = nil
+	
+	-- Reset to target age
+	state.Age = targetAge
+	state.Year = state.Year - yearsRewound
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #2: Rewind family members' ages too!
+	-- If mom was 80 when you died at 55, going back to baby should make her 25 again
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				-- Rewind their age by the same amount
+				if rel.age and type(rel.age) == "number" then
+					rel.age = rel.age - yearsRewound
+					-- Make sure they're at least a reasonable age
+					if relId == "mother" or relId == "father" then
+						rel.age = math.max(rel.age, 20) -- Parents at least 20
+					elseif relId:find("grand") then
+						rel.age = math.max(rel.age, 50) -- Grandparents at least 50
+					else
+						rel.age = math.max(rel.age, 0) -- Others at least 0
+					end
+				end
+				
+				-- CRITICAL FIX #3: Resurrect family members who died after this point
+				-- If we're going back 30 years, family who died in the last 30 years should be alive
+				if rel.deceased and rel.deathAge then
+					local theirAgeNow = (rel.age or 0)
+					local theirAgeAtDeath = rel.deathAge
+					-- If their "current" rewound age is before they died, bring them back
+					if theirAgeNow < theirAgeAtDeath then
+						rel.alive = true
+						rel.deceased = nil
+						rel.deathAge = nil
+						rel.deathYear = nil
+					end
+				end
+			end
+		end
+	end
+	
+	-- Reset some stats based on age
+	if targetAge == 0 then
+		-- Baby reset - full reset
+		state.Stats = state.Stats or {}
+		state.Stats.Happiness = 90
+		state.Stats.Health = 100
+		state.Health = 100 -- CRITICAL: Sync both health fields!
+		state.Happiness = 90
+		state.Money = 0
+		state.Education = "none"
+		state.CurrentJob = nil
+		state.Career = nil
+		state.InJail = false
+		state.JailYearsLeft = 0
+		-- Reset education data
+		if state.EducationData then
+			state.EducationData = {
+				Status = "enrolled",
+				Level = "elementary",
+				Progress = 0,
+				Duration = 5,
+			}
+		end
+		if state.MobState then
+			state.MobState.inMob = false
+			state.MobState.family = nil
+			state.MobState.rank = nil
+		end
+		-- Clear most flags but keep some identity ones
+		local keepFlags = { gender = state.Flags.gender }
+		state.Flags = keepFlags
+	else
+		-- Partial reset - restore health somewhat
+		state.Stats = state.Stats or {}
+		state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 30)
+		state.Health = state.Stats.Health -- CRITICAL: Sync both health fields!
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+	end
+	
+	local msg = string.format("⏰ Time traveled back to age %d!", targetAge)
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg, newAge = targetAge }
 end
 
 -- ============================================================================

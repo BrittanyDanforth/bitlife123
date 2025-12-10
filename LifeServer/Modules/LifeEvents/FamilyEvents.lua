@@ -39,20 +39,29 @@ FamilyEvents.events = {
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.expecting = true
-						state.Stats = state.Stats or {}
-						state.Stats.ChildCount = (state.Stats.ChildCount or 0) + 1
+						-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount for consistency
+						state.ChildCount = (state.ChildCount or 0) + 1
 						state:AddFeed("🤰 BABY ON THE WAY! Overjoyed! Life about to change!")
 					else
 						state:ModifyStat("Happiness", 8)
 						state.Flags = state.Flags or {}
 						state.Flags.expecting = true
-						state.Stats = state.Stats or {}
-						state.Stats.ChildCount = (state.Stats.ChildCount or 0) + 1
+						-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount for consistency
+						state.ChildCount = (state.ChildCount or 0) + 1
 						state:AddFeed("🤰 Pregnant! Excited and terrified! Ready or not!")
 					end
 				end,
 			},
-			{ text = "Unexpected pregnancy", effects = { Happiness = -2, Money = -200 }, setFlags = { unexpected_pregnancy = true }, feedText = "🤰 Not planned but happening. Adjusting expectations." },
+			{ 
+			text = "Unexpected pregnancy", 
+			effects = { Happiness = -2, Money = -200 }, 
+			setFlags = { unexpected_pregnancy = true, expecting = true }, 
+			feedText = "🤰 Not planned but happening. Adjusting expectations.",
+			-- CRITICAL FIX: Track child count for unexpected pregnancy too
+			onResolve = function(state)
+				state.ChildCount = (state.ChildCount or 0) + 1
+			end,
+		},
 			{ text = "False alarm", effects = { Happiness = 2 }, feedText = "🤰 Thought we were pregnant. Mixed emotions about negative test." },
 		},
 	},
@@ -80,28 +89,48 @@ FamilyEvents.events = {
 				feedText = "In the delivery room...",
 				onResolve = function(state)
 					local roll = math.random()
+					
+					-- CRITICAL FIX: Create child relationship
+					state.Relationships = state.Relationships or {}
+					local isBoy = math.random() > 0.5
+					local boyNames = {"James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Ethan", "Noah"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"}
+					local childName = isBoy and boyNames[math.random(1, #boyNames)] or girlNames[math.random(1, #girlNames)]
+					local childId = "child_" .. tostring(os.clock()):gsub("%.", "")
+					
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100, -- Babies start with max love!
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isChild = true,
+						isFamily = true,
+						birthYear = state.Year or 2025,
+					}
+					
+					state.Flags = state.Flags or {}
+					state.Flags.expecting = nil
+					state.Flags.new_parent = true
+					state.Flags.parent = true
+					state.Flags.has_child = true
+					
 					if roll < 0.60 then
 						state:ModifyStat("Happiness", 20)
-						state.Flags = state.Flags or {}
-						state.Flags.expecting = nil
-						state.Flags.new_parent = true
-						state:AddFeed("👶 HEALTHY BABY! Perfect delivery! Overwhelming love!")
+						state:AddFeed(string.format("👶 HEALTHY BABY! Welcome %s! Perfect delivery! Overwhelming love!", childName))
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", 15)
 						state:ModifyStat("Health", -3)
-						state.Flags = state.Flags or {}
-						state.Flags.expecting = nil
-						state.Flags.new_parent = true
-						state:AddFeed("👶 Baby is here! Difficult delivery but everyone's okay!")
+						state:AddFeed(string.format("👶 %s is here! Difficult delivery but everyone's okay!", childName))
 					else
 						state:ModifyStat("Happiness", 8)
 						state:ModifyStat("Health", -8)
 						state.Money = (state.Money or 0) - 2000
-						state.Flags = state.Flags or {}
-						state.Flags.expecting = nil
-						state.Flags.new_parent = true
 						state.Flags.nicu_baby = true
-						state:AddFeed("👶 Complications. Baby in NICU. Scary but hopeful.")
+						state:AddFeed(string.format("👶 Complications. %s is in NICU. Scary but hopeful.", childName))
 					end
 				end,
 			},
@@ -166,7 +195,8 @@ FamilyEvents.events = {
 		tags = { "milestone", "child", "parenting" },
 		
 		eligibility = function(state)
-			local childCount = (state.Stats and state.Stats.ChildCount) or 0
+			-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount
+			local childCount = state.ChildCount or 0
 			if childCount < 1 then
 				return false, "Need children for this event"
 			end
@@ -195,7 +225,8 @@ FamilyEvents.events = {
 		tags = { "discipline", "parenting", "challenge" },
 		
 		eligibility = function(state)
-			local childCount = (state.Stats and state.Stats.ChildCount) or 0
+			-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount
+			local childCount = state.ChildCount or 0
 			if childCount < 1 then
 				return false, "Need children for this event"
 			end
@@ -241,7 +272,8 @@ FamilyEvents.events = {
 		tags = { "teen", "parenting", "challenge" },
 		
 		eligibility = function(state)
-			local childCount = (state.Stats and state.Stats.ChildCount) or 0
+			-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount
+			local childCount = state.ChildCount or 0
 			if childCount < 1 then
 				return false, "Need children for this event"
 			end
@@ -288,7 +320,8 @@ FamilyEvents.events = {
 		tags = { "empty_nest", "milestone", "transition" },
 		
 		eligibility = function(state)
-			local childCount = (state.Stats and state.Stats.ChildCount) or 0
+			-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount
+			local childCount = state.ChildCount or 0
 			if childCount < 1 then
 				return false, "Need children for this event"
 			end
@@ -556,7 +589,8 @@ FamilyEvents.events = {
 		tags = { "grandparent", "grandchild", "bonding" },
 		
 		eligibility = function(state)
-			local childCount = (state.Stats and state.Stats.ChildCount) or 0
+			-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount
+			local childCount = state.ChildCount or 0
 			if childCount < 1 then
 				return false, "Need to have had children to have grandchildren"
 			end

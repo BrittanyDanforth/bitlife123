@@ -1782,23 +1782,17 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- choices - Scrollable for many options with FIXED height (no AutomaticSize on ScrollingFrame!)
-	local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
-	
-	EventUI.choicesSection = Instance.new("ScrollingFrame")
-	EventUI.choicesSection.Name = "ChoicesScroll"
-	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, maxChoicesH)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.None  -- CRITICAL: No AutomaticSize on ScrollingFrame
+	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
+	-- The card expands to show ALL buttons without scrolling
+	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Name = "ChoicesContainer"
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
 	EventUI.choicesSection.BackgroundTransparency = 1
-	EventUI.choicesSection.ScrollBarThickness = Device.IS_MOBILE and 4 or 3
-	EventUI.choicesSection.ScrollBarImageColor3 = C.Gray400
-	EventUI.choicesSection.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	EventUI.choicesSection.CanvasSize = UDim2.new(0, 0, 0, 0)
-	EventUI.choicesSection.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
-	-- NO UISizeConstraint needed - we use fixed height
 
 	-- MOBILE FIX: Tighter choice section padding
 	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
@@ -2117,18 +2111,111 @@ local function buildDeathUI()
 	DeathUI.epitaph.ZIndex = 122
 	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
-	-- Restart button section
+	-- Restart button section (EXPANDED: Time Machine + New Life)
 	DeathUI.buttonSection = Instance.new("Frame")
 	DeathUI.buttonSection.Name = "ButtonSection"
-	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 240)
 	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	DeathUI.buttonSection.ZIndex = 121
 	DeathUI.buttonSection.LayoutOrder = 5
 	DeathUI.buttonSection.Parent = DeathUI.scroll
+	
+	-- TIME MACHINE SECTION (BitLife-style premium feature)
+	local tmTitle = Instance.new("TextLabel")
+	tmTitle.Size = UDim2.new(1, 0, 0, 30)
+	tmTitle.Position = UDim2.new(0, 0, 0, 8)
+	tmTitle.BackgroundTransparency = 1
+	tmTitle.Font = F.Title
+	tmTitle.TextSize = 16
+	tmTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+	tmTitle.Text = "⏰ TIME MACHINE"
+	tmTitle.ZIndex = 122
+	tmTitle.Parent = DeathUI.buttonSection
+	
+	-- Time Machine buttons container
+	local tmContainer = Instance.new("Frame")
+	tmContainer.Size = UDim2.new(0.92, 0, 0, 85)
+	tmContainer.Position = UDim2.new(0.04, 0, 0, 40)
+	tmContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	tmContainer.ZIndex = 122
+	tmContainer.Parent = DeathUI.buttonSection
+	corner(tmContainer, 12)
+	
+	local tmGrid = Instance.new("UIGridLayout")
+	tmGrid.CellSize = UDim2.new(0.48, 0, 0, 36)
+	tmGrid.CellPadding = UDim2.new(0.02, 0, 0, 6)
+	tmGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tmGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	tmGrid.Parent = tmContainer
+	
+	local tmPad = Instance.new("UIPadding")
+	tmPad.PaddingTop = UDim.new(0, 6)
+	tmPad.PaddingLeft = UDim.new(0, 6)
+	tmPad.PaddingRight = UDim.new(0, 6)
+	tmPad.Parent = tmContainer
+	
+	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
+	for i, opt in ipairs(tmOptions) do
+		local tmBtn = Instance.new("TextButton")
+		tmBtn.Name = "TM_" .. opt[1]
+		tmBtn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+		tmBtn.Font = F.Button
+		tmBtn.TextSize = 13
+		tmBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+		tmBtn.Text = "👑 " .. opt[2]
+		tmBtn.AutoButtonColor = false
+		tmBtn.LayoutOrder = i
+		tmBtn.ZIndex = 123
+		tmBtn.Parent = tmContainer
+		corner(tmBtn, 8)
+		
+		tmBtn.MouseButton1Click:Connect(function()
+			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
+			if UseTimeMachine then
+				tmBtn.Text = "⏳..."
+				local ok, result = pcall(function() return UseTimeMachine:InvokeServer(opt[1]) end)
+				if ok and result and result.success then
+					-- CRITICAL FIX: After Time Machine success:
+					-- 1. Hide the death overlay
+					-- 2. Update the current state from server result
+					-- 3. Refresh the UI to show new age/stats
+					hideDeathOverlay()
+					
+					-- Update currentState with new age if provided
+					if result.newAge then
+						currentState.Age = result.newAge
+						currentState.Health = 100 -- Restore health
+						currentState.Stats = currentState.Stats or {}
+						currentState.Stats.Health = 100
+						
+						-- Clear death flags
+						if currentState.Flags then
+							currentState.Flags.dead = nil
+						end
+					end
+					
+					-- Refresh UI
+					if updateFromState then
+						updateFromState()
+					end
+				elseif ok and result and result.needsGamepass then
+					-- Player needs to purchase the gamepass - server already prompted
+					tmBtn.Text = "👑 " .. opt[2]
+					-- Flash the button to indicate it needs purchase
+					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+					task.delay(0.15, function()
+						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
+					end)
+				else
+					tmBtn.Text = "👑 " .. opt[2]
+				end
+			end
+		end)
+	end
 
 	DeathUI.restart = Instance.new("TextButton")
 	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 135)
 	DeathUI.restart.BackgroundColor3 = C.Green
 	DeathUI.restart.Font = F.Button
 	DeathUI.restart.TextSize = 20
@@ -2761,18 +2848,7 @@ showEvent = function(payload)
 			table.insert(EventUI.activeChoiceButtons, btn)
 		end
 
-		-- Auto-fit scroll area when there are only 1-2 choices (so it doesn't look like empty box)
-		task.defer(function()
-			local layout = choicesSection:FindFirstChildOfClass("UIListLayout")
-			if not layout then return end
-
-			local maxChoicesH = Device.IS_TINY_PHONE and 150 or (Device.IS_SMALL_PHONE and 190 or 230)
-			local contentH = layout.AbsoluteContentSize.Y
-
-			-- Add breathing room for padding, clamp between min tap target and max
-			local desired = math.clamp(contentH + 16, 50, maxChoicesH)
-			choicesSection.Size = UDim2.new(1, 0, 0, desired)
-		end)
+		-- CRITICAL FIX: No scroll adjustment needed - card auto-expands to fit all buttons (BitLife-style)
 
 		-- Only show Surprise Me when there are 2+ choices
 		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false

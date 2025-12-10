@@ -372,28 +372,51 @@ FinancialEvents.events = {
 			return true
 		end,
 		
-		-- CRITICAL: Random stock investment outcome
+		-- CRITICAL FIX #28: Stock investments should create actual portfolio assets
 		choices = {
 			{
 				text = "Invest small amount ($100)",
 				effects = { Money = -100 },
 				feedText = "Buying the stock...",
 				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Investments = state.Assets.Investments or {}
+					
 					local roll = math.random()
 					if roll < 0.20 then
-						state.Money = (state.Money or 0) + 400
+						-- Stock tip was hot - immediate gains AND keep the investment
+						local investment = {
+							id = "stock_" .. os.time() .. "_" .. math.random(1000),
+							name = "Hot Stock Pick",
+							type = "stock",
+							purchasePrice = 100,
+							currentValue = 400,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Investments, investment)
 						state:ModifyStat("Happiness", 10)
-						state:AddFeed("📈 IT SOARED! +300%! $100 became $400!")
-					elseif roll < 0.45 then
-						state.Money = (state.Money or 0) + 100
+						state.Flags = state.Flags or {}
+						state.Flags.has_investments = true
+						state:AddFeed("📈 IT SOARED! +300%! Now worth $400! Holding for more gains!")
+					elseif roll < 0.55 then
+						-- Decent investment, holds value
+						local investment = {
+							id = "stock_" .. os.time() .. "_" .. math.random(1000),
+							name = "Stock Investment",
+							type = "stock",
+							purchasePrice = 100,
+							currentValue = 120 + math.floor(math.random() * 80),
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Investments, investment)
 						state:ModifyStat("Happiness", 4)
-						state:AddFeed("📈 Nice gain! Doubled your money!")
-					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", 1)
-						state:AddFeed("📈 Broke even. Not exciting but not bad.")
+						state.Flags = state.Flags or {}
+						state.Flags.has_investments = true
+						state:AddFeed(string.format("📈 Good pick! Now worth $%d. Building wealth!", investment.currentValue))
 					else
+						-- Lost the investment
 						state:ModifyStat("Happiness", -3)
-						state:AddFeed("📈 Lost it all. Stock crashed. $100 gone.")
+						state:AddFeed("📈 Stock crashed. Lost $100. That's the risk.")
 					end
 				end,
 			},
@@ -402,25 +425,48 @@ FinancialEvents.events = {
 				effects = { Money = -500 },
 				feedText = "Big investment...",
 				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Investments = state.Assets.Investments or {}
+					
 					local roll = math.random()
 					if roll < 0.15 then
-						state.Money = (state.Money or 0) + 2000
+						-- Big winner
+						local investment = {
+							id = "stock_" .. os.time() .. "_" .. math.random(1000),
+							name = "Blue Chip Stock",
+							type = "stock",
+							purchasePrice = 500,
+							currentValue = 2000,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Investments, investment)
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.stock_winner = true
+						state.Flags.has_investments = true
 						state:AddFeed("📈 JACKPOT! 4x return! $500 became $2000!")
-					elseif roll < 0.40 then
-						state.Money = (state.Money or 0) + 400
+					elseif roll < 0.50 then
+						-- Solid investment
+						local value = 600 + math.floor(math.random() * 400)
+						local investment = {
+							id = "stock_" .. os.time() .. "_" .. math.random(1000),
+							name = "Diversified Stock",
+							type = "stock",
+							purchasePrice = 500,
+							currentValue = value,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Investments, investment)
 						state:ModifyStat("Happiness", 6)
-						state:AddFeed("📈 Solid return! Made $400 profit!")
-					elseif roll < 0.60 then
-						state:ModifyStat("Happiness", 1)
-						state:AddFeed("📈 About even. Market is unpredictable.")
+						state.Flags = state.Flags or {}
+						state.Flags.has_investments = true
+						state:AddFeed(string.format("📈 Solid investment! Now worth $%d!", value))
 					else
+						-- Lost it
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.stock_loss = true
-						state:AddFeed("📈 BAD TIP! Lost it all! $500 down the drain!")
+						state:AddFeed("📈 BAD TIP! Stock tanked! $500 down the drain!")
 					end
 				end,
 			},
@@ -449,35 +495,71 @@ FinancialEvents.events = {
 			return true
 		end,
 		
-		-- CRITICAL: Highly volatile crypto outcomes
+		-- CRITICAL FIX #29: Crypto investments should create actual crypto assets
 		choices = {
 			{
 				text = "Buy some Bitcoin/Ethereum",
 				effects = { Money = -200 },
 				feedText = "Buying crypto...",
 				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Crypto = state.Assets.Crypto or {}
+					
 					local roll = math.random()
 					if roll < 0.10 then
-						state.Money = (state.Money or 0) + 2000
+						-- To the moon!
+						local crypto = {
+							id = "crypto_" .. os.time() .. "_" .. math.random(1000),
+							name = "Bitcoin",
+							type = "crypto",
+							purchasePrice = 200,
+							currentValue = 2000,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Crypto, crypto)
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.crypto_winner = true
-						state:AddFeed("₿ TO THE MOON! 10x gains! $2000!")
-					elseif roll < 0.30 then
-						state.Money = (state.Money or 0) + 400
+						state.Flags.has_crypto = true
+						state:AddFeed("₿ TO THE MOON! 10x gains! Now worth $2000!")
+					elseif roll < 0.40 then
+						-- Good gains
+						local value = 300 + math.floor(math.random() * 400)
+						local crypto = {
+							id = "crypto_" .. os.time() .. "_" .. math.random(1000),
+							name = "Ethereum",
+							type = "crypto",
+							purchasePrice = 200,
+							currentValue = value,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Crypto, crypto)
 						state:ModifyStat("Happiness", 8)
-						state:AddFeed("₿ Nice bull run! Doubled your money!")
-					elseif roll < 0.50 then
-						state:ModifyStat("Happiness", 2)
-						state:AddFeed("₿ Sideways market. Holding for now.")
-					elseif roll < 0.75 then
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("₿ Down 50%. HODL and hope?")
+						state.Flags = state.Flags or {}
+						state.Flags.has_crypto = true
+						state:AddFeed(string.format("₿ Bull run! Crypto now worth $%d!", value))
+					elseif roll < 0.65 then
+						-- Holding, slight down
+						local value = 100 + math.floor(math.random() * 100)
+						local crypto = {
+							id = "crypto_" .. os.time() .. "_" .. math.random(1000),
+							name = "Bitcoin",
+							type = "crypto",
+							purchasePrice = 200,
+							currentValue = value,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Crypto, crypto)
+						state:ModifyStat("Happiness", -2)
+						state.Flags = state.Flags or {}
+						state.Flags.has_crypto = true
+						state:AddFeed(string.format("₿ Down to $%d. HODL and hope.", value))
 					else
+						-- Lost it all
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.crypto_loss = true
-						state:AddFeed("₿ Crypto winter. Lost it all. Rug pulled.")
+						state:AddFeed("₿ Crypto winter. Lost it all. Exchange went bankrupt.")
 					end
 				end,
 			},
@@ -486,18 +568,46 @@ FinancialEvents.events = {
 				effects = { Money = -100 },
 				feedText = "YOLO into meme coins...",
 				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Crypto = state.Assets.Crypto or {}
+					
 					local roll = math.random()
 					if roll < 0.05 then
-						state.Money = (state.Money or 0) + 5000
+						-- Meme coin miracle
+						local crypto = {
+							id = "crypto_" .. os.time() .. "_" .. math.random(1000),
+							name = "DogeMoon Coin",
+							type = "crypto",
+							purchasePrice = 100,
+							currentValue = 5000,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Crypto, crypto)
 						state:ModifyStat("Happiness", 20)
-						state:AddFeed("₿ INSANE GAINS! Meme coin went viral! $5000!")
-					elseif roll < 0.20 then
-						state.Money = (state.Money or 0) + 300
+						state.Flags = state.Flags or {}
+						state.Flags.crypto_winner = true
+						state.Flags.has_crypto = true
+						state:AddFeed("₿ INSANE GAINS! Meme coin viral! $5000!")
+					elseif roll < 0.25 then
+						-- Lucky pump
+						local value = 200 + math.floor(math.random() * 300)
+						local crypto = {
+							id = "crypto_" .. os.time() .. "_" .. math.random(1000),
+							name = "AltCoin",
+							type = "crypto",
+							purchasePrice = 100,
+							currentValue = value,
+							purchaseYear = state.Year
+						}
+						table.insert(state.Assets.Crypto, crypto)
 						state:ModifyStat("Happiness", 6)
-						state:AddFeed("₿ Lucky pump! Made $300!")
+						state.Flags = state.Flags or {}
+						state.Flags.has_crypto = true
+						state:AddFeed(string.format("₿ Lucky pump! Worth $%d now!", value))
 					else
+						-- Rug pulled
 						state:ModifyStat("Happiness", -5)
-						state:AddFeed("₿ Rug pull. Dev disappeared. Money gone.")
+						state:AddFeed("₿ Rug pull. Dev disappeared. $100 gone.")
 					end
 				end,
 			},
@@ -552,24 +662,53 @@ FinancialEvents.events = {
 		tags = { "debt", "credit", "financial_trouble" },
 		
 		choices = {
-			{
-				text = "Credit card debt piling up",
-				effects = {},
-				feedText = "Looking at the statements...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.30 then
-						state.Money = (state.Money or 0) - 500
-						state:ModifyStat("Happiness", -6)
-						state.Flags = state.Flags or {}
-						state.Flags.in_debt = true
-						state:AddFeed("💳 Interest is crushing. Minimum payments barely cover it.")
+		{
+			text = "Credit card debt piling up",
+			effects = {},
+			feedText = "Looking at the statements...",
+			-- CRITICAL FIX #26: Properly track credit card debt as a growing balance
+			onResolve = function(state)
+				local roll = math.random()
+				state.Flags = state.Flags or {}
+				
+				-- Initialize or increase credit card debt
+				local currentDebt = state.Flags.credit_card_debt or 0
+				
+				if roll < 0.30 then
+					-- Debt growing out of control
+					local newDebt = 2000 + math.floor(math.random() * 3000) -- $2000-$5000 new debt
+					state.Flags.credit_card_debt = currentDebt + newDebt
+					state.Flags.in_debt = true
+					state.Flags.bad_credit = true
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed(string.format("💳 Credit cards maxed out! Total debt: $%d. Interest is crushing.", state.Flags.credit_card_debt))
+				elseif roll < 0.60 then
+					-- Some debt but manageable
+					local newDebt = 500 + math.floor(math.random() * 1500) -- $500-$2000 new debt
+					state.Flags.credit_card_debt = currentDebt + newDebt
+					state.Flags.in_debt = true
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed(string.format("💳 Racked up $%d in credit card debt. Need to pay this down.", newDebt))
+				else
+					-- Managed to pay some down
+					local payment = math.min(currentDebt, 200 + math.floor(math.random() * 300))
+					if payment > 0 then
+						state.Flags.credit_card_debt = math.max(0, currentDebt - payment)
+						state.Money = (state.Money or 0) - payment
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed(string.format("💳 Paid $%d toward credit card. Progress!", payment))
+						if state.Flags.credit_card_debt <= 0 then
+							state.Flags.credit_card_debt = nil
+							state.Flags.in_debt = nil
+							state:AddFeed("💳 Credit card paid off! Debt free!")
+						end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("💳 Managed to pay it down some. Progress.")
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💳 No debt to pay down but tight budget.")
 					end
-				end,
-			},
+				end
+			end,
+		},
 			{ text = "Student loans calling", effects = { Happiness = -4, Money = -200 }, setFlags = { has_student_loans = true }, feedText = "💳 Monthly payment due. Education costs never end." },
 			{ text = "Medical debt", effects = { Happiness = -5, Money = -300 }, setFlags = { medical_debt = true }, feedText = "💳 Got sick AND went broke. American healthcare." },
 			{ text = "Consolidate and strategize", effects = { Happiness = 3, Smarts = 3, Money = -100 }, feedText = "💳 Working with financial advisor. Plan in place." },
@@ -640,18 +779,49 @@ FinancialEvents.events = {
 		end,
 		
 		choices = {
-			{
-				text = "File for bankruptcy",
-				effects = { Happiness = -10, Smarts = 2 },
-				feedText = "Filing paperwork...",
-				onResolve = function(state)
-					state.Money = 0
-					state.Flags = state.Flags or {}
-					state.Flags.in_debt = nil
-					state.Flags.declared_bankruptcy = true
-					state:AddFeed("⚠️ Fresh start. Credit ruined for 7 years. But debt free.")
-				end,
-			},
+		{
+			text = "File for bankruptcy",
+			effects = { Happiness = -10, Smarts = 2 },
+			feedText = "Filing paperwork...",
+			-- CRITICAL FIX #27: Bankruptcy should properly wipe ALL tracked debts
+			onResolve = function(state)
+				state.Money = 0
+				state.Flags = state.Flags or {}
+				
+				-- CRITICAL: Clear all debt tracking flags
+				state.Flags.in_debt = nil
+				state.Flags.credit_card_debt = nil -- Wipe credit card debt
+				state.Flags.medical_debt = nil -- Wipe medical debt
+				state.Flags.has_student_loans = nil -- Student loans can be discharged in bankruptcy (rare but possible)
+				state.Flags.mortgage_debt = nil -- Mortgage is discharged
+				state.Flags.mortgage_trouble = nil
+				state.Flags.avoiding_collectors = nil
+				state.Flags.owed_back_taxes = nil
+				state.Flags.bad_credit = true -- Credit is ruined
+				state.Flags.declared_bankruptcy = true
+				state.Flags.bankruptcy_year = state.Year -- Track when bankruptcy happened
+				
+				-- May lose some assets in bankruptcy
+				if state.Assets then
+					-- Keep one vehicle (exemption)
+					if state.Assets.Vehicles and #state.Assets.Vehicles > 1 then
+						local kept = state.Assets.Vehicles[1]
+						state.Assets.Vehicles = { kept }
+					end
+					-- Lose investment accounts
+					state.Assets.Investments = {}
+					state.Assets.Crypto = {}
+					-- May keep primary residence
+				end
+				
+				-- Clear education debt if tracked separately  
+				if state.EducationData and state.EducationData.Debt then
+					state.EducationData.Debt = 0
+				end
+				
+				state:AddFeed("⚠️ Chapter 7 Bankruptcy filed. ALL debts discharged. Credit ruined for 7-10 years. Fresh start, but lost most assets.")
+			end,
+		},
 			{ text = "Try to power through", effects = { Happiness = -5, Health = -3 }, setFlags = { struggling_financially = true }, feedText = "⚠️ Won't give up. Extra jobs, cutting everything." },
 			{ text = "Ask family for help", effects = { Happiness = 2 }, feedText = "⚠️ Swallowed pride. Family helped out. Grateful.",
 				onResolve = function(state)
