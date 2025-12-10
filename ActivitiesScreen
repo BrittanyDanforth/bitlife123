@@ -9,6 +9,127 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Pink       = C.Pink       or Color3.fromRGB(236, 72, 153)
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Cyan       = C.Cyan       or Color3.fromRGB(6, 182, 212)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Orange     = C.Orange     or Color3.fromRGB(249, 115, 22)
+C.Yellow     = C.Yellow     or Color3.fromRGB(234, 179, 8)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+
+-- Dark variants
+C.PinkDark   = C.PinkDark   or Color3.fromRGB(190, 24, 93)
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.CyanDark   = C.CyanDark   or Color3.fromRGB(14, 116, 144)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.PinkPale   = C.PinkPale   or Color3.fromRGB(252, 231, 243)
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.CyanPale   = C.CyanPale   or Color3.fromRGB(224, 242, 254)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+-- Device detection (CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE)
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+
+local ViewportSize = Camera.ViewportSize
+
+-- CRITICAL UI FIX: More aggressive scaling for small phones
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.55 end  -- SUPER TINY phones
+	if minDim < 380 then return 0.65 end  -- TINY phones like iPhone SE
+	if minDim < 400 then return 0.72 end  -- Small phones
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+
+-- CRITICAL FIX: Better text sizing for tiny phones - more readable
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+
+-- CRITICAL FIX: More padding/spacing on small screens to reduce bunching
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+
+-- CRITICAL FIX: Card heights that scale properly
+local function cardHeight(baseHeight)
+	if IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.7)) end
+	if IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.85)) end
+	return baseHeight
+end
+
+-- CRITICAL FIX: Proper minimum touch target for tiny phones
+local function btnHeight(baseHeight) 
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
+end
+
+local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 8 end
+	if IS_SMALL_PHONE then return ViewportSize.X - 12 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 20, 350) end
+	return 350
+end
+
+-- CRITICAL FIX: Icon sizes that scale for small phones
+local function iconSize(base)
+	if IS_TINY_PHONE then return math.max(36, math.floor(base * 0.62)) end
+	if IS_SMALL_PHONE then return math.max(42, math.floor(base * 0.75)) end
+	return base
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local ActivitiesScreen = {}
 ActivitiesScreen.__index = ActivitiesScreen
 
@@ -24,163 +145,149 @@ local DoPrisonAction = getRemote("DoPrisonAction")
 -- Activity Data - Must match server's Activities IDs!
 local MindBody = {
 	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0 },
-	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true },
-	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0 },
-	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true },
+	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0 },
 	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0 },
 	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200 },
 	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
+	-- CRITICAL FIX: Driver's license with QTE driving test minigame
+	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Martial arts with fight minigame
+	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "fight" },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- EDUCATION (Like BitLife!) - Go back to school, get GED, etc.
+-- ═══════════════════════════════════════════════════════════════════════════
+local Education = {
+	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school" },
+	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "Back to School!", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
+	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma" },
+	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma" },
+	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000 },
+	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000 },
+	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree" },
+	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree" },
+	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree" },
 }
 
 local Social = {
 	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0 },
 	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0 },
-	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50 },
+	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
 	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300 },
+	-- NEW: Karaoke with debate minigame
+	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 }
 
 local Entertainment = {
 	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+Happiness", minAge = 2, cost = 0 },
-	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0 },
+	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20 },
 	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150 },
 	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000 },
+	-- NEW: Arcade with diverse minigames
+	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+Happiness +Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
 }
-
--- ═══════════════════════════════════════════════════════════
--- GAMEPASS SYSTEM
--- ═══════════════════════════════════════════════════════════
-local MarketplaceService = game:GetService("MarketplaceService")
-local Players = game:GetService("Players")
-
--- Gamepass IDs (replace with actual Roblox gamepass IDs)
-local GAMEPASSES = {
-	MOB_LIFE = 0, -- Mob Life Pack - unlocks organized crime
-	CRIME_BOSS = 0, -- Crime Boss Pack - bonus crime features
-	VIP = 0, -- VIP Pack - all premium features
-	DOUBLE_MONEY = 0, -- Double Money from crimes
-	REDUCED_SENTENCE = 0, -- Reduced prison sentences
-}
-
--- Cache for gamepass ownership (checked once per session)
-local gamepassCache = {}
-
-local function checkGamepass(gamepassId)
-	if gamepassId == 0 then return true end -- Free if ID not set
-	local player = Players.LocalPlayer
-	if not player then return false end
-
-	local cacheKey = tostring(gamepassId)
-	if gamepassCache[cacheKey] ~= nil then
-		return gamepassCache[cacheKey]
-	end
-
-	local success, owns = pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamepassId)
-	end)
-
-	if success then
-		gamepassCache[cacheKey] = owns
-		return owns
-	end
-	return false
-end
-
-local function promptGamepass(gamepassId)
-	if gamepassId == 0 then return end
-	local player = Players.LocalPlayer
-	if player then
-		pcall(function()
-			MarketplaceService:PromptGamePassPurchase(player, gamepassId)
-		end)
-	end
-end
-
--- ═══════════════════════════════════════════════════════════
--- CRIME DATA
--- ═══════════════════════════════════════════════════════════
 
 -- Crime IDs MUST match server's Crimes table exactly!
+-- CRITICAL FIX: Added diverse minigames for different crimes
 local Crimes = {
+	-- PETTY CRIMES
 	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
 	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
-	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10 },
-	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16 },
-	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16 },
-	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true },
+	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- PROPERTY CRIMES
+	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
+	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16 },
+	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
+	-- WHITE COLLAR
+	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18 },
+	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16 },
+	-- SERIOUS CRIMES
+	{ id = "drug_dealing", name = "Drug Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
+	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18 },
+	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18 },
+	-- MAJOR CRIMES
+	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true, minigameType = "heist" },
+	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18 },
+	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18 },
 }
 
--- ═══════════════════════════════════════════════════════════
--- ORGANIZED CRIME / MOB SYSTEM
--- ═══════════════════════════════════════════════════════════
-
--- Mob Ranks (progression system)
-local MobRanks = {
-	{ id = "none", name = "Civilian", emoji = "👤", level = 0 },
-	{ id = "associate", name = "Associate", emoji = "🤝", level = 1, requirement = "Join a mob family" },
-	{ id = "soldier", name = "Soldier", emoji = "🔫", level = 2, requirement = "Complete 5 mob jobs" },
-	{ id = "capo", name = "Capo", emoji = "💼", level = 3, requirement = "Earn $100K for the family" },
-	{ id = "underboss", name = "Underboss", emoji = "🕶️", level = 4, requirement = "Control 3 territories" },
-	{ id = "boss", name = "Boss", emoji = "👑", level = 5, requirement = "Eliminate the current boss" },
-}
-
--- Mob Families (can join one)
-local MobFamilies = {
-	{ id = "cosa_nostra", name = "Cosa Nostra", emoji = "🇮🇹", style = "Italian Mafia", bonus = "+Respect" },
-	{ id = "yakuza", name = "Yakuza", emoji = "🇯🇵", style = "Japanese Syndicate", bonus = "+Discipline" },
-	{ id = "cartel", name = "El Cartel", emoji = "🇲🇽", style = "Drug Cartel", bonus = "+Drug Profits" },
-	{ id = "bratva", name = "Bratva", emoji = "🇷🇺", style = "Russian Mob", bonus = "+Intimidation" },
-	{ id = "triad", name = "Triad", emoji = "🇨🇳", style = "Chinese Organization", bonus = "+Connections" },
-	{ id = "irish_mob", name = "Irish Mob", emoji = "🍀", style = "Irish Crime Family", bonus = "+Loyalty" },
-}
-
--- Organized Crime Activities (Mob-specific)
-local OrganizedCrime = {
-	-- Entry level - Join the mob
-	{ id = "join_mob", name = "Join a Mob Family", emoji = "🤝", effect = "Become an Associate", minAge = 18, category = "recruitment", requiresMob = false },
-	{ id = "leave_mob", name = "Leave the Family", emoji = "🚪", effect = "Dangerous!", minAge = 18, risk = 70, category = "recruitment", requiresMob = true },
-
-	-- Associate level activities
-	{ id = "extortion", name = "Extortion", emoji = "💰", risk = 35, reward = "$500-$5K", minAge = 18, category = "racket", rankRequired = 1 },
-	{ id = "protection_racket", name = "Protection Racket", emoji = "🛡️", risk = 40, reward = "$1K-$10K/week", minAge = 18, category = "racket", rankRequired = 1 },
-	{ id = "loan_sharking", name = "Loan Sharking", emoji = "🦈", risk = 30, reward = "$2K-$20K", minAge = 18, category = "racket", rankRequired = 1 },
-	{ id = "numbers_game", name = "Run Numbers", emoji = "🎰", risk = 25, reward = "$500-$3K", minAge = 18, category = "racket", rankRequired = 1 },
-
-	-- Soldier level activities
-	{ id = "drug_trafficking", name = "Drug Trafficking", emoji = "💊", risk = 55, reward = "$10K-$100K", minAge = 18, category = "trafficking", rankRequired = 2 },
-	{ id = "arms_dealing", name = "Arms Dealing", emoji = "🔫", risk = 60, reward = "$20K-$200K", minAge = 21, category = "trafficking", rankRequired = 2 },
-	{ id = "hijacking", name = "Truck Hijacking", emoji = "🚛", risk = 50, reward = "$15K-$80K", minAge = 18, category = "heist", rankRequired = 2, hasMinigame = true },
-	{ id = "collect_debt", name = "Collect a Debt", emoji = "👊", risk = 40, reward = "$1K-$5K", minAge = 18, category = "enforcement", rankRequired = 2 },
-
-	-- Capo level activities
-	{ id = "run_crew", name = "Run Your Crew", emoji = "👥", effect = "+Income +Respect", minAge = 21, category = "management", rankRequired = 3 },
-	{ id = "territory_takeover", name = "Territory Takeover", emoji = "🗺️", risk = 65, reward = "New Territory", minAge = 21, category = "war", rankRequired = 3, hasMinigame = true },
-	{ id = "money_laundering", name = "Money Laundering", emoji = "🧺", risk = 35, reward = "Clean $50K-$500K", minAge = 21, category = "finance", rankRequired = 3 },
-	{ id = "bribe_official", name = "Bribe an Official", emoji = "🏛️", risk = 30, reward = "-Heat", minAge = 21, cost = 25000, category = "corruption", rankRequired = 3 },
-
-	-- Underboss level activities
-	{ id = "hit_job", name = "Order a Hit", emoji = "🎯", risk = 75, reward = "Eliminate Rival", minAge = 25, cost = 50000, category = "enforcement", rankRequired = 4 },
-	{ id = "mob_war", name = "Start Mob War", emoji = "⚔️", risk = 85, reward = "Territory/Power", minAge = 25, category = "war", rankRequired = 4, hasMinigame = true },
-	{ id = "smuggling_ring", name = "Run Smuggling Ring", emoji = "📦", risk = 50, reward = "$100K-$1M/year", minAge = 25, category = "trafficking", rankRequired = 4 },
-	{ id = "corrupt_cops", name = "Corrupt Police Force", emoji = "👮", risk = 40, reward = "-Arrest Risk", minAge = 25, cost = 100000, category = "corruption", rankRequired = 4 },
-
-	-- Boss level activities
-	{ id = "sit_down", name = "Call a Sit-Down", emoji = "🤵", effect = "Resolve Disputes", minAge = 30, category = "diplomacy", rankRequired = 5 },
-	{ id = "expand_empire", name = "Expand Empire", emoji = "🌎", risk = 60, reward = "New City", minAge = 30, cost = 500000, category = "expansion", rankRequired = 5 },
-	{ id = "political_control", name = "Control Politicians", emoji = "🏛️", risk = 45, reward = "Legal Protection", minAge = 30, cost = 1000000, category = "corruption", rankRequired = 5 },
-	{ id = "retire", name = "Retire (Pass the Torch)", emoji = "🏖️", effect = "End Mob Life", minAge = 50, category = "retirement", rankRequired = 5 },
-}
-
+-- CRITICAL FIX: Prison activities with appropriate minigames
 local PrisonActivities = {
-	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true },
-	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0 },
+	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true, minigameType = "prison_escape" },
+	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "prison_study", name = "Get GED", emoji = "📚", effect = "+Smarts", minAge = 0 },
-	{ id = "prison_gang", name = "Join Prison Gang", emoji = "⛓️", effect = "+Respect -Health", minAge = 0 },
-	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85 },
+	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+Respect -Health", minAge = 0, hasMinigame = true, minigameType = "fight" },
+	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85, hasMinigame = true, minigameType = "fight" },
 	{ id = "prison_snitch", name = "Snitch", emoji = "🐀", effect = "-Sentence +Risk", minAge = 0 },
 	{ id = "prison_appeal", name = "Appeal Sentence", emoji = "⚖️", effect = "Legal Help", minAge = 0, cost = 5000 },
 	{ id = "prison_goodbehavior", name = "Good Behavior", emoji = "😇", effect = "-Sentence Time", minAge = 0 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BABY/TODDLER MISCHIEF (Ages 0-4) - Cause trouble like a little one!
+-- ═══════════════════════════════════════════════════════════════════════════
+local BabyMischief = {
+	{ id = "cry_loudly", name = "Cry Really Loud", emoji = "😭", effect = "+Attention", minAge = 0, maxAge = 4 },
+	{ id = "throw_food", name = "Throw Food", emoji = "🍝", effect = "Messy!", minAge = 0, maxAge = 4 },
+	{ id = "break_toy", name = "Break a Toy", emoji = "🧸", effect = "Oopsie!", minAge = 0, maxAge = 4 },
+	{ id = "draw_walls", name = "Draw on the Walls", emoji = "🖍️", effect = "Art Time!", minAge = 1, maxAge = 4 },
+	{ id = "refuse_nap", name = "Refuse to Nap", emoji = "😤", effect = "-Sleep +Happiness", minAge = 0, maxAge = 4 },
+	{ id = "tantrum", name = "Throw a Tantrum", emoji = "🤬", effect = "+Attention -Happiness", minAge = 1, maxAge = 4 },
+	{ id = "bite_sibling", name = "Bite Someone", emoji = "🦷", effect = "Mean!", minAge = 1, maxAge = 4 },
+	{ id = "hide_mom_keys", name = "Hide Mom's Keys", emoji = "🔑", effect = "Sneaky!", minAge = 2, maxAge = 4 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CHILD MISCHIEF (Ages 5-12) - Kid trouble!
+-- ═══════════════════════════════════════════════════════════════════════════
+local ChildMischief = {
+	{ id = "skip_chores", name = "Skip Your Chores", emoji = "🧹", effect = "-Trouble", minAge = 5, maxAge = 12 },
+	{ id = "prank_sibling", name = "Prank Your Sibling", emoji = "😈", effect = "Funny!", minAge = 5, maxAge = 12 },
+	{ id = "sneak_candy", name = "Sneak Candy", emoji = "🍬", effect = "+Happiness +Sugar", minAge = 5, maxAge = 12 },
+	{ id = "stay_up_late", name = "Stay Up Late", emoji = "🌙", effect = "No Sleep!", minAge = 5, maxAge = 12 },
+	{ id = "cheat_test", name = "Cheat on a Test", emoji = "📝", effect = "Risky!", minAge = 6, maxAge = 12, risk = 25 },
+	{ id = "talk_back", name = "Talk Back to Parents", emoji = "🗣️", effect = "Sassy!", minAge = 5, maxAge = 12 },
+	{ id = "blame_sibling", name = "Blame Your Sibling", emoji = "👉", effect = "Sneaky!", minAge = 5, maxAge = 12 },
+	{ id = "fake_sick", name = "Fake Being Sick", emoji = "🤒", effect = "No School!", minAge = 6, maxAge = 12 },
+	{ id = "toilet_paper_house", name = "TP Neighbor's House", emoji = "🧻", effect = "Mischief!", minAge = 8, maxAge = 12, risk = 15 },
+	{ id = "ring_doorbell_run", name = "Ding Dong Ditch", emoji = "🚪", effect = "Run!", minAge = 7, maxAge = 12, risk = 10 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- TEEN MISCHIEF (Ages 13-17) - Rebellious teen stuff
+-- ═══════════════════════════════════════════════════════════════════════════
+local TeenMischief = {
+	{ id = "sneak_out", name = "Sneak Out at Night", emoji = "🌃", effect = "Adventure!", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "skip_class", name = "Skip Class", emoji = "🏫", effect = "Freedom!", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "party_crash", name = "Crash a Party", emoji = "🎉", effect = "+Fun +Risk", minAge = 14, maxAge = 17, risk = 25 },
+	{ id = "fake_id", name = "Get a Fake ID", emoji = "🪪", effect = "Illegal!", minAge = 15, maxAge = 17, risk = 40 },
+	{ id = "vandalize", name = "Vandalize Something", emoji = "🎨", effect = "Bad!", minAge = 13, maxAge = 17, risk = 35 },
+	{ id = "bully", name = "Bully Someone", emoji = "😠", effect = "Mean!", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "steal_parents_car", name = "Steal Parents' Car", emoji = "🚗", effect = "Joyride!", minAge = 14, maxAge = 17, risk = 50 },
+	{ id = "break_curfew", name = "Break Curfew", emoji = "⏰", effect = "Late!", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "drink_underage", name = "Underage Drinking", emoji = "🍺", effect = "Party!", minAge = 14, maxAge = 17, risk = 30 },
+	{ id = "smoke", name = "Try Smoking", emoji = "🚬", effect = "-Health", minAge = 13, maxAge = 17, risk = 10 },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-4)
+-- ═══════════════════════════════════════════════════════════════════════════
+local BabyFun = {
+	{ id = "play_toys", name = "Play with Toys", emoji = "🧸", effect = "+Happiness", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "watch_cartoons", name = "Watch Cartoons", emoji = "📺", effect = "+Happiness", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "play_peekaboo", name = "Play Peek-a-boo", emoji = "🙈", effect = "+Happiness", minAge = 0, maxAge = 2, cost = 0 },
+	{ id = "play_blocks", name = "Play with Blocks", emoji = "🧱", effect = "+Smarts +Fun", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "playground", name = "Go to Playground", emoji = "🛝", effect = "+Health +Happiness", minAge = 2, maxAge = 5, cost = 0 },
+	{ id = "coloring", name = "Color a Picture", emoji = "🖍️", effect = "+Happiness +Creativity", minAge = 2, maxAge = 5, cost = 0 },
+	{ id = "play_dolls", name = "Play with Dolls", emoji = "👶", effect = "+Happiness", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "bubbles", name = "Blow Bubbles", emoji = "🫧", effect = "+Happiness", minAge = 1, maxAge = 5, cost = 0 },
+	{ id = "nap_time", name = "Take a Nap", emoji = "😴", effect = "+Health +Energy", minAge = 0, maxAge = 5, cost = 0 },
+	{ id = "play_outside", name = "Play Outside", emoji = "🌳", effect = "+Health +Happiness", minAge = 1, maxAge = 5, cost = 0 },
 }
 
 -- Debug logging (set to false to reduce log spam)
@@ -399,8 +506,8 @@ function ActivitiesScreen:getCrimeRiskModifier(crimeId)
 	if flags.criminal_tendencies then riskModifier = riskModifier - 5 end
 	if flags.petty_thief or flags.shoplifter then riskModifier = riskModifier - 5 end
 	if flags.car_thief or flags.burglar then riskModifier = riskModifier - 8 end
-	if flags.gang_member then riskModifier = riskModifier - 10 end
-	if flags.underboss or flags.crime_boss then riskModifier = riskModifier - 15 end
+	if flags.crew_member then riskModifier = riskModifier - 10 end
+	if flags.underboss or flags.crime_boss or flags.crew_leader then riskModifier = riskModifier - 15 end
 
 	-- Low happiness increases risk
 	if happiness <= 20 then riskModifier = riskModifier + 10
@@ -427,95 +534,6 @@ function ActivitiesScreen:getCrimeRiskIndicator()
 	end
 end
 
--- ═══════════════════════════════════════════════════════════
--- MOB STATE HELPERS
--- ═══════════════════════════════════════════════════════════
-
-function ActivitiesScreen:isInMob()
-	local state = self.playerState
-	if not state then return false end
-	return state.MobFamily ~= nil or (state.Flags and state.Flags.mob_member == true)
-end
-
-function ActivitiesScreen:getMobFamily()
-	local state = self.playerState
-	if not state then return nil end
-	local familyId = state.MobFamily or (state.Flags and state.Flags.mob_family)
-	if familyId then
-		for _, family in ipairs(MobFamilies) do
-			if family.id == familyId then return family end
-		end
-	end
-	return nil
-end
-
-function ActivitiesScreen:getMobRank()
-	local state = self.playerState
-	if not state then return 0 end
-	return state.MobRank or (state.Flags and state.Flags.mob_rank) or 0
-end
-
-function ActivitiesScreen:getMobRankInfo()
-	local rankLevel = self:getMobRank()
-	for _, rank in ipairs(MobRanks) do
-		if rank.level == rankLevel then return rank end
-	end
-	return MobRanks[1] -- Default to Civilian
-end
-
-function ActivitiesScreen:getMobRespect()
-	local state = self.playerState
-	if not state then return 0 end
-	return state.MobRespect or (state.Flags and state.Flags.mob_respect) or 0
-end
-
-function ActivitiesScreen:getMobHeat()
-	local state = self.playerState
-	if not state then return 0 end
-	return state.MobHeat or (state.Flags and state.Flags.mob_heat) or 0
-end
-
-function ActivitiesScreen:getTerritories()
-	local state = self.playerState
-	if not state then return 0 end
-	return state.Territories or (state.Flags and state.Flags.territories) or 0
-end
-
-function ActivitiesScreen:getCrewSize()
-	local state = self.playerState
-	if not state then return 0 end
-	return state.CrewSize or (state.Flags and state.Flags.crew_size) or 0
-end
-
-function ActivitiesScreen:canDoMobActivity(item)
-	local age = self:getAge()
-	local money = self:getMoney()
-	local inMob = self:isInMob()
-	local mobRank = self:getMobRank()
-	local cost = item.cost or 0
-
-	-- Age check
-	if age < item.minAge then return false, "Age " .. item.minAge .. "+" end
-
-	-- Money check
-	if money < cost then return false, "Need $" .. cost end
-
-	-- Jail check
-	if self:isInJail() then return false, "In Jail" end
-
-	-- Mob membership check
-	if item.requiresMob == true and not inMob then return false, "Join Mob First" end
-	if item.requiresMob == false and inMob then return false, "Already in Mob" end
-
-	-- Rank check
-	if item.rankRequired and mobRank < item.rankRequired then
-		local reqRank = MobRanks[item.rankRequired + 1]
-		return false, "Need: " .. (reqRank and reqRank.name or "Higher Rank")
-	end
-
-	return true, nil
-end
-
 function ActivitiesScreen:createUI()
 	-- Main overlay
 	self.overlay = Instance.new("Frame")
@@ -525,80 +543,153 @@ function ActivitiesScreen:createUI()
 	self.overlay.Visible = false
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
+	
+	-- MOBILE FIX: Responsive layout constants (CRITICAL: Added IS_TINY_PHONE support)
+	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
+	local INFO_HEIGHT = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 36 or px(44))
+	local TAB_HEIGHT = IS_TINY_PHONE and 38 or btnHeight(48)
+	local GAP = IS_TINY_PHONE and 4 or padSize(8)
 
-	-- Premium header
-	local headerData = UI.createScreenHeader(self.overlay, {
-		title = "Activities",
-		color = C.Amber,
-		colorDark = C.AmberDark,
-		zIndex = 85
-	})
-	headerData.closeButton.MouseButton1Click:Connect(function() self:hide() end)
-	headerData.closeButton.MouseEnter:Connect(function()
-		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
+	-- Custom header (matches OccupationScreen for consistency)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, HEADER_HEIGHT)
+	header.BackgroundColor3 = C.Gray100
+	header.BorderSizePixel = 0
+	header.ZIndex = 84
+	header.Parent = self.overlay
+
+	local headerBottom = Instance.new("Frame")
+	headerBottom.Name = "BottomBorder"
+	headerBottom.Size = UDim2.new(1, 0, 0, 1)
+	headerBottom.Position = UDim2.new(0, 0, 1, -1)
+	headerBottom.BackgroundColor3 = C.Gray200
+	headerBottom.BorderSizePixel = 0
+	headerBottom.ZIndex = 85
+	headerBottom.Parent = header
+
+	-- MOBILE FIX: Responsive title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Size = UDim2.new(1, -px(80), 1, 0)
+	titleLabel.Position = UDim2.new(0, padSize(16), 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(20)
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = "🎯 Activities"
+	titleLabel.ZIndex = 85
+	titleLabel.Parent = header
+
+	-- MOBILE FIX: Touch-friendly close button (CRITICAL: IS_TINY_PHONE support)
+	local closeBtnSize = IS_TINY_PHONE and 28 or btnHeight(32)
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "CloseButton"
+	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
+	closeButton.AnchorPoint = Vector2.new(1, 0.5)
+	closeButton.Position = UDim2.new(1, IS_TINY_PHONE and -8 or -padSize(16), 0.5, 0)
+	closeButton.BackgroundColor3 = C.White
+	closeButton.BackgroundTransparency = 0.1
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.TextSize = textSize(16)
+	closeButton.TextColor3 = C.Gray600
+	closeButton.Text = "✕"
+	closeButton.AutoButtonColor = false
+	closeButton.ZIndex = 86
+	closeButton.Parent = header
+	UI.corner(closeButton, px(8))
+
+	closeButton.MouseButton1Click:Connect(function() self:hide() end)
+	closeButton.MouseEnter:Connect(function()
+		UI.tween(closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
 	end)
-	headerData.closeButton.MouseLeave:Connect(function()
-		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
+	closeButton.MouseLeave:Connect(function()
+		UI.tween(closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- Info bar (simplified - no shadow)
+	-- Content root (prevents UI cutoff issues)
+	self.contentRoot = Instance.new("Frame")
+	self.contentRoot.Name = "ContentRoot"
+	self.contentRoot.BackgroundTransparency = 1
+	self.contentRoot.ZIndex = 80
+	self.contentRoot.Size = UDim2.new(1, 0, 1, -HEADER_HEIGHT)
+	self.contentRoot.Position = UDim2.new(0, 0, 0, HEADER_HEIGHT)
+	self.contentRoot.Parent = self.overlay
+
+	-- MOBILE FIX: Responsive padding
+	local contentPad = Instance.new("UIPadding")
+	contentPad.PaddingLeft = UDim.new(0, padSize(8))
+	contentPad.PaddingRight = UDim.new(0, padSize(8))
+	contentPad.PaddingTop = UDim.new(0, GAP)
+	contentPad.PaddingBottom = UDim.new(0, padSize(8))
+	contentPad.Parent = self.contentRoot
+
+	-- Layout calculations
+	local infoY = 0
+	local tabY = infoY + INFO_HEIGHT + GAP
+	local scrollY = tabY + TAB_HEIGHT + GAP
+
+	-- Info bar (positioned relative to contentRoot - FIXES CUT OFF ISSUE)
 	self.infoBar = Instance.new("Frame")
 	self.infoBar.Name = "InfoBar"
-	self.infoBar.Size = UDim2.new(1, -16, 0, 52)
-	self.infoBar.Position = UDim2.new(0, 8, 0, 116)
+	self.infoBar.Size = UDim2.new(1, 0, 0, INFO_HEIGHT)
+	self.infoBar.Position = UDim2.new(0, 0, 0, infoY)
 	self.infoBar.BackgroundColor3 = C.White
 	self.infoBar.ZIndex = 84
-	self.infoBar.Parent = self.overlay
-	UI.corner(self.infoBar, 14)
+	self.infoBar.Parent = self.contentRoot
+	UI.corner(self.infoBar, 12)
 	UI.stroke(self.infoBar, 1, 0.9, C.Gray200)
 
 	local infoLayout = Instance.new("UIListLayout")
 	infoLayout.FillDirection = Enum.FillDirection.Horizontal
 	infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	infoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	infoLayout.Padding = UDim.new(0, 10)
+	infoLayout.Padding = UDim.new(0, 8)
 	infoLayout.Parent = self.infoBar
 
+	-- CRITICAL FIX: Match OccupationScreen styling for consistent look
+	-- Use proper sizing and don't use TextScaled (causes weird resizing)
 	self.ageChip = UI.createInfoChip(self.infoBar, {
 		name = "AgeChip", icon = "", text = "Age 18",
-		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 80
+		bgColor = C.BluePale, textColor = C.BlueDark, order = 1, width = 75
 	})
 	self.ageChip.icon.Text = ""
 	self.ageChip.text.Text = "Age 18"
-	self.ageChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.ageChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.ageChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.ageChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.ageChip.text.TextXAlignment = Enum.TextXAlignment.Center
 
 	self.moneyChip = UI.createInfoChip(self.infoBar, {
-		name = "MoneyChip", icon = "", text = "$1,000",
+		name = "MoneyChip", icon = "", text = "$0",
 		bgColor = C.GreenPale, textColor = C.GreenDark, order = 2, width = 90
 	})
 	self.moneyChip.icon.Text = ""
-	self.moneyChip.text.Text = "$1,000"
-	self.moneyChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.moneyChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.moneyChip.text.Text = "$0"
+	self.moneyChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.moneyChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.moneyChip.text.TextXAlignment = Enum.TextXAlignment.Center
 
 	self.statusChip = UI.createInfoChip(self.infoBar, {
-		name = "StatusChip", icon = "", text = "Free",
-		bgColor = C.GreenPale, textColor = C.GreenDark, order = 3, width = 75
+		name = "StatusChip", icon = "", text = "Adult",
+		bgColor = C.AmberPale, textColor = C.AmberDark, order = 3, width = 90
 	})
 	self.statusChip.icon.Text = ""
-	self.statusChip.text.Text = "Free"
-	self.statusChip.text.Position = UDim2.new(0, 8, 0, 0)
-	self.statusChip.text.Size = UDim2.new(1, -16, 1, 0)
+	self.statusChip.text.Text = "Adult"
+	self.statusChip.text.Position = UDim2.new(0, 10, 0, 0)
+	self.statusChip.text.Size = UDim2.new(1, -20, 1, 0)
 	self.statusChip.text.TextXAlignment = Enum.TextXAlignment.Center
 
-	-- Tab bar
+	-- Tab bar (positioned relative to contentRoot)
 	self.tabBar = Instance.new("Frame")
 	self.tabBar.Name = "TabBar"
-	self.tabBar.Size = UDim2.new(1, -16, 0, 52)
-	self.tabBar.Position = UDim2.new(0, 8, 0, 176)
+	self.tabBar.Size = UDim2.new(1, 0, 0, TAB_HEIGHT)
+	self.tabBar.Position = UDim2.new(0, 0, 0, tabY)
 	self.tabBar.BackgroundColor3 = C.Gray100
 	self.tabBar.ZIndex = 84
-	self.tabBar.Parent = self.overlay
-	UI.corner(self.tabBar, 14)
-	UI.pad(self.tabBar, 5, 5, 5, 5)
+	self.tabBar.Parent = self.contentRoot
+	UI.corner(self.tabBar, 12)
+	UI.pad(self.tabBar, 4, 4, 4, 4)
 
 	local tabLayout = Instance.new("UIListLayout")
 	tabLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -610,18 +701,18 @@ function ActivitiesScreen:createUI()
 	self.tabBtns = {}
 	self:rebuildTabs()
 
-	-- Scroll area
+	-- Scroll area (positioned relative to contentRoot)
 	self.contentScroll = Instance.new("ScrollingFrame")
 	self.contentScroll.Name = "ContentScroll"
-	self.contentScroll.Size = UDim2.new(1, -16, 1, -250)
-	self.contentScroll.Position = UDim2.new(0, 8, 0, 240)
+	self.contentScroll.Size = UDim2.new(1, 0, 1, -scrollY)
+	self.contentScroll.Position = UDim2.new(0, 0, 0, scrollY)
 	self.contentScroll.BackgroundTransparency = 1
 	self.contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	self.contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	self.contentScroll.ScrollBarThickness = 4
 	self.contentScroll.ScrollBarImageColor3 = C.Gray300
 	self.contentScroll.ZIndex = 81
-	self.contentScroll.Parent = self.overlay
+	self.contentScroll.Parent = self.contentRoot
 
 	local contentLayout = Instance.new("UIListLayout")
 	contentLayout.Padding = UDim.new(0, 12)
@@ -644,21 +735,55 @@ function ActivitiesScreen:rebuildTabs()
 	self.tabBtns = {}
 
 	local inJail = self:isInJail()
+	local age = self:getAge()
 	local tabs
 
 	if inJail then
+		-- PRISON MODE: Limited activities
 		tabs = {
 			{ id = "prison", text = "Prison", color = C.Gray700 },
 			{ id = "mindbody", text = "Exercise", color = C.Cyan },
 		}
 		self.currentTab = "prison"
+	elseif age < 5 then
+		-- BABY/TODDLER MODE (0-4): Only fun activities and mischief
+		tabs = {
+			{ id = "fun", text = "🎈 Play", color = C.Purple },
+			{ id = "mischief", text = "😈 Mischief", color = C.Red },
+		}
+		-- Default to fun for babies
+		if self.currentTab ~= "fun" and self.currentTab ~= "mischief" then
+			self.currentTab = "fun"
+		end
+	elseif age < 13 then
+		-- CHILD MODE (5-12): Fun, social, and mild mischief
+		tabs = {
+			{ id = "fun", text = "🎮 Fun", color = C.Purple },
+			{ id = "social", text = "👥 Social", color = C.Pink },
+			{ id = "mischief", text = "😈 Trouble", color = C.Red },
+		}
+		-- Switch to appropriate tab
+		if self.currentTab == "mindbody" or self.currentTab == "crime" then
+			self.currentTab = "fun"
+		end
+	elseif age < 18 then
+		-- TEEN MODE (13-17): Everything but serious crime + Education!
+		tabs = {
+			{ id = "mindbody", text = "💪 Mind", color = C.Cyan },
+			{ id = "education", text = "📚 School", color = C.Amber },
+			{ id = "social", text = "👥 Social", color = C.Pink },
+			{ id = "mischief", text = "😈 Trouble", color = C.Red },
+		}
+		if self.currentTab == "crime" then
+			self.currentTab = "mischief"
+		end
 	else
+		-- ADULT MODE (18+): Full activities + Education (BitLife style - no separate premium tab)
 		tabs = {
 			{ id = "mindbody", text = "Mind", color = C.Cyan },
+			{ id = "education", text = "📚 Learn", color = C.Amber },
 			{ id = "social", text = "Social", color = C.Pink },
-			{ id = "fun", text = "Fun", color = C.Purple },
 			{ id = "crime", text = "Crime", color = C.Red },
-			{ id = "mob", text = "Mob", color = C.Gray800 },
 		}
 	end
 
@@ -668,10 +793,10 @@ function ActivitiesScreen:rebuildTabs()
 		local btn = Instance.new("TextButton")
 		btn.Name = tab.id
 		btn.Size = UDim2.new(tabWidth, 0, 1, 0)
-		btn.BackgroundColor3 = i == 1 and tab.color or C.White
+		btn.BackgroundColor3 = (self.currentTab == tab.id or (i == 1 and not self.tabBtns[self.currentTab])) and tab.color or C.White
 		btn.Font = F.Button
-		btn.TextSize = 14
-		btn.TextColor3 = i == 1 and C.White or C.Gray600
+		btn.TextSize = 13
+		btn.TextColor3 = (self.currentTab == tab.id or (i == 1 and not self.tabBtns[self.currentTab])) and C.White or C.Gray600
 		btn.Text = tab.text
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
@@ -682,6 +807,11 @@ function ActivitiesScreen:rebuildTabs()
 		self.tabBtns[tab.id] = { btn = btn, color = tab.color }
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
+	
+	-- If current tab doesn't exist, switch to first available
+	if not self.tabBtns[self.currentTab] then
+		self.currentTab = tabs[1].id
+	end
 end
 
 function ActivitiesScreen:updateInfoBar()
@@ -690,16 +820,61 @@ function ActivitiesScreen:updateInfoBar()
 
 	local inJail = self:isInJail()
 	local jailYears = self:getJailYearsLeft()
+	local age = self:getAge()
 
 	if inJail then
-		local jailText = jailYears > 0 and string.format("%.1f yrs", jailYears) or "Jail"
+		-- Show jail time remaining
+		local jailText = jailYears > 0 and string.format("⛓️%.0fy", jailYears) or "⛓️Jail"
 		self.statusChip.text.Text = jailText
 		self.statusChip.chip.BackgroundColor3 = C.RedPale
 		self.statusChip.text.TextColor3 = C.RedDark
 	else
-		self.statusChip.text.Text = "Free"
-		self.statusChip.chip.BackgroundColor3 = C.GreenPale
-		self.statusChip.text.TextColor3 = C.GreenDark
+		-- CRITICAL FIX: Show life stage instead of just "Free"
+		local statusText = "Adult"
+		local bgColor = C.GreenPale
+		local textColor = C.GreenDark
+		
+		if age < 2 then
+			statusText = "👶 Baby"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		elseif age < 5 then
+			statusText = "🧒 Toddler"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		elseif age < 13 then
+			statusText = "📚 Child"
+			bgColor = C.BluePale
+			textColor = C.BlueDark
+		elseif age < 18 then
+			statusText = "🎮 Teen"
+			bgColor = C.AmberPale or C.Amber
+			textColor = C.AmberDark
+		elseif age < 30 then
+			statusText = "✨ Young"
+			bgColor = C.GreenPale
+			textColor = C.GreenDark
+		elseif age < 50 then
+			statusText = "💼 Adult"
+			bgColor = C.GreenPale
+			textColor = C.GreenDark
+		elseif age < 65 then
+			statusText = "👔 Midlife"
+			bgColor = C.BluePale
+			textColor = C.BlueDark
+		elseif age < 80 then
+			statusText = "🧓 Senior"
+			bgColor = C.PurplePale or C.BluePale
+			textColor = C.PurpleDark or C.BlueDark
+		else
+			statusText = "👴 Elder"
+			bgColor = C.Gray200
+			textColor = C.Gray700
+		end
+		
+		self.statusChip.text.Text = statusText
+		self.statusChip.chip.BackgroundColor3 = bgColor
+		self.statusChip.text.TextColor3 = textColor
 	end
 end
 
@@ -723,10 +898,11 @@ function ActivitiesScreen:switchTab(tabId)
 	log("Populating tab content...")
 	if tabId == "prison" then self:populatePrison()
 	elseif tabId == "mindbody" then self:populateMindBody()
+	elseif tabId == "education" then self:populateEducation()
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
 	elseif tabId == "crime" then self:populateCrime()
-	elseif tabId == "mob" then self:populateMob() end
+	elseif tabId == "mischief" then self:populateMischief() end
 	log("Tab content populated")
 end
 
@@ -790,6 +966,85 @@ function ActivitiesScreen:populateMindBody()
 
 	for i, item in ipairs(MindBody) do
 		self:createActivityCard(section, item, i, C.Cyan, C.CyanPale)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- EDUCATION TAB (Like BitLife!) - Go back to school, get GED, etc.
+-- ═══════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateEducation()
+	self:updateInfoBar()
+
+	local section = Instance.new("Frame")
+	section.Name = "EducationSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 120, 0, 32)
+	badge.BackgroundColor3 = C.Amber
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "📚 Education"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Size = UDim2.new(0, 120, 1, 0)
+	countLabel.Position = UDim2.new(0, 130, 0, 0)
+	countLabel.BackgroundTransparency = 1
+	countLabel.Font = F.Medium
+	countLabel.TextSize = 13
+	countLabel.TextColor3 = C.Gray400
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Text = #Education .. " programs"
+	countLabel.ZIndex = 84
+	countLabel.Parent = header
+
+	-- Info text for dropouts
+	local infoText = Instance.new("TextLabel")
+	infoText.Size = UDim2.new(1, 0, 0, 40)
+	infoText.BackgroundTransparency = 1
+	infoText.Font = F.Body
+	infoText.TextSize = 12
+	infoText.TextColor3 = C.Gray500
+	infoText.TextWrapped = true
+	infoText.TextXAlignment = Enum.TextXAlignment.Left
+	infoText.Text = "💡 Dropped out? Get your GED or return to school! Need a degree? Apply to college, trade school, or professional programs!"
+	infoText.LayoutOrder = 1
+	infoText.ZIndex = 83
+	infoText.Parent = section
+
+	for i, item in ipairs(Education) do
+		self:createActivityCard(section, item, i + 1, C.Amber, C.AmberPale)
 	end
 end
 
@@ -857,6 +1112,70 @@ end
 
 function ActivitiesScreen:populateFun()
 	self:updateInfoBar()
+	
+	local age = self:getAge()
+	
+	-- Determine which activities to show based on age
+	local activities
+	local headerText
+	local ageMessage
+	
+	if age < 5 then
+		-- Baby/Toddler fun activities
+		activities = {}
+		for _, item in ipairs(BabyFun) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "🎈 Playtime!"
+		ageMessage = "Things babies and toddlers love to do!"
+	else
+		-- Regular entertainment for older kids/adults
+		activities = {}
+		for _, item in ipairs(Entertainment) do
+			if age >= (item.minAge or 0) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "Entertainment"
+		ageMessage = nil
+	end
+
+	-- Age-appropriate message card for babies
+	if ageMessage then
+		local msgCard = Instance.new("Frame")
+		msgCard.Size = UDim2.new(1, 0, 0, 60)
+		msgCard.BackgroundColor3 = C.PurplePale or C.BluePale
+		msgCard.LayoutOrder = 0
+		msgCard.ZIndex = 82
+		msgCard.Parent = self.contentScroll
+		UI.corner(msgCard, 16)
+		UI.stroke(msgCard, 1, 0.7, C.Purple)
+
+		local msgIcon = Instance.new("TextLabel")
+		msgIcon.Size = UDim2.new(0, 40, 0, 40)
+		msgIcon.Position = UDim2.new(0, 12, 0.5, -20)
+		msgIcon.BackgroundTransparency = 1
+		msgIcon.Font = Enum.Font.GothamBold
+		msgIcon.TextSize = 32
+		msgIcon.Text = "👶"
+		msgIcon.ZIndex = 83
+		msgIcon.Parent = msgCard
+
+		local msgText = Instance.new("TextLabel")
+		msgText.Size = UDim2.new(1, -70, 1, -16)
+		msgText.Position = UDim2.new(0, 60, 0, 8)
+		msgText.BackgroundTransparency = 1
+		msgText.Font = F.Body
+		msgText.TextSize = 14
+		msgText.TextColor3 = C.PurpleDark or C.BlueDark
+		msgText.TextXAlignment = Enum.TextXAlignment.Left
+		msgText.TextWrapped = true
+		msgText.Text = ageMessage
+		msgText.ZIndex = 83
+		msgText.Parent = msgCard
+	end
 
 	local section = Instance.new("Frame")
 	section.Name = "FunSection"
@@ -896,7 +1215,7 @@ function ActivitiesScreen:populateFun()
 	badgeLabel.Font = F.Button
 	badgeLabel.TextSize = 14
 	badgeLabel.TextColor3 = C.White
-	badgeLabel.Text = "Entertainment"
+	badgeLabel.Text = headerText
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
@@ -908,11 +1227,11 @@ function ActivitiesScreen:populateFun()
 	countLabel.TextSize = 13
 	countLabel.TextColor3 = C.Gray400
 	countLabel.TextXAlignment = Enum.TextXAlignment.Left
-	countLabel.Text = #Entertainment .. " options"
+	countLabel.Text = #activities .. " options"
 	countLabel.ZIndex = 84
 	countLabel.Parent = header
 
-	for i, item in ipairs(Entertainment) do
+	for i, item in ipairs(activities) do
 		self:createActivityCard(section, item, i, C.Purple, C.PurplePale)
 	end
 end
@@ -1002,191 +1321,935 @@ function ActivitiesScreen:populateCrime()
 	for i, item in ipairs(Crimes) do
 		self:createCrimeCard(section, item, i)
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- ORGANIZED CRIME SECTION (BitLife style - prompts purchase if locked)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	self:createOrganizedCrimeSection()
 end
 
--- ═══════════════════════════════════════════════════════════
--- MOB TAB - ORGANIZED CRIME
--- ═══════════════════════════════════════════════════════════
-
-function ActivitiesScreen:populateMob()
-	self:updateInfoBar()
-
-	local inMob = self:isInMob()
-	local mobFamily = self:getMobFamily()
-	local mobRank = self:getMobRank()
-	local mobRankInfo = self:getMobRankInfo()
-	local respect = self:getMobRespect()
-	local heat = self:getMobHeat()
-	local territories = self:getTerritories()
-	local crewSize = self:getCrewSize()
-
-	-- Mob Status Header Card
-	local headerCard = Instance.new("Frame")
-	headerCard.Size = UDim2.new(1, 0, 0, inMob and 130 or 95)
-	headerCard.BackgroundColor3 = inMob and C.Gray900 or C.Gray700
-	headerCard.LayoutOrder = 0
-	headerCard.ZIndex = 82
-	headerCard.Parent = self.contentScroll
-	UI.corner(headerCard, 18)
-
-	-- Mob emoji icon
-	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 60, 0, 60)
-	iconFrame.Position = UDim2.new(0, 16, 0, 16)
-	iconFrame.BackgroundColor3 = inMob and (mobFamily and C.Red or C.Gray600) or C.Gray600
-	iconFrame.ZIndex = 83
-	iconFrame.Parent = headerCard
-	UI.corner(iconFrame, 14)
-
-	local headerIcon = Instance.new("TextLabel")
-	headerIcon.Size = UDim2.fromScale(1, 1)
-	headerIcon.BackgroundTransparency = 1
-	headerIcon.Font = F.Body
-	headerIcon.TextSize = 36
-	headerIcon.Text = inMob and (mobFamily and mobFamily.emoji or "🤵") or "🤵"
-	headerIcon.TextColor3 = C.White
-	headerIcon.ZIndex = 84
-	headerIcon.Parent = iconFrame
-
-	local headerText = Instance.new("TextLabel")
-	headerText.Size = UDim2.new(1, -95, 0, 26)
-	headerText.Position = UDim2.new(0, 88, 0, 14)
-	headerText.BackgroundTransparency = 1
-	headerText.Font = F.Title
-	headerText.TextSize = 20
-	headerText.TextColor3 = C.White
-	headerText.TextXAlignment = Enum.TextXAlignment.Left
-	headerText.Text = inMob and (mobFamily and mobFamily.name or "The Family") or "Organized Crime"
-	headerText.ZIndex = 83
-	headerText.Parent = headerCard
-
-	-- Rank badge
-	local rankBadge = Instance.new("Frame")
-	rankBadge.Size = UDim2.new(0, 120, 0, 26)
-	rankBadge.Position = UDim2.new(0, 88, 0, 42)
-	rankBadge.BackgroundColor3 = inMob and C.AmberPale or C.Gray200
-	rankBadge.ZIndex = 83
-	rankBadge.Parent = headerCard
-	UI.pill(rankBadge)
-
-	local rankText = Instance.new("TextLabel")
-	rankText.Size = UDim2.fromScale(1, 1)
-	rankText.BackgroundTransparency = 1
-	rankText.Font = F.Medium
-	rankText.TextSize = 12
-	rankText.TextColor3 = inMob and C.AmberDark or C.Gray600
-	rankText.Text = mobRankInfo.emoji .. " " .. mobRankInfo.name
-	rankText.ZIndex = 84
-	rankText.Parent = rankBadge
-
-	-- Mob stats (only if in mob)
-	if inMob then
-		-- Stats row
-		local statsRow = Instance.new("Frame")
-		statsRow.Size = UDim2.new(1, -32, 0, 40)
-		statsRow.Position = UDim2.new(0, 16, 0, 80)
-		statsRow.BackgroundTransparency = 1
-		statsRow.ZIndex = 83
-		statsRow.Parent = headerCard
-
-		local statsLayout = Instance.new("UIListLayout")
-		statsLayout.FillDirection = Enum.FillDirection.Horizontal
-		statsLayout.Padding = UDim.new(0, 8)
-		statsLayout.Parent = statsRow
-
-		-- Respect stat
-		local respectChip = Instance.new("Frame")
-		respectChip.Size = UDim2.new(0, 80, 0, 32)
-		respectChip.BackgroundColor3 = C.GreenPale
-		respectChip.LayoutOrder = 1
-		respectChip.ZIndex = 84
-		respectChip.Parent = statsRow
-		UI.pill(respectChip)
-
-		local respectLabel = Instance.new("TextLabel")
-		respectLabel.Size = UDim2.fromScale(1, 1)
-		respectLabel.BackgroundTransparency = 1
-		respectLabel.Font = F.Medium
-		respectLabel.TextSize = 11
-		respectLabel.TextColor3 = C.GreenDark
-		respectLabel.Text = "🤝 " .. respect
-		respectLabel.ZIndex = 85
-		respectLabel.Parent = respectChip
-
-		-- Heat stat
-		local heatChip = Instance.new("Frame")
-		heatChip.Size = UDim2.new(0, 70, 0, 32)
-		heatChip.BackgroundColor3 = heat > 50 and C.RedPale or C.AmberPale
-		heatChip.LayoutOrder = 2
-		heatChip.ZIndex = 84
-		heatChip.Parent = statsRow
-		UI.pill(heatChip)
-
-		local heatLabel = Instance.new("TextLabel")
-		heatLabel.Size = UDim2.fromScale(1, 1)
-		heatLabel.BackgroundTransparency = 1
-		heatLabel.Font = F.Medium
-		heatLabel.TextSize = 11
-		heatLabel.TextColor3 = heat > 50 and C.RedDark or C.AmberDark
-		heatLabel.Text = "🔥 " .. heat
-		heatLabel.ZIndex = 85
-		heatLabel.Parent = heatChip
-
-		-- Territories
-		local territoryChip = Instance.new("Frame")
-		territoryChip.Size = UDim2.new(0, 60, 0, 32)
-		territoryChip.BackgroundColor3 = C.BluePale
-		territoryChip.LayoutOrder = 3
-		territoryChip.ZIndex = 84
-		territoryChip.Parent = statsRow
-		UI.pill(territoryChip)
-
-		local territoryLabel = Instance.new("TextLabel")
-		territoryLabel.Size = UDim2.fromScale(1, 1)
-		territoryLabel.BackgroundTransparency = 1
-		territoryLabel.Font = F.Medium
-		territoryLabel.TextSize = 11
-		territoryLabel.TextColor3 = C.BlueDark
-		territoryLabel.Text = "🗺️ " .. territories
-		territoryLabel.ZIndex = 85
-		territoryLabel.Parent = territoryChip
-
-		-- Crew
-		local crewChip = Instance.new("Frame")
-		crewChip.Size = UDim2.new(0, 60, 0, 32)
-		crewChip.BackgroundColor3 = C.PurplePale
-		crewChip.LayoutOrder = 4
-		crewChip.ZIndex = 84
-		crewChip.Parent = statsRow
-		UI.pill(crewChip)
-
-		local crewLabel = Instance.new("TextLabel")
-		crewLabel.Size = UDim2.fromScale(1, 1)
-		crewLabel.BackgroundTransparency = 1
-		crewLabel.Font = F.Medium
-		crewLabel.TextSize = 11
-		crewLabel.TextColor3 = C.PurpleDark
-		crewLabel.Text = "👥 " .. crewSize
-		crewLabel.ZIndex = 85
-		crewLabel.Parent = crewChip
+function ActivitiesScreen:createOrganizedCrimeSection()
+	-- CRITICAL FIX #1: Only show organized crime for adults (18+)
+	local age = self:getAge()
+	if age < 18 then
+		return -- Don't show organized crime to minors
+	end
+	
+	local mobState = self:getMobState()
+	local isInMob = mobState and mobState.inMob
+	
+	-- Organized Crime section card
+	local section = Instance.new("Frame")
+	section.Name = "OrganizedCrimeSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 10
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	-- CRITICAL UI FIX: Mobile responsive header
+	local headerH = IS_TINY_PHONE and 30 or (IS_SMALL_PHONE and 32 or 36)
+	local badgeW = IS_TINY_PHONE and 120 or (IS_SMALL_PHONE and 140 or 165)
+	local badgeH = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 28 or 32)
+	local crownS = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 24 or 28)
+	
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, headerH)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+	
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, badgeW, 0, badgeH)
+	badge.BackgroundColor3 = C.Gray800
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = textSize(14)
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = IS_TINY_PHONE and "🔫 Mafia" or "🔫 Organized Crime"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+	
+	-- Crown indicator (premium) - positioned after badge
+	local crownBadge = Instance.new("Frame")
+	crownBadge.Size = UDim2.new(0, crownS, 0, crownS)
+	crownBadge.Position = UDim2.new(0, badgeW + 8, 0, (badgeH - crownS) / 2)
+	crownBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	crownBadge.ZIndex = 84
+	crownBadge.Parent = header
+	UI.corner(crownBadge, crownS / 2)
+	
+	local crownIcon = Instance.new("TextLabel")
+	crownIcon.Size = UDim2.fromScale(1, 1)
+	crownIcon.BackgroundTransparency = 1
+	crownIcon.Font = F.Body
+	crownIcon.TextSize = textSize(14)
+	crownIcon.Text = "👑"
+	crownIcon.ZIndex = 85
+	crownIcon.Parent = crownBadge
+	
+	if isInMob then
+		-- Show current mob status and operations
+		self:createMobStatusCard(section, mobState)
+		self:createMobOperationsCards(section, mobState)
 	else
-		-- Not in mob - show description
-		local headerSub = Instance.new("TextLabel")
-		headerSub.Size = UDim2.new(1, -95, 0, 20)
-		headerSub.Position = UDim2.new(0, 88, 0, 70)
-		headerSub.BackgroundTransparency = 1
-		headerSub.Font = F.Body
-		headerSub.TextSize = 13
-		headerSub.TextColor3 = C.Gray400
-		headerSub.TextXAlignment = Enum.TextXAlignment.Left
-		headerSub.Text = "Join a crime family..."
-		headerSub.ZIndex = 83
-		headerSub.Parent = headerCard
+		-- Show "Join the Mob" card (BitLife style)
+		self:createJoinMobCard(section)
+	end
+end
+
+function ActivitiesScreen:createJoinMobCard(parent)
+	-- Crime families available
+	local families = {
+		{ id = "italian", name = "Italian Mafia", emoji = "🇮🇹", desc = "La Cosa Nostra" },
+		{ id = "russian", name = "Russian Bratva", emoji = "🇷🇺", desc = "The Brotherhood" },
+		{ id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵", desc = "Way of Honor" },
+		{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", desc = "Drug Empire" },
+		{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", desc = "Ancient Society" },
+	}
+	
+	-- CRITICAL UI FIX: Scale everything for mobile
+	local cardH = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 65 or 70)
+	local iconS = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 48)
+	local btnW = IS_TINY_PHONE and 52 or (IS_SMALL_PHONE and 58 or 65)
+	local btnH = IS_TINY_PHONE and 30 or (IS_SMALL_PHONE and 33 or 36)
+	local nameSize = textSize(14)
+	local descSize = textSize(11)
+	local emojiSize = textSize(24)
+	local leftPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local rightPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local textLeft = iconS + leftPad + (IS_TINY_PHONE and 4 or 8)
+	local textRight = btnW + rightPad + (IS_TINY_PHONE and 8 or 16)
+	
+	-- Check gamepass once (not per card)
+	local hasGamepass = self:checkGamepassOwnership("MAFIA")
+	
+	for i, family in ipairs(families) do
+		local card = Instance.new("Frame")
+		card.Name = "MobCard_" .. family.id
+		card.Size = UDim2.new(1, 0, 0, cardH)
+		card.BackgroundColor3 = C.White
+		card.LayoutOrder = i
+		card.ZIndex = 84
+		card.Parent = parent
+		UI.corner(card, px(14))
+		UI.stroke(card, 1, 0.85, C.Gray200)
+		
+		-- Emoji icon
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, iconS, 0, iconS)
+		iconFrame.Position = UDim2.new(0, leftPad, 0.5, -iconS/2)
+		iconFrame.BackgroundColor3 = C.Gray100
+		iconFrame.ZIndex = 85
+		iconFrame.Parent = card
+		UI.corner(iconFrame, px(12))
+		
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = emojiSize
+		iconLabel.Text = family.emoji
+		iconLabel.ZIndex = 86
+		iconLabel.Parent = iconFrame
+		
+		-- Family name
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(1, -textLeft - textRight, 0, nameSize + 4)
+		nameLabel.Position = UDim2.new(0, textLeft, 0, IS_TINY_PHONE and 8 or 12)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Font = F.Title
+		nameLabel.TextSize = nameSize
+		nameLabel.TextColor3 = C.Gray900
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		nameLabel.Text = IS_TINY_PHONE and family.name:gsub(" Mafia", ""):gsub(" Bratva", ""):gsub(" Yakuza", ""):gsub(" Cartel", ""):gsub(" Triad", "") or family.name
+		nameLabel.ZIndex = 85
+		nameLabel.Parent = card
+		
+		-- Description
+		local descLabel = Instance.new("TextLabel")
+		descLabel.Size = UDim2.new(1, -textLeft - textRight, 0, descSize + 4)
+		descLabel.Position = UDim2.new(0, textLeft, 0, (IS_TINY_PHONE and 8 or 12) + nameSize + 2)
+		descLabel.BackgroundTransparency = 1
+		descLabel.Font = F.Body
+		descLabel.TextSize = descSize
+		descLabel.TextColor3 = C.Gray500
+		descLabel.TextXAlignment = Enum.TextXAlignment.Left
+		descLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		descLabel.Text = family.desc
+		descLabel.ZIndex = 85
+		descLabel.Parent = card
+		
+		-- Join button
+		local joinBtn = Instance.new("TextButton")
+		joinBtn.Size = UDim2.new(0, btnW, 0, btnH)
+		joinBtn.AnchorPoint = Vector2.new(1, 0.5)
+		joinBtn.Position = UDim2.new(1, -rightPad, 0.5, 0)
+		joinBtn.BackgroundColor3 = hasGamepass and C.Red or C.Gray700
+		joinBtn.Font = F.Button
+		joinBtn.TextSize = textSize(12)
+		joinBtn.TextColor3 = C.White
+		joinBtn.Text = hasGamepass and "Join" or "👑"
+		joinBtn.AutoButtonColor = false
+		joinBtn.ZIndex = 86
+		joinBtn.Parent = card
+		UI.corner(joinBtn, px(10))
+		
+		joinBtn.MouseEnter:Connect(function()
+			UI.tween(joinBtn, TweenInfo.new(0.12), {
+				Size = UDim2.new(0, btnW + 4, 0, btnH + 4),
+				BackgroundColor3 = (hasGamepass and C.RedDark or C.Gray800)
+			})
+		end)
+		joinBtn.MouseLeave:Connect(function()
+			UI.tween(joinBtn, TweenInfo.new(0.12), {
+				Size = UDim2.new(0, btnW, 0, btnH),
+				BackgroundColor3 = hasGamepass and C.Red or C.Gray700
+			})
+		end)
+		
+		joinBtn.MouseButton1Click:Connect(function()
+			if hasGamepass then
+				self:attemptJoinMob(family.id)
+			else
+				self:promptGamepassPurchase("MAFIA", "🔫 Organized Crime", "Join crime families, rise through ranks, run operations!")
+			end
+		end)
+	end
+end
+
+function ActivitiesScreen:createMobStatusCard(parent, mobState)
+	-- CRITICAL FIX #6: Nil safety for mobState
+	if not mobState then
+		return
+	end
+	
+	-- CRITICAL UI FIX: Scale for mobile
+	local cardH = IS_TINY_PHONE and 80 or (IS_SMALL_PHONE and 90 or 100)
+	local pad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local titleSize = textSize(16)
+	local labelSize = textSize(13)
+	local heatSize = textSize(10)
+	local barH = IS_TINY_PHONE and 6 or 8
+	
+	local card = Instance.new("Frame")
+	card.Name = "MobStatusCard"
+	card.Size = UDim2.new(1, 0, 0, cardH)
+	card.BackgroundColor3 = C.Gray800
+	card.LayoutOrder = 1
+	card.ZIndex = 84
+	card.Parent = parent
+	UI.corner(card, px(14))
+	
+	-- Family name
+	local familyLabel = Instance.new("TextLabel")
+	familyLabel.Size = UDim2.new(1, -pad*2, 0, titleSize + 8)
+	familyLabel.Position = UDim2.new(0, pad, 0, pad)
+	familyLabel.BackgroundTransparency = 1
+	familyLabel.Font = F.Title
+	familyLabel.TextSize = titleSize
+	familyLabel.TextColor3 = C.White
+	familyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	familyLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	familyLabel.Text = (mobState.familyEmoji or "🔫") .. " " .. (mobState.familyName or "Crime Family")
+	familyLabel.ZIndex = 85
+	familyLabel.Parent = card
+	
+	-- Rank + Respect row
+	local row2Y = pad + titleSize + 6
+	local rowH = labelSize + 4
+	
+	local rankLabel = Instance.new("TextLabel")
+	rankLabel.Size = UDim2.new(0.5, -pad, 0, rowH)
+	rankLabel.Position = UDim2.new(0, pad, 0, row2Y)
+	rankLabel.BackgroundTransparency = 1
+	rankLabel.Font = F.Medium
+	rankLabel.TextSize = labelSize
+	rankLabel.TextColor3 = C.Gray300
+	rankLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rankLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	rankLabel.Text = (mobState.rankEmoji or "") .. " " .. (mobState.rankName or "Associate")
+	rankLabel.ZIndex = 85
+	rankLabel.Parent = card
+	
+	-- CRITICAL FIX #37: Show progress to next rank
+	local currentRespect = mobState.respect or 0
+	local currentRankLevel = mobState.rankLevel or 1
+	local nextRankRespect = nil
+	
+	-- Calculate next rank requirement (synced with reduced requirements)
+	local rankRequirements = { 0, 50, 150, 400, 1000 }
+	if currentRankLevel < #rankRequirements then
+		nextRankRespect = rankRequirements[currentRankLevel + 1]
+	end
+	
+	local respectText = "💪 " .. currentRespect
+	if nextRankRespect then
+		respectText = respectText .. "/" .. nextRankRespect
+	else
+		respectText = respectText .. " (MAX RANK)"
+	end
+	
+	local respectLabel = Instance.new("TextLabel")
+	respectLabel.Size = UDim2.new(0.5, -pad, 0, rowH)
+	respectLabel.Position = UDim2.new(0.5, 0, 0, row2Y)
+	respectLabel.BackgroundTransparency = 1
+	respectLabel.Font = F.Medium
+	respectLabel.TextSize = labelSize
+	respectLabel.TextColor3 = C.Gray300
+	respectLabel.TextXAlignment = Enum.TextXAlignment.Left
+	respectLabel.Text = respectText
+	respectLabel.ZIndex = 85
+	respectLabel.Parent = card
+	
+	-- Heat bar
+	local barY = row2Y + rowH + 4
+	local heatBg = Instance.new("Frame")
+	heatBg.Size = UDim2.new(1, -pad*2, 0, barH)
+	heatBg.Position = UDim2.new(0, pad, 0, barY)
+	heatBg.BackgroundColor3 = C.Gray600
+	heatBg.ZIndex = 85
+	heatBg.Parent = card
+	UI.corner(heatBg, px(4))
+	
+	local heatFill = Instance.new("Frame")
+	-- CRITICAL FIX #33: Clamp heat fill to prevent overflow
+	local heatPercent = math.min(1, math.max(0, (mobState.heat or 0) / 100))
+	heatFill.Size = UDim2.new(heatPercent, 0, 1, 0)
+	heatFill.BackgroundColor3 = C.Red
+	heatFill.ZIndex = 86
+	heatFill.Parent = heatBg
+	UI.corner(heatFill, px(4))
+	
+	local heatLabel = Instance.new("TextLabel")
+	heatLabel.Size = UDim2.new(1, -pad*2, 0, heatSize + 4)
+	heatLabel.Position = UDim2.new(0, pad, 0, barY + barH + 2)
+	heatLabel.BackgroundTransparency = 1
+	heatLabel.Font = F.Body
+	heatLabel.TextSize = heatSize
+	heatLabel.TextColor3 = C.Gray400
+	heatLabel.TextXAlignment = Enum.TextXAlignment.Left
+	heatLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	-- CRITICAL FIX #32: Clamp heat to 0-100 to prevent display issues
+	local heatVal = math.min(100, math.max(0, mobState.heat or 0))
+	local heatStatus = heatVal > 70 and "Cops watching!" or (heatVal > 40 and "Noticed" or "Laying low")
+	heatLabel.Text = "🔥 " .. heatVal .. "% - " .. heatStatus
+	heatLabel.ZIndex = 85
+	heatLabel.Parent = card
+end
+
+function ActivitiesScreen:createMobOperationsCards(parent, mobState)
+	-- CRITICAL FIX #5: Nil safety for mobState
+	if not mobState then
+		return
+	end
+	
+	-- Get available operations based on rank
+	-- CRITICAL FIX #38: Added entry-level operations matching LifeBackend
+	local operations = {
+		{ id = "collect_debts", name = "Collect Debts", shortName = "Collect", emoji = "💵", risk = 25, reward = "$1K", minRank = 1 },
+		{ id = "run_numbers", name = "Run Numbers", shortName = "Numbers", emoji = "🔢", risk = 15, reward = "$500", minRank = 1 },
+		{ id = "intimidate", name = "Intimidate Business", shortName = "Intimidate", emoji = "😠", risk = 35, reward = "$1.5K", minRank = 1 },
+		{ id = "protection", name = "Protection Racket", shortName = "Protection", emoji = "💰", risk = 20, reward = "$2K", minRank = 1 },
+		{ id = "gambling", name = "Run Gambling Ring", shortName = "Gambling", emoji = "🎰", risk = 30, reward = "$5K", minRank = 1 },
+		{ id = "smuggling", name = "Smuggle Goods", shortName = "Smuggle", emoji = "📦", risk = 40, reward = "$10K", minRank = 2 },
+		{ id = "heist", name = "Plan a Heist", shortName = "Heist", emoji = "🏦", risk = 60, reward = "$100K", minRank = 3 },
+		{ id = "hitjob", name = "Hit Job", shortName = "Hit", emoji = "🎯", risk = 80, reward = "$25K", minRank = 4 },
+	}
+	
+	-- CRITICAL UI FIX: Scale for mobile
+	local cardH = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 60 or 65)
+	local iconS = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 38 or 44)
+	local btnW = IS_TINY_PHONE and 42 or (IS_SMALL_PHONE and 48 or 55)
+	local btnH = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 29 or 32)
+	local pad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local nameSize = textSize(13)
+	local infoSize = textSize(11)
+	local emojiSize = textSize(20)
+	local textLeft = iconS + pad + (IS_TINY_PHONE and 4 or 8)
+	local textRight = btnW + pad + (IS_TINY_PHONE and 6 or 12)
+	
+	local currentRank = (mobState and mobState.rankLevel) or 1
+	
+	for i, op in ipairs(operations) do
+		local unlocked = currentRank >= op.minRank
+		
+		local card = Instance.new("Frame")
+		card.Name = "OpCard_" .. op.id
+		card.Size = UDim2.new(1, 0, 0, cardH)
+		card.BackgroundColor3 = unlocked and C.White or C.Gray100
+		card.LayoutOrder = i + 10
+		card.ZIndex = 84
+		card.Parent = parent
+		UI.corner(card, px(14))
+		UI.stroke(card, 1, 0.85, C.Gray200)
+		
+		-- Emoji
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, iconS, 0, iconS)
+		iconFrame.Position = UDim2.new(0, pad, 0.5, -iconS/2)
+		iconFrame.BackgroundColor3 = unlocked and C.RedPale or C.Gray200
+		iconFrame.ZIndex = 85
+		iconFrame.Parent = card
+		UI.corner(iconFrame, px(12))
+		
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = emojiSize
+		iconLabel.Text = unlocked and op.emoji or "🔒"
+		iconLabel.ZIndex = 86
+		iconLabel.Parent = iconFrame
+		
+		-- Name (use shortName for tiny phones)
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(1, -textLeft - textRight, 0, nameSize + 4)
+		nameLabel.Position = UDim2.new(0, textLeft, 0, IS_TINY_PHONE and 6 or 10)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Font = F.Title
+		nameLabel.TextSize = nameSize
+		nameLabel.TextColor3 = unlocked and C.Gray900 or C.Gray400
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		nameLabel.Text = IS_TINY_PHONE and op.shortName or op.name
+		nameLabel.ZIndex = 85
+		nameLabel.Parent = card
+		
+		-- Risk/Reward
+		local infoLabel = Instance.new("TextLabel")
+		infoLabel.Size = UDim2.new(1, -textLeft - textRight, 0, infoSize + 4)
+		infoLabel.Position = UDim2.new(0, textLeft, 0, (IS_TINY_PHONE and 6 or 10) + nameSize + 2)
+		infoLabel.BackgroundTransparency = 1
+		infoLabel.Font = F.Body
+		infoLabel.TextSize = infoSize
+		infoLabel.TextColor3 = C.Gray500
+		infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+		infoLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		infoLabel.Text = unlocked and (op.risk .. "% • " .. op.reward) or ("Rank " .. op.minRank)
+		infoLabel.ZIndex = 85
+		infoLabel.Parent = card
+		
+		-- Do button
+		local doBtn = Instance.new("TextButton")
+		doBtn.Size = UDim2.new(0, btnW, 0, btnH)
+		doBtn.AnchorPoint = Vector2.new(1, 0.5)
+		doBtn.Position = UDim2.new(1, -pad, 0.5, 0)
+		doBtn.BackgroundColor3 = unlocked and C.Red or C.Gray300
+		doBtn.Font = F.Button
+		doBtn.TextSize = textSize(12)
+		doBtn.TextColor3 = C.White
+		doBtn.Text = unlocked and "Do" or "🔒"
+		doBtn.AutoButtonColor = false
+		doBtn.ZIndex = 86
+		doBtn.Parent = card
+		UI.corner(doBtn, px(8))
+		
+		if unlocked then
+			doBtn.MouseButton1Click:Connect(function()
+				self:doMobOperation(op.id, op.name)
+			end)
+		end
+	end
+	
+	-- Leave family button (scaled for mobile)
+	local leaveCardH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 45 or 50)
+	local leaveBtnH = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 32 or 36)
+	local leavePad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	
+	local leaveCard = Instance.new("Frame")
+	leaveCard.Name = "LeaveCard"
+	leaveCard.Size = UDim2.new(1, 0, 0, leaveCardH)
+	leaveCard.BackgroundColor3 = C.White
+	leaveCard.LayoutOrder = 100
+	leaveCard.ZIndex = 84
+	leaveCard.Parent = parent
+	UI.corner(leaveCard, px(14))
+	UI.stroke(leaveCard, 1, 0.85, C.Gray200)
+	
+	local leaveBtn = Instance.new("TextButton")
+	leaveBtn.Size = UDim2.new(1, -leavePad*2, 0, leaveBtnH)
+	leaveBtn.Position = UDim2.new(0, leavePad, 0.5, -leaveBtnH/2)
+	leaveBtn.BackgroundColor3 = C.Gray200
+	leaveBtn.Font = F.Button
+	leaveBtn.TextSize = textSize(13)
+	leaveBtn.TextColor3 = C.Gray700
+	leaveBtn.Text = IS_TINY_PHONE and "🚪 Leave" or "🚪 Leave the Family (Risky!)"
+	leaveBtn.AutoButtonColor = false
+	leaveBtn.ZIndex = 85
+	leaveBtn.Parent = leaveCard
+	UI.corner(leaveBtn, px(10))
+	
+	leaveBtn.MouseButton1Click:Connect(function()
+		self:attemptLeaveMob()
+	end)
+end
+
+function ActivitiesScreen:attemptJoinMob(familyId)
+	log("Attempting to join mob:", familyId)
+	local JoinMob = getRemote("JoinMob")
+	if JoinMob then
+		-- CRITICAL FIX #4: Add pcall protection
+		local success, result = pcall(function()
+			return JoinMob:InvokeServer(familyId)
+		end)
+		if success and result and result.success then
+			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
+			
+			-- CRITICAL FIX #9: Update local mob state after joining
+			if result.mobState then
+				self.playerState.MobState = result.mobState
+				log("Updated local MobState after joining:", result.mobState.familyId, result.mobState.inMob)
+			else
+				-- Fallback: Create a basic mob state if server didn't return one
+				-- CRITICAL FIX #40: Use rankLevel not rankIndex for consistency
+				self.playerState.MobState = self.playerState.MobState or {}
+				self.playerState.MobState.inMob = true
+				self.playerState.MobState.familyId = familyId
+				self.playerState.MobState.rankLevel = 1
+				self.playerState.MobState.respect = 0
+				self.playerState.MobState.heat = 0
+				self.playerState.MobState.loyalty = 50
+				log("Created fallback MobState for:", familyId)
+			end
+			
+			-- Refresh the crime tab to show mob activities
+			task.defer(function()
+				self:switchTab("crime")
+			end)
+		elseif success and result then
+			self:showResult(false, result.message or "The family rejected you.", "❌")
+		else
+			self:showResult(false, "Connection error. Try again.", "❌")
+		end
+	else
+		-- Fallback for testing: Create a local mob state
+		-- CRITICAL FIX #41: Use rankLevel not rankIndex for consistency
+		self.playerState.MobState = self.playerState.MobState or {}
+		self.playerState.MobState.inMob = true
+		self.playerState.MobState.familyId = familyId
+		self.playerState.MobState.rankLevel = 1
+		self.playerState.MobState.respect = 0
+		self.playerState.MobState.heat = 0
+		self.playerState.MobState.loyalty = 50
+		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		task.defer(function()
+			self:switchTab("crime")
+		end)
+	end
+end
+
+function ActivitiesScreen:attemptLeaveMob()
+	log("Attempting to leave mob")
+	local LeaveMob = getRemote("LeaveMob")
+	if LeaveMob then
+		-- CRITICAL FIX #4: Add pcall protection
+		local success, result = pcall(function()
+			return LeaveMob:InvokeServer()
+		end)
+		if success and result and result.success then
+			self:showResult(true, result.message or "You've left the family. Watch your back...", "🚪")
+			
+			-- CRITICAL FIX #10: Clear local mob state after leaving
+			if self.playerState.MobState then
+				self.playerState.MobState.inMob = false
+				self.playerState.MobState.familyId = nil
+				log("Cleared local MobState after leaving")
+			end
+			
+			-- Refresh the crime tab to show join options
+			task.defer(function()
+				self:switchTab("crime")
+			end)
+		elseif success and result then
+			self:showResult(false, result.message or "You can't leave... not alive anyway.", "💀")
+		else
+			self:showResult(false, "Connection error. Try again.", "❌")
+		end
+	else
+		-- Fallback for testing
+		if self.playerState.MobState then
+			self.playerState.MobState.inMob = false
+			self.playerState.MobState.familyId = nil
+		end
+		self:showResult(true, "You've left the crime family. They won't forget this...", "🚪")
+		task.defer(function()
+			self:switchTab("crime")
+		end)
+	end
+end
+
+function ActivitiesScreen:doMobOperation(opId, opName)
+	log("Doing mob operation:", opId)
+	local DoMobOp = getRemote("DoMobOperation")
+	if DoMobOp then
+		-- CRITICAL FIX #3: Add pcall protection for server calls
+		local success, result = pcall(function()
+			return DoMobOp:InvokeServer(opId)
+		end)
+		if success and result and result.success then
+			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
+			self:showResult(true, msg, "💰")
+			
+			-- CRITICAL FIX #8: Use playerState instead of state (consistency fix)
+			if self.playerState and self.playerState.MobState then
+				if result.respect then
+					self.playerState.MobState.respect = (self.playerState.MobState.respect or 0) + result.respect
+				end
+				if result.heat then
+					-- CRITICAL FIX #36: Clamp heat to 0-100 on client too
+					self.playerState.MobState.heat = math.min(100, math.max(0, (self.playerState.MobState.heat or 0) + result.heat))
+				end
+				if result.promoted then
+					-- CRITICAL FIX #43: Update rank info locally too
+					if result.newRank then
+						local currentLevel = self.playerState.MobState.rankLevel or 1
+						self.playerState.MobState.rankLevel = currentLevel + 1
+						self.playerState.MobState.rankName = result.newRank
+					end
+					if result.newRankEmoji then
+						self.playerState.MobState.rankEmoji = result.newRankEmoji
+					end
+					-- Refresh tab to show new rank
+					task.delay(0.5, function()
+						self:switchTab("crime")
+					end)
+				end
+			end
+		elseif success and result then
+			local msg = result.message or "The operation failed..."
+			-- CRITICAL FIX #42: If arrested, update local state (using playerState not state)
+			if result.arrested and self.playerState then
+				self.playerState.InJail = true
+			end
+			self:showResult(false, msg, result.arrested and "🚔" or "❌")
+		else
+			self:showResult(false, "Connection error. Try again.", "❌")
+		end
+	else
+		-- Fallback for testing
+		self:showResult(true, opName .. " completed! You earned cash and respect.", "💰")
+	end
+	self:updateInfoBar()
+	self:switchTab("crime") -- Refresh
+end
+
+function ActivitiesScreen:getMobState()
+	-- CRITICAL FIX #7: Use playerState instead of state (consistency fix)
+	if self.playerState and self.playerState.MobState then
+		return self.playerState.MobState
+	end
+	return nil
+end
+
+function ActivitiesScreen:checkGamepassOwnership(gamepassKey)
+	-- CRITICAL FIX #2: Add pcall protection for remote calls
+	local CheckGamepass = getRemote("CheckGamepass")
+	if CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer(gamepassKey)
+		end)
+		if success then
+			return owns == true
+		end
+	end
+	return false
+end
+
+function ActivitiesScreen:promptGamepassPurchase(gamepassKey, title, description)
+	-- Show purchase prompt modal (BitLife style)
+	self:showGamepassPrompt(gamepassKey, title, description)
+end
+
+function ActivitiesScreen:showGamepassPrompt(gamepassKey, title, description)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Premium BitLife-style purchase prompt with proper mobile scaling
+	-- Matches the quality of AssetsScreen result modal
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if self.gamepassPromptOverlay then
+		self.gamepassPromptOverlay:Destroy()
+	end
+	
+	-- CRITICAL: Mobile-responsive dimensions
+	local modalWidth = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local modalHeight = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local padX = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 20)
+	local padY = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 14 or 18)
+	local crownSize = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 52 or 64)
+	local titleSize = textSize(IS_TINY_PHONE and 16 or 20)
+	local descSize = textSize(IS_TINY_PHONE and 12 or 14)
+	local btnTextSize = textSize(IS_TINY_PHONE and 14 or 16)
+	local btnHeight = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 44 or 50)
+	
+	-- Overlay background
+	local overlay = Instance.new("Frame")
+	overlay.Name = "GamepassPromptOverlay"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = C.Black
+	overlay.BackgroundTransparency = 0.35
+	overlay.ZIndex = 200
+	overlay.Parent = self.screenGui
+	self.gamepassPromptOverlay = overlay
+	
+	-- Click outside to close (BEHIND container)
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 200
+	closeArea.Parent = overlay
+	closeArea.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	-- Premium shadow
+	local shadowOffset = IS_TINY_PHONE and 6 or 10
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(0, modalWidth + shadowOffset, 0, modalHeight + shadowOffset)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, shadowOffset/2, 0.5, shadowOffset/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.65
+	shadow.ZIndex = 201
+	shadow.Parent = overlay
+	UI.corner(shadow, IS_TINY_PHONE and 22 or 28)
+	
+	-- Gold outer shell (premium feel)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = Color3.fromRGB(255, 200, 50) -- Rich gold
+	shell.ZIndex = 202
+	shell.Parent = overlay
+	UI.corner(shell, IS_TINY_PHONE and 20 or 26)
+	
+	-- Gold stroke for extra premium
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = Color3.fromRGB(200, 150, 0)
+	shellStroke.Thickness = 2
+	shellStroke.Parent = shell
+	
+	-- White inner card
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(1, -8, 1, -8)
+	inner.Position = UDim2.new(0, 4, 0, 4)
+	inner.BackgroundColor3 = C.White
+	inner.ZIndex = 203
+	inner.Parent = shell
+	UI.corner(inner, IS_TINY_PHONE and 18 or 24)
+	
+	-- Crown icon frame (circular gold bg)
+	local crownFrame = Instance.new("Frame")
+	crownFrame.Size = UDim2.new(0, crownSize, 0, crownSize)
+	crownFrame.AnchorPoint = Vector2.new(0.5, 0)
+	crownFrame.Position = UDim2.new(0.5, 0, 0, padY)
+	crownFrame.BackgroundColor3 = Color3.fromRGB(255, 240, 180)
+	crownFrame.ZIndex = 204
+	crownFrame.Parent = inner
+	UI.corner(crownFrame, crownSize/2)
+	
+	local crownLabel = Instance.new("TextLabel")
+	crownLabel.Size = UDim2.fromScale(1, 1)
+	crownLabel.BackgroundTransparency = 1
+	crownLabel.Font = F.Body
+	crownLabel.TextSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 34 or 40)
+	crownLabel.Text = "👑"
+	crownLabel.ZIndex = 205
+	crownLabel.Parent = crownFrame
+	
+	-- Title (properly positioned below crown)
+	local titleY = padY + crownSize + (IS_TINY_PHONE and 8 or 14)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -padX*2, 0, titleSize + 8)
+	titleLabel.Position = UDim2.new(0, padX, 0, titleY)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = titleSize
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = title
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 204
+	titleLabel.Parent = inner
+	
+	-- Description (properly spaced below title)
+	local descY = titleY + titleSize + (IS_TINY_PHONE and 6 or 12)
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -padX*2, 0, IS_TINY_PHONE and 40 or 56)
+	descLabel.Position = UDim2.new(0, padX, 0, descY)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = descSize
+	descLabel.TextColor3 = C.Gray500
+	descLabel.TextWrapped = true
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
+	descLabel.Text = description
+	descLabel.ZIndex = 204
+	descLabel.Parent = inner
+	
+	-- Buy button (positioned from bottom)
+	local btnGap = IS_TINY_PHONE and 8 or 12
+	local buyBtn = Instance.new("TextButton")
+	buyBtn.Size = UDim2.new(1, -padX*2, 0, btnHeight)
+	buyBtn.Position = UDim2.new(0, padX, 1, -(btnHeight*2 + btnGap + padY))
+	buyBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+	buyBtn.Font = F.Button
+	buyBtn.TextSize = btnTextSize
+	buyBtn.TextColor3 = C.Gray900
+	buyBtn.Text = "👑 Unlock Now"
+	buyBtn.AutoButtonColor = false
+	buyBtn.ZIndex = 204
+	buyBtn.Parent = inner
+	UI.corner(buyBtn, IS_TINY_PHONE and 10 or 14)
+	
+	-- Hover effect
+	buyBtn.MouseEnter:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 180, 30) })
+	end)
+	buyBtn.MouseLeave:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 200, 50) })
+	end)
+	
+	buyBtn.MouseButton1Click:Connect(function()
+		-- Prompt actual Roblox purchase
+		local PromptPurchase = getRemote("PromptGamepass")
+		if PromptPurchase then
+			PromptPurchase:FireServer(gamepassKey)
+		end
+		overlay:Destroy()
+	end)
+	
+	-- Close button (below buy button)
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(1, -padX*2, 0, btnHeight - 8)
+	closeBtn.Position = UDim2.new(0, padX, 1, -(btnHeight - 8 + padY))
+	closeBtn.BackgroundColor3 = C.Gray100
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	closeBtn.TextColor3 = C.Gray500
+	closeBtn.Text = "Maybe Later"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 204
+	closeBtn.Parent = inner
+	UI.corner(closeBtn, IS_TINY_PHONE and 8 or 12)
+	
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray200 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
+	end)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- MISCHIEF TAB - Age-appropriate troublemaking!
+-- ═══════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateMischief()
+	self:updateInfoBar()
+	
+	local age = self:getAge()
+	
+	-- Determine which mischief activities based on age
+	local activities = {}
+	local headerText
+	local headerColor
+	local warningText
+	
+	if age < 5 then
+		-- Baby/Toddler mischief
+		for _, item in ipairs(BabyMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Baby Mischief"
+		headerColor = C.Red
+		warningText = "Be a little troublemaker! These are normal baby things... mostly."
+	elseif age < 13 then
+		-- Child mischief
+		for _, item in ipairs(ChildMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Kid Trouble"
+		headerColor = C.Red
+		warningText = "Being a kid means getting into trouble sometimes. Just don't get caught!"
+	else
+		-- Teen mischief
+		for _, item in ipairs(TeenMischief) do
+			if age >= (item.minAge or 0) and age <= (item.maxAge or 99) then
+				table.insert(activities, item)
+			end
+		end
+		headerText = "😈 Teen Rebellion"
+		headerColor = C.Red
+		warningText = "Being a teenager is about pushing limits. Some of these could get you in real trouble!"
 	end
 
-	-- Organized Crime Activities Section
+	-- Warning/Info card
+	local warningCard = Instance.new("Frame")
+	warningCard.Size = UDim2.new(1, 0, 0, 70)
+	warningCard.BackgroundColor3 = C.RedPale
+	warningCard.LayoutOrder = 0
+	warningCard.ZIndex = 82
+	warningCard.Parent = self.contentScroll
+	UI.corner(warningCard, 16)
+	UI.stroke(warningCard, 1, 0.7, C.Red)
+
+	local warnIcon = Instance.new("TextLabel")
+	warnIcon.Size = UDim2.new(0, 44, 0, 44)
+	warnIcon.Position = UDim2.new(0, 12, 0.5, -22)
+	warnIcon.BackgroundTransparency = 1
+	warnIcon.Font = Enum.Font.GothamBold
+	warnIcon.TextSize = 32
+	if age < 5 then
+		warnIcon.Text = "👶"
+	elseif age < 13 then
+		warnIcon.Text = "🧒"
+	else
+		warnIcon.Text = "😈"
+	end
+	warnIcon.ZIndex = 83
+	warnIcon.Parent = warningCard
+
+	local warnText = Instance.new("TextLabel")
+	warnText.Size = UDim2.new(1, -75, 1, -16)
+	warnText.Position = UDim2.new(0, 65, 0, 8)
+	warnText.BackgroundTransparency = 1
+	warnText.Font = F.Body
+	warnText.TextSize = 13
+	warnText.TextColor3 = C.RedDark
+	warnText.TextXAlignment = Enum.TextXAlignment.Left
+	warnText.TextWrapped = true
+	warnText.Text = warningText
+	warnText.ZIndex = 83
+	warnText.Parent = warningCard
+
+	-- Mischief section
 	local section = Instance.new("Frame")
-	section.Name = "MobSection"
+	section.Name = "MischiefSection"
 	section.Size = UDim2.new(1, 0, 0, 0)
 	section.AutomaticSize = Enum.AutomaticSize.Y
 	section.BackgroundColor3 = C.White
@@ -1211,8 +2274,8 @@ function ActivitiesScreen:populateMob()
 	header.Parent = section
 
 	local badge = Instance.new("Frame")
-	badge.Size = UDim2.new(0, 145, 0, 32)
-	badge.BackgroundColor3 = C.Gray800
+	badge.Size = UDim2.new(0, 140, 0, 32)
+	badge.BackgroundColor3 = headerColor
 	badge.ZIndex = 84
 	badge.Parent = header
 	UI.pill(badge)
@@ -1223,394 +2286,187 @@ function ActivitiesScreen:populateMob()
 	badgeLabel.Font = F.Button
 	badgeLabel.TextSize = 14
 	badgeLabel.TextColor3 = C.White
-	badgeLabel.Text = "🤵 Organized Crime"
+	badgeLabel.Text = headerText
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
-	-- Create cards for each organized crime activity
-	for i, item in ipairs(OrganizedCrime) do
-		self:createMobCard(section, item, i)
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Size = UDim2.new(0, 80, 1, 0)
+	countLabel.Position = UDim2.new(0, 150, 0, 0)
+	countLabel.BackgroundTransparency = 1
+	countLabel.Font = F.Medium
+	countLabel.TextSize = 13
+	countLabel.TextColor3 = C.Gray400
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Text = #activities .. " options"
+	countLabel.ZIndex = 84
+	countLabel.Parent = header
+
+	-- Create cards for each mischief activity
+	for i, item in ipairs(activities) do
+		self:createMischiefCard(section, item, i)
 	end
 end
 
-function ActivitiesScreen:createMobCard(parent, item, order)
-	local canDo, reason = self:canDoMobActivity(item)
-	local inMob = self:isInMob()
-
-	-- Special handling for join/leave mob
-	local isJoinMob = item.id == "join_mob"
-	local isLeaveMob = item.id == "leave_mob"
-
-	-- Skip join_mob if already in mob, skip leave_mob if not in mob
-	if isJoinMob and inMob then return end
-	if isLeaveMob and not inMob then return end
-
-	-- Skip activities that require mob membership if not in mob (except join_mob)
-	if item.rankRequired and not inMob then return end
-
+-- Create a mischief activity card
+function ActivitiesScreen:createMischiefCard(parent, item, index)
+	local age = self:getAge()
 	local card = Instance.new("Frame")
-	card.Name = item.id
-	card.Size = UDim2.new(1, 0, 0, 95)
+	card.Name = "MischiefCard_" .. item.id
+	card.Size = UDim2.new(1, 0, 0, 65)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
+	card.LayoutOrder = index
+	card.ZIndex = 84
 	card.Parent = parent
 	UI.corner(card, 14)
-	UI.stroke(card, canDo and 1 or 1, canDo and 0.6 or 0.88, canDo and C.Gray700 or C.Gray200)
+	UI.stroke(card, 1, 0.85, C.Gray200)
 
-	-- Icon with emoji
+	-- Emoji icon
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 58, 0, 58)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -29)
-	iconFrame.BackgroundColor3 = canDo and C.Gray100 or C.Gray50
-	iconFrame.ZIndex = 84
+	iconFrame.Size = UDim2.new(0, 48, 0, 48)
+	iconFrame.Position = UDim2.new(0, 8, 0.5, -24)
+	iconFrame.BackgroundColor3 = C.RedPale
+	iconFrame.ZIndex = 85
 	iconFrame.Parent = card
 	UI.corner(iconFrame, 12)
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
-	iconLabel.Font = F.Body
-	iconLabel.TextSize = 30
-	iconLabel.TextColor3 = canDo and C.Gray800 or C.Gray400
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.TextSize = 26
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 86
 	iconLabel.Parent = iconFrame
 
-	-- Title
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
-	titleLabel.Position = UDim2.new(0, 82, 0, 10)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
-	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
-	titleLabel.Parent = card
+	-- Name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, -130, 0, 22)
+	nameLabel.Position = UDim2.new(0, 65, 0, 10)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.Medium or Enum.Font.GothamMedium
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = C.Gray900
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = item.name
+	nameLabel.ZIndex = 85
+	nameLabel.Parent = card
 
-	-- Risk/Effect badge
-	local badgeText = item.risk and ("Risk: " .. item.risk .. "%") or (item.effect or "")
-	local badgeBg = item.risk and (item.risk >= 60 and C.RedPale or item.risk >= 40 and C.AmberPale or C.GreenPale) or C.GreenPale
-	local badgeColor = item.risk and (item.risk >= 60 and C.RedDark or item.risk >= 40 and C.AmberDark or C.GreenDark) or C.GreenDark
-
-	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, math.max(90, #badgeText * 6 + 24), 0, 24)
-	effectBadge.Position = UDim2.new(0, 82, 0, 35)
-	effectBadge.BackgroundColor3 = badgeBg
-	effectBadge.ZIndex = 84
-	effectBadge.Parent = card
-	UI.pill(effectBadge)
-
+	-- Effect
 	local effectLabel = Instance.new("TextLabel")
-	effectLabel.Size = UDim2.fromScale(1, 1)
+	effectLabel.Size = UDim2.new(1, -130, 0, 18)
+	effectLabel.Position = UDim2.new(0, 65, 0, 34)
 	effectLabel.BackgroundTransparency = 1
-	effectLabel.Font = F.Medium
-	effectLabel.TextSize = 11
-	effectLabel.TextColor3 = badgeColor
-	effectLabel.Text = badgeText .. (item.cost and item.cost > 0 and " | $" .. item.cost or "")
+	effectLabel.Font = F.Body
+	effectLabel.TextSize = 12
+	effectLabel.TextColor3 = C.Gray500
+	effectLabel.TextXAlignment = Enum.TextXAlignment.Left
+	effectLabel.Text = item.effect or ""
 	effectLabel.ZIndex = 85
-	effectLabel.Parent = effectBadge
+	effectLabel.Parent = card
 
-	-- Reward text (if exists)
-	if item.reward then
-		local rewardLabel = Instance.new("TextLabel")
-		rewardLabel.Size = UDim2.new(0.4, 0, 0, 18)
-		rewardLabel.Position = UDim2.new(0, 82, 0, 62)
-		rewardLabel.BackgroundTransparency = 1
-		rewardLabel.Font = F.Body
-		rewardLabel.TextSize = 12
-		rewardLabel.TextColor3 = C.Gray500
-		rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
-		rewardLabel.Text = "💰 " .. item.reward
-		rewardLabel.ZIndex = 84
-		rewardLabel.Parent = card
+	-- Risk indicator if present
+	if item.risk and item.risk > 0 then
+		local riskLabel = Instance.new("TextLabel")
+		riskLabel.Size = UDim2.new(0, 50, 0, 20)
+		riskLabel.AnchorPoint = Vector2.new(1, 0.5)
+		riskLabel.Position = UDim2.new(1, -60, 0.5, 0)
+		riskLabel.BackgroundColor3 = C.RedPale
+		riskLabel.Font = F.Medium
+		riskLabel.TextSize = 11
+		riskLabel.TextColor3 = C.RedDark
+		riskLabel.Text = "⚠️" .. item.risk .. "%"
+		riskLabel.ZIndex = 85
+		riskLabel.Parent = card
+		UI.pill(riskLabel)
 	end
 
-	-- Rank requirement indicator
-	if item.rankRequired then
-		local reqRank = MobRanks[item.rankRequired + 1]
-		if reqRank then
-			local rankIndicator = Instance.new("TextLabel")
-			rankIndicator.Size = UDim2.new(0, 80, 0, 16)
-			rankIndicator.Position = UDim2.new(0, 82, 0, item.reward and 78 or 62)
-			rankIndicator.BackgroundTransparency = 1
-			rankIndicator.Font = F.Body
-			rankIndicator.TextSize = 10
-			rankIndicator.TextColor3 = C.Gray400
-			rankIndicator.TextXAlignment = Enum.TextXAlignment.Left
-			rankIndicator.Text = reqRank.emoji .. " " .. reqRank.name .. "+"
-			rankIndicator.ZIndex = 84
-			rankIndicator.Parent = card
-		end
-	end
+	-- Do button
+	local doBtn = Instance.new("TextButton")
+	doBtn.Size = UDim2.new(0, 50, 0, 36)
+	doBtn.AnchorPoint = Vector2.new(1, 0.5)
+	doBtn.Position = UDim2.new(1, -8, 0.5, 0)
+	doBtn.BackgroundColor3 = C.Red
+	doBtn.Font = F.Button
+	doBtn.TextSize = 13
+	doBtn.TextColor3 = C.White
+	doBtn.Text = "Do It!"
+	doBtn.AutoButtonColor = false
+	doBtn.ZIndex = 86
+	doBtn.Parent = card
+	UI.corner(doBtn, 10)
 
-	-- Action button
-	local actionBtn = Instance.new("TextButton")
-	actionBtn.Size = UDim2.new(0, 80, 0, 46)
-	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
-	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
-	actionBtn.BackgroundColor3 = canDo and (isJoinMob and C.Green or C.Gray800) or C.Gray300
-	actionBtn.Font = F.Button
-	actionBtn.TextSize = 13
-	actionBtn.TextColor3 = canDo and C.White or C.Gray500
-	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
-	actionBtn.Parent = card
-	UI.corner(actionBtn, 12)
+	doBtn.MouseEnter:Connect(function()
+		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark or C.Red })
+	end)
+	doBtn.MouseLeave:Connect(function()
+		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Red })
+	end)
 
-	if canDo then
-		actionBtn.Text = isJoinMob and "Join" or (isLeaveMob and "Leave" or "Do It")
-		actionBtn.MouseEnter:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = isJoinMob and C.GreenDark or C.Gray900 })
-		end)
-		actionBtn.MouseLeave:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = isJoinMob and C.Green or C.Gray800 })
-		end)
-		actionBtn.MouseButton1Click:Connect(function()
-			if isJoinMob then
-				self:showJoinMobModal()
-			else
-				self:doMobActivity(item)
-			end
-		end)
-	else
-		actionBtn.Text = reason or "Locked"
-	end
-end
-
-function ActivitiesScreen:showJoinMobModal()
-	-- Create modal for choosing mob family
-	if self.mobModal then
-		self.mobModal.Visible = true
-		return
-	end
-
-	-- Modal overlay
-	self.mobModal = Instance.new("Frame")
-	self.mobModal.Name = "MobModal"
-	self.mobModal.Size = UDim2.fromScale(1, 1)
-	self.mobModal.BackgroundColor3 = C.Black
-	self.mobModal.BackgroundTransparency = 0.4
-	self.mobModal.ZIndex = 98
-	self.mobModal.Parent = self.screenGui
-
-	-- Modal card
-	local modalCard = Instance.new("Frame")
-	modalCard.Size = UDim2.new(0.92, 0, 0, 520)
-	modalCard.AnchorPoint = Vector2.new(0.5, 0.5)
-	modalCard.Position = UDim2.fromScale(0.5, 0.5)
-	modalCard.BackgroundColor3 = C.White
-	modalCard.ZIndex = 99
-	modalCard.Parent = self.mobModal
-	UI.corner(modalCard, 24)
-
-	-- Title
-	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, 0, 0, 60)
-	title.BackgroundColor3 = C.Gray900
-	title.Font = F.Title
-	title.TextSize = 22
-	title.TextColor3 = C.White
-	title.Text = "🤵 Choose Your Family"
-	title.ZIndex = 100
-	title.Parent = modalCard
-	UI.corner(title, 24)
-
-	-- Fix corner overlap
-	local titleFix = Instance.new("Frame")
-	titleFix.Size = UDim2.new(1, 0, 0, 30)
-	titleFix.Position = UDim2.new(0, 0, 0, 35)
-	titleFix.BackgroundColor3 = C.Gray900
-	titleFix.ZIndex = 100
-	titleFix.Parent = title
-
-	-- Scroll for families
-	local familyScroll = Instance.new("ScrollingFrame")
-	familyScroll.Size = UDim2.new(1, -24, 1, -130)
-	familyScroll.Position = UDim2.new(0, 12, 0, 70)
-	familyScroll.BackgroundTransparency = 1
-	familyScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-	familyScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	familyScroll.ScrollBarThickness = 4
-	familyScroll.ZIndex = 100
-	familyScroll.Parent = modalCard
-
-	local familyLayout = Instance.new("UIListLayout")
-	familyLayout.Padding = UDim.new(0, 10)
-	familyLayout.Parent = familyScroll
-
-	-- Create family cards
-	for i, family in ipairs(MobFamilies) do
-		local familyCard = Instance.new("TextButton")
-		familyCard.Name = family.id
-		familyCard.Size = UDim2.new(1, 0, 0, 70)
-		familyCard.BackgroundColor3 = C.Gray50
-		familyCard.Font = F.Body
-		familyCard.TextSize = 1
-		familyCard.TextTransparency = 1
-		familyCard.Text = ""
-		familyCard.AutoButtonColor = false
-		familyCard.LayoutOrder = i
-		familyCard.ZIndex = 101
-		familyCard.Parent = familyScroll
-		UI.corner(familyCard, 14)
-		UI.stroke(familyCard, 1, 0.85, C.Gray200)
-
-		-- Family emoji
-		local emoji = Instance.new("TextLabel")
-		emoji.Size = UDim2.new(0, 50, 0, 50)
-		emoji.Position = UDim2.new(0, 10, 0.5, -25)
-		emoji.BackgroundColor3 = C.Gray100
-		emoji.Font = F.Body
-		emoji.TextSize = 28
-		emoji.Text = family.emoji
-		emoji.ZIndex = 102
-		emoji.Parent = familyCard
-		UI.corner(emoji, 10)
-
-		-- Family name
-		local name = Instance.new("TextLabel")
-		name.Size = UDim2.new(0.5, 0, 0, 22)
-		name.Position = UDim2.new(0, 70, 0, 10)
-		name.BackgroundTransparency = 1
-		name.Font = F.Title
-		name.TextSize = 16
-		name.TextColor3 = C.Gray900
-		name.TextXAlignment = Enum.TextXAlignment.Left
-		name.Text = family.name
-		name.ZIndex = 102
-		name.Parent = familyCard
-
-		-- Style
-		local style = Instance.new("TextLabel")
-		style.Size = UDim2.new(0.6, 0, 0, 18)
-		style.Position = UDim2.new(0, 70, 0, 32)
-		style.BackgroundTransparency = 1
-		style.Font = F.Body
-		style.TextSize = 12
-		style.TextColor3 = C.Gray500
-		style.TextXAlignment = Enum.TextXAlignment.Left
-		style.Text = family.style
-		style.ZIndex = 102
-		style.Parent = familyCard
-
-		-- Bonus
-		local bonus = Instance.new("TextLabel")
-		bonus.Size = UDim2.new(0, 100, 0, 18)
-		bonus.Position = UDim2.new(0, 70, 0, 50)
-		bonus.BackgroundTransparency = 1
-		bonus.Font = F.Medium
-		bonus.TextSize = 11
-		bonus.TextColor3 = C.Green
-		bonus.TextXAlignment = Enum.TextXAlignment.Left
-		bonus.Text = family.bonus
-		bonus.ZIndex = 102
-		bonus.Parent = familyCard
-
-		familyCard.MouseEnter:Connect(function()
-			UI.tween(familyCard, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
-		end)
-		familyCard.MouseLeave:Connect(function()
-			UI.tween(familyCard, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray50 })
-		end)
-		familyCard.MouseButton1Click:Connect(function()
-			self:joinMobFamily(family)
-		end)
-	end
-
-	-- Close button
-	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(1, -24, 0, 48)
-	closeBtn.Position = UDim2.new(0, 12, 1, -60)
-	closeBtn.BackgroundColor3 = C.Gray300
-	closeBtn.Font = F.Button
-	closeBtn.TextSize = 16
-	closeBtn.TextColor3 = C.Gray700
-	closeBtn.Text = "Cancel"
-	closeBtn.ZIndex = 100
-	closeBtn.Parent = modalCard
-	UI.corner(closeBtn, 12)
-
-	closeBtn.MouseButton1Click:Connect(function()
-		self.mobModal.Visible = false
+	doBtn.MouseButton1Click:Connect(function()
+		self:doMischief(item)
 	end)
 end
 
-function ActivitiesScreen:joinMobFamily(family)
-	log("Joining mob family:", family.name)
-
-	-- Hide modal
-	if self.mobModal then
-		self.mobModal.Visible = false
-	end
-
-	-- Fire remote to server
-	local DoMobAction = remotesFolder and remotesFolder:FindFirstChild("DoMobAction")
-	if DoMobAction then
-		DoMobAction:FireServer("join_mob", { family = family.id })
+-- Execute mischief activity
+function ActivitiesScreen:doMischief(item)
+	log("Doing mischief:", item.id, item.name)
+	
+	-- Use DoActivity remote for mischief (server handles it)
+	-- CRITICAL FIX: Add pcall protection for robust error handling
+	if DoActivity then
+		local success, result = pcall(function()
+			return DoActivity:InvokeServer(item.id)
+		end)
+		if success and result then
+			if result.success then
+				self:showResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item.emoji)
+			else
+				self:showResult(false, result.message or "That didn't work out...", "😅")
+			end
+		elseif not success then
+			-- Server error - use fallback message
+			local messages = {
+				cry_loudly = "You cry SO LOUD! Everyone comes running!",
+				throw_food = "SPLAT! Food goes everywhere! Mom is NOT happy.",
+				break_toy = "Oops! The toy is in pieces now...",
+				draw_walls = "Your artistic masterpiece covers the whole wall!",
+				refuse_nap = "NO NAP! You're cranky but FREE!",
+				tantrum = "You SCREAM and kick! Maximum drama!",
+				bite_sibling = "CHOMP! Your sibling runs away crying!",
+				hide_mom_keys = "The keys are hidden REALLY well. Mom searches for an hour!",
+				skip_chores = "You sneak away from chores. Hope no one notices!",
+				prank_sibling = "GOTCHA! Your sibling falls for it!",
+				sneak_candy = "You grab candy when no one's looking. Sweet success!",
+				stay_up_late = "You watch TV under the covers until midnight!",
+				cheat_test = "You peek at your neighbor's paper...",
+				talk_back = "You give your parents some ATTITUDE!",
+				blame_sibling = "It wasn't ME, it was THEM!",
+				fake_sick = "Cough cough... you're suddenly 'too sick' for school!",
+				toilet_paper_house = "The neighbor's house is now decorated in TP!",
+				ring_doorbell_run = "DING DONG... and you're GONE!",
+				sneak_out = "You climb out the window into the night!",
+				skip_class = "You ditch class and hang out instead!",
+				party_crash = "You show up uninvited but act like you belong!",
+				fake_id = "You get a fake ID... hope it works!",
+				vandalize = "You leave your mark on something...",
+				bully = "You pick on someone smaller...",
+				steal_parents_car = "You take the car for a joyride!",
+				break_curfew = "It's way past curfew and you're still out!",
+				drink_underage = "You drink at a party... hope no one tells!",
+				smoke = "You try a cigarette. Gross!",
+			}
+			
+			local msg = messages[item.id] or ("You " .. string.lower(item.name) .. "!")
+			self:showResult(true, msg, item.emoji)
+		end
 	else
-		-- Fallback: use generic activity remote
-		if DoActivity then
-			DoActivity:FireServer("join_mob", { family = family.id })
-		end
+		logWarn("DoActivity remote not found!")
+		self:showResult(false, "Something went wrong!", "❌")
 	end
-
-	-- Show result (server will send actual result)
-	self:showMobResult({
-		title = "Welcome to " .. family.name,
-		body = "You are now an Associate of the " .. family.name .. ". Prove your loyalty and rise through the ranks!",
-		emoji = family.emoji,
-		isPositive = true,
-	})
-end
-
-function ActivitiesScreen:doMobActivity(item)
-	log("Doing mob activity:", item.name)
-
-	-- Fire remote to server
-	local DoMobAction = remotesFolder and remotesFolder:FindFirstChild("DoMobAction")
-	if DoMobAction then
-		DoMobAction:FireServer(item.id, {})
-	else
-		-- Fallback: use CommitCrime remote for risky activities
-		if item.risk and CommitCrime then
-			CommitCrime:FireServer(item.id)
-		elseif DoActivity then
-			DoActivity:FireServer(item.id)
-		end
-	end
-end
-
-function ActivitiesScreen:showMobResult(data)
-	-- Use existing result modal or create one
-	if self.resultModal then
-		local isPositive = data.isPositive ~= false
-
-		-- Update modal colors
-		local shellColor = isPositive and C.Green or C.Red
-		if self.resultModal.shell then
-			self.resultModal.shell.BackgroundColor3 = shellColor
-		end
-		if self.resultModal.okButton then
-			self.resultModal.okButton.BackgroundColor3 = shellColor
-		end
-
-		-- Update content
-		if self.resultModal.emoji then
-			self.resultModal.emoji.Text = data.emoji or (isPositive and "✨" or "😢")
-		end
-		if self.resultModal.title then
-			self.resultModal.title.Text = data.title or "Result"
-		end
-		if self.resultModal.body then
-			self.resultModal.body.Text = data.body or ""
-		end
-
-		-- Show modal
-		UI.showModal(self.resultModal)
-	end
+	
+	-- Update UI
+	self:updateInfoBar()
 end
 
 function ActivitiesScreen:populatePrison()
@@ -1742,57 +2598,206 @@ end
 function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, paleColor)
 	local age = self:getAge()
 	local money = self:getMoney()
+	local flags = self:getFlags()
 	local cost = item.cost or 0
-	local canDo = age >= item.minAge and money >= cost and not self:isInJail()
+	local accentDark = accentColor:Lerp(C.Black, 0.2)
+	
+	-- CRITICAL FIX: Check for activity-specific flags like requiresFlag and maxAge
+	local meetsFlag = true
+	if item.requiresFlag then
+		meetsFlag = flags[item.requiresFlag] == true
+	end
+	local meetsMaxAge = true
+	if item.maxAge then
+		meetsMaxAge = age <= item.maxAge
+	end
+	
+	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 95)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = canDo and 0.92 or 0.96
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 18)
+	
+	-- Colored shell (accent border)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = canDo and accentColor or C.Gray300
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 16)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = item.id
-	card.Size = UDim2.new(1, 0, 0, 85)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
+	card.ZIndex = 84
+	card.Parent = shell
 	UI.corner(card, 14)
-	UI.stroke(card, 1, canDo and 0.7 or 0.88, canDo and accentColor or C.Gray200)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if canDo then
+		-- CRITICAL FIX: Reduced width to not cover the action button on the right
+		local pressArea = Instance.new("TextButton")
+		pressArea.Name = "PressArea"
+		pressArea.Size = UDim2.new(1, -95, 1, 0)  -- Leave 95px for button
+		pressArea.BackgroundTransparency = 1
+		pressArea.Text = ""
+		pressArea.ZIndex = 90
+		pressArea.Parent = container
+		
+		local isHovering = false
+		local isPressed = false
+		
+		pressArea.MouseEnter:Connect(function()
+			if isPressed then return end
+			isHovering = true
+			-- Premium hover: lift and brighten
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 99)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.85,
+				Position = UDim2.new(0, 3, 0, 4)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = paleColor:Lerp(C.White, 0.85) })
+		end)
+		
+		pressArea.MouseLeave:Connect(function()
+			isHovering = false
+			isPressed = false
+			-- Return to normal
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 95)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.92,
+				Position = UDim2.new(0, 2, 0, 2)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		
+		pressArea.MouseButton1Down:Connect(function()
+			isPressed = true
+			-- Press down effect
+			UI.tween(container, TweenInfo.new(0.08), {
+				Size = UDim2.new(1, 0, 0, 91)
+			})
+			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = accentDark:Lerp(C.Black, 0.1) })
+		end)
+		
+		pressArea.MouseButton1Up:Connect(function()
+			isPressed = false
+			if isHovering then
+				UI.tween(container, TweenInfo.new(0.1), {
+					Size = UDim2.new(1, 0, 0, 99)
+				})
+				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = accentDark })
+			end
+		end)
+	end
 
-	-- Icon frame with emoji
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with gradient and ring)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Icon ring
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 62, 0, 62)
+	iconRing.Position = UDim2.new(0, 10, 0.5, -31)
+	iconRing.BackgroundColor3 = canDo and accentColor or C.Gray400
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 16)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 54, 0, 54)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -27)
-	iconFrame.BackgroundColor3 = paleColor
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
-	UI.corner(iconFrame, 12)
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
+	iconFrame.BackgroundColor3 = canDo and paleColor or C.Gray200
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
+	UI.corner(iconFrame, 14)
+	
+	-- Gradient for premium look
+	if canDo then
+		local iconGrad = Instance.new("UIGradient")
+		iconGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, paleColor:Lerp(C.White, 0.3)),
+		})
+		iconGrad.Rotation = 135
+		iconGrad.Parent = iconFrame
+	end
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 28
-	iconLabel.TextColor3 = accentColor
+	iconLabel.TextSize = 30
+	iconLabel.TextColor3 = canDo and accentColor or C.Gray500
+	iconLabel.TextTransparency = canDo and 0 or 0.3
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- TITLE & DETAILS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
-	titleLabel.Position = UDim2.new(0, 78, 0, 12)
+	titleLabel.Size = UDim2.new(0.5, -90, 0, 24)  -- Adjusted width to fit better
+	titleLabel.Position = UDim2.new(0, 84, 0, 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 15  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Effect badge
+	-- Effect badge (CRITICAL FIX: Dynamic width for longer text)
+	local effectText = item.effect
+	local displayEffect = effectText
+	if cost > 0 then
+		displayEffect = effectText .. " 💵$" .. cost
+	end
+	
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, cost > 0 and 135 or 105, 0, 24)
-	effectBadge.Position = UDim2.new(0, 78, 0, 38)
-	effectBadge.BackgroundColor3 = cost > 0 and C.AmberPale or C.GreenPale
-	effectBadge.ZIndex = 84
+	effectBadge.Size = UDim2.new(0, math.min(180, #displayEffect * 7 + 16), 0, 24)  -- Dynamic width based on text
+	effectBadge.Position = UDim2.new(0, 84, 0, 34)
+	effectBadge.BackgroundColor3 = canDo and (cost > 0 and C.AmberPale or C.GreenPale) or C.Gray100
+	effectBadge.ZIndex = 85
 	effectBadge.Parent = card
 	UI.pill(effectBadge)
 
@@ -1800,83 +2805,158 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	effectLabel.Size = UDim2.fromScale(1, 1)
 	effectLabel.BackgroundTransparency = 1
 	effectLabel.Font = F.Medium
-	effectLabel.TextSize = 11
-	effectLabel.TextColor3 = cost > 0 and C.AmberDark or C.GreenDark
-	effectLabel.Text = item.effect .. (cost > 0 and " | $" .. cost or "")
-	effectLabel.ZIndex = 85
+	effectLabel.TextSize = 10  -- Smaller to fit better
+	effectLabel.TextColor3 = canDo and (cost > 0 and C.AmberDark or C.GreenDark) or C.Gray500
+	effectLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	effectLabel.Text = displayEffect
+	effectLabel.ZIndex = 86
 	effectLabel.Parent = effectBadge
 
-	-- Minigame indicator
+	-- Minigame badge (more visible)
 	if item.hasMinigame then
+		local miniBadge = Instance.new("Frame")
+		miniBadge.Size = UDim2.new(0, 75, 0, 20)
+		miniBadge.Position = UDim2.new(0, 84, 0, 64)
+		miniBadge.BackgroundColor3 = canDo and C.PurplePale or C.Gray100
+		miniBadge.ZIndex = 85
+		miniBadge.Parent = card
+		UI.pill(miniBadge)
+		
 		local miniLabel = Instance.new("TextLabel")
-		miniLabel.Size = UDim2.new(0, 80, 0, 16)
-		miniLabel.Position = UDim2.new(0, 78, 0, 65)
+		miniLabel.Size = UDim2.fromScale(1, 1)
 		miniLabel.BackgroundTransparency = 1
-		miniLabel.Font = F.Body
-		miniLabel.TextSize = 11
-		miniLabel.TextColor3 = C.Purple
-		miniLabel.TextXAlignment = Enum.TextXAlignment.Left
-		miniLabel.Text = "Minigame!"
-		miniLabel.ZIndex = 84
-		miniLabel.Parent = card
+		miniLabel.Font = F.Button
+		miniLabel.TextSize = 10
+		miniLabel.TextColor3 = canDo and C.Purple or C.Gray500
+		miniLabel.Text = "🎮 Minigame"
+		miniLabel.ZIndex = 86
+		miniLabel.Parent = miniBadge
 	end
 
-	-- Effectiveness indicator (shows how your stats affect this activity)
+	-- Effectiveness indicator
 	if canDo then
 		local effectEmoji, effectColor = self:getEffectivenessIndicator(item.id)
 		if effectEmoji and effectColor then
 			local effectIndicator = Instance.new("Frame")
-			effectIndicator.Size = UDim2.new(0, 28, 0, 28)
-			effectIndicator.Position = UDim2.new(1, -90, 0, 10)
-			effectIndicator.BackgroundColor3 = effectColor
-			effectIndicator.BackgroundTransparency = 0.85
-			effectIndicator.ZIndex = 84
+			effectIndicator.Size = UDim2.new(0, 30, 0, 30)
+			effectIndicator.Position = UDim2.new(1, -100, 0, 8)
+			effectIndicator.BackgroundColor3 = effectColor:Lerp(C.White, 0.7)
+			effectIndicator.ZIndex = 85
 			effectIndicator.Parent = card
-			UI.corner(effectIndicator, 14)
+			UI.corner(effectIndicator, 15)
 
-			local effectLabel = Instance.new("TextLabel")
-			effectLabel.Size = UDim2.fromScale(1, 1)
-			effectLabel.BackgroundTransparency = 1
-			effectLabel.Font = F.Body
-			effectLabel.TextSize = 14
-			effectLabel.TextColor3 = effectColor
-			effectLabel.Text = effectEmoji
-			effectLabel.ZIndex = 85
-			effectLabel.Parent = effectIndicator
+			local effectLbl = Instance.new("TextLabel")
+			effectLbl.Size = UDim2.fromScale(1, 1)
+			effectLbl.BackgroundTransparency = 1
+			effectLbl.Font = F.Body
+			effectLbl.TextSize = 15
+			effectLbl.TextColor3 = effectColor
+			effectLbl.Text = effectEmoji
+			effectLbl.ZIndex = 86
+			effectLbl.Parent = effectIndicator
 		end
 	end
 
-	-- Action button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ACTION BUTTON (premium with shadow)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child, so emoji shows properly)
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 79, 0, 54)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 94
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 14)
+	end
+
 	local actionBtn = Instance.new("TextButton")
-	actionBtn.Size = UDim2.new(0, 68, 0, 42)
+	actionBtn.Name = "ActionBtn"
+	actionBtn.Size = UDim2.new(0, 75, 0, 50)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
-	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	actionBtn.Position = UDim2.new(1, -8, 0.5, 0)
 	actionBtn.BackgroundColor3 = canDo and accentColor or C.Gray300
 	actionBtn.Font = F.Button
-	actionBtn.TextSize = 14
+	actionBtn.TextSize = 15
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	actionBtn.Parent = card
-	UI.corner(actionBtn, 12)
+	UI.corner(actionBtn, 14)
 
 	if canDo then
-		actionBtn.Text = "Go!"
+		local isLoading = false
+		actionBtn.Text = item.hasMinigame and "🎮 Play" or "→ Go!"
+		
 		actionBtn.MouseEnter:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor:Lerp(C.Black, 0.15) })
-		end)
-		actionBtn.MouseLeave:Connect(function()
-			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
-		end)
-		actionBtn.MouseButton1Click:Connect(function()
-			if item.hasMinigame then
-				self:showMinigame(item, accentColor)
-			else
-				self:doActivity(item)
+			if isLoading then return end
+			UI.tween(actionBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				BackgroundColor3 = accentDark,
+				Size = UDim2.new(0, 80, 0, 54)
+			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), {
+					Size = UDim2.new(0, 84, 0, 58)
+				})
 			end
 		end)
+		actionBtn.MouseLeave:Connect(function()
+			if isLoading then return end
+			UI.tween(actionBtn, TweenInfo.new(0.12), {
+				BackgroundColor3 = accentColor,
+				Size = UDim2.new(0, 75, 0, 50)
+			})
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), {
+					Size = UDim2.new(0, 79, 0, 54)
+				})
+			end
+		end)
+		actionBtn.MouseButton1Click:Connect(function()
+			if isLoading then return end
+			isLoading = true
+			
+			-- Loading state
+			actionBtn.Text = "⏳..."
+			UI.tween(actionBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+			
+			task.spawn(function()
+				task.wait(0.1)
+				if item.hasMinigame then
+					self:showMinigame(item, accentColor)
+				else
+					self:doActivity(item)
+				end
+				
+				-- Reset after completion
+				task.wait(0.5)
+				if actionBtn and actionBtn.Parent then
+					isLoading = false
+					actionBtn.Text = item.hasMinigame and "🎮 Play" or "→ Go!"
+					actionBtn.BackgroundColor3 = accentColor
+				end
+			end)
+		end)
 	else
-		actionBtn.Text = age < item.minAge and "Age " .. item.minAge or (money < cost and "Need $" or "Jailed")
+		local btnText = "🔒 "
+		if age < item.minAge then
+			btnText = btnText .. "Age " .. item.minAge
+		elseif money < cost then
+			btnText = "💵 Need $"
+		elseif self:isInJail() then
+			btnText = "⛓️ Jailed"
+		elseif not meetsFlag then
+			btnText = "🔒 Locked"
+		else
+			btnText = "🔒 N/A"
+		end
+		actionBtn.Text = btnText
 	end
 end
 
@@ -1893,6 +2973,11 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	card.Parent = parent
 	UI.corner(card, 14)
 	UI.stroke(card, canDo and 1 or 1, canDo and 0.7 or 0.88, canDo and C.Red or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, canDo and 0.92 or 0.96)
+	end
 
 	-- Icon with emoji
 	local iconFrame = Instance.new("Frame")
@@ -1913,15 +2998,16 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 80, 0, 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller to fit better
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
@@ -1986,6 +3072,21 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 		end
 	end
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 82, 0, 48)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
+		btnShadow.BackgroundColor3 = C.RedDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 84
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 12)
+	end
+
 	-- Action button
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 78, 0, 44)
@@ -1996,20 +3097,53 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 	actionBtn.TextSize = 13
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 85  -- Higher than shadow
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 12)
 
 	if canDo then
-		actionBtn.Text = "Commit"
+		-- CRITICAL FIX: Show minigame indicator for crimes that have minigames (e.g., bank robbery)
+		actionBtn.Text = item.hasMinigame and "🎮 Heist" or "🔓 Commit"
+		local isLoading = false
+		
 		actionBtn.MouseEnter:Connect(function()
+			if isLoading then return end
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.RedDark })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 86, 0, 52) })
+			end
 		end)
 		actionBtn.MouseLeave:Connect(function()
+			if isLoading then return end
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Red })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 82, 0, 48) })
+			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
-			self:doCrime(item)
+			if isLoading then return end
+			isLoading = true
+			actionBtn.Text = "⏳..."
+			
+			-- CRITICAL FIX: Check for minigame BEFORE committing crime
+			task.spawn(function()
+				task.wait(0.1)
+				if item.hasMinigame then
+					-- Show crime minigame (bank robbery heist)
+					self:showCrimeMinigame(item)
+				else
+					-- Normal crime - no minigame
+					self:doCrime(item)
+				end
+				
+				-- Reset button
+				task.wait(0.5)
+				if actionBtn and actionBtn.Parent then
+					isLoading = false
+					actionBtn.Text = item.hasMinigame and "🎮 Heist" or "🔓 Commit"
+					actionBtn.BackgroundColor3 = C.Red
+				end
+			end)
 		end)
 	else
 		actionBtn.Text = age < item.minAge and "Age " .. item.minAge .. "+" or "Jailed"
@@ -2029,7 +3163,12 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	card.ZIndex = 83
 	card.Parent = parent
 	UI.corner(card, 14)
-	UI.stroke(card, 1, 0.88, C.Gray200)
+	UI.stroke(card, 1, canDo and 0.7 or 0.88, canDo and C.Gray600 or C.Gray200)
+	
+	-- CRITICAL UI FIX: Add subtle shadow
+	if UI.createShadow then
+		UI.createShadow(card, 2, 8, C.Black, 0.94)
+	end
 
 	-- Icon with emoji
 	local iconFrame = Instance.new("Frame")
@@ -2050,26 +3189,27 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	iconLabel.ZIndex = 85
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 22)
+	titleLabel.Size = UDim2.new(0.5, -85, 0, 22)  -- Adjusted width with margin
 	titleLabel.Position = UDim2.new(0, 80, 0, 12)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = 14  -- Slightly smaller to fit better
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
 	titleLabel.ZIndex = 84
 	titleLabel.Parent = card
 
-	-- Badge
+	-- Badge (CRITICAL FIX: Dynamic width for longer text)
 	local badgeText = item.risk and ("Risk: " .. item.risk .. "%") or item.effect
 	local badgeBg = item.risk and C.RedPale or C.GreenPale
 	local badgeColor = item.risk and C.RedDark or C.GreenDark
 
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, 115, 0, 24)
+	effectBadge.Size = UDim2.new(0, math.min(140, #badgeText * 7 + 16), 0, 24)  -- Dynamic width
 	effectBadge.Position = UDim2.new(0, 80, 0, 38)
 	effectBadge.BackgroundColor3 = badgeBg
 	effectBadge.ZIndex = 84
@@ -2086,22 +3226,52 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 	effectLabel.ZIndex = 85
 	effectLabel.Parent = effectBadge
 
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so text shows properly)
+	local accentColor = canDo and (item.risk and C.Red or C.Amber) or C.Gray300
+	local accentDark = canDo and (item.risk and C.RedDark or C.AmberDark) or C.Gray400
+	
+	local btnShadow
+	if canDo then
+		btnShadow = Instance.new("Frame")
+		btnShadow.Name = "ActionBtnShadow"
+		btnShadow.Size = UDim2.new(0, 72, 0, 46)
+		btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+		btnShadow.Position = UDim2.new(1, -10, 0.5, 2)
+		btnShadow.BackgroundColor3 = accentDark
+		btnShadow.BackgroundTransparency = 0.6
+		btnShadow.ZIndex = 84
+		btnShadow.Parent = card
+		UI.corner(btnShadow, 12)
+	end
+
 	-- Action button
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 68, 0, 42)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -12, 0.5, 0)
-	actionBtn.BackgroundColor3 = canDo and (item.risk and C.Red or C.Amber) or C.Gray300
+	actionBtn.BackgroundColor3 = accentColor
 	actionBtn.Font = F.Button
 	actionBtn.TextSize = 14
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
-	actionBtn.Text = canDo and "Go!" or "Need $"
+	actionBtn.Text = canDo and "→ Go!" or "Need $"
 	actionBtn.AutoButtonColor = false
-	actionBtn.ZIndex = 84
+	actionBtn.ZIndex = 85  -- Higher than shadow
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 12)
 
 	if canDo then
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 76, 0, 50) })
+			end
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			if btnShadow then
+				UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 72, 0, 46) })
+			end
+		end)
 		actionBtn.MouseButton1Click:Connect(function()
 			self:doPrisonActivity(item)
 		end)
@@ -2109,19 +3279,227 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 end
 
 function ActivitiesScreen:createResultModal()
-	self.resultModal = UI.createModalCard(self.screenGui, {
-		name = "ActivitiesResult",
-		accentColor = C.Green,
-		accentDark = C.GreenDark,
-		accentPale = C.GreenPale,
-		zIndex = 98
-	})
-
-	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	self.resultModal = {}
+	
+	-- Close/dim overlay
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "ResultModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.35
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 98
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.resultModal.closeArea = closeArea
+	self.resultModal.overlay = closeArea  -- Alias for compatibility
+	
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
+	local container = Instance.new("Frame")
+	container.Name = "ResultModalContainer"
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 99
+	container.Parent = closeArea
+	self.resultModal.container = container
+	
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 99
+	shadow.Parent = container
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
+	
+	-- Colored shell (accent border)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 100
+	shell.Parent = container
+	UI.corner(shell, 26)
+	self.resultModal.shell = shell
+	
+	-- Shell stroke for extra polish
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = C.GreenDark
+	shellStroke.Thickness = 2
+	shellStroke.Transparency = 0.5
+	shellStroke.Parent = shell
+	self.resultModal.shellStroke = shellStroke
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
+	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
+	emojiFrame.BackgroundColor3 = C.GreenPale
+	emojiFrame.ZIndex = 102
+	emojiFrame.Parent = card
+	UI.corner(emojiFrame, emojiSize/2)
+	self.resultModal.emojiFrame = emojiFrame
+	
+	-- Emoji label
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
+	emojiLabel.Text = "🎉"
+	emojiLabel.ZIndex = 103
+	emojiLabel.Parent = emojiFrame
+	self.resultModal.emojiLabel = emojiLabel
+	
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
+	titleLabel.TextColor3 = C.GreenDark
+	titleLabel.Text = "Activity Complete!"
+	titleLabel.ZIndex = 102
+	titleLabel.Parent = card
+	self.resultModal.titleLabel = titleLabel
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 15
+	messageLabel.TextColor3 = C.Gray700
+	messageLabel.TextWrapped = true
+	messageLabel.Text = "You did it!"
+	messageLabel.ZIndex = 102
+	messageLabel.Parent = card
+	self.resultModal.messageLabel = messageLabel
+	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child, so it renders behind)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 102
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
+	-- OK Button (premium styling)
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OkBtn"
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.BackgroundColor3 = C.Green
+	okBtn.Font = F.Button
+	okBtn.TextSize = 17
+	okBtn.TextColor3 = C.White
+	okBtn.Text = "👍 Awesome!"
+	okBtn.AutoButtonColor = false
+	okBtn.ZIndex = 103
+	okBtn.Parent = card
+	UI.corner(okBtn, 14)
+	self.resultModal.okButton = okBtn
+	
+	-- Button hover effects (CRITICAL FIX: Also animate shadow)
+	okBtn.MouseEnter:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0.72, 0, 0, 56),
+			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
+		})
 	end)
-	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	okBtn.MouseLeave:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 0, 0, 52),
+			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
+		})
+	end)
+	
+	-- CRITICAL FIX #3: When dismissing result modal, ALWAYS rebuild tabs and update UI
+	local function onResultDismiss()
+		local inJail = self:isInJail()
+		log("Result modal dismissed - checking state. InJail:", inJail)
+		self:rebuildTabs()
+		self:updateInfoBar()
+		if inJail and self.currentTab ~= "prison" then
+			self.currentTab = "prison"
+		elseif not inJail and self.currentTab == "prison" then
+			self.currentTab = "mindbody"
+		end
+		self:switchTab(self.currentTab)
+	end
+	
+	-- Custom show/hide methods (CRITICAL FIX: IS_TINY_PHONE responsive animation sizes)
+	self.resultModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
+		})
+	end
+	
+	self.resultModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
+	
+	closeArea.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onResultDismiss)
+	end)
+	okBtn.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onResultDismiss)
 	end)
 end
 
@@ -2134,8 +3512,9 @@ function ActivitiesScreen:createMinigameModal()
 	self.minigameOverlay.ZIndex = 96
 	self.minigameOverlay.Parent = self.screenGui
 
+	-- CRITICAL FIX: Made card taller to prevent cramped UI
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(0.92, 0, 0, 480) -- Taller for escape grid
+	card.Size = UDim2.new(0.92, 0, 0, 520) -- Taller for escape grid
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.Position = UDim2.fromScale(0.5, 0.5)
 	card.BackgroundColor3 = C.White
@@ -2144,14 +3523,16 @@ function ActivitiesScreen:createMinigameModal()
 	UI.corner(card, 24)
 	self.minigameCard = card
 
-	-- Title
+	-- Title - positioned lower to give breathing room
 	self.minigameTitle = Instance.new("TextLabel")
-	self.minigameTitle.Size = UDim2.new(1, 0, 0, 55)
+	self.minigameTitle.Size = UDim2.new(1, -20, 0, 45)
+	self.minigameTitle.Position = UDim2.new(0, 10, 0, 8)
 	self.minigameTitle.BackgroundTransparency = 1
 	self.minigameTitle.Font = F.Title
-	self.minigameTitle.TextSize = 24
+	self.minigameTitle.TextSize = 20
 	self.minigameTitle.TextColor3 = C.Gray900
 	self.minigameTitle.Text = "Tap to Workout!"
+	self.minigameTitle.TextWrapped = true
 	self.minigameTitle.ZIndex = 98
 	self.minigameTitle.Parent = card
 
@@ -2203,16 +3584,17 @@ function ActivitiesScreen:createMinigameModal()
 	self.tapCounter.ZIndex = 98
 	self.tapCounter.Parent = card
 
-	-- Instructions
+	-- CRITICAL FIX: Instructions repositioned - at bottom of card, below buttons
 	self.minigameInstructions = Instance.new("TextLabel")
 	self.minigameInstructions.Name = "Instructions"
-	self.minigameInstructions.Size = UDim2.new(1, 0, 0, 30)
-	self.minigameInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.minigameInstructions.Position = UDim2.new(0.5, 0, 0, 350)
+	self.minigameInstructions.Size = UDim2.new(1, -20, 0, 40)
+	self.minigameInstructions.AnchorPoint = Vector2.new(0.5, 1)
+	self.minigameInstructions.Position = UDim2.new(0.5, 0, 1, -10)
 	self.minigameInstructions.BackgroundTransparency = 1
 	self.minigameInstructions.Font = F.Body
-	self.minigameInstructions.TextSize = 15
+	self.minigameInstructions.TextSize = 13
 	self.minigameInstructions.TextColor3 = C.Gray500
+	self.minigameInstructions.TextWrapped = true
 	self.minigameInstructions.Text = "Tap as fast as you can!"
 	self.minigameInstructions.ZIndex = 98
 	self.minigameInstructions.Parent = card
@@ -2287,22 +3669,23 @@ function ActivitiesScreen:createMinigameModal()
 	self.exitCell.Parent = self.escapeGrid
 	UI.corner(self.exitCell, 6)
 
-	-- Direction buttons
+	-- CRITICAL FIX: Direction buttons repositioned to not cover text
+	-- Grid is 280px ending at Y=340, so buttons start at Y=355
 	self.dirButtons = Instance.new("Frame")
 	self.dirButtons.Name = "DirectionButtons"
 	self.dirButtons.Size = UDim2.new(0, 150, 0, 100)
 	self.dirButtons.AnchorPoint = Vector2.new(0.5, 0)
-	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 345)
+	self.dirButtons.Position = UDim2.new(0.5, 0, 0, 360)
 	self.dirButtons.BackgroundTransparency = 1
 	self.dirButtons.Visible = false
 	self.dirButtons.ZIndex = 98
 	self.dirButtons.Parent = card
 
 	local dirData = {
-		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -20, 0, 0) },
-		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -20, 0, 60) },
-		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 30) },
-		{ dir = "right", text = "➡️", pos = UDim2.new(1, -40, 0, 30) },
+		{ dir = "up", text = "⬆️", pos = UDim2.new(0.5, -22, 0, 0) },
+		{ dir = "down", text = "⬇️", pos = UDim2.new(0.5, -22, 0, 55) },
+		{ dir = "left", text = "⬅️", pos = UDim2.new(0, 0, 0, 27) },
+		{ dir = "right", text = "➡️", pos = UDim2.new(1, -44, 0, 27) },
 	}
 
 	self.dirBtns = {}
@@ -2341,9 +3724,12 @@ function ActivitiesScreen:createMinigameModal()
 	self.exitPos = { row = 8, col = 1 }
 	self.movesLeft = 20
 
-	-- Tap handler
+	-- Tap handler (CRITICAL FIX: Also handles crime_tap for crime minigames)
 	self.tapArea.MouseButton1Click:Connect(function()
-		if not self.minigameActive or self.minigameType ~= "tap" then return end
+		-- CRITICAL FIX: Accept both "tap" and "crime_tap" minigame types
+		if not self.minigameActive then return end
+		if self.minigameType ~= "tap" and self.minigameType ~= "crime_tap" then return end
+		
 		self.tapCount = self.tapCount + 1
 		self.tapCounter.Text = self.tapCount .. " / " .. self.tapGoal
 
@@ -2360,7 +3746,12 @@ function ActivitiesScreen:createMinigameModal()
 		-- Win check
 		if self.tapCount >= self.tapGoal then
 			self.minigameActive = false
-			self:completeMinigame(true)
+			-- CRITICAL FIX: Route to correct completion handler
+			if self.minigameType == "crime_tap" then
+				self:completeCrimeMinigame(true)
+			else
+				self:completeMinigame(true)
+			end
 		end
 	end)
 end
@@ -2724,11 +4115,52 @@ function ActivitiesScreen:countWalls()
 end
 
 function ActivitiesScreen:showMinigame(item, accentColor)
-	log("=== STARTING TAP MINIGAME ===")
-	log("Item:", item.id, "Accent:", tostring(accentColor))
+	log("=== STARTING ACTIVITY MINIGAME ===")
+	log("Item:", item.id, "MinigameType:", item.minigameType or "tap", "Accent:", tostring(accentColor))
 
 	self.currentMinigameItem = item
 	self.minigameAccent = accentColor
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use proper minigame system based on activity type!
+	-- Different activities use different minigames for variety
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local minigameType = item.minigameType or "mash"  -- Default to mash (tap)
+	
+	-- Try to use the global Minigames module if available
+	local MinigamesModule = game.ReplicatedStorage:FindFirstChild("Minigames")
+	if MinigamesModule then
+		local success, Minigames = pcall(function() return require(MinigamesModule) end)
+		if success and Minigames and Minigames.new then
+			-- Create minigames instance if needed
+			if not self._minigamesInstance then
+				local ok, mg = pcall(function() return Minigames.new(self.screenGui) end)
+				if ok and mg then
+					self._minigamesInstance = mg
+				end
+			end
+			
+			if self._minigamesInstance and self._minigamesInstance.play then
+				log("Using Minigames module for:", minigameType)
+				self._minigamesInstance:play(minigameType, function(won, stats)
+					log("Minigame result - Won:", won)
+					if won then
+						self:doActivity(item, true)  -- Bonus for winning minigame
+					else
+						self:showResult(false, "You didn't complete the challenge. No gains today!", "😅")
+					end
+				end, {
+					difficulty = item.id == "gym" and "medium" or "easy",
+					taps = item.id == "gym" and 25 or 15,
+				})
+				return
+			end
+		end
+	end
+	
+	-- Fallback to built-in tap minigame if Minigames module not available
+	log("Falling back to built-in tap minigame")
 	self.minigameType = "tap"
 	self.tapCount = 0
 	self.tapGoal = item.id == "gym" and 25 or 15
@@ -2740,7 +4172,21 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.escapeGrid.Visible = false
 	self.dirButtons.Visible = false
 
-	local title = item.id == "gym" and "💪 Tap to Workout!" or "📚 Tap to Study!"
+	-- Proper minigame titles for each activity type
+	local title
+	if item.id == "gym" then
+		title = "💪 Tap to Workout!"
+	elseif item.id == "study" then
+		title = "📚 Tap to Study!"
+	elseif item.id == "drivers_license" then
+		title = "🚗 Tap to Pass Your Driving Test!"
+	elseif item.id == "meditate" then
+		title = "🧘 Tap at the Right Moment!"
+	elseif item.id == "martial_arts" then
+		title = "🥋 Tap to Practice!"
+	else
+		title = "👆 Tap to Complete!"
+	end
 
 	self.minigameTitle.Text = title
 	self.tapArea.Text = "TAP!"
@@ -2748,7 +4194,16 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 	self.progressFill.BackgroundColor3 = accentColor
 	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
 	self.tapCounter.Text = "0 / " .. self.tapGoal
-	self.minigameInstructions.Text = "Tap as fast as you can!"
+	
+	local instructions
+	if item.id == "drivers_license" then
+		instructions = "Tap to answer driving test questions!"
+	elseif item.id == "meditate" then
+		instructions = "Tap when the circle is centered!"
+	else
+		instructions = "Tap as fast as you can!"
+	end
+	self.minigameInstructions.Text = instructions
 
 	self.minigameOverlay.Visible = true
 	self.minigameCard.Position = UDim2.new(0.5, 0, 0.5, 50)
@@ -2766,6 +4221,157 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 			self:completeMinigame(self.tapCount >= self.tapGoal * 0.5)
 		end
 	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Crime Minigame (Bank Robbery Heist!)
+-- This was never being called because crime cards skipped minigame check
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:showCrimeMinigame(item)
+	log("=== STARTING CRIME MINIGAME ===")
+	log("Crime:", item.id, "MinigameType:", item.minigameType or "heist")
+
+	self.currentMinigameItem = item
+	self.minigameAccent = C.Red
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use proper minigame system based on crime type!
+	-- Different crimes use different minigames:
+	-- - Bank Robbery/Burglary -> Heist (crack the safe)
+	-- - GTA -> Getaway (escape the cops)
+	-- - Pickpocket -> QTE (quick reaction)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local minigameType = item.minigameType or "heist"  -- Default to heist
+	
+	-- Try to use the global Minigames module if available
+	local MinigamesModule = game.ReplicatedStorage:FindFirstChild("Minigames")
+	if MinigamesModule then
+		local success, Minigames = pcall(function() return require(MinigamesModule) end)
+		if success and Minigames and Minigames.new then
+			-- Create minigames instance if needed
+			if not self._minigamesInstance then
+				local ok, mg = pcall(function() return Minigames.new(self.screenGui) end)
+				if ok and mg then
+					self._minigamesInstance = mg
+				end
+			end
+			
+			if self._minigamesInstance and self._minigamesInstance.play then
+				log("Using Minigames module for crime:", minigameType)
+				self._minigamesInstance:play(minigameType, function(won, stats)
+					log("Crime minigame result - Won:", won)
+					self:doCrimeWithBonus(item, won)
+				end, {
+					difficulty = item.risk and item.risk >= 60 and "hard" or "medium",
+				})
+				return
+			end
+		end
+	end
+	
+	-- Fallback to built-in tap minigame if Minigames module not available
+	log("Falling back to built-in crime tap minigame")
+	self.minigameType = "crime_tap"
+	self.tapCount = 0
+	self.tapGoal = item.id == "bank_robbery" and 30 or 20
+	self.minigameActive = true
+
+	-- Show tap elements, hide escape elements
+	self.tapArea.Visible = true
+	self.progressBg.Visible = true
+	self.escapeGrid.Visible = false
+	self.dirButtons.Visible = false
+
+	-- Crime-specific minigame titles
+	local title
+	if item.id == "bank_robbery" then
+		title = "🏦 TAP TO CRACK THE SAFE!"
+	elseif item.id == "burglary" then
+		title = "🏠 TAP TO BREAK IN!"
+	elseif item.id == "gta" then
+		title = "🚗 TAP TO HOTWIRE THE CAR!"
+	elseif item.id == "pickpocket" then
+		title = "👛 TAP AT THE RIGHT MOMENT!"
+	else
+		title = "🔓 TAP TO COMPLETE THE HEIST!"
+	end
+
+	self.minigameTitle.Text = title
+	self.tapArea.Text = "TAP!"
+	self.tapArea.BackgroundColor3 = C.Red
+	self.progressFill.BackgroundColor3 = C.Red
+	self.progressFill.Size = UDim2.new(0, 0, 1, 0)
+	self.tapCounter.Text = "0 / " .. self.tapGoal
+	
+	local instructions = item.id == "bank_robbery" and "Crack the vault before security arrives!" or "Tap fast to complete the crime!"
+	self.minigameInstructions.Text = instructions
+
+	self.minigameOverlay.Visible = true
+	self.minigameCard.Position = UDim2.new(0.5, 0, 0.5, 50)
+	self.minigameCard.BackgroundTransparency = 1
+
+	UI.tween(self.minigameCard, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 0
+	})
+
+	-- Timeout - shorter for crime (8 seconds - alarm triggered!)
+	task.delay(8, function()
+		if self.minigameActive and self.minigameOverlay.Visible and self.minigameType == "crime_tap" then
+			self.minigameActive = false
+			self:completeCrimeMinigame(self.tapCount >= self.tapGoal)
+		end
+	end)
+end
+
+function ActivitiesScreen:completeCrimeMinigame(success)
+	log("=== CRIME MINIGAME COMPLETE ===")
+	log("Success:", success)
+
+	task.delay(0.3, function()
+		self.minigameOverlay.Visible = false
+
+		-- Reset UI elements
+		self.escapeGrid.Visible = false
+		self.dirButtons.Visible = false
+		self.tapArea.Visible = true
+		self.progressBg.Visible = true
+
+		if success then
+			-- Player completed the heist minigame - bonus success chance!
+			log("Heist minigame success! Calling server with bonus...")
+			self:doCrimeWithBonus(self.currentMinigameItem, true)
+		else
+			-- Player failed minigame - higher chance of getting caught
+			log("Heist minigame failed! Calling server without bonus...")
+			self:doCrimeWithBonus(self.currentMinigameItem, false)
+		end
+	end)
+end
+
+function ActivitiesScreen:doCrimeWithBonus(item, bonus)
+	log("=== COMMITTING CRIME (WITH MINIGAME RESULT) ===")
+	log("Crime:", item.id, "Bonus:", bonus)
+
+	if not CommitCrime then
+		logWarn("CommitCrime remote not available!")
+		self:showResult(false, "Server not available", "Error")
+		return
+	end
+
+	-- Pass bonus flag to server - indicates minigame success
+	local result = CommitCrime:InvokeServer(item.id, bonus)
+	log("Server response:", result and "received" or "nil")
+
+	if result then
+		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
+		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
+		self:showResult(result.success, result.message, emoji)
+	else
+		logWarn("Server returned nil!")
+		self:showResult(false, "Server error", "Error")
+	end
 end
 
 function ActivitiesScreen:completeMinigame(success)
@@ -2813,19 +4419,26 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 
 	-- The server handles the actual escape logic, but we pass the minigame result
 	if escaped then
-		-- Call server escape action
+		-- CRITICAL FIX: Don't show result popup here!
+		-- The server will send an event popup with escape choices.
+		-- Showing a popup here causes DOUBLE POPUP bug.
 		local result = DoPrisonAction:InvokeServer("prison_escape")
 		if result then
 			log("Server response:", result.success, result.message)
-			self:showResult(result.success, result.message, result.success and "FREE!" or "Caught!")
+			-- Server handles the popup via presentEvent - don't show duplicate!
 		else
 			self:showResult(false, "Server error", "Error")
 		end
 	else
 		-- Player failed minigame - got caught
-		self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
-		-- Server will add time when we call the action with failure
-		DoPrisonAction:InvokeServer("prison_escape_failed")
+		-- Call server first to add time, THEN show the result
+		local result = DoPrisonAction:InvokeServer("prison_escape_failed")
+		if result then
+			log("Server response for failed escape:", result.success, result.message)
+			self:showResult(false, result.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
+		else
+			self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
+		end
 	end
 end
 
@@ -2920,13 +4533,41 @@ function ActivitiesScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "OK" or "X")
-	self.resultModal.titleLabel.Text = success and "Success!" or "Uh oh..."
+	
+	-- CRITICAL UI FIX: Better default emojis
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" or displayEmoji == "Done!" then
+		displayEmoji = success and "✨" or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" or displayEmoji == "Failed" then
+		displayEmoji = "❌"
+	elseif displayEmoji == "Success!" then
+		displayEmoji = "💰"
+	elseif displayEmoji == "Caught!" then
+		displayEmoji = "🚔"
+	elseif displayEmoji == "Chaos!" then
+		displayEmoji = "🔥"
+	elseif displayEmoji == "Snitched!" then
+		displayEmoji = "🤫"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- CRITICAL UI FIX: More descriptive titles based on context
+	local title = success and "Activity Complete!" or "Uh oh..."
+	if emoji == "Caught!" then title = "Busted!" end
+	if emoji == "Chaos!" then title = "Prison Riot!" end
+	
+	self.resultModal.titleLabel.Text = title
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
-	self.resultModal.messageLabel.Text = message or ""
+	self.resultModal.messageLabel.Text = message or (success and "You did it!" or "Something went wrong...")
 	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Awesome!" or "😔 Okay..."
 
-	UI.showModal(self.resultModal)
+	-- Use custom show method if available, fallback to UI.showModal
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
 end
 
 function ActivitiesScreen:show()

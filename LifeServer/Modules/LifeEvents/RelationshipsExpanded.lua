@@ -1,0 +1,991 @@
+--[[
+    Relationships Expanded Events
+    Deep relationship events for all life stages
+    All events use randomized outcomes - NO god mode
+]]
+
+local RelationshipsExpanded = {}
+
+local STAGE = "relationships"
+
+RelationshipsExpanded.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DATING & ROMANCE (Ages 16+)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "rel_meet_cute",
+		title = "Meet Cute",
+		emoji = "💕",
+		text = "You had an adorable chance encounter with someone!",
+		question = "Do you pursue this connection?",
+		minAge = 16, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 4,
+		requiresSingle = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "romance",
+		tags = { "dating", "meeting", "romance" },
+		
+		choices = {
+			{
+				text = "Exchange numbers and text later",
+				effects = {},
+				feedText = "You got their number...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state:AddRelationship("Partner", "romantic", 0.65)
+						state:AddFeed("💕 Great connection! You're dating someone new!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💕 They never texted back. Oh well.")
+					end
+				end,
+			},
+			{
+				text = "Too shy to approach",
+				effects = { Happiness = -3 },
+				feedText = "What if? You'll always wonder.",
+			},
+			{
+				text = "Strike up a conversation immediately",
+				effects = {},
+				feedText = "Being bold...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					local successChance = 0.35 + (looks / 200)
+					if roll < successChance then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state:AddRelationship("Partner", "romantic", 0.70)
+						state:AddFeed("💕 Chemistry! You're now dating!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💕 Awkward interaction. They weren't interested.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "rel_date_night_dilemma",
+		title = "Date Night Dilemma",
+		emoji = "🌃",
+		text = "Planning a date night. Where do you go?",
+		question = "Pick the perfect date activity.",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 2,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "date", "relationship", "romance" },
+		
+		-- CRITICAL: Random date outcome
+		choices = {
+			{
+				text = "Fancy restaurant",
+				effects = { Money = -150 },
+				feedText = "Dressing up for a nice dinner...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🌃 Romantic dinner! Perfect evening together.")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🌃 Food was meh but the company was good.")
+					end
+				end,
+			},
+			{
+				text = "Movie and couch cuddles",
+				effects = { Money = -20, Happiness = 6 },
+				feedText = "Low-key and perfect. Just being together.",
+			},
+			{
+				text = "Adventure activity together",
+				effects = { Money = -100 },
+				feedText = "Trying something new together...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🌃 Adventure bonding! Best date ever!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🌃 Fun but one of you was scared the whole time.")
+					end
+				end,
+			},
+			{
+				text = "Cook dinner at home",
+				effects = { Money = -30, Happiness = 7 },
+				feedText = "Homemade meal and quality time. Perfect.",
+			},
+		},
+	},
+	{
+		id = "rel_meeting_their_family",
+		title = "Meeting The Family",
+		emoji = "👨‍👩‍👧",
+		text = "Time to meet your partner's family!",
+		question = "How does meeting the family go?",
+		minAge = 18, maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 5,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "family", "relationship", "milestone" },
+		
+		-- CRITICAL: Random family meeting outcome
+		choices = {
+			{
+				text = "Be yourself and hope for the best",
+				effects = {},
+				feedText = "Walking through their front door...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.family_approved = true
+						state:AddFeed("👨‍👩‍👧 They LOVE you! Instant family approval!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("👨‍👩‍👧 Went okay. They need time to warm up.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.family_disapproves = true
+						state:AddFeed("👨‍👩‍👧 Oof. They didn't like you. Awkward.")
+					end
+				end,
+			},
+			{
+				text = "Try too hard to impress",
+				effects = {},
+				feedText = "Going all out to charm them...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👨‍👩‍👧 Your efforts paid off! They think you're great!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("👨‍👩‍👧 Came on too strong. They found you fake.")
+					end
+				end,
+			},
+			{
+				text = "Be nervous and quiet",
+				effects = { Happiness = 2 },
+				feedText = "Hard to shine when you're anxious. Neutral impression.",
+			},
+		},
+	},
+	{
+		id = "rel_anniversary",
+		title = "Anniversary",
+		emoji = "💑",
+		text = "It's your anniversary! How do you celebrate?",
+		question = "What do you do for your anniversary?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "anniversary", "celebration", "romance" },
+		
+		choices = {
+			{ text = "Grand romantic gesture", effects = { Money = -500, Happiness = 12 }, setFlags = { romantic = true }, feedText = "💑 Surprised them with something amazing! They cried happy tears!" },
+			{ text = "Simple but meaningful", effects = { Money = -50, Happiness = 8 }, feedText = "💑 Quality time together. That's all that matters." },
+			{ text = "Completely forget", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
+			{ text = "Re-create your first date", effects = { Money = -100, Happiness = 10 }, feedText = "💑 Nostalgic and romantic! They loved it!" },
+		},
+	},
+	{
+		id = "rel_jealousy_issue",
+		title = "Jealousy Flare-Up",
+		emoji = "😠",
+		text = "Something triggered jealousy in your relationship.",
+		question = "How do you handle the jealousy?",
+		minAge = 16, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 4,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "conflict",
+		tags = { "jealousy", "conflict", "relationship" },
+		
+		choices = {
+			{ text = "Talk it out calmly", effects = { Happiness = 3, Smarts = 2 }, setFlags = { healthy_communication = true }, feedText = "😠 Discussed feelings. Cleared the air. Trust restored." },
+			{ text = "Let it fester into a fight", effects = { Happiness = -6 }, setFlags = { relationship_tension = true }, feedText = "😠 Blew up into a huge argument. Hurtful words said." },
+			{ text = "Realize you're being unreasonable", effects = { Happiness = 2, Smarts = 2 }, feedText = "😠 Checked yourself. The jealousy wasn't warranted." },
+			{ text = "Actually... there was something to worry about", effects = { Happiness = -10 }, setFlags = { trust_broken = true }, feedText = "😠 Your instincts were right. Trust shattered." },
+		},
+	},
+	{
+		id = "rel_long_distance_test",
+		title = "Long Distance Challenge",
+		emoji = "🌍",
+		text = "Circumstances are separating you and your partner geographically.",
+		question = "Can your relationship survive the distance?",
+		minAge = 18, maxAge = 55,
+		baseChance = 0.15,
+		cooldown = 6,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "challenge",
+		tags = { "long_distance", "challenge", "relationship" },
+		
+		-- CRITICAL: Random long distance outcome
+		choices = {
+			{
+				text = "Commit to making it work",
+				effects = {},
+				feedText = "Video calls, texts, visits when possible...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.long_distance_success = true
+						state:AddFeed("🌍 Love conquers distance! Relationship strengthened!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🌍 Struggling but still together. It's hard.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.recently_single = true
+						state:AddFeed("🌍 The distance was too much. Relationship ended.")
+					end
+				end,
+			},
+			{
+				text = "End it rather than drag it out",
+				effects = { Happiness = -6 },
+				setFlags = { recently_single = true },
+				feedText = "🌍 Clean break. Painful but probably right decision.",
+			},
+		},
+	},
+	{
+		id = "rel_partner_career_vs_you",
+		title = "Career vs Relationship",
+		emoji = "⚖️",
+		text = "Your partner got an amazing opportunity far away.",
+		question = "What do you do?",
+		minAge = 22, maxAge = 50,
+		baseChance = 0.15,
+		cooldown = 6,
+		requiresPartner = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "conflict",
+		tags = { "career", "relationship", "sacrifice" },
+		
+		choices = {
+			{ text = "Support them - go together", effects = { Happiness = 4, Money = -500 }, setFlags = { moved_for_partner = true }, feedText = "⚖️ Your turn to support their dreams. New adventure together!" },
+			{ text = "Ask them not to go", effects = {}, feedText = "You ask them to stay...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚖️ They chose you! Turned down the opportunity!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.partner_resents = true
+						state:AddFeed("⚖️ They stayed but resent the sacrifice.")
+					end
+				end,
+			},
+			{ text = "Break up - let them go", effects = { Happiness = -8 }, setFlags = { recently_single = true }, feedText = "⚖️ You loved them enough to let them go." },
+			{ text = "Try long distance", effects = { Happiness = -2 }, setFlags = { long_distance = true }, feedText = "⚖️ Going to try to make it work across the miles." },
+		},
+	},
+	{
+		id = "rel_proposal_moment",
+		title = "The Big Question",
+		emoji = "💍",
+		text = "It's time to pop the question!",
+		question = "How do you propose?",
+		minAge = 20, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 6,
+		requiresPartner = true,
+		blockedByFlags = { engaged = true, married = true },
+		stage = STAGE,
+		ageBand = "adult",
+		category = "milestone",
+		tags = { "proposal", "engagement", "romance" },
+		
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($2000), not $500
+			if money < 2000 then
+				return false, "Can't afford an engagement ring"
+			end
+			-- CRITICAL FIX: Can't propose from prison!
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't propose from prison"
+			end
+			return true
+		end,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		-- CRITICAL: Random proposal outcome
+		choices = {
+			{
+				text = "Grand public proposal",
+				effects = { Money = -2000 },
+				feedText = "Getting down on one knee in front of everyone...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.75 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 THEY SAID YES! Crowd went wild! You're engaged!")
+					elseif roll < 0.90 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 Yes! But they wished it was more private.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.recently_single = true
+						state:AddFeed("💍 They said no. In public. Devastating humiliation.")
+					end
+				end,
+			},
+			{
+				text = "Intimate private proposal",
+				effects = { Money = -1000 },
+				feedText = "Just the two of you, somewhere special...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.85 then
+						state:ModifyStat("Happiness", 18)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 Perfect moment. They said YES! You're engaged!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💍 They said they're not ready. Not a no, but not a yes.")
+					end
+				end,
+			},
+			{
+				text = "Spontaneous - just ask",
+				effects = { Money = -500 },
+				feedText = "No plan, just the moment felt right...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 YES! Spontaneous and perfect! Engaged!")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("💍 Wrong timing. They want to talk later. Awkward.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "rel_wedding_planning_stress",
+		title = "Wedding Planning Stress",
+		emoji = "📋",
+		text = "Wedding planning is causing major stress!",
+		question = "How do you handle wedding planning?",
+		minAge = 20, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresPartner = true,
+		requiresFlags = { engaged = true },
+		stage = STAGE,
+		ageBand = "adult",
+		category = "planning",
+		tags = { "wedding", "stress", "planning" },
+		
+		choices = {
+			{ text = "Bridezilla/Groomzilla mode", effects = { Happiness = -5, Money = -1000 }, setFlags = { wedding_drama = true }, feedText = "📋 This wedding WILL be perfect. Everyone is terrified of you." },
+			{ text = "Stay calm and delegate", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable." },
+			{ text = "Elope instead", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!" },
+			{ text = "Push through together", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters." },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FRIENDSHIP EVENTS (All Ages)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "rel_friend_in_need",
+		title = "Friend In Need",
+		emoji = "🆘",
+		text = "A close friend is going through something difficult.",
+		question = "How do you support them?",
+		minAge = 12, maxAge = 90,
+		baseChance = 0.3,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "friendship",
+		tags = { "friend", "support", "help" },
+		
+		choices = {
+			{ text = "Drop everything to be there", effects = { Happiness = 5, Smarts = 1 }, setFlags = { loyal_friend = true }, feedText = "🆘 You showed up. That's what matters most." },
+			{ text = "Help from a distance - check in", effects = { Happiness = 2 }, feedText = "🆘 Texts and calls. Support without overwhelming." },
+			{ text = "Offer financial help", effects = { Money = -200, Happiness = 4 }, feedText = "🆘 Put your money where your mouth is. They're grateful." },
+			{ text = "Too caught up in own life", effects = { Happiness = -4 }, setFlags = { bad_friend_moment = true }, feedText = "🆘 Wasn't there for them. The guilt lingers." },
+		},
+	},
+	{
+		id = "rel_friend_betrayal",
+		title = "Friend Betrayal",
+		emoji = "🔪",
+		text = "A friend did something that deeply hurt you.",
+		question = "How do you handle the betrayal?",
+		minAge = 13, maxAge = 80,
+		baseChance = 0.15,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "conflict",
+		tags = { "betrayal", "friend", "conflict" },
+		
+		choices = {
+			{ text = "Confront them directly", effects = {}, feedText = "Demanding an explanation...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔪 They apologized sincerely. Friendship saved.")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("🔪 Made it worse. No apology. Friendship over.")
+					end
+				end,
+			},
+			{ text = "Cut them off completely", effects = { Happiness = -4 }, setFlags = { ended_friendship = true }, feedText = "🔪 Done. No second chances. They're dead to you." },
+			{ text = "Forgive but don't forget", effects = { Happiness = 2, Smarts = 2 }, feedText = "🔪 Moving forward but trust is damaged forever." },
+			{ text = "Revenge", effects = { Happiness = 2 }, setFlags = { vengeful = true }, feedText = "🔪 Got them back. Petty? Yes. Satisfying? Also yes." },
+		},
+	},
+	{
+		id = "rel_making_new_friends",
+		title = "Making New Friends",
+		emoji = "👋",
+		text = "You're trying to make new friends!",
+		question = "How do you try to make friends?",
+		minAge = 15, maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "friendship",
+		tags = { "friends", "social", "meeting" },
+		
+		-- CRITICAL: Random friend-making outcome
+		choices = {
+			{
+				text = "Join clubs or activities",
+				effects = { Money = -50 },
+				feedText = "Putting yourself out there...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.has_close_friend = true
+						state:AddFeed("👋 Made real connections! New friend group!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👋 Met some people. Nothing clicked yet.")
+					end
+				end,
+			},
+			{
+				text = "Through apps/online communities",
+				effects = {},
+				feedText = "Connecting digitally...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.has_online_friends = true
+						state:AddFeed("👋 Found your people online! Great community!")
+					else
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("👋 Some acquaintances but no deep connections.")
+					end
+				end,
+			},
+			{
+				text = "Through work/school",
+				effects = { Happiness = 5 },
+				setFlags = { work_friends = true },
+				feedText = "👋 Coworkers/classmates became real friends!",
+			},
+			{
+				text = "Stick with existing friends",
+				effects = { Happiness = 2 },
+				feedText = "👋 Quality over quantity. Keep the friends you have.",
+			},
+		},
+	},
+	{
+		id = "rel_friend_group_dynamics",
+		title = "Friend Group Drama",
+		emoji = "👥",
+		text = "There's tension in your friend group.",
+		question = "How do you handle the group dynamics?",
+		minAge = 13, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "conflict",
+		tags = { "friends", "drama", "conflict" },
+		
+		choices = {
+			{ text = "Stay neutral - don't pick sides", effects = { Happiness = 1, Smarts = 2 }, setFlags = { peacekeeper = true }, feedText = "👥 Switzerland strategy. Friends with everyone." },
+			{ text = "Try to mediate", effects = {}, feedText = "Playing peacemaker...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("👥 Resolved the conflict! Group intact!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("👥 Made it about you somehow. Both sides mad now.")
+					end
+				end,
+			},
+			{ text = "Pick a side", effects = { Happiness = -3 }, setFlags = { picked_sides = true }, feedText = "👥 Chose your people. Lost some friends." },
+			{ text = "Distance yourself from all of it", effects = { Happiness = -2 }, feedText = "👥 Stepping back. The drama is exhausting." },
+		},
+	},
+	{
+		id = "rel_losing_touch",
+		title = "Losing Touch",
+		emoji = "📵",
+		text = "You've been losing touch with old friends.",
+		question = "Do you try to reconnect?",
+		minAge = 20, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "friendship",
+		tags = { "friends", "reconnection", "loss" },
+		
+		choices = {
+			{
+				text = "Reach out and reconnect",
+				effects = {},
+				feedText = "Sending that long-overdue message...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.rekindled_friendship = true
+						state:AddFeed("📵 Like no time passed! Friendship rekindled!")
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📵 Nice chat but you've both changed. Different people now.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📵 Left on read. Some friendships just end.")
+					end
+				end,
+			},
+			{
+				text = "Let it fade naturally",
+				effects = { Happiness = -2 },
+				feedText = "📵 People grow apart. That's life.",
+			},
+			{
+				text = "Plan a reunion",
+				effects = { Money = -100 },
+				feedText = "Getting the old gang together...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("📵 AMAZING reunion! Old memories and new laughs!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📵 Awkward. You've all changed. Nothing in common anymore.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FAMILY RELATIONSHIPS (All Ages)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "rel_parent_approval_struggle",
+		title = "Parent Approval",
+		emoji = "👨‍👩‍👧",
+		text = "Seeking approval from your parents feels impossible.",
+		question = "How do you handle wanting parental approval?",
+		minAge = 15, maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "family",
+		tags = { "parents", "approval", "struggle" },
+		
+		choices = {
+			{ text = "Live your life regardless", effects = { Happiness = 4, Smarts = 2 }, setFlags = { independent_of_parents = true }, feedText = "👨‍👩‍👧 You don't need their approval to be valid." },
+			{ text = "Keep trying to please them", effects = { Happiness = -4 }, setFlags = { seeking_approval = true }, feedText = "👨‍👩‍👧 Never good enough. Always trying." },
+			{ text = "Have an honest conversation", effects = {}, feedText = "Opening up about how you feel...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👨‍👩‍👧 They finally understood! Relationship improved!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("👨‍👩‍👧 They didn't get it. Same as always.")
+					end
+				end,
+			},
+			{ text = "Accept they may never change", effects = { Happiness = 2, Smarts = 3 }, setFlags = { accepted_parent_limits = true }, feedText = "👨‍👩‍👧 Stopped expecting change. Peace in acceptance." },
+		},
+	},
+	{
+		id = "rel_sibling_rivalry_adult",
+		title = "Adult Sibling Rivalry",
+		emoji = "⚔️",
+		text = "Competition with your sibling continues into adulthood.",
+		question = "How do you handle sibling rivalry now?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "sibling", "rivalry", "family" },
+		
+		choices = {
+			{ text = "Let it go - life's too short", effects = { Happiness = 5, Smarts = 2 }, setFlags = { sibling_peace = true }, feedText = "⚔️ Stopped competing. You're on the same team." },
+			{ text = "Win at all costs", effects = { Happiness = -3, Money = 200 }, setFlags = { competitive_sibling = true }, feedText = "⚔️ WINNING. But at what cost? Relationship strained." },
+			{ text = "Celebrate their success", effects = { Happiness = 4 }, feedText = "⚔️ Their win isn't your loss. Supportive sibling." },
+			{ text = "Avoid them entirely", effects = { Happiness = -2 }, setFlags = { estranged_sibling = true }, feedText = "⚔️ Easier to not engage. Distance grows." },
+		},
+	},
+	{
+		id = "rel_family_gathering",
+		title = "Family Gathering",
+		emoji = "🍽️",
+		text = "It's time for a big family gathering!",
+		question = "How does the family gathering go?",
+		minAge = 8, maxAge = 90,
+		baseChance = 0.35,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "family",
+		tags = { "family", "gathering", "holiday" },
+		
+		-- CRITICAL: Random gathering outcome
+		choices = {
+			{
+				text = "Enjoy the chaos",
+				effects = {},
+				feedText = "All the relatives in one place...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🍽️ Great time! Good food, good stories, feeling loved!")
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🍽️ The usual mix. Some drama but mostly fine.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🍽️ Uncle started political arguments. It went downhill fast.")
+					end
+				end,
+			},
+			{
+				text = "Hide from the awkward relatives",
+				effects = { Happiness = 2 },
+				feedText = "🍽️ Strategic bathroom breaks and phone checking. Survived.",
+			},
+			{
+				text = "Skip it entirely",
+				effects = { Happiness = -1 },
+				feedText = "🍽️ Stayed home. FOMO and guilt but also... peace.",
+			},
+		},
+	},
+	{
+		id = "rel_family_secret_revealed",
+		title = "Family Secret",
+		emoji = "🤫",
+		text = "A major family secret has been revealed!",
+		question = "What secret was uncovered?",
+		minAge = 16, maxAge = 90,
+		baseChance = 0.1,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "family",
+		tags = { "secret", "family", "revelation" },
+		
+		choices = {
+			{ text = "Hidden sibling exists", effects = { Happiness = -5, Smarts = 2 }, setFlags = { secret_sibling = true }, feedText = "🤫 You have a half-brother/sister. Mind blown." },
+			{ text = "Parent had affair years ago", effects = { Happiness = -8 }, setFlags = { parent_affair = true }, feedText = "🤫 The family was built on a lie. Processing this." },
+			{ text = "Family wealth secret", effects = { Happiness = 3, Money = 500 }, feedText = "🤫 There's money in the family nobody talked about!" },
+			{ text = "Criminal history in family", effects = { Happiness = -4, Smarts = 2 }, setFlags = { family_criminal_past = true }, feedText = "🤫 Grandpa wasn't always a baker... he was a smuggler." },
+		},
+	},
+	{
+		id = "rel_caring_for_aging_parent",
+		title = "Caring for Parents",
+		emoji = "👴",
+		text = "Your parents need more care and support.",
+		question = "How do you approach caregiving?",
+		minAge = 35, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "parents", "caregiving", "aging" },
+		
+		choices = {
+			{ text = "Move them in with you", effects = { Happiness = 3, Money = -200, Health = -2 }, setFlags = { live_in_caregiver = true }, feedText = "👴 They live with you now. Hard but right." },
+			{ text = "Hire professional help", effects = { Money = -500, Happiness = 2 }, setFlags = { hired_caregiver = true }, feedText = "👴 Professional care. Expensive but quality." },
+			{ text = "Share duties with siblings", effects = { Happiness = 2 }, feedText = "👴 Family teamwork. Splitting the responsibility." },
+			{ text = "Struggling to balance everything", effects = { Happiness = -5, Health = -3 }, setFlags = { caregiver_burnout = true }, feedText = "👴 It's overwhelming. Your own life suffers." },
+		},
+	},
+	{
+		id = "rel_inheritance_family_drama",
+		title = "Inheritance Drama",
+		emoji = "💰",
+		text = "A family member passed and left an inheritance.",
+		question = "What happens with the inheritance?",
+		minAge = 25, maxAge = 80,
+		baseChance = 0.1,
+		cooldown = 8,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "money", "family" },
+		
+		-- CRITICAL: Random inheritance situation
+		choices = {
+			{
+				text = "Wait for the will reading",
+				effects = {},
+				feedText = "Finding out what you receive...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						local inheritance = math.random(5000, 20000)
+						state.Money = (state.Money or 0) + inheritance
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("💰 Received $%d! Unexpected blessing.", inheritance))
+					elseif roll < 0.55 then
+						local inheritance = math.random(1000, 5000)
+						state.Money = (state.Money or 0) + inheritance
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed(string.format("💰 Modest inheritance of $%d. Grateful.", inheritance))
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💰 Nothing for you. Others got everything.")
+					else
+						state:ModifyStat("Happiness", -6)
+						state.Flags = state.Flags or {}
+						state.Flags.family_inheritance_fight = true
+						state:AddFeed("💰 Family fighting over the estate. Ugly.")
+					end
+				end,
+			},
+			{
+				text = "Don't want to be involved in money talk",
+				effects = { Happiness = 1 },
+				feedText = "💰 Staying out of it. Not worth family drama.",
+			},
+		},
+	},
+	{
+		id = "rel_empty_nest",
+		title = "Empty Nest",
+		emoji = "🏠",
+		text = "Your kids have all moved out.",
+		question = "How do you handle the empty nest?",
+		minAge = 45, maxAge = 70,
+		oneTime = true,
+		-- CRITICAL FIX: Must have children for empty nest event!
+		-- Changed to has_child which is what child events actually set
+		requiresFlags = { has_child = true },
+		blockedByFlags = { no_children = true, childfree = true },
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "children", "empty_nest", "transition" },
+		
+		-- CRITICAL FIX: Also check eligibility function for child count
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.has_children or flags.has_child or flags.parent) then
+				return false, "Need children for this event"
+			end
+			return true
+		end,
+		
+		choices = {
+			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Walk around naked! Travel!" },
+			{ text = "Devastated - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nest_sad = true }, feedText = "🏠 The house feels so empty. Purpose feels lost." },
+			{ text = "Rediscover your relationship", effects = { Happiness = 6 }, setFlags = { rekindled_partnership = true }, feedText = "🏠 It's like dating again! Just the two of you!" },
+			{ text = "Fill time with new hobbies", effects = { Happiness = 5, Smarts = 3 }, setFlags = { new_chapter = true }, feedText = "🏠 New hobbies, classes, activities! Reinvention!" },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL DYNAMICS (All Ages)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "rel_toxic_person",
+		title = "Toxic Person",
+		emoji = "☠️",
+		text = "Someone in your life is incredibly toxic.",
+		question = "How do you deal with the toxic person?",
+		minAge = 15, maxAge = 80,
+		baseChance = 0.2,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "conflict",
+		tags = { "toxic", "boundaries", "conflict" },
+		
+		choices = {
+			{ text = "Cut them out completely", effects = { Happiness = 6, Smarts = 2 }, setFlags = { cut_toxic_person = true }, feedText = "☠️ No contact. Life improved immediately." },
+			{ text = "Set firm boundaries", effects = { Happiness = 4, Smarts = 3 }, setFlags = { good_boundaries = true }, feedText = "☠️ Limited interaction. Boundaries protected you." },
+			{ text = "Keep giving chances", effects = { Happiness = -6 }, setFlags = { doormat = true }, feedText = "☠️ They keep hurting you. Why do you allow it?" },
+			{ text = "Try to fix them", effects = { Happiness = -4, Health = -2 }, setFlags = { fixer_complex = true }, feedText = "☠️ You can't save people who don't want saving." },
+		},
+	},
+	{
+		id = "rel_social_comparison",
+		title = "Social Comparison",
+		emoji = "📱",
+		text = "Everyone on social media seems to have better lives.",
+		question = "How do you handle social comparison?",
+		minAge = 13, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "psychology",
+		tags = { "social_media", "comparison", "self_esteem" },
+		
+		choices = {
+			{ text = "Remember it's curated highlights", effects = { Happiness = 3, Smarts = 3 }, setFlags = { social_media_aware = true }, feedText = "📱 Their struggles aren't posted. Reality check." },
+			{ text = "Take a social media break", effects = { Happiness = 5, Health = 2 }, setFlags = { social_detox = true }, feedText = "📱 Unplugged. So much mental peace!" },
+			{ text = "Fall into comparison trap", effects = { Happiness = -6, Looks = -2 }, setFlags = { comparison_trap = true }, feedText = "📱 Everyone is doing better. Why can't you?" },
+			{ text = "Use it as motivation", effects = { Happiness = 2, Smarts = 2 }, feedText = "📱 Let it inspire, not depress. Healthy mindset." },
+		},
+	},
+	{
+		id = "rel_loneliness_epidemic",
+		title = "Feeling Lonely",
+		emoji = "😔",
+		text = "Despite being around people, you feel deeply lonely.",
+		question = "How do you combat loneliness?",
+		minAge = 18, maxAge = 90,
+		baseChance = 0.3,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "psychology",
+		tags = { "loneliness", "mental_health", "connection" },
+		
+		choices = {
+			{
+				text = "Actively seek connection",
+				effects = {},
+				feedText = "Reaching out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😔 Found genuine connection! The loneliness lifted!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("😔 Tried but it didn't click. Still searching.")
+					end
+				end,
+			},
+			{ text = "Join support group", effects = { Happiness = 5, Smarts = 2, Money = -50 }, setFlags = { support_group = true }, feedText = "😔 Others feel it too. You're not alone in being alone." },
+			{ text = "Get a pet", effects = { Happiness = 7, Money = -200 }, setFlags = { has_pet = true }, feedText = "😔 Unconditional love. A furry friend helped!" },
+			{ text = "Isolate further", effects = { Happiness = -8, Health = -3 }, setFlags = { chronic_loneliness = true }, feedText = "😔 Withdrew more. Spiraling. Need help." },
+		},
+	},
+	{
+		id = "rel_reputation_management",
+		title = "Reputation at Stake",
+		emoji = "🗣️",
+		text = "People are talking about you - and not positively.",
+		question = "How do you handle your reputation being challenged?",
+		minAge = 14, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "social",
+		tags = { "reputation", "gossip", "social" },
+		
+		choices = {
+			{ text = "Address it head-on", effects = {}, feedText = "Confronting the situation...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🗣️ Set the record straight. Truth won out.")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🗣️ Made a bigger scene. More people involved now.")
+					end
+				end,
+			},
+			{ text = "Rise above - don't engage", effects = { Happiness = 2, Smarts = 3 }, feedText = "🗣️ Let them talk. Your life speaks for itself." },
+			{ text = "Let it destroy you internally", effects = { Happiness = -8 }, setFlags = { reputation_damaged = true }, feedText = "🗣️ Can't stop thinking about what they say." },
+			{ text = "Fight fire with fire", effects = { Happiness = -2 }, setFlags = { gossiper = true }, feedText = "🗣️ Spread some of your own. War escalated." },
+		},
+	},
+}
+
+return RelationshipsExpanded

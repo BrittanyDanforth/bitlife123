@@ -1,0 +1,1184 @@
+--[[
+	StreetHustlerEvents.lua
+	
+	Career events for Street Hustler / Underground Dealer career path.
+	This is the "Illegal Dealer" / "Street Vendor" / "Product Seller" career.
+	Roblox-friendly language - no explicit drug references.
+	
+	Features:
+	- Selling "product" on the streets
+	- Risk of getting caught by police
+	- Building a territory/reputation
+	- Gang interactions
+	- Working up from street seller to supplier
+]]
+
+local RANDOM = Random.new()
+
+-- Helper: Jail the player
+local function jailPlayer(state, yearsMin, yearsMax, reason)
+	-- CRITICAL FIX: Use NextInteger, not NextNumber!
+	-- NextNumber() returns 0-1 float, NextInteger(min, max) returns proper integer range
+	local years = RANDOM:NextInteger(yearsMin, yearsMax)
+	state.InJail = true
+	state.JailYearsLeft = years
+	state.Flags = state.Flags or {}
+	state.Flags.in_prison = true
+	state.Flags.incarcerated = true
+	state.Flags.criminal_record = true
+	
+	if state.CurrentJob then
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.lastJobBeforeJail = state.CurrentJob
+		state.CurrentJob = nil
+		state.Flags.employed = nil
+	end
+	
+	return years
+end
+
+local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STARTING OUT - STREET HUSTLER CAREER ENTRY
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "street_hustle_opportunity",
+		emoji = "💼",
+		title = "Street Opportunity",
+		text = "Someone approaches you with a 'business opportunity' selling product on the streets. It's risky but the money is good.",
+		question = "What do you do?",
+		category = "career",
+		weight = 6,
+		minAge = 16,
+		maxAge = 35,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		requiresNoJob = true,
+		blockedByFlags = { street_hustler = true, in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Take the opportunity - I need money",
+				effects = { Happiness = 5, Money = 500 },
+				setFlags = { street_hustler = true, dealer = true, criminal_career = true },
+				feedText = "You've entered the underground economy. The money's good but the risks are real.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerRep = 10
+					state.CareerInfo.hustlerLevel = "street_seller"
+					state.Flags.has_illegal_income = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline - too risky for me",
+				effects = { Happiness = 2 },
+				feedText = "You turned down the offer. Maybe there's a legal path forward.",
+			},
+			{
+				index = 3,
+				text = "Report it to the police",
+				effects = { Happiness = -2 },
+				setFlags = { snitch = true, helpful_citizen = true },
+				feedText = "You informed the authorities. Some would call you a good citizen, others a snitch.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DAILY HUSTLE EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "street_sales_day",
+		emoji = "💵",
+		title = "Working the Corner",
+		text = "Another day working your territory. Customers are coming by and you're moving product.",
+		question = "How do you handle today?",
+		category = "career",
+		weight = 8,
+		minAge = 16,
+		maxAge = 60,
+		baseChance = 0.7,
+		cooldown = 1,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Play it safe - small sales only",
+				effects = { Happiness = 2 },
+				feedText = "You made some money keeping it low-key.",
+				onResolve = function(state)
+					local earnings = RANDOM:NextInteger(100, 400)
+					state.Money = (state.Money or 0) + earnings
+					if state.AddFeed then
+						state:AddFeed(string.format("💰 Made $%d today keeping it safe.", earnings))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Push harder - maximize profits",
+				effects = { Happiness = 3 },
+				feedText = "You pushed for bigger sales...",
+				onResolve = function(state)
+					local risk = RANDOM:NextNumber()
+					if risk < 0.25 then -- 25% chance of trouble
+						local years = jailPlayer(state, 1, 3, "Street dealing")
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 BUSTED! Cops caught you. %d years in prison.", math.floor(years)))
+						end
+					else
+						local earnings = RANDOM:NextInteger(400, 1200)
+						state.Money = (state.Money or 0) + earnings
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 5
+						if state.AddFeed then
+							state:AddFeed(string.format("💰 BIG day! Made $%d pushing hard.", earnings))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Take the day off",
+				effects = { Happiness = 5, Health = 2 },
+				feedText = "Everyone needs a break sometimes.",
+			},
+		},
+	},
+	
+	{
+		id = "rival_dealer_confrontation",
+		emoji = "😠",
+		title = "Rival Hustler",
+		text = "Another dealer is working your territory. This is YOUR corner. They're cutting into your profits.",
+		question = "How do you handle this?",
+		category = "career",
+		weight = 6,
+		minAge = 16,
+		maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Confront them aggressively",
+				effects = { Happiness = 3 },
+				feedText = "You confronted the rival...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.3 then
+						-- Fight escalates
+						state.Stats = state.Stats or {}
+						local healthLoss = RANDOM:NextInteger(-15, -5)
+						if state.ModifyStat then
+							state:ModifyStat("Health", healthLoss)
+						end
+						if state.AddFeed then
+							state:AddFeed("🤕 The confrontation got violent. You're hurt but held your ground.")
+						end
+					elseif outcome < 0.6 then
+						-- They back off
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 10
+						if state.AddFeed then
+							state:AddFeed("💪 They backed down. Your reputation grows.")
+						end
+					else
+						-- Cops show up
+						if RANDOM:NextNumber() < 0.3 then
+							jailPlayer(state, 0.5, 2, "Street fighting")
+							if state.AddFeed then
+								state:AddFeed("🚔 Cops showed up during the fight. You're arrested!")
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed("🚨 Cops showed up but you both ran. Close call!")
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Talk it out - split the territory",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "You negotiated a peace deal.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.diplomatic_hustler = true
+					if state.AddFeed then
+						state:AddFeed("🤝 You split the territory. Less money but less drama.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Find a new corner",
+				effects = { Happiness = -3 },
+				feedText = "You moved to a less profitable area.",
+			},
+			{
+				index = 4,
+				text = "Report them anonymously",
+				effects = { Happiness = 2 },
+				setFlags = { snitch = true },
+				feedText = "You tipped off the cops about your rival.",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.7 then
+						if state.AddFeed then
+							state:AddFeed("🚔 The cops busted your rival. Territory is all yours now!")
+						end
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 5
+					else
+						if state.AddFeed then
+							state:AddFeed("😬 Your rival found out you snitched. Watch your back...")
+						end
+						state.Flags.marked_by_rivals = true
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CAREER PROGRESSION
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "supplier_opportunity",
+		emoji = "📦",
+		title = "Supplier Opportunity",
+		text = "Your connect is impressed with your work. They're offering to make you a supplier - you'd manage other sellers.",
+		question = "Do you move up?",
+		category = "career",
+		weight = 5,
+		minAge = 20,
+		maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { supplier = true, in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Accept the promotion",
+				effects = { Happiness = 10, Money = 5000 },
+				setFlags = { supplier = true },
+				feedText = "You're moving up! More money, more risk.",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerLevel = "supplier"
+					state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 30
+					if state.AddFeed then
+						state:AddFeed("📈 You're now a supplier. Big leagues now.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Decline - too much heat",
+				effects = { Happiness = 5 },
+				feedText = "You decided to stay at your current level. Less money but safer.",
+			},
+			{
+				index = 3,
+				text = "This is my chance to get out",
+				effects = { Happiness = 8 },
+				feedText = "You used this moment to exit the game.",
+				onResolve = function(state)
+					state.Flags.street_hustler = nil
+					state.Flags.dealer = nil
+					state.Flags.former_hustler = true
+					state.Flags.out_of_the_game = true
+					if state.AddFeed then
+						state:AddFeed("🚶 You walked away from the life. Time to go legit.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "big_score",
+		emoji = "💎",
+		title = "The Big Score",
+		text = "A massive opportunity comes up. High risk, huge reward. One big deal that could set you up for life.",
+		question = "Do you take the risk?",
+		category = "career",
+		weight = 4,
+		minAge = 22,
+		maxAge = 50,
+		baseChance = 0.15,
+		cooldown = 20,
+		requiresFlags = { supplier = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Go all in",
+				effects = { Happiness = 5 },
+				feedText = "You went for the big score...",
+				onResolve = function(state)
+					local outcome = RANDOM:NextNumber()
+					if outcome < 0.35 then -- 35% chance of success
+						local earnings = RANDOM:NextInteger(50000, 200000)
+						state.Money = (state.Money or 0) + earnings
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 50
+						state.Flags.big_score_winner = true
+						if state.AddFeed then
+							state:AddFeed(string.format("💰💰💰 THE SCORE! You made $%d! Life changing money!", earnings))
+						end
+					elseif outcome < 0.65 then -- 30% chance of getting caught
+						local years = jailPlayer(state, 5, 15, "Major trafficking")
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 FEDERAL AGENTS! You're looking at %d years!", math.floor(years)))
+						end
+					else -- 35% chance deal falls through
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(5000, 15000))
+						if state.AddFeed then
+							state:AddFeed("❌ The deal went bad. You lost your investment.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Pass - not worth the risk",
+				effects = { Happiness = 3, Smarts = 5 },
+				feedText = "You passed on the opportunity. Live to hustle another day.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- HEAT / POLICE ATTENTION
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "police_investigation",
+		emoji = "🔍",
+		title = "Under Investigation",
+		text = "Word on the street is the police are looking into your activities. The heat is on.",
+		question = "What do you do?",
+		category = "career",
+		weight = 7,
+		minAge = 18,
+		maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true, laying_low = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Lay low for a while",
+				effects = { Happiness = -5 },
+				setFlags = { laying_low = true },
+				feedText = "You're keeping a low profile until the heat dies down.",
+				onResolve = function(state)
+					-- No income while laying low, but safe
+					if state.AddFeed then
+						state:AddFeed("🙈 Going dark for a while. No business, no problems.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Business as usual - I'm careful",
+				effects = { Happiness = 2 },
+				feedText = "You kept working...",
+				onResolve = function(state)
+					if RANDOM:NextNumber() < 0.4 then
+						local years = jailPlayer(state, 2, 5, "Dealing charges")
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 They got you! %d years.", math.floor(years)))
+						end
+					else
+						local earnings = RANDOM:NextInteger(300, 800)
+						state.Money = (state.Money or 0) + earnings
+						if state.AddFeed then
+							state:AddFeed("😎 Dodged the heat and made money. Living dangerously.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Move to a new city",
+				-- CRITICAL FIX: Validate money before relocating
+				effects = {}, -- Money handled in onResolve
+				setFlags = { relocated = true },
+				feedText = "Considering relocating...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local moveCost = 2000
+					if money >= moveCost then
+						state.Money = money - moveCost
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Spent $2000 and relocated to a new city. Fresh start!")
+						end
+					elseif money >= 500 then
+						-- Budget move
+						state.Money = money - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Moved cheap with just $500. Rough start but safe.")
+						end
+					else
+						-- Can't afford to move
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.laying_low = true
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to relocate. Laying low instead...")
+						end
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Turn informant for immunity",
+				effects = { Happiness = -10 },
+				setFlags = { informant = true, snitch = true },
+				feedText = "You cooperated with the police in exchange for immunity.",
+				onResolve = function(state)
+					state.Flags.street_hustler = nil
+					state.Flags.dealer = nil
+					state.Flags.supplier = nil
+					state.Flags.protected_witness = true
+					if state.AddFeed then
+						state:AddFeed("🕵️ You're now a protected informant. Your old life is over.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- GOING LEGIT
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "exit_the_game",
+		emoji = "🚪",
+		title = "Time to Go Legit?",
+		text = "You've saved up some money. Maybe it's time to leave the street life behind and start a legitimate business.",
+		question = "What do you do?",
+		category = "career",
+		weight = 4,
+		minAge = 25,
+		maxAge = 50,
+		baseChance = 0.2,
+		cooldown = 10,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return (state.Money or 0) >= 10000
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Open a legitimate business",
+				effects = { Happiness = 15, Money = -10000 },
+				setFlags = { went_legit = true, entrepreneur = true },
+				feedText = "You invested your money into a legit business!",
+				onResolve = function(state)
+					state.Flags.street_hustler = nil
+					state.Flags.dealer = nil
+					state.Flags.supplier = nil
+					state.Flags.former_hustler = true
+					if state.AddFeed then
+						state:AddFeed("🏪 You opened a business! The street life is behind you.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep hustling - the money's too good",
+				effects = { Happiness = 5 },
+				feedText = "You're too deep in the game to leave now.",
+			},
+			{
+				index = 3,
+				text = "Save more first",
+				effects = { Happiness = 2 },
+				feedText = "You'll think about it when you have more saved up.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADDITIONAL STREET HUSTLER EVENTS - EXPANDED CONTENT
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "street_rep_challenge",
+		emoji = "💪",
+		title = "Rep on the Line",
+		text = "Someone is questioning your rep in the streets. Word's getting around that you're soft.",
+		question = "How do you respond?",
+		category = "career",
+		weight = 6,
+		minAge = 16,
+		maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Make an example - show strength",
+				effects = {},
+				feedText = "You decided to make a statement...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.35 then
+						-- Success - rep restored
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 20
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💪 You made your point. Nobody's questioning you now.")
+					elseif roll < 0.65 then
+						-- Things got messy
+						state:ModifyStat("Health", -8)
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 10
+						state:AddFeed("💪 Got into a scrap. You're hurt but your rep is intact.")
+					else
+						-- Cops involved
+						if RANDOM:NextNumber() < 0.5 then
+							local years = jailPlayer(state, 1, 3, "Assault")
+							state:AddFeed(string.format("🚔 Things escalated. %d years for assault.", math.floor(years)))
+						else
+							state:AddFeed("🚔 Cops came but you got away. Close call.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Let it slide - not worth the trouble",
+				effects = { Happiness = -3 },
+				feedText = "You ignored the disrespect...",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerRep = math.max(0, (state.CareerInfo.hustlerRep or 0) - 10)
+					state:AddFeed("💪 Your rep took a hit but you avoided trouble.")
+				end,
+			},
+			{
+				index = 3,
+				text = "Handle it through connections",
+				effects = { Money = -200 },
+				feedText = "You had someone else handle it...",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 5
+					state:AddFeed("💪 Problem solved through channels. Smart move.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "street_loyalty_test",
+		emoji = "🤔",
+		title = "Loyalty Test",
+		text = "Your connect wants you to prove your loyalty. They're asking you to do something risky.",
+		question = "What do you do?",
+		category = "career",
+		weight = 5,
+		minAge = 18,
+		maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Do what they ask - prove yourself",
+				effects = {},
+				feedText = "You agreed to prove your loyalty...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.50 then
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 25
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(500, 1500)
+						state.Flags = state.Flags or {}
+						state.Flags.trusted_in_the_game = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🤝 You proved your loyalty. You're trusted now.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😰 It was risky but you pulled it off. Never again though.")
+					else
+						local years = jailPlayer(state, 2, 5, "Illegal activity")
+						state:AddFeed(string.format("🚔 The loyalty test was a setup or went wrong. %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Refuse - this feels like a trap",
+				effects = { Happiness = 3 },
+				feedText = "You refused the test...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.30 then
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = math.max(0, (state.CareerInfo.hustlerRep or 0) - 20)
+						state.Flags = state.Flags or {}
+						state.Flags.untrusted = true
+						state:AddFeed("🤔 They think you might be a snitch now. Trust is broken.")
+					else
+						state:AddFeed("🤔 They respected your caution. Maybe it was a test of your judgment.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Cut ties with this connect",
+				effects = { Happiness = -5 },
+				feedText = "You decided to find a new connect...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.looking_for_new_connect = true
+					state:AddFeed("🚶 You walked away from that crew. Starting fresh is hard.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "street_customer_problems",
+		emoji = "😤",
+		title = "Problem Customer",
+		text = "A customer is causing problems. They're short on money and getting aggressive.",
+		question = "How do you handle this situation?",
+		category = "career",
+		weight = 7,
+		minAge = 16,
+		maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "No product without full payment",
+				effects = { Happiness = 3 },
+				feedText = "You stood firm on payment...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.70 then
+						state:AddFeed("💵 They came back with the money. Business is business.")
+					else
+						state:ModifyStat("Health", -3)
+						state:AddFeed("💵 They got aggressive. Small scuffle but you held your ground.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Front them this once - build loyalty",
+				effects = {},
+				feedText = "You gave them credit this time...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50, 150)
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 5
+						state:AddFeed("💵 They paid you back plus extra. Loyalty earned.")
+					else
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						state:AddFeed("💵 They ghosted you. Never front again.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Things get physical",
+				effects = {},
+				feedText = "The situation escalated...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.40 then
+						state:ModifyStat("Health", -10)
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 15
+						state:AddFeed("🤕 You got hurt but sent a message. Rep up, health down.")
+					elseif roll < 0.70 then
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🤕 Quick scuffle. You're fine but shaken.")
+					else
+						local years = jailPlayer(state, 1, 2, "Battery")
+						state:AddFeed(string.format("🚔 Someone called the cops. %d years for battery.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Walk away - not worth the trouble",
+				effects = { Happiness = 2 },
+				feedText = "You let this one go. Smart.",
+			},
+		},
+	},
+	
+	{
+		id = "street_territory_expansion",
+		emoji = "📍",
+		title = "Territory Expansion",
+		text = "There's an opportunity to expand to a new neighborhood. More customers, but it's someone else's turf.",
+		question = "Do you make a move?",
+		category = "career",
+		weight = 5,
+		minAge = 20,
+		maxAge = 45,
+		baseChance = 0.3,
+		cooldown = 6,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true, laying_low = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Move in aggressively",
+				effects = {},
+				feedText = "You made your move on new territory...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.25 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(2000, 5000)
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.expanded_territory = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📍 Hostile takeover successful! You're running two corners now.")
+					elseif roll < 0.55 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📍 War broke out. You're hurt bad. Not worth it.")
+					else
+						local years = jailPlayer(state, 3, 8, "Turf war violence")
+						state:AddFeed(string.format("🚔 The turf war brought heat. %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Negotiate - split the new area",
+				effects = { Smarts = 2 },
+				feedText = "You tried diplomacy...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.50 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(500, 1500)
+						state.Flags = state.Flags or {}
+						state.Flags.diplomatic_hustler = true
+						state:AddFeed("📍 You negotiated a deal. Shared territory, shared profits.")
+					else
+						state:AddFeed("📍 They weren't interested in sharing. Stayed on your corner.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Stay in your lane",
+				effects = { Happiness = 2 },
+				feedText = "You kept to your own territory. Smart.",
+			},
+		},
+	},
+	
+	{
+		id = "street_supplier_issue",
+		emoji = "📦",
+		title = "Supply Problems",
+		text = "Your supplier is having issues. Product is late and customers are getting impatient.",
+		question = "What do you do?",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Wait it out - loyalty to your connect",
+				effects = { Happiness = -3 },
+				feedText = "You waited for your regular supplier...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.60 then
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(200, 500))
+						state:AddFeed("📦 Lost some customers but your connect came through eventually.")
+					else
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(500, 1000))
+						state:AddFeed("📦 Long dry spell. Major losses. Your connect owes you.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Find a new temporary supplier",
+				effects = {},
+				feedText = "You looked for alternative supply...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(300, 800)
+						state:AddFeed("📦 Found another source. Kept the customers happy.")
+					elseif roll < 0.75 then
+						state.Money = math.max(0, (state.Money or 0) - 200)
+						state:AddFeed("📦 New supplier's product was garbage. Reputation hit.")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.burned_by_supplier = true
+						state.Money = math.max(0, (state.Money or 0) - 500)
+						state:AddFeed("📦 Got robbed by the new 'supplier'. Never trust randoms.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Take a break from the game",
+				effects = { Happiness = 3, Health = 3 },
+				setFlags = { taking_break = true },
+				feedText = "You used this as an excuse to lay low for a bit.",
+			},
+		},
+	},
+	
+	{
+		id = "street_family_finds_out",
+		emoji = "👨‍👩‍👧",
+		title = "Family Discovers Truth",
+		text = "Your family just found out what you really do for money. They're upset.",
+		question = "How do you handle this confrontation?",
+		category = "career",
+		weight = 4,
+		minAge = 16,
+		maxAge = 40,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Promise to quit and go legit",
+				effects = { Happiness = -5 },
+				feedText = "You promised to change...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.30 then
+						state.Flags = state.Flags or {}
+						state.Flags.street_hustler = nil
+						state.Flags.dealer = nil
+						state.Flags.supplier = nil
+						state.Flags.former_hustler = true
+						state.Flags.family_intervention = true
+						state:AddFeed("👨‍👩‍👧 You actually quit. Family support helped you go straight.")
+					else
+						state:AddFeed("👨‍👩‍👧 You promised but didn't follow through. Living a double life.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Defend your choices",
+				effects = { Happiness = -8 },
+				feedText = "You stood by your decisions...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.family_rift = true
+					state:AddFeed("👨‍👩‍👧 Major family rift. They don't approve and you don't care.")
+				end,
+			},
+			{
+				index = 3,
+				text = "Lie and deny everything",
+				effects = { Happiness = -3 },
+				feedText = "You tried to cover it up...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.40 then
+						state:AddFeed("👨‍👩‍👧 They believed you... for now. Walking on eggshells.")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.family_trust_broken = true
+						state:AddFeed("👨‍👩‍👧 They didn't believe you. Trust is broken.")
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Ask for help getting out",
+				effects = { Happiness = 5 },
+				feedText = "You asked for support...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.family_support_to_quit = true
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("👨‍👩‍👧 They're helping you find a way out. Not easy but possible.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "street_close_call_raid",
+		emoji = "🚨",
+		title = "Raid Alert",
+		text = "You hear through the grapevine that cops are planning a big bust in your area!",
+		question = "What do you do?",
+		category = "career",
+		weight = 6,
+		minAge = 18,
+		maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Disappear completely for a while",
+				effects = { Happiness = -5, Money = -500 },
+				setFlags = { laying_low = true },
+				feedText = "You vanished...",
+				onResolve = function(state)
+					state:AddFeed("🚨 You laid low. Lost money but avoided the bust.")
+				end,
+			},
+			{
+				index = 2,
+				text = "Move all product to a safe location",
+				effects = {},
+				feedText = "You tried to secure everything...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.65 then
+						state:AddFeed("🚨 Everything hidden safely. The raid missed you entirely.")
+					elseif roll < 0.85 then
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(500, 1500))
+						state:AddFeed("🚨 Lost some product in the move. Still better than jail.")
+					else
+						local years = jailPlayer(state, 2, 5, "Possession with intent")
+						state:AddFeed(string.format("🚔 Caught moving product! %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Ignore the warning - could be fake",
+				effects = {},
+				feedText = "You gambled on it being false...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.40 then
+						state:AddFeed("🚨 False alarm! Nothing happened. Business as usual.")
+					elseif roll < 0.70 then
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(200, 800))
+						state:AddFeed("🚨 Raid was real but you got lucky. Lost some cash running.")
+					else
+						local years = jailPlayer(state, 3, 8, "Major bust")
+						state:AddFeed(string.format("🚔 The raid was real. You got caught! %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Warn others and spread the word",
+				effects = { Happiness = 5 },
+				feedText = "You looked out for the community...",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 15
+					state.Flags = state.Flags or {}
+					state.Flags.loyal_to_community = true
+					state:AddFeed("🚨 You warned everyone. Your rep in the community is solid.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "street_money_opportunity",
+		emoji = "💰",
+		title = "Quick Money Opportunity",
+		text = "Someone approaches you with a quick money opportunity. It's outside your usual hustle.",
+		question = "What kind of opportunity is it?",
+		category = "career",
+		weight = 5,
+		minAge = 18,
+		maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "A delivery job - big payout",
+				effects = {},
+				feedText = "You took the delivery job...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.50 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(2000, 5000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💰 Easy money! Delivery went smooth.")
+					elseif roll < 0.75 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(500, 1500)
+						state:AddFeed("💰 Got paid but it was sketchy. Not worth the stress.")
+					else
+						local years = jailPlayer(state, 3, 7, "Trafficking")
+						state:AddFeed(string.format("🚔 It was a setup! %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Moving stolen goods",
+				effects = {},
+				feedText = "You dealt in stolen property...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.55 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(1000, 3000)
+						state:AddFeed("💰 Quick flip. Made good money moving the merchandise.")
+					elseif roll < 0.80 then
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(300, 800)
+						state:AddFeed("💰 Couldn't move everything. Made some money at least.")
+					else
+						local years = jailPlayer(state, 1, 4, "Receiving stolen property")
+						state:AddFeed(string.format("🚔 Caught with hot goods! %d years.", math.floor(years)))
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Stick to what you know",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "You passed on the opportunity. Staying in your lane.",
+			},
+			{
+				index = 4,
+				text = "It's a scam - walk away",
+				effects = { Smarts = 3 },
+				feedText = "Your instincts said no. You walked away.",
+			},
+		},
+	},
+	
+	{
+		id = "street_getting_older",
+		emoji = "⏰",
+		title = "Getting Too Old For This",
+		text = "You're getting older. The street life is wearing on you. Younger hustlers are everywhere.",
+		question = "What do you do?",
+		category = "career",
+		weight = 4,
+		minAge = 35,
+		maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresFlags = { street_hustler = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Become a mentor/OG - less street work",
+				effects = { Happiness = 5, Smarts = 3 },
+				feedText = "You transitioned to an advisory role...",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerLevel = "og_advisor"
+					state.Flags = state.Flags or {}
+					state.Flags.street_og = true
+					state:AddFeed("⏰ You're the OG now. Less risk, still respected.")
+				end,
+			},
+			{
+				index = 2,
+				text = "Use savings to go legit",
+				effects = {},
+				feedText = "You tried to exit the game...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 5000 then
+						state.Money = money - 5000
+						state.Flags = state.Flags or {}
+						state.Flags.street_hustler = nil
+						state.Flags.dealer = nil
+						state.Flags.supplier = nil
+						state.Flags.former_hustler = true
+						state.Flags.went_legit = true
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("⏰ Invested your savings in a legit business. You made it out!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⏰ Not enough saved to go legit. Trapped in the game.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Keep hustling until you can't",
+				effects = { Health = -5, Happiness = -3 },
+				feedText = "You're grinding until the wheels fall off...",
+				onResolve = function(state)
+					state:AddFeed("⏰ You're still in the game. Body and mind are wearing down.")
+				end,
+			},
+			{
+				index = 4,
+				text = "Train the next generation",
+				effects = { Happiness = 3 },
+				feedText = "You're teaching the young ones...",
+				onResolve = function(state)
+					state.CareerInfo = state.CareerInfo or {}
+					state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 20
+					state.Flags = state.Flags or {}
+					state.Flags.street_mentor = true
+					state:AddFeed("⏰ Passing down knowledge. They look up to you.")
+				end,
+			},
+		},
+	},
+}
+
+return events

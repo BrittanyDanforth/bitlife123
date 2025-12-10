@@ -26,11 +26,16 @@ if ScreensFolder then
 		local child = ScreensFolder:FindFirstChild(name)
 		if child then
 			local s, r = pcall(require, child)
+			if not s then
+				warn("[LifeClient] ❌ Failed to require", name, ":", r)
+			end
 			return s and r or nil
+		else
+			warn("[LifeClient] ❌ Module not found:", name)
 		end
 		return nil
 	end
-	
+
 	-- Fast parallel loading - no WaitForChild delays
 	OccupationScreen    = safeRequire("OccupationScreen")
 	AssetsScreen        = safeRequire("AssetsScreen")
@@ -55,17 +60,46 @@ end
 MinigamesModule = safeRequireRS("Minigames")
 
 ----------------------------------------------------------------
--- REMOTES (optimized - fast lookup with short fallback)
+-- REMOTES (robust - wait for server to create them)
 ----------------------------------------------------------------
 
-local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or ReplicatedStorage:WaitForChild("LifeRemotes", 3)
-if not remotesFolder then
-	remotesFolder = ReplicatedStorage:FindFirstChild("Life") or ReplicatedStorage:WaitForChild("Life", 3)
+-- Wait for the remotes folder (server creates it on startup)
+local remotesFolder = nil
+local function waitForRemotes()
+	-- Try LifeRemotes first
+	remotesFolder = ReplicatedStorage:WaitForChild("LifeRemotes", 10)
+	if not remotesFolder then
+		-- Fallback to "Life" folder
+		remotesFolder = ReplicatedStorage:WaitForChild("Life", 5)
+	end
+	if not remotesFolder then
+		warn("[LifeClient] Could not find remotes folder! Server may not have initialized.")
+		return false
+	end
+	return true
 end
 
--- Use FindFirstChild first, then short WaitForChild as fallback
+-- Wait for remotes before continuing
+if not waitForRemotes() then
+	-- Create a placeholder folder to prevent nil errors
+	-- The game won't work properly, but at least it won't crash
+	warn("[LifeClient] Creating placeholder remotes folder - game will not function correctly!")
+	remotesFolder = Instance.new("Folder")
+	remotesFolder.Name = "LifeRemotesPlaceholder"
+	remotesFolder.Parent = ReplicatedStorage
+end
+
+-- Use FindFirstChild first, then WaitForChild as fallback
 local function getRemote(name, timeout)
-	return remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, timeout or 2)
+	if not remotesFolder then
+		warn("[LifeClient] Remotes folder is nil when getting:", name)
+		return nil
+	end
+	local remote = remotesFolder:FindFirstChild(name)
+	if not remote then
+		remote = remotesFolder:WaitForChild(name, timeout or 5)
+	end
+	return remote
 end
 
 local RequestAgeUp   = getRemote("RequestAgeUp")
@@ -73,8 +107,8 @@ local PresentEvent   = getRemote("PresentEvent")
 local SubmitChoice   = getRemote("SubmitChoice")
 local SyncState      = getRemote("SyncState")
 local SetLifeInfo    = getRemote("SetLifeInfo")
-local MinigameResult = getRemote("MinigameResult", 1)
-local MinigameStart  = getRemote("MinigameStart", 1)
+local MinigameResult = getRemote("MinigameResult", 2)
+local MinigameStart  = getRemote("MinigameStart", 2)
 
 ----------------------------------------------------------------
 -- STATE
@@ -87,6 +121,10 @@ local currentState = {
 	Name = nil, Age = 0, Money = 0,
 	Happiness = 50, Health = 100, Smarts = 50, Looks = 50,
 	Education = "None", Experience = 0, CurrentJob = nil, InJail = false,
+	-- CRITICAL: Initialize Assets structure to prevent nil errors
+	Assets = { Properties = {}, Vehicles = {}, Items = {}, Crypto = {} },
+	Relationships = {},
+	Flags = {},
 }
 
 local awaitingEvent          = false
@@ -103,6 +141,7 @@ local pendingMinigameChoiceIndex = nil
 local showEvent, hideEvent
 local showIntro, hideIntro
 local showTutorial, hideTutorial
+local showDeathOverlay, hideDeathOverlay
 local updateNameButtons
 local updateFromState
 
@@ -129,30 +168,34 @@ local C = {
 	GreenPale  = Color3.fromRGB(220, 252, 231),
 
 	-- Accents
-	Red     = Color3.fromRGB(239, 68, 68),
-	RedDark = Color3.fromRGB(220, 38, 38),
-	Orange  = Color3.fromRGB(249, 115, 22),
-	Pink    = Color3.fromRGB(244, 114, 182),
-	Purple  = Color3.fromRGB(168, 85, 247),
-	Yellow  = Color3.fromRGB(253, 224, 71),
+	Red      = Color3.fromRGB(239, 68, 68),
+	RedDark  = Color3.fromRGB(220, 38, 38),
+	RedPale  = Color3.fromRGB(254, 226, 226),
+	Orange   = Color3.fromRGB(249, 115, 22),
+	Pink     = Color3.fromRGB(244, 114, 182),
+	PinkDark = Color3.fromRGB(219, 39, 119),
+	PinkPale = Color3.fromRGB(252, 231, 243),
+	Purple   = Color3.fromRGB(168, 85, 247),
+	Yellow   = Color3.fromRGB(253, 224, 71),
+	Amber    = Color3.fromRGB(245, 158, 11),
 
 	-- Gender
 	Male   = Color3.fromRGB(56, 189, 248),
 	Female = Color3.fromRGB(244, 114, 182),
 
 	-- Neutrals
-	White   = Color3.fromRGB(255, 255, 255),
-	OffWhite= Color3.fromRGB(250, 250, 250),
-	Gray50  = Color3.fromRGB(249, 250, 251),
-	Gray100 = Color3.fromRGB(243, 244, 246),
-	Gray200 = Color3.fromRGB(229, 231, 235),
-	Gray300 = Color3.fromRGB(209, 213, 219),
-	Gray400 = Color3.fromRGB(156, 163, 175),
-	Gray500 = Color3.fromRGB(107, 114, 128),
-	Gray600 = Color3.fromRGB(75, 85, 99),
-	Gray700 = Color3.fromRGB(55, 65, 81),
-	Gray800 = Color3.fromRGB(31, 41, 55),
-	Gray900 = Color3.fromRGB(17, 24, 39),
+	White    = Color3.fromRGB(255, 255, 255),
+	OffWhite = Color3.fromRGB(250, 250, 250),
+	Gray50   = Color3.fromRGB(249, 250, 251),
+	Gray100  = Color3.fromRGB(243, 244, 246),
+	Gray200  = Color3.fromRGB(229, 231, 235),
+	Gray300  = Color3.fromRGB(209, 213, 219),
+	Gray400  = Color3.fromRGB(156, 163, 175),
+	Gray500  = Color3.fromRGB(107, 114, 128),
+	Gray600  = Color3.fromRGB(75, 85, 99),
+	Gray700  = Color3.fromRGB(55, 65, 81),
+	Gray800  = Color3.fromRGB(31, 41, 55),
+	Gray900  = Color3.fromRGB(17, 24, 39),
 
 	-- Nav
 	NavBlue = Color3.fromRGB(30, 58, 138),
@@ -168,6 +211,65 @@ local F = {
 	Medium = Enum.Font.GothamMedium,
 	Button = Enum.Font.GothamBold,
 }
+
+local function ensureSharedUITheme()
+	local sharedUI = safeRequireRS("UIComponents")
+	if not sharedUI then
+		return
+	end
+
+	sharedUI.Colors = sharedUI.Colors or {}
+	for name, value in pairs(C) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	-- Additional palette entries used by the standalone screens
+	local extraColors = {
+		Bg        = Color3.fromRGB(246, 248, 252),
+		Teal      = Color3.fromRGB(20, 184, 166),
+		TealDark  = Color3.fromRGB(13, 148, 136),
+		TealPale  = Color3.fromRGB(204, 251, 241),
+		Cyan      = Color3.fromRGB(14, 165, 233),
+		CyanDark  = Color3.fromRGB(21, 94, 117),
+		CyanPale  = Color3.fromRGB(224, 242, 254),
+		Gold      = Color3.fromRGB(251, 191, 36),
+		GoldDark  = Color3.fromRGB(217, 119, 6),
+		GoldPale  = Color3.fromRGB(254, 243, 199),
+		AmberDark = Color3.fromRGB(217, 119, 6),
+		AmberPale = Color3.fromRGB(254, 243, 199),
+		PurplePale= Color3.fromRGB(243, 232, 255),
+		Gray950   = Color3.fromRGB(2, 6, 23),
+	}
+	for name, value in pairs(extraColors) do
+		if sharedUI.Colors[name] == nil then
+			sharedUI.Colors[name] = value
+		end
+	end
+
+	sharedUI.Fonts = sharedUI.Fonts or {}
+	for name, font in pairs(F) do
+		if sharedUI.Fonts[name] == nil then
+			sharedUI.Fonts[name] = font
+		end
+	end
+
+	if not sharedUI.formatMoney then
+		function sharedUI.formatMoney(amount)
+			if not amount then return "$0" end
+			if amount >= 1_000_000 then
+				return string.format("$%.1fM", amount / 1_000_000)
+			elseif amount >= 1_000 then
+				return string.format("$%.1fK", amount / 1_000)
+			else
+				return "$" .. tostring(math.floor(amount + 0.5))
+			end
+		end
+	end
+end
+
+ensureSharedUITheme()
 
 ----------------------------------------------------------------
 -- HELPERS
@@ -238,6 +340,109 @@ local function createShadow(parent, offset, blur, color, transparency)
 	shadow.ZIndex = parent.ZIndex - 1
 	shadow.Parent = parent
 	return shadow
+end
+
+----------------------------------------------------------------
+-- MOBILE RESPONSIVE SYSTEM
+-- Detects device type and provides responsive sizing helpers
+-- OPTIMIZED for tiny phones like iPhone 6 (375x667)
+----------------------------------------------------------------
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+-- Device detection - consolidated into single table to reduce local register usage
+-- (Luau has a 200 local register limit per function scope)
+local Device = {
+	ViewportSize = Camera.ViewportSize,
+	IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled,
+	IS_TABLET = false,
+	IS_SMALL_PHONE = false,
+	IS_TINY_PHONE = false,
+}
+Device.IS_TABLET = Device.IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X < 450 or Camera.ViewportSize.Y < 750)
+Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+
+-- Viewport tracking
+local function updateViewport()
+	Device.ViewportSize = Camera.ViewportSize
+	Device.IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	Device.IS_TABLET = Device.IS_MOBILE and (Device.ViewportSize.X >= 768 or Device.ViewportSize.Y >= 768)
+	Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X < 450 or Device.ViewportSize.Y < 750)
+	Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X <= 380 or Device.ViewportSize.Y <= 680)
+end
+Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
+
+-- Responsive sizing helpers - MORE AGGRESSIVE for tiny phones
+local function getScale()
+	-- Base scale on smaller dimension for consistent mobile experience
+	local minDim = math.min(Device.ViewportSize.X, Device.ViewportSize.Y)
+	if minDim <= 320 then return 0.50 end  -- Extremely tiny (iPhone SE 1st gen)
+	if minDim <= 375 then return 0.58 end  -- Tiny phone (iPhone 6/7/8, SE)
+	if minDim <= 400 then return 0.68 end  -- Small phone
+	if minDim <= 450 then return 0.78 end  -- Medium-small phone
+	if minDim <= 550 then return 0.88 end  -- Medium phone
+	if minDim < 768 then return 0.95 end   -- Large phone / small tablet
+	return 1.0  -- Tablet / Desktop
+end
+
+-- Scale pixel values for mobile
+local function px(baseValue)
+	return math.floor(baseValue * getScale())
+end
+
+-- Get responsive text size - with better minimums for tiny screens
+local function textSize(baseSize)
+	local scale = getScale()
+	local scaled = math.floor(baseSize * scale)
+	-- Minimum readable text sizes - smaller OK on tiny phones
+	local minSize = Device.IS_TINY_PHONE and 9 or 10
+	if scaled < minSize then scaled = minSize end
+	return scaled
+end
+
+-- Get responsive padding - more compact on tiny phones
+local function padSize(base)
+	if Device.IS_TINY_PHONE then
+		return math.max(2, math.floor(base * 0.5))
+	end
+	return math.max(4, math.floor(base * getScale()))
+end
+
+-- Minimum tap target size (44px per Apple/Google guidelines, but 40 OK on tiny)
+local MIN_TAP_TARGET = Device.IS_TINY_PHONE and 40 or 44
+
+-- Get touch-friendly button height
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = Device.IS_TINY_PHONE and 38 or MIN_TAP_TARGET
+	if Device.IS_MOBILE and scaled < minTarget then
+		return minTarget
+	end
+	return scaled
+end
+
+-- Get responsive modal width (percentage of screen with max)
+local function modalWidth(maxWidth)
+	if Device.IS_TINY_PHONE then
+		return Device.ViewportSize.X - 12  -- 6px margin each side on tiny phones
+	elseif Device.IS_SMALL_PHONE then
+		return Device.ViewportSize.X - 16  -- 8px margin each side
+	end
+	return math.min(Device.ViewportSize.X * 0.92, maxWidth or 400)
+end
+
+-- Get responsive card width
+local function cardWidth(maxWidth)
+	if Device.IS_TINY_PHONE then
+		return Device.ViewportSize.X - 12  -- 6px margin each side
+	elseif Device.IS_SMALL_PHONE then
+		return Device.ViewportSize.X - 16  -- 8px margin each side
+	elseif Device.IS_MOBILE then
+		return math.min(Device.ViewportSize.X - 24, maxWidth or 350)
+	end
+	return maxWidth or 350
 end
 
 ----------------------------------------------------------------
@@ -353,9 +558,12 @@ local function createResultPopup()
 	resultOverlay.ZIndex = 80
 	resultOverlay.Parent = screenGui
 
-	-- Shadow frame (matches event modal)
+	-- TINY PHONE FIX: More compact popup width
+	local popupWidth = modalWidth(320)
+	
+	-- Shadow frame (matches event modal) - thinner borders on tiny phones
 	resultShadowFrame = Instance.new("Frame")
-	resultShadowFrame.Size = UDim2.new(0, 320, 0, 0)
+	resultShadowFrame.Size = UDim2.new(0, popupWidth, 0, 0)
 	resultShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
 	resultShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	resultShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
@@ -363,53 +571,61 @@ local function createResultPopup()
 	resultShadowFrame.BackgroundTransparency = 0.92
 	resultShadowFrame.ZIndex = 81
 	resultShadowFrame.Parent = resultOverlay
-	corner(resultShadowFrame, 28)
+	corner(resultShadowFrame, Device.IS_TINY_PHONE and 14 or px(28))
 
-	-- Green/Red shell (outer border - matches event style)
+	-- Green/Red shell - thinner on tiny phones
+	local shellMargin = Device.IS_TINY_PHONE and 2 or 6
 	resultShell = Instance.new("Frame")
 	resultShell.Name = "ResultShell"
-	resultShell.Size = UDim2.new(1, -6, 1, -6)
-	resultShell.Position = UDim2.new(0, 3, 0, 3)
+	resultShell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
+	resultShell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	resultShell.BackgroundColor3 = C.Green
 	resultShell.ZIndex = 82
 	resultShell.Parent = resultShadowFrame
-	corner(resultShell, 26)
-	stroke(resultShell, 2, 0.4, C.GreenDark)
-	createShadow(resultShell, 4, 16, C.Black, 0.9)
+	corner(resultShell, Device.IS_TINY_PHONE and 12 or px(26))
+	stroke(resultShell, Device.IS_TINY_PHONE and 1 or 2, 0.4, C.GreenDark)
+	if not Device.IS_TINY_PHONE then
+		createShadow(resultShell, 4, px(16), C.Black, 0.9)
+	end
 
-	-- Inner white card
+	-- Inner white card - thinner on tiny phones
+	local cardMargin = Device.IS_TINY_PHONE and 4 or 10
 	resultCard = Instance.new("Frame")
 	resultCard.Name = "ResultCard"
-	resultCard.Size = UDim2.new(1, -10, 1, -10)
-	resultCard.Position = UDim2.new(0, 5, 0, 5)
+	resultCard.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	resultCard.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	resultCard.BackgroundColor3 = C.White
 	resultCard.ZIndex = 83
 	resultCard.Parent = resultShell
-	corner(resultCard, 22)
+	corner(resultCard, Device.IS_TINY_PHONE and 10 or px(22))
 
 	local cardLayout = Instance.new("UIListLayout")
 	cardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	cardLayout.Padding = UDim.new(0, 10)
+	cardLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	cardLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 6 or padSize(12))
 	cardLayout.Parent = resultCard
-	pad(resultCard, 20, 20, 20, 20)
+	local cardPad = Device.IS_TINY_PHONE and 10 or padSize(20)
+	pad(resultCard, cardPad, cardPad, cardPad, cardPad)
 
-	-- Emoji
+	-- Emoji - TINY PHONE FIX: Much smaller emoji
+	local emojiSize = Device.IS_TINY_PHONE and 36 or px(60)
 	resultEmoji = Instance.new("TextLabel")
-	resultEmoji.Size = UDim2.new(0, 60, 0, 60)
+	resultEmoji.Size = UDim2.new(0, emojiSize, 0, emojiSize)
 	resultEmoji.BackgroundTransparency = 1
 	resultEmoji.Font = F.Body
-	resultEmoji.TextSize = 48
+	resultEmoji.TextSize = Device.IS_TINY_PHONE and 28 or textSize(48)
 	resultEmoji.Text = "✨"
 	resultEmoji.LayoutOrder = 1
 	resultEmoji.ZIndex = 84
 	resultEmoji.Parent = resultCard
 
-	-- Title
+	-- Title - TINY PHONE FIX: Smaller text
 	resultTitle = Instance.new("TextLabel")
-	resultTitle.Size = UDim2.new(1, 0, 0, 32)
+	resultTitle.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 20 or px(32))
 	resultTitle.BackgroundTransparency = 1
 	resultTitle.Font = F.Title
-	resultTitle.TextSize = 24
+	resultTitle.TextSize = Device.IS_TINY_PHONE and 15 or textSize(24)
 	resultTitle.TextColor3 = C.Gray900
 	resultTitle.Text = "Result"
 	resultTitle.TextWrapped = true
@@ -417,24 +633,24 @@ local function createResultPopup()
 	resultTitle.ZIndex = 84
 	resultTitle.Parent = resultCard
 
-	-- Body
+	-- Body - TINY PHONE FIX: Smaller text with tighter line height
 	resultBody = Instance.new("TextLabel")
 	resultBody.Size = UDim2.new(1, 0, 0, 0)
 	resultBody.AutomaticSize = Enum.AutomaticSize.Y
 	resultBody.BackgroundTransparency = 1
 	resultBody.Font = F.Body
-	resultBody.TextSize = 16
+	resultBody.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
 	resultBody.TextColor3 = C.Gray600
 	resultBody.TextWrapped = true
 	resultBody.TextXAlignment = Enum.TextXAlignment.Center
-	resultBody.LineHeight = 1.4
+	resultBody.LineHeight = Device.IS_TINY_PHONE and 1.2 or 1.4
 	resultBody.RichText = true
 	resultBody.Text = ""
 	resultBody.LayoutOrder = 3
 	resultBody.ZIndex = 84
 	resultBody.Parent = resultCard
 
-	-- Stats container
+	-- Stats container - tighter on tiny phones
 	resultStatsPreview = Instance.new("Frame")
 	resultStatsPreview.Name = "StatsPreview"
 	resultStatsPreview.Size = UDim2.new(1, 0, 0, 0)
@@ -445,22 +661,23 @@ local function createResultPopup()
 	resultStatsPreview.Parent = resultCard
 
 	local statsLayout = Instance.new("UIListLayout")
-	statsLayout.Padding = UDim.new(0, 4)
+	statsLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(4))
 	statsLayout.Parent = resultStatsPreview
 
-	-- OK Button
+	-- OK Button - TINY PHONE FIX: Smaller but still tappable
+	local okBtnHeight = Device.IS_TINY_PHONE and 38 or btnHeight(52)
 	resultOkBtn = Instance.new("TextButton")
-	resultOkBtn.Size = UDim2.new(1, 0, 0, 48)
+	resultOkBtn.Size = UDim2.new(1, 0, 0, okBtnHeight)
 	resultOkBtn.BackgroundColor3 = C.Green
 	resultOkBtn.Font = F.Button
-	resultOkBtn.TextSize = 16
+	resultOkBtn.TextSize = Device.IS_TINY_PHONE and 13 or textSize(18)
 	resultOkBtn.TextColor3 = C.White
-	resultOkBtn.Text = "OK"
+	resultOkBtn.Text = "Continue"
 	resultOkBtn.AutoButtonColor = false
-	resultOkBtn.LayoutOrder = 5
+	resultOkBtn.LayoutOrder = 99
 	resultOkBtn.ZIndex = 84
 	resultOkBtn.Parent = resultCard
-	corner(resultOkBtn, 10)
+	corner(resultOkBtn, Device.IS_TINY_PHONE and 8 or px(12))
 
 	resultOkBtn.MouseEnter:Connect(function()
 		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
@@ -511,7 +728,7 @@ local function showResultPopup(data, callback)
 		-- Fall back to stat-based check
 		isPositive = (data.happiness or 0) >= 0 and (data.health or 0) >= 0
 	end
-	
+
 	local shellColor = isPositive and C.Green or C.Red
 	local shellStrokeColor = isPositive and C.GreenDark or C.RedDark
 
@@ -522,7 +739,12 @@ local function showResultPopup(data, callback)
 
 	resultEmoji.Text = data.emoji or (isPositive and "✨" or "😢")
 	resultTitle.Text = data.title or "What Happened"
-	resultBody.Text = data.body or "Life goes on..."
+	-- CRITICAL UI FIX: More descriptive default body text
+	local bodyText = data.body or "Something happened, but the details are unclear."
+	if bodyText == "" then
+		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
+	end
+	resultBody.Text = bodyText
 
 	-- Clear old stat previews
 	for _, child in ipairs(resultStatsPreview:GetChildren()) do
@@ -616,26 +838,50 @@ local function showResultPopup(data, callback)
 	tween(resultShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	tween(resultCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 
-	-- Visual feedback - BitLife style: shake ONLY for significant negative outcomes
-	-- Specifically: health loss, major money loss, or explicit failure
+	-- CRITICAL FIX: Visual feedback - BitLife style shake for negative outcomes
+	-- More aggressive triggering for immersive gameplay feel
 	local shouldShake = false
 	local shouldFlash = false
+	local shakeIntensity = 6
 	
-	if data.health and data.health < -5 then
-		-- Health dropped significantly - shake and red flash
+	-- Check for any negative outcomes
+	if data.health and data.health < 0 then
+		-- ANY health loss triggers shake
 		shouldShake = true
-		shouldFlash = true
-	elseif data.money and data.money < -5000 then
-		-- Major money loss - subtle shake
-		shouldShake = true
-	elseif data.wasSuccess == false then
-		-- Explicit failure (minigame failed, etc) - light shake
-		shouldShake = true
-		shouldFlash = true
+		if data.health < -10 then
+			-- Major health loss - bigger shake and flash
+			shakeIntensity = 12
+			shouldFlash = true
+		elseif data.health < -5 then
+			shakeIntensity = 8
+			shouldFlash = true
+		end
 	end
 	
+	if data.happiness and data.happiness < -10 then
+		-- Significant happiness loss - shake
+		shouldShake = true
+		shakeIntensity = math.max(shakeIntensity, 6)
+	end
+	
+	if data.money and data.money < -1000 then
+		-- Money loss > $1000 - subtle shake
+		shouldShake = true
+		if data.money < -10000 then
+			shakeIntensity = math.max(shakeIntensity, 10)
+		end
+	end
+	
+	if data.wasSuccess == false then
+		-- Explicit failure (minigame failed, driving test failed, etc)
+		shouldShake = true
+		shouldFlash = true
+		shakeIntensity = math.max(shakeIntensity, 8)
+	end
+	
+	-- Apply effects
 	if shouldShake then
-		shakeScreen(8, 0.25)
+		shakeScreen(shakeIntensity, 0.25)
 	end
 	if shouldFlash then
 		flashScreen(C.Red, 0.6, 0.3)
@@ -648,102 +894,110 @@ end
 -- HEADER BAR (Offset to avoid Roblox logo)
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: More compact header
+local headerHeight = Device.IS_TINY_PHONE and 48 or (Device.IS_SMALL_PHONE and 56 or px(70))
+local headerTopOffset = Device.IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
 local headerBar = Instance.new("Frame")
 headerBar.Name = "Header"
-headerBar.Size = UDim2.new(1, -16, 0, 70)
-headerBar.Position = UDim2.new(0, 8, 0, 44)
+headerBar.Size = UDim2.new(1, -padSize(12), 0, headerHeight)
+headerBar.Position = UDim2.new(0, padSize(6), 0, headerTopOffset)
 headerBar.BackgroundColor3 = C.White
 headerBar.ZIndex = 5
 headerBar.Parent = mainContainer
-corner(headerBar, 18)
+corner(headerBar, Device.IS_TINY_PHONE and 12 or px(18))
 
--- subtle shadow
+-- subtle shadow - skip on tiny phones for cleaner look
 local headerShadow = Instance.new("Frame")
-headerShadow.Size = UDim2.new(1, 4, 0, 74)
-headerShadow.Position = UDim2.new(0, 6, 0, 46)
+headerShadow.Size = UDim2.new(1, 4, 0, headerHeight + 4)
+headerShadow.Position = UDim2.new(0, padSize(4), 0, headerTopOffset + 2)
 headerShadow.BackgroundColor3 = C.Black
-headerShadow.BackgroundTransparency = 0.95
+headerShadow.BackgroundTransparency = Device.IS_TINY_PHONE and 0.98 or 0.95
 headerShadow.ZIndex = 4
 headerShadow.Parent = mainContainer
-corner(headerShadow, 20)
+corner(headerShadow, Device.IS_TINY_PHONE and 14 or px(20))
 
--- avatar circle
+-- TINY PHONE FIX: Smaller avatar
+local avatarSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 38 or px(50))
 local avatarCircle = Instance.new("Frame")
-avatarCircle.Size = UDim2.new(0, 50, 0, 50)
-avatarCircle.Position = UDim2.new(0, 14, 0.5, -25)
+avatarCircle.Size = UDim2.new(0, avatarSize, 0, avatarSize)
+avatarCircle.Position = UDim2.new(0, Device.IS_TINY_PHONE and 8 or padSize(14), 0.5, -avatarSize/2)
 avatarCircle.BackgroundColor3 = C.BluePale
 avatarCircle.ZIndex = 6
 avatarCircle.Parent = headerBar
-corner(avatarCircle, 25)
-stroke(avatarCircle, 2, 0.5, C.BlueLight)
+corner(avatarCircle, avatarSize/2)
+stroke(avatarCircle, Device.IS_TINY_PHONE and 1 or 2, 0.5, C.BlueLight)
 
 local avatarEmoji = Instance.new("TextLabel")
 avatarEmoji.Size = UDim2.fromScale(1, 1)
 avatarEmoji.BackgroundTransparency = 1
 avatarEmoji.Font = F.Body
-avatarEmoji.TextSize = 26
+avatarEmoji.TextSize = Device.IS_TINY_PHONE and 18 or textSize(26)
 avatarEmoji.Text = "👶"
 avatarEmoji.ZIndex = 7
 avatarEmoji.Parent = avatarCircle
 
--- name + age
+-- TINY PHONE FIX: Tighter name container
+local nameOffset = avatarSize + (Device.IS_TINY_PHONE and 12 or padSize(24))
 local nameContainer = Instance.new("Frame")
-nameContainer.Size = UDim2.new(0.5, -90, 1, 0)
-nameContainer.Position = UDim2.new(0, 74, 0, 0)
+nameContainer.Size = UDim2.new(0.5, -nameOffset, 1, 0)
+nameContainer.Position = UDim2.new(0, nameOffset, 0, 0)
 nameContainer.BackgroundTransparency = 1
 nameContainer.ZIndex = 6
 nameContainer.Parent = headerBar
 
 local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, 0, 0, 24)
-nameLabel.Position = UDim2.new(0, 0, 0.5, -14)
+nameLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 16 or px(24))
+nameLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and -10 or px(-14))
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = F.Title
-nameLabel.TextSize = 17
+nameLabel.TextSize = Device.IS_TINY_PHONE and 13 or textSize(17)
 nameLabel.TextColor3 = C.Gray900
 nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 nameLabel.Text = "New Life"
 nameLabel.ZIndex = 7
 nameLabel.Parent = nameContainer
 
 local ageYearLabel = Instance.new("TextLabel")
-ageYearLabel.Size = UDim2.new(1, 0, 0, 16)
-ageYearLabel.Position = UDim2.new(0, 0, 0.5, 8)
+ageYearLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 12 or px(16))
+ageYearLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and 4 or padSize(8))
 ageYearLabel.BackgroundTransparency = 1
 ageYearLabel.Font = F.Body
-ageYearLabel.TextSize = 12
+ageYearLabel.TextSize = Device.IS_TINY_PHONE and 10 or textSize(12)
 ageYearLabel.TextColor3 = C.Gray500
 ageYearLabel.TextXAlignment = Enum.TextXAlignment.Left
 ageYearLabel.Text = "Age 0 • 2025"
 ageYearLabel.ZIndex = 7
 ageYearLabel.Parent = nameContainer
 
--- money display
+-- TINY PHONE FIX: Smaller money display
+local moneyWidth = Device.IS_TINY_PHONE and 70 or (Device.IS_SMALL_PHONE and 85 or px(110))
+local moneyHeight = Device.IS_TINY_PHONE and 32 or btnHeight(44)
 local moneyContainer = Instance.new("Frame")
-moneyContainer.Size = UDim2.new(0, 110, 0, 44)
+moneyContainer.Size = UDim2.new(0, moneyWidth, 0, moneyHeight)
 moneyContainer.AnchorPoint = Vector2.new(1, 0.5)
-moneyContainer.Position = UDim2.new(1, -12, 0.5, 0)
+moneyContainer.Position = UDim2.new(1, Device.IS_TINY_PHONE and -6 or -padSize(12), 0.5, 0)
 moneyContainer.BackgroundColor3 = C.GreenPale
 moneyContainer.ZIndex = 6
 moneyContainer.Parent = headerBar
-corner(moneyContainer, 14)
-stroke(moneyContainer, 2, 0.6, C.Green)
+corner(moneyContainer, Device.IS_TINY_PHONE and 8 or px(14))
+stroke(moneyContainer, Device.IS_TINY_PHONE and 1 or 2, 0.6, C.Green)
 
 local moneyIcon = Instance.new("TextLabel")
-moneyIcon.Size = UDim2.new(0, 30, 1, 0)
+moneyIcon.Size = UDim2.new(0, Device.IS_TINY_PHONE and 20 or px(30), 1, 0)
 moneyIcon.BackgroundTransparency = 1
 moneyIcon.Font = F.Body
-moneyIcon.TextSize = 20
+moneyIcon.TextSize = Device.IS_TINY_PHONE and 14 or textSize(20)
 moneyIcon.Text = "💵"
 moneyIcon.ZIndex = 7
 moneyIcon.Parent = moneyContainer
 
 local moneyLabel = Instance.new("TextLabel")
-moneyLabel.Size = UDim2.new(1, -34, 1, 0)
-moneyLabel.Position = UDim2.new(0, 30, 0, 0)
+moneyLabel.Size = UDim2.new(1, Device.IS_TINY_PHONE and -22 or -px(34), 1, 0)
+moneyLabel.Position = UDim2.new(0, Device.IS_TINY_PHONE and 20 or px(30), 0, 0)
 moneyLabel.BackgroundTransparency = 1
 moneyLabel.Font = F.Title
-moneyLabel.TextSize = 15
+moneyLabel.TextSize = textSize(15)
 moneyLabel.TextColor3 = C.GreenDark
 moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 moneyLabel.Text = "$0"
@@ -751,30 +1005,38 @@ moneyLabel.ZIndex = 7
 moneyLabel.Parent = moneyContainer
 
 ----------------------------------------------------------------
--- LIFE FEED AREA
+-- LIFE FEED AREA - TINY PHONE FIX: More compact layout
 ----------------------------------------------------------------
+
+-- Calculate feed container position based on header
+local feedTop = headerTopOffset + headerHeight + (Device.IS_TINY_PHONE and 4 or padSize(8))
+-- Nav height varies by device - smaller on tiny phones
+local navHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 55 or px(65))
+local feedBottomOffset = navHeight + (Device.IS_TINY_PHONE and 115 or px(170)) -- Nav + stats + age button
 
 local feedContainer = Instance.new("Frame")
 feedContainer.Name = "FeedContainer"
-feedContainer.Size = UDim2.new(1, -16, 1, -290)
-feedContainer.Position = UDim2.new(0, 8, 0, 122)
+feedContainer.Size = UDim2.new(1, -padSize(12), 1, -feedTop - feedBottomOffset)
+feedContainer.Position = UDim2.new(0, padSize(6), 0, feedTop)
 feedContainer.BackgroundColor3 = C.White
 feedContainer.ZIndex = 3
 feedContainer.Parent = mainContainer
-corner(feedContainer, 16)
-pad(feedContainer, 14, 14, 12, 12)
+corner(feedContainer, Device.IS_TINY_PHONE and 10 or px(16))
+local feedPad = Device.IS_TINY_PHONE and 8 or padSize(14)
+pad(feedContainer, feedPad, feedPad, Device.IS_TINY_PHONE and 6 or padSize(12), Device.IS_TINY_PHONE and 6 or padSize(12))
 
 local feedScroll = Instance.new("ScrollingFrame")
 feedScroll.Size = UDim2.fromScale(1, 1)
 feedScroll.BackgroundTransparency = 1
 feedScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 feedScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-feedScroll.ScrollBarThickness = 3
+feedScroll.ScrollBarThickness = Device.IS_MOBILE and 6 or 3  -- MOBILE FIX: Thicker scrollbar for touch
 feedScroll.ScrollBarImageColor3 = C.Gray300
+feedScroll.ScrollingDirection = Enum.ScrollingDirection.Y
 feedScroll.Parent = feedContainer
 
 local feedLayout = Instance.new("UIListLayout")
-feedLayout.Padding = UDim.new(0, 8)
+feedLayout.Padding = UDim.new(0, padSize(8))
 feedLayout.SortOrder = Enum.SortOrder.LayoutOrder
 feedLayout.Parent = feedScroll
 
@@ -821,83 +1083,92 @@ local function addFeedEntry(text)
 end
 
 ----------------------------------------------------------------
--- BOTTOM SECTION: Stats + Nav + Age Button
+-- BOTTOM SECTION: Stats + Nav + Age Button - TINY PHONE FIX
 ----------------------------------------------------------------
+
+-- TINY PHONE FIX: Smaller stats row
+local statsRowHeight = Device.IS_TINY_PHONE and 38 or 52
+local statsRowBottom = Device.IS_TINY_PHONE and 68 or 88
+local statsGap = Device.IS_TINY_PHONE and 35 or 55
 
 local statsRow = Instance.new("Frame")
 statsRow.Name = "StatsRow"
-statsRow.Size = UDim2.new(1, -16, 0, 52)
+statsRow.Size = UDim2.new(1, -12, 0, statsRowHeight)
 statsRow.AnchorPoint = Vector2.new(0.5, 1)
-statsRow.Position = UDim2.new(0.5, 0, 1, -88)
+statsRow.Position = UDim2.new(0.5, 0, 1, -statsRowBottom)
 statsRow.BackgroundColor3 = C.White
 statsRow.ZIndex = 8
 statsRow.Parent = mainContainer
-corner(statsRow, 14)
+corner(statsRow, Device.IS_TINY_PHONE and 10 or 14)
 stroke(statsRow, 1, 0.85, C.Gray200)
 
 -- left stats
 local statsLeft = Instance.new("Frame")
 statsLeft.Name = "StatsLeft"
-statsLeft.Size = UDim2.new(0.5, -55, 1, 0)
+statsLeft.Size = UDim2.new(0.5, -statsGap, 1, 0)
 statsLeft.Position = UDim2.new(0, 0, 0, 0)
 statsLeft.BackgroundTransparency = 1
 statsLeft.ZIndex = 9
 statsLeft.Parent = statsRow
-pad(statsLeft, 8, 8, 6, 6)
+pad(statsLeft, Device.IS_TINY_PHONE and 4 or 8, Device.IS_TINY_PHONE and 4 or 8, Device.IS_TINY_PHONE and 4 or 6, Device.IS_TINY_PHONE and 4 or 6)
 
 local statsLeftLayout = Instance.new("UIListLayout")
 statsLeftLayout.FillDirection = Enum.FillDirection.Horizontal
 statsLeftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 statsLeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-statsLeftLayout.Padding = UDim.new(0, 6)
+statsLeftLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 3 or 6)
 statsLeftLayout.Parent = statsLeft
 
 -- right stats
 local statsRight = Instance.new("Frame")
 statsRight.Name = "StatsRight"
-statsRight.Size = UDim2.new(0.5, -55, 1, 0)
-statsRight.Position = UDim2.new(0.5, 55, 0, 0)
+statsRight.Size = UDim2.new(0.5, -statsGap, 1, 0)
+statsRight.Position = UDim2.new(0.5, statsGap, 0, 0)
 statsRight.BackgroundTransparency = 1
 statsRight.ZIndex = 9
 statsRight.Parent = statsRow
-pad(statsRight, 8, 8, 6, 6)
+pad(statsRight, Device.IS_TINY_PHONE and 4 or 8, Device.IS_TINY_PHONE and 4 or 8, Device.IS_TINY_PHONE and 4 or 6, Device.IS_TINY_PHONE and 4 or 6)
 
 local statsRightLayout = Instance.new("UIListLayout")
 statsRightLayout.FillDirection = Enum.FillDirection.Horizontal
 statsRightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 statsRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-statsRightLayout.Padding = UDim.new(0, 6)
+statsRightLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 3 or 6)
 statsRightLayout.Parent = statsRight
 
 local statCards = {}
 
+-- TINY PHONE FIX: Smaller stat cards
+local statCardWidth = Device.IS_TINY_PHONE and 56 or 76
+local statCardHeight = Device.IS_TINY_PHONE and 30 or 40
+
 local function createStatCard(info, parent, order)
 	local statCard = Instance.new("Frame")
 	statCard.Name = "Stat_" .. info.key
-	statCard.Size = UDim2.new(0, 76, 0, 40)
+	statCard.Size = UDim2.new(0, statCardWidth, 0, statCardHeight)
 	statCard.BackgroundColor3 = C.Gray50
 	statCard.LayoutOrder = order
 	statCard.ZIndex = 10
 	statCard.Parent = parent
-	corner(statCard, 10)
+	corner(statCard, Device.IS_TINY_PHONE and 6 or 10)
 
 	local iconLbl = Instance.new("TextLabel")
-	iconLbl.Size = UDim2.new(0, 22, 0, 22)
-	iconLbl.Position = UDim2.new(0, 4, 0, 3)
+	iconLbl.Size = UDim2.new(0, Device.IS_TINY_PHONE and 16 or 22, 0, Device.IS_TINY_PHONE and 16 or 22)
+	iconLbl.Position = UDim2.new(0, Device.IS_TINY_PHONE and 2 or 4, 0, Device.IS_TINY_PHONE and 2 or 3)
 	iconLbl.BackgroundTransparency = 1
 	iconLbl.Font = F.Body
-	iconLbl.TextSize = 15
+	iconLbl.TextSize = Device.IS_TINY_PHONE and 11 or 15
 	iconLbl.Text = info.icon
 	iconLbl.ZIndex = 11
 	iconLbl.Parent = statCard
 
 	local percentLbl = Instance.new("TextLabel")
 	percentLbl.Name = "Percent"
-	percentLbl.Size = UDim2.new(0, 38, 0, 16)
-	percentLbl.Position = UDim2.new(0, 26, 0, 4)
+	percentLbl.Size = UDim2.new(0, Device.IS_TINY_PHONE and 28 or 38, 0, Device.IS_TINY_PHONE and 12 or 16)
+	percentLbl.Position = UDim2.new(0, Device.IS_TINY_PHONE and 18 or 26, 0, Device.IS_TINY_PHONE and 2 or 4)
 	percentLbl.BackgroundTransparency = 1
 	percentLbl.Font = F.Title
-	percentLbl.TextSize = 12
+	percentLbl.TextSize = Device.IS_TINY_PHONE and 9 or 12
 	percentLbl.TextColor3 = info.col
 	percentLbl.TextXAlignment = Enum.TextXAlignment.Left
 	percentLbl.Text = "100%"
@@ -905,12 +1176,12 @@ local function createStatCard(info, parent, order)
 	percentLbl.Parent = statCard
 
 	local barBg = Instance.new("Frame")
-	barBg.Size = UDim2.new(1, -10, 0, 6)
-	barBg.Position = UDim2.new(0, 5, 1, -11)
+	barBg.Size = UDim2.new(1, Device.IS_TINY_PHONE and -6 or -10, 0, Device.IS_TINY_PHONE and 4 or 6)
+	barBg.Position = UDim2.new(0, Device.IS_TINY_PHONE and 3 or 5, 1, Device.IS_TINY_PHONE and -7 or -11)
 	barBg.BackgroundColor3 = C.Gray200
 	barBg.ZIndex = 11
 	barBg.Parent = statCard
-	corner(barBg, 3)
+	corner(barBg, Device.IS_TINY_PHONE and 2 or 3)
 
 	local barFill = Instance.new("Frame")
 	barFill.Name = "Fill"
@@ -918,7 +1189,7 @@ local function createStatCard(info, parent, order)
 	barFill.BackgroundColor3 = info.col
 	barFill.ZIndex = 12
 	barFill.Parent = barBg
-	corner(barFill, 3)
+	corner(barFill, Device.IS_TINY_PHONE and 2 or 3)
 
 	statCards[info.key] = {
 		percentLabel = percentLbl,
@@ -934,12 +1205,14 @@ createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight,
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
 
 ----------------------------------------------------------------
--- NAV BAR
+-- NAV BAR - TINY PHONE FIX: More compact
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: Much smaller nav bar
+local navBarHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or px(80))
 local navBar = Instance.new("Frame")
 navBar.Name = "NavBar"
-navBar.Size = UDim2.new(1, 0, 0, 80)
+navBar.Size = UDim2.new(1, 0, 0, navBarHeight)
 navBar.AnchorPoint = Vector2.new(0.5, 1)
 navBar.Position = UDim2.new(0.5, 0, 1, 0)
 navBar.BackgroundColor3 = C.NavBlue
@@ -954,43 +1227,52 @@ navGrad.Color = ColorSequence.new({
 navGrad.Rotation = 90
 navGrad.Parent = navBar
 
+-- TINY PHONE FIX: Smaller center gap for age button
+local ageBtnGap = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
 local navLeft = Instance.new("Frame")
 navLeft.Name = "NavLeft"
-navLeft.Size = UDim2.new(0.5, -50, 1, 0)
+navLeft.Size = UDim2.new(0.5, -ageBtnGap, 1, 0)
 navLeft.Position = UDim2.new(0, 0, 0, 0)
 navLeft.BackgroundTransparency = 1
 navLeft.ZIndex = 7
 navLeft.Parent = navBar
-pad(navLeft, 8, 15, 6, 20)
+local navPadSide = Device.IS_TINY_PHONE and 4 or padSize(8)
+local navPadTop = Device.IS_TINY_PHONE and 4 or padSize(6)
+local navPadBottom = Device.IS_TINY_PHONE and 12 or padSize(20)
+pad(navLeft, navPadSide, Device.IS_TINY_PHONE and 8 or padSize(15), navPadTop, navPadBottom)
 
 local navLeftLayout = Instance.new("UIListLayout")
 navLeftLayout.FillDirection = Enum.FillDirection.Horizontal
 navLeftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 navLeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-navLeftLayout.Padding = UDim.new(0, 6)
+navLeftLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(6))
 navLeftLayout.Parent = navLeft
 
 local navRight = Instance.new("Frame")
 navRight.Name = "NavRight"
-navRight.Size = UDim2.new(0.5, -50, 1, 0)
-navRight.Position = UDim2.new(0.5, 50, 0, 0)
+navRight.Size = UDim2.new(0.5, -ageBtnGap, 1, 0)
+navRight.Position = UDim2.new(0.5, ageBtnGap, 0, 0)
 navRight.BackgroundTransparency = 1
 navRight.ZIndex = 7
 navRight.Parent = navBar
-pad(navRight, 15, 8, 6, 20)
+pad(navRight, Device.IS_TINY_PHONE and 8 or padSize(15), navPadSide, navPadTop, navPadBottom)
 
 local navRightLayout = Instance.new("UIListLayout")
 navRightLayout.FillDirection = Enum.FillDirection.Horizontal
 navRightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 navRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-navRightLayout.Padding = UDim.new(0, 6)
+navRightLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(6))
 navRightLayout.Parent = navRight
 
 local navBtnRefs = {}
 
+-- TINY PHONE FIX: Smaller nav buttons
+local navBtnWidth = Device.IS_TINY_PHONE and 36 or (Device.IS_SMALL_PHONE and 44 or px(56))
+local navBtnHeight = Device.IS_TINY_PHONE and 32 or btnHeight(48)
+
 local function createNavButton(info, parent, order)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 56, 0, 48)
+	btn.Size = UDim2.new(0, navBtnWidth, 0, navBtnHeight)
 	btn.BackgroundTransparency = 1
 	btn.AutoButtonColor = false
 	btn.LayoutOrder = order
@@ -1001,24 +1283,24 @@ local function createNavButton(info, parent, order)
 	local btnLayout = Instance.new("UIListLayout")
 	btnLayout.FillDirection = Enum.FillDirection.Vertical
 	btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	btnLayout.Padding = UDim.new(0, 1)
+	btnLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 0 or 1)
 	btnLayout.Parent = btn
 
 	local iconLbl = Instance.new("TextLabel")
-	iconLbl.Size = UDim2.new(1, 0, 0, 24)
+	iconLbl.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 16 or px(24))
 	iconLbl.BackgroundTransparency = 1
 	iconLbl.Font = F.Body
-	iconLbl.TextSize = 20
+	iconLbl.TextSize = Device.IS_TINY_PHONE and 14 or textSize(20)
 	iconLbl.TextColor3 = C.White
 	iconLbl.Text = info.icon
 	iconLbl.ZIndex = 9
 	iconLbl.Parent = btn
 
 	local textLbl = Instance.new("TextLabel")
-	textLbl.Size = UDim2.new(1, 0, 0, 14)
+	textLbl.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 10 or px(14))
 	textLbl.BackgroundTransparency = 1
 	textLbl.Font = F.Medium
-	textLbl.TextSize = 10
+	textLbl.TextSize = Device.IS_TINY_PHONE and 8 or textSize(10)
 	textLbl.TextColor3 = Color3.fromRGB(148, 163, 184)
 	textLbl.Text = info.text
 	textLbl.ZIndex = 9
@@ -1058,38 +1340,43 @@ createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"},
 createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
 
 ----------------------------------------------------------------
--- AGE BUTTON
+-- AGE BUTTON - TINY PHONE FIX: More compact
 ----------------------------------------------------------------
 
+-- TINY PHONE FIX: Much smaller age button
+local ageBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
+local ageBtnOffset = Device.IS_TINY_PHONE and 6 or padSize(10)
 local ageBtnContainer = Instance.new("Frame")
-ageBtnContainer.Size = UDim2.new(0, 90, 0, 90)
+ageBtnContainer.Size = UDim2.new(0, ageBtnSize, 0, ageBtnSize)
 ageBtnContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -70)
+ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -(navBarHeight/2 + ageBtnOffset))
 ageBtnContainer.BackgroundTransparency = 1
 ageBtnContainer.ZIndex = 15
 ageBtnContainer.Parent = mainContainer
 
 local ageOuterRing = Instance.new("Frame")
-ageOuterRing.Size = UDim2.new(1, 8, 1, 8)
+ageOuterRing.Size = UDim2.new(1, Device.IS_TINY_PHONE and 4 or 8, 1, Device.IS_TINY_PHONE and 4 or 8)
 ageOuterRing.AnchorPoint = Vector2.new(0.5, 0.5)
 ageOuterRing.Position = UDim2.fromScale(0.5, 0.5)
 ageOuterRing.BackgroundColor3 = C.White
 ageOuterRing.ZIndex = 15
 ageOuterRing.Parent = ageBtnContainer
-corner(ageOuterRing, 50)
+corner(ageOuterRing, ageBtnSize/2)
 
+local ageShadowSize = Device.IS_TINY_PHONE and 10 or 16
 local ageShadow = Instance.new("Frame")
-ageShadow.Size = UDim2.new(1, 16, 1, 16)
+ageShadow.Size = UDim2.new(1, ageShadowSize, 1, ageShadowSize)
 ageShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-ageShadow.Position = UDim2.new(0.5, 0, 0.5, 4)
+ageShadow.Position = UDim2.new(0.5, 0, 0.5, Device.IS_TINY_PHONE and 2 or 4)
 ageShadow.BackgroundColor3 = C.Black
 ageShadow.BackgroundTransparency = 0.9
 ageShadow.ZIndex = 14
 ageShadow.Parent = ageBtnContainer
-corner(ageShadow, 54)
+corner(ageShadow, ageBtnSize/2 + (Device.IS_TINY_PHONE and 2 or 4))
 
+local ageBtnMargin = Device.IS_TINY_PHONE and 4 or 6
 local ageButton = Instance.new("TextButton")
-ageButton.Size = UDim2.new(1, -6, 1, -6)
+ageButton.Size = UDim2.new(1, -ageBtnMargin, 1, -ageBtnMargin)
 ageButton.AnchorPoint = Vector2.new(0.5, 0.5)
 ageButton.Position = UDim2.fromScale(0.5, 0.5)
 ageButton.BackgroundColor3 = C.Green
@@ -1097,8 +1384,8 @@ ageButton.AutoButtonColor = false
 ageButton.Text = ""
 ageButton.ZIndex = 16
 ageButton.Parent = ageBtnContainer
-corner(ageButton, 45)
-stroke(ageButton, 3, 0, C.GreenRing)
+corner(ageButton, ageBtnSize/2 - (Device.IS_TINY_PHONE and 2 or 3))
+stroke(ageButton, Device.IS_TINY_PHONE and 2 or 3, 0, C.GreenRing)
 
 local ageGrad = Instance.new("UIGradient")
 ageGrad.Color = ColorSequence.new({
@@ -1108,30 +1395,43 @@ ageGrad.Color = ColorSequence.new({
 ageGrad.Rotation = 90
 ageGrad.Parent = ageButton
 
+-- Age button content - use vertical layout for proper stacking
+local ageBtnContent = Instance.new("Frame")
+ageBtnContent.Size = UDim2.fromScale(1, 1)
+ageBtnContent.BackgroundTransparency = 1
+ageBtnContent.ZIndex = 17
+ageBtnContent.Parent = ageButton
+
+local ageBtnLayout = Instance.new("UIListLayout")
+ageBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ageBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+ageBtnLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and -2 or 0)
+ageBtnLayout.Parent = ageBtnContent
+
 local agePlus = Instance.new("TextLabel")
-agePlus.Size = UDim2.new(1, 0, 0, 32)
-agePlus.Position = UDim2.new(0, 0, 0, 12)
+agePlus.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 22 or px(32))
 agePlus.BackgroundTransparency = 1
 agePlus.Font = F.Title
-agePlus.TextSize = 32
+agePlus.TextSize = Device.IS_TINY_PHONE and 24 or textSize(32)
 agePlus.TextColor3 = C.White
 agePlus.Text = "+"
+agePlus.LayoutOrder = 1
 agePlus.ZIndex = 17
-agePlus.Parent = ageButton
+agePlus.Parent = ageBtnContent
 
 local ageText = Instance.new("TextLabel")
-ageText.Size = UDim2.new(1, 0, 0, 18)
-ageText.Position = UDim2.new(0, 0, 0, 44)
+ageText.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 14 or 18)
 ageText.BackgroundTransparency = 1
 ageText.Font = F.Button
-ageText.TextSize = 16
+ageText.TextSize = Device.IS_TINY_PHONE and 11 or 16
 ageText.TextColor3 = C.White
 ageText.Text = "Age"
+ageText.LayoutOrder = 2
 ageText.ZIndex = 17
-ageText.Parent = ageButton
+ageText.Parent = ageBtnContent
 
 local tutorialRing = Instance.new("Frame")
-tutorialRing.Size = UDim2.new(1, 30, 1, 30)
+tutorialRing.Size = UDim2.new(1, Device.IS_TINY_PHONE and 20 or 30, 1, Device.IS_TINY_PHONE and 20 or 30)
 tutorialRing.AnchorPoint = Vector2.new(0.5, 0.5)
 tutorialRing.Position = UDim2.fromScale(0.5, 0.5)
 tutorialRing.BackgroundTransparency = 1
@@ -1153,33 +1453,36 @@ tutorialOverlay.ZIndex = 40
 tutorialOverlay.Parent = screenGui
 
 local tutTextCont = Instance.new("Frame")
-tutTextCont.Size = UDim2.new(0.85, 0, 0, 100)
-tutTextCont.AnchorPoint = Vector2.new(0.5, 0.5)
-tutTextCont.Position = UDim2.new(0.5, 0, 0.35, 0)
+tutTextCont.Size = UDim2.new(0.85, 0, 0, 0)
+tutTextCont.AutomaticSize = Enum.AutomaticSize.Y
+tutTextCont.AnchorPoint = Vector2.new(0.5, 1)
+-- Position above the age button (which is near bottom of screen)
+tutTextCont.Position = UDim2.new(0.5, 0, 1, Device.IS_TINY_PHONE and -140 or -180)
 tutTextCont.BackgroundTransparency = 1
 tutTextCont.Parent = tutorialOverlay
 
 local tutLayout = Instance.new("UIListLayout")
 tutLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-tutLayout.Padding = UDim.new(0, 6)
+tutLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or 8)
 tutLayout.Parent = tutTextCont
 
+-- Tutorial text FIRST, then pointing finger at the bottom (pointing DOWN to Age button)
 local tutLines = {
-	"👇",
-	"Tap the AGE button to grow older!",
-	"Make choices as events happen.",
-	"Live your best (or worst) life!",
+	{ text = "Tap the AGE button to grow older!", isEmoji = false },
+	{ text = "Make choices as events happen.", isEmoji = false },
+	{ text = "Live your best (or worst) life!", isEmoji = false },
+	{ text = "👇", isEmoji = true },  -- Finger at BOTTOM pointing DOWN to Age button
 }
-for i, line in ipairs(tutLines) do
+for i, lineData in ipairs(tutLines) do
 	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(1, 0, 0, i == 1 and 40 or 28)
+	lbl.Size = UDim2.new(1, 0, 0, lineData.isEmoji and 40 or (Device.IS_TINY_PHONE and 22 or 28))
 	lbl.BackgroundTransparency = 1
-	lbl.Font = i == 1 and F.Body or F.Title
-	lbl.TextSize = i == 1 and 36 or 20  -- BIGGER text
+	lbl.Font = lineData.isEmoji and F.Body or F.Title
+	lbl.TextSize = lineData.isEmoji and 36 or (Device.IS_TINY_PHONE and 16 or 20)
 	lbl.TextColor3 = C.Gray900  -- DARK text for visibility
 	lbl.TextStrokeColor3 = C.White
 	lbl.TextStrokeTransparency = 0.5  -- White outline for contrast
-	lbl.Text = line
+	lbl.Text = lineData.text
 	lbl.LayoutOrder = i
 	lbl.Parent = tutTextCont
 end
@@ -1189,7 +1492,7 @@ showTutorial = function()
 	hasShownAgeHint = true
 	tutorialOverlay.Visible = true
 	tutorialRing.Visible = true
-	
+
 	-- Pulse the ring stroke for attention
 	local pulse = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	local s = tutorialRing:FindFirstChildOfClass("UIStroke")
@@ -1198,7 +1501,7 @@ showTutorial = function()
 		s.Thickness = 4
 		tween(s, pulse, { Transparency = 0.4, Thickness = 6 })
 	end
-	
+
 	-- Also scale pulse the ring for extra visibility
 	local scalePulse = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	tween(tutorialRing, scalePulse, { 
@@ -1214,255 +1517,327 @@ hideTutorial = function()
 end
 
 ----------------------------------------------------------------
--- PREMIUM EVENT MODAL (BitLife-style red card)
+-- PREMIUM EVENT MODAL (BitLife-style red card) - MOBILE FIX
 ----------------------------------------------------------------
 
-local eventOverlay = Instance.new("Frame")
-eventOverlay.Name = "EventOverlay"
-eventOverlay.Size = UDim2.fromScale(1, 1)
-eventOverlay.BackgroundColor3 = C.Black
-eventOverlay.BackgroundTransparency = 0.45
-eventOverlay.Visible = false
-eventOverlay.ZIndex = 60
-eventOverlay.Parent = screenGui
+-- EventUI table to store event modal references and reduce local variable count
+local EventUI = {
+	activeChoiceButtons = {},
+	currentEventId = nil,
+	surpriseConnection = nil,
+	currentHideTween = nil,
+}
 
--- outer shadow frame - WIDER for better title display
-local eventShadowFrame = Instance.new("Frame")
-eventShadowFrame.Size = UDim2.new(0, 360, 0, 0)  -- Wider (was 340)
-eventShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
-eventShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-eventShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
-eventShadowFrame.BackgroundColor3 = C.Black
-eventShadowFrame.BackgroundTransparency = 0.88  -- Slightly more visible shadow
-eventShadowFrame.ZIndex = 61
-eventShadowFrame.Parent = eventOverlay
-corner(eventShadowFrame, 24)
+-- Builder function to create event modal UI
+local function buildEventModal()
+	EventUI.overlay = Instance.new("Frame")
+	EventUI.overlay.Name = "EventOverlay"
+	EventUI.overlay.Size = UDim2.fromScale(1, 1)
+	EventUI.overlay.BackgroundColor3 = C.Black
+	EventUI.overlay.BackgroundTransparency = 0.45
+	EventUI.overlay.Visible = false
+	EventUI.overlay.ZIndex = 60
+	EventUI.overlay.Parent = screenGui
 
--- BitLife-style colored shell (outer border) - premium look
-local eventShell = Instance.new("Frame")
-eventShell.Name = "EventShell"
-eventShell.Size = UDim2.new(1, -4, 1, -4)
-eventShell.Position = UDim2.new(0, 2, 0, 2)
-eventShell.BackgroundColor3 = C.Red  -- BitLife signature red
-eventShell.ZIndex = 62
-eventShell.Parent = eventShadowFrame
-corner(eventShell, 22)
-stroke(eventShell, 2, 0.3, C.RedDark)
-createShadow(eventShell, 6, 20, C.Black, 0.85)  -- Better shadow
+	-- MOBILE FIX: Responsive modal sizing for ALL mobile devices
+	local eventWidth = modalWidth(360)
+	local maxEventHeight
+	if Device.IS_TINY_PHONE then
+		maxEventHeight = Device.ViewportSize.Y - 80
+	elseif Device.IS_SMALL_PHONE then
+		maxEventHeight = Device.ViewportSize.Y - 100
+	elseif Device.IS_MOBILE then
+		maxEventHeight = Device.ViewportSize.Y - 120
+	else
+		maxEventHeight = Device.ViewportSize.Y - 140
+	end
+	
+	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
+	local eventCornerRadius = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 18 or px(24))
+	local shellMargin = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or 4)
+	local cardMargin = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 8)
+	
+	-- Shadow frame: fixed width, autosize height
+	EventUI.shadowFrame = Instance.new("Frame")
+	EventUI.shadowFrame.Size = UDim2.new(0, eventWidth, 0, 0)
+	EventUI.shadowFrame.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	EventUI.shadowFrame.Position = UDim2.fromScale(0.5, 0.5)
+	EventUI.shadowFrame.BackgroundColor3 = C.Black
+	EventUI.shadowFrame.BackgroundTransparency = 0.88
+	EventUI.shadowFrame.ZIndex = 61
+	EventUI.shadowFrame.Parent = EventUI.overlay
+	corner(EventUI.shadowFrame, eventCornerRadius)
+	
+	-- Add size constraint to prevent modal from being too tall
+	local eventSizeConstraint = Instance.new("UISizeConstraint")
+	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
+	eventSizeConstraint.Parent = EventUI.shadowFrame
 
--- inner white card - clean BitLife style
-local eventCard = Instance.new("Frame")
-eventCard.Name = "EventCard"
-eventCard.Size = UDim2.new(1, -8, 1, -8)
-eventCard.Position = UDim2.new(0, 4, 0, 4)
-eventCard.BackgroundColor3 = C.White
-eventCard.ZIndex = 63
-eventCard.Parent = eventShell
-corner(eventCard, 20)
+	-- Shell: autosize height (no Y scale) - fixes button overflow
+	EventUI.shell = Instance.new("Frame")
+	EventUI.shell.Name = "EventShell"
+	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
+	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
+	EventUI.shell.BackgroundColor3 = C.Red
+	EventUI.shell.ZIndex = 62
+	EventUI.shell.Parent = EventUI.shadowFrame
+	corner(EventUI.shell, Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 16 or px(22)))
+	stroke(EventUI.shell, Device.IS_TINY_PHONE and 1 or 2, 0.3, C.RedDark)
+	if not Device.IS_TINY_PHONE then
+		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
+	end
 
-local eventLayout = Instance.new("UIListLayout")
-eventLayout.Padding = UDim.new(0, 0)
-eventLayout.Parent = eventCard
+	-- Card: autosize height (no Y scale) - fixes button overflow
+	EventUI.card = Instance.new("Frame")
+	EventUI.card.Name = "EventCard"
+	EventUI.card.Size = UDim2.new(1, -cardMargin, 0, 0)
+	EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
+	EventUI.card.BackgroundColor3 = C.White
+	EventUI.card.ZIndex = 63
+	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
+	EventUI.card.Parent = EventUI.shell
+	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
 
--- header with avatar + relation tag
-local eventHeader = Instance.new("Frame")
-eventHeader.Name = "Header"
-eventHeader.Size = UDim2.new(1, 0, 0, 76)
-eventHeader.BackgroundColor3 = C.White
-eventHeader.LayoutOrder = 1
-eventHeader.Visible = false
-eventHeader.ZIndex = 64
-eventHeader.Parent = eventCard
-pad(eventHeader, 20, 20, 16, 12)
+	local eventLayout = Instance.new("UIListLayout")
+	eventLayout.Padding = UDim.new(0, 0)
+	eventLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
+	eventLayout.Parent = EventUI.card
 
-local eventAvatar = Instance.new("Frame")
-eventAvatar.Size = UDim2.new(0, 50, 0, 50)
-eventAvatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
-eventAvatar.ZIndex = 65
-eventAvatar.Parent = eventHeader
-corner(eventAvatar, 25)
-stroke(eventAvatar, 2, 0.3, C.Red)
+	-- TINY PHONE FIX: Much smaller header
+	EventUI.headerHeight = Device.IS_TINY_PHONE and 44 or (Device.IS_SMALL_PHONE and 54 or px(76))
+	EventUI.header = Instance.new("Frame")
+	EventUI.header.Name = "Header"
+	EventUI.header.Size = UDim2.new(1, 0, 0, EventUI.headerHeight)
+	EventUI.header.BackgroundColor3 = C.White
+	EventUI.header.LayoutOrder = 1
+	EventUI.header.Visible = false
+	EventUI.header.ZIndex = 64
+	EventUI.header.Parent = EventUI.card
+	pad(EventUI.header, padSize(16), padSize(16), padSize(10), padSize(8))
 
-local eventAvatarEmoji = Instance.new("TextLabel")
-eventAvatarEmoji.Size = UDim2.fromScale(1, 1)
-eventAvatarEmoji.BackgroundTransparency = 1
-eventAvatarEmoji.Font = F.Body
-eventAvatarEmoji.TextSize = 26
-eventAvatarEmoji.Text = "👤"
-eventAvatarEmoji.ZIndex = 66
-eventAvatarEmoji.Parent = eventAvatar
+	-- TINY PHONE FIX: Smaller avatar
+	EventUI.avatarSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
+	EventUI.avatar = Instance.new("Frame")
+	EventUI.avatar.Size = UDim2.new(0, EventUI.avatarSize, 0, EventUI.avatarSize)
+	EventUI.avatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
+	EventUI.avatar.ZIndex = 65
+	EventUI.avatar.Parent = EventUI.header
+	corner(EventUI.avatar, EventUI.avatarSize/2)
+	stroke(EventUI.avatar, Device.IS_TINY_PHONE and 1 or 2, 0.3, C.Red)
 
-local eventNameLbl = Instance.new("TextLabel")
-eventNameLbl.Size = UDim2.new(0.6, 0, 0, 22)
-eventNameLbl.Position = UDim2.new(0, 60, 0, 8)
-eventNameLbl.BackgroundTransparency = 1
-eventNameLbl.Font = F.Title
-eventNameLbl.TextSize = 16
-eventNameLbl.TextColor3 = C.Gray900
-eventNameLbl.TextXAlignment = Enum.TextXAlignment.Left
-eventNameLbl.Text = "Person Name"
-eventNameLbl.ZIndex = 65
-eventNameLbl.Parent = eventHeader
+	EventUI.avatarEmoji = Instance.new("TextLabel")
+	EventUI.avatarEmoji.Size = UDim2.fromScale(1, 1)
+	EventUI.avatarEmoji.BackgroundTransparency = 1
+	EventUI.avatarEmoji.Font = F.Body
+	EventUI.avatarEmoji.TextSize = Device.IS_TINY_PHONE and 16 or textSize(26)
+	EventUI.avatarEmoji.Text = "👤"
+	EventUI.avatarEmoji.ZIndex = 66
+	EventUI.avatarEmoji.Parent = EventUI.avatar
 
-local relationBanner = Instance.new("Frame")
-relationBanner.Size = UDim2.new(0, 115, 0, 26)
-relationBanner.AnchorPoint = Vector2.new(1, 0)
-relationBanner.Position = UDim2.new(1, 0, 0, 8)
-relationBanner.BackgroundColor3 = C.Red
-relationBanner.ZIndex = 65
-relationBanner.Parent = eventHeader
-pill(relationBanner)
+	EventUI.nameLbl = Instance.new("TextLabel")
+	EventUI.nameLbl.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 16 or px(22))
+	EventUI.nameLbl.Position = UDim2.new(0, EventUI.avatarSize + padSize(8), 0, padSize(4))
+	EventUI.nameLbl.BackgroundTransparency = 1
+	EventUI.nameLbl.Font = F.Title
+	EventUI.nameLbl.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
+	EventUI.nameLbl.TextColor3 = C.Gray900
+	EventUI.nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+	EventUI.nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+	EventUI.nameLbl.Text = "Person Name"
+	EventUI.nameLbl.ZIndex = 65
+	EventUI.nameLbl.Parent = EventUI.header
 
-local relationLbl = Instance.new("TextLabel")
-relationLbl.Size = UDim2.fromScale(1, 0.9)
-relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
-relationLbl.BackgroundTransparency = 1
-relationLbl.Font = F.Button
-relationLbl.TextSize = 11
-relationLbl.TextColor3 = C.White
-relationLbl.Text = "Classmate"
-relationLbl.ZIndex = 66
-relationLbl.Parent = relationBanner
+	-- TINY PHONE FIX: Smaller relation banner
+	EventUI.relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
+	EventUI.relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
+	EventUI.relationBanner = Instance.new("Frame")
+	EventUI.relationBanner.Size = UDim2.new(0, EventUI.relationBannerWidth, 0, EventUI.relationBannerHeight)
+	EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
+	EventUI.relationBanner.Position = UDim2.new(1, 0, 0, padSize(4))
+	EventUI.relationBanner.BackgroundColor3 = C.Red
+	EventUI.relationBanner.ZIndex = 65
+	EventUI.relationBanner.Parent = EventUI.header
+	pill(EventUI.relationBanner)
 
--- title section (emoji + event title) - BitLife style with proper sizing
-local titleSection = Instance.new("Frame")
-titleSection.Size = UDim2.new(1, 0, 0, 0)
-titleSection.AutomaticSize = Enum.AutomaticSize.Y  -- EXPAND to fit content
-titleSection.BackgroundTransparency = 1
-titleSection.LayoutOrder = 2
-titleSection.ZIndex = 64
-titleSection.Parent = eventCard
+	EventUI.relationLbl = Instance.new("TextLabel")
+	EventUI.relationLbl.Size = UDim2.fromScale(1, 0.9)
+	EventUI.relationLbl.Position = UDim2.new(0, 0, 0.05, 0)
+	EventUI.relationLbl.BackgroundTransparency = 1
+	EventUI.relationLbl.Font = F.Button
+	EventUI.relationLbl.TextSize = Device.IS_TINY_PHONE and 9 or textSize(11)
+	EventUI.relationLbl.TextColor3 = C.White
+	EventUI.relationLbl.Text = "Classmate"
+	EventUI.relationLbl.ZIndex = 66
+	EventUI.relationLbl.Parent = EventUI.relationBanner
 
--- Add padding to title section so emoji doesn't clip at top
-local titlePadding = Instance.new("UIPadding")
-titlePadding.PaddingTop = UDim.new(0, 16)
-titlePadding.PaddingBottom = UDim.new(0, 8)
-titlePadding.PaddingLeft = UDim.new(0, 16)
-titlePadding.PaddingRight = UDim.new(0, 16)
-titlePadding.Parent = titleSection
+	-- title section (emoji + event title) - TINY PHONE FIX: Much more compact
+	local titleSection = Instance.new("Frame")
+	titleSection.Size = UDim2.new(1, 0, 0, 0)
+	titleSection.AutomaticSize = Enum.AutomaticSize.Y
+	titleSection.BackgroundTransparency = 1
+	titleSection.LayoutOrder = 2
+	titleSection.ZIndex = 64
+	titleSection.Parent = EventUI.card
 
-local titleLayout = Instance.new("UIListLayout")
-titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top  -- Top align so it stacks properly
-titleLayout.Padding = UDim.new(0, 10)
-titleLayout.Parent = titleSection
+	-- MOBILE FIX: Responsive tighter padding
+	local titlePadTop = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or padSize(16))
+	local titlePadBottom = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(8))
+	local titlePadSide = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or padSize(16))
+	local titlePadding = Instance.new("UIPadding")
+	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
+	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
+	titlePadding.PaddingLeft = UDim.new(0, titlePadSide)
+	titlePadding.PaddingRight = UDim.new(0, titlePadSide)
+	titlePadding.Parent = titleSection
 
--- Emoji container with proper sizing
-local eventEmoji = Instance.new("TextLabel")
-eventEmoji.Size = UDim2.new(0, 64, 0, 64)  -- Slightly smaller for balance
-eventEmoji.BackgroundTransparency = 1
-eventEmoji.Font = F.Body
-eventEmoji.TextSize = 52  -- Balanced emoji size
-eventEmoji.Text = "🙂"
-eventEmoji.LayoutOrder = 1
-eventEmoji.ZIndex = 65
-eventEmoji.Parent = titleSection
+	local titleLayout = Instance.new("UIListLayout")
+	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or padSize(10))
+	titleLayout.Parent = titleSection
 
--- Event title - AutomaticSize so it NEVER clips!
-local eventTitle = Instance.new("TextLabel")
-eventTitle.Size = UDim2.new(1, 0, 0, 0)  -- Full width, auto height
-eventTitle.AutomaticSize = Enum.AutomaticSize.Y  -- EXPAND for long titles
-eventTitle.BackgroundTransparency = 1
-eventTitle.Font = F.Title
-eventTitle.TextSize = 26  -- Slightly smaller for better fit
-eventTitle.TextColor3 = C.Gray900
-eventTitle.Text = "Life Event"
-eventTitle.TextWrapped = true  -- Wrap long titles to multiple lines
-eventTitle.TextXAlignment = Enum.TextXAlignment.Center
-eventTitle.LayoutOrder = 2
-eventTitle.ZIndex = 65
-eventTitle.Parent = titleSection
+	-- MOBILE FIX: Responsive emoji sizing
+	EventUI.emojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
+	EventUI.emojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
+	EventUI.emoji = Instance.new("TextLabel")
+	EventUI.emoji.Size = UDim2.new(0, EventUI.emojiSize, 0, EventUI.emojiSize)
+	EventUI.emoji.BackgroundTransparency = 1
+	EventUI.emoji.Font = F.Body
+	EventUI.emoji.TextSize = EventUI.emojiTextSize
+	EventUI.emoji.Text = "🙂"
+	EventUI.emoji.LayoutOrder = 1
+	EventUI.emoji.ZIndex = 65
+	EventUI.emoji.Parent = titleSection
 
--- body + "What will you do?" question
-local bodySection = Instance.new("Frame")
-bodySection.Size = UDim2.new(1, 0, 0, 0)
-bodySection.AutomaticSize = Enum.AutomaticSize.Y
-bodySection.BackgroundTransparency = 1
-bodySection.LayoutOrder = 3
-bodySection.ZIndex = 64
-bodySection.Parent = eventCard
-pad(bodySection, 28, 28, 0, 12)
+	-- MOBILE FIX: Responsive title text
+	EventUI.titleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
+	EventUI.title = Instance.new("TextLabel")
+	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.title.BackgroundTransparency = 1
+	EventUI.title.Font = F.Title
+	EventUI.title.TextSize = EventUI.titleTextSize
+	EventUI.title.TextColor3 = C.Gray900
+	EventUI.title.Text = "Life Event"
+	EventUI.title.TextWrapped = true
+	EventUI.title.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.title.LayoutOrder = 2
+	EventUI.title.ZIndex = 65
+	EventUI.title.Parent = titleSection
 
-local bodyLayout = Instance.new("UIListLayout")
-bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-bodyLayout.Padding = UDim.new(0, 10)
-bodyLayout.Parent = bodySection
+	-- body + "What will you do?" question - MOBILE FIX: Responsive sizing
+	local bodySection = Instance.new("Frame")
+	bodySection.Size = UDim2.new(1, 0, 0, 0)
+	bodySection.AutomaticSize = Enum.AutomaticSize.Y
+	bodySection.BackgroundTransparency = 1
+	bodySection.LayoutOrder = 3
+	bodySection.ZIndex = 64
+	bodySection.Parent = EventUI.card
+	local bodyPadSide = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or padSize(28))
+	local bodyPadBottom = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(12))
+	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
-local eventBody = Instance.new("TextLabel")
-eventBody.Size = UDim2.new(1, 0, 0, 0)
-eventBody.AutomaticSize = Enum.AutomaticSize.Y
-eventBody.BackgroundTransparency = 1
-eventBody.Font = F.Body
-eventBody.TextSize = 20  -- 20% BIGGER (was 16)
-eventBody.TextColor3 = C.Gray600
-eventBody.TextWrapped = true
-eventBody.TextXAlignment = Enum.TextXAlignment.Center
-eventBody.LineHeight = 1.5
-eventBody.RichText = true
-eventBody.Text = ""
-eventBody.LayoutOrder = 1
-eventBody.ZIndex = 65
-eventBody.Parent = bodySection
+	local bodyLayout = Instance.new("UIListLayout")
+	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
+	bodyLayout.Parent = bodySection
 
-local eventQuestion = Instance.new("TextLabel")
-eventQuestion.Name = "EventQuestion"
-eventQuestion.Size = UDim2.new(1, 0, 0, 28)
-eventQuestion.BackgroundTransparency = 1
-eventQuestion.Font = F.Title
-eventQuestion.TextSize = 18  -- BIGGER (was 15)
-eventQuestion.TextColor3 = C.Gray800
-eventQuestion.Text = "What will you do?"
-eventQuestion.TextXAlignment = Enum.TextXAlignment.Center
-eventQuestion.LayoutOrder = 2
-eventQuestion.ZIndex = 65
-eventQuestion.Parent = bodySection
+	-- MOBILE FIX: Responsive body text with tighter line height
+	EventUI.bodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
+	EventUI.body = Instance.new("TextLabel")
+	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.body.BackgroundTransparency = 1
+	EventUI.body.Font = F.Body
+	EventUI.body.TextSize = EventUI.bodyTextSize
+	EventUI.body.TextColor3 = C.Gray600
+	EventUI.body.TextWrapped = true
+	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or (Device.IS_SMALL_PHONE and 1.3 or 1.5)
+	EventUI.body.RichText = true
+	EventUI.body.Text = ""
+	EventUI.body.LayoutOrder = 1
+	EventUI.body.ZIndex = 65
+	EventUI.body.Parent = bodySection
 
--- choices
-local choicesSection = Instance.new("Frame")
-choicesSection.Size = UDim2.new(1, 0, 0, 0)
-choicesSection.AutomaticSize = Enum.AutomaticSize.Y
-choicesSection.BackgroundTransparency = 1
-choicesSection.LayoutOrder = 4
-choicesSection.ZIndex = 64
-choicesSection.Parent = eventCard
+	-- MOBILE FIX: Responsive question text
+	EventUI.questionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
+	EventUI.question = Instance.new("TextLabel")
+	EventUI.question.Name = "EventQuestion"
+	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.question.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.question.BackgroundTransparency = 1
+	EventUI.question.Font = F.Title
+	EventUI.question.TextSize = EventUI.questionTextSize
+	EventUI.question.TextColor3 = C.Gray800
+	EventUI.question.Text = "What will you do?"
+	EventUI.question.TextXAlignment = Enum.TextXAlignment.Center
+	EventUI.question.TextWrapped = true
+	EventUI.question.LineHeight = Device.IS_TINY_PHONE and 1.1 or (Device.IS_SMALL_PHONE and 1.15 or 1.25)
+	EventUI.question.LayoutOrder = 2
+	EventUI.question.ZIndex = 65
+	EventUI.question.Parent = bodySection
 
-pad(choicesSection, 22, 22, 4, 24)
+	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
+	-- The card expands to show ALL buttons without scrolling
+	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
+	EventUI.choicesSection = Instance.new("Frame")
+	EventUI.choicesSection.Name = "ChoicesContainer"
+	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
+	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.LayoutOrder = 4
+	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.Parent = EventUI.card
 
-local choicesLayout = Instance.new("UIListLayout")
-choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-choicesLayout.Padding = UDim.new(0, 10)
-choicesLayout.Parent = choicesSection
+	-- MOBILE FIX: Tighter choice section padding
+	local choicePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(22))
+	local choicePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(4))
+	local choicePadBottom = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 12 or padSize(24))
+	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
-local activeChoiceButtons = {}
-local currentEventId       = nil
-local surpriseConnection   = nil
-local currentHideTween     = nil  -- Track hide animation to cancel on new event
+	local choicesLayout = Instance.new("UIListLayout")
+	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
+	-- MOBILE FIX: Tighter spacing between buttons
+	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
+	choicesLayout.Parent = EventUI.choicesSection
+end
+
+-- Build the event modal immediately
+buildEventModal()
+
+-- CRITICAL FIX: Reduced module-level locals by using direct table access
+-- Use EventUI.overlay, EventUI.shell, etc. instead of aliases
 
 local function clearChoices()
-	for _, b in ipairs(activeChoiceButtons) do
+	for _, b in ipairs(EventUI.activeChoiceButtons) do
 		b:Destroy()
 	end
-	table.clear(activeChoiceButtons)
+	table.clear(EventUI.activeChoiceButtons)
 
-	if surpriseConnection then
-		surpriseConnection:Disconnect()
-		surpriseConnection = nil
+	if EventUI.surpriseConnection then
+		EventUI.surpriseConnection:Disconnect()
+		EventUI.surpriseConnection = nil
 	end
 end
 
--- Surprise me (bottom link)
+-- MOBILE FIX: Touch-friendly surprise button
 local surpriseBtn = Instance.new("TextButton")
-surpriseBtn.Size = UDim2.new(1, 0, 0, 36)
+surpriseBtn.Size = UDim2.new(1, 0, 0, btnHeight(36))
 surpriseBtn.BackgroundTransparency = 1
 surpriseBtn.Font = F.Medium
-surpriseBtn.TextSize = 14
+surpriseBtn.TextSize = textSize(14)
 surpriseBtn.TextColor3 = C.Gray400
 surpriseBtn.Text = "✨ Surprise me!"
 surpriseBtn.AutoButtonColor = false
 surpriseBtn.LayoutOrder = 100
 surpriseBtn.ZIndex = 65
-surpriseBtn.Parent = choicesSection
+surpriseBtn.Parent = EventUI.choicesSection
 
 surpriseBtn.MouseEnter:Connect(function()
 	surpriseBtn.TextColor3 = C.Blue
@@ -1470,6 +1845,791 @@ end)
 surpriseBtn.MouseLeave:Connect(function()
 	surpriseBtn.TextColor3 = C.Gray400
 end)
+
+----------------------------------------------------------------
+-- DEATH OVERLAY - MOBILE FIX: Responsive death screen
+----------------------------------------------------------------
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BITLIFE-STYLE DEATH SCREEN - Full screen memorial with comprehensive stats
+-- ═══════════════════════════════════════════════════════════════════════════════
+local DeathUI = {}
+
+-- Builder function to reduce local variable count in module scope
+local function buildDeathUI()
+	DeathUI.overlay = Instance.new("Frame")
+	DeathUI.overlay.Name = "DeathOverlay"
+	DeathUI.overlay.Size = UDim2.fromScale(1, 1)
+	DeathUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.overlay.BackgroundTransparency = 0
+	DeathUI.overlay.Visible = false
+	DeathUI.overlay.ZIndex = 120
+	DeathUI.overlay.Parent = screenGui
+
+	-- Scrollable container for all content - MOBILE FIX: Thicker scrollbar for touch
+	DeathUI.scroll = Instance.new("ScrollingFrame")
+	DeathUI.scroll.Name = "DeathScroll"
+	DeathUI.scroll.Size = UDim2.fromScale(1, 1)
+	DeathUI.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	DeathUI.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	DeathUI.scroll.BackgroundTransparency = 1
+	DeathUI.scroll.ScrollBarThickness = Device.IS_MOBILE and 8 or 4
+	DeathUI.scroll.ScrollBarImageColor3 = C.Gray400
+	DeathUI.scroll.ZIndex = 121
+	DeathUI.scroll.Parent = DeathUI.overlay
+
+	local deathScrollLayout = Instance.new("UIListLayout")
+	deathScrollLayout.Padding = UDim.new(0, 0)
+	deathScrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	deathScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	deathScrollLayout.Parent = DeathUI.scroll
+
+	-- MOBILE FIX: Responsive header height
+	local deathHeaderHeight = Device.IS_SMALL_PHONE and 220 or px(280)
+	DeathUI.headerSection = Instance.new("Frame")
+	DeathUI.headerSection.Name = "Header"
+	DeathUI.headerSection.Size = UDim2.new(1, 0, 0, deathHeaderHeight)
+	DeathUI.headerSection.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+	DeathUI.headerSection.ZIndex = 121
+	DeathUI.headerSection.LayoutOrder = 1
+	DeathUI.headerSection.Parent = DeathUI.scroll
+
+	-- MOBILE FIX: Responsive gravestone emoji
+	local deathEmojiSize = Device.IS_SMALL_PHONE and 70 or px(100)
+	DeathUI.emojiFrame = Instance.new("Frame")
+	DeathUI.emojiFrame.Size = UDim2.new(0, deathEmojiSize, 0, deathEmojiSize)
+	DeathUI.emojiFrame.Position = UDim2.new(0.5, -deathEmojiSize/2, 0, padSize(30))
+	DeathUI.emojiFrame.BackgroundColor3 = Color3.fromRGB(60, 65, 75)
+	DeathUI.emojiFrame.ZIndex = 122
+	DeathUI.emojiFrame.Parent = DeathUI.headerSection
+	corner(DeathUI.emojiFrame, deathEmojiSize/2)
+
+	local deathEmojiLabel = Instance.new("TextLabel")
+	deathEmojiLabel.Size = UDim2.fromScale(1, 1)
+	deathEmojiLabel.BackgroundTransparency = 1
+	deathEmojiLabel.Font = F.Body
+	deathEmojiLabel.TextSize = textSize(56)
+	deathEmojiLabel.Text = "⚰️"
+	deathEmojiLabel.ZIndex = 123
+	deathEmojiLabel.Parent = DeathUI.emojiFrame
+
+	-- MOBILE FIX: Responsive RIP label positioning
+	local ripLabelY = deathEmojiSize + padSize(40)
+	local ripLabel = Instance.new("TextLabel")
+	ripLabel.Name = "RIP"
+	ripLabel.Size = UDim2.new(1, 0, 0, px(28))
+	ripLabel.Position = UDim2.new(0, 0, 0, ripLabelY)
+	ripLabel.BackgroundTransparency = 1
+	ripLabel.Font = F.Medium
+	ripLabel.TextSize = textSize(14)
+	ripLabel.TextColor3 = C.Gray400
+	ripLabel.Text = "REST IN PEACE"
+	ripLabel.ZIndex = 122
+	ripLabel.Parent = DeathUI.headerSection
+
+	-- MOBILE FIX: Responsive name text
+	local titleLabelY = ripLabelY + px(28)
+	DeathUI.title = Instance.new("TextLabel")
+	DeathUI.title.Size = UDim2.new(1, -padSize(32), 0, px(36))
+	DeathUI.title.Position = UDim2.new(0, padSize(16), 0, titleLabelY)
+	DeathUI.title.BackgroundTransparency = 1
+	DeathUI.title.Font = F.Title
+	DeathUI.title.TextSize = textSize(28)
+	DeathUI.title.TextColor3 = C.White
+	DeathUI.title.TextWrapped = true
+	DeathUI.title.Text = "Name Here"
+	DeathUI.title.ZIndex = 122
+	DeathUI.title.Parent = DeathUI.headerSection
+
+	-- MOBILE FIX: Responsive lifespan text
+	local lifespanY = titleLabelY + px(36)
+	DeathUI.lifespan = Instance.new("TextLabel")
+	DeathUI.lifespan.Name = "Lifespan"
+	DeathUI.lifespan.Size = UDim2.new(1, 0, 0, px(24))
+	DeathUI.lifespan.Position = UDim2.new(0, 0, 0, lifespanY)
+	DeathUI.lifespan.BackgroundTransparency = 1
+	DeathUI.lifespan.Font = F.Body
+	DeathUI.lifespan.TextSize = textSize(16)
+	DeathUI.lifespan.TextColor3 = C.Gray300
+	DeathUI.lifespan.Text = "2000 - 2080 (80 years)"
+	DeathUI.lifespan.ZIndex = 122
+	DeathUI.lifespan.Parent = DeathUI.headerSection
+
+	-- Cause of death
+	DeathUI.cause = Instance.new("TextLabel")
+	DeathUI.cause.Size = UDim2.new(0.9, 0, 0, 0)
+	DeathUI.cause.Position = UDim2.new(0.05, 0, 0, 235)
+	DeathUI.cause.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.cause.BackgroundTransparency = 1
+	DeathUI.cause.Font = F.Body
+	DeathUI.cause.TextSize = 14
+	DeathUI.cause.TextColor3 = C.Gray400
+	DeathUI.cause.TextWrapped = true
+	DeathUI.cause.Text = "Cause of death"
+	DeathUI.cause.ZIndex = 122
+	DeathUI.cause.Parent = DeathUI.headerSection
+
+	-- Stats container
+	DeathUI.statsSection = Instance.new("Frame")
+	DeathUI.statsSection.Name = "StatsSection"
+	DeathUI.statsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.statsSection.ZIndex = 121
+	DeathUI.statsSection.LayoutOrder = 2
+	DeathUI.statsSection.Parent = DeathUI.scroll
+
+	local statsSectionPad = Instance.new("UIPadding")
+	statsSectionPad.PaddingTop = UDim.new(0, 20)
+	statsSectionPad.PaddingBottom = UDim.new(0, 20)
+	statsSectionPad.PaddingLeft = UDim.new(0, 16)
+	statsSectionPad.PaddingRight = UDim.new(0, 16)
+	statsSectionPad.Parent = DeathUI.statsSection
+
+	local statsSectionLayout = Instance.new("UIListLayout")
+	statsSectionLayout.Padding = UDim.new(0, 12)
+	statsSectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	statsSectionLayout.Parent = DeathUI.statsSection
+
+	-- Stats title
+	local statsTitle = Instance.new("TextLabel")
+	statsTitle.Name = "StatsTitle"
+	statsTitle.Size = UDim2.new(1, 0, 0, 28)
+	statsTitle.BackgroundTransparency = 1
+	statsTitle.Font = F.Title
+	statsTitle.TextSize = 18
+	statsTitle.TextColor3 = C.White
+	statsTitle.TextXAlignment = Enum.TextXAlignment.Left
+	statsTitle.Text = "📊 LIFE STATISTICS"
+	statsTitle.LayoutOrder = 0
+	statsTitle.ZIndex = 122
+	statsTitle.Parent = DeathUI.statsSection
+
+	DeathUI.statsFrame = Instance.new("Frame")
+	DeathUI.statsFrame.Name = "StatsFrame"
+	DeathUI.statsFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.statsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.statsFrame.BackgroundTransparency = 1
+	DeathUI.statsFrame.LayoutOrder = 1
+	DeathUI.statsFrame.ZIndex = 122
+	DeathUI.statsFrame.Parent = DeathUI.statsSection
+
+	local deathStatsLayout = Instance.new("UIListLayout")
+	deathStatsLayout.Padding = UDim.new(0, 8)
+	deathStatsLayout.Parent = DeathUI.statsFrame
+
+	-- Achievements section
+	DeathUI.achievementsSection = Instance.new("Frame")
+	DeathUI.achievementsSection.Name = "AchievementsSection"
+	DeathUI.achievementsSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achievementsSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achievementsSection.BackgroundColor3 = Color3.fromRGB(25, 30, 38)
+	DeathUI.achievementsSection.ZIndex = 121
+	DeathUI.achievementsSection.LayoutOrder = 3
+	DeathUI.achievementsSection.Parent = DeathUI.scroll
+
+	local achievePad = Instance.new("UIPadding")
+	achievePad.PaddingTop = UDim.new(0, 16)
+	achievePad.PaddingBottom = UDim.new(0, 16)
+	achievePad.PaddingLeft = UDim.new(0, 16)
+	achievePad.PaddingRight = UDim.new(0, 16)
+	achievePad.Parent = DeathUI.achievementsSection
+
+	local achieveLayout = Instance.new("UIListLayout")
+	achieveLayout.Padding = UDim.new(0, 10)
+	achieveLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	achieveLayout.Parent = DeathUI.achievementsSection
+
+	local achieveTitle = Instance.new("TextLabel")
+	achieveTitle.Name = "AchieveTitle"
+	achieveTitle.Size = UDim2.new(1, 0, 0, 24)
+	achieveTitle.BackgroundTransparency = 1
+	achieveTitle.Font = F.Title
+	achieveTitle.TextSize = 16
+	achieveTitle.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+	achieveTitle.TextXAlignment = Enum.TextXAlignment.Left
+	achieveTitle.Text = "🏆 ACHIEVEMENTS"
+	achieveTitle.LayoutOrder = 0
+	achieveTitle.ZIndex = 122
+	achieveTitle.Parent = DeathUI.achievementsSection
+
+	DeathUI.achieveFrame = Instance.new("Frame")
+	DeathUI.achieveFrame.Name = "AchieveFrame"
+	DeathUI.achieveFrame.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.achieveFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.achieveFrame.BackgroundTransparency = 1
+	DeathUI.achieveFrame.LayoutOrder = 1
+	DeathUI.achieveFrame.ZIndex = 122
+	DeathUI.achieveFrame.Parent = DeathUI.achievementsSection
+
+	local achieveListLayout = Instance.new("UIListLayout")
+	achieveListLayout.Padding = UDim.new(0, 6)
+	achieveListLayout.Parent = DeathUI.achieveFrame
+
+	-- Epitaph section
+	DeathUI.epitaphSection = Instance.new("Frame")
+	DeathUI.epitaphSection.Name = "EpitaphSection"
+	DeathUI.epitaphSection.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaphSection.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaphSection.BackgroundColor3 = Color3.fromRGB(20, 25, 32)
+	DeathUI.epitaphSection.ZIndex = 121
+	DeathUI.epitaphSection.LayoutOrder = 4
+	DeathUI.epitaphSection.Parent = DeathUI.scroll
+
+	local epitaphPad = Instance.new("UIPadding")
+	epitaphPad.PaddingTop = UDim.new(0, 16)
+	epitaphPad.PaddingBottom = UDim.new(0, 24)
+	epitaphPad.PaddingLeft = UDim.new(0, 20)
+	epitaphPad.PaddingRight = UDim.new(0, 20)
+	epitaphPad.Parent = DeathUI.epitaphSection
+
+	DeathUI.epitaph = Instance.new("TextLabel")
+	DeathUI.epitaph.Name = "Epitaph"
+	DeathUI.epitaph.Size = UDim2.new(1, 0, 0, 0)
+	DeathUI.epitaph.AutomaticSize = Enum.AutomaticSize.Y
+	DeathUI.epitaph.BackgroundTransparency = 1
+	DeathUI.epitaph.Font = F.Body
+	DeathUI.epitaph.TextSize = 14
+	DeathUI.epitaph.TextColor3 = C.Gray400
+	DeathUI.epitaph.TextWrapped = true
+	DeathUI.epitaph.TextXAlignment = Enum.TextXAlignment.Center
+	DeathUI.epitaph.Text = ""
+	DeathUI.epitaph.ZIndex = 122
+	DeathUI.epitaph.Parent = DeathUI.epitaphSection
+
+	-- Restart button section (EXPANDED: Time Machine + New Life)
+	DeathUI.buttonSection = Instance.new("Frame")
+	DeathUI.buttonSection.Name = "ButtonSection"
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 240)
+	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+	DeathUI.buttonSection.ZIndex = 121
+	DeathUI.buttonSection.LayoutOrder = 5
+	DeathUI.buttonSection.Parent = DeathUI.scroll
+	
+	-- TIME MACHINE SECTION (BitLife-style premium feature)
+	local tmTitle = Instance.new("TextLabel")
+	tmTitle.Size = UDim2.new(1, 0, 0, 30)
+	tmTitle.Position = UDim2.new(0, 0, 0, 8)
+	tmTitle.BackgroundTransparency = 1
+	tmTitle.Font = F.Title
+	tmTitle.TextSize = 16
+	tmTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+	tmTitle.Text = "⏰ TIME MACHINE"
+	tmTitle.ZIndex = 122
+	tmTitle.Parent = DeathUI.buttonSection
+	
+	-- Time Machine buttons container
+	local tmContainer = Instance.new("Frame")
+	tmContainer.Size = UDim2.new(0.92, 0, 0, 85)
+	tmContainer.Position = UDim2.new(0.04, 0, 0, 40)
+	tmContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	tmContainer.ZIndex = 122
+	tmContainer.Parent = DeathUI.buttonSection
+	corner(tmContainer, 12)
+	
+	local tmGrid = Instance.new("UIGridLayout")
+	tmGrid.CellSize = UDim2.new(0.48, 0, 0, 36)
+	tmGrid.CellPadding = UDim2.new(0.02, 0, 0, 6)
+	tmGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tmGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	tmGrid.Parent = tmContainer
+	
+	local tmPad = Instance.new("UIPadding")
+	tmPad.PaddingTop = UDim.new(0, 6)
+	tmPad.PaddingLeft = UDim.new(0, 6)
+	tmPad.PaddingRight = UDim.new(0, 6)
+	tmPad.Parent = tmContainer
+	
+	-- CRITICAL FIX #23: Store Time Machine buttons for later reset
+	DeathUI.timeMachineButtons = {}
+	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
+	for i, opt in ipairs(tmOptions) do
+		local tmBtn = Instance.new("TextButton")
+		tmBtn.Name = "TM_" .. opt[1]
+		tmBtn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+		tmBtn.Font = F.Button
+		tmBtn.TextSize = 13
+		tmBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+		tmBtn.Text = "👑 " .. opt[2]
+		tmBtn.AutoButtonColor = false
+		tmBtn.LayoutOrder = i
+		tmBtn.ZIndex = 123
+		tmBtn.Parent = tmContainer
+		corner(tmBtn, 8)
+		
+		-- Store reference with original text for reset
+		DeathUI.timeMachineButtons[i] = { button = tmBtn, originalText = "👑 " .. opt[2], yearsBack = opt[1] }
+		
+		tmBtn.MouseButton1Click:Connect(function()
+			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
+			if UseTimeMachine then
+				tmBtn.Text = "⏳..."
+				local ok, result = pcall(function() return UseTimeMachine:InvokeServer(opt[1]) end)
+				if ok and result and result.success then
+					-- CRITICAL FIX: After Time Machine success:
+					-- 1. Hide the death overlay
+					-- 2. Update the current state from server result
+					-- 3. Refresh the UI to show new age/stats
+					hideDeathOverlay()
+					
+					-- Update currentState with new age if provided
+					if result.newAge then
+						currentState.Age = result.newAge
+						currentState.Health = 100 -- Restore health
+						currentState.Stats = currentState.Stats or {}
+						currentState.Stats.Health = 100
+						
+						-- Clear death flags
+						if currentState.Flags then
+							currentState.Flags.dead = nil
+						end
+					end
+					
+					-- Refresh UI
+					if updateFromState then
+						updateFromState()
+					end
+				elseif ok and result and result.needsProduct then
+					-- CRITICAL FIX #24: Handle dev product purchase flow
+					-- Player needs to purchase a product - prompt for product
+					local PromptProduct = remotesFolder:FindFirstChild("PromptProduct")
+					if PromptProduct then
+						PromptProduct:FireServer(result.productKey)
+					end
+					tmBtn.Text = "💳 " .. opt[2]
+					-- Flash the button to indicate purchase prompt
+					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+					task.delay(0.3, function()
+						tmBtn.Text = "👑 " .. opt[2]
+						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
+					end)
+				elseif ok and result and result.needsGamepass then
+					-- Legacy: Player needs to purchase the gamepass - server already prompted
+					tmBtn.Text = "👑 " .. opt[2]
+					-- Flash the button to indicate it needs purchase
+					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+					task.delay(0.15, function()
+						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
+					end)
+				else
+					tmBtn.Text = "👑 " .. opt[2]
+				end
+			end
+		end)
+	end
+
+	DeathUI.restart = Instance.new("TextButton")
+	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 135)
+	DeathUI.restart.BackgroundColor3 = C.Green
+	DeathUI.restart.Font = F.Button
+	DeathUI.restart.TextSize = 20
+	DeathUI.restart.TextColor3 = C.White
+	DeathUI.restart.Text = "🔄 Start New Life"
+	DeathUI.restart.AutoButtonColor = false
+	DeathUI.restart.ZIndex = 122
+	DeathUI.restart.Parent = DeathUI.buttonSection
+	corner(DeathUI.restart, 16)
+
+	DeathUI.restart.MouseEnter:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+	end)
+	DeathUI.restart.MouseLeave:Connect(function()
+		tween(DeathUI.restart, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+	end)
+
+	local ResetLife = remotesFolder:FindFirstChild("ResetLife")
+
+	DeathUI.restart.MouseButton1Click:Connect(function()
+		if ResetLife then
+			DeathUI.restart.Text = "Starting new life..."
+			ResetLife:FireServer()
+		end
+	end)
+end
+
+-- Build the Death UI immediately
+buildDeathUI()
+
+-- Helper to create a stat row
+local function createDeathStatRow(icon, label, value, color, order)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 36)
+	row.BackgroundColor3 = Color3.fromRGB(35, 40, 50)
+	row.LayoutOrder = order or 0
+	row.ZIndex = 123
+	corner(row, 10)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(0.55, 0, 1, 0)
+	lbl.Position = UDim2.new(0, 12, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = F.Medium
+	lbl.TextSize = 14
+	lbl.TextColor3 = C.Gray300
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Text = icon .. " " .. label
+	lbl.ZIndex = 124
+	lbl.Parent = row
+
+	local val = Instance.new("TextLabel")
+	val.Size = UDim2.new(0.45, -12, 1, 0)
+	val.Position = UDim2.new(0.55, 0, 0, 0)
+	val.BackgroundTransparency = 1
+	val.Font = F.Title
+	val.TextSize = 14
+	val.TextColor3 = color or C.White
+	val.TextXAlignment = Enum.TextXAlignment.Right
+	val.Text = tostring(value)
+	val.ZIndex = 124
+	val.Parent = row
+	
+	return row
+end
+
+-- Helper to create achievement badge
+local function createAchievementBadge(icon, text, order)
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(1, 0, 0, 32)
+	badge.BackgroundColor3 = Color3.fromRGB(45, 40, 20)
+	badge.LayoutOrder = order or 0
+	badge.ZIndex = 123
+	corner(badge, 8)
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, -16, 1, 0)
+	lbl.Position = UDim2.new(0, 8, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = F.Medium
+	lbl.TextSize = 13
+	lbl.TextColor3 = C.Gold or Color3.fromRGB(255, 193, 7)
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Text = icon .. " " .. text
+	lbl.ZIndex = 124
+	lbl.Parent = badge
+	
+	return badge
+end
+
+showDeathOverlay = function(causeText, age)
+	local name = currentState.Name or "Unknown"
+	local finalAge = age or currentState.Age or 0
+	local birthYear = 2024 - finalAge
+	local deathYear = 2024
+	
+	DeathUI.title.Text = name
+	DeathUI.lifespan.Text = string.format("%d - %d (%d years)", birthYear, deathYear, finalAge)
+	DeathUI.cause.Text = causeText or "Natural causes"
+	DeathUI.overlay.Visible = true
+	DeathUI.restart.Text = "🔄 Start New Life"
+	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
+
+	-- CRITICAL FIX #25: Reset Time Machine buttons to their original state
+	-- This fixes the hourglass bug where buttons showed ⏳ after dying a second time
+	if DeathUI.timeMachineButtons then
+		for _, btnData in ipairs(DeathUI.timeMachineButtons) do
+			if btnData.button and btnData.originalText then
+				btnData.button.Text = btnData.originalText
+				btnData.button.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+			end
+		end
+	end
+
+	-- Clear old stats
+	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+	for _, child in ipairs(DeathUI.achieveFrame:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+
+	-- Gather comprehensive stats
+	local stats = currentState.Stats or {}
+	local money = currentState.Money or 0
+	local happiness = stats.Happiness or currentState.Happiness or 50
+	local health = stats.Health or currentState.Health or 0
+	local smarts = stats.Smarts or currentState.Smarts or 50
+	local looks = stats.Looks or currentState.Looks or 50
+	local education = currentState.Education or "None"
+	local career = currentState.CurrentJob and currentState.CurrentJob.Title or "Unemployed"
+	local flags = currentState.Flags or {}
+	local assets = currentState.Assets or {}
+	
+	-- Count assets
+	local propertyCount = assets.Properties and #assets.Properties or 0
+	local vehicleCount = assets.Vehicles and #assets.Vehicles or 0
+	local itemCount = assets.Items and #assets.Items or 0
+	
+	-- Count relationships
+	local relationships = currentState.Relationships or {}
+	local relationshipCount = 0
+	local childCount = 0
+	local marriageCount = 0
+	for _, rel in pairs(relationships) do
+		relationshipCount = relationshipCount + 1
+		if rel.Type == "Child" then childCount = childCount + 1 end
+		if rel.Type == "Spouse" then marriageCount = marriageCount + 1 end
+	end
+	
+	-- Create stat rows
+	local statList = {
+		{ icon = "🎂", label = "Years Lived", value = finalAge .. " years", color = C.White, order = 1 },
+		{ icon = "💰", label = "Net Worth", value = formatMoney(money), color = money >= 1000000 and C.Gold or (money >= 100000 and C.Green or C.White), order = 2 },
+		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 3 },
+		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 4 },
+		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 5 },
+		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 6 },
+		{ icon = "🎓", label = "Education", value = education == "none" and "None" or education:gsub("^%l", string.upper), color = C.Teal, order = 7 },
+		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 8 },
+		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 9 },
+		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 10 },
+		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 11 },
+		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 12 },
+		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 13 },
+		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 14 },
+	}
+	
+	for _, s in ipairs(statList) do
+		local row = createDeathStatRow(s.icon, s.label, s.value, s.color, s.order)
+		row.Parent = DeathUI.statsFrame
+	end
+	
+	-- Generate achievements (EXPANDED - BitLife-style comprehensive list)
+	local achievements = {}
+	
+	-- Age achievements
+	if finalAge >= 100 then
+		table.insert(achievements, { icon = "🎖️", text = "Centenarian - Lived 100+ years!" })
+	elseif finalAge >= 80 then
+		table.insert(achievements, { icon = "👴", text = "Golden Years - Lived to 80+" })
+	elseif finalAge >= 65 then
+		table.insert(achievements, { icon = "🧓", text = "Retiree - Made it to 65+" })
+	end
+	
+	-- Early death achievements
+	if finalAge < 20 then
+		table.insert(achievements, { icon = "😢", text = "Gone Too Soon - Died before 20" })
+	elseif finalAge < 40 then
+		table.insert(achievements, { icon = "💔", text = "Life Cut Short - Died before 40" })
+	end
+	
+	-- Wealth achievements
+	if money >= 100000000 then
+		table.insert(achievements, { icon = "👑", text = "Billionaire Club - $100M+ net worth" })
+	elseif money >= 10000000 then
+		table.insert(achievements, { icon = "💎", text = "Mega Millionaire - $10M+ net worth" })
+	elseif money >= 1000000 then
+		table.insert(achievements, { icon = "💰", text = "Millionaire - $1M+ net worth" })
+	elseif money >= 100000 then
+		table.insert(achievements, { icon = "🏦", text = "Wealthy - $100K+ net worth" })
+	elseif money < 0 then
+		table.insert(achievements, { icon = "💸", text = "In Debt - Died owing money" })
+	elseif money < 1000 then
+		table.insert(achievements, { icon = "🪙", text = "Broke - Died nearly penniless" })
+	end
+	
+	-- Happiness achievements
+	if happiness >= 90 then
+		table.insert(achievements, { icon = "😊", text = "Joyful Life - 90%+ happiness" })
+	elseif happiness < 20 then
+		table.insert(achievements, { icon = "😞", text = "Miserable - Low happiness" })
+	end
+	
+	-- Intelligence achievements
+	if smarts >= 90 then
+		table.insert(achievements, { icon = "🧠", text = "Genius - 90%+ intelligence" })
+	end
+	
+	-- Looks achievements
+	if looks >= 90 then
+		table.insert(achievements, { icon = "😍", text = "Gorgeous - 90%+ looks" })
+	end
+	
+	-- Education achievements
+	if education == "phd" or education == "doctorate" then
+		table.insert(achievements, { icon = "📚", text = "Scholar - Earned a Doctorate" })
+	elseif education == "master" then
+		table.insert(achievements, { icon = "🎓", text = "Academic - Master's Degree" })
+	elseif education == "law" then
+		table.insert(achievements, { icon = "⚖️", text = "Lawyer - Earned a Law Degree" })
+	elseif education == "medical" then
+		table.insert(achievements, { icon = "🏥", text = "Doctor - Earned a Medical Degree" })
+	elseif education == "bachelor" then
+		table.insert(achievements, { icon = "🎓", text = "Graduate - Bachelor's Degree" })
+	elseif education == "none" and finalAge >= 18 then
+		table.insert(achievements, { icon = "🚫", text = "School Dropout - No diploma" })
+	end
+	
+	-- Family achievements
+	if childCount >= 10 then
+		table.insert(achievements, { icon = "🏆", text = "Super Parent - 10+ children" })
+	elseif childCount >= 5 then
+		table.insert(achievements, { icon = "👨‍👩‍👧‍👦", text = "Big Family - 5+ children" })
+	elseif childCount >= 1 then
+		table.insert(achievements, { icon = "👶", text = "Parent - Had children" })
+	end
+	
+	if marriageCount >= 3 then
+		table.insert(achievements, { icon = "💍", text = "Serial Spouse - Married 3+ times" })
+	elseif marriageCount >= 1 then
+		table.insert(achievements, { icon = "💒", text = "Married - Found love" })
+	end
+	
+	-- Property/Assets achievements
+	if propertyCount >= 5 then
+		table.insert(achievements, { icon = "🏰", text = "Property Baron - 5+ properties" })
+	elseif propertyCount >= 3 then
+		table.insert(achievements, { icon = "🏘️", text = "Real Estate Mogul - 3+ properties" })
+	elseif propertyCount >= 1 then
+		table.insert(achievements, { icon = "🏠", text = "Homeowner - Owned property" })
+	end
+	
+	if vehicleCount >= 10 then
+		table.insert(achievements, { icon = "🏎️", text = "Car Enthusiast - 10+ vehicles" })
+	elseif vehicleCount >= 5 then
+		table.insert(achievements, { icon = "🚗", text = "Car Collector - 5+ vehicles" })
+	end
+	
+	-- Fame achievements
+	if flags.famous or flags.celebrity then
+		table.insert(achievements, { icon = "⭐", text = "Famous - Became a celebrity" })
+	end
+	
+	-- Crime achievements
+	if flags.criminal_mastermind then
+		table.insert(achievements, { icon = "🦹", text = "Criminal Mastermind" })
+	end
+	if flags.served_time or flags.ex_convict then
+		table.insert(achievements, { icon = "⛓️", text = "Ex-Con - Served prison time" })
+	end
+	if flags.never_caught and flags.criminal_record then
+		table.insert(achievements, { icon = "🥷", text = "Ghost - Never caught" })
+	end
+	
+	-- Career achievements
+	if career and career ~= "Unemployed" and career ~= "" then
+		if flags.ceo or flags.executive then
+			table.insert(achievements, { icon = "👔", text = "Executive - Reached the top" })
+		elseif flags.retired then
+			table.insert(achievements, { icon = "🎉", text = "Retired - Earned retirement" })
+		end
+	else
+		table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+	end
+	
+	-- Special achievements from flags
+	if flags.war_hero then
+		table.insert(achievements, { icon = "🎖️", text = "War Hero - Served honorably" })
+	end
+	if flags.olympic_gold or flags.champion then
+		table.insert(achievements, { icon = "🏅", text = "Champion - Won a major competition" })
+	end
+	if flags.viral or flags.influencer then
+		table.insert(achievements, { icon = "📱", text = "Influencer - Went viral" })
+	end
+	if flags.good_person or flags.philanthropist then
+		table.insert(achievements, { icon = "😇", text = "Good Samaritan - Helped others" })
+	end
+	if flags.world_traveler then
+		table.insert(achievements, { icon = "✈️", text = "Globetrotter - Traveled the world" })
+	end
+	
+	-- Default achievement if none earned
+	if #achievements == 0 then
+		table.insert(achievements, { icon = "🌟", text = "Lived a Life - Every journey counts" })
+	end
+	
+	for i, achieve in ipairs(achievements) do
+		local badge = createAchievementBadge(achieve.icon, achieve.text, i)
+		badge.Parent = DeathUI.achieveFrame
+	end
+	
+	-- Generate epitaph (EXPANDED - more variety and context-specific)
+	local epitaphs = {
+		"A life well lived, remembered by many.",
+		"Gone but never forgotten.",
+		"Their story may end, but their legacy lives on.",
+		"Every moment was a gift.",
+		"Beloved by those who knew them.",
+		"Here lies one who made their mark on the world.",
+		"They came, they lived, they mattered.",
+		"In the end, it's not the years in your life that count, it's the life in your years.",
+		"Rest in peace, forever in our hearts.",
+		"Until we meet again.",
+	}
+	
+	-- Context-specific epitaphs
+	if money >= 10000000 then
+		table.insert(epitaphs, "Died richer than most could dream.")
+		table.insert(epitaphs, "Their wealth was legendary, their legacy even more so.")
+	elseif money >= 1000000 then
+		table.insert(epitaphs, "They say money can't buy happiness, but they sure tried.")
+		table.insert(epitaphs, "Left behind a fortune and a legacy.")
+	elseif money < 100 then
+		table.insert(epitaphs, "Proved that money isn't everything.")
+		table.insert(epitaphs, "Rich in spirit, if not in wallet.")
+	end
+	
+	if happiness >= 90 then
+		table.insert(epitaphs, "Lived life to the fullest with a smile.")
+		table.insert(epitaphs, "Happiness was their greatest treasure.")
+		table.insert(epitaphs, "Found joy in every day.")
+	elseif happiness < 30 then
+		table.insert(epitaphs, "May they find peace at last.")
+		table.insert(epitaphs, "Rest now, the struggles are over.")
+	end
+	
+	if finalAge >= 100 then
+		table.insert(epitaphs, "A century of memories, a lifetime of love.")
+		table.insert(epitaphs, "Proved that age is just a number.")
+	elseif finalAge >= 90 then
+		table.insert(epitaphs, "A long life filled with countless memories.")
+		table.insert(epitaphs, "Witnessed history and made their own.")
+	elseif finalAge < 20 then
+		table.insert(epitaphs, "A candle that burned briefly but brightly.")
+		table.insert(epitaphs, "Young in years, old in wisdom.")
+	end
+	
+	if childCount >= 5 then
+		table.insert(epitaphs, "Their greatest achievement: their family.")
+		table.insert(epitaphs, "Surrounded by the love of many children.")
+	elseif childCount >= 1 then
+		table.insert(epitaphs, "Lives on through their children.")
+	end
+	
+	if marriageCount >= 3 then
+		table.insert(epitaphs, "Loved many, loved deeply.")
+	elseif marriageCount >= 1 then
+		table.insert(epitaphs, "Found true love in this lifetime.")
+	end
+	
+	if flags.famous or flags.celebrity then
+		table.insert(epitaphs, "A star that shone bright in the world.")
+		table.insert(epitaphs, "Famous in life, legendary in death.")
+	end
+	
+	if flags.criminal_record then
+		table.insert(epitaphs, "Lived life by their own rules.")
+		table.insert(epitaphs, "A complicated soul with a complicated past.")
+	end
+	
+	if education == "phd" or education == "doctorate" then
+		table.insert(epitaphs, "A brilliant mind, gone too soon.")
+		table.insert(epitaphs, "Their knowledge lives on in their work.")
+	end
+	
+	if propertyCount >= 3 then
+		table.insert(epitaphs, "Built an empire, brick by brick.")
+	end
+	
+	-- Random selection
+	DeathUI.epitaph.Text = "\"" .. epitaphs[math.random(1, #epitaphs)] .. "\""
+end
+
+hideDeathOverlay = function()
+	DeathUI.overlay.Visible = false
+	DeathUI.restart.Text = "Start New Life"
+end
 
 ----------------------------------------------------------------
 -- EVENT CATEGORY COLORS (BitLife-style themed borders)
@@ -1481,29 +2641,48 @@ local CategoryColors = {
 	danger = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	emergency = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	health = { shell = Color3.fromRGB(249, 115, 22), stroke = Color3.fromRGB(194, 65, 12), flash = C.Orange },
-	
+
 	-- Romance/relationships - PINK
 	romance = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
-	
+
 	-- Career/money - BLUE  
 	career = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
-	
+
 	-- Family - PURPLE
 	family = { shell = C.Purple, stroke = Color3.fromRGB(126, 34, 206), flash = C.Purple },
-	
+
 	-- School - TEAL
 	school = { shell = Color3.fromRGB(20, 184, 166), stroke = Color3.fromRGB(13, 148, 136), flash = Color3.fromRGB(20, 184, 166) },
-	
+
 	-- Social - GREEN
 	social = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	
+
 	-- Motorsport/Racing - ORANGE/GOLD (racing vibes!)
 	motorsport = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
 	racing = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
-	
+
 	-- Milestone events - GOLD
 	milestone = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
 	
+	-- CRITICAL FIX: Success events - GREEN (for things like prison escape success!)
+	success = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	escape = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	positive = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	
+	-- CRITICAL FIX #2: More positive categories for green borders
+	promotion = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	graduation = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	achievement = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	lottery = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	inheritance = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	wedding = { shell = Color3.fromRGB(255, 182, 193), stroke = Color3.fromRGB(219, 112, 147), flash = Color3.fromRGB(255, 192, 203) }, -- Pink for wedding
+	birth = { shell = Color3.fromRGB(135, 206, 235), stroke = Color3.fromRGB(70, 130, 180), flash = Color3.fromRGB(176, 224, 230) }, -- Light blue for birth
+	
+	-- CRITICAL FIX #3: Negative categories for red borders (explicit)
+	failure = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	fired = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	arrested = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+
 	-- Default - RED (BitLife style)
 	default = { shell = C.Red, stroke = C.RedDark, flash = C.Blue },
 }
@@ -1516,46 +2695,46 @@ local function isDisasterEvent(payload)
 	local emoji = payload.emoji or ""
 	local category = payload.category or ""
 	local title = payload.title or ""
-	
+
 	-- Check ID prefix for explicit disaster events
 	if id:match("^d_") or id:match("^disaster_") or id:match("^emergency_") then return true end
-	
+
 	-- Check dangerous emojis - ONLY actual disaster/death emojis
 	-- Removed: 🚗 (cars), 🔫 (crime), 😨 (general fear) - these are too broad
 	local dangerEmojis = {"🌪️", "🔥", "⛈️", "🌀", "🌊", "❄️", "🌡️", "💀", "☠️", "🆘", "🏥", "🚨"}
 	for _, de in ipairs(dangerEmojis) do
 		if emoji == de then return true end
 	end
-	
+
 	-- Check category - only explicit disaster categories
 	if category == "disaster" or category == "emergency" then
 		return true
 	end
-	
+
 	-- Check title keywords - only actual natural disasters and life-threatening emergencies
 	local dangerWords = {"tornado", "hurricane", "earthquake", "flood", "blizzard", "tsunami", "wildfire", "heart attack", "stroke", "collapsed", "dying"}
 	local lowerTitle = title:lower()
 	for _, word in ipairs(dangerWords) do
 		if lowerTitle:find(word) then return true end
 	end
-	
+
 	return false
 end
 
 -- Get the appropriate color scheme for an event
 local function getEventColors(payload)
 	local category = payload.category or "default"
-	
+
 	-- Override for disaster events
 	if isDisasterEvent(payload) then
 		return CategoryColors.disaster
 	end
-	
+
 	-- Check for category match
 	if CategoryColors[category] then
 		return CategoryColors[category]
 	end
-	
+
 	return CategoryColors.default
 end
 
@@ -1570,267 +2749,352 @@ showEvent = function(payload)
 		awaitingEvent = false
 		return
 	end
-	
+
 	-- Cancel any in-progress hide animation to prevent race conditions
-	if currentHideTween then
-		currentHideTween:Cancel()
-		currentHideTween = nil
+	if EventUI.currentHideTween then
+		EventUI.currentHideTween:Cancel()
+		EventUI.currentHideTween = nil
 	end
-	
+
 	-- Wrap in pcall to catch errors and ensure awaitingEvent gets reset
 	local success, errorMsg = pcall(function()
 		awaitingEvent = true
-		currentEventId = payload.id
+		EventUI.currentEventId = payload.id
 		clearChoices()
-		
+
 		-- Get category-based colors
 		local colors = getEventColors(payload)
 		local isDisaster = isDisasterEvent(payload)
-	
-	-- Apply themed shell color
-	eventShell.BackgroundColor3 = colors.shell
-	local shellStroke = eventShell:FindFirstChildOfClass("UIStroke")
-	if shellStroke then
-		shellStroke.Color = colors.stroke
-	end
 
-	-- header
-	eventHeader.Visible = payload.showRelationship or false
-	if payload.showRelationship and payload.relationName then
-		eventNameLbl.Text = payload.relationName
-		relationLbl.Text  = payload.relationship or "Friend"
-	end
-
-	eventEmoji.Text     = payload.emoji or "🙂"
-	eventTitle.Text     = payload.title or "Life Event"
-	eventBody.Text      = payload.text or ""
-	eventQuestion.Text  = payload.question or "What will you do?"
-	
-	-- NOTE: Screen shake removed from event APPEARANCE
-	-- BitLife style: shake only happens on NEGATIVE OUTCOMES (after choice is made)
-	-- The shake effect is now triggered in SyncState when health drops or bad things happen
-	-- This prevents random shaking when events first appear
-
-	local choiceHandlers = {}
-
-	for i, choice in ipairs(payload.choices or {}) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, 0, 0, 58)  -- BIGGER buttons
-		btn.BackgroundColor3 = C.Blue
-		btn.Font = F.Button
-		btn.TextSize = 18  -- BIGGER text (was 15)
-		btn.TextColor3 = C.White
-		btn.Text = choice.text
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = i
-		btn.ZIndex = 65
-		btn.Parent = choicesSection
-
-		corner(btn, 14)
-		stroke(btn, 2, 0.5, C.BlueLight)
-
-		if choice.minigame then
-			btn.Text = "🎮 " .. choice.text
+		-- Apply themed shell color
+		EventUI.shell.BackgroundColor3 = colors.shell
+		local shellStroke = EventUI.shell:FindFirstChildOfClass("UIStroke")
+		if shellStroke then
+			shellStroke.Color = colors.stroke
 		end
 
-		btn.MouseEnter:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark, Size = UDim2.new(1, 0, 0, 62) })
-		end)
-		btn.MouseLeave:Connect(function()
-			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue, Size = UDim2.new(1, 0, 0, 58) })
-		end)
+		-- header
+		EventUI.header.Visible = payload.showRelationship or false
+		if payload.showRelationship and payload.relationName then
+			EventUI.nameLbl.Text = payload.relationName
+			EventUI.relationLbl.Text  = payload.relationship or "Friend"
+		end
 
-		local choiceIndex = choice.index or i
-		local minigameType = choice.minigame
+		EventUI.emoji.Text     = payload.emoji or "🙂"
+		EventUI.title.Text     = payload.title or "Life Event"
+		EventUI.body.Text      = payload.text or ""
+		EventUI.question.Text  = payload.question or "What will you do?"
 
-		local function handleChoice()
-			if not currentEventId then return end
+		local choiceHandlers = {}
 
-			if minigameType and minigamesInstance then
-				pendingMinigameEventId     = currentEventId
-				pendingMinigameChoiceIndex = choiceIndex
-				hideEvent()
+		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
+		local baseMinHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
+		local choiceBtnTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
+		local choiceBtnCorner = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or 12)
+		local choiceBtnPadH = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 10)
+		local choiceBtnPadV = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or 5)
+		
+		for i, choice in ipairs(payload.choices or {}) do
+			local btn = Instance.new("TextButton")
+			-- KEY: Let height auto-expand for long text
+			btn.Size = UDim2.new(1, 0, 0, 0)
+			btn.AutomaticSize = Enum.AutomaticSize.Y
+			btn.BackgroundColor3 = C.Blue
+			btn.Font = F.Button
+			btn.TextSize = choiceBtnTextSize
+			btn.TextColor3 = C.White
+			btn.Text = choice.text
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 65
+			btn.TextWrapped = true
+			btn.TextXAlignment = Enum.TextXAlignment.Center
+			btn.TextYAlignment = Enum.TextYAlignment.Center
+			btn.Parent = EventUI.choicesSection
 
-				minigamesInstance:play(minigameType, function(won, data)
-					SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
-					if MinigameResult then
-						MinigameResult:FireServer(won, data)
-					end
-					pendingMinigameEventId     = nil
-					pendingMinigameChoiceIndex = nil
-				end)
-			else
-				SubmitChoice:FireServer(currentEventId, choiceIndex)
-				hideEvent()
+			corner(btn, choiceBtnCorner)
+			stroke(btn, 1, 0.5, C.BlueLight)
+			-- Add padding so text doesn't touch edges
+			pad(btn, choiceBtnPadH, choiceBtnPadH, choiceBtnPadV, choiceBtnPadV)
+
+			-- Enforce minimum tap height
+			local sizeConstraint = Instance.new("UISizeConstraint")
+			sizeConstraint.MinSize = Vector2.new(0, btnHeight(baseMinHeight))
+			sizeConstraint.Parent = btn
+
+			if choice.minigame then
+				btn.Text = "🎮 " .. choice.text
 			end
+
+			-- Hover color only (no size change to prevent layout jumps)
+			btn.MouseEnter:Connect(function()
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.BlueDark })
+			end)
+			btn.MouseLeave:Connect(function()
+				tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = C.Blue })
+			end)
+
+			local choiceIndex = choice.index or i
+			local minigameType = choice.minigame
+
+			local function handleChoice()
+				if not EventUI.currentEventId then return end
+
+				if minigameType and minigamesInstance then
+					pendingMinigameEventId     = EventUI.currentEventId
+					pendingMinigameChoiceIndex = choiceIndex
+					hideEvent()
+
+					minigamesInstance:play(minigameType, function(won, data)
+						SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
+						if MinigameResult then
+							MinigameResult:FireServer(won, data)
+						end
+						pendingMinigameEventId     = nil
+						pendingMinigameChoiceIndex = nil
+					end)
+				else
+					SubmitChoice:FireServer(EventUI.currentEventId, choiceIndex)
+					hideEvent()
+				end
+			end
+
+			btn.MouseButton1Click:Connect(handleChoice)
+			table.insert(choiceHandlers, handleChoice)
+			table.insert(EventUI.activeChoiceButtons, btn)
 		end
 
-		btn.MouseButton1Click:Connect(handleChoice)
-		table.insert(choiceHandlers, handleChoice)
-		table.insert(activeChoiceButtons, btn)
-	end
+		-- CRITICAL FIX: No scroll adjustment needed - card auto-expands to fit all buttons (BitLife-style)
 
-	surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
-		if currentEventId and #choiceHandlers > 0 then
-			local handler = choiceHandlers[math.random(1, #choiceHandlers)]
-			handler()
-		end
-	end)
+		-- Only show Surprise Me when there are 2+ choices
+		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false
 
-	eventOverlay.Visible = true
-	eventShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
-	eventShadowFrame.BackgroundTransparency = 1
-	eventShell.BackgroundTransparency = 1
-	eventCard.BackgroundTransparency = 1
+		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
+			if EventUI.currentEventId and #choiceHandlers > 0 then
+				local handler = choiceHandlers[math.random(1, #choiceHandlers)]
+				handler()
+			end
+		end)
 
-	tween(eventShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, 0.5),
-		BackgroundTransparency = 0.92,
-	})
-	tween(eventShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-	tween(eventCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		EventUI.overlay.Visible = true
+		EventUI.shadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
+		EventUI.shadowFrame.BackgroundTransparency = 1
+		EventUI.shell.BackgroundTransparency = 1
+		EventUI.card.BackgroundTransparency = 1
+
+		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundTransparency = 0.92,
+		})
+		tween(EventUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(EventUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
-	
+
 	-- Handle errors in showEvent
 	if not success then
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
 		awaitingEvent = false
-		currentEventId = nil
-		eventOverlay.Visible = false
+		EventUI.currentEventId = nil
+		EventUI.overlay.Visible = false
 	end
 end
 
 hideEvent = function()
 	awaitingEvent  = false
-	currentEventId = nil
+	EventUI.currentEventId = nil
 
 	-- Create the hide tween and track it
-	currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
+	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
-	tween(eventShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-	tween(eventCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.shell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
-	currentHideTween.Completed:Connect(function()
+	EventUI.currentHideTween.Completed:Connect(function()
 		-- Only hide overlay if we're not currently showing a new event
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
-			eventOverlay.Visible = false
-			
+			EventUI.overlay.Visible = false
+
 			-- Reset event UI elements for next event
-			eventEmoji.Text = "🙂"
-			eventTitle.Text = ""
-			eventBody.Text = ""
-			eventAvatarEmoji.Text = "👤"
-			eventNameLbl.Text = ""
-			relationLbl.Text = ""
-			eventHeader.Visible = false
+			EventUI.emoji.Text = "🙂"
+			EventUI.title.Text = ""
+			EventUI.body.Text = ""
+			EventUI.avatarEmoji.Text = "👤"
+			EventUI.nameLbl.Text = ""
+			EventUI.relationLbl.Text = ""
+			EventUI.header.Visible = false
 		end
-		
-		currentHideTween = nil
+
+		EventUI.currentHideTween = nil
 	end)
 end
 
 ----------------------------------------------------------------
--- INTRO (gender + name)
+-- INTRO (gender + name) - Consolidated into IntroUI table to reduce local register usage
 ----------------------------------------------------------------
 
-local introOverlay = Instance.new("Frame")
-introOverlay.Size = UDim2.fromScale(1, 1)
-introOverlay.BackgroundColor3 = C.Black
-introOverlay.BackgroundTransparency = 0.5
-introOverlay.Visible = false
-introOverlay.ZIndex = 70
-introOverlay.Parent = screenGui
+local IntroUI = {}
 
-local introContent = Instance.new("Frame")
-introContent.Size = UDim2.new(0.9, 0, 0, 0)
-introContent.AutomaticSize = Enum.AutomaticSize.Y
-introContent.AnchorPoint = Vector2.new(0.5, 0.5)
-introContent.Position = UDim2.fromScale(0.5, 0.5)
-introContent.BackgroundTransparency = 1
-introContent.ZIndex = 71
-introContent.Parent = introOverlay
+IntroUI.overlay = Instance.new("Frame")
+IntroUI.overlay.Size = UDim2.fromScale(1, 1)
+IntroUI.overlay.BackgroundColor3 = C.Black
+IntroUI.overlay.BackgroundTransparency = 0.5
+IntroUI.overlay.Visible = false
+IntroUI.overlay.ZIndex = 70
+IntroUI.overlay.Parent = screenGui
 
-local introLayout = Instance.new("UIListLayout")
-introLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-introLayout.Padding = UDim.new(0, 20)
-introLayout.Parent = introContent
+IntroUI.content = Instance.new("Frame")
+IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
+IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+IntroUI.content.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroUI.content.Position = UDim2.fromScale(0.5, 0.5)
+IntroUI.content.BackgroundTransparency = 1
+IntroUI.content.ZIndex = 71
+IntroUI.content.Parent = IntroUI.overlay
 
-local genderTitle = Instance.new("TextLabel")
-genderTitle.Size = UDim2.new(1, 0, 0, 36)
-genderTitle.BackgroundTransparency = 1
-genderTitle.Font = F.Title
-genderTitle.TextSize = 24
-genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
-genderTitle.Text = "Start by picking a gender"
-genderTitle.LayoutOrder = 1
-genderTitle.ZIndex = 72
-genderTitle.Parent = introContent
+IntroUI.layout = Instance.new("UIListLayout")
+IntroUI.layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.layout.Padding = UDim.new(0, 20)
+IntroUI.layout.Parent = IntroUI.content
 
-local genderBtns = Instance.new("Frame")
-genderBtns.Size = UDim2.new(1, 0, 0, 140)
-genderBtns.BackgroundTransparency = 1
-genderBtns.LayoutOrder = 2
-genderBtns.ZIndex = 71
-genderBtns.Parent = introContent
+IntroUI.genderTitle = Instance.new("TextLabel")
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 36)
+IntroUI.genderTitle.BackgroundTransparency = 1
+IntroUI.genderTitle.Font = F.Title
+IntroUI.genderTitle.TextSize = 24
+IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
+IntroUI.genderTitle.Text = "Start by picking a gender"
+IntroUI.genderTitle.LayoutOrder = 1
+IntroUI.genderTitle.ZIndex = 72
+IntroUI.genderTitle.Parent = IntroUI.content
 
-local genderBtnLayout = Instance.new("UIListLayout")
-genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-genderBtnLayout.Padding = UDim.new(0, 14)
-genderBtnLayout.Parent = genderBtns
+IntroUI.genderBtns = Instance.new("Frame")
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 140)
+IntroUI.genderBtns.BackgroundTransparency = 1
+IntroUI.genderBtns.LayoutOrder = 2
+IntroUI.genderBtns.ZIndex = 71
+IntroUI.genderBtns.Parent = IntroUI.content
 
-local nameBtns = Instance.new("Frame")
-nameBtns.Name = "NameBtns"
-nameBtns.Size = UDim2.new(1, 0, 0, 200)
-nameBtns.BackgroundTransparency = 1
-nameBtns.Visible = false
-nameBtns.LayoutOrder = 3
-nameBtns.ZIndex = 71
-nameBtns.Parent = introContent
+IntroUI.genderBtnLayout = Instance.new("UIListLayout")
+IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 14)
+IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
-local nameBtnLayout = Instance.new("UIListLayout")
-nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-nameBtnLayout.Padding = UDim.new(0, 12)
-nameBtnLayout.Parent = nameBtns
+IntroUI.nameBtns = Instance.new("Frame")
+IntroUI.nameBtns.Name = "NameBtns"
+IntroUI.nameBtns.Size = UDim2.new(1, 0, 0, 200)
+IntroUI.nameBtns.BackgroundTransparency = 1
+IntroUI.nameBtns.Visible = false
+IntroUI.nameBtns.LayoutOrder = 3
+IntroUI.nameBtns.ZIndex = 71
+IntroUI.nameBtns.Parent = IntroUI.content
 
--- Name pools for randomization
-local maleFirstNames = { "James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry", "Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden" }
-local femaleFirstNames = { "Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope" }
-local lastNames = { "Wilson", "Chen", "Thompson", "Rodriguez", "Kim", "Brown", "Johnson", "Williams", "Garcia", "Martinez", "Davis", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "White", "Harris", "Clark", "Lewis" }
+IntroUI.nameBtnLayout = Instance.new("UIListLayout")
+IntroUI.nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+IntroUI.nameBtnLayout.Padding = UDim.new(0, 12)
+IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
-local currentMaleNames = {}
-local currentFemaleNames = {}
-local nameColors  = { C.Green, Color3.fromRGB(234, 179, 8), C.Orange }
+-- Name pools for randomization - EXPANDED for variety (100+ names each)
+-- Consolidated into single table to reduce local register usage (Luau limit is 200)
+local NameData = {
+	maleFirstNames = {
+		-- Classic names
+		"James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
+		"Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden",
+		"Matthew", "Anthony", "Christopher", "Joshua", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Tyler",
+		"Brandon", "Justin", "Aaron", "Kevin", "Eric", "Brian", "Adam", "Dylan", "Kyle", "Jason",
+		-- Modern names
+		"Logan", "Carter", "Owen", "Wyatt", "Jack", "Luke", "Gabriel", "Isaac", "Isaiah", "Jaxon",
+		"Caleb", "Connor", "Levi", "Hunter", "Cameron", "Eli", "Jordan", "Adrian", "Evan", "Austin",
+		"Chase", "Cooper", "Xavier", "Blake", "Gavin", "Zachary", "Cole", "Landon", "Dominic", "Tristan",
+		-- Unique names
+		"Maverick", "Phoenix", "Jasper", "Declan", "Emmett", "Asher", "Finn", "Theo", "Miles", "Leo",
+		"Harrison", "Felix", "Beckett", "August", "Nolan", "Atlas", "Kai", "Rowan", "Bennett", "Brooks",
+		-- Diverse cultural names
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Tyrone", "Marcus", "Dante", "Isaiah",
+		"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Haruki", "Ren", "Sora",
+		"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
+	},
+
+	femaleFirstNames = {
+		-- Classic names
+		"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+		"Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope",
+		"Elizabeth", "Sarah", "Jessica", "Jennifer", "Ashley", "Amanda", "Stephanie", "Nicole", "Melissa", "Lauren",
+		"Rachel", "Hannah", "Megan", "Samantha", "Katherine", "Rebecca", "Brittany", "Christina", "Michelle", "Victoria",
+		-- Modern names
+		"Chloe", "Zoey", "Grace", "Lily", "Audrey", "Natalie", "Brooklyn", "Leah", "Savannah", "Violet",
+		"Claire", "Bella", "Aurora", "Lucy", "Skyler", "Paisley", "Genesis", "Naomi", "Elena", "Maya",
+		"Madelyn", "Addison", "Willow", "Aubrey", "Eliana", "Stella", "Hazel", "Ivy", "Riley", "Quinn",
+		-- Unique names
+		"Serenity", "Nova", "Athena", "Jade", "Autumn", "Ruby", "Jasmine", "Kennedy", "Ariana", "Gianna",
+		"Brielle", "Sienna", "Adalynn", "Kinsley", "Londyn", "Emery", "Teagan", "Peyton", "Parker", "Reagan",
+		-- Diverse cultural names
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Isabella", "Gabriela", "Natalia",
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Zoe", "Tiana", "Sierra", "Layla", "Aisha",
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Koharu", "Kaori", "Nanami",
+		"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
+	},
+
+	lastNames = {
+		-- American/English
+		"Wilson", "Thompson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas", "Moore",
+		"Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young", "King",
+		"Wright", "Hill", "Scott", "Green", "Adams", "Baker", "Nelson", "Carter", "Mitchell", "Roberts",
+		"Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards", "Collins", "Stewart", "Morris", "Murphy",
+		"Cook", "Rogers", "Morgan", "Peterson", "Cooper", "Reed", "Bailey", "Bell", "Gomez", "Kelly",
+		-- Hispanic/Latino
+		"Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
+		"Flores", "Rivera", "Diaz", "Morales", "Ortiz", "Gutierrez", "Chavez", "Ramos", "Cruz", "Mendez",
+		-- Asian
+		"Chen", "Kim", "Nguyen", "Lee", "Wang", "Li", "Zhang", "Liu", "Huang", "Wu",
+		"Yang", "Lin", "Park", "Choi", "Tanaka", "Yamamoto", "Suzuki", "Watanabe", "Sato", "Nakamura",
+		"Patel", "Singh", "Shah", "Kumar", "Sharma", "Gupta", "Ali", "Khan", "Ahmed", "Hassan",
+		-- European
+		"Mueller", "Schmidt", "Schneider", "Weber", "Meyer", "Wagner", "Becker", "Fischer", "Hoffmann", "Koch",
+		"Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco",
+		"Dubois", "Laurent", "Martin", "Bernard", "Lefebvre", "Moreau", "Fournier", "Girard", "Bonnet", "Dupont",
+		-- Irish/Scottish
+		"Murphy", "O'Brien", "Kelly", "Sullivan", "Walsh", "O'Connor", "Quinn", "Byrne", "Ryan", "Gallagher",
+		"MacDonald", "Campbell", "Stewart", "Robertson", "Thomson", "Fraser", "Morrison", "Murray", "Cameron", "Ross"
+	},
+
+	-- Current generated names (populated by generateRandomNames)
+	currentMaleNames = {},
+	currentFemaleNames = {},
+	nameColors = { C.Green, Color3.fromRGB(234, 179, 8), C.Orange }
+}
 
 -- Function to generate random names
 local function generateRandomNames()
-	currentMaleNames = {}
-	currentFemaleNames = {}
-	
+	NameData.currentMaleNames = {}
+	NameData.currentFemaleNames = {}
+
 	-- Shuffle and pick 3 unique male names
 	local usedMale = {}
 	for i = 1, 3 do
 		local firstName, lastName
 		repeat
-			firstName = maleFirstNames[math.random(#maleFirstNames)]
-			lastName = lastNames[math.random(#lastNames)]
+			firstName = NameData.maleFirstNames[math.random(#NameData.maleFirstNames)]
+			lastName = NameData.lastNames[math.random(#NameData.lastNames)]
 		until not usedMale[firstName .. lastName]
 		usedMale[firstName .. lastName] = true
-		table.insert(currentMaleNames, firstName .. " " .. lastName)
+		table.insert(NameData.currentMaleNames, firstName .. " " .. lastName)
 	end
-	
+
 	-- Shuffle and pick 3 unique female names
 	local usedFemale = {}
 	for i = 1, 3 do
 		local firstName, lastName
 		repeat
-			firstName = femaleFirstNames[math.random(#femaleFirstNames)]
-			lastName = lastNames[math.random(#lastNames)]
+			firstName = NameData.femaleFirstNames[math.random(#NameData.femaleFirstNames)]
+			lastName = NameData.lastNames[math.random(#NameData.lastNames)]
 		until not usedFemale[firstName .. lastName]
 		usedFemale[firstName .. lastName] = true
-		table.insert(currentFemaleNames, firstName .. " " .. lastName)
+		table.insert(NameData.currentFemaleNames, firstName .. " " .. lastName)
 	end
 end
 
@@ -1838,7 +3102,7 @@ for i = 1, 3 do
 	local nameBtn = Instance.new("TextButton")
 	nameBtn.Name = "NameBtn" .. i
 	nameBtn.Size = UDim2.new(0.85, 0, 0, 54)
-	nameBtn.BackgroundColor3 = nameColors[i]
+	nameBtn.BackgroundColor3 = NameData.nameColors[i]
 	nameBtn.Font = F.Title
 	nameBtn.TextSize = 18
 	nameBtn.TextColor3 = C.White
@@ -1846,7 +3110,7 @@ for i = 1, 3 do
 	nameBtn.AutoButtonColor = false
 	nameBtn.LayoutOrder = i
 	nameBtn.ZIndex = 72
-	nameBtn.Parent = nameBtns
+	nameBtn.Parent = IntroUI.nameBtns
 	pill(nameBtn)
 	stroke(nameBtn, 2, 0.6, C.White)
 
@@ -1861,14 +3125,14 @@ for i = 1, 3 do
 	nameBtn.MouseButton1Click:Connect(function()
 		local chosenName = nameBtn.Text:match("^.-%s(.+)$") or nameBtn.Text
 		SetLifeInfo:FireServer(chosenName, selectedGender)
-		
+
 		-- Store gender in currentState immediately so avatar updates correctly
 		currentState.Gender = selectedGender
 		currentState.Name = chosenName
-		
+
 		introComplete = true
 		hideIntro()
-		
+
 		-- Update avatar immediately (defer to ensure function exists)
 		task.defer(function()
 			if updateFromState then
@@ -1879,9 +3143,9 @@ for i = 1, 3 do
 end
 
 updateNameButtons = function()
-	local names = selectedGender == "Male" and currentMaleNames or currentFemaleNames
+	local names = selectedGender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
 	local emoji = selectedGender == "Male" and "👨" or "👩"
-	for _, child in ipairs(nameBtns:GetChildren()) do
+	for _, child in ipairs(IntroUI.nameBtns:GetChildren()) do
 		if child:IsA("TextButton") then
 			local idx = tonumber(child.Name:match("%d+"))
 			if idx and names[idx] then
@@ -1906,7 +3170,7 @@ for _, g in ipairs(genderData) do
 	btn.Text = g.icon .. " " .. g.gender
 	btn.AutoButtonColor = false
 	btn.ZIndex = 72
-	btn.Parent = genderBtns
+	btn.Parent = IntroUI.genderBtns
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
 
@@ -1920,31 +3184,31 @@ for _, g in ipairs(genderData) do
 
 	btn.MouseButton1Click:Connect(function()
 		selectedGender = g.gender
-		genderTitle.Text = "Now, pick someone to become"
-		
+		IntroUI.genderTitle.Text = "Now, pick someone to become"
+
 		-- Smooth fade transition from gender to names
-		for _, genderBtn in ipairs(genderBtns:GetChildren()) do
+		for _, genderBtn in ipairs(IntroUI.genderBtns:GetChildren()) do
 			if genderBtn:IsA("TextButton") then
 				tween(genderBtn, TweenInfo.new(0.15), { BackgroundTransparency = 1, TextTransparency = 1 })
 			end
 		end
-		
+
 		task.delay(0.15, function()
-			genderBtns.Visible = false
-			nameBtns.Visible  = true
-			
+			IntroUI.genderBtns.Visible = false
+			IntroUI.nameBtns.Visible  = true
+
 			-- Reset gender buttons for next time
-			for _, genderBtn in ipairs(genderBtns:GetChildren()) do
+			for _, genderBtn in ipairs(IntroUI.genderBtns:GetChildren()) do
 				if genderBtn:IsA("TextButton") then
 					genderBtn.BackgroundTransparency = 0
 					genderBtn.TextTransparency = 0
 				end
 			end
-			
+
 			updateNameButtons()
-			
+
 			-- Fade in name buttons
-			for _, nameBtn in ipairs(nameBtns:GetChildren()) do
+			for _, nameBtn in ipairs(IntroUI.nameBtns:GetChildren()) do
 				if nameBtn:IsA("TextButton") then
 					nameBtn.BackgroundTransparency = 1
 					nameBtn.TextTransparency = 1
@@ -1957,23 +3221,23 @@ end
 
 showIntro = function()
 	if introComplete then return end
-	
+
 	-- Generate fresh random names each time intro is shown
 	generateRandomNames()
-	
+
 	-- Reset intro UI state
-	introOverlay.Visible = true
-	introOverlay.BackgroundTransparency = 0.5
-	introContent.Position = UDim2.fromScale(0.5, 0.5)
-	
+	IntroUI.overlay.Visible = true
+	IntroUI.overlay.BackgroundTransparency = 0.5
+	IntroUI.content.Position = UDim2.fromScale(0.5, 0.5)
+
 	showBlur()
-	genderTitle.Text = "Start by picking a gender"
-	genderBtns.Visible = true
-	nameBtns.Visible = false
-	
+	IntroUI.genderTitle.Text = "Start by picking a gender"
+	IntroUI.genderBtns.Visible = true
+	IntroUI.nameBtns.Visible = false
+
 	-- Fade in animation
-	introContent.Position = UDim2.new(0.5, 0, 0.55, 0)
-	tween(introContent, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+	IntroUI.content.Position = UDim2.new(0.5, 0, 0.55, 0)
+	tween(IntroUI.content, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.fromScale(0.5, 0.5)
 	})
 end
@@ -1981,32 +3245,29 @@ end
 hideIntro = function()
 	-- Smooth fade out animation
 	local fadeTime = 0.25
-	
-	tween(introContent, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+
+	tween(IntroUI.content, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, 0.45, 0)
 	})
-	tween(introOverlay, TweenInfo.new(fadeTime), {
+	tween(IntroUI.overlay, TweenInfo.new(fadeTime), {
 		BackgroundTransparency = 1
 	})
-	
+
 	hideBlur()
-	
+
 	task.delay(fadeTime, function()
-		introOverlay.Visible = false
+		IntroUI.overlay.Visible = false
 		if not hasShownAgeHint then
 			task.delay(0.3, showTutorial)
 		end
 	end)
 end
 
--- Note: updateNameButtons() is called directly when needed in the gender button click handler
--- No need for a polling loop
-
 ----------------------------------------------------------------
 -- UPDATE UI FROM STATE
 ----------------------------------------------------------------
 
-local function updateFromState()
+function updateFromState()
 	if not currentState then return end
 
 	nameLabel.Text = currentState.Name or "New Life"
@@ -2021,7 +3282,7 @@ local function updateFromState()
 	-- Use currentState.Gender, fallback to selectedGender (local variable from intro)
 	local gender = currentState.Gender or selectedGender
 	local isFemale = (gender == "Female")
-	
+
 	local age = currentState.Age or 0
 	if age < 3 then
 		-- Baby - same emoji for both genders
@@ -2059,26 +3320,26 @@ local firstSync = true
 
 SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if not state then return end
-	
+
 	-- Only log significant state changes, not every sync (reduces spam)
 	local ageChanged = currentState and currentState.Age ~= state.Age
 	local moneyChanged = currentState and currentState.Money ~= state.Money
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 1: DETECT IF THIS IS A NEW LIFE (BEFORE updating currentState)
 	-- ═══════════════════════════════════════════════════════════════
 	local isNewLife = false
-	
+
 	-- Method 1: Explicit "new life" message from server (resetPlayerLife sends this)
 	if lastFeedText == "A new life begins..." then
 		isNewLife = true
 	end
-	
+
 	-- Method 2: Old state had a name, new state doesn't -> this is a restart
 	if not isNewLife and currentState and currentState.Name and (not state.Name or state.Name == "") then
 		isNewLife = true
 	end
-	
+
 	-- Method 3: First sync with no name = new life
 	if firstSync then
 		firstSync = false
@@ -2086,27 +3347,27 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			isNewLife = true
 		end
 	end
-	
+
 	-- Method 4: Age is 0 and no name = definitely new life
 	if (state.Age == 0 or state.Age == nil) and (not state.Name or state.Name == "") then
 		isNewLife = true
 	end
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 2: HANDLE NEW LIFE RESET
 	-- ═══════════════════════════════════════════════════════════════
 	if isNewLife then
-		
+
 		-- Reset all intro/game flags
 		introComplete = false
 		selectedGender = nil
 		awaitingEvent = false
 		hasShownAgeHint = false
-		
+
 		-- Clear pending minigame state
 		pendingMinigameEventId = nil
 		pendingMinigameChoiceIndex = nil
-		
+
 		-- Clear feed entries
 		feedEntryCount = 0
 		for _, child in ipairs(feedScroll:GetChildren()) do
@@ -2114,11 +3375,11 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 				child:Destroy()
 			end
 		end
-		
+
 		-- Reset previous state tracking
 		previousState = {}
-		
-		-- Update currentState with new state
+
+		-- Update currentState with new state (include all fields from server)
 		currentState = {
 			Name = nil,
 			Age = state.Age or 0,
@@ -2128,21 +3389,28 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			Smarts = state.Smarts or 50,
 			Looks = state.Looks or 50,
 			Gender = nil,
+			-- CRITICAL: Include Assets and other fields from server state
+			Assets = state.Assets or { Properties = {}, Vehicles = {}, Items = {} },
+			Relationships = state.Relationships or {},
+			Flags = state.Flags or {},
+			CurrentJob = state.CurrentJob,
+			Education = state.Education,
+			EducationData = state.EducationData,
 		}
-		
+
 		-- Reset header UI
 		nameLabel.Text = "New Life"
 		ageYearLabel.Text = string.format("Age %d • %d", state.Age or 0, getCurrentYear(state.Age))
 		moneyLabel.Text = formatMoney(state.Money or 0)
 		avatarEmoji.Text = "👶"
-		
+
 		-- Reset stats UI
 		for key, card in pairs(statCards) do
 			local val = state[key] or (state.Stats and state.Stats[key]) or 50
 			card.percentLabel.Text = val .. "%"
 			card.barFill.Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0)
 		end
-		
+
 		-- Hide any lingering modals
 		if hideResultPopup then 
 			pcall(hideResultPopup) 
@@ -2151,18 +3419,34 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			pcall(hideEvent) 
 		end
 		hideTutorial()
-		
+		hideDeathOverlay()
+
+		-- Update all screen instances with the new state (even during reset)
+		-- This ensures screens have proper initial state
+		if occupationScreenInstance and occupationScreenInstance.updateState then
+			occupationScreenInstance:updateState(currentState)
+		end
+		if assetsScreenInstance and assetsScreenInstance.updateState then
+			assetsScreenInstance:updateState(currentState)
+		end
+		if relationshipsScreenInstance and relationshipsScreenInstance.updateState then
+			relationshipsScreenInstance:updateState(currentState)
+		end
+		if activitiesScreenInstance and activitiesScreenInstance.updateState then
+			activitiesScreenInstance:updateState(currentState)
+		end
+
 		-- SHOW INTRO MODAL
 		showIntro()
-		
+
 		-- Early return - don't process as normal sync
 		return
 	end
-	
+
 	-- ═══════════════════════════════════════════════════════════════
 	-- STEP 3: NORMAL (NON-RESET) SYNC HANDLING
 	-- ═══════════════════════════════════════════════════════════════
-	
+
 	-- Calculate deltas for result popup
 	local deltas = {}
 	if previousState.Happiness and state.Happiness then
@@ -2216,8 +3500,12 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		storyPathsScreenInstance:updateUI()
 	end
 
-	-- Show result popup if we have result data from server
-	if resultData and resultData.showPopup then
+	-- CRITICAL FIX: Check for death FIRST before showing any popups
+	-- This prevents the DOUBLE DEATH SCREEN bug where both result popup and death overlay show
+	local isDead = (resultData and resultData.fatal) or (currentState.Health and currentState.Health <= 0)
+	
+	-- Show result popup if we have result data from server (but NOT if player is dead!)
+	if resultData and resultData.showPopup and not isDead then
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
@@ -2229,58 +3517,102 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			money = resultData.money or deltas.money,
 			wasSuccess = resultData.wasSuccess, -- IMPORTANT: Pass through success flag for minigames
 		})
-	elseif deltas.health and deltas.health < -15 then
+	elseif deltas.health and deltas.health < -15 and not isDead then
 		-- Auto-shake for MAJOR negative health (15+ drop)
-		-- This is the BitLife-style "something bad happened" feedback
 		shakeScreen(10, 0.35)
 		flashScreen(C.Red, 0.5, 0.35)
 	elseif deltas.health and deltas.health < -5 then
 		-- Smaller health drop - just flash, no shake
 		flashScreen(C.Red, 0.7, 0.25)
-	elseif deltas.money and deltas.money > 10000 then
-		-- Flash green for big money gains
+	-- CRITICAL FIX: Only flash green for UNEXPECTED money gains (windfalls, lottery, etc.)
+	-- Regular salary shouldn't cause a flash - it's expected and boring
+	-- Threshold raised to $100,000 to make flashes feel special and rare
+	elseif deltas.money and deltas.money > 100000 then
+		-- Flash green for massive money windfall (lottery, inheritance, etc.)
 		flashScreen(C.Green, 0.7, 0.3)
-	elseif deltas.money and deltas.money < -10000 then
-		-- Flash red for big money losses
+	-- CRITICAL FIX: Only flash red for big LOSSES, not normal expenses
+	elseif deltas.money and deltas.money < -50000 then
+		-- Flash red for major money losses (lawsuit, major purchase shouldn't flash)
 		flashScreen(C.Red, 0.7, 0.25)
+	end
+
+	-- Check for death (from result data or health hitting 0)
+	if resultData and resultData.fatal then
+		local causeText = resultData.cause or resultData.body or lastFeedText or "You passed away."
+		showDeathOverlay(causeText, state.Age)
+	elseif currentState.Health and currentState.Health <= 0 then
+		showDeathOverlay("Health depleted.", state.Age)
+	else
+		hideDeathOverlay()
 	end
 
 	-- Update UI from state
 	updateFromState()
-	
+
 	-- Add feed entry
 	if lastFeedText and lastFeedText ~= "" and not (resultData and resultData.showPopup) then
 		addFeedEntry(lastFeedText)
 	end
-	
+
 	-- Check if intro should be shown (shouldn't normally happen here, but safety check)
 	if not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
-	elseif currentState.Name and introOverlay.Visible then
+	elseif currentState.Name and IntroUI.overlay.Visible then
 		hideIntro()
 	end
 end)
 
 -- New: ShowResult remote for explicit result popups
-local ShowResult = remotesFolder:FindFirstChild("ShowResult")
-if ShowResult then
-	ShowResult.OnClientEvent:Connect(function(data)
-		showResultPopup({
-			emoji = data.emoji or "📋",
-			title = data.title or "Result",
-			body = data.body or "Something happened...",
-			happiness = data.happiness,
-			health = data.health,
-			smarts = data.smarts,
-			looks = data.looks,
-			money = data.money,
-		}, function()
-			-- Callback when popup closed
-			if data.feedText then
-				addFeedEntry(data.feedText)
+-- CRITICAL FIX: Use do block to avoid adding to module-level local count
+do
+	local sr = remotesFolder:FindFirstChild("ShowResult")
+	if sr then
+		sr.OnClientEvent:Connect(function(data)
+			showResultPopup({
+				emoji = data.emoji or "📋",
+				title = data.title or "Result",
+				body = data.body or "Something happened...",
+				happiness = data.happiness,
+				health = data.health,
+				smarts = data.smarts,
+				looks = data.looks,
+				money = data.money,
+			}, function()
+				if data.feedText then
+					addFeedEntry(data.feedText)
+				end
+			end)
+		end)
+	end
+	
+	-- CRITICAL FIX #26: Listen for product purchases (Time Machine dev products)
+	local pp = remotesFolder:FindFirstChild("ProductPurchased")
+	if pp then
+		pp.OnClientEvent:Connect(function(productKey)
+			if productKey and productKey:find("TIME_") then
+				local ybMap = { TIME_5_YEARS = 5, TIME_10_YEARS = 10, TIME_20_YEARS = 20, TIME_30_YEARS = 30, TIME_BABY = -1 }
+				local yb = ybMap[productKey]
+				if yb then
+					local tmRemote = remotesFolder:FindFirstChild("UseTimeMachineProduct")
+					if tmRemote then
+						local ok, res = pcall(function() return tmRemote:InvokeServer(yb) end)
+						if ok and res and res.success then
+							hideDeathOverlay()
+							if res.newAge then
+								currentState.Age = res.newAge
+								currentState.Health = 100
+								currentState.Stats = currentState.Stats or {}
+								currentState.Stats.Health = 100
+								if currentState.Flags then currentState.Flags.dead = nil end
+							end
+							if updateFromState then updateFromState() end
+							addFeedEntry("⏰ Time traveled back to age " .. (res.newAge or "0") .. "!")
+						end
+					end
+				end
 			end
 		end)
-	end)
+	end
 end
 
 PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
@@ -2289,7 +3621,7 @@ PresentEvent.OnClientEvent:Connect(function(eventData, ageFeedText)
 		warn("[LifeClient] ❌ PresentEvent received with nil eventData!")
 		return
 	end
-	
+
 	hideTutorial()
 	if ageFeedText then
 		addFeedEntry(ageFeedText)
@@ -2317,16 +3649,16 @@ end)
 
 if MinigameStart then
 	MinigameStart.OnClientEvent:Connect(function(config)
-		if eventOverlay.Visible then
+		if EventUI.overlay.Visible then
 			hideEvent()
 		end
-		
+
 		pendingMinigameEventId = config.eventId
 		pendingMinigameChoiceIndex = config.choiceIndex
-		
+
 		if minigamesInstance and minigamesInstance.play then
 			minigamesInstance:play(config.id, function(won, data)
-				
+
 				-- Send result back to server
 				if MinigameResult then
 					MinigameResult:FireServer(won, {
@@ -2335,11 +3667,11 @@ if MinigameStart then
 						score = data and data.score or 0,
 					})
 				end
-				
+
 				-- Clear pending
 				pendingMinigameEventId = nil
 				pendingMinigameChoiceIndex = nil
-				
+
 				-- Visual feedback
 				if won then
 					flashScreen(C.Green, 0.7, 0.3)
@@ -2376,21 +3708,21 @@ end
 ageButton.MouseButton1Click:Connect(function()
 	-- Safety check: if awaitingEvent is true but the event overlay is NOT visible,
 	-- something went wrong - reset the flag
-	if awaitingEvent and not eventOverlay.Visible then
+	if awaitingEvent and not EventUI.overlay.Visible then
 		awaitingEvent = false
-		currentEventId = nil
+		EventUI.currentEventId = nil
 	end
-	
+
 	-- Block age up if waiting for event choice
 	if awaitingEvent then
 		return
 	end
-	
+
 	-- Block if no name set yet (intro not complete)
 	if not currentState.Name then
 		return
 	end
-	
+
 	hideTutorial()
 	pulseAge()
 	RequestAgeUp:FireServer()
@@ -2421,9 +3753,34 @@ relationshipsScreenInstance = safeNew(RelationshipsScreen, "RelationshipsScreen"
 activitiesScreenInstance    = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
 
-if MinigamesModule then
-	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
-	if ok and mg then minigamesInstance = mg end
+-- CRITICAL FIX: Wrap in do block to scope local variables and avoid local limit
+do
+	if MinigamesModule then
+		local ok, mgInst = pcall(function() return MinigamesModule.new(screenGui) end)
+		if ok and mgInst then 
+			minigamesInstance = mgInst
+			
+			-- Enable rare auto Purge event (0.5% chance every 90 seconds)
+			if mgInst.enableRareAutoPurge then
+				mgInst:enableRareAutoPurge({
+					chance = 0.005,
+					interval = 90,
+					totalScenarios = 10,
+					onComplete = function(won)
+						if currentState then
+							local d = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
+							for s, v in pairs(d) do
+								if currentState[s] then currentState[s] = math.clamp(currentState[s] + v, 0, 100) end
+							end
+							currentState.Feed = currentState.Feed or {}
+							table.insert(currentState.Feed, won and "😈 Survived The Purge!" or "💀 Died in The Purge...")
+							refreshInfo()
+						end
+					end,
+				})
+			end
+		end
+	end
 end
 
 ----------------------------------------------------------------
@@ -2450,15 +3807,15 @@ local STUCK_THRESHOLD = 30 -- seconds before considering it stuck
 task.spawn(function()
 	while true do
 		task.wait(5) -- Check every 5 seconds
-		
+
 		if awaitingEvent then
 			if not lastAwaitingEventTime then
 				lastAwaitingEventTime = tick()
 			elseif tick() - lastAwaitingEventTime > STUCK_THRESHOLD then
 				-- Check if the event overlay is actually visible
-				if not eventOverlay.Visible then
+				if not EventUI.overlay.Visible then
 					awaitingEvent = false
-					currentEventId = nil
+					EventUI.currentEventId = nil
 					lastAwaitingEventTime = nil
 				end
 			end

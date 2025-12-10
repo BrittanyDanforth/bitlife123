@@ -1,0 +1,659 @@
+--[[
+	Racing Career Events
+	Full AAA-quality racing career with minigame integration
+	Requires: QTE minigame for races, high Health (reflexes)
+	Danger element: Crashes can result in injury or end career
+]]
+
+local events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ENTRY INTO RACING
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_discovery",
+		emoji = "🏎️",
+		title = "Racing Talent Discovered",
+		text = "At a go-kart track, a scout notices your exceptional reflexes and racing instincts.",
+		category = "career_racing",
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.35, -- CRITICAL FIX: More likely to trigger
+		minAge = 10,
+		maxAge = 18, -- CRITICAL FIX: Extended age range
+		oneTime = true,
+		-- REMOVED: requiresNoJob (too restrictive - teens can discover racing while in school)
+		requiresStats = { Health = 40 }, -- CRITICAL FIX: Lower threshold
+		blockedByFlags = { discovered_racing = true },
+		choices = {
+			{
+				index = 1,
+				text = "Join the junior racing program",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { discovered_racing = true, racing_aspirant = true },
+				feedText = "Your racing journey begins! You joined a junior karting program.",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "easy" },
+			},
+			{
+				index = 2,
+				text = "Racing is too dangerous",
+				effects = { Happiness = -3 },
+				feedText = "You passed on the racing opportunity.",
+			},
+		},
+	},
+	
+	{
+		id = "first_kart_race",
+		emoji = "🏁",
+		title = "First Karting Race",
+		text = "Your first official go-kart race is here! The crowd cheers as engines rev.",
+		category = "career_racing",
+		weight = 12,
+		minAge = 12,
+		maxAge = 18,
+		requiresFlags = { racing_aspirant = true },
+		-- CRITICAL FIX: Removed blockedByFlags = { employed = true } 
+		-- This was blocking ALL employed players including those with school jobs!
+		-- Racing can be a side activity, not a job blocker
+		blockedByFlags = { first_race_won = true, in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Race with everything you've got!",
+				effects = { Happiness = 8 },
+				feedText = "You gave it your all on the track!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.first_race_won = true
+						state.Flags.employed = true
+						state.Flags.has_job = true
+						if state.SetCareer then
+							state:SetCareer({
+								id = "go_kart_racer",
+								name = "Go-Kart Racer",
+								company = "Local Karting League",
+								salary = 15000,
+								category = "racing",
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🏆 You WON your first race! You're now a go-kart racer!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("You didn't win, but you showed promise. Keep practicing!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Play it safe",
+				effects = { Happiness = 2 },
+				feedText = "You finished safely in the middle of the pack.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AMATEUR TO PROFESSIONAL
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "amateur_championship",
+		emoji = "🏆",
+		title = "Regional Championship",
+		text = "The regional amateur championship is here. Win this and you'll attract professional attention!",
+		category = "career_racing",
+		weight = 10,
+		minAge = 16,
+		maxAge = 25,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Go for the championship!",
+				effects = { Happiness = 5 },
+				feedText = "You're competing for the title!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.regional_champion = true
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						state.Money = (state.Money or 0) + 25000
+						if state.CurrentJob and state.CurrentJob.id == "go_kart_racer" then
+							if state.SetCareer then
+								state:SetCareer({
+									id = "amateur_racer",
+									name = "Amateur Racer",
+									company = "Regional Racing Circuit",
+									salary = 35000,
+									category = "racing",
+								})
+							end
+						end
+						if state.AddFeed then
+							state:AddFeed("🏆 REGIONAL CHAMPION! You've been promoted to amateur racing!")
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						if state.AddFeed then
+							state:AddFeed("You lost the championship. There's always next year.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not ready yet",
+				effects = { Happiness = -5 },
+				feedText = "You skipped the championship. Missed opportunity?",
+			},
+		},
+	},
+
+	{
+		id = "pro_team_offer",
+		emoji = "📋",
+		title = "Professional Team Interest",
+		text = "A professional racing team has noticed your results. They want you to try out!",
+		category = "career_racing",
+		weight = 8,
+		minAge = 18,
+		maxAge = 30,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		requiresFlags = { regional_champion = true },
+		blockedByFlags = { pro_racer = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Accept the tryout!",
+				effects = { Happiness = 10 },
+				feedText = "Time to prove yourself to the pros!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.pro_racer = true
+						state.Money = (state.Money or 0) + 50000
+						if state.SetCareer then
+							state:SetCareer({
+								id = "professional_racer",
+								name = "Professional Racer",
+								company = "National Racing Series",
+								salary = 150000,
+								category = "racing",
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🏁 You made the team! You're now a PROFESSIONAL RACER!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The tryout didn't go well. Keep training.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'm not ready for the big leagues",
+				effects = { Happiness = -3 },
+				feedText = "You turned down the professional opportunity.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- F1 AND LEGEND STATUS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "f1_team_scout",
+		emoji = "🏎️",
+		title = "Formula 1 Interest!",
+		text = "An F1 team is interested in you! This is the pinnacle of motorsport.",
+		category = "career_racing",
+		weight = 5,
+		minAge = 21,
+		maxAge = 35,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		requiresFlags = { pro_racer = true },
+		blockedByFlags = { f1_driver = true },
+		requiresStats = { Health = 75 },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Sign with the F1 team!",
+				effects = { Happiness = 20 },
+				feedText = "The ultimate test of racing skill!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.f1_driver = true
+						state.Money = (state.Money or 0) + 500000
+						if state.SetCareer then
+							state:SetCareer({
+								id = "f1_driver",
+								name = "Formula 1 Driver",
+								company = "F1 Racing Team",
+								salary = 2500000,
+								category = "racing",
+							})
+						end
+						if state.AddFeed then
+							state:AddFeed("🏆 YOU'RE AN F1 DRIVER! The pinnacle of motorsport!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The F1 dream will have to wait. Not this time.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too much pressure, decline",
+				effects = { Happiness = -10, Money = 100000 },
+				feedText = "You turned down F1. Some say you dodged a bullet.",
+			},
+		},
+	},
+
+	{
+		id = "world_championship",
+		emoji = "🌍",
+		title = "World Championship Race",
+		text = "The season finale! Win this and you become a WORLD CHAMPION!",
+		category = "career_racing",
+		weight = 6,
+		minAge = 22,
+		maxAge = 40,
+		requiresFlags = { f1_driver = true },
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Race for the championship!",
+				effects = { Happiness = 10 },
+				feedText = "Everything on the line!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.world_champion = true
+						state.Flags.championships_won = (state.Flags.championships_won or 0) + 1
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = 100
+						state.Money = (state.Money or 0) + 5000000
+						-- Become a legend after multiple championships
+						if state.Flags.championships_won >= 3 then
+							state.Flags.racing_legend = true
+							if state.SetCareer then
+								state:SetCareer({
+									id = "racing_legend",
+									name = "Racing Legend",
+									company = "Racing Hall of Fame",
+									salary = 15000000,
+									category = "racing",
+								})
+							end
+							if state.AddFeed then
+								state:AddFeed("👑 RACING LEGEND! Your name will echo through history!")
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed("🏆 WORLD CHAMPION! Championship #" .. state.Flags.championships_won .. "!")
+							end
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						if state.AddFeed then
+							state:AddFeed("The championship slipped away. Heartbreaking loss.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Let teammate take the spotlight",
+				effects = { Happiness = -5 },
+				feedText = "You helped the team but gave up your chance at glory.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DANGER EVENTS - CRASHES AND INJURIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_crash",
+		emoji = "💥",
+		title = "CRASH!",
+		text = "Your car spins out of control at high speed! React quickly!",
+		category = "career_racing",
+		weight = 8,
+		minAge = 14,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Try to control the spin!",
+				feedText = "Quick reflexes needed!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 5
+						state.Flags = state.Flags or {}
+						state.Flags.survived_crash = true
+						if state.AddFeed then
+							state:AddFeed("Incredible save! You recovered from the spin!")
+						end
+					else
+						-- CRITICAL: Crash causes injury!
+						state.Stats = state.Stats or {}
+						state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 30)
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 20
+						state.Flags = state.Flags or {}
+						state.Flags.injured = true
+						state.Flags.hospitalized = true
+						if state.AddFeed then
+							state:AddFeed("🏥 CRASH! You're seriously injured and hospitalized!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Brace for impact",
+				effects = { Health = -15, Happiness = -10 },
+				setFlags = { injured = true },
+				feedText = "You crashed but the safety systems saved your life.",
+			},
+		},
+	},
+
+	{
+		id = "fatal_crash_risk",
+		emoji = "☠️",
+		title = "High-Speed Disaster",
+		text = "At 200+ mph, you lose control heading into the wall!",
+		category = "career_racing",
+		weight = 3,
+		minAge = 18,
+		maxAge = 50,
+		requiresFlags = { pro_racer = true },
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Fight for control!",
+				feedText = "Critical moment!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.miracle_escape = true
+						state.Stats = state.Stats or {}
+						state.Stats.Health = (state.Stats.Health or 50) - 10
+						if state.AddFeed then
+							state:AddFeed("Miracle escape! You walked away from a terrifying crash!")
+						end
+					else
+						-- Career-ending injury scenario
+						local outcomeRoll = math.random(1, 100)
+						state.Stats = state.Stats or {}
+						if outcomeRoll <= 15 then
+							-- Severe injury, ends racing career
+							state.Stats.Health = 15
+							state.Flags = state.Flags or {}
+							state.Flags.career_ended = true
+							state.Flags.hospitalized = true
+							-- Clear career
+							state.CurrentJob = nil
+							state.Flags.employed = nil
+							state.Flags.has_job = nil
+							if state.AddFeed then
+								state:AddFeed("🏥 Severe crash. You'll need a long recovery and can't race anymore.")
+							end
+						else
+							-- Career-ending injury
+							state.Stats.Health = math.max(5, (state.Stats.Health or 50) - 50)
+							state.Flags = state.Flags or {}
+							state.Flags.career_ended = true
+							state.Flags.hospitalized = true
+							-- Clear career
+							state.CurrentJob = nil
+							state.Flags.employed = nil
+							state.Flags.has_job = nil
+							if state.AddFeed then
+								state:AddFeed("🏥 Serious injuries. Your racing career is over.")
+							end
+						end
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RIVALRY AND DRAMA
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_rivalry",
+		emoji = "😤",
+		title = "Heated Rivalry",
+		text = "A rival driver has been trash-talking you to the media!",
+		category = "career_racing",
+		weight = 10,
+		minAge = 16,
+		maxAge = 45,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Beat them on the track!",
+				effects = { Happiness = 5 },
+				feedText = "Time to settle this on the track!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.defeated_rival = true
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						state.Money = (state.Money or 0) + 10000
+						if state.AddFeed then
+							state:AddFeed("🏆 You humiliated your rival on the track! Sweet victory!")
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						if state.AddFeed then
+							state:AddFeed("Your rival beat you. The trash talk continues...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Ignore them, stay focused",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "You took the high road.",
+			},
+			{
+				index = 3,
+				text = "Fire back in the media",
+				effects = { Happiness = 3 },
+				setFlags = { media_drama = true },
+				feedText = "The rivalry is heating up!",
+			},
+		},
+	},
+
+	{
+		id = "sponsorship_deal",
+		emoji = "💰",
+		title = "Major Sponsorship",
+		text = "A major brand wants you as their racing ambassador!",
+		category = "career_racing",
+		weight = 7,
+		minAge = 18,
+		maxAge = 45,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		requiresFlags = { pro_racer = true },
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Sign the lucrative deal!",
+				effects = { Money = 500000, Happiness = 10 },
+				setFlags = { major_sponsor = true },
+				feedText = "Massive sponsorship deal signed! You're rich!",
+			},
+			{
+				index = 2,
+				text = "Negotiate for more",
+				effects = { Money = 750000, Happiness = 8 },
+				setFlags = { major_sponsor = true, tough_negotiator = true },
+				feedText = "You pushed for more and got it!",
+			},
+			{
+				index = 3,
+				text = "Decline - value my independence",
+				effects = { Happiness = 5 },
+				feedText = "You stayed true to yourself.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RETIREMENT AND LEGACY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "racing_retirement",
+		emoji = "🏁",
+		title = "Racing Retirement",
+		text = "Your body can't handle the G-forces anymore. Time to retire?",
+		category = "career_racing",
+		weight = 10,
+		minAge = 35,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Retire as a legend",
+				effects = { Happiness = 15, Health = 10 },
+				setFlags = { retired_racer = true, racing_legend_status = true },
+				feedText = "You retired at the top of your game!",
+				onResolve = function(state)
+					local totalEarnings = state.Money or 0
+					state.Flags = state.Flags or {}
+					state.Flags.pension_amount = math.floor(totalEarnings * 0.05) -- 5% of wealth as pension
+					state.Flags.retired = true
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
+			},
+			{
+				index = 2,
+				text = "Become a team owner",
+				-- CRITICAL FIX: Validate money before $2M team purchase
+				effects = {}, -- Money handled in onResolve
+				feedText = "Considering starting a racing team...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local teamCost = 2000000
+					
+					if money >= teamCost then
+						state.Money = money - teamCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.SetCareer then
+							state:SetCareer({
+								id = "racing_team_owner",
+								name = "Racing Team Owner",
+								company = "Your Racing Team",
+								salary = 5000000,
+								category = "racing",
+							})
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.team_owner = true
+						if state.AddFeed then
+							state:AddFeed("🏎️ You invested $2M and became a racing team owner!")
+						end
+					elseif money >= 500000 then
+						-- Smaller team / investor partnership
+						state.Money = money - 500000
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.SetCareer then
+							state:SetCareer({
+								id = "racing_team_partner",
+								name = "Racing Team Partner",
+								company = "Racing Partnership",
+								salary = 1000000,
+								category = "racing",
+							})
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.team_partner = true
+						if state.AddFeed then
+							state:AddFeed("🏎️ Became a minority team partner with $500K investment!")
+						end
+					else
+						-- Can't afford - retire instead
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						local totalEarnings = state.Money or 0
+						state.Flags = state.Flags or {}
+						state.Flags.pension_amount = math.floor(totalEarnings * 0.05)
+						state.Flags.retired = true
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+						if state.AddFeed then
+							state:AddFeed("🏁 Can't afford a team. Retired as a racing legend instead!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "One more season!",
+				effects = { Health = -10, Happiness = 5 },
+				feedText = "You'll race one more year. Risky at your age...",
+			},
+		},
+	},
+}
+
+return events
