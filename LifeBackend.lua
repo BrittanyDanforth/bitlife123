@@ -4352,7 +4352,7 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + math.floor(crime.risk / 20))
 			
 			-- CRITICAL FIX #34: Check for rank up from crimes too!
-			local family = MobFamilies[state.MobState.familyId]
+			local family = MobSystemModule.Families[state.MobState.familyId]
 			if family then
 				local nextRankIdx = (state.MobState.rankLevel or 1) + 1
 				if nextRankIdx <= #family.ranks then
@@ -6055,7 +6055,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 	end
 	
 	-- Validate family
-	local family = MobFamilies[familyId]
+	local family = MobSystemModule.Families[familyId]
 	if not family then
 		return { success = false, message = "Unknown crime family." }
 	end
@@ -6227,7 +6227,7 @@ function LifeBackend:handleMobOperation(player, operationId)
 		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
 		
 		-- Check for rank up
-		local family = MobFamilies[state.MobState.familyId]
+		local family = MobSystemModule.Families[state.MobState.familyId]
 		if family then
 			local nextRankIdx = (state.MobState.rankLevel or 1) + 1
 			if nextRankIdx <= #family.ranks then

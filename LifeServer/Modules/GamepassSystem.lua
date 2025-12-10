@@ -28,10 +28,10 @@ GamepassSystem.Gamepasses = {
 		id = 0, -- Replace with actual gamepass ID
 		name = "Bitizenship",
 		emoji = "👑",
-		description = "Unlock premium features! Ad-free, special careers, and more.",
+		description = "Unlock premium features! Special careers, bonus money, and more.",
 		price = 299, -- Robux
 		features = {
-			"Ad-free experience",
+			"Premium exclusive features",
 			"Access to Royalty careers",
 			"Special character customization",
 			"Exclusive random events",

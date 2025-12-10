@@ -9,7 +9,7 @@ This document describes the premium gamepass features implemented in the BitLife
 
 ### 👑 Bitizenship (R$ 299)
 Unlock premium features and enhanced gameplay.
-- Ad-free experience
+- Premium exclusive features
 - Access to Royalty careers
 - Special character customization
 - Exclusive random events
