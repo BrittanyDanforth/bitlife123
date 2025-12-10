@@ -28,10 +28,10 @@ GamepassSystem.Gamepasses = {
 		id = 0, -- Replace with actual gamepass ID
 		name = "Bitizenship",
 		emoji = "👑",
-		description = "Unlock premium features! Ad-free, special careers, and more.",
+		description = "Unlock premium features! Special careers, bonus money, and more.",
 		price = 299, -- Robux
 		features = {
-			"Ad-free experience",
+			"Premium exclusive features",
 			"Access to Royalty careers",
 			"Special character customization",
 			"Exclusive random events",
@@ -244,6 +244,9 @@ end
 -- OWNERSHIP CHECKING
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL: Set this to false for production, true for testing
+GamepassSystem.TEST_MODE = false -- Set to true to allow free access for testing
+
 function GamepassSystem:checkOwnership(player, gamepassKey)
 	local gamepass = self.Gamepasses[gamepassKey]
 	if not gamepass then
@@ -251,10 +254,18 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 		return false
 	end
 	
-	-- If ID is 0, treat as demo/testing mode (return false or true based on your testing needs)
+	-- CRITICAL FIX: If ID is 0, we're in unconfigured mode
+	-- In production, this should prompt the user to buy but not give free access
 	if gamepass.id == 0 then
-		-- For testing, you can return true to test features
-		return false
+		if self.TEST_MODE then
+			-- Testing mode - grant access but warn
+			warn("[GamepassSystem] ⚠️ TEST MODE - Granting free access to:", gamepassKey)
+			return true
+		else
+			-- Production mode - ID not configured, do NOT grant free access
+			warn("[GamepassSystem] ⚠️ Gamepass '" .. gamepassKey .. "' has no ID configured (id=0). Purchase required.")
+			return false
+		end
 	end
 	
 	-- Check cached ownership first
@@ -264,14 +275,17 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 		return self.playerOwnership[cacheKey]
 	end
 	
-	-- Check actual ownership
+	-- Check actual ownership via MarketplaceService
 	local success, owns = pcall(function()
 		return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
 	end)
 	
 	if success then
 		self.playerOwnership[cacheKey] = owns
+		print("[GamepassSystem] Player", player.Name, "owns", gamepassKey, ":", owns)
 		return owns
+	else
+		warn("[GamepassSystem] Failed to check ownership for", gamepassKey, ":", owns)
 	end
 	
 	return false
@@ -328,9 +342,15 @@ end
 
 function GamepassSystem:promptGamepass(player, gamepassKey)
 	local gamepass = self.Gamepasses[gamepassKey]
-	if not gamepass or gamepass.id == 0 then
-		warn("[GamepassSystem] Cannot prompt purchase - invalid ID for:", gamepassKey)
-		return false
+	if not gamepass then
+		warn("[GamepassSystem] Unknown gamepass:", gamepassKey)
+		return false, "unknown_gamepass"
+	end
+	
+	-- CRITICAL FIX: Handle ID = 0 case properly
+	if gamepass.id == 0 then
+		warn("[GamepassSystem] ⚠️ Cannot prompt purchase - gamepass '" .. gamepassKey .. "' has ID=0. Configure the actual Roblox Gamepass ID!")
+		return false, "not_configured"
 	end
 	
 	local success, err = pcall(function()
@@ -338,17 +358,25 @@ function GamepassSystem:promptGamepass(player, gamepassKey)
 	end)
 	
 	if not success then
-		warn("[GamepassSystem] Failed to prompt purchase:", err)
+		warn("[GamepassSystem] Failed to prompt gamepass purchase:", err)
+		return false, "marketplace_error"
 	end
 	
-	return success
+	print("[GamepassSystem] Prompted", player.Name, "to purchase", gamepassKey)
+	return true, "prompted"
 end
 
 function GamepassSystem:promptProduct(player, productKey)
 	local product = self.Products[productKey]
-	if not product or product.id == 0 then
-		warn("[GamepassSystem] Cannot prompt purchase - invalid ID for:", productKey)
-		return false
+	if not product then
+		warn("[GamepassSystem] Unknown product:", productKey)
+		return false, "unknown_product"
+	end
+	
+	-- CRITICAL FIX: Handle ID = 0 case properly
+	if product.id == 0 then
+		warn("[GamepassSystem] ⚠️ Cannot prompt purchase - product '" .. productKey .. "' has ID=0. Configure the actual Roblox Developer Product ID!")
+		return false, "not_configured"
 	end
 	
 	local success, err = pcall(function()
@@ -356,10 +384,28 @@ function GamepassSystem:promptProduct(player, productKey)
 	end)
 	
 	if not success then
-		warn("[GamepassSystem] Failed to prompt purchase:", err)
+		warn("[GamepassSystem] Failed to prompt product purchase:", err)
+		return false, "marketplace_error"
 	end
 	
-	return success
+	print("[GamepassSystem] Prompted", player.Name, "to purchase product", productKey)
+	return true, "prompted"
+end
+
+-- CRITICAL FIX: Helper to get product info for Time Machine options
+function GamepassSystem:getProductInfo(productKey)
+	local product = self.Products[productKey]
+	if not product then return nil end
+	
+	return {
+		key = productKey,
+		id = product.id,
+		name = product.name,
+		emoji = product.emoji,
+		description = product.description,
+		price = product.price,
+		configured = product.id ~= 0,
+	}
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

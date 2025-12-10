@@ -16,6 +16,8 @@ MobSystem.__index = MobSystem
 -- CRIME FAMILY DEFINITIONS
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX #35: REDUCED rank requirements for faster progression (synced with LifeBackend)
+-- Also INCREASED respect rewards from operations
 MobSystem.Families = {
 	italian = {
 		id = "italian",
@@ -27,17 +29,17 @@ MobSystem.Families = {
 		colorDark = Color3.fromRGB(185, 28, 28),
 		ranks = {
 			{ id = "associate", name = "Associate", level = 1, respect = 0, emoji = "👤" },
-			{ id = "soldier", name = "Soldier", level = 2, respect = 100, emoji = "🔫" },
-			{ id = "capo", name = "Caporegime", level = 3, respect = 500, emoji = "💰" },
-			{ id = "underboss", name = "Underboss", level = 4, respect = 2000, emoji = "🎩" },
-			{ id = "boss", name = "Boss", level = 5, respect = 10000, emoji = "👑" },
+			{ id = "soldier", name = "Soldier", level = 2, respect = 50, emoji = "🔫" },
+			{ id = "capo", name = "Caporegime", level = 3, respect = 150, emoji = "💰" },
+			{ id = "underboss", name = "Underboss", level = 4, respect = 400, emoji = "🎩" },
+			{ id = "boss", name = "Boss", level = 5, respect = 1000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "protection", name = "Protection Racket", risk = 20, reward = { min = 500, max = 2000 }, respect = 5 },
-			{ id = "gambling", name = "Run Gambling Ring", risk = 30, reward = { min = 1000, max = 5000 }, respect = 10 },
-			{ id = "smuggling", name = "Smuggle Goods", risk = 40, reward = { min = 2000, max = 10000 }, respect = 20 },
-			{ id = "heist", name = "Plan a Heist", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50 },
-			{ id = "hitjob", name = "Hit Job", risk = 80, reward = { min = 5000, max = 25000 }, respect = 100 },
+			{ id = "protection", name = "Protection Racket", risk = 20, reward = { min = 500, max = 2000 }, respect = 15 },
+			{ id = "gambling", name = "Run Gambling Ring", risk = 30, reward = { min = 1000, max = 5000 }, respect = 25 },
+			{ id = "smuggling", name = "Smuggle Goods", risk = 40, reward = { min = 2000, max = 10000 }, respect = 40 },
+			{ id = "heist", name = "Plan a Heist", risk = 60, reward = { min = 10000, max = 100000 }, respect = 80 },
+			{ id = "hitjob", name = "Hit Job", risk = 80, reward = { min = 5000, max = 25000 }, respect = 150 },
 		},
 		initiation = "You must prove your loyalty by completing a task for the family.",
 	},
@@ -52,17 +54,17 @@ MobSystem.Families = {
 		colorDark = Color3.fromRGB(29, 78, 216),
 		ranks = {
 			{ id = "shestyorka", name = "Shestyorka", level = 1, respect = 0, emoji = "👤" },
-			{ id = "bratok", name = "Bratok", level = 2, respect = 100, emoji = "🔫" },
-			{ id = "brigadier", name = "Brigadier", level = 3, respect = 500, emoji = "💰" },
-			{ id = "avtoritet", name = "Avtoritet", level = 4, respect = 2000, emoji = "🎩" },
-			{ id = "pakhan", name = "Pakhan", level = 5, respect = 10000, emoji = "👑" },
+			{ id = "bratok", name = "Bratok", level = 2, respect = 50, emoji = "🔫" },
+			{ id = "brigadier", name = "Brigadier", level = 3, respect = 150, emoji = "💰" },
+			{ id = "avtoritet", name = "Avtoritet", level = 4, respect = 400, emoji = "🎩" },
+			{ id = "pakhan", name = "Pakhan", level = 5, respect = 1000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "extortion", name = "Extortion", risk = 25, reward = { min = 800, max = 3000 }, respect = 8 },
-			{ id = "weapons", name = "Arms Dealing", risk = 45, reward = { min = 3000, max = 15000 }, respect = 25 },
-			{ id = "cyber", name = "Cyber Crime", risk = 30, reward = { min = 2000, max = 20000 }, respect = 15 },
-			{ id = "kidnapping", name = "Kidnapping", risk = 70, reward = { min = 15000, max = 75000 }, respect = 60 },
-			{ id = "assassination", name = "Contract Kill", risk = 85, reward = { min = 10000, max = 50000 }, respect = 120 },
+			{ id = "extortion", name = "Extortion", risk = 25, reward = { min = 800, max = 3000 }, respect = 20 },
+			{ id = "weapons", name = "Arms Dealing", risk = 45, reward = { min = 3000, max = 15000 }, respect = 45 },
+			{ id = "cyber", name = "Cyber Crime", risk = 30, reward = { min = 2000, max = 20000 }, respect = 30 },
+			{ id = "kidnapping", name = "Kidnapping", risk = 70, reward = { min = 15000, max = 75000 }, respect = 100 },
+			{ id = "assassination", name = "Contract Kill", risk = 85, reward = { min = 10000, max = 50000 }, respect = 180 },
 		},
 		initiation = "To join the Bratva, you must show no fear. Complete an act of violence.",
 	},
@@ -77,17 +79,17 @@ MobSystem.Families = {
 		colorDark = Color3.fromRGB(109, 40, 217),
 		ranks = {
 			{ id = "shatei", name = "Shatei", level = 1, respect = 0, emoji = "👤" },
-			{ id = "wakashu", name = "Wakashu", level = 2, respect = 100, emoji = "🔫" },
-			{ id = "shateigashira", name = "Shateigashira", level = 3, respect = 500, emoji = "💰" },
-			{ id = "wakagashira", name = "Wakagashira", level = 4, respect = 2000, emoji = "🎩" },
-			{ id = "oyabun", name = "Oyabun", level = 5, respect = 10000, emoji = "👑" },
+			{ id = "wakashu", name = "Wakashu", level = 2, respect = 50, emoji = "🔫" },
+			{ id = "shateigashira", name = "Shateigashira", level = 3, respect = 150, emoji = "💰" },
+			{ id = "wakagashira", name = "Wakagashira", level = 4, respect = 400, emoji = "🎩" },
+			{ id = "oyabun", name = "Oyabun", level = 5, respect = 1000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "pachinko", name = "Pachinko Parlors", risk = 15, reward = { min = 1000, max = 5000 }, respect = 8 },
-			{ id = "blackmail", name = "Corporate Blackmail", risk = 35, reward = { min = 5000, max = 25000 }, respect = 20 },
-			{ id = "construction", name = "Construction Bid Rigging", risk = 25, reward = { min = 3000, max = 15000 }, respect = 15 },
-			{ id = "trafficking", name = "Human Trafficking", risk = 75, reward = { min = 20000, max = 100000 }, respect = 80 },
-			{ id = "yubitsume", name = "Enforce Loyalty", risk = 50, reward = { min = 0, max = 0 }, respect = 150 },
+			{ id = "pachinko", name = "Pachinko Parlors", risk = 15, reward = { min = 1000, max = 5000 }, respect = 18 },
+			{ id = "blackmail", name = "Corporate Blackmail", risk = 35, reward = { min = 5000, max = 25000 }, respect = 35 },
+			{ id = "construction", name = "Construction Bid Rigging", risk = 25, reward = { min = 3000, max = 15000 }, respect = 25 },
+			{ id = "trafficking", name = "Human Trafficking", risk = 75, reward = { min = 20000, max = 100000 }, respect = 120 },
+			{ id = "yubitsume", name = "Enforce Loyalty", risk = 50, reward = { min = 0, max = 0 }, respect = 200 },
 		},
 		initiation = "You must get the traditional irezumi tattoo and swear the oath of loyalty.",
 	},
@@ -102,17 +104,17 @@ MobSystem.Families = {
 		colorDark = Color3.fromRGB(22, 163, 74),
 		ranks = {
 			{ id = "halcon", name = "Halcon", level = 1, respect = 0, emoji = "👤" },
-			{ id = "sicario", name = "Sicario", level = 2, respect = 100, emoji = "🔫" },
-			{ id = "lugarteniente", name = "Lugarteniente", level = 3, respect = 500, emoji = "💰" },
-			{ id = "capo", name = "Capo", level = 4, respect = 2000, emoji = "🎩" },
-			{ id = "jefe", name = "El Jefe", level = 5, respect = 10000, emoji = "👑" },
+			{ id = "sicario", name = "Sicario", level = 2, respect = 50, emoji = "🔫" },
+			{ id = "lugarteniente", name = "Lugarteniente", level = 3, respect = 150, emoji = "💰" },
+			{ id = "capo", name = "Capo", level = 4, respect = 400, emoji = "🎩" },
+			{ id = "jefe", name = "El Jefe", level = 5, respect = 1000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "lookout", name = "Lookout Duty", risk = 10, reward = { min = 200, max = 800 }, respect = 3 },
-			{ id = "transport", name = "Drug Transport", risk = 40, reward = { min = 5000, max = 20000 }, respect = 20 },
-			{ id = "production", name = "Run Drug Lab", risk = 50, reward = { min = 10000, max = 50000 }, respect = 35 },
-			{ id = "distribution", name = "Distribution Network", risk = 35, reward = { min = 8000, max = 30000 }, respect = 25 },
-			{ id = "territorial", name = "Territory Takeover", risk = 90, reward = { min = 25000, max = 150000 }, respect = 100 },
+			{ id = "lookout", name = "Lookout Duty", risk = 10, reward = { min = 200, max = 800 }, respect = 8 },
+			{ id = "transport", name = "Drug Transport", risk = 40, reward = { min = 5000, max = 20000 }, respect = 35 },
+			{ id = "production", name = "Run Drug Lab", risk = 50, reward = { min = 10000, max = 50000 }, respect = 55 },
+			{ id = "distribution", name = "Distribution Network", risk = 35, reward = { min = 8000, max = 30000 }, respect = 40 },
+			{ id = "territorial", name = "Territory Takeover", risk = 90, reward = { min = 25000, max = 150000 }, respect = 150 },
 		},
 		initiation = "Prove yourself by making a successful run across the border.",
 	},
@@ -127,17 +129,17 @@ MobSystem.Families = {
 		colorDark = Color3.fromRGB(194, 65, 12),
 		ranks = {
 			{ id = "lantern", name = "Blue Lantern", level = 1, respect = 0, emoji = "👤" },
-			{ id = "fortyNiner", name = "49er", level = 2, respect = 100, emoji = "🔫" },
-			{ id = "redPole", name = "Red Pole", level = 3, respect = 500, emoji = "💰" },
-			{ id = "deputy", name = "Deputy", level = 4, respect = 2000, emoji = "🎩" },
-			{ id = "dragonHead", name = "Dragon Head", level = 5, respect = 10000, emoji = "👑" },
+			{ id = "fortyNiner", name = "49er", level = 2, respect = 50, emoji = "🔫" },
+			{ id = "redPole", name = "Red Pole", level = 3, respect = 150, emoji = "💰" },
+			{ id = "deputy", name = "Deputy", level = 4, respect = 400, emoji = "🎩" },
+			{ id = "dragonHead", name = "Dragon Head", level = 5, respect = 1000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "counterfeiting", name = "Counterfeiting", risk = 25, reward = { min = 1500, max = 6000 }, respect = 10 },
-			{ id = "piracy", name = "Software Piracy", risk = 20, reward = { min = 2000, max = 10000 }, respect = 8 },
-			{ id = "loan_sharking", name = "Loan Sharking", risk = 30, reward = { min = 3000, max = 12000 }, respect = 15 },
-			{ id = "smuggling", name = "Smuggling Ring", risk = 55, reward = { min = 15000, max = 60000 }, respect = 40 },
-			{ id = "ritual", name = "Blood Oath Ceremony", risk = 40, reward = { min = 0, max = 0 }, respect = 200 },
+			{ id = "counterfeiting", name = "Counterfeiting", risk = 25, reward = { min = 1500, max = 6000 }, respect = 20 },
+			{ id = "piracy", name = "Software Piracy", risk = 20, reward = { min = 2000, max = 10000 }, respect = 18 },
+			{ id = "loan_sharking", name = "Loan Sharking", risk = 30, reward = { min = 3000, max = 12000 }, respect = 30 },
+			{ id = "smuggling", name = "Smuggling Ring", risk = 55, reward = { min = 15000, max = 60000 }, respect = 70 },
+			{ id = "ritual", name = "Blood Oath Ceremony", risk = 40, reward = { min = 0, max = 0 }, respect = 250 },
 		},
 		initiation = "You must undergo the traditional 36 oaths ceremony and blood oath.",
 	},
@@ -600,6 +602,314 @@ function MobSystem:getFamilyList()
 		})
 	end
 	return list
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EXPANDED MOB ACTIVITIES - More things to do as a mobster
+-- ════════════════════════════════════════════════════════════════════════════
+
+MobSystem.MobActivities = {
+	-- Social/Networking activities
+	{
+		id = "meet_boss",
+		name = "Meet with the Boss",
+		emoji = "🤝",
+		description = "Show respect to the boss and gain favor",
+		effect = { loyalty = 10, respect = 5 },
+		cooldown = 1, -- years
+		minRank = 1,
+	},
+	{
+		id = "recruit_members",
+		name = "Recruit New Members",
+		emoji = "👥",
+		description = "Bring in fresh blood for the family",
+		effect = { respect = 15, heat = 5 },
+		cooldown = 1,
+		minRank = 2,
+	},
+	{
+		id = "attend_funeral",
+		name = "Attend Family Funeral",
+		emoji = "⚰️",
+		description = "Pay respects to fallen family members",
+		effect = { loyalty = 15, happiness = -5 },
+		cooldown = 0,
+		minRank = 1,
+	},
+	{
+		id = "host_dinner",
+		name = "Host Family Dinner",
+		emoji = "🍝",
+		description = "Strengthen bonds with family members",
+		effect = { loyalty = 20, respect = 10, cost = 5000 },
+		cooldown = 1,
+		minRank = 3,
+	},
+	-- Training/Skills
+	{
+		id = "weapons_training",
+		name = "Weapons Training",
+		emoji = "🎯",
+		description = "Improve your skills with firearms",
+		effect = { combatSkill = 10, health = -5 },
+		cooldown = 1,
+		minRank = 1,
+	},
+	{
+		id = "learn_lockpicking",
+		name = "Learn Lockpicking",
+		emoji = "🔐",
+		description = "Master the art of getting into places",
+		effect = { stealthSkill = 15 },
+		cooldown = 2,
+		minRank = 1,
+	},
+	{
+		id = "learn_driving",
+		name = "Getaway Driver Training",
+		emoji = "🚗",
+		description = "Learn evasive driving techniques",
+		effect = { drivingSkill = 15 },
+		cooldown = 1,
+		minRank = 2,
+	},
+	-- Territory management
+	{
+		id = "patrol_territory",
+		name = "Patrol Territory",
+		emoji = "🚶",
+		description = "Keep the streets safe for the family",
+		effect = { respect = 5, heat = 2 },
+		cooldown = 0,
+		minRank = 1,
+	},
+	{
+		id = "collect_debts",
+		name = "Collect Debts",
+		emoji = "💸",
+		description = "Remind people to pay what they owe",
+		effect = { money = {1000, 5000}, respect = 8, heat = 10 },
+		cooldown = 0,
+		minRank = 1,
+		hasMinigame = true,
+		minigameType = "confrontation",
+	},
+	{
+		id = "expand_territory",
+		name = "Expand Territory",
+		emoji = "📍",
+		description = "Take over new blocks for the family",
+		effect = { respect = 30, heat = 25, risk = 40 },
+		cooldown = 1,
+		minRank = 3,
+		hasMinigame = true,
+		minigameType = "fight",
+	},
+	-- Money laundering
+	{
+		id = "setup_front",
+		name = "Set Up Front Business",
+		emoji = "🏪",
+		description = "Create a legitimate business to launder money",
+		effect = { passiveIncome = 500, heat = -10, cost = 20000 },
+		cooldown = 2,
+		minRank = 3,
+	},
+	{
+		id = "launder_money",
+		name = "Launder Money",
+		emoji = "💰",
+		description = "Clean your dirty money through businesses",
+		effect = { heat = -15, cost = 0.1 }, -- 10% of dirty money
+		cooldown = 0,
+		minRank = 2,
+	},
+	-- Loyalty missions
+	{
+		id = "eliminate_snitch",
+		name = "Eliminate a Snitch",
+		emoji = "🤫",
+		description = "Take care of someone who talked too much",
+		effect = { respect = 50, loyalty = 30, heat = 40, risk = 60 },
+		cooldown = 1,
+		minRank = 2,
+		hasMinigame = true,
+		minigameType = "qte",
+	},
+	{
+		id = "bribe_officials",
+		name = "Bribe Officials",
+		emoji = "🏛️",
+		description = "Pay off cops and politicians",
+		effect = { heat = -30, cost = 10000 },
+		cooldown = 1,
+		minRank = 3,
+	},
+	-- High-level operations
+	{
+		id = "gang_war",
+		name = "Start Gang War",
+		emoji = "⚔️",
+		description = "Attack a rival family's territory",
+		effect = { respect = 100, heat = 80, risk = 70 },
+		cooldown = 2,
+		minRank = 4,
+		hasMinigame = true,
+		minigameType = "fight",
+	},
+	{
+		id = "become_informant",
+		name = "Become FBI Informant",
+		emoji = "🕵️",
+		description = "Secretly work with the feds (extremely risky!)",
+		effect = { special = "witness_protection" },
+		cooldown = 0, -- One time only
+		minRank = 1,
+		dangerous = true,
+	},
+}
+
+-- Get available mob activities based on rank and cooldowns
+function MobSystem:getAvailableActivities(lifeState)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return {}
+	end
+	
+	local available = {}
+	local currentRank = mobState.rankIndex or 1
+	local cooldowns = mobState.activityCooldowns or {}
+	local currentYear = lifeState.Year or 2025
+	
+	for _, activity in ipairs(self.MobActivities) do
+		local canDo = currentRank >= (activity.minRank or 1)
+		
+		-- Check cooldown
+		if activity.cooldown and activity.cooldown > 0 then
+			local lastDone = cooldowns[activity.id]
+			if lastDone then
+				local yearsSince = currentYear - lastDone
+				if yearsSince < activity.cooldown then
+					canDo = false
+				end
+			end
+		end
+		
+		if canDo then
+			table.insert(available, {
+				id = activity.id,
+				name = activity.name,
+				emoji = activity.emoji,
+				description = activity.description,
+				minRank = activity.minRank,
+				hasMinigame = activity.hasMinigame,
+				minigameType = activity.minigameType,
+				dangerous = activity.dangerous,
+			})
+		end
+	end
+	
+	return available
+end
+
+-- Do a mob activity
+function MobSystem:doActivity(lifeState, activityId)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return false, "You're not in a crime family!", nil
+	end
+	
+	-- Find activity
+	local activity = nil
+	for _, a in ipairs(self.MobActivities) do
+		if a.id == activityId then
+			activity = a
+			break
+		end
+	end
+	
+	if not activity then
+		return false, "Unknown activity.", nil
+	end
+	
+	-- Check rank
+	if (mobState.rankIndex or 1) < (activity.minRank or 1) then
+		return false, "You need a higher rank for this.", nil
+	end
+	
+	-- Apply effects
+	local result = {
+		activity = activity.name,
+		success = true,
+		message = "",
+		effects = {},
+	}
+	
+	local effect = activity.effect or {}
+	
+	-- Money effects
+	if effect.money then
+		local amount = type(effect.money) == "table" 
+			and math.random(effect.money[1], effect.money[2]) 
+			or effect.money
+		lifeState.Money = (lifeState.Money or 0) + amount
+		result.money = amount
+		table.insert(result.effects, "+$" .. self:formatMoney(amount))
+	end
+	
+	-- Cost
+	if effect.cost then
+		local cost = effect.cost
+		if cost < 1 then
+			-- Percentage of money
+			cost = math.floor((lifeState.Money or 0) * cost)
+		end
+		lifeState.Money = math.max(0, (lifeState.Money or 0) - cost)
+		result.cost = cost
+		table.insert(result.effects, "-$" .. self:formatMoney(cost))
+	end
+	
+	-- Respect
+	if effect.respect then
+		mobState.respect = (mobState.respect or 0) + effect.respect
+		table.insert(result.effects, "+" .. effect.respect .. " respect")
+	end
+	
+	-- Loyalty
+	if effect.loyalty then
+		mobState.loyalty = math.min(100, (mobState.loyalty or 0) + effect.loyalty)
+		table.insert(result.effects, "+" .. effect.loyalty .. " loyalty")
+	end
+	
+	-- Heat
+	if effect.heat then
+		mobState.heat = math.min(100, math.max(0, (mobState.heat or 0) + effect.heat))
+		if effect.heat > 0 then
+			table.insert(result.effects, "+" .. effect.heat .. " heat")
+		else
+			table.insert(result.effects, effect.heat .. " heat")
+		end
+	end
+	
+	-- Set cooldown
+	if activity.cooldown and activity.cooldown > 0 then
+		mobState.activityCooldowns = mobState.activityCooldowns or {}
+		mobState.activityCooldowns[activityId] = lifeState.Year or 2025
+	end
+	
+	result.message = activity.name .. " completed! " .. table.concat(result.effects, ", ")
+	
+	-- Check for rank up
+	local rankUpMsg = self:checkRankUp(lifeState)
+	if rankUpMsg then
+		result.message = result.message .. "\n\n" .. rankUpMsg
+		result.promoted = true
+	end
+	
+	return true, result.message, result
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
