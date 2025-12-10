@@ -1353,6 +1353,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.JoinMob = self:createRemote("JoinMob", "RemoteFunction")
 	self.remotes.LeaveMob = self:createRemote("LeaveMob", "RemoteFunction")
 	self.remotes.DoMobOperation = self:createRemote("DoMobOperation", "RemoteFunction")
+	self.remotes.GetMobInfo = self:createRemote("GetMobInfo", "RemoteFunction")
 	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
@@ -1452,6 +1453,10 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId)
 		return self:handleMobOperation(player, operationId)
+	end
+	
+	self.remotes.GetMobInfo.OnServerInvoke = function(player)
+		return self:getMobInfo(player)
 	end
 	
 	self.remotes.CheckGamepass.OnServerInvoke = function(player, gamepassKey)
@@ -5938,6 +5943,19 @@ function LifeBackend:handleJoinMob(player, familyId)
 		return { success = false, message = "State not found." }
 	end
 	
+	-- CRITICAL FIX #1: Check MAFIA gamepass ownership first
+	local hasGamepass = self:checkGamepassOwnership(player, "MAFIA")
+	if not hasGamepass then
+		-- Prompt purchase and return error
+		self:promptGamepassPurchase(player, "MAFIA")
+		return { 
+			success = false, 
+			message = "👑 Organized Crime is a premium feature! Purchase the Mafia gamepass to join crime families.", 
+			needsGamepass = true,
+			gamepassKey = "MAFIA"
+		}
+	end
+	
 	-- Check age
 	if state.Age < 18 then
 		return { success = false, message = "You must be 18+ to join the mob." }
@@ -6151,6 +6169,64 @@ function LifeBackend:handleMobOperation(player, operationId)
 		self:pushState(player, msg)
 		return { success = false, message = msg }
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GET MOB INFO - Returns available families and operations for client display
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:getMobInfo(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Check gamepass ownership
+	local hasGamepass = self:checkGamepassOwnership(player, "MAFIA")
+	
+	-- Get available families
+	local families = {}
+	for familyId, family in pairs(MobFamilies) do
+		table.insert(families, {
+			id = familyId,
+			name = family.name,
+			emoji = family.emoji,
+			description = family.description or "Join the underworld.",
+		})
+	end
+	
+	-- Get available operations based on current rank
+	local operations = {}
+	local currentRank = 0
+	local isInMob = state.MobState and state.MobState.inMob
+	
+	if isInMob then
+		currentRank = state.MobState.rankLevel or 1
+		for _, op in ipairs(MobOperations) do
+			local canDo = currentRank >= op.minRank
+			table.insert(operations, {
+				id = op.id,
+				name = op.name,
+				risk = op.risk,
+				reward = string.format("$%s-$%s", formatMoney(op.minReward), formatMoney(op.maxReward)),
+				respect = op.respect,
+				minRank = op.minRank,
+				available = canDo,
+				lockedReason = not canDo and string.format("Requires Rank %d", op.minRank) or nil,
+			})
+		end
+	end
+	
+	return {
+		success = true,
+		hasGamepass = hasGamepass,
+		isInMob = isInMob,
+		mobState = state.MobState,
+		families = families,
+		operations = operations,
+		currentRank = currentRank,
+		age = state.Age,
+		inJail = state.InJail == true,
+	}
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
