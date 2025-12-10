@@ -27,6 +27,9 @@ local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 local EventEngine = LifeEvents.EventEngine
 
+-- CRITICAL FIX #39: Load MobSystem module for yearly tick processing
+local MobSystemModule = require(ModulesFolder:WaitForChild("MobSystem"))
+
 local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
@@ -2112,7 +2115,7 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #12: Annual Cost of Living Expenses
 -- Players should have annual expenses that scale with lifestyle
--- Without this, money only goes up, never down from basic living costs
+-- CRITICAL FIX #27: REDUCED and made transparent - was too harsh!
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:applyLivingExpenses(state)
 	-- Don't apply expenses if player is under 18 (parents support them)
@@ -2125,13 +2128,16 @@ function LifeBackend:applyLivingExpenses(state)
 		return
 	end
 	
-	local baseCost = 8000 -- $8,000/year minimum for basic living
+	-- CRITICAL FIX #27: REDUCED living expenses - was way too harsh!
+	-- Old: $8k base + $12k rent = $20k/year (too much!)
+	-- New: $3k base + $6k rent = $9k/year (more reasonable)
+	local baseCost = 3000 -- $3,000/year for food/utilities/basic needs
 	local totalExpenses = baseCost
 	
-	-- Add housing costs if no owned property
+	-- Add housing costs if no owned property (reduced from $12k to $6k)
 	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
 	if not hasProperty then
-		totalExpenses = totalExpenses + 12000 -- Rent: $1,000/month
+		totalExpenses = totalExpenses + 6000 -- Rent: $500/month (modest apartment)
 	end
 	
 	-- Add vehicle maintenance if owns vehicles
@@ -2923,6 +2929,45 @@ function LifeBackend:processAddictions(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #39: Mob Yearly Tick
+-- Process yearly mob events: heat decay, wars, police crackdowns, etc.
+-- Without this, heat never decays and mob events never fire!
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:processMobYearly(state)
+	if not state.MobState or not state.MobState.inMob then
+		return
+	end
+	
+	-- Increment years in mob
+	state.MobState.yearsInMob = (state.MobState.yearsInMob or 0) + 1
+	
+	-- CRITICAL: Heat decays by 10 per year naturally
+	state.MobState.heat = math.max(0, (state.MobState.heat or 0) - 10)
+	
+	-- Random yearly mob events (simplified version - full version in MobSystem module)
+	local roll = RANDOM:NextInteger(1, 100)
+	
+	if roll <= 5 then
+		-- Family war (5% chance)
+		-- Could trigger events, but for now just log
+		debugPrint("Mob family war event for", state.Name or "player")
+	elseif roll <= 10 and (state.MobState.heat or 0) > 50 then
+		-- Police crackdown if heat is high (5% chance)
+		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + 20)
+		debugPrint("Police crackdown on mob, heat increased to", state.MobState.heat)
+	elseif roll <= 15 then
+		-- Loyalty test (5% chance)
+		-- For now just affects loyalty
+		state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 100) - 5)
+	elseif roll <= 20 then
+		-- Bonus from family earnings (5% chance)
+		local bonus = RANDOM:NextInteger(100, 1000) * (state.MobState.rankLevel or 1)
+		self:addMoney(state, bonus)
+		debugPrint("Mob family bonus: $", bonus)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #35: Natural Death System
 -- Players should be able to die from old age or very low health
 -- Without this, players are effectively immortal
@@ -3618,6 +3663,7 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
 	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
+	self:processMobYearly(state) -- CRITICAL FIX #39: Mob yearly tick (heat decay, family events)
 	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4293,10 +4339,45 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		local payout = RANDOM:NextInteger(crime.reward[1], crime.reward[2])
 		self:addMoney(state, payout)
 		self:applyStatChanges(state, { Happiness = 4 })
+		
+		-- CRITICAL FIX #31: Add mob respect for successful crimes when in a crime family
+		local mobRespectGained = 0
+		local promoted = false
+		local newRank = nil
+		if state.MobState and state.MobState.inMob then
+			-- Crimes give respect based on their risk level
+			mobRespectGained = math.floor(crime.risk / 5) + RANDOM:NextInteger(1, 5)
+			state.MobState.respect = (state.MobState.respect or 0) + mobRespectGained
+			-- Also add a bit of heat
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + math.floor(crime.risk / 20))
+			
+			-- CRITICAL FIX #34: Check for rank up from crimes too!
+			local family = MobFamilies[state.MobState.familyId]
+			if family then
+				local nextRankIdx = (state.MobState.rankLevel or 1) + 1
+				if nextRankIdx <= #family.ranks then
+					local nextRankDef = family.ranks[nextRankIdx]
+					if state.MobState.respect >= nextRankDef.respect then
+						state.MobState.rankLevel = nextRankIdx
+						state.MobState.rankName = nextRankDef.name
+						state.MobState.rankEmoji = nextRankDef.emoji
+						promoted = true
+						newRank = nextRankDef.name
+					end
+				end
+			end
+		end
+		
 		local message = string.format("Crime succeeded! You gained %s.", formatMoney(payout))
+		if mobRespectGained > 0 then
+			message = message .. string.format(" (+%d mob respect)", mobRespectGained)
+		end
+		if promoted and newRank then
+			message = message .. " 🎉 Promoted to " .. newRank .. "!"
+		end
 		-- CRITICAL FIX: Don't use showPopup - client shows its own result
 		self:pushState(player, message)
-		return { success = true, caught = false, message = message, money = payout }
+		return { success = true, caught = false, message = message, money = payout, mobRespect = mobRespectGained, promoted = promoted, newRank = newRank }
 	end
 end
 
@@ -5874,6 +5955,7 @@ end
 -- ============================================================================
 
 -- Crime family definitions
+-- CRITICAL FIX #28: Reduced rank requirements significantly for better progression
 local MobFamilies = {
 	italian = {
 		name = "Italian Mafia",
@@ -5881,10 +5963,10 @@ local MobFamilies = {
 		emoji = "🇮🇹",
 		ranks = {
 			{ name = "Associate", emoji = "👤", respect = 0 },
-			{ name = "Soldier", emoji = "🔫", respect = 100 },
-			{ name = "Caporegime", emoji = "💰", respect = 500 },
-			{ name = "Underboss", emoji = "🎩", respect = 2000 },
-			{ name = "Boss", emoji = "👑", respect = 10000 },
+			{ name = "Soldier", emoji = "🔫", respect = 50 },
+			{ name = "Caporegime", emoji = "💰", respect = 150 },
+			{ name = "Underboss", emoji = "🎩", respect = 400 },
+			{ name = "Boss", emoji = "👑", respect = 1000 },
 		},
 	},
 	russian = {
@@ -5893,10 +5975,10 @@ local MobFamilies = {
 		emoji = "🇷🇺",
 		ranks = {
 			{ name = "Shestyorka", emoji = "👤", respect = 0 },
-			{ name = "Bratok", emoji = "🔫", respect = 100 },
-			{ name = "Brigadier", emoji = "💰", respect = 500 },
-			{ name = "Avtoritet", emoji = "🎩", respect = 2000 },
-			{ name = "Pakhan", emoji = "👑", respect = 10000 },
+			{ name = "Bratok", emoji = "🔫", respect = 50 },
+			{ name = "Brigadier", emoji = "💰", respect = 150 },
+			{ name = "Avtoritet", emoji = "🎩", respect = 400 },
+			{ name = "Pakhan", emoji = "👑", respect = 1000 },
 		},
 	},
 	yakuza = {
@@ -5905,10 +5987,10 @@ local MobFamilies = {
 		emoji = "🇯🇵",
 		ranks = {
 			{ name = "Shatei", emoji = "👤", respect = 0 },
-			{ name = "Wakashu", emoji = "🔫", respect = 100 },
-			{ name = "Shateigashira", emoji = "💰", respect = 500 },
-			{ name = "Wakagashira", emoji = "🎩", respect = 2000 },
-			{ name = "Oyabun", emoji = "👑", respect = 10000 },
+			{ name = "Wakashu", emoji = "🔫", respect = 50 },
+			{ name = "Shateigashira", emoji = "💰", respect = 150 },
+			{ name = "Wakagashira", emoji = "🎩", respect = 400 },
+			{ name = "Oyabun", emoji = "👑", respect = 1000 },
 		},
 	},
 	cartel = {
@@ -5917,10 +5999,10 @@ local MobFamilies = {
 		emoji = "🇲🇽",
 		ranks = {
 			{ name = "Halcon", emoji = "👤", respect = 0 },
-			{ name = "Sicario", emoji = "🔫", respect = 100 },
-			{ name = "Lugarteniente", emoji = "💰", respect = 500 },
-			{ name = "Capo", emoji = "🎩", respect = 2000 },
-			{ name = "El Jefe", emoji = "👑", respect = 10000 },
+			{ name = "Sicario", emoji = "🔫", respect = 50 },
+			{ name = "Lugarteniente", emoji = "💰", respect = 150 },
+			{ name = "Capo", emoji = "🎩", respect = 400 },
+			{ name = "El Jefe", emoji = "👑", respect = 1000 },
 		},
 	},
 	triad = {
@@ -5929,21 +6011,26 @@ local MobFamilies = {
 		emoji = "🇨🇳",
 		ranks = {
 			{ name = "Blue Lantern", emoji = "👤", respect = 0 },
-			{ name = "49er", emoji = "🔫", respect = 100 },
-			{ name = "Red Pole", emoji = "💰", respect = 500 },
-			{ name = "Deputy", emoji = "🎩", respect = 2000 },
-			{ name = "Dragon Head", emoji = "👑", respect = 10000 },
+			{ name = "49er", emoji = "🔫", respect = 50 },
+			{ name = "Red Pole", emoji = "💰", respect = 150 },
+			{ name = "Deputy", emoji = "🎩", respect = 400 },
+			{ name = "Dragon Head", emoji = "👑", respect = 1000 },
 		},
 	},
 }
 
 -- Mob operations
+-- CRITICAL FIX #29: INCREASED respect gains for faster progression
 local MobOperations = {
-	{ id = "protection", name = "Protection Racket", risk = 20, minReward = 500, maxReward = 2000, respect = 5, minRank = 1 },
-	{ id = "gambling", name = "Run Gambling Ring", risk = 30, minReward = 1000, maxReward = 5000, respect = 10, minRank = 1 },
-	{ id = "smuggling", name = "Smuggle Goods", risk = 40, minReward = 2000, maxReward = 10000, respect = 20, minRank = 2 },
-	{ id = "heist", name = "Plan a Heist", risk = 60, minReward = 10000, maxReward = 100000, respect = 50, minRank = 3 },
-	{ id = "hitjob", name = "Hit Job", risk = 80, minReward = 5000, maxReward = 25000, respect = 100, minRank = 4 },
+	{ id = "protection", name = "Protection Racket", risk = 20, minReward = 500, maxReward = 2000, respect = 15, minRank = 1 },
+	{ id = "gambling", name = "Run Gambling Ring", risk = 30, minReward = 1000, maxReward = 5000, respect = 25, minRank = 1 },
+	{ id = "smuggling", name = "Smuggle Goods", risk = 40, minReward = 2000, maxReward = 10000, respect = 40, minRank = 2 },
+	{ id = "heist", name = "Plan a Heist", risk = 60, minReward = 10000, maxReward = 100000, respect = 80, minRank = 3 },
+	{ id = "hitjob", name = "Hit Job", risk = 80, minReward = 5000, maxReward = 25000, respect = 150, minRank = 4 },
+	-- CRITICAL FIX #30: Added more entry-level operations for new mobsters
+	{ id = "collect_debts", name = "Collect Debts", risk = 25, minReward = 200, maxReward = 1000, respect = 10, minRank = 1 },
+	{ id = "run_numbers", name = "Run Numbers", risk = 15, minReward = 100, maxReward = 500, respect = 8, minRank = 1 },
+	{ id = "intimidate", name = "Intimidate Business", risk = 35, minReward = 300, maxReward = 1500, respect = 20, minRank = 1 },
 }
 
 function LifeBackend:handleJoinMob(player, familyId)

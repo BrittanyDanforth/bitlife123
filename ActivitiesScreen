@@ -1589,6 +1589,24 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 	rankLabel.ZIndex = 85
 	rankLabel.Parent = card
 	
+	-- CRITICAL FIX #37: Show progress to next rank
+	local currentRespect = mobState.respect or 0
+	local currentRankLevel = mobState.rankLevel or 1
+	local nextRankRespect = nil
+	
+	-- Calculate next rank requirement (synced with reduced requirements)
+	local rankRequirements = { 0, 50, 150, 400, 1000 }
+	if currentRankLevel < #rankRequirements then
+		nextRankRespect = rankRequirements[currentRankLevel + 1]
+	end
+	
+	local respectText = "💪 " .. currentRespect
+	if nextRankRespect then
+		respectText = respectText .. "/" .. nextRankRespect
+	else
+		respectText = respectText .. " (MAX RANK)"
+	end
+	
 	local respectLabel = Instance.new("TextLabel")
 	respectLabel.Size = UDim2.new(0.5, -pad, 0, rowH)
 	respectLabel.Position = UDim2.new(0.5, 0, 0, row2Y)
@@ -1597,7 +1615,7 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 	respectLabel.TextSize = labelSize
 	respectLabel.TextColor3 = C.Gray300
 	respectLabel.TextXAlignment = Enum.TextXAlignment.Left
-	respectLabel.Text = "💪 " .. (mobState.respect or 0)
+	respectLabel.Text = respectText
 	respectLabel.ZIndex = 85
 	respectLabel.Parent = card
 	
@@ -1612,7 +1630,9 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 	UI.corner(heatBg, px(4))
 	
 	local heatFill = Instance.new("Frame")
-	heatFill.Size = UDim2.new((mobState.heat or 0) / 100, 0, 1, 0)
+	-- CRITICAL FIX #33: Clamp heat fill to prevent overflow
+	local heatPercent = math.min(1, math.max(0, (mobState.heat or 0) / 100))
+	heatFill.Size = UDim2.new(heatPercent, 0, 1, 0)
 	heatFill.BackgroundColor3 = C.Red
 	heatFill.ZIndex = 86
 	heatFill.Parent = heatBg
@@ -1627,7 +1647,8 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 	heatLabel.TextColor3 = C.Gray400
 	heatLabel.TextXAlignment = Enum.TextXAlignment.Left
 	heatLabel.TextTruncate = Enum.TextTruncate.AtEnd
-	local heatVal = mobState.heat or 0
+	-- CRITICAL FIX #32: Clamp heat to 0-100 to prevent display issues
+	local heatVal = math.min(100, math.max(0, mobState.heat or 0))
 	local heatStatus = heatVal > 70 and "Cops watching!" or (heatVal > 40 and "Noticed" or "Laying low")
 	heatLabel.Text = "🔥 " .. heatVal .. "% - " .. heatStatus
 	heatLabel.ZIndex = 85
@@ -1641,7 +1662,11 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 	end
 	
 	-- Get available operations based on rank
+	-- CRITICAL FIX #38: Added entry-level operations matching LifeBackend
 	local operations = {
+		{ id = "collect_debts", name = "Collect Debts", shortName = "Collect", emoji = "💵", risk = 25, reward = "$1K", minRank = 1 },
+		{ id = "run_numbers", name = "Run Numbers", shortName = "Numbers", emoji = "🔢", risk = 15, reward = "$500", minRank = 1 },
+		{ id = "intimidate", name = "Intimidate Business", shortName = "Intimidate", emoji = "😠", risk = 35, reward = "$1.5K", minRank = 1 },
 		{ id = "protection", name = "Protection Racket", shortName = "Protection", emoji = "💰", risk = 20, reward = "$2K", minRank = 1 },
 		{ id = "gambling", name = "Run Gambling Ring", shortName = "Gambling", emoji = "🎰", risk = 30, reward = "$5K", minRank = 1 },
 		{ id = "smuggling", name = "Smuggle Goods", shortName = "Smuggle", emoji = "📦", risk = 40, reward = "$10K", minRank = 2 },
@@ -1794,10 +1819,11 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 				log("Updated local MobState after joining:", result.mobState.familyId, result.mobState.inMob)
 			else
 				-- Fallback: Create a basic mob state if server didn't return one
+				-- CRITICAL FIX #40: Use rankLevel not rankIndex for consistency
 				self.playerState.MobState = self.playerState.MobState or {}
 				self.playerState.MobState.inMob = true
 				self.playerState.MobState.familyId = familyId
-				self.playerState.MobState.rankIndex = 1
+				self.playerState.MobState.rankLevel = 1
 				self.playerState.MobState.respect = 0
 				self.playerState.MobState.heat = 0
 				self.playerState.MobState.loyalty = 50
@@ -1815,10 +1841,11 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 		end
 	else
 		-- Fallback for testing: Create a local mob state
+		-- CRITICAL FIX #41: Use rankLevel not rankIndex for consistency
 		self.playerState.MobState = self.playerState.MobState or {}
 		self.playerState.MobState.inMob = true
 		self.playerState.MobState.familyId = familyId
-		self.playerState.MobState.rankIndex = 1
+		self.playerState.MobState.rankLevel = 1
 		self.playerState.MobState.respect = 0
 		self.playerState.MobState.heat = 0
 		self.playerState.MobState.loyalty = 50
@@ -1887,9 +1914,19 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 					self.playerState.MobState.respect = (self.playerState.MobState.respect or 0) + result.respect
 				end
 				if result.heat then
-					self.playerState.MobState.heat = (self.playerState.MobState.heat or 0) + result.heat
+					-- CRITICAL FIX #36: Clamp heat to 0-100 on client too
+					self.playerState.MobState.heat = math.min(100, math.max(0, (self.playerState.MobState.heat or 0) + result.heat))
 				end
 				if result.promoted then
+					-- CRITICAL FIX #43: Update rank info locally too
+					if result.newRank then
+						local currentLevel = self.playerState.MobState.rankLevel or 1
+						self.playerState.MobState.rankLevel = currentLevel + 1
+						self.playerState.MobState.rankName = result.newRank
+					end
+					if result.newRankEmoji then
+						self.playerState.MobState.rankEmoji = result.newRankEmoji
+					end
 					-- Refresh tab to show new rank
 					task.delay(0.5, function()
 						self:switchTab("crime")
@@ -1898,9 +1935,9 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			end
 		elseif success and result then
 			local msg = result.message or "The operation failed..."
-			-- CRITICAL FIX: If arrested, update local state
-			if result.arrested and self.state then
-				self.state.InJail = true
+			-- CRITICAL FIX #42: If arrested, update local state (using playerState not state)
+			if result.arrested and self.playerState then
+				self.playerState.InJail = true
 			end
 			self:showResult(false, msg, result.arrested and "🚔" or "❌")
 		else
