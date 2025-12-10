@@ -859,6 +859,10 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	-- CRITICAL FIX: Missing activities from client (caused "Unknown activity" error)
+	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
+	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
+	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-5)
@@ -927,12 +931,24 @@ local ActivityCatalog = {
 }
 
 local CrimeCatalog = {
+	-- PETTY CRIMES (low risk)
 	porch_pirate = { risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 } },
 	shoplift = { risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 } },
 	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 } },
+	-- PROPERTY CRIMES (medium risk)
 	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 } },
 	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 } },
+	-- MAJOR CRIMES (high risk)
 	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 } },
+	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
+	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
+	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
+	drug_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
+	car_theft = { risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 } },
+	arson = { risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 } },
+	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
+	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
+	murder = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
 }
 
 local PrisonActions = {
@@ -1331,6 +1347,14 @@ function LifeBackend:setupRemotes()
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
 	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
+	
+	-- PREMIUM FEATURES: Organized Crime remotes
+	self.remotes.JoinMob = self:createRemote("JoinMob", "RemoteFunction")
+	self.remotes.LeaveMob = self:createRemote("LeaveMob", "RemoteFunction")
+	self.remotes.DoMobOperation = self:createRemote("DoMobOperation", "RemoteFunction")
+	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
+	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
+	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -1415,6 +1439,31 @@ function LifeBackend:setupRemotes()
 	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
 		self:resetLife(player)
 	end)
+	
+	-- PREMIUM FEATURES: Organized Crime handlers
+	self.remotes.JoinMob.OnServerInvoke = function(player, familyId)
+		return self:handleJoinMob(player, familyId)
+	end
+	
+	self.remotes.LeaveMob.OnServerInvoke = function(player)
+		return self:handleLeaveMob(player)
+	end
+	
+	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId)
+		return self:handleMobOperation(player, operationId)
+	end
+	
+	self.remotes.CheckGamepass.OnServerInvoke = function(player, gamepassKey)
+		return self:checkGamepassOwnership(player, gamepassKey)
+	end
+	
+	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey)
+		self:promptGamepassPurchase(player, gamepassKey)
+	end)
+	
+	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
+		return self:handleTimeMachine(player, yearsBack)
+	end
 end
 
 function LifeBackend:createInitialState(player)
@@ -5820,6 +5869,332 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 		self:applyStatChanges(state, { Happiness = -2 })
 	end
 	self:pushState(player, won and "You crushed the minigame!" or "You failed the minigame.")
+end
+
+-- ============================================================================
+-- PREMIUM FEATURES: Organized Crime / Mob System
+-- ============================================================================
+
+-- Crime family definitions
+local MobFamilies = {
+	italian = {
+		name = "Italian Mafia",
+		fullName = "La Cosa Nostra", 
+		emoji = "🇮🇹",
+		ranks = {
+			{ name = "Associate", emoji = "👤", respect = 0 },
+			{ name = "Soldier", emoji = "🔫", respect = 100 },
+			{ name = "Caporegime", emoji = "💰", respect = 500 },
+			{ name = "Underboss", emoji = "🎩", respect = 2000 },
+			{ name = "Boss", emoji = "👑", respect = 10000 },
+		},
+	},
+	russian = {
+		name = "Russian Bratva",
+		fullName = "The Brotherhood",
+		emoji = "🇷🇺",
+		ranks = {
+			{ name = "Shestyorka", emoji = "👤", respect = 0 },
+			{ name = "Bratok", emoji = "🔫", respect = 100 },
+			{ name = "Brigadier", emoji = "💰", respect = 500 },
+			{ name = "Avtoritet", emoji = "🎩", respect = 2000 },
+			{ name = "Pakhan", emoji = "👑", respect = 10000 },
+		},
+	},
+	yakuza = {
+		name = "Japanese Yakuza",
+		fullName = "Yamaguchi-gumi",
+		emoji = "🇯🇵",
+		ranks = {
+			{ name = "Shatei", emoji = "👤", respect = 0 },
+			{ name = "Wakashu", emoji = "🔫", respect = 100 },
+			{ name = "Shateigashira", emoji = "💰", respect = 500 },
+			{ name = "Wakagashira", emoji = "🎩", respect = 2000 },
+			{ name = "Oyabun", emoji = "👑", respect = 10000 },
+		},
+	},
+	cartel = {
+		name = "Mexican Cartel",
+		fullName = "Cartel de Sinaloa",
+		emoji = "🇲🇽",
+		ranks = {
+			{ name = "Halcon", emoji = "👤", respect = 0 },
+			{ name = "Sicario", emoji = "🔫", respect = 100 },
+			{ name = "Lugarteniente", emoji = "💰", respect = 500 },
+			{ name = "Capo", emoji = "🎩", respect = 2000 },
+			{ name = "El Jefe", emoji = "👑", respect = 10000 },
+		},
+	},
+	triad = {
+		name = "Chinese Triad",
+		fullName = "14K Triad",
+		emoji = "🇨🇳",
+		ranks = {
+			{ name = "Blue Lantern", emoji = "👤", respect = 0 },
+			{ name = "49er", emoji = "🔫", respect = 100 },
+			{ name = "Red Pole", emoji = "💰", respect = 500 },
+			{ name = "Deputy", emoji = "🎩", respect = 2000 },
+			{ name = "Dragon Head", emoji = "👑", respect = 10000 },
+		},
+	},
+}
+
+-- Mob operations
+local MobOperations = {
+	{ id = "protection", name = "Protection Racket", risk = 20, minReward = 500, maxReward = 2000, respect = 5, minRank = 1 },
+	{ id = "gambling", name = "Run Gambling Ring", risk = 30, minReward = 1000, maxReward = 5000, respect = 10, minRank = 1 },
+	{ id = "smuggling", name = "Smuggle Goods", risk = 40, minReward = 2000, maxReward = 10000, respect = 20, minRank = 2 },
+	{ id = "heist", name = "Plan a Heist", risk = 60, minReward = 10000, maxReward = 100000, respect = 50, minRank = 3 },
+	{ id = "hitjob", name = "Hit Job", risk = 80, minReward = 5000, maxReward = 25000, respect = 100, minRank = 4 },
+}
+
+function LifeBackend:handleJoinMob(player, familyId)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Check age
+	if state.Age < 18 then
+		return { success = false, message = "You must be 18+ to join the mob." }
+	end
+	
+	-- Check if in jail
+	if state.InJail then
+		return { success = false, message = "You can't join from jail!" }
+	end
+	
+	-- Check if already in mob
+	if state.MobState and state.MobState.inMob then
+		return { success = false, message = "You're already in a crime family!" }
+	end
+	
+	-- Validate family
+	local family = MobFamilies[familyId]
+	if not family then
+		return { success = false, message = "Unknown crime family." }
+	end
+	
+	-- Initialize mob state if needed
+	if not state.MobState then
+		state.MobState = {}
+	end
+	
+	-- Join the family
+	local firstRank = family.ranks[1]
+	state.MobState.inMob = true
+	state.MobState.familyId = familyId
+	state.MobState.familyName = family.name
+	state.MobState.familyEmoji = family.emoji
+	state.MobState.rankLevel = 1
+	state.MobState.rankName = firstRank.name
+	state.MobState.rankEmoji = firstRank.emoji
+	state.MobState.respect = 0
+	state.MobState.heat = 0
+	state.MobState.loyalty = 100
+	state.MobState.yearsInMob = 0
+	state.MobState.operationsCompleted = 0
+	state.MobState.earnings = 0
+	
+	local msg = "You've joined " .. family.name .. " as a " .. firstRank.name .. "!"
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg }
+end
+
+function LifeBackend:handleLeaveMob(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	if not state.MobState or not state.MobState.inMob then
+		return { success = false, message = "You're not in a crime family." }
+	end
+	
+	local familyName = state.MobState.familyName or "the family"
+	local rankLevel = state.MobState.rankLevel or 1
+	
+	-- Higher ranks = harder to leave alive
+	if rankLevel >= 3 then
+		local deathChance = rankLevel * 15
+		if RANDOM:NextInteger(1, 100) <= deathChance then
+			-- They got killed trying to leave
+			state.MobState.inMob = false
+			state.MobState.familyId = nil
+			-- Trigger death? For now just return failure
+			return { success = false, message = "The family doesn't let high-ranking members leave alive... 💀" }
+		end
+	end
+	
+	-- Successfully left
+	state.MobState.inMob = false
+	state.MobState.familyId = nil
+	state.MobState.familyName = nil
+	state.MobState.familyEmoji = nil
+	state.MobState.rankLevel = 1
+	state.MobState.rankName = nil
+	state.MobState.rankEmoji = nil
+	state.MobState.respect = 0
+	
+	local msg = "You've left " .. familyName .. ". Watch your back..."
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg }
+end
+
+function LifeBackend:handleMobOperation(player, operationId)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	if not state.MobState or not state.MobState.inMob then
+		return { success = false, message = "You're not in a crime family." }
+	end
+	
+	if state.InJail then
+		return { success = false, message = "You can't do operations from jail!" }
+	end
+	
+	-- Find operation
+	local operation = nil
+	for _, op in ipairs(MobOperations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return { success = false, message = "Unknown operation." }
+	end
+	
+	-- Check rank requirement
+	local currentRank = state.MobState.rankLevel or 1
+	if currentRank < operation.minRank then
+		return { success = false, message = "You need a higher rank for this operation." }
+	end
+	
+	-- Calculate success
+	local baseChance = 100 - operation.risk
+	local rankBonus = currentRank * 5
+	local successChance = math.min(95, baseChance + rankBonus)
+	
+	local roll = RANDOM:NextInteger(1, 100)
+	local success = roll <= successChance
+	
+	if success then
+		-- Calculate rewards
+		local money = RANDOM:NextInteger(operation.minReward, operation.maxReward)
+		local respect = operation.respect + RANDOM:NextInteger(0, 10)
+		local heat = math.floor(operation.risk / 10)
+		
+		-- Apply rewards
+		self:addMoney(state, money)
+		state.MobState.respect = (state.MobState.respect or 0) + respect
+		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
+		state.MobState.earnings = (state.MobState.earnings or 0) + money
+		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
+		
+		-- Check for rank up
+		local family = MobFamilies[state.MobState.familyId]
+		if family then
+			local nextRankIdx = (state.MobState.rankLevel or 1) + 1
+			if nextRankIdx <= #family.ranks then
+				local nextRank = family.ranks[nextRankIdx]
+				if state.MobState.respect >= nextRank.respect then
+					state.MobState.rankLevel = nextRankIdx
+					state.MobState.rankName = nextRank.name
+					state.MobState.rankEmoji = nextRank.emoji
+					
+					local msg = string.format("%s completed! +$%d +%d respect. 🎉 Promoted to %s %s!", 
+						operation.name, money, respect, nextRank.emoji, nextRank.name)
+					self:pushState(player, msg)
+					return { success = true, message = msg, money = money, respect = respect, promoted = true }
+				end
+			end
+		end
+		
+		local msg = string.format("%s completed! +$%d +%d respect.", operation.name, money, respect)
+		self:pushState(player, msg)
+		return { success = true, message = msg, money = money, respect = respect }
+	else
+		-- Failed
+		local heat = math.floor(operation.risk / 5)
+		state.MobState.heat = math.min(100, (state.MobState.heat or 0) + heat)
+		
+		-- Chance of arrest
+		local arrestChance = operation.risk / 2
+		if RANDOM:NextInteger(1, 100) <= arrestChance then
+			local jailYears = math.ceil(operation.risk / 20)
+			state.InJail = true
+			state.JailYearsLeft = jailYears
+			
+			local msg = string.format("%s failed! Caught and sentenced to %d years!", operation.name, jailYears)
+			self:pushState(player, msg)
+			return { success = false, message = msg, arrested = true }
+		end
+		
+		local msg = operation.name .. " failed! You barely escaped."
+		self:pushState(player, msg)
+		return { success = false, message = msg }
+	end
+end
+
+function LifeBackend:checkGamepassOwnership(player, gamepassKey)
+	-- For now, return false (implement with MarketplaceService later)
+	-- Replace 0 with actual gamepass IDs when created
+	return false
+end
+
+function LifeBackend:promptGamepassPurchase(player, gamepassKey)
+	-- Implement with MarketplaceService:PromptGamePassPurchase
+	-- For now, just log
+	debugPrint(string.format("Player %s wants to purchase gamepass: %s", player.Name, gamepassKey))
+end
+
+function LifeBackend:handleTimeMachine(player, yearsBack)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	local currentAge = state.Age
+	local targetAge = yearsBack == -1 and 0 or (currentAge - yearsBack)
+	
+	if targetAge < 0 then
+		targetAge = 0
+	end
+	
+	-- Reset to target age
+	state.Age = targetAge
+	state.Year = state.Year - (currentAge - targetAge)
+	
+	-- Reset some stats based on age
+	if targetAge == 0 then
+		-- Baby reset
+		state.Stats.Happiness = 90
+		state.Stats.Health = 100
+		state.Money = 0
+		state.Education = "none"
+		state.CurrentJob = nil
+		state.InJail = false
+		state.JailYearsLeft = 0
+		if state.MobState then
+			state.MobState.inMob = false
+		end
+	else
+		-- Partial reset - restore health somewhat
+		state.Stats.Health = math.min(100, state.Stats.Health + 20)
+		state.InJail = false
+		state.JailYearsLeft = 0
+	end
+	
+	local msg = string.format("⏰ Time traveled back to age %d!", targetAge)
+	self:pushState(player, msg)
+	
+	return { success = true, message = msg, newAge = targetAge }
 end
 
 -- ============================================================================

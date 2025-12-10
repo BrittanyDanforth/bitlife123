@@ -2111,18 +2111,81 @@ local function buildDeathUI()
 	DeathUI.epitaph.ZIndex = 122
 	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
-	-- Restart button section
+	-- Restart button section (EXPANDED: Time Machine + New Life)
 	DeathUI.buttonSection = Instance.new("Frame")
 	DeathUI.buttonSection.Name = "ButtonSection"
-	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 100)
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 240)
 	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	DeathUI.buttonSection.ZIndex = 121
 	DeathUI.buttonSection.LayoutOrder = 5
 	DeathUI.buttonSection.Parent = DeathUI.scroll
+	
+	-- TIME MACHINE SECTION (BitLife-style premium feature)
+	local tmTitle = Instance.new("TextLabel")
+	tmTitle.Size = UDim2.new(1, 0, 0, 30)
+	tmTitle.Position = UDim2.new(0, 0, 0, 8)
+	tmTitle.BackgroundTransparency = 1
+	tmTitle.Font = F.Title
+	tmTitle.TextSize = 16
+	tmTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+	tmTitle.Text = "⏰ TIME MACHINE"
+	tmTitle.ZIndex = 122
+	tmTitle.Parent = DeathUI.buttonSection
+	
+	-- Time Machine buttons container
+	local tmContainer = Instance.new("Frame")
+	tmContainer.Size = UDim2.new(0.92, 0, 0, 85)
+	tmContainer.Position = UDim2.new(0.04, 0, 0, 40)
+	tmContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	tmContainer.ZIndex = 122
+	tmContainer.Parent = DeathUI.buttonSection
+	corner(tmContainer, 12)
+	
+	local tmGrid = Instance.new("UIGridLayout")
+	tmGrid.CellSize = UDim2.new(0.48, 0, 0, 36)
+	tmGrid.CellPadding = UDim2.new(0.02, 0, 0, 6)
+	tmGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tmGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	tmGrid.Parent = tmContainer
+	
+	local tmPad = Instance.new("UIPadding")
+	tmPad.PaddingTop = UDim.new(0, 6)
+	tmPad.PaddingLeft = UDim.new(0, 6)
+	tmPad.PaddingRight = UDim.new(0, 6)
+	tmPad.Parent = tmContainer
+	
+	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
+	for i, opt in ipairs(tmOptions) do
+		local tmBtn = Instance.new("TextButton")
+		tmBtn.Name = "TM_" .. opt[1]
+		tmBtn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+		tmBtn.Font = F.Button
+		tmBtn.TextSize = 13
+		tmBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+		tmBtn.Text = "👑 " .. opt[2]
+		tmBtn.AutoButtonColor = false
+		tmBtn.LayoutOrder = i
+		tmBtn.ZIndex = 123
+		tmBtn.Parent = tmContainer
+		corner(tmBtn, 8)
+		
+		tmBtn.MouseButton1Click:Connect(function()
+			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
+			if UseTimeMachine then
+				tmBtn.Text = "⏳..."
+				local ok, result = pcall(function() return UseTimeMachine:InvokeServer(opt[1]) end)
+				if ok and result and result.success then
+					hideDeathOverlay()
+				else
+					tmBtn.Text = "👑 " .. opt[2]
+				end
+			end
+		end)
+	end
 
 	DeathUI.restart = Instance.new("TextButton")
 	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 16)
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 135)
 	DeathUI.restart.BackgroundColor3 = C.Green
 	DeathUI.restart.Font = F.Button
 	DeathUI.restart.TextSize = 20

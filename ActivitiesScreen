@@ -195,12 +195,25 @@ local Entertainment = {
 -- Crime IDs MUST match server's Crimes table exactly!
 -- CRITICAL FIX: Added diverse minigames for different crimes
 local Crimes = {
+	-- PETTY CRIMES
 	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
 	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
 	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- PROPERTY CRIMES
 	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
+	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16 },
 	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
+	-- WHITE COLLAR
+	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18 },
+	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16 },
+	-- SERIOUS CRIMES
+	{ id = "drug_dealing", name = "Drug Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
+	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18 },
+	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18 },
+	-- MAJOR CRIMES
 	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true, minigameType = "heist" },
+	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18 },
+	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18 },
 }
 
 -- CRITICAL FIX: Prison activities with appropriate minigames
@@ -1343,16 +1356,21 @@ function ActivitiesScreen:createOrganizedCrimeSection()
 	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	sectionLayout.Parent = section
 	
-	-- Header with crown icon (premium indicator like BitLife)
+	-- CRITICAL UI FIX: Mobile responsive header
+	local headerH = IS_TINY_PHONE and 30 or (IS_SMALL_PHONE and 32 or 36)
+	local badgeW = IS_TINY_PHONE and 120 or (IS_SMALL_PHONE and 140 or 165)
+	local badgeH = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 28 or 32)
+	local crownS = IS_TINY_PHONE and 22 or (IS_SMALL_PHONE and 24 or 28)
+	
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, 36)
+	header.Size = UDim2.new(1, 0, 0, headerH)
 	header.BackgroundTransparency = 1
 	header.LayoutOrder = 0
 	header.ZIndex = 83
 	header.Parent = section
 	
 	local badge = Instance.new("Frame")
-	badge.Size = UDim2.new(0, 165, 0, 32)
+	badge.Size = UDim2.new(0, badgeW, 0, badgeH)
 	badge.BackgroundColor3 = C.Gray800
 	badge.ZIndex = 84
 	badge.Parent = header
@@ -1362,26 +1380,26 @@ function ActivitiesScreen:createOrganizedCrimeSection()
 	badgeLabel.Size = UDim2.fromScale(1, 1)
 	badgeLabel.BackgroundTransparency = 1
 	badgeLabel.Font = F.Button
-	badgeLabel.TextSize = 14
+	badgeLabel.TextSize = textSize(14)
 	badgeLabel.TextColor3 = C.White
-	badgeLabel.Text = "🔫 Organized Crime"
+	badgeLabel.Text = IS_TINY_PHONE and "🔫 Mafia" or "🔫 Organized Crime"
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 	
-	-- Crown indicator (premium)
+	-- Crown indicator (premium) - positioned after badge
 	local crownBadge = Instance.new("Frame")
-	crownBadge.Size = UDim2.new(0, 28, 0, 28)
-	crownBadge.Position = UDim2.new(0, 175, 0, 2)
+	crownBadge.Size = UDim2.new(0, crownS, 0, crownS)
+	crownBadge.Position = UDim2.new(0, badgeW + 8, 0, (badgeH - crownS) / 2)
 	crownBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 	crownBadge.ZIndex = 84
 	crownBadge.Parent = header
-	UI.corner(crownBadge, 14)
+	UI.corner(crownBadge, crownS / 2)
 	
 	local crownIcon = Instance.new("TextLabel")
 	crownIcon.Size = UDim2.fromScale(1, 1)
 	crownIcon.BackgroundTransparency = 1
 	crownIcon.Font = F.Body
-	crownIcon.TextSize = 16
+	crownIcon.TextSize = textSize(14)
 	crownIcon.Text = "👑"
 	crownIcon.ZIndex = 85
 	crownIcon.Parent = crownBadge
@@ -1406,87 +1424,103 @@ function ActivitiesScreen:createJoinMobCard(parent)
 		{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", desc = "Ancient Society" },
 	}
 	
+	-- CRITICAL UI FIX: Scale everything for mobile
+	local cardH = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 65 or 70)
+	local iconS = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 48)
+	local btnW = IS_TINY_PHONE and 52 or (IS_SMALL_PHONE and 58 or 65)
+	local btnH = IS_TINY_PHONE and 30 or (IS_SMALL_PHONE and 33 or 36)
+	local nameSize = textSize(14)
+	local descSize = textSize(11)
+	local emojiSize = textSize(24)
+	local leftPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local rightPad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local textLeft = iconS + leftPad + (IS_TINY_PHONE and 4 or 8)
+	local textRight = btnW + rightPad + (IS_TINY_PHONE and 8 or 16)
+	
+	-- Check gamepass once (not per card)
+	local hasGamepass = self:checkGamepassOwnership("MAFIA")
+	
 	for i, family in ipairs(families) do
 		local card = Instance.new("Frame")
 		card.Name = "MobCard_" .. family.id
-		card.Size = UDim2.new(1, 0, 0, 70)
+		card.Size = UDim2.new(1, 0, 0, cardH)
 		card.BackgroundColor3 = C.White
 		card.LayoutOrder = i
 		card.ZIndex = 84
 		card.Parent = parent
-		UI.corner(card, 14)
+		UI.corner(card, px(14))
 		UI.stroke(card, 1, 0.85, C.Gray200)
 		
-		-- Emoji
+		-- Emoji icon
 		local iconFrame = Instance.new("Frame")
-		iconFrame.Size = UDim2.new(0, 48, 0, 48)
-		iconFrame.Position = UDim2.new(0, 10, 0.5, -24)
+		iconFrame.Size = UDim2.new(0, iconS, 0, iconS)
+		iconFrame.Position = UDim2.new(0, leftPad, 0.5, -iconS/2)
 		iconFrame.BackgroundColor3 = C.Gray100
 		iconFrame.ZIndex = 85
 		iconFrame.Parent = card
-		UI.corner(iconFrame, 12)
+		UI.corner(iconFrame, px(12))
 		
 		local iconLabel = Instance.new("TextLabel")
 		iconLabel.Size = UDim2.fromScale(1, 1)
 		iconLabel.BackgroundTransparency = 1
 		iconLabel.Font = F.Body
-		iconLabel.TextSize = 26
+		iconLabel.TextSize = emojiSize
 		iconLabel.Text = family.emoji
 		iconLabel.ZIndex = 86
 		iconLabel.Parent = iconFrame
 		
-		-- Name
+		-- Family name
 		local nameLabel = Instance.new("TextLabel")
-		nameLabel.Size = UDim2.new(1, -140, 0, 22)
-		nameLabel.Position = UDim2.new(0, 68, 0, 12)
+		nameLabel.Size = UDim2.new(1, -textLeft - textRight, 0, nameSize + 4)
+		nameLabel.Position = UDim2.new(0, textLeft, 0, IS_TINY_PHONE and 8 or 12)
 		nameLabel.BackgroundTransparency = 1
 		nameLabel.Font = F.Title
-		nameLabel.TextSize = 14
+		nameLabel.TextSize = nameSize
 		nameLabel.TextColor3 = C.Gray900
 		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-		nameLabel.Text = family.name
+		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		nameLabel.Text = IS_TINY_PHONE and family.name:gsub(" Mafia", ""):gsub(" Bratva", ""):gsub(" Yakuza", ""):gsub(" Cartel", ""):gsub(" Triad", "") or family.name
 		nameLabel.ZIndex = 85
 		nameLabel.Parent = card
 		
-		-- Desc
+		-- Description
 		local descLabel = Instance.new("TextLabel")
-		descLabel.Size = UDim2.new(1, -140, 0, 18)
-		descLabel.Position = UDim2.new(0, 68, 0, 35)
+		descLabel.Size = UDim2.new(1, -textLeft - textRight, 0, descSize + 4)
+		descLabel.Position = UDim2.new(0, textLeft, 0, (IS_TINY_PHONE and 8 or 12) + nameSize + 2)
 		descLabel.BackgroundTransparency = 1
 		descLabel.Font = F.Body
-		descLabel.TextSize = 11
+		descLabel.TextSize = descSize
 		descLabel.TextColor3 = C.Gray500
 		descLabel.TextXAlignment = Enum.TextXAlignment.Left
+		descLabel.TextTruncate = Enum.TextTruncate.AtEnd
 		descLabel.Text = family.desc
 		descLabel.ZIndex = 85
 		descLabel.Parent = card
 		
-		-- Join button (shows lock if no gamepass - BitLife style)
-		local hasGamepass = self:checkGamepassOwnership("MAFIA")
-		
+		-- Join button
 		local joinBtn = Instance.new("TextButton")
-		joinBtn.Size = UDim2.new(0, 65, 0, 36)
+		joinBtn.Size = UDim2.new(0, btnW, 0, btnH)
 		joinBtn.AnchorPoint = Vector2.new(1, 0.5)
-		joinBtn.Position = UDim2.new(1, -10, 0.5, 0)
+		joinBtn.Position = UDim2.new(1, -rightPad, 0.5, 0)
 		joinBtn.BackgroundColor3 = hasGamepass and C.Red or C.Gray700
 		joinBtn.Font = F.Button
-		joinBtn.TextSize = 12
+		joinBtn.TextSize = textSize(12)
 		joinBtn.TextColor3 = C.White
-		joinBtn.Text = hasGamepass and "Join" or "👑 Join"
+		joinBtn.Text = hasGamepass and "Join" or "👑"
 		joinBtn.AutoButtonColor = false
 		joinBtn.ZIndex = 86
 		joinBtn.Parent = card
-		UI.corner(joinBtn, 10)
+		UI.corner(joinBtn, px(10))
 		
 		joinBtn.MouseEnter:Connect(function()
 			UI.tween(joinBtn, TweenInfo.new(0.12), {
-				Size = UDim2.new(0, 69, 0, 40),
+				Size = UDim2.new(0, btnW + 4, 0, btnH + 4),
 				BackgroundColor3 = (hasGamepass and C.RedDark or C.Gray800)
 			})
 		end)
 		joinBtn.MouseLeave:Connect(function()
 			UI.tween(joinBtn, TweenInfo.new(0.12), {
-				Size = UDim2.new(0, 65, 0, 36),
+				Size = UDim2.new(0, btnW, 0, btnH),
 				BackgroundColor3 = hasGamepass and C.Red or C.Gray700
 			})
 		end)
@@ -1495,7 +1529,6 @@ function ActivitiesScreen:createJoinMobCard(parent)
 			if hasGamepass then
 				self:attemptJoinMob(family.id)
 			else
-				-- Prompt gamepass purchase (BitLife style)
 				self:promptGamepassPurchase("MAFIA", "🔫 Organized Crime", "Join crime families, rise through ranks, run operations!")
 			end
 		end)
@@ -1508,79 +1541,95 @@ function ActivitiesScreen:createMobStatusCard(parent, mobState)
 		return
 	end
 	
+	-- CRITICAL UI FIX: Scale for mobile
+	local cardH = IS_TINY_PHONE and 80 or (IS_SMALL_PHONE and 90 or 100)
+	local pad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local titleSize = textSize(16)
+	local labelSize = textSize(13)
+	local heatSize = textSize(10)
+	local barH = IS_TINY_PHONE and 6 or 8
+	
 	local card = Instance.new("Frame")
 	card.Name = "MobStatusCard"
-	card.Size = UDim2.new(1, 0, 0, 100)
+	card.Size = UDim2.new(1, 0, 0, cardH)
 	card.BackgroundColor3 = C.Gray800
 	card.LayoutOrder = 1
 	card.ZIndex = 84
 	card.Parent = parent
-	UI.corner(card, 14)
+	UI.corner(card, px(14))
 	
 	-- Family name
 	local familyLabel = Instance.new("TextLabel")
-	familyLabel.Size = UDim2.new(1, -20, 0, 26)
-	familyLabel.Position = UDim2.new(0, 10, 0, 10)
+	familyLabel.Size = UDim2.new(1, -pad*2, 0, titleSize + 8)
+	familyLabel.Position = UDim2.new(0, pad, 0, pad)
 	familyLabel.BackgroundTransparency = 1
 	familyLabel.Font = F.Title
-	familyLabel.TextSize = 16
+	familyLabel.TextSize = titleSize
 	familyLabel.TextColor3 = C.White
 	familyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	familyLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	familyLabel.Text = (mobState.familyEmoji or "🔫") .. " " .. (mobState.familyName or "Crime Family")
 	familyLabel.ZIndex = 85
 	familyLabel.Parent = card
 	
-	-- Rank
+	-- Rank + Respect row
+	local row2Y = pad + titleSize + 6
+	local rowH = labelSize + 4
+	
 	local rankLabel = Instance.new("TextLabel")
-	rankLabel.Size = UDim2.new(0.5, -15, 0, 20)
-	rankLabel.Position = UDim2.new(0, 10, 0, 40)
+	rankLabel.Size = UDim2.new(0.5, -pad, 0, rowH)
+	rankLabel.Position = UDim2.new(0, pad, 0, row2Y)
 	rankLabel.BackgroundTransparency = 1
 	rankLabel.Font = F.Medium
-	rankLabel.TextSize = 13
+	rankLabel.TextSize = labelSize
 	rankLabel.TextColor3 = C.Gray300
 	rankLabel.TextXAlignment = Enum.TextXAlignment.Left
-	rankLabel.Text = "Rank: " .. (mobState.rankName or "Associate")
+	rankLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	rankLabel.Text = (mobState.rankEmoji or "") .. " " .. (mobState.rankName or "Associate")
 	rankLabel.ZIndex = 85
 	rankLabel.Parent = card
 	
-	-- Respect
 	local respectLabel = Instance.new("TextLabel")
-	respectLabel.Size = UDim2.new(0.5, -15, 0, 20)
-	respectLabel.Position = UDim2.new(0.5, 5, 0, 40)
+	respectLabel.Size = UDim2.new(0.5, -pad, 0, rowH)
+	respectLabel.Position = UDim2.new(0.5, 0, 0, row2Y)
 	respectLabel.BackgroundTransparency = 1
 	respectLabel.Font = F.Medium
-	respectLabel.TextSize = 13
+	respectLabel.TextSize = labelSize
 	respectLabel.TextColor3 = C.Gray300
 	respectLabel.TextXAlignment = Enum.TextXAlignment.Left
-	respectLabel.Text = "💪 " .. (mobState.respect or 0) .. " Respect"
+	respectLabel.Text = "💪 " .. (mobState.respect or 0)
 	respectLabel.ZIndex = 85
 	respectLabel.Parent = card
 	
 	-- Heat bar
+	local barY = row2Y + rowH + 4
 	local heatBg = Instance.new("Frame")
-	heatBg.Size = UDim2.new(1, -20, 0, 8)
-	heatBg.Position = UDim2.new(0, 10, 0, 68)
+	heatBg.Size = UDim2.new(1, -pad*2, 0, barH)
+	heatBg.Position = UDim2.new(0, pad, 0, barY)
 	heatBg.BackgroundColor3 = C.Gray600
 	heatBg.ZIndex = 85
 	heatBg.Parent = card
-	UI.corner(heatBg, 4)
+	UI.corner(heatBg, px(4))
 	
 	local heatFill = Instance.new("Frame")
 	heatFill.Size = UDim2.new((mobState.heat or 0) / 100, 0, 1, 0)
 	heatFill.BackgroundColor3 = C.Red
 	heatFill.ZIndex = 86
 	heatFill.Parent = heatBg
-	UI.corner(heatFill, 4)
+	UI.corner(heatFill, px(4))
 	
 	local heatLabel = Instance.new("TextLabel")
-	heatLabel.Size = UDim2.new(1, -20, 0, 16)
-	heatLabel.Position = UDim2.new(0, 10, 0, 78)
+	heatLabel.Size = UDim2.new(1, -pad*2, 0, heatSize + 4)
+	heatLabel.Position = UDim2.new(0, pad, 0, barY + barH + 2)
 	heatLabel.BackgroundTransparency = 1
 	heatLabel.Font = F.Body
-	heatLabel.TextSize = 10
+	heatLabel.TextSize = heatSize
 	heatLabel.TextColor3 = C.Gray400
 	heatLabel.TextXAlignment = Enum.TextXAlignment.Left
-	heatLabel.Text = "🔥 Heat: " .. (mobState.heat or 0) .. "% - " .. (mobState.heat > 70 and "Cops are watching!" or mobState.heat > 40 and "Getting noticed..." or "Laying low")
+	heatLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	local heatVal = mobState.heat or 0
+	local heatStatus = heatVal > 70 and "Cops watching!" or (heatVal > 40 and "Noticed" or "Laying low")
+	heatLabel.Text = "🔥 " .. heatVal .. "% - " .. heatStatus
 	heatLabel.ZIndex = 85
 	heatLabel.Parent = card
 end
@@ -1593,12 +1642,24 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 	
 	-- Get available operations based on rank
 	local operations = {
-		{ id = "protection", name = "Protection Racket", emoji = "💰", risk = 20, reward = "$500-$2K", minRank = 1 },
-		{ id = "gambling", name = "Run Gambling Ring", emoji = "🎰", risk = 30, reward = "$1K-$5K", minRank = 1 },
-		{ id = "smuggling", name = "Smuggle Goods", emoji = "📦", risk = 40, reward = "$2K-$10K", minRank = 2 },
-		{ id = "heist", name = "Plan a Heist", emoji = "🏦", risk = 60, reward = "$10K-$100K", minRank = 3 },
-		{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = "$5K-$25K", minRank = 4 },
+		{ id = "protection", name = "Protection Racket", shortName = "Protection", emoji = "💰", risk = 20, reward = "$2K", minRank = 1 },
+		{ id = "gambling", name = "Run Gambling Ring", shortName = "Gambling", emoji = "🎰", risk = 30, reward = "$5K", minRank = 1 },
+		{ id = "smuggling", name = "Smuggle Goods", shortName = "Smuggle", emoji = "📦", risk = 40, reward = "$10K", minRank = 2 },
+		{ id = "heist", name = "Plan a Heist", shortName = "Heist", emoji = "🏦", risk = 60, reward = "$100K", minRank = 3 },
+		{ id = "hitjob", name = "Hit Job", shortName = "Hit", emoji = "🎯", risk = 80, reward = "$25K", minRank = 4 },
 	}
+	
+	-- CRITICAL UI FIX: Scale for mobile
+	local cardH = IS_TINY_PHONE and 55 or (IS_SMALL_PHONE and 60 or 65)
+	local iconS = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 38 or 44)
+	local btnW = IS_TINY_PHONE and 42 or (IS_SMALL_PHONE and 48 or 55)
+	local btnH = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 29 or 32)
+	local pad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	local nameSize = textSize(13)
+	local infoSize = textSize(11)
+	local emojiSize = textSize(20)
+	local textLeft = iconS + pad + (IS_TINY_PHONE and 4 or 8)
+	local textRight = btnW + pad + (IS_TINY_PHONE and 6 or 12)
 	
 	local currentRank = (mobState and mobState.rankLevel) or 1
 	
@@ -1607,72 +1668,74 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 		
 		local card = Instance.new("Frame")
 		card.Name = "OpCard_" .. op.id
-		card.Size = UDim2.new(1, 0, 0, 65)
+		card.Size = UDim2.new(1, 0, 0, cardH)
 		card.BackgroundColor3 = unlocked and C.White or C.Gray100
 		card.LayoutOrder = i + 10
 		card.ZIndex = 84
 		card.Parent = parent
-		UI.corner(card, 14)
+		UI.corner(card, px(14))
 		UI.stroke(card, 1, 0.85, C.Gray200)
 		
 		-- Emoji
 		local iconFrame = Instance.new("Frame")
-		iconFrame.Size = UDim2.new(0, 44, 0, 44)
-		iconFrame.Position = UDim2.new(0, 10, 0.5, -22)
+		iconFrame.Size = UDim2.new(0, iconS, 0, iconS)
+		iconFrame.Position = UDim2.new(0, pad, 0.5, -iconS/2)
 		iconFrame.BackgroundColor3 = unlocked and C.RedPale or C.Gray200
 		iconFrame.ZIndex = 85
 		iconFrame.Parent = card
-		UI.corner(iconFrame, 12)
+		UI.corner(iconFrame, px(12))
 		
 		local iconLabel = Instance.new("TextLabel")
 		iconLabel.Size = UDim2.fromScale(1, 1)
 		iconLabel.BackgroundTransparency = 1
 		iconLabel.Font = F.Body
-		iconLabel.TextSize = 22
+		iconLabel.TextSize = emojiSize
 		iconLabel.Text = unlocked and op.emoji or "🔒"
 		iconLabel.ZIndex = 86
 		iconLabel.Parent = iconFrame
 		
-		-- Name
+		-- Name (use shortName for tiny phones)
 		local nameLabel = Instance.new("TextLabel")
-		nameLabel.Size = UDim2.new(1, -140, 0, 20)
-		nameLabel.Position = UDim2.new(0, 62, 0, 10)
+		nameLabel.Size = UDim2.new(1, -textLeft - textRight, 0, nameSize + 4)
+		nameLabel.Position = UDim2.new(0, textLeft, 0, IS_TINY_PHONE and 6 or 10)
 		nameLabel.BackgroundTransparency = 1
 		nameLabel.Font = F.Title
-		nameLabel.TextSize = 13
+		nameLabel.TextSize = nameSize
 		nameLabel.TextColor3 = unlocked and C.Gray900 or C.Gray400
 		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-		nameLabel.Text = op.name
+		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		nameLabel.Text = IS_TINY_PHONE and op.shortName or op.name
 		nameLabel.ZIndex = 85
 		nameLabel.Parent = card
 		
 		-- Risk/Reward
 		local infoLabel = Instance.new("TextLabel")
-		infoLabel.Size = UDim2.new(1, -140, 0, 18)
-		infoLabel.Position = UDim2.new(0, 62, 0, 32)
+		infoLabel.Size = UDim2.new(1, -textLeft - textRight, 0, infoSize + 4)
+		infoLabel.Position = UDim2.new(0, textLeft, 0, (IS_TINY_PHONE and 6 or 10) + nameSize + 2)
 		infoLabel.BackgroundTransparency = 1
 		infoLabel.Font = F.Body
-		infoLabel.TextSize = 11
+		infoLabel.TextSize = infoSize
 		infoLabel.TextColor3 = C.Gray500
 		infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-		infoLabel.Text = unlocked and ("⚠️ " .. op.risk .. "% risk • " .. op.reward) or ("Unlock at rank " .. op.minRank)
+		infoLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		infoLabel.Text = unlocked and (op.risk .. "% • " .. op.reward) or ("Rank " .. op.minRank)
 		infoLabel.ZIndex = 85
 		infoLabel.Parent = card
 		
 		-- Do button
 		local doBtn = Instance.new("TextButton")
-		doBtn.Size = UDim2.new(0, 55, 0, 32)
+		doBtn.Size = UDim2.new(0, btnW, 0, btnH)
 		doBtn.AnchorPoint = Vector2.new(1, 0.5)
-		doBtn.Position = UDim2.new(1, -10, 0.5, 0)
+		doBtn.Position = UDim2.new(1, -pad, 0.5, 0)
 		doBtn.BackgroundColor3 = unlocked and C.Red or C.Gray300
 		doBtn.Font = F.Button
-		doBtn.TextSize = 12
+		doBtn.TextSize = textSize(12)
 		doBtn.TextColor3 = C.White
-		doBtn.Text = unlocked and "Do It" or "🔒"
+		doBtn.Text = unlocked and "Do" or "🔒"
 		doBtn.AutoButtonColor = false
 		doBtn.ZIndex = 86
 		doBtn.Parent = card
-		UI.corner(doBtn, 8)
+		UI.corner(doBtn, px(8))
 		
 		if unlocked then
 			doBtn.MouseButton1Click:Connect(function()
@@ -1681,29 +1744,33 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 		end
 	end
 	
-	-- Leave family button
+	-- Leave family button (scaled for mobile)
+	local leaveCardH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 45 or 50)
+	local leaveBtnH = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 32 or 36)
+	local leavePad = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
+	
 	local leaveCard = Instance.new("Frame")
 	leaveCard.Name = "LeaveCard"
-	leaveCard.Size = UDim2.new(1, 0, 0, 50)
+	leaveCard.Size = UDim2.new(1, 0, 0, leaveCardH)
 	leaveCard.BackgroundColor3 = C.White
 	leaveCard.LayoutOrder = 100
 	leaveCard.ZIndex = 84
 	leaveCard.Parent = parent
-	UI.corner(leaveCard, 14)
+	UI.corner(leaveCard, px(14))
 	UI.stroke(leaveCard, 1, 0.85, C.Gray200)
 	
 	local leaveBtn = Instance.new("TextButton")
-	leaveBtn.Size = UDim2.new(1, -20, 0, 36)
-	leaveBtn.Position = UDim2.new(0, 10, 0.5, -18)
+	leaveBtn.Size = UDim2.new(1, -leavePad*2, 0, leaveBtnH)
+	leaveBtn.Position = UDim2.new(0, leavePad, 0.5, -leaveBtnH/2)
 	leaveBtn.BackgroundColor3 = C.Gray200
 	leaveBtn.Font = F.Button
-	leaveBtn.TextSize = 13
+	leaveBtn.TextSize = textSize(13)
 	leaveBtn.TextColor3 = C.Gray700
-	leaveBtn.Text = "🚪 Leave the Family (Risky!)"
+	leaveBtn.Text = IS_TINY_PHONE and "🚪 Leave" or "🚪 Leave the Family (Risky!)"
 	leaveBtn.AutoButtonColor = false
 	leaveBtn.ZIndex = 85
 	leaveBtn.Parent = leaveCard
-	UI.corner(leaveBtn, 10)
+	UI.corner(leaveBtn, px(10))
 	
 	leaveBtn.MouseButton1Click:Connect(function()
 		self:attemptLeaveMob()
@@ -2175,16 +2242,19 @@ function ActivitiesScreen:doMischief(item)
 	log("Doing mischief:", item.id, item.name)
 	
 	-- Use DoActivity remote for mischief (server handles it)
+	-- CRITICAL FIX: Add pcall protection for robust error handling
 	if DoActivity then
-		local result = DoActivity:InvokeServer(item.id)
-		if result then
+		local success, result = pcall(function()
+			return DoActivity:InvokeServer(item.id)
+		end)
+		if success and result then
 			if result.success then
 				self:showResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item.emoji)
 			else
 				self:showResult(false, result.message or "That didn't work out...", "😅")
 			end
-		else
-			-- Fallback for unimplemented activities
+		elseif not success then
+			-- Server error - use fallback message
 			local messages = {
 				cry_loudly = "You cry SO LOUD! Everyone comes running!",
 				throw_food = "SPLAT! Food goes everywhere! Mom is NOT happy.",
