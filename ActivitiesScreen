@@ -1863,8 +1863,9 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 end
 
 function ActivitiesScreen:getMobState()
-	if self.state and self.state.MobState then
-		return self.state.MobState
+	-- CRITICAL FIX: Use self.playerState not self.state
+	if self.playerState and self.playerState.MobState then
+		return self.playerState.MobState
 	end
 	return nil
 end
@@ -2512,7 +2513,8 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	local cost = item.cost or 0
 	local accentDark = accentColor:Lerp(C.Black, 0.2)
 	
-	-- CRITICAL FIX: Check for activity-specific flags like requiresFlag and maxAge
+	-- CRITICAL FIX #11: Check for activity-specific flags including blockedByFlag
+	-- This prevents duplicate actions (like enrolling in college twice)
 	local meetsFlag = true
 	if item.requiresFlag then
 		meetsFlag = flags[item.requiresFlag] == true
@@ -2522,7 +2524,44 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 		meetsMaxAge = age <= item.maxAge
 	end
 	
-	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
+	-- CRITICAL FIX: Check if activity is blocked by a flag (already did this action)
+	local notBlocked = true
+	local blockedReason = nil
+	if item.blockedByFlag then
+		if flags[item.blockedByFlag] == true then
+			notBlocked = false
+			blockedReason = "Already done!"
+		end
+	end
+	-- Also check common blocking patterns for education
+	if item.id == "university" or item.id == "community_college" then
+		if flags.in_college or flags.in_university or flags.college_student then
+			notBlocked = false
+			blockedReason = "Already enrolled!"
+		end
+	end
+	if item.id == "medical_school" and (flags.in_med_school or flags.medical_student) then
+		notBlocked = false
+		blockedReason = "Already enrolled!"
+	end
+	if item.id == "law_school" and (flags.in_law_school or flags.law_student) then
+		notBlocked = false
+		blockedReason = "Already enrolled!"
+	end
+	if item.id == "business_school" and (flags.in_business_school or flags.mba_student) then
+		notBlocked = false
+		blockedReason = "Already enrolled!"
+	end
+	if item.id == "drivers_license" and (flags.has_license or flags.drivers_license) then
+		notBlocked = false
+		blockedReason = "Already have license!"
+	end
+	if item.id == "get_ged" and (flags.has_ged or flags.high_school or flags.graduated_high_school) then
+		notBlocked = false
+		blockedReason = "Already completed!"
+	end
+	
+	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge and notBlocked
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
@@ -2863,6 +2902,11 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 			btnText = "⛓️ Jailed"
 		elseif not meetsFlag then
 			btnText = "🔒 Locked"
+		elseif not notBlocked then
+			-- CRITICAL FIX #12: Show why activity is blocked
+			btnText = blockedReason and ("✅ " .. blockedReason) or "✅ Done"
+			actionBtn.BackgroundColor3 = C.GreenPale or C.Gray200
+			actionBtn.TextColor3 = C.GreenDark or C.Gray600
 		else
 			btnText = "🔒 N/A"
 		end

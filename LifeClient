@@ -2319,6 +2319,19 @@ showDeathOverlay = function(causeText, age)
 	DeathUI.restart.Text = "🔄 Start New Life"
 	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
 
+	-- CRITICAL FIX #13: Reset Time Machine button texts
+	-- This prevents the hourglass (⏳) from staying after a previous time travel attempt
+	if DeathUI.buttonSection then
+		local tmOptions = { { -1, "Baby" }, { 5, "5yr" }, { 10, "10yr" }, { 20, "20yr" } }
+		for _, opt in ipairs(tmOptions) do
+			local tmBtn = DeathUI.buttonSection:FindFirstChild("TM_" .. opt[1])
+			if tmBtn then
+				tmBtn.Text = "👑 " .. opt[2]
+				tmBtn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+			end
+		end
+	end
+
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
 		if child:IsA("Frame") then child:Destroy() end
