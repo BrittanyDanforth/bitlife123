@@ -16,6 +16,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local ModulesFolder = script:FindFirstChild("Modules") or script.Parent:FindFirstChild("Modules")
 assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer/Modules.")
@@ -6152,19 +6153,110 @@ function LifeBackend:handleMobOperation(player, operationId)
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GAMEPASS SYSTEM
+-- Configure your actual Roblox gamepass IDs here
+-- Create gamepasses in Roblox Creator Dashboard and put the IDs below
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GAMEPASS_IDS = {
+	MAFIA = 0,          -- Replace with your actual Mafia/Organized Crime gamepass ID
+	TIME_MACHINE = 0,   -- Replace with your actual Time Machine gamepass ID
+	BITIZEN = 0,        -- Replace with your actual Bitizen gamepass ID
+	GOD_MODE = 0,       -- Replace with your actual God Mode gamepass ID
+}
+
+-- Track gamepass ownership cache (refreshes on check)
+local gamepassCache = {}
+
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
-	-- For now, return false (implement with MarketplaceService later)
-	-- Replace 0 with actual gamepass IDs when created
-	return false
+	local gamepassId = GAMEPASS_IDS[gamepassKey]
+	
+	-- If no gamepass ID is configured (still 0), return true for testing
+	-- IMPORTANT: Set actual IDs above when deploying!
+	if not gamepassId or gamepassId == 0 then
+		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Allowing access for testing.", gamepassKey))
+		return true -- Allow access when not configured (for testing)
+	end
+	
+	-- Check cache first
+	local cacheKey = player.UserId .. "_" .. gamepassKey
+	if gamepassCache[cacheKey] ~= nil then
+		return gamepassCache[cacheKey]
+	end
+	
+	-- Actually check with MarketplaceService
+	local success, owns = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamepassId)
+	end)
+	
+	if success then
+		gamepassCache[cacheKey] = owns
+		debugPrint(string.format("Player %s %s gamepass %s (ID: %d)", 
+			player.Name, owns and "OWNS" or "doesn't own", gamepassKey, gamepassId))
+		return owns
+	else
+		warn(string.format("[LifeBackend] Failed to check gamepass ownership: %s", tostring(owns)))
+		return false
+	end
 end
 
 function LifeBackend:promptGamepassPurchase(player, gamepassKey)
-	-- Implement with MarketplaceService:PromptGamePassPurchase
-	-- For now, just log
-	debugPrint(string.format("Player %s wants to purchase gamepass: %s", player.Name, gamepassKey))
+	local gamepassId = GAMEPASS_IDS[gamepassKey]
+	
+	if not gamepassId or gamepassId == 0 then
+		debugPrint(string.format("⚠️ Gamepass '%s' has no ID configured. Cannot prompt purchase.", gamepassKey))
+		-- For testing, just notify the player
+		self:pushState(player, "🔓 Feature unlocked for testing! (No gamepass configured)")
+		return
+	end
+	
+	-- Actually prompt the purchase
+	local success, err = pcall(function()
+		MarketplaceService:PromptGamePassPurchase(player, gamepassId)
+	end)
+	
+	if not success then
+		warn(string.format("[LifeBackend] Failed to prompt gamepass purchase: %s", tostring(err)))
+	else
+		debugPrint(string.format("Prompted player %s to purchase gamepass %s (ID: %d)", 
+			player.Name, gamepassKey, gamepassId))
+	end
 end
 
+-- Listen for gamepass purchases to update cache
+local function onGamepassPurchased(player, gamepassId, wasPurchased)
+	if wasPurchased then
+		-- Find which gamepass was purchased and update cache
+		for key, id in pairs(GAMEPASS_IDS) do
+			if id == gamepassId then
+				local cacheKey = player.UserId .. "_" .. key
+				gamepassCache[cacheKey] = true
+				debugPrint(string.format("Player %s purchased gamepass %s!", player.Name, key))
+				break
+			end
+		end
+	end
+end
+
+-- Connect the purchase handler
+pcall(function()
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchased)
+end)
+
 function LifeBackend:handleTimeMachine(player, yearsBack)
+	-- CRITICAL FIX: Check gamepass ownership first
+	local hasGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+	if not hasGamepass then
+		-- Prompt purchase and return error
+		self:promptGamepassPurchase(player, "TIME_MACHINE")
+		return { 
+			success = false, 
+			message = "👑 Time Machine is a premium feature!", 
+			needsGamepass = true,
+			gamepassKey = "TIME_MACHINE"
+		}
+	end
+	
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "State not found." }

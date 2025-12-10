@@ -1831,8 +1831,26 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 		if success and result and result.success then
 			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
 			self:showResult(true, msg, "💰")
+			
+			-- CRITICAL FIX: Update local mob state after operation
+			if self.state and self.state.MobState then
+				if result.respect then
+					self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+				end
+				if result.promoted then
+					-- Refresh tab to show new rank
+					task.delay(0.5, function()
+						self:switchTab("crime")
+					end)
+				end
+			end
 		elseif success and result then
-			self:showResult(false, result.message or "The operation failed...", "❌")
+			local msg = result.message or "The operation failed..."
+			-- CRITICAL FIX: If arrested, update local state
+			if result.arrested and self.state then
+				self.state.InJail = true
+			end
+			self:showResult(false, msg, result.arrested and "🚔" or "❌")
 		else
 			self:showResult(false, "Connection error. Try again.", "❌")
 		end
@@ -1871,86 +1889,153 @@ function ActivitiesScreen:promptGamepassPurchase(gamepassKey, title, description
 end
 
 function ActivitiesScreen:showGamepassPrompt(gamepassKey, title, description)
-	-- Create BitLife-style purchase prompt
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Premium BitLife-style purchase prompt with proper mobile scaling
+	-- Matches the quality of AssetsScreen result modal
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if self.gamepassPromptOverlay then
 		self.gamepassPromptOverlay:Destroy()
 	end
 	
+	-- CRITICAL: Mobile-responsive dimensions
+	local modalWidth = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local modalHeight = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local padX = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 20)
+	local padY = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 14 or 18)
+	local crownSize = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 52 or 64)
+	local titleSize = textSize(IS_TINY_PHONE and 16 or 20)
+	local descSize = textSize(IS_TINY_PHONE and 12 or 14)
+	local btnTextSize = textSize(IS_TINY_PHONE and 14 or 16)
+	local btnHeight = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 44 or 50)
+	
+	-- Overlay background
 	local overlay = Instance.new("Frame")
 	overlay.Name = "GamepassPromptOverlay"
 	overlay.Size = UDim2.fromScale(1, 1)
 	overlay.BackgroundColor3 = C.Black
-	overlay.BackgroundTransparency = 0.4
+	overlay.BackgroundTransparency = 0.35
 	overlay.ZIndex = 200
 	overlay.Parent = self.screenGui
 	self.gamepassPromptOverlay = overlay
 	
-	local container = Instance.new("Frame")
-	container.Size = UDim2.new(0, IS_TINY_PHONE and 280 or 320, 0, IS_TINY_PHONE and 220 or 260)
-	container.AnchorPoint = Vector2.new(0.5, 0.5)
-	container.Position = UDim2.fromScale(0.5, 0.5)
-	container.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Gold
-	container.ZIndex = 201
-	container.Parent = overlay
-	UI.corner(container, 20)
+	-- Click outside to close (BEHIND container)
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 200
+	closeArea.Parent = overlay
+	closeArea.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
 	
+	-- Premium shadow
+	local shadowOffset = IS_TINY_PHONE and 6 or 10
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(0, modalWidth + shadowOffset, 0, modalHeight + shadowOffset)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, shadowOffset/2, 0.5, shadowOffset/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.65
+	shadow.ZIndex = 201
+	shadow.Parent = overlay
+	UI.corner(shadow, IS_TINY_PHONE and 22 or 28)
+	
+	-- Gold outer shell (premium feel)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = Color3.fromRGB(255, 200, 50) -- Rich gold
+	shell.ZIndex = 202
+	shell.Parent = overlay
+	UI.corner(shell, IS_TINY_PHONE and 20 or 26)
+	
+	-- Gold stroke for extra premium
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = Color3.fromRGB(200, 150, 0)
+	shellStroke.Thickness = 2
+	shellStroke.Parent = shell
+	
+	-- White inner card
 	local inner = Instance.new("Frame")
-	inner.Size = UDim2.new(1, -6, 1, -6)
-	inner.Position = UDim2.new(0, 3, 0, 3)
+	inner.Size = UDim2.new(1, -8, 1, -8)
+	inner.Position = UDim2.new(0, 4, 0, 4)
 	inner.BackgroundColor3 = C.White
-	inner.ZIndex = 202
-	inner.Parent = container
-	UI.corner(inner, 18)
+	inner.ZIndex = 203
+	inner.Parent = shell
+	UI.corner(inner, IS_TINY_PHONE and 18 or 24)
 	
-	-- Crown icon
+	-- Crown icon frame (circular gold bg)
+	local crownFrame = Instance.new("Frame")
+	crownFrame.Size = UDim2.new(0, crownSize, 0, crownSize)
+	crownFrame.AnchorPoint = Vector2.new(0.5, 0)
+	crownFrame.Position = UDim2.new(0.5, 0, 0, padY)
+	crownFrame.BackgroundColor3 = Color3.fromRGB(255, 240, 180)
+	crownFrame.ZIndex = 204
+	crownFrame.Parent = inner
+	UI.corner(crownFrame, crownSize/2)
+	
 	local crownLabel = Instance.new("TextLabel")
-	crownLabel.Size = UDim2.new(1, 0, 0, 50)
-	crownLabel.Position = UDim2.new(0, 0, 0, 15)
+	crownLabel.Size = UDim2.fromScale(1, 1)
 	crownLabel.BackgroundTransparency = 1
 	crownLabel.Font = F.Body
-	crownLabel.TextSize = 36
+	crownLabel.TextSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 34 or 40)
 	crownLabel.Text = "👑"
-	crownLabel.ZIndex = 203
-	crownLabel.Parent = inner
+	crownLabel.ZIndex = 205
+	crownLabel.Parent = crownFrame
 	
-	-- Title
+	-- Title (properly positioned below crown)
+	local titleY = padY + crownSize + (IS_TINY_PHONE and 8 or 14)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -20, 0, 26)
-	titleLabel.Position = UDim2.new(0, 10, 0, 65)
+	titleLabel.Size = UDim2.new(1, -padX*2, 0, titleSize + 8)
+	titleLabel.Position = UDim2.new(0, padX, 0, titleY)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 18
+	titleLabel.TextSize = titleSize
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.Text = title
-	titleLabel.ZIndex = 203
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 204
 	titleLabel.Parent = inner
 	
-	-- Description
+	-- Description (properly spaced below title)
+	local descY = titleY + titleSize + (IS_TINY_PHONE and 6 or 12)
 	local descLabel = Instance.new("TextLabel")
-	descLabel.Size = UDim2.new(1, -30, 0, 50)
-	descLabel.Position = UDim2.new(0, 15, 0, 95)
+	descLabel.Size = UDim2.new(1, -padX*2, 0, IS_TINY_PHONE and 40 or 56)
+	descLabel.Position = UDim2.new(0, padX, 0, descY)
 	descLabel.BackgroundTransparency = 1
 	descLabel.Font = F.Body
-	descLabel.TextSize = 13
-	descLabel.TextColor3 = C.Gray600
+	descLabel.TextSize = descSize
+	descLabel.TextColor3 = C.Gray500
 	descLabel.TextWrapped = true
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
 	descLabel.Text = description
-	descLabel.ZIndex = 203
+	descLabel.ZIndex = 204
 	descLabel.Parent = inner
 	
-	-- Buy button
+	-- Buy button (positioned from bottom)
+	local btnGap = IS_TINY_PHONE and 8 or 12
 	local buyBtn = Instance.new("TextButton")
-	buyBtn.Size = UDim2.new(1, -30, 0, 44)
-	buyBtn.Position = UDim2.new(0, 15, 1, -100)
-	buyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	buyBtn.Size = UDim2.new(1, -padX*2, 0, btnHeight)
+	buyBtn.Position = UDim2.new(0, padX, 1, -(btnHeight*2 + btnGap + padY))
+	buyBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
 	buyBtn.Font = F.Button
-	buyBtn.TextSize = 16
+	buyBtn.TextSize = btnTextSize
 	buyBtn.TextColor3 = C.Gray900
 	buyBtn.Text = "👑 Unlock Now"
 	buyBtn.AutoButtonColor = false
-	buyBtn.ZIndex = 203
+	buyBtn.ZIndex = 204
 	buyBtn.Parent = inner
-	UI.corner(buyBtn, 12)
+	UI.corner(buyBtn, IS_TINY_PHONE and 10 or 14)
+	
+	-- Hover effect
+	buyBtn.MouseEnter:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 180, 30) })
+	end)
+	buyBtn.MouseLeave:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 200, 50) })
+	end)
 	
 	buyBtn.MouseButton1Click:Connect(function()
 		-- Prompt actual Roblox purchase
@@ -1961,32 +2046,28 @@ function ActivitiesScreen:showGamepassPrompt(gamepassKey, title, description)
 		overlay:Destroy()
 	end)
 	
-	-- Close button
+	-- Close button (below buy button)
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(1, -30, 0, 36)
-	closeBtn.Position = UDim2.new(0, 15, 1, -50)
-	closeBtn.BackgroundColor3 = C.Gray200
+	closeBtn.Size = UDim2.new(1, -padX*2, 0, btnHeight - 8)
+	closeBtn.Position = UDim2.new(0, padX, 1, -(btnHeight - 8 + padY))
+	closeBtn.BackgroundColor3 = C.Gray100
 	closeBtn.Font = F.Button
-	closeBtn.TextSize = 14
-	closeBtn.TextColor3 = C.Gray600
+	closeBtn.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	closeBtn.TextColor3 = C.Gray500
 	closeBtn.Text = "Maybe Later"
 	closeBtn.AutoButtonColor = false
-	closeBtn.ZIndex = 203
+	closeBtn.ZIndex = 204
 	closeBtn.Parent = inner
-	UI.corner(closeBtn, 10)
+	UI.corner(closeBtn, IS_TINY_PHONE and 8 or 12)
 	
-	closeBtn.MouseButton1Click:Connect(function()
-		overlay:Destroy()
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray200 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
 	end)
 	
-	-- Click outside to close
-	local closeArea = Instance.new("TextButton")
-	closeArea.Size = UDim2.fromScale(1, 1)
-	closeArea.BackgroundTransparency = 1
-	closeArea.Text = ""
-	closeArea.ZIndex = 200
-	closeArea.Parent = overlay
-	closeArea.MouseButton1Click:Connect(function()
+	closeBtn.MouseButton1Click:Connect(function()
 		overlay:Destroy()
 	end)
 end
