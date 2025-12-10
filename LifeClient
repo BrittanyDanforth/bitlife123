@@ -1607,7 +1607,7 @@ local function buildEventModal()
 	eventLayout.Parent = EventUI.card
 
 	-- TINY PHONE FIX: Much smaller header
-	local EventUI.headerHeight = Device.IS_TINY_PHONE and 44 or (Device.IS_SMALL_PHONE and 54 or px(76))
+	EventUI.headerHeight = Device.IS_TINY_PHONE and 44 or (Device.IS_SMALL_PHONE and 54 or px(76))
 	EventUI.header = Instance.new("Frame")
 	EventUI.header.Name = "Header"
 	EventUI.header.Size = UDim2.new(1, 0, 0, EventUI.headerHeight)
@@ -1619,7 +1619,7 @@ local function buildEventModal()
 	pad(EventUI.header, padSize(16), padSize(16), padSize(10), padSize(8))
 
 	-- TINY PHONE FIX: Smaller avatar
-	local EventUI.avatarSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
+	EventUI.avatarSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or px(50))
 	EventUI.avatar = Instance.new("Frame")
 	EventUI.avatar.Size = UDim2.new(0, EventUI.avatarSize, 0, EventUI.avatarSize)
 	EventUI.avatar.BackgroundColor3 = Color3.fromRGB(254, 226, 226)
@@ -1651,8 +1651,8 @@ local function buildEventModal()
 	EventUI.nameLbl.Parent = EventUI.header
 
 	-- TINY PHONE FIX: Smaller relation banner
-	local EventUI.relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
-	local EventUI.relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
+	EventUI.relationBannerWidth = Device.IS_TINY_PHONE and 65 or (Device.IS_SMALL_PHONE and 80 or px(115))
+	EventUI.relationBannerHeight = Device.IS_TINY_PHONE and 18 or px(26)
 	EventUI.EventUI.relationBanner = Instance.new("Frame")
 	EventUI.EventUI.relationBanner.Size = UDim2.new(0, EventUI.relationBannerWidth, 0, EventUI.relationBannerHeight)
 	EventUI.EventUI.relationBanner.AnchorPoint = Vector2.new(1, 0)
@@ -1700,8 +1700,8 @@ local function buildEventModal()
 	titleLayout.Parent = titleSection
 
 	-- MOBILE FIX: Responsive emoji sizing
-	local EventUI.emojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
-	local EventUI.emojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
+	EventUI.emojiSize = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or px(64))
+	EventUI.emojiTextSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 36 or textSize(52))
 	EventUI.emoji = Instance.new("TextLabel")
 	EventUI.emoji.Size = UDim2.new(0, EventUI.emojiSize, 0, EventUI.emojiSize)
 	EventUI.emoji.BackgroundTransparency = 1
@@ -1713,7 +1713,7 @@ local function buildEventModal()
 	EventUI.emoji.Parent = titleSection
 
 	-- MOBILE FIX: Responsive title text
-	local EventUI.titleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
+	EventUI.titleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
@@ -1747,7 +1747,7 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- MOBILE FIX: Responsive body text with tighter line height
-	local EventUI.bodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
+	EventUI.bodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
@@ -1765,7 +1765,7 @@ local function buildEventModal()
 	EventUI.body.Parent = bodySection
 
 	-- MOBILE FIX: Responsive question text
-	local EventUI.questionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
+	EventUI.questionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
