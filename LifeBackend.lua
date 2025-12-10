@@ -2642,9 +2642,14 @@ function LifeBackend:applyMortgagePayments(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX #24: Partner Aging
--- Partners should age along with the player
--- Without this, partners stay the same age forever
+-- CRITICAL FIX #24: Update Child Roles As They Grow
+-- Children should transition from "Son/Daughter" to "Teenage" to "Adult"
+-- 
+-- NOTE: Aging and death checks are ONLY done in advanceRelationships() now!
+-- Previously this function duplicated that work, causing:
+--   1. Family members aging 2x per year
+--   2. Family members getting 2x death rolls per year
+-- This was why parents died when the player was only 21-23 years old!
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:ageRelationships(state)
 	if not state.Relationships then
@@ -2653,12 +2658,10 @@ function LifeBackend:ageRelationships(state)
 	
 	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
-			-- Age everyone by 1 year
-			if rel.age then
-				rel.age = rel.age + 1
-			end
+			-- REMOVED: Duplicate aging - advanceRelationships() already ages everyone
+			-- REMOVED: Duplicate death checks - advanceRelationships() already handles this
 			
-			-- Children also age and grow
+			-- Children grow up and their role description changes
 			if rel.isChild and rel.age then
 				-- Update child role based on age
 				if rel.age >= 18 then
@@ -2667,24 +2670,6 @@ function LifeBackend:ageRelationships(state)
 					rel.isAdult = true
 				elseif rel.age >= 13 then
 					rel.role = rel.gender == "male" and "Teenage Son" or "Teenage Daughter"
-				end
-			end
-			
-			-- Elderly relatives might pass away
-			if rel.isFamily and rel.age and rel.age >= 75 then
-				local deathChance = (rel.age - 75) / 50 -- Increases with age
-				if RANDOM:NextNumber() < deathChance then
-					rel.alive = false
-					rel.deathAge = rel.age
-					rel.deathYear = state.Year
-					state.Flags = state.Flags or {}
-					state.Flags.family_loss = true
-					self:logYearEvent(state, "family_loss",
-						string.format("💔 %s (%s) passed away at age %d.", rel.name or "A family member", rel.role or "relative", rel.age), "😢")
-					
-					-- Impact happiness
-					state.Stats = state.Stats or {}
-					state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 10, 0, 100)
 				end
 			end
 		end
@@ -3621,6 +3606,22 @@ function LifeBackend:handleAgeUp(player)
 	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: IMMEDIATELY handle death if checkNaturalDeath marked player as dead
+	-- Without this, player dies but never sees the death screen!
+	-- The bug was: checkNaturalDeath sets Flags.dead=true but Health could still be >0
+	-- So the health check at the end of handleAgeUp would pass, continuing normal flow
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags and state.Flags.dead then
+		state.Health = 0
+		state.Stats = state.Stats or {}
+		state.Stats.Health = 0
+		local deathFeed = string.format("💀 Age %d: %s", state.Age, state.DeathReason or "You passed away.")
+		state.awaitingDecision = false
+		self:completeAgeCycle(player, state, deathFeed)
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #4: Pay pension to retired players
 	-- Retirees should receive annual pension income based on their career history
 	-- Without this, retired players had NO income and would slowly go broke!
@@ -3651,37 +3652,15 @@ function LifeBackend:handleAgeUp(player)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #9: Age children in Relationships each year
-	-- Without this, your 5-year-old son would still be 5 years old when you're 80!
+	-- CRITICAL FIX: Removed duplicate family aging and death logic!
+	-- Family members are ALREADY aged and checked for death in advanceRelationships()
+	-- Having it here too caused:
+	--   1. Family members aging 2 years per player year (double speed!)
+	--   2. Family members getting TWO death rolls per year (stacking mortality!)
+	-- This was why the user's parents died when player was only 21-23 years old!
+	-- The detailed death logic in advanceRelationships (lines 1767-1807) is preserved
+	-- which has proper graduated death chances based on age.
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if state.Relationships then
-		for relId, rel in pairs(state.Relationships) do
-			if type(rel) == "table" and rel.alive ~= false then
-				-- Age all living relationship members (except "partner" whose age is tracked separately in some cases)
-				if rel.age ~= nil and type(rel.age) == "number" then
-					rel.age = rel.age + 1
-					
-					-- ═══════════════════════════════════════════════════════════════════════
-					-- MINOR FIX: Elderly family members may pass away
-					-- ═══════════════════════════════════════════════════════════════════════
-					if rel.type == "family" and rel.role ~= "Partner" and rel.role ~= "Spouse" then
-						if rel.age >= 75 then
-							local deathChance = (rel.age - 75) / 100 -- 1% per year over 75
-							if RANDOM:NextNumber() < deathChance then
-								rel.alive = false
-								rel.deceased = true
-								rel.deathAge = rel.age
-								-- Log the death
-								self:logYearEvent(state, "family_death", 
-									string.format("Your %s, %s, passed away at age %d.", 
-										rel.role or "relative", rel.name or "family member", rel.age), "💔")
-							end
-						end
-					end
-				end
-			end
-		end
-	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Decrement jail sentence each year and auto-release when complete
@@ -3789,7 +3768,11 @@ end
 
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 	local deathInfo
-	if state.Health and state.Health <= 0 then
+	-- CRITICAL FIX: Check Flags.dead FIRST (set by checkNaturalDeath)
+	-- This ensures natural deaths from old age are properly handled
+	if state.Flags and state.Flags.dead then
+		deathInfo = { died = true, cause = state.DeathReason or state.CauseOfDeath or "Natural causes" }
+	elseif state.Health and state.Health <= 0 then
 		deathInfo = { died = true, cause = "Health Failure" }
 	else
 		deathInfo = LifeStageSystem.checkDeath(state)
@@ -6017,13 +6000,15 @@ function LifeBackend:handleLeaveMob(player)
 	
 	-- Higher ranks = harder to leave alive
 	if rankLevel >= 3 then
-		local deathChance = rankLevel * 15
+		local deathChance = rankLevel * 10 -- 30% at rank 3, 40% at rank 4, 50% at rank 5
 		if RANDOM:NextInteger(1, 100) <= deathChance then
-			-- They got killed trying to leave
-			state.MobState.inMob = false
-			state.MobState.familyId = nil
-			-- Trigger death? For now just return failure
-			return { success = false, message = "The family doesn't let high-ranking members leave alive... 💀" }
+			-- CRITICAL FIX: If they "fail" to leave, don't kick them out!
+			-- They're still in the mob - they just got caught trying to leave
+			-- Lower their respect/loyalty as punishment
+			state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 50)
+			state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 0) - 30)
+			
+			return { success = false, message = "The family caught you trying to leave. You're in deep trouble... 😰" }
 		end
 	end
 	
@@ -6131,6 +6116,31 @@ function LifeBackend:handleMobOperation(player, operationId)
 			state.InJail = true
 			state.JailYearsLeft = jailYears
 			
+			-- CRITICAL FIX: Set proper jail flags like regular crime does
+			state.Flags = state.Flags or {}
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			
+			-- CRITICAL FIX: Lose job when going to prison
+			if state.CurrentJob then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJobBeforeJail = {
+					id = state.CurrentJob.id,
+					name = state.CurrentJob.name,
+					company = state.CurrentJob.company,
+					salary = state.CurrentJob.salary,
+				}
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+			
+			-- CRITICAL FIX: Pause education during incarceration
+			if state.EducationData and state.EducationData.Status == "enrolled" then
+				state.EducationData.StatusBeforeJail = "enrolled"
+				state.EducationData.Status = "suspended"
+			end
+			
 			local msg = string.format("%s failed! Caught and sentenced to %d years!", operation.name, jailYears)
 			self:pushState(player, msg)
 			return { success = false, message = msg, arrested = true }
@@ -6167,28 +6177,100 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 		targetAge = 0
 	end
 	
+	local yearsRewound = currentAge - targetAge
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1: Reset death state - player is no longer dead!
+	-- Without this, player would still be "dead" after using Time Machine
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	state.Flags.dead = nil
+	state.DeathReason = nil
+	state.DeathAge = nil
+	state.DeathYear = nil
+	state.CauseOfDeath = nil
+	
 	-- Reset to target age
 	state.Age = targetAge
-	state.Year = state.Year - (currentAge - targetAge)
+	state.Year = state.Year - yearsRewound
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #2: Rewind family members' ages too!
+	-- If mom was 80 when you died at 55, going back to baby should make her 25 again
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				-- Rewind their age by the same amount
+				if rel.age and type(rel.age) == "number" then
+					rel.age = rel.age - yearsRewound
+					-- Make sure they're at least a reasonable age
+					if relId == "mother" or relId == "father" then
+						rel.age = math.max(rel.age, 20) -- Parents at least 20
+					elseif relId:find("grand") then
+						rel.age = math.max(rel.age, 50) -- Grandparents at least 50
+					else
+						rel.age = math.max(rel.age, 0) -- Others at least 0
+					end
+				end
+				
+				-- CRITICAL FIX #3: Resurrect family members who died after this point
+				-- If we're going back 30 years, family who died in the last 30 years should be alive
+				if rel.deceased and rel.deathAge then
+					local theirAgeNow = (rel.age or 0)
+					local theirAgeAtDeath = rel.deathAge
+					-- If their "current" rewound age is before they died, bring them back
+					if theirAgeNow < theirAgeAtDeath then
+						rel.alive = true
+						rel.deceased = nil
+						rel.deathAge = nil
+						rel.deathYear = nil
+					end
+				end
+			end
+		end
+	end
 	
 	-- Reset some stats based on age
 	if targetAge == 0 then
-		-- Baby reset
+		-- Baby reset - full reset
+		state.Stats = state.Stats or {}
 		state.Stats.Happiness = 90
 		state.Stats.Health = 100
+		state.Health = 100 -- CRITICAL: Sync both health fields!
+		state.Happiness = 90
 		state.Money = 0
 		state.Education = "none"
 		state.CurrentJob = nil
+		state.Career = nil
 		state.InJail = false
 		state.JailYearsLeft = 0
+		-- Reset education data
+		if state.EducationData then
+			state.EducationData = {
+				Status = "enrolled",
+				Level = "elementary",
+				Progress = 0,
+				Duration = 5,
+			}
+		end
 		if state.MobState then
 			state.MobState.inMob = false
+			state.MobState.family = nil
+			state.MobState.rank = nil
 		end
+		-- Clear most flags but keep some identity ones
+		local keepFlags = { gender = state.Flags.gender }
+		state.Flags = keepFlags
 	else
 		-- Partial reset - restore health somewhat
-		state.Stats.Health = math.min(100, state.Stats.Health + 20)
+		state.Stats = state.Stats or {}
+		state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 30)
+		state.Health = state.Stats.Health -- CRITICAL: Sync both health fields!
 		state.InJail = false
 		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
 	end
 	
 	local msg = string.format("⏰ Time traveled back to age %d!", targetAge)
