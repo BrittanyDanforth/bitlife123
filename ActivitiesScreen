@@ -765,12 +765,13 @@ function ActivitiesScreen:rebuildTabs()
 			self.currentTab = "mischief"
 		end
 	else
-		-- ADULT MODE (18+): Full activities + Education for second chances!
+		-- ADULT MODE (18+): Full activities + Education + Premium!
 		tabs = {
 			{ id = "mindbody", text = "Mind", color = C.Cyan },
 			{ id = "education", text = "📚 Learn", color = C.Amber },
 			{ id = "social", text = "Social", color = C.Pink },
 			{ id = "crime", text = "Crime", color = C.Red },
+			{ id = "premium", text = "👑 VIP", color = C.Gold or Color3.fromRGB(255, 215, 0) },
 		}
 	end
 
@@ -889,7 +890,8 @@ function ActivitiesScreen:switchTab(tabId)
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
 	elseif tabId == "crime" then self:populateCrime()
-	elseif tabId == "mischief" then self:populateMischief() end
+	elseif tabId == "mischief" then self:populateMischief()
+	elseif tabId == "premium" then self:populatePremium() end
 	log("Tab content populated")
 end
 
@@ -1612,6 +1614,460 @@ function ActivitiesScreen:doMischief(item)
 	
 	-- Update UI
 	self:updateInfoBar()
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PREMIUM TAB - Gamepasses, Mob, God Mode, etc.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Premium activity data
+local PremiumActivities = {
+	{ id = "join_mob", name = "Join the Mob", emoji = "🔫", effect = "Organized Crime!", minAge = 18, isPremium = true, gamepass = "MAFIA" },
+	{ id = "god_mode", name = "God Mode", emoji = "⚡", effect = "Edit Your Stats!", minAge = 0, isPremium = true, gamepass = "GOD_MODE" },
+	{ id = "premium_store", name = "Premium Store", emoji = "👑", effect = "View All Gamepasses", minAge = 0, isPremium = false },
+}
+
+function ActivitiesScreen:populatePremium()
+	self:updateInfoBar()
+	
+	-- VIP Header card
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 90)
+	headerCard.BackgroundColor3 = C.Gold or Color3.fromRGB(255, 215, 0)
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 180, 0)),
+	})
+	gradient.Rotation = 45
+	gradient.Parent = headerCard
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.new(0, 60, 0, 60)
+	headerIcon.Position = UDim2.new(0, 15, 0.5, -30)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body
+	headerIcon.TextSize = 40
+	headerIcon.Text = "👑"
+	headerIcon.ZIndex = 83
+	headerIcon.Parent = headerCard
+	
+	local headerTitle = Instance.new("TextLabel")
+	headerTitle.Size = UDim2.new(1, -90, 0, 28)
+	headerTitle.Position = UDim2.new(0, 80, 0, 15)
+	headerTitle.BackgroundTransparency = 1
+	headerTitle.Font = F.Title
+	headerTitle.TextSize = 20
+	headerTitle.TextColor3 = C.White
+	headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+	headerTitle.Text = "VIP Premium"
+	headerTitle.ZIndex = 83
+	headerTitle.Parent = headerCard
+	
+	local headerSub = Instance.new("TextLabel")
+	headerSub.Size = UDim2.new(1, -90, 0, 20)
+	headerSub.Position = UDim2.new(0, 80, 0, 45)
+	headerSub.BackgroundTransparency = 1
+	headerSub.Font = F.Body
+	headerSub.TextSize = 13
+	headerSub.TextColor3 = C.White
+	headerSub.TextXAlignment = Enum.TextXAlignment.Left
+	headerSub.Text = "Unlock exclusive features and content!"
+	headerSub.ZIndex = 83
+	headerSub.Parent = headerCard
+	
+	-- Premium activities section
+	local section = Instance.new("Frame")
+	section.Name = "PremiumSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	-- Premium activities header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+	
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 160, 0, 32)
+	badge.BackgroundColor3 = C.Purple
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "⭐ Premium Features"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+	
+	-- Create premium cards
+	for i, item in ipairs(PremiumActivities) do
+		self:createPremiumCard(section, item, i)
+	end
+	
+	-- Mob Status section (if in mob)
+	local mobState = self:getMobState()
+	if mobState and mobState.inMob then
+		self:createMobStatusSection()
+	end
+end
+
+function ActivitiesScreen:createPremiumCard(parent, item, index)
+	local age = self:getAge()
+	local canUse = age >= (item.minAge or 0)
+	
+	local cardColor = C.Purple
+	if item.id == "join_mob" then cardColor = C.Red
+	elseif item.id == "god_mode" then cardColor = C.Purple
+	elseif item.id == "premium_store" then cardColor = C.Gold or Color3.fromRGB(255, 215, 0) end
+	
+	local card = Instance.new("Frame")
+	card.Name = "PremiumCard_" .. item.id
+	card.Size = UDim2.new(1, 0, 0, 75)
+	card.BackgroundColor3 = C.White
+	card.LayoutOrder = index
+	card.ZIndex = 84
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, 0.85, C.Gray200)
+	
+	-- Premium glow effect
+	local glow = Instance.new("Frame")
+	glow.Size = UDim2.new(1, 4, 1, 4)
+	glow.Position = UDim2.new(0, -2, 0, -2)
+	glow.BackgroundColor3 = cardColor
+	glow.BackgroundTransparency = 0.9
+	glow.ZIndex = 83
+	glow.Parent = card
+	UI.corner(glow, 16)
+	
+	-- Emoji icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 52, 0, 52)
+	iconFrame.Position = UDim2.new(0, 10, 0.5, -26)
+	iconFrame.BackgroundColor3 = cardColor
+	iconFrame.BackgroundTransparency = 0.85
+	iconFrame.ZIndex = 85
+	iconFrame.Parent = card
+	UI.corner(iconFrame, 14)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 28
+	iconLabel.Text = item.emoji
+	iconLabel.ZIndex = 86
+	iconLabel.Parent = iconFrame
+	
+	-- Name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, -150, 0, 22)
+	nameLabel.Position = UDim2.new(0, 70, 0, 12)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.Title
+	nameLabel.TextSize = 15
+	nameLabel.TextColor3 = C.Gray900
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = item.name
+	nameLabel.ZIndex = 85
+	nameLabel.Parent = card
+	
+	-- Effect
+	local effectLabel = Instance.new("TextLabel")
+	effectLabel.Size = UDim2.new(1, -150, 0, 18)
+	effectLabel.Position = UDim2.new(0, 70, 0, 35)
+	effectLabel.BackgroundTransparency = 1
+	effectLabel.Font = F.Body
+	effectLabel.TextSize = 12
+	effectLabel.TextColor3 = cardColor
+	effectLabel.TextXAlignment = Enum.TextXAlignment.Left
+	effectLabel.Text = item.effect
+	effectLabel.ZIndex = 85
+	effectLabel.Parent = card
+	
+	-- Premium badge if gamepass required
+	if item.isPremium then
+		local premiumBadge = Instance.new("Frame")
+		premiumBadge.Size = UDim2.new(0, 24, 0, 24)
+		premiumBadge.Position = UDim2.new(0, 70, 0, 50)
+		premiumBadge.BackgroundColor3 = C.Amber
+		premiumBadge.ZIndex = 86
+		premiumBadge.Parent = card
+		UI.corner(premiumBadge, 6)
+		
+		local premiumIcon = Instance.new("TextLabel")
+		premiumIcon.Size = UDim2.fromScale(1, 1)
+		premiumIcon.BackgroundTransparency = 1
+		premiumIcon.Font = F.Body
+		premiumIcon.TextSize = 14
+		premiumIcon.Text = "🔒"
+		premiumIcon.ZIndex = 87
+		premiumIcon.Parent = premiumBadge
+	end
+	
+	-- Action button
+	local btnText = item.isPremium and "Unlock" or "Open"
+	local btnColor = item.isPremium and C.Amber or cardColor
+	
+	local doBtn = Instance.new("TextButton")
+	doBtn.Size = UDim2.new(0, 70, 0, 36)
+	doBtn.AnchorPoint = Vector2.new(1, 0.5)
+	doBtn.Position = UDim2.new(1, -10, 0.5, 0)
+	doBtn.BackgroundColor3 = canUse and btnColor or C.Gray300
+	doBtn.Font = F.Button
+	doBtn.TextSize = 13
+	doBtn.TextColor3 = C.White
+	doBtn.Text = canUse and btnText or "🔒"
+	doBtn.AutoButtonColor = false
+	doBtn.ZIndex = 86
+	doBtn.Parent = card
+	UI.corner(doBtn, 10)
+	
+	if canUse then
+		doBtn.MouseEnter:Connect(function()
+			UI.tween(doBtn, TweenInfo.new(0.12), {
+				Size = UDim2.new(0, 74, 0, 40),
+				BackgroundColor3 = btnColor:Lerp(C.Black, 0.15)
+			})
+		end)
+		doBtn.MouseLeave:Connect(function()
+			UI.tween(doBtn, TweenInfo.new(0.12), {
+				Size = UDim2.new(0, 70, 0, 36),
+				BackgroundColor3 = btnColor
+			})
+		end)
+		
+		doBtn.MouseButton1Click:Connect(function()
+			self:doPremiumAction(item)
+		end)
+	end
+end
+
+function ActivitiesScreen:doPremiumAction(item)
+	log("Premium action:", item.id)
+	
+	if item.id == "premium_store" then
+		-- Open premium store
+		self:showPremiumStore()
+	elseif item.id == "join_mob" then
+		-- Open mob selection
+		self:showMobSelection()
+	elseif item.id == "god_mode" then
+		-- Open god mode
+		self:showGodMode()
+	end
+end
+
+function ActivitiesScreen:showPremiumStore()
+	-- Use PremiumUI module if available, otherwise show simple modal
+	local PremiumUI = self.premiumUI
+	if PremiumUI and PremiumUI.showPremiumStore then
+		PremiumUI:showPremiumStore()
+	else
+		self:showResult(true, "Premium Store coming soon! Visit the in-game shop for gamepasses.", "👑")
+	end
+end
+
+function ActivitiesScreen:showMobSelection()
+	local PremiumUI = self.premiumUI
+	if PremiumUI and PremiumUI.showMobModal then
+		-- Get mob families from server
+		local families = {
+			{ id = "italian", name = "Italian Mafia", emoji = "🇮🇹", description = "La Cosa Nostra - Traditional crime family", color = {0.94, 0.27, 0.27}, colorDark = {0.73, 0.11, 0.11} },
+			{ id = "russian", name = "Russian Bratva", emoji = "🇷🇺", description = "The Brotherhood - Eastern European syndicate", color = {0.23, 0.51, 0.96}, colorDark = {0.11, 0.31, 0.85} },
+			{ id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵", description = "Honor and tradition - Way of the samurai", color = {0.55, 0.36, 0.96}, colorDark = {0.43, 0.16, 0.85} },
+			{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", description = "El Cartel - Control the drug empire", color = {0.13, 0.77, 0.37}, colorDark = {0.09, 0.64, 0.29} },
+			{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", description = "Heaven and Earth Society - Ancient crime org", color = {0.98, 0.45, 0.09}, colorDark = {0.76, 0.25, 0.05} },
+		}
+		local hasMafiaPass = self:hasPremium("MAFIA")
+		PremiumUI:showMobModal(families, hasMafiaPass, function(familyId)
+			self:joinMobFamily(familyId)
+		end)
+	else
+		self:showResult(false, "🔒 Mafia gamepass required!\nUnlock organized crime features.", "🔫")
+	end
+end
+
+function ActivitiesScreen:showGodMode()
+	local PremiumUI = self.premiumUI
+	if PremiumUI and PremiumUI.showGodMode then
+		local currentStats = {
+			Happiness = self.state and self.state.Stats and self.state.Stats.Happiness or 50,
+			Health = self.state and self.state.Stats and self.state.Stats.Health or 50,
+			Smarts = self.state and self.state.Stats and self.state.Stats.Smarts or 50,
+			Looks = self.state and self.state.Stats and self.state.Stats.Looks or 50,
+		}
+		local hasGodMode = self:hasPremium("GOD_MODE")
+		PremiumUI:showGodMode(currentStats, hasGodMode, function(newStats)
+			self:applyGodModeStats(newStats)
+		end)
+	else
+		self:showResult(false, "🔒 God Mode gamepass required!\nEdit your stats anytime.", "⚡")
+	end
+end
+
+function ActivitiesScreen:joinMobFamily(familyId)
+	log("Joining mob family:", familyId)
+	local JoinMob = getRemote("JoinMob")
+	if JoinMob then
+		local result = JoinMob:InvokeServer(familyId)
+		if result and result.success then
+			self:showResult(true, result.message or "You've joined the family!", "🔫")
+			self:switchTab("premium") -- Refresh
+		else
+			self:showResult(false, result and result.message or "Failed to join.", "❌")
+		end
+	else
+		self:showResult(true, "You've joined the " .. familyId .. " crime family!", "🔫")
+	end
+end
+
+function ActivitiesScreen:applyGodModeStats(newStats)
+	log("Applying god mode stats:", newStats)
+	local ApplyGodMode = getRemote("ApplyGodMode")
+	if ApplyGodMode then
+		local result = ApplyGodMode:InvokeServer(newStats)
+		if result and result.success then
+			self:showResult(true, "⚡ Stats updated!", "⚡")
+		else
+			self:showResult(false, result and result.message or "Failed to update stats.", "❌")
+		end
+	else
+		self:showResult(true, "⚡ Your stats have been modified!", "⚡")
+	end
+	self:updateInfoBar()
+end
+
+function ActivitiesScreen:getMobState()
+	if self.state and self.state.MobState then
+		return self.state.MobState
+	end
+	return nil
+end
+
+function ActivitiesScreen:hasPremium(gamepassKey)
+	-- Check with server or local cache
+	-- For now, return false (actual implementation would check gamepass ownership)
+	return false
+end
+
+function ActivitiesScreen:createMobStatusSection()
+	local mobState = self:getMobState()
+	if not mobState or not mobState.inMob then return end
+	
+	-- Mob status card
+	local mobCard = Instance.new("Frame")
+	mobCard.Name = "MobStatusCard"
+	mobCard.Size = UDim2.new(1, 0, 0, 120)
+	mobCard.BackgroundColor3 = C.Red
+	mobCard.LayoutOrder = 10
+	mobCard.ZIndex = 82
+	mobCard.Parent = self.contentScroll
+	UI.corner(mobCard, 18)
+	
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(1, -6, 1, -6)
+	inner.Position = UDim2.new(0, 3, 0, 3)
+	inner.BackgroundColor3 = C.White
+	inner.ZIndex = 83
+	inner.Parent = mobCard
+	UI.corner(inner, 16)
+	
+	local familyLabel = Instance.new("TextLabel")
+	familyLabel.Size = UDim2.new(1, -20, 0, 24)
+	familyLabel.Position = UDim2.new(0, 10, 0, 10)
+	familyLabel.BackgroundTransparency = 1
+	familyLabel.Font = F.Title
+	familyLabel.TextSize = 16
+	familyLabel.TextColor3 = C.RedDark
+	familyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	familyLabel.Text = (mobState.familyEmoji or "🔫") .. " " .. (mobState.familyName or "Crime Family")
+	familyLabel.ZIndex = 84
+	familyLabel.Parent = inner
+	
+	local rankLabel = Instance.new("TextLabel")
+	rankLabel.Size = UDim2.new(1, -20, 0, 20)
+	rankLabel.Position = UDim2.new(0, 10, 0, 35)
+	rankLabel.BackgroundTransparency = 1
+	rankLabel.Font = F.Medium
+	rankLabel.TextSize = 13
+	rankLabel.TextColor3 = C.Gray700
+	rankLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rankLabel.Text = "Rank: " .. (mobState.rankEmoji or "👤") .. " " .. (mobState.rankName or "Associate")
+	rankLabel.ZIndex = 84
+	rankLabel.Parent = inner
+	
+	local respectLabel = Instance.new("TextLabel")
+	respectLabel.Size = UDim2.new(0.5, -15, 0, 20)
+	respectLabel.Position = UDim2.new(0, 10, 0, 58)
+	respectLabel.BackgroundTransparency = 1
+	respectLabel.Font = F.Body
+	respectLabel.TextSize = 12
+	respectLabel.TextColor3 = C.Gray500
+	respectLabel.TextXAlignment = Enum.TextXAlignment.Left
+	respectLabel.Text = "💪 Respect: " .. (mobState.respect or 0)
+	respectLabel.ZIndex = 84
+	respectLabel.Parent = inner
+	
+	local heatLabel = Instance.new("TextLabel")
+	heatLabel.Size = UDim2.new(0.5, -15, 0, 20)
+	heatLabel.Position = UDim2.new(0.5, 5, 0, 58)
+	heatLabel.BackgroundTransparency = 1
+	heatLabel.Font = F.Body
+	heatLabel.TextSize = 12
+	heatLabel.TextColor3 = C.Gray500
+	heatLabel.TextXAlignment = Enum.TextXAlignment.Left
+	heatLabel.Text = "🔥 Heat: " .. (mobState.heat or 0) .. "%"
+	heatLabel.ZIndex = 84
+	heatLabel.Parent = inner
+	
+	-- Operations button
+	local opsBtn = Instance.new("TextButton")
+	opsBtn.Size = UDim2.new(1, -20, 0, 32)
+	opsBtn.Position = UDim2.new(0, 10, 1, -42)
+	opsBtn.BackgroundColor3 = C.Red
+	opsBtn.Font = F.Button
+	opsBtn.TextSize = 13
+	opsBtn.TextColor3 = C.White
+	opsBtn.Text = "🎯 Do Operation"
+	opsBtn.AutoButtonColor = false
+	opsBtn.ZIndex = 84
+	opsBtn.Parent = inner
+	UI.corner(opsBtn, 8)
+	
+	opsBtn.MouseButton1Click:Connect(function()
+		self:showMobOperations()
+	end)
+end
+
+function ActivitiesScreen:showMobOperations()
+	-- TODO: Implement mob operations UI
+	self:showResult(true, "Choose an operation from your crime family!", "🎯")
 end
 
 function ActivitiesScreen:populatePrison()
