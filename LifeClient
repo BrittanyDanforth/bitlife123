@@ -3456,240 +3456,177 @@ do
 		end)
 	end
 
-	-- Ethnicity section with emojis
-	local ethSec = makeSection("🌍 Ethnicity / Heritage", 3)
-	local ethFrame = Instance.new("Frame")
-	ethFrame.Size = UDim2.new(1, 0, 0, 0)
-	ethFrame.AutomaticSize = Enum.AutomaticSize.Y
-	ethFrame.BackgroundTransparency = 1
-	ethFrame.LayoutOrder = 2
-	ethFrame.ZIndex = 73
-	ethFrame.Parent = ethSec
-	local ethGrid = Instance.new("UIGridLayout")
-	ethGrid.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
-	ethGrid.CellPadding = UDim2.new(0, 4, 0, 4)
-	ethGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	ethGrid.Parent = ethFrame
-	
-	-- Ethnicity options with emojis representing diverse backgrounds
-	local ethOpts = {
-		{ id = "Random", label = "🎲 Random", emoji = "🎲" },
-		{ id = "Caucasian", label = "🧑‍🦱 Caucasian", emoji = "🧑‍🦱" },
-		{ id = "African", label = "👨🏿 African", emoji = "👨🏿" },
-		{ id = "Asian", label = "🧑🏻 Asian", emoji = "🧑🏻" },
-		{ id = "Hispanic", label = "🧑🏽 Hispanic", emoji = "🧑🏽" },
-		{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern", emoji = "🧔🏽" },
-		{ id = "Indian", label = "🧑🏾 South Asian", emoji = "🧑🏾" },
-		{ id = "Pacific Islander", label = "🏝️ Pacific Islander", emoji = "🏝️" },
-		{ id = "Indigenous", label = "🪶 Indigenous", emoji = "🪶" },
-		{ id = "Mixed", label = "🌈 Mixed", emoji = "🌈" },
-	}
-	
-	IntroUI.ethnicityBtns = {}
-	for _, eth in ipairs(ethOpts) do
-		local btn = Instance.new("TextButton")
-		btn.Name = eth.id
-		btn.Size = UDim2.new(0, 100, 0, 34)
-		btn.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
-		btn.Text = eth.label
-		btn.TextColor3 = eth.id == "Random" and C.White or C.Gray600
-		btn.TextSize = Device.IS_TINY_PHONE and 10 or 11
-		btn.Font = F.Medium
-		btn.TextTruncate = Enum.TextTruncate.AtEnd
-		btn.ZIndex = 74
-		btn.Parent = ethFrame
-		corner(btn, 6)
-		IntroUI.ethnicityBtns[eth.id] = btn
-		btn.MouseButton1Click:Connect(function()
-			GodModeCreateData.ethnicity = eth.id
-			for id, b in pairs(IntroUI.ethnicityBtns) do
-				b.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
-				b.TextColor3 = id == eth.id and C.White or C.Gray600
-			end
-		end)
+	-- Ethnicity section with emojis (wrapped in own scope)
+	do
+		local ethSec = makeSection("🌍 Ethnicity / Heritage", 3)
+		local ef = Instance.new("Frame")
+		ef.Size = UDim2.new(1, 0, 0, 0)
+		ef.AutomaticSize = Enum.AutomaticSize.Y
+		ef.BackgroundTransparency = 1
+		ef.LayoutOrder = 2
+		ef.ZIndex = 73
+		ef.Parent = ethSec
+		local eg = Instance.new("UIGridLayout")
+		eg.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
+		eg.CellPadding = UDim2.new(0, 4, 0, 4)
+		eg.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		eg.Parent = ef
+		
+		local ethOpts = {
+			{ id = "Random", label = "🎲 Random" }, { id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+			{ id = "African", label = "👨🏿 African" }, { id = "Asian", label = "🧑🏻 Asian" },
+			{ id = "Hispanic", label = "🧑🏽 Hispanic" }, { id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+			{ id = "Indian", label = "🧑🏾 South Asian" }, { id = "Pacific Islander", label = "🏝️ Pacific Islander" },
+			{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
+		}
+		
+		IntroUI.ethnicityBtns = {}
+		for _, eth in ipairs(ethOpts) do
+			local b = Instance.new("TextButton")
+			b.Name = eth.id
+			b.Size = UDim2.new(0, 100, 0, 34)
+			b.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
+			b.Text = eth.label
+			b.TextColor3 = eth.id == "Random" and C.White or C.Gray600
+			b.TextSize = Device.IS_TINY_PHONE and 10 or 11
+			b.Font = F.Medium
+			b.TextTruncate = Enum.TextTruncate.AtEnd
+			b.ZIndex = 74
+			b.Parent = ef
+			corner(b, 6)
+			IntroUI.ethnicityBtns[eth.id] = b
+			b.MouseButton1Click:Connect(function()
+				GodModeCreateData.ethnicity = eth.id
+				for id, bt in pairs(IntroUI.ethnicityBtns) do
+					bt.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
+					bt.TextColor3 = id == eth.id and C.White or C.Gray600
+				end
+			end)
+		end
 	end
 
-	-- Wealth section
-	IntroUI.wealthBtns = {}
-	local wealthOpts = {
-		{ id = "Poor", label = "🏚️ Poor Family", desc = "Start with $0-500" },
-		{ id = "Lower Middle", label = "🏠 Lower Middle Class", desc = "Start with $1K-5K" },
-		{ id = "Middle Class", label = "🏡 Middle Class", desc = "Start with $5K-20K" },
-		{ id = "Upper Middle", label = "🏢 Upper Middle Class", desc = "Start with $50K-100K" },
-		{ id = "Rich", label = "🏰 Wealthy Family", desc = "Start with $500K-2M" },
-		{ id = "Famous", label = "👑 Famous/Royal", desc = "Start with $5M+" },
-	}
-	for i, w in ipairs(wealthOpts) do
-		local btn = Instance.new("TextButton")
-		btn.Name = w.id
-		btn.Size = UDim2.new(1, 0, 0, 44)
-		btn.BackgroundColor3 = w.id == "Middle Class" and C.Green or C.Gray100
-		btn.Text = ""
-		btn.LayoutOrder = i + 1
-		btn.ZIndex = 74
-		btn.Parent = wealthSec
-		corner(btn, 8)
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.new(1, -16, 0, 24)
-		lbl.Position = UDim2.new(0, 8, 0, 4)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = w.label
-		lbl.TextColor3 = w.id == "Middle Class" and C.White or C.Gray800
-		lbl.TextSize = 14
-		lbl.Font = F.Medium
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-		lbl.ZIndex = 75
-		lbl.Parent = btn
-		local desc = Instance.new("TextLabel")
-		desc.Size = UDim2.new(1, -16, 0, 16)
-		desc.Position = UDim2.new(0, 8, 0, 26)
-		desc.BackgroundTransparency = 1
-		desc.Text = w.desc
-		desc.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or C.Gray500
-		desc.TextSize = 11
-		desc.Font = F.Body
-		desc.TextXAlignment = Enum.TextXAlignment.Left
-		desc.ZIndex = 75
-		desc.Parent = btn
-		IntroUI.wealthBtns[w.id] = { btn = btn, label = lbl, desc = desc }
-		btn.MouseButton1Click:Connect(function()
-			GodModeCreateData.familyWealth = w.id
-			for id, d in pairs(IntroUI.wealthBtns) do
-				d.btn.BackgroundColor3 = id == w.id and C.Green or C.Gray100
-				d.label.TextColor3 = id == w.id and C.White or C.Gray800
-				d.desc.TextColor3 = id == w.id and Color3.fromRGB(220, 252, 231) or C.Gray500
-			end
-		end)
+	-- Wealth section (wrapped in own scope)
+	do
+		local ws = makeSection("💰 Family Wealth", 4)
+		IntroUI.wealthBtns = {}
+		local wOpts = {
+			{ id = "Poor", label = "🏚️ Poor Family", desc = "$0-500" },
+			{ id = "Lower Middle", label = "🏠 Lower Middle Class", desc = "$1K-5K" },
+			{ id = "Middle Class", label = "🏡 Middle Class", desc = "$5K-20K" },
+			{ id = "Upper Middle", label = "🏢 Upper Middle Class", desc = "$50K-100K" },
+			{ id = "Rich", label = "🏰 Wealthy Family", desc = "$500K-2M" },
+			{ id = "Famous", label = "👑 Famous/Royal", desc = "$5M+" },
+		}
+		for i, w in ipairs(wOpts) do
+			local b = Instance.new("TextButton")
+			b.Name = w.id; b.Size = UDim2.new(1, 0, 0, 44)
+			b.BackgroundColor3 = w.id == "Middle Class" and C.Green or C.Gray100
+			b.Text = ""; b.LayoutOrder = i + 1; b.ZIndex = 74; b.Parent = ws
+			corner(b, 8)
+			local l = Instance.new("TextLabel")
+			l.Size = UDim2.new(1, -16, 0, 24); l.Position = UDim2.new(0, 8, 0, 4)
+			l.BackgroundTransparency = 1; l.Text = w.label
+			l.TextColor3 = w.id == "Middle Class" and C.White or C.Gray800
+			l.TextSize = 14; l.Font = F.Medium; l.TextXAlignment = Enum.TextXAlignment.Left
+			l.ZIndex = 75; l.Parent = b
+			local d = Instance.new("TextLabel")
+			d.Size = UDim2.new(1, -16, 0, 16); d.Position = UDim2.new(0, 8, 0, 26)
+			d.BackgroundTransparency = 1; d.Text = w.desc
+			d.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or C.Gray500
+			d.TextSize = 11; d.Font = F.Body; d.TextXAlignment = Enum.TextXAlignment.Left
+			d.ZIndex = 75; d.Parent = b
+			IntroUI.wealthBtns[w.id] = { btn = b, label = l, desc = d }
+			b.MouseButton1Click:Connect(function()
+				GodModeCreateData.familyWealth = w.id
+				for id, dt in pairs(IntroUI.wealthBtns) do
+					dt.btn.BackgroundColor3 = id == w.id and C.Green or C.Gray100
+					dt.label.TextColor3 = id == w.id and C.White or C.Gray800
+					dt.desc.TextColor3 = id == w.id and Color3.fromRGB(220, 252, 231) or C.Gray500
+				end
+			end)
+		end
 	end
 
-	-- Stats section
-	local statsSec = makeSection("📊 Starting Stats", 5)
-	IntroUI.statSliders = {}
-	for i, s in ipairs({{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}) do
-		local row = Instance.new("Frame")
-		row.Size = UDim2.new(1, 0, 0, 36)
-		row.BackgroundTransparency = 1
-		row.LayoutOrder = i + 1
-		row.ZIndex = 73
-		row.Parent = statsSec
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.new(0, 80, 1, 0)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = s.icon .. " " .. s.key
-		lbl.TextColor3 = C.Gray700
-		lbl.TextSize = 13
-		lbl.Font = F.Medium
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-		lbl.ZIndex = 74
-		lbl.Parent = row
-		local bg = Instance.new("Frame")
-		bg.Size = UDim2.new(1, -130, 0, 12)
-		bg.Position = UDim2.new(0, 85, 0.5, 0)
-		bg.AnchorPoint = Vector2.new(0, 0.5)
-		bg.BackgroundColor3 = C.Gray200
-		bg.ZIndex = 74
-		bg.Parent = row
-		corner(bg, 6)
-		local fill = Instance.new("Frame")
-		fill.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
-		fill.BackgroundColor3 = s.color
-		fill.ZIndex = 75
-		fill.Parent = bg
-		corner(fill, 6)
-		local val = Instance.new("TextLabel")
-		val.Size = UDim2.new(0, 40, 1, 0)
-		val.Position = UDim2.new(1, -40, 0, 0)
-		val.BackgroundTransparency = 1
-		val.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
-		val.TextColor3 = C.Gray700
-		val.TextSize = 13
-		val.Font = F.Medium
-		val.TextXAlignment = Enum.TextXAlignment.Right
-		val.ZIndex = 74
-		val.Parent = row
-		IntroUI.statSliders[s.key] = { fill = fill, value = val, bg = bg }
-		bg.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				local relX = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
-				local newVal = math.floor(relX * 100)
-				GodModeCreateData.stats[s.key] = newVal
-				fill.Size = UDim2.new(relX, 0, 1, 0)
-				val.Text = tostring(newVal) .. "%"
-			end
-		end)
+	-- Stats section (wrapped in own scope)
+	do
+		local ss = makeSection("📊 Starting Stats", 5)
+		IntroUI.statSliders = {}
+		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
+		for i, s in ipairs(statData) do
+			local r = Instance.new("Frame")
+			r.Size = UDim2.new(1, 0, 0, 36); r.BackgroundTransparency = 1; r.LayoutOrder = i + 1; r.ZIndex = 73; r.Parent = ss
+			local lb = Instance.new("TextLabel")
+			lb.Size = UDim2.new(0, 80, 1, 0); lb.BackgroundTransparency = 1
+			lb.Text = s.icon .. " " .. s.key; lb.TextColor3 = C.Gray700; lb.TextSize = 13
+			lb.Font = F.Medium; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.ZIndex = 74; lb.Parent = r
+			local bg = Instance.new("Frame")
+			bg.Size = UDim2.new(1, -130, 0, 12); bg.Position = UDim2.new(0, 85, 0.5, 0)
+			bg.AnchorPoint = Vector2.new(0, 0.5); bg.BackgroundColor3 = C.Gray200; bg.ZIndex = 74; bg.Parent = r
+			corner(bg, 6)
+			local fl = Instance.new("Frame")
+			fl.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
+			fl.BackgroundColor3 = s.color; fl.ZIndex = 75; fl.Parent = bg
+			corner(fl, 6)
+			local vl = Instance.new("TextLabel")
+			vl.Size = UDim2.new(0, 40, 1, 0); vl.Position = UDim2.new(1, -40, 0, 0)
+			vl.BackgroundTransparency = 1; vl.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
+			vl.TextColor3 = C.Gray700; vl.TextSize = 13; vl.Font = F.Medium
+			vl.TextXAlignment = Enum.TextXAlignment.Right; vl.ZIndex = 74; vl.Parent = r
+			IntroUI.statSliders[s.key] = { fill = fl, value = vl, bg = bg }
+			bg.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					local relX = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
+					local newVal = math.floor(relX * 100)
+					GodModeCreateData.stats[s.key] = newVal
+					fl.Size = UDim2.new(relX, 0, 1, 0)
+					vl.Text = tostring(newVal) .. "%"
+				end
+			end)
+		end
 	end
 
-	-- Country section with flag emojis
-	local countrySec = makeSection("🌎 Country of Birth", 6)
-	local countryOpts = {
-		{id = "United States", flag = "🇺🇸"},
-		{id = "United Kingdom", flag = "🇬🇧"},
-		{id = "Canada", flag = "🇨🇦"},
-		{id = "Australia", flag = "🇦🇺"},
-		{id = "Germany", flag = "🇩🇪"},
-		{id = "France", flag = "🇫🇷"},
-		{id = "Japan", flag = "🇯🇵"},
-		{id = "Brazil", flag = "🇧🇷"},
-		{id = "Mexico", flag = "🇲🇽"},
-		{id = "India", flag = "🇮🇳"},
-		{id = "China", flag = "🇨🇳"},
-		{id = "Italy", flag = "🇮🇹"},
-		{id = "Spain", flag = "🇪🇸"},
-		{id = "Russia", flag = "🇷🇺"},
-		{id = "South Korea", flag = "🇰🇷"},
-		{id = "Nigeria", flag = "🇳🇬"},
-		{id = "South Africa", flag = "🇿🇦"},
-		{id = "Argentina", flag = "🇦🇷"},
-		{id = "Philippines", flag = "🇵🇭"},
-		{id = "Indonesia", flag = "🇮🇩"},
-	}
-	local countryDropdown = Instance.new("TextButton")
-	countryDropdown.Size = UDim2.new(1, 0, 0, 40)
-	countryDropdown.BackgroundColor3 = C.Gray100
-	countryDropdown.Text = "🇺🇸 " .. GodModeCreateData.country
-	countryDropdown.TextColor3 = C.Gray800
-	countryDropdown.TextSize = 14
-	countryDropdown.Font = F.Medium
-	countryDropdown.LayoutOrder = 2
-	countryDropdown.ZIndex = 74
-	countryDropdown.Parent = countrySec
-	corner(countryDropdown, 8)
-	IntroUI.countryDropdown = countryDropdown
-	local countryExpanded = false
-	local countryList = Instance.new("Frame")
-	countryList.Size = UDim2.new(1, 0, 0, 0)
-	countryList.BackgroundColor3 = C.White
-	countryList.Visible = false
-	countryList.LayoutOrder = 3
-	countryList.ZIndex = 80
-	countryList.Parent = countrySec
-	corner(countryList, 8)
-	stroke(countryList, 1, 0.5, C.Gray300)
-	local cListLayout = Instance.new("UIListLayout")
-	cListLayout.Parent = countryList
-	for _, c in ipairs(countryOpts) do
-		local cBtn = Instance.new("TextButton")
-		cBtn.Size = UDim2.new(1, 0, 0, 32)
-		cBtn.BackgroundColor3 = C.White
-		cBtn.Text = c.flag .. " " .. c.id
-		cBtn.TextColor3 = C.Gray700
-		cBtn.TextSize = 13
-		cBtn.Font = F.Body
-		cBtn.ZIndex = 81
-		cBtn.Parent = countryList
-		cBtn.MouseButton1Click:Connect(function()
-			GodModeCreateData.country = c.id
-			countryDropdown.Text = c.flag .. " " .. c.id
-			countryList.Visible = false
-			countryList.Size = UDim2.new(1, 0, 0, 0)
-			countryExpanded = false
+	-- Country section with flag emojis (wrapped in own scope)
+	do
+		local cs = makeSection("🌎 Country of Birth", 6)
+		local cOpts = {
+			{id = "United States", flag = "🇺🇸"}, {id = "United Kingdom", flag = "🇬🇧"},
+			{id = "Canada", flag = "🇨🇦"}, {id = "Australia", flag = "🇦🇺"},
+			{id = "Germany", flag = "🇩🇪"}, {id = "France", flag = "🇫🇷"},
+			{id = "Japan", flag = "🇯🇵"}, {id = "Brazil", flag = "🇧🇷"},
+			{id = "Mexico", flag = "🇲🇽"}, {id = "India", flag = "🇮🇳"},
+			{id = "China", flag = "🇨🇳"}, {id = "Italy", flag = "🇮🇹"},
+			{id = "Spain", flag = "🇪🇸"}, {id = "Russia", flag = "🇷🇺"},
+			{id = "South Korea", flag = "🇰🇷"}, {id = "Nigeria", flag = "🇳🇬"},
+			{id = "South Africa", flag = "🇿🇦"}, {id = "Argentina", flag = "🇦🇷"},
+			{id = "Philippines", flag = "🇵🇭"}, {id = "Indonesia", flag = "🇮🇩"},
+		}
+		local dd = Instance.new("TextButton")
+		dd.Size = UDim2.new(1, 0, 0, 40); dd.BackgroundColor3 = C.Gray100
+		dd.Text = "🇺🇸 " .. GodModeCreateData.country; dd.TextColor3 = C.Gray800
+		dd.TextSize = 14; dd.Font = F.Medium; dd.LayoutOrder = 2; dd.ZIndex = 74; dd.Parent = cs
+		corner(dd, 8)
+		IntroUI.countryDropdown = dd
+		local exp = false
+		local cl = Instance.new("Frame")
+		cl.Size = UDim2.new(1, 0, 0, 0); cl.BackgroundColor3 = C.White; cl.Visible = false
+		cl.LayoutOrder = 3; cl.ZIndex = 80; cl.Parent = cs
+		corner(cl, 8); stroke(cl, 1, 0.5, C.Gray300)
+		local cll = Instance.new("UIListLayout"); cll.Parent = cl
+		for _, c in ipairs(cOpts) do
+			local cb = Instance.new("TextButton")
+			cb.Size = UDim2.new(1, 0, 0, 32); cb.BackgroundColor3 = C.White
+			cb.Text = c.flag .. " " .. c.id; cb.TextColor3 = C.Gray700
+			cb.TextSize = 13; cb.Font = F.Body; cb.ZIndex = 81; cb.Parent = cl
+			cb.MouseButton1Click:Connect(function()
+				GodModeCreateData.country = c.id; dd.Text = c.flag .. " " .. c.id
+				cl.Visible = false; cl.Size = UDim2.new(1, 0, 0, 0); exp = false
+			end)
+		end
+		dd.MouseButton1Click:Connect(function()
+			exp = not exp; cl.Visible = exp
+			cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 200)) or UDim2.new(1, 0, 0, 0)
 		end)
 	end
-	countryDropdown.MouseButton1Click:Connect(function()
-		countryExpanded = not countryExpanded
-		countryList.Visible = countryExpanded
-		countryList.Size = countryExpanded and UDim2.new(1, 0, 0, math.min(#countryOpts * 32, 200)) or UDim2.new(1, 0, 0, 0)
-	end)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- FIXED BOTTOM BUTTON AREA (Always visible, outside scroll)
@@ -3746,43 +3683,43 @@ do
 	stroke(IntroUI.godModeStartBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 	
 	IntroUI.godModeStartBtn.MouseButton1Click:Connect(function()
-		local customName = GodModeCreateData.customName:gsub("^%s+", ""):gsub("%s+$", "")
-		if customName == "" then
-			local names = GodModeCreateData.gender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
-			customName = #names > 0 and names[1] or (GodModeCreateData.gender == "Male" and "John Doe" or "Jane Doe")
+		local cName = GodModeCreateData.customName:gsub("^%s+", ""):gsub("%s+$", "")
+		if cName == "" then
+			local n = GodModeCreateData.gender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
+			cName = #n > 0 and n[1] or (GodModeCreateData.gender == "Male" and "John Doe" or "Jane Doe")
 		end
-		SetLifeInfo:FireServer(customName, GodModeCreateData.gender)
-		local payload = {
-			name = customName, gender = GodModeCreateData.gender, stats = GodModeCreateData.stats,
+		SetLifeInfo:FireServer(cName, GodModeCreateData.gender)
+		local p = { name = cName, gender = GodModeCreateData.gender, stats = GodModeCreateData.stats,
 			godModeCreate = true, familyWealth = GodModeCreateData.familyWealth,
-			ethnicity = GodModeCreateData.ethnicity, country = GodModeCreateData.country,
-		}
-		if GodModeEdit then pcall(function() GodModeEdit:InvokeServer(payload) end) end
+			ethnicity = GodModeCreateData.ethnicity, country = GodModeCreateData.country }
+		if GodModeEdit then pcall(function() GodModeEdit:InvokeServer(p) end) end
 		currentState.Gender = GodModeCreateData.gender
-		currentState.Name = customName
+		currentState.Name = cName
 		introComplete = true
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
 
-	-- BACK BUTTON - Smaller, below start
-	local backBtn = Instance.new("TextButton")
-	backBtn.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 32 or 36)
-	backBtn.BackgroundColor3 = C.Gray200
-	backBtn.Text = "← Back to Names"
-	backBtn.TextColor3 = C.Gray600
-	backBtn.TextSize = Device.IS_TINY_PHONE and 12 or 14
-	backBtn.Font = F.Medium
-	backBtn.ZIndex = 76
-	backBtn.LayoutOrder = 2
-	backBtn.Parent = bottomArea
-	corner(backBtn, 8)
-	
-	backBtn.MouseButton1Click:Connect(function()
-		IntroUI.godModeContainer.Visible = false
-		IntroUI.nameBtns.Visible = true
-		IntroUI.genderTitle.Text = "Pick someone to become"
-	end)
+	-- BACK BUTTON - Separate scope to reduce local registers
+	do
+		local bk = Instance.new("TextButton")
+		bk.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 32 or 36)
+		bk.BackgroundColor3 = C.Gray200
+		bk.Text = "← Back to Names"
+		bk.TextColor3 = C.Gray600
+		bk.TextSize = Device.IS_TINY_PHONE and 12 or 14
+		bk.Font = F.Medium
+		bk.ZIndex = 76
+		bk.LayoutOrder = 2
+		bk.Parent = bottomArea
+		corner(bk, 8)
+		
+		bk.MouseButton1Click:Connect(function()
+			IntroUI.godModeContainer.Visible = false
+			IntroUI.nameBtns.Visible = true
+			IntroUI.genderTitle.Text = "Pick someone to become"
+		end)
+	end
 end -- End of God Mode UI do-block
 
 -- Function to show God Mode customization
@@ -4053,10 +3990,37 @@ showIntro = function()
 	-- Generate fresh random names each time intro is shown
 	generateRandomNames()
 
-	-- Reset intro UI state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Reset ALL intro UI states for clean new life experience
+	-- This ensures God Mode customization UI is hidden when starting fresh
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	IntroUI.overlay.Visible = true
 	IntroUI.overlay.BackgroundTransparency = 0.5
 	IntroUI.content.Position = UDim2.fromScale(0.5, 0.5)
+	
+	-- CRITICAL FIX: Reset God Mode container and all customization state
+	if IntroUI.godModeContainer then
+		IntroUI.godModeContainer.Visible = false
+	end
+	
+	-- Reset God Mode data for new life
+	if GodModeCreateData then
+		GodModeCreateData.customName = ""
+		GodModeCreateData.gender = "Male"
+		GodModeCreateData.ethnicity = "Random"
+		GodModeCreateData.familyWealth = "Middle Class"
+		GodModeCreateData.country = "United States"
+		-- CRITICAL FIX: Reset stats to defaults
+		GodModeCreateData.stats = { Happiness = 50, Health = 100, Smarts = 50, Looks = 50 }
+	end
+	
+	-- CRITICAL FIX: Reset God Mode UI elements to default states
+	if IntroUI.customNameInput then
+		IntroUI.customNameInput.Text = ""
+	end
+	if IntroUI.countryDropdown then
+		IntroUI.countryDropdown.Text = "🇺🇸 United States"
+	end
 
 	showBlur()
 	IntroUI.genderTitle.Text = "Start by picking a gender"
