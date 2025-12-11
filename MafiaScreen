@@ -1455,10 +1455,12 @@ function MafiaScreen:attemptJoinFamily(familyId)
 			-- CRITICAL FIX: Update local state immediately with the returned mobState
 			if result.mobState and self.playerState then
 				self.playerState.MobState = result.mobState
+				log("✅ MobState updated: inMob =", result.mobState.inMob)
 			end
 			
 			self:showResult(true, "Welcome to the Family!", result.message or "You've joined.", "🤝")
 			task.delay(1.5, function()
+				self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
 				self:refreshContent()
 			end)
 		elseif result.needsGamepass then
@@ -1493,6 +1495,7 @@ function MafiaScreen:attemptLeaveFamily()
 			
 			self:showResult(true, "You're Out", result.message or "You left the family.", "🚪")
 			task.delay(1.5, function()
+				self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
 				self:refreshContent()
 			end)
 		elseif result.death then
@@ -1533,6 +1536,7 @@ function MafiaScreen:doOperation(operationId, modifiers)
 		end
 		
 		task.delay(1.5, function()
+			self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
 			self:refreshContent()
 		end)
 	elseif success and result and result.needsGamepass then

@@ -3327,23 +3327,22 @@ local GodModeCreateData = {
 
 -- Build God Mode UI in separate scope to reduce local registers
 do
-	-- Container fills available space, with fixed button area at bottom
-	local btnAreaHeight = Device.IS_TINY_PHONE and 100 or 120
-	
+	-- Container now just holds the scroll - no fixed bottom area
 	IntroUI.godModeContainer = Instance.new("Frame")
 	IntroUI.godModeContainer.Name = "GodModeCustomize"
-	IntroUI.godModeContainer.Size = UDim2.new(1, 0, 1, 0) -- Fill parent
+	IntroUI.godModeContainer.Size = UDim2.new(1, 0, 0, 0)
+	IntroUI.godModeContainer.AutomaticSize = Enum.AutomaticSize.Y
 	IntroUI.godModeContainer.BackgroundTransparency = 1
 	IntroUI.godModeContainer.Visible = false
 	IntroUI.godModeContainer.LayoutOrder = 4
 	IntroUI.godModeContainer.ZIndex = 71
 	IntroUI.godModeContainer.Parent = IntroUI.content
 
-	-- Scroll area - leaves room at bottom for fixed button
+	-- Scroll area - full width, auto height
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Size = UDim2.new(1, 0, 1, -btnAreaHeight)
-	scroll.Position = UDim2.new(0, 0, 0, 0)
+	scroll.Size = UDim2.new(1, 0, 0, 400) -- Fixed height for scrolling
 	scroll.BackgroundTransparency = 1
+	scroll.BackgroundColor3 = C.Bg
 	scroll.ScrollBarThickness = 6
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(253, 230, 138)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -3356,14 +3355,41 @@ do
 	local layout = Instance.new("UIListLayout")
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = scroll
 
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 8)
 	padding.PaddingRight = UDim.new(0, 8)
 	padding.PaddingTop = UDim.new(0, 8)
-	padding.PaddingBottom = UDim.new(0, 10)
+	padding.PaddingBottom = UDim.new(0, 20)
 	padding.Parent = scroll
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BACK BUTTON AT TOP (LayoutOrder = 0)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local backBtn = Instance.new("TextButton")
+	backBtn.Name = "BackBtn"
+	backBtn.Size = UDim2.new(0.5, 0, 0, 32)
+	backBtn.BackgroundColor3 = C.Gray200
+	backBtn.Text = "← Back to Gender"
+	backBtn.TextColor3 = C.Gray600
+	backBtn.TextSize = 13
+	backBtn.Font = F.Medium
+	backBtn.ZIndex = 73
+	backBtn.LayoutOrder = 0
+	backBtn.Parent = scroll
+	corner(backBtn, 8)
+	IntroUI.godModeBackBtn = backBtn
+	
+	backBtn.MouseButton1Click:Connect(function()
+		IntroUI.godModeContainer.Visible = false
+		IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+		IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
+		IntroUI.genderBtns.Visible = true
+		IntroUI.nameBtns.Visible = false
+		IntroUI.genderTitle.Text = "Start by picking a gender"
+	end)
 	
 	-- Helper to create section
 	local function makeSection(title, order)
@@ -3668,56 +3694,19 @@ do
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- FIXED BOTTOM BUTTON AREA (Always visible, outside scroll)
+	-- START BUTTON AT BOTTOM OF SCROLL (LayoutOrder = 100)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local bottomArea = Instance.new("Frame")
-	bottomArea.Name = "BottomButtons"
-	bottomArea.Size = UDim2.new(1, 0, 0, btnAreaHeight)
-	bottomArea.Position = UDim2.new(0, 0, 1, -btnAreaHeight)
-	bottomArea.BackgroundColor3 = C.Bg
-	bottomArea.BorderSizePixel = 0
-	bottomArea.ZIndex = 75
-	bottomArea.Parent = IntroUI.godModeContainer
-	
-	-- Gradient fade at top of button area
-	local fadeGrad = Instance.new("UIGradient")
-	fadeGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(0.15, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
-	})
-	fadeGrad.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.3),
-		NumberSequenceKeypoint.new(0.15, 0),
-		NumberSequenceKeypoint.new(1, 0),
-	})
-	fadeGrad.Rotation = 90
-	fadeGrad.Parent = bottomArea
-	
-	local bottomLayout = Instance.new("UIListLayout")
-	bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	bottomLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	bottomLayout.Padding = UDim.new(0, 8)
-	bottomLayout.Parent = bottomArea
-	
-	local bottomPad = Instance.new("UIPadding")
-	bottomPad.PaddingLeft = UDim.new(0, 12)
-	bottomPad.PaddingRight = UDim.new(0, 12)
-	bottomPad.PaddingTop = UDim.new(0, 8)
-	bottomPad.PaddingBottom = UDim.new(0, 12)
-	bottomPad.Parent = bottomArea
-	
-	-- START BUTTON - Big and always visible
 	IntroUI.godModeStartBtn = Instance.new("TextButton")
-	IntroUI.godModeStartBtn.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 44 or 52)
+	IntroUI.godModeStartBtn.Name = "StartBtn"
+	IntroUI.godModeStartBtn.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 48 or 56)
 	IntroUI.godModeStartBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
 	IntroUI.godModeStartBtn.Text = "⚡ START YOUR CUSTOM LIFE ⚡"
 	IntroUI.godModeStartBtn.TextColor3 = C.Gray900
-	IntroUI.godModeStartBtn.TextSize = Device.IS_TINY_PHONE and 15 or 18
+	IntroUI.godModeStartBtn.TextSize = Device.IS_TINY_PHONE and 16 or 18
 	IntroUI.godModeStartBtn.Font = F.Title
-	IntroUI.godModeStartBtn.ZIndex = 76
-	IntroUI.godModeStartBtn.LayoutOrder = 1
-	IntroUI.godModeStartBtn.Parent = bottomArea
+	IntroUI.godModeStartBtn.ZIndex = 73
+	IntroUI.godModeStartBtn.LayoutOrder = 100 -- Always at bottom
+	IntroUI.godModeStartBtn.Parent = scroll
 	corner(IntroUI.godModeStartBtn, 12)
 	stroke(IntroUI.godModeStartBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 	
@@ -3737,37 +3726,11 @@ do
 		currentState.Gender = GodModeCreateData.gender
 		currentState.Name = cName
 		introComplete = true
-		-- CRITICAL FIX: Restore content to auto-size before hiding
 		IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
 		IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
-
-	-- BACK BUTTON - Separate scope to reduce local registers
-	do
-		local bk = Instance.new("TextButton")
-		bk.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 32 or 36)
-		bk.BackgroundColor3 = C.Gray200
-		bk.Text = "← Back"
-		bk.TextColor3 = C.Gray600
-		bk.TextSize = Device.IS_TINY_PHONE and 12 or 14
-		bk.Font = F.Medium
-		bk.ZIndex = 76
-		bk.LayoutOrder = 2
-		bk.Parent = bottomArea
-		corner(bk, 8)
-		
-		bk.MouseButton1Click:Connect(function()
-			IntroUI.godModeContainer.Visible = false
-			-- CRITICAL FIX: Restore content to auto-size mode and show gender buttons
-			IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
-			IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
-			IntroUI.genderBtns.Visible = true
-			IntroUI.nameBtns.Visible = false
-			IntroUI.genderTitle.Text = "Start by picking a gender"
-		end)
-	end
 end -- End of God Mode UI do-block
 
 -- Function to show God Mode customization
@@ -3782,24 +3745,21 @@ local function showGodModeIntroCustomize()
 		return
 	end
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Properly set up the content for God Mode customization
-	-- Need to disable AutomaticSize and set a fixed height for the container to work
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	
 	-- Hide BOTH gender and name buttons
 	IntroUI.genderBtns.Visible = false
 	IntroUI.nameBtns.Visible = false
 	
-	-- Switch content to fixed size mode (80% of viewport height)
-	IntroUI.content.AutomaticSize = Enum.AutomaticSize.None
-	local viewportHeight = workspace.CurrentCamera.ViewportSize.Y
-	local contentHeight = math.min(viewportHeight * 0.8, 600) -- Cap at 600px
-	IntroUI.content.Size = UDim2.new(0.92, 0, 0, contentHeight)
-	
+	-- Show God Mode container
 	IntroUI.godModeContainer.Visible = true
 	IntroUI.genderTitle.Text = "⚡ Customize Your Character"
 	IntroUI.genderTitle.Visible = true
+	
+	-- Adjust scroll height based on viewport
+	if IntroUI.godModeScroll then
+		local viewportHeight = workspace.CurrentCamera.ViewportSize.Y
+		local scrollHeight = math.min(viewportHeight * 0.65, 450)
+		IntroUI.godModeScroll.Size = UDim2.new(1, 0, 0, scrollHeight)
+	end
 	
 	-- Reset to defaults but keep selected gender
 	GodModeCreateData.gender = selectedGender or "Male"
@@ -3932,32 +3892,7 @@ for i = 1, 3 do
 	end)
 end
 
--- Add "Customize with God Mode" button as 4th option
-local godModeCustomizeBtn = Instance.new("TextButton")
-godModeCustomizeBtn.Name = "GodModeCustomizeBtn"
-godModeCustomizeBtn.Size = UDim2.new(0.85, 0, 0, 54)
-godModeCustomizeBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-godModeCustomizeBtn.Font = F.Title
-godModeCustomizeBtn.TextSize = 16
-godModeCustomizeBtn.TextColor3 = C.Gray900
-godModeCustomizeBtn.Text = "⚡ Customize Character"
-godModeCustomizeBtn.AutoButtonColor = false
-godModeCustomizeBtn.LayoutOrder = 4
-godModeCustomizeBtn.ZIndex = 72
-godModeCustomizeBtn.Parent = IntroUI.nameBtns
-pill(godModeCustomizeBtn)
-stroke(godModeCustomizeBtn, 2, 0, Color3.fromRGB(217, 119, 6))
-
-godModeCustomizeBtn.MouseEnter:Connect(function()
-	tween(godModeCustomizeBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 58) })
-end)
-godModeCustomizeBtn.MouseLeave:Connect(function()
-	tween(godModeCustomizeBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 54) })
-end)
-
-godModeCustomizeBtn.MouseButton1Click:Connect(function()
-	showGodModeIntroCustomize()
-end)
+-- REMOVED: Duplicate Customize button - now only on gender selection screen
 
 updateNameButtons = function()
 	local names = selectedGender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
@@ -3969,16 +3904,6 @@ updateNameButtons = function()
 				child.Text = emoji .. " " .. names[idx]
 			end
 		end
-	end
-	
-	-- Update God Mode button based on ownership
-	refreshGodModeStatus()
-	if hasGodMode then
-		godModeCustomizeBtn.Text = "⚡ Customize Character"
-		godModeCustomizeBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-	else
-		godModeCustomizeBtn.Text = "🔓 Get God Mode"
-		godModeCustomizeBtn.BackgroundColor3 = C.Gray300
 	end
 end
 
@@ -4212,22 +4137,28 @@ function updateFromState()
 	end
 	
 	-- Skin tone modifiers based on ethnicity
-	local skinTone = "" -- Default (yellow)
+	-- CRITICAL FIX: Proper skin tone assignments
+	local skinTone = "" -- Default (yellow/no modifier)
 	if ethnicity == "Caucasian" then
-		skinTone = "🏻" -- Light skin
+		skinTone = "🏼" -- Medium-light skin (NOT yellow)
 	elseif ethnicity == "African" then
 		skinTone = "🏿" -- Dark skin
-	elseif ethnicity == "Hispanic" or ethnicity == "Middle Eastern" then
+	elseif ethnicity == "Hispanic" then
+		skinTone = "🏽" -- Medium skin
+	elseif ethnicity == "Middle Eastern" then
 		skinTone = "🏽" -- Medium skin
 	elseif ethnicity == "Asian" then
-		skinTone = "🏻" -- Light skin
+		skinTone = "🏻" -- Light skin (East Asian)
 	elseif ethnicity == "Indian" then
-		skinTone = "🏾" -- Medium-dark skin
-	elseif ethnicity == "Pacific Islander" or ethnicity == "Indigenous" then
+		skinTone = "🏾" -- Medium-dark skin (South Asian)
+	elseif ethnicity == "Pacific Islander" then
+		skinTone = "🏽" -- Medium skin
+	elseif ethnicity == "Indigenous" then
 		skinTone = "🏽" -- Medium skin
 	elseif ethnicity == "Mixed" then
 		skinTone = "🏼" -- Medium-light skin
 	end
+	-- Random = no modifier (yellow default)
 	
 	-- CRITICAL FIX: Avatar emoji based on age, gender, AND ethnicity
 	local age = currentState.Age or 0

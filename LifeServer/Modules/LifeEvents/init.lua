@@ -847,6 +847,17 @@ function LifeEvents.buildYearQueue(state, options)
 			if not hasPolice then
 				table.insert(categories, "career_police")
 			end
+		-- CRITICAL FIX: Add fast food/service career events
+		elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" or
+			   jobId:find("fastfood") or jobId:find("waiter") or jobId:find("barista") or
+			   jobId:find("cashier") or jobId:find("retail") or jobId:find("server") then
+			local hasService = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_service" then hasService = true break end
+			end
+			if not hasService then
+				table.insert(categories, "career_service")
+			end
 		end
 	end
 	
