@@ -244,6 +244,13 @@ end
 -- OWNERSHIP CHECKING
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- DEVELOPMENT/TESTING MODE
+-- Set this to true in Studio to test premium features without real gamepasses
+-- CRITICAL: Set to false before publishing to production!
+-- ════════════════════════════════════════════════════════════════════════════
+GamepassSystem.DEV_MODE = false -- Change to true for testing in Studio
+
 function GamepassSystem:checkOwnership(player, gamepassKey)
 	local gamepass = self.Gamepasses[gamepassKey]
 	if not gamepass then
@@ -251,9 +258,13 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 		return false
 	end
 	
-	-- If ID is 0, treat as demo/testing mode (return false or true based on your testing needs)
+	-- If ID is 0, use dev mode setting
 	if gamepass.id == 0 then
-		-- For testing, you can return true to test features
+		-- In dev mode, return true to allow testing premium features
+		if self.DEV_MODE then
+			return true
+		end
+		-- In production with ID 0, features are disabled
 		return false
 	end
 	
@@ -264,7 +275,7 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 		return self.playerOwnership[cacheKey]
 	end
 	
-	-- Check actual ownership
+	-- Check actual ownership with pcall protection
 	local success, owns = pcall(function()
 		return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
 	end)
@@ -272,6 +283,8 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 	if success then
 		self.playerOwnership[cacheKey] = owns
 		return owns
+	else
+		warn("[GamepassSystem] Failed to check ownership:", owns)
 	end
 	
 	return false
@@ -500,6 +513,24 @@ function GamepassSystem:getPlayerPremiumStatus(player)
 		celebrity = self:hasCelebrity(player),
 		darkMode = self:hasDarkMode(player),
 	}
+end
+
+-- MINOR FIX #1: Add function to refresh gamepass cache after purchase
+function GamepassSystem:refreshPlayerCache(player)
+	local playerId = player.UserId
+	for key, _ in pairs(self.Gamepasses) do
+		local cacheKey = playerId .. "_" .. key
+		self.playerOwnership[cacheKey] = nil -- Clear cache to force re-check
+	end
+end
+
+-- MINOR FIX #2: Add function to clear cache when player leaves
+function GamepassSystem:onPlayerRemoving(player)
+	local playerId = player.UserId
+	for key, _ in pairs(self.Gamepasses) do
+		local cacheKey = playerId .. "_" .. key
+		self.playerOwnership[cacheKey] = nil
+	end
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

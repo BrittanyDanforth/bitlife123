@@ -558,15 +558,36 @@ end
 function MobSystem:serialize(lifeState)
 	local mobState = self:getMobState(lifeState)
 	
-	if not mobState.inMob then
-		return { inMob = false }
+	-- CRITICAL FIX #14: Handle nil or empty mobState
+	if not mobState or not mobState.inMob then
+		return { 
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			familyEmoji = nil,
+			rankLevel = 1,
+			rankName = nil,
+			rankEmoji = nil,
+			respect = 0,
+			loyalty = 100,
+			heat = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			earnings = 0,
+			kills = 0,
+			operations = {},
+		}
 	end
 	
 	local family = self.Families[mobState.familyId]
-	local currentRank = family.ranks[mobState.rankIndex]
+	if not family then
+		return { inMob = false, operations = {} }
+	end
+	
+	local currentRank = family.ranks[mobState.rankIndex or 1]
 	local nextRank = self:getNextRank(lifeState)
 	local operationsSummary = {}
-	local rankGate = mobState.rankIndex + 1
+	local rankGate = (mobState.rankIndex or 1) + 1
 	for idx, op in ipairs(family.operations) do
 		local required = op.rankRequired or idx
 		if required <= rankGate then
@@ -639,53 +660,8 @@ function MobSystem:getFamilyList()
 	return list
 end
 
--- ════════════════════════════════════════════════════════════════════════════
--- SERIALIZATION (Send MobState to client)
--- ════════════════════════════════════════════════════════════════════════════
-
-function MobSystem:serialize(lifeState)
-	local mobState = self:getMobState(lifeState)
-	if not mobState then
-		return {
-			inMob = false,
-			familyId = nil,
-			familyName = nil,
-			familyEmoji = nil,
-			rankIndex = 1,
-			rankLevel = 1,
-			rankName = nil,
-			rankEmoji = nil,
-			respect = 0,
-			loyalty = 100,
-			heat = 0,
-			yearsInMob = 0,
-			operationsCompleted = 0,
-			operationsFailed = 0,
-			earnings = 0,
-			kills = 0,
-		}
-	end
-	
-	-- Return a clean copy of the mob state for the client
-	return {
-		inMob = mobState.inMob or false,
-		familyId = mobState.familyId,
-		familyName = mobState.familyName,
-		familyEmoji = mobState.familyEmoji,
-		rankIndex = mobState.rankIndex or 1,
-		rankLevel = mobState.rankLevel or 1,
-		rankName = mobState.rankName,
-		rankEmoji = mobState.rankEmoji,
-		respect = mobState.respect or 0,
-		loyalty = mobState.loyalty or 100,
-		heat = mobState.heat or 0,
-		yearsInMob = mobState.yearsInMob or 0,
-		operationsCompleted = mobState.operationsCompleted or 0,
-		operationsFailed = mobState.operationsFailed or 0,
-		earnings = mobState.earnings or 0,
-		kills = mobState.kills or 0,
-	}
-end
+-- CRITICAL FIX #13: Removed duplicate serialize function
+-- The comprehensive serialize function is defined above (lines 558-610)
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE

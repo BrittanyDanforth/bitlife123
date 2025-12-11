@@ -1781,6 +1781,18 @@ function LifeBackend:createInitialState(player)
 	local state = LifeState.new(player)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #11: BITIZENSHIP BENEFITS
+	-- Players with Bitizenship get bonus starting money and special flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasBitizenship = self:checkGamepassOwnership(player, "BITIZENSHIP")
+	if hasBitizenship then
+		state.Money = (state.Money or 0) + 10000 -- Start with $10k bonus
+		state.Flags = state.Flags or {}
+		state.Flags.bitizen = true
+		state.Flags.premium_player = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- SERVER-SIDE FAMILY CREATION
 	-- Create proper family members so they're part of authoritative state
 	-- This prevents the "disappearing family" bug where client-generated defaults
@@ -4104,7 +4116,9 @@ end
 
 function LifeBackend:resetLife(player)
 	debugPrint("Resetting life for", player.Name)
-	local newState = LifeState.new(player)
+	-- CRITICAL FIX #15: Use createInitialState instead of raw LifeState.new
+	-- This ensures the player gets proper family members, Bitizenship bonuses, etc.
+	local newState = self:createInitialState(player)
 	self.playerStates[player] = newState
 	self.pendingEvents[player.UserId] = nil
 	self:pushState(player, "A new life begins...")
@@ -6039,6 +6053,29 @@ function LifeBackend:startStoryPath(player, pathId)
 		return { success = false, message = "Unknown path." }
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1: Premium path gamepass checks
+	-- Celebrity and Royal paths require gamepasses
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local premiumPaths = {
+		celebrity = { key = "CELEBRITY", displayName = "Fame Package" },
+		royal = { key = "ROYALTY", displayName = "Royalty Pass" },
+	}
+	
+	local premiumInfo = premiumPaths[pathId]
+	if premiumInfo then
+		if not self:checkGamepassOwnership(player, premiumInfo.key) then
+			self:promptGamepassPurchase(player, premiumInfo.key)
+			return { 
+				success = false, 
+				-- MINOR FIX #3: Cleaner gamepass name in error message
+				message = "👑 The " .. path.name .. " path requires the " .. premiumInfo.displayName .. " gamepass.",
+				needsGamepass = true,
+				gamepassKey = premiumInfo.key
+			}
+		end
+	end
+
 	local req = path.requirements or {}
 
 	if (state.Age or 0) < (path.minAge or 0) then
@@ -6273,6 +6310,17 @@ function LifeBackend:handleLeaveMob(player)
 end
 
 function LifeBackend:handleMobOperation(player, operationId)
+	-- CRITICAL FIX #12: Check MAFIA gamepass before operations
+	if not self:checkGamepassOwnership(player, "MAFIA") then
+		self:promptGamepassPurchase(player, "MAFIA")
+		return {
+			success = false,
+			message = "🔫 Organized Crime operations require the Mafia gamepass.",
+			needsGamepass = true,
+			gamepassKey = "MAFIA"
+		}
+	end
+	
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "State not found." }

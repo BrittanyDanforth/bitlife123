@@ -1514,6 +1514,19 @@ function MafiaScreen:doOperation(operationId, modifiers)
 		if result.success then
 			local emoji = result.promoted and "🎉" or "💰"
 			self:showResult(true, "Operation Complete!", result.message or "Success!", emoji)
+			
+			-- MINOR FIX #4: Update local MobState immediately after successful operation
+			if self.playerState and self.playerState.MobState then
+				if result.respect then
+					self.playerState.MobState.respect = (self.playerState.MobState.respect or 0) + result.respect
+				end
+				if result.money and self.playerState.Money then
+					self.playerState.Money = self.playerState.Money + result.money
+				end
+				if result.promoted then
+					self.playerState.MobState.rankLevel = (self.playerState.MobState.rankLevel or 1) + 1
+				end
+			end
 		else
 			local emoji = result.arrested and "👮" or "💨"
 			self:showResult(false, "Operation Failed", result.message or "Things went wrong.", emoji)
@@ -1522,6 +1535,12 @@ function MafiaScreen:doOperation(operationId, modifiers)
 		task.delay(1.5, function()
 			self:refreshContent()
 		end)
+	elseif success and result and result.needsGamepass then
+		-- MINOR FIX #5: Handle gamepass requirement in operations
+		if PromptGamepass then
+			PromptGamepass:FireServer("MAFIA")
+		end
+		self:showResult(false, "Gamepass Required", result.message or "You need the Mafia gamepass.", "💎")
 	end
 end
 
@@ -1557,8 +1576,27 @@ end
 
 function MafiaScreen:show()
 	if self.isVisible then return end
-	self.isVisible = true
 	
+	-- CRITICAL FIX #10: Check gamepass ownership before showing screen
+	local hasGamepass = false
+	if CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer("MAFIA")
+		end)
+		if success then
+			hasGamepass = owns
+		end
+	end
+	
+	-- If no gamepass, show purchase prompt
+	if not hasGamepass then
+		if PromptGamepass then
+			PromptGamepass:FireServer("MAFIA")
+		end
+		-- Still show the screen but with locked content
+	end
+	
+	self.isVisible = true
 	self:refreshContent()
 	
 	self.overlay.Visible = true
