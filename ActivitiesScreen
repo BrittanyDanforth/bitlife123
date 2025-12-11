@@ -4425,10 +4425,13 @@ function ActivitiesScreen:doCrimeWithBonus(item, bonus)
 	end
 
 	-- Pass bonus flag to server - indicates minigame success
-	local result = CommitCrime:InvokeServer(item.id, bonus)
-	log("Server response:", result and "received" or "nil")
+	-- CRITICAL FIX: Add pcall protection
+	local success, result = pcall(function()
+		return CommitCrime:InvokeServer(item.id, bonus)
+	end)
+	log("Server response:", success and (result and "received" or "nil") or "error")
 
-	if result then
+	if success and result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
 		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
 		self:showResult(result.success, result.message, emoji)
@@ -4486,8 +4489,11 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 		-- CRITICAL FIX: Don't show result popup here!
 		-- The server will send an event popup with escape choices.
 		-- Showing a popup here causes DOUBLE POPUP bug.
-		local result = DoPrisonAction:InvokeServer("prison_escape")
-		if result then
+		-- CRITICAL FIX: Add pcall protection
+		local success, result = pcall(function()
+			return DoPrisonAction:InvokeServer("prison_escape")
+		end)
+		if success and result then
 			log("Server response:", result.success, result.message)
 			-- Server handles the popup via presentEvent - don't show duplicate!
 		else
@@ -4496,10 +4502,13 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 	else
 		-- Player failed minigame - got caught
 		-- Call server first to add time, THEN show the result
-		local result = DoPrisonAction:InvokeServer("prison_escape_failed")
-		if result then
-			log("Server response for failed escape:", result.success, result.message)
-			self:showResult(false, result.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
+		-- CRITICAL FIX: Add pcall protection
+		local callSuccess, serverResult = pcall(function()
+			return DoPrisonAction:InvokeServer("prison_escape_failed")
+		end)
+		if callSuccess and serverResult then
+			log("Server response for failed escape:", serverResult.success, serverResult.message)
+			self:showResult(false, serverResult.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
 		else
 			self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
 		end
@@ -4518,7 +4527,15 @@ function ActivitiesScreen:doActivity(item, bonus)
 	end
 
 	log("Invoking server DoActivity...")
-	local result = DoActivity:InvokeServer(item.id, bonus or false)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return DoActivity:InvokeServer(item.id, bonus or false)
+	end)
+	if not success then
+		logWarn("DoActivity call failed:", result)
+		self:showResult(false, "Server error", "Error")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -4542,7 +4559,15 @@ function ActivitiesScreen:doCrime(item)
 	end
 
 	log("Invoking server CommitCrime...")
-	local result = CommitCrime:InvokeServer(item.id)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return CommitCrime:InvokeServer(item.id)
+	end)
+	if not success then
+		logWarn("CommitCrime call failed:", result)
+		self:showResult(false, "Server error", "Error")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -4574,7 +4599,15 @@ function ActivitiesScreen:doPrisonActivity(item)
 	end
 
 	log("Invoking server DoPrisonAction...")
-	local result = DoPrisonAction:InvokeServer(item.id)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return DoPrisonAction:InvokeServer(item.id)
+	end)
+	if not success then
+		logWarn("DoPrisonAction call failed:", result)
+		self:showResult(false, "Server error", "Error")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then

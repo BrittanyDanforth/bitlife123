@@ -216,9 +216,9 @@ local events = {
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.30
 					if caught then
-						local years = incarceratePlayer(state, 2, 7, "trafficking illegal goods")
+						local years = incarceratePlayer(state, 2, 7, "smuggling illegal goods")
 						if state.AddFeed then
-							state:AddFeed(string.format("Undercover cops! You were arrested and sentenced to %.1f years for trafficking.", years))
+							state:AddFeed(string.format("Undercover cops! You were arrested and sentenced to %.1f years for smuggling.", years))
 						end
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
@@ -852,11 +852,11 @@ local events = {
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.50
 					if caught then
-						local years = incarceratePlayer(state, 5, 15, "extortion and intimidation")
+						local years = incarceratePlayer(state, 5, 15, "intimidation and threats")
 						state.Flags = state.Flags or {}
 						state.Flags.serious_criminal = true
 						if state.AddFeed then
-							state:AddFeed(string.format("You were caught! Sentenced to %.0f years for extortion.", years))
+							state:AddFeed(string.format("You were caught! Sentenced to %.0f years for intimidation.", years))
 						end
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -25)

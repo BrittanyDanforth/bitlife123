@@ -204,6 +204,10 @@ local Paths = {
 		colorDark = C.AmberDark,
 		minAge = 14,
 		requirements = { looks = 50 },
+		-- CRITICAL FIX #3: Premium path requires gamepass
+		isPremium = true,
+		gamepassKey = "CELEBRITY",
+		gamepassName = "Fame Package",
 		stages = {
 			{ id = "aspiring", name = "Aspiring Star", emoji = "🌟", description = "Dreams of fame" },
 			{ id = "influencer", name = "Influencer", emoji = "📱", description = "Social media presence" },
@@ -229,6 +233,10 @@ local Paths = {
 		colorDark = C.PurpleDark,
 		minAge = 18,
 		requirements = { looks = 80, happiness = 60 },
+		-- CRITICAL FIX #4: Premium path requires gamepass
+		isPremium = true,
+		gamepassKey = "ROYALTY",
+		gamepassName = "Royalty Pass",
 		stages = {
 			{ id = "commoner", name = "Commoner", emoji = "👤", description = "Regular person" },
 			{ id = "courted", name = "Being Courted", emoji = "💕", description = "Royal interest" },
@@ -557,6 +565,9 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 		reqsMet = false
 		reqText = "Need " .. path.requirements.looks .. " Looks"
 	end
+	
+	-- CRITICAL FIX #5: Check if this is a premium path
+	local isPremiumPath = path.isPremium == true
 
 	local card = Instance.new("Frame")
 	card.Name = path.id
@@ -568,6 +579,28 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	UI.corner(card, 18)
 	UI.stroke(card, canStart and reqsMet and 2 or 1, canStart and reqsMet and 0.7 or 0.88, canStart and reqsMet and path.color or C.Gray200)
 	UI.createShadow(card, 2, 6, C.Black, 0.95)
+	
+	-- CRITICAL FIX #6: Add premium badge for gamepass-required paths
+	if isPremiumPath then
+		local premiumBadge = Instance.new("Frame")
+		premiumBadge.Name = "PremiumBadge"
+		premiumBadge.Size = UDim2.new(0, 60, 0, 20)
+		premiumBadge.Position = UDim2.new(1, -74, 0, 6)
+		premiumBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+		premiumBadge.ZIndex = 86
+		premiumBadge.Parent = card
+		UI.pill(premiumBadge)
+		
+		local premiumLabel = Instance.new("TextLabel")
+		premiumLabel.Size = UDim2.fromScale(1, 1)
+		premiumLabel.BackgroundTransparency = 1
+		premiumLabel.Font = F.Bold or F.Title
+		premiumLabel.TextSize = 10
+		premiumLabel.TextColor3 = Color3.fromRGB(100, 70, 0)
+		premiumLabel.Text = "👑 PREMIUM"
+		premiumLabel.ZIndex = 87
+		premiumLabel.Parent = premiumBadge
+	end
 
 	-- Icon
 	local iconFrame = Instance.new("Frame")
@@ -667,6 +700,11 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 			self:showPathModal(path)
 		end)
 	end
+	
+	-- CRITICAL FIX #7: Store isPremium on card for modal to use
+	card:SetAttribute("isPremium", isPremiumPath)
+	card:SetAttribute("gamepassKey", path.gamepassKey or "")
+	card:SetAttribute("gamepassName", path.gamepassName or "")
 end
 
 function StoryPathsScreen:createStageCard(parent, stage, order, unlocked, current, accentColor, paleColor)
@@ -814,11 +852,23 @@ function StoryPathsScreen:showPathModal(path)
 	self.pathModal.emojiLabel.Text = path.emoji
 	self.pathModal.titleLabel.Text = path.name
 	self.pathModal.titleLabel.TextColor3 = path.colorDark
-	self.pathModal.messageLabel.Text = path.description .. "\n\nThis path has " .. #path.stages .. " stages to complete."
+	
+	-- CRITICAL FIX #8: Show premium path info in modal
+	local descText = path.description .. "\n\nThis path has " .. #path.stages .. " stages to complete."
+	if path.isPremium then
+		descText = "👑 PREMIUM PATH\n\n" .. path.description .. "\n\nThis path has " .. #path.stages .. " stages.\nRequires " .. (path.gamepassName or "Premium") .. " gamepass."
+	end
+	self.pathModal.messageLabel.Text = descText
 	self.pathModal.confirmBtn.BackgroundColor3 = path.color
 
+	-- CRITICAL FIX #9: Disconnect previous handler to prevent memory leak and duplicate calls
+	if self.confirmConnection then
+		self.confirmConnection:Disconnect()
+		self.confirmConnection = nil
+	end
+	
 	-- Update confirm handler
-	self.pathModal.confirmBtn.MouseButton1Click:Connect(function()
+	self.confirmConnection = self.pathModal.confirmBtn.MouseButton1Click:Connect(function()
 		UI.hideModal(self.pathModal, function()
 			self:startPath(path.id)
 		end)
@@ -1276,7 +1326,15 @@ function StoryPathsScreen:startPath(pathId)
 	end
 
 	log("Invoking server StartPath...")
-	local result = StartPath:InvokeServer(pathId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return StartPath:InvokeServer(pathId)
+	end)
+	if not success then
+		logWarn("StartPath call failed:", result)
+		self:showResult(false, "Server error", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -1300,7 +1358,15 @@ function StoryPathsScreen:doPathAction(pathId, actionId)
 	end
 
 	log("Invoking server DoPathAction...")
-	local result = DoPathAction:InvokeServer(pathId, actionId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return DoPathAction:InvokeServer(pathId, actionId)
+	end)
+	if not success then
+		logWarn("DoPathAction call failed:", result)
+		self:showResult(false, "Server error", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then

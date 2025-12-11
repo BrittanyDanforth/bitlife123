@@ -52,15 +52,19 @@ local LifeStages = {
 -- CRITICAL FIX: Added "teen" to young_adult to catch late-teen events like graduation
 -- CRITICAL FIX: Added career_street, career_police, and assets categories which were MISSING!
 -- These categories MUST be included or their events NEVER trigger!
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #26: Added career categories for all job-specific events
+-- This ensures tech, medical, finance, office, creative events can trigger
+-- ════════════════════════════════════════════════════════════════════════════════════
 local StageCategories = {
-	baby        = { "childhood", "milestones" },                                    -- Ages 0-2: Basic childhood events
-	toddler     = { "childhood", "milestones" },                                    -- Ages 3-5: Toddler events
-	child       = { "childhood", "milestones", "random", "career_racing" },         -- Ages 6-12: Racing discovery possible
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street" }, -- Ages 13-17: Full teen experience + part-time work + street hustle entry
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 18-34: Peak career years + all career paths + assets
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "assets" }, -- Ages 35-49: Established adult + all paths
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "assets" }, -- Ages 50-64: Midlife + early senior events
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "assets" }, -- Ages 65+: Retirement years - senior events now loaded!
+	baby        = { "childhood", "milestones" },
+	toddler     = { "childhood", "milestones" },
+	child       = { "childhood", "milestones", "random", "career_racing" },
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "assets" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -842,6 +846,17 @@ function LifeEvents.buildYearQueue(state, options)
 			end
 			if not hasPolice then
 				table.insert(categories, "career_police")
+			end
+		-- CRITICAL FIX: Add fast food/service career events
+		elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" or
+			   jobId:find("fastfood") or jobId:find("waiter") or jobId:find("barista") or
+			   jobId:find("cashier") or jobId:find("retail") or jobId:find("server") then
+			local hasService = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_service" then hasService = true break end
+			end
+			if not hasService then
+				table.insert(categories, "career_service")
 			end
 		end
 	end
