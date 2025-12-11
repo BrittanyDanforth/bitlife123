@@ -1605,9 +1605,10 @@ navRightLayout.Parent = navRight
 
 local navBtnRefs = {}
 
--- TINY PHONE FIX: Smaller nav buttons
-local navBtnWidth = Device.IS_TINY_PHONE and 36 or (Device.IS_SMALL_PHONE and 44 or px(56))
-local navBtnHeight = Device.IS_TINY_PHONE and 32 or btnHeight(48)
+-- CRITICAL FIX: Adjusted nav button sizes for 5 buttons (added Story Paths)
+-- Slightly smaller to fit all buttons without overflow
+local navBtnWidth = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 38 or px(48))
+local navBtnHeight = Device.IS_TINY_PHONE and 30 or btnHeight(46)
 
 local function createNavButton(info, parent, order)
 	local btn = Instance.new("TextButton")
@@ -1672,11 +1673,13 @@ local function createNavButton(info, parent, order)
 	return btn
 end
 
--- BitLife-style nav: Jobs, Assets, Relationships, Activities
+-- BitLife-style nav: Jobs, Assets, Relationships, Activities, Story Paths
+-- CRITICAL FIX: Added Story Paths button that was missing from bottom navigation
 createNavButton({ icon = "💼", text = "Jobs",       screen = "occupation"   }, navLeft,  1)
 createNavButton({ icon = "🏠", text = "Assets",     screen = "assets"       }, navLeft,  2)
 createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"}, navRight, 1)
 createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
+createNavButton({ icon = "📖", text = "Paths",      screen = "storypaths"   }, navRight, 3)
 
 ----------------------------------------------------------------
 -- AGE BUTTON - TINY PHONE FIX: More compact
@@ -4267,6 +4270,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		end
 		if ScreenInstances.mafia and ScreenInstances.mafia.updateState then
 			ScreenInstances.mafia:updateState(currentState)
+		end
+		-- CRITICAL FIX: Update storypaths screen state
+		if ScreenInstances.storypaths and ScreenInstances.storypaths.updateState then
+			ScreenInstances.storypaths:updateState(currentState)
 		end
 
 		-- SHOW INTRO MODAL

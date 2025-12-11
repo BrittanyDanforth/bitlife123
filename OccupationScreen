@@ -573,6 +573,193 @@ local EducationRanks = {
 	phd         = 6,
 }
 
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #1: CAREER PATHS & ENTRY-LEVEL SYSTEM
+-- Jobs marked as promotions cannot be applied to directly - must be earned through work performance
+-- This reduces the visible job list to ~50 entry-level positions
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+
+-- Promotion-only jobs (cannot apply directly - must be promoted into)
+-- These are filtered OUT of the job listing
+local PromotionOnlyJobs = {
+	-- Office promotions
+	"office_manager", "executive_assistant", "project_manager", "operations_director", "coo",
+	"hr_manager",
+	-- Tech promotions
+	"senior_developer", "tech_lead", "software_architect", "cto", "security_engineer",
+	-- Medical promotions
+	"nurse_practitioner", "doctor", "surgeon", "chief_of_medicine", "psychiatrist",
+	-- Legal promotions
+	"lawyer", "senior_partner", "judge",
+	-- Finance promotions
+	"cpa", "investment_banker", "hedge_fund_manager", "cfo",
+	-- Creative promotions
+	"art_director", "editor", "cmo", "movie_star", "pop_star",
+	-- Government promotions
+	"detective", "police_chief", "fire_captain", "mayor", "senator", "president",
+	-- Education promotions
+	"department_head", "principal", "superintendent", "professor", "dean",
+	-- Science promotions
+	"senior_scientist", "research_director",
+	-- Sports promotions
+	"star_athlete", "head_coach",
+	-- Military promotions
+	"sergeant", "captain", "colonel", "general",
+	-- Criminal promotions
+	"crew_leader", "crime_boss",
+	-- Hacker promotions
+	"elite_hacker", "cyber_crime_boss", "ransomware_kingpin", "ciso",
+	-- Racing promotions
+	"racing_legend", "racing_team_owner",
+	-- Esports promotions
+	"esports_champion",
+}
+
+-- Convert to lookup table for O(1) access
+local IsPromotionJob = {}
+for _, jobId in ipairs(PromotionOnlyJobs) do
+	IsPromotionJob[jobId] = true
+end
+
+-- Career path definitions for the promotion system
+-- These show "Next: [promotion job]" on the current job card
+local CareerPaths = {
+	-- Office path
+	receptionist = "administrative_assistant",
+	office_assistant = "administrative_assistant",
+	administrative_assistant = "office_manager",
+	office_manager = "operations_director",
+	operations_director = "coo",
+	hr_coordinator = "hr_manager",
+	recruiter = "hr_manager",
+	
+	-- Tech path
+	it_support = "junior_developer",
+	junior_developer = "developer",
+	developer = "senior_developer",
+	senior_developer = "tech_lead",
+	tech_lead = "software_architect",
+	software_architect = "cto",
+	web_developer = "senior_developer",
+	mobile_developer = "senior_developer",
+	data_analyst = "data_scientist",
+	data_scientist = "ml_engineer",
+	cybersecurity_analyst = "security_engineer",
+	security_engineer = "ciso",
+	devops_engineer = "tech_lead",
+	
+	-- Medical path
+	hospital_orderly = "medical_assistant",
+	medical_assistant = "nurse_lpn",
+	nurse_lpn = "nurse_rn",
+	nurse_rn = "nurse_practitioner",
+	emt = "nurse_rn",
+	doctor_resident = "doctor",
+	doctor = "surgeon",
+	surgeon = "chief_of_medicine",
+	
+	-- Legal path
+	legal_assistant = "paralegal",
+	paralegal = "associate_lawyer",
+	associate_lawyer = "lawyer",
+	lawyer = "senior_partner",
+	prosecutor = "judge",
+	
+	-- Finance path
+	bank_teller = "loan_officer",
+	loan_officer = "accountant_jr",
+	accountant_jr = "accountant",
+	accountant = "cpa",
+	financial_analyst = "investment_banker_jr",
+	investment_banker_jr = "investment_banker",
+	investment_banker = "hedge_fund_manager",
+	cpa = "cfo",
+	
+	-- Creative path
+	graphic_designer_jr = "graphic_designer",
+	graphic_designer = "art_director",
+	journalist_jr = "journalist",
+	journalist = "editor",
+	marketing_associate = "marketing_manager",
+	marketing_manager = "cmo",
+	actor_extra = "actor",
+	actor = "movie_star",
+	musician_local = "musician_signed",
+	musician_signed = "pop_star",
+	
+	-- Government path
+	police_officer = "detective",
+	detective = "police_chief",
+	firefighter = "fire_captain",
+	city_council = "mayor",
+	mayor = "senator",
+	senator = "president",
+	
+	-- Education path
+	teaching_assistant = "substitute_teacher",
+	substitute_teacher = "teacher",
+	teacher = "department_head",
+	department_head = "principal",
+	principal = "superintendent",
+	professor_assistant = "professor",
+	professor = "dean",
+	
+	-- Science path
+	lab_technician = "research_assistant",
+	research_assistant = "scientist",
+	scientist = "senior_scientist",
+	senior_scientist = "research_director",
+	
+	-- Sports path
+	gym_instructor = "sports_coach",
+	minor_league = "professional_athlete",
+	professional_athlete = "star_athlete",
+	sports_coach = "head_coach",
+	
+	-- Military path
+	enlisted = "sergeant",
+	sergeant = "officer",
+	officer = "captain",
+	captain = "colonel",
+	colonel = "general",
+	
+	-- Criminal path
+	illegal_dealer_street = "illegal_dealer",
+	illegal_dealer = "enforcer",
+	crew_member = "crew_leader",
+	crew_leader = "crime_boss",
+	
+	-- Hacker path
+	script_kiddie = "freelance_hacker",
+	freelance_hacker = "black_hat_hacker",
+	black_hat_hacker = "elite_hacker",
+	elite_hacker = "cyber_crime_boss",
+	cyber_crime_boss = "ransomware_kingpin",
+	pen_tester = "security_consultant",
+	security_consultant = "ciso",
+	
+	-- Racing path
+	go_kart_racer = "amateur_racer",
+	amateur_racer = "professional_racer",
+	professional_racer = "f1_driver",
+	f1_driver = "racing_legend",
+	
+	-- Esports path
+	casual_gamer = "content_creator",
+	content_creator = "pro_gamer",
+	pro_gamer = "esports_champion",
+}
+
+-- Helper function to check if a job is entry-level (can be applied to directly)
+local function isEntryLevelJob(jobId)
+	return not IsPromotionJob[jobId]
+end
+
+-- Helper function to get the promotion path for a job
+local function getNextPromotion(jobId)
+	return CareerPaths[jobId]
+end
+
 -- Debug logging (set to false to reduce log spam)
 local DEBUG = false
 local function log(...)
@@ -1705,15 +1892,19 @@ function OccupationScreen:populateJobs()
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
-	-- CRITICAL FIX: Sort jobs by difficulty (easy at top, hard at bottom)
-	-- Also sorts by salary within same difficulty level
+	-- CRITICAL FIX #2: Only show ENTRY-LEVEL jobs (not promotions)
+	-- Promotion jobs must be earned through work performance
+	-- Also sorts by difficulty and salary
 	local sortedJobs = {}
 	for _, job in ipairs(Jobs) do
 		if job.id ~= currentJob then
-			-- Apply category filter
-			local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
-			if showJob then
-				table.insert(sortedJobs, job)
+			-- CRITICAL FIX: Skip promotion-only jobs - they can't be applied to directly
+			if isEntryLevelJob(job.id) then
+				-- Apply category filter
+				local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
+				if showJob then
+					table.insert(sortedJobs, job)
+				end
 			end
 		end
 	end
@@ -1767,7 +1958,21 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local yearsAtJob = self:getYearsAtJob()
 	local raises = self:getRaises()
 	local serverJob = self:getCurrentJobData()
-	local hasPromotion = serverJob and serverJob.promotesTo
+	
+	-- CRITICAL FIX #3: Use CareerPaths to show promotion even if server doesn't specify
+	local nextJobId = getNextPromotion(job.id)
+	local hasPromotion = (serverJob and serverJob.promotesTo) or (nextJobId ~= nil)
+	
+	-- Find next job name for display
+	local nextJobName = nil
+	if nextJobId then
+		for _, j in ipairs(Jobs) do
+			if j.id == nextJobId then
+				nextJobName = j.name
+				break
+			end
+		end
+	end
 
 	-- ═══════════════════════════════════════════════════════════
 	-- CRITICAL UI FIX: Proper card sizing (don't over-shrink!)
@@ -2005,6 +2210,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	UI.pill(perfBarFill)
 
 	-- Promotion progress (only if promotion available) - SCALED
+	-- CRITICAL FIX #4: Show next job title in promotion progress
 	if hasPromotion then
 		local promoLabelY = IS_TINY_PHONE and 28 or 48
 		local promoBarY = IS_TINY_PHONE and 42 or 66
@@ -2016,7 +2222,16 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 		promoLabel.TextSize = IS_TINY_PHONE and 10 or 12
 		promoLabel.TextColor3 = C.Gray700
 		promoLabel.TextXAlignment = Enum.TextXAlignment.Left
-		promoLabel.Text = (IS_TINY_PHONE and "🚀 " or "🚀 Promotion: ") .. math.floor(promotionProgress) .. "%" .. (IS_TINY_PHONE and "" or " (80% needed)")
+		-- Show next job name if we have it
+		local promoText = ""
+		if nextJobName then
+			promoText = IS_TINY_PHONE 
+				and ("🚀 → " .. nextJobName:sub(1, 15) .. " " .. math.floor(promotionProgress) .. "%")
+				or ("🚀 Next: " .. nextJobName .. " - " .. math.floor(promotionProgress) .. "% (80% needed)")
+		else
+			promoText = (IS_TINY_PHONE and "🚀 " or "🚀 Promotion: ") .. math.floor(promotionProgress) .. "%" .. (IS_TINY_PHONE and "" or " (80% needed)")
+		end
+		promoLabel.Text = promoText
 		promoLabel.ZIndex = 85
 		promoLabel.Parent = progressSection
 

@@ -902,25 +902,96 @@ function LifeBackend:findJobByInput(query)
 	return nil
 end
 
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CAREER TRACKS - Define full career paths from entry-level to top positions
+-- Each track is an ordered list where promotions move you up the list
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
 local CareerTracks = {
-	office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "project_manager", "operations_director", "coo" },
-	tech = { "it_support", "junior_developer", "developer", "senior_developer", "tech_lead", "software_architect", "cto" },
-	medical = { "hospital_orderly", "medical_assistant", "nurse_lpn", "nurse_rn", "doctor_resident", "doctor", "chief_of_medicine" },
-	legal = { "legal_assistant", "paralegal", "associate_lawyer", "lawyer", "senior_partner", "judge" },
-	creative = { "graphic_designer_jr", "graphic_designer", "art_director", "actor", "movie_star" },
-	finance = { "bank_teller", "accountant_jr", "financial_analyst", "investment_banker", "hedge_fund_manager", "cfo" },
-	government = { "postal_worker", "city_council", "mayor", "governor", "senator", "president" },
-	criminal = { "illegal_dealer_street", "illegal_dealer", "crew_leader", "crime_boss" },
-	sports = { "gym_instructor", "minor_league", "professional_athlete", "star_athlete", "head_coach" },
-	-- NEW: Racing career track - from go-karts to legend
-	racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend", "racing_team_owner" },
-	-- NEW: Hacker career - white hat path (legit)
+	-- Office/Business path
+	office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "office_manager", "project_manager", "operations_director", "coo" },
+	hr = { "hr_coordinator", "recruiter", "hr_manager" },
+	
+	-- Technology path
+	tech_dev = { "it_support", "junior_developer", "developer", "senior_developer", "tech_lead", "software_architect", "cto" },
+	tech_web = { "web_developer", "developer", "senior_developer", "tech_lead" },
+	tech_mobile = { "mobile_developer", "senior_developer", "tech_lead" },
+	tech_data = { "data_analyst", "data_scientist", "ml_engineer" },
+	tech_security = { "cybersecurity_analyst", "security_engineer", "ciso" },
+	tech_devops = { "devops_engineer", "tech_lead", "cto" },
+	
+	-- Medical path
+	medical_nursing = { "hospital_orderly", "medical_assistant", "nurse_lpn", "nurse_rn", "nurse_practitioner" },
+	medical_doctor = { "doctor_resident", "doctor", "surgeon", "chief_of_medicine" },
+	medical_other = { "emt", "physical_therapist", "pharmacist", "dentist", "veterinarian", "psychiatrist" },
+	
+	-- Legal path
+	legal = { "legal_assistant", "paralegal", "associate_lawyer", "lawyer", "senior_partner" },
+	legal_gov = { "public_defender", "prosecutor", "judge" },
+	
+	-- Finance path
+	finance_banking = { "bank_teller", "loan_officer", "accountant_jr", "accountant", "cpa", "cfo" },
+	finance_invest = { "financial_analyst", "investment_banker_jr", "investment_banker", "hedge_fund_manager" },
+	
+	-- Creative path
+	creative_design = { "graphic_designer_jr", "graphic_designer", "art_director" },
+	creative_media = { "journalist_jr", "journalist", "editor" },
+	creative_marketing = { "social_media_manager", "marketing_associate", "marketing_manager", "cmo" },
+	creative_acting = { "actor_extra", "actor", "movie_star" },
+	creative_music = { "musician_local", "musician_signed", "pop_star" },
+	
+	-- Government path
+	gov_police = { "police_officer", "detective", "police_chief" },
+	gov_fire = { "firefighter", "fire_captain" },
+	gov_politics = { "city_council", "mayor", "senator", "president" },
+	gov_federal = { "fbi_agent", "cia_agent", "diplomat" },
+	
+	-- Education path
+	education_school = { "teaching_assistant", "substitute_teacher", "teacher", "department_head", "principal", "superintendent" },
+	education_university = { "professor_assistant", "professor", "dean" },
+	
+	-- Science path
+	science = { "lab_technician", "research_assistant", "scientist", "senior_scientist", "research_director" },
+	
+	-- Sports path
+	sports_player = { "minor_league", "professional_athlete", "star_athlete" },
+	sports_coach = { "gym_instructor", "sports_coach", "head_coach" },
+	
+	-- Military path
+	military_enlisted = { "enlisted", "sergeant" },
+	military_officer = { "officer", "captain", "colonel", "general" },
+	
+	-- Criminal path
+	criminal_street = { "illegal_dealer_street", "illegal_dealer", "enforcer", "crew_leader", "crime_boss" },
+	criminal_crew = { "crew_member", "crew_leader", "crime_boss" },
+	
+	-- Hacker paths
 	hacker_whitehat = { "script_kiddie", "freelance_hacker", "pen_tester", "security_consultant", "ciso" },
-	-- NEW: Hacker career - black hat path (criminal)
 	hacker_blackhat = { "script_kiddie", "freelance_hacker", "black_hat_hacker", "elite_hacker", "cyber_crime_boss", "ransomware_kingpin" },
-	-- NEW: Esports career track
+	
+	-- Racing path
+	racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend" },
+	
+	-- Esports path
 	esports = { "casual_gamer", "content_creator", "pro_gamer", "esports_champion", "gaming_legend" },
+	
+	-- Trades path
+	trades_electric = { "electrician_apprentice", "electrician" },
+	trades_plumb = { "plumber_apprentice", "plumber" },
+	trades_construct = { "construction", "foreman" },
 }
+
+-- Direct promotion mapping for quick lookups (job -> next job)
+local PromotionMap = {}
+for trackName, trackJobs in pairs(CareerTracks) do
+	for i = 1, #trackJobs - 1 do
+		PromotionMap[trackJobs[i]] = trackJobs[i + 1]
+	end
+end
+
+-- Helper function to get the next promotion for any job
+local function getNextPromotionJob(jobId)
+	return PromotionMap[jobId]
+end
 
 -- ============================================================================
 -- Activities, Crimes, Prison Actions, and Assets
@@ -1310,19 +1381,50 @@ function LifeBackend:buildCareerEvent(state)
 		return nil
 	end
 	local jobId = string.lower(job.id)
-	-- Police-focused events
-	if jobId:find("police") or jobId:find("detective") then
-		local template = chooseRandom(PoliceCareerEvents)
-		if not template then
-			return nil
-		end
-		local eventDef = deepCopy(template)
-		eventDef.id = template.id .. "_" .. tostring(RANDOM:NextInteger(1000, 999999))
-		eventDef.source = "career_police"
-		return eventDef
+	local jobCategory = (job.category and string.lower(job.category)) or ""
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Career events for different job categories
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local eventPool = nil
+	local eventSource = nil
+	
+	-- Police/Detective events
+	if jobId:find("police") or jobId:find("detective") or jobId:find("fbi") or jobId:find("cia") then
+		eventPool = PoliceCareerEvents
+		eventSource = "career_police"
+	-- Tech events
+	elseif jobCategory == "tech" or jobId:find("developer") or jobId:find("engineer") or jobId:find("cto") then
+		eventPool = TechCareerEvents
+		eventSource = "career_tech"
+	-- Medical events
+	elseif jobCategory == "medical" or jobId:find("doctor") or jobId:find("nurse") or jobId:find("surgeon") then
+		eventPool = MedicalCareerEvents
+		eventSource = "career_medical"
+	-- Office events
+	elseif jobCategory == "office" or jobId:find("manager") or jobId:find("coo") or jobId:find("director") then
+		eventPool = OfficeCareerEvents
+		eventSource = "career_office"
+	-- Finance events
+	elseif jobCategory == "finance" or jobId:find("banker") or jobId:find("accountant") or jobId:find("cfo") then
+		eventPool = FinanceCareerEvents
+		eventSource = "career_finance"
 	end
-
-	return nil
+	
+	if not eventPool or #eventPool == 0 then
+		return nil
+	end
+	
+	local template = chooseRandom(eventPool)
+	if not template then
+		return nil
+	end
+	
+	local eventDef = deepCopy(template)
+	eventDef.id = template.id .. "_" .. tostring(RANDOM:NextInteger(1000, 999999))
+	eventDef.source = eventSource
+	return eventDef
 end
 
 local PoliceCareerEvents = {
@@ -1399,6 +1501,219 @@ local PoliceCareerEvents = {
 				setFlags = { police_cautious = true },
 				feedText = "You held position until SWAT arrived.",
 			},
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #9-12: Tech Career Events
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+local TechCareerEvents = {
+	{
+		id = "tech_deadline",
+		title = "Crunch Time",
+		emoji = "💻",
+		text = "Your team's deadline is tomorrow and the code is still buggy. Your manager wants you to push anyway.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Push the buggy code", deltas = { Happiness = -2 }, setFlags = { tech_rushed = true }, feedText = "You shipped buggy code. Users are complaining." },
+			{ text = "Stay late and fix it", deltas = { Health = -3, Happiness = 2, Smarts = 2 }, setFlags = { tech_dedicated = true }, feedText = "You pulled an all-nighter and shipped clean code." },
+			{ text = "Request extension", deltas = { Happiness = 1 }, setFlags = { tech_realistic = true }, feedText = "You negotiated a 3-day extension." },
+		},
+	},
+	{
+		id = "tech_interview",
+		title = "Job Offer",
+		emoji = "🚀",
+		text = "A competitor reaches out with a job offer paying 40% more than your current salary.",
+		question = "How do you respond?",
+		choices = {
+			{ text = "Accept the offer", deltas = { Money = 15000, Happiness = 3 }, setFlags = { tech_job_hopper = true }, feedText = "You jumped ship for more money." },
+			{ text = "Use it to negotiate a raise", deltas = { Money = 5000, Happiness = 2 }, feedText = "You leveraged the offer into a counter-offer." },
+			{ text = "Decline and stay loyal", deltas = { Happiness = 1 }, setFlags = { tech_loyal = true }, feedText = "You stayed put for now." },
+		},
+	},
+	{
+		id = "tech_security",
+		title = "Security Breach",
+		emoji = "🔐",
+		text = "You discover a critical security vulnerability in production code. Fixing it will delay the release.",
+		question = "What's your move?",
+		choices = {
+			{ text = "Report it immediately", deltas = { Happiness = 2, Smarts = 3 }, setFlags = { tech_ethical = true }, feedText = "You reported the vulnerability and prevented a breach." },
+			{ text = "Fix it quietly", deltas = { Smarts = 2 }, feedText = "You patched it without telling anyone." },
+			{ text = "Ignore it for now", deltas = { Happiness = -5 }, setFlags = { tech_negligent = true }, feedText = "The vulnerability was exploited weeks later." },
+		},
+	},
+	{
+		id = "tech_standup",
+		title = "Code Review Drama",
+		emoji = "👨‍💻",
+		text = "A senior developer publicly criticizes your code in a meeting, calling it 'junior-level garbage.'",
+		question = "How do you react?",
+		choices = {
+			{ text = "Defend your code calmly", deltas = { Happiness = 2, Smarts = 1 }, feedText = "You defended your design decisions professionally." },
+			{ text = "Accept the criticism", deltas = { Smarts = 3, Happiness = -1 }, feedText = "You took the feedback and improved your skills." },
+			{ text = "Report to HR", deltas = { Happiness = 1 }, setFlags = { tech_hr_reporter = true }, feedText = "You reported the unprofessional behavior." },
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #13-16: Medical Career Events
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+local MedicalCareerEvents = {
+	{
+		id = "medical_emergency",
+		title = "Code Blue",
+		emoji = "🚑",
+		text = "A patient flatlines during your shift. You're the closest medical staff.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Start CPR immediately", deltas = { Health = -2, Happiness = 4 }, setFlags = { medical_hero = true }, feedText = "You saved a life with quick action." },
+			{ text = "Call for the crash team", deltas = { Happiness = 1 }, feedText = "You followed protocol and got help." },
+			{ text = "Freeze up", deltas = { Happiness = -5, Health = -3 }, setFlags = { medical_anxious = true }, feedText = "You froze and the patient died." },
+		},
+	},
+	{
+		id = "medical_ethics",
+		title = "Ethical Dilemma",
+		emoji = "⚕️",
+		text = "A wealthy patient offers you $50,000 to skip them ahead in the transplant list.",
+		question = "What do you say?",
+		choices = {
+			{ text = "Refuse firmly", deltas = { Happiness = 3 }, setFlags = { medical_ethical = true }, feedText = "You refused the bribe and reported the incident." },
+			{ text = "Accept the money", deltas = { Money = 50000, Happiness = -2 }, setFlags = { medical_corrupt = true }, feedText = "You took the bribe. Your conscience weighs heavy." },
+		},
+	},
+	{
+		id = "medical_mistake",
+		title = "Medical Error",
+		emoji = "💊",
+		text = "You realize you prescribed the wrong dosage to a patient yesterday. They haven't taken it yet.",
+		question = "How do you handle it?",
+		choices = {
+			{ text = "Call them immediately", deltas = { Happiness = 2, Smarts = 2 }, setFlags = { medical_responsible = true }, feedText = "You caught the error in time and fixed it." },
+			{ text = "Quietly fix it in the system", deltas = { Happiness = -1 }, feedText = "You corrected the record without telling anyone." },
+			{ text = "Hope they don't notice", deltas = { Happiness = -10 }, setFlags = { medical_negligent = true }, feedText = "The patient had a reaction and sued the hospital." },
+		},
+	},
+	{
+		id = "medical_long_shift",
+		title = "Double Shift",
+		emoji = "🏥",
+		text = "Your relief called in sick. You've already worked 14 hours.",
+		question = "Do you stay?",
+		choices = {
+			{ text = "Stay and cover", deltas = { Health = -8, Money = 500, Happiness = 2 }, setFlags = { medical_dedicated = true }, feedText = "You powered through a 24-hour shift." },
+			{ text = "Go home anyway", deltas = { Health = 2, Happiness = -2 }, feedText = "You went home. The ward was understaffed." },
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #17-20: Office Career Events
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+local OfficeCareerEvents = {
+	{
+		id = "office_credit",
+		title = "Stolen Credit",
+		emoji = "📊",
+		text = "Your manager presents YOUR project to executives as their own idea.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Confront them privately", deltas = { Happiness = 2 }, setFlags = { office_assertive = true }, feedText = "You addressed the issue directly." },
+			{ text = "Email the executives with proof", deltas = { Happiness = 3 }, setFlags = { office_bold = true }, feedText = "You exposed the credit theft." },
+			{ text = "Let it slide", deltas = { Happiness = -3 }, setFlags = { office_pushover = true }, feedText = "You let your work be stolen." },
+		},
+	},
+	{
+		id = "office_gossip",
+		title = "Office Gossip",
+		emoji = "💬",
+		text = "Coworkers are spreading rumors about a colleague's personal life. They want you to join in.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Refuse to participate", deltas = { Happiness = 2 }, setFlags = { office_professional = true }, feedText = "You stayed above the gossip." },
+			{ text = "Join the conversation", deltas = { Happiness = 1 }, setFlags = { office_gossiper = true }, feedText = "You participated in the gossip." },
+			{ text = "Defend the colleague", deltas = { Happiness = 3 }, setFlags = { office_defender = true }, feedText = "You stood up for your colleague." },
+		},
+	},
+	{
+		id = "office_promotion_opportunity",
+		title = "Promotion Opportunity",
+		emoji = "📈",
+		text = "A senior position opens up. Your manager hints they'll support your application... if you cover for their mistakes.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Accept the deal", deltas = { Happiness = -1 }, setFlags = { office_compromised = true }, feedText = "You made a questionable alliance." },
+			{ text = "Apply without their help", deltas = { Happiness = 2 }, setFlags = { office_independent = true }, feedText = "You applied on your own merits." },
+			{ text = "Report the corruption", deltas = { Happiness = 3 }, setFlags = { office_whistleblower = true }, feedText = "You reported unethical behavior." },
+		},
+	},
+	{
+		id = "office_overwork",
+		title = "Weekend Work",
+		emoji = "🏢",
+		text = "Your boss asks you to work this weekend. Again. You have family plans.",
+		question = "What do you say?",
+		choices = {
+			{ text = "Work the weekend", deltas = { Happiness = -4, Money = 200 }, setFlags = { office_workaholic = true }, feedText = "You cancelled plans to work." },
+			{ text = "Politely decline", deltas = { Happiness = 3 }, setFlags = { office_boundaries = true }, feedText = "You set healthy boundaries." },
+			{ text = "Negotiate half day", deltas = { Happiness = 1, Money = 100 }, feedText = "You compromised on a half day." },
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #21-24: Finance Career Events
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+local FinanceCareerEvents = {
+	{
+		id = "finance_insider",
+		title = "Insider Trading Tip",
+		emoji = "💹",
+		text = "A client accidentally shares material non-public information about an upcoming merger.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Report to compliance", deltas = { Happiness = 3 }, setFlags = { finance_ethical = true }, feedText = "You reported the potential violation." },
+			{ text = "Trade on the info", deltas = { Money = 50000, Happiness = -2 }, setFlags = { finance_insider_trader = true }, feedText = "You made an illegal trade." },
+			{ text = "Pretend you didn't hear", deltas = { Happiness = -1 }, feedText = "You ignored the information." },
+		},
+	},
+	{
+		id = "finance_market_crash",
+		title = "Market Chaos",
+		emoji = "📉",
+		text = "The market is crashing. Your clients are panicking and calling non-stop.",
+		question = "How do you handle it?",
+		choices = {
+			{ text = "Calm them down, advise holding", deltas = { Happiness = 2, Smarts = 2 }, setFlags = { finance_steady = true }, feedText = "You kept clients calm during the chaos." },
+			{ text = "Sell everything", deltas = { Happiness = -3 }, setFlags = { finance_panic = true }, feedText = "You panic-sold at the bottom." },
+			{ text = "Go dark and hide", deltas = { Happiness = -5 }, setFlags = { finance_coward = true }, feedText = "You avoided all calls and lost clients." },
+		},
+	},
+	{
+		id = "finance_bonus",
+		title = "Bonus Season",
+		emoji = "💰",
+		text = "Bonuses are announced. Yours is lower than expected, while a less qualified colleague got more.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Negotiate with your boss", deltas = { Money = 5000, Happiness = 2 }, feedText = "You negotiated a bonus adjustment." },
+			{ text = "Accept it quietly", deltas = { Happiness = -2 }, feedText = "You accepted the lower bonus." },
+			{ text = "Start job hunting", deltas = { Happiness = 1 }, setFlags = { finance_looking = true }, feedText = "You started looking for new opportunities." },
+		},
+	},
+	{
+		id = "finance_client_error",
+		title = "Client Fund Error",
+		emoji = "🏦",
+		text = "You notice an extra $100,000 was accidentally deposited into your client's account due to a bank error.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Report the error immediately", deltas = { Happiness = 3 }, setFlags = { finance_honest = true }, feedText = "You reported the error and it was corrected." },
+			{ text = "Say nothing", deltas = { Money = 10000, Happiness = -3 }, setFlags = { finance_dishonest = true }, feedText = "You kept quiet. The audit found it later." },
 		},
 	},
 }
@@ -2271,8 +2586,14 @@ function LifeBackend:tickCareer(state)
 	info.yearsAtJob = (info.yearsAtJob or 0) + 1
 	-- CRITICAL FIX: Performance can fluctuate more - not always improving
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-5, 5), 0, 100)
-	-- CRITICAL FIX: Removed automatic promotionProgress - it was causing promotion spam
-	-- Now promotions are based on yearsAtJob + performance + luck (see handlePromotion)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #25: Calculate promotion progress based on years and performance
+	-- This provides visual feedback to the player without auto-promoting
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local yearsProgress = math.min((info.yearsAtJob or 0) * 10, 30) -- Up to 30% from years (3 years min)
+	local perfProgress = (info.performance or 50) * 0.5 -- Up to 50% from performance
+	info.promotionProgress = clamp(yearsProgress + perfProgress, 0, 100)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Track career skills based on job category
@@ -5325,13 +5646,73 @@ function LifeBackend:handlePromotion(player)
 	-- Promotion granted!
 	info.promotionProgress = 0
 	info.promotions = (info.promotions or 0) + 1
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15) -- 15% raise, not 20%
-	info.performance = clamp((info.performance or 60) + 5, 0, 100)
 	state.Flags.just_promoted = true
-
-	local feed = string.format("🎉 You were promoted! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: Actually change job title on promotion, not just salary!
+	-- Use CareerTracks to find the next job in the career path
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local currentJobId = state.CurrentJob.id
+	local promotedToNewTitle = false
+	local oldJobName = state.CurrentJob.name or "your old position"
+	local newJobName = nil
+	
+	-- Find current job's career track and next position
+	for trackName, trackJobs in pairs(CareerTracks) do
+		for i, jobId in ipairs(trackJobs) do
+			if jobId == currentJobId then
+				-- Found current job, check if there's a next position
+				local nextJobId = trackJobs[i + 1]
+				if nextJobId then
+					local nextJob = JobCatalog[nextJobId]
+					if nextJob then
+						-- Check if player meets requirements for next job
+						local meetsReqs = true
+						if nextJob.minAge and (state.Age or 0) < nextJob.minAge then
+							meetsReqs = false
+						end
+						-- For now, skip education check on internal promotions
+						
+						if meetsReqs then
+							-- PROMOTE to next job!
+							state.CurrentJob = {
+								id = nextJob.id,
+								name = nextJob.name,
+								title = nextJob.name,
+								company = state.CurrentJob.company or nextJob.company, -- Keep same company
+								salary = math.floor((state.CurrentJob.salary or nextJob.salary) * 1.25), -- 25% raise on title change
+								emoji = nextJob.emoji,
+								category = nextJob.category,
+								hiredAt = state.Age,
+							}
+							promotedToNewTitle = true
+							newJobName = nextJob.name
+							info.yearsAtJob = 0 -- Reset years at job for new position
+							info.raises = 0 -- Reset raises for new position
+						end
+					end
+				end
+				break
+			end
+		end
+		if promotedToNewTitle then break end
+	end
+	
+	local feed
+	if promotedToNewTitle and newJobName then
+		feed = string.format("🎉 MAJOR PROMOTION! You've been promoted from %s to %s! New salary: %s", 
+			oldJobName, newJobName, formatMoney(state.CurrentJob.salary))
+		-- Add a flag for major promotion
+		state.Flags.major_promotion = true
+	else
+		-- No title change available (top of career track) - just salary bump
+		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
+		feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+	end
+	
+	info.performance = clamp((info.performance or 60) + 5, 0, 100)
 	self:pushState(player, feed)
-	return { success = true, message = feed }
+	return { success = true, message = feed, newJob = promotedToNewTitle and state.CurrentJob or nil }
 end
 
 function LifeBackend:handleRaise(player)
@@ -5387,19 +5768,36 @@ function LifeBackend:getCareerInfo(player)
 	state.CareerInfo = state.CareerInfo or {}
 	state.Career = state.Career or {}
 
+	-- CRITICAL FIX #6: Get next promotion job info for client display
+	local nextJobId = nil
+	local nextJobName = nil
+	local nextJobSalary = nil
+	if state.CurrentJob and state.CurrentJob.id then
+		nextJobId = getNextPromotionJob(state.CurrentJob.id)
+		if nextJobId and JobCatalog[nextJobId] then
+			local nextJob = JobCatalog[nextJobId]
+			nextJobName = nextJob.name
+			nextJobSalary = nextJob.salary
+		end
+	end
+
 	return {
 		success = true,
 		performance = state.CareerInfo.performance or 0,
 		promotionProgress = state.CareerInfo.promotionProgress or 0,
 		yearsAtJob = state.CareerInfo.yearsAtJob or 0,
 		raises = state.CareerInfo.raises or 0,
-		promotions = state.CareerInfo.promotions or 0, -- CRITICAL FIX: Track promotions
+		promotions = state.CareerInfo.promotions or 0,
 		careerHistory = state.CareerInfo.careerHistory or {},
 		skills = state.CareerInfo.skills or {},
 		track = state.Career.track,
-		-- CRITICAL FIX: Add totalExperience for Career Info modal display
 		totalExperience = state.CareerInfo.totalYearsWorked or 0,
 		totalYearsWorked = state.CareerInfo.totalYearsWorked or 0,
+		-- CRITICAL FIX #7: Include next promotion info
+		promotesTo = nextJobId,
+		promotesToName = nextJobName,
+		promotesToSalary = nextJobSalary,
+		hasPromotion = nextJobId ~= nil,
 	}
 end
 
