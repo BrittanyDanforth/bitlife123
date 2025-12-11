@@ -3338,27 +3338,16 @@ IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
 local NameData = {
 	maleFirstNames = {
-		"James", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
-		"Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Elijah", "Matthew",
-		"Christopher", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Logan", "Wyatt",
-		"Jack", "Luke", "Gabriel", "Adrian", "Evan", "Austin", "Xavier", "Blake",
-		"Dominic", "Finn", "Theo", "Miles", "Leo", "Nolan", "Kai", "Rowan",
+		"James", "Michael", "Daniel", "Alexander", "Liam", "Noah",
+		"Jackson", "Elijah", "Logan", "Wyatt", "Kai", "Rowan",
 	},
-
 	femaleFirstNames = {
-		"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia",
-		"Harper", "Evelyn", "Abigail", "Emily", "Luna", "Ella", "Avery", "Camila",
-		"Aria", "Scarlett", "Penelope", "Elizabeth", "Sarah", "Jessica", "Ashley", "Nicole",
-		"Lauren", "Rachel", "Hannah", "Megan", "Samantha", "Victoria", "Chloe", "Grace",
-		"Lily", "Natalie", "Leah", "Claire", "Bella", "Aurora", "Lucy", "Naomi",
+		"Emma", "Sophia", "Olivia", "Isabella", "Mia", "Charlotte",
+		"Avery", "Camila", "Scarlett", "Chloe", "Hazel", "Naomi",
 	},
-
 	lastNames = {
-		"Wilson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas",
-		"Moore", "Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall",
-		"Allen", "Young", "King", "Wright", "Hill", "Scott", "Green", "Adams",
-		"Nelson", "Carter", "Mitchell", "Roberts", "Turner", "Campbell", "Parker", "Evans",
-		"Collins", "Stewart", "Murphy", "Rogers", "Morgan", "Peterson", "Reed", "Bailey",
+		"Wilson", "Brown", "Johnson", "Williams", "Taylor", "Clark",
+		"Walker", "King", "Adams", "Carter", "Parker", "Reed",
 	},
 
 	currentMaleNames = {},
