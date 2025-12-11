@@ -961,23 +961,65 @@ end
 -- This ensures players don't miss important life moments like DMV, graduation, etc.
 -- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
-	[5] = { "first_day_kindergarten" },
+	[0] = { "royal_birth_announcement" }, -- CRITICAL FIX #99: Royal birth milestone
+	[1] = { "royal_christening" },
+	[3] = { "first_public_appearance" }, -- Royal first public appearance
+	[5] = { "first_day_kindergarten", "royal_education_choice" },
 	[6] = { "first_day_school" },
 	[8] = { "learning_to_ride_bike" },
-	[13] = { "stage_transition_teen", "teen_social_media" },
+	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery" }, -- CRITICAL FIX #87: Talent discovery
 	[14] = { "class_selection" },
 	[15] = { "learning_to_drive" },
-	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite" },
+	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite", "fame_audition" }, -- CRITICAL FIX #100: Fame audition
 	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball" }, -- Royal coming of age
 	[19] = { "college_experience" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink" },
-	[25] = { "quarter_life_crisis" },
-	[30] = { "stage_transition_adult", "turning_30" },
-	[40] = { "turning_40", "midlife_reflection" },
-	[50] = { "stage_transition_middle_age", "turning_50" },
-	[65] = { "stage_transition_senior", "retirement_decision" },
-	[70] = { "golden_years", "legacy_planning" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service" }, -- Royal military service option
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure" }, -- Royal engagement pressure
+	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough" }, -- CRITICAL FIX #100: Fame breakthrough opportunity
+	[35] = { "royal_charity_focus", "career_peak" },
+	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign" },
+	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee" }, -- CRITICAL FIX #99: Royal jubilee
+	[60] = { "golden_jubilee" },
+	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning" },
+	[70] = { "golden_years", "legacy_planning", "diamond_jubilee" },
+	[75] = { "platinum_jubilee" },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #99/#100: PREMIUM MILESTONE EVENTS
+-- These milestone events are for premium gamepass holders
+-- ═══════════════════════════════════════════════════════════════════════════════
+local PremiumMilestoneEvents = {
+	-- Royalty milestones (require is_royalty flag)
+	royalty = {
+		[0] = "royal_birth_announcement",
+		[1] = "royal_christening",
+		[3] = "first_public_appearance",
+		[6] = "royal_education_choice",
+		[18] = "coming_of_age_ball",
+		[21] = "royal_military_service",
+		[25] = "royal_engagement_pressure",
+		[50] = "silver_jubilee",
+		[60] = "golden_jubilee",
+		[70] = "diamond_jubilee",
+		[75] = "platinum_jubilee",
+	},
+	-- Mafia milestones (require in_mob flag)
+	mafia = {
+		-- These trigger based on rank/respect, not age
+	},
+	-- Celebrity milestones (require fame_career flag)
+	celebrity = {
+		[13] = "talent_discovery",
+		[16] = "fame_audition",
+		[21] = "first_big_break",
+		[25] = "award_nomination",
+		[30] = "fame_breakthrough",
+		[35] = "career_peak",
+		[40] = "comeback_opportunity",
+		[50] = "lifetime_achievement",
+	},
 }
 
 local function isAgeMilestoneEvent(eventId, age)
@@ -1022,6 +1064,44 @@ local function calculateEventWeight(event, state)
 	-- BOOST: One-time events that haven't been seen yet
 	if event.oneTime and occurCount == 0 then
 		weight = weight * 2
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #98: PREMIUM EVENT WEIGHT BOOSTING
+	-- Premium events should have higher priority for gamepass holders
+	-- This ensures royal/mafia/celebrity events actually trigger
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- Boost royal events for royal players
+	if event.isRoyalOnly then
+		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+		if isRoyal then
+			weight = weight * 3 -- Triple weight for royal events when player is royal
+		end
+	end
+	
+	-- Boost mafia events for mob members
+	if event.isMafiaOnly then
+		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+		if isInMob then
+			weight = weight * 3 -- Triple weight for mafia events when player is in mob
+		end
+	end
+	
+	-- Boost celebrity events for famous players
+	if event.isCelebrityOnly then
+		local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+		if hasFameCareer then
+			weight = weight * 3 -- Triple weight for celebrity events when player has fame career
+		end
+	end
+	
+	-- Extra boost for premium milestone events
+	if event.isMilestone then
+		if event.isRoyalOnly or event.isMafiaOnly or event.isCelebrityOnly then
+			weight = weight * 2 -- Extra boost for premium milestones
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

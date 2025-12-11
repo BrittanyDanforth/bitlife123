@@ -4477,6 +4477,65 @@ function LifeBackend:handleAgeUp(player)
 	end
 	
 	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #94: Mafia heat decay system
+	-- Heat naturally decreases over time when player is keeping a low profile
+	-- This makes the mafia experience more realistic - heat from crimes fades
+	-- ════════════════════════════════════════════════════════════════════════════
+	if state.MobState and state.MobState.inMob then
+		local mobState = state.MobState
+		
+		-- Heat decays by 5-15% per year when player isn't doing crimes
+		if mobState.heat and mobState.heat > 0 then
+			local heatDecay = math.random(5, 15)
+			mobState.heat = math.max(0, mobState.heat - heatDecay)
+			
+			if mobState.heat == 0 and (mobState.previousHeat or 0) > 0 then
+				appendFeed(state, "🔥 Your heat has fully cooled down. The cops aren't looking for you anymore.")
+			end
+			mobState.previousHeat = mobState.heat
+		end
+		
+		-- Increment years in mob
+		mobState.yearsInMob = (mobState.yearsInMob or 0) + 1
+		
+		-- CRITICAL FIX #78: Check for mob promotion based on respect
+		local respectThresholds = { 0, 100, 300, 600, 1000 }
+		local currentRank = mobState.rankIndex or 1
+		if currentRank < 5 then
+			local nextThreshold = respectThresholds[currentRank + 1]
+			if mobState.respect and mobState.respect >= nextThreshold then
+				local oldRankName = mobState.rankName
+				mobState.rankIndex = currentRank + 1
+				mobState.rankLevel = mobState.rankIndex
+				
+				local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+				local rankEmojis = {"👤", "🔫", "💀", "🎩", "👑"}
+				mobState.rankName = rankNames[mobState.rankIndex]
+				mobState.rankEmoji = rankEmojis[mobState.rankIndex]
+				
+				appendFeed(state, string.format("%s You've been promoted from %s to %s!", 
+					mobState.rankEmoji, oldRankName, mobState.rankName))
+				state.Flags.got_promotion = true
+				state.Flags.mob_promoted = true
+			end
+		end
+		
+		-- CRITICAL FIX #86: Loyalty decay if player hasn't been active
+		if mobState.operationsCompleted == 0 and mobState.yearsInMob > 1 then
+			local loyaltyDecay = math.random(1, 5)
+			mobState.loyalty = math.max(0, (mobState.loyalty or 100) - loyaltyDecay)
+			
+			if mobState.loyalty < 30 then
+				appendFeed(state, "⚠️ The family is questioning your loyalty. Complete some operations!")
+				state.Flags.loyalty_warning = true
+			end
+		end
+		
+		-- Reset yearly operation counter for next year
+		mobState.operationsThisYear = 0
+	end
+	
+	-- ════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #2: Process yearly ROYALTY updates (popularity, succession, duties)
 	-- Without this, royal players never advanced to King, never got jubilees, etc.!
 	-- ════════════════════════════════════════════════════════════════════════════

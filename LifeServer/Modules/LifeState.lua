@@ -860,6 +860,92 @@ function LifeState:EnableGodMode()
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #95: Set gamepass flags from ownership data
+-- This ensures all gamepass-related flags are properly set in state
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:SetGamepassFlags(gamepassOwnership)
+	if not gamepassOwnership then return self end
+	
+	self.GamepassOwnership = self.GamepassOwnership or {}
+	self.Flags = self.Flags or {}
+	
+	-- Royalty gamepass
+	if gamepassOwnership.Royalty or gamepassOwnership.royalty then
+		self.GamepassOwnership.royalty = true
+		self.GamepassOwnership.Royalty = true
+		self.Flags.royalty_gamepass = true
+	end
+	
+	-- Mafia gamepass
+	if gamepassOwnership.Mafia or gamepassOwnership.mafia then
+		self.GamepassOwnership.mafia = true
+		self.GamepassOwnership.Mafia = true
+		self.Flags.mafia_gamepass = true
+	end
+	
+	-- Celebrity/Fame gamepass
+	if gamepassOwnership.Celebrity or gamepassOwnership.celebrity then
+		self.GamepassOwnership.celebrity = true
+		self.GamepassOwnership.Celebrity = true
+		self.Flags.celebrity_gamepass = true
+	end
+	
+	-- God Mode gamepass
+	if gamepassOwnership.GodMode or gamepassOwnership.godMode then
+		self.GamepassOwnership.godMode = true
+		self.GamepassOwnership.GodMode = true
+		self.Flags.god_mode_gamepass = true
+	end
+	
+	-- Bitizenship gamepass
+	if gamepassOwnership.Bitizenship or gamepassOwnership.bitizenship then
+		self.GamepassOwnership.bitizenship = true
+		self.GamepassOwnership.Bitizenship = true
+		self.Flags.bitizenship = true
+	end
+	
+	-- Time Machine gamepass
+	if gamepassOwnership.TimeMachine or gamepassOwnership.timeMachine then
+		self.GamepassOwnership.timeMachine = true
+		self.GamepassOwnership.TimeMachine = true
+		self.Flags.time_machine_gamepass = true
+	end
+	
+	-- Boss Mode gamepass
+	if gamepassOwnership.BossMode or gamepassOwnership.bossMode then
+		self.GamepassOwnership.bossMode = true
+		self.GamepassOwnership.BossMode = true
+		self.Flags.boss_mode_gamepass = true
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #73/#74: Check if player should start as royalty
+-- Called during character creation when player selects "Royal" family wealth
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:CheckAndInitializeRoyalty()
+	-- Only initialize if player has royalty gamepass AND selected royalty
+	if self.Flags.royalty_gamepass and (self.Flags.selected_royalty or self.Flags.royal_family) then
+		-- Pick a random royal country
+		local RoyalCountries = {
+			{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", palace = "Buckingham Palace", startingWealth = { min = 50000000, max = 500000000 } },
+			{ id = "japan", name = "Japan", emoji = "🇯🇵", palace = "Imperial Palace", startingWealth = { min = 100000000, max = 800000000 } },
+			{ id = "monaco", name = "Monaco", emoji = "🇲🇨", palace = "Prince's Palace", startingWealth = { min = 200000000, max = 1000000000 } },
+			{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", palace = "Al-Yamamah Palace", startingWealth = { min = 500000000, max = 5000000000 } },
+		}
+		
+		local country = RoyalCountries[math.random(#RoyalCountries)]
+		local title = self.Gender == "male" and "Prince" or "Princess"
+		
+		return self:InitializeRoyalty(country, title)
+	end
+	
+	return self
+end
+
 -- CRITICAL FIX #20: Apply god mode stat edit
 function LifeState:ApplyGodModeEdit(statKey, newValue)
 	if not self.GodModeState.enabled then
