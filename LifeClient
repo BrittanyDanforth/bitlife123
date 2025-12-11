@@ -1272,7 +1272,7 @@ godModeButton.AutoButtonColor = false
 godModeButton.Text = ""
 godModeButton.ZIndex = 90
 godModeButton.Parent = statsRow
-UI.corner(godModeButton, 12)
+corner(godModeButton, 12)
 
 updateGodModeButtonAppearance()
 
@@ -1427,8 +1427,8 @@ showGodModeModal = function()
 		card.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
 		card.ZIndex = 153
 		card.Parent = statsGrid
-		UI.corner(card, 10)
-		UI.stroke(card, 1, 0.9, C.Gray200)
+		corner(card, 10)
+		stroke(card, 1, 0.9, C.Gray200)
 		pad(card, 8, 8, 6, 6)
 
 		local title = Instance.new("TextLabel")

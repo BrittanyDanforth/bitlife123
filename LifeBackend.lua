@@ -1,6 +1,8 @@
 local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
+local GamepassSystem
+
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
 	if not player then
 		return false
@@ -57,7 +59,7 @@ assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer
 
 local LifeState = require(ModulesFolder:WaitForChild("LifeState"))
 local LifeStageSystem = require(ModulesFolder:WaitForChild("LifeStageSystem"))
-local GamepassSystem = require(ModulesFolder:WaitForChild("GamepassSystem"))
+GamepassSystem = require(ModulesFolder:WaitForChild("GamepassSystem"))
 local MobSystem = require(ModulesFolder:WaitForChild("MobSystem"))
 local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
