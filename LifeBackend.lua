@@ -6796,10 +6796,17 @@ function LifeBackend:handleGodModeEdit(player, payload)
 		end
 	end
 
+	-- CRITICAL FIX: Store gender with proper capitalization for client compatibility
 	if payload.gender and type(payload.gender) == "string" then
-		local gender = payload.gender:lower()
-		if gender == "male" or gender == "female" or gender == "nonbinary" then
-			state.Gender = gender
+		local genderLower = payload.gender:lower()
+		if genderLower == "male" then
+			state.Gender = "Male"
+			table.insert(summaries, "Gender updated")
+		elseif genderLower == "female" then
+			state.Gender = "Female"
+			table.insert(summaries, "Gender updated")
+		elseif genderLower == "nonbinary" then
+			state.Gender = "Nonbinary"
 			table.insert(summaries, "Gender updated")
 		end
 	end
@@ -6847,6 +6854,26 @@ function LifeBackend:handleGodModeEdit(player, payload)
 				state.Flags[wealth.flag] = true
 			end
 			table.insert(summaries, "Family wealth set to " .. payload.familyWealth)
+		end
+	end
+	
+	-- CRITICAL FIX: Handle starting stats from God Mode creation
+	if payload.godModeCreate and payload.stats then
+		if type(payload.stats) == "table" then
+			-- Apply custom starting stats
+			if payload.stats.Happiness then
+				state.Happiness = math.clamp(tonumber(payload.stats.Happiness) or 50, 0, 100)
+			end
+			if payload.stats.Health then
+				state.Health = math.clamp(tonumber(payload.stats.Health) or 100, 0, 100)
+			end
+			if payload.stats.Smarts then
+				state.Smarts = math.clamp(tonumber(payload.stats.Smarts) or 50, 0, 100)
+			end
+			if payload.stats.Looks then
+				state.Looks = math.clamp(tonumber(payload.stats.Looks) or 50, 0, 100)
+			end
+			table.insert(summaries, "Starting stats customized")
 		end
 	end
 	

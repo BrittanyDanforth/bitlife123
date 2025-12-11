@@ -3283,7 +3283,8 @@ IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
 IntroUI.genderBtns = Instance.new("Frame")
-IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 140)
+-- CRITICAL FIX: Increased height to fit Male, Female, AND Customize Character buttons
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 220)
 IntroUI.genderBtns.BackgroundTransparency = 1
 IntroUI.genderBtns.LayoutOrder = 2
 IntroUI.genderBtns.ZIndex = 71
@@ -3576,13 +3577,40 @@ do
 			vl.TextColor3 = C.Gray700; vl.TextSize = 13; vl.Font = F.Medium
 			vl.TextXAlignment = Enum.TextXAlignment.Right; vl.ZIndex = 74; vl.Parent = r
 			IntroUI.statSliders[s.key] = { fill = fl, value = vl, bg = bg }
+			
+			-- CRITICAL UI FIX: Draggable stat sliders with proper touch/mouse support
+			local dragging = false
+			local function updateSlider(posX)
+				local relX = math.clamp((posX - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
+				local newVal = math.floor(relX * 100)
+				GodModeCreateData.stats[s.key] = newVal
+				fl.Size = UDim2.new(relX, 0, 1, 0)
+				vl.Text = tostring(newVal) .. "%"
+			end
+			
 			bg.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					local relX = math.clamp((input.Position.X - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
-					local newVal = math.floor(relX * 100)
-					GodModeCreateData.stats[s.key] = newVal
-					fl.Size = UDim2.new(relX, 0, 1, 0)
-					vl.Text = tostring(newVal) .. "%"
+					dragging = true
+					updateSlider(input.Position.X)
+				end
+			end)
+			
+			bg.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					dragging = false
+				end
+			end)
+			
+			-- Listen for mouse/touch movement globally while dragging
+			game:GetService("UserInputService").InputChanged:Connect(function(input)
+				if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+					updateSlider(input.Position.X)
+				end
+			end)
+			
+			game:GetService("UserInputService").InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					dragging = false
 				end
 			end)
 		end
@@ -3609,17 +3637,24 @@ do
 		dd.TextSize = 14; dd.Font = F.Medium; dd.LayoutOrder = 2; dd.ZIndex = 74; dd.Parent = cs
 		corner(dd, 8)
 		IntroUI.countryDropdown = dd
+		-- CRITICAL UI FIX: Country dropdown with proper scrollable list
 		local exp = false
-		local cl = Instance.new("Frame")
+		local cl = Instance.new("ScrollingFrame")
 		cl.Size = UDim2.new(1, 0, 0, 0); cl.BackgroundColor3 = C.White; cl.Visible = false
 		cl.LayoutOrder = 3; cl.ZIndex = 80; cl.Parent = cs
+		cl.ScrollBarThickness = 6
+		cl.ScrollBarImageColor3 = C.Gray400
+		cl.CanvasSize = UDim2.new(0, 0, 0, #cOpts * 32)
+		cl.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		corner(cl, 8); stroke(cl, 1, 0.5, C.Gray300)
 		local cll = Instance.new("UIListLayout"); cll.Parent = cl
 		for _, c in ipairs(cOpts) do
 			local cb = Instance.new("TextButton")
-			cb.Size = UDim2.new(1, 0, 0, 32); cb.BackgroundColor3 = C.White
+			cb.Size = UDim2.new(1, -6, 0, 32); cb.BackgroundColor3 = C.White
 			cb.Text = c.flag .. " " .. c.id; cb.TextColor3 = C.Gray700
 			cb.TextSize = 13; cb.Font = F.Body; cb.ZIndex = 81; cb.Parent = cl
+			cb.MouseEnter:Connect(function() cb.BackgroundColor3 = C.Gray100 end)
+			cb.MouseLeave:Connect(function() cb.BackgroundColor3 = C.White end)
 			cb.MouseButton1Click:Connect(function()
 				GodModeCreateData.country = c.id; dd.Text = c.flag .. " " .. c.id
 				cl.Visible = false; cl.Size = UDim2.new(1, 0, 0, 0); exp = false
@@ -3627,7 +3662,8 @@ do
 		end
 		dd.MouseButton1Click:Connect(function()
 			exp = not exp; cl.Visible = exp
-			cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 200)) or UDim2.new(1, 0, 0, 0)
+			-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
+			cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
 		end)
 	end
 
@@ -3696,9 +3732,14 @@ do
 			godModeCreate = true, familyWealth = GodModeCreateData.familyWealth,
 			ethnicity = GodModeCreateData.ethnicity, country = GodModeCreateData.country }
 		if GodModeEdit then pcall(function() GodModeEdit:InvokeServer(p) end) end
+		-- CRITICAL FIX: Set both selectedGender AND currentState.Gender for avatar display
+		selectedGender = GodModeCreateData.gender
 		currentState.Gender = GodModeCreateData.gender
 		currentState.Name = cName
 		introComplete = true
+		-- CRITICAL FIX: Restore content to auto-size before hiding
+		IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+		IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
@@ -3708,7 +3749,7 @@ do
 		local bk = Instance.new("TextButton")
 		bk.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 32 or 36)
 		bk.BackgroundColor3 = C.Gray200
-		bk.Text = "← Back to Names"
+		bk.Text = "← Back"
 		bk.TextColor3 = C.Gray600
 		bk.TextSize = Device.IS_TINY_PHONE and 12 or 14
 		bk.Font = F.Medium
@@ -3719,8 +3760,12 @@ do
 		
 		bk.MouseButton1Click:Connect(function()
 			IntroUI.godModeContainer.Visible = false
-			IntroUI.nameBtns.Visible = true
-			IntroUI.genderTitle.Text = "Pick someone to become"
+			-- CRITICAL FIX: Restore content to auto-size mode and show gender buttons
+			IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+			IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
+			IntroUI.genderBtns.Visible = true
+			IntroUI.nameBtns.Visible = false
+			IntroUI.genderTitle.Text = "Start by picking a gender"
 		end)
 	end
 end -- End of God Mode UI do-block
@@ -3737,10 +3782,24 @@ local function showGodModeIntroCustomize()
 		return
 	end
 	
-	-- Hide name buttons, show God Mode customization
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Properly set up the content for God Mode customization
+	-- Need to disable AutomaticSize and set a fixed height for the container to work
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Hide BOTH gender and name buttons
+	IntroUI.genderBtns.Visible = false
 	IntroUI.nameBtns.Visible = false
+	
+	-- Switch content to fixed size mode (80% of viewport height)
+	IntroUI.content.AutomaticSize = Enum.AutomaticSize.None
+	local viewportHeight = workspace.CurrentCamera.ViewportSize.Y
+	local contentHeight = math.min(viewportHeight * 0.8, 600) -- Cap at 600px
+	IntroUI.content.Size = UDim2.new(0.92, 0, 0, contentHeight)
+	
 	IntroUI.godModeContainer.Visible = true
 	IntroUI.genderTitle.Text = "⚡ Customize Your Character"
+	IntroUI.genderTitle.Visible = true
 	
 	-- Reset to defaults but keep selected gender
 	GodModeCreateData.gender = selectedGender or "Male"
@@ -3942,12 +4001,11 @@ for _, g in ipairs(genderData) do
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
 
-	-- FIXED: no insane Y scale; just a small pulse
 	btn.MouseEnter:Connect(function()
 		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 62) })
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 58) }) -- 0,58 not 58,0
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 58) })
 	end)
 
 	btn.MouseButton1Click:Connect(function()
@@ -3987,6 +4045,64 @@ for _, g in ipairs(genderData) do
 	end)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Add "Customize Character" button to GENDER selection screen
+-- This appears alongside Male/Female buttons at the initial screen
+-- ═══════════════════════════════════════════════════════════════════════════════
+do
+	local customizeGenderBtn = Instance.new("TextButton")
+	customizeGenderBtn.Name = "CustomizeGenderBtn"
+	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138) -- Gold
+	customizeGenderBtn.Font = F.Title
+	customizeGenderBtn.TextSize = 16
+	customizeGenderBtn.TextColor3 = C.Gray900
+	customizeGenderBtn.Text = "⚡ Customize Character"
+	customizeGenderBtn.AutoButtonColor = false
+	customizeGenderBtn.LayoutOrder = 10 -- After gender buttons
+	customizeGenderBtn.ZIndex = 72
+	customizeGenderBtn.Parent = IntroUI.genderBtns
+	pill(customizeGenderBtn)
+	stroke(customizeGenderBtn, 2, 0, Color3.fromRGB(217, 119, 6))
+	
+	IntroUI.customizeGenderBtn = customizeGenderBtn
+	
+	customizeGenderBtn.MouseEnter:Connect(function()
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+	end)
+	customizeGenderBtn.MouseLeave:Connect(function()
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+	end)
+	
+	customizeGenderBtn.MouseButton1Click:Connect(function()
+		-- Check for God Mode ownership
+		refreshGodModeStatus()
+		if hasGodMode then
+			showGodModeIntroCustomize()
+		else
+			-- Prompt to purchase
+			if PromptGamepass then
+				PromptGamepass:FireServer("GOD_MODE")
+			end
+		end
+	end)
+	
+	-- Update button appearance based on God Mode status
+	local function updateCustomizeGenderBtn()
+		refreshGodModeStatus()
+		if hasGodMode then
+			customizeGenderBtn.Text = "⚡ Customize Character"
+			customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+		else
+			customizeGenderBtn.Text = "🔓 Customize (God Mode)"
+			customizeGenderBtn.BackgroundColor3 = C.Gray300
+		end
+	end
+	
+	-- Update on show
+	task.defer(updateCustomizeGenderBtn)
+end
+
 showIntro = function()
 	if introComplete then return end
 
@@ -4005,6 +4121,10 @@ showIntro = function()
 	if IntroUI.godModeContainer then
 		IntroUI.godModeContainer.Visible = false
 	end
+	
+	-- CRITICAL FIX: Restore content to auto-size mode
+	IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+	IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
 	
 	-- Reset God Mode data for new life
 	if GodModeCreateData then
@@ -4038,6 +4158,11 @@ showIntro = function()
 end
 
 hideIntro = function()
+	-- CRITICAL FIX: Restore content to auto-size mode before hiding
+	IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
+	IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
+	IntroUI.godModeContainer.Visible = false
+	
 	-- Smooth fade out animation
 	local fadeTime = 0.25
 
@@ -4073,27 +4198,63 @@ function updateFromState()
 	)
 	moneyLabel.Text = formatMoney(currentState.Money or 0)
 
-	-- Gender-aware avatar emoji selection
-	-- Use currentState.Gender, fallback to selectedGender (local variable from intro)
-	local gender = currentState.Gender or selectedGender
-	local isFemale = (gender == "Female")
-
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Gender AND Ethnicity-aware avatar emoji selection
+	-- Uses skin tone modifiers based on player's ethnicity from God Mode
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local gender = currentState.Gender or selectedGender or "Male"
+	local isFemale = (gender:lower() == "female")
+	
+	-- Get ethnicity from player flags for skin-tone modifiers
+	local ethnicity = ""
+	if currentState.Flags and currentState.Flags.ethnicity then
+		ethnicity = currentState.Flags.ethnicity
+	end
+	
+	-- Skin tone modifiers based on ethnicity
+	local skinTone = "" -- Default (yellow)
+	if ethnicity == "Caucasian" then
+		skinTone = "🏻" -- Light skin
+	elseif ethnicity == "African" then
+		skinTone = "🏿" -- Dark skin
+	elseif ethnicity == "Hispanic" or ethnicity == "Middle Eastern" then
+		skinTone = "🏽" -- Medium skin
+	elseif ethnicity == "Asian" then
+		skinTone = "🏻" -- Light skin
+	elseif ethnicity == "Indian" then
+		skinTone = "🏾" -- Medium-dark skin
+	elseif ethnicity == "Pacific Islander" or ethnicity == "Indigenous" then
+		skinTone = "🏽" -- Medium skin
+	elseif ethnicity == "Mixed" then
+		skinTone = "🏼" -- Medium-light skin
+	end
+	
+	-- CRITICAL FIX: Avatar emoji based on age, gender, AND ethnicity
 	local age = currentState.Age or 0
-	if age < 3 then
-		-- Baby - same emoji for both genders
-		avatarEmoji.Text = "👶"
+	if age < 2 then
+		-- Baby
+		avatarEmoji.Text = isFemale and "👶" .. skinTone .. "🎀" or "👶" .. skinTone
+	elseif age < 5 then
+		-- Toddler
+		avatarEmoji.Text = isFemale and "👧" .. skinTone or "👦" .. skinTone
 	elseif age < 13 then
 		-- Child
-		avatarEmoji.Text = isFemale and "👧" or "👦"
+		avatarEmoji.Text = isFemale and "👧" .. skinTone or "👦" .. skinTone
 	elseif age < 20 then
 		-- Teen
-		avatarEmoji.Text = isFemale and "👩‍🦰" or "👨‍🦱"
+		avatarEmoji.Text = isFemale and "👩" .. skinTone or "👨" .. skinTone
+	elseif age < 40 then
+		-- Young Adult
+		avatarEmoji.Text = isFemale and "👩" .. skinTone or "👨" .. skinTone
 	elseif age < 60 then
-		-- Adult
-		avatarEmoji.Text = isFemale and "👩" or "👨"
-	else
+		-- Middle Aged Adult
+		avatarEmoji.Text = isFemale and "👩" .. skinTone or "👨" .. skinTone
+	elseif age < 75 then
 		-- Senior
-		avatarEmoji.Text = isFemale and "👵" or "👴"
+		avatarEmoji.Text = isFemale and "👵" .. skinTone or "👴" .. skinTone
+	else
+		-- Elderly
+		avatarEmoji.Text = isFemale and "👵" .. skinTone or "👴" .. skinTone
 	end
 
 	for key, card in pairs(statCards) do
