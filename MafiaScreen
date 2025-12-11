@@ -1452,6 +1452,11 @@ function MafiaScreen:attemptJoinFamily(familyId)
 	
 	if success and result then
 		if result.success then
+			-- CRITICAL FIX: Update local state immediately with the returned mobState
+			if result.mobState and self.playerState then
+				self.playerState.MobState = result.mobState
+			end
+			
 			self:showResult(true, "Welcome to the Family!", result.message or "You've joined.", "🤝")
 			task.delay(1.5, function()
 				self:refreshContent()
@@ -1479,6 +1484,13 @@ function MafiaScreen:attemptLeaveFamily()
 	
 	if success and result then
 		if result.success then
+			-- CRITICAL FIX: Update local state immediately
+			if self.playerState and self.playerState.MobState then
+				self.playerState.MobState.inMob = false
+				self.playerState.MobState.familyId = nil
+				self.playerState.MobState.familyName = nil
+			end
+			
 			self:showResult(true, "You're Out", result.message or "You left the family.", "🚪")
 			task.delay(1.5, function()
 				self:refreshContent()

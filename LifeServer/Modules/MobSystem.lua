@@ -640,6 +640,54 @@ function MobSystem:getFamilyList()
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- SERIALIZATION (Send MobState to client)
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MobSystem:serialize(lifeState)
+	local mobState = self:getMobState(lifeState)
+	if not mobState then
+		return {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			familyEmoji = nil,
+			rankIndex = 1,
+			rankLevel = 1,
+			rankName = nil,
+			rankEmoji = nil,
+			respect = 0,
+			loyalty = 100,
+			heat = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			operationsFailed = 0,
+			earnings = 0,
+			kills = 0,
+		}
+	end
+	
+	-- Return a clean copy of the mob state for the client
+	return {
+		inMob = mobState.inMob or false,
+		familyId = mobState.familyId,
+		familyName = mobState.familyName,
+		familyEmoji = mobState.familyEmoji,
+		rankIndex = mobState.rankIndex or 1,
+		rankLevel = mobState.rankLevel or 1,
+		rankName = mobState.rankName,
+		rankEmoji = mobState.rankEmoji,
+		respect = mobState.respect or 0,
+		loyalty = mobState.loyalty or 100,
+		heat = mobState.heat or 0,
+		yearsInMob = mobState.yearsInMob or 0,
+		operationsCompleted = mobState.operationsCompleted or 0,
+		operationsFailed = mobState.operationsFailed or 0,
+		earnings = mobState.earnings or 0,
+		kills = mobState.kills or 0,
+	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 

@@ -3320,35 +3320,42 @@ local GodModeCreateData = {
 
 -- Build God Mode UI in separate scope to reduce local registers
 do
+	-- Container fills available space, with fixed button area at bottom
+	local btnAreaHeight = Device.IS_TINY_PHONE and 100 or 120
+	
 	IntroUI.godModeContainer = Instance.new("Frame")
 	IntroUI.godModeContainer.Name = "GodModeCustomize"
-	IntroUI.godModeContainer.Size = UDim2.new(1, 0, 0, 500)
+	IntroUI.godModeContainer.Size = UDim2.new(1, 0, 1, 0) -- Fill parent
 	IntroUI.godModeContainer.BackgroundTransparency = 1
 	IntroUI.godModeContainer.Visible = false
 	IntroUI.godModeContainer.LayoutOrder = 4
 	IntroUI.godModeContainer.ZIndex = 71
 	IntroUI.godModeContainer.Parent = IntroUI.content
 
+	-- Scroll area - leaves room at bottom for fixed button
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.Size = UDim2.new(1, 0, 1, -btnAreaHeight)
+	scroll.Position = UDim2.new(0, 0, 0, 0)
 	scroll.BackgroundTransparency = 1
-	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarThickness = 6
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(253, 230, 138)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ScrollingEnabled = true
+	scroll.ElasticBehavior = Enum.ElasticBehavior.Always
 	scroll.Parent = IntroUI.godModeContainer
 	IntroUI.godModeScroll = scroll
 
 	local layout = Instance.new("UIListLayout")
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Padding = UDim.new(0, 10)
+	layout.Padding = UDim.new(0, 8)
 	layout.Parent = scroll
 
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 8)
 	padding.PaddingRight = UDim.new(0, 8)
 	padding.PaddingTop = UDim.new(0, 8)
-	padding.PaddingBottom = UDim.new(0, 20)
+	padding.PaddingBottom = UDim.new(0, 10)
 	padding.Parent = scroll
 	
 	-- Helper to create section
@@ -3446,39 +3453,55 @@ do
 		end)
 	end
 
-	-- Ethnicity section
-	local ethSec = makeSection("🌍 Ethnicity", 3)
+	-- Ethnicity section with emojis
+	local ethSec = makeSection("🌍 Ethnicity / Heritage", 3)
 	local ethFrame = Instance.new("Frame")
-	ethFrame.Size = UDim2.new(1, 0, 0, 80)
+	ethFrame.Size = UDim2.new(1, 0, 0, 0)
+	ethFrame.AutomaticSize = Enum.AutomaticSize.Y
 	ethFrame.BackgroundTransparency = 1
 	ethFrame.LayoutOrder = 2
 	ethFrame.ZIndex = 73
 	ethFrame.Parent = ethSec
 	local ethGrid = Instance.new("UIGridLayout")
-	ethGrid.CellSize = UDim2.new(0, 90, 0, 32)
-	ethGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+	ethGrid.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
+	ethGrid.CellPadding = UDim2.new(0, 4, 0, 4)
 	ethGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	ethGrid.Parent = ethFrame
 	
+	-- Ethnicity options with emojis representing diverse backgrounds
+	local ethOpts = {
+		{ id = "Random", label = "🎲 Random", emoji = "🎲" },
+		{ id = "Caucasian", label = "🧑‍🦱 Caucasian", emoji = "🧑‍🦱" },
+		{ id = "African", label = "👨🏿 African", emoji = "👨🏿" },
+		{ id = "Asian", label = "🧑🏻 Asian", emoji = "🧑🏻" },
+		{ id = "Hispanic", label = "🧑🏽 Hispanic", emoji = "🧑🏽" },
+		{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern", emoji = "🧔🏽" },
+		{ id = "Indian", label = "🧑🏾 South Asian", emoji = "🧑🏾" },
+		{ id = "Pacific Islander", label = "🏝️ Pacific Islander", emoji = "🏝️" },
+		{ id = "Indigenous", label = "🪶 Indigenous", emoji = "🪶" },
+		{ id = "Mixed", label = "🌈 Mixed", emoji = "🌈" },
+	}
+	
 	IntroUI.ethnicityBtns = {}
-	for _, eth in ipairs({"Random", "Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Indian", "Mixed"}) do
+	for _, eth in ipairs(ethOpts) do
 		local btn = Instance.new("TextButton")
-		btn.Name = eth
-		btn.Size = UDim2.new(0, 90, 0, 32)
-		btn.BackgroundColor3 = eth == "Random" and C.Purple or C.Gray200
-		btn.Text = eth
-		btn.TextColor3 = eth == "Random" and C.White or C.Gray600
-		btn.TextSize = 12
+		btn.Name = eth.id
+		btn.Size = UDim2.new(0, 100, 0, 34)
+		btn.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
+		btn.Text = eth.label
+		btn.TextColor3 = eth.id == "Random" and C.White or C.Gray600
+		btn.TextSize = Device.IS_TINY_PHONE and 10 or 11
 		btn.Font = F.Medium
+		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.ZIndex = 74
 		btn.Parent = ethFrame
 		corner(btn, 6)
-		IntroUI.ethnicityBtns[eth] = btn
+		IntroUI.ethnicityBtns[eth.id] = btn
 		btn.MouseButton1Click:Connect(function()
-			GodModeCreateData.ethnicity = eth
+			GodModeCreateData.ethnicity = eth.id
 			for id, b in pairs(IntroUI.ethnicityBtns) do
-				b.BackgroundColor3 = id == eth and C.Purple or C.Gray200
-				b.TextColor3 = id == eth and C.White or C.Gray600
+				b.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
+				b.TextColor3 = id == eth.id and C.White or C.Gray600
 			end
 		end)
 	end
@@ -3593,9 +3616,30 @@ do
 		end)
 	end
 
-	-- Country section
-	local countrySec = makeSection("🌎 Country", 6)
-	local countryOpts = {"United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "Brazil", "Mexico", "India", "China", "Italy", "Spain", "Russia"}
+	-- Country section with flag emojis
+	local countrySec = makeSection("🌎 Country of Birth", 6)
+	local countryOpts = {
+		{id = "United States", flag = "🇺🇸"},
+		{id = "United Kingdom", flag = "🇬🇧"},
+		{id = "Canada", flag = "🇨🇦"},
+		{id = "Australia", flag = "🇦🇺"},
+		{id = "Germany", flag = "🇩🇪"},
+		{id = "France", flag = "🇫🇷"},
+		{id = "Japan", flag = "🇯🇵"},
+		{id = "Brazil", flag = "🇧🇷"},
+		{id = "Mexico", flag = "🇲🇽"},
+		{id = "India", flag = "🇮🇳"},
+		{id = "China", flag = "🇨🇳"},
+		{id = "Italy", flag = "🇮🇹"},
+		{id = "Spain", flag = "🇪🇸"},
+		{id = "Russia", flag = "🇷🇺"},
+		{id = "South Korea", flag = "🇰🇷"},
+		{id = "Nigeria", flag = "🇳🇬"},
+		{id = "South Africa", flag = "🇿🇦"},
+		{id = "Argentina", flag = "🇦🇷"},
+		{id = "Philippines", flag = "🇵🇭"},
+		{id = "Indonesia", flag = "🇮🇩"},
+	}
 	local countryDropdown = Instance.new("TextButton")
 	countryDropdown.Size = UDim2.new(1, 0, 0, 40)
 	countryDropdown.BackgroundColor3 = C.Gray100
@@ -3620,19 +3664,19 @@ do
 	stroke(countryList, 1, 0.5, C.Gray300)
 	local cListLayout = Instance.new("UIListLayout")
 	cListLayout.Parent = countryList
-	for _, country in ipairs(countryOpts) do
+	for _, c in ipairs(countryOpts) do
 		local cBtn = Instance.new("TextButton")
 		cBtn.Size = UDim2.new(1, 0, 0, 32)
 		cBtn.BackgroundColor3 = C.White
-		cBtn.Text = country
+		cBtn.Text = c.flag .. " " .. c.id
 		cBtn.TextColor3 = C.Gray700
 		cBtn.TextSize = 13
 		cBtn.Font = F.Body
 		cBtn.ZIndex = 81
 		cBtn.Parent = countryList
 		cBtn.MouseButton1Click:Connect(function()
-			GodModeCreateData.country = country
-			countryDropdown.Text = "🌎 " .. country
+			GodModeCreateData.country = c.id
+			countryDropdown.Text = c.flag .. " " .. c.id
 			countryList.Visible = false
 			countryList.Size = UDim2.new(1, 0, 0, 0)
 			countryExpanded = false
@@ -3644,26 +3688,60 @@ do
 		countryList.Size = countryExpanded and UDim2.new(1, 0, 0, math.min(#countryOpts * 32, 200)) or UDim2.new(1, 0, 0, 0)
 	end)
 
-	-- Start Life button section
-	local startSec = Instance.new("Frame")
-	startSec.Size = UDim2.new(1, 0, 0, 60)
-	startSec.BackgroundTransparency = 1
-	startSec.LayoutOrder = 7
-	startSec.ZIndex = 72
-	startSec.Parent = scroll
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FIXED BOTTOM BUTTON AREA (Always visible, outside scroll)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local bottomArea = Instance.new("Frame")
+	bottomArea.Name = "BottomButtons"
+	bottomArea.Size = UDim2.new(1, 0, 0, btnAreaHeight)
+	bottomArea.Position = UDim2.new(0, 0, 1, -btnAreaHeight)
+	bottomArea.BackgroundColor3 = C.Bg
+	bottomArea.BorderSizePixel = 0
+	bottomArea.ZIndex = 75
+	bottomArea.Parent = IntroUI.godModeContainer
+	
+	-- Gradient fade at top of button area
+	local fadeGrad = Instance.new("UIGradient")
+	fadeGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.15, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
+	})
+	fadeGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.3),
+		NumberSequenceKeypoint.new(0.15, 0),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	fadeGrad.Rotation = 90
+	fadeGrad.Parent = bottomArea
+	
+	local bottomLayout = Instance.new("UIListLayout")
+	bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	bottomLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	bottomLayout.Padding = UDim.new(0, 8)
+	bottomLayout.Parent = bottomArea
+	
+	local bottomPad = Instance.new("UIPadding")
+	bottomPad.PaddingLeft = UDim.new(0, 12)
+	bottomPad.PaddingRight = UDim.new(0, 12)
+	bottomPad.PaddingTop = UDim.new(0, 8)
+	bottomPad.PaddingBottom = UDim.new(0, 12)
+	bottomPad.Parent = bottomArea
+	
+	-- START BUTTON - Big and always visible
 	IntroUI.godModeStartBtn = Instance.new("TextButton")
-	IntroUI.godModeStartBtn.Size = UDim2.new(0.9, 0, 0, 50)
-	IntroUI.godModeStartBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-	IntroUI.godModeStartBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	IntroUI.godModeStartBtn.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 44 or 52)
 	IntroUI.godModeStartBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-	IntroUI.godModeStartBtn.Text = "⚡ START YOUR CUSTOM LIFE"
+	IntroUI.godModeStartBtn.Text = "⚡ START YOUR CUSTOM LIFE ⚡"
 	IntroUI.godModeStartBtn.TextColor3 = C.Gray900
-	IntroUI.godModeStartBtn.TextSize = 18
+	IntroUI.godModeStartBtn.TextSize = Device.IS_TINY_PHONE and 15 or 18
 	IntroUI.godModeStartBtn.Font = F.Title
-	IntroUI.godModeStartBtn.ZIndex = 73
-	IntroUI.godModeStartBtn.Parent = startSec
+	IntroUI.godModeStartBtn.ZIndex = 76
+	IntroUI.godModeStartBtn.LayoutOrder = 1
+	IntroUI.godModeStartBtn.Parent = bottomArea
 	corner(IntroUI.godModeStartBtn, 12)
 	stroke(IntroUI.godModeStartBtn, 2, 0, Color3.fromRGB(217, 119, 6))
+	
 	IntroUI.godModeStartBtn.MouseButton1Click:Connect(function()
 		local customName = GodModeCreateData.customName:gsub("^%s+", ""):gsub("%s+$", "")
 		if customName == "" then
@@ -3684,25 +3762,19 @@ do
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
 
-	-- Back button section
-	local backSec = Instance.new("Frame")
-	backSec.Size = UDim2.new(1, 0, 0, 40)
-	backSec.BackgroundTransparency = 1
-	backSec.LayoutOrder = 8
-	backSec.ZIndex = 72
-	backSec.Parent = scroll
+	-- BACK BUTTON - Smaller, below start
 	local backBtn = Instance.new("TextButton")
-	backBtn.Size = UDim2.new(0.5, 0, 0, 36)
-	backBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-	backBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	backBtn.Size = UDim2.new(0.6, 0, 0, Device.IS_TINY_PHONE and 32 or 36)
 	backBtn.BackgroundColor3 = C.Gray200
 	backBtn.Text = "← Back to Names"
 	backBtn.TextColor3 = C.Gray600
-	backBtn.TextSize = 14
+	backBtn.TextSize = Device.IS_TINY_PHONE and 12 or 14
 	backBtn.Font = F.Medium
-	backBtn.ZIndex = 73
-	backBtn.Parent = backSec
+	backBtn.ZIndex = 76
+	backBtn.LayoutOrder = 2
+	backBtn.Parent = bottomArea
 	corner(backBtn, 8)
+	
 	backBtn.MouseButton1Click:Connect(function()
 		IntroUI.godModeContainer.Visible = false
 		IntroUI.nameBtns.Visible = true
@@ -4152,6 +4224,8 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			CurrentJob = state.CurrentJob,
 			Education = state.Education,
 			EducationData = state.EducationData,
+			-- CRITICAL: Include MobState for Mafia screen
+			MobState = state.MobState or { inMob = false },
 		}
 
 		-- Reset header UI
