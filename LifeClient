@@ -3277,20 +3277,6 @@ end
 
 local IntroUI = {}
 
-local function parseNames(blob)
-	local list = {}
-	if type(blob) ~= "string" then
-		return list
-	end
-	for line in blob:gmatch("[^\r\n]+") do
-		local trimmed = line:match("^%s*(.-)%s*$")
-		if trimmed ~= "" then
-			table.insert(list, trimmed)
-		end
-	end
-	return list
-end
-
 IntroUI.overlay = Instance.new("Frame")
 IntroUI.overlay.Size = UDim2.fromScale(1, 1)
 IntroUI.overlay.BackgroundColor3 = C.Black
@@ -3350,185 +3336,30 @@ IntroUI.nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 IntroUI.nameBtnLayout.Padding = UDim.new(0, 12)
 IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
--- Name pools for randomization - EXPANDED for variety (100+ names each)
--- Consolidated into single table to reduce local register usage (Luau limit is 200)
 local NameData = {
-	maleFirstNames = parseNames([[
-James
-Michael
-Daniel
-Alexander
-William
-Benjamin
-Lucas
-Henry
-Noah
-Liam
-Mason
-Oliver
-Aiden
-Jackson
-Elijah
-Matthew
-Christopher
-Andrew
-Joseph
-Samuel
-Ryan
-Nathan
-Logan
-Wyatt
-Jack
-Luke
-Gabriel
-Adrian
-Evan
-Austin
-Xavier
-Blake
-Dominic
-Finn
-Theo
-Miles
-Leo
-Nolan
-Kai
-Rowan
-]]),
+	maleFirstNames = {
+		"James", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
+		"Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Elijah", "Matthew",
+		"Christopher", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Logan", "Wyatt",
+		"Jack", "Luke", "Gabriel", "Adrian", "Evan", "Austin", "Xavier", "Blake",
+		"Dominic", "Finn", "Theo", "Miles", "Leo", "Nolan", "Kai", "Rowan",
+	},
 
-	femaleFirstNames = parseNames([[
-Emma
-Sophia
-Olivia
-Ava
-Isabella
-Mia
-Charlotte
-Amelia
-Harper
-Evelyn
-Abigail
-Emily
-Luna
-Ella
-Avery
-Camila
-Aria
-Scarlett
-Penelope
-Elizabeth
-Sarah
-Jessica
-Ashley
-Nicole
-Lauren
-Rachel
-Hannah
-Megan
-Samantha
-Victoria
-Chloe
-Grace
-Lily
-Natalie
-Leah
-Claire
-Bella
-Aurora
-Lucy
-Naomi
-Elena
-Maya
-Madelyn
-Willow
-Aubrey
-Eliana
-Stella
-Hazel
-Ivy
-Riley
-Quinn
-]]),
+	femaleFirstNames = {
+		"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia",
+		"Harper", "Evelyn", "Abigail", "Emily", "Luna", "Ella", "Avery", "Camila",
+		"Aria", "Scarlett", "Penelope", "Elizabeth", "Sarah", "Jessica", "Ashley", "Nicole",
+		"Lauren", "Rachel", "Hannah", "Megan", "Samantha", "Victoria", "Chloe", "Grace",
+		"Lily", "Natalie", "Leah", "Claire", "Bella", "Aurora", "Lucy", "Naomi",
+	},
 
-	lastNames = parseNames([[
-Wilson
-Brown
-Johnson
-Williams
-Davis
-Anderson
-Taylor
-Thomas
-Moore
-Jackson
-White
-Harris
-Clark
-Lewis
-Walker
-Hall
-Allen
-Young
-King
-Wright
-Hill
-Scott
-Green
-Adams
-Nelson
-Carter
-Mitchell
-Roberts
-Turner
-Campbell
-Parker
-Evans
-Collins
-Stewart
-Murphy
-Rogers
-Morgan
-Peterson
-Reed
-Bailey
-Bell
-Garcia
-Rodriguez
-Martinez
-Hernandez
-Lopez
-Gonzalez
-Perez
-Sanchez
-Ramirez
-Torres
-Rivera
-Diaz
-Morales
-Cruz
-Chen
-Kim
-Nguyen
-Lee
-Wang
-Li
-Zhang
-Patel
-Singh
-Khan
-Ahmed
-Hassan
-Rossi
-Romano
-Ricci
-Laurent
-Bernard
-Sullivan
-O'Connor
-Quinn
-Byrne
-Ryan
-]]),
+	lastNames = {
+		"Wilson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas",
+		"Moore", "Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall",
+		"Allen", "Young", "King", "Wright", "Hill", "Scott", "Green", "Adams",
+		"Nelson", "Carter", "Mitchell", "Roberts", "Turner", "Campbell", "Parker", "Evans",
+		"Collins", "Stewart", "Murphy", "Rogers", "Morgan", "Peterson", "Reed", "Bailey",
+	},
 
 	currentMaleNames = {},
 	currentFemaleNames = {},
