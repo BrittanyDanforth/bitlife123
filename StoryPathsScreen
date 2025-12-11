@@ -1276,7 +1276,15 @@ function StoryPathsScreen:startPath(pathId)
 	end
 
 	log("Invoking server StartPath...")
-	local result = StartPath:InvokeServer(pathId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return StartPath:InvokeServer(pathId)
+	end)
+	if not success then
+		logWarn("StartPath call failed:", result)
+		self:showResult(false, "Server error", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -1300,7 +1308,15 @@ function StoryPathsScreen:doPathAction(pathId, actionId)
 	end
 
 	log("Invoking server DoPathAction...")
-	local result = DoPathAction:InvokeServer(pathId, actionId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return DoPathAction:InvokeServer(pathId, actionId)
+	end)
+	if not success then
+		logWarn("DoPathAction call failed:", result)
+		self:showResult(false, "Server error", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then

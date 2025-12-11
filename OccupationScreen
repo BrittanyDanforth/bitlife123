@@ -4416,7 +4416,15 @@ function OccupationScreen:applyForJob(jobId)
 	end
 
 	log("Invoking server ApplyForJob...")
-	local result = ApplyForJob:InvokeServer(jobId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return ApplyForJob:InvokeServer(jobId)
+	end)
+	if not success then
+		logWarn("ApplyForJob call failed:", result)
+		self:showResult(false, "Server error. Please try again.", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -4834,7 +4842,15 @@ function OccupationScreen:executeQuit(quitStyle)
 	log("=== EXECUTING QUIT ===")
 	log("Quit style:", quitStyle)
 	
-	local result = QuitJob:InvokeServer(quitStyle)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return QuitJob:InvokeServer(quitStyle)
+	end)
+	if not success then
+		logWarn("QuitJob call failed:", result)
+		self:showResult(false, "Server error.", "❌")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 	
 	if result and result.success then
@@ -4881,9 +4897,12 @@ function OccupationScreen:executeQuit(quitStyle)
 				self.cachedJobData = nil
 				
 				-- Force refresh career info from server (expect nil/empty response)
+				-- CRITICAL FIX: Add pcall protection
 				if GetCareerInfo then
-					local newCareerInfo = GetCareerInfo:InvokeServer()
-					if newCareerInfo then
+					local success, newCareerInfo = pcall(function()
+						return GetCareerInfo:InvokeServer()
+					end)
+					if success and newCareerInfo then
 						self.careerInfo = newCareerInfo
 					end
 				end
@@ -4922,7 +4941,15 @@ function OccupationScreen:doWork()
 	end
 
 	log("Invoking server DoWork...")
-	local result = DoWork:InvokeServer()
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return DoWork:InvokeServer()
+	end)
+	if not success then
+		logWarn("DoWork call failed:", result)
+		self:showResult(false, "Server error.", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -4953,7 +4980,15 @@ function OccupationScreen:requestPromotion()
 	end
 
 	log("Invoking server RequestPromotion...")
-	local result = RequestPromotion:InvokeServer()
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return RequestPromotion:InvokeServer()
+	end)
+	if not success then
+		logWarn("RequestPromotion call failed:", result)
+		self:showResult(false, "Server error.", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -4979,7 +5014,15 @@ function OccupationScreen:requestRaise()
 	end
 
 	log("Invoking server RequestRaise...")
-	local result = RequestRaise:InvokeServer()
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return RequestRaise:InvokeServer()
+	end)
+	if not success then
+		logWarn("RequestRaise call failed:", result)
+		self:showResult(false, "Server error.", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
@@ -5488,7 +5531,15 @@ function OccupationScreen:enrollEducation(eduId)
 	end
 
 	log("Invoking server EnrollEducation...")
-	local result = EnrollEducation:InvokeServer(eduId)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return EnrollEducation:InvokeServer(eduId)
+	end)
+	if not success then
+		logWarn("EnrollEducation call failed:", result)
+		self:showResult(false, "Server error.", "X")
+		return
+	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then

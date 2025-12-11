@@ -17,7 +17,7 @@ local player = Players.LocalPlayer
 
 local ScreensFolder = ReplicatedStorage:WaitForChild("Screens", 3) -- Reduced timeout
 
-local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, StoryPathsScreen
+local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, StoryPathsScreen, MafiaScreen
 local MinigamesModule
 
 if ScreensFolder then
@@ -31,7 +31,10 @@ if ScreensFolder then
 			end
 			return s and r or nil
 		else
-			warn("[LifeClient] ❌ Module not found:", name)
+			-- Don't warn for optional modules like MafiaScreen
+			if name ~= "MafiaScreen" then
+				warn("[LifeClient] ❌ Module not found:", name)
+			end
 		end
 		return nil
 	end
@@ -42,6 +45,7 @@ if ScreensFolder then
 	RelationshipsScreen = safeRequire("RelationshipsScreen")
 	ActivitiesScreen    = safeRequire("ActivitiesScreen")
 	StoryPathsScreen    = safeRequire("StoryPathsScreen")
+	MafiaScreen         = safeRequire("MafiaScreen")
 end
 
 -- Minigames module (directly in ReplicatedStorage) - wait for it!
@@ -141,6 +145,7 @@ local ScreenInstances = {
 	relationships = nil,
 	activities = nil,
 	storypaths = nil,
+	mafia = nil,
 }
 local minigamesInstance
 local pendingMinigameEventId     = nil
@@ -3368,6 +3373,538 @@ IntroUI.nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 IntroUI.nameBtnLayout.Padding = UDim.new(0, 12)
 IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GOD MODE CHARACTER CREATION CUSTOMIZATION
+-- Full character customization at creation for God Mode owners
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+IntroUI.godModeContainer = Instance.new("Frame")
+IntroUI.godModeContainer.Name = "GodModeCustomize"
+IntroUI.godModeContainer.Size = UDim2.new(1, 0, 0, 500)
+IntroUI.godModeContainer.BackgroundTransparency = 1
+IntroUI.godModeContainer.Visible = false
+IntroUI.godModeContainer.LayoutOrder = 4
+IntroUI.godModeContainer.ZIndex = 71
+IntroUI.godModeContainer.Parent = IntroUI.content
+
+local godModeScroll = Instance.new("ScrollingFrame")
+godModeScroll.Size = UDim2.new(1, 0, 1, 0)
+godModeScroll.BackgroundTransparency = 1
+godModeScroll.ScrollBarThickness = 4
+godModeScroll.ScrollBarImageColor3 = Color3.fromRGB(253, 230, 138)
+godModeScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+godModeScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+godModeScroll.Parent = IntroUI.godModeContainer
+
+local godModeLayout = Instance.new("UIListLayout")
+godModeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+godModeLayout.Padding = UDim.new(0, 10)
+godModeLayout.Parent = godModeScroll
+
+local godModePad = Instance.new("UIPadding")
+godModePad.PaddingLeft = UDim.new(0, 8)
+godModePad.PaddingRight = UDim.new(0, 8)
+godModePad.PaddingTop = UDim.new(0, 8)
+godModePad.PaddingBottom = UDim.new(0, 20)
+godModePad.Parent = godModeScroll
+
+-- God Mode customization data
+local GodModeCreateData = {
+	customName = "",
+	gender = "Male",
+	ethnicity = "Random",
+	familyWealth = "Middle Class",
+	country = "United States",
+	stats = { Happiness = 50, Health = 100, Smarts = 50, Looks = 50 },
+}
+
+local EthnicityOptions = {
+	"Random", "Caucasian", "African", "Asian", "Hispanic", "Middle Eastern", "Indian", "Mixed"
+}
+
+local WealthOptions = {
+	{ id = "Poor", label = "🏚️ Poor Family", desc = "Start with $0-500" },
+	{ id = "Lower Middle", label = "🏠 Lower Middle Class", desc = "Start with $1,000-5,000" },
+	{ id = "Middle Class", label = "🏡 Middle Class", desc = "Start with $5,000-20,000" },
+	{ id = "Upper Middle", label = "🏢 Upper Middle Class", desc = "Start with $50,000-100,000" },
+	{ id = "Rich", label = "🏰 Wealthy Family", desc = "Start with $500,000-2M" },
+	{ id = "Famous", label = "👑 Famous/Royal", desc = "Start with $5M+ and fame" },
+}
+
+local CountryOptions = {
+	"United States", "United Kingdom", "Canada", "Australia", "Germany", "France", 
+	"Japan", "Brazil", "Mexico", "India", "China", "Italy", "Spain", "Russia"
+}
+
+-- Helper to create a section card
+local function createGodModeSection(title, order)
+	local section = Instance.new("Frame")
+	section.Name = "Section_" .. title
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = order
+	section.ZIndex = 72
+	section.Parent = godModeScroll
+	corner(section, 12)
+	
+	local sectionPad = Instance.new("UIPadding")
+	sectionPad.PaddingLeft = UDim.new(0, 12)
+	sectionPad.PaddingRight = UDim.new(0, 12)
+	sectionPad.PaddingTop = UDim.new(0, 10)
+	sectionPad.PaddingBottom = UDim.new(0, 10)
+	sectionPad.Parent = section
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 8)
+	sectionLayout.Parent = section
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 0, 24)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = C.Gray800
+	titleLabel.TextSize = 16
+	titleLabel.Font = F.Title
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.LayoutOrder = 1
+	titleLabel.ZIndex = 73
+	titleLabel.Parent = section
+	
+	return section
+end
+
+-- Create Custom Name section
+local nameSection = createGodModeSection("👤 Character Name", 1)
+
+IntroUI.customNameInput = Instance.new("TextBox")
+IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
+IntroUI.customNameInput.BackgroundColor3 = C.Gray100
+IntroUI.customNameInput.Text = ""
+IntroUI.customNameInput.PlaceholderText = "Enter custom name..."
+IntroUI.customNameInput.TextColor3 = C.Gray900
+IntroUI.customNameInput.PlaceholderColor3 = C.Gray400
+IntroUI.customNameInput.TextSize = 16
+IntroUI.customNameInput.Font = F.Medium
+IntroUI.customNameInput.ClearTextOnFocus = false
+IntroUI.customNameInput.LayoutOrder = 2
+IntroUI.customNameInput.ZIndex = 73
+IntroUI.customNameInput.Parent = nameSection
+corner(IntroUI.customNameInput, 8)
+
+IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
+	GodModeCreateData.customName = IntroUI.customNameInput.Text
+end)
+
+-- Create Gender section
+local genderSection = createGodModeSection("⚧ Gender", 2)
+
+local genderBtnFrame = Instance.new("Frame")
+genderBtnFrame.Size = UDim2.new(1, 0, 0, 40)
+genderBtnFrame.BackgroundTransparency = 1
+genderBtnFrame.LayoutOrder = 2
+genderBtnFrame.ZIndex = 73
+genderBtnFrame.Parent = genderSection
+
+local genderBtnLayout = Instance.new("UIListLayout")
+genderBtnLayout.FillDirection = Enum.FillDirection.Horizontal
+genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+genderBtnLayout.Padding = UDim.new(0, 8)
+genderBtnLayout.Parent = genderBtnFrame
+
+IntroUI.genderBtnsCustom = {}
+for i, gData in ipairs({{id="Male", icon="♂", color=C.Male}, {id="Female", icon="♀", color=C.Female}}) do
+	local gBtn = Instance.new("TextButton")
+	gBtn.Size = UDim2.new(0, 100, 0, 36)
+	gBtn.BackgroundColor3 = gData.id == "Male" and gData.color or C.Gray200
+	gBtn.Text = gData.icon .. " " .. gData.id
+	gBtn.TextColor3 = gData.id == "Male" and C.White or C.Gray600
+	gBtn.TextSize = 14
+	gBtn.Font = F.Medium
+	gBtn.ZIndex = 74
+	gBtn.Parent = genderBtnFrame
+	corner(gBtn, 8)
+	IntroUI.genderBtnsCustom[gData.id] = gBtn
+	
+	gBtn.MouseButton1Click:Connect(function()
+		GodModeCreateData.gender = gData.id
+		selectedGender = gData.id
+		-- Update button states
+		for id, btn in pairs(IntroUI.genderBtnsCustom) do
+			if id == gData.id then
+				btn.BackgroundColor3 = id == "Male" and C.Male or C.Female
+				btn.TextColor3 = C.White
+			else
+				btn.BackgroundColor3 = C.Gray200
+				btn.TextColor3 = C.Gray600
+			end
+		end
+	end)
+end
+
+-- Create Ethnicity section
+local ethnicitySection = createGodModeSection("🌍 Ethnicity", 3)
+
+local ethnicityBtnFrame = Instance.new("Frame")
+ethnicityBtnFrame.Size = UDim2.new(1, 0, 0, 80)
+ethnicityBtnFrame.BackgroundTransparency = 1
+ethnicityBtnFrame.LayoutOrder = 2
+ethnicityBtnFrame.ZIndex = 73
+ethnicityBtnFrame.Parent = ethnicitySection
+
+local ethnicityGrid = Instance.new("UIGridLayout")
+ethnicityGrid.CellSize = UDim2.new(0, 90, 0, 32)
+ethnicityGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+ethnicityGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ethnicityGrid.Parent = ethnicityBtnFrame
+
+IntroUI.ethnicityBtns = {}
+for i, eth in ipairs(EthnicityOptions) do
+	local eBtn = Instance.new("TextButton")
+	eBtn.Name = eth
+	eBtn.Size = UDim2.new(0, 90, 0, 32)
+	eBtn.BackgroundColor3 = eth == "Random" and C.Purple or C.Gray200
+	eBtn.Text = eth
+	eBtn.TextColor3 = eth == "Random" and C.White or C.Gray600
+	eBtn.TextSize = 12
+	eBtn.Font = F.Medium
+	eBtn.ZIndex = 74
+	eBtn.Parent = ethnicityBtnFrame
+	corner(eBtn, 6)
+	IntroUI.ethnicityBtns[eth] = eBtn
+	
+	eBtn.MouseButton1Click:Connect(function()
+		GodModeCreateData.ethnicity = eth
+		for id, btn in pairs(IntroUI.ethnicityBtns) do
+			if id == eth then
+				btn.BackgroundColor3 = C.Purple
+				btn.TextColor3 = C.White
+			else
+				btn.BackgroundColor3 = C.Gray200
+				btn.TextColor3 = C.Gray600
+			end
+		end
+	end)
+end
+
+-- Create Family Wealth section
+local wealthSection = createGodModeSection("💰 Family Wealth", 4)
+
+IntroUI.wealthBtns = {}
+for i, wealth in ipairs(WealthOptions) do
+	local wBtn = Instance.new("TextButton")
+	wBtn.Name = wealth.id
+	wBtn.Size = UDim2.new(1, 0, 0, 44)
+	wBtn.BackgroundColor3 = wealth.id == "Middle Class" and C.Green or C.Gray100
+	wBtn.Text = ""
+	wBtn.LayoutOrder = i + 1
+	wBtn.ZIndex = 74
+	wBtn.Parent = wealthSection
+	corner(wBtn, 8)
+	
+	local wLabel = Instance.new("TextLabel")
+	wLabel.Size = UDim2.new(1, -16, 0, 24)
+	wLabel.Position = UDim2.new(0, 8, 0, 4)
+	wLabel.BackgroundTransparency = 1
+	wLabel.Text = wealth.label
+	wLabel.TextColor3 = wealth.id == "Middle Class" and C.White or C.Gray800
+	wLabel.TextSize = 14
+	wLabel.Font = F.Medium
+	wLabel.TextXAlignment = Enum.TextXAlignment.Left
+	wLabel.ZIndex = 75
+	wLabel.Parent = wBtn
+	
+	local wDesc = Instance.new("TextLabel")
+	wDesc.Size = UDim2.new(1, -16, 0, 16)
+	wDesc.Position = UDim2.new(0, 8, 0, 26)
+	wDesc.BackgroundTransparency = 1
+	wDesc.Text = wealth.desc
+	wDesc.TextColor3 = wealth.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or C.Gray500
+	wDesc.TextSize = 11
+	wDesc.Font = F.Body
+	wDesc.TextXAlignment = Enum.TextXAlignment.Left
+	wDesc.ZIndex = 75
+	wDesc.Parent = wBtn
+	
+	IntroUI.wealthBtns[wealth.id] = { btn = wBtn, label = wLabel, desc = wDesc }
+	
+	wBtn.MouseButton1Click:Connect(function()
+		GodModeCreateData.familyWealth = wealth.id
+		for id, data in pairs(IntroUI.wealthBtns) do
+			if id == wealth.id then
+				data.btn.BackgroundColor3 = C.Green
+				data.label.TextColor3 = C.White
+				data.desc.TextColor3 = Color3.fromRGB(220, 252, 231)
+			else
+				data.btn.BackgroundColor3 = C.Gray100
+				data.label.TextColor3 = C.Gray800
+				data.desc.TextColor3 = C.Gray500
+			end
+		end
+	end)
+end
+
+-- Create Stats section
+local statsSection = createGodModeSection("📊 Starting Stats", 5)
+
+IntroUI.statSliders = {}
+local statConfigs = {
+	{ key = "Happiness", icon = "😊", color = C.Yellow },
+	{ key = "Health", icon = "❤️", color = C.Green },
+	{ key = "Smarts", icon = "🧠", color = C.Purple },
+	{ key = "Looks", icon = "💄", color = C.Pink },
+}
+
+for i, stat in ipairs(statConfigs) do
+	local statRow = Instance.new("Frame")
+	statRow.Size = UDim2.new(1, 0, 0, 36)
+	statRow.BackgroundTransparency = 1
+	statRow.LayoutOrder = i + 1
+	statRow.ZIndex = 73
+	statRow.Parent = statsSection
+	
+	local statLabel = Instance.new("TextLabel")
+	statLabel.Size = UDim2.new(0, 80, 1, 0)
+	statLabel.BackgroundTransparency = 1
+	statLabel.Text = stat.icon .. " " .. stat.key
+	statLabel.TextColor3 = C.Gray700
+	statLabel.TextSize = 13
+	statLabel.Font = F.Medium
+	statLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statLabel.ZIndex = 74
+	statLabel.Parent = statRow
+	
+	local sliderBg = Instance.new("Frame")
+	sliderBg.Size = UDim2.new(1, -130, 0, 12)
+	sliderBg.Position = UDim2.new(0, 85, 0.5, 0)
+	sliderBg.AnchorPoint = Vector2.new(0, 0.5)
+	sliderBg.BackgroundColor3 = C.Gray200
+	sliderBg.ZIndex = 74
+	sliderBg.Parent = statRow
+	corner(sliderBg, 6)
+	
+	local sliderFill = Instance.new("Frame")
+	sliderFill.Size = UDim2.new(GodModeCreateData.stats[stat.key] / 100, 0, 1, 0)
+	sliderFill.BackgroundColor3 = stat.color
+	sliderFill.ZIndex = 75
+	sliderFill.Parent = sliderBg
+	corner(sliderFill, 6)
+	
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.Size = UDim2.new(0, 40, 1, 0)
+	valueLabel.Position = UDim2.new(1, -40, 0, 0)
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.Text = tostring(GodModeCreateData.stats[stat.key]) .. "%"
+	valueLabel.TextColor3 = C.Gray700
+	valueLabel.TextSize = 13
+	valueLabel.Font = F.Medium
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.ZIndex = 74
+	valueLabel.Parent = statRow
+	
+	IntroUI.statSliders[stat.key] = { fill = sliderFill, value = valueLabel, bg = sliderBg }
+	
+	-- Simple click-to-set slider
+	sliderBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local relX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+			local newVal = math.floor(relX * 100)
+			GodModeCreateData.stats[stat.key] = newVal
+			sliderFill.Size = UDim2.new(relX, 0, 1, 0)
+			valueLabel.Text = tostring(newVal) .. "%"
+		end
+	end)
+end
+
+-- Create Country section
+local countrySection = createGodModeSection("🌎 Country", 6)
+
+local countryDropdown = Instance.new("TextButton")
+countryDropdown.Size = UDim2.new(1, 0, 0, 40)
+countryDropdown.BackgroundColor3 = C.Gray100
+countryDropdown.Text = "🇺🇸 " .. GodModeCreateData.country
+countryDropdown.TextColor3 = C.Gray800
+countryDropdown.TextSize = 14
+countryDropdown.Font = F.Medium
+countryDropdown.LayoutOrder = 2
+countryDropdown.ZIndex = 74
+countryDropdown.Parent = countrySection
+corner(countryDropdown, 8)
+
+local countryExpanded = false
+local countryList = Instance.new("Frame")
+countryList.Size = UDim2.new(1, 0, 0, 0)
+countryList.BackgroundColor3 = C.White
+countryList.Visible = false
+countryList.LayoutOrder = 3
+countryList.ZIndex = 80
+countryList.Parent = countrySection
+corner(countryList, 8)
+stroke(countryList, 1, 0.5, C.Gray300)
+
+local countryListLayout = Instance.new("UIListLayout")
+countryListLayout.Parent = countryList
+
+for i, country in ipairs(CountryOptions) do
+	local cBtn = Instance.new("TextButton")
+	cBtn.Size = UDim2.new(1, 0, 0, 32)
+	cBtn.BackgroundColor3 = C.White
+	cBtn.Text = country
+	cBtn.TextColor3 = C.Gray700
+	cBtn.TextSize = 13
+	cBtn.Font = F.Body
+	cBtn.ZIndex = 81
+	cBtn.Parent = countryList
+	
+	cBtn.MouseButton1Click:Connect(function()
+		GodModeCreateData.country = country
+		countryDropdown.Text = "🌎 " .. country
+		countryList.Visible = false
+		countryList.Size = UDim2.new(1, 0, 0, 0)
+		countryExpanded = false
+	end)
+end
+
+countryDropdown.MouseButton1Click:Connect(function()
+	countryExpanded = not countryExpanded
+	countryList.Visible = countryExpanded
+	countryList.Size = countryExpanded and UDim2.new(1, 0, 0, math.min(#CountryOptions * 32, 200)) or UDim2.new(1, 0, 0, 0)
+end)
+
+-- Create Start Life button
+local startSection = Instance.new("Frame")
+startSection.Size = UDim2.new(1, 0, 0, 60)
+startSection.BackgroundTransparency = 1
+startSection.LayoutOrder = 7
+startSection.ZIndex = 72
+startSection.Parent = godModeScroll
+
+IntroUI.godModeStartBtn = Instance.new("TextButton")
+IntroUI.godModeStartBtn.Size = UDim2.new(0.9, 0, 0, 50)
+IntroUI.godModeStartBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+IntroUI.godModeStartBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+IntroUI.godModeStartBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+IntroUI.godModeStartBtn.Text = "⚡ START YOUR CUSTOM LIFE"
+IntroUI.godModeStartBtn.TextColor3 = C.Gray900
+IntroUI.godModeStartBtn.TextSize = 18
+IntroUI.godModeStartBtn.Font = F.Title
+IntroUI.godModeStartBtn.ZIndex = 73
+IntroUI.godModeStartBtn.Parent = startSection
+corner(IntroUI.godModeStartBtn, 12)
+stroke(IntroUI.godModeStartBtn, 2, 0, Color3.fromRGB(217, 119, 6))
+
+IntroUI.godModeStartBtn.MouseButton1Click:Connect(function()
+	-- Validate name
+	local customName = GodModeCreateData.customName:gsub("^%s+", ""):gsub("%s+$", "")
+	if customName == "" then
+		-- Generate a random name if none provided
+		local names = GodModeCreateData.gender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
+		if #names > 0 then
+			customName = names[1]
+		else
+			customName = GodModeCreateData.gender == "Male" and "John Doe" or "Jane Doe"
+		end
+	end
+	
+	-- Set life info first
+	SetLifeInfo:FireServer(customName, GodModeCreateData.gender)
+	
+	-- Apply God Mode customizations
+	local godModePayload = {
+		name = customName,
+		gender = GodModeCreateData.gender,
+		stats = GodModeCreateData.stats,
+		godModeCreate = true,
+		familyWealth = GodModeCreateData.familyWealth,
+		ethnicity = GodModeCreateData.ethnicity,
+		country = GodModeCreateData.country,
+	}
+	
+	if GodModeEdit then
+		pcall(function()
+			GodModeEdit:InvokeServer(godModePayload)
+		end)
+	end
+	
+	-- Store in current state
+	currentState.Gender = GodModeCreateData.gender
+	currentState.Name = customName
+	
+	introComplete = true
+	hideIntro()
+	
+	task.defer(function()
+		if updateFromState then
+			updateFromState()
+		end
+	end)
+end)
+
+-- Back button
+local backSection = Instance.new("Frame")
+backSection.Size = UDim2.new(1, 0, 0, 40)
+backSection.BackgroundTransparency = 1
+backSection.LayoutOrder = 8
+backSection.ZIndex = 72
+backSection.Parent = godModeScroll
+
+local backBtn = Instance.new("TextButton")
+backBtn.Size = UDim2.new(0.5, 0, 0, 36)
+backBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+backBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+backBtn.BackgroundColor3 = C.Gray200
+backBtn.Text = "← Back to Names"
+backBtn.TextColor3 = C.Gray600
+backBtn.TextSize = 14
+backBtn.Font = F.Medium
+backBtn.ZIndex = 73
+backBtn.Parent = backSection
+corner(backBtn, 8)
+
+backBtn.MouseButton1Click:Connect(function()
+	IntroUI.godModeContainer.Visible = false
+	IntroUI.nameBtns.Visible = true
+	IntroUI.genderTitle.Text = "Pick someone to become"
+end)
+
+-- Function to show God Mode customization
+local function showGodModeIntroCustomize()
+	-- Refresh God Mode status
+	refreshGodModeStatus()
+	
+	if not hasGodMode then
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		return
+	end
+	
+	-- Hide name buttons, show God Mode customization
+	IntroUI.nameBtns.Visible = false
+	IntroUI.godModeContainer.Visible = true
+	IntroUI.genderTitle.Text = "⚡ Customize Your Character"
+	
+	-- Reset to defaults but keep selected gender
+	GodModeCreateData.gender = selectedGender or "Male"
+	GodModeCreateData.customName = ""
+	GodModeCreateData.ethnicity = "Random"
+	GodModeCreateData.familyWealth = "Middle Class"
+	GodModeCreateData.country = "United States"
+	GodModeCreateData.stats = { Happiness = 50, Health = 100, Smarts = 50, Looks = 50 }
+	
+	-- Update UI to match
+	IntroUI.customNameInput.Text = ""
+	for id, btn in pairs(IntroUI.genderBtnsCustom) do
+		if id == GodModeCreateData.gender then
+			btn.BackgroundColor3 = id == "Male" and C.Male or C.Female
+			btn.TextColor3 = C.White
+		else
+			btn.BackgroundColor3 = C.Gray200
+			btn.TextColor3 = C.Gray600
+		end
+	end
+end
+
 local NameData = {
 	maleFirstNames = {
 		"James", "Michael", "Daniel", "Alexander", "Liam", "Noah",
@@ -3461,16 +3998,53 @@ for i = 1, 3 do
 	end)
 end
 
+-- Add "Customize with God Mode" button as 4th option
+local godModeCustomizeBtn = Instance.new("TextButton")
+godModeCustomizeBtn.Name = "GodModeCustomizeBtn"
+godModeCustomizeBtn.Size = UDim2.new(0.85, 0, 0, 54)
+godModeCustomizeBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+godModeCustomizeBtn.Font = F.Title
+godModeCustomizeBtn.TextSize = 16
+godModeCustomizeBtn.TextColor3 = C.Gray900
+godModeCustomizeBtn.Text = "⚡ Customize Character"
+godModeCustomizeBtn.AutoButtonColor = false
+godModeCustomizeBtn.LayoutOrder = 4
+godModeCustomizeBtn.ZIndex = 72
+godModeCustomizeBtn.Parent = IntroUI.nameBtns
+pill(godModeCustomizeBtn)
+stroke(godModeCustomizeBtn, 2, 0, Color3.fromRGB(217, 119, 6))
+
+godModeCustomizeBtn.MouseEnter:Connect(function()
+	tween(godModeCustomizeBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 58) })
+end)
+godModeCustomizeBtn.MouseLeave:Connect(function()
+	tween(godModeCustomizeBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 54) })
+end)
+
+godModeCustomizeBtn.MouseButton1Click:Connect(function()
+	showGodModeIntroCustomize()
+end)
+
 updateNameButtons = function()
 	local names = selectedGender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
 	local emoji = selectedGender == "Male" and "👨" or "👩"
 	for _, child in ipairs(IntroUI.nameBtns:GetChildren()) do
-		if child:IsA("TextButton") then
+		if child:IsA("TextButton") and child.Name:match("^NameBtn") then
 			local idx = tonumber(child.Name:match("%d+"))
 			if idx and names[idx] then
 				child.Text = emoji .. " " .. names[idx]
 			end
 		end
+	end
+	
+	-- Update God Mode button based on ownership
+	refreshGodModeStatus()
+	if hasGodMode then
+		godModeCustomizeBtn.Text = "⚡ Customize Character"
+		godModeCustomizeBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+	else
+		godModeCustomizeBtn.Text = "🔓 Get God Mode"
+		godModeCustomizeBtn.BackgroundColor3 = C.Gray300
 	end
 end
 
@@ -3745,8 +4319,8 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 		-- Update all screen instances with the new state (even during reset)
 		-- This ensures screens have proper initial state
-if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
-	ScreenInstances.occupation:updateState(currentState)
+		if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
+			ScreenInstances.occupation:updateState(currentState)
 		end
 		if ScreenInstances.assets and ScreenInstances.assets.updateState then
 			ScreenInstances.assets:updateState(currentState)
@@ -3756,6 +4330,9 @@ if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
 		end
 		if ScreenInstances.activities and ScreenInstances.activities.updateState then
 			ScreenInstances.activities:updateState(currentState)
+		end
+		if ScreenInstances.mafia and ScreenInstances.mafia.updateState then
+			ScreenInstances.mafia:updateState(currentState)
 		end
 
 		-- SHOW INTRO MODAL
@@ -3808,18 +4385,20 @@ if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
 	if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
 		ScreenInstances.occupation:updateState(currentState)
 	end
-if ScreenInstances.assets and ScreenInstances.assets.updateState then
-	ScreenInstances.assets:updateState(currentState)
+	if ScreenInstances.assets and ScreenInstances.assets.updateState then
+		ScreenInstances.assets:updateState(currentState)
 	end
-if ScreenInstances.relationships and ScreenInstances.relationships.updateState then
-	ScreenInstances.relationships:updateState(currentState)
+	if ScreenInstances.relationships and ScreenInstances.relationships.updateState then
+		ScreenInstances.relationships:updateState(currentState)
 	end
-if ScreenInstances.activities and ScreenInstances.activities.updateState then
-	ScreenInstances.activities:updateState(currentState)
+	if ScreenInstances.activities and ScreenInstances.activities.updateState then
+		ScreenInstances.activities:updateState(currentState)
 	end
-
-if ScreenInstances.storypaths and ScreenInstances.storypaths.visible then
-	ScreenInstances.storypaths:updateUI()
+	if ScreenInstances.mafia and ScreenInstances.mafia.updateState then
+		ScreenInstances.mafia:updateState(currentState)
+	end
+	if ScreenInstances.storypaths and ScreenInstances.storypaths.visible then
+		ScreenInstances.storypaths:updateUI()
 	end
 
 	-- CRITICAL FIX: Check for death FIRST before showing any popups
@@ -4043,6 +4622,7 @@ ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",     
 ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
+ScreenInstances.mafia        = safeNew(MafiaScreen,         "MafiaScreen",         screenGui, blurOverlay, showBlur, hideBlur, currentState)
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)

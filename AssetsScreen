@@ -1694,7 +1694,15 @@ function AssetsScreen:sellAsset(item, itemType)
 		return
 	end
 
-	local result = SellAsset:InvokeServer(item.id, itemType)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return SellAsset:InvokeServer(item.id, itemType)
+	end)
+	if not success then
+		logWarn("SellAsset call failed:", result)
+		self:showResult(false, "Server error", "❌")
+		return
+	end
 	if result then
 		log("Sell result:", result.success, result.message)
 		self:showResult(result.success, result.message, result.success and "💰" or "😔")
@@ -2071,7 +2079,15 @@ function AssetsScreen:buyAsset(item, itemType)
 		return
 	end
 
-	local result = remote:InvokeServer(item.id)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return remote:InvokeServer(item.id)
+	end)
+	if not success then
+		logWarn("BuyAsset call failed:", result)
+		self:showResult(false, "Server error", "❌")
+		return
+	end
 	if result then
 		self:showResult(result.success, result.message, result.success and "🎉" or "😔")
 		
@@ -2173,8 +2189,11 @@ function AssetsScreen:spin()
 
 	task.delay(0.3, function()
 		if Gamble then
-			local result = Gamble:InvokeServer(self.betAmount, finalSymbols)
-			if result then
+			-- CRITICAL FIX: Add pcall protection for server calls
+			local success, result = pcall(function()
+				return Gamble:InvokeServer(self.betAmount, finalSymbols)
+			end)
+			if success and result then
 				if result.success then
 					self.spinResult.Text = "🎉 You won " .. UI.formatMoney(result.winnings) .. "!"
 					self.spinResult.TextColor3 = C.Green
@@ -2182,6 +2201,9 @@ function AssetsScreen:spin()
 					self.spinResult.Text = result.message or "Better luck next time!"
 					self.spinResult.TextColor3 = C.Red
 				end
+			elseif not success then
+				self.spinResult.Text = "Server error"
+				self.spinResult.TextColor3 = C.Red
 			end
 		else
 			local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]

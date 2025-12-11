@@ -852,7 +852,7 @@ TeenExpanded.events = {
 		stage = STAGE,
 		ageBand = "teen",
 		category = "risky",
-		tags = { "drugs", "alcohol", "peer_pressure" },
+		tags = { "substances", "alcohol", "peer_pressure" },
 		
 		choices = {
 			{

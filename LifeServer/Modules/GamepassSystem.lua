@@ -441,7 +441,7 @@ function GamepassSystem:getMafiaFamilies()
 			id = "cartel",
 			name = "Mexican Cartel",
 			emoji = "🇲🇽",
-			description = "El Cartel - Control the drug trade empire",
+			description = "El Cartel - Control the smuggling empire",
 			ranks = {"Halcon", "Sicario", "Lugarteniente", "Capo", "Jefe"},
 			color = Color3.fromRGB(34, 197, 94), -- Green
 		},

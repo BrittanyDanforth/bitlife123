@@ -1144,12 +1144,12 @@ local CrimeCatalog = {
 	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
 	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
 	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
-	drug_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
+	smuggling = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
 	car_theft = { risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 } },
 	arson = { risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 } },
-	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
-	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
-	murder = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
+	intimidation = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
+	ransom = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
+	assault = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
 }
 
 local PrisonActions = {
@@ -2510,7 +2510,7 @@ function LifeBackend:applyHabitEffects(state)
 	end
 	
 	-- Substance abuse: serious health impact
-	if state.Flags.substance_issue or state.Flags.drug_addiction then
+	if state.Flags.substance_issue or state.Flags.substance_addict then
 		healthChange = healthChange - RANDOM:NextInteger(2, 5)
 		happinessChange = happinessChange - RANDOM:NextInteger(1, 3)
 	end
@@ -3150,14 +3150,14 @@ function LifeBackend:processAddictions(state)
 			moneyCost = function(state) return math.floor((state.Money or 0) * 0.20) end, -- 20% of wealth
 			quitDifficulty = 0.10,
 		},
-		drug_user = {
+		substance_user = {
 			healthCost = 4,
 			happinessCost = 3,
 			moneyCost = 3000,
 			quitDifficulty = 0.10,
 			canGetArrested = true,
 		},
-		hard_drugs = {
+		substance_addict = {
 			healthCost = 8,
 			happinessCost = 6,
 			smartsCost = 2,
@@ -3180,7 +3180,7 @@ function LifeBackend:processAddictions(state)
 				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - addiction.happinessCost, 0, 100)
 			end
 			
-			-- Apply smarts cost (brain damage from hard drugs)
+			-- Apply smarts cost (brain damage from substance abuse)
 			if addiction.smartsCost then
 				state.Stats.Smarts = clamp((state.Stats.Smarts or 50) - addiction.smartsCost, 0, 100)
 			end
@@ -3202,20 +3202,20 @@ function LifeBackend:processAddictions(state)
 					"💼 Lost job due to addiction problems.", "😔")
 			end
 			
-			-- Chance to get arrested (drugs)
+			-- Chance to get arrested (illegal substances)
 			if addiction.canGetArrested and RANDOM:NextNumber() < 0.08 then
 				state.Flags.arrested = true
 				state.Flags.criminal_record = true
 				self:logYearEvent(state, "legal",
-					"🚔 Arrested for drug possession!", "⚠️")
+					"🚔 Arrested for illegal activity!", "⚠️")
 			end
 			
-			-- Chance to overdose (hard drugs)
+			-- Chance to overdose (severe addiction)
 			if addiction.canOverdose and RANDOM:NextNumber() < 0.03 then
 				state.Stats.Health = clamp((state.Stats.Health or 50) - 30, 0, 100)
 				if state.Stats.Health <= 0 then
 					state.Flags.dead = true
-					state.DeathReason = "Drug overdose"
+					state.DeathReason = "Substance overdose"
 				else
 					state.Flags.overdose_survivor = true
 					self:logYearEvent(state, "health",
@@ -3306,7 +3306,7 @@ function LifeBackend:checkNaturalDeath(state)
 		if state.Flags.smoking or state.Flags.heavy_drinking then
 			lifestyleModifier = lifestyleModifier * 1.5 -- 50% increase
 		end
-		if state.Flags.hard_drugs or state.Flags.alcoholic then
+		if state.Flags.substance_addict or state.Flags.alcoholic then
 			lifestyleModifier = lifestyleModifier * 2.0 -- 100% increase
 		end
 		
@@ -6381,14 +6381,58 @@ function LifeBackend:handleGodModeEdit(player, payload)
 		end
 	end
 
+	-- GOD MODE CHARACTER CREATION FEATURES
+	-- Handle family wealth setting (only during creation - godModeCreate flag)
+	if payload.godModeCreate and payload.familyWealth then
+		local wealthSettings = {
+			["Poor"] = { min = 0, max = 500, flag = "poor_family" },
+			["Lower Middle"] = { min = 1000, max = 5000, flag = nil },
+			["Middle Class"] = { min = 5000, max = 20000, flag = nil },
+			["Upper Middle"] = { min = 50000, max = 100000, flag = "wealthy_parents" },
+			["Rich"] = { min = 500000, max = 2000000, flag = "rich_family" },
+			["Famous"] = { min = 5000000, max = 10000000, flag = "famous_family" },
+		}
+		
+		local wealth = wealthSettings[payload.familyWealth]
+		if wealth then
+			state.Money = RANDOM:NextInteger(wealth.min, wealth.max)
+			if wealth.flag then
+				state.Flags = state.Flags or {}
+				state.Flags[wealth.flag] = true
+			end
+			table.insert(summaries, "Family wealth set to " .. payload.familyWealth)
+		end
+	end
+	
+	-- Handle ethnicity setting
+	if payload.ethnicity and payload.ethnicity ~= "Random" then
+		state.Flags = state.Flags or {}
+		state.Flags.ethnicity = payload.ethnicity
+		table.insert(summaries, "Ethnicity set to " .. payload.ethnicity)
+	end
+	
+	-- Handle country setting
+	if payload.country then
+		state.Flags = state.Flags or {}
+		state.Flags.country = payload.country
+		table.insert(summaries, "Country set to " .. payload.country)
+	end
+
 	if #summaries == 0 then
 		return { success = false, message = "No God Mode changes were provided." }
 	end
 
 	state.Flags = state.Flags or {}
 	state.Flags.god_mode_last_used = os.time()
+	
+	-- Mark as God Mode created character
+	if payload.godModeCreate then
+		state.Flags.god_mode_created = true
+	end
 
-	local feedText = "⚡ God Mode update: " .. table.concat(summaries, " • ")
+	local feedText = payload.godModeCreate 
+		and "⚡ A custom life begins..." 
+		or ("⚡ God Mode update: " .. table.concat(summaries, " • "))
 	appendFeed(state, feedText)
 	self:pushState(player, feedText)
 

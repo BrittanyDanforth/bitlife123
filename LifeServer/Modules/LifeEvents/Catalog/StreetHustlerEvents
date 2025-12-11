@@ -341,7 +341,7 @@ local events = {
 							state:AddFeed(string.format("💰💰💰 THE SCORE! You made $%d! Life changing money!", earnings))
 						end
 					elseif outcome < 0.65 then -- 30% chance of getting caught
-						local years = jailPlayer(state, 5, 15, "Major trafficking")
+						local years = jailPlayer(state, 5, 15, "Major smuggling")
 						if state.AddFeed then
 							state:AddFeed(string.format("🚔 FEDERAL AGENTS! You're looking at %d years!", math.floor(years)))
 						end
@@ -1064,7 +1064,7 @@ local events = {
 						state.Money = (state.Money or 0) + RANDOM:NextInteger(500, 1500)
 						state:AddFeed("💰 Got paid but it was sketchy. Not worth the stress.")
 					else
-						local years = jailPlayer(state, 3, 7, "Trafficking")
+						local years = jailPlayer(state, 3, 7, "Smuggling")
 						state:AddFeed(string.format("🚔 It was a setup! %d years.", math.floor(years)))
 					end
 				end,
