@@ -993,6 +993,385 @@ local events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #25: MAFIA-SPECIFIC CRIMES
+	-- Special crimes only available to mob members with unique mechanics
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "mob_protection_racket",
+		emoji = "💰",
+		title = "Family Business: Protection",
+		text = "Your capo has given you a list of businesses that need to pay their weekly 'insurance'. Time to make the rounds.",
+		category = "crime",
+		weight = 8,
+		minAge = 18,
+		maxAge = 65,
+		cooldown = 2,
+		isMafiaOnly = true,
+		conditions = { requiresFlags = { in_mob = true, mafia_gamepass = true } },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Be intimidating but professional",
+				effects = { },
+				feedText = "Collecting protection money...",
+				onResolve = function(state)
+					local money = RANDOM:NextInteger(2000, 8000)
+					if state.AddMoney then
+						state:AddMoney(money)
+					end
+					if state.MobState then
+						state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(3, 8)
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("🔫 You collected $%d in protection money. The family is pleased.", money))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Get rough with a reluctant shop owner",
+				effects = { },
+				feedText = "Things got messy...",
+				onResolve = function(state)
+					local caught = RANDOM:NextNumber() < 0.15
+					if caught then
+						local years = incarceratePlayer(state, 1, 4, "assault and extortion")
+						if state.AddFeed then
+							state:AddFeed(string.format("A witness called the cops. You're going away for %.1f years.", years))
+						end
+					else
+						local money = RANDOM:NextInteger(4000, 12000)
+						if state.AddMoney then
+							state:AddMoney(money)
+						end
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(8, 15)
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(5, 10)
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("💪 The shop owner paid up AND threw in an extra $%d. Respect!", money))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Let them slide this week",
+				effects = { Happiness = 3 },
+				feedText = "You showed mercy...",
+				onResolve = function(state)
+					if state.MobState then
+						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - RANDOM:NextInteger(2, 5))
+					end
+					if state.AddFeed then
+						state:AddFeed("😬 Word got back to the capo. He's not happy you went soft.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mob_hit_contract",
+		emoji = "🎯",
+		title = "Family Business: The Contract",
+		text = "Your boss has a problem that needs to disappear. Permanently. This is a test of your loyalty.",
+		category = "crime",
+		weight = 4,
+		minAge = 21,
+		maxAge = 60,
+		cooldown = 10,
+		isMafiaOnly = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, mafia_gamepass = true },
+			customCheck = function(state)
+				return state.MobState and (state.MobState.rankLevel or 1) >= 2
+			end,
+		},
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Accept the contract - make it clean",
+				effects = { },
+				feedText = "You accepted the hit...",
+				onResolve = function(state)
+					local caught = RANDOM:NextNumber() < 0.20
+					if caught then
+						local years = incarceratePlayer(state, 20, 50, "murder")
+						if state.AddFeed then
+							state:AddFeed(string.format("💀 Evidence tied you to the hit. Life sentence: %.1f years.", years))
+						end
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + 20 -- Still respected for not ratting
+						end
+					else
+						local money = RANDOM:NextInteger(25000, 75000)
+						if state.AddMoney then
+							state:AddMoney(money)
+						end
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(25, 50)
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(15, 25)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.made_man = true
+						state.Flags.killer = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🔫 Contract complete. $%d bonus. You're now a made man.", money))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Refuse - I'm not a killer",
+				effects = { Happiness = 5 },
+				feedText = "You refused the hit...",
+				onResolve = function(state)
+					if state.MobState then
+						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - RANDOM:NextInteger(15, 30))
+						state.MobState.loyalty = (state.MobState.loyalty or 50) - 20
+					end
+					if state.AddFeed then
+						state:AddFeed("😰 The boss is furious. Your loyalty is now in question. Watch your back.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Tip off the target anonymously",
+				effects = { },
+				feedText = "You warned the target...",
+				onResolve = function(state)
+					local discovered = RANDOM:NextNumber() < 0.40
+					if discovered then
+						-- You're now a rat
+						state.Flags = state.Flags or {}
+						state.Flags.mob_traitor = true
+						if state.MobState then
+							state.MobState.inMob = false
+						end
+						if state.AddFeed then
+							state:AddFeed("💀 The family found out you warned the target. You're marked for death.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -20)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("The target fled before the hit. Nobody suspects you... yet.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mob_heist_planning",
+		emoji = "🏦",
+		title = "Family Business: Big Score",
+		text = "The family is planning a major heist. You've been asked to participate. This could make your career in the organization.",
+		category = "crime",
+		weight = 3,
+		minAge = 21,
+		maxAge = 55,
+		cooldown = 15,
+		isMafiaOnly = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, mafia_gamepass = true },
+			customCheck = function(state)
+				return state.MobState and (state.MobState.rankLevel or 1) >= 2
+			end,
+		},
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Take the lead role - I want the biggest cut",
+				effects = { },
+				feedText = "You're leading the heist...",
+				minigameType = "heist",
+				hasMinigame = true,
+				onResolve = function(state, outcome)
+					local success = outcome and outcome.minigameSuccess
+					if success then
+						local money = RANDOM:NextInteger(100000, 500000)
+						if state.AddMoney then
+							state:AddMoney(money)
+						end
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(40, 80)
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(20, 40)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.heist_legend = true
+						if state.AddFeed then
+							state:AddFeed(string.format("💰 LEGENDARY HEIST! Your cut: $%d. You're a legend in the family!", money))
+						end
+					else
+						local caught = RANDOM:NextNumber() < 0.50
+						if caught then
+							local years = incarceratePlayer(state, 10, 25, "armed robbery")
+							if state.AddFeed then
+								state:AddFeed(string.format("🚔 The heist went wrong. You're the only one who got caught. %.1f years.", years))
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed("😰 The heist failed but you escaped. No score, but you're still free.")
+							end
+							if state.MobState then
+								state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 10)
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Support role - getaway driver",
+				effects = { },
+				feedText = "You're driving getaway...",
+				minigameType = "getaway",
+				hasMinigame = true,
+				onResolve = function(state, outcome)
+					local success = outcome and outcome.minigameSuccess
+					if success then
+						local money = RANDOM:NextInteger(30000, 80000)
+						if state.AddMoney then
+							state:AddMoney(money)
+						end
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(15, 30)
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(10, 20)
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.wheelman = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🚗 Clean getaway! Your cut: $%d. They call you the Wheelman now.", money))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🚔 The cops chased you but you managed to lose them. Close call!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Sit this one out",
+				effects = { Happiness = 2 },
+				feedText = "You passed on the heist...",
+				onResolve = function(state)
+					if state.MobState then
+						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - RANDOM:NextInteger(5, 10))
+					end
+					if state.AddFeed then
+						state:AddFeed("The heist went down without you. You missed out on a big score.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mob_witness_problem",
+		emoji = "👁️",
+		title = "Family Business: Loose Ends",
+		text = "There's a witness who saw something they shouldn't have. The family needs this handled before they testify.",
+		category = "crime",
+		weight = 3,
+		minAge = 21,
+		maxAge = 60,
+		cooldown = 12,
+		isMafiaOnly = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, mafia_gamepass = true },
+			customCheck = function(state)
+				return state.MobState and (state.MobState.rankLevel or 1) >= 3
+			end,
+		},
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Pay them off to change their story",
+				effects = { },
+				feedText = "Bribing the witness...",
+				onResolve = function(state)
+					local cost = RANDOM:NextInteger(20000, 50000)
+					local money = state.Money or 0
+					if money >= cost then
+						if state.AddMoney then
+							state:AddMoney(-cost)
+						end
+						local success = RANDOM:NextNumber() < 0.70
+						if success then
+							if state.MobState then
+								state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(10, 20)
+							end
+							if state.AddFeed then
+								state:AddFeed(string.format("💵 The witness took $%d and changed their story. Problem solved cleanly.", cost))
+							end
+						else
+							if state.AddFeed then
+								state:AddFeed(string.format("😤 They took the $%d but still testified. Waste of money.", cost))
+							end
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💸 You don't have enough cash to make this deal.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Intimidate them into silence",
+				effects = { },
+				feedText = "Sending a message...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.60
+					if success then
+						if state.MobState then
+							state.MobState.respect = (state.MobState.respect or 0) + RANDOM:NextInteger(15, 25)
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(5, 10)
+						end
+						if state.AddFeed then
+							state:AddFeed("😰 The witness is too scared to testify. Problem handled.")
+						end
+					else
+						-- They went to the cops
+						if state.AddFeed then
+							state:AddFeed("🚔 The witness told the cops about your threats. Heat is rising.")
+						end
+						if state.MobState then
+							state.MobState.heat = (state.MobState.heat or 0) + RANDOM:NextInteger(20, 35)
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Report to the boss - let someone else handle it",
+				effects = { },
+				feedText = "Passing the problem up...",
+				onResolve = function(state)
+					if state.MobState then
+						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - RANDOM:NextInteger(5, 10))
+					end
+					if state.AddFeed then
+						state:AddFeed("The boss handled it, but he's disappointed you couldn't deal with it yourself.")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return events

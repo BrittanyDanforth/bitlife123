@@ -7175,10 +7175,11 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #7: ROYAL BIRTH INITIALIZATION
+	-- CRITICAL FIX #7 & #28: ROYAL BIRTH INITIALIZATION
 	-- Handle "Born Royal" family wealth option - requires Royalty gamepass
+	-- Now also checks for isRoyalBirth flag from character creation
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if payload.familyWealth == "Royal" or payload.familyWealth == "Royalty" or payload.bornRoyal then
+	if payload.familyWealth == "Royal" or payload.familyWealth == "Royalty" or payload.bornRoyal or payload.isRoyalBirth then
 		if self:checkGamepassOwnership(player, "ROYALTY") then
 			-- Initialize royal state
 			local royalCountryId = payload.royalCountry or "uk" -- Default to UK

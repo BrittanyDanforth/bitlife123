@@ -1940,16 +1940,62 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 			return JoinMob:InvokeServer(familyId)
 		end)
 		if success and result and result.success then
+			-- CRITICAL FIX #26: Update local state with mob info immediately
+			if self.playerState then
+				self.playerState.MobState = result.mobState or {
+					inMob = true,
+					familyId = familyId,
+					familyName = result.familyName or "Crime Family",
+					familyEmoji = result.familyEmoji or "🔫",
+					rankLevel = 1,
+					rankName = "Associate",
+					rankEmoji = "🔰",
+					respect = 0,
+					heat = 0,
+					loyalty = 50,
+				}
+				self.playerState.Flags = self.playerState.Flags or {}
+				self.playerState.Flags.in_mob = true
+				self.playerState.Flags.mafia_member = true
+			end
+			-- Also update self.state for getMobState()
+			if self.state then
+				self.state.MobState = self.playerState and self.playerState.MobState or result.mobState
+				self.state.Flags = self.state.Flags or {}
+				self.state.Flags.in_mob = true
+			end
 			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
-			self:switchTab("crime") -- Refresh
+			-- CRITICAL FIX #34: Delay refresh to allow state to propagate
+			task.delay(0.3, function()
+				self:switchTab("crime") -- Refresh to show mob operations
+			end)
 		elseif success and result then
 			self:showResult(false, result.message or "The family rejected you.", "❌")
 		else
 			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
-		-- Fallback for testing
+		-- Fallback for testing - also update local state
+		if self.playerState then
+			self.playerState.MobState = {
+				inMob = true,
+				familyId = familyId,
+				familyName = "Crime Family",
+				familyEmoji = "🔫",
+				rankLevel = 1,
+				rankName = "Associate",
+				rankEmoji = "🔰",
+				respect = 0,
+				heat = 0,
+				loyalty = 50,
+			}
+			self.playerState.Flags = self.playerState.Flags or {}
+			self.playerState.Flags.in_mob = true
+		end
 		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		task.delay(0.3, function()
+			self:switchTab("crime")
+		end)
 	end
 end
 
@@ -2017,8 +2063,29 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 end
 
 function ActivitiesScreen:getMobState()
+	-- CRITICAL FIX #21 & #34: Check both playerState and state for MobState
+	if self.playerState and self.playerState.MobState then
+		return self.playerState.MobState
+	end
 	if self.state and self.state.MobState then
 		return self.state.MobState
+	end
+	-- Also check flags to ensure consistency
+	local flags = (self.playerState and self.playerState.Flags) or (self.state and self.state.Flags)
+	if flags and flags.in_mob then
+		-- Return a minimal mob state if we know they're in mob but don't have full state
+		return {
+			inMob = true,
+			familyId = flags.mob_family_id,
+			familyName = flags.mob_family_name or "Crime Family",
+			familyEmoji = "🔫",
+			rankLevel = flags.mob_rank or 1,
+			rankName = "Associate",
+			rankEmoji = "🔰",
+			respect = 0,
+			heat = 0,
+			loyalty = 50,
+		}
 	end
 	return nil
 end

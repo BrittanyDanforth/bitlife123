@@ -1383,6 +1383,38 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 	local events = {}
 	local age = lifeState.Age or 0
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #29: Age-based title progression
+	-- Update royal title based on age (e.g., Prince → Crown Prince at age 18)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local oldTitle = royalState.title
+	RoyaltyEvents.updateRoyalTitle(lifeState)
+	if royalState.title ~= oldTitle and royalState.title then
+		table.insert(events, {
+			type = "title_change",
+			message = string.format("👑 Your title has changed! You are now %s!", royalState.title),
+		})
+	end
+	
+	-- CRITICAL FIX #29: Coming of age milestones
+	if age == 18 and not royalState.cameOfAge then
+		royalState.cameOfAge = true
+		royalState.popularity = math.min(100, royalState.popularity + 5)
+		table.insert(events, {
+			type = "coming_of_age",
+			message = "🎂 You have come of age! You can now perform adult royal duties.",
+		})
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.royal_adult = true
+	elseif age == 21 and not royalState.fullyAdult then
+		royalState.fullyAdult = true
+		royalState.popularity = math.min(100, royalState.popularity + 3)
+		table.insert(events, {
+			type = "full_adulthood",
+			message = "🎉 At 21, you are now a full adult member of the royal family!",
+		})
+	end
+	
 	-- Passive popularity decay
 	if royalState.dutiesCompleted == 0 then
 		royalState.popularity = math.max(0, royalState.popularity - 2)
@@ -1425,10 +1457,26 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 	if not royalState.isMonarch and royalState.lineOfSuccession > 1 then
 		-- Small chance of moving up in line
 		if math.random(100) <= 5 then
+			local oldLine = royalState.lineOfSuccession
 			royalState.lineOfSuccession = royalState.lineOfSuccession - 1
+			-- CRITICAL FIX #29: Update title after succession change
+			RoyaltyEvents.updateRoyalTitle(lifeState)
 			table.insert(events, {
 				type = "succession",
-				message = string.format("You moved up to #%d in line for the throne!", royalState.lineOfSuccession),
+				message = string.format("You moved up to #%d in line for the throne! You are now %s.", royalState.lineOfSuccession, royalState.title),
+			})
+		end
+	end
+	
+	-- Check if ready for coronation
+	if not royalState.isMonarch and royalState.lineOfSuccession == 1 and age >= 21 then
+		if math.random(100) <= 10 then -- 10% chance per year when next in line and adult
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.throne_ready = true
+			lifeState.Flags.is_heir = true
+			table.insert(events, {
+				type = "succession_imminent",
+				message = "👑 The current monarch's health is declining. You may soon inherit the throne!",
 			})
 		end
 	end
@@ -1436,14 +1484,16 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 	-- Random scandal chance
 	if math.random(100) <= 3 then
 		local scandal = RoyaltyEvents.getRandomScandal()
-		royalState.scandals = royalState.scandals + 1
-		local popLoss = math.random(scandal.popularityLoss.min, scandal.popularityLoss.max)
-		royalState.popularity = math.max(0, royalState.popularity - popLoss)
-		table.insert(events, {
-			type = "scandal",
-			message = "📰 SCANDAL: " .. scandal.name .. " - " .. scandal.description,
-			scandalId = scandal.id,
-		})
+		if scandal then
+			royalState.scandals = royalState.scandals + 1
+			local popLoss = math.random(scandal.popularityLoss.min, scandal.popularityLoss.max)
+			royalState.popularity = math.max(0, royalState.popularity - popLoss)
+			table.insert(events, {
+				type = "scandal",
+				message = "📰 SCANDAL: " .. scandal.name .. " - " .. scandal.description,
+				scandalId = scandal.id,
+			})
+		end
 	end
 	
 	return events
