@@ -120,12 +120,17 @@ function LifeState.new(player)
 	-- Fame (0-100)
 	self.Fame = 0
 	
+	-- ════════════════════════════════════════════════════════════════════════════
 	-- PREMIUM FEATURE: Organized Crime/Mob State
+	-- CRITICAL FIX #12: Full mob state initialization
+	-- ════════════════════════════════════════════════════════════════════════════
 	self.MobState = {
 		inMob = false,
 		familyId = nil,
 		familyName = nil,
 		familyEmoji = nil,
+		familyColor = nil,
+		rankIndex = 1,
 		rankLevel = 1,
 		rankName = "Associate",
 		rankEmoji = "👤",
@@ -138,6 +143,74 @@ function LifeState.new(player)
 		yearsInMob = 0,
 		operationsCompleted = 0,
 		operationsFailed = 0,
+		operations = {}, -- Available operations
+		territories = {},
+		lastEvent = nil,
+	}
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM FEATURE: Royalty State
+	-- CRITICAL FIX #13: Full royalty state initialization
+	-- ════════════════════════════════════════════════════════════════════════════
+	self.RoyalState = {
+		isRoyal = false,
+		isMonarch = false,
+		country = nil,
+		countryName = nil,
+		countryEmoji = nil,
+		palace = nil,
+		title = nil,
+		lineOfSuccession = 0,
+		popularity = 0,
+		scandals = 0,
+		dutiesCompleted = 0,
+		dutyStreak = 0,
+		reignYears = 0,
+		wealth = 0,
+		awards = {},
+		charitiesPatronized = {},
+		stateVisits = {},
+	}
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM FEATURE: Celebrity/Fame State
+	-- CRITICAL FIX #14: Full celebrity state initialization
+	-- ════════════════════════════════════════════════════════════════════════════
+	self.FameState = {
+		isFamous = false,
+		careerPath = nil, -- actor, musician, influencer, athlete, model
+		careerName = nil,
+		currentStage = 0,
+		stageName = nil,
+		subType = nil, -- genre, sport, platform, etc.
+		yearsInCareer = 0,
+		lastPromotionYear = 0,
+		followers = 0,
+		endorsements = {},
+		awards = {},
+		scandals = 0,
+		fameLevel = "Unknown",
+	}
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM FEATURE: God Mode State
+	-- CRITICAL FIX #15: God mode tracking
+	-- ════════════════════════════════════════════════════════════════════════════
+	self.GodModeState = {
+		enabled = false,
+		editsThisLife = 0,
+		lastEditAge = 0,
+	}
+	
+	-- Premium gamepass ownership flags
+	self.GamepassOwnership = {
+		royalty = false,
+		mafia = false,
+		celebrity = false,
+		godMode = false,
+		bitizenship = false,
+		timeMachine = false,
+		bossMode = false,
 	}
 	
 	-- Event History (for preventing repeats)
@@ -661,8 +734,24 @@ function LifeState:Serialize()
 		-- CRITICAL FIX: Child count for family display
 		ChildCount = self.ChildCount,
 		
+		-- ════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM FEATURES - Full serialization
+		-- ════════════════════════════════════════════════════════════════════════════
+		
 		-- PREMIUM FEATURE: Mob State for organized crime
 		MobState = self.MobState,
+		
+		-- PREMIUM FEATURE: Royalty State
+		RoyalState = self.RoyalState,
+		
+		-- PREMIUM FEATURE: Celebrity/Fame State
+		FameState = self.FameState,
+		
+		-- PREMIUM FEATURE: God Mode State
+		GodModeState = self.GodModeState,
+		
+		-- Gamepass ownership for client UI
+		GamepassOwnership = self.GamepassOwnership,
 		
 		-- Event History (needed for client to show recent events)
 		EventHistory = {
@@ -672,6 +761,129 @@ function LifeState:Serialize()
 		-- Death
 		CauseOfDeath = self.CauseOfDeath,
 	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- PREMIUM FEATURE HELPERS
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- CRITICAL FIX #16: Initialize royalty for new character
+function LifeState:InitializeRoyalty(countryData, title)
+	self.RoyalState.isRoyal = true
+	self.RoyalState.country = countryData.id
+	self.RoyalState.countryName = countryData.name
+	self.RoyalState.countryEmoji = countryData.emoji
+	self.RoyalState.palace = countryData.palace
+	self.RoyalState.title = title
+	self.RoyalState.lineOfSuccession = math.random(1, 5)
+	self.RoyalState.popularity = 75 + math.random(-10, 10)
+	
+	-- Calculate starting wealth
+	local wealthRange = countryData.startingWealth or { min = 10000000, max = 100000000 }
+	self.RoyalState.wealth = math.random(wealthRange.min, wealthRange.max)
+	self.Money = self.RoyalState.wealth
+	
+	-- Set flags
+	self.Flags.is_royalty = true
+	self.Flags.royal_birth = true
+	self.Flags.royal_country = countryData.id
+	self.Flags.wealthy_family = true
+	self.Flags.upper_class = true
+	self.Flags.famous_family = true
+	
+	return self
+end
+
+-- CRITICAL FIX #17: Initialize mafia membership
+function LifeState:InitializeMafia(familyData)
+	self.MobState.inMob = true
+	self.MobState.familyId = familyData.id
+	self.MobState.familyName = familyData.name
+	self.MobState.familyEmoji = familyData.emoji
+	if familyData.color then
+		self.MobState.familyColor = { familyData.color.R, familyData.color.G, familyData.color.B }
+	end
+	self.MobState.rankIndex = 1
+	self.MobState.rankLevel = 1
+	self.MobState.rankName = familyData.ranks[1].name
+	self.MobState.rankEmoji = familyData.ranks[1].emoji
+	self.MobState.respect = 0
+	self.MobState.loyalty = 100
+	self.MobState.heat = 0
+	self.MobState.yearsInMob = 0
+	self.MobState.operationsCompleted = 0
+	self.MobState.earnings = 0
+	self.MobState.kills = 0
+	
+	-- Set flags
+	self.Flags.in_mob = true
+	self.Flags.mafia_member = true
+	self.Flags.criminal_lifestyle = true
+	
+	return self
+end
+
+-- CRITICAL FIX #18: Initialize fame career
+function LifeState:InitializeFameCareer(careerPath, careerData, firstStage)
+	self.FameState.careerPath = careerPath
+	self.FameState.careerName = careerData.name
+	self.FameState.currentStage = 1
+	self.FameState.stageName = firstStage.name
+	self.FameState.yearsInCareer = 0
+	self.FameState.lastPromotionYear = 0
+	self.FameState.followers = firstStage.followers or 0
+	
+	-- Set job
+	self.CurrentJob = {
+		id = careerPath .. "_" .. firstStage.id,
+		name = firstStage.name,
+		company = careerData.name .. " Industry",
+		salary = math.random(firstStage.salary.min, firstStage.salary.max),
+		category = "entertainment",
+		isFameCareer = true,
+	}
+	
+	-- Set flags
+	self.Flags.fame_career = true
+	self.Flags.entertainment_industry = true
+	self.Flags["career_" .. careerPath] = true
+	self.Flags.employed = true
+	self.Flags.has_job = true
+	
+	return self
+end
+
+-- CRITICAL FIX #19: Enable god mode
+function LifeState:EnableGodMode()
+	self.GodModeState.enabled = true
+	self.Flags.god_mode_active = true
+	return self
+end
+
+-- CRITICAL FIX #20: Apply god mode stat edit
+function LifeState:ApplyGodModeEdit(statKey, newValue)
+	if not self.GodModeState.enabled then
+		return false, "God Mode not enabled"
+	end
+	
+	local validStats = { Happiness = true, Health = true, Smarts = true, Looks = true }
+	if not validStats[statKey] then
+		return false, "Invalid stat"
+	end
+	
+	newValue = math.clamp(newValue, 0, 100)
+	
+	if self.Stats[statKey] ~= nil then
+		self.Stats[statKey] = newValue
+	end
+	if self[statKey] ~= nil then
+		self[statKey] = newValue
+	end
+	
+	self.GodModeState.editsThisLife = self.GodModeState.editsThisLife + 1
+	self.GodModeState.lastEditAge = self.Age
+	
+	return true, string.format("%s set to %d", statKey, newValue)
 end
 
 return LifeState

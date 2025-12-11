@@ -2191,7 +2191,37 @@ function LifeBackend:serializeState(state)
 		debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
 		debugPrint("  Items:", #serialized.Assets.Items)
 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM FEATURE SERIALIZATION - CRITICAL FIX #21
+		-- Ensure all premium states are properly serialized for client
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- MAFIA STATE
 		serialized.MobState = MobSystem:serialize(state)
+		
+		-- ROYALTY STATE
+		if state.RoyalState and state.RoyalState.isRoyal then
+			serialized.RoyalState = state.RoyalState
+		else
+			serialized.RoyalState = { isRoyal = false }
+		end
+		
+		-- CELEBRITY/FAME STATE
+		if state.FameState and state.FameState.careerPath then
+			serialized.FameState = state.FameState
+		else
+			serialized.FameState = { isFamous = false, fame = state.Fame or 0 }
+		end
+		
+		-- GOD MODE STATE
+		if state.GodModeState then
+			serialized.GodModeState = state.GodModeState
+		else
+			serialized.GodModeState = { enabled = false }
+		end
+		
+		-- GAMEPASS OWNERSHIP
+		serialized.GamepassOwnership = state.GamepassOwnership or {}
 	end
 	
 	return serialized

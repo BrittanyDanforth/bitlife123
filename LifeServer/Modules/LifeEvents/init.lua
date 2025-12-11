@@ -57,14 +57,14 @@ local LifeStages = {
 -- This ensures tech, medical, finance, office, creative events can trigger
 -- ════════════════════════════════════════════════════════════════════════════════════
 local StageCategories = {
-	baby        = { "childhood", "milestones" },
-	toddler     = { "childhood", "milestones" },
-	child       = { "childhood", "milestones", "random", "career_racing" },
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "assets" },
+	baby        = { "childhood", "milestones", "royalty" },
+	toddler     = { "childhood", "milestones", "royalty" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty" },
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -243,6 +243,13 @@ function LifeEvents.init()
 		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
 		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
 		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM GAMEPASS EVENT MODULES - Require specific gamepasses
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events
+		{ name = "CelebrityEvents", category = "celebrity" },         -- Celebrity/Fame gamepass events  
+		{ name = "MafiaEvents",     category = "mafia" },             -- Mafia gamepass events
 	}
 	
 	local totalEvents = 0
