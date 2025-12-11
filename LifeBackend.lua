@@ -1,3 +1,6 @@
+local LifeBackend = {}
+LifeBackend.__index = LifeBackend
+
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
 	if not player then
 		return false
@@ -59,9 +62,6 @@ local MobSystem = require(ModulesFolder:WaitForChild("MobSystem"))
 local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 local EventEngine = LifeEvents.EventEngine
-
-local LifeBackend = {}
-LifeBackend.__index = LifeBackend
 
 local RANDOM = Random.new()
 local C = nil -- client palette not available on server
