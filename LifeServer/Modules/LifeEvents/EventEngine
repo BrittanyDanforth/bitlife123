@@ -56,19 +56,130 @@ function EventEngine.isEligible(event, state)
 	return LifeStageSystem.validateEvent(event, state)
 end
 
-local function applyChoiceEffects(state, choice)
-	if choice.effects then
-		for stat, delta in pairs(choice.effects) do
-			if state.ModifyStat then
-				state:ModifyStat(stat, delta)
-			elseif state.Stats and state.Stats[stat] then
-				state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #53: Apply mafia effects from choices
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyMafiaEffect(state, mafiaEffect)
+	if not mafiaEffect or not state.MobState then return end
+	
+	local mobState = state.MobState
+	
+	if mafiaEffect.respect then
+		mobState.respect = (mobState.respect or 0) + mafiaEffect.respect
+	end
+	if mafiaEffect.heat then
+		mobState.heat = math.min(100, (mobState.heat or 0) + mafiaEffect.heat)
+	end
+	if mafiaEffect.loyalty then
+		mobState.loyalty = math.clamp((mobState.loyalty or 100) + mafiaEffect.loyalty, 0, 100)
+	end
+	if mafiaEffect.money then
+		state.Money = (state.Money or 0) + mafiaEffect.money
+		mobState.earnings = (mobState.earnings or 0) + mafiaEffect.money
+	end
+	if mafiaEffect.kills then
+		mobState.kills = (mobState.kills or 0) + mafiaEffect.kills
+	end
+	if mafiaEffect.joinFamily then
+		mobState.inMob = true
+		state.Flags.in_mob = true
+	end
+	if mafiaEffect.kicked then
+		mobState.inMob = false
+		state.Flags.in_mob = nil
+	end
+	if mafiaEffect.initiated then
+		state.Flags.initiated = true
+	end
+	if mafiaEffect.madeMember then
+		state.Flags.made_member = true
+	end
+	if mafiaEffect.rankUp then
+		mobState.rankIndex = math.min((mobState.rankIndex or 1) + 1, 5)
+		mobState.rankLevel = mobState.rankIndex
+	end
+	if mafiaEffect.arrested then
+		state.InJail = true
+		state.JailYearsLeft = mafiaEffect.jailYears or 5
+		state.Flags.in_prison = true
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #54: Apply royalty effects from choices
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyRoyaltyEffect(state, royaltyEffect)
+	if not royaltyEffect or not state.RoyalState then return end
+	
+	local royalState = state.RoyalState
+	
+	if royaltyEffect.popularity then
+		royalState.popularity = math.clamp((royalState.popularity or 50) + royaltyEffect.popularity, 0, 100)
+	end
+	if royaltyEffect.scandals then
+		royalState.scandals = (royalState.scandals or 0) + royaltyEffect.scandals
+	end
+	if royaltyEffect.wealth then
+		royalState.wealth = (royalState.wealth or 0) + royaltyEffect.wealth
+		state.Money = (state.Money or 0) + royaltyEffect.wealth
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #57: Apply fame effects from choices
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyFameEffect(state, fameEffect)
+	if not fameEffect then return end
+	
+	-- fameEffect can be a number or a table
+	local fameChange = type(fameEffect) == "number" and fameEffect or (fameEffect.fame or 0)
+	state.Fame = math.clamp((state.Fame or 0) + fameChange, 0, 100)
+	
+	if type(fameEffect) == "table" then
+		if fameEffect.followers and state.FameState then
+			state.FameState.followers = (state.FameState.followers or 0) + fameEffect.followers
+		end
+	end
+end
+
+local function applyChoiceEffects(state, choice, isSuccess)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance - use success/fail effects appropriately
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local effectsToApply = choice.effects
+	local moneyToApply = choice.money
+	local feedToUse = choice.feed
+	
+	-- If success/fail effects exist, use those instead
+	if isSuccess == true then
+		effectsToApply = choice.successEffects or choice.effects
+		moneyToApply = choice.successMoney or choice.money
+		feedToUse = choice.successFeed or choice.feed
+	elseif isSuccess == false then
+		effectsToApply = choice.failEffects or {}
+		moneyToApply = choice.failMoney or 0
+		feedToUse = choice.failFeed or choice.failMessage or choice.feed
+	end
+	
+	-- Apply stat effects
+	if effectsToApply then
+		for stat, delta in pairs(effectsToApply) do
+			if stat ~= "Money" then -- Handle money separately
+				if state.ModifyStat then
+					state:ModifyStat(stat, delta)
+				elseif state.Stats and state.Stats[stat] then
+					state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+				end
 			end
+		end
+		-- Check for Money in effects
+		if effectsToApply.Money then
+			moneyToApply = (moneyToApply or 0) + effectsToApply.Money
 		end
 	end
 
-	if choice.money then
-		local amount = choice.money
+	if moneyToApply and moneyToApply ~= 0 then
+		local amount = moneyToApply
 		if state.AddMoney then
 			state:AddMoney(amount, choice.text)
 		else
@@ -96,6 +207,79 @@ local function applyChoiceEffects(state, choice)
 			end
 		end
 	end
+	
+	-- CRITICAL FIX: Handle setFlags shorthand (many events use this)
+	if choice.setFlags then
+		state.Flags = state.Flags or {}
+		for flag, value in pairs(choice.setFlags) do
+			state.Flags[flag] = value
+		end
+	end
+	
+	-- CRITICAL FIX #53: Apply mafia effects
+	local mafiaEffectToApply = choice.mafiaEffect
+	if isSuccess == true and choice.successMafiaEffect then
+		mafiaEffectToApply = choice.successMafiaEffect
+	elseif isSuccess == false and choice.failMafiaEffect then
+		mafiaEffectToApply = choice.failMafiaEffect
+	end
+	if mafiaEffectToApply then
+		applyMafiaEffect(state, mafiaEffectToApply)
+	end
+	
+	-- CRITICAL FIX #54: Apply royalty effects
+	if choice.royaltyEffect then
+		applyRoyaltyEffect(state, choice.royaltyEffect)
+	end
+	
+	-- CRITICAL FIX #57: Apply fame effects
+	local fameEffectToApply = choice.fameEffect
+	if isSuccess == true and choice.successFame then
+		fameEffectToApply = choice.successFame
+	elseif isSuccess == false and choice.failFame then
+		fameEffectToApply = choice.failFame
+	end
+	if fameEffectToApply then
+		applyFameEffect(state, fameEffectToApply)
+	end
+	
+	-- Handle fameGain shorthand (common in celebrity events)
+	if choice.fameGain then
+		state.Fame = math.clamp((state.Fame or 0) + choice.fameGain, 0, 100)
+	end
+	if isSuccess == false and choice.failFameLoss then
+		state.Fame = math.clamp((state.Fame or 0) - choice.failFameLoss, 0, 100)
+	end
+	
+	-- Handle salaryBonus (common in career events)
+	if choice.salaryBonus then
+		state.Money = (state.Money or 0) + choice.salaryBonus
+	end
+	
+	-- Handle healthLoss/healthGain
+	if choice.healthLoss then
+		if state.ModifyStat then
+			state:ModifyStat("Health", -choice.healthLoss)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) - choice.healthLoss, 0, 100)
+		end
+	end
+	if choice.healthGain then
+		if state.ModifyStat then
+			state:ModifyStat("Health", choice.healthGain)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) + choice.healthGain, 0, 100)
+		end
+	end
+	
+	-- Set feed message
+	if feedToUse and state.AddFeed then
+		state:AddFeed(feedToUse)
+	elseif feedToUse then
+		state.PendingFeed = feedToUse
+	end
+	
+	return isSuccess
 end
 
 function EventEngine.completeEvent(event, choiceIndex, state)
@@ -104,11 +288,26 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 		return nil, "Invalid choice"
 	end
 
-	applyChoiceEffects(state, choice)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance for choices with random outcomes
+	-- Many events have choices like "Win the Oscar" with 25% success chance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isSuccess = nil -- nil means no success/fail mechanic
+	
+	if choice.successChance then
+		local roll = Random.new():NextNumber() * 100
+		isSuccess = roll <= choice.successChance
+		
+		-- Store result for UI feedback
+		choice._wasSuccessful = isSuccess
+		choice._rollResult = roll
+	end
+	
+	applyChoiceEffects(state, choice, isSuccess)
 	
 	-- CRITICAL FIX: Call choice-level onResolve callback
 	if choice.onResolve then
-		local success, err = pcall(choice.onResolve, state, choice, event)
+		local success, err = pcall(choice.onResolve, state, choice, event, isSuccess)
 		if not success then
 			warn("[LifeEvents] Choice handler error:", err)
 		end
@@ -120,6 +319,7 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 		local outcome = {
 			choiceIndex = choiceIndex,
 			choice = choice,
+			wasSuccessful = isSuccess,
 		}
 		local success, err = pcall(event.onComplete, state, choice, event, outcome)
 		if not success then
@@ -128,10 +328,10 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 	end
 
 	if state.RecordEvent then
-		state:RecordEvent(event.id, { choice = choiceIndex })
+		state:RecordEvent(event.id, { choice = choiceIndex, success = isSuccess })
 	end
 
-	return choice
+	return choice, isSuccess
 end
 
 local function weightedPick(events)

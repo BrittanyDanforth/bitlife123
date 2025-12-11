@@ -1421,4 +1421,55 @@ function CelebrityEvents.serializeFameState(lifeState)
 	}
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #42: Export events in standard format for LifeEvents loader
+-- The init.lua module loader expects .events, .Events, or .LifeEvents array
+-- Combines GeneralFameEvents with all career-specific events
+-- ════════════════════════════════════════════════════════════════════════════
+CelebrityEvents.events = {}
+
+-- Add general fame events
+for _, event in ipairs(CelebrityEvents.GeneralFameEvents or {}) do
+	event.isCelebrityOnly = true
+	event.minAge = event.minAge or 16
+	event.maxAge = event.maxAge or 99
+	table.insert(CelebrityEvents.events, event)
+end
+
+-- Add acting career events with proper tagging
+if CelebrityEvents.ActingCareer and CelebrityEvents.ActingCareer.events then
+	for _, event in ipairs(CelebrityEvents.ActingCareer.events) do
+		event.isCelebrityOnly = true
+		event.careerPath = "actor"
+		event.minAge = event.minAge or 18
+		event.maxAge = event.maxAge or 99
+		table.insert(CelebrityEvents.events, event)
+	end
+end
+
+-- Add music career events with proper tagging
+if CelebrityEvents.MusicCareer and CelebrityEvents.MusicCareer.events then
+	for _, event in ipairs(CelebrityEvents.MusicCareer.events) do
+		event.isCelebrityOnly = true
+		event.careerPath = "musician"
+		event.minAge = event.minAge or 16
+		event.maxAge = event.maxAge or 99
+		table.insert(CelebrityEvents.events, event)
+	end
+end
+
+-- Add influencer career events with proper tagging
+if CelebrityEvents.InfluencerCareer and CelebrityEvents.InfluencerCareer.events then
+	for _, event in ipairs(CelebrityEvents.InfluencerCareer.events) do
+		event.isCelebrityOnly = true
+		event.careerPath = "influencer"
+		event.minAge = event.minAge or 13
+		event.maxAge = event.maxAge or 99
+		table.insert(CelebrityEvents.events, event)
+	end
+end
+
+-- Also expose as LifeEvents for backwards compatibility
+CelebrityEvents.LifeEvents = CelebrityEvents.events
+
 return CelebrityEvents

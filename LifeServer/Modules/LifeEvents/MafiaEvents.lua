@@ -1166,4 +1166,10 @@ MafiaEvents.CrimeFamilies = {
 	triad = { id = "triad", name = "Chinese Triad", emoji = "🇨🇳" },
 }
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #41: Export events in standard format for LifeEvents loader
+-- The init.lua module loader expects .events, .Events, or .LifeEvents array
+-- ════════════════════════════════════════════════════════════════════════════
+MafiaEvents.events = MafiaEvents.LifeEvents
+
 return MafiaEvents

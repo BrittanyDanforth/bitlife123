@@ -142,8 +142,17 @@ local function loadEventModule(moduleName, categoryName)
 		return 0
 	end
 	
-	-- Support multiple export formats
-	local events = moduleData.events or moduleData.Events or moduleData
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #41-43: Support multiple export formats including premium modules
+	-- Premium modules (MafiaEvents, RoyaltyEvents, CelebrityEvents) use .LifeEvents
+	-- Standard modules use .events, .Events, or return an array directly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local events = moduleData.events 
+		or moduleData.Events 
+		or moduleData.LifeEvents  -- CRITICAL FIX: Premium modules use LifeEvents
+		or moduleData.GeneralEvents  -- Some modules use GeneralEvents
+		or moduleData
+	
 	if type(events) ~= "table" then
 		warn("[LifeEvents] ⚠️ Invalid events format in:", moduleName)
 		return 0
@@ -151,9 +160,28 @@ local function loadEventModule(moduleName, categoryName)
 	
 	-- Ensure it's an array of events
 	if events[1] == nil and next(events) ~= nil then
-		-- It's a dictionary, not an array - skip
-		warn("[LifeEvents] ⚠️ Events should be an array in:", moduleName)
-		return 0
+		-- It's a dictionary, not an array - check for nested arrays
+		-- CRITICAL FIX #42: CelebrityEvents has events nested in career paths
+		-- Try to find and combine all event arrays from the module
+		local combinedEvents = {}
+		
+		-- Check for common event array names
+		local possibleArrayNames = { "LifeEvents", "GeneralFameEvents", "events", "Events" }
+		for _, arrayName in ipairs(possibleArrayNames) do
+			if type(moduleData[arrayName]) == "table" and moduleData[arrayName][1] ~= nil then
+				for _, event in ipairs(moduleData[arrayName]) do
+					table.insert(combinedEvents, event)
+				end
+			end
+		end
+		
+		-- If still no events found, skip
+		if #combinedEvents == 0 then
+			warn("[LifeEvents] ⚠️ Events should be an array in:", moduleName, "- found dictionary without event arrays")
+			return 0
+		end
+		
+		events = combinedEvents
 	end
 	
 	local category = categoryName or moduleName:lower()
@@ -756,6 +784,90 @@ local function canEventTrigger(event, state)
 		for _, blockEventId in ipairs(event.blockedByEvents) do
 			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
 				return false
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #44-46,51: MAFIA-SPECIFIC CONDITION CHECKS
+	-- Mafia events use conditions.minRank, conditions.minHeat, conditions.promotionReady
+	-- These were NOT being checked, causing events to trigger for wrong rank players!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Check for mob membership requirement (CRITICAL FIX #51)
+	if event.requiresMobMembership then
+		local mobState = state.MobState
+		if not mobState or not mobState.inMob then
+			if not flags.in_mob then
+				return false -- Must be in a crime family
+			end
+		end
+	end
+	
+	-- Check minRank condition (CRITICAL FIX #44)
+	if cond.minRank then
+		local mobState = state.MobState
+		local playerRank = 0
+		if mobState and mobState.inMob then
+			playerRank = mobState.rankIndex or mobState.rankLevel or 1
+		end
+		if playerRank < cond.minRank then
+			return false -- Not high enough rank
+		end
+	end
+	
+	-- Check minHeat condition (CRITICAL FIX #45)
+	if cond.minHeat then
+		local mobState = state.MobState
+		local playerHeat = 0
+		if mobState then
+			playerHeat = mobState.heat or 0
+		end
+		if playerHeat < cond.minHeat then
+			return false -- Not enough heat for this event
+		end
+	end
+	
+	-- Check promotionReady condition (CRITICAL FIX #46)
+	if cond.promotionReady then
+		local mobState = state.MobState
+		if not mobState or not mobState.inMob then
+			return false -- Not in mob
+		end
+		-- Check if player has enough respect for next rank
+		-- This requires knowledge of rank thresholds
+		local respectThresholds = { 0, 100, 500, 2000, 10000 }
+		local currentRank = mobState.rankIndex or 1
+		local nextRank = currentRank + 1
+		local nextThreshold = respectThresholds[nextRank]
+		if not nextThreshold then
+			return false -- Already at max rank
+		end
+		if (mobState.respect or 0) < nextThreshold then
+			return false -- Not enough respect for promotion
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #47: CUSTOM CHECK CALLBACK - For complex event conditions
+	-- Events can define conditions.customCheck as a function for advanced logic
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if cond.customCheck and type(cond.customCheck) == "function" then
+		local success, result = pcall(cond.customCheck, state)
+		if success then
+			if result == false then
+				return false -- Custom condition check failed
+			end
+		end
+	end
+	
+	-- Also support event-level customCheck for convenience
+	if event.customCheck and type(event.customCheck) == "function" then
+		local success, result = pcall(event.customCheck, state)
+		if success then
+			if result == false then
+				return false -- Custom condition check failed
 			end
 		end
 	end

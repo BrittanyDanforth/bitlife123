@@ -1832,4 +1832,10 @@ function RoyaltyEvents.performDuty(lifeState, dutyId)
 	return true, string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain), result
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #43: Export events in standard format for LifeEvents loader
+-- The init.lua module loader expects .events, .Events, or .LifeEvents array
+-- ════════════════════════════════════════════════════════════════════════════
+RoyaltyEvents.events = RoyaltyEvents.LifeEvents
+
 return RoyaltyEvents

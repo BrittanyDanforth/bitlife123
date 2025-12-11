@@ -73,6 +73,12 @@ local GodModeSystem = require(ModulesFolder:WaitForChild("GodModeSystem"))
 local RoyaltyEvents = nil
 local CelebrityEvents = nil
 
+-- CRITICAL FIX #48: Load TimeMachine for snapshot saving
+local TimeMachine = nil
+pcall(function()
+	TimeMachine = require(ModulesFolder:WaitForChild("TimeMachine"))
+end)
+
 -- Safe require for premium event modules (they might not exist in all setups)
 pcall(function()
 	RoyaltyEvents = require(LifeEventsFolder:WaitForChild("RoyaltyEvents"))
@@ -1900,6 +1906,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
 	self.remotes.GodModeEdit = self:createRemote("GodModeEdit", "RemoteFunction")
+	-- CRITICAL FIX #60: Add remote to get God Mode configuration (presets, editable stats)
+	self.remotes.GetGodModeInfo = self:createRemote("GetGodModeInfo", "RemoteFunction")
 	
 	-- CRITICAL FIX #13: PREMIUM FEATURES: Royalty remotes
 	self.remotes.DoRoyalDuty = self:createRemote("DoRoyalDuty", "RemoteFunction")
@@ -2017,6 +2025,11 @@ function LifeBackend:setupRemotes()
 
 	self.remotes.GodModeEdit.OnServerInvoke = function(player, payload)
 		return self:handleGodModeEdit(player, payload)
+	end
+	
+	-- CRITICAL FIX #60: Handler to get God Mode configuration for client UI
+	self.remotes.GetGodModeInfo.OnServerInvoke = function(player)
+		return self:getGodModeInfo(player)
 	end
 	
 	-- CRITICAL FIX #13: PREMIUM FEATURES: Royalty handlers
@@ -4416,6 +4429,21 @@ function LifeBackend:handleAgeUp(player)
 		state.Year = (state.Year or 2025) + 1
 	end
 
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #48: Save TimeMachine snapshots for time travel feature
+	-- Snapshots are saved every 5 years, at age 0, and at age 18
+	-- This allows players with TimeMachine gamepass to travel back in time
+	-- ════════════════════════════════════════════════════════════════════════════
+	if TimeMachine and state.Age then
+		local serializedState = nil
+		if state.Serialize then
+			serializedState = state:Serialize()
+		else
+			serializedState = shallowCopy(state)
+		end
+		TimeMachine.saveSnapshot(player, state, serializedState)
+	end
+
 	self:advanceRelationships(state)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
@@ -4721,6 +4749,18 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 		feedText = deathMeta.obituary or string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
 		
 		debugPrint(string.format("Player died: %s (Age %d) cause=%s", state.Name or player.Name, state.Age or -1, deathInfo.cause or "unknown"))
+		
+		-- ════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #59: Integrate TimeMachine into death handling
+		-- Allows players with Time Machine gamepass to travel back in time
+		-- ════════════════════════════════════════════════════════════════════════════
+		local timeMachineData = nil
+		local hasTimeMachineGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+		
+		if TimeMachine and hasTimeMachineGamepass then
+			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
+		end
+		
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
@@ -4730,6 +4770,9 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			fatal = true,
 			cause = deathInfo.cause,
 			deathMeta = deathMeta,
+			-- CRITICAL FIX #59: Include time machine options in death screen
+			hasTimeMachine = hasTimeMachineGamepass,
+			timeMachineData = timeMachineData,
 		}
 	end
 
@@ -7363,6 +7406,78 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	self:pushState(player, feedText)
 
 	return { success = true, message = feedText, changes = summaries }
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #60: Get God Mode info for client UI
+-- Returns presets, editable stats, and clearable flags for the God Mode screen
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:getGodModeInfo(player)
+	local hasGodMode = self:checkGamepassOwnership(player, "GOD_MODE")
+	
+	if not hasGodMode then
+		return {
+			success = false,
+			hasGamepass = false,
+			message = "⚡ God Mode requires the God Mode gamepass.",
+		}
+	end
+	
+	local state = self:getState(player)
+	local godModeInfo = {
+		success = true,
+		hasGamepass = true,
+	}
+	
+	-- Get configuration from GodModeSystem
+	if GodModeSystem then
+		godModeInfo.presets = GodModeSystem:getPresetsInfo()
+		godModeInfo.editableStats = GodModeSystem:getEditableStatsInfo()
+		godModeInfo.editableProperties = GodModeSystem:getEditablePropertiesInfo()
+		godModeInfo.clearableFlags = GodModeSystem:getClearableFlagsInfo()
+	else
+		-- Fallback if GodModeSystem not loaded
+		godModeInfo.presets = {
+			{ id = "perfect", name = "Perfect Life", emoji = "✨", description = "Max all stats, clear all negatives" },
+			{ id = "rich", name = "Billionaire", emoji = "💎", description = "Set money to $1 billion" },
+			{ id = "famous", name = "Famous", emoji = "⭐", description = "Max fame to 100" },
+			{ id = "healthy", name = "Peak Health", emoji = "💪", description = "Max health, cure all diseases" },
+			{ id = "genius", name = "Genius", emoji = "🧠", description = "Max smarts to 100" },
+			{ id = "fresh_start", name = "Fresh Start", emoji = "🔄", description = "Clear all negative flags" },
+		}
+		godModeInfo.editableStats = {
+			{ key = "Happiness", emoji = "😊", name = "Happiness", min = 0, max = 100 },
+			{ key = "Health", emoji = "❤️", name = "Health", min = 0, max = 100 },
+			{ key = "Smarts", emoji = "🧠", name = "Smarts", min = 0, max = 100 },
+			{ key = "Looks", emoji = "✨", name = "Looks", min = 0, max = 100 },
+		}
+		godModeInfo.editableProperties = {
+			{ key = "name", emoji = "📝", name = "Character Name", type = "string" },
+			{ key = "gender", emoji = "👤", name = "Gender", type = "select", options = { "Male", "Female", "Nonbinary" } },
+		}
+		godModeInfo.clearableFlags = {
+			{ key = "criminal_record", emoji = "📋", name = "Criminal Record" },
+			{ key = "diseases", emoji = "💊", name = "All Diseases" },
+			{ key = "addictions", emoji = "🚭", name = "All Addictions" },
+			{ key = "debt", emoji = "💳", name = "All Debt" },
+		}
+	end
+	
+	-- Include current state info for the UI
+	if state then
+		godModeInfo.currentStats = {
+			Happiness = state.Stats and state.Stats.Happiness or state.Happiness or 50,
+			Health = state.Stats and state.Stats.Health or state.Health or 50,
+			Smarts = state.Stats and state.Stats.Smarts or state.Smarts or 50,
+			Looks = state.Stats and state.Stats.Looks or state.Looks or 50,
+		}
+		godModeInfo.currentMoney = state.Money or 0
+		godModeInfo.currentName = state.Name
+		godModeInfo.currentGender = state.Gender
+		godModeInfo.currentAge = state.Age
+	end
+	
+	return godModeInfo
 end
 
 function LifeBackend:handleTimeMachine(player, yearsBack)
