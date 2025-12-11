@@ -414,33 +414,76 @@ local function canEventTrigger(event, state)
 	-- Without this, players without gamepasses could get royalty/mafia/celebrity events!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- ROYALTY events require Royalty gamepass AND being born royal
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #61-63: STRICT PREMIUM EVENT FILTERING
+	-- Premium events should ONLY trigger for players who have BOTH:
+	-- 1. The gamepass ownership
+	-- 2. Actually started that premium feature (joined mob, born royal, etc.)
+	-- Without this, players could randomly get royal events even if they didn't choose royal!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ROYALTY events require Royalty gamepass AND actually being royalty
 	if event.isRoyalOnly then
 		if not flags.royalty_gamepass then
 			return false -- Must own Royalty gamepass
 		end
-		if not flags.is_royalty and not (state.RoyalState and state.RoyalState.isRoyal) then
-			return false -- Must be royal to get royal events
+		-- CRITICAL FIX #62: Must actually BE royalty, not just own gamepass
+		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+			or (state.RoyalState and state.RoyalState.isRoyal)
+		if not isActuallyRoyal then
+			return false -- Must have chosen royal at birth or became royal somehow
 		end
 	end
 	
-	-- MAFIA events require Mafia gamepass
+	-- MAFIA events require Mafia gamepass AND being in the mob
 	if event.isMafiaOnly then
 		if not flags.mafia_gamepass then
 			return false -- Must own Mafia gamepass
 		end
-		-- Also check if in mob for mob-member-only events
-		if event.requiresMobMembership then
-			if not flags.in_mob and not (state.MobState and state.MobState.inMob) then
-				return false -- Must be in a crime family
+		
+		-- CRITICAL FIX #61/#63: Check if this is an "approach" event vs "member" event
+		-- Approach events (mafia_approach) should trigger for gamepass owners who AREN'T in mob yet
+		-- All OTHER mafia events require actually being in the mob
+		local isApproachEvent = event.id and (
+			string.find(event.id, "approach") or 
+			string.find(event.id, "recruit") or
+			string.find(event.id, "offer_to_join")
+		)
+		
+		if not isApproachEvent then
+			-- Regular mafia events - MUST be in the mob
+			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+			if not isInMob then
+				return false -- Must have joined a crime family first
+			end
+		else
+			-- Approach events - should NOT trigger if already in mob
+			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+			if isInMob then
+				return false -- Already in mob, don't recruit again
 			end
 		end
 	end
 	
-	-- CELEBRITY events require Celebrity gamepass
+	-- CELEBRITY events require Celebrity gamepass AND having a fame career
 	if event.isCelebrityOnly then
 		if not flags.celebrity_gamepass then
 			return false -- Must own Celebrity gamepass
+		end
+		-- CRITICAL FIX #69: Must actually have a fame career to get career events
+		-- General fame events (paparazzi, fans) just need some fame
+		local hasActiveFameCareer = flags.fame_career or flags.career_actor 
+			or flags.career_musician or flags.career_influencer or flags.career_athlete
+			or (state.FameState and state.FameState.careerPath)
+		local hasFame = (state.Fame or 0) >= 20
+		
+		-- Career-specific events need the career, general events just need some fame
+		if event.careerPath then
+			if not hasActiveFameCareer then
+				return false -- Career events need active fame career
+			end
+		elseif not hasActiveFameCareer and not hasFame then
+			return false -- Need either career or natural fame
 		end
 	end
 	
@@ -908,10 +951,60 @@ end
 -- WEIGHT CALCULATION - Prioritize variety and freshness
 -- ════════════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #65/#66/#67: AGE-SPECIFIC MILESTONE EVENTS
+-- These are events that MUST trigger at specific ages (DMV, graduation, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AGE-SPECIFIC GUARANTEED MILESTONE EVENTS
+-- These events WILL trigger at specific ages (unless already triggered)
+-- This ensures players don't miss important life moments like DMV, graduation, etc.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local AgeMilestoneEvents = {
+	[5] = { "first_day_kindergarten" },
+	[6] = { "first_day_school" },
+	[8] = { "learning_to_ride_bike" },
+	[13] = { "stage_transition_teen", "teen_social_media" },
+	[14] = { "class_selection" },
+	[15] = { "learning_to_drive" },
+	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite" },
+	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out" },
+	[19] = { "college_experience" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink" },
+	[25] = { "quarter_life_crisis" },
+	[30] = { "stage_transition_adult", "turning_30" },
+	[40] = { "turning_40", "midlife_reflection" },
+	[50] = { "stage_transition_middle_age", "turning_50" },
+	[65] = { "stage_transition_senior", "retirement_decision" },
+	[70] = { "golden_years", "legacy_planning" },
+}
+
+local function isAgeMilestoneEvent(eventId, age)
+	local milestones = AgeMilestoneEvents[age]
+	if not milestones then return false end
+	for _, id in ipairs(milestones) do
+		if id == eventId then return true end
+	end
+	return false
+end
+
 local function calculateEventWeight(event, state)
 	local history = getEventHistory(state)
 	local baseWeight = event.weight or 10
 	local weight = baseWeight
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #67: MASSIVE BOOST for age-specific milestone events
+	-- Events like DMV at 15-16, graduation at 17-18 should ALWAYS trigger
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if isAgeMilestoneEvent(event.id, age) then
+		local eventOccurred = (history.occurrences[event.id] or 0) > 0
+		if not eventOccurred then
+			weight = weight * 100 -- MASSIVE boost to guarantee it triggers
+		end
+	end
 	
 	-- BOOST: Never-seen events get priority
 	local occurCount = history.occurrences[event.id] or 0
@@ -924,6 +1017,29 @@ local function calculateEventWeight(event, state)
 	-- BOOST: Milestone/priority events
 	if event.priority == "high" or event.isMilestone then
 		weight = weight * 3
+	end
+	
+	-- BOOST: One-time events that haven't been seen yet
+	if event.oneTime and occurCount == 0 then
+		weight = weight * 2
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #65/#66: Age-appropriate milestone boosting
+	-- Boost events based on how appropriate they are for current age
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local minAge = event.minAge or 0
+	local maxAge = event.maxAge or 999
+	
+	-- If event is at its PRIME age, boost it
+	local midAge = (minAge + maxAge) / 2
+	local ageDistance = math.abs(age - midAge)
+	local ageRange = (maxAge - minAge) / 2
+	if ageRange > 0 then
+		local ageRelevance = 1 - (ageDistance / ageRange)
+		if ageRelevance > 0.8 then
+			weight = weight * 1.5 -- Prime age for this event
+		end
 	end
 	
 	-- REDUCE: Recently seen categories (variety)
@@ -945,7 +1061,7 @@ local function calculateEventWeight(event, state)
 	-- REDUCE: Time since last occurrence
 	local lastAge = history.lastOccurrence[event.id]
 	if lastAge then
-		local yearsSince = (state.Age or 0) - lastAge
+		local yearsSince = age - lastAge
 		if yearsSince < 3 then
 			weight = weight * 0.4
 		elseif yearsSince < 5 then
@@ -1064,6 +1180,96 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #68: PREMIUM GAMEPASS EVENT CATEGORIES
+	-- Add premium event categories ONLY for players who have the gamepass AND are active in it
+	-- This ensures premium events appear in the event pool when appropriate
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- MAFIA: Only add category if player has gamepass AND is in mob
+	if flags.mafia_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Mafia) then
+		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+		if isInMob then
+			-- Player is in mob - add mafia events
+			local hasMafiaCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "mafia" or cat == "crime" then hasMafiaCat = true break end
+			end
+			if not hasMafiaCat then
+				table.insert(categories, "mafia")
+			end
+		else
+			-- Player NOT in mob yet - only add recruitment events category
+			local hasRecruitCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "mafia_recruit" then hasRecruitCat = true break end
+			end
+			if not hasRecruitCat then
+				table.insert(categories, "mafia_recruit")
+			end
+		end
+	end
+	
+	-- ROYALTY: Only add category if player has gamepass AND is royalty
+	if flags.royalty_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Royalty) then
+		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+		if isRoyal then
+			local hasRoyalCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "royalty" or cat == "royal" then hasRoyalCat = true break end
+			end
+			if not hasRoyalCat then
+				table.insert(categories, "royalty")
+			end
+		end
+	end
+	
+	-- CELEBRITY: Only add category if player has gamepass AND has fame career OR natural fame
+	if flags.celebrity_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Celebrity) then
+		local hasFameCareer = flags.fame_career or flags.career_actor 
+			or flags.career_musician or flags.career_influencer or flags.career_athlete
+			or (state.FameState and state.FameState.careerPath)
+		local hasFame = (state.Fame or 0) >= 10
+		
+		if hasFameCareer or hasFame then
+			local hasCelebCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "celebrity" or cat == "fame" then hasCelebCat = true break end
+			end
+			if not hasCelebCat then
+				table.insert(categories, "celebrity")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #67: GUARANTEED MILESTONE EVENTS
+	-- First, check if there's an age-specific milestone that MUST trigger
+	-- These are events that should NEVER be skipped (DMV at 16, graduation at 18, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local guaranteedMilestones = AgeMilestoneEvents[age]
+	local history = getEventHistory(state)
+	
+	if guaranteedMilestones then
+		for _, milestoneId in ipairs(guaranteedMilestones) do
+			local event = AllEvents[milestoneId]
+			if event then
+				-- Check if event already occurred
+				local occurCount = (history.occurrences[milestoneId] or 0)
+				if occurCount == 0 then
+					-- Event hasn't happened yet - check if it can trigger
+					if canEventTrigger(event, state) then
+						-- GUARANTEED trigger for age-specific milestones!
+						table.insert(selectedEvents, event)
+						recordEventShown(state, event)
+						return selectedEvents -- Return early - milestone takes priority
+					end
+				end
+			end
+		end
+	end
+	
 	-- Collect all eligible events
 	local candidateEvents = {}
 	local priorityEvents = {}
@@ -1073,10 +1279,15 @@ function LifeEvents.buildYearQueue(state, options)
 		for _, event in ipairs(categoryEvents) do
 			if canEventTrigger(event, state) then
 				local weight = calculateEventWeight(event, state)
+				
+				-- CRITICAL FIX: Check if this is an age milestone that hasn't triggered
+				local isAgeMilestone = isAgeMilestoneEvent(event.id, age)
+				local eventOccurred = (history.occurrences[event.id] or 0) > 0
+				
 				local candidate = {
 					event = event,
 					weight = weight,
-					isPriority = event.priority == "high" or event.isMilestone,
+					isPriority = event.priority == "high" or event.isMilestone or (isAgeMilestone and not eventOccurred),
 				}
 				
 				if candidate.isPriority then
