@@ -3277,6 +3277,20 @@ end
 
 local IntroUI = {}
 
+local function parseNames(blob)
+	local list = {}
+	if type(blob) ~= "string" then
+		return list
+	end
+	for line in blob:gmatch("[^\r\n]+") do
+		local trimmed = line:match("^%s*(.-)%s*$")
+		if trimmed ~= "" then
+			table.insert(list, trimmed)
+		end
+	end
+	return list
+end
+
 IntroUI.overlay = Instance.new("Frame")
 IntroUI.overlay.Size = UDim2.fromScale(1, 1)
 IntroUI.overlay.BackgroundColor3 = C.Black
@@ -3339,70 +3353,421 @@ IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 -- Name pools for randomization - EXPANDED for variety (100+ names each)
 -- Consolidated into single table to reduce local register usage (Luau limit is 200)
 local NameData = {
-	maleFirstNames = {
-		-- Classic names
-		"James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
-		"Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden",
-		"Matthew", "Anthony", "Christopher", "Joshua", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Tyler",
-		"Brandon", "Justin", "Aaron", "Kevin", "Eric", "Brian", "Adam", "Dylan", "Kyle", "Jason",
-		-- Modern names
-		"Logan", "Carter", "Owen", "Wyatt", "Jack", "Luke", "Gabriel", "Isaac", "Isaiah", "Jaxon",
-		"Caleb", "Connor", "Levi", "Hunter", "Cameron", "Eli", "Jordan", "Adrian", "Evan", "Austin",
-		"Chase", "Cooper", "Xavier", "Blake", "Gavin", "Zachary", "Cole", "Landon", "Dominic", "Tristan",
-		-- Unique names
-		"Maverick", "Phoenix", "Jasper", "Declan", "Emmett", "Asher", "Finn", "Theo", "Miles", "Leo",
-		"Harrison", "Felix", "Beckett", "August", "Nolan", "Atlas", "Kai", "Rowan", "Bennett", "Brooks",
-		-- Diverse cultural names
-		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
-		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Tyrone", "Marcus", "Dante", "Isaiah",
-		"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Haruki", "Ren", "Sora",
-		"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
-	},
+	maleFirstNames = parseNames([[
+James
+Marcus
+David
+Michael
+Daniel
+Alexander
+William
+Benjamin
+Lucas
+Henry
+Ethan
+Noah
+Liam
+Mason
+Oliver
+Aiden
+Jackson
+Sebastian
+Elijah
+Jayden
+Matthew
+Anthony
+Christopher
+Joshua
+Andrew
+Joseph
+Samuel
+Ryan
+Nathan
+Tyler
+Brandon
+Justin
+Aaron
+Kevin
+Eric
+Brian
+Adam
+Dylan
+Kyle
+Jason
+Logan
+Carter
+Owen
+Wyatt
+Jack
+Luke
+Gabriel
+Isaac
+Isaiah
+Jaxon
+Caleb
+Connor
+Levi
+Hunter
+Cameron
+Eli
+Jordan
+Adrian
+Evan
+Austin
+Chase
+Cooper
+Xavier
+Blake
+Gavin
+Zachary
+Cole
+Landon
+Dominic
+Tristan
+Maverick
+Phoenix
+Jasper
+Declan
+Emmett
+Asher
+Finn
+Theo
+Miles
+Leo
+Harrison
+Felix
+Beckett
+August
+Nolan
+Atlas
+Kai
+Rowan
+Bennett
+Brooks
+Diego
+Carlos
+Miguel
+Rafael
+Alejandro
+Juan
+Marco
+Antonio
+Luis
+Eduardo
+Jamal
+Darius
+Malik
+Terrence
+Andre
+DeShawn
+Tyrone
+Dante
+Hiroshi
+Takeshi
+Kenji
+Yuki
+Ryu
+Akira
+Kazuki
+Haruki
+Ren
+Sora
+Raj
+Arjun
+Vikram
+Rahul
+Amir
+Omar
+Hassan
+Khalid
+Zaid
+Tariq
+]]),
 
-	femaleFirstNames = {
-		-- Classic names
-		"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
-		"Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope",
-		"Elizabeth", "Sarah", "Jessica", "Jennifer", "Ashley", "Amanda", "Stephanie", "Nicole", "Melissa", "Lauren",
-		"Rachel", "Hannah", "Megan", "Samantha", "Katherine", "Rebecca", "Brittany", "Christina", "Michelle", "Victoria",
-		-- Modern names
-		"Chloe", "Zoey", "Grace", "Lily", "Audrey", "Natalie", "Brooklyn", "Leah", "Savannah", "Violet",
-		"Claire", "Bella", "Aurora", "Lucy", "Skyler", "Paisley", "Genesis", "Naomi", "Elena", "Maya",
-		"Madelyn", "Addison", "Willow", "Aubrey", "Eliana", "Stella", "Hazel", "Ivy", "Riley", "Quinn",
-		-- Unique names
-		"Serenity", "Nova", "Athena", "Jade", "Autumn", "Ruby", "Jasmine", "Kennedy", "Ariana", "Gianna",
-		"Brielle", "Sienna", "Adalynn", "Kinsley", "Londyn", "Emery", "Teagan", "Peyton", "Parker", "Reagan",
-		-- Diverse cultural names
-		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Isabella", "Gabriela", "Natalia",
-		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Zoe", "Tiana", "Sierra", "Layla", "Aisha",
-		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Koharu", "Kaori", "Nanami",
-		"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
-	},
+	femaleFirstNames = parseNames([[
+Emma
+Sophia
+Olivia
+Ava
+Isabella
+Mia
+Charlotte
+Amelia
+Harper
+Evelyn
+Abigail
+Emily
+Luna
+Ella
+Avery
+Sofia
+Camila
+Aria
+Scarlett
+Penelope
+Elizabeth
+Sarah
+Jessica
+Jennifer
+Ashley
+Amanda
+Stephanie
+Nicole
+Melissa
+Lauren
+Rachel
+Hannah
+Megan
+Samantha
+Katherine
+Rebecca
+Brittany
+Christina
+Michelle
+Victoria
+Chloe
+Zoey
+Grace
+Lily
+Audrey
+Natalie
+Brooklyn
+Leah
+Savannah
+Violet
+Claire
+Bella
+Aurora
+Lucy
+Skyler
+Paisley
+Genesis
+Naomi
+Elena
+Maya
+Madelyn
+Addison
+Willow
+Aubrey
+Eliana
+Stella
+Hazel
+Ivy
+Riley
+Quinn
+Serenity
+Nova
+Athena
+Jade
+Autumn
+Ruby
+Jasmine
+Kennedy
+Ariana
+Gianna
+Brielle
+Sienna
+Adalynn
+Kinsley
+Londyn
+Emery
+Teagan
+Peyton
+Parker
+Reagan
+Maria
+Carmen
+Valentina
+Lucia
+Ana
+Rosa
+Elena
+Gabriela
+Natalia
+Aaliyah
+Destiny
+Diamond
+Imani
+Zoe
+Tiana
+Sierra
+Layla
+Aisha
+Sakura
+Yuki
+Mei
+Hana
+Aiko
+Rin
+Mika
+Koharu
+Kaori
+Nanami
+Priya
+Ananya
+Isha
+Fatima
+Zahra
+Leila
+Nadia
+Sara
+Amira
+Yasmin
+]]),
 
-	lastNames = {
-		-- American/English
-		"Wilson", "Thompson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas", "Moore",
-		"Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young", "King",
-		"Wright", "Hill", "Scott", "Green", "Adams", "Baker", "Nelson", "Carter", "Mitchell", "Roberts",
-		"Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards", "Collins", "Stewart", "Morris", "Murphy",
-		"Cook", "Rogers", "Morgan", "Peterson", "Cooper", "Reed", "Bailey", "Bell", "Gomez", "Kelly",
-		-- Hispanic/Latino
-		"Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
-		"Flores", "Rivera", "Diaz", "Morales", "Ortiz", "Gutierrez", "Chavez", "Ramos", "Cruz", "Mendez",
-		-- Asian
-		"Chen", "Kim", "Nguyen", "Lee", "Wang", "Li", "Zhang", "Liu", "Huang", "Wu",
-		"Yang", "Lin", "Park", "Choi", "Tanaka", "Yamamoto", "Suzuki", "Watanabe", "Sato", "Nakamura",
-		"Patel", "Singh", "Shah", "Kumar", "Sharma", "Gupta", "Ali", "Khan", "Ahmed", "Hassan",
-		-- European
-		"Mueller", "Schmidt", "Schneider", "Weber", "Meyer", "Wagner", "Becker", "Fischer", "Hoffmann", "Koch",
-		"Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco",
-		"Dubois", "Laurent", "Martin", "Bernard", "Lefebvre", "Moreau", "Fournier", "Girard", "Bonnet", "Dupont",
-		-- Irish/Scottish
-		"Murphy", "O'Brien", "Kelly", "Sullivan", "Walsh", "O'Connor", "Quinn", "Byrne", "Ryan", "Gallagher",
-		"MacDonald", "Campbell", "Stewart", "Robertson", "Thomson", "Fraser", "Morrison", "Murray", "Cameron", "Ross"
-	},
+	lastNames = parseNames([[
+Wilson
+Thompson
+Brown
+Johnson
+Williams
+Davis
+Anderson
+Taylor
+Thomas
+Moore
+Jackson
+White
+Harris
+Clark
+Lewis
+Walker
+Hall
+Allen
+Young
+King
+Wright
+Hill
+Scott
+Green
+Adams
+Baker
+Nelson
+Carter
+Mitchell
+Roberts
+Turner
+Phillips
+Campbell
+Parker
+Evans
+Edwards
+Collins
+Stewart
+Morris
+Murphy
+Cook
+Rogers
+Morgan
+Peterson
+Cooper
+Reed
+Bailey
+Bell
+Gomez
+Kelly
+Garcia
+Rodriguez
+Martinez
+Hernandez
+Lopez
+Gonzalez
+Perez
+Sanchez
+Ramirez
+Torres
+Flores
+Rivera
+Diaz
+Morales
+Ortiz
+Gutierrez
+Chavez
+Ramos
+Cruz
+Mendez
+Chen
+Kim
+Nguyen
+Lee
+Wang
+Li
+Zhang
+Liu
+Huang
+Wu
+Yang
+Lin
+Park
+Choi
+Tanaka
+Yamamoto
+Suzuki
+Watanabe
+Sato
+Nakamura
+Patel
+Singh
+Shah
+Kumar
+Sharma
+Gupta
+Ali
+Khan
+Ahmed
+Hassan
+Mueller
+Schmidt
+Schneider
+Weber
+Meyer
+Wagner
+Becker
+Fischer
+Hoffmann
+Koch
+Rossi
+Russo
+Ferrari
+Esposito
+Bianchi
+Romano
+Colombo
+Ricci
+Marino
+Greco
+Dubois
+Laurent
+Martin
+Bernard
+Lefebvre
+Moreau
+Fournier
+Girard
+Bonnet
+Dupont
+Murphy
+O'Brien
+Kelly
+Sullivan
+Walsh
+O'Connor
+Quinn
+Byrne
+Ryan
+Gallagher
+MacDonald
+Campbell
+Stewart
+Robertson
+Thomson
+Fraser
+Morrison
+Murray
+Cameron
+Ross
+]]),
 
-	-- Current generated names (populated by generateRandomNames)
 	currentMaleNames = {},
 	currentFemaleNames = {},
 	nameColors = { C.Green, Color3.fromRGB(234, 179, 8), C.Orange }
