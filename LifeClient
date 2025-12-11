@@ -1056,7 +1056,7 @@ moneyLabel.Parent = moneyContainer
 local feedTop = headerTopOffset + headerHeight + (Device.IS_TINY_PHONE and 4 or padSize(8))
 -- Nav height varies by device - smaller on tiny phones
 local navHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 55 or px(65))
-local feedBottomOffset = navHeight + (Device.IS_TINY_PHONE and 115 or px(170)) -- Nav + stats + age button
+local feedBottomOffset = navHeight + (Device.IS_TINY_PHONE and 140 or px(200)) -- Nav + stats + premium row + age button
 
 local feedContainer = Instance.new("Frame")
 feedContainer.Name = "FeedContainer"
@@ -1266,18 +1266,46 @@ local function updateGodModeButtonAppearance()
 	end
 end
 
+----------------------------------------------------------------
+-- GOD MODE CTA (CLEAN PLACEMENT)
+-- Dedicated row above stats so it doesn't look randomly glued on
+----------------------------------------------------------------
+
+local premiumRowHeight = Device.IS_TINY_PHONE and 30 or 36
+local premiumRowOffset = Device.IS_TINY_PHONE and 6 or 10
+
+local premiumRow = Instance.new("Frame")
+premiumRow.Name = "PremiumRow"
+premiumRow.Size = UDim2.new(1, -12, 0, premiumRowHeight)
+premiumRow.AnchorPoint = Vector2.new(0.5, 1)
+
+-- Position it JUST above the stats row
+premiumRow.Position = UDim2.new(
+	0.5, 0,
+	1, -(statsRowBottom + statsRowHeight + premiumRowOffset)
+)
+
+premiumRow.BackgroundTransparency = 1
+premiumRow.ZIndex = 9
+premiumRow.Parent = mainContainer
+
 godModeButton = Instance.new("TextButton")
 godModeButton.Name = "GodModeButton"
-godModeButton.Size = UDim2.new(0, Device.IS_TINY_PHONE and 140 or 180, 0, Device.IS_TINY_PHONE and 26 or 32)
-godModeButton.AnchorPoint = Vector2.new(0.5, 1)
-godModeButton.Position = UDim2.new(0.5, 0, 0, -4)
+godModeButton.Size = UDim2.new(
+	0, Device.IS_TINY_PHONE and 170 or 220,
+	0, btnHeight(Device.IS_TINY_PHONE and 26 or 32)
+)
+
+godModeButton.AnchorPoint = Vector2.new(0.5, 0.5)
+godModeButton.Position = UDim2.fromScale(0.5, 0.5)
 godModeButton.BackgroundColor3 = C.Gray200
 godModeButton.Font = F.Button
 godModeButton.TextSize = textSize(12)
+godModeButton.TextColor3 = C.Gray500
 godModeButton.AutoButtonColor = false
 godModeButton.Text = ""
-godModeButton.ZIndex = 90
-godModeButton.Parent = statsRow
+godModeButton.ZIndex = 10
+godModeButton.Parent = premiumRow
 corner(godModeButton, 12)
 
 updateGodModeButtonAppearance()
