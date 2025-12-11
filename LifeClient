@@ -338,6 +338,12 @@ local function pad(p, l, r, t, b)
 	return pd
 end
 
+UI = UI or safeRequireRS("UIComponents") or {}
+UI.corner = UI.corner or corner
+UI.pill = UI.pill or pill
+UI.stroke = UI.stroke or stroke
+UI.pad = UI.pad or pad
+
 local function tween(o, i, p)
 	local t = TweenService:Create(o, i, p)
 	t:Play()
