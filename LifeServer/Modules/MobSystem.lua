@@ -33,11 +33,13 @@ MobSystem.Families = {
 			{ id = "boss", name = "Boss", level = 5, respect = 10000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "protection", name = "Protection Racket", risk = 20, reward = { min = 500, max = 2000 }, respect = 5 },
-			{ id = "gambling", name = "Run Gambling Ring", risk = 30, reward = { min = 1000, max = 5000 }, respect = 10 },
-			{ id = "smuggling", name = "Smuggle Goods", risk = 40, reward = { min = 2000, max = 10000 }, respect = 20 },
-			{ id = "heist", name = "Plan a Heist", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50 },
-			{ id = "hitjob", name = "Hit Job", risk = 80, reward = { min = 5000, max = 25000 }, respect = 100 },
+			{ id = "protection", name = "Protection Racket", emoji = "🛡️", risk = 20, reward = { min = 500, max = 2000 }, respect = 5, description = "Collect envelopes from local businesses.", rankRequired = 1, category = "income" },
+			{ id = "numbers", name = "Numbers Game", emoji = "🎲", risk = 25, reward = { min = 1200, max = 4000 }, respect = 8, description = "Rig a neighborhood lottery.", rankRequired = 1, category = "income" },
+			{ id = "gambling", name = "Run Gambling Ring", emoji = "🎰", risk = 30, reward = { min = 1000, max = 5000 }, respect = 10, description = "Operate an underground casino night.", rankRequired = 2, category = "income" },
+			{ id = "loan_shark", name = "Shylock Loans", emoji = "💵", risk = 35, reward = { min = 3000, max = 12000 }, respect = 18, description = "Collect interest from desperate borrowers.", rankRequired = 2, category = "finance" },
+			{ id = "smuggling", name = "Smuggle Goods", emoji = "📦", risk = 40, reward = { min = 2000, max = 10000 }, respect = 20, description = "Sneak contraband through the docks.", rankRequired = 3, category = "logistics" },
+			{ id = "heist", name = "Plan a Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Coordinate a high-stakes robbery.", rankRequired = 4, category = "score" },
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 5000, max = 25000 }, respect = 100, description = "Settle a vendetta permanently.", rankRequired = 5, category = "violence" },
 		},
 		initiation = "You must prove your loyalty by completing a task for the family.",
 	},
@@ -58,11 +60,12 @@ MobSystem.Families = {
 			{ id = "pakhan", name = "Pakhan", level = 5, respect = 10000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "extortion", name = "Extortion", risk = 25, reward = { min = 800, max = 3000 }, respect = 8 },
-			{ id = "weapons", name = "Arms Dealing", risk = 45, reward = { min = 3000, max = 15000 }, respect = 25 },
-			{ id = "cyber", name = "Cyber Crime", risk = 30, reward = { min = 2000, max = 20000 }, respect = 15 },
-			{ id = "kidnapping", name = "Kidnapping", risk = 70, reward = { min = 15000, max = 75000 }, respect = 60 },
-			{ id = "assassination", name = "Contract Kill", risk = 85, reward = { min = 10000, max = 50000 }, respect = 120 },
+			{ id = "extortion", name = "Street Extortion", emoji = "🤐", risk = 25, reward = { min = 800, max = 3000 }, respect = 8, description = "Shake down kiosks for protection cash.", rankRequired = 1, category = "income" },
+			{ id = "black_market", name = "Black Market Deal", emoji = "🛰️", risk = 35, reward = { min = 2000, max = 9000 }, respect = 15, description = "Move counterfeit goods through the ports.", rankRequired = 1, category = "logistics" },
+			{ id = "cyber", name = "Cyber Crime", emoji = "💻", risk = 30, reward = { min = 2000, max = 20000 }, respect = 15, description = "Deploy a ransomware payload.", rankRequired = 2, category = "tech" },
+			{ id = "weapons", name = "Arms Dealing", emoji = "🔫", risk = 45, reward = { min = 3000, max = 15000 }, respect = 25, description = "Broker a weapons shipment.", rankRequired = 3, category = "logistics" },
+			{ id = "kidnapping", name = "High-Value Kidnapping", emoji = "🛩️", risk = 70, reward = { min = 15000, max = 75000 }, respect = 60, description = "Snatch a VIP and negotiate ransom.", rankRequired = 4, category = "score" },
+			{ id = "assassination", name = "Contract Kill", emoji = "🕶️", risk = 85, reward = { min = 10000, max = 50000 }, respect = 120, description = "Eliminate a rival pakhan.", rankRequired = 5, category = "violence" },
 		},
 		initiation = "To join the Bratva, you must show no fear. Complete an act of violence.",
 	},
@@ -83,11 +86,13 @@ MobSystem.Families = {
 			{ id = "oyabun", name = "Oyabun", level = 5, respect = 10000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "pachinko", name = "Pachinko Parlors", risk = 15, reward = { min = 1000, max = 5000 }, respect = 8 },
-			{ id = "blackmail", name = "Corporate Blackmail", risk = 35, reward = { min = 5000, max = 25000 }, respect = 20 },
-			{ id = "construction", name = "Construction Bid Rigging", risk = 25, reward = { min = 3000, max = 15000 }, respect = 15 },
-			{ id = "trafficking", name = "Human Trafficking", risk = 75, reward = { min = 20000, max = 100000 }, respect = 80 },
-			{ id = "yubitsume", name = "Enforce Loyalty", risk = 50, reward = { min = 0, max = 0 }, respect = 150 },
+			{ id = "pachinko", name = "Pachinko Parlors", emoji = "🎰", risk = 15, reward = { min = 1000, max = 5000 }, respect = 8, description = "Siphon coins from arcades.", rankRequired = 1, category = "income" },
+			{ id = "night_market", name = "Night Market Fees", emoji = "🀄", risk = 20, reward = { min = 1500, max = 6000 }, respect = 10, description = "Tax the street vendors.", rankRequired = 1, category = "income" },
+			{ id = "blackmail", name = "Corporate Blackmail", emoji = "📂", risk = 35, reward = { min = 5000, max = 25000 }, respect = 20, description = "Leak photos unless they pay.", rankRequired = 2, category = "finance" },
+			{ id = "construction", name = "Construction Bid Rigging", emoji = "🏗️", risk = 25, reward = { min = 3000, max = 15000 }, respect = 15, description = "Control major contracts.", rankRequired = 3, category = "logistics" },
+			{ id = "art_smuggling", name = "Art Smuggling", emoji = "🖼️", risk = 45, reward = { min = 7000, max = 30000 }, respect = 35, description = "Move stolen art overseas.", rankRequired = 4, category = "logistics" },
+			{ id = "trafficking", name = "Human Trafficking", emoji = "🚢", risk = 75, reward = { min = 20000, max = 100000 }, respect = 80, description = "Illicit trafficking operation.", rankRequired = 5, category = "score" },
+			{ id = "yubitsume", name = "Enforce Loyalty", emoji = "🩸", risk = 50, reward = { min = 0, max = 0 }, respect = 150, description = "Make an example with yubitsume.", rankRequired = 5, category = "discipline" },
 		},
 		initiation = "You must get the traditional irezumi tattoo and swear the oath of loyalty.",
 	},
@@ -108,11 +113,13 @@ MobSystem.Families = {
 			{ id = "jefe", name = "El Jefe", level = 5, respect = 10000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "lookout", name = "Lookout Duty", risk = 10, reward = { min = 200, max = 800 }, respect = 3 },
-			{ id = "transport", name = "Drug Transport", risk = 40, reward = { min = 5000, max = 20000 }, respect = 20 },
-			{ id = "production", name = "Run Drug Lab", risk = 50, reward = { min = 10000, max = 50000 }, respect = 35 },
-			{ id = "distribution", name = "Distribution Network", risk = 35, reward = { min = 8000, max = 30000 }, respect = 25 },
-			{ id = "territorial", name = "Territory Takeover", risk = 90, reward = { min = 25000, max = 150000 }, respect = 100 },
+			{ id = "lookout", name = "Lookout Duty", emoji = "👀", risk = 10, reward = { min = 200, max = 800 }, respect = 3, description = "Watch the border crossings.", rankRequired = 1, category = "support" },
+			{ id = "mule_run", name = "Mule Run", emoji = "🧳", risk = 25, reward = { min = 2000, max = 7000 }, respect = 10, description = "Move product across town.", rankRequired = 1, category = "logistics" },
+			{ id = "transport", name = "Drug Transport", emoji = "🚛", risk = 40, reward = { min = 5000, max = 20000 }, respect = 20, description = "Escort a major shipment.", rankRequired = 2, category = "logistics" },
+			{ id = "production", name = "Run Drug Lab", emoji = "⚗️", risk = 50, reward = { min = 10000, max = 50000 }, respect = 35, description = "Oversee chemical operations.", rankRequired = 3, category = "finance" },
+			{ id = "distribution", name = "Distribution Network", emoji = "📦", risk = 35, reward = { min = 8000, max = 30000 }, respect = 25, description = "Expand the regional network.", rankRequired = 4, category = "logistics" },
+			{ id = "lab_expansion", name = "Lab Expansion", emoji = "🏭", risk = 55, reward = { min = 12000, max = 60000 }, respect = 40, description = "Build a new jungle lab.", rankRequired = 4, category = "finance" },
+			{ id = "territorial", name = "Territory Takeover", emoji = "🌎", risk = 90, reward = { min = 25000, max = 150000 }, respect = 100, description = "Seize a rival's city.", rankRequired = 5, category = "violence" },
 		},
 		initiation = "Prove yourself by making a successful run across the border.",
 	},
@@ -133,11 +140,12 @@ MobSystem.Families = {
 			{ id = "dragonHead", name = "Dragon Head", level = 5, respect = 10000, emoji = "👑" },
 		},
 		operations = {
-			{ id = "counterfeiting", name = "Counterfeiting", risk = 25, reward = { min = 1500, max = 6000 }, respect = 10 },
-			{ id = "piracy", name = "Software Piracy", risk = 20, reward = { min = 2000, max = 10000 }, respect = 8 },
-			{ id = "loan_sharking", name = "Loan Sharking", risk = 30, reward = { min = 3000, max = 12000 }, respect = 15 },
-			{ id = "smuggling", name = "Smuggling Ring", risk = 55, reward = { min = 15000, max = 60000 }, respect = 40 },
-			{ id = "ritual", name = "Blood Oath Ceremony", risk = 40, reward = { min = 0, max = 0 }, respect = 200 },
+			{ id = "counterfeiting", name = "Counterfeit Bills", emoji = "💷", risk = 25, reward = { min = 1500, max = 6000 }, respect = 10, description = "Print stacks of fake cash.", rankRequired = 1, category = "income" },
+			{ id = "piracy", name = "Software Piracy", emoji = "💾", risk = 20, reward = { min = 2000, max = 10000 }, respect = 8, description = "Duplicate movies and games.", rankRequired = 1, category = "tech" },
+			{ id = "loan_sharking", name = "Loan Sharking", emoji = "📉", risk = 30, reward = { min = 3000, max = 12000 }, respect = 15, description = "Collect brutal interest payments.", rankRequired = 2, category = "finance" },
+			{ id = "nightclub_take", name = "Nightclub Takeover", emoji = "🎤", risk = 35, reward = { min = 5000, max = 22000 }, respect = 22, description = "Seize control of a nightclub.", rankRequired = 3, category = "violence" },
+			{ id = "smuggling", name = "Smuggling Ring", emoji = "🚢", risk = 55, reward = { min = 15000, max = 60000 }, respect = 40, description = "Move contraband along the coast.", rankRequired = 4, category = "logistics" },
+			{ id = "ritual", name = "Blood Oath Ceremony", emoji = "🩸", risk = 40, reward = { min = 0, max = 0 }, respect = 200, description = "Enforce loyalty through ritual.", rankRequired = 5, category = "discipline" },
 		},
 		initiation = "You must undergo the traditional 36 oaths ceremony and blood oath.",
 	},
@@ -163,6 +171,7 @@ MobSystem.DefaultMobState = {
 	territories = {},
 	crew = {}, -- NPCs under your command
 	heat = 0, -- Current wanted level
+	lastEvent = nil,
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -301,8 +310,10 @@ function MobSystem:getAvailableOperations(lifeState)
 	local available = {}
 	
 	-- Higher ranks unlock more operations
+	local rankGate = mobState.rankIndex + 1
 	for i, op in ipairs(family.operations) do
-		if i <= mobState.rankIndex + 1 then
+		local required = op.rankRequired or i
+		if required <= rankGate then
 			table.insert(available, op)
 		end
 	end
@@ -375,6 +386,7 @@ function MobSystem:doOperation(lifeState, operationId)
 		local rankUpMsg = self:checkRankUp(lifeState)
 		if rankUpMsg then
 			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
 		end
 	else
 		-- Failed operation
@@ -532,6 +544,10 @@ function MobSystem:onYearPass(lifeState)
 		end
 	end
 	
+	if #events > 0 then
+		mobState.lastEvent = events[#events].message
+	end
+	
 	return events
 end
 
@@ -549,6 +565,25 @@ function MobSystem:serialize(lifeState)
 	local family = self.Families[mobState.familyId]
 	local currentRank = family.ranks[mobState.rankIndex]
 	local nextRank = self:getNextRank(lifeState)
+	local operationsSummary = {}
+	local rankGate = mobState.rankIndex + 1
+	for idx, op in ipairs(family.operations) do
+		local required = op.rankRequired or idx
+		if required <= rankGate then
+			table.insert(operationsSummary, {
+				id = op.id,
+				name = op.name,
+				emoji = op.emoji,
+				description = op.description,
+				category = op.category,
+				risk = op.risk,
+				respect = op.respect,
+				minReward = op.reward.min,
+				maxReward = op.reward.max,
+				rankRequired = required,
+			})
+		end
+	end
 	
 	return {
 		inMob = true,
@@ -569,6 +604,8 @@ function MobSystem:serialize(lifeState)
 		earnings = mobState.earnings,
 		yearsInMob = mobState.yearsInMob,
 		operationsCompleted = mobState.operationsCompleted,
+		lastEvent = mobState.lastEvent,
+		operations = operationsSummary,
 	}
 end
 

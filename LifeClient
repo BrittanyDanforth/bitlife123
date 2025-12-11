@@ -102,13 +102,16 @@ local function getRemote(name, timeout)
 	return remote
 end
 
-local RequestAgeUp   = getRemote("RequestAgeUp")
-local PresentEvent   = getRemote("PresentEvent")
-local SubmitChoice   = getRemote("SubmitChoice")
-local SyncState      = getRemote("SyncState")
-local SetLifeInfo    = getRemote("SetLifeInfo")
-local MinigameResult = getRemote("MinigameResult", 2)
-local MinigameStart  = getRemote("MinigameStart", 2)
+local RequestAgeUp     = getRemote("RequestAgeUp")
+local PresentEvent     = getRemote("PresentEvent")
+local SubmitChoice     = getRemote("SubmitChoice")
+local SyncState        = getRemote("SyncState")
+local SetLifeInfo      = getRemote("SetLifeInfo")
+local MinigameResult   = getRemote("MinigameResult", 2)
+local MinigameStart    = getRemote("MinigameStart", 2)
+local CheckGamepass    = getRemote("CheckGamepass", 2)
+local PromptGamepass   = getRemote("PromptGamepass", 2)
+local GodModeEdit      = getRemote("GodModeEdit", 2)
 
 ----------------------------------------------------------------
 -- STATE
@@ -132,10 +135,36 @@ local hasShownAgeHint        = false
 local introComplete          = false
 local selectedGender         = nil
 
-local occupationScreenInstance, assetsScreenInstance, relationshipsScreenInstance, activitiesScreenInstance, storyPathsScreenInstance
+local ScreenInstances = {
+	occupation = nil,
+	assets = nil,
+	relationships = nil,
+	activities = nil,
+	storypaths = nil,
+}
 local minigamesInstance
 local pendingMinigameEventId     = nil
 local pendingMinigameChoiceIndex = nil
+local hasGodMode = false
+local godModeOverlay = nil
+local godModeButton = nil
+local destroyGodModeModal
+local showGodModeModal
+
+local function refreshGodModeStatus()
+	if not CheckGamepass then
+		return hasGodMode
+	end
+	local success, owns = pcall(function()
+		return CheckGamepass:InvokeServer("GOD_MODE")
+	end)
+	if success then
+		hasGodMode = owns == true
+	end
+	return hasGodMode
+end
+
+refreshGodModeStatus()
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -308,6 +337,12 @@ local function pad(p, l, r, t, b)
 	pd.Parent = p
 	return pd
 end
+
+UI = UI or safeRequireRS("UIComponents") or {}
+UI.corner = UI.corner or corner
+UI.pill = UI.pill or pill
+UI.stroke = UI.stroke or stroke
+UI.pad = UI.pad or pad
 
 local function tween(o, i, p)
 	local t = TweenService:Create(o, i, p)
@@ -539,8 +574,17 @@ end
 -- RESULT POPUP (BitLife-style card matching event modal)
 ----------------------------------------------------------------
 
-local resultOverlay, resultShadowFrame, resultShell, resultCard
-local resultEmoji, resultTitle, resultBody, resultOkBtn, resultStatsPreview
+local ResultUI = {
+	overlay = nil,
+	shadow = nil,
+	shell = nil,
+	card = nil,
+	emoji = nil,
+	title = nil,
+	body = nil,
+	okButton = nil,
+	statsPreview = nil,
+}
 local resultVisible = false
 local resultCallback = nil
 
@@ -549,144 +593,144 @@ local hideResultPopup
 
 local function createResultPopup()
 	-- Overlay
-	resultOverlay = Instance.new("Frame")
-	resultOverlay.Name = "ResultOverlay"
-	resultOverlay.Size = UDim2.fromScale(1, 1)
-	resultOverlay.BackgroundColor3 = C.Black
-	resultOverlay.BackgroundTransparency = 0.45
-	resultOverlay.Visible = false
-	resultOverlay.ZIndex = 80
-	resultOverlay.Parent = screenGui
+	ResultUI.overlay = Instance.new("Frame")
+	ResultUI.overlay.Name = "ResultOverlay"
+	ResultUI.overlay.Size = UDim2.fromScale(1, 1)
+	ResultUI.overlay.BackgroundColor3 = C.Black
+	ResultUI.overlay.BackgroundTransparency = 0.45
+	ResultUI.overlay.Visible = false
+	ResultUI.overlay.ZIndex = 80
+	ResultUI.overlay.Parent = screenGui
 
 	-- TINY PHONE FIX: More compact popup width
 	local popupWidth = modalWidth(320)
 	
 	-- Shadow frame (matches event modal) - thinner borders on tiny phones
-	resultShadowFrame = Instance.new("Frame")
-	resultShadowFrame.Size = UDim2.new(0, popupWidth, 0, 0)
-	resultShadowFrame.AutomaticSize = Enum.AutomaticSize.Y
-	resultShadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	resultShadowFrame.Position = UDim2.fromScale(0.5, 0.5)
-	resultShadowFrame.BackgroundColor3 = C.Black
-	resultShadowFrame.BackgroundTransparency = 0.92
-	resultShadowFrame.ZIndex = 81
-	resultShadowFrame.Parent = resultOverlay
-	corner(resultShadowFrame, Device.IS_TINY_PHONE and 14 or px(28))
+	ResultUI.shadow = Instance.new("Frame")
+	ResultUI.shadow.Size = UDim2.new(0, popupWidth, 0, 0)
+	ResultUI.shadow.AutomaticSize = Enum.AutomaticSize.Y
+	ResultUI.shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	ResultUI.shadow.Position = UDim2.fromScale(0.5, 0.5)
+	ResultUI.shadow.BackgroundColor3 = C.Black
+	ResultUI.shadow.BackgroundTransparency = 0.92
+	ResultUI.shadow.ZIndex = 81
+	ResultUI.shadow.Parent = ResultUI.overlay
+	corner(ResultUI.shadow, Device.IS_TINY_PHONE and 14 or px(28))
 
 	-- Green/Red shell - thinner on tiny phones
 	local shellMargin = Device.IS_TINY_PHONE and 2 or 6
-	resultShell = Instance.new("Frame")
-	resultShell.Name = "ResultShell"
-	resultShell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
-	resultShell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
-	resultShell.BackgroundColor3 = C.Green
-	resultShell.ZIndex = 82
-	resultShell.Parent = resultShadowFrame
-	corner(resultShell, Device.IS_TINY_PHONE and 12 or px(26))
-	stroke(resultShell, Device.IS_TINY_PHONE and 1 or 2, 0.4, C.GreenDark)
+	ResultUI.shell = Instance.new("Frame")
+	ResultUI.shell.Name = "ResultShell"
+	ResultUI.shell.Size = UDim2.new(1, -shellMargin, 1, -shellMargin)
+	ResultUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
+	ResultUI.shell.BackgroundColor3 = C.Green
+	ResultUI.shell.ZIndex = 82
+	ResultUI.shell.Parent = ResultUI.shadow
+	corner(ResultUI.shell, Device.IS_TINY_PHONE and 12 or px(26))
+	stroke(ResultUI.shell, Device.IS_TINY_PHONE and 1 or 2, 0.4, C.GreenDark)
 	if not Device.IS_TINY_PHONE then
-		createShadow(resultShell, 4, px(16), C.Black, 0.9)
+		createShadow(ResultUI.shell, 4, px(16), C.Black, 0.9)
 	end
 
 	-- Inner white card - thinner on tiny phones
 	local cardMargin = Device.IS_TINY_PHONE and 4 or 10
-	resultCard = Instance.new("Frame")
-	resultCard.Name = "ResultCard"
-	resultCard.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
-	resultCard.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
-	resultCard.BackgroundColor3 = C.White
-	resultCard.ZIndex = 83
-	resultCard.Parent = resultShell
-	corner(resultCard, Device.IS_TINY_PHONE and 10 or px(22))
+	ResultUI.card = Instance.new("Frame")
+	ResultUI.card.Name = "ResultCard"
+	ResultUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
+	ResultUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
+	ResultUI.card.BackgroundColor3 = C.White
+	ResultUI.card.ZIndex = 83
+	ResultUI.card.Parent = ResultUI.shell
+	corner(ResultUI.card, Device.IS_TINY_PHONE and 10 or px(22))
 
 	local cardLayout = Instance.new("UIListLayout")
 	cardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	cardLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	cardLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 6 or padSize(12))
-	cardLayout.Parent = resultCard
+	cardLayout.Parent = ResultUI.card
 	local cardPad = Device.IS_TINY_PHONE and 10 or padSize(20)
-	pad(resultCard, cardPad, cardPad, cardPad, cardPad)
+	pad(ResultUI.card, cardPad, cardPad, cardPad, cardPad)
 
 	-- Emoji - TINY PHONE FIX: Much smaller emoji
 	local emojiSize = Device.IS_TINY_PHONE and 36 or px(60)
-	resultEmoji = Instance.new("TextLabel")
-	resultEmoji.Size = UDim2.new(0, emojiSize, 0, emojiSize)
-	resultEmoji.BackgroundTransparency = 1
-	resultEmoji.Font = F.Body
-	resultEmoji.TextSize = Device.IS_TINY_PHONE and 28 or textSize(48)
-	resultEmoji.Text = "✨"
-	resultEmoji.LayoutOrder = 1
-	resultEmoji.ZIndex = 84
-	resultEmoji.Parent = resultCard
+	ResultUI.emoji = Instance.new("TextLabel")
+	ResultUI.emoji.Size = UDim2.new(0, emojiSize, 0, emojiSize)
+	ResultUI.emoji.BackgroundTransparency = 1
+	ResultUI.emoji.Font = F.Body
+	ResultUI.emoji.TextSize = Device.IS_TINY_PHONE and 28 or textSize(48)
+	ResultUI.emoji.Text = "✨"
+	ResultUI.emoji.LayoutOrder = 1
+	ResultUI.emoji.ZIndex = 84
+	ResultUI.emoji.Parent = ResultUI.card
 
 	-- Title - TINY PHONE FIX: Smaller text
-	resultTitle = Instance.new("TextLabel")
-	resultTitle.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 20 or px(32))
-	resultTitle.BackgroundTransparency = 1
-	resultTitle.Font = F.Title
-	resultTitle.TextSize = Device.IS_TINY_PHONE and 15 or textSize(24)
-	resultTitle.TextColor3 = C.Gray900
-	resultTitle.Text = "Result"
-	resultTitle.TextWrapped = true
-	resultTitle.LayoutOrder = 2
-	resultTitle.ZIndex = 84
-	resultTitle.Parent = resultCard
+	ResultUI.title = Instance.new("TextLabel")
+	ResultUI.title.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 20 or px(32))
+	ResultUI.title.BackgroundTransparency = 1
+	ResultUI.title.Font = F.Title
+	ResultUI.title.TextSize = Device.IS_TINY_PHONE and 15 or textSize(24)
+	ResultUI.title.TextColor3 = C.Gray900
+	ResultUI.title.Text = "Result"
+	ResultUI.title.TextWrapped = true
+	ResultUI.title.LayoutOrder = 2
+	ResultUI.title.ZIndex = 84
+	ResultUI.title.Parent = ResultUI.card
 
 	-- Body - TINY PHONE FIX: Smaller text with tighter line height
-	resultBody = Instance.new("TextLabel")
-	resultBody.Size = UDim2.new(1, 0, 0, 0)
-	resultBody.AutomaticSize = Enum.AutomaticSize.Y
-	resultBody.BackgroundTransparency = 1
-	resultBody.Font = F.Body
-	resultBody.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
-	resultBody.TextColor3 = C.Gray600
-	resultBody.TextWrapped = true
-	resultBody.TextXAlignment = Enum.TextXAlignment.Center
-	resultBody.LineHeight = Device.IS_TINY_PHONE and 1.2 or 1.4
-	resultBody.RichText = true
-	resultBody.Text = ""
-	resultBody.LayoutOrder = 3
-	resultBody.ZIndex = 84
-	resultBody.Parent = resultCard
+	ResultUI.body = Instance.new("TextLabel")
+	ResultUI.body.Size = UDim2.new(1, 0, 0, 0)
+	ResultUI.body.AutomaticSize = Enum.AutomaticSize.Y
+	ResultUI.body.BackgroundTransparency = 1
+	ResultUI.body.Font = F.Body
+	ResultUI.body.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
+	ResultUI.body.TextColor3 = C.Gray600
+	ResultUI.body.TextWrapped = true
+	ResultUI.body.TextXAlignment = Enum.TextXAlignment.Center
+	ResultUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or 1.4
+	ResultUI.body.RichText = true
+	ResultUI.body.Text = ""
+	ResultUI.body.LayoutOrder = 3
+	ResultUI.body.ZIndex = 84
+	ResultUI.body.Parent = ResultUI.card
 
 	-- Stats container - tighter on tiny phones
-	resultStatsPreview = Instance.new("Frame")
-	resultStatsPreview.Name = "StatsPreview"
-	resultStatsPreview.Size = UDim2.new(1, 0, 0, 0)
-	resultStatsPreview.AutomaticSize = Enum.AutomaticSize.Y
-	resultStatsPreview.BackgroundTransparency = 1
-	resultStatsPreview.LayoutOrder = 4
-	resultStatsPreview.ZIndex = 84
-	resultStatsPreview.Parent = resultCard
+	ResultUI.statsPreview = Instance.new("Frame")
+	ResultUI.statsPreview.Name = "StatsPreview"
+	ResultUI.statsPreview.Size = UDim2.new(1, 0, 0, 0)
+	ResultUI.statsPreview.AutomaticSize = Enum.AutomaticSize.Y
+	ResultUI.statsPreview.BackgroundTransparency = 1
+	ResultUI.statsPreview.LayoutOrder = 4
+	ResultUI.statsPreview.ZIndex = 84
+	ResultUI.statsPreview.Parent = ResultUI.card
 
 	local statsLayout = Instance.new("UIListLayout")
 	statsLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(4))
-	statsLayout.Parent = resultStatsPreview
+	statsLayout.Parent = ResultUI.statsPreview
 
 	-- OK Button - TINY PHONE FIX: Smaller but still tappable
 	local okBtnHeight = Device.IS_TINY_PHONE and 38 or btnHeight(52)
-	resultOkBtn = Instance.new("TextButton")
-	resultOkBtn.Size = UDim2.new(1, 0, 0, okBtnHeight)
-	resultOkBtn.BackgroundColor3 = C.Green
-	resultOkBtn.Font = F.Button
-	resultOkBtn.TextSize = Device.IS_TINY_PHONE and 13 or textSize(18)
-	resultOkBtn.TextColor3 = C.White
-	resultOkBtn.Text = "Continue"
-	resultOkBtn.AutoButtonColor = false
-	resultOkBtn.LayoutOrder = 99
-	resultOkBtn.ZIndex = 84
-	resultOkBtn.Parent = resultCard
-	corner(resultOkBtn, Device.IS_TINY_PHONE and 8 or px(12))
+	ResultUI.okButton = Instance.new("TextButton")
+	ResultUI.okButton.Size = UDim2.new(1, 0, 0, okBtnHeight)
+	ResultUI.okButton.BackgroundColor3 = C.Green
+	ResultUI.okButton.Font = F.Button
+	ResultUI.okButton.TextSize = Device.IS_TINY_PHONE and 13 or textSize(18)
+	ResultUI.okButton.TextColor3 = C.White
+	ResultUI.okButton.Text = "Continue"
+	ResultUI.okButton.AutoButtonColor = false
+	ResultUI.okButton.LayoutOrder = 99
+	ResultUI.okButton.ZIndex = 84
+	ResultUI.okButton.Parent = ResultUI.card
+	corner(ResultUI.okButton, Device.IS_TINY_PHONE and 8 or px(12))
 
-	resultOkBtn.MouseEnter:Connect(function()
-		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
+	ResultUI.okButton.MouseEnter:Connect(function()
+		tween(ResultUI.okButton, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
 	end)
-	resultOkBtn.MouseLeave:Connect(function()
-		tween(resultOkBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Green })
+	ResultUI.okButton.MouseLeave:Connect(function()
+		tween(ResultUI.okButton, TweenInfo.new(0.1), { BackgroundColor3 = C.Green })
 	end)
 
-	resultOkBtn.MouseButton1Click:Connect(function()
+	ResultUI.okButton.MouseButton1Click:Connect(function()
 		hideResultPopup()
 		if resultCallback then
 			resultCallback()
@@ -696,25 +740,25 @@ local function createResultPopup()
 end
 
 hideResultPopup = function()
-	if not resultOverlay then return end
+	if not ResultUI.overlay then return end
 	resultVisible = false
 
-	tween(resultShadowFrame, TweenInfo.new(0.2), {
+	tween(ResultUI.shadow, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
-	tween(resultShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-	tween(resultCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(ResultUI.shell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(ResultUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
 	task.delay(0.2, function()
-		if resultOverlay then
-			resultOverlay.Visible = false
+		if ResultUI.overlay then
+			ResultUI.overlay.Visible = false
 		end
 	end)
 end
 
 local function showResultPopup(data, callback)
-	if not resultOverlay then createResultPopup() end
+	if not ResultUI.overlay then createResultPopup() end
 
 	resultCallback = callback
 
@@ -732,22 +776,22 @@ local function showResultPopup(data, callback)
 	local shellColor = isPositive and C.Green or C.Red
 	local shellStrokeColor = isPositive and C.GreenDark or C.RedDark
 
-	resultShell.BackgroundColor3 = shellColor
-	local shellStroke = resultShell:FindFirstChildOfClass("UIStroke")
+	ResultUI.shell.BackgroundColor3 = shellColor
+	local shellStroke = ResultUI.shell:FindFirstChildOfClass("UIStroke")
 	if shellStroke then shellStroke.Color = shellStrokeColor end
-	resultOkBtn.BackgroundColor3 = shellColor
+	ResultUI.okButton.BackgroundColor3 = shellColor
 
-	resultEmoji.Text = data.emoji or (isPositive and "✨" or "😢")
-	resultTitle.Text = data.title or "What Happened"
+	ResultUI.emoji.Text = data.emoji or (isPositive and "✨" or "😢")
+	ResultUI.title.Text = data.title or "What Happened"
 	-- CRITICAL UI FIX: More descriptive default body text
 	local bodyText = data.body or "Something happened, but the details are unclear."
 	if bodyText == "" then
 		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
 	end
-	resultBody.Text = bodyText
+	ResultUI.body.Text = bodyText
 
 	-- Clear old stat previews
-	for _, child in ipairs(resultStatsPreview:GetChildren()) do
+	for _, child in ipairs(ResultUI.statsPreview:GetChildren()) do
 		if child:IsA("Frame") then child:Destroy() end
 	end
 
@@ -765,7 +809,7 @@ local function showResultPopup(data, callback)
 			row.Size = UDim2.new(1, 0, 0, 24)
 			row.BackgroundTransparency = 1
 			row.ZIndex = 85
-			row.Parent = resultStatsPreview
+			row.Parent = ResultUI.statsPreview
 
 			local lbl = Instance.new("TextLabel")
 			lbl.Size = UDim2.new(0.5, 0, 1, 0)
@@ -798,7 +842,7 @@ local function showResultPopup(data, callback)
 		row.Size = UDim2.new(1, 0, 0, 24)
 		row.BackgroundTransparency = 1
 		row.ZIndex = 85
-		row.Parent = resultStatsPreview
+		row.Parent = ResultUI.statsPreview
 
 		local lbl = Instance.new("TextLabel")
 		lbl.Size = UDim2.new(0.5, 0, 1, 0)
@@ -825,18 +869,18 @@ local function showResultPopup(data, callback)
 	end
 
 	-- Show with animation
-	resultOverlay.Visible = true
-	resultShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
-	resultShadowFrame.BackgroundTransparency = 1
-	resultShell.BackgroundTransparency = 1
-	resultCard.BackgroundTransparency = 1
+	ResultUI.overlay.Visible = true
+	ResultUI.shadow.Position = UDim2.new(0.5, 0, 0.5, 40)
+	ResultUI.shadow.BackgroundTransparency = 1
+	ResultUI.shell.BackgroundTransparency = 1
+	ResultUI.card.BackgroundTransparency = 1
 
-	tween(resultShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+	tween(ResultUI.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 0.92,
 	})
-	tween(resultShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-	tween(resultCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+	tween(ResultUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+	tween(ResultUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 
 	-- CRITICAL FIX: Visual feedback - BitLife style shake for negative outcomes
 	-- More aggressive triggering for immersive gameplay feel
@@ -1204,6 +1248,339 @@ createStatCard({ key = "Health",    icon = "❤️", col = C.Red    }, statsLeft
 createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight, 1)
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
 
+destroyGodModeModal = destroyGodModeModal or function() end
+showGodModeModal = showGodModeModal or function() end
+
+local function updateGodModeButtonAppearance()
+	if not godModeButton then
+		return
+	end
+	if hasGodMode then
+		godModeButton.Text = "⚡ God Mode"
+		godModeButton.TextColor3 = C.Gray800
+		godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+	else
+		godModeButton.Text = "🔓 Unlock God Mode"
+		godModeButton.TextColor3 = C.Gray500
+		godModeButton.BackgroundColor3 = C.Gray200
+	end
+end
+
+godModeButton = Instance.new("TextButton")
+godModeButton.Name = "GodModeButton"
+godModeButton.Size = UDim2.new(0, Device.IS_TINY_PHONE and 140 or 180, 0, Device.IS_TINY_PHONE and 26 or 32)
+godModeButton.AnchorPoint = Vector2.new(0.5, 1)
+godModeButton.Position = UDim2.new(0.5, 0, 0, -4)
+godModeButton.BackgroundColor3 = C.Gray200
+godModeButton.Font = F.Button
+godModeButton.TextSize = textSize(12)
+godModeButton.AutoButtonColor = false
+godModeButton.Text = ""
+godModeButton.ZIndex = 90
+godModeButton.Parent = statsRow
+corner(godModeButton, 12)
+
+updateGodModeButtonAppearance()
+
+godModeButton.MouseButton1Click:Connect(function()
+	if hasGodMode then
+		showGodModeModal()
+	else
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		task.delay(1, function()
+			refreshGodModeStatus()
+			updateGodModeButtonAppearance()
+		end)
+	end
+end)
+
+destroyGodModeModal = function()
+	if godModeOverlay then
+		godModeOverlay:Destroy()
+		godModeOverlay = nil
+	end
+end
+
+showGodModeModal = function()
+	if not hasGodMode then
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		return
+	end
+
+	destroyGodModeModal()
+
+	godModeOverlay = Instance.new("Frame")
+	godModeOverlay.Name = "GodModeOverlay"
+	godModeOverlay.Size = UDim2.fromScale(1, 1)
+	godModeOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+	godModeOverlay.BackgroundTransparency = 0.35
+	godModeOverlay.ZIndex = 150
+	godModeOverlay.Parent = mainContainer
+
+	local modal = Instance.new("Frame")
+	modal.Name = "GodModeModal"
+	modal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 280 or 360, 0, 0)
+	modal.AutomaticSize = Enum.AutomaticSize.Y
+	modal.AnchorPoint = Vector2.new(0.5, 0.5)
+	modal.Position = UDim2.new(0.5, 0, 0.5, 0)
+	modal.BackgroundColor3 = C.White
+	modal.ZIndex = 151
+	modal.Parent = godModeOverlay
+	corner(modal, 16)
+	stroke(modal, 1, 0.85, C.Gray200)
+	pad(modal, 14, 14, 14, 14)
+
+	local modalLayout = Instance.new("UIListLayout")
+	modalLayout.FillDirection = Enum.FillDirection.Vertical
+	modalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	modalLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	modalLayout.Padding = UDim.new(0, 8)
+	modalLayout.Parent = modal
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 0, textSize(18) + 6)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(18)
+	titleLabel.TextColor3 = C.Gray800
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = "God Mode Editor"
+	titleLabel.ZIndex = 152
+	titleLabel.Parent = modal
+
+	local subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 6)
+	subtitleLabel.BackgroundTransparency = 1
+	subtitleLabel.Font = F.Body
+	subtitleLabel.TextSize = textSize(11)
+	subtitleLabel.TextColor3 = C.Gray500
+	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subtitleLabel.TextWrapped = true
+	subtitleLabel.Text = "Edit your stats, name, and job instantly. Values are clamped between 0 and 100."
+	subtitleLabel.ZIndex = 152
+	subtitleLabel.Parent = modal
+
+	local function createInputRow(labelText, defaultText, placeholder, numeric)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 0)
+		row.AutomaticSize = Enum.AutomaticSize.Y
+		row.BackgroundTransparency = 1
+		row.ZIndex = 152
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
+		label.BackgroundTransparency = 1
+		label.Font = F.Medium
+		label.TextSize = textSize(11)
+		label.TextColor3 = C.Gray600
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Text = labelText
+		label.Parent = row
+
+		local input = Instance.new("TextBox")
+		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 26 or 32)
+		input.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
+		input.Font = F.Body
+		input.TextSize = textSize(12)
+		input.TextColor3 = C.Gray800
+		input.ClearTextOnFocus = false
+		input.Text = defaultText or ""
+		input.PlaceholderText = placeholder or ""
+		input.TextXAlignment = Enum.TextXAlignment.Left
+		input.Parent = row
+		corner(input, 8)
+		stroke(input, 1, 0.9, C.Gray200)
+		pad(input, 8, 8, 4, 4)
+
+		if numeric then
+			input.Text = tostring(defaultText or 0)
+		end
+
+		return row, input
+	end
+
+	local currentName = currentState.Name or player.Name or ""
+	local nameRow, nameInput = createInputRow("Name", currentName, "Enter a new name")
+	nameRow.Parent = modal
+
+	local statsGrid = Instance.new("Frame")
+	statsGrid.Name = "StatsGrid"
+	statsGrid.Size = UDim2.new(1, 0, 0, 0)
+	statsGrid.AutomaticSize = Enum.AutomaticSize.Y
+	statsGrid.BackgroundTransparency = 1
+	statsGrid.ZIndex = 152
+	statsGrid.Parent = modal
+
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+	gridLayout.CellSize = UDim2.new(0.5, -4, 0, Device.IS_TINY_PHONE and 60 or 70)
+	gridLayout.Parent = statsGrid
+
+	local statInputs = {}
+	local statList = {
+		{ label = "Happiness", key = "Happiness", value = currentState.Happiness or 50 },
+		{ label = "Health", key = "Health", value = currentState.Health or 100 },
+		{ label = "Smarts", key = "Smarts", value = currentState.Smarts or 50 },
+		{ label = "Looks", key = "Looks", value = currentState.Looks or 50 },
+	}
+
+	for _, stat in ipairs(statList) do
+		local card = Instance.new("Frame")
+		card.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
+		card.ZIndex = 153
+		card.Parent = statsGrid
+		corner(card, 10)
+		stroke(card, 1, 0.9, C.Gray200)
+		pad(card, 8, 8, 6, 6)
+
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, 0, 0, textSize(11) + 2)
+		title.BackgroundTransparency = 1
+		title.Font = F.Medium
+		title.TextSize = textSize(11)
+		title.TextColor3 = C.Gray600
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.Text = stat.label
+		title.Parent = card
+
+		local input = Instance.new("TextBox")
+		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 24 or 28)
+		input.Position = UDim2.new(0, 0, 0, textSize(11) + 6)
+		input.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		input.Font = F.Body
+		input.TextSize = textSize(12)
+		input.TextColor3 = C.Gray800
+		input.TextXAlignment = Enum.TextXAlignment.Left
+		input.ClearTextOnFocus = false
+		input.Text = tostring(stat.value)
+		input.Parent = card
+		corner(input, 6)
+		stroke(input, 1, 0.9, C.Gray200)
+		pad(input, 6, 6, 2, 2)
+
+		statInputs[stat.key] = input
+	end
+
+	local careerRow, careerInput = createInputRow("Career (ID or name)", "", "e.g. police_officer or clear")
+	careerRow.Parent = modal
+
+	local moneyRow, moneyInput = createInputRow("Money", tostring(currentState.Money or 0), "Optional", true)
+	moneyRow.Parent = modal
+
+	local errorLabel = Instance.new("TextLabel")
+	errorLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
+	errorLabel.BackgroundTransparency = 1
+	errorLabel.Font = F.Body
+	errorLabel.TextSize = textSize(11)
+	errorLabel.TextColor3 = C.Red
+	errorLabel.TextXAlignment = Enum.TextXAlignment.Left
+	errorLabel.Text = ""
+	errorLabel.ZIndex = 152
+	errorLabel.Parent = modal
+
+	local buttonBar = Instance.new("Frame")
+	buttonBar.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 32 or 40)
+	buttonBar.BackgroundTransparency = 1
+	buttonBar.ZIndex = 152
+	buttonBar.Parent = modal
+
+	local buttonLayout = Instance.new("UIListLayout")
+	buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+	buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	buttonLayout.Padding = UDim.new(0, 8)
+	buttonLayout.Parent = buttonBar
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 70 or 90, 1, 0)
+	closeBtn.BackgroundColor3 = C.Gray200
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(12)
+	closeBtn.TextColor3 = C.Gray700
+	closeBtn.Text = "Cancel"
+	closeBtn.AutoButtonColor = false
+	closeBtn.Parent = buttonBar
+	corner(closeBtn, 8)
+
+	local applyBtn = Instance.new("TextButton")
+	applyBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 120 or 150, 1, 0)
+	applyBtn.BackgroundColor3 = Color3.fromRGB(249, 200, 10)
+	applyBtn.Font = F.Button
+	applyBtn.TextSize = textSize(13)
+	applyBtn.TextColor3 = C.Black
+	applyBtn.Text = "Apply Changes"
+	applyBtn.AutoButtonColor = false
+	applyBtn.Parent = buttonBar
+	corner(applyBtn, 8)
+
+	closeBtn.MouseButton1Click:Connect(destroyGodModeModal)
+
+	applyBtn.MouseButton1Click:Connect(function()
+		errorLabel.Text = ""
+		local payload = { stats = {} }
+		local trimmedName = nameInput.Text and nameInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+		if trimmedName ~= "" and trimmedName ~= (currentState.Name or "") then
+			payload.name = trimmedName
+		end
+
+		for key, input in pairs(statInputs) do
+			local value = tonumber(input.Text)
+			if value then
+				payload.stats[key] = value
+			end
+		end
+
+		local moneyValue = tonumber(moneyInput.Text)
+		if moneyValue then
+			payload.money = moneyValue
+		end
+
+		local careerText = careerInput.Text and careerInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+		if careerText ~= "" then
+			if careerText:lower() == "clear" or careerText:lower() == "none" then
+				payload.clearCareer = true
+			else
+				payload.careerId = careerText
+			end
+		end
+
+		local hasChanges = payload.name or payload.money or payload.careerId or payload.clearCareer
+		if payload.stats and next(payload.stats) ~= nil then
+			hasChanges = true
+		else
+			payload.stats = nil
+		end
+
+		if not hasChanges then
+			errorLabel.Text = "Enter at least one change."
+			return
+		end
+
+		if not GodModeEdit then
+			errorLabel.Text = "Server not ready for God Mode edits."
+			return
+		end
+
+		applyBtn.Text = "Saving..."
+		applyBtn.AutoButtonColor = false
+
+		local ok, result = pcall(function()
+			return GodModeEdit:InvokeServer(payload)
+		end)
+
+		if ok and result and result.success then
+			addFeedEntry(result.message or "God Mode updated.")
+			destroyGodModeModal()
+		else
+			errorLabel.Text = (result and result.message) or "Unable to apply changes."
+			applyBtn.Text = "Apply Changes"
+		end
+	end)
+end
+
 ----------------------------------------------------------------
 -- NAV BAR - TINY PHONE FIX: More compact
 ----------------------------------------------------------------
@@ -1316,16 +1693,16 @@ local function createNavButton(info, parent, order)
 	end)
 
 	btn.MouseButton1Click:Connect(function()
-		if info.screen == "occupation" and occupationScreenInstance then
-			occupationScreenInstance:show()
-		elseif info.screen == "assets" and assetsScreenInstance then
-			assetsScreenInstance:show()
-		elseif info.screen == "relationships" and relationshipsScreenInstance then
-			relationshipsScreenInstance:show()
-		elseif info.screen == "activities" and activitiesScreenInstance then
-			activitiesScreenInstance:show()
-		elseif info.screen == "storypaths" and storyPathsScreenInstance then
-			storyPathsScreenInstance:show()
+		if info.screen == "occupation" and ScreenInstances.occupation then
+			ScreenInstances.occupation:show()
+		elseif info.screen == "assets" and ScreenInstances.assets then
+			ScreenInstances.assets:show()
+		elseif info.screen == "relationships" and ScreenInstances.relationships then
+			ScreenInstances.relationships:show()
+		elseif info.screen == "activities" and ScreenInstances.activities then
+			ScreenInstances.activities:show()
+		elseif info.screen == "storypaths" and ScreenInstances.storypaths then
+			ScreenInstances.storypaths:show()
 		end
 	end)
 
@@ -1811,23 +2188,6 @@ end
 -- Build the event modal immediately
 buildEventModal()
 
--- Aliases for read-only backward compatibility with existing code
-local eventOverlay = EventUI.overlay
-local eventShadowFrame = EventUI.shadowFrame
-local eventShell = EventUI.shell
-local eventCard = EventUI.card
-local eventHeader = EventUI.header
-local eventAvatar = EventUI.avatar
-local eventAvatarEmoji = EventUI.avatarEmoji
-local eventNameLbl = EventUI.nameLbl
-local relationBanner = EventUI.relationBanner
-local relationLbl = EventUI.relationLbl
-local eventEmoji = EventUI.emoji
-local eventTitle = EventUI.title
-local eventBody = EventUI.body
-local eventQuestion = EventUI.question
-local choicesSection = EventUI.choicesSection
-
 local function clearChoices()
 	for _, b in ipairs(EventUI.activeChoiceButtons) do
 		b:Destroy()
@@ -1851,7 +2211,7 @@ surpriseBtn.Text = "✨ Surprise me!"
 surpriseBtn.AutoButtonColor = false
 surpriseBtn.LayoutOrder = 100
 surpriseBtn.ZIndex = 65
-surpriseBtn.Parent = choicesSection
+surpriseBtn.Parent = EventUI.choicesSection
 
 surpriseBtn.MouseEnter:Connect(function()
 	surpriseBtn.TextColor3 = C.Blue
@@ -2751,23 +3111,23 @@ showEvent = function(payload)
 		local isDisaster = isDisasterEvent(payload)
 
 		-- Apply themed shell color
-		eventShell.BackgroundColor3 = colors.shell
-		local shellStroke = eventShell:FindFirstChildOfClass("UIStroke")
+		EventUI.shell.BackgroundColor3 = colors.shell
+		local shellStroke = EventUI.shell:FindFirstChildOfClass("UIStroke")
 		if shellStroke then
 			shellStroke.Color = colors.stroke
 		end
 
 		-- header
-		eventHeader.Visible = payload.showRelationship or false
+		EventUI.header.Visible = payload.showRelationship or false
 		if payload.showRelationship and payload.relationName then
-			eventNameLbl.Text = payload.relationName
-			relationLbl.Text  = payload.relationship or "Friend"
+			EventUI.nameLbl.Text = payload.relationName
+			EventUI.relationLbl.Text  = payload.relationship or "Friend"
 		end
 
-		eventEmoji.Text     = payload.emoji or "🙂"
-		eventTitle.Text     = payload.title or "Life Event"
-		eventBody.Text      = payload.text or ""
-		eventQuestion.Text  = payload.question or "What will you do?"
+		EventUI.emoji.Text     = payload.emoji or "🙂"
+		EventUI.title.Text     = payload.title or "Life Event"
+		EventUI.body.Text      = payload.text or ""
+		EventUI.question.Text  = payload.question or "What will you do?"
 
 		local choiceHandlers = {}
 
@@ -2794,7 +3154,7 @@ showEvent = function(payload)
 			btn.TextWrapped = true
 			btn.TextXAlignment = Enum.TextXAlignment.Center
 			btn.TextYAlignment = Enum.TextYAlignment.Center
-			btn.Parent = choicesSection
+			btn.Parent = EventUI.choicesSection
 
 			corner(btn, choiceBtnCorner)
 			stroke(btn, 1, 0.5, C.BlueLight)
@@ -2860,18 +3220,18 @@ showEvent = function(payload)
 			end
 		end)
 
-		eventOverlay.Visible = true
-		eventShadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
-		eventShadowFrame.BackgroundTransparency = 1
-		eventShell.BackgroundTransparency = 1
-		eventCard.BackgroundTransparency = 1
+		EventUI.overlay.Visible = true
+		EventUI.shadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
+		EventUI.shadowFrame.BackgroundTransparency = 1
+		EventUI.shell.BackgroundTransparency = 1
+		EventUI.card.BackgroundTransparency = 1
 
-		tween(eventShadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundTransparency = 0.92,
 		})
-		tween(eventShell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-		tween(eventCard, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(EventUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		tween(EventUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
 
 	-- Handle errors in showEvent
@@ -2879,7 +3239,7 @@ showEvent = function(payload)
 		warn("[LifeClient] ❌ ERROR in showEvent:", errorMsg)
 		awaitingEvent = false
 		EventUI.currentEventId = nil
-		eventOverlay.Visible = false
+		EventUI.overlay.Visible = false
 	end
 end
 
@@ -2888,27 +3248,27 @@ hideEvent = function()
 	EventUI.currentEventId = nil
 
 	-- Create the hide tween and track it
-	EventUI.currentHideTween = tween(eventShadowFrame, TweenInfo.new(0.2), {
+	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
 		BackgroundTransparency = 1,
 	})
-	tween(eventShell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-	tween(eventCard, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.shell, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	tween(EventUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
 	EventUI.currentHideTween.Completed:Connect(function()
 		-- Only hide overlay if we're not currently showing a new event
 		-- This prevents race condition where hide completes after new show started
 		if not awaitingEvent then
-			eventOverlay.Visible = false
+			EventUI.overlay.Visible = false
 
 			-- Reset event UI elements for next event
-			eventEmoji.Text = "🙂"
-			eventTitle.Text = ""
-			eventBody.Text = ""
-			eventAvatarEmoji.Text = "👤"
-			eventNameLbl.Text = ""
-			relationLbl.Text = ""
-			eventHeader.Visible = false
+			EventUI.emoji.Text = "🙂"
+			EventUI.title.Text = ""
+			EventUI.body.Text = ""
+			EventUI.avatarEmoji.Text = "👤"
+			EventUI.nameLbl.Text = ""
+			EventUI.relationLbl.Text = ""
+			EventUI.header.Visible = false
 		end
 
 		EventUI.currentHideTween = nil
@@ -2980,73 +3340,20 @@ IntroUI.nameBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 IntroUI.nameBtnLayout.Padding = UDim.new(0, 12)
 IntroUI.nameBtnLayout.Parent = IntroUI.nameBtns
 
--- Name pools for randomization - EXPANDED for variety (100+ names each)
--- Consolidated into single table to reduce local register usage (Luau limit is 200)
 local NameData = {
 	maleFirstNames = {
-		-- Classic names
-		"James", "Marcus", "David", "Michael", "Daniel", "Alexander", "William", "Benjamin", "Lucas", "Henry",
-		"Ethan", "Noah", "Liam", "Mason", "Oliver", "Aiden", "Jackson", "Sebastian", "Elijah", "Jayden",
-		"Matthew", "Anthony", "Christopher", "Joshua", "Andrew", "Joseph", "Samuel", "Ryan", "Nathan", "Tyler",
-		"Brandon", "Justin", "Aaron", "Kevin", "Eric", "Brian", "Adam", "Dylan", "Kyle", "Jason",
-		-- Modern names
-		"Logan", "Carter", "Owen", "Wyatt", "Jack", "Luke", "Gabriel", "Isaac", "Isaiah", "Jaxon",
-		"Caleb", "Connor", "Levi", "Hunter", "Cameron", "Eli", "Jordan", "Adrian", "Evan", "Austin",
-		"Chase", "Cooper", "Xavier", "Blake", "Gavin", "Zachary", "Cole", "Landon", "Dominic", "Tristan",
-		-- Unique names
-		"Maverick", "Phoenix", "Jasper", "Declan", "Emmett", "Asher", "Finn", "Theo", "Miles", "Leo",
-		"Harrison", "Felix", "Beckett", "August", "Nolan", "Atlas", "Kai", "Rowan", "Bennett", "Brooks",
-		-- Diverse cultural names
-		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
-		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Tyrone", "Marcus", "Dante", "Isaiah",
-		"Hiroshi", "Takeshi", "Kenji", "Yuki", "Ryu", "Akira", "Kazuki", "Haruki", "Ren", "Sora",
-		"Raj", "Arjun", "Vikram", "Rahul", "Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq"
+		"James", "Michael", "Daniel", "Alexander", "Liam", "Noah",
+		"Jackson", "Elijah", "Logan", "Wyatt", "Kai", "Rowan",
 	},
-
 	femaleFirstNames = {
-		-- Classic names
-		"Emma", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
-		"Abigail", "Emily", "Luna", "Ella", "Avery", "Sofia", "Camila", "Aria", "Scarlett", "Penelope",
-		"Elizabeth", "Sarah", "Jessica", "Jennifer", "Ashley", "Amanda", "Stephanie", "Nicole", "Melissa", "Lauren",
-		"Rachel", "Hannah", "Megan", "Samantha", "Katherine", "Rebecca", "Brittany", "Christina", "Michelle", "Victoria",
-		-- Modern names
-		"Chloe", "Zoey", "Grace", "Lily", "Audrey", "Natalie", "Brooklyn", "Leah", "Savannah", "Violet",
-		"Claire", "Bella", "Aurora", "Lucy", "Skyler", "Paisley", "Genesis", "Naomi", "Elena", "Maya",
-		"Madelyn", "Addison", "Willow", "Aubrey", "Eliana", "Stella", "Hazel", "Ivy", "Riley", "Quinn",
-		-- Unique names
-		"Serenity", "Nova", "Athena", "Jade", "Autumn", "Ruby", "Jasmine", "Kennedy", "Ariana", "Gianna",
-		"Brielle", "Sienna", "Adalynn", "Kinsley", "Londyn", "Emery", "Teagan", "Peyton", "Parker", "Reagan",
-		-- Diverse cultural names
-		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Isabella", "Gabriela", "Natalia",
-		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Zoe", "Tiana", "Sierra", "Layla", "Aisha",
-		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Koharu", "Kaori", "Nanami",
-		"Priya", "Ananya", "Isha", "Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin"
+		"Emma", "Sophia", "Olivia", "Isabella", "Mia", "Charlotte",
+		"Avery", "Camila", "Scarlett", "Chloe", "Hazel", "Naomi",
 	},
-
 	lastNames = {
-		-- American/English
-		"Wilson", "Thompson", "Brown", "Johnson", "Williams", "Davis", "Anderson", "Taylor", "Thomas", "Moore",
-		"Jackson", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young", "King",
-		"Wright", "Hill", "Scott", "Green", "Adams", "Baker", "Nelson", "Carter", "Mitchell", "Roberts",
-		"Turner", "Phillips", "Campbell", "Parker", "Evans", "Edwards", "Collins", "Stewart", "Morris", "Murphy",
-		"Cook", "Rogers", "Morgan", "Peterson", "Cooper", "Reed", "Bailey", "Bell", "Gomez", "Kelly",
-		-- Hispanic/Latino
-		"Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
-		"Flores", "Rivera", "Diaz", "Morales", "Ortiz", "Gutierrez", "Chavez", "Ramos", "Cruz", "Mendez",
-		-- Asian
-		"Chen", "Kim", "Nguyen", "Lee", "Wang", "Li", "Zhang", "Liu", "Huang", "Wu",
-		"Yang", "Lin", "Park", "Choi", "Tanaka", "Yamamoto", "Suzuki", "Watanabe", "Sato", "Nakamura",
-		"Patel", "Singh", "Shah", "Kumar", "Sharma", "Gupta", "Ali", "Khan", "Ahmed", "Hassan",
-		-- European
-		"Mueller", "Schmidt", "Schneider", "Weber", "Meyer", "Wagner", "Becker", "Fischer", "Hoffmann", "Koch",
-		"Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco",
-		"Dubois", "Laurent", "Martin", "Bernard", "Lefebvre", "Moreau", "Fournier", "Girard", "Bonnet", "Dupont",
-		-- Irish/Scottish
-		"Murphy", "O'Brien", "Kelly", "Sullivan", "Walsh", "O'Connor", "Quinn", "Byrne", "Ryan", "Gallagher",
-		"MacDonald", "Campbell", "Stewart", "Robertson", "Thomson", "Fraser", "Morrison", "Murray", "Cameron", "Ross"
+		"Wilson", "Brown", "Johnson", "Williams", "Taylor", "Clark",
+		"Walker", "King", "Adams", "Carter", "Parker", "Reed",
 	},
 
-	-- Current generated names (populated by generateRandomNames)
 	currentMaleNames = {},
 	currentFemaleNames = {},
 	nameColors = { C.Green, Color3.fromRGB(234, 179, 8), C.Orange }
@@ -3292,6 +3599,9 @@ function updateFromState()
 			Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0),
 		})
 	end
+
+	refreshGodModeStatus()
+	updateGodModeButtonAppearance()
 end
 
 ----------------------------------------------------------------
@@ -3407,17 +3717,17 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 		-- Update all screen instances with the new state (even during reset)
 		-- This ensures screens have proper initial state
-		if occupationScreenInstance and occupationScreenInstance.updateState then
-			occupationScreenInstance:updateState(currentState)
+if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
+	ScreenInstances.occupation:updateState(currentState)
 		end
-		if assetsScreenInstance and assetsScreenInstance.updateState then
-			assetsScreenInstance:updateState(currentState)
+		if ScreenInstances.assets and ScreenInstances.assets.updateState then
+			ScreenInstances.assets:updateState(currentState)
 		end
-		if relationshipsScreenInstance and relationshipsScreenInstance.updateState then
-			relationshipsScreenInstance:updateState(currentState)
+		if ScreenInstances.relationships and ScreenInstances.relationships.updateState then
+			ScreenInstances.relationships:updateState(currentState)
 		end
-		if activitiesScreenInstance and activitiesScreenInstance.updateState then
-			activitiesScreenInstance:updateState(currentState)
+		if ScreenInstances.activities and ScreenInstances.activities.updateState then
+			ScreenInstances.activities:updateState(currentState)
 		end
 
 		-- SHOW INTRO MODAL
@@ -3467,21 +3777,21 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	end
 
 	-- Update all screen instances with latest state
-	if occupationScreenInstance and occupationScreenInstance.updateState then
-		occupationScreenInstance:updateState(currentState)
+	if ScreenInstances.occupation and ScreenInstances.occupation.updateState then
+		ScreenInstances.occupation:updateState(currentState)
 	end
-	if assetsScreenInstance and assetsScreenInstance.updateState then
-		assetsScreenInstance:updateState(currentState)
+if ScreenInstances.assets and ScreenInstances.assets.updateState then
+	ScreenInstances.assets:updateState(currentState)
 	end
-	if relationshipsScreenInstance and relationshipsScreenInstance.updateState then
-		relationshipsScreenInstance:updateState(currentState)
+if ScreenInstances.relationships and ScreenInstances.relationships.updateState then
+	ScreenInstances.relationships:updateState(currentState)
 	end
-	if activitiesScreenInstance and activitiesScreenInstance.updateState then
-		activitiesScreenInstance:updateState(currentState)
+if ScreenInstances.activities and ScreenInstances.activities.updateState then
+	ScreenInstances.activities:updateState(currentState)
 	end
 
-	if storyPathsScreenInstance and storyPathsScreenInstance.visible then
-		storyPathsScreenInstance:updateUI()
+if ScreenInstances.storypaths and ScreenInstances.storypaths.visible then
+	ScreenInstances.storypaths:updateUI()
 	end
 
 	-- CRITICAL FIX: Check for death FIRST before showing any popups
@@ -3602,7 +3912,7 @@ end)
 
 if MinigameStart then
 	MinigameStart.OnClientEvent:Connect(function(config)
-		if eventOverlay.Visible then
+if EventUI.overlay.Visible then
 			hideEvent()
 		end
 
@@ -3661,7 +3971,7 @@ end
 ageButton.MouseButton1Click:Connect(function()
 	-- Safety check: if awaitingEvent is true but the event overlay is NOT visible,
 	-- something went wrong - reset the flag
-	if awaitingEvent and not eventOverlay.Visible then
+	if awaitingEvent and not EventUI.overlay.Visible then
 		awaitingEvent = false
 		EventUI.currentEventId = nil
 	end
@@ -3700,11 +4010,11 @@ local function safeNew(mod, name, ...)
 	return nil
 end
 
-occupationScreenInstance    = safeNew(OccupationScreen,    "OccupationScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
-assetsScreenInstance        = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
-relationshipsScreenInstance = safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
-activitiesScreenInstance    = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
-storyPathsScreenInstance    = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
+ScreenInstances.occupation   = safeNew(OccupationScreen,    "OccupationScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
+ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
+ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
+ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
+ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
@@ -3774,7 +4084,7 @@ task.spawn(function()
 				lastAwaitingEventTime = tick()
 			elseif tick() - lastAwaitingEventTime > STUCK_THRESHOLD then
 				-- Check if the event overlay is actually visible
-				if not eventOverlay.Visible then
+				if not EventUI.overlay.Visible then
 					awaitingEvent = false
 					EventUI.currentEventId = nil
 					lastAwaitingEventTime = nil
