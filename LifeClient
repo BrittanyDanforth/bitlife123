@@ -1253,99 +1253,28 @@ createStatCard({ key = "Health",    icon = "❤️", col = C.Red    }, statsLeft
 createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight, 1)
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
 
-destroyGodModeModal = destroyGodModeModal or function() end
-showGodModeModal = showGodModeModal or function() end
-
-local function updateGodModeButtonAppearance()
-	if not godModeButton then
-		return
-	end
-	if hasGodMode then
-		godModeButton.Text = "⚡ God Mode"
-		godModeButton.TextColor3 = C.Gray800
-		godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-	else
-		godModeButton.Text = "🔓 Unlock God Mode"
-		godModeButton.TextColor3 = C.Gray500
-		godModeButton.BackgroundColor3 = C.Gray200
-	end
-end
-
 ----------------------------------------------------------------
--- GOD MODE CTA (CLEAN PLACEMENT)
--- Dedicated row above stats so it doesn't look randomly glued on
+-- GOD MODE - Only available during character creation now
+-- The in-game God Mode editor has been removed per user request
+-- God Mode customization is handled in the intro screen
 ----------------------------------------------------------------
 
-local premiumRowHeight = Device.IS_TINY_PHONE and 30 or 36
-local premiumRowOffset = Device.IS_TINY_PHONE and 6 or 10
+-- Keep these functions as stubs for compatibility
+destroyGodModeModal = function() end
+showGodModeModal = function() end
 
-local premiumRow = Instance.new("Frame")
-premiumRow.Name = "PremiumRow"
-premiumRow.Size = UDim2.new(1, -12, 0, premiumRowHeight)
-premiumRow.AnchorPoint = Vector2.new(0.5, 1)
+-- No-op since button was removed from main UI
+local function updateGodModeButtonAppearance() end
 
--- Position it JUST above the stats row
-premiumRow.Position = UDim2.new(
-	0.5, 0,
-	1, -(statsRowBottom + statsRowHeight + premiumRowOffset)
-)
+-- Note: The premiumRow and godModeButton have been removed
+-- God Mode is now only accessible during character creation via
+-- the "⚡ Customize Character" button in the intro screen
 
-premiumRow.BackgroundTransparency = 1
-premiumRow.ZIndex = 9
-premiumRow.Parent = mainContainer
+-- Legacy overlay variable (kept for compatibility)
+godModeOverlay = nil
 
-godModeButton = Instance.new("TextButton")
-godModeButton.Name = "GodModeButton"
-godModeButton.Size = UDim2.new(
-	0, Device.IS_TINY_PHONE and 170 or 220,
-	0, btnHeight(Device.IS_TINY_PHONE and 26 or 32)
-)
-
-godModeButton.AnchorPoint = Vector2.new(0.5, 0.5)
-godModeButton.Position = UDim2.fromScale(0.5, 0.5)
-godModeButton.BackgroundColor3 = C.Gray200
-godModeButton.Font = F.Button
-godModeButton.TextSize = textSize(12)
-godModeButton.TextColor3 = C.Gray500
-godModeButton.AutoButtonColor = false
-godModeButton.Text = ""
-godModeButton.ZIndex = 10
-godModeButton.Parent = premiumRow
-corner(godModeButton, 12)
-
-updateGodModeButtonAppearance()
-
-godModeButton.MouseButton1Click:Connect(function()
-	if hasGodMode then
-		showGodModeModal()
-	else
-		if PromptGamepass then
-			PromptGamepass:FireServer("GOD_MODE")
-		end
-		task.delay(1, function()
-			refreshGodModeStatus()
-			updateGodModeButtonAppearance()
-		end)
-	end
-end)
-
-destroyGodModeModal = function()
-	if godModeOverlay then
-		godModeOverlay:Destroy()
-		godModeOverlay = nil
-	end
-end
-
-showGodModeModal = function()
-	if not hasGodMode then
-		if PromptGamepass then
-			PromptGamepass:FireServer("GOD_MODE")
-		end
-		return
-	end
-
-	destroyGodModeModal()
-
+-- Skip the old God Mode modal UI creation
+if false then -- Disabled: God Mode editor removed from main UI
 	godModeOverlay = Instance.new("Frame")
 	godModeOverlay.Name = "GodModeOverlay"
 	godModeOverlay.Size = UDim2.fromScale(1, 1)
