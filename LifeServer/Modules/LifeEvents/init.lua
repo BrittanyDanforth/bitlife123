@@ -381,6 +381,58 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5/#14: PREMIUM GAMEPASS EVENT FILTERING
+	-- Events marked as premium-only MUST check for gamepass ownership!
+	-- Without this, players without gamepasses could get royalty/mafia/celebrity events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ROYALTY events require Royalty gamepass AND being born royal
+	if event.isRoyalOnly then
+		if not flags.royalty_gamepass then
+			return false -- Must own Royalty gamepass
+		end
+		if not flags.is_royalty and not (state.RoyalState and state.RoyalState.isRoyal) then
+			return false -- Must be royal to get royal events
+		end
+	end
+	
+	-- MAFIA events require Mafia gamepass
+	if event.isMafiaOnly then
+		if not flags.mafia_gamepass then
+			return false -- Must own Mafia gamepass
+		end
+		-- Also check if in mob for mob-member-only events
+		if event.requiresMobMembership then
+			if not flags.in_mob and not (state.MobState and state.MobState.inMob) then
+				return false -- Must be in a crime family
+			end
+		end
+	end
+	
+	-- CELEBRITY events require Celebrity gamepass
+	if event.isCelebrityOnly then
+		if not flags.celebrity_gamepass then
+			return false -- Must own Celebrity gamepass
+		end
+	end
+	
+	-- Check event conditions for premium flags
+	if event.conditions then
+		if event.conditions.requiresFlags then
+			-- Check for mafia_gamepass, royalty_gamepass, etc.
+			if event.conditions.requiresFlags.mafia_gamepass and not flags.mafia_gamepass then
+				return false
+			end
+			if event.conditions.requiresFlags.royalty_gamepass and not flags.royalty_gamepass then
+				return false
+			end
+			if event.conditions.requiresFlags.celebrity_gamepass and not flags.celebrity_gamepass then
+				return false
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
 	-- Only allow health-related, medical, or high-priority events for very sick players
 	-- This prevents the weird situation of getting "Travel Opportunity!" while dying

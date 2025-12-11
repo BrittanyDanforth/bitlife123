@@ -1579,4 +1579,207 @@ function RoyaltyEvents.serializeRoyalState(lifeState)
 	}
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #15: ROYAL RANK/TITLE PROGRESSION SYSTEM
+-- Handles progression from Prince/Princess → Crown Prince/Princess → King/Queen
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.TitleProgression = {
+	male = {
+		{ title = "Prince", lineOfSuccession = 6, ageMin = 0 },
+		{ title = "Prince", lineOfSuccession = 5, ageMin = 0 },
+		{ title = "Prince", lineOfSuccession = 4, ageMin = 0 },
+		{ title = "Prince", lineOfSuccession = 3, ageMin = 0 },
+		{ title = "Crown Prince", lineOfSuccession = 2, ageMin = 16 },
+		{ title = "Crown Prince", lineOfSuccession = 1, ageMin = 18 },
+		{ title = "King", lineOfSuccession = 0, ageMin = 21, isMonarch = true },
+	},
+	female = {
+		{ title = "Princess", lineOfSuccession = 6, ageMin = 0 },
+		{ title = "Princess", lineOfSuccession = 5, ageMin = 0 },
+		{ title = "Princess", lineOfSuccession = 4, ageMin = 0 },
+		{ title = "Princess", lineOfSuccession = 3, ageMin = 0 },
+		{ title = "Crown Princess", lineOfSuccession = 2, ageMin = 16 },
+		{ title = "Crown Princess", lineOfSuccession = 1, ageMin = 18 },
+		{ title = "Queen", lineOfSuccession = 0, ageMin = 21, isMonarch = true },
+	},
+}
+
+function RoyaltyEvents.updateRoyalTitle(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return nil
+	end
+	
+	local gender = (lifeState.Gender or "Male"):lower()
+	local progression = RoyaltyEvents.TitleProgression[gender] or RoyaltyEvents.TitleProgression.male
+	local age = lifeState.Age or 0
+	local line = royalState.lineOfSuccession or 99
+	
+	-- Find appropriate title
+	for _, rank in ipairs(progression) do
+		if line <= rank.lineOfSuccession and age >= rank.ageMin then
+			royalState.title = rank.title
+			if rank.isMonarch and not royalState.isMonarch and line == 0 then
+				-- They should be monarch but aren't yet - coronation pending
+				lifeState.Flags = lifeState.Flags or {}
+				lifeState.Flags.throne_ready = true
+			end
+			return rank.title
+		end
+	end
+	
+	return royalState.title
+end
+
+function RoyaltyEvents.advanceSuccession(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, nil
+	end
+	
+	-- Already monarch
+	if royalState.isMonarch then
+		return false, nil
+	end
+	
+	local oldLine = royalState.lineOfSuccession
+	
+	-- Move up in succession
+	if oldLine > 1 then
+		royalState.lineOfSuccession = oldLine - 1
+		RoyaltyEvents.updateRoyalTitle(lifeState)
+		
+		return true, string.format("You moved up to #%d in the line of succession! You are now %s.", royalState.lineOfSuccession, royalState.title)
+	elseif oldLine == 1 then
+		-- Ready for coronation
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.throne_ready = true
+		lifeState.Flags.is_heir = true
+		
+		return true, "The monarch has passed. The crown will soon be yours..."
+	end
+	
+	return false, nil
+end
+
+function RoyaltyEvents.triggerCoronation(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	if royalState.isMonarch then
+		return false, "Already a monarch"
+	end
+	
+	local gender = (lifeState.Gender or "Male"):lower()
+	local monarchTitle = gender == "female" and "Queen" or "King"
+	
+	royalState.isMonarch = true
+	royalState.title = monarchTitle
+	royalState.lineOfSuccession = 0
+	royalState.reignYears = 0
+	royalState.popularity = math.min(100, royalState.popularity + 20)
+	
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.is_monarch = true
+	lifeState.Flags.crowned = true
+	lifeState.Flags.throne_ready = nil
+	
+	return true, string.format("👑 Long live %s %s! You have been crowned!", monarchTitle, lifeState.Name or "Your Majesty")
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- ROYAL DUTY COMPLETION SYSTEM
+-- ════════════════════════════════════════════════════════════════════════════
+
+function RoyaltyEvents.getAvailableDuties(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return {}
+	end
+	
+	local age = lifeState.Age or 0
+	local isMonarch = royalState.isMonarch
+	local available = {}
+	
+	for _, duty in ipairs(RoyaltyEvents.RoyalDuties) do
+		local meetsReqs = true
+		
+		if age < (duty.minAge or 0) then
+			meetsReqs = false
+		end
+		
+		if duty.requiresMonarch and not isMonarch then
+			meetsReqs = false
+		end
+		
+		if meetsReqs then
+			table.insert(available, duty)
+		end
+	end
+	
+	return available
+end
+
+function RoyaltyEvents.performDuty(lifeState, dutyId)
+	local royalState = lifeState.RoyalState
+	if not royalState then
+		return false, "Not royalty", nil
+	end
+	
+	local duty = nil
+	for _, d in ipairs(RoyaltyEvents.RoyalDuties) do
+		if d.id == dutyId then
+			duty = d
+			break
+		end
+	end
+	
+	if not duty then
+		return false, "Unknown duty", nil
+	end
+	
+	-- Check requirements
+	if lifeState.Age < (duty.minAge or 0) then
+		return false, "Too young for this duty", nil
+	end
+	
+	if duty.requiresMonarch and not royalState.isMonarch then
+		return false, "Only the monarch can perform this duty", nil
+	end
+	
+	local totalCost = (duty.wealthCost or 0) + (duty.charityCost or 0) + (duty.donationAmount or 0)
+	if lifeState.Money < totalCost then
+		return false, "Not enough funds", nil
+	end
+	
+	-- Apply costs
+	lifeState.Money = lifeState.Money - totalCost
+	
+	-- Apply popularity gain
+	local popGain = math.random(duty.popularityEffect.min, duty.popularityEffect.max)
+	royalState.popularity = math.min(100, royalState.popularity + popGain)
+	royalState.dutiesCompleted = (royalState.dutiesCompleted or 0) + 1
+	royalState.dutyStreak = (royalState.dutyStreak or 0) + 1
+	
+	-- Streak bonus
+	if royalState.dutyStreak >= 5 then
+		popGain = popGain + 5
+		royalState.popularity = math.min(100, royalState.popularity + 5)
+	end
+	
+	local result = {
+		dutyId = duty.id,
+		dutyName = duty.name,
+		dutyEmoji = duty.emoji,
+		popularityGain = popGain,
+		cost = totalCost,
+		newPopularity = royalState.popularity,
+	}
+	
+	return true, string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain), result
+end
+
 return RoyaltyEvents

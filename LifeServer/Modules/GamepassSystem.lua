@@ -975,6 +975,124 @@ function GamepassSystem:getRequiredGamepassForFeature(featureId)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #18: SYNC GAMEPASS OWNERSHIP TO LIFE STATE
+-- This ensures all gamepass flags are properly set on the player's state
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:syncToLifeState(player, lifeState)
+	if not lifeState then return end
+	
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.GamepassOwnership = lifeState.GamepassOwnership or {}
+	
+	-- Check each gamepass and set flags
+	local gamepassChecks = {
+		{ key = "ROYALTY", flag = "royalty_gamepass", ownership = "royalty" },
+		{ key = "MAFIA", flag = "mafia_gamepass", ownership = "mafia" },
+		{ key = "CELEBRITY", flag = "celebrity_gamepass", ownership = "celebrity" },
+		{ key = "GOD_MODE", flag = "god_mode_gamepass", ownership = "godMode" },
+		{ key = "TIME_MACHINE", flag = "time_machine_gamepass", ownership = "timeMachine" },
+		{ key = "BOSS_MODE", flag = "boss_mode_gamepass", ownership = "bossMode" },
+		{ key = "BITIZENSHIP", flag = "bitizen", ownership = "bitizenship" },
+	}
+	
+	for _, check in ipairs(gamepassChecks) do
+		local owns = self:checkOwnership(player, check.key)
+		lifeState.Flags[check.flag] = owns or nil
+		lifeState.GamepassOwnership[check.ownership] = owns
+		
+		-- Special handling for god mode
+		if check.key == "GOD_MODE" and owns then
+			lifeState.GodModeState = lifeState.GodModeState or {}
+			lifeState.GodModeState.enabled = true
+		end
+	end
+	
+	return lifeState
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #15: ROYAL RANK PROGRESSION HELPER
+-- Handles progression from Prince/Princess → King/Queen with proper titles
+-- ════════════════════════════════════════════════════════════════════════════
+
+GamepassSystem.RoyalRankProgression = {
+	male = {
+		{ title = "Prince", level = 1 },
+		{ title = "Crown Prince", level = 2 },
+		{ title = "King", level = 3, isMonarch = true },
+	},
+	female = {
+		{ title = "Princess", level = 1 },
+		{ title = "Crown Princess", level = 2 },
+		{ title = "Queen", level = 3, isMonarch = true },
+	},
+}
+
+function GamepassSystem:getRoyalRank(lifeState)
+	if not lifeState.RoyalState or not lifeState.RoyalState.isRoyal then
+		return nil
+	end
+	
+	local gender = (lifeState.Gender or "Male"):lower()
+	local ranks = self.RoyalRankProgression[gender] or self.RoyalRankProgression.male
+	
+	if lifeState.RoyalState.isMonarch then
+		return ranks[3]
+	elseif lifeState.RoyalState.lineOfSuccession == 1 then
+		return ranks[2]
+	else
+		return ranks[1]
+	end
+end
+
+function GamepassSystem:updateRoyalTitle(lifeState)
+	local rank = self:getRoyalRank(lifeState)
+	if rank then
+		lifeState.RoyalState.title = rank.title
+	end
+	return rank
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #17: MAFIA EVENT TRIGGER HELPERS
+-- Provides proper mafia event triggering support
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:canTriggerMafiaEvent(player, lifeState, eventType)
+	if not self:hasMafia(player) then
+		return false, "Mafia gamepass required"
+	end
+	
+	if not lifeState.MobState or not lifeState.MobState.inMob then
+		if eventType ~= "approach" and eventType ~= "recruitment" then
+			return false, "Must be in a crime family"
+		end
+	end
+	
+	return true, nil
+end
+
+function GamepassSystem:getMafiaEventChance(lifeState, eventType)
+	local mobState = lifeState.MobState
+	if not mobState or not mobState.inMob then
+		return 0.05 -- 5% chance to get approached if not in mob
+	end
+	
+	-- Base chances by event type
+	local baseChances = {
+		operation = 0.30,
+		loyalty_test = 0.10,
+		promotion = 0.15,
+		war = 0.05,
+		betrayal = 0.08,
+		arrest = 0.10 + (mobState.heat or 0) / 200,
+	}
+	
+	return baseChances[eventType] or 0.10
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 

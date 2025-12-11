@@ -1047,4 +1047,123 @@ function MafiaEvents.serializeMafiaEventState(lifeState)
 	}
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #17: PROPER MAFIA EVENT INITIALIZATION
+-- Ensures events are properly triggered based on mob state
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaEvents.initializeMobMember(lifeState, familyData)
+	lifeState.MobState = lifeState.MobState or {}
+	
+	lifeState.MobState.inMob = true
+	lifeState.MobState.familyId = familyData.id
+	lifeState.MobState.familyName = familyData.name
+	lifeState.MobState.familyEmoji = familyData.emoji
+	lifeState.MobState.rankIndex = 1
+	lifeState.MobState.rankLevel = 1
+	lifeState.MobState.rankName = "Associate"
+	lifeState.MobState.rankEmoji = "👤"
+	lifeState.MobState.respect = 0
+	lifeState.MobState.loyalty = 100
+	lifeState.MobState.heat = 0
+	lifeState.MobState.yearsInMob = 0
+	lifeState.MobState.operationsCompleted = 0
+	lifeState.MobState.operationsFailed = 0
+	lifeState.MobState.earnings = 0
+	lifeState.MobState.kills = 0
+	
+	-- Set proper flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.in_mob = true
+	lifeState.Flags.mafia_member = true
+	lifeState.Flags.criminal_lifestyle = true
+	
+	return true, "You've joined " .. familyData.name .. "!"
+end
+
+function MafiaEvents.getMobRankForRespect(respect)
+	local ranks = {
+		{ name = "Associate", emoji = "👤", minRespect = 0 },
+		{ name = "Soldier", emoji = "🔫", minRespect = 100 },
+		{ name = "Caporegime", emoji = "💰", minRespect = 500 },
+		{ name = "Underboss", emoji = "🎩", minRespect = 2000 },
+		{ name = "Boss", emoji = "👑", minRespect = 10000 },
+	}
+	
+	local currentRank = ranks[1]
+	for i, rank in ipairs(ranks) do
+		if respect >= rank.minRespect then
+			currentRank = rank
+			currentRank.index = i
+		end
+	end
+	
+	return currentRank
+end
+
+function MafiaEvents.checkMobPromotion(lifeState)
+	local mobState = lifeState.MobState
+	if not mobState or not mobState.inMob then
+		return false, nil
+	end
+	
+	local currentRank = MafiaEvents.getMobRankForRespect(mobState.respect)
+	
+	if currentRank.index > mobState.rankIndex then
+		-- Promotion available!
+		mobState.rankIndex = currentRank.index
+		mobState.rankLevel = currentRank.index
+		mobState.rankName = currentRank.name
+		mobState.rankEmoji = currentRank.emoji
+		
+		return true, string.format("🎉 Promoted to %s %s!", currentRank.emoji, currentRank.name)
+	end
+	
+	return false, nil
+end
+
+function MafiaEvents.applyOperationResult(lifeState, operation, success, result)
+	local mobState = lifeState.MobState
+	if not mobState then return end
+	
+	if success then
+		mobState.respect = mobState.respect + (result.respect or 0)
+		mobState.earnings = mobState.earnings + (result.money or 0)
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+		mobState.heat = math.min(100, mobState.heat + (result.heat or 0))
+		lifeState.Money = (lifeState.Money or 0) + (result.money or 0)
+		
+		if result.kills then
+			mobState.kills = (mobState.kills or 0) + result.kills
+		end
+		
+		-- Check for promotion
+		local promoted, promoMsg = MafiaEvents.checkMobPromotion(lifeState)
+		if promoted then
+			result.promotionMessage = promoMsg
+		end
+	else
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+		mobState.heat = math.min(100, mobState.heat + (result.heat or 10))
+		
+		if result.arrested then
+			lifeState.InJail = true
+			lifeState.JailYearsLeft = result.jailYears or 5
+			lifeState.Flags.in_prison = true
+		end
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MAFIA CRIME FAMILY DATA (for reference)
+-- ════════════════════════════════════════════════════════════════════════════
+
+MafiaEvents.CrimeFamilies = {
+	italian = { id = "italian", name = "Italian Mafia", emoji = "🇮🇹" },
+	russian = { id = "russian", name = "Russian Bratva", emoji = "🇷🇺" },
+	yakuza = { id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵" },
+	cartel = { id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽" },
+	triad = { id = "triad", name = "Chinese Triad", emoji = "🇨🇳" },
+}
+
 return MafiaEvents
