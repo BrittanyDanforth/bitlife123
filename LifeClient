@@ -3963,8 +3963,9 @@ local function makeGodModeSection(parentScroll, title, order)
 end
 
 -- Build God Mode UI in separate scope to reduce local registers
--- CRITICAL FIX: Split into multiple separate do-blocks to stay under 200 register limit
-do
+-- CRITICAL FIX: Use IIFEs (Immediately Invoked Function Expressions) to create actual new function scopes
+-- do...end blocks don't create new function scopes for register allocation, only lexical scopes
+;(function()
 	-- Container now just holds the scroll - no fixed bottom area
 	IntroUI.godModeContainer = Instance.new("Frame")
 	IntroUI.godModeContainer.Name = "GodModeCustomize"
@@ -4028,11 +4029,11 @@ do
 		IntroUI.nameBtns.Visible = false
 		IntroUI.genderTitle.Text = "Start by picking a gender"
 	end)
-end -- End setup do-block
+end)() -- End setup IIFE
 
--- CRITICAL FIX: Each section in its own TOP-LEVEL do-block to reset register count
+-- CRITICAL FIX: Each section in its own IIFE to create actual new function scope and reset register count
 -- Name section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
 	IntroUI.customNameInput = Instance.new("TextBox")
@@ -4052,10 +4053,10 @@ do
 	IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
 		GodModeCreateData.customName = IntroUI.customNameInput.Text
 	end)
-end
+end)()
 
 -- Gender section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
 	local gFrame = Instance.new("Frame")
@@ -4092,10 +4093,10 @@ do
 			end
 		end)
 	end
-end
+end)()
 
 -- Ethnicity section with emojis
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
 	local ef = Instance.new("Frame")
@@ -4146,11 +4147,11 @@ do
 	for _, eth in ipairs(ethOpts) do
 		createEthBtn(eth.id, eth.label)
 	end
-end
+end)()
 
 -- Wealth section
 -- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
 		IntroUI.wealthBtns = {}
@@ -4248,10 +4249,10 @@ do
 		for i, w in ipairs(wOpts) do
 			createWealthBtn(ws, w, i + 1, hasRoyaltyGamepass)
 		end
-end
+end)()
 
--- CRITICAL FIX #273: Stats section - wrapped in helper function to avoid register limit
-do
+-- CRITICAL FIX #273: Stats section - wrapped in IIFE to avoid register limit
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
 	IntroUI.statSliders = {}
@@ -4347,10 +4348,10 @@ do
 	createStatSlider(ss, "Health", "❤️", C.Green, 3)
 	createStatSlider(ss, "Smarts", "🧠", C.Purple, 4)
 	createStatSlider(ss, "Looks", "💄", C.Pink, 5)
-end
+end)()
 
 -- Country section with flag emojis
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
 		local cOpts = {
@@ -4411,10 +4412,10 @@ do
 		-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
 		cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
 	end)
-end
+end)()
 
 -- Start button section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- START BUTTON AT BOTTOM OF SCROLL (LayoutOrder = 100)
@@ -4470,7 +4471,7 @@ do
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
-end -- End of Start button do-block
+end)() -- End of Start button IIFE
 
 -- Function to show God Mode customization
 local function showGodModeIntroCustomize()
