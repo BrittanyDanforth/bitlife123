@@ -299,11 +299,23 @@ end
 function GodModeSystem:clearCriminalRecord(lifeState)
 	local flags = lifeState.Flags or {}
 	
-	-- Clear all criminal-related flags
+	-- CRITICAL FIX #172: Comprehensive criminal record clearing
 	local criminalFlags = {
+		-- Record types
 		"criminal_record", "convicted_felon", "arrested", "prison_record",
+		"juvenile_record", "sealed_record", "expunged_record",
+		-- Legal status
 		"on_probation", "on_parole", "warrant", "fugitive", "felon",
+		"sex_offender", "registered_offender",
+		-- Crime types
 		"murderer", "thief", "drug_dealer", "violent_criminal",
+		"assault_conviction", "robbery_conviction", "fraud_conviction",
+		"dui_conviction", "drug_conviction", "theft_conviction",
+		"burglary_conviction", "arson_conviction", "kidnapping_conviction",
+		-- General criminal flags
+		"in_prison", "jail_time", "prison_time", "incarcerated",
+		"escaped_prisoner", "on_the_run",
+		"gang_member", "organized_crime", "mafia_record",
 	}
 	
 	for _, flag in ipairs(criminalFlags) do
@@ -312,21 +324,42 @@ function GodModeSystem:clearCriminalRecord(lifeState)
 	
 	lifeState.Flags = flags
 	
-	-- Clear jail state
+	-- CRITICAL FIX #173: Clear jail state completely
 	lifeState.InJail = false
 	lifeState.JailYearsLeft = 0
+	lifeState.JailTime = nil
+	lifeState.PrisonSentence = nil
 	
-	return true, "📋 Criminal record cleared!"
+	-- CRITICAL FIX #174: Clear mob/mafia criminal flags if in organized crime
+	if lifeState.MobState then
+		lifeState.MobState.heat = 0
+		lifeState.MobState.notoriety = 0
+	end
+	
+	return true, "📋 Criminal record completely cleared! Fresh start!"
 end
 
 function GodModeSystem:cureDiseases(lifeState)
 	local flags = lifeState.Flags or {}
 	
-	-- Clear all disease-related flags
+	-- CRITICAL FIX #168: Expanded disease list to include all health conditions
 	local diseaseFlags = {
-		"has_std", "has_cancer", "chronic_illness", "terminal_illness",
+		-- STDs
+		"has_std", "hiv_positive", "hepatitis", "herpes", "chlamydia", "gonorrhea",
+		-- Cancer and serious diseases
+		"has_cancer", "cancer", "tumor", "leukemia",
+		-- Chronic conditions
+		"chronic_illness", "terminal_illness", "chronic_pain",
+		"diabetes", "heart_disease", "lung_disease", "kidney_disease", "liver_disease",
+		-- Mental health
 		"mental_illness", "depression", "anxiety", "bipolar", "schizophrenia",
-		"hiv_positive", "hepatitis", "diabetes", "heart_disease",
+		"ptsd", "ocd", "adhd", "insomnia", "eating_disorder",
+		-- Physical conditions
+		"injured", "seriously_injured", "hospitalized", "disabled", "paralyzed",
+		"broken_bone", "concussion", "chronic_fatigue",
+		-- Misc health issues
+		"food_poisoning", "allergic_reaction", "sick", "ill", "bedridden",
+		"prolonged_illness", "immune_compromised",
 	}
 	
 	for _, flag in ipairs(diseaseFlags) do
@@ -335,22 +368,36 @@ function GodModeSystem:cureDiseases(lifeState)
 	
 	lifeState.Flags = flags
 	
-	-- Boost health
+	-- CRITICAL FIX #169: Boost health and sync both stat locations
 	if lifeState.Stats then
-		lifeState.Stats.Health = math.min(100, (lifeState.Stats.Health or 50) + 30)
-		lifeState.Health = lifeState.Stats.Health
+		lifeState.Stats.Health = 100
+		lifeState.Health = 100
+	else
+		lifeState.Health = 100
 	end
 	
-	return true, "💊 All diseases cured! Health improved."
+	return true, "💊 All diseases and conditions cured! Health restored to 100%"
 end
 
 function GodModeSystem:removeAddictions(lifeState)
 	local flags = lifeState.Flags or {}
 	
-	-- Clear all addiction-related flags
+	-- CRITICAL FIX #170: Expanded addiction list to cover all substances
 	local addictionFlags = {
-		"alcoholic", "drug_addict", "gambling_addict", "nicotine_addict",
+		-- Substance addictions
+		"alcoholic", "alcohol_addiction", "heavy_drinker",
+		"drug_addict", "cocaine_addiction", "heroin_addiction", "meth_addiction",
+		"pill_addiction", "prescription_addiction", "opioid_addiction",
+		"nicotine_addict", "smoking_addiction", "vaping_addiction",
+		"marijuana_addiction", "weed_addiction",
+		-- Behavioral addictions
+		"gambling_addict", "gambling_addiction", "casino_addiction",
+		"shopping_addiction", "spending_addiction",
+		"gaming_addiction", "social_media_addiction", "phone_addiction",
+		"porn_addiction", "sex_addiction",
+		-- General flags
 		"addicted", "substance_abuse", "recovering_addict", "rehab_needed",
+		"overdosed", "withdrawal", "in_rehab",
 	}
 	
 	for _, flag in ipairs(addictionFlags) do
@@ -359,29 +406,64 @@ function GodModeSystem:removeAddictions(lifeState)
 	
 	lifeState.Flags = flags
 	
-	-- Boost happiness
-	if lifeState.Stats then
-		lifeState.Stats.Happiness = math.min(100, (lifeState.Stats.Happiness or 50) + 20)
-		lifeState.Happiness = lifeState.Stats.Happiness
+	-- CRITICAL FIX #171: Clear addiction state data if exists
+	if lifeState.Addictions then
+		lifeState.Addictions = {}
 	end
 	
-	return true, "🚭 All addictions removed! Happiness improved."
+	-- Boost happiness and sync
+	if lifeState.Stats then
+		lifeState.Stats.Happiness = math.min(100, (lifeState.Stats.Happiness or 50) + 25)
+		lifeState.Happiness = lifeState.Stats.Happiness
+	else
+		lifeState.Happiness = math.min(100, (lifeState.Happiness or 50) + 25)
+	end
+	
+	return true, "🚭 All addictions removed! Feeling free and happy!"
 end
 
 function GodModeSystem:clearDebt(lifeState)
+	-- CRITICAL FIX #175: Clear ALL types of debt
+	
 	-- Clear education debt
 	if lifeState.EducationData then
 		lifeState.EducationData.Debt = 0
 	end
 	
-	-- Clear any debt flags
+	-- CRITICAL FIX #176: Clear mortgage debt
 	local flags = lifeState.Flags or {}
+	flags.mortgage_debt = nil
+	flags.has_mortgage = nil
+	
+	-- Clear car loan
+	flags.car_loan = nil
+	flags.has_car_loan = nil
+	
+	-- Clear credit card debt
+	flags.credit_card_debt = nil
+	flags.has_credit_card_debt = nil
+	
+	-- Clear medical debt
+	flags.medical_debt = nil
+	flags.has_medical_debt = nil
+	
+	-- Clear general debt flags
 	flags.in_debt = nil
 	flags.bankrupt = nil
 	flags.loan_default = nil
+	flags.has_student_loans = nil
+	flags.collections = nil
+	flags.wage_garnishment = nil
+	flags.struggling_financially = nil
+	
 	lifeState.Flags = flags
 	
-	return true, "💳 All debt cleared!"
+	-- CRITICAL FIX #177: Clear any debt amounts stored elsewhere
+	if lifeState.Debts then
+		lifeState.Debts = {}
+	end
+	
+	return true, "💳 All debts cleared! Financially free!"
 end
 
 function GodModeSystem:clearAllNegativeFlags(lifeState)
@@ -447,11 +529,152 @@ function GodModeSystem:maxAllRelationships(lifeState)
 	for id, rel in pairs(lifeState.Relationships) do
 		if type(rel) == "table" then
 			rel.relationship = 100
+			-- CRITICAL FIX #178: Also heal relationship wounds/flags
+			rel.angry = nil
+			rel.mad = nil
+			rel.hurt = nil
+			rel.jealous = nil
+			rel.grudge = nil
 			count = count + 1
 		end
 	end
 	
 	return true, string.format("💕 Maximized %d relationships to 100%%!", count)
+end
+
+-- CRITICAL FIX #179: Add function to resurrect dead family members
+function GodModeSystem:reviveDeadRelatives(lifeState)
+	if not lifeState.Relationships then
+		return false, "No relationships"
+	end
+	
+	local count = 0
+	for id, rel in pairs(lifeState.Relationships) do
+		if type(rel) == "table" and rel.alive == false then
+			rel.alive = true
+			rel.deathAge = nil
+			rel.deathCause = nil
+			rel.relationship = math.max(rel.relationship or 50, 50)
+			count = count + 1
+		end
+	end
+	
+	if count > 0 then
+		return true, string.format("✨ Revived %d deceased family members!", count)
+	else
+		return false, "No deceased relatives to revive"
+	end
+end
+
+-- CRITICAL FIX #180: Add function to fix negative stats
+function GodModeSystem:fixNegativeStats(lifeState)
+	lifeState.Stats = lifeState.Stats or {}
+	local fixed = 0
+	
+	-- Fix any negative or out-of-range stats
+	for _, stat in ipairs({"Happiness", "Health", "Smarts", "Looks"}) do
+		if lifeState.Stats[stat] and lifeState.Stats[stat] < 0 then
+			lifeState.Stats[stat] = 0
+			lifeState[stat] = 0
+			fixed = fixed + 1
+		elseif lifeState.Stats[stat] and lifeState.Stats[stat] > 100 then
+			lifeState.Stats[stat] = 100
+			lifeState[stat] = 100
+			fixed = fixed + 1
+		end
+	end
+	
+	-- Fix fame
+	if lifeState.Fame and lifeState.Fame < 0 then
+		lifeState.Fame = 0
+		fixed = fixed + 1
+	end
+	
+	-- Fix money
+	if lifeState.Money and lifeState.Money < 0 then
+		lifeState.Money = 0
+		fixed = fixed + 1
+	end
+	
+	if fixed > 0 then
+		return true, string.format("🔧 Fixed %d out-of-range values", fixed)
+	else
+		return true, "✅ All values are within normal range"
+	end
+end
+
+-- CRITICAL FIX #181: Get out of jail free
+function GodModeSystem:releaseFromJail(lifeState)
+	if not lifeState.InJail then
+		return false, "You're not in jail"
+	end
+	
+	lifeState.InJail = false
+	lifeState.JailYearsLeft = 0
+	lifeState.JailTime = nil
+	lifeState.PrisonSentence = nil
+	
+	-- Clear prison-related flags
+	local flags = lifeState.Flags or {}
+	flags.in_prison = nil
+	flags.incarcerated = nil
+	flags.serving_time = nil
+	flags.on_death_row = nil
+	flags.life_sentence = nil
+	lifeState.Flags = flags
+	
+	-- Restore education if suspended
+	if lifeState.EducationData and lifeState.EducationData.StatusBeforeJail then
+		lifeState.EducationData.Status = lifeState.EducationData.StatusBeforeJail
+		lifeState.EducationData.StatusBeforeJail = nil
+	end
+	
+	return true, "🔓 Released from jail! You're free!"
+end
+
+-- CRITICAL FIX #184: Add function to make player instantly famous
+function GodModeSystem:makeFamous(lifeState)
+	lifeState.Fame = 100
+	lifeState.FameState = lifeState.FameState or {}
+	lifeState.FameState.isFamous = true
+	lifeState.FameState.fameLevel = "Legend"
+	lifeState.FameState.followers = 10000000
+	
+	-- Set famous flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.famous = true
+	lifeState.Flags.celebrity = true
+	lifeState.Flags.famous_social_media = true
+	
+	return true, "⭐ You're now legendary famous with 10M followers!"
+end
+
+-- CRITICAL FIX #185: Add function to become rich instantly
+function GodModeSystem:makeRich(lifeState, amount)
+	amount = amount or 1000000000 -- Default to 1 billion
+	lifeState.Money = amount
+	
+	-- Set wealthy flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.wealthy = true
+	lifeState.Flags.billionaire = true
+	lifeState.Flags.self_made_millionaire = true
+	
+	return true, string.format("💎 You now have $%s!", self:formatMoney(amount))
+end
+
+-- CRITICAL FIX #186: Format money helper
+function GodModeSystem:formatMoney(amount)
+	if not amount then return "$0" end
+	if amount >= 1000000000 then
+		return string.format("%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("%.1fK", amount / 1000)
+	else
+		return tostring(amount)
+	end
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

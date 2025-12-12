@@ -1257,27 +1257,464 @@ createStatCard({ key = "Smarts",    icon = "🧠", col = C.Purple }, statsRight,
 createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight, 2)
 
 ----------------------------------------------------------------
--- GOD MODE - Only available during character creation now
--- The in-game God Mode editor has been removed per user request
--- God Mode customization is handled in the intro screen
+-- GOD MODE IN-GAME EDITOR
+-- CRITICAL FIX #162: Re-enabled God Mode for in-game stat editing
+-- Allows players to edit stats, cure diseases, remove addictions, etc.
 ----------------------------------------------------------------
 
--- Keep these functions as stubs for compatibility
-destroyGodModeModal = function() end
-showGodModeModal = function() end
+-- God Mode overlay for in-game editing
+godModeOverlay = Instance.new("Frame")
+godModeOverlay.Name = "GodModeOverlay"
+godModeOverlay.Size = UDim2.fromScale(1, 1)
+godModeOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+godModeOverlay.BackgroundTransparency = 0.35
+godModeOverlay.Visible = false
+godModeOverlay.ZIndex = 150
+godModeOverlay.Parent = mainContainer
 
--- No-op since button was removed from main UI
-local function updateGodModeButtonAppearance() end
+-- CRITICAL FIX #163: Create God Mode Button in header area
+local godModeBtnSize = Device.IS_TINY_PHONE and 28 or 36
+godModeButton = Instance.new("TextButton")
+godModeButton.Name = "GodModeBtn"
+godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
+godModeButton.Position = UDim2.new(1, -(godModeBtnSize + (Device.IS_TINY_PHONE and 80 or 120)), 0.5, -godModeBtnSize/2)
+godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+godModeButton.Text = "⚡"
+godModeButton.TextSize = Device.IS_TINY_PHONE and 14 or 18
+godModeButton.ZIndex = 8
+godModeButton.Visible = false -- Hidden by default, shown if hasGodMode
+godModeButton.Parent = headerBar
+corner(godModeButton, godModeBtnSize/2)
+stroke(godModeButton, 2, 0, Color3.fromRGB(217, 119, 6))
 
--- Note: The premiumRow and godModeButton have been removed
--- God Mode is now only accessible during character creation via
--- the "⚡ Customize Character" button in the intro screen
+-- God Mode button hover effect
+godModeButton.MouseEnter:Connect(function()
+	godModeButton.BackgroundColor3 = Color3.fromRGB(252, 211, 77)
+end)
+godModeButton.MouseLeave:Connect(function()
+	godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+end)
 
--- Legacy overlay variable (kept for compatibility)
-godModeOverlay = nil
+-- Update God Mode button visibility
+local function updateGodModeButtonAppearance()
+	refreshGodModeStatus()
+	if godModeButton then
+		godModeButton.Visible = hasGodMode
+	end
+end
 
--- Skip the old God Mode modal UI creation
-if false then -- Disabled: God Mode editor removed from main UI
+-- Create the God Mode Modal
+local godModeModal = Instance.new("Frame")
+godModeModal.Name = "GodModeModal"
+godModeModal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 380, 0, 0)
+godModeModal.AutomaticSize = Enum.AutomaticSize.Y
+godModeModal.AnchorPoint = Vector2.new(0.5, 0.5)
+godModeModal.Position = UDim2.new(0.5, 0, 0.5, 0)
+godModeModal.BackgroundColor3 = C.White
+godModeModal.ZIndex = 151
+godModeModal.Parent = godModeOverlay
+corner(godModeModal, 16)
+stroke(godModeModal, 1, 0.85, C.Gray200)
+
+local modalPad = Instance.new("UIPadding")
+modalPad.PaddingTop = UDim.new(0, 14)
+modalPad.PaddingBottom = UDim.new(0, 14)
+modalPad.PaddingLeft = UDim.new(0, 14)
+modalPad.PaddingRight = UDim.new(0, 14)
+modalPad.Parent = godModeModal
+
+local modalScroll = Instance.new("ScrollingFrame")
+modalScroll.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 350 or 450)
+modalScroll.BackgroundTransparency = 1
+modalScroll.ScrollBarThickness = 4
+modalScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
+modalScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+modalScroll.ZIndex = 152
+modalScroll.Parent = godModeModal
+
+local modalLayout = Instance.new("UIListLayout")
+modalLayout.FillDirection = Enum.FillDirection.Vertical
+modalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+modalLayout.Padding = UDim.new(0, 10)
+modalLayout.Parent = modalScroll
+
+-- Title
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = F.Title
+titleLabel.TextSize = textSize(20)
+titleLabel.TextColor3 = C.Gray800
+titleLabel.Text = "⚡ God Mode Editor"
+titleLabel.ZIndex = 153
+titleLabel.LayoutOrder = 0
+titleLabel.Parent = modalScroll
+
+-- Subtitle
+local subtitleLabel = Instance.new("TextLabel")
+subtitleLabel.Size = UDim2.new(1, 0, 0, 20)
+subtitleLabel.BackgroundTransparency = 1
+subtitleLabel.Font = F.Body
+subtitleLabel.TextSize = textSize(12)
+subtitleLabel.TextColor3 = C.Gray500
+subtitleLabel.Text = "Edit stats, cure diseases, and more!"
+subtitleLabel.ZIndex = 153
+subtitleLabel.LayoutOrder = 1
+subtitleLabel.Parent = modalScroll
+
+-- STAT SLIDERS SECTION
+local statSection = Instance.new("Frame")
+statSection.Size = UDim2.new(1, 0, 0, 0)
+statSection.AutomaticSize = Enum.AutomaticSize.Y
+statSection.BackgroundTransparency = 1
+statSection.ZIndex = 152
+statSection.LayoutOrder = 2
+statSection.Parent = modalScroll
+
+local statLayout = Instance.new("UIListLayout")
+statLayout.Padding = UDim.new(0, 8)
+statLayout.Parent = statSection
+
+local godModeStatInputs = {}
+local stats = {
+	{ key = "Happiness", emoji = "😊", color = C.Yellow },
+	{ key = "Health", emoji = "❤️", color = C.Red },
+	{ key = "Smarts", emoji = "🧠", color = C.Purple },
+	{ key = "Looks", emoji = "💄", color = C.Pink },
+}
+
+for i, stat in ipairs(stats) do
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 40)
+	row.BackgroundTransparency = 1
+	row.LayoutOrder = i
+	row.ZIndex = 153
+	row.Parent = statSection
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(0, 80, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = F.Medium
+	lbl.TextSize = 14
+	lbl.TextColor3 = C.Gray700
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Text = stat.emoji .. " " .. stat.key
+	lbl.ZIndex = 154
+	lbl.Parent = row
+	
+	local sliderBg = Instance.new("Frame")
+	sliderBg.Size = UDim2.new(1, -130, 0, 20)
+	sliderBg.Position = UDim2.new(0, 85, 0.5, -10)
+	sliderBg.BackgroundColor3 = C.Gray200
+	sliderBg.ZIndex = 154
+	sliderBg.Parent = row
+	corner(sliderBg, 6)
+	
+	local sliderFill = Instance.new("Frame")
+	sliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+	sliderFill.BackgroundColor3 = stat.color
+	sliderFill.ZIndex = 155
+	sliderFill.Parent = sliderBg
+	corner(sliderFill, 6)
+	
+	local valInput = Instance.new("TextBox")
+	valInput.Size = UDim2.new(0, 40, 0, 28)
+	valInput.Position = UDim2.new(1, -40, 0.5, -14)
+	valInput.BackgroundColor3 = C.Gray100
+	valInput.Font = F.Medium
+	valInput.TextSize = 14
+	valInput.TextColor3 = C.Gray800
+	valInput.Text = "50"
+	valInput.ZIndex = 154
+	valInput.Parent = row
+	corner(valInput, 6)
+	
+	godModeStatInputs[stat.key] = { input = valInput, fill = sliderFill, bg = sliderBg }
+	
+	-- Slider drag functionality
+	local dragging = false
+	sliderBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+		end
+	end)
+	sliderBg.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	sliderBg.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local relX = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+			local newVal = math.floor(relX * 100)
+			valInput.Text = tostring(newVal)
+			sliderFill.Size = UDim2.new(relX, 0, 1, 0)
+		end
+	end)
+	
+	valInput.FocusLost:Connect(function()
+		local val = math.clamp(tonumber(valInput.Text) or 50, 0, 100)
+		valInput.Text = tostring(val)
+		sliderFill.Size = UDim2.new(val/100, 0, 1, 0)
+	end)
+end
+
+-- QUICK ACTIONS SECTION
+local actionsTitle = Instance.new("TextLabel")
+actionsTitle.Size = UDim2.new(1, 0, 0, 30)
+actionsTitle.BackgroundTransparency = 1
+actionsTitle.Font = F.Title
+actionsTitle.TextSize = textSize(16)
+actionsTitle.TextColor3 = C.Gray700
+actionsTitle.Text = "🛠️ Quick Actions"
+actionsTitle.ZIndex = 153
+actionsTitle.LayoutOrder = 3
+actionsTitle.Parent = modalScroll
+
+local actionsGrid = Instance.new("Frame")
+actionsGrid.Size = UDim2.new(1, 0, 0, 0)
+actionsGrid.AutomaticSize = Enum.AutomaticSize.Y
+actionsGrid.BackgroundTransparency = 1
+actionsGrid.ZIndex = 152
+actionsGrid.LayoutOrder = 4
+actionsGrid.Parent = modalScroll
+
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0.48, 0, 0, 50)
+gridLayout.CellPadding = UDim2.new(0.02, 0, 0, 8)
+gridLayout.Parent = actionsGrid
+
+-- CRITICAL FIX #164 + #183: Quick action buttons for God Mode - Expanded list
+local quickActions = {
+	{ id = "cure_diseases", emoji = "💊", name = "Cure Diseases", desc = "Remove all illnesses" },
+	{ id = "remove_addictions", emoji = "🚭", name = "No Addictions", desc = "Remove all addictions" },
+	{ id = "clear_record", emoji = "📋", name = "Clear Record", desc = "Erase criminal record" },
+	{ id = "max_stats", emoji = "⬆️", name = "Max Stats", desc = "Set all stats to 100" },
+	{ id = "clear_debt", emoji = "💳", name = "Clear Debt", desc = "Erase all debts" },
+	{ id = "full_heal", emoji = "❤️", name = "Full Heal", desc = "Restore health to 100" },
+	{ id = "max_relationships", emoji = "💕", name = "Max Relations", desc = "Max all relationships" },
+	{ id = "jail_break", emoji = "🔓", name = "Jail Break", desc = "Get out of jail free" },
+	{ id = "fresh_start", emoji = "🔄", name = "Fresh Start", desc = "Clear all negative flags" },
+	{ id = "revive_family", emoji = "✨", name = "Revive Family", desc = "Bring back the dead" },
+}
+
+local godModeActionBtns = {}
+for i, action in ipairs(quickActions) do
+	local btn = Instance.new("TextButton")
+	btn.Name = action.id
+	btn.Size = UDim2.new(0.48, 0, 0, 50)
+	btn.BackgroundColor3 = C.Gray100
+	btn.Text = ""
+	btn.ZIndex = 153
+	btn.Parent = actionsGrid
+	corner(btn, 10)
+	
+	local btnContent = Instance.new("Frame")
+	btnContent.Size = UDim2.fromScale(1, 1)
+	btnContent.BackgroundTransparency = 1
+	btnContent.ZIndex = 154
+	btnContent.Parent = btn
+	
+	local emoji = Instance.new("TextLabel")
+	emoji.Size = UDim2.new(0, 30, 1, 0)
+	emoji.Position = UDim2.new(0, 5, 0, 0)
+	emoji.BackgroundTransparency = 1
+	emoji.Font = F.Body
+	emoji.TextSize = 20
+	emoji.Text = action.emoji
+	emoji.ZIndex = 155
+	emoji.Parent = btnContent
+	
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, -40, 0, 20)
+	name.Position = UDim2.new(0, 35, 0, 5)
+	name.BackgroundTransparency = 1
+	name.Font = F.Medium
+	name.TextSize = 12
+	name.TextColor3 = C.Gray800
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.Text = action.name
+	name.ZIndex = 155
+	name.Parent = btnContent
+	
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(1, -40, 0, 16)
+	desc.Position = UDim2.new(0, 35, 0, 26)
+	desc.BackgroundTransparency = 1
+	desc.Font = F.Body
+	desc.TextSize = 10
+	desc.TextColor3 = C.Gray500
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.Text = action.desc
+	desc.ZIndex = 155
+	desc.Parent = btnContent
+	
+	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.Gray200 end)
+	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.Gray100 end)
+	
+	godModeActionBtns[action.id] = btn
+end
+
+-- Error label
+local errorLabel = Instance.new("TextLabel")
+errorLabel.Size = UDim2.new(1, 0, 0, 20)
+errorLabel.BackgroundTransparency = 1
+errorLabel.Font = F.Body
+errorLabel.TextSize = 12
+errorLabel.TextColor3 = C.Red
+errorLabel.Text = ""
+errorLabel.ZIndex = 153
+errorLabel.LayoutOrder = 5
+errorLabel.Parent = modalScroll
+
+-- Button bar
+local buttonBar = Instance.new("Frame")
+buttonBar.Size = UDim2.new(1, 0, 0, 45)
+buttonBar.BackgroundTransparency = 1
+buttonBar.ZIndex = 152
+buttonBar.LayoutOrder = 6
+buttonBar.Parent = modalScroll
+
+local buttonLayout = Instance.new("UIListLayout")
+buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+buttonLayout.Padding = UDim.new(0, 10)
+buttonLayout.Parent = buttonBar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0.45, 0, 0, 40)
+closeBtn.BackgroundColor3 = C.Gray300
+closeBtn.Text = "Close"
+closeBtn.TextColor3 = C.Gray700
+closeBtn.TextSize = 16
+closeBtn.Font = F.Medium
+closeBtn.ZIndex = 153
+closeBtn.Parent = buttonBar
+corner(closeBtn, 10)
+
+local applyBtn = Instance.new("TextButton")
+applyBtn.Size = UDim2.new(0.45, 0, 0, 40)
+applyBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+applyBtn.Text = "⚡ Apply Changes"
+applyBtn.TextColor3 = C.Gray800
+applyBtn.TextSize = 16
+applyBtn.Font = F.Medium
+applyBtn.ZIndex = 153
+applyBtn.Parent = buttonBar
+corner(applyBtn, 10)
+stroke(applyBtn, 2, 0, Color3.fromRGB(217, 119, 6))
+
+-- Hide/Show functions
+destroyGodModeModal = function()
+	godModeOverlay.Visible = false
+end
+
+showGodModeModal = function()
+	refreshGodModeStatus()
+	if not hasGodMode then
+		if PromptGamepass then
+			PromptGamepass:FireServer("GOD_MODE")
+		end
+		return
+	end
+	
+	-- Update stat inputs from current state
+	if currentState and currentState.Stats then
+		for key, data in pairs(godModeStatInputs) do
+			local val = currentState.Stats[key] or currentState[key] or 50
+			data.input.Text = tostring(math.floor(val))
+			data.fill.Size = UDim2.new(val/100, 0, 1, 0)
+		end
+	end
+	
+	errorLabel.Text = ""
+	godModeOverlay.Visible = true
+end
+
+-- Connect buttons
+closeBtn.MouseButton1Click:Connect(destroyGodModeModal)
+godModeButton.MouseButton1Click:Connect(showGodModeModal)
+
+-- Connect quick action buttons
+for actionId, btn in pairs(godModeActionBtns) do
+	btn.MouseButton1Click:Connect(function()
+		if not GodModeEdit then
+			errorLabel.Text = "Server not ready"
+			return
+		end
+		
+		local payload = { quickAction = actionId }
+		local ok, result = pcall(function()
+			return GodModeEdit:InvokeServer(payload)
+		end)
+		
+		if ok and result and result.success then
+			addFeedEntry(result.message or ("Applied: " .. actionId))
+			destroyGodModeModal()
+		else
+			errorLabel.Text = (result and result.message) or "Action failed"
+		end
+	end)
+end
+
+-- Apply button
+applyBtn.MouseButton1Click:Connect(function()
+	errorLabel.Text = ""
+	
+	if not GodModeEdit then
+		errorLabel.Text = "Server not ready for God Mode edits."
+		return
+	end
+	
+	-- Build payload
+	local payload = {
+		stats = {}
+	}
+	
+	for key, data in pairs(godModeStatInputs) do
+		local val = math.clamp(tonumber(data.input.Text) or 50, 0, 100)
+		payload.stats[key] = val
+	end
+	
+	applyBtn.Text = "Applying..."
+	applyBtn.AutoButtonColor = false
+	
+	local ok, result = pcall(function()
+		return GodModeEdit:InvokeServer(payload)
+	end)
+	
+	if ok and result and result.success then
+		addFeedEntry(result.message or "God Mode changes applied!")
+		destroyGodModeModal()
+	else
+		errorLabel.Text = (result and result.message) or "Unable to apply changes."
+	end
+	
+	applyBtn.Text = "⚡ Apply Changes"
+	applyBtn.AutoButtonColor = true
+end)
+
+-- Background click to close
+godModeOverlay.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local pos = input.Position
+		local modalPos = godModeModal.AbsolutePosition
+		local modalSize = godModeModal.AbsoluteSize
+		if pos.X < modalPos.X or pos.X > modalPos.X + modalSize.X or
+		   pos.Y < modalPos.Y or pos.Y > modalPos.Y + modalSize.Y then
+			destroyGodModeModal()
+		end
+	end
+end)
+
+-- Update button visibility on state sync
+task.spawn(function()
+	task.wait(1)
+	updateGodModeButtonAppearance()
+end)
+
+-- LEGACY CODE BELOW (disabled)
+if false then -- Disabled: Old modal code kept for reference
 	godModeOverlay = Instance.new("Frame")
 	godModeOverlay.Name = "GodModeOverlay"
 	godModeOverlay.Size = UDim2.fromScale(1, 1)

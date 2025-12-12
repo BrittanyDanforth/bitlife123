@@ -7724,6 +7724,68 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #165: GOD MODE QUICK ACTIONS - In-game button support
+	-- Handle quickAction from in-game God Mode editor
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if payload.quickAction then
+		local action = payload.quickAction
+		if GodModeSystem then
+			if action == "cure_diseases" then
+				local success, msg = GodModeSystem:cureDiseases(state)
+				table.insert(summaries, msg or "💊 All diseases cured!")
+			elseif action == "remove_addictions" then
+				local success, msg = GodModeSystem:removeAddictions(state)
+				table.insert(summaries, msg or "🚭 All addictions removed!")
+			elseif action == "clear_record" then
+				local success, msg = GodModeSystem:clearCriminalRecord(state)
+				table.insert(summaries, msg or "📋 Criminal record cleared!")
+			elseif action == "max_stats" then
+				-- CRITICAL FIX #166: Max all stats to 100
+				state.Stats = state.Stats or {}
+				state.Stats.Happiness = 100
+				state.Stats.Health = 100
+				state.Stats.Smarts = 100
+				state.Stats.Looks = 100
+				state.Happiness = 100
+				state.Health = 100
+				state.Smarts = 100
+				state.Looks = 100
+				table.insert(summaries, "⬆️ All stats maxed to 100%!")
+			elseif action == "clear_debt" then
+				local success, msg = GodModeSystem:clearDebt(state)
+				table.insert(summaries, msg or "💳 All debt cleared!")
+			elseif action == "full_heal" then
+				-- CRITICAL FIX #167: Full heal action
+				state.Stats = state.Stats or {}
+				state.Stats.Health = 100
+				state.Health = 100
+				-- Also clear health-related flags
+				state.Flags = state.Flags or {}
+				state.Flags.injured = nil
+				state.Flags.seriously_injured = nil
+				state.Flags.hospitalized = nil
+				table.insert(summaries, "❤️ Fully healed! Health restored to 100%")
+			-- CRITICAL FIX #182: Additional quick actions
+			elseif action == "max_relationships" then
+				local success, msg = GodModeSystem:maxAllRelationships(state)
+				table.insert(summaries, msg or "💕 All relationships maxed!")
+			elseif action == "revive_family" then
+				local success, msg = GodModeSystem:reviveDeadRelatives(state)
+				table.insert(summaries, msg or "✨ Revived deceased family!")
+			elseif action == "fix_stats" then
+				local success, msg = GodModeSystem:fixNegativeStats(state)
+				table.insert(summaries, msg or "🔧 Fixed stat values!")
+			elseif action == "jail_break" then
+				local success, msg = GodModeSystem:releaseFromJail(state)
+				table.insert(summaries, msg or "🔓 Released from jail!")
+			elseif action == "fresh_start" then
+				local success, msg = GodModeSystem:clearAllNegativeFlags(state)
+				table.insert(summaries, msg or "🔄 Fresh start applied!")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #20: GOD MODE PRESETS - Quick preset application
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if payload.preset then
