@@ -1,6 +1,7 @@
 local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local GamepassSystem
 
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
@@ -230,7 +231,7 @@ end
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local MarketplaceService = game:GetService("MarketplaceService")
+-- MarketplaceService is defined at top of file (needed early for ProcessReceipt setup)
 
 local ModulesFolder = script:FindFirstChild("Modules") or script.Parent:FindFirstChild("Modules")
 assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer/Modules.")
