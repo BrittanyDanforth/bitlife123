@@ -4166,7 +4166,12 @@ do
 			return false
 		end
 		
-		for i, w in ipairs(wOpts) do
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #257: Wrap loop body in do-end block to prevent "Out of local registers"
+		-- error at line 4179. Luau has a 200 local register limit per scope, and this
+		-- loop was creating too many locals in the same scope.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		for i, w in ipairs(wOpts) do do
 			local b = Instance.new("TextButton")
 			b.Name = w.id; b.Size = UDim2.new(1, 0, 0, 44)
 			-- CRITICAL FIX: Royal option shows gold if player has gamepass, otherwise gray
@@ -4176,21 +4181,21 @@ do
 			b.BackgroundColor3 = defaultColor
 			b.Text = ""; b.LayoutOrder = i + 1; b.ZIndex = 74; b.Parent = ws
 			corner(b, 8)
-			local l = Instance.new("TextLabel")
-			l.Size = UDim2.new(1, -16, 0, 24); l.Position = UDim2.new(0, 8, 0, 4)
-			l.BackgroundTransparency = 1
-			l.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
-			l.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
-			l.TextSize = 14; l.Font = F.Medium; l.TextXAlignment = Enum.TextXAlignment.Left
-			l.ZIndex = 75; l.Parent = b
-			local d = Instance.new("TextLabel")
-			d.Size = UDim2.new(1, -16, 0, 16); d.Position = UDim2.new(0, 8, 0, 26)
-			d.BackgroundTransparency = 1
-			d.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
-			d.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
-			d.TextSize = 11; d.Font = F.Body; d.TextXAlignment = Enum.TextXAlignment.Left
-			d.ZIndex = 75; d.Parent = b
-			IntroUI.wealthBtns[w.id] = { btn = b, label = l, desc = d, isRoyal = isRoyal }
+			local labelEl = Instance.new("TextLabel")
+			labelEl.Size = UDim2.new(1, -16, 0, 24); labelEl.Position = UDim2.new(0, 8, 0, 4)
+			labelEl.BackgroundTransparency = 1
+			labelEl.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
+			labelEl.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
+			labelEl.TextSize = 14; labelEl.Font = F.Medium; labelEl.TextXAlignment = Enum.TextXAlignment.Left
+			labelEl.ZIndex = 75; labelEl.Parent = b
+			local descEl = Instance.new("TextLabel")
+			descEl.Size = UDim2.new(1, -16, 0, 16); descEl.Position = UDim2.new(0, 8, 0, 26)
+			descEl.BackgroundTransparency = 1
+			descEl.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
+			descEl.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
+			descEl.TextSize = 11; descEl.Font = F.Body; descEl.TextXAlignment = Enum.TextXAlignment.Left
+			descEl.ZIndex = 75; descEl.Parent = b
+			IntroUI.wealthBtns[w.id] = { btn = b, label = labelEl, desc = descEl, isRoyal = isRoyal }
 			b.MouseButton1Click:Connect(function()
 				-- CRITICAL FIX #22: Check for Royalty gamepass when selecting Royal option
 				if w.requiresGamepass then
@@ -4229,55 +4234,56 @@ do
 					end
 				end
 			end)
-		end
+		end end
 end
 
 -- Stats section
+-- CRITICAL FIX #258: Also wrap stat slider loop in do-end to prevent register overflow
 do
 	local scroll = IntroUI.godModeScroll
 	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
 		IntroUI.statSliders = {}
 		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
-		for i, s in ipairs(statData) do
-			local r = Instance.new("Frame")
-			r.Size = UDim2.new(1, 0, 0, 36); r.BackgroundTransparency = 1; r.LayoutOrder = i + 1; r.ZIndex = 73; r.Parent = ss
-			local lb = Instance.new("TextLabel")
-			lb.Size = UDim2.new(0, 80, 1, 0); lb.BackgroundTransparency = 1
-			lb.Text = s.icon .. " " .. s.key; lb.TextColor3 = C.Gray700; lb.TextSize = 13
-			lb.Font = F.Medium; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.ZIndex = 74; lb.Parent = r
-			local bg = Instance.new("Frame")
-			bg.Size = UDim2.new(1, -130, 0, 12); bg.Position = UDim2.new(0, 85, 0.5, 0)
-			bg.AnchorPoint = Vector2.new(0, 0.5); bg.BackgroundColor3 = C.Gray200; bg.ZIndex = 74; bg.Parent = r
-			corner(bg, 6)
-			local fl = Instance.new("Frame")
-			fl.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
-			fl.BackgroundColor3 = s.color; fl.ZIndex = 75; fl.Parent = bg
-			corner(fl, 6)
-			local vl = Instance.new("TextLabel")
-			vl.Size = UDim2.new(0, 40, 1, 0); vl.Position = UDim2.new(1, -40, 0, 0)
-			vl.BackgroundTransparency = 1; vl.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
-			vl.TextColor3 = C.Gray700; vl.TextSize = 13; vl.Font = F.Medium
-			vl.TextXAlignment = Enum.TextXAlignment.Right; vl.ZIndex = 74; vl.Parent = r
-			IntroUI.statSliders[s.key] = { fill = fl, value = vl, bg = bg }
+		for i, s in ipairs(statData) do do
+			local row = Instance.new("Frame")
+			row.Size = UDim2.new(1, 0, 0, 36); row.BackgroundTransparency = 1; row.LayoutOrder = i + 1; row.ZIndex = 73; row.Parent = ss
+			local statLabel = Instance.new("TextLabel")
+			statLabel.Size = UDim2.new(0, 80, 1, 0); statLabel.BackgroundTransparency = 1
+			statLabel.Text = s.icon .. " " .. s.key; statLabel.TextColor3 = C.Gray700; statLabel.TextSize = 13
+			statLabel.Font = F.Medium; statLabel.TextXAlignment = Enum.TextXAlignment.Left; statLabel.ZIndex = 74; statLabel.Parent = row
+			local sliderBg = Instance.new("Frame")
+			sliderBg.Size = UDim2.new(1, -130, 0, 12); sliderBg.Position = UDim2.new(0, 85, 0.5, 0)
+			sliderBg.AnchorPoint = Vector2.new(0, 0.5); sliderBg.BackgroundColor3 = C.Gray200; sliderBg.ZIndex = 74; sliderBg.Parent = row
+			corner(sliderBg, 6)
+			local sliderFill = Instance.new("Frame")
+			sliderFill.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
+			sliderFill.BackgroundColor3 = s.color; sliderFill.ZIndex = 75; sliderFill.Parent = sliderBg
+			corner(sliderFill, 6)
+			local valueLabel = Instance.new("TextLabel")
+			valueLabel.Size = UDim2.new(0, 40, 1, 0); valueLabel.Position = UDim2.new(1, -40, 0, 0)
+			valueLabel.BackgroundTransparency = 1; valueLabel.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
+			valueLabel.TextColor3 = C.Gray700; valueLabel.TextSize = 13; valueLabel.Font = F.Medium
+			valueLabel.TextXAlignment = Enum.TextXAlignment.Right; valueLabel.ZIndex = 74; valueLabel.Parent = row
+			IntroUI.statSliders[s.key] = { fill = sliderFill, value = valueLabel, bg = sliderBg }
 			
 			-- CRITICAL UI FIX: Draggable stat sliders with proper touch/mouse support
 			local dragging = false
 			local function updateSlider(posX)
-				local relX = math.clamp((posX - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
+				local relX = math.clamp((posX - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
 				local newVal = math.floor(relX * 100)
 				GodModeCreateData.stats[s.key] = newVal
-				fl.Size = UDim2.new(relX, 0, 1, 0)
-				vl.Text = tostring(newVal) .. "%"
+				sliderFill.Size = UDim2.new(relX, 0, 1, 0)
+				valueLabel.Text = tostring(newVal) .. "%"
 			end
 			
-			bg.InputBegan:Connect(function(input)
+			sliderBg.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 					dragging = true
 					updateSlider(input.Position.X)
 				end
 			end)
 			
-			bg.InputEnded:Connect(function(input)
+			sliderBg.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 					dragging = false
 				end
@@ -4295,7 +4301,7 @@ do
 					dragging = false
 				end
 			end)
-		end
+		end end
 end
 
 -- Country section with flag emojis

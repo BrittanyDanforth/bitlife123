@@ -660,14 +660,23 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function LifeState:Serialize()
-	-- Debug: Log asset counts before serialization
-	print("[LifeState:Serialize] Self.Assets status:")
+	-- CRITICAL FIX #262: Only log assets debug info when there ARE assets (reduces spam)
+	-- Moved from always-logging to conditional to prevent thousands of log lines
+	local totalAssets = 0
 	if self.Assets then
+		totalAssets = (self.Assets.Properties and #self.Assets.Properties or 0) 
+			+ (self.Assets.Vehicles and #self.Assets.Vehicles or 0) 
+			+ (self.Assets.Items and #self.Assets.Items or 0)
+	end
+	
+	-- Only log if player has assets OR if Assets is nil (actual error)
+	if not self.Assets then
+		print("[LifeState:Serialize] WARNING: self.Assets is nil!")
+	elseif totalAssets > 0 then
+		print("[LifeState:Serialize] Self.Assets status:")
 		print("  Properties:", self.Assets.Properties and #self.Assets.Properties or 0)
 		print("  Vehicles:", self.Assets.Vehicles and #self.Assets.Vehicles or 0)
 		print("  Items:", self.Assets.Items and #self.Assets.Items or 0)
-	else
-		print("  WARNING: self.Assets is nil!")
 	end
 	
 	return {

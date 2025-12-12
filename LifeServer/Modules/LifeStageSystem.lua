@@ -473,6 +473,58 @@ function LifeStageSystem.validateEvent(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #292: Add mafia-specific condition validation
+	-- These conditions were not being checked, causing mafia events to trigger incorrectly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local mobState = state.MobState or {}
+	
+	-- minRank: Minimum mafia rank required
+	if conditions.minRank then
+		local playerRank = mobState.rankIndex or 1
+		if playerRank < conditions.minRank then
+			return false
+		end
+	end
+	
+	-- minHeat: Minimum heat level required (for FBI offers, investigations, etc.)
+	if conditions.minHeat then
+		local playerHeat = mobState.heat or 0
+		if playerHeat < conditions.minHeat then
+			return false
+		end
+	end
+	
+	-- minRespect: Minimum respect required (for promotions, made_man_ceremony, etc.)
+	if conditions.minRespect then
+		local playerRespect = mobState.respect or 0
+		if playerRespect < conditions.minRespect then
+			return false
+		end
+	end
+	
+	-- minYearsInMob: Minimum years spent in mob (for retirement, etc.)
+	if conditions.minYearsInMob then
+		local yearsInMob = mobState.yearsInMob or 0
+		if yearsInMob < conditions.minYearsInMob then
+			return false
+		end
+	end
+	
+	-- promotionReady: Check if player has enough respect for next rank
+	if conditions.promotionReady then
+		local playerRank = mobState.rankIndex or 1
+		local playerRespect = mobState.respect or 0
+		local respectThresholds = { 0, 100, 500, 2000, 10000 }
+		local nextRank = playerRank + 1
+		if nextRank > #respectThresholds then
+			return false -- Already at max rank
+		end
+		if playerRespect < respectThresholds[nextRank] then
+			return false -- Not enough respect for next rank
+		end
+	end
+	
 	return true
 end
 

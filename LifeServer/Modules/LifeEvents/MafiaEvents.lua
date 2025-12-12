@@ -345,7 +345,12 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
-		conditions = { requiresFlags = { in_mob = true, made_member = true } },
+		cooldown = 4, -- CRITICAL FIX #272: 4 year cooldown
+		maxOccurrences = 3, -- CRITICAL FIX: Max 3 loyalty tests per lifetime
+		conditions = { 
+			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { boss_dead = true, witness_protection = true },
+		},
 		choices = {
 			{
 				text = "Prove your loyalty convincingly",
@@ -386,8 +391,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
+		cooldown = 5, -- CRITICAL FIX #273: 5 year cooldown - FBI doesn't approach every year
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 FBI offers per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true },
+			blockedFlags = { fbi_informant = true, witness_protection = true },
 			minHeat = 40,
 		},
 		choices = {
@@ -431,8 +439,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 65,
 		isMafiaOnly = true,
+		cooldown = 4, -- CRITICAL FIX #274: 4 year cooldown - hits aren't frequent
+		maxOccurrences = 5, -- CRITICAL FIX: Max 5 hit contracts per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { boss_dead = true, witness_protection = true, in_prison = true },
 			minRank = 3,
 		},
 		choices = {
@@ -482,8 +493,10 @@ MafiaEvents.LifeEvents = {
 		maxAge = 70,
 		isMafiaOnly = true,
 		isMilestone = true,
+		cooldown = 3, -- CRITICAL FIX #279: 3 year cooldown between promotions
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { boss_dead = true, mob_boss = true, is_boss = true }, -- CRITICAL FIX: Can't promote if boss is dead or already boss
 			promotionReady = true,
 		},
 		choices = {
@@ -520,9 +533,11 @@ MafiaEvents.LifeEvents = {
 		maxAge = 70,
 		isMafiaOnly = true,
 		isMilestone = true,
+		oneTime = true, -- CRITICAL FIX #277: Only once - can't become underboss twice
 		conditions = { 
-			requiresFlags = { in_mob = true },
-			minRank = 4,
+			requiresFlags = { in_mob = true, is_capo = true }, -- CRITICAL FIX #278: Must be Capo (rank 3) to become Underboss (rank 4)
+			blockedFlags = { underboss = true, mob_boss = true, is_boss = true, boss_dead = true }, -- CRITICAL FIX: Can't if already underboss/boss
+			minRank = 3, -- CRITICAL FIX #278: Capo rank required
 		},
 		choices = {
 			{
@@ -541,6 +556,10 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #252: become_boss now properly clears boss_dead flag after player becomes boss
+	-- This prevents the "boss is dead but boss needs tribute" inconsistency
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "become_boss",
 		title = "👑 The Throne",
@@ -551,23 +570,27 @@ MafiaEvents.LifeEvents = {
 		maxAge = 80,
 		isMafiaOnly = true,
 		isMilestone = true,
+		oneTime = true,
 		priority = "critical",
 		conditions = { 
 			requiresFlags = { underboss = true, boss_dead = true },
+			blockedFlags = { mob_boss = true, is_boss = true }, -- Can't become boss if already boss
 		},
 		choices = {
 			{
 				text = "Take power peacefully with the commission's blessing",
 				effects = { Happiness = 20 },
 				mafiaEffect = { becomeBoss = true, respect = 100, money = 500000 },
-				setFlags = { mob_boss = true, peaceful_succession = true },
+				setFlags = { mob_boss = true, is_boss = true, peaceful_succession = true },
+				clearFlags = { boss_dead = true, underboss = true }, -- CRITICAL FIX: Clear boss_dead after becoming boss
 				feed = "You're now the Boss. The family answers to you.",
 			},
 			{
 				text = "Eliminate any challengers",
 				effects = { Happiness = 10, Health = -10 },
 				mafiaEffect = { becomeBoss = true, respect = 80, heat = 50, kills = 2 },
-				setFlags = { mob_boss = true, violent_takeover = true },
+				setFlags = { mob_boss = true, is_boss = true, violent_takeover = true },
+				clearFlags = { boss_dead = true, underboss = true }, -- CRITICAL FIX: Clear boss_dead
 				feed = "You've secured power through blood.",
 			},
 			{
@@ -575,6 +598,7 @@ MafiaEvents.LifeEvents = {
 				effects = { Happiness = -10 },
 				mafiaEffect = { respect = -30, demoted = true },
 				setFlags = { gave_up_throne = true },
+				clearFlags = { boss_dead = true }, -- Boss position filled by someone else
 				feed = "You'll always wonder what could have been.",
 			},
 		},
@@ -592,8 +616,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
+		cooldown = 3, -- CRITICAL FIX #275: 3 year cooldown
+		maxOccurrences = 4, -- CRITICAL FIX: Max 4 disputes per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true },
+			blockedFlags = { witness_protection = true, in_prison = true },
 			minRank = 2,
 		},
 		choices = {
@@ -626,6 +653,11 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #250: family_war no longer requires at_war flag (which was rarely set)
+	-- Now triggers randomly for mob members with cooldown to prevent spam
+	-- Also added war-starting capability via setFlags
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "family_war",
 		title = "⚔️ Family War!",
@@ -635,8 +667,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
+		cooldown = 8, -- CRITICAL FIX: 8 year cooldown - wars don't happen constantly
+		maxOccurrences = 3, -- CRITICAL FIX: Max 3 wars per lifetime
 		conditions = { 
-			requiresFlags = { in_mob = true, at_war = true },
+			requiresFlags = { in_mob = true },
+			blockedFlags = { mob_fugitive = true, witness_protection = true, former_mobster = true },
 		},
 		choices = {
 			{
@@ -686,6 +721,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isMafiaOnly = true,
+		cooldown = 3, -- CRITICAL FIX #290: 3 year cooldown in prison
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, in_prison = true },
 		},
@@ -728,6 +765,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
+		cooldown = 4, -- CRITICAL FIX #291: 4 year cooldown
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 prison hits per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, in_prison = true },
 			minRank = 2,
@@ -764,8 +803,10 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isMafiaOnly = true,
+		priority = "critical", -- CRITICAL FIX #276: This should trigger as priority event
 		conditions = { 
 			requiresFlags = { in_mob = true, hit_on_you = true },
+			blockedFlags = { survived_hit = true }, -- CRITICAL FIX: Only once per hit order
 		},
 		choices = {
 			{
@@ -809,8 +850,10 @@ MafiaEvents.LifeEvents = {
 		minAge = 50,
 		maxAge = 80,
 		isMafiaOnly = true,
+		oneTime = true, -- CRITICAL FIX #284: Only one retirement attempt
 		conditions = { 
 			requiresFlags = { in_mob = true },
+			blockedFlags = { boss_dead = true, witness_protection = true, retired_from_mob = true }, -- CRITICAL FIX #285: Can't retire if boss is dead or already retired
 			minYearsInMob = 10,
 		},
 		choices = {
@@ -846,6 +889,9 @@ MafiaEvents.LifeEvents = {
 	-- CRITICAL FIX #111: EXPANDED MAFIA EVENTS
 	-- Additional mafia events for more comprehensive gameplay
 	-- ═══════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #259: Added cooldown and maxOccurrences to money_laundering
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "money_laundering",
 		title = "🏦 Money Laundering",
@@ -855,7 +901,12 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 70,
 		isMafiaOnly = true,
-		conditions = { requiresFlags = { in_mob = true, initiated = true } },
+		cooldown = 4,
+		maxOccurrences = 3,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { witness_protection = true, former_mobster = true },
+		},
 		choices = {
 			{
 				text = "Open a cash-intensive restaurant",
@@ -887,6 +938,9 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #260: Added cooldown and maxOccurrences to family_sit_down
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "family_sit_down",
 		title = "🤝 The Sit-Down",
@@ -896,7 +950,12 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 70,
 		isMafiaOnly = true,
-		conditions = { requiresFlags = { in_mob = true, initiated = true } },
+		cooldown = 3,
+		maxOccurrences = 4,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { witness_protection = true, former_mobster = true, boss_dead = true },
+		},
 		choices = {
 			{
 				text = "Support Captain Angelo (traditional)",
@@ -932,6 +991,10 @@ MafiaEvents.LifeEvents = {
 	-- CRITICAL FIX #245: Added cooldown and maxOccurrences to gang war event
 	-- Gang wars shouldn't happen every year
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #253: gang_war no longer requires gang_war flag (circular dependency)
+	-- Now triggers as a random rare event for mob members
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "gang_war",
 		title = "⚔️ Gang War!",
@@ -943,7 +1006,10 @@ MafiaEvents.LifeEvents = {
 		isMafiaOnly = true,
 		cooldown = 5, -- CRITICAL FIX: 5 year cooldown between gang wars
 		maxOccurrences = 2, -- CRITICAL FIX: Max 2 gang wars per lifetime
-		conditions = { requiresFlags = { in_mob = true, gang_war = true } },
+		conditions = { 
+			requiresFlags = { in_mob = true },
+			blockedFlags = { witness_protection = true, former_mobster = true, in_prison = true },
+		},
 		choices = {
 			{
 				text = "Lead a strike team",
@@ -988,9 +1054,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 50,
 		isMafiaOnly = true,
+		isMilestone = true, -- CRITICAL FIX #286: This is a milestone event
+		oneTime = true, -- CRITICAL FIX #286: Only once - can't get made twice
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
-			blockedFlags = { made_man = true },
+			blockedFlags = { made_man = true, made_member = true, boss_dead = true, witness_protection = true }, -- CRITICAL FIX #287: Can't if already made
 			minRespect = 500,
 		},
 		choices = {
@@ -1010,8 +1078,11 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #251: Renamed to mansion_heist to avoid duplicate ID with heist_planning above
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "heist_planning",
+		id = "mansion_heist",
 		title = "💎 The Big Score",
 		emoji = "💎",
 		text = "Word came down about a major heist opportunity. A wealthy businessman has $10 million in his safe.",
@@ -1019,6 +1090,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 60,
 		isMafiaOnly = true,
+		cooldown = 6, -- CRITICAL FIX: 6 year cooldown
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 per lifetime
 		conditions = { requiresFlags = { in_mob = true, initiated = true } },
 		choices = {
 			{
@@ -1412,6 +1485,10 @@ MafiaEvents.LifeEvents = {
 	},
 	
 	-- FAMILY TRIBUTE
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #249: Added blockedFlags for boss_dead to prevent "boss is dead but needs tribute" bug
+	-- Also added blockedFlags for player being the boss (boss doesn't pay tribute to self)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "tribute_to_boss",
 		title = "💎 Tribute Time",
@@ -1422,7 +1499,10 @@ MafiaEvents.LifeEvents = {
 		maxAge = 70,
 		isMafiaOnly = true,
 		cooldown = 2,
-		conditions = { requiresFlags = { in_mob = true } },
+		conditions = { 
+			requiresFlags = { in_mob = true },
+			blockedFlags = { boss_dead = true, mob_boss = true, is_boss = true, witness_protection = true, former_mobster = true },
+		},
 		choices = {
 			{
 				text = "Kick up generously (50%)",
@@ -1457,10 +1537,11 @@ MafiaEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 60,
 		isMafiaOnly = true,
+		isMilestone = true, -- CRITICAL FIX #288: This is a milestone event
 		oneTime = true,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
-			blockedFlags = { is_capo = true },
+			blockedFlags = { is_capo = true, underboss = true, mob_boss = true, boss_dead = true, witness_protection = true }, -- CRITICAL FIX #289: Can't if already capo or higher
 		},
 		choices = {
 			{

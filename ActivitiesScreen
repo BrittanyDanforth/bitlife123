@@ -823,7 +823,15 @@ function ActivitiesScreen:rebuildTabs()
 		end
 		
 		-- MAFIA TAB: For players in the mob
-		local isInMob = flags.in_mob or (mobState and mobState.inMob)
+		-- CRITICAL FIX #282: Use multiple checks for mob membership to prevent missing tab
+		local isInMob = flags.in_mob 
+			or flags.mafia_member 
+			or (mobState and mobState.inMob)
+		-- CRITICAL FIX #283: Also check via getMobState() which has additional fallback logic
+		if not isInMob then
+			local checkedMobState = self:getMobState()
+			isInMob = checkedMobState and checkedMobState.inMob
+		end
 		if isInMob then
 			table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) }) -- Dark red
 		end
