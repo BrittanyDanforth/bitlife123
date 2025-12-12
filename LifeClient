@@ -4166,58 +4166,48 @@ do
 			return false
 		end
 		
-		for i, w in ipairs(wOpts) do
-			local b = Instance.new("TextButton")
-			b.Name = w.id; b.Size = UDim2.new(1, 0, 0, 44)
-			-- CRITICAL FIX: Royal option shows gold if player has gamepass, otherwise gray
+		-- CRITICAL FIX #250: Wrap loop in do-end block to prevent "Out of local registers" error
+		-- Lua bytecode has a 200 local register limit per function scope
+		for i, w in ipairs(wOpts) do do
+			local btn = Instance.new("TextButton")
+			btn.Name = w.id; btn.Size = UDim2.new(1, 0, 0, 44)
 			local isRoyal = w.id == "Royal"
 			local hasRoyal = isRoyal and hasRoyaltyGamepass()
 			local defaultColor = w.id == "Middle Class" and C.Green or (isRoyal and (hasRoyal and Color3.fromRGB(255, 215, 0) or C.Gray300) or C.Gray100)
-			b.BackgroundColor3 = defaultColor
-			b.Text = ""; b.LayoutOrder = i + 1; b.ZIndex = 74; b.Parent = ws
-			corner(b, 8)
-			local l = Instance.new("TextLabel")
-			l.Size = UDim2.new(1, -16, 0, 24); l.Position = UDim2.new(0, 8, 0, 4)
-			l.BackgroundTransparency = 1
-			l.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
-			l.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
-			l.TextSize = 14; l.Font = F.Medium; l.TextXAlignment = Enum.TextXAlignment.Left
-			l.ZIndex = 75; l.Parent = b
-			local d = Instance.new("TextLabel")
-			d.Size = UDim2.new(1, -16, 0, 16); d.Position = UDim2.new(0, 8, 0, 26)
-			d.BackgroundTransparency = 1
-			d.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
-			d.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
-			d.TextSize = 11; d.Font = F.Body; d.TextXAlignment = Enum.TextXAlignment.Left
-			d.ZIndex = 75; d.Parent = b
-			IntroUI.wealthBtns[w.id] = { btn = b, label = l, desc = d, isRoyal = isRoyal }
-			b.MouseButton1Click:Connect(function()
-				-- CRITICAL FIX #22: Check for Royalty gamepass when selecting Royal option
+			btn.BackgroundColor3 = defaultColor
+			btn.Text = ""; btn.LayoutOrder = i + 1; btn.ZIndex = 74; btn.Parent = ws
+			corner(btn, 8)
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(1, -16, 0, 24); lbl.Position = UDim2.new(0, 8, 0, 4)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
+			lbl.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
+			lbl.TextSize = 14; lbl.Font = F.Medium; lbl.TextXAlignment = Enum.TextXAlignment.Left
+			lbl.ZIndex = 75; lbl.Parent = btn
+			local desc = Instance.new("TextLabel")
+			desc.Size = UDim2.new(1, -16, 0, 16); desc.Position = UDim2.new(0, 8, 0, 26)
+			desc.BackgroundTransparency = 1
+			desc.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
+			desc.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
+			desc.TextSize = 11; desc.Font = F.Body; desc.TextXAlignment = Enum.TextXAlignment.Left
+			desc.ZIndex = 75; desc.Parent = btn
+			IntroUI.wealthBtns[w.id] = { btn = btn, label = lbl, desc = desc, isRoyal = isRoyal }
+			btn.MouseButton1Click:Connect(function()
 				if w.requiresGamepass then
 					local hasPass = hasRoyaltyGamepass()
 					if not hasPass then
-						-- Prompt to purchase Royalty gamepass
-						-- CRITICAL FIX: Use FireServer not InvokeServer (PromptGamepass is RemoteEvent)
 						if PromptGamepass then
 							pcall(function() PromptGamepass:FireServer("ROYALTY") end)
 						end
-						return -- Don't select this option
+						return
 					end
 				end
-				
 				GodModeCreateData.familyWealth = w.id
-				-- CRITICAL FIX #28: Set royal birth flag when Royal is selected
-				if w.id == "Royal" then
-					GodModeCreateData.isRoyalBirth = true
-				else
-					GodModeCreateData.isRoyalBirth = false
-				end
-				
+				GodModeCreateData.isRoyalBirth = (w.id == "Royal")
 				for id, dt in pairs(IntroUI.wealthBtns) do
 					local isSelected = id == w.id
 					local isRoyalBtn = dt.isRoyal
 					local hasRoyalPass = isRoyalBtn and hasRoyaltyGamepass()
-					
 					if isSelected then
 						dt.btn.BackgroundColor3 = isRoyalBtn and Color3.fromRGB(255, 215, 0) or C.Green
 						dt.label.TextColor3 = isRoyalBtn and C.Gray900 or C.White
@@ -4229,7 +4219,7 @@ do
 					end
 				end
 			end)
-		end
+		end end
 end
 
 -- Stats section

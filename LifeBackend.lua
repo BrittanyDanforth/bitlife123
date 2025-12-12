@@ -2632,8 +2632,37 @@ function LifeBackend:serializeState(state)
 		-- Ensure all premium states are properly serialized for client
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #257: Sync MobState.inMob and Flags.in_mob before serialization
+		-- This ensures the client always has consistent data about mob membership
+		-- Without this, activities show "don't meet requirements" even when in mob
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if state.MobState and state.MobState.inMob then
+			state.Flags = state.Flags or {}
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+		elseif state.Flags and state.Flags.in_mob then
+			-- Flag says in mob but MobState doesn't - restore MobState
+			state.MobState = state.MobState or {}
+			if not state.MobState.inMob then
+				state.MobState.inMob = true
+				state.MobState.rankIndex = state.MobState.rankIndex or 1
+				state.MobState.rankLevel = state.MobState.rankLevel or 1
+				state.MobState.respect = state.MobState.respect or 0
+				state.MobState.loyalty = state.MobState.loyalty or 50
+				state.MobState.heat = state.MobState.heat or 0
+			end
+		end
+		
 		-- MAFIA STATE
 		serialized.MobState = MafiaSystem:serialize(state)
+		
+		-- CRITICAL FIX #258: Also sync the serialized Flags to include in_mob
+		serialized.Flags = serialized.Flags or {}
+		if serialized.MobState and serialized.MobState.inMob then
+			serialized.Flags.in_mob = true
+			serialized.Flags.mafia_member = true
+		end
 		
 		-- ROYALTY STATE
 		if state.RoyalState and state.RoyalState.isRoyal then
@@ -5102,6 +5131,35 @@ function LifeBackend:handleAgeUp(player)
 			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
 			
 			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #251: Restore mob membership after prison release
+			-- The in_mob flag and MobState.inMob must stay synchronized!
+			-- Without this, mafia events stop firing after prison release!
+			-- ═══════════════════════════════════════════════════════════════════════
+			if state.MobState and state.MobState.inMob then
+				-- Player was in mob before jail - ensure flag stays set
+				state.Flags.in_mob = true
+				state.Flags.mafia_member = true
+				-- Reduce loyalty slightly for being in prison
+				state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 100) - 10)
+				-- Reduce heat since you served time
+				state.MobState.heat = math.max(0, (state.MobState.heat or 0) - 30)
+				debugPrint("Mob membership restored after prison release. Loyalty:", state.MobState.loyalty)
+			elseif state.Flags.was_in_mob_before_jail then
+				-- Backup flag check - restore mob state if it was saved
+				state.Flags.in_mob = true
+				state.Flags.mafia_member = true
+				state.Flags.was_in_mob_before_jail = nil -- Clear backup flag
+				-- Initialize MobState if missing
+				if not state.MobState or not state.MobState.inMob then
+					state.MobState = state.MobState or {}
+					state.MobState.inMob = true
+					state.MobState.loyalty = 70 -- Lower loyalty after prison
+					state.MobState.heat = 0
+				end
+				debugPrint("Mob membership restored from backup flag after prison release")
+			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
 			-- If player was in college before going to jail, they can now re-enroll
 			-- ═══════════════════════════════════════════════════════════════════════
@@ -5109,6 +5167,9 @@ function LifeBackend:handleAgeUp(player)
 				state.EducationData.Status = "enrolled"
 				state.EducationData.StatusBeforeJail = nil
 				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+			elseif state.MobState and state.MobState.inMob then
+				-- Special message for mob members
+				state.PendingFeed = "🎉 You've been released from prison! The family welcomes you back."
 			else
 				state.PendingFeed = "🎉 You've been released from prison! Time served."
 			end
@@ -5490,6 +5551,17 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 
 	if justGotIncarcerated then
 		-- Player was caught during this event!
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #256: Preserve mob membership when event causes jail
+		-- ═══════════════════════════════════════════════════════════════════════
+		if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+			state.Flags.was_in_mob_before_jail = true
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			debugPrint("Preserved mob membership for event-triggered jail:", player.Name)
+		end
+		
 		-- Try to get the jail message from PendingFeed set by onResolve
 		if state.PendingFeed and type(state.PendingFeed) == "string" and state.PendingFeed ~= "" then
 			-- Check if the feed text is jail-related (contains relevant keywords)
@@ -5731,6 +5803,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			local jailYears = math.ceil(activity.risk / 15)
 			state.InJail = true
 			state.JailYearsLeft = jailYears
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			-- CRITICAL FIX #253: Preserve mob membership when jailed from mafia ops
+			if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+				state.Flags.was_in_mob_before_jail = true
+			end
 			resultMessage = "You got caught! Sentenced to " .. jailYears .. " years in prison."
 			gotCaught = true
 		end
@@ -5787,6 +5865,15 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		state.JailYearsLeft = years
 		state.Flags.in_prison = true
 		state.Flags.incarcerated = true
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #252: Preserve mob membership flag when going to jail
+		-- This backup flag ensures we restore in_mob after prison release
+		-- ═══════════════════════════════════════════════════════════════════════
+		if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+			state.Flags.was_in_mob_before_jail = true
+			debugPrint("Preserved mob membership for jail duration:", player.Name)
+		end
 		
 		-- CRITICAL FIX: Lose job when going to prison!
 		-- In BitLife, you get fired when incarcerated. Save last job for potential re-employment.
@@ -5900,6 +5987,22 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		state.Flags.fugitive = true
 		state.PendingFeed = nil
 		state.YearLog = {}
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #269: Restore mob membership after prison escape
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if state.MobState and state.MobState.inMob then
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + 20) -- Escaping raises heat
+		elseif state.Flags.was_in_mob_before_jail then
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+			state.Flags.was_in_mob_before_jail = nil
+			state.MobState = state.MobState or {}
+			state.MobState.inMob = true
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + 20)
+		end
 		
 		-- Player won the minigame - they escape successfully!
 		local eventDef = {
