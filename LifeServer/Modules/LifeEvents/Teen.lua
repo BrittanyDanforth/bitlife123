@@ -2118,6 +2118,189 @@ Teen.events = {
 			{ text = "Accept the L", effects = { Smarts = -2, Happiness = -3 }, feedText = "You didn't even try. That zero hurts." },
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #87: TALENT DISCOVERY EVENTS
+	-- These events help players discover talents that can lead to Celebrity careers
+	-- Requires Celebrity gamepass for full career options
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "talent_discovery",
+		title = "Hidden Talent!",
+		emoji = "⭐",
+		text = "During a school event, you discover you might have a hidden talent! People are taking notice.",
+		question = "What talent did you discover?",
+		minAge = 13, maxAge = 16,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		
+		choices = {
+			{
+				text = "Acting - you're a natural performer",
+				effects = { Happiness = 10, Looks = 3 },
+				setFlags = { talent_acting = true, drama_kid = true, natural_performer = true },
+				feedText = "You have a gift for acting! The drama teacher wants you for the lead role.",
+				fameEffect = { fame = 2 },
+			},
+			{
+				text = "Singing - your voice is amazing",
+				effects = { Happiness = 10 },
+				setFlags = { talent_singing = true, choir_member = true, gifted_voice = true },
+				feedText = "Your voice gave everyone chills. You could be a star!",
+				fameEffect = { fame = 2 },
+			},
+			{
+				text = "Dancing - moves like nobody else",
+				effects = { Happiness = 10, Health = 3 },
+				setFlags = { talent_dancing = true, dance_team = true, natural_dancer = true },
+				feedText = "Your dancing left everyone speechless!",
+				fameEffect = { fame = 2 },
+			},
+			{
+				text = "Sports - athletic prodigy",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { talent_sports = true, athletic_prodigy = true, varsity_potential = true },
+				feedText = "Scouts are already keeping an eye on you!",
+				fameEffect = { fame = 2 },
+			},
+			{
+				text = "Social media - you're going viral",
+				effects = { Happiness = 10, Smarts = 2 },
+				setFlags = { talent_social = true, social_media_star = true, viral_content = true },
+				feedText = "Your content is blowing up online!",
+				fameEffect = { fame = 3, followers = 5000 },
+			},
+		},
+	},
+	{
+		id = "fame_audition",
+		title = "Big Audition Opportunity!",
+		emoji = "🎬",
+		text = "A talent scout noticed you! They want you to audition for a real opportunity.",
+		question = "This could change everything. Do you go for it?",
+		minAge = 14, maxAge = 18,
+		oneTime = true,
+		requiresAnyFlags = { talent_acting = true, talent_singing = true, talent_dancing = true, natural_performer = true },
+		
+		choices = {
+			{
+				text = "Go all in! This is your dream!",
+				effects = { Happiness = 5 },
+				successChance = 50,
+				successEffects = { Happiness = 20 },
+				successFeed = "🌟 YOU GOT THE PART! This is the beginning of something huge!",
+				successFame = { fame = 10, breakthrough = true },
+				failEffects = { Happiness = -10 },
+				failFeed = "😔 They went with someone else. Keep trying though!",
+				failFame = { fame = 1 },
+				setFlags = { auditioned_professionally = true },
+			},
+			{
+				text = "Prepare carefully first",
+				effects = { Smarts = 3, Happiness = 3 },
+				successChance = 65,
+				successEffects = { Happiness = 15 },
+				successFeed = "🌟 Your preparation paid off! You got a callback!",
+				successFame = { fame = 8 },
+				failEffects = { Happiness = -5 },
+				failFeed = "📝 Not this time, but they loved your professionalism.",
+				failFame = { fame = 2 },
+				setFlags = { auditioned_professionally = true, prepared_audition = true },
+			},
+			{
+				text = "Too nervous - maybe next time",
+				effects = { Happiness = -5 },
+				setFlags = { missed_opportunity = true },
+				feedText = "You passed on the opportunity. There'll be other chances... right?",
+			},
+			{
+				text = "Focus on school instead",
+				effects = { Smarts = 5, Happiness = -3 },
+				setFlags = { chose_education = true },
+				feedText = "Fame can wait. Education comes first.",
+			},
+		},
+	},
+	{
+		id = "school_talent_show",
+		title = "School Talent Show",
+		emoji = "🎤",
+		text = "The annual talent show is coming up. Everyone's talking about who's going to perform.",
+		question = "Do you sign up?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.6,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "Sign up and perform your heart out!",
+				effects = { Happiness = 8 },
+				successChance = 60,
+				successEffects = { Happiness = 15, Looks = 2 },
+				successFeed = "🌟 STANDING OVATION! You won the talent show!",
+				successFame = { fame = 3 },
+				failEffects = { Happiness = -8, Looks = -1 },
+				failFeed = "😅 You forgot your lines/lyrics/steps. Everyone saw. Mortifying.",
+				setFlags = { performed_publicly = true },
+			},
+			{
+				text = "Help backstage instead",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { stage_crew = true },
+				feedText = "You helped make the show happen. The performers thanked you!",
+			},
+			{
+				text = "Just watch from the audience",
+				effects = { Happiness = 2 },
+				feedText = "Some great performances! Maybe next year you'll try.",
+			},
+			{
+				text = "Skip it entirely",
+				effects = { Happiness = 1 },
+				feedText = "Talent shows aren't your thing.",
+			},
+		},
+	},
+	{
+		id = "viral_moment",
+		title = "Your Video Went VIRAL!",
+		emoji = "📱",
+		text = "Someone filmed you doing something and posted it online. It's blowing up!",
+		question = "What kind of viral moment was it?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.25,
+		oneTime = true,
+		
+		choices = {
+			{
+				text = "An amazing talent display",
+				effects = { Happiness = 15 },
+				setFlags = { viral_talent = true, internet_famous = true },
+				feedText = "🔥 10 million views! Brands are reaching out!",
+				fameEffect = { fame = 8, followers = 50000 },
+			},
+			{
+				text = "A hilarious fail",
+				effects = { Happiness = -5, Looks = -3 },
+				setFlags = { viral_fail = true, meme_material = true },
+				feedText = "😅 You're famous... for all the wrong reasons.",
+				fameEffect = { fame = 5, followers = 20000 },
+			},
+			{
+				text = "A heartwarming moment",
+				effects = { Happiness = 12 },
+				setFlags = { viral_wholesome = true },
+				feedText = "🥰 People love you! You're trending for being a good person.",
+				fameEffect = { fame = 6, followers = 30000 },
+			},
+			{
+				text = "Delete the video immediately",
+				effects = { Happiness = 3 },
+				feedText = "You asked them to take it down. Privacy preserved.",
+			},
+		},
+	},
 }
 
 return Teen

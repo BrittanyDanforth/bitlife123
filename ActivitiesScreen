@@ -797,6 +797,33 @@ function ActivitiesScreen:rebuildTabs()
 			{ id = "social", text = "Social", color = C.Pink },
 			{ id = "crime", text = "Crime", color = C.Red },
 		}
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #88/#89: PREMIUM ACTIVITY TABS
+		-- Add special tabs for premium gamepass features
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local flags = self.playerState and self.playerState.Flags or {}
+		local royalState = self.playerState and self.playerState.RoyalState
+		local fameState = self.playerState and self.playerState.FameState
+		local mobState = self.playerState and self.playerState.MobState
+		
+		-- ROYAL TAB: For players who are royalty
+		local isRoyal = flags.is_royalty or flags.royal_birth or (royalState and royalState.isRoyal)
+		if isRoyal then
+			table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) }) -- Gold color
+		end
+		
+		-- FAME TAB: For players with a celebrity career
+		local hasFameCareer = flags.fame_career or (fameState and fameState.careerPath)
+		if hasFameCareer then
+			table.insert(tabs, { id = "fame", text = "⭐ Fame", color = Color3.fromRGB(255, 215, 0) }) -- Star gold
+		end
+		
+		-- MAFIA TAB: For players in the mob
+		local isInMob = flags.in_mob or (mobState and mobState.inMob)
+		if isInMob then
+			table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) }) -- Dark red
+		end
 	end
 
 	local tabWidth = 0.95 / #tabs
@@ -914,7 +941,14 @@ function ActivitiesScreen:switchTab(tabId)
 	elseif tabId == "social" then self:populateSocial()
 	elseif tabId == "fun" then self:populateFun()
 	elseif tabId == "crime" then self:populateCrime()
-	elseif tabId == "mischief" then self:populateMischief() end
+	elseif tabId == "mischief" then self:populateMischief()
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #88/#89/#90: PREMIUM ACTIVITY TABS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif tabId == "royal" then self:populateRoyal()
+	elseif tabId == "fame" then self:populateFame()
+	elseif tabId == "mafia" then self:populateMafia()
+	end
 	log("Tab content populated")
 end
 
@@ -1940,16 +1974,62 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 			return JoinMob:InvokeServer(familyId)
 		end)
 		if success and result and result.success then
+			-- CRITICAL FIX #26: Update local state with mob info immediately
+			if self.playerState then
+				self.playerState.MobState = result.mobState or {
+					inMob = true,
+					familyId = familyId,
+					familyName = result.familyName or "Crime Family",
+					familyEmoji = result.familyEmoji or "🔫",
+					rankLevel = 1,
+					rankName = "Associate",
+					rankEmoji = "🔰",
+					respect = 0,
+					heat = 0,
+					loyalty = 50,
+				}
+				self.playerState.Flags = self.playerState.Flags or {}
+				self.playerState.Flags.in_mob = true
+				self.playerState.Flags.mafia_member = true
+			end
+			-- Also update self.state for getMobState()
+			if self.state then
+				self.state.MobState = self.playerState and self.playerState.MobState or result.mobState
+				self.state.Flags = self.state.Flags or {}
+				self.state.Flags.in_mob = true
+			end
 			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
-			self:switchTab("crime") -- Refresh
+			-- CRITICAL FIX #34: Delay refresh to allow state to propagate
+			task.delay(0.3, function()
+				self:switchTab("crime") -- Refresh to show mob operations
+			end)
 		elseif success and result then
 			self:showResult(false, result.message or "The family rejected you.", "❌")
 		else
 			self:showResult(false, "Connection error. Try again.", "❌")
 		end
 	else
-		-- Fallback for testing
+		-- Fallback for testing - also update local state
+		if self.playerState then
+			self.playerState.MobState = {
+				inMob = true,
+				familyId = familyId,
+				familyName = "Crime Family",
+				familyEmoji = "🔫",
+				rankLevel = 1,
+				rankName = "Associate",
+				rankEmoji = "🔰",
+				respect = 0,
+				heat = 0,
+				loyalty = 50,
+			}
+			self.playerState.Flags = self.playerState.Flags or {}
+			self.playerState.Flags.in_mob = true
+		end
 		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		task.delay(0.3, function()
+			self:switchTab("crime")
+		end)
 	end
 end
 
@@ -2017,8 +2097,29 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 end
 
 function ActivitiesScreen:getMobState()
+	-- CRITICAL FIX #21 & #34: Check both playerState and state for MobState
+	if self.playerState and self.playerState.MobState then
+		return self.playerState.MobState
+	end
 	if self.state and self.state.MobState then
 		return self.state.MobState
+	end
+	-- Also check flags to ensure consistency
+	local flags = (self.playerState and self.playerState.Flags) or (self.state and self.state.Flags)
+	if flags and flags.in_mob then
+		-- Return a minimal mob state if we know they're in mob but don't have full state
+		return {
+			inMob = true,
+			familyId = flags.mob_family_id,
+			familyName = flags.mob_family_name or "Crime Family",
+			familyEmoji = "🔫",
+			rankLevel = flags.mob_rank or 1,
+			rankName = "Associate",
+			rankEmoji = "🔰",
+			respect = 0,
+			heat = 0,
+			loyalty = 50,
+		}
 	end
 	return nil
 end
@@ -4619,6 +4720,340 @@ function ActivitiesScreen:doPrisonActivity(item)
 	else
 		logWarn("Server returned nil!")
 		self:showResult(false, "Server error", "Error")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #88: ROYAL ACTIVITIES TAB
+-- Activities specific to players who are royalty (have royalty gamepass + is_royalty)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateRoyal()
+	self:updateInfoBar()
+	
+	local royalState = self.playerState and self.playerState.RoyalState or {}
+	local isMonarch = royalState.isMonarch
+	local popularity = royalState.popularity or 50
+	local countryName = royalState.countryName or "Kingdom"
+	local title = royalState.title or (isMonarch and "Monarch" or "Royal")
+	
+	-- Royal status header
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 100)
+	headerCard.BackgroundColor3 = Color3.fromRGB(218, 165, 32) -- Gold
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 55, 0, 55)
+	iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 12)
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body or Enum.Font.Gotham
+	headerIcon.TextSize = 32
+	headerIcon.Text = isMonarch and "👑" or "🏰"
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -85, 0, 26)
+	headerText.Position = UDim2.new(0, 80, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title or Enum.Font.GothamBold
+	headerText.TextSize = 18
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = title .. " of " .. countryName
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+	
+	local popBadge = Instance.new("Frame")
+	popBadge.Size = UDim2.new(0, 140, 0, 26)
+	popBadge.Position = UDim2.new(0, 80, 0, 42)
+	popBadge.BackgroundColor3 = Color3.fromRGB(255, 255, 200)
+	popBadge.ZIndex = 83
+	popBadge.Parent = headerCard
+	UI.pill(popBadge)
+	
+	local popText = Instance.new("TextLabel")
+	popText.Size = UDim2.fromScale(1, 1)
+	popText.BackgroundTransparency = 1
+	popText.Font = F.Medium or Enum.Font.GothamMedium
+	popText.TextSize = 12
+	popText.TextColor3 = Color3.fromRGB(139, 69, 19)
+	popText.Text = "👥 Popularity: " .. popularity .. "%"
+	popText.ZIndex = 84
+	popText.Parent = popBadge
+	
+	-- Royal duties section
+	local RoyalDuties = {
+		{ id = "public_appearance", name = "Public Appearance", emoji = "📸", effect = "+Popularity", cost = 0 },
+		{ id = "charity_visit", name = "Visit Charity", emoji = "❤️", effect = "+Popularity +Happiness", cost = 10000 },
+		{ id = "state_dinner", name = "Host State Dinner", emoji = "🍽️", effect = "+Diplomacy", cost = 50000 },
+		{ id = "open_parliament", name = "Open Parliament", emoji = "🏛️", effect = "+Respect", cost = 0, monarchOnly = true },
+		{ id = "knight_ceremony", name = "Knight Someone", emoji = "⚔️", effect = "+Popularity", cost = 0, monarchOnly = true },
+		{ id = "royal_wedding", name = "Attend Royal Wedding", emoji = "💒", effect = "+Happiness +Popularity", cost = 0 },
+		{ id = "military_review", name = "Military Review", emoji = "🎖️", effect = "+Popularity", cost = 0 },
+		{ id = "charity_gala", name = "Host Charity Gala", emoji = "🎭", effect = "+Popularity +Fame", cost = 100000 },
+	}
+	
+	local section = Instance.new("Frame")
+	section.Name = "RoyalDutiesSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+	
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 120, 0, 32)
+	badge.BackgroundColor3 = Color3.fromRGB(218, 165, 32)
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button or Enum.Font.GothamBold
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "👑 Royal Duties"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+	
+	for i, duty in ipairs(RoyalDuties) do
+		if not duty.monarchOnly or isMonarch then
+			self:createActivityCard(section, duty, i, Color3.fromRGB(218, 165, 32), Color3.fromRGB(255, 248, 220))
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #89: FAME ACTIVITIES TAB
+-- Activities specific to players with a celebrity career
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateFame()
+	self:updateInfoBar()
+	
+	local fameState = self.playerState and self.playerState.FameState or {}
+	local fame = (self.playerState and self.playerState.Fame) or 0
+	local careerPath = fameState.careerPath or "Celebrity"
+	local followers = fameState.followers or 0
+	
+	-- Fame status header
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 100)
+	headerCard.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Gold
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 55, 0, 55)
+	iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 200)
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 12)
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body or Enum.Font.Gotham
+	headerIcon.TextSize = 32
+	headerIcon.Text = "⭐"
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -85, 0, 26)
+	headerText.Position = UDim2.new(0, 80, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title or Enum.Font.GothamBold
+	headerText.TextSize = 18
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = string.upper(careerPath) .. " Career"
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+	
+	local fameBadge = Instance.new("Frame")
+	fameBadge.Size = UDim2.new(0, 200, 0, 26)
+	fameBadge.Position = UDim2.new(0, 80, 0, 42)
+	fameBadge.BackgroundColor3 = Color3.fromRGB(255, 255, 200)
+	fameBadge.ZIndex = 83
+	fameBadge.Parent = headerCard
+	UI.pill(fameBadge)
+	
+	local fameText = Instance.new("TextLabel")
+	fameText.Size = UDim2.fromScale(1, 1)
+	fameText.BackgroundTransparency = 1
+	fameText.Font = F.Medium or Enum.Font.GothamMedium
+	fameText.TextSize = 12
+	fameText.TextColor3 = Color3.fromRGB(139, 69, 19)
+	fameText.Text = "🌟 Fame: " .. fame .. "% | 👥 " .. UI.formatNumber(followers) .. " followers"
+	fameText.ZIndex = 84
+	fameText.Parent = fameBadge
+	
+	-- Fame activities
+	local FameActivities = {
+		{ id = "audition", name = "Go to Audition", emoji = "🎬", effect = "+Fame +Money", cost = 0 },
+		{ id = "social_post", name = "Post on Social Media", emoji = "📱", effect = "+Followers", cost = 0 },
+		{ id = "interview", name = "Do an Interview", emoji = "🎤", effect = "+Fame", cost = 0 },
+		{ id = "photoshoot", name = "Do a Photoshoot", emoji = "📸", effect = "+Looks +Fame", cost = 500 },
+		{ id = "endorsement", name = "Seek Endorsement", emoji = "💼", effect = "+Money", cost = 0 },
+		{ id = "publicity_stunt", name = "Publicity Stunt", emoji = "🎪", effect = "+Fame +Risk", cost = 5000 },
+		{ id = "charity_event", name = "Charity Event", emoji = "❤️", effect = "+Fame +Happiness", cost = 10000 },
+		{ id = "album_tour", name = "Go on Tour", emoji = "🎸", effect = "+Fame +Money -Health", cost = 50000 },
+	}
+	
+	local section = Instance.new("Frame")
+	section.Name = "FameSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	for i, activity in ipairs(FameActivities) do
+		self:createActivityCard(section, activity, i, Color3.fromRGB(255, 215, 0), Color3.fromRGB(255, 248, 220))
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #90: MAFIA ACTIVITIES TAB
+-- Activities specific to players in the mob
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateMafia()
+	self:updateInfoBar()
+	
+	local mobState = self.playerState and self.playerState.MobState or {}
+	local familyName = mobState.familyName or "Crime Family"
+	local rankName = mobState.rankName or "Associate"
+	local respect = mobState.respect or 0
+	local heat = mobState.heat or 0
+	
+	-- Mafia status header
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 100)
+	headerCard.BackgroundColor3 = Color3.fromRGB(88, 28, 28) -- Dark red
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 55, 0, 55)
+	iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(120, 40, 40)
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 12)
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body or Enum.Font.Gotham
+	headerIcon.TextSize = 32
+	headerIcon.Text = mobState.rankEmoji or "🔫"
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -85, 0, 26)
+	headerText.Position = UDim2.new(0, 80, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title or Enum.Font.GothamBold
+	headerText.TextSize = 18
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = rankName .. " - " .. familyName
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+	
+	local statsBadge = Instance.new("Frame")
+	statsBadge.Size = UDim2.new(0, 200, 0, 26)
+	statsBadge.Position = UDim2.new(0, 80, 0, 42)
+	statsBadge.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+	statsBadge.ZIndex = 83
+	statsBadge.Parent = headerCard
+	UI.pill(statsBadge)
+	
+	local statsText = Instance.new("TextLabel")
+	statsText.Size = UDim2.fromScale(1, 1)
+	statsText.BackgroundTransparency = 1
+	statsText.Font = F.Medium or Enum.Font.GothamMedium
+	statsText.TextSize = 12
+	statsText.TextColor3 = C.White
+	statsText.Text = "💪 Respect: " .. respect .. " | 🔥 Heat: " .. heat .. "%"
+	statsText.ZIndex = 84
+	statsText.Parent = statsBadge
+	
+	-- Mafia operations
+	local MafiaOperations = {
+		{ id = "collect_protection", name = "Collect Protection", emoji = "💰", effect = "+Money +Heat", risk = 20 },
+		{ id = "drug_run", name = "Drug Run", emoji = "📦", effect = "+Money +Heat", risk = 35 },
+		{ id = "hit_job", name = "Hit Job", emoji = "🔫", effect = "+Respect +Heat", risk = 50 },
+		{ id = "heist", name = "Plan a Heist", emoji = "🏦", effect = "+Money +Heat", risk = 60, hasMinigame = true, minigameType = "heist" },
+		{ id = "intimidate", name = "Intimidate Someone", emoji = "😠", effect = "+Respect", risk = 25 },
+		{ id = "recruit", name = "Recruit Members", emoji = "👥", effect = "+Loyalty", risk = 10 },
+		{ id = "bribe_cops", name = "Bribe Police", emoji = "👮", effect = "-Heat", cost = 50000 },
+		{ id = "lay_low", name = "Lay Low", emoji = "🏠", effect = "-Heat", cost = 0 },
+	}
+	
+	local section = Instance.new("Frame")
+	section.Name = "MafiaSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	for i, op in ipairs(MafiaOperations) do
+		self:createActivityCard(section, op, i, Color3.fromRGB(139, 0, 0), Color3.fromRGB(255, 220, 220))
 	end
 end
 

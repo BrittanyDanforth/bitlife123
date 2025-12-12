@@ -56,19 +56,352 @@ function EventEngine.isEligible(event, state)
 	return LifeStageSystem.validateEvent(event, state)
 end
 
-local function applyChoiceEffects(state, choice)
-	if choice.effects then
-		for stat, delta in pairs(choice.effects) do
-			if state.ModifyStat then
-				state:ModifyStat(stat, delta)
-			elseif state.Stats and state.Stats[stat] then
-				state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #53/#76/#94: Apply mafia effects from choices
+-- Extended with full mob state management, heat decay, and operation tracking
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyMafiaEffect(state, mafiaEffect)
+	if not mafiaEffect then return end
+	
+	-- CRITICAL FIX #76: Initialize MobState if needed
+	if not state.MobState then
+		state.MobState = {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			familyEmoji = nil,
+			rankIndex = 1,
+			rankLevel = 1,
+			rankName = "Associate",
+			rankEmoji = "👤",
+			respect = 0,
+			notoriety = 0,
+			heat = 0,
+			loyalty = 100,
+			kills = 0,
+			earnings = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			operationsFailed = 0,
+		}
+	end
+	
+	local mobState = state.MobState
+	state.Flags = state.Flags or {}
+	
+	if mafiaEffect.respect then
+		mobState.respect = (mobState.respect or 0) + mafiaEffect.respect
+		-- Check for automatic rank-up based on respect thresholds
+		if mobState.respect >= 500 and mobState.rankIndex < 5 then
+			mobState.rankIndex = math.min((mobState.rankIndex or 1) + 1, 5)
+			mobState.rankLevel = mobState.rankIndex
+		end
+	end
+	if mafiaEffect.heat then
+		mobState.heat = math.clamp((mobState.heat or 0) + mafiaEffect.heat, 0, 100)
+	end
+	-- CRITICAL FIX #94: Heat decay support
+	if mafiaEffect.heatDecay then
+		mobState.heat = math.max(0, (mobState.heat or 0) - mafiaEffect.heatDecay)
+	end
+	if mafiaEffect.loyalty then
+		mobState.loyalty = math.clamp((mobState.loyalty or 100) + mafiaEffect.loyalty, 0, 100)
+	end
+	if mafiaEffect.money then
+		state.Money = (state.Money or 0) + mafiaEffect.money
+		mobState.earnings = (mobState.earnings or 0) + mafiaEffect.money
+	end
+	if mafiaEffect.kills then
+		mobState.kills = (mobState.kills or 0) + mafiaEffect.kills
+		mobState.notoriety = (mobState.notoriety or 0) + (mafiaEffect.kills * 10)
+	end
+	if mafiaEffect.joinFamily then
+		mobState.inMob = true
+		mobState.yearsInMob = 0
+		state.Flags.in_mob = true
+		state.Flags.mafia_member = true
+		-- Set family info if provided
+		if type(mafiaEffect.joinFamily) == "table" then
+			mobState.familyId = mafiaEffect.joinFamily.id
+			mobState.familyName = mafiaEffect.joinFamily.name
+			mobState.familyEmoji = mafiaEffect.joinFamily.emoji
+		end
+	end
+	if mafiaEffect.kicked then
+		mobState.inMob = false
+		state.Flags.in_mob = nil
+		state.Flags.kicked_from_mob = true
+	end
+	if mafiaEffect.initiated then
+		state.Flags.initiated = true
+		mobState.rankName = "Soldier"
+		mobState.rankEmoji = "🔫"
+	end
+	if mafiaEffect.madeMember then
+		state.Flags.made_member = true
+		mobState.rankName = "Made Man"
+		mobState.rankEmoji = "💀"
+		mobState.rankIndex = math.max(mobState.rankIndex or 1, 2)
+	end
+	if mafiaEffect.rankUp then
+		mobState.rankIndex = math.min((mobState.rankIndex or 1) + 1, 5)
+		mobState.rankLevel = mobState.rankIndex
+		-- Update rank names based on index
+		local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+		local rankEmojis = {"👤", "🔫", "💀", "🎩", "👑"}
+		mobState.rankName = rankNames[mobState.rankIndex] or "Associate"
+		mobState.rankEmoji = rankEmojis[mobState.rankIndex] or "👤"
+		state.Flags.got_promoted_mob = true
+	end
+	if mafiaEffect.becomeBoss then
+		mobState.rankIndex = 5
+		mobState.rankLevel = 5
+		mobState.rankName = "Boss"
+		mobState.rankEmoji = "👑"
+		state.Flags.mob_boss = true
+	end
+	if mafiaEffect.arrested then
+		state.InJail = true
+		state.JailYearsLeft = mafiaEffect.jailYears or 5
+		state.Flags.in_prison = true
+		state.Flags.arrested_for_crime = true
+	end
+	if mafiaEffect.escaped then
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.escaped_prison = true
+		mobState.heat = math.min(100, (mobState.heat or 0) + 30) -- Escaping adds heat
+	end
+	if mafiaEffect.operationSuccess then
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+	end
+	if mafiaEffect.operationFailed then
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+	end
+	if mafiaEffect.territoryGain then
+		mobState.territories = mobState.territories or {}
+		table.insert(mobState.territories, mafiaEffect.territoryGain)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #54/#71/#75: Apply royalty effects from choices
+-- Extended to handle all royal state changes including succession and duties
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyRoyaltyEffect(state, royaltyEffect)
+	if not royaltyEffect then return end
+	
+	-- CRITICAL FIX #75: Initialize RoyalState if needed
+	if not state.RoyalState then
+		state.RoyalState = {
+			isRoyal = false,
+			isMonarch = false,
+			popularity = 50,
+			scandals = 0,
+			dutiesCompleted = 0,
+			dutyStreak = 0,
+			reignYears = 0,
+			wealth = 0,
+			lineOfSuccession = 99,
+		}
+	end
+	
+	local royalState = state.RoyalState
+	
+	if royaltyEffect.popularity then
+		royalState.popularity = math.clamp((royalState.popularity or 50) + royaltyEffect.popularity, 0, 100)
+	end
+	if royaltyEffect.scandals then
+		royalState.scandals = (royalState.scandals or 0) + royaltyEffect.scandals
+	end
+	if royaltyEffect.wealth then
+		royalState.wealth = (royalState.wealth or 0) + royaltyEffect.wealth
+		state.Money = (state.Money or 0) + royaltyEffect.wealth
+	end
+	
+	-- CRITICAL FIX #71: Handle succession line changes
+	if royaltyEffect.successionChange then
+		royalState.lineOfSuccession = math.max(1, (royalState.lineOfSuccession or 99) + royaltyEffect.successionChange)
+	end
+	
+	-- CRITICAL FIX #92: Handle becoming monarch
+	if royaltyEffect.becomeMonarch then
+		royalState.isMonarch = true
+		royalState.lineOfSuccession = 0
+		royalState.reignYears = 0
+		state.Flags = state.Flags or {}
+		state.Flags.is_monarch = true
+		state.Flags.became_monarch = true
+	end
+	
+	-- CRITICAL FIX #99: Handle coronation
+	if royaltyEffect.coronation then
+		royalState.coronationYear = state.Year
+		state.Flags = state.Flags or {}
+		state.Flags.coronated = true
+	end
+	
+	-- Handle duty completion tracking
+	if royaltyEffect.dutyCompleted then
+		royalState.dutiesCompleted = (royalState.dutiesCompleted or 0) + 1
+		royalState.dutyStreak = (royalState.dutyStreak or 0) + 1
+	end
+	
+	-- Handle abdication
+	if royaltyEffect.abdicate then
+		royalState.isMonarch = false
+		royalState.lineOfSuccession = 99
+		state.Flags = state.Flags or {}
+		state.Flags.abdicated = true
+		state.Flags.is_monarch = nil
+	end
+	
+	-- Handle exile
+	if royaltyEffect.exile then
+		royalState.isRoyal = false
+		royalState.isMonarch = false
+		state.Flags = state.Flags or {}
+		state.Flags.exiled = true
+		state.Flags.is_royalty = nil
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #57/#77/#93/#100: Apply fame effects from choices
+-- Extended to handle career progression, scandals, awards, and breakthrough moments
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyFameEffect(state, fameEffect)
+	if not fameEffect then return end
+	
+	-- CRITICAL FIX #77: Initialize FameState if needed
+	if not state.FameState then
+		state.FameState = {
+			isFamous = false,
+			careerPath = nil,
+			careerName = nil,
+			currentStage = 0,
+			stageName = nil,
+			yearsInCareer = 0,
+			followers = 0,
+			endorsements = {},
+			awards = {},
+			scandals = 0,
+			fameLevel = "Unknown",
+		}
+	end
+	
+	local fameState = state.FameState
+	
+	-- fameEffect can be a number or a table
+	local fameChange = type(fameEffect) == "number" and fameEffect or (fameEffect.fame or 0)
+	state.Fame = math.clamp((state.Fame or 0) + fameChange, 0, 100)
+	
+	if type(fameEffect) == "table" then
+		if fameEffect.followers then
+			fameState.followers = (fameState.followers or 0) + fameEffect.followers
+		end
+		
+		-- CRITICAL FIX #93: Handle fame decay
+		if fameEffect.decay then
+			state.Fame = math.max(0, (state.Fame or 0) - fameEffect.decay)
+		end
+		
+		-- CRITICAL FIX #100: Handle career breakthrough
+		if fameEffect.breakthrough then
+			fameState.isFamous = true
+			state.Flags = state.Flags or {}
+			state.Flags.fame_breakthrough = true
+			state.Flags.famous = true
+		end
+		
+		-- Handle scandals
+		if fameEffect.scandal then
+			fameState.scandals = (fameState.scandals or 0) + (fameEffect.scandal or 1)
+			state.Fame = math.max(0, (state.Fame or 0) - 5)
+		end
+		
+		-- Handle awards
+		if fameEffect.award then
+			fameState.awards = fameState.awards or {}
+			table.insert(fameState.awards, {
+				name = fameEffect.award,
+				year = state.Year,
+			})
+			state.Fame = math.min(100, (state.Fame or 0) + 10)
+			state.Flags = state.Flags or {}
+			state.Flags.award_winner = true
+		end
+		
+		-- Handle career stage advancement
+		if fameEffect.promotion then
+			fameState.currentStage = (fameState.currentStage or 0) + 1
+			fameState.lastPromotionYear = state.Year
+		end
+		
+		-- Handle starting a fame career
+		if fameEffect.startCareer then
+			fameState.isFamous = true
+			fameState.careerPath = fameEffect.startCareer.path
+			fameState.careerName = fameEffect.startCareer.name
+			fameState.currentStage = 1
+			fameState.yearsInCareer = 0
+			state.Flags = state.Flags or {}
+			state.Flags.fame_career = true
+			state.Flags["career_" .. fameEffect.startCareer.path] = true
+		end
+		
+		-- Handle endorsements
+		if fameEffect.endorsement then
+			fameState.endorsements = fameState.endorsements or {}
+			table.insert(fameState.endorsements, {
+				brand = fameEffect.endorsement.brand or "Unknown Brand",
+				value = fameEffect.endorsement.value or 10000,
+				year = state.Year,
+			})
+			state.Money = (state.Money or 0) + (fameEffect.endorsement.value or 10000)
+		end
+	end
+end
+
+local function applyChoiceEffects(state, choice, isSuccess)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance - use success/fail effects appropriately
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local effectsToApply = choice.effects
+	local moneyToApply = choice.money
+	local feedToUse = choice.feed
+	
+	-- If success/fail effects exist, use those instead
+	if isSuccess == true then
+		effectsToApply = choice.successEffects or choice.effects
+		moneyToApply = choice.successMoney or choice.money
+		feedToUse = choice.successFeed or choice.feed
+	elseif isSuccess == false then
+		effectsToApply = choice.failEffects or {}
+		moneyToApply = choice.failMoney or 0
+		feedToUse = choice.failFeed or choice.failMessage or choice.feed
+	end
+	
+	-- Apply stat effects
+	if effectsToApply then
+		for stat, delta in pairs(effectsToApply) do
+			if stat ~= "Money" then -- Handle money separately
+				if state.ModifyStat then
+					state:ModifyStat(stat, delta)
+				elseif state.Stats and state.Stats[stat] then
+					state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+				end
 			end
+		end
+		-- Check for Money in effects
+		if effectsToApply.Money then
+			moneyToApply = (moneyToApply or 0) + effectsToApply.Money
 		end
 	end
 
-	if choice.money then
-		local amount = choice.money
+	if moneyToApply and moneyToApply ~= 0 then
+		local amount = moneyToApply
 		if state.AddMoney then
 			state:AddMoney(amount, choice.text)
 		else
@@ -96,6 +429,79 @@ local function applyChoiceEffects(state, choice)
 			end
 		end
 	end
+	
+	-- CRITICAL FIX: Handle setFlags shorthand (many events use this)
+	if choice.setFlags then
+		state.Flags = state.Flags or {}
+		for flag, value in pairs(choice.setFlags) do
+			state.Flags[flag] = value
+		end
+	end
+	
+	-- CRITICAL FIX #53: Apply mafia effects
+	local mafiaEffectToApply = choice.mafiaEffect
+	if isSuccess == true and choice.successMafiaEffect then
+		mafiaEffectToApply = choice.successMafiaEffect
+	elseif isSuccess == false and choice.failMafiaEffect then
+		mafiaEffectToApply = choice.failMafiaEffect
+	end
+	if mafiaEffectToApply then
+		applyMafiaEffect(state, mafiaEffectToApply)
+	end
+	
+	-- CRITICAL FIX #54: Apply royalty effects
+	if choice.royaltyEffect then
+		applyRoyaltyEffect(state, choice.royaltyEffect)
+	end
+	
+	-- CRITICAL FIX #57: Apply fame effects
+	local fameEffectToApply = choice.fameEffect
+	if isSuccess == true and choice.successFame then
+		fameEffectToApply = choice.successFame
+	elseif isSuccess == false and choice.failFame then
+		fameEffectToApply = choice.failFame
+	end
+	if fameEffectToApply then
+		applyFameEffect(state, fameEffectToApply)
+	end
+	
+	-- Handle fameGain shorthand (common in celebrity events)
+	if choice.fameGain then
+		state.Fame = math.clamp((state.Fame or 0) + choice.fameGain, 0, 100)
+	end
+	if isSuccess == false and choice.failFameLoss then
+		state.Fame = math.clamp((state.Fame or 0) - choice.failFameLoss, 0, 100)
+	end
+	
+	-- Handle salaryBonus (common in career events)
+	if choice.salaryBonus then
+		state.Money = (state.Money or 0) + choice.salaryBonus
+	end
+	
+	-- Handle healthLoss/healthGain
+	if choice.healthLoss then
+		if state.ModifyStat then
+			state:ModifyStat("Health", -choice.healthLoss)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) - choice.healthLoss, 0, 100)
+		end
+	end
+	if choice.healthGain then
+		if state.ModifyStat then
+			state:ModifyStat("Health", choice.healthGain)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) + choice.healthGain, 0, 100)
+		end
+	end
+	
+	-- Set feed message
+	if feedToUse and state.AddFeed then
+		state:AddFeed(feedToUse)
+	elseif feedToUse then
+		state.PendingFeed = feedToUse
+	end
+	
+	return isSuccess
 end
 
 function EventEngine.completeEvent(event, choiceIndex, state)
@@ -104,11 +510,26 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 		return nil, "Invalid choice"
 	end
 
-	applyChoiceEffects(state, choice)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance for choices with random outcomes
+	-- Many events have choices like "Win the Oscar" with 25% success chance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isSuccess = nil -- nil means no success/fail mechanic
+	
+	if choice.successChance then
+		local roll = Random.new():NextNumber() * 100
+		isSuccess = roll <= choice.successChance
+		
+		-- Store result for UI feedback
+		choice._wasSuccessful = isSuccess
+		choice._rollResult = roll
+	end
+	
+	applyChoiceEffects(state, choice, isSuccess)
 	
 	-- CRITICAL FIX: Call choice-level onResolve callback
 	if choice.onResolve then
-		local success, err = pcall(choice.onResolve, state, choice, event)
+		local success, err = pcall(choice.onResolve, state, choice, event, isSuccess)
 		if not success then
 			warn("[LifeEvents] Choice handler error:", err)
 		end
@@ -120,6 +541,7 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 		local outcome = {
 			choiceIndex = choiceIndex,
 			choice = choice,
+			wasSuccessful = isSuccess,
 		}
 		local success, err = pcall(event.onComplete, state, choice, event, outcome)
 		if not success then
@@ -128,10 +550,10 @@ function EventEngine.completeEvent(event, choiceIndex, state)
 	end
 
 	if state.RecordEvent then
-		state:RecordEvent(event.id, { choice = choiceIndex })
+		state:RecordEvent(event.id, { choice = choiceIndex, success = isSuccess })
 	end
 
-	return choice
+	return choice, isSuccess
 end
 
 local function weightedPick(events)

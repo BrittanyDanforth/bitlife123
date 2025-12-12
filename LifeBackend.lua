@@ -60,10 +60,33 @@ assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer
 local LifeState = require(ModulesFolder:WaitForChild("LifeState"))
 local LifeStageSystem = require(ModulesFolder:WaitForChild("LifeStageSystem"))
 GamepassSystem = require(ModulesFolder:WaitForChild("GamepassSystem"))
-local MobSystem = require(ModulesFolder:WaitForChild("MobSystem"))
+-- CRITICAL FIX #101: Renamed MafiaSystem to MafiaSystem for clarity
+local MafiaSystem = require(ModulesFolder:WaitForChild("MafiaSystem"))
 local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 local EventEngine = LifeEvents.EventEngine
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #1: Load premium feature modules
+-- These were defined but NEVER required, so their yearly processing never ran!
+-- ════════════════════════════════════════════════════════════════════════════
+local GodModeSystem = require(ModulesFolder:WaitForChild("GodModeSystem"))
+local RoyaltyEvents = nil
+local CelebrityEvents = nil
+
+-- CRITICAL FIX #48: Load TimeMachine for snapshot saving
+local TimeMachine = nil
+pcall(function()
+	TimeMachine = require(ModulesFolder:WaitForChild("TimeMachine"))
+end)
+
+-- Safe require for premium event modules (they might not exist in all setups)
+pcall(function()
+	RoyaltyEvents = require(LifeEventsFolder:WaitForChild("RoyaltyEvents"))
+end)
+pcall(function()
+	CelebrityEvents = require(LifeEventsFolder:WaitForChild("CelebrityEvents"))
+end)
 
 local RANDOM = Random.new()
 local C = nil -- client palette not available on server
@@ -300,7 +323,7 @@ local function resetMobStateForAge(state, targetAge)
 		return
 	end
 
-	local mobState = MobSystem and MobSystem:getMobState(state) or (state.MobState or {})
+	local mobState = MafiaSystem and MafiaSystem:getMobState(state) or (state.MobState or {})
 	mobState.inMob = false
 	mobState.familyId = nil
 	mobState.familyName = nil
@@ -1884,6 +1907,13 @@ function LifeBackend:setupRemotes()
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
 	self.remotes.GodModeEdit = self:createRemote("GodModeEdit", "RemoteFunction")
+	-- CRITICAL FIX #60: Add remote to get God Mode configuration (presets, editable stats)
+	self.remotes.GetGodModeInfo = self:createRemote("GetGodModeInfo", "RemoteFunction")
+	
+	-- CRITICAL FIX #13: PREMIUM FEATURES: Royalty remotes
+	self.remotes.DoRoyalDuty = self:createRemote("DoRoyalDuty", "RemoteFunction")
+	self.remotes.Abdicate = self:createRemote("Abdicate", "RemoteFunction")
+	self.remotes.GetRoyalInfo = self:createRemote("GetRoyalInfo", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -1997,6 +2027,163 @@ function LifeBackend:setupRemotes()
 	self.remotes.GodModeEdit.OnServerInvoke = function(player, payload)
 		return self:handleGodModeEdit(player, payload)
 	end
+	
+	-- CRITICAL FIX #60: Handler to get God Mode configuration for client UI
+	self.remotes.GetGodModeInfo.OnServerInvoke = function(player)
+		return self:getGodModeInfo(player)
+	end
+	
+	-- CRITICAL FIX #13: PREMIUM FEATURES: Royalty handlers
+	self.remotes.DoRoyalDuty.OnServerInvoke = function(player, dutyId)
+		return self:handleRoyalDuty(player, dutyId)
+	end
+	
+	self.remotes.Abdicate.OnServerInvoke = function(player)
+		return self:handleAbdication(player)
+	end
+	
+	self.remotes.GetRoyalInfo.OnServerInvoke = function(player)
+		return self:getRoyalInfo(player)
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #13: ROYALTY SYSTEM HANDLERS
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeBackend:handleRoyalDuty(player, dutyId)
+	if not self:checkGamepassOwnership(player, "ROYALTY") then
+		self:promptGamepassPurchase(player, "ROYALTY")
+		return { success = false, message = "👑 Royal duties require the Royalty gamepass.", needsGamepass = true }
+	end
+	
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+	
+	if not state.RoyalState or not state.RoyalState.isRoyal then
+		return { success = false, message = "You're not royalty!" }
+	end
+	
+	-- Find the duty
+	local duties = {
+		state_visit = { name = "State Visit", emoji = "🤝", popularity = { 2, 8 }, cost = 50000, minAge = 18 },
+		ribbon_cutting = { name = "Ribbon Cutting Ceremony", emoji = "✂️", popularity = { 1, 5 }, cost = 5000, minAge = 10 },
+		charity_gala = { name = "Host Charity Gala", emoji = "🎭", popularity = { 3, 10 }, cost = 100000, minAge = 18 },
+		military_parade = { name = "Attend Military Parade", emoji = "🎖️", popularity = { 2, 6 }, cost = 10000, minAge = 16 },
+		parliament_opening = { name = "State Opening of Parliament", emoji = "🏛️", popularity = { 1, 5 }, cost = 25000, minAge = 21, requiresMonarch = true },
+		hospital_visit = { name = "Hospital Visit", emoji = "🏥", popularity = { 3, 8 }, cost = 2000, minAge = 8 },
+		school_visit = { name = "School Visit", emoji = "🏫", popularity = { 2, 6 }, cost = 3000, minAge = 12 },
+		knighting_ceremony = { name = "Knighting Ceremony", emoji = "⚔️", popularity = { 2, 5 }, cost = 15000, minAge = 21, requiresMonarch = true },
+		environmental_campaign = { name = "Environmental Campaign", emoji = "🌍", popularity = { 2, 7 }, cost = 200000, minAge = 18 },
+		sports_event = { name = "Sports Event Appearance", emoji = "🏆", popularity = { 2, 5 }, cost = 10000, minAge = 12 },
+		arts_patronage = { name = "Arts Patronage Event", emoji = "🎨", popularity = { 1, 4 }, cost = 25000, minAge = 16 },
+		disaster_relief = { name = "Disaster Relief Visit", emoji = "🆘", popularity = { 5, 15 }, cost = 10000, minAge = 16 },
+	}
+	
+	local duty = duties[dutyId]
+	if not duty then
+		return { success = false, message = "Unknown duty." }
+	end
+	
+	-- Check age requirement
+	if state.Age < duty.minAge then
+		return { success = false, message = "You must be at least " .. duty.minAge .. " to perform this duty." }
+	end
+	
+	-- Check monarch requirement
+	if duty.requiresMonarch and not state.RoyalState.isMonarch then
+		return { success = false, message = "Only the monarch can perform this duty." }
+	end
+	
+	-- Check funds
+	if state.Money < duty.cost then
+		return { success = false, message = "Not enough funds for this duty. Required: $" .. formatMoney(duty.cost) }
+	end
+	
+	-- Deduct cost
+	state.Money = state.Money - duty.cost
+	
+	-- Apply popularity gain
+	local popGain = RANDOM:NextInteger(duty.popularity[1], duty.popularity[2])
+	state.RoyalState.popularity = math.min(100, state.RoyalState.popularity + popGain)
+	state.RoyalState.dutiesCompleted = (state.RoyalState.dutiesCompleted or 0) + 1
+	state.RoyalState.dutyStreak = (state.RoyalState.dutyStreak or 0) + 1
+	
+	-- Streak bonus
+	if state.RoyalState.dutyStreak >= 5 then
+		state.RoyalState.popularity = math.min(100, state.RoyalState.popularity + 5)
+		popGain = popGain + 5
+	end
+	
+	local message = string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain)
+	appendFeed(state, message)
+	self:pushState(player, message)
+	
+	return { 
+		success = true, 
+		message = message,
+		popularityGain = popGain,
+		currentPopularity = state.RoyalState.popularity,
+	}
+end
+
+function LifeBackend:handleAbdication(player)
+	if not self:checkGamepassOwnership(player, "ROYALTY") then
+		return { success = false, message = "👑 Abdication requires the Royalty gamepass.", needsGamepass = true }
+	end
+	
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+	
+	if not state.RoyalState or not state.RoyalState.isRoyal then
+		return { success = false, message = "You're not royalty!" }
+	end
+	
+	if not state.RoyalState.isMonarch then
+		return { success = false, message = "Only the monarch can abdicate. You're still " .. (state.RoyalState.title or "an heir") .. "." }
+	end
+	
+	-- Abdicate
+	state.RoyalState.isMonarch = false
+	state.RoyalState.popularity = math.max(0, state.RoyalState.popularity - 30)
+	
+	state.Flags.abdicated = true
+	state.Flags.is_monarch = nil
+	state.Flags.former_monarch = true
+	
+	local message = "👑 You have abdicated the throne! The nation is shocked."
+	appendFeed(state, message)
+	self:pushState(player, message)
+	
+	return { success = true, message = message }
+end
+
+function LifeBackend:getRoyalInfo(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+	
+	local hasRoyalty = self:checkGamepassOwnership(player, "ROYALTY")
+	
+	if not state.RoyalState or not state.RoyalState.isRoyal then
+		return {
+			success = true,
+			isRoyal = false,
+			hasGamepass = hasRoyalty,
+		}
+	end
+	
+	return {
+		success = true,
+		isRoyal = true,
+		hasGamepass = hasRoyalty,
+		royalState = state.RoyalState,
+	}
 end
 
 function LifeBackend:createInitialState(player)
@@ -2012,6 +2199,53 @@ function LifeBackend:createInitialState(player)
 		state.Flags = state.Flags or {}
 		state.Flags.bitizen = true
 		state.Flags.premium_player = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #4: Set ALL gamepass ownership flags on character creation
+	-- Without this, premium events check flags that are NEVER set!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	state.GamepassOwnership = state.GamepassOwnership or {}
+	
+	-- Check and set ALL premium gamepass flags
+	local hasRoyalty = self:checkGamepassOwnership(player, "ROYALTY")
+	if hasRoyalty then
+		state.Flags.royalty_gamepass = true
+		state.GamepassOwnership.royalty = true
+	end
+	
+	local hasMafia = self:checkGamepassOwnership(player, "MAFIA")
+	if hasMafia then
+		state.Flags.mafia_gamepass = true  -- CRITICAL FIX #9: This flag was NEVER set!
+		state.GamepassOwnership.mafia = true
+	end
+	
+	local hasCelebrity = self:checkGamepassOwnership(player, "CELEBRITY")
+	if hasCelebrity then
+		state.Flags.celebrity_gamepass = true
+		state.GamepassOwnership.celebrity = true
+	end
+	
+	local hasGodMode = self:checkGamepassOwnership(player, "GOD_MODE")
+	if hasGodMode then
+		state.Flags.god_mode_gamepass = true
+		state.GamepassOwnership.godMode = true
+		-- CRITICAL FIX #6: God Mode enables stat editing UI, not events
+		state.GodModeState = state.GodModeState or {}
+		state.GodModeState.enabled = true
+	end
+	
+	local hasTimeMachine = self:checkGamepassOwnership(player, "TIME_MACHINE")
+	if hasTimeMachine then
+		state.Flags.time_machine_gamepass = true
+		state.GamepassOwnership.timeMachine = true
+	end
+	
+	local hasBossMode = self:checkGamepassOwnership(player, "BOSS_MODE")
+	if hasBossMode then
+		state.Flags.boss_mode_gamepass = true
+		state.GamepassOwnership.bossMode = true
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2191,7 +2425,37 @@ function LifeBackend:serializeState(state)
 		debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
 		debugPrint("  Items:", #serialized.Assets.Items)
 
-		serialized.MobState = MobSystem:serialize(state)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM FEATURE SERIALIZATION - CRITICAL FIX #21
+		-- Ensure all premium states are properly serialized for client
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- MAFIA STATE
+		serialized.MobState = MafiaSystem:serialize(state)
+		
+		-- ROYALTY STATE
+		if state.RoyalState and state.RoyalState.isRoyal then
+			serialized.RoyalState = state.RoyalState
+		else
+			serialized.RoyalState = { isRoyal = false }
+		end
+		
+		-- CELEBRITY/FAME STATE
+		if state.FameState and state.FameState.careerPath then
+			serialized.FameState = state.FameState
+		else
+			serialized.FameState = { isFamous = false, fame = state.Fame or 0 }
+		end
+		
+		-- GOD MODE STATE
+		if state.GodModeState then
+			serialized.GodModeState = state.GodModeState
+		else
+			serialized.GodModeState = { enabled = false }
+		end
+		
+		-- GAMEPASS OWNERSHIP
+		serialized.GamepassOwnership = state.GamepassOwnership or {}
 	end
 	
 	return serialized
@@ -2271,11 +2535,21 @@ function LifeBackend:setLifeInfo(player, name, gender)
 	if not state then
 		return
 	end
-	if name and name ~= "" then
+	
+	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
+	if name and name ~= "" and name:match("%S") then
 		-- CRITICAL FIX: Apply Roblox text filtering to custom names
 		local filteredName = filterText(name, player)
 		state.Name = filteredName
+	else
+		-- Generate a default name if none provided
+		local maleNames = {"James", "John", "Michael", "David", "Chris", "Matthew", "Daniel", "Andrew", "Ryan", "Tyler"}
+		local femaleNames = {"Emily", "Sarah", "Jessica", "Ashley", "Samantha", "Madison", "Hannah", "Olivia", "Emma", "Sophia"}
+		
+		local nameList = (gender == "female") and femaleNames or maleNames
+		state.Name = nameList[math.random(#nameList)]
 	end
+	
 	if gender then
 		state.Gender = gender
 	end
@@ -3684,6 +3958,9 @@ function LifeBackend:replaceTextVariables(text, state)
 	-- Age replacement
 	local age = state.Age or 0
 	result = result:gsub("{{AGE}}", tostring(age))
+	-- CRITICAL FIX #102/#109: Also handle %d format for backward compatibility
+	result = result:gsub("%%d years old", tostring(age) .. " years old")
+	result = result:gsub("At %%d", "At " .. tostring(age))
 	
 	-- Job/company replacement
 	if state.CurrentJob then
@@ -4166,6 +4443,21 @@ function LifeBackend:handleAgeUp(player)
 		state.Year = (state.Year or 2025) + 1
 	end
 
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #48: Save TimeMachine snapshots for time travel feature
+	-- Snapshots are saved every 5 years, at age 0, and at age 18
+	-- This allows players with TimeMachine gamepass to travel back in time
+	-- ════════════════════════════════════════════════════════════════════════════
+	if TimeMachine and state.Age then
+		local serializedState = nil
+		if state.Serialize then
+			serializedState = state:Serialize()
+		else
+			serializedState = shallowCopy(state)
+		end
+		TimeMachine.saveSnapshot(player, state, serializedState)
+	end
+
 	self:advanceRelationships(state)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
@@ -4189,12 +4481,143 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
 	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
-	local mobEvents = MobSystem:onYearPass(state)
+	local mobEvents = MafiaSystem:onYearPass(state)
 	if mobEvents and #mobEvents > 0 then
 		for _, event in ipairs(mobEvents) do
 			if event.message then
 				appendFeed(state, event.message)
 			end
+		end
+	end
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #94: Mafia heat decay system
+	-- Heat naturally decreases over time when player is keeping a low profile
+	-- This makes the mafia experience more realistic - heat from crimes fades
+	-- ════════════════════════════════════════════════════════════════════════════
+	if state.MobState and state.MobState.inMob then
+		local mobState = state.MobState
+		
+		-- Heat decays by 5-15% per year when player isn't doing crimes
+		if mobState.heat and mobState.heat > 0 then
+			local heatDecay = math.random(5, 15)
+			mobState.heat = math.max(0, mobState.heat - heatDecay)
+			
+			if mobState.heat == 0 and (mobState.previousHeat or 0) > 0 then
+				appendFeed(state, "🔥 Your heat has fully cooled down. The cops aren't looking for you anymore.")
+			end
+			mobState.previousHeat = mobState.heat
+		end
+		
+		-- Increment years in mob
+		mobState.yearsInMob = (mobState.yearsInMob or 0) + 1
+		
+		-- CRITICAL FIX #78: Check for mob promotion based on respect
+		local respectThresholds = { 0, 100, 300, 600, 1000 }
+		local currentRank = mobState.rankIndex or 1
+		if currentRank < 5 then
+			local nextThreshold = respectThresholds[currentRank + 1]
+			if mobState.respect and mobState.respect >= nextThreshold then
+				local oldRankName = mobState.rankName
+				mobState.rankIndex = currentRank + 1
+				mobState.rankLevel = mobState.rankIndex
+				
+				local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+				local rankEmojis = {"👤", "🔫", "💀", "🎩", "👑"}
+				mobState.rankName = rankNames[mobState.rankIndex]
+				mobState.rankEmoji = rankEmojis[mobState.rankIndex]
+				
+				appendFeed(state, string.format("%s You've been promoted from %s to %s!", 
+					mobState.rankEmoji, oldRankName, mobState.rankName))
+				state.Flags.got_promotion = true
+				state.Flags.mob_promoted = true
+			end
+		end
+		
+		-- CRITICAL FIX #86: Loyalty decay if player hasn't been active
+		if mobState.operationsCompleted == 0 and mobState.yearsInMob > 1 then
+			local loyaltyDecay = math.random(1, 5)
+			mobState.loyalty = math.max(0, (mobState.loyalty or 100) - loyaltyDecay)
+			
+			if mobState.loyalty < 30 then
+				appendFeed(state, "⚠️ The family is questioning your loyalty. Complete some operations!")
+				state.Flags.loyalty_warning = true
+			end
+		end
+		
+		-- Reset yearly operation counter for next year
+		mobState.operationsThisYear = 0
+	end
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #2: Process yearly ROYALTY updates (popularity, succession, duties)
+	-- Without this, royal players never advanced to King, never got jubilees, etc.!
+	-- ════════════════════════════════════════════════════════════════════════════
+	if RoyaltyEvents and state.RoyalState and state.RoyalState.isRoyal then
+		local royalEvents = RoyaltyEvents.processYearlyRoyalUpdates(state)
+		if royalEvents and #royalEvents > 0 then
+			for _, event in ipairs(royalEvents) do
+				if event.message then
+					appendFeed(state, event.message)
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #10: Check for throne succession (become monarch if next in line)
+		if state.RoyalState.lineOfSuccession == 1 and not state.RoyalState.isMonarch then
+			-- 3% chance per year the monarch passes and you inherit
+			if state.Age >= 25 and RANDOM:NextNumber() < 0.03 then
+				local success, msg = RoyaltyEvents.becomeMonarch(state)
+				if success then
+					appendFeed(state, msg)
+					state.Flags.throne_ready = nil
+					state.Flags.became_monarch = true
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #19: Royal wealth management - allowance/expenses
+		if state.RoyalState.isRoyal then
+			local royalIncome = 0
+			if state.RoyalState.isMonarch then
+				royalIncome = math.random(5000000, 20000000) -- Monarchs get massive income
+			else
+				royalIncome = math.random(500000, 2000000) -- Princes/Princesses get allowance
+			end
+			state.Money = (state.Money or 0) + royalIncome
+			state.RoyalState.wealth = state.Money
+		end
+	end
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #3: Process yearly CELEBRITY/FAME updates (promotions, events)
+	-- Without this, famous players never advanced in their careers!
+	-- ════════════════════════════════════════════════════════════════════════════
+	if CelebrityEvents and state.FameState and state.FameState.careerPath then
+		local fameEvents = CelebrityEvents.processYearlyFameUpdates(state)
+		if fameEvents and #fameEvents > 0 then
+			for _, event in ipairs(fameEvents) do
+				if event.message then
+					appendFeed(state, event.message)
+				end
+				-- Handle career promotions
+				if event.type == "promotion" then
+					state.Flags.got_promotion = true
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #16: Random endorsement deals for famous players
+		if state.Fame and state.Fame >= 40 and RANDOM:NextNumber() < 0.15 then
+			local endorsementValue = math.floor(state.Fame * RANDOM:NextInteger(5000, 20000))
+			state.Money = (state.Money or 0) + endorsementValue
+			if state.FameState.endorsements then
+				table.insert(state.FameState.endorsements, {
+					year = state.Year,
+					value = endorsementValue,
+				})
+			end
+			appendFeed(state, string.format("💰 You received a $%s endorsement deal!", formatMoney(endorsementValue)))
 		end
 	end
 	self:checkNaturalDeath(state) -- CRITICAL FIX #35: Check for natural death
@@ -4399,6 +4822,18 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 		feedText = deathMeta.obituary or string.format("You passed away from %s.", deathInfo.cause or "unknown causes")
 		
 		debugPrint(string.format("Player died: %s (Age %d) cause=%s", state.Name or player.Name, state.Age or -1, deathInfo.cause or "unknown"))
+		
+		-- ════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #59: Integrate TimeMachine into death handling
+		-- Allows players with Time Machine gamepass to travel back in time
+		-- ════════════════════════════════════════════════════════════════════════════
+		local timeMachineData = nil
+		local hasTimeMachineGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+		
+		if TimeMachine and hasTimeMachineGamepass then
+			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
+		end
+		
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
@@ -4408,6 +4843,9 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			fatal = true,
 			cause = deathInfo.cause,
 			deathMeta = deathMeta,
+			-- CRITICAL FIX #59: Include time machine options in death screen
+			hasTimeMachine = hasTimeMachineGamepass,
+			timeMachineData = timeMachineData,
 		}
 	end
 
@@ -6610,7 +7048,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 		return { success = false, message = "State not found." }
 	end
 
-	local canJoin, reason = MobSystem:canJoinMob(state)
+	local canJoin, reason = MafiaSystem:canJoinMob(state)
 	if not canJoin then
 		return { success = false, message = reason or "You can't join the mob right now." }
 	end
@@ -6624,7 +7062,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 		}
 	end
 
-	local success, message = MobSystem:joinFamily(state, familyId)
+	local success, message = MafiaSystem:joinFamily(state, familyId)
 	if not success then
 		return { success = false, message = message or "The family rejected you." }
 	end
@@ -6632,7 +7070,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 	local msg = message or "You've joined the crime family."
 	self:pushState(player, msg)
 	
-	return { success = true, message = msg, mobState = MobSystem:serialize(state) }
+	return { success = true, message = msg, mobState = MafiaSystem:serialize(state) }
 end
 
 function LifeBackend:handleLeaveMob(player)
@@ -6641,7 +7079,7 @@ function LifeBackend:handleLeaveMob(player)
 		return { success = false, message = "State not found." }
 	end
 
-	local success, message, consequences = MobSystem:leaveFamily(state)
+	local success, message, consequences = MafiaSystem:leaveFamily(state)
 	if not success then
 		return { success = false, message = message or "You can't leave right now." }
 	end
@@ -6672,7 +7110,7 @@ function LifeBackend:handleMobOperation(player, operationId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	local success, message, opResult = MobSystem:doOperation(state, operationId)
+	local success, message, opResult = MafiaSystem:doOperation(state, operationId)
 	if success then
 		local resp = {
 			success = true,
@@ -6851,6 +7289,176 @@ function LifeBackend:handleGodModeEdit(player, payload)
 		state.Flags.country = payload.country
 		table.insert(summaries, "Country set to " .. payload.country)
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7 & #28: ROYAL BIRTH INITIALIZATION
+	-- Handle "Born Royal" family wealth option - requires Royalty gamepass
+	-- Now also checks for isRoyalBirth flag from character creation
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if payload.familyWealth == "Royal" or payload.familyWealth == "Royalty" or payload.bornRoyal or payload.isRoyalBirth then
+		if self:checkGamepassOwnership(player, "ROYALTY") then
+			-- Initialize royal state
+			local royalCountryId = payload.royalCountry or "uk" -- Default to UK
+			local royalCountries = {
+				uk = { id = "uk", name = "United Kingdom", emoji = "🇬🇧", palace = "Buckingham Palace", startingWealth = { min = 50000000, max = 500000000 } },
+				spain = { id = "spain", name = "Spain", emoji = "🇪🇸", palace = "Royal Palace of Madrid", startingWealth = { min = 30000000, max = 200000000 } },
+				japan = { id = "japan", name = "Japan", emoji = "🇯🇵", palace = "Imperial Palace", startingWealth = { min = 100000000, max = 800000000 } },
+				monaco = { id = "monaco", name = "Monaco", emoji = "🇲🇨", palace = "Prince's Palace", startingWealth = { min = 200000000, max = 1000000000 } },
+				saudi = { id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", palace = "Al-Yamamah Palace", startingWealth = { min = 500000000, max = 5000000000 } },
+				sweden = { id = "sweden", name = "Sweden", emoji = "🇸🇪", palace = "Stockholm Palace", startingWealth = { min = 20000000, max = 150000000 } },
+				netherlands = { id = "netherlands", name = "Netherlands", emoji = "🇳🇱", palace = "Royal Palace Amsterdam", startingWealth = { min = 30000000, max = 200000000 } },
+				belgium = { id = "belgium", name = "Belgium", emoji = "🇧🇪", palace = "Royal Palace of Brussels", startingWealth = { min = 25000000, max = 180000000 } },
+				denmark = { id = "denmark", name = "Denmark", emoji = "🇩🇰", palace = "Amalienborg Palace", startingWealth = { min = 25000000, max = 150000000 } },
+				norway = { id = "norway", name = "Norway", emoji = "🇳🇴", palace = "Royal Palace Oslo", startingWealth = { min = 25000000, max = 150000000 } },
+				morocco = { id = "morocco", name = "Morocco", emoji = "🇲🇦", palace = "Royal Palace of Rabat", startingWealth = { min = 80000000, max = 400000000 } },
+				jordan = { id = "jordan", name = "Jordan", emoji = "🇯🇴", palace = "Al-Husseiniya Palace", startingWealth = { min = 50000000, max = 300000000 } },
+				thailand = { id = "thailand", name = "Thailand", emoji = "🇹🇭", palace = "Grand Palace", startingWealth = { min = 100000000, max = 600000000 } },
+			}
+			
+			local country = royalCountries[royalCountryId] or royalCountries.uk
+			local wealthRange = country.startingWealth
+			local royalWealth = RANDOM:NextInteger(wealthRange.min, wealthRange.max)
+			
+			-- Determine title based on gender
+			local gender = state.Gender or "Male"
+			local title = (gender == "Female") and "Princess" or "Prince"
+			
+			-- Initialize royal state
+			state.RoyalState = {
+				isRoyal = true,
+				isMonarch = false,
+				country = country.id,
+				countryName = country.name,
+				countryEmoji = country.emoji,
+				palace = country.palace,
+				title = title,
+				lineOfSuccession = RANDOM:NextInteger(1, 5),
+				popularity = 75 + RANDOM:NextInteger(-10, 10),
+				scandals = 0,
+				dutiesCompleted = 0,
+				dutyStreak = 0,
+				reignYears = 0,
+				wealth = royalWealth,
+				awards = {},
+				charitiesPatronized = {},
+				stateVisits = {},
+			}
+			
+			state.Money = royalWealth
+			
+			-- Set royal flags
+			state.Flags.is_royalty = true
+			state.Flags.royal_birth = true
+			state.Flags.royal_country = country.id
+			state.Flags.wealthy_family = true
+			state.Flags.upper_class = true
+			state.Flags.famous_family = true
+			state.Flags.royalty_gamepass = true
+			
+			table.insert(summaries, string.format("👑 Born as %s of %s %s with $%s inheritance!", title, country.emoji, country.name, formatMoney(royalWealth)))
+		else
+			-- No gamepass, prompt purchase
+			self:promptGamepassPurchase(player, "ROYALTY")
+			table.insert(summaries, "👑 Royal birth requires the Royalty gamepass!")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: CELEBRITY CAREER INITIALIZATION
+	-- Handle starting a fame career from character creation - requires Celebrity gamepass
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if payload.famePath and payload.famePath ~= "" then
+		if self:checkGamepassOwnership(player, "CELEBRITY") then
+			local careerPaths = {
+				actor = { name = "Acting", emoji = "🎬", firstStage = "Extra", salary = { min = 500, max = 2000 } },
+				musician = { name = "Music", emoji = "🎵", firstStage = "Street Performer", salary = { min = 50, max = 500 } },
+				influencer = { name = "Social Media", emoji = "📱", firstStage = "New Creator", salary = { min = 0, max = 100 } },
+				athlete = { name = "Professional Sports", emoji = "🏆", firstStage = "Amateur", salary = { min = 0, max = 500 } },
+				model = { name = "Modeling", emoji = "📸", firstStage = "Amateur Model", salary = { min = 100, max = 1000 } },
+			}
+			
+			local path = careerPaths[payload.famePath]
+			if path then
+				state.FameState = {
+					isFamous = false,
+					careerPath = payload.famePath,
+					careerName = path.name,
+					currentStage = 1,
+					stageName = path.firstStage,
+					subType = payload.fameSubType,
+					yearsInCareer = 0,
+					lastPromotionYear = 0,
+					followers = 0,
+					endorsements = {},
+					awards = {},
+					scandals = 0,
+					fameLevel = "Unknown",
+				}
+				
+				state.CurrentJob = {
+					id = payload.famePath .. "_starter",
+					name = path.firstStage,
+					company = path.name .. " Industry",
+					salary = RANDOM:NextInteger(path.salary.min, path.salary.max),
+					category = "entertainment",
+					isFameCareer = true,
+				}
+				
+				state.Flags.fame_career = true
+				state.Flags.entertainment_industry = true
+				state.Flags["career_" .. payload.famePath] = true
+				state.Flags.employed = true
+				state.Flags.has_job = true
+				state.Flags.celebrity_gamepass = true
+				
+				table.insert(summaries, string.format("%s Started %s career as %s!", path.emoji, path.name, path.firstStage))
+			end
+		else
+			self:promptGamepassPurchase(player, "CELEBRITY")
+			table.insert(summaries, "⭐ Fame careers require the Celebrity gamepass!")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #20: GOD MODE PRESETS - Quick preset application
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if payload.preset then
+		if GodModeSystem then
+			local success, msg = GodModeSystem:applyPreset(state, payload.preset)
+			if success then
+				table.insert(summaries, msg)
+			end
+		end
+	end
+	
+	-- Handle clearing flags (criminal record, diseases, addictions, debt)
+	if payload.clearCriminalRecord then
+		if GodModeSystem then
+			GodModeSystem:clearCriminalRecord(state)
+			table.insert(summaries, "📋 Criminal record cleared!")
+		end
+	end
+	
+	if payload.cureDiseases then
+		if GodModeSystem then
+			GodModeSystem:cureDiseases(state)
+			table.insert(summaries, "💊 All diseases cured!")
+		end
+	end
+	
+	if payload.removeAddictions then
+		if GodModeSystem then
+			GodModeSystem:removeAddictions(state)
+			table.insert(summaries, "🚭 All addictions removed!")
+		end
+	end
+	
+	if payload.clearDebt then
+		if GodModeSystem then
+			GodModeSystem:clearDebt(state)
+			table.insert(summaries, "💳 All debt cleared!")
+		end
+	end
 
 	if #summaries == 0 then
 		return { success = false, message = "No God Mode changes were provided." }
@@ -6871,6 +7479,78 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	self:pushState(player, feedText)
 
 	return { success = true, message = feedText, changes = summaries }
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #60: Get God Mode info for client UI
+-- Returns presets, editable stats, and clearable flags for the God Mode screen
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:getGodModeInfo(player)
+	local hasGodMode = self:checkGamepassOwnership(player, "GOD_MODE")
+	
+	if not hasGodMode then
+		return {
+			success = false,
+			hasGamepass = false,
+			message = "⚡ God Mode requires the God Mode gamepass.",
+		}
+	end
+	
+	local state = self:getState(player)
+	local godModeInfo = {
+		success = true,
+		hasGamepass = true,
+	}
+	
+	-- Get configuration from GodModeSystem
+	if GodModeSystem then
+		godModeInfo.presets = GodModeSystem:getPresetsInfo()
+		godModeInfo.editableStats = GodModeSystem:getEditableStatsInfo()
+		godModeInfo.editableProperties = GodModeSystem:getEditablePropertiesInfo()
+		godModeInfo.clearableFlags = GodModeSystem:getClearableFlagsInfo()
+	else
+		-- Fallback if GodModeSystem not loaded
+		godModeInfo.presets = {
+			{ id = "perfect", name = "Perfect Life", emoji = "✨", description = "Max all stats, clear all negatives" },
+			{ id = "rich", name = "Billionaire", emoji = "💎", description = "Set money to $1 billion" },
+			{ id = "famous", name = "Famous", emoji = "⭐", description = "Max fame to 100" },
+			{ id = "healthy", name = "Peak Health", emoji = "💪", description = "Max health, cure all diseases" },
+			{ id = "genius", name = "Genius", emoji = "🧠", description = "Max smarts to 100" },
+			{ id = "fresh_start", name = "Fresh Start", emoji = "🔄", description = "Clear all negative flags" },
+		}
+		godModeInfo.editableStats = {
+			{ key = "Happiness", emoji = "😊", name = "Happiness", min = 0, max = 100 },
+			{ key = "Health", emoji = "❤️", name = "Health", min = 0, max = 100 },
+			{ key = "Smarts", emoji = "🧠", name = "Smarts", min = 0, max = 100 },
+			{ key = "Looks", emoji = "✨", name = "Looks", min = 0, max = 100 },
+		}
+		godModeInfo.editableProperties = {
+			{ key = "name", emoji = "📝", name = "Character Name", type = "string" },
+			{ key = "gender", emoji = "👤", name = "Gender", type = "select", options = { "Male", "Female", "Nonbinary" } },
+		}
+		godModeInfo.clearableFlags = {
+			{ key = "criminal_record", emoji = "📋", name = "Criminal Record" },
+			{ key = "diseases", emoji = "💊", name = "All Diseases" },
+			{ key = "addictions", emoji = "🚭", name = "All Addictions" },
+			{ key = "debt", emoji = "💳", name = "All Debt" },
+		}
+	end
+	
+	-- Include current state info for the UI
+	if state then
+		godModeInfo.currentStats = {
+			Happiness = state.Stats and state.Stats.Happiness or state.Happiness or 50,
+			Health = state.Stats and state.Stats.Health or state.Health or 50,
+			Smarts = state.Stats and state.Stats.Smarts or state.Smarts or 50,
+			Looks = state.Stats and state.Stats.Looks or state.Looks or 50,
+		}
+		godModeInfo.currentMoney = state.Money or 0
+		godModeInfo.currentName = state.Name
+		godModeInfo.currentGender = state.Gender
+		godModeInfo.currentAge = state.Age
+	end
+	
+	return godModeInfo
 end
 
 function LifeBackend:handleTimeMachine(player, yearsBack)

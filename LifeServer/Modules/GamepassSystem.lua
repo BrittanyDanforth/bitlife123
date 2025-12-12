@@ -9,6 +9,12 @@
 	- Bitizenship (premium features)
 	- Special Careers
 	- Boss Mode (business features)
+	- Royalty (born as prince/princess)
+	- Celebrity (fame career paths)
+	
+	CRITICAL FIX #1: Real gamepass IDs implemented
+	CRITICAL FIX #2: Full feature definitions for each gamepass
+	CRITICAL FIX #3: Proper ownership caching and validation
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -18,123 +24,368 @@ local GamepassSystem = {}
 GamepassSystem.__index = GamepassSystem
 
 -- ════════════════════════════════════════════════════════════════════════════
--- GAMEPASS DEFINITIONS
--- Replace these IDs with your actual Roblox gamepass IDs
+-- REAL GAMEPASS IDS - CRITICAL FIX #1
+-- These are the actual production gamepass IDs
+-- ════════════════════════════════════════════════════════════════════════════
+
+local GAMEPASS_IDS = {
+	ROYALTY = 1626378001,      -- Royalty gamepass
+	GOD_MODE = 1628050729,     -- God Mode gamepass
+	MAFIA = 1626238769,        -- Join the Mafia gamepass
+	CELEBRITY = 1626461980,    -- Celebrity/Fame gamepass
+	-- Additional gamepasses (set to 0 until real IDs are provided)
+	BITIZENSHIP = 0,
+	TIME_MACHINE = 0,
+	BOSS_MODE = 0,
+	DARK_MODE = 0,
+}
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- GAMEPASS DEFINITIONS - Expanded with full features
 -- ════════════════════════════════════════════════════════════════════════════
 
 GamepassSystem.Gamepasses = {
-	-- Core Premium Passes
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ROYALTY GAMEPASS - Born into royalty, inherit throne, royal lifestyle
+	-- ═══════════════════════════════════════════════════════════════════════
+	ROYALTY = {
+		id = GAMEPASS_IDS.ROYALTY,
+		name = "Royalty",
+		emoji = "👸",
+		description = "Be born into royalty! Live as a prince or princess, inherit kingdoms, and experience the royal lifestyle.",
+		price = 299,
+		category = "lifestyle",
+		features = {
+			"Born as Prince/Princess in random kingdom",
+			"Choose your royal country at birth",
+			"Inherit the throne and rule",
+			"Royal duties and responsibilities",
+			"Massive inherited wealth ($10M-$500M)",
+			"Royal palace residence",
+			"Royal scandals and drama",
+			"Abdicate or exile options",
+			"Royal marriages and alliances",
+			"Execution/imprisonment powers",
+			"Royal guards and servants",
+			"State visits and diplomacy",
+			"Royal charity work",
+			"Knighting ceremonies",
+			"Royal fashion and jewels",
+		},
+		-- CRITICAL: Link to character customization
+		characterCreationOption = "royal_family",
+		startingWealth = { min = 10000000, max = 500000000 },
+		specialBirthOptions = {
+			{ id = "prince", title = "Prince", emoji = "🤴", gender = "Male" },
+			{ id = "princess", title = "Princess", emoji = "👸", gender = "Female" },
+		},
+		royalCountries = {
+			{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", title = { male = "Prince", female = "Princess" }, currency = "GBP" },
+			{ id = "spain", name = "Spain", emoji = "🇪🇸", title = { male = "Príncipe", female = "Princesa" }, currency = "EUR" },
+			{ id = "sweden", name = "Sweden", emoji = "🇸🇪", title = { male = "Prins", female = "Prinsessa" }, currency = "SEK" },
+			{ id = "japan", name = "Japan", emoji = "🇯🇵", title = { male = "Prince", female = "Princess" }, currency = "JPY" },
+			{ id = "monaco", name = "Monaco", emoji = "🇲🇨", title = { male = "Prince", female = "Princess" }, currency = "EUR" },
+			{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", title = { male = "Prince", female = "Princess" }, currency = "SAR" },
+			{ id = "thailand", name = "Thailand", emoji = "🇹🇭", title = { male = "Prince", female = "Princess" }, currency = "THB" },
+			{ id = "morocco", name = "Morocco", emoji = "🇲🇦", title = { male = "Prince", female = "Princess" }, currency = "MAD" },
+			{ id = "jordan", name = "Jordan", emoji = "🇯🇴", title = { male = "Prince", female = "Princess" }, currency = "JOD" },
+			{ id = "belgium", name = "Belgium", emoji = "🇧🇪", title = { male = "Prince", female = "Princess" }, currency = "EUR" },
+			{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱", title = { male = "Prins", female = "Prinses" }, currency = "EUR" },
+			{ id = "norway", name = "Norway", emoji = "🇳🇴", title = { male = "Prins", female = "Prinsesse" }, currency = "NOK" },
+			{ id = "denmark", name = "Denmark", emoji = "🇩🇰", title = { male = "Prins", female = "Prinsesse" }, currency = "DKK" },
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- GOD MODE GAMEPASS - Edit all stats anytime
+	-- ═══════════════════════════════════════════════════════════════════════
+	GOD_MODE = {
+		id = GAMEPASS_IDS.GOD_MODE,
+		name = "God Mode",
+		emoji = "⚡",
+		description = "Edit your stats anytime! Become the perfect person with complete control over your life.",
+		price = 499,
+		category = "utility",
+		features = {
+			"Edit Happiness 0-100 anytime",
+			"Edit Health 0-100 anytime",
+			"Edit Smarts 0-100 anytime",
+			"Edit Looks 0-100 anytime",
+			"Change character appearance",
+			"Modify relationship levels",
+			"Instant skill boosts",
+			"Edit Fame level",
+			"Edit Wealth (within limits)",
+			"Reset criminal record",
+			"Change gender presentation",
+			"Modify age (limited)",
+			"Edit fertility",
+			"Cure diseases instantly",
+			"Maximum workout gains",
+		},
+		editableStats = {
+			{ key = "Happiness", emoji = "😊", min = 0, max = 100, description = "Your overall mood and satisfaction" },
+			{ key = "Health", emoji = "❤️", min = 0, max = 100, description = "Physical health and vitality" },
+			{ key = "Smarts", emoji = "🧠", min = 0, max = 100, description = "Intelligence and wisdom" },
+			{ key = "Looks", emoji = "✨", min = 0, max = 100, description = "Physical attractiveness" },
+			{ key = "Fame", emoji = "⭐", min = 0, max = 100, description = "Public recognition and celebrity" },
+		},
+		editableBooleans = {
+			{ key = "criminal_record", emoji = "📋", description = "Clear your criminal history" },
+			{ key = "diseases", emoji = "💊", description = "Cure all diseases" },
+			{ key = "addictions", emoji = "🚭", description = "Remove all addictions" },
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- MAFIA GAMEPASS - Join organized crime families
+	-- ═══════════════════════════════════════════════════════════════════════
+	MAFIA = {
+		id = GAMEPASS_IDS.MAFIA,
+		name = "Organized Crime",
+		emoji = "🔫",
+		description = "Join the criminal underworld. Rise through the ranks of the Mafia and build your criminal empire.",
+		price = 499,
+		category = "lifestyle",
+		features = {
+			"Join 5 crime families (Italian, Russian, Yakuza, Cartel, Triad)",
+			"Rise from Associate to Boss",
+			"Run criminal operations",
+			"Territory wars and turf control",
+			"Special mafia-only events",
+			"Heist planning and execution",
+			"Protection rackets",
+			"Smuggling operations",
+			"Prison connections",
+			"Hitman contracts",
+			"Money laundering",
+			"Loan sharking",
+			"Witness elimination",
+			"Family loyalty system",
+			"Rank-based operations unlock",
+		},
+		crimeFamily = {
+			{ id = "italian", name = "Italian Mafia", emoji = "🇮🇹", color = Color3.fromRGB(239, 68, 68) },
+			{ id = "russian", name = "Russian Bratva", emoji = "🇷🇺", color = Color3.fromRGB(59, 130, 246) },
+			{ id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵", color = Color3.fromRGB(139, 92, 246) },
+			{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", color = Color3.fromRGB(34, 197, 94) },
+			{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", color = Color3.fromRGB(249, 115, 22) },
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- CELEBRITY GAMEPASS - Fame and entertainment careers
+	-- ═══════════════════════════════════════════════════════════════════════
+	CELEBRITY = {
+		id = GAMEPASS_IDS.CELEBRITY,
+		name = "Fame Package",
+		emoji = "⭐",
+		description = "Become a celebrity! Access exclusive fame career paths and experience the glamorous lifestyle.",
+		price = 249,
+		category = "career",
+		features = {
+			"Actor career path (TV → Movies → A-List)",
+			"Music career path (Indie → Label → Superstar)",
+			"Social media influencer path",
+			"Professional athlete career",
+			"Model career path",
+			"Fame events and paparazzi",
+			"Red carpet events",
+			"Award shows",
+			"Celebrity scandals",
+			"Endorsement deals",
+			"Fan interactions",
+			"Stalker events",
+			"Celebrity relationships",
+			"Rehab events",
+			"Comeback arcs",
+		},
+		careerPaths = {
+			-- ACTING CAREER
+			actor = {
+				name = "Acting",
+				emoji = "🎬",
+				stages = {
+					{ id = "extra", name = "Extra", salary = { 500, 2000 }, fame = 0, yearsRequired = 0 },
+					{ id = "background", name = "Background Actor", salary = { 2000, 8000 }, fame = 1, yearsRequired = 1 },
+					{ id = "bit_part", name = "Bit Part Actor", salary = { 8000, 20000 }, fame = 5, yearsRequired = 2 },
+					{ id = "supporting", name = "Supporting Actor", salary = { 50000, 150000 }, fame = 15, yearsRequired = 3 },
+					{ id = "lead", name = "Lead Actor", salary = { 200000, 1000000 }, fame = 35, yearsRequired = 4 },
+					{ id = "movie_star", name = "Movie Star", salary = { 1000000, 10000000 }, fame = 60, yearsRequired = 6 },
+					{ id = "a_list", name = "A-List Celebrity", salary = { 10000000, 50000000 }, fame = 85, yearsRequired = 8 },
+					{ id = "legend", name = "Hollywood Legend", salary = { 25000000, 100000000 }, fame = 100, yearsRequired = 15 },
+				},
+			},
+			-- MUSIC CAREER
+			musician = {
+				name = "Music",
+				emoji = "🎵",
+				stages = {
+					{ id = "street", name = "Street Performer", salary = { 100, 1000 }, fame = 0, yearsRequired = 0 },
+					{ id = "local", name = "Local Artist", salary = { 1000, 5000 }, fame = 2, yearsRequired = 1 },
+					{ id = "indie", name = "Indie Artist", salary = { 5000, 25000 }, fame = 8, yearsRequired = 2 },
+					{ id = "signed", name = "Signed Artist", salary = { 50000, 200000 }, fame = 20, yearsRequired = 3 },
+					{ id = "touring", name = "Touring Artist", salary = { 200000, 800000 }, fame = 40, yearsRequired = 4 },
+					{ id = "platinum", name = "Platinum Artist", salary = { 1000000, 5000000 }, fame = 65, yearsRequired = 5 },
+					{ id = "superstar", name = "Superstar", salary = { 5000000, 30000000 }, fame = 85, yearsRequired = 7 },
+					{ id = "icon", name = "Music Icon", salary = { 20000000, 100000000 }, fame = 100, yearsRequired = 12 },
+				},
+			},
+			-- SOCIAL MEDIA INFLUENCER
+			influencer = {
+				name = "Social Media",
+				emoji = "📱",
+				stages = {
+					{ id = "newbie", name = "New Creator", salary = { 0, 100 }, fame = 0, yearsRequired = 0, followers = 100 },
+					{ id = "micro", name = "Micro Influencer", salary = { 500, 5000 }, fame = 3, yearsRequired = 1, followers = 10000 },
+					{ id = "growing", name = "Growing Influencer", salary = { 5000, 25000 }, fame = 10, yearsRequired = 2, followers = 100000 },
+					{ id = "established", name = "Established Creator", salary = { 50000, 150000 }, fame = 25, yearsRequired = 3, followers = 500000 },
+					{ id = "famous", name = "Famous Influencer", salary = { 200000, 500000 }, fame = 45, yearsRequired = 4, followers = 2000000 },
+					{ id = "mega", name = "Mega Influencer", salary = { 500000, 2000000 }, fame = 65, yearsRequired = 5, followers = 10000000 },
+					{ id = "celebrity", name = "Internet Celebrity", salary = { 2000000, 10000000 }, fame = 85, yearsRequired = 6, followers = 50000000 },
+					{ id = "icon", name = "Social Media Icon", salary = { 10000000, 50000000 }, fame = 100, yearsRequired = 8, followers = 100000000 },
+				},
+			},
+			-- PROFESSIONAL ATHLETE
+			athlete = {
+				name = "Professional Sports",
+				emoji = "🏆",
+				sports = { "Football", "Basketball", "Soccer", "Baseball", "Tennis", "Golf", "MMA", "Boxing" },
+				stages = {
+					{ id = "amateur", name = "Amateur", salary = { 0, 500 }, fame = 0, yearsRequired = 0 },
+					{ id = "college", name = "College Athlete", salary = { 0, 5000 }, fame = 2, yearsRequired = 2 },
+					{ id = "minor", name = "Minor League", salary = { 25000, 75000 }, fame = 5, yearsRequired = 3 },
+					{ id = "pro", name = "Professional", salary = { 100000, 500000 }, fame = 15, yearsRequired = 4 },
+					{ id = "starter", name = "Starter", salary = { 500000, 3000000 }, fame = 30, yearsRequired = 5 },
+					{ id = "allstar", name = "All-Star", salary = { 3000000, 15000000 }, fame = 55, yearsRequired = 6 },
+					{ id = "mvp", name = "MVP Candidate", salary = { 10000000, 40000000 }, fame = 75, yearsRequired = 8 },
+					{ id = "legend", name = "Sports Legend", salary = { 30000000, 100000000 }, fame = 100, yearsRequired = 12 },
+				},
+			},
+			-- MODEL CAREER
+			model = {
+				name = "Modeling",
+				emoji = "📸",
+				stages = {
+					{ id = "amateur", name = "Amateur Model", salary = { 100, 500 }, fame = 0, yearsRequired = 0 },
+					{ id = "catalog", name = "Catalog Model", salary = { 5000, 20000 }, fame = 3, yearsRequired = 1 },
+					{ id = "commercial", name = "Commercial Model", salary = { 20000, 60000 }, fame = 10, yearsRequired = 2 },
+					{ id = "fashion", name = "Fashion Model", salary = { 75000, 200000 }, fame = 25, yearsRequired = 3 },
+					{ id = "runway", name = "Runway Model", salary = { 200000, 500000 }, fame = 40, yearsRequired = 4 },
+					{ id = "top", name = "Top Model", salary = { 500000, 2000000 }, fame = 60, yearsRequired = 5 },
+					{ id = "super", name = "Supermodel", salary = { 2000000, 10000000 }, fame = 85, yearsRequired = 7 },
+					{ id = "icon", name = "Fashion Icon", salary = { 10000000, 50000000 }, fame = 100, yearsRequired = 10 },
+				},
+			},
+		},
+		fameEvents = {
+			"Paparazzi follows you everywhere",
+			"Fan asks for autograph",
+			"Tabloid writes story about you",
+			"Invited to red carpet event",
+			"Brand wants endorsement deal",
+			"Scandal in the press",
+			"Award nomination",
+			"Celebrity feud begins",
+			"Stalker incident",
+			"Charity gala invitation",
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- BITIZENSHIP - Core premium membership
+	-- ═══════════════════════════════════════════════════════════════════════
 	BITIZENSHIP = {
-		id = 0, -- Replace with actual gamepass ID
+		id = GAMEPASS_IDS.BITIZENSHIP,
 		name = "Bitizenship",
 		emoji = "👑",
 		description = "Unlock premium features! Ad-free, special careers, and more.",
-		price = 299, -- Robux
+		price = 299,
+		category = "membership",
 		features = {
 			"Ad-free experience",
 			"Access to Royalty careers",
 			"Special character customization",
 			"Exclusive random events",
-			"Start with bonus money",
+			"Start with bonus money ($50,000)",
+			"Premium relationship options",
+			"Special life paths",
+			"Early access to new features",
+			"Premium support",
 		},
 	},
 	
-	GOD_MODE = {
-		id = 0, -- Replace with actual gamepass ID
-		name = "God Mode",
-		emoji = "⚡",
-		description = "Edit your stats anytime! Become the perfect person.",
-		price = 499, -- Robux
-		features = {
-			"Edit Happiness, Health, Smarts, Looks anytime",
-			"Set any stat from 0-100",
-			"Change your character's appearance",
-			"Modify relationship levels",
-			"Instant skill boosts",
-		},
-	},
-	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- TIME MACHINE - Go back in time on death
+	-- ═══════════════════════════════════════════════════════════════════════
 	TIME_MACHINE = {
-		id = 0, -- Replace with actual gamepass ID
+		id = GAMEPASS_IDS.TIME_MACHINE,
 		name = "Time Machine",
 		emoji = "⏰",
 		description = "Go back in time when you die! Fix your mistakes.",
-		price = 399, -- Robux
+		price = 399,
+		category = "utility",
 		features = {
 			"Go back 5 years",
 			"Go back 10 years",
 			"Go back 20 years",
 			"Go back 30 years",
 			"Restart as baby (same character)",
+			"Keep memories from future",
+			"Change key decisions",
+			"Avoid death permanently",
+		},
+		timeOptions = {
+			{ years = 5, label = "5 Years", emoji = "⏰" },
+			{ years = 10, label = "10 Years", emoji = "⏰" },
+			{ years = 20, label = "20 Years", emoji = "⏰" },
+			{ years = 30, label = "30 Years", emoji = "⏰" },
+			{ years = -1, label = "Baby (Restart)", emoji = "👶" },
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- BOSS MODE - Business empire features
+	-- ═══════════════════════════════════════════════════════════════════════
 	BOSS_MODE = {
-		id = 0, -- Replace with actual gamepass ID
+		id = GAMEPASS_IDS.BOSS_MODE,
 		name = "Boss Mode",
 		emoji = "💼",
 		description = "Start your own business empire! Become a tycoon.",
-		price = 399, -- Robux
+		price = 399,
+		category = "career",
 		features = {
 			"Start any type of business",
 			"Hire and fire employees",
 			"Expand to multiple locations",
 			"Go public with IPO",
 			"Franchise your business",
+			"Corporate espionage",
+			"Hostile takeovers",
+			"Business empire building",
+		},
+		businessTypes = {
+			{ id = "restaurant", name = "Restaurant", emoji = "🍽️", startCost = 50000 },
+			{ id = "retail", name = "Retail Store", emoji = "🏪", startCost = 75000 },
+			{ id = "tech", name = "Tech Startup", emoji = "💻", startCost = 100000 },
+			{ id = "real_estate", name = "Real Estate", emoji = "🏠", startCost = 200000 },
+			{ id = "nightclub", name = "Nightclub", emoji = "🎵", startCost = 150000 },
+			{ id = "gym", name = "Fitness Center", emoji = "💪", startCost = 80000 },
+			{ id = "salon", name = "Beauty Salon", emoji = "💇", startCost = 40000 },
+			{ id = "auto", name = "Auto Dealership", emoji = "🚗", startCost = 500000 },
 		},
 	},
 	
-	MAFIA = {
-		id = 0, -- Replace with actual gamepass ID
-		name = "Organized Crime",
-		emoji = "🔫",
-		description = "Join the criminal underworld. Rise through the ranks of the Mafia.",
-		price = 499, -- Robux
-		features = {
-			"Join crime families (Italian, Russian, Yakuza, Cartel, Triad)",
-			"Rise from Associate to Boss",
-			"Run criminal operations",
-			"Territory wars",
-			"Special mafia events",
-		},
-	},
-	
-	ROYALTY = {
-		id = 0, -- Replace with actual gamepass ID
-		name = "Royalty",
-		emoji = "👸",
-		description = "Be born into royalty! Live as a prince or princess.",
-		price = 299, -- Robux
-		features = {
-			"Born as royalty (random country)",
-			"Inherit the throne",
-			"Royal duties and events",
-			"Massive wealth",
-			"Royal scandals",
-		},
-	},
-	
-	CELEBRITY = {
-		id = 0, -- Replace with actual gamepass ID
-		name = "Fame Package",
-		emoji = "⭐",
-		description = "Become a celebrity faster! Special fame careers.",
-		price = 249, -- Robux
-		features = {
-			"Actor career path",
-			"Music career path",
-			"Social media influencer",
-			"Professional athlete",
-			"Fame events and paparazzi",
-		},
-	},
-	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- DARK MODE - UI theme
+	-- ═══════════════════════════════════════════════════════════════════════
 	DARK_MODE = {
-		id = 0, -- Replace with actual gamepass ID
+		id = GAMEPASS_IDS.DARK_MODE,
 		name = "Dark Mode",
 		emoji = "🌙",
 		description = "Easy on the eyes! Switch to dark theme.",
-		price = 49, -- Robux
+		price = 49,
+		category = "cosmetic",
 		features = {
 			"Dark theme UI",
 			"Multiple theme options",
@@ -150,43 +401,43 @@ GamepassSystem.Gamepasses = {
 GamepassSystem.Products = {
 	-- Time Machine uses (for non-gamepass owners)
 	TIME_5_YEARS = {
-		id = 0, -- Replace with actual product ID
+		id = 0,
 		name = "Go Back 5 Years",
 		emoji = "⏰",
 		description = "Go back 5 years in your life",
-		price = 25, -- Robux
+		price = 25,
 		type = "consumable",
 	},
 	TIME_10_YEARS = {
-		id = 0, -- Replace with actual product ID
+		id = 0,
 		name = "Go Back 10 Years",
 		emoji = "⏰",
 		description = "Go back 10 years in your life",
-		price = 45, -- Robux
+		price = 45,
 		type = "consumable",
 	},
 	TIME_20_YEARS = {
-		id = 0, -- Replace with actual product ID
+		id = 0,
 		name = "Go Back 20 Years",
 		emoji = "⏰",
 		description = "Go back 20 years in your life",
-		price = 75, -- Robux
+		price = 75,
 		type = "consumable",
 	},
 	TIME_30_YEARS = {
-		id = 0, -- Replace with actual product ID
+		id = 0,
 		name = "Go Back 30 Years",
 		emoji = "⏰",
 		description = "Go back 30 years in your life",
-		price = 99, -- Robux
+		price = 99,
 		type = "consumable",
 	},
 	TIME_BABY = {
-		id = 0, -- Replace with actual product ID
+		id = 0,
 		name = "Restart as Baby",
 		emoji = "👶",
 		description = "Restart your life from age 0 (same character)",
-		price = 125, -- Robux
+		price = 125,
 		type = "consumable",
 	},
 	
@@ -237,19 +488,20 @@ GamepassSystem.Products = {
 function GamepassSystem.new()
 	local self = setmetatable({}, GamepassSystem)
 	self.playerOwnership = {} -- Cache of player ownership
+	self.ownershipCallbacks = {} -- Callbacks for ownership changes
 	return self
 end
-
--- ════════════════════════════════════════════════════════════════════════════
--- OWNERSHIP CHECKING
--- ════════════════════════════════════════════════════════════════════════════
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- DEVELOPMENT/TESTING MODE
 -- Set this to true in Studio to test premium features without real gamepasses
 -- CRITICAL: Set to false before publishing to production!
 -- ════════════════════════════════════════════════════════════════════════════
-GamepassSystem.DEV_MODE = false -- Change to true for testing in Studio
+GamepassSystem.DEV_MODE = false
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- OWNERSHIP CHECKING - CRITICAL FIX #3: Improved caching
+-- ════════════════════════════════════════════════════════════════════════════
 
 function GamepassSystem:checkOwnership(player, gamepassKey)
 	local gamepass = self.Gamepasses[gamepassKey]
@@ -260,11 +512,9 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 	
 	-- If ID is 0, use dev mode setting
 	if gamepass.id == 0 then
-		-- In dev mode, return true to allow testing premium features
 		if self.DEV_MODE then
 			return true
 		end
-		-- In production with ID 0, features are disabled
 		return false
 	end
 	
@@ -299,8 +549,17 @@ function GamepassSystem:ownsAny(player, gamepassKeys)
 	return false
 end
 
+function GamepassSystem:ownsAll(player, gamepassKeys)
+	for _, key in ipairs(gamepassKeys) do
+		if not self:checkOwnership(player, key) then
+			return false
+		end
+	end
+	return true
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
--- PREMIUM FEATURE CHECKS
+-- PREMIUM FEATURE CHECKS - Convenience methods
 -- ════════════════════════════════════════════════════════════════════════════
 
 function GamepassSystem:hasBitizenship(player)
@@ -380,12 +639,9 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function GamepassSystem:canUseTimeMachine(player, yearsBack)
-	-- If they own the gamepass, unlimited uses
 	if self:hasTimeMachine(player) then
 		return true, "gamepass"
 	end
-	
-	-- Otherwise, they need to purchase individual uses
 	return false, "purchase_required"
 end
 
@@ -395,12 +651,12 @@ function GamepassSystem:getTimeMachineOptions()
 		{ years = 10, label = "10 Years", emoji = "⏰", productKey = "TIME_10_YEARS" },
 		{ years = 20, label = "20 Years", emoji = "⏰", productKey = "TIME_20_YEARS" },
 		{ years = 30, label = "30 Years", emoji = "⏰", productKey = "TIME_30_YEARS" },
-		{ years = -1, label = "Baby", emoji = "👶", productKey = "TIME_BABY" }, -- -1 = restart
+		{ years = -1, label = "Baby", emoji = "👶", productKey = "TIME_BABY" },
 	}
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
--- GOD MODE LOGIC
+-- GOD MODE LOGIC - CRITICAL FIX #4: Full implementation
 -- ════════════════════════════════════════════════════════════════════════════
 
 function GamepassSystem:canEditStats(player)
@@ -408,7 +664,8 @@ function GamepassSystem:canEditStats(player)
 end
 
 function GamepassSystem:getEditableStats()
-	return {
+	local godMode = self.Gamepasses.GOD_MODE
+	return godMode.editableStats or {
 		{ key = "Happiness", emoji = "😊", min = 0, max = 100 },
 		{ key = "Health", emoji = "❤️", min = 0, max = 100 },
 		{ key = "Smarts", emoji = "🧠", min = 0, max = 100 },
@@ -416,8 +673,41 @@ function GamepassSystem:getEditableStats()
 	}
 end
 
+function GamepassSystem:applyGodModeEdit(player, lifeState, statKey, newValue)
+	if not self:hasGodMode(player) then
+		return false, "God Mode gamepass required"
+	end
+	
+	-- Validate stat key
+	local validStats = { "Happiness", "Health", "Smarts", "Looks", "Fame" }
+	local isValid = false
+	for _, stat in ipairs(validStats) do
+		if stat == statKey then
+			isValid = true
+			break
+		end
+	end
+	
+	if not isValid then
+		return false, "Invalid stat key"
+	end
+	
+	-- Clamp value
+	newValue = math.clamp(newValue, 0, 100)
+	
+	-- Apply to state
+	if lifeState.Stats and lifeState.Stats[statKey] ~= nil then
+		lifeState.Stats[statKey] = newValue
+	end
+	if lifeState[statKey] ~= nil then
+		lifeState[statKey] = newValue
+	end
+	
+	return true, string.format("%s set to %d", statKey, newValue)
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
--- MAFIA/MOB ACCESS
+-- MAFIA/MOB ACCESS - CRITICAL FIX #5: Proper integration
 -- ════════════════════════════════════════════════════════════════════════════
 
 function GamepassSystem:canJoinMafia(player)
@@ -425,48 +715,151 @@ function GamepassSystem:canJoinMafia(player)
 end
 
 function GamepassSystem:getMafiaFamilies()
-	return {
-		{
-			id = "italian",
-			name = "Italian Mafia",
-			emoji = "🇮🇹",
-			description = "La Cosa Nostra - The traditional organized crime family",
-			ranks = {"Associate", "Soldier", "Capo", "Underboss", "Boss"},
-			color = Color3.fromRGB(239, 68, 68), -- Red
-		},
-		{
-			id = "russian",
-			name = "Russian Bratva",
-			emoji = "🇷🇺",
-			description = "The Brotherhood - Ruthless eastern European syndicate",
-			ranks = {"Shestyorka", "Bratok", "Brigadier", "Avtoritet", "Pakhan"},
-			color = Color3.fromRGB(59, 130, 246), -- Blue
-		},
-		{
-			id = "yakuza",
-			name = "Japanese Yakuza",
-			emoji = "🇯🇵",
-			description = "Honor and tradition - The way of the samurai",
-			ranks = {"Shatei", "Wakashu", "Shateigashira", "Wakagashira", "Oyabun"},
-			color = Color3.fromRGB(139, 92, 246), -- Purple
-		},
-		{
-			id = "cartel",
-			name = "Mexican Cartel",
-			emoji = "🇲🇽",
-			description = "El Cartel - Control the smuggling empire",
-			ranks = {"Halcon", "Sicario", "Lugarteniente", "Capo", "Jefe"},
-			color = Color3.fromRGB(34, 197, 94), -- Green
-		},
-		{
-			id = "triad",
-			name = "Chinese Triad",
-			emoji = "🇨🇳",
-			description = "The Heaven and Earth Society - Ancient criminal organization",
-			ranks = {"Blue Lantern", "49er", "Red Pole", "Deputy", "Dragon Head"},
-			color = Color3.fromRGB(249, 115, 22), -- Orange
-		},
+	local mafia = self.Gamepasses.MAFIA
+	return mafia.crimeFamily or {
+		{ id = "italian", name = "Italian Mafia", emoji = "🇮🇹", color = Color3.fromRGB(239, 68, 68) },
+		{ id = "russian", name = "Russian Bratva", emoji = "🇷🇺", color = Color3.fromRGB(59, 130, 246) },
+		{ id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵", color = Color3.fromRGB(139, 92, 246) },
+		{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", color = Color3.fromRGB(34, 197, 94) },
+		{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", color = Color3.fromRGB(249, 115, 22) },
 	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- ROYALTY ACCESS - CRITICAL FIX #6: Born as royalty
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:canBeRoyalty(player)
+	return self:hasRoyalty(player)
+end
+
+function GamepassSystem:getRoyalCountries()
+	local royalty = self.Gamepasses.ROYALTY
+	return royalty.royalCountries or {}
+end
+
+function GamepassSystem:getRoyalStartingWealth()
+	local royalty = self.Gamepasses.ROYALTY
+	local wealth = royalty.startingWealth or { min = 10000000, max = 500000000 }
+	return math.random(wealth.min, wealth.max)
+end
+
+function GamepassSystem:initializeRoyalBirth(lifeState, player, countryId, title)
+	if not self:hasRoyalty(player) then
+		return false, "Royalty gamepass required"
+	end
+	
+	local countries = self:getRoyalCountries()
+	local country = nil
+	for _, c in ipairs(countries) do
+		if c.id == countryId then
+			country = c
+			break
+		end
+	end
+	
+	if not country then
+		-- Random country
+		country = countries[math.random(1, #countries)]
+	end
+	
+	-- Determine title based on gender
+	local gender = lifeState.Gender or "Male"
+	local royalTitle = country.title[gender:lower()] or (gender == "Male" and "Prince" or "Princess")
+	
+	-- Initialize royal state
+	lifeState.RoyalState = {
+		isRoyal = true,
+		country = country.id,
+		countryName = country.name,
+		countryEmoji = country.emoji,
+		title = royalTitle,
+		lineOfSuccession = math.random(1, 5), -- Position in line
+		isMonarch = false,
+		reignYears = 0,
+		popularity = 75 + math.random(-10, 10),
+		scandals = 0,
+		dutiesCompleted = 0,
+		wealth = self:getRoyalStartingWealth(),
+	}
+	
+	-- Set starting money to royal wealth
+	lifeState.Money = lifeState.RoyalState.wealth
+	
+	-- Set flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.is_royalty = true
+	lifeState.Flags.royal_birth = true
+	lifeState.Flags.royal_country = country.id
+	lifeState.Flags.wealthy_family = true
+	lifeState.Flags.upper_class = true
+	
+	return true, string.format("Born as %s %s of %s!", royalTitle, lifeState.Name or "Unknown", country.name)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CELEBRITY ACCESS - CRITICAL FIX #7: Fame career paths
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:canBeCelebrity(player)
+	return self:hasCelebrity(player)
+end
+
+function GamepassSystem:getCelebrityCareerPaths()
+	local celebrity = self.Gamepasses.CELEBRITY
+	return celebrity.careerPaths or {}
+end
+
+function GamepassSystem:getFameEvents()
+	local celebrity = self.Gamepasses.CELEBRITY
+	return celebrity.fameEvents or {}
+end
+
+function GamepassSystem:initializeFameCareer(lifeState, player, careerPath)
+	if not self:hasCelebrity(player) then
+		return false, "Celebrity gamepass required"
+	end
+	
+	local paths = self:getCelebrityCareerPaths()
+	local path = paths[careerPath]
+	
+	if not path then
+		return false, "Invalid career path"
+	end
+	
+	-- Initialize fame state
+	lifeState.FameState = {
+		isFamous = false,
+		careerPath = careerPath,
+		careerName = path.name,
+		currentStage = 1,
+		stageName = path.stages[1].name,
+		fame = 0,
+		followers = 0,
+		endorsements = {},
+		awards = {},
+		scandals = 0,
+		yearsInCareer = 0,
+	}
+	
+	-- Set starting job
+	local firstStage = path.stages[1]
+	lifeState.CurrentJob = {
+		id = careerPath .. "_" .. firstStage.id,
+		name = firstStage.name,
+		company = path.name .. " Industry",
+		salary = math.random(firstStage.salary[1], firstStage.salary[2]),
+		category = "entertainment",
+		isFameCareer = true,
+	}
+	
+	-- Set flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.fame_career = true
+	lifeState.Flags.entertainment_industry = true
+	lifeState.Flags["career_" .. careerPath] = true
+	
+	return true, string.format("Started career as %s!", firstStage.name)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -479,10 +872,12 @@ function GamepassSystem:getGamepassInfo(gamepassKey)
 	
 	return {
 		key = gamepassKey,
+		id = gamepass.id,
 		name = gamepass.name,
 		emoji = gamepass.emoji,
 		description = gamepass.description,
 		price = gamepass.price,
+		category = gamepass.category,
 		features = gamepass.features,
 	}
 end
@@ -492,10 +887,12 @@ function GamepassSystem:getAllGamepasses()
 	for key, data in pairs(self.Gamepasses) do
 		table.insert(list, {
 			key = key,
+			id = data.id,
 			name = data.name,
 			emoji = data.emoji,
 			description = data.description,
 			price = data.price,
+			category = data.category or "general",
 			features = data.features,
 		})
 	end
@@ -515,22 +912,184 @@ function GamepassSystem:getPlayerPremiumStatus(player)
 	}
 end
 
--- MINOR FIX #1: Add function to refresh gamepass cache after purchase
+-- CRITICAL FIX #8: Refresh gamepass cache after purchase
 function GamepassSystem:refreshPlayerCache(player)
 	local playerId = player.UserId
 	for key, _ in pairs(self.Gamepasses) do
 		local cacheKey = playerId .. "_" .. key
-		self.playerOwnership[cacheKey] = nil -- Clear cache to force re-check
+		self.playerOwnership[cacheKey] = nil
 	end
 end
 
--- MINOR FIX #2: Add function to clear cache when player leaves
+-- CRITICAL FIX #9: Clear cache when player leaves
 function GamepassSystem:onPlayerRemoving(player)
 	local playerId = player.UserId
 	for key, _ in pairs(self.Gamepasses) do
 		local cacheKey = playerId .. "_" .. key
 		self.playerOwnership[cacheKey] = nil
 	end
+end
+
+-- CRITICAL FIX #10: Get gamepass ID by key
+function GamepassSystem:getGamepassId(gamepassKey)
+	local gamepass = self.Gamepasses[gamepassKey]
+	if gamepass then
+		return gamepass.id
+	end
+	return 0
+end
+
+-- CRITICAL FIX #11: Check if feature requires specific gamepass
+function GamepassSystem:getRequiredGamepassForFeature(featureId)
+	local featureMapping = {
+		-- Royalty features
+		royal_birth = "ROYALTY",
+		royal_family = "ROYALTY",
+		throne_inheritance = "ROYALTY",
+		royal_duties = "ROYALTY",
+		royal_marriage = "ROYALTY",
+		-- Mafia features
+		join_mafia = "MAFIA",
+		mafia_operations = "MAFIA",
+		crime_family = "MAFIA",
+		mob_activities = "MAFIA",
+		-- Celebrity features
+		actor_career = "CELEBRITY",
+		music_career = "CELEBRITY",
+		influencer_career = "CELEBRITY",
+		athlete_career = "CELEBRITY",
+		model_career = "CELEBRITY",
+		fame_events = "CELEBRITY",
+		-- God Mode features
+		edit_stats = "GOD_MODE",
+		stat_editing = "GOD_MODE",
+		-- Boss Mode features
+		start_business = "BOSS_MODE",
+		business_empire = "BOSS_MODE",
+		-- Time Machine features
+		time_travel = "TIME_MACHINE",
+		go_back_years = "TIME_MACHINE",
+	}
+	
+	return featureMapping[featureId]
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #18: SYNC GAMEPASS OWNERSHIP TO LIFE STATE
+-- This ensures all gamepass flags are properly set on the player's state
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:syncToLifeState(player, lifeState)
+	if not lifeState then return end
+	
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.GamepassOwnership = lifeState.GamepassOwnership or {}
+	
+	-- Check each gamepass and set flags
+	local gamepassChecks = {
+		{ key = "ROYALTY", flag = "royalty_gamepass", ownership = "royalty" },
+		{ key = "MAFIA", flag = "mafia_gamepass", ownership = "mafia" },
+		{ key = "CELEBRITY", flag = "celebrity_gamepass", ownership = "celebrity" },
+		{ key = "GOD_MODE", flag = "god_mode_gamepass", ownership = "godMode" },
+		{ key = "TIME_MACHINE", flag = "time_machine_gamepass", ownership = "timeMachine" },
+		{ key = "BOSS_MODE", flag = "boss_mode_gamepass", ownership = "bossMode" },
+		{ key = "BITIZENSHIP", flag = "bitizen", ownership = "bitizenship" },
+	}
+	
+	for _, check in ipairs(gamepassChecks) do
+		local owns = self:checkOwnership(player, check.key)
+		lifeState.Flags[check.flag] = owns or nil
+		lifeState.GamepassOwnership[check.ownership] = owns
+		
+		-- Special handling for god mode
+		if check.key == "GOD_MODE" and owns then
+			lifeState.GodModeState = lifeState.GodModeState or {}
+			lifeState.GodModeState.enabled = true
+		end
+	end
+	
+	return lifeState
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #15: ROYAL RANK PROGRESSION HELPER
+-- Handles progression from Prince/Princess → King/Queen with proper titles
+-- ════════════════════════════════════════════════════════════════════════════
+
+GamepassSystem.RoyalRankProgression = {
+	male = {
+		{ title = "Prince", level = 1 },
+		{ title = "Crown Prince", level = 2 },
+		{ title = "King", level = 3, isMonarch = true },
+	},
+	female = {
+		{ title = "Princess", level = 1 },
+		{ title = "Crown Princess", level = 2 },
+		{ title = "Queen", level = 3, isMonarch = true },
+	},
+}
+
+function GamepassSystem:getRoyalRank(lifeState)
+	if not lifeState.RoyalState or not lifeState.RoyalState.isRoyal then
+		return nil
+	end
+	
+	local gender = (lifeState.Gender or "Male"):lower()
+	local ranks = self.RoyalRankProgression[gender] or self.RoyalRankProgression.male
+	
+	if lifeState.RoyalState.isMonarch then
+		return ranks[3]
+	elseif lifeState.RoyalState.lineOfSuccession == 1 then
+		return ranks[2]
+	else
+		return ranks[1]
+	end
+end
+
+function GamepassSystem:updateRoyalTitle(lifeState)
+	local rank = self:getRoyalRank(lifeState)
+	if rank then
+		lifeState.RoyalState.title = rank.title
+	end
+	return rank
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #17: MAFIA EVENT TRIGGER HELPERS
+-- Provides proper mafia event triggering support
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:canTriggerMafiaEvent(player, lifeState, eventType)
+	if not self:hasMafia(player) then
+		return false, "Mafia gamepass required"
+	end
+	
+	if not lifeState.MobState or not lifeState.MobState.inMob then
+		if eventType ~= "approach" and eventType ~= "recruitment" then
+			return false, "Must be in a crime family"
+		end
+	end
+	
+	return true, nil
+end
+
+function GamepassSystem:getMafiaEventChance(lifeState, eventType)
+	local mobState = lifeState.MobState
+	if not mobState or not mobState.inMob then
+		return 0.05 -- 5% chance to get approached if not in mob
+	end
+	
+	-- Base chances by event type
+	local baseChances = {
+		operation = 0.30,
+		loyalty_test = 0.10,
+		promotion = 0.15,
+		war = 0.05,
+		betrayal = 0.08,
+		arrest = 0.10 + (mobState.heat or 0) / 200,
+	}
+	
+	return baseChances[eventType] or 0.10
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
