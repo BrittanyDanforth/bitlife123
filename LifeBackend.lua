@@ -1223,18 +1223,192 @@ local ActivityCatalog = {
 		risk = 25, riskConsequence = "you got sick and your parents found out!" },
 	smoke = { stats = { Happiness = 1, Health = -4 }, feed = "tried smoking", cost = 0, setFlag = "smoker",
 		risk = 20, riskConsequence = "your parents smelled it on your clothes!" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROYAL DUTIES (Was causing "Unknown Activity" errors)
+	-- These activities are called from the Royalty tab in ActivitiesScreen
+	-- ═══════════════════════════════════════════════════════════════════════════
+	public_appearance = { 
+		stats = { Happiness = 5 }, 
+		feed = "made a public appearance and waved to the crowds", 
+		cost = 0,
+		requiresFlag = "is_royalty",
+		royaltyEffect = { popularity = 5 },
+	},
+	charity_visit = { 
+		stats = { Happiness = 8, Health = 2 }, 
+		feed = "visited a charity and met with beneficiaries", 
+		cost = 10000,
+		requiresFlag = "is_royalty",
+		royaltyEffect = { popularity = 8 },
+	},
+	state_dinner = { 
+		stats = { Happiness = 3, Smarts = 2 }, 
+		feed = "hosted a state dinner with foreign dignitaries", 
+		cost = 50000,
+		requiresFlag = "is_royalty",
+		requiresAge = 18,
+		royaltyEffect = { popularity = 10 },
+	},
+	open_parliament = { 
+		stats = { Happiness = 2, Smarts = 3 }, 
+		feed = "opened Parliament with the traditional ceremony", 
+		cost = 0,
+		requiresFlag = "is_monarch",
+		requiresAge = 21,
+		royaltyEffect = { popularity = 12 },
+	},
+	knight_ceremony = { 
+		stats = { Happiness = 10 }, 
+		feed = "knighted a deserving citizen", 
+		cost = 0,
+		requiresFlag = "is_monarch",
+		requiresAge = 21,
+		royaltyEffect = { popularity = 8 },
+	},
+	ribbon_cutting = { 
+		stats = { Happiness = 4 }, 
+		feed = "cut the ribbon at a new building opening", 
+		cost = 5000,
+		requiresFlag = "is_royalty",
+		royaltyEffect = { popularity = 4 },
+	},
+	royal_tour = { 
+		stats = { Happiness = 6, Health = -3 }, 
+		feed = "went on a royal tour of the Commonwealth", 
+		cost = 100000,
+		requiresFlag = "is_royalty",
+		requiresAge = 18,
+		royaltyEffect = { popularity = 15 },
+	},
+	royal_wedding = { 
+		stats = { Happiness = 15 }, 
+		feed = "attended a glamorous royal wedding", 
+		cost = 0,
+		requiresFlag = "is_royalty",
+		royaltyEffect = { popularity = 10 },
+	},
+	military_review = { 
+		stats = { Happiness = 3 }, 
+		feed = "reviewed the royal military forces", 
+		cost = 0,
+		requiresFlag = "is_royalty",
+		requiresAge = 16,
+		royaltyEffect = { popularity = 6 },
+	},
+	charity_gala = { 
+		stats = { Happiness = 8 }, 
+		feed = "hosted a magnificent charity gala", 
+		cost = 100000,
+		requiresFlag = "is_royalty",
+		requiresAge = 18,
+		royaltyEffect = { popularity = 10 },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MAFIA OPERATIONS (Was causing "Unknown Activity" errors)
+	-- These activities are called from the Mafia tab in ActivitiesScreen
+	-- ═══════════════════════════════════════════════════════════════════════════
+	collect_protection = { 
+		stats = { Happiness = 2 }, 
+		feed = "collected protection money from local businesses", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 5, heat = 10, money = { 2000, 8000 } },
+	},
+	contraband_run = { 
+		stats = { Happiness = 3, Health = -2 }, 
+		feed = "made a contraband delivery run", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 8, heat = 20, money = { 5000, 15000 } },
+		risk = 35,
+	},
+	hit_job = { 
+		stats = { Happiness = -5 }, 
+		feed = "carried out a hit job for the family", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 20, heat = 40, money = { 15000, 50000 } },
+		risk = 50,
+		setFlag = "killer",
+	},
+	heist = { 
+		stats = { Happiness = 5 }, 
+		feed = "participated in a heist", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 25, heat = 50, money = { 50000, 200000 } },
+		risk = 60,
+		hasMinigame = true,
+		minigameType = "heist",
+	},
+	intimidate = { 
+		stats = { Happiness = 1 }, 
+		feed = "intimidated someone for the family", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 10, heat = 15, money = { 1000, 5000 } },
+		risk = 25,
+	},
+	bribe_official = { 
+		stats = { Smarts = 2 }, 
+		feed = "bribed a government official", 
+		cost = 25000,
+		requiresFlag = "in_mob",
+		requiresAge = 21,
+		mafiaEffect = { respect = 15, heat = -10 },
+	},
+	launder_money = { 
+		stats = { Smarts = 3 }, 
+		feed = "laundered money through legitimate businesses", 
+		cost = 10000,
+		requiresFlag = "in_mob",
+		requiresAge = 21,
+		mafiaEffect = { respect = 10, heat = -5, money = { 20000, 50000 } },
+	},
+	-- CRITICAL FIX #303: Added remaining mafia operations from ActivitiesScreen
+	recruit = { 
+		stats = { Happiness = 3 }, 
+		feed = "recruited new members for the family", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 8, heat = 5 },
+	},
+	bribe_cops = { 
+		stats = { Happiness = 2 }, 
+		feed = "bribed local police to look the other way", 
+		cost = 50000,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { respect = 5, heat = -20 },
+	},
+	lay_low = { 
+		stats = { Happiness = -2, Health = 2 }, 
+		feed = "laid low and stayed out of sight", 
+		cost = 0,
+		requiresFlag = "in_mob",
+		requiresAge = 18,
+		mafiaEffect = { heat = -15 },
+	},
 }
 
 local CrimeCatalog = {
 	-- PETTY CRIMES (low risk)
 	porch_pirate = { risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 } },
 	shoplift = { risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 } },
-	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 } },
+	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 }, hasMinigame = true, minigameType = "qte" },
 	-- PROPERTY CRIMES (medium risk)
-	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 } },
-	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 } },
+	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 }, hasMinigame = true, minigameType = "heist" },
+	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 }, hasMinigame = true, minigameType = "getaway" },
 	-- MAJOR CRIMES (high risk)
-	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 } },
+	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 }, hasMinigame = true, minigameType = "heist" },
 	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
 	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
 	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
@@ -1244,6 +1418,15 @@ local CrimeCatalog = {
 	intimidation = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
 	ransom = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
 	assault = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
+	-- CRITICAL FIX: Added missing crimes from ActivitiesScreen (was causing "Unknown Crime" errors)
+	illegal_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } }, -- Renamed from drug_dealing
+	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
+	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
+	murder = { risk = 95, reward = { 0, 5000 }, jail = { min = 25, max = 100 } },
+	hacking = { risk = 45, reward = { 5000, 50000 }, jail = { min = 2, max = 8 }, hasMinigame = true, minigameType = "hacking" },
+	counterfeiting = { risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 } },
+	fraud = { risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 } },
+	embezzlement = { risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 } },
 }
 
 local PrisonActions = {
@@ -2449,8 +2632,37 @@ function LifeBackend:serializeState(state)
 		-- Ensure all premium states are properly serialized for client
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #257: Sync MobState.inMob and Flags.in_mob before serialization
+		-- This ensures the client always has consistent data about mob membership
+		-- Without this, activities show "don't meet requirements" even when in mob
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if state.MobState and state.MobState.inMob then
+			state.Flags = state.Flags or {}
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+		elseif state.Flags and state.Flags.in_mob then
+			-- Flag says in mob but MobState doesn't - restore MobState
+			state.MobState = state.MobState or {}
+			if not state.MobState.inMob then
+				state.MobState.inMob = true
+				state.MobState.rankIndex = state.MobState.rankIndex or 1
+				state.MobState.rankLevel = state.MobState.rankLevel or 1
+				state.MobState.respect = state.MobState.respect or 0
+				state.MobState.loyalty = state.MobState.loyalty or 50
+				state.MobState.heat = state.MobState.heat or 0
+			end
+		end
+		
 		-- MAFIA STATE
 		serialized.MobState = MafiaSystem:serialize(state)
+		
+		-- CRITICAL FIX #258: Also sync the serialized Flags to include in_mob
+		serialized.Flags = serialized.Flags or {}
+		if serialized.MobState and serialized.MobState.inMob then
+			serialized.Flags.in_mob = true
+			serialized.Flags.mafia_member = true
+		end
 		
 		-- ROYALTY STATE
 		if state.RoyalState and state.RoyalState.isRoyal then
@@ -4919,6 +5131,35 @@ function LifeBackend:handleAgeUp(player)
 			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
 			
 			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #251: Restore mob membership after prison release
+			-- The in_mob flag and MobState.inMob must stay synchronized!
+			-- Without this, mafia events stop firing after prison release!
+			-- ═══════════════════════════════════════════════════════════════════════
+			if state.MobState and state.MobState.inMob then
+				-- Player was in mob before jail - ensure flag stays set
+				state.Flags.in_mob = true
+				state.Flags.mafia_member = true
+				-- Reduce loyalty slightly for being in prison
+				state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 100) - 10)
+				-- Reduce heat since you served time
+				state.MobState.heat = math.max(0, (state.MobState.heat or 0) - 30)
+				debugPrint("Mob membership restored after prison release. Loyalty:", state.MobState.loyalty)
+			elseif state.Flags.was_in_mob_before_jail then
+				-- Backup flag check - restore mob state if it was saved
+				state.Flags.in_mob = true
+				state.Flags.mafia_member = true
+				state.Flags.was_in_mob_before_jail = nil -- Clear backup flag
+				-- Initialize MobState if missing
+				if not state.MobState or not state.MobState.inMob then
+					state.MobState = state.MobState or {}
+					state.MobState.inMob = true
+					state.MobState.loyalty = 70 -- Lower loyalty after prison
+					state.MobState.heat = 0
+				end
+				debugPrint("Mob membership restored from backup flag after prison release")
+			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
 			-- If player was in college before going to jail, they can now re-enroll
 			-- ═══════════════════════════════════════════════════════════════════════
@@ -4926,6 +5167,9 @@ function LifeBackend:handleAgeUp(player)
 				state.EducationData.Status = "enrolled"
 				state.EducationData.StatusBeforeJail = nil
 				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+			elseif state.MobState and state.MobState.inMob then
+				-- Special message for mob members
+				state.PendingFeed = "🎉 You've been released from prison! The family welcomes you back."
 			else
 				state.PendingFeed = "🎉 You've been released from prison! Time served."
 			end
@@ -5307,6 +5551,17 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 
 	if justGotIncarcerated then
 		-- Player was caught during this event!
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #256: Preserve mob membership when event causes jail
+		-- ═══════════════════════════════════════════════════════════════════════
+		if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+			state.Flags.was_in_mob_before_jail = true
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			debugPrint("Preserved mob membership for event-triggered jail:", player.Name)
+		end
+		
 		-- Try to get the jail message from PendingFeed set by onResolve
 		if state.PendingFeed and type(state.PendingFeed) == "string" and state.PendingFeed ~= "" then
 			-- Check if the feed text is jail-related (contains relevant keywords)
@@ -5500,10 +5755,69 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		state.CompletedActivities = state.CompletedActivities or {}
 		state.CompletedActivities[activityId] = true
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #301: Handle royalty-specific effects from royal duties
+	-- Without this, royal activities wouldn't affect popularity/respect
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.royaltyEffect then
+		state.RoyaltyState = state.RoyaltyState or {}
+		local royalEffect = activity.royaltyEffect
+		if royalEffect.popularity then
+			state.RoyaltyState.popularity = (state.RoyaltyState.popularity or 50) + royalEffect.popularity
+			state.RoyaltyState.popularity = math.clamp(state.RoyaltyState.popularity, 0, 100)
+		end
+		if royalEffect.respect then
+			state.RoyaltyState.respect = (state.RoyaltyState.respect or 50) + royalEffect.respect
+		end
+		if royalEffect.diplomacy then
+			state.RoyaltyState.diplomacy = (state.RoyaltyState.diplomacy or 50) + royalEffect.diplomacy
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #302: Handle mafia-specific effects from mob operations
+	-- Without this, mafia activities wouldn't affect respect/heat/earnings
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.mafiaEffect then
+		state.MobState = state.MobState or {}
+		local mafEffect = activity.mafiaEffect
+		if mafEffect.respect then
+			state.MobState.respect = (state.MobState.respect or 0) + mafEffect.respect
+		end
+		if mafEffect.heat then
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + mafEffect.heat)
+		end
+		if mafEffect.money then
+			-- mafiaEffect.money is a {min, max} table
+			local moneyEarned = RANDOM:NextInteger(mafEffect.money[1], mafEffect.money[2])
+			self:addMoney(state, moneyEarned)
+			state.MobState.earnings = (state.MobState.earnings or 0) + moneyEarned
+			resultMessage = resultMessage .. " Earned $" .. moneyEarned .. "."
+		end
+		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
+		
+		-- Risk check for mafia operations
+		if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+			-- Got caught doing mafia business
+			local jailYears = math.ceil(activity.risk / 15)
+			state.InJail = true
+			state.JailYearsLeft = jailYears
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			-- CRITICAL FIX #253: Preserve mob membership when jailed from mafia ops
+			if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+				state.Flags.was_in_mob_before_jail = true
+			end
+			resultMessage = "You got caught! Sentenced to " .. jailYears .. " years in prison."
+			gotCaught = true
+		end
+	end
 
-	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
-	-- This was causing double popup issues in ActivitiesScreen
-	self:pushState(player, resultMessage)
+	-- CRITICAL FIX #311: Don't push state for activities - this was causing screen closures!
+	-- The client shows its own result popup via showResult() in ActivitiesScreen
+	-- State will sync on next age up naturally
+	-- self:pushState(player, resultMessage)  -- DISABLED - was closing ActivitiesScreen
 	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
@@ -5551,6 +5865,15 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		state.JailYearsLeft = years
 		state.Flags.in_prison = true
 		state.Flags.incarcerated = true
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #252: Preserve mob membership flag when going to jail
+		-- This backup flag ensures we restore in_mob after prison release
+		-- ═══════════════════════════════════════════════════════════════════════
+		if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+			state.Flags.was_in_mob_before_jail = true
+			debugPrint("Preserved mob membership for jail duration:", player.Name)
+		end
 		
 		-- CRITICAL FIX: Lose job when going to prison!
 		-- In BitLife, you get fired when incarcerated. Save last job for potential re-employment.
@@ -5664,6 +5987,22 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		state.Flags.fugitive = true
 		state.PendingFeed = nil
 		state.YearLog = {}
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #269: Restore mob membership after prison escape
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if state.MobState and state.MobState.inMob then
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + 20) -- Escaping raises heat
+		elseif state.Flags.was_in_mob_before_jail then
+			state.Flags.in_mob = true
+			state.Flags.mafia_member = true
+			state.Flags.was_in_mob_before_jail = nil
+			state.MobState = state.MobState or {}
+			state.MobState.inMob = true
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + 20)
+		end
 		
 		-- Player won the minigame - they escape successfully!
 		local eventDef = {

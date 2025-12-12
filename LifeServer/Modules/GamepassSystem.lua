@@ -35,7 +35,8 @@ local GAMEPASS_IDS = {
 	CELEBRITY = 1626461980,    -- Celebrity/Fame gamepass
 	-- Additional gamepasses (set to 0 until real IDs are provided)
 	BITIZENSHIP = 0,
-	TIME_MACHINE = 0,
+	-- CRITICAL FIX: Time Machine gamepass with correct ID
+	TIME_MACHINE = 1630681215,  -- Time Machine gamepass (unlimited rewinds)
 	BOSS_MODE = 0,
 	DARK_MODE = 0,
 }

@@ -8,6 +8,7 @@ local startTime = tick()
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService      = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 
@@ -170,6 +171,40 @@ local function refreshGodModeStatus()
 end
 
 refreshGodModeStatus()
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Listen for gamepass purchases to update UI smoothly
+-- When user buys a gamepass, update all related buttons immediately
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GAMEPASS_IDS = {
+	ROYALTY = 1626378001,
+	GOD_MODE = 1628050729,
+	MAFIA = 1626238769,
+	CELEBRITY = 1626461980,
+	TIME_MACHINE = 1630681215,
+}
+
+local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
+	if plr ~= player or not wasPurchased then return end
+	
+	-- Refresh gamepass status
+	refreshGodModeStatus()
+	
+	-- Update all gamepass buttons in intro UI
+	task.defer(function()
+		-- Update God Mode button
+		if IntroUI and IntroUI.updateCustomizeGenderBtn then
+			IntroUI.updateCustomizeGenderBtn()
+		end
+		
+		-- Update Royalty button
+		if IntroUI and IntroUI.updateRoyaltyGenderBtn then
+			IntroUI.updateRoyaltyGenderBtn()
+		end
+	end)
+end
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchaseFinished)
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -1287,15 +1322,19 @@ godModeOverlay.Visible = false
 godModeOverlay.ZIndex = 150
 godModeOverlay.Parent = mainContainer
 
--- CRITICAL FIX #163: Create God Mode Button in header area
-local godModeBtnSize = Device.IS_TINY_PHONE and 28 or 36
+-- CRITICAL FIX #163 & #275: Create God Mode Button in header area
+-- CRITICAL FIX #275: Better mobile positioning - centered in header right side
+local godModeBtnSize = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 32 or 36)
 godModeButton = Instance.new("TextButton")
 godModeButton.Name = "GodModeBtn"
 godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
-godModeButton.Position = UDim2.new(1, -(godModeBtnSize + (Device.IS_TINY_PHONE and 80 or 120)), 0.5, -godModeBtnSize/2)
+-- Position: Right side of header, before any other buttons, properly centered
+local godModeBtnOffset = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or 80)
+godModeButton.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
+godModeButton.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
 godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
 godModeButton.Text = "⚡"
-godModeButton.TextSize = Device.IS_TINY_PHONE and 14 or 18
+godModeButton.TextSize = Device.IS_TINY_PHONE and 16 or 18
 godModeButton.ZIndex = 8
 godModeButton.Visible = false -- Hidden by default, shown if hasGodMode
 godModeButton.Parent = headerBar
@@ -2891,16 +2930,31 @@ local function buildDeathUI()
 	DeathUI.epitaph.ZIndex = 122
 	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
-	-- Restart button section (EXPANDED: Time Machine + New Life)
+	-- Restart button section (EXPANDED: Time Machine + New Life + Promo)
 	DeathUI.buttonSection = Instance.new("Frame")
 	DeathUI.buttonSection.Name = "ButtonSection"
-	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 240)
+	-- CRITICAL FIX: Increased height to fit promo section
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 300)
 	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	DeathUI.buttonSection.ZIndex = 121
 	DeathUI.buttonSection.LayoutOrder = 5
 	DeathUI.buttonSection.Parent = DeathUI.scroll
 	
 	-- TIME MACHINE SECTION (BitLife-style premium feature)
+	-- CRITICAL FIX: Check if user has Time Machine gamepass
+	local hasTimeMachineGamepass = false
+	local function checkTimeMachineGamepass()
+		if CheckGamepass then
+			local success, owns = pcall(function()
+				return CheckGamepass:InvokeServer("TIME_MACHINE")
+			end)
+			if success then
+				hasTimeMachineGamepass = owns == true
+			end
+		end
+		return hasTimeMachineGamepass
+	end
+	
 	local tmTitle = Instance.new("TextLabel")
 	tmTitle.Size = UDim2.new(1, 0, 0, 30)
 	tmTitle.Position = UDim2.new(0, 0, 0, 8)
@@ -2911,6 +2965,7 @@ local function buildDeathUI()
 	tmTitle.Text = "⏰ TIME MACHINE"
 	tmTitle.ZIndex = 122
 	tmTitle.Parent = DeathUI.buttonSection
+	DeathUI.tmTitle = tmTitle
 	
 	-- Time Machine buttons container
 	local tmContainer = Instance.new("Frame")
@@ -2920,6 +2975,7 @@ local function buildDeathUI()
 	tmContainer.ZIndex = 122
 	tmContainer.Parent = DeathUI.buttonSection
 	corner(tmContainer, 12)
+	DeathUI.tmContainer = tmContainer
 	
 	local tmGrid = Instance.new("UIGridLayout")
 	tmGrid.CellSize = UDim2.new(0.48, 0, 0, 36)
@@ -2934,7 +2990,51 @@ local function buildDeathUI()
 	tmPad.PaddingRight = UDim.new(0, 6)
 	tmPad.Parent = tmContainer
 	
+	-- CRITICAL FIX: Add "Get Unlimited Rewinds" promo button for users without gamepass
+	local tmPromoContainer = Instance.new("Frame")
+	tmPromoContainer.Name = "TimeMachinePromo"
+	tmPromoContainer.Size = UDim2.new(0.92, 0, 0, 50)
+	tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 40)
+	tmPromoContainer.BackgroundColor3 = Color3.fromRGB(45, 35, 60)
+	tmPromoContainer.ZIndex = 122
+	tmPromoContainer.Visible = false  -- Hidden by default, shown if no gamepass
+	tmPromoContainer.Parent = DeathUI.buttonSection
+	corner(tmPromoContainer, 12)
+	DeathUI.tmPromoContainer = tmPromoContainer
+	
+	local tmPromoBtn = Instance.new("TextButton")
+	tmPromoBtn.Size = UDim2.new(1, 0, 1, 0)
+	tmPromoBtn.BackgroundTransparency = 1
+	tmPromoBtn.Font = F.Title
+	tmPromoBtn.TextSize = 15
+	tmPromoBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+	tmPromoBtn.Text = "🔓 Get Unlimited Rewinds!"
+	tmPromoBtn.AutoButtonColor = false
+	tmPromoBtn.ZIndex = 123
+	tmPromoBtn.Parent = tmPromoContainer
+	
+	local tmPromoSubtext = Instance.new("TextLabel")
+	tmPromoSubtext.Size = UDim2.new(1, 0, 0, 16)
+	tmPromoSubtext.Position = UDim2.new(0, 0, 1, -18)
+	tmPromoSubtext.BackgroundTransparency = 1
+	tmPromoSubtext.Font = F.Body
+	tmPromoSubtext.TextSize = 11
+	tmPromoSubtext.TextColor3 = C.Gray400
+	tmPromoSubtext.Text = "Go back anytime with Time Machine Pass"
+	tmPromoSubtext.ZIndex = 123
+	tmPromoSubtext.Parent = tmPromoContainer
+	
+	-- CRITICAL FIX: Promo button prompts gamepass purchase
+	tmPromoBtn.MouseButton1Click:Connect(function()
+		local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
+		if PromptGamepass then
+			PromptGamepass:FireServer("TIME_MACHINE")
+		end
+	end)
+	
 	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
+	local tmButtons = {}
+	
 	for i, opt in ipairs(tmOptions) do
 		local tmBtn = Instance.new("TextButton")
 		tmBtn.Name = "TM_" .. opt[1]
@@ -2942,12 +3042,13 @@ local function buildDeathUI()
 		tmBtn.Font = F.Button
 		tmBtn.TextSize = 13
 		tmBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
-		tmBtn.Text = "👑 " .. opt[2]
+		tmBtn.Text = "⏰ " .. opt[2]
 		tmBtn.AutoButtonColor = false
 		tmBtn.LayoutOrder = i
 		tmBtn.ZIndex = 123
 		tmBtn.Parent = tmContainer
 		corner(tmBtn, 8)
+		table.insert(tmButtons, {btn = tmBtn, opt = opt})
 		
 		tmBtn.MouseButton1Click:Connect(function()
 			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
@@ -2979,23 +3080,52 @@ local function buildDeathUI()
 						updateFromState()
 					end
 				elseif ok and result and result.needsGamepass then
-					-- Player needs to purchase the gamepass - server already prompted
-					tmBtn.Text = "👑 " .. opt[2]
-					-- Flash the button to indicate it needs purchase
-					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
-					task.delay(0.15, function()
-						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
-					end)
+					-- CRITICAL FIX: Player needs to purchase the gamepass
+					tmBtn.Text = "⏰ " .. opt[2]
+					-- Prompt the gamepass purchase
+					local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
+					if PromptGamepass then
+						PromptGamepass:FireServer("TIME_MACHINE")
+					end
 				else
-					tmBtn.Text = "👑 " .. opt[2]
+					tmBtn.Text = "⏰ " .. opt[2]
 				end
 			end
 		end)
 	end
+	
+	-- CRITICAL FIX: Function to update Time Machine UI based on gamepass ownership
+	DeathUI.updateTimeMachineUI = function()
+		checkTimeMachineGamepass()
+		if hasTimeMachineGamepass then
+			-- User owns gamepass - show full time machine UI
+			tmContainer.Visible = true
+			tmPromoContainer.Visible = false
+			tmTitle.Text = "⏰ TIME MACHINE"
+			for _, data in ipairs(tmButtons) do
+				data.btn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+				data.btn.TextColor3 = Color3.fromRGB(255, 215, 0)
+				data.btn.Text = "⏰ " .. data.opt[2]
+			end
+		else
+			-- User doesn't own gamepass - show promo with limited options
+			tmContainer.Visible = true
+			tmPromoContainer.Visible = true
+			tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 130)
+			tmTitle.Text = "⏰ TIME MACHINE (One-Time Use)"
+			-- Buttons work but will cost Robux per use
+			for _, data in ipairs(tmButtons) do
+				data.btn.BackgroundColor3 = Color3.fromRGB(60, 50, 30)
+				data.btn.TextColor3 = Color3.fromRGB(200, 170, 60)
+				data.btn.Text = "💰 " .. data.opt[2]
+			end
+		end
+	end
 
 	DeathUI.restart = Instance.new("TextButton")
 	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 135)
+	-- CRITICAL FIX: Moved down to accommodate promo section
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 195)
 	DeathUI.restart.BackgroundColor3 = C.Green
 	DeathUI.restart.Font = F.Button
 	DeathUI.restart.TextSize = 20
@@ -3098,6 +3228,11 @@ showDeathOverlay = function(causeText, age)
 	DeathUI.overlay.Visible = true
 	DeathUI.restart.Text = "🔄 Start New Life"
 	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
+	
+	-- CRITICAL FIX: Update Time Machine UI based on gamepass ownership
+	if DeathUI.updateTimeMachineUI then
+		DeathUI.updateTimeMachineUI()
+	end
 
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
@@ -3725,19 +3860,22 @@ IntroUI.layout.Padding = UDim.new(0, 20)
 IntroUI.layout.Parent = IntroUI.content
 
 IntroUI.genderTitle = Instance.new("TextLabel")
-IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 36)
+-- CRITICAL FIX: Moved title higher and gave it more space so it doesn't overlap buttons
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 48)
 IntroUI.genderTitle.BackgroundTransparency = 1
 IntroUI.genderTitle.Font = F.Title
-IntroUI.genderTitle.TextSize = 24
+IntroUI.genderTitle.TextSize = 22
 IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
 IntroUI.genderTitle.Text = "Start by picking a gender"
+IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Top
 IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
 IntroUI.genderBtns = Instance.new("Frame")
--- CRITICAL FIX: Increased height to fit Male, Female, AND Customize Character buttons
-IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 220)
+-- CRITICAL FIX: Increased height to fit Male, Female, Born Royal, AND Customize Character buttons
+-- Mobile needs more space for touch targets
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 280)
 IntroUI.genderBtns.BackgroundTransparency = 1
 IntroUI.genderBtns.LayoutOrder = 2
 IntroUI.genderBtns.ZIndex = 71
@@ -3745,7 +3883,8 @@ IntroUI.genderBtns.Parent = IntroUI.content
 
 IntroUI.genderBtnLayout = Instance.new("UIListLayout")
 IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-IntroUI.genderBtnLayout.Padding = UDim.new(0, 14)
+-- CRITICAL FIX: Increased padding for better mobile touch targets
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 12)
 IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
 IntroUI.nameBtns = Instance.new("Frame")
@@ -3824,6 +3963,7 @@ local function makeGodModeSection(parentScroll, title, order)
 end
 
 -- Build God Mode UI in separate scope to reduce local registers
+-- CRITICAL FIX: Split into multiple separate do-blocks to stay under 200 register limit
 do
 	-- Container now just holds the scroll - no fixed bottom area
 	IntroUI.godModeContainer = Instance.new("Frame")
@@ -3888,11 +4028,12 @@ do
 		IntroUI.nameBtns.Visible = false
 		IntroUI.genderTitle.Text = "Start by picking a gender"
 	end)
-	
-	-- CRITICAL FIX #251: Use makeGodModeSection from outer scope instead of defining locally
-	-- This saves ~15 local registers which was causing the "Out of local registers" error
-	
-	-- Name section
+end -- End setup do-block
+
+-- CRITICAL FIX: Each section in its own TOP-LEVEL do-block to reset register count
+-- Name section
+do
+	local scroll = IntroUI.godModeScroll
 	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
 	IntroUI.customNameInput = Instance.new("TextBox")
 	IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
@@ -3911,8 +4052,11 @@ do
 	IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
 		GodModeCreateData.customName = IntroUI.customNameInput.Text
 	end)
+end
 
-	-- Gender section
+-- Gender section
+do
+	local scroll = IntroUI.godModeScroll
 	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
 	local gFrame = Instance.new("Frame")
 	gFrame.Size = UDim2.new(1, 0, 0, 40)
@@ -3948,60 +4092,67 @@ do
 			end
 		end)
 	end
+end
 
-	-- Ethnicity section with emojis (wrapped in own scope)
-	do
-		local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
-		local ef = Instance.new("Frame")
-		ef.Size = UDim2.new(1, 0, 0, 0)
-		ef.AutomaticSize = Enum.AutomaticSize.Y
-		ef.BackgroundTransparency = 1
-		ef.LayoutOrder = 2
-		ef.ZIndex = 73
-		ef.Parent = ethSec
-		local eg = Instance.new("UIGridLayout")
-		eg.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
-		eg.CellPadding = UDim2.new(0, 4, 0, 4)
-		eg.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		eg.Parent = ef
-		
-		local ethOpts = {
-			{ id = "Random", label = "🎲 Random" }, { id = "Caucasian", label = "🧑‍🦱 Caucasian" },
-			{ id = "African", label = "👨🏿 African" }, { id = "Asian", label = "🧑🏻 Asian" },
-			{ id = "Hispanic", label = "🧑🏽 Hispanic" }, { id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
-			{ id = "Indian", label = "🧑🏾 South Asian" }, { id = "Pacific Islander", label = "🏝️ Pacific Islander" },
-			{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
-		}
-		
-		IntroUI.ethnicityBtns = {}
-		for _, eth in ipairs(ethOpts) do
-			local b = Instance.new("TextButton")
-			b.Name = eth.id
-			b.Size = UDim2.new(0, 100, 0, 34)
-			b.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
-			b.Text = eth.label
-			b.TextColor3 = eth.id == "Random" and C.White or C.Gray600
-			b.TextSize = Device.IS_TINY_PHONE and 10 or 11
-			b.Font = F.Medium
-			b.TextTruncate = Enum.TextTruncate.AtEnd
-			b.ZIndex = 74
-			b.Parent = ef
-			corner(b, 6)
-			IntroUI.ethnicityBtns[eth.id] = b
-			b.MouseButton1Click:Connect(function()
-				GodModeCreateData.ethnicity = eth.id
-				for id, bt in pairs(IntroUI.ethnicityBtns) do
-					bt.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
-					bt.TextColor3 = id == eth.id and C.White or C.Gray600
-				end
-			end)
-		end
+-- Ethnicity section with emojis
+do
+	local scroll = IntroUI.godModeScroll
+	local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
+	local ef = Instance.new("Frame")
+	ef.Size = UDim2.new(1, 0, 0, 0)
+	ef.AutomaticSize = Enum.AutomaticSize.Y
+	ef.BackgroundTransparency = 1
+	ef.LayoutOrder = 2
+	ef.ZIndex = 73
+	ef.Parent = ethSec
+	local eg = Instance.new("UIGridLayout")
+	eg.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
+	eg.CellPadding = UDim2.new(0, 4, 0, 4)
+	eg.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	eg.Parent = ef
+	
+	local ethOpts = {
+		{ id = "Random", label = "🎲 Random" }, { id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+		{ id = "African", label = "👨🏿 African" }, { id = "Asian", label = "🧑🏻 Asian" },
+		{ id = "Hispanic", label = "🧑🏽 Hispanic" }, { id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+		{ id = "Indian", label = "🧑🏾 South Asian" }, { id = "Pacific Islander", label = "🏝️ Pacific Islander" },
+		{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
+	}
+	
+	-- CRITICAL FIX #274: Helper function to create ethnicity buttons (isolates locals)
+	IntroUI.ethnicityBtns = {}
+	local function createEthBtn(ethId, ethLabel)
+		local btn = Instance.new("TextButton")
+		btn.Name = ethId
+		btn.Size = UDim2.new(0, 100, 0, 34)
+		btn.BackgroundColor3 = ethId == "Random" and C.Purple or C.Gray200
+		btn.Text = ethLabel
+		btn.TextColor3 = ethId == "Random" and C.White or C.Gray600
+		btn.TextSize = Device.IS_TINY_PHONE and 10 or 11
+		btn.Font = F.Medium
+		btn.TextTruncate = Enum.TextTruncate.AtEnd
+		btn.ZIndex = 74
+		btn.Parent = ef
+		corner(btn, 6)
+		IntroUI.ethnicityBtns[ethId] = btn
+		btn.MouseButton1Click:Connect(function()
+			GodModeCreateData.ethnicity = ethId
+			for id, bt in pairs(IntroUI.ethnicityBtns) do
+				bt.BackgroundColor3 = id == ethId and C.Purple or C.Gray200
+				bt.TextColor3 = id == ethId and C.White or C.Gray600
+			end
+		end)
 	end
+	for _, eth in ipairs(ethOpts) do
+		createEthBtn(eth.id, eth.label)
+	end
+end
 
-	-- Wealth section (wrapped in own scope)
-	-- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
-	do
-		local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
+-- Wealth section
+-- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
+do
+	local scroll = IntroUI.godModeScroll
+	local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
 		IntroUI.wealthBtns = {}
 		local wOpts = {
 			{ id = "Poor", label = "🏚️ Poor Family", desc = "$0-500" },
@@ -4023,57 +4174,63 @@ do
 			return false
 		end
 		
-		for i, w in ipairs(wOpts) do
-			local b = Instance.new("TextButton")
-			b.Name = w.id; b.Size = UDim2.new(1, 0, 0, 44)
-			-- CRITICAL FIX: Royal option shows gold if player has gamepass, otherwise gray
-			local isRoyal = w.id == "Royal"
-			local hasRoyal = isRoyal and hasRoyaltyGamepass()
-			local defaultColor = w.id == "Middle Class" and C.Green or (isRoyal and (hasRoyal and Color3.fromRGB(255, 215, 0) or C.Gray300) or C.Gray100)
-			b.BackgroundColor3 = defaultColor
-			b.Text = ""; b.LayoutOrder = i + 1; b.ZIndex = 74; b.Parent = ws
-			corner(b, 8)
-			local l = Instance.new("TextLabel")
-			l.Size = UDim2.new(1, -16, 0, 24); l.Position = UDim2.new(0, 8, 0, 4)
-			l.BackgroundTransparency = 1
-			l.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
-			l.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
-			l.TextSize = 14; l.Font = F.Medium; l.TextXAlignment = Enum.TextXAlignment.Left
-			l.ZIndex = 75; l.Parent = b
-			local d = Instance.new("TextLabel")
-			d.Size = UDim2.new(1, -16, 0, 16); d.Position = UDim2.new(0, 8, 0, 26)
-			d.BackgroundTransparency = 1
-			d.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
-			d.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
-			d.TextSize = 11; d.Font = F.Body; d.TextXAlignment = Enum.TextXAlignment.Left
-			d.ZIndex = 75; d.Parent = b
-			IntroUI.wealthBtns[w.id] = { btn = b, label = l, desc = d, isRoyal = isRoyal }
-			b.MouseButton1Click:Connect(function()
-				-- CRITICAL FIX #22: Check for Royalty gamepass when selecting Royal option
-				if w.requiresGamepass then
-					local hasPass = hasRoyaltyGamepass()
+		-- CRITICAL FIX #291: Helper function to create wealth buttons (isolates local registers)
+		local function createWealthBtn(parent, wealthData, layoutOrder, checkRoyalty)
+			local btn = Instance.new("TextButton")
+			btn.Name = wealthData.id
+			btn.Size = UDim2.new(1, 0, 0, 44)
+			local isRoyal = wealthData.id == "Royal"
+			local hasRoyal = isRoyal and checkRoyalty()
+			local defaultColor = wealthData.id == "Middle Class" and C.Green or (isRoyal and (hasRoyal and Color3.fromRGB(255, 215, 0) or C.Gray300) or C.Gray100)
+			btn.BackgroundColor3 = defaultColor
+			btn.Text = ""
+			btn.LayoutOrder = layoutOrder
+			btn.ZIndex = 74
+			btn.Parent = parent
+			corner(btn, 8)
+			
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(1, -16, 0, 24)
+			lbl.Position = UDim2.new(0, 8, 0, 4)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or wealthData.label
+			lbl.TextColor3 = wealthData.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
+			lbl.TextSize = 14
+			lbl.Font = F.Medium
+			lbl.TextXAlignment = Enum.TextXAlignment.Left
+			lbl.ZIndex = 75
+			lbl.Parent = btn
+			
+			local desc = Instance.new("TextLabel")
+			desc.Size = UDim2.new(1, -16, 0, 16)
+			desc.Position = UDim2.new(0, 8, 0, 26)
+			desc.BackgroundTransparency = 1
+			desc.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or wealthData.desc
+			desc.TextColor3 = wealthData.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
+			desc.TextSize = 11
+			desc.Font = F.Body
+			desc.TextXAlignment = Enum.TextXAlignment.Left
+			desc.ZIndex = 75
+			desc.Parent = btn
+			
+			IntroUI.wealthBtns[wealthData.id] = { btn = btn, label = lbl, desc = desc, isRoyal = isRoyal }
+			
+			btn.MouseButton1Click:Connect(function()
+				if wealthData.requiresGamepass then
+					local hasPass = checkRoyalty()
 					if not hasPass then
-						-- Prompt to purchase Royalty gamepass
 						if PromptGamepass then
-							pcall(function() PromptGamepass:InvokeServer("ROYALTY") end)
+							pcall(function() PromptGamepass:FireServer("ROYALTY") end)
 						end
-						return -- Don't select this option
+						return
 					end
 				end
-				
-				GodModeCreateData.familyWealth = w.id
-				-- CRITICAL FIX #28: Set royal birth flag when Royal is selected
-				if w.id == "Royal" then
-					GodModeCreateData.isRoyalBirth = true
-				else
-					GodModeCreateData.isRoyalBirth = false
-				end
-				
+				GodModeCreateData.familyWealth = wealthData.id
+				GodModeCreateData.isRoyalBirth = (wealthData.id == "Royal")
 				for id, dt in pairs(IntroUI.wealthBtns) do
-					local isSelected = id == w.id
+					local isSelected = id == wealthData.id
 					local isRoyalBtn = dt.isRoyal
-					local hasRoyalPass = isRoyalBtn and hasRoyaltyGamepass()
-					
+					local hasRoyalPass = isRoyalBtn and checkRoyalty()
 					if isSelected then
 						dt.btn.BackgroundColor3 = isRoyalBtn and Color3.fromRGB(255, 215, 0) or C.Green
 						dt.label.TextColor3 = isRoyalBtn and C.Gray900 or C.White
@@ -4086,76 +4243,116 @@ do
 				end
 			end)
 		end
-	end
-
-	-- Stats section (wrapped in own scope)
-	do
-		local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
-		IntroUI.statSliders = {}
-		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
-		for i, s in ipairs(statData) do
-			local r = Instance.new("Frame")
-			r.Size = UDim2.new(1, 0, 0, 36); r.BackgroundTransparency = 1; r.LayoutOrder = i + 1; r.ZIndex = 73; r.Parent = ss
-			local lb = Instance.new("TextLabel")
-			lb.Size = UDim2.new(0, 80, 1, 0); lb.BackgroundTransparency = 1
-			lb.Text = s.icon .. " " .. s.key; lb.TextColor3 = C.Gray700; lb.TextSize = 13
-			lb.Font = F.Medium; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.ZIndex = 74; lb.Parent = r
-			local bg = Instance.new("Frame")
-			bg.Size = UDim2.new(1, -130, 0, 12); bg.Position = UDim2.new(0, 85, 0.5, 0)
-			bg.AnchorPoint = Vector2.new(0, 0.5); bg.BackgroundColor3 = C.Gray200; bg.ZIndex = 74; bg.Parent = r
-			corner(bg, 6)
-			local fl = Instance.new("Frame")
-			fl.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
-			fl.BackgroundColor3 = s.color; fl.ZIndex = 75; fl.Parent = bg
-			corner(fl, 6)
-			local vl = Instance.new("TextLabel")
-			vl.Size = UDim2.new(0, 40, 1, 0); vl.Position = UDim2.new(1, -40, 0, 0)
-			vl.BackgroundTransparency = 1; vl.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
-			vl.TextColor3 = C.Gray700; vl.TextSize = 13; vl.Font = F.Medium
-			vl.TextXAlignment = Enum.TextXAlignment.Right; vl.ZIndex = 74; vl.Parent = r
-			IntroUI.statSliders[s.key] = { fill = fl, value = vl, bg = bg }
-			
-			-- CRITICAL UI FIX: Draggable stat sliders with proper touch/mouse support
-			local dragging = false
-			local function updateSlider(posX)
-				local relX = math.clamp((posX - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
-				local newVal = math.floor(relX * 100)
-				GodModeCreateData.stats[s.key] = newVal
-				fl.Size = UDim2.new(relX, 0, 1, 0)
-				vl.Text = tostring(newVal) .. "%"
-			end
-			
-			bg.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = true
-					updateSlider(input.Position.X)
-				end
-			end)
-			
-			bg.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = false
-				end
-			end)
-			
-			-- Listen for mouse/touch movement globally while dragging
-			game:GetService("UserInputService").InputChanged:Connect(function(input)
-				if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-					updateSlider(input.Position.X)
-				end
-			end)
-			
-			game:GetService("UserInputService").InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = false
-				end
-			end)
+		
+		-- Create wealth buttons using helper function
+		for i, w in ipairs(wOpts) do
+			createWealthBtn(ws, w, i + 1, hasRoyaltyGamepass)
 		end
-	end
+end
 
-	-- Country section with flag emojis (wrapped in own scope)
-	do
-		local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
+-- CRITICAL FIX #273: Stats section - wrapped in helper function to avoid register limit
+do
+	local scroll = IntroUI.godModeScroll
+	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
+	IntroUI.statSliders = {}
+	
+	-- Helper function to create each slider (isolates local variables)
+	local function createStatSlider(parent, statKey, statIcon, statColor, layoutOrder)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 36)
+		row.BackgroundTransparency = 1
+		row.LayoutOrder = layoutOrder
+		row.ZIndex = 73
+		row.Parent = parent
+		
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(0, 80, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = statIcon .. " " .. statKey
+		label.TextColor3 = C.Gray700
+		label.TextSize = 13
+		label.Font = F.Medium
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.ZIndex = 74
+		label.Parent = row
+		
+		local sliderBg = Instance.new("Frame")
+		sliderBg.Size = UDim2.new(1, -130, 0, 12)
+		sliderBg.Position = UDim2.new(0, 85, 0.5, 0)
+		sliderBg.AnchorPoint = Vector2.new(0, 0.5)
+		sliderBg.BackgroundColor3 = C.Gray200
+		sliderBg.ZIndex = 74
+		sliderBg.Parent = row
+		corner(sliderBg, 6)
+		
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(GodModeCreateData.stats[statKey] / 100, 0, 1, 0)
+		fill.BackgroundColor3 = statColor
+		fill.ZIndex = 75
+		fill.Parent = sliderBg
+		corner(fill, 6)
+		
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Size = UDim2.new(0, 40, 1, 0)
+		valueLabel.Position = UDim2.new(1, -40, 0, 0)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Text = tostring(GodModeCreateData.stats[statKey]) .. "%"
+		valueLabel.TextColor3 = C.Gray700
+		valueLabel.TextSize = 13
+		valueLabel.Font = F.Medium
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.ZIndex = 74
+		valueLabel.Parent = row
+		
+		IntroUI.statSliders[statKey] = { fill = fill, value = valueLabel, bg = sliderBg }
+		
+		-- Dragging logic
+		local dragging = false
+		local function updateSlider(posX)
+			local relX = math.clamp((posX - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+			local newVal = math.floor(relX * 100)
+			GodModeCreateData.stats[statKey] = newVal
+			fill.Size = UDim2.new(relX, 0, 1, 0)
+			valueLabel.Text = tostring(newVal) .. "%"
+		end
+		
+		sliderBg.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				updateSlider(input.Position.X)
+			end
+		end)
+		
+		sliderBg.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+		
+		game:GetService("UserInputService").InputChanged:Connect(function(input)
+			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				updateSlider(input.Position.X)
+			end
+		end)
+		
+		game:GetService("UserInputService").InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+	end
+	
+	-- Create sliders using helper function
+	createStatSlider(ss, "Happiness", "😊", C.Yellow, 2)
+	createStatSlider(ss, "Health", "❤️", C.Green, 3)
+	createStatSlider(ss, "Smarts", "🧠", C.Purple, 4)
+	createStatSlider(ss, "Looks", "💄", C.Pink, 5)
+end
+
+-- Country section with flag emojis
+do
+	local scroll = IntroUI.godModeScroll
+	local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
 		local cOpts = {
 			{id = "United States", flag = "🇺🇸"}, {id = "United Kingdom", flag = "🇬🇧"},
 			{id = "Canada", flag = "🇨🇦"}, {id = "Australia", flag = "🇦🇺"},
@@ -4184,26 +4381,41 @@ do
 		cl.CanvasSize = UDim2.new(0, 0, 0, #cOpts * 32)
 		cl.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		corner(cl, 8); stroke(cl, 1, 0.5, C.Gray300)
+		-- CRITICAL FIX #290: Helper function to create country buttons (isolates locals)
 		local cll = Instance.new("UIListLayout"); cll.Parent = cl
-		for _, c in ipairs(cOpts) do
-			local cb = Instance.new("TextButton")
-			cb.Size = UDim2.new(1, -6, 0, 32); cb.BackgroundColor3 = C.White
-			cb.Text = c.flag .. " " .. c.id; cb.TextColor3 = C.Gray700
-			cb.TextSize = 13; cb.Font = F.Body; cb.ZIndex = 81; cb.Parent = cl
-			cb.MouseEnter:Connect(function() cb.BackgroundColor3 = C.Gray100 end)
-			cb.MouseLeave:Connect(function() cb.BackgroundColor3 = C.White end)
-			cb.MouseButton1Click:Connect(function()
-				GodModeCreateData.country = c.id; dd.Text = c.flag .. " " .. c.id
-				cl.Visible = false; cl.Size = UDim2.new(1, 0, 0, 0); exp = false
+		local function createCountryBtn(countryId, countryFlag)
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, -6, 0, 32)
+			btn.BackgroundColor3 = C.White
+			btn.Text = countryFlag .. " " .. countryId
+			btn.TextColor3 = C.Gray700
+			btn.TextSize = 13
+			btn.Font = F.Body
+			btn.ZIndex = 81
+			btn.Parent = cl
+			btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.Gray100 end)
+			btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.White end)
+			btn.MouseButton1Click:Connect(function()
+				GodModeCreateData.country = countryId
+				dd.Text = countryFlag .. " " .. countryId
+				cl.Visible = false
+				cl.Size = UDim2.new(1, 0, 0, 0)
+				exp = false
 			end)
 		end
-		dd.MouseButton1Click:Connect(function()
-			exp = not exp; cl.Visible = exp
-			-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
-			cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
-		end)
-	end
+		for _, c in ipairs(cOpts) do
+			createCountryBtn(c.id, c.flag)
+		end
+	dd.MouseButton1Click:Connect(function()
+		exp = not exp; cl.Visible = exp
+		-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
+		cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
+	end)
+end
 
+-- Start button section
+do
+	local scroll = IntroUI.godModeScroll
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- START BUTTON AT BOTTOM OF SCROLL (LayoutOrder = 100)
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4258,7 +4470,7 @@ do
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
-end -- End of God Mode UI do-block
+end -- End of Start button do-block
 
 -- Function to show God Mode customization
 local function showGodModeIntroCustomize()
@@ -4543,13 +4755,20 @@ do
 	local function updateCustomizeGenderBtn()
 		refreshGodModeStatus()
 		if hasGodMode then
+			-- CRITICAL FIX: Show unlocked gold color when gamepass owned
 			customizeGenderBtn.Text = "⚡ Customize Character"
 			customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+			customizeGenderBtn.TextColor3 = C.Gray900
 		else
-			customizeGenderBtn.Text = "🔓 Customize (God Mode)"
+			-- CRITICAL FIX: Show 🔒 locked style (was 🔓 which looks unlocked)
+			customizeGenderBtn.Text = "🔒 Customize (God Mode)"
 			customizeGenderBtn.BackgroundColor3 = C.Gray300
+			customizeGenderBtn.TextColor3 = C.Gray600
 		end
 	end
+	
+	-- CRITICAL FIX: Store the update function globally so it can be called on gamepass purchase
+	IntroUI.updateCustomizeGenderBtn = updateCustomizeGenderBtn
 	
 	-- Update on show
 	task.defer(updateCustomizeGenderBtn)
@@ -4558,30 +4777,70 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #103: Add "Born Royal" button to GENDER selection screen
 -- This allows Royalty gamepass owners to be born as royalty WITHOUT needing God Mode
--- Works independently of God Mode - just needs Royalty gamepass
+-- CRITICAL FIX: Split into multiple do-blocks to stay under 200 register limit
 -- ═══════════════════════════════════════════════════════════════════════════════
-do
-	-- Helper to check Royalty gamepass ownership
-	local function hasRoyaltyGamepass()
-		if CheckGamepass then
-			local success, owns = pcall(function()
-				return CheckGamepass:InvokeServer("ROYALTY")
-			end)
-			return success and owns == true
-		end
-		return false
+
+-- Royal birth shared state (module level to avoid register issues)
+IntroUI.RoyalBirthData = {
+	gender = "Male",
+	name = "",
+	ethnicity = "Random",
+	overlay = nil,
+}
+
+IntroUI.RoyalCountries = {
+	{ id = "uk", name = "United Kingdom", emoji = "🇬🇧" },
+	{ id = "spain", name = "Spain", emoji = "🇪🇸" },
+	{ id = "sweden", name = "Sweden", emoji = "🇸🇪" },
+	{ id = "japan", name = "Japan", emoji = "🇯🇵" },
+	{ id = "monaco", name = "Monaco", emoji = "🇲🇨" },
+	{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦" },
+	{ id = "thailand", name = "Thailand", emoji = "🇹🇭" },
+	{ id = "morocco", name = "Morocco", emoji = "🇲🇦" },
+	{ id = "jordan", name = "Jordan", emoji = "🇯🇴" },
+	{ id = "belgium", name = "Belgium", emoji = "🇧🇪" },
+	{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱" },
+	{ id = "norway", name = "Norway", emoji = "🇳🇴" },
+	{ id = "denmark", name = "Denmark", emoji = "🇩🇰" },
+}
+
+IntroUI.EthnicityOptions = {
+	{ id = "Random", label = "🎲 Random" },
+	{ id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+	{ id = "African", label = "👨🏿 African" },
+	{ id = "Asian", label = "🧑🏻 Asian" },
+	{ id = "Hispanic", label = "🧑🏽 Hispanic" },
+	{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+	{ id = "Mixed", label = "🌈 Mixed" },
+}
+
+-- Helper to check Royalty gamepass ownership (module level)
+local function checkRoyaltyGamepass()
+	if CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer("ROYALTY")
+		end)
+		return success and owns == true
 	end
-	
+	return false
+end
+
+-- Forward declare Royal UI functions at module level
+IntroUI.showRoyalCountrySelection = nil
+IntroUI.showRoyalGenderSelection = nil
+
+-- Royal button setup block
+do
 	local royaltyBtn = Instance.new("TextButton")
 	royaltyBtn.Name = "RoyaltyGenderBtn"
 	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 48)
-	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Royal Gold
+	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 	royaltyBtn.Font = F.Title
 	royaltyBtn.TextSize = 16
 	royaltyBtn.TextColor3 = C.Gray900
 	royaltyBtn.Text = "👑 Born Royal"
 	royaltyBtn.AutoButtonColor = false
-	royaltyBtn.LayoutOrder = 9 -- Before Customize, after Female
+	royaltyBtn.LayoutOrder = 9
 	royaltyBtn.ZIndex = 72
 	royaltyBtn.Parent = IntroUI.genderBtns
 	pill(royaltyBtn)
@@ -4596,49 +4855,74 @@ do
 		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
 	end)
 	
-	-- Royal country selection state
-	local royalCountryOverlay = nil
-	local selectedRoyalCountry = nil
+	royaltyBtn.MouseButton1Click:Connect(function()
+		if checkRoyaltyGamepass() then
+			if IntroUI.showRoyalCountrySelection then
+				IntroUI.showRoyalCountrySelection()
+			end
+		else
+			-- CRITICAL FIX: Use FireServer not InvokeServer (PromptGamepass is RemoteEvent)
+			if PromptGamepass then
+				pcall(function() PromptGamepass:FireServer("ROYALTY") end)
+			end
+		end
+	end)
 	
-	-- Royal countries list
-	local RoyalCountries = {
-		{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", flag = "🇬🇧" },
-		{ id = "spain", name = "Spain", emoji = "🇪🇸", flag = "🇪🇸" },
-		{ id = "sweden", name = "Sweden", emoji = "🇸🇪", flag = "🇸🇪" },
-		{ id = "japan", name = "Japan", emoji = "🇯🇵", flag = "🇯🇵" },
-		{ id = "monaco", name = "Monaco", emoji = "🇲🇨", flag = "🇲🇨" },
-		{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", flag = "🇸🇦" },
-		{ id = "thailand", name = "Thailand", emoji = "🇹🇭", flag = "🇹🇭" },
-		{ id = "morocco", name = "Morocco", emoji = "🇲🇦", flag = "🇲🇦" },
-		{ id = "jordan", name = "Jordan", emoji = "🇯🇴", flag = "🇯🇴" },
-		{ id = "belgium", name = "Belgium", emoji = "🇧🇪", flag = "🇧🇪" },
-		{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱", flag = "🇳🇱" },
-		{ id = "norway", name = "Norway", emoji = "🇳🇴", flag = "🇳🇴" },
-		{ id = "denmark", name = "Denmark", emoji = "🇩🇰", flag = "🇩🇰" },
-	}
+	IntroUI.updateRoyaltyGenderBtn = function()
+		local hasRoyal = checkRoyaltyGamepass()
+		if hasRoyal then
+			-- CRITICAL FIX: Show unlocked gold color when gamepass owned
+			royaltyBtn.Text = "👑 Born Royal"
+			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+			royaltyBtn.TextColor3 = C.Gray900
+			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+		else
+			-- CRITICAL FIX: Show 🔒 locked style like God Mode button
+			royaltyBtn.Text = "🔒 Born Royal"
+			royaltyBtn.BackgroundColor3 = C.Gray300
+			royaltyBtn.TextColor3 = C.Gray600
+			stroke(royaltyBtn, 1, 0.5, C.Gray400)
+		end
+	end
 	
-	local function showRoyalCountrySelection()
-		if royalCountryOverlay then return end
+	task.defer(IntroUI.updateRoyaltyGenderBtn)
+end
+
+-- Royal Country Selection function block
+do
+	IntroUI.showRoyalCountrySelection = function()
+		if IntroUI.RoyalBirthData.overlay then return end
+		
+		-- Reset royal birth data
+		IntroUI.RoyalBirthData.gender = "Male"
+		IntroUI.RoyalBirthData.name = ""
+		IntroUI.RoyalBirthData.ethnicity = "Random"
 		
 		-- Create overlay
-		royalCountryOverlay = Instance.new("Frame")
-		royalCountryOverlay.Name = "RoyalCountryOverlay"
-		royalCountryOverlay.Size = UDim2.fromScale(1, 1)
-		royalCountryOverlay.BackgroundColor3 = C.Black
-		royalCountryOverlay.BackgroundTransparency = 0.4
-		royalCountryOverlay.ZIndex = 80
-		royalCountryOverlay.Parent = screenGui
+		local overlay = Instance.new("Frame")
+		overlay.Name = "RoyalCountryOverlay"
+		overlay.Size = UDim2.fromScale(1, 1)
+		overlay.BackgroundColor3 = C.Black
+		overlay.BackgroundTransparency = 0.4
+		overlay.ZIndex = 80
+		overlay.Parent = screenGui
+		IntroUI.RoyalBirthData.overlay = overlay
 		
-		-- Card
+		-- Card with slide animation
 		local card = Instance.new("Frame")
 		card.Name = "Card"
 		card.Size = UDim2.new(0.9, 0, 0, 0)
 		card.AutomaticSize = Enum.AutomaticSize.Y
 		card.AnchorPoint = Vector2.new(0.5, 0.5)
-		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.Position = UDim2.fromScale(-0.5, 0.5) -- Start off-screen left
 		card.BackgroundColor3 = C.White
 		card.ZIndex = 81
-		card.Parent = royalCountryOverlay
+		card.Parent = overlay
+		
+		-- Slide in animation
+		tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5)
+		})
 		corner(card, 16)
 		pad(card, 16, 16, 16, 16)
 		
@@ -4684,7 +4968,7 @@ do
 		scrollLayout.Padding = UDim.new(0, 6)
 		scrollLayout.Parent = scroll
 		
-		for _, country in ipairs(RoyalCountries) do
+		for _, country in ipairs(IntroUI.RoyalCountries) do
 			local countryBtn = Instance.new("TextButton")
 			countryBtn.Size = UDim2.new(1, 0, 0, 44)
 			countryBtn.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
@@ -4705,16 +4989,19 @@ do
 			end)
 			
 			countryBtn.MouseButton1Click:Connect(function()
-				selectedRoyalCountry = country.id
-				
-				-- Close the country selection
-				if royalCountryOverlay then
-					royalCountryOverlay:Destroy()
-					royalCountryOverlay = nil
-				end
-				
-				-- Now show gender selection for the royal
-				showRoyalGenderSelection(country)
+				-- Slide out animation then show customization
+				tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+					Position = UDim2.fromScale(-0.5, 0.5)
+				})
+				task.delay(0.25, function()
+					if IntroUI.RoyalBirthData.overlay then
+						IntroUI.RoyalBirthData.overlay:Destroy()
+						IntroUI.RoyalBirthData.overlay = nil
+					end
+					if IntroUI.showRoyalGenderSelection then
+						IntroUI.showRoyalGenderSelection(country)
+					end
+				end)
 			end)
 		end
 		
@@ -4731,15 +5018,21 @@ do
 		corner(randomBtn, 8)
 		
 		randomBtn.MouseButton1Click:Connect(function()
-			local randomCountry = RoyalCountries[math.random(1, #RoyalCountries)]
-			selectedRoyalCountry = randomCountry.id
+			local randomCountry = IntroUI.RoyalCountries[math.random(1, #IntroUI.RoyalCountries)]
 			
-			if royalCountryOverlay then
-				royalCountryOverlay:Destroy()
-				royalCountryOverlay = nil
-			end
-			
-			showRoyalGenderSelection(randomCountry)
+			-- Slide out animation then show customization
+			tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(-0.5, 0.5)
+			})
+			task.delay(0.25, function()
+				if IntroUI.RoyalBirthData.overlay then
+					IntroUI.RoyalBirthData.overlay:Destroy()
+					IntroUI.RoyalBirthData.overlay = nil
+				end
+				if IntroUI.showRoyalGenderSelection then
+					IntroUI.showRoyalGenderSelection(randomCountry)
+				end
+			end)
 		end)
 		
 		-- Cancel button
@@ -4755,159 +5048,392 @@ do
 		corner(cancelBtn, 8)
 		
 		cancelBtn.MouseButton1Click:Connect(function()
-			if royalCountryOverlay then
-				royalCountryOverlay:Destroy()
-				royalCountryOverlay = nil
-			end
+			-- Slide out animation then close
+			tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(-0.5, 0.5)
+			})
+			task.delay(0.2, function()
+				if IntroUI.RoyalBirthData.overlay then
+					IntroUI.RoyalBirthData.overlay:Destroy()
+					IntroUI.RoyalBirthData.overlay = nil
+				end
+			end)
 		end)
 	end
-	
-	local function showRoyalGenderSelection(country)
-		-- Create overlay for gender selection
-		local genderOverlay = Instance.new("Frame")
-		genderOverlay.Name = "RoyalGenderOverlay"
-		genderOverlay.Size = UDim2.fromScale(1, 1)
-		genderOverlay.BackgroundColor3 = C.Black
-		genderOverlay.BackgroundTransparency = 0.4
-		genderOverlay.ZIndex = 80
-		genderOverlay.Parent = screenGui
+end
+
+-- Royal Gender/Customization Selection function block
+do
+	IntroUI.showRoyalGenderSelection = function(country)
+		-- Create overlay for customization
+		local customOverlay = Instance.new("Frame")
+		customOverlay.Name = "RoyalCustomizeOverlay"
+		customOverlay.Size = UDim2.fromScale(1, 1)
+		customOverlay.BackgroundColor3 = C.Black
+		customOverlay.BackgroundTransparency = 0.4
+		customOverlay.ZIndex = 80
+		customOverlay.Parent = screenGui
 		
-		-- Card
+		-- Main scrollable card
 		local card = Instance.new("Frame")
 		card.Name = "Card"
-		card.Size = UDim2.new(0.85, 0, 0, 0)
-		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.Size = UDim2.new(0.92, 0, 0.8, 0)
 		card.AnchorPoint = Vector2.new(0.5, 0.5)
-		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.Position = UDim2.fromScale(1.5, 0.5) -- Start off-screen for slide
 		card.BackgroundColor3 = C.White
 		card.ZIndex = 81
-		card.Parent = genderOverlay
+		card.Parent = customOverlay
 		corner(card, 16)
-		pad(card, 20, 20, 20, 20)
+		
+		-- Slide in animation
+		tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5)
+		})
+		
+		-- Scroll frame
+		local scroll = Instance.new("ScrollingFrame")
+		scroll.Size = UDim2.new(1, 0, 1, 0)
+		scroll.BackgroundTransparency = 1
+		scroll.ScrollBarThickness = 4
+		scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		scroll.ZIndex = 82
+		scroll.Parent = card
+		
+		local scrollPad = Instance.new("UIPadding")
+		scrollPad.PaddingLeft = UDim.new(0, 16)
+		scrollPad.PaddingRight = UDim.new(0, 16)
+		scrollPad.PaddingTop = UDim.new(0, 16)
+		scrollPad.PaddingBottom = UDim.new(0, 16)
+		scrollPad.Parent = scroll
 		
 		local layout = Instance.new("UIListLayout")
 		layout.Padding = UDim.new(0, 12)
 		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		layout.Parent = card
+		layout.Parent = scroll
 		
-		-- Title
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, 36)
-		title.BackgroundTransparency = 1
-		title.Text = country.emoji .. " Royal of " .. country.name
-		title.TextColor3 = C.Gray900
-		title.TextSize = 18
-		title.Font = F.Title
-		title.ZIndex = 82
-		title.Parent = card
+		-- Header
+		local header = Instance.new("TextLabel")
+		header.Size = UDim2.new(1, 0, 0, 44)
+		header.BackgroundTransparency = 1
+		header.Text = country.emoji .. " Royal Birth: " .. country.name
+		header.TextColor3 = Color3.fromRGB(180, 140, 0)
+		header.TextSize = 18
+		header.Font = F.Title
+		header.ZIndex = 83
+		header.Parent = scroll
 		
-		-- Prince button
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GENDER SELECTION
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local genderSec = Instance.new("Frame")
+		genderSec.Size = UDim2.new(1, 0, 0, 0)
+		genderSec.AutomaticSize = Enum.AutomaticSize.Y
+		genderSec.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
+		genderSec.ZIndex = 82
+		genderSec.Parent = scroll
+		corner(genderSec, 12)
+		pad(genderSec, 12, 12, 12, 12)
+		
+		local genderLayout = Instance.new("UIListLayout")
+		genderLayout.Padding = UDim.new(0, 8)
+		genderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		genderLayout.Parent = genderSec
+		
+		local genderTitle = Instance.new("TextLabel")
+		genderTitle.Size = UDim2.new(1, 0, 0, 24)
+		genderTitle.BackgroundTransparency = 1
+		genderTitle.Text = "👑 Choose Your Royal Title"
+		genderTitle.TextColor3 = C.Gray800
+		genderTitle.TextSize = 15
+		genderTitle.Font = F.Title
+		genderTitle.ZIndex = 83
+		genderTitle.Parent = genderSec
+		
+		local genderBtnFrame = Instance.new("Frame")
+		genderBtnFrame.Size = UDim2.new(1, 0, 0, 48)
+		genderBtnFrame.BackgroundTransparency = 1
+		genderBtnFrame.ZIndex = 83
+		genderBtnFrame.Parent = genderSec
+		
+		local genderBtnLayout = Instance.new("UIListLayout")
+		genderBtnLayout.FillDirection = Enum.FillDirection.Horizontal
+		genderBtnLayout.Padding = UDim.new(0, 10)
+		genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		genderBtnLayout.Parent = genderBtnFrame
+		
+		IntroUI.RoyalBirthData.gender = "Male"
+		
 		local princeBtn = Instance.new("TextButton")
-		princeBtn.Size = UDim2.new(1, 0, 0, 56)
+		princeBtn.Size = UDim2.new(0, 120, 0, 48)
 		princeBtn.BackgroundColor3 = C.Male
-		princeBtn.Text = "🤴 Prince"
+		princeBtn.Text = "👑 Prince"
 		princeBtn.TextColor3 = C.White
-		princeBtn.TextSize = 18
+		princeBtn.TextSize = 15
 		princeBtn.Font = F.Title
-		princeBtn.ZIndex = 82
-		princeBtn.Parent = card
-		corner(princeBtn, 12)
+		princeBtn.ZIndex = 84
+		princeBtn.Parent = genderBtnFrame
+		corner(princeBtn, 10)
+		stroke(princeBtn, 2, 0, Color3.fromRGB(30, 100, 180))
 		
-		-- Princess button
 		local princessBtn = Instance.new("TextButton")
-		princessBtn.Size = UDim2.new(1, 0, 0, 56)
-		princessBtn.BackgroundColor3 = C.Female
+		princessBtn.Size = UDim2.new(0, 120, 0, 48)
+		princessBtn.BackgroundColor3 = C.Gray200
 		princessBtn.Text = "👸 Princess"
-		princessBtn.TextColor3 = C.White
-		princessBtn.TextSize = 18
+		princessBtn.TextColor3 = C.Gray600
+		princessBtn.TextSize = 15
 		princessBtn.Font = F.Title
-		princessBtn.ZIndex = 82
-		princessBtn.Parent = card
-		corner(princessBtn, 12)
-		
-		-- Cancel button
-		local cancelBtn = Instance.new("TextButton")
-		cancelBtn.Size = UDim2.new(0.5, 0, 0, 36)
-		cancelBtn.BackgroundColor3 = C.Gray200
-		cancelBtn.Text = "← Back"
-		cancelBtn.TextColor3 = C.Gray600
-		cancelBtn.TextSize = 14
-		cancelBtn.Font = F.Medium
-		cancelBtn.ZIndex = 82
-		cancelBtn.Parent = card
-		corner(cancelBtn, 8)
-		
-		local function startRoyalLife(gender)
-			genderOverlay:Destroy()
-			
-			-- Set the selected gender for royal birth
-			selectedGender = gender
-			
-			-- Send to server with royal birth info
-			if SetLifeInfo then
-				pcall(function()
-					SetLifeInfo:FireServer({
-						gender = gender,
-						isRoyalBirth = true,
-						royalCountry = country.id,
-						royalCountryName = country.name,
-					})
-				end)
-			end
-			
-			-- Hide intro and complete setup
-			introComplete = true
-			hideIntro()
-		end
+		princessBtn.ZIndex = 84
+		princessBtn.Parent = genderBtnFrame
+		corner(princessBtn, 10)
 		
 		princeBtn.MouseButton1Click:Connect(function()
-			startRoyalLife("Male")
+			IntroUI.RoyalBirthData.gender = "Male"
+			princeBtn.BackgroundColor3 = C.Male
+			princeBtn.TextColor3 = C.White
+			stroke(princeBtn, 2, 0, Color3.fromRGB(30, 100, 180))
+			princessBtn.BackgroundColor3 = C.Gray200
+			princessBtn.TextColor3 = C.Gray600
+			local s = princessBtn:FindFirstChildOfClass("UIStroke")
+			if s then s:Destroy() end
 		end)
 		
 		princessBtn.MouseButton1Click:Connect(function()
-			startRoyalLife("Female")
+			IntroUI.RoyalBirthData.gender = "Female"
+			princessBtn.BackgroundColor3 = C.Female
+			princessBtn.TextColor3 = C.White
+			stroke(princessBtn, 2, 0, Color3.fromRGB(180, 50, 120))
+			princeBtn.BackgroundColor3 = C.Gray200
+			princeBtn.TextColor3 = C.Gray600
+			local s = princeBtn:FindFirstChildOfClass("UIStroke")
+			if s then s:Destroy() end
 		end)
 		
-		cancelBtn.MouseButton1Click:Connect(function()
-			genderOverlay:Destroy()
-			showRoyalCountrySelection()
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- NAME INPUT
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local nameSec = Instance.new("Frame")
+		nameSec.Size = UDim2.new(1, 0, 0, 0)
+		nameSec.AutomaticSize = Enum.AutomaticSize.Y
+		nameSec.BackgroundColor3 = C.White
+		nameSec.ZIndex = 82
+		nameSec.Parent = scroll
+		corner(nameSec, 12)
+		stroke(nameSec, 1, 0.5, C.Gray200)
+		pad(nameSec, 12, 12, 12, 12)
+		
+		local nameLayout = Instance.new("UIListLayout")
+		nameLayout.Padding = UDim.new(0, 6)
+		nameLayout.Parent = nameSec
+		
+		local nameTitle = Instance.new("TextLabel")
+		nameTitle.Size = UDim2.new(1, 0, 0, 22)
+		nameTitle.BackgroundTransparency = 1
+		nameTitle.Text = "👤 Royal Name (Optional)"
+		nameTitle.TextColor3 = C.Gray800
+		nameTitle.TextSize = 14
+		nameTitle.Font = F.Title
+		nameTitle.TextXAlignment = Enum.TextXAlignment.Left
+		nameTitle.ZIndex = 83
+		nameTitle.Parent = nameSec
+		
+		local nameInput = Instance.new("TextBox")
+		nameInput.Size = UDim2.new(1, 0, 0, 40)
+		nameInput.BackgroundColor3 = C.Gray100
+		nameInput.Text = ""
+		nameInput.PlaceholderText = "Leave blank for random royal name..."
+		nameInput.TextColor3 = C.Gray900
+		nameInput.PlaceholderColor3 = C.Gray400
+		nameInput.TextSize = 14
+		nameInput.Font = F.Medium
+		nameInput.ClearTextOnFocus = false
+		nameInput.ZIndex = 83
+		nameInput.Parent = nameSec
+		corner(nameInput, 8)
+		
+		nameInput:GetPropertyChangedSignal("Text"):Connect(function()
+			IntroUI.RoyalBirthData.name = nameInput.Text
+		end)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ETHNICITY SELECTION
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local ethSec = Instance.new("Frame")
+		ethSec.Size = UDim2.new(1, 0, 0, 0)
+		ethSec.AutomaticSize = Enum.AutomaticSize.Y
+		ethSec.BackgroundColor3 = C.White
+		ethSec.ZIndex = 82
+		ethSec.Parent = scroll
+		corner(ethSec, 12)
+		stroke(ethSec, 1, 0.5, C.Gray200)
+		pad(ethSec, 12, 12, 12, 12)
+		
+		local ethLayout = Instance.new("UIListLayout")
+		ethLayout.Padding = UDim.new(0, 6)
+		ethLayout.Parent = ethSec
+		
+		local ethTitle = Instance.new("TextLabel")
+		ethTitle.Size = UDim2.new(1, 0, 0, 22)
+		ethTitle.BackgroundTransparency = 1
+		ethTitle.Text = "🌍 Ethnicity"
+		ethTitle.TextColor3 = C.Gray800
+		ethTitle.TextSize = 14
+		ethTitle.Font = F.Title
+		ethTitle.TextXAlignment = Enum.TextXAlignment.Left
+		ethTitle.ZIndex = 83
+		ethTitle.Parent = ethSec
+		
+		local ethGrid = Instance.new("Frame")
+		ethGrid.Size = UDim2.new(1, 0, 0, 0)
+		ethGrid.AutomaticSize = Enum.AutomaticSize.Y
+		ethGrid.BackgroundTransparency = 1
+		ethGrid.ZIndex = 83
+		ethGrid.Parent = ethSec
+		
+		local ethGridLayout = Instance.new("UIGridLayout")
+		ethGridLayout.CellSize = UDim2.new(0, 90, 0, 32)
+		ethGridLayout.CellPadding = UDim2.new(0, 6, 0, 6)
+		ethGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		ethGridLayout.Parent = ethGrid
+		
+		local ethBtns = {}
+		for _, eth in ipairs(IntroUI.EthnicityOptions) do
+			local btn = Instance.new("TextButton")
+			btn.Name = eth.id
+			btn.Size = UDim2.new(0, 90, 0, 32)
+			btn.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
+			btn.Text = eth.label
+			btn.TextColor3 = eth.id == "Random" and C.White or C.Gray600
+			btn.TextSize = 10
+			btn.Font = F.Medium
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.ZIndex = 84
+			btn.Parent = ethGrid
+			corner(btn, 6)
+			ethBtns[eth.id] = btn
+			
+			btn.MouseButton1Click:Connect(function()
+				IntroUI.RoyalBirthData.ethnicity = eth.id
+				for id, b in pairs(ethBtns) do
+					b.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
+					b.TextColor3 = id == eth.id and C.White or C.Gray600
+				end
+			end)
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ACTION BUTTONS
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local btnFrame = Instance.new("Frame")
+		btnFrame.Size = UDim2.new(1, 0, 0, 52)
+		btnFrame.BackgroundTransparency = 1
+		btnFrame.ZIndex = 82
+		btnFrame.Parent = scroll
+		
+		local btnLayout = Instance.new("UIListLayout")
+		btnLayout.FillDirection = Enum.FillDirection.Horizontal
+		btnLayout.Padding = UDim.new(0, 10)
+		btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		btnLayout.Parent = btnFrame
+		
+		local backBtn = Instance.new("TextButton")
+		backBtn.Size = UDim2.new(0, 90, 0, 46)
+		backBtn.BackgroundColor3 = C.Gray200
+		backBtn.Text = "← Back"
+		backBtn.TextColor3 = C.Gray600
+		backBtn.TextSize = 14
+		backBtn.Font = F.Medium
+		backBtn.ZIndex = 83
+		backBtn.Parent = btnFrame
+		corner(backBtn, 10)
+		
+		local startBtn = Instance.new("TextButton")
+		startBtn.Size = UDim2.new(0, 160, 0, 46)
+		startBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+		startBtn.Text = "👑 Begin Royal Life"
+		startBtn.TextColor3 = C.Gray900
+		startBtn.TextSize = 15
+		startBtn.Font = F.Title
+		startBtn.ZIndex = 83
+		startBtn.Parent = btnFrame
+		corner(startBtn, 10)
+		stroke(startBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+		
+		-- Back button - slide back to kingdom selection
+		backBtn.MouseButton1Click:Connect(function()
+			tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(1.5, 0.5)
+			})
+			task.delay(0.25, function()
+				customOverlay:Destroy()
+				IntroUI.showRoyalCountrySelection()
+			end)
+		end)
+		
+		-- Start Royal Life
+		startBtn.MouseButton1Click:Connect(function()
+			-- Get final name
+			local finalName = IntroUI.RoyalBirthData.name:gsub("^%s+", ""):gsub("%s+$", "")
+			if finalName == "" then
+				local maleNames = {"William", "Charles", "Henry", "Edward", "George", "Philip", "James", "Alexander"}
+				local femaleNames = {"Elizabeth", "Victoria", "Charlotte", "Catherine", "Diana", "Margaret", "Anne", "Alexandra"}
+				local names = IntroUI.RoyalBirthData.gender == "Male" and maleNames or femaleNames
+				finalName = names[math.random(1, #names)]
+			end
+			
+			-- Animate out
+			tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(0.5, 1.5)
+			})
+			
+			task.delay(0.2, function()
+				customOverlay:Destroy()
+				
+				-- CRITICAL FIX: Set selectedGender
+				selectedGender = IntroUI.RoyalBirthData.gender
+				
+				-- CRITICAL FIX: Set currentState properly
+				currentState.Gender = IntroUI.RoyalBirthData.gender
+				currentState.Name = finalName
+				currentState.Flags = currentState.Flags or {}
+				currentState.Flags.is_royalty = true
+				currentState.Flags.royal_birth = true
+				currentState.Flags.royal_country = country.id
+				currentState.Flags.royal_country_name = country.name
+				
+				-- CRITICAL FIX: Send proper format to server
+				if SetLifeInfo then
+					pcall(function()
+						SetLifeInfo:FireServer(finalName, IntroUI.RoyalBirthData.gender)
+					end)
+				end
+				
+				-- Send detailed royal info if GodModeEdit available
+				if GodModeEdit then
+					pcall(function()
+						GodModeEdit:InvokeServer({
+							name = finalName,
+							gender = IntroUI.RoyalBirthData.gender,
+							isRoyalBirth = true,
+							royalCountry = country.id,
+							royalCountryName = country.name,
+							ethnicity = IntroUI.RoyalBirthData.ethnicity,
+							familyWealth = "Royal",
+						})
+					end)
+				end
+				
+				-- CRITICAL FIX: Complete intro properly
+				introComplete = true
+				hideIntro()
+				
+				task.defer(function()
+					if updateFromState then updateFromState() end
+				end)
+			end)
 		end)
 	end
-	
-	royaltyBtn.MouseButton1Click:Connect(function()
-		-- Check for Royalty gamepass ownership
-		local hasRoyal = hasRoyaltyGamepass()
-		if hasRoyal then
-			showRoyalCountrySelection()
-		else
-			-- Prompt to purchase Royalty gamepass
-			if PromptGamepass then
-				pcall(function()
-					PromptGamepass:InvokeServer("ROYALTY")
-				end)
-			end
-		end
-	end)
-	
-	-- Update button appearance based on Royalty gamepass status
-	local function updateRoyaltyGenderBtn()
-		local hasRoyal = hasRoyaltyGamepass()
-		if hasRoyal then
-			royaltyBtn.Text = "👑 Born Royal"
-			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
-		else
-			royaltyBtn.Text = "🔒 Born Royal (Gamepass)"
-			royaltyBtn.BackgroundColor3 = C.Gray300
-			stroke(royaltyBtn, 1, 0.5, C.Gray400)
-		end
-	end
-	
-	-- Update on show
-	task.defer(updateRoyaltyGenderBtn)
-	
-	-- Store update function for later use
-	IntroUI.updateRoyaltyGenderBtn = updateRoyaltyGenderBtn
 end
 
 showIntro = function()

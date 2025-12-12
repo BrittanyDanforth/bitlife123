@@ -257,8 +257,8 @@ end
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
--- Debug logging (ENABLED to trace asset sync issues)
-local DEBUG = true
+-- Debug logging (Disabled for production - was ENABLED to trace asset sync issues)
+local DEBUG = false
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end

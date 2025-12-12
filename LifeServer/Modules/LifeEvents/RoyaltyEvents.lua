@@ -510,6 +510,7 @@ RoyaltyEvents.RoyalScandals = {
 
 RoyaltyEvents.LifeEvents = {
 	-- BIRTH AND CHILDHOOD
+	-- CRITICAL FIX #288: Added oneTime to birth announcement
 	{
 		id = "royal_birth_announcement",
 		title = "👶 Royal Birth Announcement",
@@ -520,6 +521,9 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 0,
 		isRoyalOnly = true,
 		isBirthEvent = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		priority = "critical",
 		choices = {
 			{
 				text = "Born to rule! (Embrace destiny)",
@@ -535,6 +539,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #286: Added oneTime to christening event
 	{
 		id = "royal_christening",
 		title = "⛪ Royal Christening",
@@ -545,21 +550,25 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 1,
 		isRoyalOnly = true,
 		isMilestone = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { christened = true } },
 		choices = {
 			{
 				text = "Sleep through the whole thing",
 				effects = { Happiness = 5 },
-				setFlags = { peaceful_baby = true },
+				setFlags = { peaceful_baby = true, christened = true },
 				feed = "You slept peacefully through your christening.",
 			},
 			{
 				text = "Cry during the ceremony",
 				effects = { Happiness = -2 },
-				setFlags = { fussy_baby = true },
+				setFlags = { fussy_baby = true, christened = true },
 				feed = "Your cries echoed through the chapel!",
 			},
 		},
 	},
+	-- CRITICAL FIX #289: Added oneTime to first public appearance
 	{
 		id = "first_public_appearance",
 		title = "📸 First Public Appearance",
@@ -570,30 +579,35 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 5,
 		isRoyalOnly = true,
 		isMilestone = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { first_appearance_done = true } },
 		choices = {
 			{
 				text = "Wave enthusiastically to the crowd",
 				effects = { Happiness = 8 },
 				royaltyEffect = { popularity = 5 },
-				setFlags = { natural_public_speaker = true },
+				setFlags = { natural_public_speaker = true, first_appearance_done = true },
 				feed = "The crowd loved your enthusiastic wave!",
 			},
 			{
 				text = "Hide behind your parent shyly",
 				effects = { Happiness = 3 },
 				royaltyEffect = { popularity = 2 },
-				setFlags = { shy_royal = true },
+				setFlags = { shy_royal = true, first_appearance_done = true },
 				feed = "You were adorably shy at your first appearance.",
 			},
 			{
 				text = "Make a funny face at the cameras",
 				effects = { Happiness = 10 },
 				royaltyEffect = { popularity = 3, scandals = 0 },
+				setFlags = { first_appearance_done = true },
 				setFlags = { playful_royal = true },
 				feed = "Your funny face became a viral meme!",
 			},
 		},
 	},
+	-- CRITICAL FIX #287: Added oneTime to royal education choice
 	{
 		id = "royal_education_choice",
 		title = "🎓 Royal Education",
@@ -602,6 +616,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 6,
 		maxAge = 8,
 		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { elite_education = true, palace_tutors = true, normal_school = true } },
 		choices = {
 			{
 				text = "Attend Eton/exclusive boarding school",
@@ -980,6 +997,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #292: Added oneTime to coming of age (only happens once at 18)
 	{
 		id = "coming_of_age",
 		title = "🎂 Royal Coming of Age",
@@ -989,30 +1007,35 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 18,
 		isRoyalOnly = true,
 		isMilestone = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		priority = "critical",
+		conditions = { blockedFlags = { came_of_age = true } },
 		choices = {
 			{
 				text = "Embrace your new responsibilities",
 				effects = { Happiness = 5, Smarts = 5 },
 				royaltyEffect = { popularity = 10 },
-				setFlags = { dutiful_royal = true },
+				setFlags = { dutiful_royal = true, came_of_age = true },
 				feed = "You embraced your royal duties with grace.",
 			},
 			{
 				text = "Party like there's no tomorrow",
 				effects = { Happiness = 15, Health = -5 },
 				royaltyEffect = { popularity = -5 },
-				setFlags = { party_royal = true },
+				setFlags = { party_royal = true, came_of_age = true },
 				feed = "Your coming-of-age party was legendary!",
 			},
 			{
 				text = "Give a speech about your vision for the future",
 				effects = { Happiness = 5, Smarts = 8 },
 				royaltyEffect = { popularity = 15 },
-				setFlags = { visionary_royal = true, public_speaker = true },
+				setFlags = { visionary_royal = true, public_speaker = true, came_of_age = true },
 				feed = "Your speech inspired the nation!",
 			},
 		},
 	},
+	-- CRITICAL FIX #293: Added oneTime to military service
 	{
 		id = "military_service",
 		title = "🎖️ Royal Military Service",
@@ -1021,7 +1044,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 25,
 		isRoyalOnly = true,
-		conditions = { requiresFlags = { not_served_military = nil } },
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { military_service = true, declined_service = true } },
 		choices = {
 			{
 				text = "Join the Army",
@@ -1053,6 +1078,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #294: Added oneTime to first solo engagement
 	{
 		id = "first_solo_engagement",
 		title = "✨ First Solo Engagement",
@@ -1061,6 +1087,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 22,
 		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { solo_success = true, learned_from_mistake = true, public_disaster = true } },
 		choices = {
 			{
 				text = "Nail it with charm and grace",
@@ -1095,34 +1124,40 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 40,
 		isRoyalOnly = true,
-		conditions = { requiresFlags = { married = nil } },
+		oneTime = true, -- CRITICAL FIX #308: Only trigger once to prevent duplicate romance events
+		cooldown = 10, -- CRITICAL FIX: 10 year cooldown as extra safety
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { married = nil },
+			blockedFlags = { royal_courtship_done = true, engaged = true, married = true }
+		},
 		choices = {
 			{
 				text = "Date someone from nobility",
 				effects = { Happiness = 8 },
 				royaltyEffect = { popularity = 5 },
-				setFlags = { dating_noble = true, traditional_romance = true },
+				setFlags = { dating_noble = true, traditional_romance = true, royal_courtship_done = true, engaged = true },
 				feed = "You began courting someone from a noble family.",
 			},
 			{
 				text = "Date a commoner (break tradition!)",
 				effects = { Happiness = 12 },
 				royaltyEffect = { popularity = 15 },
-				setFlags = { dating_commoner = true, modern_royal = true },
+				setFlags = { dating_commoner = true, modern_royal = true, royal_courtship_done = true, engaged = true },
 				feed = "The public loves your down-to-earth romance!",
 			},
 			{
 				text = "Date a foreign royal (alliance)",
 				effects = { Happiness = 6 },
 				royaltyEffect = { popularity = 3 },
-				setFlags = { dating_foreign_royal = true, diplomatic_romance = true },
+				setFlags = { dating_foreign_royal = true, diplomatic_romance = true, royal_courtship_done = true, engaged = true },
 				feed = "Your relationship could unite two kingdoms!",
 			},
 			{
 				text = "Keep your relationship secret",
 				effects = { Happiness = 10 },
 				royaltyEffect = { popularity = 0 },
-				setFlags = { secret_romance = true },
+				setFlags = { secret_romance = true, royal_courtship_done = true },
 				feed = "You're keeping your love life private... for now.",
 			},
 		},
@@ -1135,38 +1170,65 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 50,
 		isRoyalOnly = true,
+		oneTime = true, -- CRITICAL FIX #306: Only one wedding planning event
 		conditions = { requiresFlags = { engaged = true } },
 		choices = {
 			{
 				text = "Traditional grand ceremony ($50 million)",
 				effects = { Happiness = 15 },
-				royaltyEffect = { popularity = 20, wealthCost = 50000000 },
-				setFlags = { grand_wedding = true },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { grand_wedding = true, married = true },
 				feed = "Your fairy-tale wedding captivated the world!",
+				-- CRITICAL FIX #306: Actually deduct the money!
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 50000000
+					if state.AddFeed then
+						state:AddFeed("💒 Your grand royal wedding cost $50 million!")
+					end
+				end,
 			},
 			{
 				text = "Modern intimate wedding ($10 million)",
 				effects = { Happiness = 18 },
-				royaltyEffect = { popularity = 25, wealthCost = 10000000 },
-				setFlags = { intimate_wedding = true, relatable_royal = true },
+				royaltyEffect = { popularity = 25 },
+				setFlags = { intimate_wedding = true, relatable_royal = true, married = true },
 				feed = "Your intimate wedding touched hearts everywhere!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 10000000
+					if state.AddFeed then
+						state:AddFeed("💒 Your intimate royal wedding cost $10 million.")
+					end
+				end,
 			},
 			{
 				text = "Lavish destination wedding ($100 million)",
 				effects = { Happiness = 12 },
-				royaltyEffect = { popularity = -10, wealthCost = 100000000 },
-				setFlags = { extravagant_wedding = true },
+				royaltyEffect = { popularity = -10 },
+				setFlags = { extravagant_wedding = true, married = true },
 				feed = "Your extravagant wedding drew criticism for its cost.",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 100000000
+					if state.AddFeed then
+						state:AddFeed("💒 Your lavish royal wedding cost $100 million!")
+					end
+				end,
 			},
 			{
 				text = "Elope secretly",
 				effects = { Happiness = 20 },
-				royaltyEffect = { popularity = 10, scandals = 1, wealthCost = 100000 },
-				setFlags = { eloped = true, rebellious_royal = true },
+				royaltyEffect = { popularity = 10, scandals = 1 },
+				setFlags = { eloped = true, rebellious_royal = true, married = true },
 				feed = "You shocked the world by eloping!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 100000
+					if state.AddFeed then
+						state:AddFeed("💒 You eloped and saved millions!")
+					end
+				end,
 			},
 		},
 	},
+	-- CRITICAL FIX #295: Added cooldown to heir birth event
 	{
 		id = "royal_heir_birth",
 		title = "👶 An Heir is Born",
@@ -1175,6 +1237,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 22,
 		maxAge = 45,
 		isRoyalOnly = true,
+		cooldown = 3,
+		maxOccurrences = 4,
 		conditions = { requiresFlags = { married = true } },
 		choices = {
 			{
@@ -1254,9 +1318,10 @@ RoyaltyEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
-		title = "👑 CORONATION DAY",
+		title = "👑 You're Becoming Ruler!",
 		emoji = "👑",
-		text = "The day has come. You are being crowned as the new monarch! Millions watch as the crown is placed upon your head.",
+		-- CRITICAL FIX #307: Simplified text for younger audience
+		text = "It's finally happening! You are about to become the new King or Queen! Everyone is watching as you get ready to wear the crown and rule the kingdom!",
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
@@ -1267,29 +1332,29 @@ RoyaltyEvents.LifeEvents = {
 		priority = "critical",
 		conditions = { 
 			requiresFlags = { throne_ready = true },
-			blockedFlags = { is_monarch = true, crowned = true }, -- Block if already monarch OR crowned
+			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true }, -- Block if already monarch OR crowned
 		},
 		choices = {
 			{
-				text = "Swear the sacred oath with conviction",
+				text = "Accept the crown proudly! 👑",
 				effects = { Happiness = 20, Smarts = 5 },
-				royaltyEffect = { popularity = 25, becomeMonarch = true }, -- CRITICAL FIX: was becomesMonarch
+				royaltyEffect = { popularity = 25, becomeMonarch = true },
 				setFlags = { is_monarch = true, crowned = true, coronation_completed = true },
-				feed = "Long live the King/Queen! You are now the monarch!",
+				feed = "Long live the King/Queen! You are now the ruler!",
 			},
 			{
-				text = "Break tradition with a modern coronation",
+				text = "Make it a fun, modern ceremony! 🎉",
 				effects = { Happiness = 15 },
-				royaltyEffect = { popularity = 30, becomeMonarch = true }, -- CRITICAL FIX: was becomesMonarch
+				royaltyEffect = { popularity = 30, becomeMonarch = true },
 				setFlags = { is_monarch = true, crowned = true, modern_monarch = true, coronation_completed = true },
-				feed = "Your modern coronation marked a new era!",
+				feed = "Your fun ceremony started a new era!",
 			},
 			{
-				text = "Abdicate at the last moment",
+				text = "Say no - I don't want to rule",
 				effects = { Happiness = -20 },
 				royaltyEffect = { popularity = -50, abdicated = true },
-				setFlags = { abdicated = true, coronation_declined = true },
-				feed = "In a shocking turn, you abdicated the throne!",
+				setFlags = { abdicated = true, coronation_declined = true, coronation_completed = true },
+				feed = "You shocked everyone by refusing the crown!",
 			},
 		},
 	},
@@ -1413,12 +1478,15 @@ RoyaltyEvents.LifeEvents = {
 	},
 	{
 		id = "royal_feud",
-		title = "👨‍👩‍👧‍👦 Family Feud",
+		title = "👨‍👩‍👧‍👦 Family Disagreement",
 		emoji = "👨‍👩‍👧‍👦",
-		text = "There's tension within the royal family. A sibling or relative is causing drama that threatens to go public.",
+		-- CRITICAL FIX #315: Simplified text and added cooldown to prevent spam
+		text = "There's some tension in the royal family. A relative is upset and might cause problems if this gets out to the public.",
 		minAge = 18,
 		maxAge = 90,
 		isRoyalOnly = true,
+		cooldown = 8, -- CRITICAL FIX #315: 8 year cooldown to prevent spam
+		maxOccurrences = 3, -- CRITICAL FIX: Limit to 3 family feuds per lifetime
 		choices = {
 			{
 				text = "Try to resolve it privately",
@@ -1527,6 +1595,7 @@ RoyaltyEvents.LifeEvents = {
 	},
 	
 	-- LATE LIFE AND LEGACY
+	-- CRITICAL FIX #284: Added oneTime and blockedFlags to legacy event
 	{
 		id = "royal_legacy",
 		title = "📜 Your Royal Legacy",
@@ -1535,7 +1604,12 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 65,
 		maxAge = 90,
 		isRoyalOnly = true,
-		conditions = { requiresFlags = { is_monarch = true } },
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { is_monarch = true },
+			blockedFlags = { legacy_charity = true, legacy_reform = true, reign_to_death = true, considers_abolition = true },
+		},
 		choices = {
 			{
 				text = "Charity work and compassion",
@@ -1612,6 +1686,7 @@ RoyaltyEvents.LifeEvents = {
 	-- CRITICAL FIX #110: EXPANDED ROYAL EVENTS
 	-- Additional royal events for more comprehensive gameplay
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #276: Added cooldown and oneTime to fashion event
 	{
 		id = "royal_fashion_icon",
 		title = "👗 Fashion Trendsetter",
@@ -1620,6 +1695,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 60,
 		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { fashion_icon = true, traditional_dresser = true } },
 		choices = {
 			{
 				text = "Embrace high fashion and bold choices",
@@ -1644,6 +1722,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #277: Added cooldown and oneTime to documentary event
 	{
 		id = "royal_documentary",
 		title = "🎥 Royal Documentary",
@@ -1652,6 +1731,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { documentary_open = true, documentary_controlled = true, declined_documentary = true } },
 		choices = {
 			{
 				text = "Allow full access - nothing to hide",
@@ -1676,6 +1758,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #285: Added oneTime to social media event
 	{
 		id = "royal_social_media",
 		title = "📱 Royal Social Media",
@@ -1684,7 +1767,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 50,
 		isRoyalOnly = true,
-		conditions = { blockedFlags = { has_social_media = true } },
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { has_social_media = true, no_social_media = true } },
 		choices = {
 			{
 				text = "Launch official accounts on all platforms",
@@ -1709,6 +1794,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #278: Added cooldown to humanitarian mission
 	{
 		id = "royal_humanitarian_mission",
 		title = "🌍 Humanitarian Mission",
@@ -1717,6 +1803,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
+		cooldown = 5,
+		maxOccurrences = 3,
 		choices = {
 			{
 				text = "Lead the mission personally",
@@ -1740,6 +1828,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #279: Added cooldown and oneTime to modernization debate
 	{
 		id = "royal_modernization_debate",
 		title = "⚖️ Monarchy Modernization",
@@ -1748,7 +1837,12 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 90,
 		isRoyalOnly = true,
-		conditions = { requiresFlags = { is_monarch = true } },
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { is_monarch = true },
+			blockedFlags = { modernizer = true, careful_reformer = true, traditionalist = true },
+		},
 		choices = {
 			{
 				text = "Push for significant modernization",
@@ -1773,6 +1867,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #280: Added cooldown to sibling rivalry
 	{
 		id = "royal_sibling_rivalry",
 		title = "👨‍👩‍👧‍👦 Sibling Dynamics",
@@ -1781,6 +1876,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isRoyalOnly = true,
+		cooldown = 6,
+		maxOccurrences = 3,
 		choices = {
 			{
 				text = "Present a united front publicly",
@@ -1805,6 +1902,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #281: Added cooldown to security threat event
 	{
 		id = "royal_security_threat",
 		title = "🚨 Security Threat",
@@ -1813,6 +1911,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 90,
 		isRoyalOnly = true,
+		cooldown = 8,
+		maxOccurrences = 3,
 		choices = {
 			{
 				text = "Increase security dramatically",
@@ -1837,6 +1937,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #282: Added oneTime and blockedFlags to book deal
 	{
 		id = "royal_book_deal",
 		title = "📚 Royal Memoirs",
@@ -1845,6 +1946,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 35,
 		maxAge = 90,
 		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { wrote_tellall = true, wrote_memoirs = true, declined_memoirs = true } },
 		choices = {
 			{
 				text = "Write a tell-all explosive memoir",
@@ -1869,6 +1973,7 @@ RoyaltyEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #283: Added cooldown to commonwealth tour
 	{
 		id = "royal_commonwealth_tour",
 		title = "🌐 Commonwealth Tour",
@@ -1877,6 +1982,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 75,
 		isRoyalOnly = true,
+		cooldown = 5,
+		maxOccurrences = 5,
 		choices = {
 			{
 				text = "Embrace every engagement enthusiastically",
@@ -2212,12 +2319,17 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 	end
 	
 	-- Passive popularity decay
-	if royalState.dutiesCompleted == 0 then
+	-- CRITICAL FIX #304: Only show this message occasionally (25% chance) to prevent spam
+	-- Also only apply decay if popularity is above 30 (prevents kicking players when already low)
+	if royalState.dutiesCompleted == 0 and royalState.popularity > 30 then
 		royalState.popularity = math.max(0, royalState.popularity - 2)
-		table.insert(events, {
-			type = "popularity_decay",
-			message = "Your popularity dropped slightly due to lack of public appearances.",
-		})
+		-- Only show the message 25% of the time to prevent annoying spam
+		if math.random(100) <= 25 then
+			table.insert(events, {
+				type = "popularity_decay",
+				message = "💭 A royal advisor suggests making more public appearances to maintain popularity.",
+			})
+		end
 	end
 	
 	-- Reset yearly counters
