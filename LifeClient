@@ -3824,6 +3824,7 @@ local function makeGodModeSection(parentScroll, title, order)
 end
 
 -- Build God Mode UI in separate scope to reduce local registers
+-- CRITICAL FIX: Split into multiple separate do-blocks to stay under 200 register limit
 do
 	-- Container now just holds the scroll - no fixed bottom area
 	IntroUI.godModeContainer = Instance.new("Frame")
@@ -3888,124 +3889,127 @@ do
 		IntroUI.nameBtns.Visible = false
 		IntroUI.genderTitle.Text = "Start by picking a gender"
 	end)
+end -- End setup do-block
+
+-- CRITICAL FIX: Each section in its own TOP-LEVEL do-block to reset register count
+-- Name section
+do
+	local scroll = IntroUI.godModeScroll
+	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
+	IntroUI.customNameInput = Instance.new("TextBox")
+	IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
+	IntroUI.customNameInput.BackgroundColor3 = C.Gray100
+	IntroUI.customNameInput.Text = ""
+	IntroUI.customNameInput.PlaceholderText = "Enter custom name..."
+	IntroUI.customNameInput.TextColor3 = C.Gray900
+	IntroUI.customNameInput.PlaceholderColor3 = C.Gray400
+	IntroUI.customNameInput.TextSize = 16
+	IntroUI.customNameInput.Font = F.Medium
+	IntroUI.customNameInput.ClearTextOnFocus = false
+	IntroUI.customNameInput.LayoutOrder = 2
+	IntroUI.customNameInput.ZIndex = 73
+	IntroUI.customNameInput.Parent = nameSec
+	corner(IntroUI.customNameInput, 8)
+	IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
+		GodModeCreateData.customName = IntroUI.customNameInput.Text
+	end)
+end
+
+-- Gender section
+do
+	local scroll = IntroUI.godModeScroll
+	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
+	local gFrame = Instance.new("Frame")
+	gFrame.Size = UDim2.new(1, 0, 0, 40)
+	gFrame.BackgroundTransparency = 1
+	gFrame.LayoutOrder = 2
+	gFrame.ZIndex = 73
+	gFrame.Parent = genderSec
+	local gLayout = Instance.new("UIListLayout")
+	gLayout.FillDirection = Enum.FillDirection.Horizontal
+	gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	gLayout.Padding = UDim.new(0, 8)
+	gLayout.Parent = gFrame
 	
-	-- CRITICAL FIX #251: Use makeGodModeSection from outer scope instead of defining locally
-	-- This saves ~15 local registers which was causing the "Out of local registers" error
-	
-	-- Name section (wrapped in own scope to reduce register usage)
-	do
-		local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
-		IntroUI.customNameInput = Instance.new("TextBox")
-		IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
-		IntroUI.customNameInput.BackgroundColor3 = C.Gray100
-		IntroUI.customNameInput.Text = ""
-		IntroUI.customNameInput.PlaceholderText = "Enter custom name..."
-		IntroUI.customNameInput.TextColor3 = C.Gray900
-		IntroUI.customNameInput.PlaceholderColor3 = C.Gray400
-		IntroUI.customNameInput.TextSize = 16
-		IntroUI.customNameInput.Font = F.Medium
-		IntroUI.customNameInput.ClearTextOnFocus = false
-		IntroUI.customNameInput.LayoutOrder = 2
-		IntroUI.customNameInput.ZIndex = 73
-		IntroUI.customNameInput.Parent = nameSec
-		corner(IntroUI.customNameInput, 8)
-		IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
-			GodModeCreateData.customName = IntroUI.customNameInput.Text
+	IntroUI.genderBtnsCustom = {}
+	for _, gData in ipairs({{id="Male", icon="♂", color=C.Male}, {id="Female", icon="♀", color=C.Female}}) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 100, 0, 36)
+		btn.BackgroundColor3 = gData.id == "Male" and gData.color or C.Gray200
+		btn.Text = gData.icon .. " " .. gData.id
+		btn.TextColor3 = gData.id == "Male" and C.White or C.Gray600
+		btn.TextSize = 14
+		btn.Font = F.Medium
+		btn.ZIndex = 74
+		btn.Parent = gFrame
+		corner(btn, 8)
+		IntroUI.genderBtnsCustom[gData.id] = btn
+		btn.MouseButton1Click:Connect(function()
+			GodModeCreateData.gender = gData.id
+			selectedGender = gData.id
+			for id, b in pairs(IntroUI.genderBtnsCustom) do
+				b.BackgroundColor3 = id == gData.id and (id == "Male" and C.Male or C.Female) or C.Gray200
+				b.TextColor3 = id == gData.id and C.White or C.Gray600
+			end
 		end)
 	end
+end
 
-	-- Gender section (wrapped in own scope to reduce register usage)
-	do
-		local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
-		local gFrame = Instance.new("Frame")
-		gFrame.Size = UDim2.new(1, 0, 0, 40)
-		gFrame.BackgroundTransparency = 1
-		gFrame.LayoutOrder = 2
-		gFrame.ZIndex = 73
-		gFrame.Parent = genderSec
-		local gLayout = Instance.new("UIListLayout")
-		gLayout.FillDirection = Enum.FillDirection.Horizontal
-		gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		gLayout.Padding = UDim.new(0, 8)
-		gLayout.Parent = gFrame
-		
-		IntroUI.genderBtnsCustom = {}
-		for _, gData in ipairs({{id="Male", icon="♂", color=C.Male}, {id="Female", icon="♀", color=C.Female}}) do
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(0, 100, 0, 36)
-			btn.BackgroundColor3 = gData.id == "Male" and gData.color or C.Gray200
-			btn.Text = gData.icon .. " " .. gData.id
-			btn.TextColor3 = gData.id == "Male" and C.White or C.Gray600
-			btn.TextSize = 14
-			btn.Font = F.Medium
-			btn.ZIndex = 74
-			btn.Parent = gFrame
-			corner(btn, 8)
-			IntroUI.genderBtnsCustom[gData.id] = btn
-			btn.MouseButton1Click:Connect(function()
-				GodModeCreateData.gender = gData.id
-				selectedGender = gData.id
-				for id, b in pairs(IntroUI.genderBtnsCustom) do
-					b.BackgroundColor3 = id == gData.id and (id == "Male" and C.Male or C.Female) or C.Gray200
-					b.TextColor3 = id == gData.id and C.White or C.Gray600
-				end
-			end)
-		end
+-- Ethnicity section with emojis
+do
+	local scroll = IntroUI.godModeScroll
+	local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
+	local ef = Instance.new("Frame")
+	ef.Size = UDim2.new(1, 0, 0, 0)
+	ef.AutomaticSize = Enum.AutomaticSize.Y
+	ef.BackgroundTransparency = 1
+	ef.LayoutOrder = 2
+	ef.ZIndex = 73
+	ef.Parent = ethSec
+	local eg = Instance.new("UIGridLayout")
+	eg.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
+	eg.CellPadding = UDim2.new(0, 4, 0, 4)
+	eg.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	eg.Parent = ef
+	
+	local ethOpts = {
+		{ id = "Random", label = "🎲 Random" }, { id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+		{ id = "African", label = "👨🏿 African" }, { id = "Asian", label = "🧑🏻 Asian" },
+		{ id = "Hispanic", label = "🧑🏽 Hispanic" }, { id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+		{ id = "Indian", label = "🧑🏾 South Asian" }, { id = "Pacific Islander", label = "🏝️ Pacific Islander" },
+		{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
+	}
+	
+	IntroUI.ethnicityBtns = {}
+	for _, eth in ipairs(ethOpts) do
+		local b = Instance.new("TextButton")
+		b.Name = eth.id
+		b.Size = UDim2.new(0, 100, 0, 34)
+		b.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
+		b.Text = eth.label
+		b.TextColor3 = eth.id == "Random" and C.White or C.Gray600
+		b.TextSize = Device.IS_TINY_PHONE and 10 or 11
+		b.Font = F.Medium
+		b.TextTruncate = Enum.TextTruncate.AtEnd
+		b.ZIndex = 74
+		b.Parent = ef
+		corner(b, 6)
+		IntroUI.ethnicityBtns[eth.id] = b
+		b.MouseButton1Click:Connect(function()
+			GodModeCreateData.ethnicity = eth.id
+			for id, bt in pairs(IntroUI.ethnicityBtns) do
+				bt.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
+				bt.TextColor3 = id == eth.id and C.White or C.Gray600
+			end
+		end)
 	end
+end
 
-	-- Ethnicity section with emojis (wrapped in own scope)
-	do
-		local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
-		local ef = Instance.new("Frame")
-		ef.Size = UDim2.new(1, 0, 0, 0)
-		ef.AutomaticSize = Enum.AutomaticSize.Y
-		ef.BackgroundTransparency = 1
-		ef.LayoutOrder = 2
-		ef.ZIndex = 73
-		ef.Parent = ethSec
-		local eg = Instance.new("UIGridLayout")
-		eg.CellSize = UDim2.new(0, Device.IS_TINY_PHONE and 85 or 100, 0, 34)
-		eg.CellPadding = UDim2.new(0, 4, 0, 4)
-		eg.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		eg.Parent = ef
-		
-		local ethOpts = {
-			{ id = "Random", label = "🎲 Random" }, { id = "Caucasian", label = "🧑‍🦱 Caucasian" },
-			{ id = "African", label = "👨🏿 African" }, { id = "Asian", label = "🧑🏻 Asian" },
-			{ id = "Hispanic", label = "🧑🏽 Hispanic" }, { id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
-			{ id = "Indian", label = "🧑🏾 South Asian" }, { id = "Pacific Islander", label = "🏝️ Pacific Islander" },
-			{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
-		}
-		
-		IntroUI.ethnicityBtns = {}
-		for _, eth in ipairs(ethOpts) do
-			local b = Instance.new("TextButton")
-			b.Name = eth.id
-			b.Size = UDim2.new(0, 100, 0, 34)
-			b.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
-			b.Text = eth.label
-			b.TextColor3 = eth.id == "Random" and C.White or C.Gray600
-			b.TextSize = Device.IS_TINY_PHONE and 10 or 11
-			b.Font = F.Medium
-			b.TextTruncate = Enum.TextTruncate.AtEnd
-			b.ZIndex = 74
-			b.Parent = ef
-			corner(b, 6)
-			IntroUI.ethnicityBtns[eth.id] = b
-			b.MouseButton1Click:Connect(function()
-				GodModeCreateData.ethnicity = eth.id
-				for id, bt in pairs(IntroUI.ethnicityBtns) do
-					bt.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
-					bt.TextColor3 = id == eth.id and C.White or C.Gray600
-				end
-			end)
-		end
-	end
-
-	-- Wealth section (wrapped in own scope)
-	-- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
-	do
-		local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
+-- Wealth section
+-- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
+do
+	local scroll = IntroUI.godModeScroll
+	local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
 		IntroUI.wealthBtns = {}
 		local wOpts = {
 			{ id = "Poor", label = "🏚️ Poor Family", desc = "$0-500" },
@@ -4090,11 +4094,12 @@ do
 				end
 			end)
 		end
-	end
+end
 
-	-- Stats section (wrapped in own scope)
-	do
-		local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
+-- Stats section
+do
+	local scroll = IntroUI.godModeScroll
+	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
 		IntroUI.statSliders = {}
 		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
 		for i, s in ipairs(statData) do
@@ -4155,11 +4160,12 @@ do
 				end
 			end)
 		end
-	end
+end
 
-	-- Country section with flag emojis (wrapped in own scope)
-	do
-		local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
+-- Country section with flag emojis
+do
+	local scroll = IntroUI.godModeScroll
+	local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
 		local cOpts = {
 			{id = "United States", flag = "🇺🇸"}, {id = "United Kingdom", flag = "🇬🇧"},
 			{id = "Canada", flag = "🇨🇦"}, {id = "Australia", flag = "🇦🇺"},
@@ -4201,13 +4207,16 @@ do
 				cl.Visible = false; cl.Size = UDim2.new(1, 0, 0, 0); exp = false
 			end)
 		end
-		dd.MouseButton1Click:Connect(function()
-			exp = not exp; cl.Visible = exp
-			-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
-			cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
-		end)
-	end
+	dd.MouseButton1Click:Connect(function()
+		exp = not exp; cl.Visible = exp
+		-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
+		cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
+	end)
+end
 
+-- Start button section
+do
+	local scroll = IntroUI.godModeScroll
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- START BUTTON AT BOTTOM OF SCROLL (LayoutOrder = 100)
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4262,7 +4271,7 @@ do
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
-end -- End of God Mode UI do-block
+end -- End of Start button do-block
 
 -- Function to show God Mode customization
 local function showGodModeIntroCustomize()
