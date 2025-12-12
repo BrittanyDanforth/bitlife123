@@ -60,7 +60,8 @@ assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer
 local LifeState = require(ModulesFolder:WaitForChild("LifeState"))
 local LifeStageSystem = require(ModulesFolder:WaitForChild("LifeStageSystem"))
 GamepassSystem = require(ModulesFolder:WaitForChild("GamepassSystem"))
-local MobSystem = require(ModulesFolder:WaitForChild("MobSystem"))
+-- CRITICAL FIX #101: Renamed MafiaSystem to MafiaSystem for clarity
+local MafiaSystem = require(ModulesFolder:WaitForChild("MafiaSystem"))
 local LifeEventsFolder = ModulesFolder:WaitForChild("LifeEvents")
 local LifeEvents = require(LifeEventsFolder:WaitForChild("init"))
 local EventEngine = LifeEvents.EventEngine
@@ -322,7 +323,7 @@ local function resetMobStateForAge(state, targetAge)
 		return
 	end
 
-	local mobState = MobSystem and MobSystem:getMobState(state) or (state.MobState or {})
+	local mobState = MafiaSystem and MafiaSystem:getMobState(state) or (state.MobState or {})
 	mobState.inMob = false
 	mobState.familyId = nil
 	mobState.familyName = nil
@@ -2430,7 +2431,7 @@ function LifeBackend:serializeState(state)
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		
 		-- MAFIA STATE
-		serialized.MobState = MobSystem:serialize(state)
+		serialized.MobState = MafiaSystem:serialize(state)
 		
 		-- ROYALTY STATE
 		if state.RoyalState and state.RoyalState.isRoyal then
@@ -2534,11 +2535,21 @@ function LifeBackend:setLifeInfo(player, name, gender)
 	if not state then
 		return
 	end
-	if name and name ~= "" then
+	
+	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
+	if name and name ~= "" and name:match("%S") then
 		-- CRITICAL FIX: Apply Roblox text filtering to custom names
 		local filteredName = filterText(name, player)
 		state.Name = filteredName
+	else
+		-- Generate a default name if none provided
+		local maleNames = {"James", "John", "Michael", "David", "Chris", "Matthew", "Daniel", "Andrew", "Ryan", "Tyler"}
+		local femaleNames = {"Emily", "Sarah", "Jessica", "Ashley", "Samantha", "Madison", "Hannah", "Olivia", "Emma", "Sophia"}
+		
+		local nameList = (gender == "female") and femaleNames or maleNames
+		state.Name = nameList[math.random(#nameList)]
 	end
+	
 	if gender then
 		state.Gender = gender
 	end
@@ -3947,6 +3958,9 @@ function LifeBackend:replaceTextVariables(text, state)
 	-- Age replacement
 	local age = state.Age or 0
 	result = result:gsub("{{AGE}}", tostring(age))
+	-- CRITICAL FIX #102/#109: Also handle %d format for backward compatibility
+	result = result:gsub("%%d years old", tostring(age) .. " years old")
+	result = result:gsub("At %%d", "At " .. tostring(age))
 	
 	-- Job/company replacement
 	if state.CurrentJob then
@@ -4467,7 +4481,7 @@ function LifeBackend:handleAgeUp(player)
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
 	self:processAddictions(state) -- CRITICAL FIX #32: Addiction consequences
-	local mobEvents = MobSystem:onYearPass(state)
+	local mobEvents = MafiaSystem:onYearPass(state)
 	if mobEvents and #mobEvents > 0 then
 		for _, event in ipairs(mobEvents) do
 			if event.message then
@@ -7034,7 +7048,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 		return { success = false, message = "State not found." }
 	end
 
-	local canJoin, reason = MobSystem:canJoinMob(state)
+	local canJoin, reason = MafiaSystem:canJoinMob(state)
 	if not canJoin then
 		return { success = false, message = reason or "You can't join the mob right now." }
 	end
@@ -7048,7 +7062,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 		}
 	end
 
-	local success, message = MobSystem:joinFamily(state, familyId)
+	local success, message = MafiaSystem:joinFamily(state, familyId)
 	if not success then
 		return { success = false, message = message or "The family rejected you." }
 	end
@@ -7056,7 +7070,7 @@ function LifeBackend:handleJoinMob(player, familyId)
 	local msg = message or "You've joined the crime family."
 	self:pushState(player, msg)
 	
-	return { success = true, message = msg, mobState = MobSystem:serialize(state) }
+	return { success = true, message = msg, mobState = MafiaSystem:serialize(state) }
 end
 
 function LifeBackend:handleLeaveMob(player)
@@ -7065,7 +7079,7 @@ function LifeBackend:handleLeaveMob(player)
 		return { success = false, message = "State not found." }
 	end
 
-	local success, message, consequences = MobSystem:leaveFamily(state)
+	local success, message, consequences = MafiaSystem:leaveFamily(state)
 	if not success then
 		return { success = false, message = message or "You can't leave right now." }
 	end
@@ -7096,7 +7110,7 @@ function LifeBackend:handleMobOperation(player, operationId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	local success, message, opResult = MobSystem:doOperation(state, operationId)
+	local success, message, opResult = MafiaSystem:doOperation(state, operationId)
 	if success then
 		local resp = {
 			success = true,

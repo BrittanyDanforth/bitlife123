@@ -1324,12 +1324,90 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #105/#116: GUARANTEED PREMIUM EVENT CHECK
+	-- For royal/mafia/celebrity players, ensure they get premium events frequently
+	-- This runs a 40% chance to force a premium event for engaged premium players
+	-- Without this, premium events were being drowned out by regular events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local history = getEventHistory(state)
+	local RANDOM_LOCAL = Random.new()
+	
+	-- Royal players: 40% chance to get a royal event each year
+	local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	if isRoyal and RANDOM_LOCAL:NextNumber() < 0.40 then
+		local royalEvents = EventsByCategory["royalty"] or {}
+		local eligibleRoyalEvents = {}
+		
+		for _, event in ipairs(royalEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleRoyalEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleRoyalEvents > 0 then
+			-- Pick a random eligible royal event
+			local chosenEvent = eligibleRoyalEvents[RANDOM_LOCAL:NextInteger(1, #eligibleRoyalEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Return early - royal event takes priority
+		end
+	end
+	
+	-- Mafia players: 35% chance to get a mafia event each year
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	if isInMob and RANDOM_LOCAL:NextNumber() < 0.35 then
+		local mafiaEvents = EventsByCategory["mafia"] or {}
+		local eligibleMafiaEvents = {}
+		
+		for _, event in ipairs(mafiaEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleMafiaEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleMafiaEvents > 0 then
+			local chosenEvent = eligibleMafiaEvents[RANDOM_LOCAL:NextInteger(1, #eligibleMafiaEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- Celebrity players: 35% chance to get a celebrity event each year
+	local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+	if hasFameCareer and RANDOM_LOCAL:NextNumber() < 0.35 then
+		local celebEvents = EventsByCategory["celebrity"] or {}
+		local eligibleCelebEvents = {}
+		
+		for _, event in ipairs(celebEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleCelebEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleCelebEvents > 0 then
+			local chosenEvent = celebEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCelebEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #67: GUARANTEED MILESTONE EVENTS
 	-- First, check if there's an age-specific milestone that MUST trigger
 	-- These are events that should NEVER be skipped (DMV at 16, graduation at 18, etc.)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local guaranteedMilestones = AgeMilestoneEvents[age]
-	local history = getEventHistory(state)
 	
 	if guaranteedMilestones then
 		for _, milestoneId in ipairs(guaranteedMilestones) do
