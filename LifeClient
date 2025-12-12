@@ -156,6 +156,7 @@ local godModeOverlay = nil
 local godModeButton = nil
 local destroyGodModeModal
 local showGodModeModal
+local updateGodModeButtonAppearance
 
 local function refreshGodModeStatus()
 	if not CheckGamepass then
@@ -987,7 +988,7 @@ local HeaderUI = {}
 HeaderUI.height = Device.IS_TINY_PHONE and 48 or (Device.IS_SMALL_PHONE and 56 or px(70))
 HeaderUI.topOffset = Device.IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
 
-do -- CRITICAL FIX #253: Scope block for header construction
+;(function() -- CRITICAL FIX #253: IIFE for header construction (do-blocks don't reduce register count)
 local headerBar = Instance.new("Frame")
 headerBar.Name = "Header"
 headerBar.Size = UDim2.new(1, -padSize(12), 0, HeaderUI.height)
@@ -1095,7 +1096,7 @@ HeaderUI.moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HeaderUI.moneyLabel.Text = "$0"
 HeaderUI.moneyLabel.ZIndex = 7
 HeaderUI.moneyLabel.Parent = moneyContainer
-end -- CRITICAL FIX #253: End header construction scope
+end)() -- CRITICAL FIX #253: End header construction IIFE
 
 -- CRITICAL FIX #253: Aliases removed - use HeaderUI.avatarEmoji, HeaderUI.nameLabel, etc.
 -- These are set below after the do-block for backward compatibility
@@ -1310,8 +1311,10 @@ createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight,
 -- GOD MODE IN-GAME EDITOR
 -- CRITICAL FIX #162: Re-enabled God Mode for in-game stat editing
 -- Allows players to edit stats, cure diseases, remove addictions, etc.
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
+;(function()
 -- God Mode overlay for in-game editing
 godModeOverlay = Instance.new("Frame")
 godModeOverlay.Name = "GodModeOverlay"
@@ -1350,7 +1353,7 @@ godModeButton.MouseLeave:Connect(function()
 end)
 
 -- Update God Mode button visibility
-local function updateGodModeButtonAppearance()
+updateGodModeButtonAppearance = function()
 	refreshGodModeStatus()
 	if godModeButton then
 		godModeButton.Visible = hasGodMode
@@ -1766,6 +1769,7 @@ task.spawn(function()
 	task.wait(1)
 	updateGodModeButtonAppearance()
 end)
+end)() -- End God Mode In-Game Editor IIFE
 
 -- LEGACY CODE BELOW (disabled)
 if false then -- Disabled: Old modal code kept for reference
@@ -2039,11 +2043,16 @@ end
 
 ----------------------------------------------------------------
 -- NAV BAR - TINY PHONE FIX: More compact
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
--- TINY PHONE FIX: Much smaller nav bar
+-- Variables that need to be accessible outside IIFE
+local navBar, navBtnRefs
 local navBarHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or px(80))
-local navBar = Instance.new("Frame")
+
+;(function()
+-- TINY PHONE FIX: Much smaller nav bar
+navBar = Instance.new("Frame")
 navBar.Name = "NavBar"
 navBar.Size = UDim2.new(1, 0, 0, navBarHeight)
 navBar.AnchorPoint = Vector2.new(0.5, 1)
@@ -2097,7 +2106,7 @@ navRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 navRightLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(6))
 navRightLayout.Parent = navRight
 
-local navBtnRefs = {}
+navBtnRefs = {}
 
 -- CRITICAL FIX: Adjusted nav button sizes for 5 buttons (added Story Paths)
 -- Slightly smaller to fit all buttons without overflow
@@ -2174,15 +2183,21 @@ createNavButton({ icon = "🏠", text = "Assets",     screen = "assets"       },
 createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"}, navRight, 1)
 createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
 createNavButton({ icon = "📖", text = "Paths",      screen = "storypaths"   }, navRight, 3)
+end)() -- End Nav Bar IIFE
 
 ----------------------------------------------------------------
 -- AGE BUTTON - TINY PHONE FIX: More compact
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
+-- Variables that need to be accessible outside IIFE
+local ageBtnContainer, ageButton, ageOuterRing, ageBtnSize
+
+;(function()
 -- TINY PHONE FIX: Much smaller age button
-local ageBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
+ageBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
 local ageBtnOffset = Device.IS_TINY_PHONE and 6 or padSize(10)
-local ageBtnContainer = Instance.new("Frame")
+ageBtnContainer = Instance.new("Frame")
 ageBtnContainer.Size = UDim2.new(0, ageBtnSize, 0, ageBtnSize)
 ageBtnContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -(navBarHeight/2 + ageBtnOffset))
@@ -2190,7 +2205,7 @@ ageBtnContainer.BackgroundTransparency = 1
 ageBtnContainer.ZIndex = 15
 ageBtnContainer.Parent = mainContainer
 
-local ageOuterRing = Instance.new("Frame")
+ageOuterRing = Instance.new("Frame")
 ageOuterRing.Size = UDim2.new(1, Device.IS_TINY_PHONE and 4 or 8, 1, Device.IS_TINY_PHONE and 4 or 8)
 ageOuterRing.AnchorPoint = Vector2.new(0.5, 0.5)
 ageOuterRing.Position = UDim2.fromScale(0.5, 0.5)
@@ -2211,7 +2226,7 @@ ageShadow.Parent = ageBtnContainer
 corner(ageShadow, ageBtnSize/2 + (Device.IS_TINY_PHONE and 2 or 4))
 
 local ageBtnMargin = Device.IS_TINY_PHONE and 4 or 6
-local ageButton = Instance.new("TextButton")
+ageButton = Instance.new("TextButton")
 ageButton.Size = UDim2.new(1, -ageBtnMargin, 1, -ageBtnMargin)
 ageButton.AnchorPoint = Vector2.new(0.5, 0.5)
 ageButton.Position = UDim2.fromScale(0.5, 0.5)
@@ -2351,6 +2366,7 @@ hideTutorial = function()
 	-- Reset ring size for next time
 	tutorialRing.Size = UDim2.new(1, 30, 1, 30)
 end
+end)() -- End Age Button/Tutorial IIFE
 
 ----------------------------------------------------------------
 -- PREMIUM EVENT MODAL (BitLife-style red card) - MOBILE FIX
