@@ -3765,6 +3765,48 @@ local GodModeCreateData = {
 	royalCountry = nil,
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #251: Move makeSection helper OUTSIDE the do-block
+-- This reduces local register usage inside the God Mode UI builder
+-- Lua has a limit of 200 local registers per function/chunk
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function makeGodModeSection(parentScroll, title, order)
+	local sec = Instance.new("Frame")
+	sec.Name = "Section_" .. title
+	sec.Size = UDim2.new(1, 0, 0, 0)
+	sec.AutomaticSize = Enum.AutomaticSize.Y
+	sec.BackgroundColor3 = C.White
+	sec.LayoutOrder = order
+	sec.ZIndex = 72
+	sec.Parent = parentScroll
+	corner(sec, 12)
+	
+	local p = Instance.new("UIPadding")
+	p.PaddingLeft = UDim.new(0, 12)
+	p.PaddingRight = UDim.new(0, 12)
+	p.PaddingTop = UDim.new(0, 10)
+	p.PaddingBottom = UDim.new(0, 10)
+	p.Parent = sec
+	
+	local l = Instance.new("UIListLayout")
+	l.Padding = UDim.new(0, 8)
+	l.Parent = sec
+	
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.new(1, 0, 0, 24)
+	t.BackgroundTransparency = 1
+	t.Text = title
+	t.TextColor3 = C.Gray800
+	t.TextSize = 16
+	t.Font = F.Title
+	t.TextXAlignment = Enum.TextXAlignment.Left
+	t.LayoutOrder = 1
+	t.ZIndex = 73
+	t.Parent = sec
+	
+	return sec
+end
+
 -- Build God Mode UI in separate scope to reduce local registers
 do
 	-- Container now just holds the scroll - no fixed bottom area
@@ -3831,46 +3873,11 @@ do
 		IntroUI.genderTitle.Text = "Start by picking a gender"
 	end)
 	
-	-- Helper to create section
-	local function makeSection(title, order)
-		local sec = Instance.new("Frame")
-		sec.Name = "Section_" .. title
-		sec.Size = UDim2.new(1, 0, 0, 0)
-		sec.AutomaticSize = Enum.AutomaticSize.Y
-		sec.BackgroundColor3 = C.White
-		sec.LayoutOrder = order
-		sec.ZIndex = 72
-		sec.Parent = scroll
-		corner(sec, 12)
-		
-		local p = Instance.new("UIPadding")
-		p.PaddingLeft = UDim.new(0, 12)
-		p.PaddingRight = UDim.new(0, 12)
-		p.PaddingTop = UDim.new(0, 10)
-		p.PaddingBottom = UDim.new(0, 10)
-		p.Parent = sec
-		
-		local l = Instance.new("UIListLayout")
-		l.Padding = UDim.new(0, 8)
-		l.Parent = sec
-		
-		local t = Instance.new("TextLabel")
-		t.Size = UDim2.new(1, 0, 0, 24)
-		t.BackgroundTransparency = 1
-		t.Text = title
-		t.TextColor3 = C.Gray800
-		t.TextSize = 16
-		t.Font = F.Title
-		t.TextXAlignment = Enum.TextXAlignment.Left
-		t.LayoutOrder = 1
-		t.ZIndex = 73
-		t.Parent = sec
-		
-		return sec
-	end
-
+	-- CRITICAL FIX #251: Use makeGodModeSection from outer scope instead of defining locally
+	-- This saves ~15 local registers which was causing the "Out of local registers" error
+	
 	-- Name section
-	local nameSec = makeSection("👤 Character Name", 1)
+	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
 	IntroUI.customNameInput = Instance.new("TextBox")
 	IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
 	IntroUI.customNameInput.BackgroundColor3 = C.Gray100
@@ -3890,7 +3897,7 @@ do
 	end)
 
 	-- Gender section
-	local genderSec = makeSection("⚧ Gender", 2)
+	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
 	local gFrame = Instance.new("Frame")
 	gFrame.Size = UDim2.new(1, 0, 0, 40)
 	gFrame.BackgroundTransparency = 1
@@ -3928,7 +3935,7 @@ do
 
 	-- Ethnicity section with emojis (wrapped in own scope)
 	do
-		local ethSec = makeSection("🌍 Ethnicity / Heritage", 3)
+		local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
 		local ef = Instance.new("Frame")
 		ef.Size = UDim2.new(1, 0, 0, 0)
 		ef.AutomaticSize = Enum.AutomaticSize.Y
@@ -3978,7 +3985,7 @@ do
 	-- Wealth section (wrapped in own scope)
 	-- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
 	do
-		local ws = makeSection("💰 Family Wealth", 4)
+		local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
 		IntroUI.wealthBtns = {}
 		local wOpts = {
 			{ id = "Poor", label = "🏚️ Poor Family", desc = "$0-500" },
@@ -4067,7 +4074,7 @@ do
 
 	-- Stats section (wrapped in own scope)
 	do
-		local ss = makeSection("📊 Starting Stats", 5)
+		local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
 		IntroUI.statSliders = {}
 		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
 		for i, s in ipairs(statData) do
@@ -4132,7 +4139,7 @@ do
 
 	-- Country section with flag emojis (wrapped in own scope)
 	do
-		local cs = makeSection("🌎 Country of Birth", 6)
+		local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
 		local cOpts = {
 			{id = "United States", flag = "🇺🇸"}, {id = "United Kingdom", flag = "🇬🇧"},
 			{id = "Canada", flag = "🇨🇦"}, {id = "Australia", flag = "🇦🇺"},
