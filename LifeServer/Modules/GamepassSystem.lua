@@ -399,46 +399,54 @@ GamepassSystem.Gamepasses = {
 -- ════════════════════════════════════════════════════════════════════════════
 
 GamepassSystem.Products = {
-	-- Time Machine uses (for non-gamepass owners)
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #100: Real Developer Product IDs for Time Machine
+	-- These are the actual production product IDs for life rewind features
+	-- ════════════════════════════════════════════════════════════════════════════
 	TIME_5_YEARS = {
-		id = 0,
+		id = 3477466389,  -- REAL PRODUCT ID: Go back in time 5 years!
 		name = "Go Back 5 Years",
 		emoji = "⏰",
 		description = "Go back 5 years in your life",
 		price = 25,
 		type = "consumable",
+		years = 5,
 	},
 	TIME_10_YEARS = {
-		id = 0,
+		id = 3477466522,  -- REAL PRODUCT ID: Go back in time 10 years!
 		name = "Go Back 10 Years",
 		emoji = "⏰",
 		description = "Go back 10 years in your life",
 		price = 45,
 		type = "consumable",
+		years = 10,
 	},
 	TIME_20_YEARS = {
-		id = 0,
+		id = 3477466619,  -- REAL PRODUCT ID: Go back in time 20 years!
 		name = "Go Back 20 Years",
 		emoji = "⏰",
 		description = "Go back 20 years in your life",
 		price = 75,
 		type = "consumable",
+		years = 20,
 	},
 	TIME_30_YEARS = {
-		id = 0,
+		id = 0,  -- Not provided - set to 0 until real ID is available
 		name = "Go Back 30 Years",
 		emoji = "⏰",
 		description = "Go back 30 years in your life",
 		price = 99,
 		type = "consumable",
+		years = 30,
 	},
 	TIME_BABY = {
-		id = 0,
+		id = 3477466778,  -- REAL PRODUCT ID: Go back to being a baby!
 		name = "Restart as Baby",
 		emoji = "👶",
 		description = "Restart your life from age 0 (same character)",
 		price = 125,
 		type = "consumable",
+		years = -1,  -- Special: restart from birth
 	},
 	
 	-- Money boosts

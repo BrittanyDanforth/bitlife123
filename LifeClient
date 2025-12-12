@@ -4095,6 +4095,361 @@ do
 	task.defer(updateCustomizeGenderBtn)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #103: Add "Born Royal" button to GENDER selection screen
+-- This allows Royalty gamepass owners to be born as royalty WITHOUT needing God Mode
+-- Works independently of God Mode - just needs Royalty gamepass
+-- ═══════════════════════════════════════════════════════════════════════════════
+do
+	-- Helper to check Royalty gamepass ownership
+	local function hasRoyaltyGamepass()
+		if CheckGamepass then
+			local success, owns = pcall(function()
+				return CheckGamepass:InvokeServer("ROYALTY")
+			end)
+			return success and owns == true
+		end
+		return false
+	end
+	
+	local royaltyBtn = Instance.new("TextButton")
+	royaltyBtn.Name = "RoyaltyGenderBtn"
+	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Royal Gold
+	royaltyBtn.Font = F.Title
+	royaltyBtn.TextSize = 16
+	royaltyBtn.TextColor3 = C.Gray900
+	royaltyBtn.Text = "👑 Born Royal"
+	royaltyBtn.AutoButtonColor = false
+	royaltyBtn.LayoutOrder = 9 -- Before Customize, after Female
+	royaltyBtn.ZIndex = 72
+	royaltyBtn.Parent = IntroUI.genderBtns
+	pill(royaltyBtn)
+	stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+	
+	IntroUI.royaltyGenderBtn = royaltyBtn
+	
+	royaltyBtn.MouseEnter:Connect(function()
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+	end)
+	royaltyBtn.MouseLeave:Connect(function()
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+	end)
+	
+	-- Royal country selection state
+	local royalCountryOverlay = nil
+	local selectedRoyalCountry = nil
+	
+	-- Royal countries list
+	local RoyalCountries = {
+		{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", flag = "🇬🇧" },
+		{ id = "spain", name = "Spain", emoji = "🇪🇸", flag = "🇪🇸" },
+		{ id = "sweden", name = "Sweden", emoji = "🇸🇪", flag = "🇸🇪" },
+		{ id = "japan", name = "Japan", emoji = "🇯🇵", flag = "🇯🇵" },
+		{ id = "monaco", name = "Monaco", emoji = "🇲🇨", flag = "🇲🇨" },
+		{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", flag = "🇸🇦" },
+		{ id = "thailand", name = "Thailand", emoji = "🇹🇭", flag = "🇹🇭" },
+		{ id = "morocco", name = "Morocco", emoji = "🇲🇦", flag = "🇲🇦" },
+		{ id = "jordan", name = "Jordan", emoji = "🇯🇴", flag = "🇯🇴" },
+		{ id = "belgium", name = "Belgium", emoji = "🇧🇪", flag = "🇧🇪" },
+		{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱", flag = "🇳🇱" },
+		{ id = "norway", name = "Norway", emoji = "🇳🇴", flag = "🇳🇴" },
+		{ id = "denmark", name = "Denmark", emoji = "🇩🇰", flag = "🇩🇰" },
+	}
+	
+	local function showRoyalCountrySelection()
+		if royalCountryOverlay then return end
+		
+		-- Create overlay
+		royalCountryOverlay = Instance.new("Frame")
+		royalCountryOverlay.Name = "RoyalCountryOverlay"
+		royalCountryOverlay.Size = UDim2.fromScale(1, 1)
+		royalCountryOverlay.BackgroundColor3 = C.Black
+		royalCountryOverlay.BackgroundTransparency = 0.4
+		royalCountryOverlay.ZIndex = 80
+		royalCountryOverlay.Parent = screenGui
+		
+		-- Card
+		local card = Instance.new("Frame")
+		card.Name = "Card"
+		card.Size = UDim2.new(0.9, 0, 0, 0)
+		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.AnchorPoint = Vector2.new(0.5, 0.5)
+		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.BackgroundColor3 = C.White
+		card.ZIndex = 81
+		card.Parent = royalCountryOverlay
+		corner(card, 16)
+		pad(card, 16, 16, 16, 16)
+		
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, 8)
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.Parent = card
+		
+		-- Title
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, 0, 0, 40)
+		title.BackgroundTransparency = 1
+		title.Text = "👑 Choose Your Kingdom"
+		title.TextColor3 = C.Gray900
+		title.TextSize = 20
+		title.Font = F.Title
+		title.ZIndex = 82
+		title.Parent = card
+		
+		-- Subtitle
+		local subtitle = Instance.new("TextLabel")
+		subtitle.Size = UDim2.new(1, 0, 0, 28)
+		subtitle.BackgroundTransparency = 1
+		subtitle.Text = "Select a royal family to be born into"
+		subtitle.TextColor3 = C.Gray500
+		subtitle.TextSize = 14
+		subtitle.Font = F.Body
+		subtitle.ZIndex = 82
+		subtitle.Parent = card
+		
+		-- Scroll frame for countries
+		local scroll = Instance.new("ScrollingFrame")
+		scroll.Size = UDim2.new(1, 0, 0, 280)
+		scroll.BackgroundTransparency = 1
+		scroll.ScrollBarThickness = 4
+		scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		scroll.ZIndex = 82
+		scroll.Parent = card
+		
+		local scrollLayout = Instance.new("UIListLayout")
+		scrollLayout.Padding = UDim.new(0, 6)
+		scrollLayout.Parent = scroll
+		
+		for _, country in ipairs(RoyalCountries) do
+			local countryBtn = Instance.new("TextButton")
+			countryBtn.Size = UDim2.new(1, 0, 0, 44)
+			countryBtn.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
+			countryBtn.Text = country.emoji .. " " .. country.name
+			countryBtn.TextColor3 = C.Gray800
+			countryBtn.TextSize = 15
+			countryBtn.Font = F.Medium
+			countryBtn.ZIndex = 83
+			countryBtn.Parent = scroll
+			corner(countryBtn, 8)
+			stroke(countryBtn, 1, 0.8, Color3.fromRGB(255, 215, 0))
+			
+			countryBtn.MouseEnter:Connect(function()
+				tween(countryBtn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+			end)
+			countryBtn.MouseLeave:Connect(function()
+				tween(countryBtn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(255, 248, 220) })
+			end)
+			
+			countryBtn.MouseButton1Click:Connect(function()
+				selectedRoyalCountry = country.id
+				
+				-- Close the country selection
+				if royalCountryOverlay then
+					royalCountryOverlay:Destroy()
+					royalCountryOverlay = nil
+				end
+				
+				-- Now show gender selection for the royal
+				showRoyalGenderSelection(country)
+			end)
+		end
+		
+		-- Random button
+		local randomBtn = Instance.new("TextButton")
+		randomBtn.Size = UDim2.new(1, 0, 0, 44)
+		randomBtn.BackgroundColor3 = Color3.fromRGB(168, 85, 247) -- Purple
+		randomBtn.Text = "🎲 Random Kingdom"
+		randomBtn.TextColor3 = C.White
+		randomBtn.TextSize = 15
+		randomBtn.Font = F.Title
+		randomBtn.ZIndex = 82
+		randomBtn.Parent = card
+		corner(randomBtn, 8)
+		
+		randomBtn.MouseButton1Click:Connect(function()
+			local randomCountry = RoyalCountries[math.random(1, #RoyalCountries)]
+			selectedRoyalCountry = randomCountry.id
+			
+			if royalCountryOverlay then
+				royalCountryOverlay:Destroy()
+				royalCountryOverlay = nil
+			end
+			
+			showRoyalGenderSelection(randomCountry)
+		end)
+		
+		-- Cancel button
+		local cancelBtn = Instance.new("TextButton")
+		cancelBtn.Size = UDim2.new(0.5, 0, 0, 36)
+		cancelBtn.BackgroundColor3 = C.Gray200
+		cancelBtn.Text = "← Back"
+		cancelBtn.TextColor3 = C.Gray600
+		cancelBtn.TextSize = 14
+		cancelBtn.Font = F.Medium
+		cancelBtn.ZIndex = 82
+		cancelBtn.Parent = card
+		corner(cancelBtn, 8)
+		
+		cancelBtn.MouseButton1Click:Connect(function()
+			if royalCountryOverlay then
+				royalCountryOverlay:Destroy()
+				royalCountryOverlay = nil
+			end
+		end)
+	end
+	
+	local function showRoyalGenderSelection(country)
+		-- Create overlay for gender selection
+		local genderOverlay = Instance.new("Frame")
+		genderOverlay.Name = "RoyalGenderOverlay"
+		genderOverlay.Size = UDim2.fromScale(1, 1)
+		genderOverlay.BackgroundColor3 = C.Black
+		genderOverlay.BackgroundTransparency = 0.4
+		genderOverlay.ZIndex = 80
+		genderOverlay.Parent = screenGui
+		
+		-- Card
+		local card = Instance.new("Frame")
+		card.Name = "Card"
+		card.Size = UDim2.new(0.85, 0, 0, 0)
+		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.AnchorPoint = Vector2.new(0.5, 0.5)
+		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.BackgroundColor3 = C.White
+		card.ZIndex = 81
+		card.Parent = genderOverlay
+		corner(card, 16)
+		pad(card, 20, 20, 20, 20)
+		
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, 12)
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.Parent = card
+		
+		-- Title
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, 0, 0, 36)
+		title.BackgroundTransparency = 1
+		title.Text = country.emoji .. " Royal of " .. country.name
+		title.TextColor3 = C.Gray900
+		title.TextSize = 18
+		title.Font = F.Title
+		title.ZIndex = 82
+		title.Parent = card
+		
+		-- Prince button
+		local princeBtn = Instance.new("TextButton")
+		princeBtn.Size = UDim2.new(1, 0, 0, 56)
+		princeBtn.BackgroundColor3 = C.Male
+		princeBtn.Text = "🤴 Prince"
+		princeBtn.TextColor3 = C.White
+		princeBtn.TextSize = 18
+		princeBtn.Font = F.Title
+		princeBtn.ZIndex = 82
+		princeBtn.Parent = card
+		corner(princeBtn, 12)
+		
+		-- Princess button
+		local princessBtn = Instance.new("TextButton")
+		princessBtn.Size = UDim2.new(1, 0, 0, 56)
+		princessBtn.BackgroundColor3 = C.Female
+		princessBtn.Text = "👸 Princess"
+		princessBtn.TextColor3 = C.White
+		princessBtn.TextSize = 18
+		princessBtn.Font = F.Title
+		princessBtn.ZIndex = 82
+		princessBtn.Parent = card
+		corner(princessBtn, 12)
+		
+		-- Cancel button
+		local cancelBtn = Instance.new("TextButton")
+		cancelBtn.Size = UDim2.new(0.5, 0, 0, 36)
+		cancelBtn.BackgroundColor3 = C.Gray200
+		cancelBtn.Text = "← Back"
+		cancelBtn.TextColor3 = C.Gray600
+		cancelBtn.TextSize = 14
+		cancelBtn.Font = F.Medium
+		cancelBtn.ZIndex = 82
+		cancelBtn.Parent = card
+		corner(cancelBtn, 8)
+		
+		local function startRoyalLife(gender)
+			genderOverlay:Destroy()
+			
+			-- Set the selected gender for royal birth
+			selectedGender = gender
+			
+			-- Send to server with royal birth info
+			if SetLifeInfo then
+				pcall(function()
+					SetLifeInfo:FireServer({
+						gender = gender,
+						isRoyalBirth = true,
+						royalCountry = country.id,
+						royalCountryName = country.name,
+					})
+				end)
+			end
+			
+			-- Hide intro and complete setup
+			introComplete = true
+			hideIntro()
+		end
+		
+		princeBtn.MouseButton1Click:Connect(function()
+			startRoyalLife("Male")
+		end)
+		
+		princessBtn.MouseButton1Click:Connect(function()
+			startRoyalLife("Female")
+		end)
+		
+		cancelBtn.MouseButton1Click:Connect(function()
+			genderOverlay:Destroy()
+			showRoyalCountrySelection()
+		end)
+	end
+	
+	royaltyBtn.MouseButton1Click:Connect(function()
+		-- Check for Royalty gamepass ownership
+		local hasRoyal = hasRoyaltyGamepass()
+		if hasRoyal then
+			showRoyalCountrySelection()
+		else
+			-- Prompt to purchase Royalty gamepass
+			if PromptGamepass then
+				pcall(function()
+					PromptGamepass:InvokeServer("ROYALTY")
+				end)
+			end
+		end
+	end)
+	
+	-- Update button appearance based on Royalty gamepass status
+	local function updateRoyaltyGenderBtn()
+		local hasRoyal = hasRoyaltyGamepass()
+		if hasRoyal then
+			royaltyBtn.Text = "👑 Born Royal"
+			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+		else
+			royaltyBtn.Text = "🔒 Born Royal (Gamepass)"
+			royaltyBtn.BackgroundColor3 = C.Gray300
+			stroke(royaltyBtn, 1, 0.5, C.Gray400)
+		end
+	end
+	
+	-- Update on show
+	task.defer(updateRoyaltyGenderBtn)
+	
+	-- Store update function for later use
+	IntroUI.updateRoyaltyGenderBtn = updateRoyaltyGenderBtn
+end
+
 showIntro = function()
 	if introComplete then return end
 
@@ -4144,6 +4499,11 @@ showIntro = function()
 	IntroUI.genderTitle.Text = "Start by picking a gender"
 	IntroUI.genderBtns.Visible = true
 	IntroUI.nameBtns.Visible = false
+
+	-- CRITICAL FIX #104: Update Royalty button appearance on intro show
+	if IntroUI.updateRoyaltyGenderBtn then
+		IntroUI.updateRoyaltyGenderBtn()
+	end
 
 	-- Fade in animation
 	IntroUI.content.Position = UDim2.new(0.5, 0, 0.55, 0)

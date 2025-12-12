@@ -2777,7 +2777,8 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 		meetsMaxAge = age <= item.maxAge
 	end
 	
-	local canDo = age >= item.minAge and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
+	-- CRITICAL FIX: Default minAge to 0 if not specified to prevent nil comparison error
+	local canDo = age >= (item.minAge or 0) and money >= cost and not self:isInJail() and meetsFlag and meetsMaxAge
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
@@ -4793,15 +4794,16 @@ function ActivitiesScreen:populateRoyal()
 	popText.Parent = popBadge
 	
 	-- Royal duties section
+	-- CRITICAL FIX #107: Added minAge to all items to prevent nil comparison error
 	local RoyalDuties = {
-		{ id = "public_appearance", name = "Public Appearance", emoji = "📸", effect = "+Popularity", cost = 0 },
-		{ id = "charity_visit", name = "Visit Charity", emoji = "❤️", effect = "+Popularity +Happiness", cost = 10000 },
-		{ id = "state_dinner", name = "Host State Dinner", emoji = "🍽️", effect = "+Diplomacy", cost = 50000 },
-		{ id = "open_parliament", name = "Open Parliament", emoji = "🏛️", effect = "+Respect", cost = 0, monarchOnly = true },
-		{ id = "knight_ceremony", name = "Knight Someone", emoji = "⚔️", effect = "+Popularity", cost = 0, monarchOnly = true },
-		{ id = "royal_wedding", name = "Attend Royal Wedding", emoji = "💒", effect = "+Happiness +Popularity", cost = 0 },
-		{ id = "military_review", name = "Military Review", emoji = "🎖️", effect = "+Popularity", cost = 0 },
-		{ id = "charity_gala", name = "Host Charity Gala", emoji = "🎭", effect = "+Popularity +Fame", cost = 100000 },
+		{ id = "public_appearance", name = "Public Appearance", emoji = "📸", effect = "+Popularity", cost = 0, minAge = 5 },
+		{ id = "charity_visit", name = "Visit Charity", emoji = "❤️", effect = "+Popularity +Happiness", cost = 10000, minAge = 8 },
+		{ id = "state_dinner", name = "Host State Dinner", emoji = "🍽️", effect = "+Diplomacy", cost = 50000, minAge = 18 },
+		{ id = "open_parliament", name = "Open Parliament", emoji = "🏛️", effect = "+Respect", cost = 0, monarchOnly = true, minAge = 21 },
+		{ id = "knight_ceremony", name = "Knight Someone", emoji = "⚔️", effect = "+Popularity", cost = 0, monarchOnly = true, minAge = 21 },
+		{ id = "royal_wedding", name = "Attend Royal Wedding", emoji = "💒", effect = "+Happiness +Popularity", cost = 0, minAge = 5 },
+		{ id = "military_review", name = "Military Review", emoji = "🎖️", effect = "+Popularity", cost = 0, minAge = 16 },
+		{ id = "charity_gala", name = "Host Charity Gala", emoji = "🎭", effect = "+Popularity +Fame", cost = 100000, minAge = 18 },
 	}
 	
 	local section = Instance.new("Frame")
@@ -4921,15 +4923,16 @@ function ActivitiesScreen:populateFame()
 	fameText.Parent = fameBadge
 	
 	-- Fame activities
+	-- CRITICAL FIX #108: Added minAge to all items to prevent nil comparison error
 	local FameActivities = {
-		{ id = "audition", name = "Go to Audition", emoji = "🎬", effect = "+Fame +Money", cost = 0 },
-		{ id = "social_post", name = "Post on Social Media", emoji = "📱", effect = "+Followers", cost = 0 },
-		{ id = "interview", name = "Do an Interview", emoji = "🎤", effect = "+Fame", cost = 0 },
-		{ id = "photoshoot", name = "Do a Photoshoot", emoji = "📸", effect = "+Looks +Fame", cost = 500 },
-		{ id = "endorsement", name = "Seek Endorsement", emoji = "💼", effect = "+Money", cost = 0 },
-		{ id = "publicity_stunt", name = "Publicity Stunt", emoji = "🎪", effect = "+Fame +Risk", cost = 5000 },
-		{ id = "charity_event", name = "Charity Event", emoji = "❤️", effect = "+Fame +Happiness", cost = 10000 },
-		{ id = "album_tour", name = "Go on Tour", emoji = "🎸", effect = "+Fame +Money -Health", cost = 50000 },
+		{ id = "audition", name = "Go to Audition", emoji = "🎬", effect = "+Fame +Money", cost = 0, minAge = 16 },
+		{ id = "social_post", name = "Post on Social Media", emoji = "📱", effect = "+Followers", cost = 0, minAge = 13 },
+		{ id = "interview", name = "Do an Interview", emoji = "🎤", effect = "+Fame", cost = 0, minAge = 14 },
+		{ id = "photoshoot", name = "Do a Photoshoot", emoji = "📸", effect = "+Looks +Fame", cost = 500, minAge = 16 },
+		{ id = "endorsement", name = "Seek Endorsement", emoji = "💼", effect = "+Money", cost = 0, minAge = 18 },
+		{ id = "publicity_stunt", name = "Publicity Stunt", emoji = "🎪", effect = "+Fame +Risk", cost = 5000, minAge = 18 },
+		{ id = "charity_event", name = "Charity Event", emoji = "❤️", effect = "+Fame +Happiness", cost = 10000, minAge = 16 },
+		{ id = "album_tour", name = "Go on Tour", emoji = "🎸", effect = "+Fame +Money -Health", cost = 50000, minAge = 18 },
 	}
 	
 	local section = Instance.new("Frame")
@@ -5024,15 +5027,16 @@ function ActivitiesScreen:populateMafia()
 	statsText.Parent = statsBadge
 	
 	-- Mafia operations
+	-- CRITICAL FIX #109: Added minAge to all items to prevent nil comparison error
 	local MafiaOperations = {
-		{ id = "collect_protection", name = "Collect Protection", emoji = "💰", effect = "+Money +Heat", risk = 20 },
-		{ id = "drug_run", name = "Drug Run", emoji = "📦", effect = "+Money +Heat", risk = 35 },
-		{ id = "hit_job", name = "Hit Job", emoji = "🔫", effect = "+Respect +Heat", risk = 50 },
-		{ id = "heist", name = "Plan a Heist", emoji = "🏦", effect = "+Money +Heat", risk = 60, hasMinigame = true, minigameType = "heist" },
-		{ id = "intimidate", name = "Intimidate Someone", emoji = "😠", effect = "+Respect", risk = 25 },
-		{ id = "recruit", name = "Recruit Members", emoji = "👥", effect = "+Loyalty", risk = 10 },
-		{ id = "bribe_cops", name = "Bribe Police", emoji = "👮", effect = "-Heat", cost = 50000 },
-		{ id = "lay_low", name = "Lay Low", emoji = "🏠", effect = "-Heat", cost = 0 },
+		{ id = "collect_protection", name = "Collect Protection", emoji = "💰", effect = "+Money +Heat", risk = 20, minAge = 18, cost = 0 },
+		{ id = "drug_run", name = "Drug Run", emoji = "📦", effect = "+Money +Heat", risk = 35, minAge = 18, cost = 0 },
+		{ id = "hit_job", name = "Hit Job", emoji = "🔫", effect = "+Respect +Heat", risk = 50, minAge = 18, cost = 0 },
+		{ id = "heist", name = "Plan a Heist", emoji = "🏦", effect = "+Money +Heat", risk = 60, hasMinigame = true, minigameType = "heist", minAge = 18, cost = 0 },
+		{ id = "intimidate", name = "Intimidate Someone", emoji = "😠", effect = "+Respect", risk = 25, minAge = 18, cost = 0 },
+		{ id = "recruit", name = "Recruit Members", emoji = "👥", effect = "+Loyalty", risk = 10, minAge = 18, cost = 0 },
+		{ id = "bribe_cops", name = "Bribe Police", emoji = "👮", effect = "-Heat", cost = 50000, minAge = 18 },
+		{ id = "lay_low", name = "Lay Low", emoji = "🏠", effect = "-Heat", cost = 0, minAge = 18 },
 	}
 	
 	local section = Instance.new("Frame")

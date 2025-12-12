@@ -2530,10 +2530,28 @@ local function filterText(text, player)
 	end
 end
 
-function LifeBackend:setLifeInfo(player, name, gender)
+function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 	local state = self:getState(player)
 	if not state then
 		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #105: Support both old (name, gender) and new (payload object) formats
+	-- New format: { gender = "Male", isRoyalBirth = true, royalCountry = "uk" }
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local name, gender, isRoyalBirth, royalCountry
+	
+	if type(nameOrPayload) == "table" then
+		-- New payload format
+		name = nameOrPayload.name
+		gender = nameOrPayload.gender
+		isRoyalBirth = nameOrPayload.isRoyalBirth
+		royalCountry = nameOrPayload.royalCountry
+	else
+		-- Old format (name, gender)
+		name = nameOrPayload
+		gender = genderArg
 	end
 	
 	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
@@ -2546,13 +2564,91 @@ function LifeBackend:setLifeInfo(player, name, gender)
 		local maleNames = {"James", "John", "Michael", "David", "Chris", "Matthew", "Daniel", "Andrew", "Ryan", "Tyler"}
 		local femaleNames = {"Emily", "Sarah", "Jessica", "Ashley", "Samantha", "Madison", "Hannah", "Olivia", "Emma", "Sophia"}
 		
-		local nameList = (gender == "female") and femaleNames or maleNames
+		-- For royalty, use more regal names
+		local royalMaleNames = {"William", "Charles", "Edward", "Henry", "George", "Alexander", "Frederick", "Leopold", "Albert", "Philip"}
+		local royalFemaleNames = {"Victoria", "Elizabeth", "Catherine", "Charlotte", "Diana", "Margaret", "Alexandra", "Beatrice", "Eugenie", "Sophia"}
+		
+		local nameList
+		if isRoyalBirth then
+			nameList = (gender == "Female") and royalFemaleNames or royalMaleNames
+		else
+			nameList = (gender == "Female") and femaleNames or maleNames
+		end
 		state.Name = nameList[math.random(#nameList)]
 	end
 	
 	if gender then
 		state.Gender = gender
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #106: Handle royal birth from the "Born Royal" button
+	-- This is separate from God Mode character customization
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if isRoyalBirth then
+		-- Verify player has Royalty gamepass
+		if self:checkGamepassOwnership(player, "ROYALTY") then
+			local royalCountryId = royalCountry or "uk"
+			local royalCountries = {
+				uk = { id = "uk", name = "United Kingdom", emoji = "🇬🇧", palace = "Buckingham Palace", startingWealth = { min = 50000000, max = 500000000 } },
+				spain = { id = "spain", name = "Spain", emoji = "🇪🇸", palace = "Royal Palace of Madrid", startingWealth = { min = 30000000, max = 200000000 } },
+				sweden = { id = "sweden", name = "Sweden", emoji = "🇸🇪", palace = "Stockholm Palace", startingWealth = { min = 20000000, max = 150000000 } },
+				japan = { id = "japan", name = "Japan", emoji = "🇯🇵", palace = "Imperial Palace", startingWealth = { min = 100000000, max = 800000000 } },
+				monaco = { id = "monaco", name = "Monaco", emoji = "🇲🇨", palace = "Prince's Palace", startingWealth = { min = 200000000, max = 1000000000 } },
+				saudi = { id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", palace = "Al-Yamamah Palace", startingWealth = { min = 500000000, max = 5000000000 } },
+				belgium = { id = "belgium", name = "Belgium", emoji = "🇧🇪", palace = "Royal Palace of Brussels", startingWealth = { min = 25000000, max = 180000000 } },
+				netherlands = { id = "netherlands", name = "Netherlands", emoji = "🇳🇱", palace = "Royal Palace Amsterdam", startingWealth = { min = 30000000, max = 200000000 } },
+				norway = { id = "norway", name = "Norway", emoji = "🇳🇴", palace = "Royal Palace Oslo", startingWealth = { min = 25000000, max = 150000000 } },
+				denmark = { id = "denmark", name = "Denmark", emoji = "🇩🇰", palace = "Amalienborg Palace", startingWealth = { min = 25000000, max = 150000000 } },
+				morocco = { id = "morocco", name = "Morocco", emoji = "🇲🇦", palace = "Royal Palace of Rabat", startingWealth = { min = 80000000, max = 400000000 } },
+				jordan = { id = "jordan", name = "Jordan", emoji = "🇯🇴", palace = "Al-Husseiniya Palace", startingWealth = { min = 50000000, max = 300000000 } },
+				thailand = { id = "thailand", name = "Thailand", emoji = "🇹🇭", palace = "Grand Palace", startingWealth = { min = 100000000, max = 600000000 } },
+			}
+			
+			local country = royalCountries[royalCountryId] or royalCountries.uk
+			local wealthRange = country.startingWealth
+			local royalWealth = RANDOM:NextInteger(wealthRange.min, wealthRange.max)
+			
+			-- Determine title based on gender
+			local genderStr = state.Gender or "Male"
+			local title = (genderStr == "Female") and "Princess" or "Prince"
+			
+			-- Initialize royal state
+			state.RoyalState = {
+				isRoyal = true,
+				isMonarch = false,
+				country = country.id,
+				countryName = country.name,
+				countryEmoji = country.emoji,
+				palace = country.palace,
+				title = title,
+				lineOfSuccession = RANDOM:NextInteger(1, 5),
+				popularity = 75 + RANDOM:NextInteger(-10, 10),
+				scandals = 0,
+				dutiesCompleted = 0,
+				dutyStreak = 0,
+				reignYears = 0,
+				wealth = royalWealth,
+			}
+			
+			-- Set money
+			state.Money = royalWealth
+			
+			-- Set flags
+			state.Flags = state.Flags or {}
+			state.Flags.is_royalty = true
+			state.Flags.royal_birth = true
+			state.Flags.royal_country = country.id
+			state.Flags.wealthy_family = true
+			state.Flags.upper_class = true
+			state.Flags.famous_family = true
+			
+			-- Send royal birth message
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", title, state.Name or "Your Highness", country.name, country.palace))
+			return
+		end
+	end
+	
 	self:pushState(player, string.format("%s takes their first breath.", state.Name or "Your character"))
 end
 
