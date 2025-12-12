@@ -2747,8 +2747,75 @@ end
 -- CRITICAL FIX: Filter text using Roblox's TextService for custom names
 local TextService = game:GetService("TextService")
 
+-- CRITICAL FIX #325: Pre-approved safe names that bypass Roblox filter
+-- These are the names we generate in the game, so they're guaranteed safe
+local SAFE_FIRST_NAMES = {
+	-- Male names
+	["James"] = true, ["Michael"] = true, ["Daniel"] = true, ["Alexander"] = true,
+	["Liam"] = true, ["Noah"] = true, ["Jackson"] = true, ["Elijah"] = true,
+	["Logan"] = true, ["Wyatt"] = true, ["Kai"] = true, ["Rowan"] = true,
+	["John"] = true, ["David"] = true, ["Chris"] = true, ["Matthew"] = true,
+	["Andrew"] = true, ["Ryan"] = true, ["Tyler"] = true,
+	-- Royal male names
+	["William"] = true, ["Charles"] = true, ["Edward"] = true, ["Henry"] = true,
+	["George"] = true, ["Frederick"] = true, ["Leopold"] = true, ["Albert"] = true,
+	["Philip"] = true,
+	-- Female names
+	["Emma"] = true, ["Sophia"] = true, ["Olivia"] = true, ["Isabella"] = true,
+	["Mia"] = true, ["Charlotte"] = true, ["Avery"] = true, ["Camila"] = true,
+	["Scarlett"] = true, ["Chloe"] = true, ["Hazel"] = true, ["Naomi"] = true,
+	["Emily"] = true, ["Sarah"] = true, ["Jessica"] = true, ["Ashley"] = true,
+	["Samantha"] = true, ["Madison"] = true, ["Hannah"] = true,
+	-- Royal female names
+	["Victoria"] = true, ["Elizabeth"] = true, ["Catherine"] = true, ["Diana"] = true,
+	["Margaret"] = true, ["Alexandra"] = true, ["Beatrice"] = true, ["Eugenie"] = true,
+}
+
+local SAFE_LAST_NAMES = {
+	["Wilson"] = true, ["Brown"] = true, ["Johnson"] = true, ["Williams"] = true,
+	["Taylor"] = true, ["Clark"] = true, ["Walker"] = true, ["King"] = true,
+	["Adams"] = true, ["Carter"] = true, ["Parker"] = true, ["Reed"] = true,
+	["Smith"] = true, ["Jones"] = true, ["Davis"] = true, ["Miller"] = true,
+	["Anderson"] = true, ["Thomas"] = true, ["Moore"] = true, ["Martin"] = true,
+}
+
+-- Check if a name is from our safe list (first + last name format)
+local function isSafeName(name)
+	if not name or name == "" then return false end
+	
+	-- Split into parts
+	local parts = {}
+	for part in name:gmatch("%S+") do
+		table.insert(parts, part)
+	end
+	
+	-- Single name check
+	if #parts == 1 then
+		return SAFE_FIRST_NAMES[parts[1]] or SAFE_LAST_NAMES[parts[1]]
+	end
+	
+	-- First + Last name check
+	if #parts == 2 then
+		return SAFE_FIRST_NAMES[parts[1]] and SAFE_LAST_NAMES[parts[2]]
+	end
+	
+	-- First Middle Last check (allow if first and last are safe)
+	if #parts >= 2 then
+		return SAFE_FIRST_NAMES[parts[1]] and SAFE_LAST_NAMES[parts[#parts]]
+	end
+	
+	return false
+end
+
 local function filterText(text, player)
 	if not text or text == "" then return text end
+	
+	-- CRITICAL FIX #325: Skip filtering for pre-approved safe names
+	-- This prevents Roblox from hashtagging our generated names
+	if isSafeName(text) then
+		return text
+	end
+	
 	local success, result = pcall(function()
 		local filtered = TextService:FilterStringAsync(text, player.UserId, Enum.TextFilterContext.PublicChat)
 		return filtered:GetNonChatStringForBroadcastAsync()

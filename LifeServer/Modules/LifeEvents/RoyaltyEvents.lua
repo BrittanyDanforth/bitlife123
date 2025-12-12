@@ -2284,7 +2284,7 @@ RoyaltyEvents.LifeEvents = {
 		title = "👋 Balcony Appearance",
 		emoji = "👋",
 		text = "Thousands have gathered outside the palace for a royal occasion. Time for the famous balcony wave!",
-		minAge = 5,
+		minAge = 12, -- CRITICAL FIX #323: Was 5, now 12 - babies shouldn't wave to crowds independently
 		maxAge = 100,
 		isRoyalOnly = true,
 		cooldown = 2,
@@ -2529,7 +2529,8 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 	-- Passive popularity decay
 	-- CRITICAL FIX #304: Only show this message occasionally (25% chance) to prevent spam
 	-- Also only apply decay if popularity is above 30 (prevents kicking players when already low)
-	if royalState.dutiesCompleted == 0 and royalState.popularity > 30 then
+	-- CRITICAL FIX #324: Only show advisor message for age 12+ (babies don't get advisor suggestions!)
+	if royalState.dutiesCompleted == 0 and royalState.popularity > 30 and age >= 12 then
 		royalState.popularity = math.max(0, royalState.popularity - 2)
 		-- Only show the message 25% of the time to prevent annoying spam
 		if math.random(100) <= 25 then
@@ -2538,6 +2539,9 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 				message = "💭 A royal advisor suggests making more public appearances to maintain popularity.",
 			})
 		end
+	elseif age < 12 and royalState.popularity > 30 then
+		-- CRITICAL FIX #324: For young royals, popularity naturally stays stable (they're cute!)
+		-- No decay for children under 12 - they don't need to do public duties
 	end
 	
 	-- Reset yearly counters

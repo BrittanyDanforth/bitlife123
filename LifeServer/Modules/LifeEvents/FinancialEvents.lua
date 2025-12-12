@@ -88,6 +88,7 @@ FinancialEvents.events = {
 		ageBand = "any",
 		category = "finance",
 		tags = { "side_hustle", "income", "work" },
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX #326: Can't do side hustles from prison
 		
 		choices = {
 			{
@@ -167,6 +168,7 @@ FinancialEvents.events = {
 		category = "career",
 		tags = { "bonus", "work", "income" },
 		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX #327: Can't get work bonus from prison
 		
 		-- CRITICAL: Random bonus outcome
 		choices = {
@@ -854,6 +856,7 @@ FinancialEvents.events = {
 		ageBand = "any",
 		category = "gambling",
 		tags = { "gambling", "casino", "risk" },
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX #328: Can't go to casino from prison
 		
 		eligibility = function(state)
 			local money = state.Money or 0

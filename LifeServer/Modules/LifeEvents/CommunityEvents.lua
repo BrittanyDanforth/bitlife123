@@ -25,6 +25,7 @@ CommunityEvents.events = {
 		ageBand = "any",
 		category = "community",
 		tags = { "neighbors", "social", "community" },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true }, -- CRITICAL FIX #329: No neighbors in prison/homeless
 		
 		-- CRITICAL: Random neighbor outcome
 		choices = {
@@ -79,6 +80,7 @@ CommunityEvents.events = {
 		ageBand = "any",
 		category = "community",
 		tags = { "conflict", "neighbors", "dispute" },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true }, -- CRITICAL FIX #330: No neighborhood disputes in prison
 		
 		choices = {
 			{

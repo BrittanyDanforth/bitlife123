@@ -219,6 +219,7 @@ SocialMediaEvents.events = {
 		category = "dating",
 		tags = { "dating", "apps", "romance" },
 		requiresSingle = true,
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX #331: No dating apps from prison
 		
 		-- CRITICAL: Random dating app outcome
 		choices = {
