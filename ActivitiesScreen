@@ -219,7 +219,7 @@ local Crimes = {
 	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18 },
 	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16 },
 	-- SERIOUS CRIMES
-	{ id = "drug_dealing", name = "Drug Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
+	{ id = "illegal_dealing", name = "Illegal Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
 	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18 },
 	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18 },
 	-- MAJOR CRIMES
@@ -1467,7 +1467,7 @@ function ActivitiesScreen:createJoinMobCard(parent)
 		{ id = "italian", name = "Italian Mafia", emoji = "🇮🇹", desc = "La Cosa Nostra" },
 		{ id = "russian", name = "Russian Bratva", emoji = "🇷🇺", desc = "The Brotherhood" },
 		{ id = "yakuza", name = "Japanese Yakuza", emoji = "🇯🇵", desc = "Way of Honor" },
-		{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", desc = "Drug Empire" },
+		{ id = "cartel", name = "Mexican Cartel", emoji = "🇲🇽", desc = "Smuggling Empire" },
 		{ id = "triad", name = "Chinese Triad", emoji = "🇨🇳", desc = "Ancient Society" },
 	}
 	
@@ -5030,7 +5030,7 @@ function ActivitiesScreen:populateMafia()
 	-- CRITICAL FIX #109: Added minAge to all items to prevent nil comparison error
 	local MafiaOperations = {
 		{ id = "collect_protection", name = "Collect Protection", emoji = "💰", effect = "+Money +Heat", risk = 20, minAge = 18, cost = 0 },
-		{ id = "drug_run", name = "Drug Run", emoji = "📦", effect = "+Money +Heat", risk = 35, minAge = 18, cost = 0 },
+		{ id = "contraband_run", name = "Contraband Run", emoji = "📦", effect = "+Money +Heat", risk = 35, minAge = 18, cost = 0 },
 		{ id = "hit_job", name = "Hit Job", emoji = "🔫", effect = "+Respect +Heat", risk = 50, minAge = 18, cost = 0 },
 		{ id = "heist", name = "Plan a Heist", emoji = "🏦", effect = "+Money +Heat", risk = 60, hasMinigame = true, minigameType = "heist", minAge = 18, cost = 0 },
 		{ id = "intimidate", name = "Intimidate Someone", emoji = "😠", effect = "+Respect", risk = 25, minAge = 18, cost = 0 },

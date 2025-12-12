@@ -253,7 +253,7 @@ C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
 local RelationshipsScreen = {}
 RelationshipsScreen.__index = RelationshipsScreen
 
-local DEBUG = true  -- ENABLED to trace relationship sync issues
+local DEBUG = false  -- Disabled for production (was ENABLED to trace relationship sync issues)
 local function log(...)
 	if DEBUG then
 		print("[RelationshipsScreen]", ...)
