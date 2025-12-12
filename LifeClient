@@ -151,37 +151,55 @@ local ScreenInstances = {
 local minigamesInstance
 local pendingMinigameEventId     = nil
 local pendingMinigameChoiceIndex = nil
+-- CRITICAL FIX #421: Cache ALL gamepass statuses to prevent reset on purchase
+-- These are set to true immediately when purchased and NEVER set back to false
 local hasGodMode = false
-local hasRoyalty = false  -- CRITICAL FIX #411: Cache royalty status like god mode
+local hasRoyalty = false
+local hasMafia = false
+local hasCelebrity = false
+local hasTimeMachine = false
 local godModeOverlay = nil
 local godModeButton = nil
 local destroyGodModeModal
 local showGodModeModal
 local updateGodModeButtonAppearance
 
+-- CRITICAL FIX #419: These refresh functions must NEVER downgrade true to false!
+-- When a gamepass is purchased, we set hasGodMode = true immediately.
+-- But the server might still return false due to caching delays.
+-- So we ONLY update if the server says true (upgrading false to true).
+-- We NEVER set hasGodMode = false if it's already true!
 local function refreshGodModeStatus()
+	-- If already true, don't even check - can't lose a purchased gamepass
+	if hasGodMode then
+		return true
+	end
 	if not CheckGamepass then
 		return hasGodMode
 	end
 	local success, owns = pcall(function()
 		return CheckGamepass:InvokeServer("GOD_MODE")
 	end)
-	if success then
-		hasGodMode = owns == true
+	if success and owns == true then
+		hasGodMode = true  -- ONLY upgrade to true, never downgrade
 	end
 	return hasGodMode
 end
 
--- CRITICAL FIX #412: Refresh royalty status with caching
+-- CRITICAL FIX #420: Same logic for Royalty - NEVER downgrade true to false!
 local function refreshRoyaltyStatus()
+	-- If already true, don't even check - can't lose a purchased gamepass
+	if hasRoyalty then
+		return true
+	end
 	if not CheckGamepass then
 		return hasRoyalty
 	end
 	local success, owns = pcall(function()
 		return CheckGamepass:InvokeServer("ROYALTY")
 	end)
-	if success then
-		hasRoyalty = owns == true
+	if success and owns == true then
+		hasRoyalty = true  -- ONLY upgrade to true, never downgrade
 	end
 	return hasRoyalty
 end
@@ -206,14 +224,24 @@ local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	
 	print("[LifeClient] Gamepass purchase finished:", gamePassId, wasPurchased)
 	
-	-- CRITICAL FIX #404: Force set gamepass ownership immediately based on purchase
+	-- CRITICAL FIX #422: Force set gamepass ownership immediately based on purchase
 	-- This bypasses any caching delays from the server
+	-- These values are NEVER set back to false once true!
 	if gamePassId == GAMEPASS_IDS.GOD_MODE then
 		hasGodMode = true
 		print("[LifeClient] God Mode gamepass purchased - immediately enabling!")
 	elseif gamePassId == GAMEPASS_IDS.ROYALTY then
 		hasRoyalty = true
 		print("[LifeClient] Royalty gamepass purchased - immediately enabling!")
+	elseif gamePassId == GAMEPASS_IDS.MAFIA then
+		hasMafia = true
+		print("[LifeClient] Mafia gamepass purchased - immediately enabling!")
+	elseif gamePassId == GAMEPASS_IDS.CELEBRITY then
+		hasCelebrity = true
+		print("[LifeClient] Celebrity gamepass purchased - immediately enabling!")
+	elseif gamePassId == GAMEPASS_IDS.TIME_MACHINE then
+		hasTimeMachine = true
+		print("[LifeClient] Time Machine gamepass purchased - immediately enabling!")
 	end
 	
 	-- CRITICAL FIX #405: Multiple retries to handle Roblox API delays
@@ -270,11 +298,18 @@ if GamepassPurchased then
 	GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
 		print("[LifeClient] Server confirmed gamepass purchased:", gamepassKey)
 		
-		-- CRITICAL FIX #408: Immediately set gamepass flags based on server confirmation
+		-- CRITICAL FIX #423: Immediately set gamepass flags based on server confirmation
+		-- These are PERMANENT - never set back to false!
 		if gamepassKey == "GOD_MODE" then
 			hasGodMode = true
 		elseif gamepassKey == "ROYALTY" then
 			hasRoyalty = true
+		elseif gamepassKey == "MAFIA" then
+			hasMafia = true
+		elseif gamepassKey == "CELEBRITY" then
+			hasCelebrity = true
+		elseif gamepassKey == "TIME_MACHINE" then
+			hasTimeMachine = true
 		end
 		
 		-- CRITICAL FIX #409: Update client state GamepassOwnership immediately
@@ -3120,18 +3155,21 @@ local function buildDeathUI()
 	DeathUI.buttonSection.Parent = DeathUI.scroll
 	
 	-- TIME MACHINE SECTION (BitLife-style premium feature)
-	-- CRITICAL FIX: Check if user has Time Machine gamepass
-	local hasTimeMachineGamepass = false
+	-- CRITICAL FIX #424: Use global hasTimeMachine cache, never downgrade true to false
 	local function checkTimeMachineGamepass()
+		-- If already true, don't even check - can't lose a purchased gamepass
+		if hasTimeMachine then
+			return true
+		end
 		if CheckGamepass then
 			local success, owns = pcall(function()
 				return CheckGamepass:InvokeServer("TIME_MACHINE")
 			end)
-			if success then
-				hasTimeMachineGamepass = owns == true
+			if success and owns == true then
+				hasTimeMachine = true  -- ONLY upgrade to true, never downgrade
 			end
 		end
-		return hasTimeMachineGamepass
+		return hasTimeMachine
 	end
 	
 	local tmTitle = Instance.new("TextLabel")
@@ -3278,19 +3316,21 @@ local function buildDeathUI()
 		end)
 	end
 	
-	-- CRITICAL FIX #368: Function to update Time Machine UI based on gamepass ownership
+	-- CRITICAL FIX #425: Function to update Time Machine UI based on gamepass ownership
+	-- Uses global hasTimeMachine cache that NEVER downgrades true to false
 	DeathUI.updateTimeMachineUI = function()
-		-- Re-check gamepass ownership (in case it was just purchased)
-		local freshCheck = false
-		if CheckGamepass then
-			local ok, owns = pcall(function() return CheckGamepass:InvokeServer("TIME_MACHINE") end)
-			if ok then
-				freshCheck = owns == true
-				hasTimeMachineGamepass = freshCheck
+		-- Check if already true (purchased this session), if so don't even call server
+		if not hasTimeMachine then
+			-- Only call server if we don't already know they own it
+			if CheckGamepass then
+				local ok, owns = pcall(function() return CheckGamepass:InvokeServer("TIME_MACHINE") end)
+				if ok and owns == true then
+					hasTimeMachine = true  -- ONLY upgrade to true
+				end
 			end
 		end
 		
-		if hasTimeMachineGamepass then
+		if hasTimeMachine then
 			-- User owns gamepass - show full time machine UI with UNLIMITED badge
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = false
@@ -5950,7 +5990,27 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 			EducationData = state.EducationData,
 			-- CRITICAL: Include MobState for Mafia screen
 			MobState = state.MobState or { inMob = false },
+			-- CRITICAL FIX #429: Include GamepassOwnership
+			GamepassOwnership = state.GamepassOwnership or {},
 		}
+		
+		-- CRITICAL FIX #430: Initialize gamepass caches from server state
+		-- This ensures gamepasses are recognized even on new life
+		if state.GamepassOwnership then
+			if state.GamepassOwnership.godMode then hasGodMode = true end
+			if state.GamepassOwnership.royalty then hasRoyalty = true end
+			if state.GamepassOwnership.mafia then hasMafia = true end
+			if state.GamepassOwnership.celebrity then hasCelebrity = true end
+			if state.GamepassOwnership.timeMachine then hasTimeMachine = true end
+		end
+		-- Also check Flags as fallback
+		if state.Flags then
+			if state.Flags.god_mode_gamepass then hasGodMode = true end
+			if state.Flags.royalty_gamepass then hasRoyalty = true end
+			if state.Flags.mafia_gamepass then hasMafia = true end
+			if state.Flags.celebrity_gamepass then hasCelebrity = true end
+			if state.Flags.time_machine_gamepass then hasTimeMachine = true end
+		end
 
 		-- Reset header UI
 		nameLabel.Text = "New Life"
@@ -6041,6 +6101,23 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- Also copy Age directly if it's in the state
 	if state.Age then
 		currentState.Age = state.Age
+	end
+	
+	-- CRITICAL FIX #431: Update gamepass caches from server state on every sync
+	-- ONLY upgrade to true, never downgrade (server might have stale data)
+	if state.GamepassOwnership then
+		if state.GamepassOwnership.godMode then hasGodMode = true end
+		if state.GamepassOwnership.royalty then hasRoyalty = true end
+		if state.GamepassOwnership.mafia then hasMafia = true end
+		if state.GamepassOwnership.celebrity then hasCelebrity = true end
+		if state.GamepassOwnership.timeMachine then hasTimeMachine = true end
+	end
+	if state.Flags then
+		if state.Flags.god_mode_gamepass then hasGodMode = true end
+		if state.Flags.royalty_gamepass then hasRoyalty = true end
+		if state.Flags.mafia_gamepass then hasMafia = true end
+		if state.Flags.celebrity_gamepass then hasCelebrity = true end
+		if state.Flags.time_machine_gamepass then hasTimeMachine = true end
 	end
 
 	-- Update all screen instances with latest state

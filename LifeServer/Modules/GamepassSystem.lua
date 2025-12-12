@@ -530,23 +530,35 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 	-- Check cached ownership first
 	local playerId = player.UserId
 	local cacheKey = playerId .. "_" .. gamepassKey
-	if self.playerOwnership[cacheKey] ~= nil then
-		return self.playerOwnership[cacheKey]
+	
+	-- CRITICAL FIX #427: If cache is TRUE, ALWAYS return true - never re-check!
+	-- A purchased gamepass can never become unpurchased
+	if self.playerOwnership[cacheKey] == true then
+		return true
 	end
 	
-	-- Check actual ownership with pcall protection
+	-- Only check server if we don't know or cache is false
 	local success, owns = pcall(function()
 		return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
 	end)
 	
 	if success then
-		self.playerOwnership[cacheKey] = owns
-		return owns
+		-- CRITICAL FIX #428: ONLY upgrade to true, NEVER downgrade to false
+		-- MarketplaceService might return stale data right after purchase
+		if owns == true then
+			self.playerOwnership[cacheKey] = true
+		elseif self.playerOwnership[cacheKey] == nil then
+			-- Only set to false if we've never checked before
+			self.playerOwnership[cacheKey] = false
+		end
+		-- If cache was already true but API returned false, KEEP it true!
+		return self.playerOwnership[cacheKey]
 	else
 		warn("[GamepassSystem] Failed to check ownership:", owns)
 	end
 	
-	return false
+	-- Return cached value if API failed, or false if no cache
+	return self.playerOwnership[cacheKey] or false
 end
 
 function GamepassSystem:ownsAny(player, gamepassKeys)
@@ -1204,28 +1216,15 @@ function GamepassSystem:setGamepassPurchasedCallback(callback)
 end
 
 function GamepassSystem:notifyGamepassPurchased(player, gamepassKey)
-	-- CRITICAL FIX #400: Clear ownership cache properly using correct cache key format
-	-- Cache uses format: playerId .. "_" .. gamepassKey
+	-- CRITICAL FIX #426: IMMEDIATELY set cache to TRUE after purchase notification
+	-- We KNOW the purchase happened because PromptGamePassPurchaseFinished fired with wasPurchased = true
+	-- DO NOT re-check MarketplaceService - it might return stale data!
 	local playerId = player.UserId
 	local cacheKey = playerId .. "_" .. gamepassKey
 	
-	-- Clear this specific gamepass cache entry
-	self.playerOwnership[cacheKey] = nil
-	
-	-- CRITICAL FIX #401: Immediately re-check and cache the new ownership status
-	-- This ensures the next check returns the updated value
-	local success, owns = pcall(function()
-		local gamepass = self.Gamepasses[gamepassKey]
-		if gamepass and gamepass.id and gamepass.id ~= 0 then
-			return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
-		end
-		return false
-	end)
-	
-	if success then
-		self.playerOwnership[cacheKey] = owns
-		print("[GamepassSystem] Updated ownership cache for", player.Name, gamepassKey, "=", owns)
-	end
+	-- FORCE the cache to TRUE - we know they own it because they just bought it!
+	self.playerOwnership[cacheKey] = true
+	print("[GamepassSystem] FORCED ownership cache to TRUE for", player.Name, gamepassKey)
 	
 	-- Call callback if set
 	if self.onGamepassPurchased then
