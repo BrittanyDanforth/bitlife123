@@ -158,6 +158,524 @@ MafiaSystem.Families = {
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #319: OPERATION SCENARIOS - Choice-based events for immersive gameplay
+-- Each operation can have multiple scenario steps with branching choices
+-- ════════════════════════════════════════════════════════════════════════════
+
+MafiaSystem.OperationScenarios = {
+	-- STREET INTIMIDATION (Bratva)
+	intimidation = {
+		{
+			id = "intimidation_approach",
+			title = "🤐 STREET INTIMIDATION",
+			text = "The Bratva needs you to collect 'protection money' from local businesses. You approach a small electronics kiosk run by an older man.",
+			choices = {
+				{
+					text = "Walk up calmly and explain the 'arrangement'",
+					successMod = 1.1,
+					riskMod = 0.8,
+					next = "intimidation_negotiate",
+				},
+				{
+					text = "Bring a baseball bat and look menacing",
+					successMod = 1.0,
+					riskMod = 1.2,
+					rewardMod = 1.2,
+					next = "intimidation_force",
+				},
+				{
+					text = "Wait until closing time to approach",
+					successMod = 1.2,
+					riskMod = 0.6,
+					next = "intimidation_private",
+				},
+			},
+		},
+		{
+			id = "intimidation_negotiate",
+			title = "💬 THE NEGOTIATION",
+			text = "The shop owner looks nervous. He says he can't afford protection money - business has been slow.",
+			choices = {
+				{
+					text = "Lower the amount, keep him as a regular payer",
+					successMod = 1.1,
+					riskMod = 0.7,
+					rewardMod = 0.6,
+					final = true,
+				},
+				{
+					text = "Insist on the full amount or there'll be problems",
+					successMod = 0.9,
+					riskMod = 1.1,
+					final = true,
+				},
+				{
+					text = "Offer 'protection' services - you'll watch out for his shop",
+					successMod = 1.3,
+					riskMod = 0.5,
+					rewardMod = 0.8,
+					final = true,
+				},
+			},
+		},
+		{
+			id = "intimidation_force",
+			title = "👊 SHOW OF FORCE",
+			text = "You smash a display case to make your point. The owner's hands are shaking as he reaches for his cash register.",
+			choices = {
+				{
+					text = "Take what he gives and leave quickly",
+					successMod = 1.0,
+					riskMod = 1.0,
+					rewardMod = 0.9,
+					final = true,
+				},
+				{
+					text = "Demand everything in the register",
+					successMod = 0.7,
+					riskMod = 1.5,
+					rewardMod = 1.4,
+					final = true,
+				},
+				{
+					text = "Stop - apologize and set up a reasonable payment plan",
+					successMod = 1.2,
+					riskMod = 0.6,
+					rewardMod = 0.5,
+					respectBonus = 5, -- Shows restraint
+					final = true,
+				},
+			},
+		},
+		{
+			id = "intimidation_private",
+			title = "🌙 AFTER HOURS",
+			text = "The shop is closed. The owner is alone, counting the day's earnings. He looks up, startled.",
+			choices = {
+				{
+					text = "Introduce yourself professionally as 'local security'",
+					successMod = 1.2,
+					riskMod = 0.5,
+					final = true,
+				},
+				{
+					text = "Block the door and make your demands clear",
+					successMod = 1.0,
+					riskMod = 1.0,
+					rewardMod = 1.1,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- BLACK MARKET DEAL
+	black_market = {
+		{
+			id = "black_market_contact",
+			title = "🛰️ BLACK MARKET DEAL",
+			text = "A contact has a shipment of counterfeit electronics that need to move through the port. You need to handle the logistics.",
+			choices = {
+				{
+					text = "Bribe the dock workers to look the other way",
+					successMod = 1.2,
+					riskMod = 0.7,
+					costMod = 0.15, -- 15% of potential reward as bribe
+					next = "black_market_delivery",
+				},
+				{
+					text = "Use a front company's shipping containers",
+					successMod = 1.1,
+					riskMod = 0.8,
+					next = "black_market_delivery",
+				},
+				{
+					text = "Move the goods at night through the back entrance",
+					successMod = 0.9,
+					riskMod = 1.2,
+					next = "black_market_risky",
+				},
+			},
+		},
+		{
+			id = "black_market_delivery",
+			title = "📦 THE DELIVERY",
+			text = "The goods are ready to move. Your buyer is waiting at a warehouse across town. How do you transport them?",
+			choices = {
+				{
+					text = "Rent a legitimate delivery truck with fake paperwork",
+					successMod = 1.1,
+					riskMod = 0.8,
+					final = true,
+				},
+				{
+					text = "Split into smaller packages across multiple cars",
+					successMod = 1.2,
+					riskMod = 0.6,
+					rewardMod = 0.9, -- Extra logistics cost
+					final = true,
+				},
+				{
+					text = "One fast run with armed escort",
+					successMod = 0.9,
+					riskMod = 1.3,
+					rewardMod = 1.0,
+					final = true,
+				},
+			},
+		},
+		{
+			id = "black_market_risky",
+			title = "⚠️ COMPLICATIONS",
+			text = "Security spotted movement near the port! They're doing a sweep.",
+			choices = {
+				{
+					text = "Hide the goods and abort for tonight",
+					successMod = 0.7,
+					riskMod = 0.4,
+					rewardMod = 0.0, -- No reward this time
+					final = true,
+				},
+				{
+					text = "Create a distraction and rush the goods through",
+					successMod = 0.6,
+					riskMod = 1.5,
+					rewardMod = 1.0,
+					final = true,
+				},
+				{
+					text = "Bribe the security guard on the spot",
+					successMod = 0.8,
+					riskMod = 0.9,
+					costMod = 0.25,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- CYBER CRIME
+	cyber = {
+		{
+			id = "cyber_target",
+			title = "💻 CYBER OPERATION",
+			text = "The tech team has identified a vulnerable target - a regional hospital network. Ransomware could be devastating.",
+			choices = {
+				{
+					text = "Target the hospital - maximum pressure for ransom",
+					successMod = 1.0,
+					riskMod = 1.5, -- High heat
+					rewardMod = 1.5,
+					next = "cyber_execution",
+				},
+				{
+					text = "Switch to a less sensitive target - a logistics company",
+					successMod = 1.2,
+					riskMod = 0.7,
+					rewardMod = 0.8,
+					next = "cyber_execution",
+				},
+				{
+					text = "Cryptocurrency exchange hack instead - higher skill needed",
+					successMod = 0.7,
+					riskMod = 1.0,
+					rewardMod = 2.0, -- High reward if successful
+					next = "cyber_execution",
+				},
+			},
+		},
+		{
+			id = "cyber_execution",
+			title = "🖥️ DEPLOYING PAYLOAD",
+			text = "The malware is ready. Your hacker is waiting for the go-ahead.",
+			choices = {
+				{
+					text = "Execute now during business hours",
+					successMod = 1.0,
+					riskMod = 1.1,
+					final = true,
+				},
+				{
+					text = "Wait until Friday night - IT staff will be minimal",
+					successMod = 1.3,
+					riskMod = 0.8,
+					final = true,
+				},
+				{
+					text = "Deploy and immediately demand ransom",
+					successMod = 0.9,
+					riskMod = 1.2,
+					rewardMod = 1.1,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- ARMS DEALING
+	weapons = {
+		{
+			id = "weapons_source",
+			title = "🔫 ARMS DEAL",
+			text = "A shipment of military-grade weapons needs to move from the supplier to your buyer. The Bratva is counting on you.",
+			choices = {
+				{
+					text = "Meet the supplier alone to inspect the merchandise",
+					successMod = 1.0,
+					riskMod = 1.1,
+					next = "weapons_transfer",
+				},
+				{
+					text = "Send trusted soldiers to verify and transport",
+					successMod = 1.1,
+					riskMod = 0.9,
+					next = "weapons_transfer",
+				},
+				{
+					text = "Arrange simultaneous exchange at neutral location",
+					successMod = 1.2,
+					riskMod = 0.7,
+					costMod = 0.1, -- Extra logistics
+					next = "weapons_transfer",
+				},
+			},
+		},
+		{
+			id = "weapons_transfer",
+			title = "📦 THE HANDOFF",
+			text = "The weapons are ready. Your buyer's men are approaching the meeting point.",
+			choices = {
+				{
+					text = "Show the merchandise, get the cash, professional handoff",
+					successMod = 1.1,
+					riskMod = 0.8,
+					final = true,
+				},
+				{
+					text = "Demand payment first before revealing location",
+					successMod = 1.0,
+					riskMod = 1.0,
+					rewardMod = 1.1,
+					final = true,
+				},
+				{
+					text = "Keep some weapons as 'insurance' for future business",
+					successMod = 0.9,
+					riskMod = 1.2,
+					rewardMod = 0.8,
+					respectBonus = 10, -- Power move
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- HIGH VALUE RANSOM
+	ransom = {
+		{
+			id = "ransom_target",
+			title = "💼 HIGH VALUE TARGET",
+			text = "Intelligence has identified a wealthy businessman's son. The family is worth millions. This is your big score.",
+			choices = {
+				{
+					text = "Grab him at the nightclub tonight",
+					successMod = 1.0,
+					riskMod = 1.2,
+					next = "ransom_capture",
+				},
+				{
+					text = "Pose as a taxi driver and pick him up",
+					successMod = 1.2,
+					riskMod = 0.8,
+					next = "ransom_capture",
+				},
+				{
+					text = "Infiltrate his security team first",
+					successMod = 1.3,
+					riskMod = 0.6,
+					costMod = 0.15,
+					next = "ransom_capture",
+				},
+			},
+		},
+		{
+			id = "ransom_capture",
+			title = "🚐 THE GRAB",
+			text = "The target is in your van. He's scared but cooperating. Time to make the ransom demand.",
+			choices = {
+				{
+					text = "Demand $500,000 in 48 hours",
+					successMod = 1.1,
+					riskMod = 0.9,
+					next = "ransom_negotiate",
+				},
+				{
+					text = "Demand $1 million - they can afford it",
+					successMod = 0.8,
+					riskMod = 1.2,
+					rewardMod = 1.5,
+					next = "ransom_negotiate",
+				},
+				{
+					text = "Send a message with proof of life, negotiate from there",
+					successMod = 1.2,
+					riskMod = 0.7,
+					next = "ransom_negotiate",
+				},
+			},
+		},
+		{
+			id = "ransom_negotiate",
+			title = "📞 THE NEGOTIATION",
+			text = "The family wants to negotiate. They claim they can't pay the full amount immediately.",
+			choices = {
+				{
+					text = "Accept their counter-offer - half now, half on release",
+					successMod = 1.3,
+					riskMod = 0.6,
+					rewardMod = 0.7,
+					final = true,
+				},
+				{
+					text = "Hold firm - full amount or consequences",
+					successMod = 0.8,
+					riskMod = 1.4,
+					final = true,
+				},
+				{
+					text = "Demand crypto payment - harder to trace",
+					successMod = 1.1,
+					riskMod = 0.8,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- ENFORCER HIT
+	enforcer_hit = {
+		{
+			id = "enforcer_briefing",
+			title = "🕶️ ENFORCER JOB",
+			text = "The boss has a problem that needs to disappear. A rival who's been causing trouble. This is a test of your loyalty.",
+			choices = {
+				{
+					text = "Accept the job without question",
+					successMod = 1.0,
+					riskMod = 1.0,
+					respectBonus = 20,
+					next = "enforcer_method",
+				},
+				{
+					text = "Ask for details about the target first",
+					successMod = 1.1,
+					riskMod = 0.9,
+					next = "enforcer_method",
+				},
+				{
+					text = "Request additional payment for the risk",
+					successMod = 0.9,
+					riskMod = 1.1,
+					rewardMod = 1.3,
+					next = "enforcer_method",
+				},
+			},
+		},
+		{
+			id = "enforcer_method",
+			title = "🎯 THE APPROACH",
+			text = "You've tracked the target to his usual haunts. How do you want to handle this?",
+			choices = {
+				{
+					text = "Quick and clean - professional hit",
+					successMod = 1.0,
+					riskMod = 1.0,
+					final = true,
+				},
+				{
+					text = "Make it look like an accident",
+					successMod = 0.8,
+					riskMod = 0.5,
+					final = true,
+				},
+				{
+					text = "Send a message to others - make it public",
+					successMod = 1.0,
+					riskMod = 1.8,
+					respectBonus = 30,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- PROTECTION RACKET (Italian)
+	protection = {
+		{
+			id = "protection_rounds",
+			title = "🛡️ COLLECTION DAY",
+			text = "It's time to make the rounds. Three businesses owe protection money this week. Where do you start?",
+			choices = {
+				{
+					text = "Start with the restaurant - they always pay",
+					successMod = 1.2,
+					riskMod = 0.6,
+					rewardMod = 0.8,
+					final = true,
+				},
+				{
+					text = "Go to the struggling deli - they're behind on payments",
+					successMod = 0.9,
+					riskMod = 0.9,
+					rewardMod = 0.7,
+					final = true,
+				},
+				{
+					text = "Hit the new jewelry store - time to expand",
+					successMod = 0.8,
+					riskMod = 1.2,
+					rewardMod = 1.3,
+					final = true,
+				},
+			},
+		},
+	},
+	
+	-- GAMBLING RING (Italian)
+	gambling = {
+		{
+			id = "gambling_setup",
+			title = "🎰 CASINO NIGHT",
+			text = "You're running tonight's underground poker game. High rollers are expected. How do you want to play it?",
+			choices = {
+				{
+					text = "Run it straight - house edge is enough",
+					successMod = 1.2,
+					riskMod = 0.6,
+					rewardMod = 0.8,
+					final = true,
+				},
+				{
+					text = "Rig a few games for big winners who complain",
+					successMod = 1.0,
+					riskMod = 1.0,
+					rewardMod = 1.1,
+					final = true,
+				},
+				{
+					text = "Let a VIP win big - he'll bring more whales next time",
+					successMod = 1.1,
+					riskMod = 0.7,
+					rewardMod = 0.5,
+					respectBonus = 15, -- Long-term thinking
+					final = true,
+				},
+			},
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- MOB STATE (per player)
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -685,6 +1203,169 @@ end
 
 -- CRITICAL FIX #13: Removed duplicate serialize function
 -- The comprehensive serialize function is defined above (lines 558-610)
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #319: SCENARIO-BASED OPERATION SYSTEM
+-- Returns scenario steps for immersive, choice-based operations
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:getOperationScenarios(operationId)
+	return self.OperationScenarios[operationId]
+end
+
+function MafiaSystem:hasScenarios(operationId)
+	return self.OperationScenarios[operationId] ~= nil
+end
+
+function MafiaSystem:getScenarioStep(operationId, stepId)
+	local scenarios = self.OperationScenarios[operationId]
+	if not scenarios then return nil end
+	
+	for _, step in ipairs(scenarios) do
+		if step.id == stepId then
+			return step
+		end
+	end
+	
+	-- Return first step if no ID matches
+	return scenarios[1]
+end
+
+-- Process a scenario-based operation with accumulated modifiers
+function MafiaSystem:doScenarioOperation(lifeState, operationId, accumulatedMods)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return false, "You're not in a crime family!", nil
+	end
+	
+	if lifeState.InJail then
+		return false, "You can't do operations from jail!", nil
+	end
+	
+	local family = self.Families[mobState.familyId]
+	local operation = nil
+	
+	for _, op in ipairs(family.operations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return false, "Unknown operation.", nil
+	end
+	
+	-- Apply accumulated modifiers from scenario choices
+	local mods = accumulatedMods or {}
+	local successMod = mods.successMod or 1.0
+	local riskMod = mods.riskMod or 1.0
+	local rewardMod = mods.rewardMod or 1.0
+	local costMod = mods.costMod or 0
+	local respectBonus = mods.respectBonus or 0
+	
+	-- Calculate success with modifiers
+	local baseChance = 100 - (operation.risk * riskMod)
+	local rankBonus = mobState.rankIndex * 5
+	local successChance = math.min(95, (baseChance + rankBonus) * successMod)
+	
+	local roll = math.random(100)
+	local success = roll <= successChance
+	
+	local result = {
+		operation = operation.name,
+		operationEmoji = operation.emoji,
+		success = success,
+		money = 0,
+		respect = 0,
+		heat = 0,
+		message = "",
+		scenarioEvent = true, -- Flag for client to know this came from scenarios
+	}
+	
+	if success then
+		-- Calculate rewards with modifiers
+		local baseReward = math.random(operation.reward.min, operation.reward.max)
+		result.money = math.floor(baseReward * rewardMod * (1 - costMod))
+		result.respect = math.floor((operation.respect + math.random(0, 10) + respectBonus) * successMod)
+		result.heat = math.floor((operation.risk / 10) * riskMod)
+		
+		-- Apply rewards
+		lifeState.Money = (lifeState.Money or 0) + result.money
+		mobState.respect = mobState.respect + result.respect
+		mobState.heat = math.min(100, mobState.heat + result.heat)
+		mobState.earnings = mobState.earnings + result.money
+		mobState.operationsCompleted = mobState.operationsCompleted + 1
+		
+		result.message = string.format(
+			"%s Operation successful! You earned $%s and gained %d respect.",
+			operation.emoji,
+			self:formatMoney(result.money),
+			result.respect
+		)
+		
+		-- Check for rank up
+		local rankUpMsg = self:checkRankUp(lifeState)
+		if rankUpMsg then
+			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
+		end
+	else
+		-- Failed operation
+		result.heat = math.floor((operation.risk / 5) * riskMod)
+		mobState.heat = math.min(100, mobState.heat + result.heat)
+		mobState.operationsFailed = mobState.operationsFailed + 1
+		
+		-- Risk of arrest based on modified risk
+		local arrestChance = (operation.risk * riskMod) / 2
+		if math.random(100) <= arrestChance then
+			local jailYears = math.ceil((operation.risk * riskMod) / 20)
+			lifeState.InJail = true
+			lifeState.JailYearsLeft = jailYears
+			result.message = string.format(
+				"%s Operation failed! You got caught and sentenced to %d years!",
+				operation.emoji,
+				jailYears
+			)
+			result.arrested = true
+		else
+			result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+		end
+	end
+	
+	return true, result.message, result
+end
+
+-- Generate an event card for mafia operations (for LifeClient to display)
+function MafiaSystem:generateOperationEvent(lifeState, operationId)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return nil
+	end
+	
+	local scenarios = self:getOperationScenarios(operationId)
+	if not scenarios or #scenarios == 0 then
+		return nil
+	end
+	
+	local firstStep = scenarios[1]
+	local family = self.Families[mobState.familyId]
+	
+	-- Convert to event card format
+	return {
+		id = "mafia_op_" .. operationId,
+		title = firstStep.title,
+		emoji = (family and family.emoji) or "🔫",
+		text = firstStep.text,
+		isMafiaOperation = true,
+		operationId = operationId,
+		scenarioStepId = firstStep.id,
+		choices = firstStep.choices,
+		familyName = family and family.name,
+		familyColor = family and { family.color.R, family.color.G, family.color.B },
+	}
+end
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE

@@ -156,6 +156,7 @@ local godModeOverlay = nil
 local godModeButton = nil
 local destroyGodModeModal
 local showGodModeModal
+local updateGodModeButtonAppearance
 
 local function refreshGodModeStatus()
 	if not CheckGamepass then
@@ -187,10 +188,12 @@ local GAMEPASS_IDS = {
 local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	if plr ~= player or not wasPurchased then return end
 	
+	print("[LifeClient] Gamepass purchase finished:", gamePassId, wasPurchased)
+	
 	-- Refresh gamepass status
 	refreshGodModeStatus()
 	
-	-- Update all gamepass buttons in intro UI
+	-- CRITICAL FIX #364: Update all gamepass buttons in intro UI immediately
 	task.defer(function()
 		-- Update God Mode button
 		if IntroUI and IntroUI.updateCustomizeGenderBtn then
@@ -201,10 +204,73 @@ local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 		if IntroUI and IntroUI.updateRoyaltyGenderBtn then
 			IntroUI.updateRoyaltyGenderBtn()
 		end
+		
+		-- CRITICAL FIX #365: Update Time Machine UI if death overlay is showing
+		if DeathUI and DeathUI.updateTimeMachineUI then
+			DeathUI.updateTimeMachineUI()
+		end
+		
+		-- CRITICAL FIX #366: Update Mafia screen if it's open
+		-- This will be handled by the GamepassPurchased remote from server
 	end)
 end
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchaseFinished)
+
+-- CRITICAL FIX #367: Listen for server-side gamepass purchase notification
+-- This fires AFTER the purchase is verified and state is updated
+local GamepassPurchased = remotesFolder and remotesFolder:FindFirstChild("GamepassPurchased")
+if GamepassPurchased then
+	GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
+		print("[LifeClient] Server confirmed gamepass purchased:", gamepassKey)
+		
+		-- Refresh all relevant UI
+		refreshGodModeStatus()
+		
+		task.defer(function()
+			-- Update intro UI buttons
+			if IntroUI and IntroUI.updateCustomizeGenderBtn then
+				IntroUI.updateCustomizeGenderBtn()
+			end
+			if IntroUI and IntroUI.updateRoyaltyGenderBtn then
+				IntroUI.updateRoyaltyGenderBtn()
+			end
+			
+			-- Update Time Machine
+			if DeathUI and DeathUI.updateTimeMachineUI then
+				DeathUI.updateTimeMachineUI()
+			end
+			
+			-- Force refresh the main UI
+			if updateFromState then
+				updateFromState()
+			end
+		end)
+	end)
+end
+
+-- CRITICAL FIX #369: Listen for Developer Product purchase completion
+-- When a time machine product is purchased, the ProcessReceipt handles it on server
+-- The server will send a SyncState update which triggers hideDeathOverlay
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, wasPurchased)
+	if userId ~= player.UserId or not wasPurchased then return end
+	
+	print("[LifeClient] Developer Product purchased:", productId)
+	
+	-- Time Machine product IDs
+	local TIME_PRODUCTS = {
+		[3477466389] = 5,   -- 5 years
+		[3477466522] = 10,  -- 10 years
+		[3477466619] = 20,  -- 20 years
+		[3477466778] = -1,  -- Baby
+	}
+	
+	if TIME_PRODUCTS[productId] then
+		print("[LifeClient] Time Machine product purchased, waiting for server to process...")
+		-- Server's ProcessReceipt will handle the time travel and send SyncState
+		-- The SyncState handler will update the UI and hide death overlay
+	end
+end)
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -987,7 +1053,7 @@ local HeaderUI = {}
 HeaderUI.height = Device.IS_TINY_PHONE and 48 or (Device.IS_SMALL_PHONE and 56 or px(70))
 HeaderUI.topOffset = Device.IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
 
-do -- CRITICAL FIX #253: Scope block for header construction
+;(function() -- CRITICAL FIX #253: IIFE for header construction (do-blocks don't reduce register count)
 local headerBar = Instance.new("Frame")
 headerBar.Name = "Header"
 headerBar.Size = UDim2.new(1, -padSize(12), 0, HeaderUI.height)
@@ -1095,7 +1161,7 @@ HeaderUI.moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HeaderUI.moneyLabel.Text = "$0"
 HeaderUI.moneyLabel.ZIndex = 7
 HeaderUI.moneyLabel.Parent = moneyContainer
-end -- CRITICAL FIX #253: End header construction scope
+end)() -- CRITICAL FIX #253: End header construction IIFE
 
 -- CRITICAL FIX #253: Aliases removed - use HeaderUI.avatarEmoji, HeaderUI.nameLabel, etc.
 -- These are set below after the do-block for backward compatibility
@@ -1310,8 +1376,10 @@ createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight,
 -- GOD MODE IN-GAME EDITOR
 -- CRITICAL FIX #162: Re-enabled God Mode for in-game stat editing
 -- Allows players to edit stats, cure diseases, remove addictions, etc.
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
+;(function()
 -- God Mode overlay for in-game editing
 godModeOverlay = Instance.new("Frame")
 godModeOverlay.Name = "GodModeOverlay"
@@ -1324,12 +1392,13 @@ godModeOverlay.Parent = mainContainer
 
 -- CRITICAL FIX #163 & #275: Create God Mode Button in header area
 -- CRITICAL FIX #275: Better mobile positioning - centered in header right side
-local godModeBtnSize = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 32 or 36)
+-- CRITICAL FIX #317: Moved button LEFT to avoid overlapping cash display
+local godModeBtnSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 30 or 34)
 godModeButton = Instance.new("TextButton")
 godModeButton.Name = "GodModeBtn"
 godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
--- Position: Right side of header, before any other buttons, properly centered
-local godModeBtnOffset = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or 80)
+-- Position: More to the left to avoid cash overlap - increased offset significantly
+local godModeBtnOffset = Device.IS_TINY_PHONE and 95 or (Device.IS_SMALL_PHONE and 110 or 140)
 godModeButton.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
 godModeButton.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
 godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
@@ -1350,7 +1419,7 @@ godModeButton.MouseLeave:Connect(function()
 end)
 
 -- Update God Mode button visibility
-local function updateGodModeButtonAppearance()
+updateGodModeButtonAppearance = function()
 	refreshGodModeStatus()
 	if godModeButton then
 		godModeButton.Visible = hasGodMode
@@ -1358,9 +1427,10 @@ local function updateGodModeButtonAppearance()
 end
 
 -- Create the God Mode Modal
+-- CRITICAL FIX #316: Wider modal to fit buttons properly
 local godModeModal = Instance.new("Frame")
 godModeModal.Name = "GodModeModal"
-godModeModal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 380, 0, 0)
+godModeModal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 320 or 420, 0, 0)
 godModeModal.AutomaticSize = Enum.AutomaticSize.Y
 godModeModal.AnchorPoint = Vector2.new(0.5, 0.5)
 godModeModal.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1370,11 +1440,12 @@ godModeModal.Parent = godModeOverlay
 corner(godModeModal, 16)
 stroke(godModeModal, 1, 0.85, C.Gray200)
 
+-- CRITICAL FIX #316: More padding for better layout
 local modalPad = Instance.new("UIPadding")
-modalPad.PaddingTop = UDim.new(0, 14)
-modalPad.PaddingBottom = UDim.new(0, 14)
-modalPad.PaddingLeft = UDim.new(0, 14)
-modalPad.PaddingRight = UDim.new(0, 14)
+modalPad.PaddingTop = UDim.new(0, 16)
+modalPad.PaddingBottom = UDim.new(0, 16)
+modalPad.PaddingLeft = UDim.new(0, 20)
+modalPad.PaddingRight = UDim.new(0, 20)
 modalPad.Parent = godModeModal
 
 local modalScroll = Instance.new("ScrollingFrame")
@@ -1622,8 +1693,9 @@ errorLabel.LayoutOrder = 5
 errorLabel.Parent = modalScroll
 
 -- Button bar
+-- CRITICAL FIX #316: Properly centered button bar with fixed width buttons
 local buttonBar = Instance.new("Frame")
-buttonBar.Size = UDim2.new(1, 0, 0, 45)
+buttonBar.Size = UDim2.new(1, 0, 0, 50)
 buttonBar.BackgroundTransparency = 1
 buttonBar.ZIndex = 152
 buttonBar.LayoutOrder = 6
@@ -1632,26 +1704,31 @@ buttonBar.Parent = modalScroll
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-buttonLayout.Padding = UDim.new(0, 10)
+buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+buttonLayout.Padding = UDim.new(0, 12)
 buttonLayout.Parent = buttonBar
 
+-- CRITICAL FIX #316: Fixed width buttons that fit nicely in the modal
+local btnWidth = Device.IS_TINY_PHONE and 130 or 160
+local btnHeight = Device.IS_TINY_PHONE and 38 or 42
+
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.45, 0, 0, 40)
+closeBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 closeBtn.BackgroundColor3 = C.Gray300
 closeBtn.Text = "Close"
 closeBtn.TextColor3 = C.Gray700
-closeBtn.TextSize = 16
+closeBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
 closeBtn.Font = F.Medium
 closeBtn.ZIndex = 153
 closeBtn.Parent = buttonBar
 corner(closeBtn, 10)
 
 local applyBtn = Instance.new("TextButton")
-applyBtn.Size = UDim2.new(0.45, 0, 0, 40)
+applyBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 applyBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-applyBtn.Text = "⚡ Apply Changes"
+applyBtn.Text = "⚡ Apply"
 applyBtn.TextColor3 = C.Gray800
-applyBtn.TextSize = 16
+applyBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
 applyBtn.Font = F.Medium
 applyBtn.ZIndex = 153
 applyBtn.Parent = buttonBar
@@ -1766,6 +1843,7 @@ task.spawn(function()
 	task.wait(1)
 	updateGodModeButtonAppearance()
 end)
+end)() -- End God Mode In-Game Editor IIFE
 
 -- LEGACY CODE BELOW (disabled)
 if false then -- Disabled: Old modal code kept for reference
@@ -2039,11 +2117,16 @@ end
 
 ----------------------------------------------------------------
 -- NAV BAR - TINY PHONE FIX: More compact
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
--- TINY PHONE FIX: Much smaller nav bar
+-- Variables that need to be accessible outside IIFE
+local navBar, navBtnRefs
 local navBarHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or px(80))
-local navBar = Instance.new("Frame")
+
+;(function()
+-- TINY PHONE FIX: Much smaller nav bar
+navBar = Instance.new("Frame")
 navBar.Name = "NavBar"
 navBar.Size = UDim2.new(1, 0, 0, navBarHeight)
 navBar.AnchorPoint = Vector2.new(0.5, 1)
@@ -2097,7 +2180,7 @@ navRightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 navRightLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(6))
 navRightLayout.Parent = navRight
 
-local navBtnRefs = {}
+navBtnRefs = {}
 
 -- CRITICAL FIX: Adjusted nav button sizes for 5 buttons (added Story Paths)
 -- Slightly smaller to fit all buttons without overflow
@@ -2174,15 +2257,21 @@ createNavButton({ icon = "🏠", text = "Assets",     screen = "assets"       },
 createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"}, navRight, 1)
 createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
 createNavButton({ icon = "📖", text = "Paths",      screen = "storypaths"   }, navRight, 3)
+end)() -- End Nav Bar IIFE
 
 ----------------------------------------------------------------
 -- AGE BUTTON - TINY PHONE FIX: More compact
+-- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------
 
+-- Variables that need to be accessible outside IIFE
+local ageBtnContainer, ageButton, ageOuterRing, ageBtnSize
+
+;(function()
 -- TINY PHONE FIX: Much smaller age button
-local ageBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
+ageBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
 local ageBtnOffset = Device.IS_TINY_PHONE and 6 or padSize(10)
-local ageBtnContainer = Instance.new("Frame")
+ageBtnContainer = Instance.new("Frame")
 ageBtnContainer.Size = UDim2.new(0, ageBtnSize, 0, ageBtnSize)
 ageBtnContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 ageBtnContainer.Position = UDim2.new(0.5, 0, 1, -(navBarHeight/2 + ageBtnOffset))
@@ -2190,7 +2279,7 @@ ageBtnContainer.BackgroundTransparency = 1
 ageBtnContainer.ZIndex = 15
 ageBtnContainer.Parent = mainContainer
 
-local ageOuterRing = Instance.new("Frame")
+ageOuterRing = Instance.new("Frame")
 ageOuterRing.Size = UDim2.new(1, Device.IS_TINY_PHONE and 4 or 8, 1, Device.IS_TINY_PHONE and 4 or 8)
 ageOuterRing.AnchorPoint = Vector2.new(0.5, 0.5)
 ageOuterRing.Position = UDim2.fromScale(0.5, 0.5)
@@ -2211,7 +2300,7 @@ ageShadow.Parent = ageBtnContainer
 corner(ageShadow, ageBtnSize/2 + (Device.IS_TINY_PHONE and 2 or 4))
 
 local ageBtnMargin = Device.IS_TINY_PHONE and 4 or 6
-local ageButton = Instance.new("TextButton")
+ageButton = Instance.new("TextButton")
 ageButton.Size = UDim2.new(1, -ageBtnMargin, 1, -ageBtnMargin)
 ageButton.AnchorPoint = Vector2.new(0.5, 0.5)
 ageButton.Position = UDim2.fromScale(0.5, 0.5)
@@ -2351,6 +2440,7 @@ hideTutorial = function()
 	-- Reset ring size for next time
 	tutorialRing.Size = UDim2.new(1, 30, 1, 30)
 end
+end)() -- End Age Button/Tutorial IIFE
 
 ----------------------------------------------------------------
 -- PREMIUM EVENT MODAL (BitLife-style red card) - MOBILE FIX
@@ -3079,9 +3169,14 @@ local function buildDeathUI()
 					if updateFromState then
 						updateFromState()
 					end
+				elseif ok and result and result.needsProduct then
+					-- CRITICAL FIX #363: Player needs to purchase developer product (one-time use)
+					tmBtn.Text = "💰 " .. opt[2]
+					-- The server already prompted the product purchase
+					-- The ProcessReceipt will handle the time travel
 				elseif ok and result and result.needsGamepass then
-					-- CRITICAL FIX: Player needs to purchase the gamepass
-					tmBtn.Text = "⏰ " .. opt[2]
+					-- CRITICAL FIX: Player needs to purchase the gamepass for unlimited uses
+					tmBtn.Text = "👑 " .. opt[2]
 					-- Prompt the gamepass purchase
 					local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
 					if PromptGamepass then
@@ -3094,26 +3189,37 @@ local function buildDeathUI()
 		end)
 	end
 	
-	-- CRITICAL FIX: Function to update Time Machine UI based on gamepass ownership
+	-- CRITICAL FIX #368: Function to update Time Machine UI based on gamepass ownership
 	DeathUI.updateTimeMachineUI = function()
-		checkTimeMachineGamepass()
+		-- Re-check gamepass ownership (in case it was just purchased)
+		local freshCheck = false
+		if CheckGamepass then
+			local ok, owns = pcall(function() return CheckGamepass:InvokeServer("TIME_MACHINE") end)
+			if ok then
+				freshCheck = owns == true
+				hasTimeMachineGamepass = freshCheck
+			end
+		end
+		
 		if hasTimeMachineGamepass then
-			-- User owns gamepass - show full time machine UI
+			-- User owns gamepass - show full time machine UI with UNLIMITED badge
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = false
-			tmTitle.Text = "⏰ TIME MACHINE"
+			tmTitle.Text = "⏰ TIME MACHINE (UNLIMITED)"
+			tmTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
 			for _, data in ipairs(tmButtons) do
 				data.btn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
 				data.btn.TextColor3 = Color3.fromRGB(255, 215, 0)
 				data.btn.Text = "⏰ " .. data.opt[2]
 			end
 		else
-			-- User doesn't own gamepass - show promo with limited options
+			-- User doesn't own gamepass - show one-time purchase options
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = true
 			tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 130)
-			tmTitle.Text = "⏰ TIME MACHINE (One-Time Use)"
-			-- Buttons work but will cost Robux per use
+			tmTitle.Text = "⏰ TIME MACHINE"
+			tmTitle.TextColor3 = Color3.fromRGB(200, 170, 60)
+			-- Buttons work but will cost Robux per use (Developer Products)
 			for _, data in ipairs(tmButtons) do
 				data.btn.BackgroundColor3 = Color3.fromRGB(60, 50, 30)
 				data.btn.TextColor3 = Color3.fromRGB(200, 170, 60)
@@ -3963,8 +4069,9 @@ local function makeGodModeSection(parentScroll, title, order)
 end
 
 -- Build God Mode UI in separate scope to reduce local registers
--- CRITICAL FIX: Split into multiple separate do-blocks to stay under 200 register limit
-do
+-- CRITICAL FIX: Use IIFEs (Immediately Invoked Function Expressions) to create actual new function scopes
+-- do...end blocks don't create new function scopes for register allocation, only lexical scopes
+;(function()
 	-- Container now just holds the scroll - no fixed bottom area
 	IntroUI.godModeContainer = Instance.new("Frame")
 	IntroUI.godModeContainer.Name = "GodModeCustomize"
@@ -4028,11 +4135,11 @@ do
 		IntroUI.nameBtns.Visible = false
 		IntroUI.genderTitle.Text = "Start by picking a gender"
 	end)
-end -- End setup do-block
+end)() -- End setup IIFE
 
--- CRITICAL FIX: Each section in its own TOP-LEVEL do-block to reset register count
+-- CRITICAL FIX: Each section in its own IIFE to create actual new function scope and reset register count
 -- Name section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
 	IntroUI.customNameInput = Instance.new("TextBox")
@@ -4052,10 +4159,10 @@ do
 	IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
 		GodModeCreateData.customName = IntroUI.customNameInput.Text
 	end)
-end
+end)()
 
 -- Gender section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
 	local gFrame = Instance.new("Frame")
@@ -4092,10 +4199,10 @@ do
 			end
 		end)
 	end
-end
+end)()
 
 -- Ethnicity section with emojis
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ethSec = makeGodModeSection(scroll, "🌍 Ethnicity / Heritage", 3)
 	local ef = Instance.new("Frame")
@@ -4146,11 +4253,11 @@ do
 	for _, eth in ipairs(ethOpts) do
 		createEthBtn(eth.id, eth.label)
 	end
-end
+end)()
 
 -- Wealth section
 -- CRITICAL FIX #22: Link Royalty gamepass to Famous/Royal wealth option
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ws = makeGodModeSection(scroll, "💰 Family Wealth", 4)
 		IntroUI.wealthBtns = {}
@@ -4248,10 +4355,10 @@ do
 		for i, w in ipairs(wOpts) do
 			createWealthBtn(ws, w, i + 1, hasRoyaltyGamepass)
 		end
-end
+end)()
 
--- CRITICAL FIX #273: Stats section - wrapped in helper function to avoid register limit
-do
+-- CRITICAL FIX #273: Stats section - wrapped in IIFE to avoid register limit
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
 	IntroUI.statSliders = {}
@@ -4347,10 +4454,10 @@ do
 	createStatSlider(ss, "Health", "❤️", C.Green, 3)
 	createStatSlider(ss, "Smarts", "🧠", C.Purple, 4)
 	createStatSlider(ss, "Looks", "💄", C.Pink, 5)
-end
+end)()
 
 -- Country section with flag emojis
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	local cs = makeGodModeSection(scroll, "🌎 Country of Birth", 6)
 		local cOpts = {
@@ -4411,10 +4518,10 @@ do
 		-- CRITICAL UI FIX: Limit dropdown height to 180px for mobile
 		cl.Size = exp and UDim2.new(1, 0, 0, math.min(#cOpts * 32, 180)) or UDim2.new(1, 0, 0, 0)
 	end)
-end
+end)()
 
 -- Start button section
-do
+;(function()
 	local scroll = IntroUI.godModeScroll
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- START BUTTON AT BOTTOM OF SCROLL (LayoutOrder = 100)
@@ -4470,7 +4577,7 @@ do
 		hideIntro()
 		task.defer(function() if updateFromState then updateFromState() end end)
 	end)
-end -- End of Start button do-block
+end)() -- End of Start button IIFE
 
 -- Function to show God Mode customization
 local function showGodModeIntroCustomize()

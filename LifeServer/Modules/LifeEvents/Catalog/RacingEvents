@@ -28,7 +28,8 @@ local events = {
 				index = 1,
 				text = "Join the junior racing program",
 				effects = { Happiness = 10, Health = 5 },
-				setFlags = { discovered_racing = true, racing_aspirant = true },
+				-- CRITICAL FIX #352: Grant karting_experience and racing_experience flags for job eligibility
+				setFlags = { discovered_racing = true, racing_aspirant = true, karting_experience = true, racing_experience = true },
 				feedText = "Your racing journey begins! You joined a junior karting program.",
 				triggerMinigame = "qte",
 				minigameOptions = { difficulty = "easy" },
@@ -70,6 +71,9 @@ local events = {
 						state.Flags.first_race_won = true
 						state.Flags.employed = true
 						state.Flags.has_job = true
+						-- CRITICAL FIX #353: Grant racing experience flags for job eligibility
+						state.Flags.karting_experience = true
+						state.Flags.racing_experience = true
 						if state.SetCareer then
 							state:SetCareer({
 								id = "go_kart_racer",
@@ -83,6 +87,10 @@ local events = {
 							state:AddFeed("🏆 You WON your first race! You're now a go-kart racer!")
 						end
 					else
+						-- Still give them some racing experience even if they didn't win
+						state.Flags = state.Flags or {}
+						state.Flags.karting_experience = true
+						state.Flags.racing_experience = true
 						if state.AddFeed then
 							state:AddFeed("You didn't win, but you showed promise. Keep practicing!")
 						end
@@ -125,6 +133,9 @@ local events = {
 					if minigameResult and minigameResult.success then
 						state.Flags = state.Flags or {}
 						state.Flags.regional_champion = true
+						-- CRITICAL FIX #354: Grant amateur_racing flag for professional job eligibility
+						state.Flags.amateur_racing = true
+						state.Flags.racing_experience = true
 						state.Stats = state.Stats or {}
 						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
 						state.Money = (state.Money or 0) + 25000
