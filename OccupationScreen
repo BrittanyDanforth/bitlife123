@@ -1238,9 +1238,10 @@ function OccupationScreen:createUI()
 	self.overlay.Parent = self.screenGui
 
 	-- MOBILE FIX: Responsive layout constants (CRITICAL: IS_TINY_PHONE support)
-	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
-	local INFO_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 44 or px(52))
-	local TAB_HEIGHT = IS_TINY_PHONE and 40 or btnHeight(52)
+	-- CRITICAL FIX #316: Increased header height for better visibility (matching ActivitiesScreen)
+	local HEADER_HEIGHT = IS_TINY_PHONE and 56 or (IS_SMALL_PHONE and 64 or px(80))
+	local INFO_HEIGHT = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or px(56))
+	local TAB_HEIGHT = IS_TINY_PHONE and 44 or btnHeight(56)
 	local CATEGORY_HEIGHT = IS_TINY_PHONE and 36 or btnHeight(44)
 	local GAP = IS_TINY_PHONE and 4 or padSize(8)
 
@@ -1277,18 +1278,19 @@ function OccupationScreen:createUI()
 	titleLabel.Parent = header
 
 	-- MOBILE FIX: Touch-friendly close button
-	local closeBtnSize = btnHeight(32)
+	-- CRITICAL FIX #316: Made close button bigger and changed to "X" (matching ActivitiesScreen)
+	local closeBtnSize = IS_TINY_PHONE and 36 or btnHeight(44)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
 	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
 	closeButton.AnchorPoint = Vector2.new(1, 0.5)
 	closeButton.Position = UDim2.new(1, -padSize(16), 0.5, 0)
 	closeButton.BackgroundColor3 = C.White
-	closeButton.BackgroundTransparency = 0.1
+	closeButton.BackgroundTransparency = 0
 	closeButton.Font = Enum.Font.GothamBold
-	closeButton.TextSize = textSize(16)
-	closeButton.TextColor3 = C.Gray600
-	closeButton.Text = "✕"
+	closeButton.TextSize = textSize(20)
+	closeButton.TextColor3 = C.Gray700
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header

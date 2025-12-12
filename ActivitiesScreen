@@ -557,9 +557,10 @@ function ActivitiesScreen:createUI()
 	self.overlay.Parent = self.screenGui
 	
 	-- MOBILE FIX: Responsive layout constants (CRITICAL: Added IS_TINY_PHONE support)
-	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
-	local INFO_HEIGHT = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 36 or px(44))
-	local TAB_HEIGHT = IS_TINY_PHONE and 38 or btnHeight(48)
+	-- CRITICAL FIX #309: Increased header height for better visibility
+	local HEADER_HEIGHT = IS_TINY_PHONE and 56 or (IS_SMALL_PHONE and 64 or px(80))
+	local INFO_HEIGHT = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or px(48))
+	local TAB_HEIGHT = IS_TINY_PHONE and 42 or btnHeight(52)
 	local GAP = IS_TINY_PHONE and 4 or padSize(8)
 
 	-- Custom header (matches OccupationScreen for consistency)
@@ -595,22 +596,24 @@ function ActivitiesScreen:createUI()
 	titleLabel.Parent = header
 
 	-- MOBILE FIX: Touch-friendly close button (CRITICAL: IS_TINY_PHONE support)
-	local closeBtnSize = IS_TINY_PHONE and 28 or btnHeight(32)
+	-- CRITICAL FIX #310: Made close button bigger and changed to simple "X"
+	local closeBtnSize = IS_TINY_PHONE and 36 or btnHeight(44)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
 	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)
 	closeButton.AnchorPoint = Vector2.new(1, 0.5)
-	closeButton.Position = UDim2.new(1, IS_TINY_PHONE and -8 or -padSize(16), 0.5, 0)
+	closeButton.Position = UDim2.new(1, IS_TINY_PHONE and -10 or -padSize(16), 0.5, 0)
 	closeButton.BackgroundColor3 = C.White
-	closeButton.BackgroundTransparency = 0.1
+	closeButton.BackgroundTransparency = 0
 	closeButton.Font = Enum.Font.GothamBold
-	closeButton.TextSize = textSize(16)
-	closeButton.TextColor3 = C.Gray600
-	closeButton.Text = "✕"
+	closeButton.TextSize = textSize(20)
+	closeButton.TextColor3 = C.Gray700
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header
-	UI.corner(closeButton, px(8))
+	UI.corner(closeButton, px(10))
+	UI.stroke(closeButton, 1, 0.5, C.Gray300)
 
 	closeButton.MouseButton1Click:Connect(function() self:hide() end)
 	closeButton.MouseEnter:Connect(function()
@@ -918,15 +921,18 @@ function ActivitiesScreen:updateInfoBar()
 end
 
 function ActivitiesScreen:switchTab(tabId)
+	-- CRITICAL FIX #313: Debounce to prevent flickering from rapid tab switches
+	if self._switchingTab then return end
+	self._switchingTab = true
+	
 	log("Switching tab to:", tabId)
 	self.currentTab = tabId
 
 	for id, data in pairs(self.tabBtns) do
 		local isActive = id == tabId
-		UI.tween(data.btn, TweenInfo.new(0.15), {
-			BackgroundColor3 = isActive and data.color or C.White,
-			TextColor3 = isActive and C.White or C.Gray600
-		})
+		-- CRITICAL FIX #313: Use immediate color change instead of tween to reduce flicker
+		data.btn.BackgroundColor3 = isActive and data.color or C.White
+		data.btn.TextColor3 = isActive and C.White or C.Gray600
 	end
 
 	-- Clear content
@@ -950,6 +956,11 @@ function ActivitiesScreen:switchTab(tabId)
 	elseif tabId == "mafia" then self:populateMafia()
 	end
 	log("Tab content populated")
+	
+	-- CRITICAL FIX #313: Release debounce after a short delay
+	task.delay(0.1, function()
+		self._switchingTab = false
+	end)
 end
 
 function ActivitiesScreen:populateMindBody()
@@ -3110,15 +3121,29 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 			end)
 		end)
 	else
+		-- CRITICAL FIX #312: More helpful error messages for locked activities
 		local btnText = "🔒 "
-		if age < item.minAge then
-			btnText = btnText .. "Age " .. item.minAge
+		if age < (item.minAge or 0) then
+			btnText = btnText .. "Age " .. (item.minAge or 0)
 		elseif money < cost then
-			btnText = "💵 Need $"
+			btnText = "💵 Need $" .. cost
 		elseif self:isInJail() then
 			btnText = "⛓️ Jailed"
 		elseif not meetsFlag then
-			btnText = "🔒 Locked"
+			-- CRITICAL FIX #312: Show specific requirement for locked activities
+			if item.requiresFlag == "in_mob" then
+				btnText = "🔫 Join Mafia"
+			elseif item.requiresFlag == "is_royalty" or item.requiresFlag == "royal_birth" then
+				btnText = "👑 Royalty Only"
+			elseif item.requiresFlag == "is_monarch" then
+				btnText = "👑 Monarch Only"
+			elseif item.requiresFlag == "has_job" or item.requiresFlag == "employed" then
+				btnText = "💼 Need Job"
+			else
+				btnText = "🔒 Locked"
+			end
+		elseif not meetsMaxAge then
+			btnText = "🔒 Too Old"
 		else
 			btnText = "🔒 N/A"
 		end
@@ -5059,6 +5084,51 @@ function ActivitiesScreen:populateMafia()
 	for i, op in ipairs(MafiaOperations) do
 		self:createActivityCard(section, op, i, Color3.fromRGB(139, 0, 0), Color3.fromRGB(255, 220, 220))
 	end
+	
+	-- CRITICAL FIX #314: Info card about getting a legitimate job while in mafia
+	local jobInfoCard = Instance.new("Frame")
+	jobInfoCard.Name = "JobInfoCard"
+	jobInfoCard.Size = UDim2.new(1, 0, 0, 70)
+	jobInfoCard.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+	jobInfoCard.LayoutOrder = 999
+	jobInfoCard.ZIndex = 82
+	jobInfoCard.Parent = self.contentScroll
+	UI.corner(jobInfoCard, 14)
+	
+	local jobIcon = Instance.new("TextLabel")
+	jobIcon.Size = UDim2.new(0, 40, 0, 40)
+	jobIcon.Position = UDim2.new(0, 12, 0.5, -20)
+	jobIcon.BackgroundTransparency = 1
+	jobIcon.Font = F.Body or Enum.Font.Gotham
+	jobIcon.TextSize = 28
+	jobIcon.Text = "💼"
+	jobIcon.ZIndex = 83
+	jobIcon.Parent = jobInfoCard
+	
+	local jobTitle = Instance.new("TextLabel")
+	jobTitle.Size = UDim2.new(1, -70, 0, 22)
+	jobTitle.Position = UDim2.new(0, 60, 0, 10)
+	jobTitle.BackgroundTransparency = 1
+	jobTitle.Font = F.Title or Enum.Font.GothamBold
+	jobTitle.TextSize = 14
+	jobTitle.TextColor3 = Color3.fromRGB(200, 200, 220)
+	jobTitle.TextXAlignment = Enum.TextXAlignment.Left
+	jobTitle.Text = "💡 Want a Cover Job?"
+	jobTitle.ZIndex = 83
+	jobTitle.Parent = jobInfoCard
+	
+	local jobDesc = Instance.new("TextLabel")
+	jobDesc.Size = UDim2.new(1, -70, 0, 30)
+	jobDesc.Position = UDim2.new(0, 60, 0, 32)
+	jobDesc.BackgroundTransparency = 1
+	jobDesc.Font = F.Body or Enum.Font.Gotham
+	jobDesc.TextSize = 11
+	jobDesc.TextColor3 = Color3.fromRGB(160, 160, 180)
+	jobDesc.TextXAlignment = Enum.TextXAlignment.Left
+	jobDesc.TextWrapped = true
+	jobDesc.Text = "You can get a regular job in the Jobs tab as a cover. Having legit income helps hide your criminal activities!"
+	jobDesc.ZIndex = 83
+	jobDesc.Parent = jobInfoCard
 end
 
 function ActivitiesScreen:showResult(success, message, emoji)

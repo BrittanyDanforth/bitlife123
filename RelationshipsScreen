@@ -595,8 +595,9 @@ function RelationshipsScreen:createUI()
 
 	----------------------------------------------------------------
 	-- HEADER - MOBILE FIX: Responsive sizing (CRITICAL: IS_TINY_PHONE support)
+	-- CRITICAL FIX #317: Increased header height for better visibility
 	----------------------------------------------------------------
-	local HEADER_HEIGHT = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or px(72))
+	local HEADER_HEIGHT = IS_TINY_PHONE and 56 or (IS_SMALL_PHONE and 64 or px(80))
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
@@ -630,7 +631,8 @@ function RelationshipsScreen:createUI()
 	titleLabel.Parent = header
 
 	-- MOBILE FIX: Touch-friendly close button
-	local closeBtnSize = btnHeight(32)
+	-- CRITICAL FIX #317: Made close button bigger for consistency
+	local closeBtnSize = IS_TINY_PHONE and 36 or btnHeight(44)
 	local closeButton = Instance.new("TextButton")
 	closeButton.Name = "CloseButton"
 	closeButton.Size = UDim2.new(0, closeBtnSize, 0, closeBtnSize)

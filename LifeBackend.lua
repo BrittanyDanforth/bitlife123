@@ -5736,9 +5736,10 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		end
 	end
 
-	-- CRITICAL FIX: Don't use showPopup here - client shows its own result popup
-	-- This was causing double popup issues in ActivitiesScreen
-	self:pushState(player, resultMessage)
+	-- CRITICAL FIX #311: Don't push state for activities - this was causing screen closures!
+	-- The client shows its own result popup via showResult() in ActivitiesScreen
+	-- State will sync on next age up naturally
+	-- self:pushState(player, resultMessage)  -- DISABLED - was closing ActivitiesScreen
 	return { success = true, message = resultMessage, gotCaught = gotCaught }
 end
 
