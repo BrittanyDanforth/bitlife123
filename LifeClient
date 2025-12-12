@@ -4613,6 +4613,28 @@ do
 	local royalCountryOverlay = nil
 	local selectedRoyalCountry = nil
 	
+	-- CRITICAL FIX: Forward declare functions to avoid nil errors
+	local showRoyalGenderSelection
+	local showRoyalCountrySelection
+	
+	-- Royal birth customization data (must be before functions that use it)
+	local RoyalBirthData = {
+		gender = "Male",
+		name = "",
+		ethnicity = "Random",
+	}
+	
+	-- Ethnicity options for royal birth
+	local EthnicityOptions = {
+		{ id = "Random", label = "🎲 Random" },
+		{ id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+		{ id = "African", label = "👨🏿 African" },
+		{ id = "Asian", label = "🧑🏻 Asian" },
+		{ id = "Hispanic", label = "🧑🏽 Hispanic" },
+		{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+		{ id = "Mixed", label = "🌈 Mixed" },
+	}
+	
 	-- Royal countries list
 	local RoyalCountries = {
 		{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", flag = "🇬🇧" },
@@ -4630,8 +4652,13 @@ do
 		{ id = "denmark", name = "Denmark", emoji = "🇩🇰", flag = "🇩🇰" },
 	}
 	
-	local function showRoyalCountrySelection()
+	showRoyalCountrySelection = function()
 		if royalCountryOverlay then return end
+		
+		-- Reset royal birth data
+		RoyalBirthData.gender = "Male"
+		RoyalBirthData.name = ""
+		RoyalBirthData.ethnicity = "Random"
 		
 		-- Create overlay
 		royalCountryOverlay = Instance.new("Frame")
@@ -4642,16 +4669,21 @@ do
 		royalCountryOverlay.ZIndex = 80
 		royalCountryOverlay.Parent = screenGui
 		
-		-- Card
+		-- Card with slide animation
 		local card = Instance.new("Frame")
 		card.Name = "Card"
 		card.Size = UDim2.new(0.9, 0, 0, 0)
 		card.AutomaticSize = Enum.AutomaticSize.Y
 		card.AnchorPoint = Vector2.new(0.5, 0.5)
-		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.Position = UDim2.fromScale(-0.5, 0.5) -- Start off-screen left
 		card.BackgroundColor3 = C.White
 		card.ZIndex = 81
 		card.Parent = royalCountryOverlay
+		
+		-- Slide in animation
+		tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5)
+		})
 		corner(card, 16)
 		pad(card, 16, 16, 16, 16)
 		
@@ -4720,14 +4752,17 @@ do
 			countryBtn.MouseButton1Click:Connect(function()
 				selectedRoyalCountry = country.id
 				
-				-- Close the country selection
-				if royalCountryOverlay then
-					royalCountryOverlay:Destroy()
-					royalCountryOverlay = nil
-				end
-				
-				-- Now show gender selection for the royal
-				showRoyalGenderSelection(country)
+				-- Slide out animation then show customization
+				tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+					Position = UDim2.fromScale(-0.5, 0.5)
+				})
+				task.delay(0.25, function()
+					if royalCountryOverlay then
+						royalCountryOverlay:Destroy()
+						royalCountryOverlay = nil
+					end
+					showRoyalGenderSelection(country)
+				end)
 			end)
 		end
 		
@@ -4747,12 +4782,17 @@ do
 			local randomCountry = RoyalCountries[math.random(1, #RoyalCountries)]
 			selectedRoyalCountry = randomCountry.id
 			
-			if royalCountryOverlay then
-				royalCountryOverlay:Destroy()
-				royalCountryOverlay = nil
-			end
-			
-			showRoyalGenderSelection(randomCountry)
+			-- Slide out animation then show customization
+			tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(-0.5, 0.5)
+			})
+			task.delay(0.25, function()
+				if royalCountryOverlay then
+					royalCountryOverlay:Destroy()
+					royalCountryOverlay = nil
+				end
+				showRoyalGenderSelection(randomCountry)
+			end)
 		end)
 		
 		-- Cancel button
@@ -4768,122 +4808,387 @@ do
 		corner(cancelBtn, 8)
 		
 		cancelBtn.MouseButton1Click:Connect(function()
-			if royalCountryOverlay then
-				royalCountryOverlay:Destroy()
-				royalCountryOverlay = nil
-			end
+			-- Slide out animation then close
+			tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(-0.5, 0.5)
+			})
+			task.delay(0.2, function()
+				if royalCountryOverlay then
+					royalCountryOverlay:Destroy()
+					royalCountryOverlay = nil
+				end
+			end)
 		end)
 	end
 	
-	local function showRoyalGenderSelection(country)
-		-- Create overlay for gender selection
-		local genderOverlay = Instance.new("Frame")
-		genderOverlay.Name = "RoyalGenderOverlay"
-		genderOverlay.Size = UDim2.fromScale(1, 1)
-		genderOverlay.BackgroundColor3 = C.Black
-		genderOverlay.BackgroundTransparency = 0.4
-		genderOverlay.ZIndex = 80
-		genderOverlay.Parent = screenGui
+	showRoyalGenderSelection = function(country)
+		-- Create overlay for customization
+		local customOverlay = Instance.new("Frame")
+		customOverlay.Name = "RoyalCustomizeOverlay"
+		customOverlay.Size = UDim2.fromScale(1, 1)
+		customOverlay.BackgroundColor3 = C.Black
+		customOverlay.BackgroundTransparency = 0.4
+		customOverlay.ZIndex = 80
+		customOverlay.Parent = screenGui
 		
-		-- Card
+		-- Main scrollable card
 		local card = Instance.new("Frame")
 		card.Name = "Card"
-		card.Size = UDim2.new(0.85, 0, 0, 0)
-		card.AutomaticSize = Enum.AutomaticSize.Y
+		card.Size = UDim2.new(0.92, 0, 0.8, 0)
 		card.AnchorPoint = Vector2.new(0.5, 0.5)
-		card.Position = UDim2.fromScale(0.5, 0.5)
+		card.Position = UDim2.fromScale(1.5, 0.5) -- Start off-screen for slide
 		card.BackgroundColor3 = C.White
 		card.ZIndex = 81
-		card.Parent = genderOverlay
+		card.Parent = customOverlay
 		corner(card, 16)
-		pad(card, 20, 20, 20, 20)
+		
+		-- Slide in animation
+		tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5)
+		})
+		
+		-- Scroll frame
+		local scroll = Instance.new("ScrollingFrame")
+		scroll.Size = UDim2.new(1, 0, 1, 0)
+		scroll.BackgroundTransparency = 1
+		scroll.ScrollBarThickness = 4
+		scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		scroll.ZIndex = 82
+		scroll.Parent = card
+		
+		local scrollPad = Instance.new("UIPadding")
+		scrollPad.PaddingLeft = UDim.new(0, 16)
+		scrollPad.PaddingRight = UDim.new(0, 16)
+		scrollPad.PaddingTop = UDim.new(0, 16)
+		scrollPad.PaddingBottom = UDim.new(0, 16)
+		scrollPad.Parent = scroll
 		
 		local layout = Instance.new("UIListLayout")
 		layout.Padding = UDim.new(0, 12)
 		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		layout.Parent = card
+		layout.Parent = scroll
 		
-		-- Title
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, 36)
-		title.BackgroundTransparency = 1
-		title.Text = country.emoji .. " Royal of " .. country.name
-		title.TextColor3 = C.Gray900
-		title.TextSize = 18
-		title.Font = F.Title
-		title.ZIndex = 82
-		title.Parent = card
+		-- Header
+		local header = Instance.new("TextLabel")
+		header.Size = UDim2.new(1, 0, 0, 44)
+		header.BackgroundTransparency = 1
+		header.Text = country.emoji .. " Royal Birth: " .. country.name
+		header.TextColor3 = Color3.fromRGB(180, 140, 0)
+		header.TextSize = 18
+		header.Font = F.Title
+		header.ZIndex = 83
+		header.Parent = scroll
 		
-		-- Prince button
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GENDER SELECTION
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local genderSec = Instance.new("Frame")
+		genderSec.Size = UDim2.new(1, 0, 0, 0)
+		genderSec.AutomaticSize = Enum.AutomaticSize.Y
+		genderSec.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
+		genderSec.ZIndex = 82
+		genderSec.Parent = scroll
+		corner(genderSec, 12)
+		pad(genderSec, 12, 12, 12, 12)
+		
+		local genderLayout = Instance.new("UIListLayout")
+		genderLayout.Padding = UDim.new(0, 8)
+		genderLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		genderLayout.Parent = genderSec
+		
+		local genderTitle = Instance.new("TextLabel")
+		genderTitle.Size = UDim2.new(1, 0, 0, 24)
+		genderTitle.BackgroundTransparency = 1
+		genderTitle.Text = "👑 Choose Your Royal Title"
+		genderTitle.TextColor3 = C.Gray800
+		genderTitle.TextSize = 15
+		genderTitle.Font = F.Title
+		genderTitle.ZIndex = 83
+		genderTitle.Parent = genderSec
+		
+		local genderBtnFrame = Instance.new("Frame")
+		genderBtnFrame.Size = UDim2.new(1, 0, 0, 48)
+		genderBtnFrame.BackgroundTransparency = 1
+		genderBtnFrame.ZIndex = 83
+		genderBtnFrame.Parent = genderSec
+		
+		local genderBtnLayout = Instance.new("UIListLayout")
+		genderBtnLayout.FillDirection = Enum.FillDirection.Horizontal
+		genderBtnLayout.Padding = UDim.new(0, 10)
+		genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		genderBtnLayout.Parent = genderBtnFrame
+		
+		RoyalBirthData.gender = "Male"
+		
 		local princeBtn = Instance.new("TextButton")
-		princeBtn.Size = UDim2.new(1, 0, 0, 56)
+		princeBtn.Size = UDim2.new(0, 120, 0, 48)
 		princeBtn.BackgroundColor3 = C.Male
-		princeBtn.Text = "🤴 Prince"
+		princeBtn.Text = "👑 Prince"
 		princeBtn.TextColor3 = C.White
-		princeBtn.TextSize = 18
+		princeBtn.TextSize = 15
 		princeBtn.Font = F.Title
-		princeBtn.ZIndex = 82
-		princeBtn.Parent = card
-		corner(princeBtn, 12)
+		princeBtn.ZIndex = 84
+		princeBtn.Parent = genderBtnFrame
+		corner(princeBtn, 10)
+		stroke(princeBtn, 2, 0, Color3.fromRGB(30, 100, 180))
 		
-		-- Princess button
 		local princessBtn = Instance.new("TextButton")
-		princessBtn.Size = UDim2.new(1, 0, 0, 56)
-		princessBtn.BackgroundColor3 = C.Female
+		princessBtn.Size = UDim2.new(0, 120, 0, 48)
+		princessBtn.BackgroundColor3 = C.Gray200
 		princessBtn.Text = "👸 Princess"
-		princessBtn.TextColor3 = C.White
-		princessBtn.TextSize = 18
+		princessBtn.TextColor3 = C.Gray600
+		princessBtn.TextSize = 15
 		princessBtn.Font = F.Title
-		princessBtn.ZIndex = 82
-		princessBtn.Parent = card
-		corner(princessBtn, 12)
-		
-		-- Cancel button
-		local cancelBtn = Instance.new("TextButton")
-		cancelBtn.Size = UDim2.new(0.5, 0, 0, 36)
-		cancelBtn.BackgroundColor3 = C.Gray200
-		cancelBtn.Text = "← Back"
-		cancelBtn.TextColor3 = C.Gray600
-		cancelBtn.TextSize = 14
-		cancelBtn.Font = F.Medium
-		cancelBtn.ZIndex = 82
-		cancelBtn.Parent = card
-		corner(cancelBtn, 8)
-		
-		local function startRoyalLife(gender)
-			genderOverlay:Destroy()
-			
-			-- Set the selected gender for royal birth
-			selectedGender = gender
-			
-			-- Send to server with royal birth info
-			if SetLifeInfo then
-				pcall(function()
-					SetLifeInfo:FireServer({
-						gender = gender,
-						isRoyalBirth = true,
-						royalCountry = country.id,
-						royalCountryName = country.name,
-					})
-				end)
-			end
-			
-			-- Hide intro and complete setup
-			introComplete = true
-			hideIntro()
-		end
+		princessBtn.ZIndex = 84
+		princessBtn.Parent = genderBtnFrame
+		corner(princessBtn, 10)
 		
 		princeBtn.MouseButton1Click:Connect(function()
-			startRoyalLife("Male")
+			RoyalBirthData.gender = "Male"
+			princeBtn.BackgroundColor3 = C.Male
+			princeBtn.TextColor3 = C.White
+			stroke(princeBtn, 2, 0, Color3.fromRGB(30, 100, 180))
+			princessBtn.BackgroundColor3 = C.Gray200
+			princessBtn.TextColor3 = C.Gray600
+			local s = princessBtn:FindFirstChildOfClass("UIStroke")
+			if s then s:Destroy() end
 		end)
 		
 		princessBtn.MouseButton1Click:Connect(function()
-			startRoyalLife("Female")
+			RoyalBirthData.gender = "Female"
+			princessBtn.BackgroundColor3 = C.Female
+			princessBtn.TextColor3 = C.White
+			stroke(princessBtn, 2, 0, Color3.fromRGB(180, 50, 120))
+			princeBtn.BackgroundColor3 = C.Gray200
+			princeBtn.TextColor3 = C.Gray600
+			local s = princeBtn:FindFirstChildOfClass("UIStroke")
+			if s then s:Destroy() end
 		end)
 		
-		cancelBtn.MouseButton1Click:Connect(function()
-			genderOverlay:Destroy()
-			showRoyalCountrySelection()
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- NAME INPUT
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local nameSec = Instance.new("Frame")
+		nameSec.Size = UDim2.new(1, 0, 0, 0)
+		nameSec.AutomaticSize = Enum.AutomaticSize.Y
+		nameSec.BackgroundColor3 = C.White
+		nameSec.ZIndex = 82
+		nameSec.Parent = scroll
+		corner(nameSec, 12)
+		stroke(nameSec, 1, 0.5, C.Gray200)
+		pad(nameSec, 12, 12, 12, 12)
+		
+		local nameLayout = Instance.new("UIListLayout")
+		nameLayout.Padding = UDim.new(0, 6)
+		nameLayout.Parent = nameSec
+		
+		local nameTitle = Instance.new("TextLabel")
+		nameTitle.Size = UDim2.new(1, 0, 0, 22)
+		nameTitle.BackgroundTransparency = 1
+		nameTitle.Text = "👤 Royal Name (Optional)"
+		nameTitle.TextColor3 = C.Gray800
+		nameTitle.TextSize = 14
+		nameTitle.Font = F.Title
+		nameTitle.TextXAlignment = Enum.TextXAlignment.Left
+		nameTitle.ZIndex = 83
+		nameTitle.Parent = nameSec
+		
+		local nameInput = Instance.new("TextBox")
+		nameInput.Size = UDim2.new(1, 0, 0, 40)
+		nameInput.BackgroundColor3 = C.Gray100
+		nameInput.Text = ""
+		nameInput.PlaceholderText = "Leave blank for random royal name..."
+		nameInput.TextColor3 = C.Gray900
+		nameInput.PlaceholderColor3 = C.Gray400
+		nameInput.TextSize = 14
+		nameInput.Font = F.Medium
+		nameInput.ClearTextOnFocus = false
+		nameInput.ZIndex = 83
+		nameInput.Parent = nameSec
+		corner(nameInput, 8)
+		
+		nameInput:GetPropertyChangedSignal("Text"):Connect(function()
+			RoyalBirthData.name = nameInput.Text
+		end)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ETHNICITY SELECTION
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local ethSec = Instance.new("Frame")
+		ethSec.Size = UDim2.new(1, 0, 0, 0)
+		ethSec.AutomaticSize = Enum.AutomaticSize.Y
+		ethSec.BackgroundColor3 = C.White
+		ethSec.ZIndex = 82
+		ethSec.Parent = scroll
+		corner(ethSec, 12)
+		stroke(ethSec, 1, 0.5, C.Gray200)
+		pad(ethSec, 12, 12, 12, 12)
+		
+		local ethLayout = Instance.new("UIListLayout")
+		ethLayout.Padding = UDim.new(0, 6)
+		ethLayout.Parent = ethSec
+		
+		local ethTitle = Instance.new("TextLabel")
+		ethTitle.Size = UDim2.new(1, 0, 0, 22)
+		ethTitle.BackgroundTransparency = 1
+		ethTitle.Text = "🌍 Ethnicity"
+		ethTitle.TextColor3 = C.Gray800
+		ethTitle.TextSize = 14
+		ethTitle.Font = F.Title
+		ethTitle.TextXAlignment = Enum.TextXAlignment.Left
+		ethTitle.ZIndex = 83
+		ethTitle.Parent = ethSec
+		
+		local ethGrid = Instance.new("Frame")
+		ethGrid.Size = UDim2.new(1, 0, 0, 0)
+		ethGrid.AutomaticSize = Enum.AutomaticSize.Y
+		ethGrid.BackgroundTransparency = 1
+		ethGrid.ZIndex = 83
+		ethGrid.Parent = ethSec
+		
+		local ethGridLayout = Instance.new("UIGridLayout")
+		ethGridLayout.CellSize = UDim2.new(0, 90, 0, 32)
+		ethGridLayout.CellPadding = UDim2.new(0, 6, 0, 6)
+		ethGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		ethGridLayout.Parent = ethGrid
+		
+		local ethBtns = {}
+		for _, eth in ipairs(EthnicityOptions) do
+			local btn = Instance.new("TextButton")
+			btn.Name = eth.id
+			btn.Size = UDim2.new(0, 90, 0, 32)
+			btn.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
+			btn.Text = eth.label
+			btn.TextColor3 = eth.id == "Random" and C.White or C.Gray600
+			btn.TextSize = 10
+			btn.Font = F.Medium
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.ZIndex = 84
+			btn.Parent = ethGrid
+			corner(btn, 6)
+			ethBtns[eth.id] = btn
+			
+			btn.MouseButton1Click:Connect(function()
+				RoyalBirthData.ethnicity = eth.id
+				for id, b in pairs(ethBtns) do
+					b.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
+					b.TextColor3 = id == eth.id and C.White or C.Gray600
+				end
+			end)
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ACTION BUTTONS
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local btnFrame = Instance.new("Frame")
+		btnFrame.Size = UDim2.new(1, 0, 0, 52)
+		btnFrame.BackgroundTransparency = 1
+		btnFrame.ZIndex = 82
+		btnFrame.Parent = scroll
+		
+		local btnLayout = Instance.new("UIListLayout")
+		btnLayout.FillDirection = Enum.FillDirection.Horizontal
+		btnLayout.Padding = UDim.new(0, 10)
+		btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		btnLayout.Parent = btnFrame
+		
+		local backBtn = Instance.new("TextButton")
+		backBtn.Size = UDim2.new(0, 90, 0, 46)
+		backBtn.BackgroundColor3 = C.Gray200
+		backBtn.Text = "← Back"
+		backBtn.TextColor3 = C.Gray600
+		backBtn.TextSize = 14
+		backBtn.Font = F.Medium
+		backBtn.ZIndex = 83
+		backBtn.Parent = btnFrame
+		corner(backBtn, 10)
+		
+		local startBtn = Instance.new("TextButton")
+		startBtn.Size = UDim2.new(0, 160, 0, 46)
+		startBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+		startBtn.Text = "👑 Begin Royal Life"
+		startBtn.TextColor3 = C.Gray900
+		startBtn.TextSize = 15
+		startBtn.Font = F.Title
+		startBtn.ZIndex = 83
+		startBtn.Parent = btnFrame
+		corner(startBtn, 10)
+		stroke(startBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+		
+		-- Back button - slide back to kingdom selection
+		backBtn.MouseButton1Click:Connect(function()
+			tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(1.5, 0.5)
+			})
+			task.delay(0.25, function()
+				customOverlay:Destroy()
+				showRoyalCountrySelection()
+			end)
+		end)
+		
+		-- Start Royal Life
+		startBtn.MouseButton1Click:Connect(function()
+			-- Get final name
+			local finalName = RoyalBirthData.name:gsub("^%s+", ""):gsub("%s+$", "")
+			if finalName == "" then
+				local maleNames = {"William", "Charles", "Henry", "Edward", "George", "Philip", "James", "Alexander"}
+				local femaleNames = {"Elizabeth", "Victoria", "Charlotte", "Catherine", "Diana", "Margaret", "Anne", "Alexandra"}
+				local names = RoyalBirthData.gender == "Male" and maleNames or femaleNames
+				finalName = names[math.random(1, #names)]
+			end
+			
+			-- Animate out
+			tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(0.5, 1.5)
+			})
+			
+			task.delay(0.2, function()
+				customOverlay:Destroy()
+				
+				-- CRITICAL FIX: Set selectedGender
+				selectedGender = RoyalBirthData.gender
+				
+				-- CRITICAL FIX: Set currentState properly
+				currentState.Gender = RoyalBirthData.gender
+				currentState.Name = finalName
+				currentState.Flags = currentState.Flags or {}
+				currentState.Flags.is_royalty = true
+				currentState.Flags.royal_birth = true
+				currentState.Flags.royal_country = country.id
+				currentState.Flags.royal_country_name = country.name
+				
+				-- CRITICAL FIX: Send proper format to server
+				if SetLifeInfo then
+					pcall(function()
+						SetLifeInfo:FireServer(finalName, RoyalBirthData.gender)
+					end)
+				end
+				
+				-- Send detailed royal info if GodModeEdit available
+				if GodModeEdit then
+					pcall(function()
+						GodModeEdit:InvokeServer({
+							name = finalName,
+							gender = RoyalBirthData.gender,
+							isRoyalBirth = true,
+							royalCountry = country.id,
+							royalCountryName = country.name,
+							ethnicity = RoyalBirthData.ethnicity,
+							familyWealth = "Royal",
+						})
+					end)
+				end
+				
+				-- CRITICAL FIX: Complete intro properly
+				introComplete = true
+				hideIntro()
+				
+				task.defer(function()
+					if updateFromState then updateFromState() end
+				end)
+			end)
 		end)
 	end
 	
