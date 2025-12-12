@@ -3892,61 +3892,65 @@ do
 	-- CRITICAL FIX #251: Use makeGodModeSection from outer scope instead of defining locally
 	-- This saves ~15 local registers which was causing the "Out of local registers" error
 	
-	-- Name section
-	local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
-	IntroUI.customNameInput = Instance.new("TextBox")
-	IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
-	IntroUI.customNameInput.BackgroundColor3 = C.Gray100
-	IntroUI.customNameInput.Text = ""
-	IntroUI.customNameInput.PlaceholderText = "Enter custom name..."
-	IntroUI.customNameInput.TextColor3 = C.Gray900
-	IntroUI.customNameInput.PlaceholderColor3 = C.Gray400
-	IntroUI.customNameInput.TextSize = 16
-	IntroUI.customNameInput.Font = F.Medium
-	IntroUI.customNameInput.ClearTextOnFocus = false
-	IntroUI.customNameInput.LayoutOrder = 2
-	IntroUI.customNameInput.ZIndex = 73
-	IntroUI.customNameInput.Parent = nameSec
-	corner(IntroUI.customNameInput, 8)
-	IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
-		GodModeCreateData.customName = IntroUI.customNameInput.Text
-	end)
-
-	-- Gender section
-	local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
-	local gFrame = Instance.new("Frame")
-	gFrame.Size = UDim2.new(1, 0, 0, 40)
-	gFrame.BackgroundTransparency = 1
-	gFrame.LayoutOrder = 2
-	gFrame.ZIndex = 73
-	gFrame.Parent = genderSec
-	local gLayout = Instance.new("UIListLayout")
-	gLayout.FillDirection = Enum.FillDirection.Horizontal
-	gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	gLayout.Padding = UDim.new(0, 8)
-	gLayout.Parent = gFrame
-	
-	IntroUI.genderBtnsCustom = {}
-	for _, gData in ipairs({{id="Male", icon="♂", color=C.Male}, {id="Female", icon="♀", color=C.Female}}) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(0, 100, 0, 36)
-		btn.BackgroundColor3 = gData.id == "Male" and gData.color or C.Gray200
-		btn.Text = gData.icon .. " " .. gData.id
-		btn.TextColor3 = gData.id == "Male" and C.White or C.Gray600
-		btn.TextSize = 14
-		btn.Font = F.Medium
-		btn.ZIndex = 74
-		btn.Parent = gFrame
-		corner(btn, 8)
-		IntroUI.genderBtnsCustom[gData.id] = btn
-		btn.MouseButton1Click:Connect(function()
-			GodModeCreateData.gender = gData.id
-			selectedGender = gData.id
-			for id, b in pairs(IntroUI.genderBtnsCustom) do
-				b.BackgroundColor3 = id == gData.id and (id == "Male" and C.Male or C.Female) or C.Gray200
-				b.TextColor3 = id == gData.id and C.White or C.Gray600
-			end
+	-- Name section (wrapped in own scope to reduce register usage)
+	do
+		local nameSec = makeGodModeSection(scroll, "👤 Character Name", 1)
+		IntroUI.customNameInput = Instance.new("TextBox")
+		IntroUI.customNameInput.Size = UDim2.new(1, 0, 0, 40)
+		IntroUI.customNameInput.BackgroundColor3 = C.Gray100
+		IntroUI.customNameInput.Text = ""
+		IntroUI.customNameInput.PlaceholderText = "Enter custom name..."
+		IntroUI.customNameInput.TextColor3 = C.Gray900
+		IntroUI.customNameInput.PlaceholderColor3 = C.Gray400
+		IntroUI.customNameInput.TextSize = 16
+		IntroUI.customNameInput.Font = F.Medium
+		IntroUI.customNameInput.ClearTextOnFocus = false
+		IntroUI.customNameInput.LayoutOrder = 2
+		IntroUI.customNameInput.ZIndex = 73
+		IntroUI.customNameInput.Parent = nameSec
+		corner(IntroUI.customNameInput, 8)
+		IntroUI.customNameInput:GetPropertyChangedSignal("Text"):Connect(function()
+			GodModeCreateData.customName = IntroUI.customNameInput.Text
 		end)
+	end
+
+	-- Gender section (wrapped in own scope to reduce register usage)
+	do
+		local genderSec = makeGodModeSection(scroll, "⚧ Gender", 2)
+		local gFrame = Instance.new("Frame")
+		gFrame.Size = UDim2.new(1, 0, 0, 40)
+		gFrame.BackgroundTransparency = 1
+		gFrame.LayoutOrder = 2
+		gFrame.ZIndex = 73
+		gFrame.Parent = genderSec
+		local gLayout = Instance.new("UIListLayout")
+		gLayout.FillDirection = Enum.FillDirection.Horizontal
+		gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		gLayout.Padding = UDim.new(0, 8)
+		gLayout.Parent = gFrame
+		
+		IntroUI.genderBtnsCustom = {}
+		for _, gData in ipairs({{id="Male", icon="♂", color=C.Male}, {id="Female", icon="♀", color=C.Female}}) do
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(0, 100, 0, 36)
+			btn.BackgroundColor3 = gData.id == "Male" and gData.color or C.Gray200
+			btn.Text = gData.icon .. " " .. gData.id
+			btn.TextColor3 = gData.id == "Male" and C.White or C.Gray600
+			btn.TextSize = 14
+			btn.Font = F.Medium
+			btn.ZIndex = 74
+			btn.Parent = gFrame
+			corner(btn, 8)
+			IntroUI.genderBtnsCustom[gData.id] = btn
+			btn.MouseButton1Click:Connect(function()
+				GodModeCreateData.gender = gData.id
+				selectedGender = gData.id
+				for id, b in pairs(IntroUI.genderBtnsCustom) do
+					b.BackgroundColor3 = id == gData.id and (id == "Male" and C.Male or C.Female) or C.Gray200
+					b.TextColor3 = id == gData.id and C.White or C.Gray600
+				end
+			end)
+		end
 	end
 
 	-- Ethnicity section with emojis (wrapped in own scope)
