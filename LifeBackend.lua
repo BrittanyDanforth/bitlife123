@@ -2595,7 +2595,128 @@ function LifeBackend:getState(player)
 	return self.playerStates[player]
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #255/#263: Sync MobState.inMob and Flags.in_mob to prevent desync issues
+-- This fixes the "don't meet requirements" bug after prison release and other
+-- situations where mob membership flags can get out of sync
+-- #263: Also properly sync rank-based flags to MobState and handle promotions
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:syncMobStateFlags(state)
+	if not state then return end
+	
+	state.Flags = state.Flags or {}
+	state.MobState = state.MobState or {}
+	
+	-- If MobState says they're in mob, ensure flag is set
+	if state.MobState.inMob then
+		state.Flags.in_mob = true
+		state.Flags.mafia_member = true
+		
+		-- CRITICAL FIX #263: Ensure rank-based flags are set correctly based on rankIndex
+		-- This ensures proper progression and prevents "don't meet requirements" bugs
+		local rankIndex = state.MobState.rankIndex or 1
+		
+		-- Rank 1: Associate (no special flags needed beyond in_mob)
+		-- Rank 2: Soldier (initiated)
+		if rankIndex >= 2 then
+			state.Flags.initiated = true
+		else
+			-- If demoted, clear higher rank flags
+			state.Flags.initiated = nil
+		end
+		
+		-- Rank 3: Capo/Made Member
+		if rankIndex >= 3 then
+			state.Flags.made_member = true
+			state.Flags.is_capo = true
+		else
+			state.Flags.made_member = nil
+			state.Flags.is_capo = nil
+		end
+		
+		-- Rank 4: Underboss
+		if rankIndex >= 4 then
+			state.Flags.underboss = true
+		else
+			state.Flags.underboss = nil
+		end
+		
+		-- Rank 5: Boss
+		if rankIndex >= 5 then
+			state.Flags.mob_boss = true
+			state.Flags.is_boss = true
+			-- CRITICAL FIX #264: Boss should clear boss_dead flag (they ARE the boss now)
+			state.Flags.boss_dead = nil
+		else
+			state.Flags.mob_boss = nil
+			state.Flags.is_boss = nil
+		end
+		
+		-- CRITICAL FIX #265: Sync MobState rank info from rankIndex
+		-- Ensure rankLevel matches rankIndex for consistency
+		state.MobState.rankLevel = rankIndex
+		
+		-- Update rank name/emoji based on index (generic names if family-specific not available)
+		local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+		local rankEmojis = {"👤", "🔫", "💰", "🎩", "👑"}
+		if not state.MobState.rankName or state.MobState.rankName == "" then
+			state.MobState.rankName = rankNames[rankIndex] or "Associate"
+		end
+		if not state.MobState.rankEmoji or state.MobState.rankEmoji == "" then
+			state.MobState.rankEmoji = rankEmojis[rankIndex] or "👤"
+		end
+	end
+	
+	-- If flag says they're in mob but MobState doesn't, respect MobState (they may have left)
+	-- But if they have the flag and MobState wasn't initialized, trust the flag
+	if state.Flags.in_mob and not state.MobState.inMob then
+		if state.MobState.familyId or state.MobState.respect then
+			-- MobState has some data, so they were in mob - re-enable
+			state.MobState.inMob = true
+		end
+	end
+	
+	-- Clear mob flags if definitively not in mob
+	if state.MobState.inMob == false and state.Flags.kicked_from_mob then
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.initiated = nil
+		state.Flags.made_member = nil
+		state.Flags.is_capo = nil
+		state.Flags.underboss = nil
+		state.Flags.mob_boss = nil
+		state.Flags.is_boss = nil
+	end
+	
+	-- CRITICAL FIX #266: Also sync from flags to MobState if flags indicate promotion
+	-- This catches cases where events set flags directly without updating MobState
+	if state.Flags.mob_boss or state.Flags.is_boss then
+		if state.MobState.rankIndex and state.MobState.rankIndex < 5 then
+			state.MobState.rankIndex = 5
+			state.MobState.rankLevel = 5
+			state.MobState.rankName = "Boss"
+			state.MobState.rankEmoji = "👑"
+		end
+	elseif state.Flags.underboss then
+		if state.MobState.rankIndex and state.MobState.rankIndex < 4 then
+			state.MobState.rankIndex = 4
+			state.MobState.rankLevel = 4
+			state.MobState.rankName = "Underboss"
+			state.MobState.rankEmoji = "🎩"
+		end
+	elseif state.Flags.is_capo or state.Flags.made_member then
+		if state.MobState.rankIndex and state.MobState.rankIndex < 3 then
+			state.MobState.rankIndex = 3
+			state.MobState.rankLevel = 3
+			state.MobState.rankName = "Capo"
+			state.MobState.rankEmoji = "💰"
+		end
+	end
+end
+
 function LifeBackend:serializeState(state)
+	-- CRITICAL FIX #255: Sync mob flags before serialization
+	self:syncMobStateFlags(state)
 	local serialized
 	
 	if state and state.Serialize then
@@ -2621,11 +2742,14 @@ function LifeBackend:serializeState(state)
 		serialized.Assets.Investments = serialized.Assets.Investments or {}
 		serialized.Assets.Businesses = serialized.Assets.Businesses or {}
 		
-		-- Debug: Trace what's being serialized
-		debugPrint("[serializeState] Assets in serialized state:")
-		debugPrint("  Properties:", #serialized.Assets.Properties)
-		debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
-		debugPrint("  Items:", #serialized.Assets.Items)
+		-- CRITICAL FIX #261: Only log assets debug info when there ARE assets (reduces spam)
+		local totalAssets = #serialized.Assets.Properties + #serialized.Assets.Vehicles + #serialized.Assets.Items
+		if totalAssets > 0 then
+			debugPrint("[serializeState] Assets in serialized state:")
+			debugPrint("  Properties:", #serialized.Assets.Properties)
+			debugPrint("  Vehicles:", #serialized.Assets.Vehicles)
+			debugPrint("  Items:", #serialized.Assets.Items)
+		end
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- PREMIUM FEATURE SERIALIZATION - CRITICAL FIX #21
@@ -4831,6 +4955,13 @@ function LifeBackend:handleAgeUp(player)
 		return
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #256: Sync mob state flags at start of age up
+	-- This ensures in_mob flag and MobState.inMob are always in sync before events
+	-- Fixes the bug where mafia events stopped after prison release
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:syncMobStateFlags(state)
+
 	debugPrint(string.format("Age up requested by %s (Age %d, Year %d)", player.Name, state.Age or -1, state.Year or 0))
 
 	local oldAge = state.Age
@@ -5101,6 +5232,39 @@ function LifeBackend:handleAgeUp(player)
 			state.Flags.incarcerated = nil
 			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
 			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #248: Preserve and restore mob membership after prison release!
+			-- The bug was: After prison release, mafia events stopped because in_mob flag
+			-- and MobState weren't being properly maintained. Now we explicitly preserve them.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local wasMobMember = state.MobState and state.MobState.inMob
+			if wasMobMember then
+				-- Ensure the in_mob flag is preserved (it should already be set, but make sure)
+				state.Flags.in_mob = true
+				state.Flags.mafia_member = true
+				
+				-- Update mob state to reflect prison time served
+				if state.MobState then
+					-- Heat decreases while in prison (laying low)
+					state.MobState.heat = math.max(0, (state.MobState.heat or 0) - 30)
+					-- Loyalty might decrease (family might have moved on)
+					state.MobState.loyalty = math.max(20, (state.MobState.loyalty or 100) - 10)
+					-- Add years in mob (prison counts)
+					state.MobState.yearsInMob = (state.MobState.yearsInMob or 0) + 1
+					
+					-- CRITICAL FIX #280: Rank is PRESERVED in prison - you don't lose your position
+					-- Only update the mobState stats, not the rank
+					-- The rank should already be preserved in MobState.rankIndex
+					debugPrint("Player rank preserved at:", state.MobState.rankIndex, state.MobState.rankName)
+				end
+				
+				-- CRITICAL FIX #281: Sync all mob state flags after prison release
+				-- This ensures rank-based flags (is_capo, underboss, etc.) are properly restored
+				self:syncMobStateFlags(state)
+				
+				debugPrint("Player released from prison - MOB MEMBERSHIP PRESERVED:", player.Name)
+			end
+			
 			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
 			-- If player was in college before going to jail, they can now re-enroll
@@ -5108,9 +5272,17 @@ function LifeBackend:handleAgeUp(player)
 			if state.EducationData and state.EducationData.StatusBeforeJail == "enrolled" then
 				state.EducationData.Status = "enrolled"
 				state.EducationData.StatusBeforeJail = nil
-				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+				if wasMobMember then
+					state.PendingFeed = "🎉 You've been released from prison! Time served. The family welcomes you back. Your education has been reinstated."
+				else
+					state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+				end
 			else
-				state.PendingFeed = "🎉 You've been released from prison! Time served."
+				if wasMobMember then
+					state.PendingFeed = "🎉 You've been released from prison! Time served. The family remembers your loyalty."
+				else
+					state.PendingFeed = "🎉 You've been released from prison! Time served."
+				end
 			end
 			
 			debugPrint("Player released from prison after completing sentence:", player.Name)

@@ -153,12 +153,30 @@ local function applyMafiaEffect(state, mafiaEffect)
 		mobState.rankEmoji = rankEmojis[mobState.rankIndex] or "👤"
 		state.Flags.got_promoted_mob = true
 	end
+	-- CRITICAL FIX #267: Handle becomeUnderboss effect (used by become_underboss event)
+	if mafiaEffect.becomeUnderboss then
+		mobState.rankIndex = 4
+		mobState.rankLevel = 4
+		mobState.rankName = "Underboss"
+		mobState.rankEmoji = "🎩"
+		state.Flags.underboss = true
+		state.Flags.made_member = true
+		state.Flags.is_capo = true
+		state.Flags.initiated = true
+	end
 	if mafiaEffect.becomeBoss then
 		mobState.rankIndex = 5
 		mobState.rankLevel = 5
 		mobState.rankName = "Boss"
 		mobState.rankEmoji = "👑"
 		state.Flags.mob_boss = true
+		state.Flags.is_boss = true
+		state.Flags.underboss = true -- Boss was underboss before
+		state.Flags.made_member = true
+		state.Flags.is_capo = true
+		state.Flags.initiated = true
+		-- CRITICAL FIX #268: Clear boss_dead when becoming boss
+		state.Flags.boss_dead = nil
 	end
 	if mafiaEffect.arrested then
 		state.InJail = true
@@ -182,6 +200,51 @@ local function applyMafiaEffect(state, mafiaEffect)
 	if mafiaEffect.territoryGain then
 		mobState.territories = mobState.territories or {}
 		table.insert(mobState.territories, mafiaEffect.territoryGain)
+	end
+	-- CRITICAL FIX #269: Handle demotion effect
+	if mafiaEffect.demoted then
+		-- Demote by one rank (minimum rank 1)
+		local newRank = math.max(1, (mobState.rankIndex or 1) - 1)
+		mobState.rankIndex = newRank
+		mobState.rankLevel = newRank
+		local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+		local rankEmojis = {"👤", "🔫", "💰", "🎩", "👑"}
+		mobState.rankName = rankNames[newRank] or "Associate"
+		mobState.rankEmoji = rankEmojis[newRank] or "👤"
+		state.Flags.got_demoted = true
+		-- Clear higher rank flags
+		if newRank < 5 then
+			state.Flags.mob_boss = nil
+			state.Flags.is_boss = nil
+		end
+		if newRank < 4 then
+			state.Flags.underboss = nil
+		end
+		if newRank < 3 then
+			state.Flags.made_member = nil
+			state.Flags.is_capo = nil
+		end
+		if newRank < 2 then
+			state.Flags.initiated = nil
+		end
+	end
+	-- CRITICAL FIX #270: Handle witness protection (leaves mob completely)
+	if mafiaEffect.witnessProtection then
+		mobState.inMob = false
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.witness_protection = true
+		state.Flags.former_mobster = true
+	end
+	-- CRITICAL FIX #271: Handle betrayal consequences
+	if mafiaEffect.betrayal then
+		state.Flags.traitor = true
+		state.Flags.betrayed_family = true
+		mobState.loyalty = 0
+		-- High chance of hit being ordered
+		if mafiaEffect.hitOrdered or math.random(100) <= 70 then
+			state.Flags.hit_on_you = true
+		end
 	end
 end
 
@@ -435,6 +498,17 @@ local function applyChoiceEffects(state, choice, isSuccess)
 		state.Flags = state.Flags or {}
 		for flag, value in pairs(choice.setFlags) do
 			state.Flags[flag] = value
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #254: Handle clearFlags shorthand (used by mafia events)
+	-- This allows events to clear flags like boss_dead after player becomes boss
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.clearFlags then
+		state.Flags = state.Flags or {}
+		for flag, _ in pairs(choice.clearFlags) do
+			state.Flags[flag] = nil
 		end
 	end
 	
