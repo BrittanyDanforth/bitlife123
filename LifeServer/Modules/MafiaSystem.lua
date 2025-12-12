@@ -1,12 +1,16 @@
 --[[
-	MafiaSystem.lua (Renamed from MafiaSystem.lua)
+	MafiaSystem.lua
 	
 	Organized crime/Mafia system for BitLife-style game.
 	Allows players to join crime families and rise through the ranks.
 	
 	REQUIRES: Mafia gamepass (ID: 1626238769)
 	
-	CRITICAL FIX #101: Renamed from MafiaSystem to MafiaSystem for clarity
+	CRITICAL FIX #101: This is the CANONICAL mafia module
+	CRITICAL FIX #241: Removed duplicate MobSystem.lua (was identical copy)
+	
+	NOTE: The old MobSystem.lua was an exact duplicate of this file.
+	All mafia/mob functionality should use this MafiaSystem module.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

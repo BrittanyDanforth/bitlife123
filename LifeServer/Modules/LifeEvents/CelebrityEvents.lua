@@ -824,12 +824,16 @@ CelebrityEvents.ModelCareer = {
 
 CelebrityEvents.GeneralFameEvents = {
 	-- PAPARAZZI EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #249: Added cooldown to prevent paparazzi event spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "paparazzi_chase",
 		title = "📸 Paparazzi Chase!",
 		emoji = "📸",
 		text = "Paparazzi are following you everywhere! They're getting dangerously close.",
 		minFame = 30,
+		cooldown = 2, -- CRITICAL FIX: 2 year cooldown between paparazzi events
 		choices = {
 			{
 				text = "Smile and wave professionally",
@@ -860,12 +864,16 @@ CelebrityEvents.GeneralFameEvents = {
 	},
 	
 	-- FAN ENCOUNTERS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #248: Added cooldown to prevent fan encounter spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "fan_encounter",
 		title = "😍 Fan Encounter!",
 		emoji = "😍",
 		text = "A fan recognizes you and wants a photo and autograph!",
 		minFame = 20,
+		cooldown = 2, -- CRITICAL FIX: 2 year cooldown
 		choices = {
 			{
 				text = "Happily oblige",
@@ -897,12 +905,17 @@ CelebrityEvents.GeneralFameEvents = {
 	},
 	
 	-- STALKER SITUATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #250: Stalker events should be rare (once per lifetime max)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "stalker",
 		title = "😰 Stalker Situation",
 		emoji = "😰",
 		text = "Someone has been obsessively following you. They've shown up at your home.",
 		minFame = 50,
+		oneTime = true, -- CRITICAL FIX: Only one stalker situation per lifetime
+		cooldown = 10, -- CRITICAL FIX: 10 year cooldown if it happens again
 		choices = {
 			{
 				text = "Get a restraining order",

@@ -179,6 +179,10 @@ MafiaEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- OPERATIONS AND CRIME
 	-- ═══════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #244 & #247: Added cooldown and maxOccurrences to collection event
+	-- Prevents collection spam - 2 year cooldown, max 8 per lifetime
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "protection_collection",
 		title = "💰 Collection Day",
@@ -188,6 +192,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
+		cooldown = 2, -- 2 year cooldown between collections
+		maxOccurrences = 8, -- CRITICAL FIX #247: Max 8 collection events per lifetime
 		conditions = { requiresFlags = { in_mob = true } },
 		choices = {
 			{
@@ -220,6 +226,10 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #242: Added cooldown and maxOccurrences to heist event
+	-- Prevents heist spam - only 3 heists per lifetime with 5 year cooldown
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "heist_planning",
 		title = "🏦 The Big Score",
@@ -229,6 +239,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 60,
 		isMafiaOnly = true,
+		cooldown = 5, -- CRITICAL FIX: 5 year cooldown between heists
+		maxOccurrences = 3, -- CRITICAL FIX: Max 3 heists per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
 			minRank = 2,
@@ -270,6 +282,13 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #243: Added cooldown to shipment event
+	-- Prevents shipment spam - 3 year cooldown
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #246: Enhanced shipment event with maxOccurrences
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "drug_shipment",
 		title = "📦 The Shipment",
@@ -279,6 +298,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 65,
 		isMafiaOnly = true,
+		cooldown = 3, -- 3 year cooldown between shipments
+		maxOccurrences = 5, -- CRITICAL FIX: Max 5 shipment operations per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true },
 			minRank = 2,
@@ -907,6 +928,10 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #245: Added cooldown and maxOccurrences to gang war event
+	-- Gang wars shouldn't happen every year
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "gang_war",
 		title = "⚔️ Gang War!",
@@ -916,6 +941,8 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 60,
 		isMafiaOnly = true,
+		cooldown = 5, -- CRITICAL FIX: 5 year cooldown between gang wars
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 gang wars per lifetime
 		conditions = { requiresFlags = { in_mob = true, gang_war = true } },
 		choices = {
 			{
