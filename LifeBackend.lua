@@ -667,40 +667,99 @@ local JobCatalogList = {
 	{ id = "coo", name = "Chief Operating Officer", company = "Fortune 500", emoji = "🏆", salary = 350000, minAge = 42, requirement = "master", category = "office",
 		difficulty = 9, minStats = { Smarts = 75 }, description = "C-suite requires exceptional talent" },
 
-	-- TECHNOLOGY
-	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech" },
-	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech" },
-	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech" },
-	{ id = "senior_developer", name = "Senior Developer", company = "BigTech Corp", emoji = "💻", salary = 145000, minAge = 27, requirement = "bachelor", category = "tech" },
-	{ id = "tech_lead", name = "Tech Lead", company = "BigTech Corp", emoji = "👨‍💻", salary = 175000, minAge = 30, requirement = "bachelor", category = "tech" },
-	{ id = "software_architect", name = "Software Architect", company = "MegaTech Inc", emoji = "🏗️", salary = 195000, minAge = 32, requirement = "master", category = "tech" },
-	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech" },
-	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech" },
-	{ id = "data_analyst", name = "Data Analyst", company = "DataDriven Co", emoji = "📈", salary = 72000, minAge = 22, requirement = "bachelor", category = "tech" },
-	{ id = "data_scientist", name = "Data Scientist", company = "AI Innovations", emoji = "🧠", salary = 135000, minAge = 26, requirement = "master", category = "tech" },
-	{ id = "ml_engineer", name = "Machine Learning Engineer", company = "AI Labs", emoji = "🤖", salary = 165000, minAge = 28, requirement = "master", category = "tech" },
-	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech" },
-	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech" },
-	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech" },
+	-- TECHNOLOGY - CRITICAL FIX #336: Tech jobs require coding/tech skills!
+	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech",
+		difficulty = 2, grantsFlags = { "tech_experience", "it_background" },
+		description = "Entry point to tech career" },
+	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech",
+		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience", "coding_bootcamp" }, grantsFlags = { "developer_experience", "software_engineer" },
+		description = "Requires coding skills (code as hobby, computer club, bootcamp)" },
+	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech",
+		difficulty = 5, requiresFlags = { "developer_experience", "coder" }, grantsFlags = { "mid_level_dev", "software_engineer" },
+		description = "Requires junior developer experience" },
+	{ id = "senior_developer", name = "Senior Developer", company = "BigTech Corp", emoji = "💻", salary = 145000, minAge = 27, requirement = "bachelor", category = "tech",
+		difficulty = 6, requiresFlags = { "mid_level_dev", "developer_experience" }, grantsFlags = { "senior_dev", "tech_leader" },
+		description = "Requires software developer experience" },
+	{ id = "tech_lead", name = "Tech Lead", company = "BigTech Corp", emoji = "👨‍💻", salary = 175000, minAge = 30, requirement = "bachelor", category = "tech",
+		difficulty = 7, requiresFlags = { "senior_dev", "tech_leader" }, grantsFlags = { "tech_lead", "engineering_leadership" },
+		description = "Requires senior developer experience" },
+	{ id = "software_architect", name = "Software Architect", company = "MegaTech Inc", emoji = "🏗️", salary = 195000, minAge = 32, requirement = "master", category = "tech",
+		difficulty = 8, requiresFlags = { "tech_lead", "senior_dev" }, grantsFlags = { "architect" },
+		description = "Requires tech lead experience" },
+	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech",
+		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience" }, grantsFlags = { "web_dev", "developer_experience" },
+		description = "Requires coding skills" },
+	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech",
+		difficulty = 5, requiresFlags = { "coder", "developer_experience" }, grantsFlags = { "mobile_dev", "app_developer" },
+		description = "Requires coding experience" },
+	{ id = "data_analyst", name = "Data Analyst", company = "DataDriven Co", emoji = "📈", salary = 72000, minAge = 22, requirement = "bachelor", category = "tech",
+		difficulty = 4, minStats = { Smarts = 55 }, grantsFlags = { "data_experience", "analytics" },
+		description = "Entry point to data science" },
+	{ id = "data_scientist", name = "Data Scientist", company = "AI Innovations", emoji = "🧠", salary = 135000, minAge = 26, requirement = "master", category = "tech",
+		difficulty = 6, minStats = { Smarts = 65 }, requiresFlags = { "data_experience", "coder" }, grantsFlags = { "data_scientist", "ml_experience" },
+		description = "Requires data analyst experience" },
+	{ id = "ml_engineer", name = "Machine Learning Engineer", company = "AI Labs", emoji = "🤖", salary = 165000, minAge = 28, requirement = "master", category = "tech",
+		difficulty = 7, minStats = { Smarts = 70 }, requiresFlags = { "data_scientist", "developer_experience" }, grantsFlags = { "ml_engineer", "ai_expert" },
+		description = "Requires data science and coding experience" },
+	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech",
+		difficulty = 5, requiresFlags = { "tech_experience", "it_background", "coder" }, grantsFlags = { "security_experience", "cybersecurity" },
+		description = "Requires IT/tech background" },
+	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech",
+		difficulty = 6, requiresFlags = { "security_experience", "cybersecurity" }, grantsFlags = { "security_engineer", "senior_security" },
+		description = "Requires cybersecurity experience" },
+	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech",
+		difficulty = 6, requiresFlags = { "developer_experience", "tech_experience" }, grantsFlags = { "devops", "cloud_engineer" },
+		description = "Requires development experience" },
 	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech",
-		difficulty = 9, minStats = { Smarts = 80 }, description = "Lead technology strategy for entire company" },
+		difficulty = 9, minStats = { Smarts = 80 }, requiresFlags = { "tech_lead", "engineering_leadership" }, grantsFlags = { "c_level", "tech_executive" },
+		description = "Requires tech leadership experience" },
 
-	-- MEDICAL
-	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical" },
-	{ id = "medical_assistant", name = "Medical Assistant", company = "Family Clinic", emoji = "💉", salary = 36000, minAge = 18, requirement = "high_school", category = "medical" },
-	{ id = "emt", name = "EMT / Paramedic", company = "City Ambulance", emoji = "🚑", salary = 42000, minAge = 18, requirement = "high_school", category = "medical" },
-	{ id = "nurse_lpn", name = "Licensed Practical Nurse", company = "Regional Hospital", emoji = "👩‍⚕️", salary = 52000, minAge = 20, requirement = "community", category = "medical" },
-	{ id = "nurse_rn", name = "Registered Nurse", company = "City Hospital", emoji = "👩‍⚕️", salary = 78000, minAge = 22, requirement = "bachelor", category = "medical" },
-	{ id = "nurse_practitioner", name = "Nurse Practitioner", company = "Medical Center", emoji = "👩‍⚕️", salary = 118000, minAge = 28, requirement = "master", category = "medical" },
-	{ id = "physical_therapist", name = "Physical Therapist", company = "RehabCare Center", emoji = "🦿", salary = 92000, minAge = 26, requirement = "master", category = "medical" },
-	{ id = "pharmacist", name = "Pharmacist", company = "MediPharm", emoji = "💊", salary = 128000, minAge = 28, requirement = "phd", category = "medical" },
-	{ id = "dentist", name = "Dentist", company = "Bright Smiles Dental", emoji = "🦷", salary = 175000, minAge = 28, requirement = "medical", category = "medical" },
-	{ id = "doctor_resident", name = "Medical Resident", company = "Teaching Hospital", emoji = "🩺", salary = 65000, minAge = 26, requirement = "medical", category = "medical" },
-	{ id = "doctor", name = "Doctor", company = "City Hospital", emoji = "🩺", salary = 250000, minAge = 30, requirement = "medical", category = "medical" },
-	{ id = "surgeon", name = "Surgeon", company = "Medical Center", emoji = "🔪", salary = 420000, minAge = 34, requirement = "medical", category = "medical" },
-	{ id = "chief_of_medicine", name = "Chief of Medicine", company = "University Hospital", emoji = "👨‍⚕️", salary = 550000, minAge = 45, requirement = "medical", category = "medical" },
-	{ id = "psychiatrist", name = "Psychiatrist", company = "Mental Health Center", emoji = "🧠", salary = 280000, minAge = 32, requirement = "medical", category = "medical" },
-	{ id = "veterinarian", name = "Veterinarian", company = "Pet Care Clinic", emoji = "🐾", salary = 105000, minAge = 28, requirement = "medical", category = "medical" },
+	-- MEDICAL - CRITICAL FIX #337: Medical careers need proper progression!
+	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical",
+		difficulty = 1, grantsFlags = { "medical_experience", "hospital_work" },
+		description = "Entry point to healthcare" },
+	{ id = "medical_assistant", name = "Medical Assistant", company = "Family Clinic", emoji = "💉", salary = 36000, minAge = 18, requirement = "high_school", category = "medical",
+		difficulty = 2, grantsFlags = { "medical_experience", "clinical_experience" },
+		description = "Basic medical support role" },
+	{ id = "emt", name = "EMT / Paramedic", company = "City Ambulance", emoji = "🚑", salary = 42000, minAge = 18, requirement = "high_school", category = "medical",
+		difficulty = 3, minStats = { Health = 50 }, grantsFlags = { "medical_experience", "emergency_medicine" },
+		description = "Emergency medical technician" },
+	{ id = "nurse_lpn", name = "Licensed Practical Nurse", company = "Regional Hospital", emoji = "👩‍⚕️", salary = 52000, minAge = 20, requirement = "community", category = "medical",
+		difficulty = 3, grantsFlags = { "nursing_experience", "clinical_experience" },
+		description = "Licensed practical nursing" },
+	{ id = "nurse_rn", name = "Registered Nurse", company = "City Hospital", emoji = "👩‍⚕️", salary = 78000, minAge = 22, requirement = "bachelor", category = "medical",
+		difficulty = 4, grantsFlags = { "nursing_experience", "rn_license", "clinical_experience" },
+		description = "Registered nursing degree required" },
+	{ id = "nurse_practitioner", name = "Nurse Practitioner", company = "Medical Center", emoji = "👩‍⚕️", salary = 118000, minAge = 28, requirement = "master", category = "medical",
+		difficulty = 5, requiresFlags = { "nursing_experience", "rn_license" }, grantsFlags = { "advanced_nursing", "np_license" },
+		description = "Requires RN experience" },
+	{ id = "physical_therapist", name = "Physical Therapist", company = "RehabCare Center", emoji = "🦿", salary = 92000, minAge = 26, requirement = "master", category = "medical",
+		difficulty = 5, minStats = { Health = 45 }, grantsFlags = { "pt_license", "clinical_experience" },
+		description = "Physical therapy degree required" },
+	{ id = "pharmacist", name = "Pharmacist", company = "MediPharm", emoji = "💊", salary = 128000, minAge = 28, requirement = "phd", category = "medical",
+		difficulty = 5, minStats = { Smarts = 65 }, grantsFlags = { "pharmacist_license" },
+		description = "Pharmacy doctorate required" },
+	{ id = "dentist", name = "Dentist", company = "Bright Smiles Dental", emoji = "🦷", salary = 175000, minAge = 28, requirement = "medical", category = "medical",
+		difficulty = 6, grantsFlags = { "dentist_license", "medical_professional" },
+		description = "Dental degree required" },
+	{ id = "doctor_resident", name = "Medical Resident", company = "Teaching Hospital", emoji = "🩺", salary = 65000, minAge = 26, requirement = "medical", category = "medical",
+		difficulty = 5, grantsFlags = { "residency_complete", "clinical_experience", "doctor_training" },
+		description = "Medical school graduate - residency training" },
+	{ id = "doctor", name = "Doctor", company = "City Hospital", emoji = "🩺", salary = 250000, minAge = 30, requirement = "medical", category = "medical",
+		difficulty = 6, requiresFlags = { "residency_complete", "doctor_training" }, grantsFlags = { "licensed_doctor", "attending_physician" },
+		description = "Requires completed residency" },
+	{ id = "surgeon", name = "Surgeon", company = "Medical Center", emoji = "🔪", salary = 420000, minAge = 34, requirement = "medical", category = "medical",
+		difficulty = 8, requiresFlags = { "licensed_doctor", "attending_physician" }, grantsFlags = { "surgeon", "surgical_experience" },
+		description = "Requires years of doctor experience" },
+	{ id = "chief_of_medicine", name = "Chief of Medicine", company = "University Hospital", emoji = "👨‍⚕️", salary = 550000, minAge = 45, requirement = "medical", category = "medical",
+		difficulty = 9, requiresFlags = { "licensed_doctor", "attending_physician" }, grantsFlags = { "medical_leadership" },
+		description = "Requires extensive medical career" },
+	{ id = "psychiatrist", name = "Psychiatrist", company = "Mental Health Center", emoji = "🧠", salary = 280000, minAge = 32, requirement = "medical", category = "medical",
+		difficulty = 7, requiresFlags = { "residency_complete" }, grantsFlags = { "psychiatrist", "mental_health_expert" },
+		description = "Requires medical residency" },
+	{ id = "veterinarian", name = "Veterinarian", company = "Pet Care Clinic", emoji = "🐾", salary = 105000, minAge = 28, requirement = "medical", category = "medical",
+		difficulty = 5, grantsFlags = { "vet_license", "animal_medicine" },
+		description = "Veterinary degree required" },
 
 	-- LAW
 	{ id = "paralegal", name = "Paralegal", company = "Legal Associates", emoji = "📜", salary = 52000, minAge = 22, requirement = "bachelor", category = "law" },
@@ -740,19 +799,25 @@ local JobCatalogList = {
 	{ id = "marketing_manager", name = "Marketing Manager", company = "Brand Corp", emoji = "📈", salary = 95000, minAge = 28, requirement = "bachelor", category = "creative" },
 	{ id = "cmo", name = "Chief Marketing Officer", company = "Fortune 500", emoji = "📢", salary = 320000, minAge = 40, requirement = "master", category = "creative",
 		difficulty = 8, minStats = { Smarts = 70 }, description = "Lead marketing for major corporation" },
-	-- CRITICAL FIX: Creative careers need difficulty to prevent everyone becoming a star instantly
+	-- CRITICAL FIX #334: Creative careers need proper progression - can't just become movie star!
 	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative",
-		difficulty = 2, minStats = { Looks = 35 }, description = "Entry point to acting career" },
+		difficulty = 2, minStats = { Looks = 35 }, grantsFlags = { "acting_experience", "film_industry" },
+		description = "Entry point to acting career" },
 	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative",
-		difficulty = 7, minStats = { Looks = 55 }, description = "Professional acting requires talent and luck" },
+		difficulty = 7, minStats = { Looks = 55 }, requiresFlags = { "acting_experience", "drama_club", "theater_experience", "film_industry" }, grantsFlags = { "professional_actor", "celebrity" },
+		description = "Requires acting experience (drama club, background work)" },
 	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative",
-		difficulty = 10, minStats = { Looks = 80 }, description = "Only the most talented become stars" },
+		difficulty = 10, minStats = { Looks = 80 }, requiresFlags = { "professional_actor", "celebrity" }, grantsFlags = { "movie_star", "famous" },
+		description = "Requires professional acting career - extreme talent and luck" },
 	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative",
-		difficulty = 3, description = "Local gigs and small venues" },
+		difficulty = 3, requiresFlags = { "musician", "plays_instrument", "in_a_band", "music_lessons" }, grantsFlags = { "local_musician", "music_experience" },
+		description = "Requires musical ability - local gigs and small venues" },
 	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative",
-		difficulty = 7, description = "Record labels only sign the talented" },
+		difficulty = 7, requiresFlags = { "local_musician", "music_experience" }, grantsFlags = { "signed_artist", "recording_artist" },
+		description = "Requires local musician experience - record label contract" },
 	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative",
-		difficulty = 10, minStats = { Looks = 70 }, description = "World-famous musical artist" },
+		difficulty = 10, minStats = { Looks = 70 }, requiresFlags = { "signed_artist", "recording_artist" }, grantsFlags = { "pop_star", "famous", "celebrity" },
+		description = "Requires signed artist career - world-famous musical artist" },
 
 	-- GOVERNMENT
 	{ id = "postal_worker", name = "Postal Worker", company = "US Postal Service", emoji = "📮", salary = 45000, minAge = 18, requirement = "high_school", category = "government" },
@@ -797,19 +862,26 @@ local JobCatalogList = {
 	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science" },
 	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science" },
 
-	-- SPORTS - CRITICAL FIX: Sports careers now require actual fitness!
+	-- SPORTS - CRITICAL FIX #333: Sports careers now require proper progression!
+	-- Can't just become professional athlete - need to play sports as kid/teen
 	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports",
-		minStats = { Health = 60 }, difficulty = 2, description = "Must be in excellent physical shape" },
+		minStats = { Health = 60 }, difficulty = 2, grantsFlags = { "fitness_experience" },
+		description = "Must be in excellent physical shape" },
 	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports",
-		minStats = { Health = 70 }, difficulty = 6, description = "Exceptional athletic ability required" },
+		minStats = { Health = 70 }, difficulty = 6, requiresFlags = { "athlete", "sports_team", "varsity_athlete", "school_sports" }, grantsFlags = { "minor_league_player", "pro_sports_experience" },
+		description = "Requires high school/college sports experience" },
 	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports",
-		minStats = { Health = 80 }, difficulty = 9, description = "Elite-level athletic performance" },
+		minStats = { Health = 80 }, difficulty = 9, requiresFlags = { "minor_league_player", "pro_sports_experience" }, grantsFlags = { "pro_athlete", "sports_star" },
+		description = "Requires minor league experience - elite athletic ability" },
 	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports",
-		minStats = { Health = 90 }, difficulty = 10, description = "World-class athletic ability" },
+		minStats = { Health = 90 }, difficulty = 10, requiresFlags = { "pro_athlete", "sports_star" }, grantsFlags = { "superstar_athlete", "sports_legend" },
+		description = "Requires pro athlete career - world-class ability" },
 	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports",
-		minStats = { Smarts = 45 }, difficulty = 4, description = "Teaching and athletic knowledge" },
+		minStats = { Smarts = 45 }, difficulty = 4, requiresFlags = { "athlete", "sports_team", "minor_league_player", "pro_athlete", "school_sports" }, grantsFlags = { "coach_experience" },
+		description = "Requires athletic background - teaching and athletic knowledge" },
 	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports",
-		minStats = { Smarts = 65 }, difficulty = 8, description = "Elite coaching position" },
+		minStats = { Smarts = 65 }, difficulty = 8, requiresFlags = { "coach_experience", "pro_athlete" }, grantsFlags = { "head_coach" },
+		description = "Requires coaching experience - elite coaching position" },
 
 	-- MILITARY - CRITICAL FIX: All military jobs now require fitness!
 	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
@@ -837,21 +909,27 @@ local JobCatalogList = {
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RACING CAREER PATH
-	-- A full progression from go-karts to becoming a racing legend
-	-- Requires: High Health (reflexes), starts young, danger element
+	-- CRITICAL FIX #332: Racing now requires proper progression through experience flags!
+	-- Must start at go-karts, work your way up. Can't just become professional racer!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Karting League", emoji = "🏎️", salary = 15000, minAge = 12, requirement = nil, category = "racing", 
-		minStats = { Health = 50 }, description = "Start your racing career on the track" },
+		minStats = { Health = 50 }, difficulty = 3, grantsFlags = { "karting_experience", "racing_experience" },
+		description = "Start your racing career on the track" },
 	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Racing Circuit", emoji = "🏎️", salary = 35000, minAge = 16, requirement = nil, category = "racing",
-		minStats = { Health = 60 }, description = "Compete in regional amateur racing series" },
+		minStats = { Health = 60 }, difficulty = 5, requiresFlags = { "karting_experience", "racing_experience" }, grantsFlags = { "amateur_racing", "racing_experience" },
+		description = "Compete in regional amateur racing series - requires go-kart experience" },
 	{ id = "professional_racer", name = "Professional Racer", company = "National Racing Series", emoji = "🏁", salary = 150000, minAge = 18, requirement = nil, category = "racing",
-		minStats = { Health = 70 }, description = "Race professionally on the national circuit" },
+		minStats = { Health = 70 }, difficulty = 7, requiresFlags = { "amateur_racing" }, grantsFlags = { "pro_racer", "racing_experience" },
+		description = "Race professionally - requires amateur racing experience" },
 	{ id = "f1_driver", name = "Formula 1 Driver", company = "F1 Racing Team", emoji = "🏆", salary = 2500000, minAge = 21, requirement = nil, category = "racing",
-		minStats = { Health = 80 }, description = "The pinnacle of motorsport" },
+		minStats = { Health = 80 }, difficulty = 9, requiresFlags = { "pro_racer" }, grantsFlags = { "f1_experience", "racing_champion" },
+		description = "The pinnacle of motorsport - requires professional racing career" },
 	{ id = "racing_legend", name = "Racing Legend", company = "Racing Hall of Fame", emoji = "👑", salary = 15000000, minAge = 28, requirement = nil, category = "racing",
-		minStats = { Health = 75 }, description = "Multi-champion, legend status achieved" },
+		minStats = { Health = 75 }, difficulty = 10, requiresFlags = { "f1_experience", "racing_champion" }, grantsFlags = { "racing_legend" },
+		description = "Multi-champion, legend status - requires F1 experience" },
 	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Your Racing Team", emoji = "🏢", salary = 5000000, minAge = 35, requirement = nil, category = "racing",
-		description = "Own and manage a professional racing team" },
+		difficulty = 6, requiresFlags = { "pro_racer", "racing_experience" }, grantsFlags = { "team_owner" },
+		description = "Own and manage a professional racing team - requires racing background" },
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- HACKER/CYBERSECURITY CAREER PATH
@@ -1158,6 +1236,126 @@ local ActivityCatalog = {
 	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
 	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
 	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #355: Career Skill-Building Activities
+	-- These grant experience flags needed for career progression!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	
+	-- Racing experience (for racing career)
+	go_kart_racing = {
+		stats = { Health = 4, Happiness = 6 },
+		feed = "went go-kart racing and practiced your driving skills!",
+		cost = 50,
+		requiresAge = 8,
+		setFlags = { karting_experience = true, racing_experience = true },
+	},
+	race_track_visit = {
+		stats = { Happiness = 5 },
+		feed = "visited the race track and learned about racing!",
+		cost = 30,
+		requiresAge = 6,
+		setFlags = { racing_experience = true },
+	},
+	
+	-- Sports experience (for athletic careers)
+	join_school_sports = {
+		stats = { Health = 5, Happiness = 4 },
+		feed = "joined the school sports team!",
+		cost = 50,
+		requiresAge = 10,
+		maxAge = 18,
+		setFlags = { athlete = true, sports_team = true, school_sports = true },
+	},
+	sports_camp = {
+		stats = { Health = 8, Happiness = 5 },
+		feed = "attended sports camp and improved your athletic skills!",
+		cost = 500,
+		requiresAge = 8,
+		maxAge = 17,
+		setFlags = { athlete = true, sports_team = true },
+	},
+	varsity_tryouts = {
+		stats = { Health = 4, Happiness = 3 },
+		feed = "made the varsity team!",
+		cost = 0,
+		requiresAge = 14,
+		maxAge = 18,
+		requiresFlag = "school_sports",
+		setFlags = { varsity_athlete = true, athlete = true },
+	},
+	
+	-- Coding/Tech experience (for tech careers)
+	computer_club = {
+		stats = { Smarts = 5, Happiness = 3 },
+		feed = "joined the computer club and learned programming!",
+		cost = 0,
+		requiresAge = 10,
+		setFlags = { coder = true, computer_skills = true, tech_experience = true },
+	},
+	learn_coding = {
+		stats = { Smarts = 8, Happiness = 2 },
+		feed = "learned to code through online tutorials!",
+		cost = 0,
+		requiresAge = 10,
+		setFlags = { coder = true, computer_skills = true },
+	},
+	build_computer = {
+		stats = { Smarts = 6, Happiness = 4 },
+		feed = "built your own computer!",
+		cost = 800,
+		requiresAge = 12,
+		setFlags = { tech_experience = true, computer_skills = true },
+	},
+	
+	-- Music experience (for music careers)
+	music_lessons = {
+		stats = { Happiness = 4, Smarts = 2 },
+		feed = "took music lessons and practiced an instrument!",
+		cost = 100,
+		requiresAge = 6,
+		setFlags = { musician = true, plays_instrument = true, music_lessons = true },
+	},
+	join_band = {
+		stats = { Happiness = 6 },
+		feed = "joined a band!",
+		cost = 0,
+		requiresAge = 12,
+		requiresFlag = "plays_instrument",
+		setFlags = { in_a_band = true, musician = true },
+	},
+	play_open_mic = {
+		stats = { Happiness = 5 },
+		feed = "performed at an open mic night!",
+		cost = 0,
+		requiresAge = 14,
+		requiresFlag = "musician",
+		setFlags = { local_musician = true, music_experience = true },
+	},
+	
+	-- Acting experience (for acting careers)
+	drama_club = {
+		stats = { Happiness = 4, Smarts = 1 },
+		feed = "joined the drama club and performed in a play!",
+		cost = 0,
+		requiresAge = 10,
+		setFlags = { drama_club = true, acting_experience = true, theater_experience = true },
+	},
+	acting_classes = {
+		stats = { Happiness = 3, Looks = 1 },
+		feed = "took acting classes!",
+		cost = 200,
+		requiresAge = 8,
+		setFlags = { acting_experience = true },
+	},
+	community_theater = {
+		stats = { Happiness = 5 },
+		feed = "performed in community theater!",
+		cost = 0,
+		requiresAge = 12,
+		requiresFlag = "acting_experience",
+		setFlags = { theater_experience = true, professional_actor = false },
+	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- BABY/TODDLER PLAY ACTIVITIES (Ages 0-5)
@@ -2067,6 +2265,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.RequestPromotion = self:createRemote("RequestPromotion", "RemoteFunction")
 	self.remotes.RequestRaise = self:createRemote("RequestRaise", "RemoteFunction")
 	self.remotes.GetCareerInfo = self:createRemote("GetCareerInfo", "RemoteFunction")
+	self.remotes.GetJobEligibility = self:createRemote("GetJobEligibility", "RemoteFunction") -- CRITICAL FIX #338: Check job qualifications
 	self.remotes.GetEducationInfo = self:createRemote("GetEducationInfo", "RemoteFunction")
 	self.remotes.EnrollEducation = self:createRemote("EnrollEducation", "RemoteFunction")
 
@@ -2142,6 +2341,11 @@ function LifeBackend:setupRemotes()
 	end
 	self.remotes.GetCareerInfo.OnServerInvoke = function(player)
 		return self:getCareerInfo(player)
+	end
+	
+	-- CRITICAL FIX #338: Check job eligibility (education, experience, stats)
+	self.remotes.GetJobEligibility.OnServerInvoke = function(player)
+		return self:getJobEligibility(player)
 	end
 
 	self.remotes.GetEducationInfo.OnServerInvoke = function(player)
@@ -6179,6 +6383,136 @@ function LifeBackend:meetsEducationRequirement(state, requirement)
 	return playerRank >= jobRank
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #338: Get Job Eligibility for ALL jobs
+-- Returns a table of job IDs mapped to eligibility info
+-- This allows the client to show which jobs are available vs locked
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:getJobEligibility(player)
+	local state = self:getState(player)
+	if not state then
+		return {}
+	end
+	
+	local eligibility = {}
+	state.Flags = state.Flags or {}
+	state.Stats = state.Stats or {}
+	
+	for jobId, job in pairs(JobCatalog) do
+		local info = {
+			eligible = true,
+			reasons = {},
+			missingFlags = {},
+			missingEdu = nil,
+			missingStats = {},
+			tooYoung = false,
+		}
+		
+		-- Check age requirement
+		if (state.Age or 0) < (job.minAge or 0) then
+			info.eligible = false
+			info.tooYoung = true
+			table.insert(info.reasons, string.format("Must be %d+ years old", job.minAge))
+		end
+		
+		-- Check education requirement
+		if job.requirement and not self:meetsEducationRequirement(state, job.requirement) then
+			info.eligible = false
+			info.missingEdu = job.requirement
+			local eduNames = { 
+				high_school = "High School Diploma", 
+				bachelor = "Bachelor's Degree", 
+				master = "Master's Degree", 
+				phd = "PhD", 
+				medical = "Medical Degree", 
+				law = "Law Degree", 
+				community = "Community College" 
+			}
+			table.insert(info.reasons, string.format("Requires %s", eduNames[job.requirement] or job.requirement))
+		end
+		
+		-- Check stat requirements
+		if job.minStats then
+			for statName, minValue in pairs(job.minStats) do
+				local playerStat = state.Stats[statName] or state[statName] or 50
+				if playerStat < minValue then
+					info.eligible = false
+					info.missingStats[statName] = { required = minValue, current = playerStat }
+					table.insert(info.reasons, string.format("%s too low (%d/%d)", statName, playerStat, minValue))
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #339: Check experience/flag requirements
+		-- This is the key fix - jobs requiring experience will be locked!
+		if job.requiresFlags then
+			local hasAnyRequiredFlag = false
+			for _, flagName in ipairs(job.requiresFlags) do
+				if state.Flags[flagName] then
+					hasAnyRequiredFlag = true
+					break
+				end
+			end
+			
+			if not hasAnyRequiredFlag then
+				info.eligible = false
+				info.missingFlags = job.requiresFlags
+				
+				-- Provide helpful experience message
+				local expMessages = {
+					karting_experience = "Go-kart racing experience",
+					racing_experience = "Racing experience",
+					amateur_racing = "Amateur racing experience",
+					pro_racer = "Professional racing career",
+					f1_experience = "F1 driving experience",
+					athlete = "Athletic background",
+					sports_team = "School sports experience",
+					minor_league_player = "Minor league experience",
+					pro_athlete = "Professional athlete career",
+					acting_experience = "Acting experience",
+					professional_actor = "Professional acting career",
+					musician = "Musical ability",
+					local_musician = "Local music experience",
+					signed_artist = "Record label contract",
+					coder = "Coding skills",
+					developer_experience = "Developer experience",
+					tech_experience = "Tech industry experience",
+					nursing_experience = "Nursing experience",
+					residency_complete = "Medical residency",
+					coach_experience = "Coaching experience",
+				}
+				
+				local expText = expMessages[job.requiresFlags[1]] or "Specialized experience"
+				table.insert(info.reasons, string.format("Requires %s", expText))
+			end
+		end
+		
+		-- Check promotion-only status
+		if PromotionOnlyJobs[jobId] then
+			info.eligible = false
+			info.promotionOnly = true
+			table.insert(info.reasons, "Promotion only - can't apply directly")
+		end
+		
+		-- Check criminal record for strict jobs
+		if state.Flags.criminal_record then
+			local strictCategories = { "law", "government", "finance", "education", "military" }
+			for _, cat in ipairs(strictCategories) do
+				if job.category == cat then
+					info.eligible = false
+					info.criminalRecord = true
+					table.insert(info.reasons, "Criminal record disqualifies you")
+					break
+				end
+			end
+		end
+		
+		eligibility[jobId] = info
+	end
+	
+	return eligibility
+end
+
 -- ============================================================================
 -- CRITICAL FIX: Job Rejection Messages for variety and realism
 -- ============================================================================
@@ -6301,16 +6635,76 @@ function LifeBackend:handleJobApplication(player, jobId)
 		end
 		
 		if not hasRequiredExperience then
-			-- Provide helpful message about what experience is needed
+			-- CRITICAL FIX #335: Provide helpful messages about what experience is needed for ALL career paths
 			local experienceMessages = {
+				-- Tech/Hacking
 				coder = "coding skills (try computer camp or study programming)",
 				tech_experience = "tech industry experience (work in IT first)",
 				hacker_experience = "hacking experience (start as a script kiddie first)",
 				elite_hacker_rep = "elite hacker reputation (prove yourself as a black hat first)",
 				cyber_crime_history = "cyber crime background (work your way up the criminal ladder)",
+				-- Racing career
+				karting_experience = "go-kart racing experience (start racing go-karts as a kid!)",
+				racing_experience = "racing experience (you need to race before going pro!)",
+				amateur_racing = "amateur racing experience (work your way up from go-karts)",
+				pro_racer = "professional racing experience (compete in national racing first)",
+				f1_experience = "Formula 1 experience (must be a pro racer first)",
+				racing_champion = "racing championship wins (achieve greatness on the track)",
+				-- Sports career
+				athlete = "athletic experience (join school sports teams as a kid)",
+				sports_team = "sports team experience (play on school teams)",
+				varsity_athlete = "varsity sports experience (excel at high school sports)",
+				school_sports = "school sports background (join teams in school)",
+				minor_league_player = "minor league experience (work up from school sports)",
+				pro_sports_experience = "professional sports experience (play minor leagues first)",
+				pro_athlete = "professional athlete career (you must play pro sports first)",
+				sports_star = "sports stardom (become a pro athlete first)",
+				coach_experience = "coaching experience (coach at lower levels first)",
+				-- Acting career
+				acting_experience = "acting experience (try drama club or background acting)",
+				drama_club = "drama/theater experience (join drama club in school)",
+				theater_experience = "theater experience (perform in plays/shows)",
+				film_industry = "film industry experience (work as a background actor first)",
+				professional_actor = "professional acting career (work as an actor first)",
+				celebrity = "celebrity status (become a successful actor first)",
+				-- Music career
+				musician = "musical ability (learn an instrument or take music lessons)",
+				plays_instrument = "instrument skills (practice music as a hobby)",
+				in_a_band = "band experience (play in a band)",
+				music_lessons = "formal music training (take music lessons)",
+				local_musician = "local music scene experience (play local gigs first)",
+				music_experience = "music industry experience (perform at local venues)",
+				signed_artist = "record label contract (get signed as an artist first)",
+				recording_artist = "recording experience (make music professionally)",
+				-- Tech career
+				computer_skills = "computer skills (use computers as a hobby, join computer club)",
+				coding_bootcamp = "coding bootcamp (complete a programming course)",
+				developer_experience = "developer experience (work as a junior developer first)",
+				software_engineer = "software engineering background",
+				mid_level_dev = "mid-level developer experience (work as a developer first)",
+				senior_dev = "senior developer experience (work up from developer)",
+				tech_leader = "technical leadership experience",
+				tech_lead = "tech lead experience (lead development teams first)",
+				engineering_leadership = "engineering leadership background",
+				it_background = "IT background (work in tech support first)",
+				web_dev = "web development experience",
+				mobile_dev = "mobile development experience",
+				data_experience = "data analysis experience (work as a data analyst first)",
+				analytics = "analytics background",
+				data_scientist = "data science experience",
+				ml_experience = "machine learning experience",
+				security_experience = "security experience (work in cybersecurity first)",
+				cybersecurity = "cybersecurity background",
+				devops = "DevOps experience",
+				-- Medical career
+				medical_experience = "medical experience (work in healthcare first)",
+				nursing_experience = "nursing experience (work as a nurse first)",
+				clinical_experience = "clinical experience (work in a medical setting)",
+				residency_complete = "completed medical residency",
+				surgical_experience = "surgical experience (work as a surgeon first)",
 			}
 			
-			local helpText = experienceMessages[requiredFlagNames[1]] or "specialized experience"
+			local helpText = experienceMessages[requiredFlagNames[1]] or "specialized experience in this field"
 			return { 
 				success = false, 
 				message = string.format("This job requires %s. You don't have the necessary background.", helpText)

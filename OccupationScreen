@@ -266,6 +266,7 @@ local RequestPromotion = getRemote("RequestPromotion")
 local RequestRaise = getRemote("RequestRaise")
 local GetCareerInfo = getRemote("GetCareerInfo")
 local GetEducationInfo = getRemote("GetEducationInfo") -- NEW: detailed GPA/progress/transcript
+local GetJobEligibility = getRemote("GetJobEligibility") -- CRITICAL FIX #345: Check job experience requirements
 
 -- Job Categories for filtering
 -- CRITICAL FIX: Added missing categories for new career paths (racing, hacker, esports)
@@ -354,42 +355,42 @@ local Jobs = {
 	{ id = "coo", name = "Chief Operating Officer", company = "Fortune 500", emoji = "🏆", salary = 350000, minAge = 42, requirement = "master", category = "office", difficulty = 9, minStats = { Smarts = 70 } },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- TECHNOLOGY - Added difficulty & minStats (Smarts required!)
+	-- TECHNOLOGY - CRITICAL FIX #343: Requires coding/tech experience!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech", difficulty = 3, minStats = { Smarts = 40 } },
-	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 55 } },
-	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 60 } },
-	{ id = "senior_developer", name = "Senior Developer", company = "BigTech Corp", emoji = "💻", salary = 145000, minAge = 27, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 65 } },
-	{ id = "tech_lead", name = "Tech Lead", company = "BigTech Corp", emoji = "👨‍💻", salary = 175000, minAge = 30, requirement = "bachelor", category = "tech", difficulty = 8, minStats = { Smarts = 70 } },
-	{ id = "software_architect", name = "Software Architect", company = "MegaTech Inc", emoji = "🏗️", salary = 195000, minAge = 32, requirement = "master", category = "tech", difficulty = 8, minStats = { Smarts = 75 } },
-	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 50 } },
-	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 55 } },
-	{ id = "data_analyst", name = "Data Analyst", company = "DataDriven Co", emoji = "📈", salary = 72000, minAge = 22, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 55 } },
-	{ id = "data_scientist", name = "Data Scientist", company = "AI Innovations", emoji = "🧠", salary = 135000, minAge = 26, requirement = "master", category = "tech", difficulty = 8, minStats = { Smarts = 75 } },
-	{ id = "ml_engineer", name = "Machine Learning Engineer", company = "AI Labs", emoji = "🤖", salary = 165000, minAge = 28, requirement = "master", category = "tech", difficulty = 9, minStats = { Smarts = 80 } },
-	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 60 } },
-	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 65 } },
-	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 65 } },
-	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech", difficulty = 10, minStats = { Smarts = 85 } },
+	{ id = "it_support", name = "IT Support Technician", company = "TechHelp Inc", emoji = "🖥️", salary = 45000, minAge = 18, requirement = "high_school", category = "tech", difficulty = 2 },
+	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech", difficulty = 4, minStats = { Smarts = 55 }, requiresExp = "Coding skills required (hobby, computer club, bootcamp)" },
+	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 60 }, requiresExp = "Junior developer experience required" },
+	{ id = "senior_developer", name = "Senior Developer", company = "BigTech Corp", emoji = "💻", salary = 145000, minAge = 27, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 65 }, requiresExp = "Software developer experience required" },
+	{ id = "tech_lead", name = "Tech Lead", company = "BigTech Corp", emoji = "👨‍💻", salary = 175000, minAge = 30, requirement = "bachelor", category = "tech", difficulty = 7, minStats = { Smarts = 70 }, requiresExp = "Senior developer experience required" },
+	{ id = "software_architect", name = "Software Architect", company = "MegaTech Inc", emoji = "🏗️", salary = 195000, minAge = 32, requirement = "master", category = "tech", difficulty = 8, minStats = { Smarts = 75 }, requiresExp = "Tech lead experience required" },
+	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech", difficulty = 4, minStats = { Smarts = 50 }, requiresExp = "Coding skills required" },
+	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 55 }, requiresExp = "Coding experience required" },
+	{ id = "data_analyst", name = "Data Analyst", company = "DataDriven Co", emoji = "📈", salary = 72000, minAge = 22, requirement = "bachelor", category = "tech", difficulty = 4, minStats = { Smarts = 55 } },
+	{ id = "data_scientist", name = "Data Scientist", company = "AI Innovations", emoji = "🧠", salary = 135000, minAge = 26, requirement = "master", category = "tech", difficulty = 6, minStats = { Smarts = 65 }, requiresExp = "Data analyst experience required" },
+	{ id = "ml_engineer", name = "Machine Learning Engineer", company = "AI Labs", emoji = "🤖", salary = 165000, minAge = 28, requirement = "master", category = "tech", difficulty = 7, minStats = { Smarts = 70 }, requiresExp = "Data science and coding experience required" },
+	{ id = "cybersecurity_analyst", name = "Cybersecurity Analyst", company = "SecureNet", emoji = "🔐", salary = 95000, minAge = 24, requirement = "bachelor", category = "tech", difficulty = 5, minStats = { Smarts = 60 }, requiresExp = "IT/tech background required" },
+	{ id = "security_engineer", name = "Security Engineer", company = "CyberShield", emoji = "🛡️", salary = 140000, minAge = 28, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 65 }, requiresExp = "Cybersecurity experience required" },
+	{ id = "devops_engineer", name = "DevOps Engineer", company = "CloudOps Inc", emoji = "☁️", salary = 125000, minAge = 26, requirement = "bachelor", category = "tech", difficulty = 6, minStats = { Smarts = 65 }, requiresExp = "Development experience required" },
+	{ id = "cto", name = "Chief Technology Officer", company = "Tech Giant", emoji = "🚀", salary = 380000, minAge = 38, requirement = "master", category = "tech", difficulty = 9, minStats = { Smarts = 80 }, requiresExp = "Tech leadership experience required" },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- MEDICAL / HEALTHCARE - Added difficulty & minStats (Smarts required!)
+	-- MEDICAL / HEALTHCARE - CRITICAL FIX #344: Proper career progression!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical", difficulty = 2 },
-	{ id = "medical_assistant", name = "Medical Assistant", company = "Family Clinic", emoji = "💉", salary = 36000, minAge = 18, requirement = "high_school", category = "medical", difficulty = 3 },
-	{ id = "emt", name = "EMT / Paramedic", company = "City Ambulance", emoji = "🚑", salary = 42000, minAge = 18, requirement = "high_school", category = "medical", difficulty = 4, minStats = { Health = 45, Smarts = 40 } },
-	{ id = "nurse_lpn", name = "Licensed Practical Nurse", company = "Regional Hospital", emoji = "👩‍⚕️", salary = 52000, minAge = 20, requirement = "community", category = "medical", difficulty = 4, minStats = { Smarts = 45 } },
-	{ id = "nurse_rn", name = "Registered Nurse", company = "City Hospital", emoji = "👩‍⚕️", salary = 78000, minAge = 22, requirement = "bachelor", category = "medical", difficulty = 5, minStats = { Smarts = 55 } },
-	{ id = "nurse_practitioner", name = "Nurse Practitioner", company = "Medical Center", emoji = "👩‍⚕️", salary = 118000, minAge = 28, requirement = "master", category = "medical", difficulty = 7, minStats = { Smarts = 65 } },
-	{ id = "physical_therapist", name = "Physical Therapist", company = "RehabCare Center", emoji = "🦿", salary = 92000, minAge = 26, requirement = "master", category = "medical", difficulty = 6, minStats = { Smarts = 55, Health = 45 } },
-	{ id = "pharmacist", name = "Pharmacist", company = "MediPharm", emoji = "💊", salary = 128000, minAge = 28, requirement = "phd", category = "medical", difficulty = 7, minStats = { Smarts = 70 } },
-	{ id = "dentist", name = "Dentist", company = "Bright Smiles Dental", emoji = "🦷", salary = 175000, minAge = 28, requirement = "medical", category = "medical", difficulty = 8, minStats = { Smarts = 75 } },
-	{ id = "doctor_resident", name = "Medical Resident", company = "Teaching Hospital", emoji = "🩺", salary = 65000, minAge = 26, requirement = "medical", category = "medical", difficulty = 7, minStats = { Smarts = 70 } },
-	{ id = "doctor", name = "Doctor", company = "City Hospital", emoji = "🩺", salary = 250000, minAge = 30, requirement = "medical", category = "medical", difficulty = 9, minStats = { Smarts = 80 } },
-	{ id = "surgeon", name = "Surgeon", company = "Medical Center", emoji = "🔪", salary = 420000, minAge = 34, requirement = "medical", category = "medical", difficulty = 10, minStats = { Smarts = 90, Health = 50 } },
-	{ id = "chief_of_medicine", name = "Chief of Medicine", company = "University Hospital", emoji = "👨‍⚕️", salary = 550000, minAge = 45, requirement = "medical", category = "medical", difficulty = 10, minStats = { Smarts = 90 } },
-	{ id = "psychiatrist", name = "Psychiatrist", company = "Mental Health Center", emoji = "🧠", salary = 280000, minAge = 32, requirement = "medical", category = "medical", difficulty = 9, minStats = { Smarts = 80 } },
-	{ id = "veterinarian", name = "Veterinarian", company = "Pet Care Clinic", emoji = "🐾", salary = 105000, minAge = 28, requirement = "medical", category = "medical", difficulty = 7, minStats = { Smarts = 65 } },
+	{ id = "hospital_orderly", name = "Hospital Orderly", company = "City Hospital", emoji = "🏥", salary = 28000, minAge = 18, requirement = nil, category = "medical", difficulty = 1 },
+	{ id = "medical_assistant", name = "Medical Assistant", company = "Family Clinic", emoji = "💉", salary = 36000, minAge = 18, requirement = "high_school", category = "medical", difficulty = 2 },
+	{ id = "emt", name = "EMT / Paramedic", company = "City Ambulance", emoji = "🚑", salary = 42000, minAge = 18, requirement = "high_school", category = "medical", difficulty = 3, minStats = { Health = 50 } },
+	{ id = "nurse_lpn", name = "Licensed Practical Nurse", company = "Regional Hospital", emoji = "👩‍⚕️", salary = 52000, minAge = 20, requirement = "community", category = "medical", difficulty = 3 },
+	{ id = "nurse_rn", name = "Registered Nurse", company = "City Hospital", emoji = "👩‍⚕️", salary = 78000, minAge = 22, requirement = "bachelor", category = "medical", difficulty = 4 },
+	{ id = "nurse_practitioner", name = "Nurse Practitioner", company = "Medical Center", emoji = "👩‍⚕️", salary = 118000, minAge = 28, requirement = "master", category = "medical", difficulty = 5, requiresExp = "RN nursing experience required" },
+	{ id = "physical_therapist", name = "Physical Therapist", company = "RehabCare Center", emoji = "🦿", salary = 92000, minAge = 26, requirement = "master", category = "medical", difficulty = 5, minStats = { Health = 45 } },
+	{ id = "pharmacist", name = "Pharmacist", company = "MediPharm", emoji = "💊", salary = 128000, minAge = 28, requirement = "phd", category = "medical", difficulty = 5, minStats = { Smarts = 65 } },
+	{ id = "dentist", name = "Dentist", company = "Bright Smiles Dental", emoji = "🦷", salary = 175000, minAge = 28, requirement = "medical", category = "medical", difficulty = 6 },
+	{ id = "doctor_resident", name = "Medical Resident", company = "Teaching Hospital", emoji = "🩺", salary = 65000, minAge = 26, requirement = "medical", category = "medical", difficulty = 5 },
+	{ id = "doctor", name = "Doctor", company = "City Hospital", emoji = "🩺", salary = 250000, minAge = 30, requirement = "medical", category = "medical", difficulty = 6, requiresExp = "Completed medical residency required" },
+	{ id = "surgeon", name = "Surgeon", company = "Medical Center", emoji = "🔪", salary = 420000, minAge = 34, requirement = "medical", category = "medical", difficulty = 8, requiresExp = "Doctor experience required" },
+	{ id = "chief_of_medicine", name = "Chief of Medicine", company = "University Hospital", emoji = "👨‍⚕️", salary = 550000, minAge = 45, requirement = "medical", category = "medical", difficulty = 9, requiresExp = "Senior doctor experience required" },
+	{ id = "psychiatrist", name = "Psychiatrist", company = "Mental Health Center", emoji = "🧠", salary = 280000, minAge = 32, requirement = "medical", category = "medical", difficulty = 7, requiresExp = "Medical residency required" },
+	{ id = "veterinarian", name = "Veterinarian", company = "Pet Care Clinic", emoji = "🐾", salary = 105000, minAge = 28, requirement = "medical", category = "medical", difficulty = 5 },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- LEGAL - Added difficulty & minStats (Smarts required!)
@@ -433,12 +434,13 @@ local Jobs = {
 	{ id = "marketing_associate", name = "Marketing Associate", company = "AdVenture Agency", emoji = "📈", salary = 52000, minAge = 22, requirement = "bachelor", category = "creative", difficulty = 4 },
 	{ id = "marketing_manager", name = "Marketing Manager", company = "Brand Corp", emoji = "📈", salary = 95000, minAge = 28, requirement = "bachelor", category = "creative", difficulty = 6 },
 	{ id = "cmo", name = "Chief Marketing Officer", company = "Fortune 500", emoji = "📢", salary = 320000, minAge = 40, requirement = "master", category = "creative", difficulty = 8 },
-	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative", difficulty = 2, minStats = { Looks = 40 } },
-	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative", difficulty = 6, minStats = { Looks = 60 } },
-	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative", difficulty = 10, minStats = { Looks = 85 } },
-	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative", difficulty = 3 },
-	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative", difficulty = 7, minStats = { Looks = 50 } },
-	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative", difficulty = 10, minStats = { Looks = 80 } },
+	-- CRITICAL FIX #342: Creative careers require experience/talent development
+	{ id = "actor_extra", name = "Background Actor", company = "Hollywood Studios", emoji = "🎭", salary = 25000, minAge = 18, requirement = nil, category = "creative", difficulty = 2, minStats = { Looks = 35 } },
+	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative", difficulty = 7, minStats = { Looks = 55 }, requiresExp = "Acting experience (drama club/background work) required" },
+	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative", difficulty = 10, minStats = { Looks = 80 }, requiresExp = "Professional acting career required" },
+	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative", difficulty = 3, requiresExp = "Musical ability (instrument/lessons) required" },
+	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative", difficulty = 7, minStats = { Looks = 50 }, requiresExp = "Local music scene experience required" },
+	{ id = "pop_star", name = "Pop Star", company = "Global Records", emoji = "🎤", salary = 5000000, minAge = 22, requirement = nil, category = "creative", difficulty = 10, minStats = { Looks = 70 }, requiresExp = "Signed artist experience required" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- GOVERNMENT / PUBLIC SERVICE - CRITICAL FIX: Added difficulty & minStats
@@ -483,14 +485,14 @@ local Jobs = {
 	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science", difficulty = 9, minStats = { Smarts = 85 } },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- SPORTS / ATHLETICS - CRITICAL FIX: Added difficulty & minStats (Health required!)
+	-- SPORTS / ATHLETICS - CRITICAL FIX #341: Requires athletic background!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports", difficulty = 2, minStats = { Health = 50 } },
-	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports", difficulty = 6, minStats = { Health = 70 } },
-	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 85 } },
-	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 95, Looks = 60 } },
-	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports", difficulty = 4 },
-	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports", difficulty = 7 },
+	{ id = "gym_instructor", name = "Gym Instructor", company = "Fitness Center", emoji = "🏋️", salary = 35000, minAge = 18, requirement = nil, category = "sports", difficulty = 2, minStats = { Health = 60 } },
+	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports", difficulty = 6, minStats = { Health = 70 }, requiresExp = "School sports team experience required" },
+	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 80 }, requiresExp = "Minor league experience required" },
+	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresExp = "Professional athlete career required" },
+	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports", difficulty = 4, requiresExp = "Athletic background required" },
+	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports", difficulty = 8, requiresExp = "Coaching experience required" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- MILITARY - CRITICAL FIX: Added difficulty & minStats (Health REQUIRED!)
@@ -531,14 +533,14 @@ local Jobs = {
 	{ id = "ransomware_kingpin", name = "Ransomware Kingpin", company = "Shadow Network", emoji = "☠️", salary = 10000000, minAge = 30, requirement = nil, category = "hacker", illegal = true, difficulty = 10, minStats = { Smarts = 95 }, requiresExp = "Cyber crime history required" },
 
 	-- ════════════════════════════════════════════════════════════════
-	-- RACING CAREERS - CRITICAL FIX: IDs must match server JobCatalog!
+	-- RACING CAREERS - CRITICAL FIX #340: Requires racing experience!
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Karting League", emoji = "🏎️", salary = 15000, minAge = 12, requirement = nil, category = "racing", difficulty = 2, minStats = { Health = 50 } },
-	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Racing Circuit", emoji = "🏎️", salary = 35000, minAge = 16, requirement = nil, category = "racing", difficulty = 4, minStats = { Health = 60 } },
-	{ id = "professional_racer", name = "Professional Racer", company = "National Racing Series", emoji = "🏁", salary = 150000, minAge = 18, requirement = nil, category = "racing", difficulty = 6, minStats = { Health = 70 } },
-	{ id = "f1_driver", name = "Formula 1 Driver", company = "F1 Racing Team", emoji = "🏆", salary = 2500000, minAge = 21, requirement = nil, category = "racing", difficulty = 9, minStats = { Health = 80 } },
-	{ id = "racing_legend", name = "Racing Legend", company = "Racing Hall of Fame", emoji = "👑", salary = 15000000, minAge = 28, requirement = nil, category = "racing", difficulty = 10, minStats = { Health = 75 } },
-	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Your Racing Team", emoji = "🏢", salary = 5000000, minAge = 35, requirement = nil, category = "racing", difficulty = 8, minStats = { Smarts = 55 } },
+	{ id = "go_kart_racer", name = "Go-Kart Racer", company = "Local Karting League", emoji = "🏎️", salary = 15000, minAge = 12, requirement = nil, category = "racing", difficulty = 3, minStats = { Health = 50 }, requiresExp = nil },
+	{ id = "amateur_racer", name = "Amateur Racer", company = "Regional Racing Circuit", emoji = "🏎️", salary = 35000, minAge = 16, requirement = nil, category = "racing", difficulty = 5, minStats = { Health = 60 }, requiresExp = "Go-kart racing experience required" },
+	{ id = "professional_racer", name = "Professional Racer", company = "National Racing Series", emoji = "🏁", salary = 150000, minAge = 18, requirement = nil, category = "racing", difficulty = 7, minStats = { Health = 70 }, requiresExp = "Amateur racing experience required" },
+	{ id = "f1_driver", name = "Formula 1 Driver", company = "F1 Racing Team", emoji = "🏆", salary = 2500000, minAge = 21, requirement = nil, category = "racing", difficulty = 9, minStats = { Health = 80 }, requiresExp = "Professional racing career required" },
+	{ id = "racing_legend", name = "Racing Legend", company = "Racing Hall of Fame", emoji = "👑", salary = 15000000, minAge = 28, requirement = nil, category = "racing", difficulty = 10, minStats = { Health = 75 }, requiresExp = "F1 driving experience required" },
+	{ id = "racing_team_owner", name = "Racing Team Owner", company = "Your Racing Team", emoji = "🏢", salary = 5000000, minAge = 35, requirement = nil, category = "racing", difficulty = 6, minStats = { Smarts = 55 }, requiresExp = "Professional racing background required" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- ESPORTS / GAMING CAREERS - CRITICAL FIX: IDs must match server!
@@ -919,6 +921,58 @@ function OccupationScreen:fetchCareerInfo()
 		return result
 	end
 	return nil
+end
+
+-- CRITICAL FIX #347: Fetch job eligibility from server
+-- This tells us which jobs the player qualifies for (experience, education, stats)
+function OccupationScreen:fetchJobEligibility()
+	if not GetJobEligibility then
+		log("GetJobEligibility remote not available")
+		self.jobEligibility = {}
+		return nil
+	end
+
+	local success, result = pcall(function()
+		return GetJobEligibility:InvokeServer()
+	end)
+
+	if success and result then
+		self.jobEligibility = result
+		log("Fetched job eligibility for", self:tableSize(result), "jobs")
+		return result
+	end
+	self.jobEligibility = {}
+	return nil
+end
+
+-- Helper to count table size
+function OccupationScreen:tableSize(t)
+	local count = 0
+	for _ in pairs(t or {}) do count = count + 1 end
+	return count
+end
+
+-- Check if player is eligible for a specific job
+function OccupationScreen:isJobEligible(jobId)
+	if not self.jobEligibility or not self.jobEligibility[jobId] then
+		return true -- Default to eligible if no data
+	end
+	return self.jobEligibility[jobId].eligible
+end
+
+-- Get the reason why a job is locked
+function OccupationScreen:getJobLockReason(jobId)
+	if not self.jobEligibility or not self.jobEligibility[jobId] then
+		return nil
+	end
+	local info = self.jobEligibility[jobId]
+	if info.eligible then return nil end
+	
+	-- Return the first (most important) reason
+	if info.reasons and #info.reasons > 0 then
+		return info.reasons[1]
+	end
+	return "Missing requirements"
 end
 
 function OccupationScreen:getCareerPerformance()
@@ -1669,6 +1723,9 @@ function OccupationScreen:populateJobs()
 
 	-- Fetch career info from server (for performance, promotion progress, etc.)
 	self:fetchCareerInfo()
+	
+	-- CRITICAL FIX #346: Fetch job eligibility (experience/skill requirements)
+	self:fetchJobEligibility()
 
 	-- Clear content
 	for _, child in ipairs(self.contentScroll:GetChildren()) do
@@ -2922,9 +2979,23 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 			eduNeeded = self:getEducationDisplayName(job.requirement)
 		end
 	end
+	
+	-- CRITICAL FIX #348: Check experience/skill requirements from server
+	local meetsExperience = self:isJobEligible(job.id)
+	local experienceNeeded = nil
+	if not meetsExperience then
+		experienceNeeded = self:getJobLockReason(job.id) or job.requiresExp
+	end
+	-- Also check client-side requiresExp for display purposes
+	if job.requiresExp and meetsExperience then
+		-- Server says we're eligible, trust it
+	elseif job.requiresExp and not meetsExperience then
+		experienceNeeded = experienceNeeded or job.requiresExp
+	end
 
-	-- Can't apply if in jail
-	local canApply = meetsAge and meetsEdu and not inJail
+	-- Can't apply if in jail OR missing experience requirements
+	local canApply = meetsAge and meetsEdu and meetsExperience and not inJail
+	local isLockedByExperience = not meetsExperience and meetsAge and meetsEdu and not inJail
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
@@ -2957,11 +3028,19 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	shadow.Parent = container
 	UI.corner(shadow, IS_TINY_PHONE and 12 or 18)
 	
-	-- Colored shell (accent border - blue for available, gray for locked)
+	-- Colored shell (accent border - blue for available, amber for exp-locked, gray for other locked)
+	-- CRITICAL FIX #349: Orange/amber color for experience-locked jobs to show they're unlockable
+	local shellColor = C.Gray300
+	if canApply then
+		shellColor = C.Blue
+	elseif isLockedByExperience then
+		shellColor = C.Amber -- Orange for "need experience" - shows it's unlockable!
+	end
+	
 	local shell = Instance.new("Frame")
 	shell.Name = "Shell"
 	shell.Size = UDim2.new(1, 0, 1, 0)
-	shell.BackgroundColor3 = canApply and C.Blue or C.Gray300
+	shell.BackgroundColor3 = shellColor
 	shell.ZIndex = 83
 	shell.Parent = container
 	UI.corner(shell, IS_TINY_PHONE and 10 or 16)
@@ -3122,12 +3201,19 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	salaryLabel.ZIndex = 86
 	salaryLabel.Parent = salaryBadge
 
-	-- Requirements - CRITICAL FIX: Show job difficulty so players know what to expect
+	-- Requirements - CRITICAL FIX #350: Show experience requirements prominently
 	local reqText = ""
 	if not meetsAge then
 		reqText = "Age " .. job.minAge .. "+"
 	elseif not meetsEdu then
 		reqText = "Need " .. eduNeeded
+	elseif not meetsExperience and experienceNeeded then
+		-- Show experience requirement (truncated for display)
+		local shortExp = experienceNeeded
+		if #shortExp > 35 then
+			shortExp = shortExp:sub(1, 32) .. "..."
+		end
+		reqText = "🔒 " .. shortExp
 	else
 		reqText = "Age " .. job.minAge .. "+"
 	end
@@ -3168,7 +3254,16 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	reqLabel.BackgroundTransparency = 1
 	reqLabel.Font = F.Body
 	reqLabel.TextSize = REQ_SIZE
-	reqLabel.TextColor3 = canApply and C.Gray400 or C.Red
+	-- CRITICAL FIX #351: Amber color for experience requirements to show they're unlockable
+	local reqColor = C.Gray400
+	if not canApply then
+		if isLockedByExperience then
+			reqColor = C.AmberDark -- Orange for experience lock - shows progression needed
+		else
+			reqColor = C.Red -- Red for age/education locks
+		end
+	end
+	reqLabel.TextColor3 = reqColor
 	reqLabel.TextXAlignment = Enum.TextXAlignment.Left
 	reqLabel.Text = reqText
 	reqLabel.ZIndex = 85
