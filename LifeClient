@@ -947,21 +947,26 @@ end
 ----------------------------------------------------------------
 
 -- TINY PHONE FIX: More compact header
-local headerHeight = Device.IS_TINY_PHONE and 48 or (Device.IS_SMALL_PHONE and 56 or px(70))
-local headerTopOffset = Device.IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
+-- CRITICAL FIX #253: Consolidate header UI into table to reduce file-level locals
+local HeaderUI = {}
+HeaderUI.height = Device.IS_TINY_PHONE and 48 or (Device.IS_SMALL_PHONE and 56 or px(70))
+HeaderUI.topOffset = Device.IS_TINY_PHONE and 32 or px(44)  -- Less top offset on tiny phones
+
+do -- CRITICAL FIX #253: Scope block for header construction
 local headerBar = Instance.new("Frame")
 headerBar.Name = "Header"
-headerBar.Size = UDim2.new(1, -padSize(12), 0, headerHeight)
-headerBar.Position = UDim2.new(0, padSize(6), 0, headerTopOffset)
+headerBar.Size = UDim2.new(1, -padSize(12), 0, HeaderUI.height)
+headerBar.Position = UDim2.new(0, padSize(6), 0, HeaderUI.topOffset)
 headerBar.BackgroundColor3 = C.White
 headerBar.ZIndex = 5
 headerBar.Parent = mainContainer
 corner(headerBar, Device.IS_TINY_PHONE and 12 or px(18))
+HeaderUI.bar = headerBar
 
 -- subtle shadow - skip on tiny phones for cleaner look
 local headerShadow = Instance.new("Frame")
-headerShadow.Size = UDim2.new(1, 4, 0, headerHeight + 4)
-headerShadow.Position = UDim2.new(0, padSize(4), 0, headerTopOffset + 2)
+headerShadow.Size = UDim2.new(1, 4, 0, HeaderUI.height + 4)
+headerShadow.Position = UDim2.new(0, padSize(4), 0, HeaderUI.topOffset + 2)
 headerShadow.BackgroundColor3 = C.Black
 headerShadow.BackgroundTransparency = Device.IS_TINY_PHONE and 0.98 or 0.95
 headerShadow.ZIndex = 4
@@ -975,18 +980,18 @@ avatarCircle.Size = UDim2.new(0, avatarSize, 0, avatarSize)
 avatarCircle.Position = UDim2.new(0, Device.IS_TINY_PHONE and 8 or padSize(14), 0.5, -avatarSize/2)
 avatarCircle.BackgroundColor3 = C.BluePale
 avatarCircle.ZIndex = 6
-avatarCircle.Parent = headerBar
+avatarCircle.Parent = HeaderUI.bar
 corner(avatarCircle, avatarSize/2)
 stroke(avatarCircle, Device.IS_TINY_PHONE and 1 or 2, 0.5, C.BlueLight)
 
-local avatarEmoji = Instance.new("TextLabel")
-avatarEmoji.Size = UDim2.fromScale(1, 1)
-avatarEmoji.BackgroundTransparency = 1
-avatarEmoji.Font = F.Body
-avatarEmoji.TextSize = Device.IS_TINY_PHONE and 18 or textSize(26)
-avatarEmoji.Text = "👶"
-avatarEmoji.ZIndex = 7
-avatarEmoji.Parent = avatarCircle
+HeaderUI.avatarEmoji = Instance.new("TextLabel")
+HeaderUI.avatarEmoji.Size = UDim2.fromScale(1, 1)
+HeaderUI.avatarEmoji.BackgroundTransparency = 1
+HeaderUI.avatarEmoji.Font = F.Body
+HeaderUI.avatarEmoji.TextSize = Device.IS_TINY_PHONE and 18 or textSize(26)
+HeaderUI.avatarEmoji.Text = "👶"
+HeaderUI.avatarEmoji.ZIndex = 7
+HeaderUI.avatarEmoji.Parent = avatarCircle
 
 -- TINY PHONE FIX: Tighter name container
 local nameOffset = avatarSize + (Device.IS_TINY_PHONE and 12 or padSize(24))
@@ -995,32 +1000,32 @@ nameContainer.Size = UDim2.new(0.5, -nameOffset, 1, 0)
 nameContainer.Position = UDim2.new(0, nameOffset, 0, 0)
 nameContainer.BackgroundTransparency = 1
 nameContainer.ZIndex = 6
-nameContainer.Parent = headerBar
+nameContainer.Parent = HeaderUI.bar
 
-local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 16 or px(24))
-nameLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and -10 or px(-14))
-nameLabel.BackgroundTransparency = 1
-nameLabel.Font = F.Title
-nameLabel.TextSize = Device.IS_TINY_PHONE and 13 or textSize(17)
-nameLabel.TextColor3 = C.Gray900
-nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-nameLabel.Text = "New Life"
-nameLabel.ZIndex = 7
-nameLabel.Parent = nameContainer
+HeaderUI.nameLabel = Instance.new("TextLabel")
+HeaderUI.nameLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 16 or px(24))
+HeaderUI.nameLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and -10 or px(-14))
+HeaderUI.nameLabel.BackgroundTransparency = 1
+HeaderUI.nameLabel.Font = F.Title
+HeaderUI.nameLabel.TextSize = Device.IS_TINY_PHONE and 13 or textSize(17)
+HeaderUI.nameLabel.TextColor3 = C.Gray900
+HeaderUI.nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeaderUI.nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+HeaderUI.nameLabel.Text = "New Life"
+HeaderUI.nameLabel.ZIndex = 7
+HeaderUI.nameLabel.Parent = nameContainer
 
-local ageYearLabel = Instance.new("TextLabel")
-ageYearLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 12 or px(16))
-ageYearLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and 4 or padSize(8))
-ageYearLabel.BackgroundTransparency = 1
-ageYearLabel.Font = F.Body
-ageYearLabel.TextSize = Device.IS_TINY_PHONE and 10 or textSize(12)
-ageYearLabel.TextColor3 = C.Gray500
-ageYearLabel.TextXAlignment = Enum.TextXAlignment.Left
-ageYearLabel.Text = "Age 0 • 2025"
-ageYearLabel.ZIndex = 7
-ageYearLabel.Parent = nameContainer
+HeaderUI.ageYearLabel = Instance.new("TextLabel")
+HeaderUI.ageYearLabel.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 12 or px(16))
+HeaderUI.ageYearLabel.Position = UDim2.new(0, 0, 0.5, Device.IS_TINY_PHONE and 4 or padSize(8))
+HeaderUI.ageYearLabel.BackgroundTransparency = 1
+HeaderUI.ageYearLabel.Font = F.Body
+HeaderUI.ageYearLabel.TextSize = Device.IS_TINY_PHONE and 10 or textSize(12)
+HeaderUI.ageYearLabel.TextColor3 = C.Gray500
+HeaderUI.ageYearLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeaderUI.ageYearLabel.Text = "Age 0 • 2025"
+HeaderUI.ageYearLabel.ZIndex = 7
+HeaderUI.ageYearLabel.Parent = nameContainer
 
 -- TINY PHONE FIX: Smaller money display
 local moneyWidth = Device.IS_TINY_PHONE and 70 or (Device.IS_SMALL_PHONE and 85 or px(110))
@@ -1031,7 +1036,7 @@ moneyContainer.AnchorPoint = Vector2.new(1, 0.5)
 moneyContainer.Position = UDim2.new(1, Device.IS_TINY_PHONE and -6 or -padSize(12), 0.5, 0)
 moneyContainer.BackgroundColor3 = C.GreenPale
 moneyContainer.ZIndex = 6
-moneyContainer.Parent = headerBar
+moneyContainer.Parent = HeaderUI.bar
 corner(moneyContainer, Device.IS_TINY_PHONE and 8 or px(14))
 stroke(moneyContainer, Device.IS_TINY_PHONE and 1 or 2, 0.6, C.Green)
 
@@ -1044,24 +1049,34 @@ moneyIcon.Text = "💵"
 moneyIcon.ZIndex = 7
 moneyIcon.Parent = moneyContainer
 
-local moneyLabel = Instance.new("TextLabel")
-moneyLabel.Size = UDim2.new(1, Device.IS_TINY_PHONE and -22 or -px(34), 1, 0)
-moneyLabel.Position = UDim2.new(0, Device.IS_TINY_PHONE and 20 or px(30), 0, 0)
-moneyLabel.BackgroundTransparency = 1
-moneyLabel.Font = F.Title
-moneyLabel.TextSize = textSize(15)
-moneyLabel.TextColor3 = C.GreenDark
-moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-moneyLabel.Text = "$0"
-moneyLabel.ZIndex = 7
-moneyLabel.Parent = moneyContainer
+HeaderUI.moneyLabel = Instance.new("TextLabel")
+HeaderUI.moneyLabel.Size = UDim2.new(1, Device.IS_TINY_PHONE and -22 or -px(34), 1, 0)
+HeaderUI.moneyLabel.Position = UDim2.new(0, Device.IS_TINY_PHONE and 20 or px(30), 0, 0)
+HeaderUI.moneyLabel.BackgroundTransparency = 1
+HeaderUI.moneyLabel.Font = F.Title
+HeaderUI.moneyLabel.TextSize = textSize(15)
+HeaderUI.moneyLabel.TextColor3 = C.GreenDark
+HeaderUI.moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeaderUI.moneyLabel.Text = "$0"
+HeaderUI.moneyLabel.ZIndex = 7
+HeaderUI.moneyLabel.Parent = moneyContainer
+end -- CRITICAL FIX #253: End header construction scope
+
+-- CRITICAL FIX #253: Aliases removed - use HeaderUI.avatarEmoji, HeaderUI.nameLabel, etc.
+-- These are set below after the do-block for backward compatibility
+local avatarEmoji, nameLabel, ageYearLabel, moneyLabel, headerBar
+avatarEmoji = HeaderUI.avatarEmoji
+nameLabel = HeaderUI.nameLabel
+ageYearLabel = HeaderUI.ageYearLabel
+moneyLabel = HeaderUI.moneyLabel
+headerBar = HeaderUI.bar
 
 ----------------------------------------------------------------
 -- LIFE FEED AREA - TINY PHONE FIX: More compact layout
 ----------------------------------------------------------------
 
 -- Calculate feed container position based on header
-local feedTop = headerTopOffset + headerHeight + (Device.IS_TINY_PHONE and 4 or padSize(8))
+local feedTop = HeaderUI.topOffset + HeaderUI.height + (Device.IS_TINY_PHONE and 4 or padSize(8))
 -- Nav height varies by device - smaller on tiny phones
 local navHeight = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 55 or px(65))
 local feedBottomOffset = navHeight + (Device.IS_TINY_PHONE and 140 or px(200)) -- Nav + stats + premium row + age button
@@ -3682,6 +3697,7 @@ end
 
 ----------------------------------------------------------------
 -- INTRO (gender + name) - Consolidated into IntroUI table to reduce local register usage
+-- CRITICAL FIX #252: Using table instead of individual locals
 ----------------------------------------------------------------
 
 local IntroUI = {}
