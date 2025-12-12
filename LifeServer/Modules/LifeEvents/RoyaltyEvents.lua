@@ -1201,7 +1201,11 @@ RoyaltyEvents.LifeEvents = {
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #191: Fixed throne succession spam
+	-- Made oneTime and added proper blocking flags
 	-- THRONE AND SUCCESSION
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "throne_succession",
 		title = "👑 Succession Approaches",
@@ -1210,34 +1214,44 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 80,
 		isRoyalOnly = true,
+		oneTime = true, -- CRITICAL FIX: Only happens once
+		maxOccurrences = 1,
+		cooldown = 100,
 		conditions = { 
-			requiresFlags = { is_heir = true },
-			blockedFlags = { is_monarch = true },
+			requiresFlags = { is_royalty = true },
+			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true },
 		},
 		choices = {
 			{
 				text = "Accept your destiny with grace",
 				effects = { Happiness = 5, Smarts = 5 },
 				royaltyEffect = { popularity = 10 },
-				setFlags = { ready_for_throne = true },
+				setFlags = { throne_ready = true, ready_for_throne = true, succession_approached = true },
 				feed = "You prepared yourself for the responsibilities ahead.",
 			},
 			{
 				text = "Feel overwhelmed by the responsibility",
 				effects = { Happiness = -10 },
 				royaltyEffect = { popularity = 0 },
-				setFlags = { reluctant_heir = true },
+				setFlags = { throne_ready = true, reluctant_heir = true, succession_approached = true },
 				feed = "The weight of the crown weighs heavily on you.",
 			},
 			{
 				text = "Consider abdicating before coronation",
 				effects = { Happiness = 0 },
 				royaltyEffect = { popularity = -20 },
-				setFlags = { considering_abdication = true },
+				setFlags = { considering_abdication = true, succession_approached = true },
 				feed = "Rumors spread that you may refuse the throne.",
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #187: Fixed coronation event spam
+	-- 1. Changed becomesMonarch to becomeMonarch (matching EventEngine)
+	-- 2. Added oneTime = true to prevent repeated coronations
+	-- 3. Added maxOccurrences = 1 as safety
+	-- 4. Added cooldown = 100 to prevent any repeat
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
 		title = "👑 CORONATION DAY",
@@ -1247,31 +1261,34 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 90,
 		isRoyalOnly = true,
 		isMilestone = true,
+		oneTime = true, -- CRITICAL FIX: Only once ever!
+		maxOccurrences = 1, -- CRITICAL FIX: Safety - max 1 occurrence
+		cooldown = 100, -- CRITICAL FIX: Huge cooldown as extra safety
 		priority = "critical",
 		conditions = { 
 			requiresFlags = { throne_ready = true },
-			blockedFlags = { is_monarch = true },
+			blockedFlags = { is_monarch = true, crowned = true }, -- Block if already monarch OR crowned
 		},
 		choices = {
 			{
 				text = "Swear the sacred oath with conviction",
 				effects = { Happiness = 20, Smarts = 5 },
-				royaltyEffect = { popularity = 25, becomesMonarch = true },
-				setFlags = { is_monarch = true, crowned = true },
+				royaltyEffect = { popularity = 25, becomeMonarch = true }, -- CRITICAL FIX: was becomesMonarch
+				setFlags = { is_monarch = true, crowned = true, coronation_completed = true },
 				feed = "Long live the King/Queen! You are now the monarch!",
 			},
 			{
 				text = "Break tradition with a modern coronation",
 				effects = { Happiness = 15 },
-				royaltyEffect = { popularity = 30, becomesMonarch = true },
-				setFlags = { is_monarch = true, crowned = true, modern_monarch = true },
+				royaltyEffect = { popularity = 30, becomeMonarch = true }, -- CRITICAL FIX: was becomesMonarch
+				setFlags = { is_monarch = true, crowned = true, modern_monarch = true, coronation_completed = true },
 				feed = "Your modern coronation marked a new era!",
 			},
 			{
 				text = "Abdicate at the last moment",
 				effects = { Happiness = -20 },
 				royaltyEffect = { popularity = -50, abdicated = true },
-				setFlags = { abdicated = true },
+				setFlags = { abdicated = true, coronation_declined = true },
 				feed = "In a shocking turn, you abdicated the throne!",
 			},
 		},
@@ -1588,6 +1605,428 @@ RoyaltyEvents.LifeEvents = {
 				setFlags = { considers_abolition = true },
 				feed = "Whispers of abolition shocked the nation!",
 			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #110: EXPANDED ROYAL EVENTS
+	-- Additional royal events for more comprehensive gameplay
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "royal_fashion_icon",
+		title = "👗 Fashion Trendsetter",
+		emoji = "👗",
+		text = "Your fashion choices are making headlines! Designers are desperate to dress you and the public copies your every outfit.",
+		minAge = 16,
+		maxAge = 60,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Embrace high fashion and bold choices",
+				effects = { Happiness = 10, Looks = 5 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { fashion_icon = true },
+				feed = "You've become a global fashion icon!",
+			},
+			{
+				text = "Stick to traditional royal attire",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { traditional_dresser = true },
+				feed = "Your classic style is timeless elegance.",
+			},
+			{
+				text = "Support local designers exclusively",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 12 },
+				setFlags = { supports_local = true },
+				feed = "Your patriotic fashion choices boosted the local industry!",
+			},
+		},
+	},
+	{
+		id = "royal_documentary",
+		title = "🎥 Royal Documentary",
+		emoji = "🎥",
+		text = "A major streaming service wants to produce a documentary about your life. This could humanize the monarchy... or expose too much.",
+		minAge = 25,
+		maxAge = 90,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Allow full access - nothing to hide",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { documentary_open = true },
+				feed = "The documentary was a huge success! People loved seeing the real you.",
+			},
+			{
+				text = "Strictly controlled access only",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { documentary_controlled = true },
+				feed = "The documentary showed a polished version of royal life.",
+			},
+			{
+				text = "Decline - maintain the mystique",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { declined_documentary = true },
+				feed = "You value your privacy over publicity.",
+			},
+		},
+	},
+	{
+		id = "royal_social_media",
+		title = "📱 Royal Social Media",
+		emoji = "📱",
+		text = "Should you join social media? It could modernize the monarchy's image, but also opens you to direct criticism.",
+		minAge = 18,
+		maxAge = 50,
+		isRoyalOnly = true,
+		conditions = { blockedFlags = { has_social_media = true } },
+		choices = {
+			{
+				text = "Launch official accounts on all platforms",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { has_social_media = true, social_media_savvy = true },
+				feed = "Your social media presence took off! Millions of followers.",
+			},
+			{
+				text = "Start with just one platform (Instagram)",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { has_social_media = true },
+				feed = "Your Instagram is carefully curated and very popular.",
+			},
+			{
+				text = "Stay off social media entirely",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = -3 },
+				setFlags = { no_social_media = true },
+				feed = "You prefer to remain mysterious.",
+			},
+		},
+	},
+	{
+		id = "royal_humanitarian_mission",
+		title = "🌍 Humanitarian Mission",
+		emoji = "🌍",
+		text = "A devastating disaster has struck a foreign nation. You have the opportunity to lead a royal humanitarian mission.",
+		minAge = 21,
+		maxAge = 70,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Lead the mission personally",
+				effects = { Happiness = 15, Health = -5 },
+				royaltyEffect = { popularity = 25 },
+				setFlags = { humanitarian_leader = true },
+				feed = "Your hands-on approach inspired the world!",
+			},
+			{
+				text = "Donate significantly and send representatives",
+				effects = { Happiness = 8, Money = -5000000 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { generous_royal = true },
+				feed = "Your generous donation made a real difference.",
+			},
+			{
+				text = "Make a public statement of support",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = 5 },
+				feed = "Your words were appreciated, though some hoped for more.",
+			},
+		},
+	},
+	{
+		id = "royal_modernization_debate",
+		title = "⚖️ Monarchy Modernization",
+		emoji = "⚖️",
+		text = "There's growing debate about modernizing the monarchy. Some want more transparency, others want to preserve tradition.",
+		minAge = 30,
+		maxAge = 90,
+		isRoyalOnly = true,
+		conditions = { requiresFlags = { is_monarch = true } },
+		choices = {
+			{
+				text = "Push for significant modernization",
+				effects = { Happiness = 10, Smarts = 5 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { modernizer = true },
+				feed = "Your reforms are ushering in a new era for the monarchy!",
+			},
+			{
+				text = "Make small, careful changes",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { careful_reformer = true },
+				feed = "Gradual change keeps everyone happy.",
+			},
+			{
+				text = "Defend tradition staunchly",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { traditionalist = true },
+				feed = "Your dedication to tradition is unwavering.",
+			},
+		},
+	},
+	{
+		id = "royal_sibling_rivalry",
+		title = "👨‍👩‍👧‍👦 Sibling Dynamics",
+		emoji = "👨‍👩‍👧‍👦",
+		text = "Your royal sibling is making waves. Are they supportive or competitive? The media loves a good sibling story.",
+		minAge = 18,
+		maxAge = 70,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Present a united front publicly",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { united_family = true },
+				feed = "The world admires your family unity.",
+			},
+			{
+				text = "Compete for the spotlight",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = -5, scandals = 1 },
+				setFlags = { sibling_rivalry = true },
+				feed = "The rivalry makes headlines but hurts the family image.",
+			},
+			{
+				text = "Support their independent path",
+				effects = { Happiness = 10 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { supportive_sibling = true },
+				feed = "Your support shows true royal grace.",
+			},
+		},
+	},
+	{
+		id = "royal_security_threat",
+		title = "🚨 Security Threat",
+		emoji = "🚨",
+		text = "Your security team has uncovered a credible threat against you. How do you handle this frightening situation?",
+		minAge = 18,
+		maxAge = 90,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Increase security dramatically",
+				effects = { Happiness = -10, Health = 5 },
+				royaltyEffect = { popularity = 0 },
+				setFlags = { high_security = true },
+				feed = "Your security is now fortress-level.",
+			},
+			{
+				text = "Continue normal duties to show strength",
+				effects = { Happiness = 5, Health = -5 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { brave_royal = true },
+				feed = "Your courage in the face of threats impressed everyone!",
+			},
+			{
+				text = "Take a temporary break from public life",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { took_break = true },
+				feed = "Safety first. You'll return when it's safe.",
+			},
+		},
+	},
+	{
+		id = "royal_book_deal",
+		title = "📚 Royal Memoirs",
+		emoji = "📚",
+		text = "A publisher is offering a massive advance for your memoirs. What will you reveal?",
+		minAge = 35,
+		maxAge = 90,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Write a tell-all explosive memoir",
+				effects = { Happiness = 10, Money = 20000000 },
+				royaltyEffect = { popularity = -20, scandals = 2 },
+				setFlags = { wrote_tellall = true },
+				feed = "Your tell-all shocked the world and topped bestseller lists!",
+			},
+			{
+				text = "Write a dignified, measured account",
+				effects = { Happiness = 8, Money = 10000000 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { wrote_memoirs = true },
+				feed = "Your graceful memoirs were well-received.",
+			},
+			{
+				text = "Decline - some things should stay private",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 3 },
+				setFlags = { declined_memoirs = true },
+				feed = "You chose discretion over disclosure.",
+			},
+		},
+	},
+	{
+		id = "royal_commonwealth_tour",
+		title = "🌐 Commonwealth Tour",
+		emoji = "🌐",
+		text = "It's time for a major tour of Commonwealth nations. These tours are exhausting but vital for diplomatic relations.",
+		minAge = 21,
+		maxAge = 75,
+		isRoyalOnly = true,
+		choices = {
+			{
+				text = "Embrace every engagement enthusiastically",
+				effects = { Happiness = 5, Health = -10 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { touring_royal = true },
+				feed = "Your energy and warmth won hearts across nations!",
+			},
+			{
+				text = "Focus on key diplomatic moments",
+				effects = { Happiness = 3, Health = -5 },
+				royaltyEffect = { popularity = 12 },
+				feed = "Strategic engagement was efficient and effective.",
+			},
+			{
+				text = "Cut the tour short due to health",
+				effects = { Happiness = -5, Health = 5 },
+				royaltyEffect = { popularity = -8 },
+				setFlags = { cut_tour_short = true },
+				feed = "Some were disappointed, but health comes first.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #226-240: MASSIVE ROYALTY EVENT EXPANSION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "milestone_royal_birthday",
+		title = "🎂 Milestone Birthday",
+		emoji = "🎂",
+		text = "You're celebrating a milestone birthday! The nation wants to celebrate with you.",
+		minAge = 18,
+		maxAge = 100,
+		isRoyalOnly = true,
+		cooldown = 10,
+		choices = {
+			{ text = "Grand public celebration", effects = { Happiness = 15, Money = -500000 }, royaltyEffect = { popularity = 15 }, feed = "The nation celebrated!" },
+			{ text = "Intimate family gathering", effects = { Happiness = 20 }, royaltyEffect = { popularity = 5 }, feed = "A private celebration." },
+			{ text = "Charitable donation instead", effects = { Happiness = 15, Money = -1000000 }, royaltyEffect = { popularity = 20 }, feed = "You asked for charity donations!" },
+		},
+	},
+	{
+		id = "royal_patronage_request",
+		title = "🎗️ Patronage Request",
+		emoji = "🎗️",
+		text = "A charity has asked you to become their patron.",
+		minAge = 21,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 3,
+		choices = {
+			{ text = "Accept and champion", effects = { Happiness = 10 }, royaltyEffect = { popularity = 12 }, feed = "You became a passionate advocate!" },
+			{ text = "Accept ceremonially", effects = { Happiness = 5 }, royaltyEffect = { popularity = 5 }, feed = "You lent your name." },
+			{ text = "Decline", effects = { Happiness = 0 }, royaltyEffect = { popularity = -3 }, feed = "Too many commitments." },
+		},
+	},
+	{
+		id = "royal_scandal_erupts",
+		title = "📰 Scandal Erupts!",
+		emoji = "📰",
+		text = "The tabloids are running an embarrassing story about you!",
+		minAge = 18,
+		maxAge = 80,
+		isRoyalOnly = true,
+		cooldown = 5,
+		choices = {
+			{ text = "Issue dignified denial", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
+			{ text = "Sue for defamation", effects = { Happiness = -15, Money = -500000 }, royaltyEffect = { popularity = -3, scandals = 1 }, feed = "You took legal action." },
+			{ text = "Ignore it", effects = { Happiness = -5 }, royaltyEffect = { popularity = -10, scandals = 1 }, feed = "Your silence spoke volumes." },
+			{ text = "Address with humor", effects = { Happiness = 5 }, royaltyEffect = { popularity = 10 }, feed = "Your wit won the day!" },
+		},
+	},
+	{
+		id = "christmas_speech",
+		title = "📺 Annual Address",
+		emoji = "📺",
+		text = "Time for your annual address to the nation.",
+		minAge = 25,
+		maxAge = 100,
+		isRoyalOnly = true,
+		cooldown = 2,
+		conditions = { requiresFlags = { is_monarch = true } },
+		choices = {
+			{ text = "Uplifting and hopeful", effects = { Happiness = 10 }, royaltyEffect = { popularity = 12 }, feed = "Your message resonated." },
+			{ text = "Serious and reflective", effects = { Happiness = 5 }, royaltyEffect = { popularity = 8 }, feed = "Your address was thoughtful." },
+			{ text = "Personal and vulnerable", effects = { Happiness = 15 }, royaltyEffect = { popularity = 20 }, feed = "Your sharing touched millions!" },
+		},
+	},
+	{
+		id = "your_royal_wedding",
+		title = "💒 Your Royal Wedding!",
+		emoji = "💒",
+		text = "Your wedding day has arrived! The world is watching!",
+		minAge = 21,
+		maxAge = 60,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { blockedFlags = { married = true } },
+		choices = {
+			{ text = "Traditional grand ceremony", effects = { Happiness = 25, Money = -5000000 }, royaltyEffect = { popularity = 30 }, setFlags = { married = true }, feed = "A fairy tale wedding!" },
+			{ text = "Modern celebration", effects = { Happiness = 22, Money = -2000000 }, royaltyEffect = { popularity = 20 }, setFlags = { married = true }, feed = "A modern royal wedding!" },
+			{ text = "Private ceremony", effects = { Happiness = 20, Money = -500000 }, royaltyEffect = { popularity = 10 }, setFlags = { married = true }, feed = "Beautifully intimate." },
+		},
+	},
+	{
+		id = "royal_heir_born",
+		title = "👶 Royal Heir Born!",
+		emoji = "👶",
+		text = "A new heir has been born! The nation celebrates!",
+		minAge = 22,
+		maxAge = 50,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { requiresFlags = { married = true }, blockedFlags = { has_heir = true } },
+		choices = {
+			{ text = "Grand announcement", effects = { Happiness = 30 }, royaltyEffect = { popularity = 25 }, setFlags = { has_heir = true }, feed = "The nation celebrates!" },
+			{ text = "Private time first", effects = { Happiness = 35 }, royaltyEffect = { popularity = 15 }, setFlags = { has_heir = true }, feed = "Precious private moments." },
+		},
+	},
+	{
+		id = "constitutional_crisis",
+		title = "⚠️ Constitutional Crisis",
+		emoji = "⚠️",
+		text = "A political crisis threatens the nation. As monarch, you have a role.",
+		minAge = 30,
+		maxAge = 90,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { requiresFlags = { is_monarch = true } },
+		choices = {
+			{ text = "Stay neutral", effects = { Happiness = -10 }, royaltyEffect = { popularity = 5 }, feed = "You maintained constitutional neutrality." },
+			{ text = "Mediate privately", effects = { Happiness = 5, Smarts = 10 }, royaltyEffect = { popularity = 20 }, feed = "Your quiet diplomacy helped!" },
+			{ text = "Call for unity", effects = { Happiness = 10 }, royaltyEffect = { popularity = 15 }, feed = "Your call resonated." },
+		},
+	},
+	{
+		id = "royal_philanthropy_initiative",
+		title = "❤️ Philanthropy Initiative",
+		emoji = "❤️",
+		text = "You can make a real difference. What cause will you champion?",
+		minAge = 25,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 5,
+		choices = {
+			{ text = "Mental health", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!" },
+			{ text = "Environment", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!" },
+			{ text = "Youth empowerment", effects = { Happiness = 15, Money = -1500000 }, royaltyEffect = { popularity = 22 }, feed = "Inspiring young leaders!" },
 		},
 	},
 }

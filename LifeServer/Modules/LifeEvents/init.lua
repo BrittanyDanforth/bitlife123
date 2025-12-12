@@ -1894,14 +1894,29 @@ function EventEngine.createRelationship(state, relType, options)
 end
 
 function EventEngine.completeEvent(eventDef, choiceIndex, state)
-	if not eventDef or not eventDef.choices then
-		warn("[EventEngine] Invalid event definition")
+	-- CRITICAL FIX #115: Full nil safety for event completion
+	if not eventDef then
+		warn("[EventEngine] Invalid event definition - nil")
+		return nil
+	end
+	if not eventDef.choices then
+		warn("[EventEngine] Invalid event definition - no choices:", eventDef.id or "unknown")
+		return nil
+	end
+	if not state then
+		warn("[EventEngine] Invalid state - nil")
+		return nil
+	end
+	
+	-- CRITICAL FIX #116: Validate choiceIndex is within bounds
+	if type(choiceIndex) ~= "number" or choiceIndex < 1 or choiceIndex > #eventDef.choices then
+		warn("[EventEngine] Invalid choice index:", choiceIndex, "for event:", eventDef.id, "max:", #eventDef.choices)
 		return nil
 	end
 	
 	local choice = eventDef.choices[choiceIndex]
 	if not choice then
-		warn("[EventEngine] Invalid choice index:", choiceIndex)
+		warn("[EventEngine] Choice at index is nil:", choiceIndex)
 		return nil
 	end
 	

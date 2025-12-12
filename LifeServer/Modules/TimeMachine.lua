@@ -14,6 +14,19 @@ TimeMachine.__index = TimeMachine
 -- TIME TRAVEL OPTIONS
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #101: Real Developer Product IDs for Time Machine
+-- These IDs match the ones configured in Roblox Developer Portal
+-- ════════════════════════════════════════════════════════════════════════════
+
+TimeMachine.ProductIds = {
+	TIME_5_YEARS = 3477466389,   -- Go back in time 5 years!
+	TIME_10_YEARS = 3477466522,  -- Go back in time 10 years!
+	TIME_20_YEARS = 3477466619,  -- Go back in time 20 years!
+	TIME_30_YEARS = 0,           -- Not provided yet
+	TIME_BABY = 3477466778,      -- Go back to being a baby!
+}
+
 TimeMachine.Options = {
 	{
 		id = "5_years",
@@ -22,6 +35,7 @@ TimeMachine.Options = {
 		emoji = "⏰",
 		description = "Return to 5 years ago",
 		productKey = "TIME_5_YEARS",
+		productId = 3477466389,
 	},
 	{
 		id = "10_years",
@@ -30,6 +44,7 @@ TimeMachine.Options = {
 		emoji = "⏰",
 		description = "Return to 10 years ago",
 		productKey = "TIME_10_YEARS",
+		productId = 3477466522,
 	},
 	{
 		id = "20_years",
@@ -38,6 +53,7 @@ TimeMachine.Options = {
 		emoji = "⏰",
 		description = "Return to 20 years ago",
 		productKey = "TIME_20_YEARS",
+		productId = 3477466619,
 	},
 	{
 		id = "30_years",
@@ -46,6 +62,7 @@ TimeMachine.Options = {
 		emoji = "⏰",
 		description = "Return to 30 years ago",
 		productKey = "TIME_30_YEARS",
+		productId = 0,  -- Not available yet
 	},
 	{
 		id = "baby",
@@ -54,8 +71,29 @@ TimeMachine.Options = {
 		emoji = "👶",
 		description = "Start over from age 0 (keep character)",
 		productKey = "TIME_BABY",
+		productId = 3477466778,
 	},
 }
+
+-- Helper function to get product ID by years
+function TimeMachine.getProductIdForYears(years)
+	for _, opt in ipairs(TimeMachine.Options) do
+		if opt.years == years then
+			return opt.productId
+		end
+	end
+	return 0
+end
+
+-- Helper function to get option by product ID
+function TimeMachine.getOptionByProductId(productId)
+	for _, opt in ipairs(TimeMachine.Options) do
+		if opt.productId == productId then
+			return opt
+		end
+	end
+	return nil
+end
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- SNAPSHOT SYSTEM (for time travel)

@@ -2087,27 +2087,32 @@ function LifeBackend:handleRoyalDuty(player, dutyId)
 		return { success = false, message = "Unknown duty." }
 	end
 	
-	-- Check age requirement
-	if state.Age < duty.minAge then
-		return { success = false, message = "You must be at least " .. duty.minAge .. " to perform this duty." }
+	-- CRITICAL FIX #145: Nil safety for duty minAge
+	local requiredAge = duty.minAge or 0
+	if (state.Age or 0) < requiredAge then
+		return { success = false, message = "You must be at least " .. requiredAge .. " to perform this duty." }
 	end
 	
-	-- Check monarch requirement
+	-- CRITICAL FIX #146: Nil safety for RoyalState access
+	state.RoyalState = state.RoyalState or {}
 	if duty.requiresMonarch and not state.RoyalState.isMonarch then
 		return { success = false, message = "Only the monarch can perform this duty." }
 	end
 	
-	-- Check funds
-	if state.Money < duty.cost then
-		return { success = false, message = "Not enough funds for this duty. Required: $" .. formatMoney(duty.cost) }
+	-- CRITICAL FIX #147: Nil safety for Money and duty cost
+	local dutyCost = duty.cost or 0
+	if (state.Money or 0) < dutyCost then
+		return { success = false, message = "Not enough funds for this duty. Required: $" .. formatMoney(dutyCost) }
 	end
 	
 	-- Deduct cost
-	state.Money = state.Money - duty.cost
+	state.Money = (state.Money or 0) - dutyCost
 	
-	-- Apply popularity gain
-	local popGain = RANDOM:NextInteger(duty.popularity[1], duty.popularity[2])
-	state.RoyalState.popularity = math.min(100, state.RoyalState.popularity + popGain)
+	-- CRITICAL FIX #148: Nil safety for popularity range
+	local popMin = (duty.popularity and duty.popularity[1]) or 1
+	local popMax = (duty.popularity and duty.popularity[2]) or 10
+	local popGain = RANDOM:NextInteger(popMin, popMax)
+	state.RoyalState.popularity = math.min(100, (state.RoyalState.popularity or 50) + popGain)
 	state.RoyalState.dutiesCompleted = (state.RoyalState.dutiesCompleted or 0) + 1
 	state.RoyalState.dutyStreak = (state.RoyalState.dutyStreak or 0) + 1
 	
@@ -2350,13 +2355,26 @@ function LifeBackend:createInitialState(player)
 	end
 	
 	-- Siblings (random chance)
+	-- CRITICAL FIX #128: Improved sibling relationship generation with proper age handling
 	local numSiblings = RANDOM:NextInteger(0, 3)
 	for i = 1, numSiblings do
 		local isBrother = RANDOM:NextNumber() > 0.5
-		local siblingAge = RANDOM:NextInteger(-5, 8) -- Can be older or younger
+		local siblingAgeOffset = RANDOM:NextInteger(-5, 8) -- Can be older or younger
 		local siblingId = (isBrother and "brother_" or "sister_") .. tostring(i)
-		local siblingRole = siblingAge > 0 and (isBrother and "Older Brother" or "Older Sister") 
-			or (isBrother and "Younger Brother" or "Younger Sister")
+		
+		-- CRITICAL FIX #129: Determine role based on age offset
+		local siblingRole
+		if siblingAgeOffset > 0 then
+			siblingRole = isBrother and "Older Brother" or "Older Sister"
+		elseif siblingAgeOffset < 0 then
+			siblingRole = isBrother and "Younger Brother" or "Younger Sister"
+		else
+			siblingRole = isBrother and "Twin Brother" or "Twin Sister"
+		end
+		
+		-- CRITICAL FIX #130: Store actual sibling age (based on player age 0 at birth)
+		-- Older siblings have positive offset, younger have negative (born later)
+		local siblingAbsoluteAge = math.max(0, siblingAgeOffset) -- At player's birth, older siblings already exist
 		
 		state.Relationships[siblingId] = {
 			id = siblingId,
@@ -2364,11 +2382,12 @@ function LifeBackend:createInitialState(player)
 			type = "family",
 			role = siblingRole,
 			relationship = 55 + RANDOM:NextInteger(-10, 20),
-			age = math.max(1, siblingAge), -- Sibling age relative to player (stored as absolute later)
+			age = siblingAbsoluteAge,
 			gender = isBrother and "male" or "female",
 			alive = true,
 			isFamily = true,
-			ageOffset = siblingAge, -- Store the offset for updating later
+			ageOffset = siblingAgeOffset, -- Store the offset for updating later
+			birthOrder = siblingAgeOffset > 0 and "older" or (siblingAgeOffset < 0 and "younger" or "twin"),
 		}
 	end
 	
@@ -2530,10 +2549,28 @@ local function filterText(text, player)
 	end
 end
 
-function LifeBackend:setLifeInfo(player, name, gender)
+function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 	local state = self:getState(player)
 	if not state then
 		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #105: Support both old (name, gender) and new (payload object) formats
+	-- New format: { gender = "Male", isRoyalBirth = true, royalCountry = "uk" }
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local name, gender, isRoyalBirth, royalCountry
+	
+	if type(nameOrPayload) == "table" then
+		-- New payload format
+		name = nameOrPayload.name
+		gender = nameOrPayload.gender
+		isRoyalBirth = nameOrPayload.isRoyalBirth
+		royalCountry = nameOrPayload.royalCountry
+	else
+		-- Old format (name, gender)
+		name = nameOrPayload
+		gender = genderArg
 	end
 	
 	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
@@ -2546,13 +2583,91 @@ function LifeBackend:setLifeInfo(player, name, gender)
 		local maleNames = {"James", "John", "Michael", "David", "Chris", "Matthew", "Daniel", "Andrew", "Ryan", "Tyler"}
 		local femaleNames = {"Emily", "Sarah", "Jessica", "Ashley", "Samantha", "Madison", "Hannah", "Olivia", "Emma", "Sophia"}
 		
-		local nameList = (gender == "female") and femaleNames or maleNames
+		-- For royalty, use more regal names
+		local royalMaleNames = {"William", "Charles", "Edward", "Henry", "George", "Alexander", "Frederick", "Leopold", "Albert", "Philip"}
+		local royalFemaleNames = {"Victoria", "Elizabeth", "Catherine", "Charlotte", "Diana", "Margaret", "Alexandra", "Beatrice", "Eugenie", "Sophia"}
+		
+		local nameList
+		if isRoyalBirth then
+			nameList = (gender == "Female") and royalFemaleNames or royalMaleNames
+		else
+			nameList = (gender == "Female") and femaleNames or maleNames
+		end
 		state.Name = nameList[math.random(#nameList)]
 	end
 	
 	if gender then
 		state.Gender = gender
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #106: Handle royal birth from the "Born Royal" button
+	-- This is separate from God Mode character customization
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if isRoyalBirth then
+		-- Verify player has Royalty gamepass
+		if self:checkGamepassOwnership(player, "ROYALTY") then
+			local royalCountryId = royalCountry or "uk"
+			local royalCountries = {
+				uk = { id = "uk", name = "United Kingdom", emoji = "🇬🇧", palace = "Buckingham Palace", startingWealth = { min = 50000000, max = 500000000 } },
+				spain = { id = "spain", name = "Spain", emoji = "🇪🇸", palace = "Royal Palace of Madrid", startingWealth = { min = 30000000, max = 200000000 } },
+				sweden = { id = "sweden", name = "Sweden", emoji = "🇸🇪", palace = "Stockholm Palace", startingWealth = { min = 20000000, max = 150000000 } },
+				japan = { id = "japan", name = "Japan", emoji = "🇯🇵", palace = "Imperial Palace", startingWealth = { min = 100000000, max = 800000000 } },
+				monaco = { id = "monaco", name = "Monaco", emoji = "🇲🇨", palace = "Prince's Palace", startingWealth = { min = 200000000, max = 1000000000 } },
+				saudi = { id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", palace = "Al-Yamamah Palace", startingWealth = { min = 500000000, max = 5000000000 } },
+				belgium = { id = "belgium", name = "Belgium", emoji = "🇧🇪", palace = "Royal Palace of Brussels", startingWealth = { min = 25000000, max = 180000000 } },
+				netherlands = { id = "netherlands", name = "Netherlands", emoji = "🇳🇱", palace = "Royal Palace Amsterdam", startingWealth = { min = 30000000, max = 200000000 } },
+				norway = { id = "norway", name = "Norway", emoji = "🇳🇴", palace = "Royal Palace Oslo", startingWealth = { min = 25000000, max = 150000000 } },
+				denmark = { id = "denmark", name = "Denmark", emoji = "🇩🇰", palace = "Amalienborg Palace", startingWealth = { min = 25000000, max = 150000000 } },
+				morocco = { id = "morocco", name = "Morocco", emoji = "🇲🇦", palace = "Royal Palace of Rabat", startingWealth = { min = 80000000, max = 400000000 } },
+				jordan = { id = "jordan", name = "Jordan", emoji = "🇯🇴", palace = "Al-Husseiniya Palace", startingWealth = { min = 50000000, max = 300000000 } },
+				thailand = { id = "thailand", name = "Thailand", emoji = "🇹🇭", palace = "Grand Palace", startingWealth = { min = 100000000, max = 600000000 } },
+			}
+			
+			local country = royalCountries[royalCountryId] or royalCountries.uk
+			local wealthRange = country.startingWealth
+			local royalWealth = RANDOM:NextInteger(wealthRange.min, wealthRange.max)
+			
+			-- Determine title based on gender
+			local genderStr = state.Gender or "Male"
+			local title = (genderStr == "Female") and "Princess" or "Prince"
+			
+			-- Initialize royal state
+			state.RoyalState = {
+				isRoyal = true,
+				isMonarch = false,
+				country = country.id,
+				countryName = country.name,
+				countryEmoji = country.emoji,
+				palace = country.palace,
+				title = title,
+				lineOfSuccession = RANDOM:NextInteger(1, 5),
+				popularity = 75 + RANDOM:NextInteger(-10, 10),
+				scandals = 0,
+				dutiesCompleted = 0,
+				dutyStreak = 0,
+				reignYears = 0,
+				wealth = royalWealth,
+			}
+			
+			-- Set money
+			state.Money = royalWealth
+			
+			-- Set flags
+			state.Flags = state.Flags or {}
+			state.Flags.is_royalty = true
+			state.Flags.royal_birth = true
+			state.Flags.royal_country = country.id
+			state.Flags.wealthy_family = true
+			state.Flags.upper_class = true
+			state.Flags.famous_family = true
+			
+			-- Send royal birth message
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", title, state.Name or "Your Highness", country.name, country.palace))
+			return
+		end
+	end
+	
 	self:pushState(player, string.format("%s takes their first breath.", state.Name or "Your character"))
 end
 
@@ -2831,9 +2946,12 @@ function LifeBackend:tickCareer(state)
 		info.skills[skill] = math.min(100, currentLevel + RANDOM:NextInteger(0, gain))
 	end
 	
-	-- CRITICAL FIX: Actually PAY the salary during age up!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #137: Actually PAY the salary during age up AND show feed message!
+	-- The salary WAS being paid but user couldn't see it because no message was shown
 	-- Use catalog job salary if available, otherwise use CurrentJob.salary directly
 	-- This ensures event-created jobs (not in catalog) still pay salary
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local salary = 0
 	if catalogJob and catalogJob.salary then
 		salary = catalogJob.salary
@@ -2844,6 +2962,19 @@ function LifeBackend:tickCareer(state)
 	if salary > 0 then
 		self:addMoney(state, salary)
 		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
+		
+		-- CRITICAL FIX #138: Add salary to YearLog so user sees they got paid!
+		-- This was the bug - salary was paid but user didn't see any message
+		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "salary",
+			emoji = "💰",
+			text = string.format("Earned $%s from your job as %s", 
+				formatMoney(salary), 
+				state.CurrentJob.name or "employee"),
+			amount = salary,
+		})
 	end
 end
 
@@ -2873,23 +3004,16 @@ function LifeBackend:collectPropertyIncome(state)
 	
 	if totalIncome > 0 then
 		self:addMoney(state, totalIncome)
-		-- CRITICAL FIX: Only show rental income message occasionally to avoid spam
-		-- Only show if:
-		-- 1. Income is very significant ($10K+ per year), OR
-		-- 2. Player has multiple properties (actual landlord)
-		-- AND only show message sometimes (roughly every 3 years) to avoid repetitive feed
-		local numProperties = #properties
-		local shouldShowMessage = (totalIncome >= 10000 or numProperties >= 2) and RANDOM:NextNumber() < 0.33
 		
-		if shouldShowMessage then
-			local currentFeed = state.PendingFeed or ""
-			local incomeText = string.format("💰 Your properties generated $%s in rental income this year.", formatMoney(totalIncome))
-			if currentFeed ~= "" then
-				state.PendingFeed = currentFeed .. " " .. incomeText
-			else
-				state.PendingFeed = incomeText
-			end
-		end
+		-- CRITICAL FIX #141: Use YearLog for property income instead of PendingFeed
+		-- This ensures all income/expense info is shown consistently
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "property_income",
+			emoji = "🏠",
+			text = string.format("Collected $%s in property rental income", formatMoney(totalIncome)),
+			amount = totalIncome,
+		})
 	end
 end
 
@@ -2985,8 +3109,16 @@ function LifeBackend:applyLivingExpenses(state)
 		totalExpenses = totalExpenses + (numVehicles * 2000) -- $2,000/year per vehicle
 	end
 	
-	-- Family costs
-	local childCount = state.ChildCount or 0
+	-- CRITICAL FIX #152: Count children from relationships instead of ChildCount
+	-- state.ChildCount was never being set, so child expenses were always $0!
+	local childCount = 0
+	if state.Relationships then
+		for _, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.isChild then
+				childCount = childCount + 1
+			end
+		end
+	end
 	if childCount > 0 then
 		totalExpenses = totalExpenses + (childCount * 5000) -- $5,000/year per child
 	end
@@ -3001,11 +3133,30 @@ function LifeBackend:applyLivingExpenses(state)
 	local currentMoney = state.Money or 0
 	if currentMoney >= totalExpenses then
 		state.Money = currentMoney - totalExpenses
+		
+		-- CRITICAL FIX #139: Log expenses to YearLog so user sees where money went
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "expenses",
+			emoji = "🏠",
+			text = string.format("Paid $%s in living expenses", formatMoney(totalExpenses)),
+			amount = -totalExpenses,
+		})
 	else
 		-- Can't afford full expenses - go broke but not negative
+		local paidAmount = currentMoney
 		state.Money = 0
 		state.Flags = state.Flags or {}
 		state.Flags.struggling_financially = true
+		
+		-- CRITICAL FIX #140: Log when player goes broke
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "expenses",
+			emoji = "💸",
+			text = string.format("Couldn't afford $%s in expenses - went broke!", formatMoney(totalExpenses)),
+			amount = -paidAmount,
+		})
 	end
 end
 
@@ -3162,6 +3313,14 @@ function LifeBackend:applyEducationCosts(state)
 	
 	if money >= cost then
 		state.Money = money - cost
+		-- CRITICAL FIX #158: Log education costs to YearLog
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "education_cost",
+			emoji = "🎓",
+			text = string.format("Paid $%s for education expenses", formatMoney(cost)),
+			amount = -cost,
+		})
 	else
 		-- Can't afford - add to debt
 		local shortfall = cost - money
@@ -3169,8 +3328,14 @@ function LifeBackend:applyEducationCosts(state)
 		eduData.Debt = (eduData.Debt or 0) + shortfall
 		state.Flags = state.Flags or {}
 		state.Flags.has_student_loans = true
-		self:logYearEvent(state, "education",
-			string.format("📚 Took out $%d in loans for education expenses.", shortfall), "📝")
+		-- CRITICAL FIX #159: Log student loans to YearLog
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "student_loan",
+			emoji = "📚",
+			text = string.format("Took out $%s in student loans", formatMoney(shortfall)),
+			amount = 0, -- Not a direct expense, just debt
+		})
 	end
 end
 
@@ -3446,18 +3611,36 @@ function LifeBackend:collectBusinessIncome(state)
 	
 	if totalIncome > 0 then
 		state.Money = (state.Money or 0) + totalIncome
-		self:logYearEvent(state, "business", 
-			string.format("📊 Your businesses generated $%s in profit!", formatMoney(totalIncome)), "💼")
+		-- CRITICAL FIX #156: Use YearLog for business income instead of logYearEvent
+		-- This ensures it shows up in the feed consistently with other income
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "business_income",
+			emoji = "💼",
+			text = string.format("Businesses generated $%s in profit", formatMoney(totalIncome)),
+			amount = totalIncome,
+		})
 	elseif totalIncome < 0 then
 		-- Business losses
 		local loss = math.abs(totalIncome)
 		if (state.Money or 0) >= loss then
 			state.Money = state.Money - loss
-			self:logYearEvent(state, "business", 
-				string.format("📊 Your businesses lost $%s this year.", formatMoney(loss)), "📉")
+			-- CRITICAL FIX #157: Use YearLog for business losses
+			state.YearLog = state.YearLog or {}
+			table.insert(state.YearLog, {
+				type = "business_loss",
+				emoji = "📉",
+				text = string.format("Businesses lost $%s this year", formatMoney(loss)),
+				amount = -loss,
+			})
 		else
-			self:logYearEvent(state, "business", 
-				"📊 Your businesses are struggling. Consider your options.", "📉")
+			state.YearLog = state.YearLog or {}
+			table.insert(state.YearLog, {
+				type = "business_struggling",
+				emoji = "📉",
+				text = "Businesses are struggling financially",
+				amount = 0,
+			})
 		end
 	end
 end
@@ -3487,17 +3670,36 @@ function LifeBackend:applyMortgagePayments(state)
 		state.Money = money - annualPayment
 		state.Flags.mortgage_debt = math.max(0, mortgageDebt - (monthlyPrincipal * 12))
 		
+		-- CRITICAL FIX #160: Log mortgage payments to YearLog
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "mortgage",
+			emoji = "🏠",
+			text = string.format("Paid $%s in mortgage", formatMoney(annualPayment)),
+			amount = -annualPayment,
+		})
+		
 		if state.Flags.mortgage_debt <= 0 then
 			state.Flags.mortgage_debt = nil
 			state.Flags.mortgage_paid_off = true
-			self:logYearEvent(state, "housing", 
-				"🏠 Congratulations! You paid off your mortgage!", "🎉")
+			-- CRITICAL FIX #161: Show mortgage payoff celebration in YearLog
+			table.insert(state.YearLog, {
+				type = "mortgage_payoff",
+				emoji = "🎉",
+				text = "Paid off your mortgage! You own your home free and clear!",
+				amount = 0,
+			})
 		end
 	else
 		-- Can't afford mortgage
 		state.Flags.mortgage_trouble = true
-		self:logYearEvent(state, "housing", 
-			"🏠 Warning: Struggling to make mortgage payments!", "⚠️")
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "mortgage_trouble",
+			emoji = "⚠️",
+			text = "Struggling to make mortgage payments",
+			amount = 0,
+		})
 	end
 end
 
@@ -3765,6 +3967,11 @@ function LifeBackend:processAddictions(state)
 			end
 		end
 	end
+	
+	-- CRITICAL FIX #151: Sync Stats to top-level state after addiction processing
+	state.Health = state.Stats.Health
+	state.Happiness = state.Stats.Happiness
+	state.Smarts = state.Stats.Smarts
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -4054,7 +4261,15 @@ function LifeBackend:replaceTextVariables(text, state)
 	-- Family status replacement
 	local familyParts = {}
 	if state.Flags and (state.Flags.has_child or state.Flags.parent) then
-		local childCount = state.ChildCount or 0
+		-- CRITICAL FIX #153: Count children from relationships instead of ChildCount
+		local childCount = 0
+		if state.Relationships then
+			for _, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.isChild then
+					childCount = childCount + 1
+				end
+			end
+		end
 		if childCount > 0 then
 			table.insert(familyParts, childCount == 1 and "a child" or (childCount .. " kids"))
 		else
@@ -4665,6 +4880,15 @@ function LifeBackend:handleAgeUp(player)
 		if pensionAmount > 0 then
 			self:addMoney(state, pensionAmount)
 			debugPrint("Pension paid:", pensionAmount, "to retired player. New balance:", state.Money)
+			
+			-- CRITICAL FIX #149: Log pension to YearLog so retired players see their income
+			state.YearLog = state.YearLog or {}
+			table.insert(state.YearLog, {
+				type = "pension",
+				emoji = "🏖️",
+				text = string.format("Received $%s pension", formatMoney(pensionAmount)),
+				amount = pensionAmount,
+			})
 		end
 	end
 	
@@ -4721,13 +4945,46 @@ function LifeBackend:handleAgeUp(player)
 	state.Smarts = state.Stats.Smarts
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Generate interesting BitLife-style year summaries instead of boring 
-	-- "Another year passes" - Include relationship status, job, notable things happening
+	-- CRITICAL FIX #142: Generate BitLife-style year summaries that INCLUDE both
+	-- PendingFeed (event results) AND YearLog (salary, expenses, income)
+	-- Previously YearLog was ignored when PendingFeed existed, hiding salary info!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local feedText
-	if state.PendingFeed then
-		feedText = string.format("Age %d: %s", state.Age, state.PendingFeed)
+	local yearLogText = ""
+	
+	-- CRITICAL FIX #143: Process YearLog first to build income/expense summary
+	if state.YearLog and #state.YearLog > 0 then
+		local logParts = {}
+		for _, logEntry in ipairs(state.YearLog) do
+			if logEntry.text and logEntry.text ~= "" then
+				table.insert(logParts, logEntry.text)
+			end
+		end
+		if #logParts > 0 then
+			-- Limit to 3 most important entries
+			local maxEntries = math.min(#logParts, 3)
+			local finalParts = {}
+			for i = 1, maxEntries do
+				table.insert(finalParts, logParts[i])
+			end
+			yearLogText = table.concat(finalParts, ". ") .. "."
+		end
+		state.YearLog = {} -- Clear after processing
+	end
+	
+	-- CRITICAL FIX #144: Combine PendingFeed with YearLog for complete summary
+	if state.PendingFeed and state.PendingFeed ~= "" then
+		if yearLogText ~= "" then
+			-- Both exist - show event THEN income/expenses
+			feedText = string.format("Age %d: %s %s", state.Age, state.PendingFeed, yearLogText)
+		else
+			feedText = string.format("Age %d: %s", state.Age, state.PendingFeed)
+		end
+	elseif yearLogText ~= "" then
+		-- Only YearLog exists (normal year with just income/expenses)
+		feedText = string.format("📅 Age %d: %s", state.Age, yearLogText)
 	else
+		-- Nothing specific - generate generic summary
 		feedText = self:generateYearSummary(state)
 	end
 	state.PendingFeed = nil
@@ -6039,7 +6296,16 @@ function LifeBackend:handlePromotion(player)
 	-- CRITICAL FIX #5: Actually change job title on promotion, not just salary!
 	-- Use CareerTracks to find the next job in the career path
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local currentJobId = state.CurrentJob.id
+	-- CRITICAL FIX #126: Nil safety for job ID access
+	local currentJobId = state.CurrentJob and state.CurrentJob.id
+	if not currentJobId then
+		-- Fallback: just do salary promotion
+		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.15)
+		local feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		self:pushState(player, feed)
+		return { success = true, message = feed }
+	end
+	
 	local promotedToNewTitle = false
 	local oldJobName = state.CurrentJob.name or "your old position"
 	local newJobName = nil
@@ -6319,11 +6585,20 @@ end
 -- ============================================================================
 
 function LifeBackend:findAssetById(list, assetId)
+	-- CRITICAL FIX #127: Nil safety for asset lookup
+	if not list or type(list) ~= "table" then
+		return nil
+	end
+	if not assetId then
+		return nil
+	end
+	
 	for _, asset in ipairs(list) do
-		if asset.id == assetId then
+		if asset and asset.id == assetId then
 			return asset
 		end
 	end
+	return nil
 end
 
 --[[
@@ -6687,19 +6962,38 @@ function LifeBackend:handleInteraction(player, payload)
 		return { success = false, message = "Invalid interaction payload." }
 	end
 
+	-- CRITICAL FIX #131: Nil safety for payload fields
 	local relType = payload.relationshipType or "family"
 	local actionId = payload.actionId
 	local targetId = payload.targetId
 	local targetStrength = tonumber(payload.relationshipStrength)
+	
+	-- CRITICAL FIX #132: Validate required fields
+	if not actionId then
+		return { success = false, message = "No action specified." }
+	end
 
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then
-		return { success = false, message = "Unknown relationship type." }
+		-- CRITICAL FIX #133: Try fallback to common action sets
+		actionSet = InteractionEffects["family"]
+		if not actionSet then
+			return { success = false, message = "Unknown relationship type." }
+		end
 	end
 
 	local action = actionSet[actionId]
 	if not action then
-		return { success = false, message = "Unknown interaction." }
+		-- CRITICAL FIX #134: Try to find action in other sets
+		for setName, otherSet in pairs(InteractionEffects) do
+			if otherSet[actionId] then
+				action = otherSet[actionId]
+				break
+			end
+		end
+		if not action then
+			return { success = false, message = "Unknown interaction." }
+		end
 	end
 
 	state.Flags = state.Flags or {}
@@ -7256,21 +7550,31 @@ function LifeBackend:handleGodModeEdit(player, payload)
 		end
 	end
 	
-	-- CRITICAL FIX: Handle starting stats from God Mode creation
+	-- CRITICAL FIX #150: Handle starting stats from God Mode creation
+	-- Must sync BOTH state.Stats.* AND state.* for consistency!
 	if payload.godModeCreate and payload.stats then
 		if type(payload.stats) == "table" then
-			-- Apply custom starting stats
+			state.Stats = state.Stats or {}
+			-- Apply custom starting stats - sync both locations
 			if payload.stats.Happiness then
-				state.Happiness = math.clamp(tonumber(payload.stats.Happiness) or 50, 0, 100)
+				local val = math.clamp(tonumber(payload.stats.Happiness) or 50, 0, 100)
+				state.Happiness = val
+				state.Stats.Happiness = val
 			end
 			if payload.stats.Health then
-				state.Health = math.clamp(tonumber(payload.stats.Health) or 100, 0, 100)
+				local val = math.clamp(tonumber(payload.stats.Health) or 100, 0, 100)
+				state.Health = val
+				state.Stats.Health = val
 			end
 			if payload.stats.Smarts then
-				state.Smarts = math.clamp(tonumber(payload.stats.Smarts) or 50, 0, 100)
+				local val = math.clamp(tonumber(payload.stats.Smarts) or 50, 0, 100)
+				state.Smarts = val
+				state.Stats.Smarts = val
 			end
 			if payload.stats.Looks then
-				state.Looks = math.clamp(tonumber(payload.stats.Looks) or 50, 0, 100)
+				local val = math.clamp(tonumber(payload.stats.Looks) or 50, 0, 100)
+				state.Looks = val
+				state.Stats.Looks = val
 			end
 			table.insert(summaries, "Starting stats customized")
 		end
@@ -7416,6 +7720,68 @@ function LifeBackend:handleGodModeEdit(player, payload)
 		else
 			self:promptGamepassPurchase(player, "CELEBRITY")
 			table.insert(summaries, "⭐ Fame careers require the Celebrity gamepass!")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #165: GOD MODE QUICK ACTIONS - In-game button support
+	-- Handle quickAction from in-game God Mode editor
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if payload.quickAction then
+		local action = payload.quickAction
+		if GodModeSystem then
+			if action == "cure_diseases" then
+				local success, msg = GodModeSystem:cureDiseases(state)
+				table.insert(summaries, msg or "💊 All diseases cured!")
+			elseif action == "remove_addictions" then
+				local success, msg = GodModeSystem:removeAddictions(state)
+				table.insert(summaries, msg or "🚭 All addictions removed!")
+			elseif action == "clear_record" then
+				local success, msg = GodModeSystem:clearCriminalRecord(state)
+				table.insert(summaries, msg or "📋 Criminal record cleared!")
+			elseif action == "max_stats" then
+				-- CRITICAL FIX #166: Max all stats to 100
+				state.Stats = state.Stats or {}
+				state.Stats.Happiness = 100
+				state.Stats.Health = 100
+				state.Stats.Smarts = 100
+				state.Stats.Looks = 100
+				state.Happiness = 100
+				state.Health = 100
+				state.Smarts = 100
+				state.Looks = 100
+				table.insert(summaries, "⬆️ All stats maxed to 100%!")
+			elseif action == "clear_debt" then
+				local success, msg = GodModeSystem:clearDebt(state)
+				table.insert(summaries, msg or "💳 All debt cleared!")
+			elseif action == "full_heal" then
+				-- CRITICAL FIX #167: Full heal action
+				state.Stats = state.Stats or {}
+				state.Stats.Health = 100
+				state.Health = 100
+				-- Also clear health-related flags
+				state.Flags = state.Flags or {}
+				state.Flags.injured = nil
+				state.Flags.seriously_injured = nil
+				state.Flags.hospitalized = nil
+				table.insert(summaries, "❤️ Fully healed! Health restored to 100%")
+			-- CRITICAL FIX #182: Additional quick actions
+			elseif action == "max_relationships" then
+				local success, msg = GodModeSystem:maxAllRelationships(state)
+				table.insert(summaries, msg or "💕 All relationships maxed!")
+			elseif action == "revive_family" then
+				local success, msg = GodModeSystem:reviveDeadRelatives(state)
+				table.insert(summaries, msg or "✨ Revived deceased family!")
+			elseif action == "fix_stats" then
+				local success, msg = GodModeSystem:fixNegativeStats(state)
+				table.insert(summaries, msg or "🔧 Fixed stat values!")
+			elseif action == "jail_break" then
+				local success, msg = GodModeSystem:releaseFromJail(state)
+				table.insert(summaries, msg or "🔓 Released from jail!")
+			elseif action == "fresh_start" then
+				local success, msg = GodModeSystem:clearAllNegativeFlags(state)
+				table.insert(summaries, msg or "🔄 Fresh start applied!")
+			end
 		end
 	end
 	
@@ -7646,7 +8012,16 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 		state.Money = 0
 		state.Education = "none"
 		state.CurrentJob = nil
-		state.Career = nil
+		-- CRITICAL FIX #154: Reset Career to empty table instead of nil to prevent nil access errors
+		state.Career = {}
+		-- CRITICAL FIX #155: Reset CareerInfo properly on time travel to baby
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.performance = 0
+		state.CareerInfo.promotionProgress = 0
+		state.CareerInfo.yearsAtJob = 0
+		state.CareerInfo.raises = 0
+		state.CareerInfo.promotions = 0
+		state.CareerInfo.totalYearsWorked = 0
 		state.InJail = false
 		state.JailYearsLeft = 0
 		-- Reset education data
@@ -7658,10 +8033,49 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 				Duration = 5,
 			}
 		end
+		-- CRITICAL FIX #112: Full MobState reset with nil safety
 		if state.MobState then
 			state.MobState.inMob = false
 			state.MobState.family = nil
+			state.MobState.familyId = nil
+			state.MobState.familyName = nil
 			state.MobState.rank = nil
+			state.MobState.rankIndex = 1
+			state.MobState.rankLevel = 1
+			state.MobState.rankName = "Associate"
+			state.MobState.rankEmoji = "👤"
+			state.MobState.respect = 0
+			state.MobState.notoriety = 0
+			state.MobState.heat = 0
+			state.MobState.loyalty = 100
+			state.MobState.kills = 0
+			state.MobState.earnings = 0
+			state.MobState.yearsInMob = 0
+			state.MobState.operationsCompleted = 0
+			state.MobState.operationsFailed = 0
+		end
+		-- CRITICAL FIX #113: Full RoyalState reset on time travel to baby
+		if state.RoyalState then
+			state.RoyalState.isRoyal = false
+			state.RoyalState.isMonarch = false
+			state.RoyalState.country = nil
+			state.RoyalState.countryName = nil
+			state.RoyalState.title = nil
+			state.RoyalState.lineOfSuccession = 0
+			state.RoyalState.popularity = 0
+			state.RoyalState.scandals = 0
+			state.RoyalState.dutiesCompleted = 0
+			state.RoyalState.reignYears = 0
+			state.RoyalState.wealth = 0
+		end
+		-- CRITICAL FIX #114: Full FameState reset
+		if state.FameState then
+			state.FameState.isFamous = false
+			state.FameState.careerPath = nil
+			state.FameState.currentStage = 0
+			state.FameState.followers = 0
+			state.FameState.scandals = 0
+			state.FameState.yearsInCareer = 0
 		end
 		-- Clear most flags but keep some identity ones
 		local keepFlags = { gender = state.Flags.gender }

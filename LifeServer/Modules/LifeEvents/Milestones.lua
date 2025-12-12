@@ -921,4 +921,8 @@ Milestones.events = {
 	},
 }
 
+-- CRITICAL FIX #135: Export events in standard format for LifeEvents loader
+-- The init.lua module loader expects .events, .Events, or .LifeEvents array
+Milestones.LifeEvents = Milestones.events
+
 return Milestones

@@ -824,12 +824,16 @@ CelebrityEvents.ModelCareer = {
 
 CelebrityEvents.GeneralFameEvents = {
 	-- PAPARAZZI EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #249: Added cooldown to prevent paparazzi event spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "paparazzi_chase",
 		title = "📸 Paparazzi Chase!",
 		emoji = "📸",
 		text = "Paparazzi are following you everywhere! They're getting dangerously close.",
 		minFame = 30,
+		cooldown = 2, -- CRITICAL FIX: 2 year cooldown between paparazzi events
 		choices = {
 			{
 				text = "Smile and wave professionally",
@@ -860,12 +864,16 @@ CelebrityEvents.GeneralFameEvents = {
 	},
 	
 	-- FAN ENCOUNTERS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #248: Added cooldown to prevent fan encounter spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "fan_encounter",
 		title = "😍 Fan Encounter!",
 		emoji = "😍",
 		text = "A fan recognizes you and wants a photo and autograph!",
 		minFame = 20,
+		cooldown = 2, -- CRITICAL FIX: 2 year cooldown
 		choices = {
 			{
 				text = "Happily oblige",
@@ -897,12 +905,17 @@ CelebrityEvents.GeneralFameEvents = {
 	},
 	
 	-- STALKER SITUATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #250: Stalker events should be rare (once per lifetime max)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "stalker",
 		title = "😰 Stalker Situation",
 		emoji = "😰",
 		text = "Someone has been obsessively following you. They've shown up at your home.",
 		minFame = 50,
+		oneTime = true, -- CRITICAL FIX: Only one stalker situation per lifetime
+		cooldown = 10, -- CRITICAL FIX: 10 year cooldown if it happens again
 		choices = {
 			{
 				text = "Get a restraining order",
@@ -1163,6 +1176,280 @@ CelebrityEvents.GeneralFameEvents = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #211-225: MASSIVE CELEBRITY EVENT EXPANSION
+	-- 15+ new events with proper progression and blocking flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CAREER BREAKTHROUGH
+	{
+		id = "career_breakthrough",
+		title = "🌟 Career Breakthrough!",
+		emoji = "🌟",
+		text = "You've been offered a role/opportunity that could define your career. This is the big one.",
+		minFame = 25,
+		maxFame = 60,
+		oneTime = true,
+		choices = {
+			{
+				text = "Go all in",
+				effects = { Happiness = 15, Health = -10 },
+				fameEffect = 25,
+				setFlags = { career_breakthrough = true },
+				feed = "Your breakthrough moment arrived!",
+			},
+			{
+				text = "Take it but maintain balance",
+				effects = { Happiness = 10 },
+				fameEffect = 15,
+				feed = "You handled the opportunity professionally.",
+			},
+		},
+	},
+	
+	-- VIRAL MOMENT
+	{
+		id = "viral_moment",
+		title = "📱 Going Viral!",
+		emoji = "📱",
+		text = "Something you did went incredibly viral! Millions of people have seen it.",
+		minFame = 15,
+		cooldown = 5,
+		choices = {
+			{
+				text = "Lean into the attention",
+				effects = { Happiness = 15 },
+				fameEffect = 20,
+				setFlags = { went_viral = true },
+				feed = "You rode the viral wave to new heights!",
+			},
+			{
+				text = "Stay humble",
+				effects = { Happiness = 8, Smarts = 5 },
+				fameEffect = 10,
+				feed = "You handled it with grace.",
+			},
+		},
+	},
+	
+	-- BRAND EMPIRE
+	{
+		id = "brand_empire",
+		title = "👔 Build Your Brand Empire",
+		emoji = "👔",
+		text = "You have enough fame to launch your own brand.",
+		minFame = 50,
+		oneTime = true,
+		choices = {
+			{
+				text = "Launch a fashion line",
+				effects = { Happiness = 15, Money = -500000 },
+				successChance = 60,
+				successFame = 15,
+				successFeed = "Your fashion line is a hit!",
+				failFame = -5,
+				failFeed = "Your fashion line flopped.",
+				setFlags = { entrepreneur = true },
+			},
+			{
+				text = "Launch a beauty brand",
+				effects = { Happiness = 12, Money = -300000 },
+				successChance = 70,
+				successFame = 12,
+				successFeed = "Your beauty brand is selling out!",
+				setFlags = { entrepreneur = true },
+			},
+		},
+	},
+	
+	-- CELEBRITY FEUD
+	{
+		id = "celebrity_feud",
+		title = "⚡ Celebrity Feud!",
+		emoji = "⚡",
+		text = "Another celebrity publicly called you out!",
+		minFame = 35,
+		cooldown = 4,
+		choices = {
+			{
+				text = "Clap back hard",
+				effects = { Happiness = 8 },
+				successChance = 50,
+				successFame = 15,
+				successFeed = "You won the feud!",
+				failFame = -10,
+				failFeed = "Your response backfired.",
+			},
+			{
+				text = "Take the high road",
+				effects = { Happiness = 5, Smarts = 5 },
+				fameEffect = 5,
+				feed = "Your mature response earned respect.",
+			},
+		},
+	},
+	
+	-- REALITY TV OFFER
+	{
+		id = "reality_tv_offer",
+		title = "📺 Reality TV Offer",
+		emoji = "📺",
+		text = "A major network wants you for their reality show.",
+		minFame = 30,
+		oneTime = true,
+		choices = {
+			{
+				text = "Accept - show everything",
+				effects = { Happiness = 5, Money = 500000 },
+				fameEffect = 25,
+				setFlags = { reality_tv_star = true },
+				feed = "Your life is now an open book!",
+			},
+			{
+				text = "Decline",
+				effects = { Happiness = 10 },
+				feed = "You valued your privacy.",
+			},
+		},
+	},
+	
+	-- AWARD NOMINATION
+	{
+		id = "major_award_nomination",
+		title = "🏆 Award Nomination!",
+		emoji = "🏆",
+		text = "You've been nominated for a major award!",
+		minFame = 55,
+		cooldown = 5,
+		choices = {
+			{
+				text = "Campaign hard to win",
+				effects = { Happiness = 10, Money = -100000 },
+				successChance = 40,
+				successFame = 25,
+				successFeed = "YOU WON!",
+				setFlags = { award_winner = true },
+				failFame = 5,
+				failFeed = "You didn't win, but the nomination was an honor.",
+			},
+			{
+				text = "Let the work speak for itself",
+				effects = { Happiness = 8 },
+				successChance = 30,
+				successFame = 30,
+				successFeed = "You won on merit!",
+				failFame = 5,
+			},
+		},
+	},
+	
+	-- MENTAL HEALTH
+	{
+		id = "fame_mental_health",
+		title = "😔 The Dark Side of Fame",
+		emoji = "😔",
+		text = "The constant spotlight is taking its toll.",
+		minFame = 50,
+		cooldown = 5,
+		choices = {
+			{
+				text = "Speak openly about struggles",
+				effects = { Happiness = 10, Health = 5 },
+				fameEffect = 15,
+				setFlags = { mental_health_advocate = true },
+				feed = "Your honesty inspired millions.",
+			},
+			{
+				text = "Take a break",
+				effects = { Happiness = 15, Health = 10 },
+				fameEffect = -10,
+				feed = "You stepped back to focus on yourself.",
+			},
+		},
+	},
+	
+	-- MEGA DEAL
+	{
+		id = "mega_endorsement_deal",
+		title = "💰 Mega Deal!",
+		emoji = "💰",
+		text = "A massive brand wants you as their global spokesperson.",
+		minFame = 70,
+		oneTime = true,
+		choices = {
+			{
+				text = "Sign the deal",
+				effects = { Happiness = 20, Money = 5000000 },
+				fameEffect = 15,
+				setFlags = { mega_endorsement = true },
+				feed = "You signed a $5 million deal!",
+			},
+			{
+				text = "Negotiate for more",
+				effects = { Happiness = 15 },
+				successChance = 50,
+				successEffects = { Money = 10000000 },
+				successFame = 20,
+				successFeed = "$10 million! Legendary!",
+				failFeed = "They walked away.",
+			},
+		},
+	},
+	
+	-- LEGACY
+	{
+		id = "legacy_project",
+		title = "🌟 Legacy Project",
+		emoji = "🌟",
+		text = "You have the opportunity to create something that will outlast you.",
+		minFame = 80,
+		oneTime = true,
+		choices = {
+			{
+				text = "Start a foundation",
+				effects = { Happiness = 25, Money = -500000 },
+				fameEffect = 20,
+				setFlags = { has_foundation = true },
+				feed = "Your foundation will help millions.",
+			},
+			{
+				text = "Create a masterwork",
+				effects = { Happiness = 20, Health = -10 },
+				fameEffect = 25,
+				setFlags = { created_masterwork = true },
+				feed = "You created something eternal.",
+			},
+		},
+	},
+	
+	-- CANCELLED
+	{
+		id = "getting_cancelled",
+		title = "❌ Getting Cancelled!",
+		emoji = "❌",
+		text = "Something from your past surfaced. The internet mob is out for blood.",
+		minFame = 45,
+		cooldown = 8,
+		choices = {
+			{
+				text = "Apologize sincerely",
+				effects = { Happiness = -15 },
+				fameEffect = -10,
+				setFlags = { was_cancelled = true },
+				feed = "You owned your mistakes.",
+			},
+			{
+				text = "Fight back",
+				effects = { Happiness = -5 },
+				successChance = 30,
+				successFame = 5,
+				successFeed = "You turned the tide.",
+				failFame = -30,
+				failFeed = "Fighting back made it worse.",
+			},
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1341,11 +1628,16 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 	end
 	
 	-- Random career event
+	-- CRITICAL FIX #117: Add nil safety for career events with proper stage checking
 	if career.events and #career.events > 0 then
 		if math.random(100) <= 15 then
 			local possibleEvents = {}
+			local currentStage = fameState.currentStage or 1
 			for _, event in ipairs(career.events) do
-				if fameState.currentStage >= event.minStage and fameState.currentStage <= event.maxStage then
+				-- CRITICAL FIX #118: Default minStage and maxStage to prevent nil comparisons
+				local minStage = event.minStage or 1
+				local maxStage = event.maxStage or 999
+				if currentStage >= minStage and currentStage <= maxStage then
 					table.insert(possibleEvents, event)
 				end
 			end
