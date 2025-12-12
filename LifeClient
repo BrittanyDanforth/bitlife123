@@ -188,10 +188,12 @@ local GAMEPASS_IDS = {
 local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	if plr ~= player or not wasPurchased then return end
 	
+	print("[LifeClient] Gamepass purchase finished:", gamePassId, wasPurchased)
+	
 	-- Refresh gamepass status
 	refreshGodModeStatus()
 	
-	-- Update all gamepass buttons in intro UI
+	-- CRITICAL FIX #364: Update all gamepass buttons in intro UI immediately
 	task.defer(function()
 		-- Update God Mode button
 		if IntroUI and IntroUI.updateCustomizeGenderBtn then
@@ -202,10 +204,73 @@ local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 		if IntroUI and IntroUI.updateRoyaltyGenderBtn then
 			IntroUI.updateRoyaltyGenderBtn()
 		end
+		
+		-- CRITICAL FIX #365: Update Time Machine UI if death overlay is showing
+		if DeathUI and DeathUI.updateTimeMachineUI then
+			DeathUI.updateTimeMachineUI()
+		end
+		
+		-- CRITICAL FIX #366: Update Mafia screen if it's open
+		-- This will be handled by the GamepassPurchased remote from server
 	end)
 end
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchaseFinished)
+
+-- CRITICAL FIX #367: Listen for server-side gamepass purchase notification
+-- This fires AFTER the purchase is verified and state is updated
+local GamepassPurchased = remotesFolder and remotesFolder:FindFirstChild("GamepassPurchased")
+if GamepassPurchased then
+	GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
+		print("[LifeClient] Server confirmed gamepass purchased:", gamepassKey)
+		
+		-- Refresh all relevant UI
+		refreshGodModeStatus()
+		
+		task.defer(function()
+			-- Update intro UI buttons
+			if IntroUI and IntroUI.updateCustomizeGenderBtn then
+				IntroUI.updateCustomizeGenderBtn()
+			end
+			if IntroUI and IntroUI.updateRoyaltyGenderBtn then
+				IntroUI.updateRoyaltyGenderBtn()
+			end
+			
+			-- Update Time Machine
+			if DeathUI and DeathUI.updateTimeMachineUI then
+				DeathUI.updateTimeMachineUI()
+			end
+			
+			-- Force refresh the main UI
+			if updateFromState then
+				updateFromState()
+			end
+		end)
+	end)
+end
+
+-- CRITICAL FIX #369: Listen for Developer Product purchase completion
+-- When a time machine product is purchased, the ProcessReceipt handles it on server
+-- The server will send a SyncState update which triggers hideDeathOverlay
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, wasPurchased)
+	if userId ~= player.UserId or not wasPurchased then return end
+	
+	print("[LifeClient] Developer Product purchased:", productId)
+	
+	-- Time Machine product IDs
+	local TIME_PRODUCTS = {
+		[3477466389] = 5,   -- 5 years
+		[3477466522] = 10,  -- 10 years
+		[3477466619] = 20,  -- 20 years
+		[3477466778] = -1,  -- Baby
+	}
+	
+	if TIME_PRODUCTS[productId] then
+		print("[LifeClient] Time Machine product purchased, waiting for server to process...")
+		-- Server's ProcessReceipt will handle the time travel and send SyncState
+		-- The SyncState handler will update the UI and hide death overlay
+	end
+end)
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -3104,9 +3169,14 @@ local function buildDeathUI()
 					if updateFromState then
 						updateFromState()
 					end
+				elseif ok and result and result.needsProduct then
+					-- CRITICAL FIX #363: Player needs to purchase developer product (one-time use)
+					tmBtn.Text = "💰 " .. opt[2]
+					-- The server already prompted the product purchase
+					-- The ProcessReceipt will handle the time travel
 				elseif ok and result and result.needsGamepass then
-					-- CRITICAL FIX: Player needs to purchase the gamepass
-					tmBtn.Text = "⏰ " .. opt[2]
+					-- CRITICAL FIX: Player needs to purchase the gamepass for unlimited uses
+					tmBtn.Text = "👑 " .. opt[2]
 					-- Prompt the gamepass purchase
 					local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
 					if PromptGamepass then
@@ -3119,26 +3189,37 @@ local function buildDeathUI()
 		end)
 	end
 	
-	-- CRITICAL FIX: Function to update Time Machine UI based on gamepass ownership
+	-- CRITICAL FIX #368: Function to update Time Machine UI based on gamepass ownership
 	DeathUI.updateTimeMachineUI = function()
-		checkTimeMachineGamepass()
+		-- Re-check gamepass ownership (in case it was just purchased)
+		local freshCheck = false
+		if CheckGamepass then
+			local ok, owns = pcall(function() return CheckGamepass:InvokeServer("TIME_MACHINE") end)
+			if ok then
+				freshCheck = owns == true
+				hasTimeMachineGamepass = freshCheck
+			end
+		end
+		
 		if hasTimeMachineGamepass then
-			-- User owns gamepass - show full time machine UI
+			-- User owns gamepass - show full time machine UI with UNLIMITED badge
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = false
-			tmTitle.Text = "⏰ TIME MACHINE"
+			tmTitle.Text = "⏰ TIME MACHINE (UNLIMITED)"
+			tmTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
 			for _, data in ipairs(tmButtons) do
 				data.btn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
 				data.btn.TextColor3 = Color3.fromRGB(255, 215, 0)
 				data.btn.Text = "⏰ " .. data.opt[2]
 			end
 		else
-			-- User doesn't own gamepass - show promo with limited options
+			-- User doesn't own gamepass - show one-time purchase options
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = true
 			tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 130)
-			tmTitle.Text = "⏰ TIME MACHINE (One-Time Use)"
-			-- Buttons work but will cost Robux per use
+			tmTitle.Text = "⏰ TIME MACHINE"
+			tmTitle.TextColor3 = Color3.fromRGB(200, 170, 60)
+			-- Buttons work but will cost Robux per use (Developer Products)
 			for _, data in ipairs(tmButtons) do
 				data.btn.BackgroundColor3 = Color3.fromRGB(60, 50, 30)
 				data.btn.TextColor3 = Color3.fromRGB(200, 170, 60)

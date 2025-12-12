@@ -34,6 +34,184 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey)
 	end
 end
 
+-- CRITICAL FIX #358: Developer Product purchase prompt
+function LifeBackend:promptProductPurchase(player, productKey)
+	if not player then
+		return
+	end
+
+	local success, err = pcall(function()
+		GamepassSystem:promptProduct(player, productKey)
+	end)
+
+	if not success then
+		warn(string.format("[LifeBackend] Failed to prompt product %s purchase: %s", tostring(productKey), tostring(err)))
+	end
+end
+
+-- CRITICAL FIX #360: Set up ProcessReceipt for Developer Products
+function LifeBackend:setupProcessReceipt()
+	local self = self
+	MarketplaceService.ProcessReceipt = function(receiptInfo)
+		local result = GamepassSystem:processProductReceipt(
+			receiptInfo,
+			function(player) return self:getState(player) end,
+			function(player, years) return self:executeTimeMachineAction(player, years) end
+		)
+		return result
+	end
+	print("[LifeBackend] ProcessReceipt handler set up for Developer Products")
+end
+
+-- CRITICAL FIX #361: Set up gamepass purchase listener for UI refresh
+function LifeBackend:setupGamepassPurchaseListener()
+	-- Listen for gamepass purchase completion
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, wasPurchased)
+		if not wasPurchased then return end
+		
+		-- Find which gamepass was purchased
+		local GAMEPASS_IDS = {
+			ROYALTY = 1626378001,
+			GOD_MODE = 1628050729,
+			MAFIA = 1626238769,
+			CELEBRITY = 1626461980,
+			TIME_MACHINE = 1630681215,
+		}
+		
+		local purchasedKey = nil
+		for key, id in pairs(GAMEPASS_IDS) do
+			if id == gamePassId then
+				purchasedKey = key
+				break
+			end
+		end
+		
+		if purchasedKey then
+			print("[LifeBackend] Gamepass purchased:", purchasedKey, "by player:", player.Name)
+			
+			-- Clear ownership cache to force re-check
+			GamepassSystem:notifyGamepassPurchased(player, purchasedKey)
+			
+			-- Update player state flags
+			local state = self:getState(player)
+			if state then
+				state.Flags = state.Flags or {}
+				if purchasedKey == "ROYALTY" then
+					state.Flags.royalty_gamepass = true
+				elseif purchasedKey == "GOD_MODE" then
+					state.Flags.god_mode_gamepass = true
+				elseif purchasedKey == "MAFIA" then
+					state.Flags.mafia_gamepass = true
+				elseif purchasedKey == "CELEBRITY" then
+					state.Flags.celebrity_gamepass = true
+				elseif purchasedKey == "TIME_MACHINE" then
+					state.Flags.time_machine_gamepass = true
+				end
+			end
+			
+			-- CRITICAL FIX #359: Notify client that gamepass was purchased
+			if self.remotes and self.remotes.GamepassPurchased then
+				self.remotes.GamepassPurchased:FireClient(player, purchasedKey)
+			end
+			
+			-- Also push state to refresh UI
+			self:pushState(player, "🎉 " .. purchasedKey .. " unlocked!")
+		end
+	end)
+	
+	print("[LifeBackend] Gamepass purchase listener set up")
+end
+
+-- CRITICAL FIX #360: Execute time machine action (called from ProcessReceipt)
+function LifeBackend:executeTimeMachineAction(player, yearsBack)
+	-- This is called from ProcessReceipt after a developer product is purchased
+	-- It bypasses the gamepass check since the player paid for this specific use
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Execute the time travel (same logic as handleTimeMachine but without gamepass check)
+	local currentAge = state.Age
+	local targetAge = yearsBack == -1 and 0 or (currentAge - yearsBack)
+	
+	if targetAge < 0 then
+		targetAge = 0
+	end
+	
+	local yearsRewound = currentAge - targetAge
+	
+	-- Reset death state
+	state.Flags = state.Flags or {}
+	state.Flags.dead = nil
+	state.DeathReason = nil
+	state.DeathAge = nil
+	state.DeathYear = nil
+	state.CauseOfDeath = nil
+	
+	-- Reset to target age
+	state.Age = targetAge
+	state.Year = state.Year - yearsRewound
+	
+	-- Rewind family members' ages
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.age and type(rel.age) == "number" then
+				rel.age = rel.age - yearsRewound
+				if relId == "mother" or relId == "father" then
+					rel.age = math.max(rel.age, 20)
+				elseif relId:find("grand") then
+					rel.age = math.max(rel.age, 50)
+				else
+					rel.age = math.max(rel.age, 0)
+				end
+				
+				-- Resurrect family who died after this point
+				if rel.deceased and rel.deathAge then
+					if rel.age < rel.deathAge then
+						rel.alive = true
+						rel.deceased = nil
+						rel.deathAge = nil
+						rel.deathYear = nil
+					end
+				end
+			end
+		end
+	end
+	
+	-- Reset stats based on age
+	if targetAge == 0 then
+		state.Stats = state.Stats or {}
+		state.Stats.Happiness = 90
+		state.Stats.Health = 100
+		state.Health = 100
+		state.Happiness = 90
+		state.Money = 0
+		state.Education = "none"
+		state.CurrentJob = nil
+		state.Career = {}
+	else
+		-- Partial reset - restore some stats
+		state.Stats = state.Stats or {}
+		state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 30)
+		state.Health = state.Stats.Health
+	end
+	
+	-- Clear pending action
+	GamepassSystem:clearPendingTimeMachine(player)
+	
+	-- Push state to refresh client
+	local feed = string.format("⏰ Time Machine activated! You're now %d years old!", targetAge)
+	self:pushState(player, feed)
+	
+	return { 
+		success = true, 
+		message = feed,
+		newAge = targetAge,
+		yearsRewound = yearsRewound
+	}
+end
+
 --[[
 	LifeBackend.lua
 
@@ -2287,6 +2465,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoMobOperation = self:createRemote("DoMobOperation", "RemoteFunction")
 	self.remotes.CheckGamepass = self:createRemote("CheckGamepass", "RemoteFunction")
 	self.remotes.PromptGamepass = self:createRemote("PromptGamepass", "RemoteEvent")
+	self.remotes.PromptProduct = self:createRemote("PromptProduct", "RemoteEvent")  -- CRITICAL FIX #358: Developer product purchases
+	self.remotes.GamepassPurchased = self:createRemote("GamepassPurchased", "RemoteEvent")  -- CRITICAL FIX #359: Notify client of purchase
 	self.remotes.UseTimeMachine = self:createRemote("UseTimeMachine", "RemoteFunction")
 	self.remotes.GodModeEdit = self:createRemote("GodModeEdit", "RemoteFunction")
 	-- CRITICAL FIX #60: Add remote to get God Mode configuration (presets, editable stats)
@@ -2407,9 +2587,20 @@ function LifeBackend:setupRemotes()
 		self:promptGamepassPurchase(player, gamepassKey)
 	end)
 	
+	-- CRITICAL FIX #358: Developer Product purchase handler
+	self.remotes.PromptProduct.OnServerEvent:Connect(function(player, productKey)
+		self:promptProductPurchase(player, productKey)
+	end)
+	
 	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
 		return self:handleTimeMachine(player, yearsBack)
 	end
+	
+	-- CRITICAL FIX #360: Set up ProcessReceipt for Developer Products (Time Machine)
+	self:setupProcessReceipt()
+	
+	-- CRITICAL FIX #361: Set up gamepass purchase listener for UI refresh
+	self:setupGamepassPurchaseListener()
 
 	self.remotes.GodModeEdit.OnServerInvoke = function(player, payload)
 		return self:handleGodModeEdit(player, payload)
@@ -8763,18 +8954,39 @@ function LifeBackend:getGodModeInfo(player)
 end
 
 function LifeBackend:handleTimeMachine(player, yearsBack)
-	-- CRITICAL FIX: Check gamepass ownership first
-	if not self:checkGamepassOwnership(player, "TIME_MACHINE") then
-		-- Prompt purchase and return error
-		self:promptGamepassPurchase(player, "TIME_MACHINE")
-		return { 
-			success = false, 
-			message = "👑 Time Machine requires the Time Machine pass.", 
-			needsGamepass = true,
-			gamepassKey = "TIME_MACHINE"
-		}
+	-- CRITICAL FIX #362: Check for gamepass (unlimited) OR developer product (one-time)
+	local hasGamepass = self:checkGamepassOwnership(player, "TIME_MACHINE")
+	
+	if not hasGamepass then
+		-- User doesn't have unlimited gamepass - they need to buy a one-time product
+		-- Get the product key for this number of years
+		local productKey = GamepassSystem:getProductKeyForYears(yearsBack)
+		local productId = GamepassSystem:getProductIdForYears(yearsBack)
+		
+		if productId and productId > 0 then
+			-- Prompt the developer product purchase (one-time use)
+			self:promptProductPurchase(player, productKey)
+			return { 
+				success = false, 
+				message = "⏰ Purchase this time travel option!", 
+				needsProduct = true,
+				productKey = productKey,
+				productId = productId,
+				yearsBack = yearsBack
+			}
+		else
+			-- Fallback to gamepass prompt if no product available
+			self:promptGamepassPurchase(player, "TIME_MACHINE")
+			return { 
+				success = false, 
+				message = "👑 Get the Time Machine pass for unlimited rewinds!", 
+				needsGamepass = true,
+				gamepassKey = "TIME_MACHINE"
+			}
+		end
 	end
 	
+	-- User has gamepass - proceed with time travel (unlimited uses)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "State not found." }

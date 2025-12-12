@@ -1102,6 +1102,120 @@ function GamepassSystem:getMafiaEventChance(lifeState, eventType)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #356: Developer Product Purchase Handler
+-- Handles one-time time machine purchases (5yr, 10yr, 20yr, baby)
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Pending time machine actions (player -> years to travel back)
+GamepassSystem.pendingTimeMachineActions = {}
+
+-- Product ID to years mapping for ProcessReceipt
+GamepassSystem.productIdToYears = {
+	[3477466389] = 5,   -- 5 years
+	[3477466522] = 10,  -- 10 years
+	[3477466619] = 20,  -- 20 years
+	[3477466778] = -1,  -- Baby (restart)
+}
+
+function GamepassSystem:getProductKeyForYears(years)
+	if years == 5 then return "TIME_5_YEARS"
+	elseif years == 10 then return "TIME_10_YEARS"
+	elseif years == 20 then return "TIME_20_YEARS"
+	elseif years == 30 then return "TIME_30_YEARS"
+	elseif years == -1 then return "TIME_BABY"
+	end
+	return nil
+end
+
+function GamepassSystem:getProductIdForYears(years)
+	local key = self:getProductKeyForYears(years)
+	if key and self.Products[key] then
+		return self.Products[key].id
+	end
+	return 0
+end
+
+-- Called when a developer product is purchased
+-- Returns: Enum.ProductPurchaseDecision
+function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, executeTimeMachine)
+	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
+	if not player then
+		-- Player left, but purchase succeeded - we should still grant it
+		-- Store for later if they rejoin (not implemented here for simplicity)
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	
+	local productId = receiptInfo.ProductId
+	local years = self.productIdToYears[productId]
+	
+	if years then
+		-- This is a time machine product
+		print("[GamepassSystem] Processing Time Machine product:", productId, "years:", years)
+		
+		-- Execute the time machine action
+		if executeTimeMachine then
+			local success, result = pcall(function()
+				return executeTimeMachine(player, years)
+			end)
+			
+			if success and result and result.success then
+				print("[GamepassSystem] Time Machine purchase successful for player:", player.Name)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			else
+				warn("[GamepassSystem] Time Machine failed:", result and result.message or "Unknown error")
+				-- Still grant since payment was taken
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		end
+		
+		-- Mark as pending for this player so handleTimeMachine can use it
+		self.pendingTimeMachineActions[player.UserId] = years
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+	
+	-- Unknown product
+	warn("[GamepassSystem] Unknown product ID:", productId)
+	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+-- Check if player has a pending time machine action from product purchase
+function GamepassSystem:hasPendingTimeMachine(player)
+	return self.pendingTimeMachineActions[player.UserId] ~= nil
+end
+
+function GamepassSystem:getPendingTimeMachineYears(player)
+	return self.pendingTimeMachineActions[player.UserId]
+end
+
+function GamepassSystem:clearPendingTimeMachine(player)
+	self.pendingTimeMachineActions[player.UserId] = nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #357: Gamepass Purchase Listener for UI Refresh
+-- Fires an event when a gamepass is purchased so UI can refresh
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Store callback for when gamepass is purchased (set by LifeBackend)
+GamepassSystem.onGamepassPurchased = nil
+
+function GamepassSystem:setGamepassPurchasedCallback(callback)
+	self.onGamepassPurchased = callback
+end
+
+function GamepassSystem:notifyGamepassPurchased(player, gamepassKey)
+	-- Clear ownership cache to force re-check
+	if self.playerOwnership[player.UserId] then
+		self.playerOwnership[player.UserId][gamepassKey] = nil
+	end
+	
+	-- Call callback if set
+	if self.onGamepassPurchased then
+		self.onGamepassPurchased(player, gamepassKey)
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 
