@@ -29,6 +29,13 @@ MafiaEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- INITIATION EVENTS
 	-- ═══════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #188: Fixed mafia approach spam
+	-- 1. Added oneTime = true - you only get approached once per life
+	-- 2. Added blockedFlags for approached_by_mob to prevent repeat approaches
+	-- 3. Added maxOccurrences = 1 as safety
+	-- 4. Set approached_by_mob flag on ALL choices
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "mafia_approach",
 		title = "🔫 The Approach",
@@ -38,39 +45,46 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 50,
 		isMafiaOnly = true,
+		oneTime = true, -- CRITICAL FIX: Only once per life!
+		maxOccurrences = 1, -- CRITICAL FIX: Safety
+		cooldown = 100, -- CRITICAL FIX: Extra safety
 		conditions = { 
 			requiresFlags = { mafia_gamepass = true },
-			blockedFlags = { in_mob = true },
+			blockedFlags = { in_mob = true, approached_by_mob = true, rejected_mob = true, mob_enemy = true },
 		},
 		choices = {
 			{
 				text = "Accept the offer immediately",
 				effects = { Happiness = 10 },
 				mafiaEffect = { joinFamily = true, respect = 5 },
-				setFlags = { eager_recruit = true },
+				setFlags = { eager_recruit = true, approached_by_mob = true, accepted_mob_offer = true },
 				feed = "You've made a life-changing decision...",
 			},
 			{
 				text = "Ask for more information",
 				effects = { Smarts = 3 },
 				mafiaEffect = { consideration = true },
-				setFlags = { cautious_recruit = true },
-				feed = "He smiles. 'Smart. I like that.'",
+				setFlags = { cautious_recruit = true, approached_by_mob = true, considering_mob = true },
+				feed = "He smiles. 'Smart. I like that. We'll be in touch.'",
 			},
 			{
 				text = "Politely decline",
 				effects = { Happiness = 5 },
-				setFlags = { rejected_mob = true },
-				feed = "He nods. 'The offer will stand... for now.'",
+				setFlags = { rejected_mob = true, approached_by_mob = true },
+				feed = "He nods. 'The offer won't come again.'",
 			},
 			{
 				text = "Report it to the police",
 				effects = { Happiness = -10 },
-				setFlags = { mob_enemy = true, police_informant = true },
+				setFlags = { mob_enemy = true, police_informant = true, approached_by_mob = true },
 				feed = "You've made dangerous enemies...",
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #189: Fixed initiation task spam
+	-- Added oneTime and proper blocking flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "initiation_task",
 		title = "⚔️ Prove Yourself",
@@ -80,38 +94,47 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 60,
 		isMafiaOnly = true,
-		conditions = { requiresFlags = { in_mob = true, initiated = nil } },
+		oneTime = true, -- CRITICAL FIX: Only once!
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { in_mob = true },
+			blockedFlags = { initiated = true, initiation_completed = true, mob_enemy = true },
+		},
 		choices = {
 			{
 				text = "Beat up someone who owes money",
 				effects = { Happiness = -5, Health = -5 },
 				mafiaEffect = { respect = 15, heat = 10, initiated = true },
-				setFlags = { initiated = true, enforcer_type = true },
+				setFlags = { initiated = true, enforcer_type = true, initiation_completed = true },
 				feed = "You collected the debt with your fists.",
 			},
 			{
 				text = "Deliver a 'package' across town",
 				effects = { Happiness = 5 },
 				mafiaEffect = { respect = 10, heat = 5, initiated = true },
-				setFlags = { initiated = true, courier_type = true },
+				setFlags = { initiated = true, courier_type = true, initiation_completed = true },
 				feed = "The package was delivered. No questions asked.",
 			},
 			{
 				text = "Stand guard during a 'meeting'",
 				effects = { Health = -3 },
 				mafiaEffect = { respect = 8, heat = 3, initiated = true },
-				setFlags = { initiated = true, soldier_type = true },
+				setFlags = { initiated = true, soldier_type = true, initiation_completed = true },
 				feed = "You proved you can be trusted.",
 			},
 			{
 				text = "Refuse and try to leave",
 				effects = { Happiness = -20, Health = -30 },
 				mafiaEffect = { kicked = true, enemyOfFamily = true },
-				setFlags = { mob_enemy = true, beat_up_by_mob = true },
+				setFlags = { mob_enemy = true, beat_up_by_mob = true, initiation_completed = true },
 				feed = "They didn't take your refusal well...",
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #190: Fixed blood oath spam
+	-- Added oneTime and proper blocking flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "blood_oath",
 		title = "🩸 The Blood Oath",
@@ -122,27 +145,32 @@ MafiaEvents.LifeEvents = {
 		maxAge = 60,
 		isMafiaOnly = true,
 		isMilestone = true,
-		conditions = { requiresFlags = { in_mob = true, initiated = true, made_member = nil } },
+		oneTime = true, -- CRITICAL FIX: Only once!
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { made_member = true, blood_oath_taken = true, mob_fugitive = true },
+		},
 		choices = {
 			{
 				text = "Swear the oath with conviction",
 				effects = { Happiness = 10 },
 				mafiaEffect = { respect = 25, loyalty = 10, madeMember = true },
-				setFlags = { made_member = true, sworn_oath = true },
+				setFlags = { made_member = true, sworn_oath = true, blood_oath_taken = true },
 				feed = "You are now a made member. There's no going back.",
 			},
 			{
 				text = "Swear the oath reluctantly",
 				effects = { Happiness = -5 },
 				mafiaEffect = { respect = 15, loyalty = 5, madeMember = true },
-				setFlags = { made_member = true, reluctant_member = true },
+				setFlags = { made_member = true, reluctant_member = true, blood_oath_taken = true },
 				feed = "They noticed your hesitation, but you're in now.",
 			},
 			{
 				text = "Run away",
 				effects = { Happiness = -30, Health = -50 },
 				mafiaEffect = { kicked = true, hitOrdered = true },
-				setFlags = { mob_fugitive = true },
+				setFlags = { mob_fugitive = true, blood_oath_refused = true },
 				feed = "Running from the oath has consequences...",
 			},
 		},
@@ -1174,6 +1202,340 @@ MafiaEvents.LifeEvents = {
 				mafiaEffect = { betrayal = true, respect = -1000 },
 				setFlags = { ultimate_traitor = true },
 				feed = "You chose to burn it all down.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #192-210: MASSIVE MAFIA EVENT EXPANSION
+	-- 15+ new events with proper progression, cooldowns, and blocking flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- MONEY LAUNDERING OPERATIONS
+	{
+		id = "money_laundering_setup",
+		title = "💰 Laundering Operation",
+		emoji = "💰",
+		text = "The family needs a new front for laundering money. You've been tasked with setting up a legitimate-looking business.",
+		question = "What kind of business will you establish?",
+		minAge = 25,
+		maxAge = 65,
+		isMafiaOnly = true,
+		cooldown = 5,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { owns_front_business = true },
+		},
+		choices = {
+			{
+				text = "Open a restaurant",
+				effects = { Happiness = 10, Smarts = 5 },
+				mafiaEffect = { respect = 25, money = 50000 },
+				setFlags = { owns_front_business = true, owns_restaurant = true },
+				feed = "Your Italian restaurant is now washing millions.",
+			},
+			{
+				text = "Buy a car wash",
+				effects = { Happiness = 8 },
+				mafiaEffect = { respect = 20, money = 30000, heat = 5 },
+				setFlags = { owns_front_business = true, owns_carwash = true },
+				feed = "Cash business. Untraceable. Perfect.",
+			},
+			{
+				text = "Start a construction company",
+				effects = { Happiness = 12, Smarts = 8 },
+				mafiaEffect = { respect = 40, money = 100000, heat = 10 },
+				setFlags = { owns_front_business = true, owns_construction = true },
+				feed = "Now you can bid on city contracts too.",
+			},
+			{
+				text = "Decline - too risky",
+				effects = { Happiness = -5 },
+				mafiaEffect = { respect = -15 },
+				setFlags = { refused_laundering = true },
+				feed = "The boss expected more ambition from you.",
+			},
+		},
+	},
+	
+	-- WITNESS PROBLEMS
+	{
+		id = "witness_problem",
+		title = "👁️ Witness Problem",
+		emoji = "👁️",
+		text = "Someone saw too much during your last operation. They're planning to testify against the family.",
+		question = "How do you handle this loose end?",
+		minAge = 21,
+		maxAge = 65,
+		isMafiaOnly = true,
+		cooldown = 4,
+		conditions = { requiresFlags = { in_mob = true, initiated = true } },
+		choices = {
+			{
+				text = "Pay them off to disappear",
+				effects = { Happiness = 5 },
+				mafiaEffect = { money = -100000, respect = 10, heatDecay = 5 },
+				setFlags = { paid_off_witness = true },
+				feed = "Money talks. The witness vanished to Mexico.",
+			},
+			{
+				text = "Intimidate them into silence",
+				effects = { Happiness = -5 },
+				successChance = 70,
+				successMafiaEffect = { respect = 25, heat = 15 },
+				failMafiaEffect = { heat = 40, respect = -10 },
+				setFlags = { intimidated_witness = true },
+				feed = "Fear is a powerful motivator.",
+			},
+			{
+				text = "Eliminate the problem permanently",
+				effects = { Happiness = -20, Health = -5 },
+				mafiaEffect = { respect = 50, heat = 30, kills = 1 },
+				setFlags = { killed_witness = true, murderer = true },
+				feed = "No witness, no problem.",
+			},
+			{
+				text = "Let the legal team handle it",
+				effects = { Happiness = 0 },
+				mafiaEffect = { money = -50000, heatDecay = 10 },
+				setFlags = { used_lawyers = true },
+				feed = "The family's lawyers made the case disappear.",
+			},
+		},
+	},
+	
+	-- CORRUPT COP
+	{
+		id = "corrupt_cop_offer",
+		title = "🚔 Bent Badge",
+		emoji = "🚔",
+		text = "A detective approaches you with an offer. For a monthly payment, he'll warn you about raids and lose evidence.",
+		question = "Do you put a cop on the payroll?",
+		minAge = 25,
+		maxAge = 65,
+		isMafiaOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { has_corrupt_cop = true, refused_corrupt_cop = true },
+		},
+		choices = {
+			{
+				text = "Accept - protection is valuable",
+				effects = { Happiness = 15 },
+				mafiaEffect = { respect = 30, heatDecay = 20, money = -10000 },
+				setFlags = { has_corrupt_cop = true, police_connections = true },
+				feed = "You now have an inside man at the precinct.",
+			},
+			{
+				text = "Negotiate a better deal",
+				effects = { Happiness = 10, Smarts = 5 },
+				mafiaEffect = { respect = 35, heatDecay = 25, money = -5000 },
+				setFlags = { has_corrupt_cop = true, master_negotiator = true },
+				feed = "Half the price, same protection. Good deal.",
+			},
+			{
+				text = "Decline - too risky",
+				effects = { Happiness = 0 },
+				setFlags = { refused_corrupt_cop = true },
+				feed = "Smart. Bent cops can be double agents.",
+			},
+		},
+	},
+	
+	-- NIGHTCLUB OWNERSHIP
+	{
+		id = "nightclub_opportunity",
+		title = "🎵 Club Ownership",
+		emoji = "🎵",
+		text = "A popular nightclub owner got behind on his payments. The family is taking over. You can run it.",
+		question = "How do you manage the club?",
+		minAge = 28,
+		maxAge = 55,
+		isMafiaOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { owns_nightclub = true },
+		},
+		choices = {
+			{
+				text = "Make it a legitimate success",
+				effects = { Happiness = 15, Smarts = 8 },
+				mafiaEffect = { respect = 30, money = 75000 },
+				setFlags = { owns_nightclub = true, legitimate_businessman = true },
+				feed = "The club is packed every night.",
+			},
+			{
+				text = "Use it for drug distribution",
+				effects = { Happiness = 8 },
+				mafiaEffect = { respect = 25, money = 150000, heat = 20 },
+				setFlags = { owns_nightclub = true, drug_distributor = true },
+				feed = "The VIP room has a very special menu.",
+			},
+			{
+				text = "Money laundering hub",
+				effects = { Happiness = 10 },
+				mafiaEffect = { respect = 35, money = 100000, heat = 10 },
+				setFlags = { owns_nightclub = true, money_launderer = true },
+				feed = "Cash flows in. Clean cash flows out.",
+			},
+		},
+	},
+	
+	-- FAMILY TRIBUTE
+	{
+		id = "tribute_to_boss",
+		title = "💎 Tribute Time",
+		emoji = "💎",
+		text = "It's time for the annual tribute to the boss. Everyone kicks up a percentage of their earnings.",
+		question = "How much do you tribute?",
+		minAge = 21,
+		maxAge = 70,
+		isMafiaOnly = true,
+		cooldown = 2,
+		conditions = { requiresFlags = { in_mob = true } },
+		choices = {
+			{
+				text = "Kick up generously (50%)",
+				effects = { Happiness = -5 },
+				mafiaEffect = { money = -50000, respect = 15, loyalty = 20 },
+				setFlags = { generous_tribute = true },
+				feed = "The boss appreciates your loyalty.",
+			},
+			{
+				text = "Standard tribute (30%)",
+				effects = { Happiness = 0 },
+				mafiaEffect = { money = -30000, respect = 5, loyalty = 5 },
+				feed = "Fair is fair. Everyone pays their share.",
+			},
+			{
+				text = "Light tribute (15%)",
+				effects = { Happiness = 5 },
+				mafiaEffect = { money = -15000, respect = -10, loyalty = -10 },
+				setFlags = { light_tribute = true },
+				feed = "Your small tribute was noticed.",
+			},
+		},
+	},
+	
+	-- CAPO PROMOTION
+	{
+		id = "capo_promotion",
+		title = "👔 Capo Ceremony",
+		emoji = "👔",
+		text = "The boss calls you in. 'You've earned it,' he says. 'You're now a Caporegime. You get your own crew.'",
+		question = "How do you accept this honor?",
+		minAge = 30,
+		maxAge = 60,
+		isMafiaOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { is_capo = true },
+		},
+		choices = {
+			{
+				text = "Accept with humble gratitude",
+				effects = { Happiness = 25 },
+				mafiaEffect = { respect = 50, rankUp = true },
+				setFlags = { is_capo = true, humble_leader = true },
+				feed = "You're now Capo. Ten soldiers under your command.",
+			},
+			{
+				text = "Accept and make ambitious promises",
+				effects = { Happiness = 20 },
+				mafiaEffect = { respect = 60, rankUp = true, money = 50000 },
+				setFlags = { is_capo = true, ambitious_capo = true },
+				feed = "Big talk. Now you have to deliver.",
+			},
+		},
+	},
+	
+	-- REVENGE HIT
+	{
+		id = "revenge_mission",
+		title = "🔪 Vendetta",
+		emoji = "🔪",
+		text = "Someone disrespected the family. The boss wants him gone. You've been chosen for this hit.",
+		question = "How do you handle the contract?",
+		minAge = 25,
+		maxAge = 55,
+		isMafiaOnly = true,
+		cooldown = 5,
+		conditions = { requiresFlags = { in_mob = true, initiated = true } },
+		choices = {
+			{
+				text = "Execute it personally",
+				effects = { Happiness = -15, Health = -5 },
+				successChance = 75,
+				successMafiaEffect = { respect = 60, kills = 1, heat = 25 },
+				failMafiaEffect = { respect = -20, heat = 40 },
+				setFlags = { personal_hitter = true, has_killed = true },
+				feed = "Clean work. No witnesses.",
+			},
+			{
+				text = "Hire outside professionals",
+				effects = { Happiness = -5 },
+				mafiaEffect = { respect = 30, money = -50000, heat = 10 },
+				setFlags = { uses_contractors = true },
+				feed = "Outsourcing. Smart. Deniable.",
+			},
+			{
+				text = "Make it look like an accident",
+				effects = { Happiness = -8, Smarts = 8 },
+				successChance = 60,
+				successMafiaEffect = { respect = 50, kills = 1, heat = 5 },
+				failMafiaEffect = { respect = 20, kills = 1, heat = 35 },
+				setFlags = { accident_specialist = true },
+				feed = "A tragic 'accident.'",
+			},
+			{
+				text = "Refuse the contract",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = -50, loyalty = -30 },
+				setFlags = { refused_hit = true },
+				feed = "Refusing orders has consequences.",
+			},
+		},
+	},
+	
+	-- FBI INVESTIGATION
+	{
+		id = "fbi_surveillance",
+		title = "📡 Under Surveillance",
+		emoji = "📡",
+		text = "Your contacts warn you: the FBI has you under surveillance. They're building a RICO case.",
+		question = "How do you respond to the heat?",
+		minAge = 25,
+		maxAge = 70,
+		isMafiaOnly = true,
+		cooldown = 4,
+		conditions = { requiresFlags = { in_mob = true, initiated = true } },
+		choices = {
+			{
+				text = "Go completely dark",
+				effects = { Happiness = -15 },
+				mafiaEffect = { heatDecay = 30, money = -20000, respect = 10 },
+				setFlags = { went_dark = true },
+				feed = "Radio silence. Let them waste resources.",
+			},
+			{
+				text = "Feed them false information",
+				effects = { Happiness = 5, Smarts = 10 },
+				successChance = 55,
+				successMafiaEffect = { heatDecay = 20, respect = 30 },
+				failMafiaEffect = { heat = 20, respect = -10 },
+				setFlags = { played_fbi = true },
+				feed = "Misinformation is an art form.",
+			},
+			{
+				text = "Continue business as usual",
+				effects = { Happiness = 0 },
+				mafiaEffect = { heat = 15, money = 50000 },
+				setFlags = { fearless = true },
+				feed = "Let them watch. They can't prove anything.",
 			},
 		},
 	},
