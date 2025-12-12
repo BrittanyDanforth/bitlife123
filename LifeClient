@@ -1327,12 +1327,13 @@ godModeOverlay.Parent = mainContainer
 
 -- CRITICAL FIX #163 & #275: Create God Mode Button in header area
 -- CRITICAL FIX #275: Better mobile positioning - centered in header right side
-local godModeBtnSize = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 32 or 36)
+-- CRITICAL FIX #317: Moved button LEFT to avoid overlapping cash display
+local godModeBtnSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 30 or 34)
 godModeButton = Instance.new("TextButton")
 godModeButton.Name = "GodModeBtn"
 godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
--- Position: Right side of header, before any other buttons, properly centered
-local godModeBtnOffset = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or 80)
+-- Position: More to the left to avoid cash overlap - increased offset significantly
+local godModeBtnOffset = Device.IS_TINY_PHONE and 95 or (Device.IS_SMALL_PHONE and 110 or 140)
 godModeButton.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
 godModeButton.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
 godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
@@ -1361,9 +1362,10 @@ updateGodModeButtonAppearance = function()
 end
 
 -- Create the God Mode Modal
+-- CRITICAL FIX #316: Wider modal to fit buttons properly
 local godModeModal = Instance.new("Frame")
 godModeModal.Name = "GodModeModal"
-godModeModal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 380, 0, 0)
+godModeModal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 320 or 420, 0, 0)
 godModeModal.AutomaticSize = Enum.AutomaticSize.Y
 godModeModal.AnchorPoint = Vector2.new(0.5, 0.5)
 godModeModal.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1373,11 +1375,12 @@ godModeModal.Parent = godModeOverlay
 corner(godModeModal, 16)
 stroke(godModeModal, 1, 0.85, C.Gray200)
 
+-- CRITICAL FIX #316: More padding for better layout
 local modalPad = Instance.new("UIPadding")
-modalPad.PaddingTop = UDim.new(0, 14)
-modalPad.PaddingBottom = UDim.new(0, 14)
-modalPad.PaddingLeft = UDim.new(0, 14)
-modalPad.PaddingRight = UDim.new(0, 14)
+modalPad.PaddingTop = UDim.new(0, 16)
+modalPad.PaddingBottom = UDim.new(0, 16)
+modalPad.PaddingLeft = UDim.new(0, 20)
+modalPad.PaddingRight = UDim.new(0, 20)
 modalPad.Parent = godModeModal
 
 local modalScroll = Instance.new("ScrollingFrame")
@@ -1625,8 +1628,9 @@ errorLabel.LayoutOrder = 5
 errorLabel.Parent = modalScroll
 
 -- Button bar
+-- CRITICAL FIX #316: Properly centered button bar with fixed width buttons
 local buttonBar = Instance.new("Frame")
-buttonBar.Size = UDim2.new(1, 0, 0, 45)
+buttonBar.Size = UDim2.new(1, 0, 0, 50)
 buttonBar.BackgroundTransparency = 1
 buttonBar.ZIndex = 152
 buttonBar.LayoutOrder = 6
@@ -1635,26 +1639,31 @@ buttonBar.Parent = modalScroll
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-buttonLayout.Padding = UDim.new(0, 10)
+buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+buttonLayout.Padding = UDim.new(0, 12)
 buttonLayout.Parent = buttonBar
 
+-- CRITICAL FIX #316: Fixed width buttons that fit nicely in the modal
+local btnWidth = Device.IS_TINY_PHONE and 130 or 160
+local btnHeight = Device.IS_TINY_PHONE and 38 or 42
+
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.45, 0, 0, 40)
+closeBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 closeBtn.BackgroundColor3 = C.Gray300
 closeBtn.Text = "Close"
 closeBtn.TextColor3 = C.Gray700
-closeBtn.TextSize = 16
+closeBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
 closeBtn.Font = F.Medium
 closeBtn.ZIndex = 153
 closeBtn.Parent = buttonBar
 corner(closeBtn, 10)
 
 local applyBtn = Instance.new("TextButton")
-applyBtn.Size = UDim2.new(0.45, 0, 0, 40)
+applyBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 applyBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-applyBtn.Text = "⚡ Apply Changes"
+applyBtn.Text = "⚡ Apply"
 applyBtn.TextColor3 = C.Gray800
-applyBtn.TextSize = 16
+applyBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
 applyBtn.Font = F.Medium
 applyBtn.ZIndex = 153
 applyBtn.Parent = buttonBar

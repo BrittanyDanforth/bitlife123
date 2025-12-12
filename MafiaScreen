@@ -385,7 +385,7 @@ end
 -- CONSTRUCTOR
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard)
 	log("=== CREATING MafiaScreen ===")
 	local self = setmetatable({}, MafiaScreen)
 	self.screenGui = screenGui
@@ -396,6 +396,8 @@ function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pla
 	self.currentView = "main" -- main, families, operation
 	self.operationModal = nil
 	self.heistProgress = nil
+	-- CRITICAL FIX #320: Callback to show event card in main UI (like BitLife)
+	self.onShowEventCard = onShowEventCard
 	
 	self:createUI()
 	log("✅ MafiaScreen created successfully")
@@ -1055,10 +1057,26 @@ function MafiaScreen:createOperationCard(op, order)
 	corner(doBtn, 8)
 	
 	doBtn.MouseButton1Click:Connect(function()
-		-- Check if this operation has scenarios
-		if op.id == "heist" or op.id == "ransom" then
-			self:startOperationScenario(op)
+		-- CRITICAL FIX #320: All operations now use scenario-based event cards
+		-- Check if this operation has scenarios (most do now)
+		local scenarioOps = {
+			"intimidation", "black_market", "cyber", "weapons", "ransom", 
+			"enforcer_hit", "protection", "gambling", "heist"
+		}
+		
+		local hasScenario = false
+		for _, scenarioOp in ipairs(scenarioOps) do
+			if op.id == scenarioOp then
+				hasScenario = true
+				break
+			end
+		end
+		
+		if hasScenario then
+			-- CRITICAL FIX #320: Close mafia screen and show event card in main UI
+			self:startScenarioOperation(op)
 		else
+			-- Fallback to direct operation for ops without scenarios
 			self:doOperation(op.id)
 		end
 	end)
@@ -1504,6 +1522,131 @@ function MafiaScreen:attemptLeaveFamily()
 			self:showResult(false, "Can't Leave", result.message or "You can't leave right now.", "⚠️")
 		end
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #320: START SCENARIO OPERATION
+-- Close MafiaScreen and show event card in main UI like BitLife
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:startScenarioOperation(op)
+	-- Hide the mafia screen first
+	self:hide()
+	
+	-- Get the operation scenario from server (if available)
+	-- Or create a local event card format
+	local mobState = self:getMobState()
+	local familyEmoji = mobState and mobState.familyEmoji or "🔫"
+	local familyName = mobState and mobState.familyName or "Crime Family"
+	local familyColor = mobState and mobState.familyColor
+	
+	-- Create event card data in the format LifeClient expects
+	local eventCard = {
+		id = "mafia_scenario_" .. op.id,
+		title = op.emoji .. " " .. op.name,
+		emoji = op.emoji,
+		text = self:getScenarioText(op),
+		isMafiaOperation = true,
+		operationId = op.id,
+		familyName = familyName,
+		familyEmoji = familyEmoji,
+		choices = self:getScenarioChoices(op),
+	}
+	
+	-- Call the callback to show event card in main UI
+	if self.onShowEventCard then
+		self.onShowEventCard(eventCard, function(choiceIndex, accumulatedMods)
+			-- This callback is called when player makes a choice
+			self:processScenarioChoice(op, choiceIndex, accumulatedMods)
+		end)
+	else
+		-- Fallback: just do the operation directly
+		self:doOperation(op.id)
+	end
+end
+
+-- Generate scenario text based on operation type
+function MafiaScreen:getScenarioText(op)
+	local texts = {
+		intimidation = "Time to collect protection money. A local shopkeeper owes the family. You approach the establishment...",
+		black_market = "A shipment of counterfeit goods needs to move through the port. Your contact is waiting. How do you handle this?",
+		cyber = "The tech team has found a vulnerable target. Ransomware is ready to deploy. What's your move?",
+		weapons = "A weapons shipment needs to change hands. The buyer is getting impatient. Execute the deal carefully.",
+		ransom = "Intelligence has identified a high-value target. This is your big score if you pull it off.",
+		enforcer_hit = "The boss has a problem that needs to disappear. This is a test of your loyalty to the family.",
+		protection = "Collection day. Several businesses owe the family money. Time to make the rounds.",
+		gambling = "Tonight's underground casino is expecting high rollers. You're running the operation.",
+		heist = "A major score awaits. The target has been scouted. Now it's time to execute.",
+	}
+	return texts[op.id] or op.description or "The family needs you to handle an operation."
+end
+
+-- Generate scenario choices
+function MafiaScreen:getScenarioChoices(op)
+	local defaultChoices = {
+		{
+			text = "Approach carefully and professionally",
+			successMod = 1.1,
+			riskMod = 0.8,
+			feed = "You handled it like a pro.",
+		},
+		{
+			text = "Go in hard - show them who's boss",
+			successMod = 1.0,
+			riskMod = 1.2,
+			rewardMod = 1.2,
+			feed = "Your reputation precedes you.",
+		},
+		{
+			text = "Find an alternative approach",
+			successMod = 1.2,
+			riskMod = 0.6,
+			rewardMod = 0.9,
+			feed = "Smart thinking kept you safe.",
+		},
+	}
+	
+	-- Custom choices for specific operations
+	local customChoices = {
+		intimidation = {
+			{ text = "Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
+			{ text = "Make an example to scare others", successMod = 0.9, riskMod = 1.3, rewardMod = 1.3, feed = "Fear is a powerful tool." },
+			{ text = "Offer protection services genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
+		},
+		black_market = {
+			{ text = "Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
+			{ text = "Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
+			{ text = "Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
+		},
+		cyber = {
+			{ text = "Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
+			{ text = "Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
+			{ text = "Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
+		},
+		weapons = {
+			{ text = "Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
+			{ text = "Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
+			{ text = "Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
+		},
+		ransom = {
+			{ text = "Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public." },
+			{ text = "Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
+			{ text = "Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
+		},
+		enforcer_hit = {
+			{ text = "Quick and clean - no witnesses", successMod = 1.1, riskMod = 0.9, feed = "Professional." },
+			{ text = "Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
+			{ text = "Send a message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 20, feed = "Fear spreads." },
+		},
+	}
+	
+	return customChoices[op.id] or defaultChoices
+end
+
+-- Process scenario choice and execute operation
+function MafiaScreen:processScenarioChoice(op, choiceIndex, accumulatedMods)
+	-- Execute the operation with modifiers
+	self:doOperation(op.id, accumulatedMods)
 end
 
 function MafiaScreen:doOperation(operationId, modifiers)

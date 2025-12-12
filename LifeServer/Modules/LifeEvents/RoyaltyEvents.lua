@@ -2136,6 +2136,214 @@ RoyaltyEvents.LifeEvents = {
 			{ text = "Youth empowerment", effects = { Happiness = 15, Money = -1500000 }, royaltyEffect = { popularity = 22 }, feed = "Inspiring young leaders!" },
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #321: EXPANDED ROYAL PROGRESSION EVENTS
+	-- More immersive royal life events for better gameplay
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "royal_council_meeting",
+		title = "👑 Royal Council Meeting",
+		emoji = "👑",
+		text = "The royal council has convened to discuss important matters of state. Your input is requested on several key issues.",
+		minAge = 21,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 3,
+		conditions = { requiresFlags = { is_monarch = true } },
+		choices = {
+			{ text = "Focus on economic reforms", effects = { Smarts = 5 }, royaltyEffect = { popularity = 8 }, feed = "Your economic vision impressed the council." },
+			{ text = "Prioritize social welfare programs", effects = { Happiness = 8 }, royaltyEffect = { popularity = 15 }, feed = "The people appreciate your compassion." },
+			{ text = "Strengthen military and defense", effects = { Smarts = 3, Health = 2 }, royaltyEffect = { popularity = 5 }, feed = "The kingdom is secure under your leadership." },
+			{ text = "Delegate to your advisors", effects = { Happiness = 5 }, royaltyEffect = { popularity = -3 }, feed = "You trust your council to handle affairs." },
+		},
+	},
+	{
+		id = "royal_scandal_tabloids",
+		title = "📰 Tabloid Attack!",
+		emoji = "📰",
+		text = "A tabloid newspaper has published embarrassing photos and rumors about you. The palace is in damage control mode!",
+		minAge = 18,
+		maxAge = 80,
+		isRoyalOnly = true,
+		cooldown = 4,
+		baseChance = 0.3,
+		choices = {
+			{ text = "Sue the tabloid for defamation", effects = { Happiness = -5, Money = -500000 }, royaltyEffect = { popularity = 5 }, feed = "You fought back legally!" },
+			{ text = "Issue a dignified statement", effects = { Happiness = -3 }, royaltyEffect = { popularity = 8 }, feed = "Your grace under pressure impressed many." },
+			{ text = "Ignore it completely", effects = { Happiness = -8 }, royaltyEffect = { popularity = -10 }, feed = "Your silence let rumors spread." },
+			{ text = "Turn it into a joke on social media", effects = { Happiness = 10 }, royaltyEffect = { popularity = 15 }, feed = "Your sense of humor won the day!" },
+		},
+	},
+	{
+		id = "royal_investment_opportunity",
+		title = "💎 Royal Investment",
+		emoji = "💎",
+		text = "Your financial advisors present several investment opportunities to grow the royal fortune.",
+		minAge = 25,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 4,
+		choices = {
+			{
+				text = "Invest in sustainable energy",
+				effects = { Smarts = 3 },
+				royaltyEffect = { popularity = 10 },
+				feed = "A forward-thinking investment!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state.Money = (state.Money or 0) + 5000000
+						state:AddFeed("💰 Your green investment paid off! +$5M")
+					else
+						state.Money = (state.Money or 0) - 2000000
+						state:AddFeed("📉 The investment underperformed. -$2M")
+					end
+				end,
+			},
+			{
+				text = "Acquire a luxury resort",
+				effects = { Happiness = 8 },
+				feed = "A new vacation spot for the family!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 20000000
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + 8000000
+						state:AddFeed("🏖️ The resort is profitable! Annual income increased.")
+					end
+				end,
+			},
+			{
+				text = "Start a charitable foundation",
+				effects = { Happiness = 15, Money = -10000000 },
+				royaltyEffect = { popularity = 25 },
+				setFlags = { royal_foundation = true },
+				feed = "Your foundation will help millions!",
+			},
+			{
+				text = "Keep the money in stable bonds",
+				effects = { Happiness = 3 },
+				feed = "Safe and steady wealth management.",
+			},
+		},
+	},
+	{
+		id = "royal_pet_drama",
+		title = "🐕 Royal Pet Situation",
+		emoji = "🐕",
+		text = "Your beloved royal pet is causing quite a stir! The palace staff have concerns.",
+		minAge = 10,
+		maxAge = 80,
+		isRoyalOnly = true,
+		cooldown = 5,
+		choices = {
+			{ text = "The pet stays - hire more staff", effects = { Happiness = 10, Money = -50000 }, feed = "Your loyalty to your pet is admirable!" },
+			{ text = "Get professional training", effects = { Happiness = 5, Money = -20000 }, feed = "Your pet is now palace-worthy." },
+			{ text = "Find a loving new home", effects = { Happiness = -15 }, royaltyEffect = { popularity = -5 }, feed = "A hard decision but necessary." },
+			{ text = "Add MORE pets!", effects = { Happiness = 15, Money = -100000 }, royaltyEffect = { popularity = 8 }, feed = "The palace is now a zoo! The public loves it." },
+		},
+	},
+	{
+		id = "royal_university_degree",
+		title = "🎓 Royal Education Decision",
+		emoji = "🎓",
+		text = "You have the opportunity to pursue higher education at one of the world's most prestigious universities.",
+		minAge = 18,
+		maxAge = 25,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { blockedFlags = { royal_degree = true } },
+		choices = {
+			{ text = "Oxford - History and Politics", effects = { Smarts = 15, Happiness = 5 }, royaltyEffect = { popularity = 10 }, setFlags = { royal_degree = true, oxford_grad = true }, feed = "You graduated from Oxford with honors!" },
+			{ text = "Cambridge - Economics", effects = { Smarts = 12, Happiness = 3 }, royaltyEffect = { popularity = 10 }, setFlags = { royal_degree = true, cambridge_grad = true }, feed = "A Cambridge economist on the throne!" },
+			{ text = "Harvard - International Relations", effects = { Smarts = 10, Happiness = 8 }, royaltyEffect = { popularity = 8 }, setFlags = { royal_degree = true, harvard_grad = true }, feed = "You expanded your global perspective." },
+			{ text = "Skip university - learn through royal duties", effects = { Happiness = 5 }, royaltyEffect = { popularity = -5 }, setFlags = { no_university = true }, feed = "Some lessons can't be taught in classrooms." },
+		},
+	},
+	{
+		id = "royal_love_triangle",
+		title = "💔 Royal Love Complications",
+		emoji = "💔",
+		text = "Rumors are swirling about a love triangle involving you and two eligible nobles. The tabloids are having a field day!",
+		minAge = 20,
+		maxAge = 40,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { blockedFlags = { married = true, love_triangle_resolved = true } },
+		choices = {
+			{ text = "Choose the one your heart desires", effects = { Happiness = 20 }, royaltyEffect = { popularity = 5 }, setFlags = { love_triangle_resolved = true, passionate_royal = true }, feed = "Love wins! The public adores your romance." },
+			{ text = "Choose the politically advantageous match", effects = { Happiness = -5, Smarts = 5 }, royaltyEffect = { popularity = 10 }, setFlags = { love_triangle_resolved = true, strategic_royal = true }, feed = "A wise choice for the kingdom." },
+			{ text = "Reject both and focus on yourself", effects = { Happiness = 5 }, royaltyEffect = { popularity = -3 }, setFlags = { love_triangle_resolved = true, independent_royal = true }, feed = "You're not ready to settle down." },
+			{ text = "Try to keep seeing both secretly", effects = { Happiness = 10 }, royaltyEffect = { popularity = -15, scandals = 1 }, setFlags = { love_triangle_resolved = true, scandalous_royal = true }, feed = "This can only end badly..." },
+		},
+	},
+	{
+		id = "royal_balcony_appearance",
+		title = "👋 Balcony Appearance",
+		emoji = "👋",
+		text = "Thousands have gathered outside the palace for a royal occasion. Time for the famous balcony wave!",
+		minAge = 5,
+		maxAge = 100,
+		isRoyalOnly = true,
+		cooldown = 2,
+		choices = {
+			{ text = "Wave enthusiastically and blow kisses", effects = { Happiness = 12 }, royaltyEffect = { popularity = 10 }, feed = "The crowd went wild!" },
+			{ text = "Maintain dignified composure", effects = { Happiness = 5 }, royaltyEffect = { popularity = 5 }, feed = "Regal and refined as always." },
+			{ text = "Make funny faces at the kids below", effects = { Happiness = 15 }, royaltyEffect = { popularity = 15 }, feed = "You're the people's favorite!" },
+			{ text = "Quickly retreat inside", effects = { Happiness = -5 }, royaltyEffect = { popularity = -8 }, feed = "The crowd was disappointed." },
+		},
+	},
+	{
+		id = "royal_state_dinner",
+		title = "🍽️ State Dinner",
+		emoji = "🍽️",
+		text = "A foreign leader is visiting for an important state dinner. Every word and action will be scrutinized.",
+		minAge = 18,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 3,
+		choices = {
+			{ text = "Be warm and personally engaging", effects = { Happiness = 8 }, royaltyEffect = { popularity = 12 }, feed = "You charmed the diplomatic delegation!" },
+			{ text = "Stick strictly to protocol", effects = { Smarts = 3 }, royaltyEffect = { popularity = 5 }, feed = "A flawless diplomatic performance." },
+			{ text = "Make a bold political statement", effects = { Happiness = 5, Smarts = 5 }, royaltyEffect = { popularity = -5 }, feed = "Controversial but memorable." },
+			{ text = "Focus on learning about their culture", effects = { Smarts = 8, Happiness = 5 }, royaltyEffect = { popularity = 10 }, feed = "Your cultural curiosity impressed everyone." },
+		},
+	},
+	{
+		id = "royal_hunting_trip",
+		title = "🦌 Royal Hunt",
+		emoji = "🦌",
+		text = "The royal hunting party is being organized. Traditional sport or modern controversy?",
+		minAge = 16,
+		maxAge = 75,
+		isRoyalOnly = true,
+		cooldown = 4,
+		choices = {
+			{ text = "Lead the traditional hunt", effects = { Health = 5, Happiness = 8 }, royaltyEffect = { popularity = -10 }, feed = "Traditionalists approved, activists didn't." },
+			{ text = "Convert it to a photography safari", effects = { Happiness = 10, Smarts = 3 }, royaltyEffect = { popularity = 15 }, feed = "Modern and environmentally conscious!" },
+			{ text = "Cancel the hunt entirely", effects = { Happiness = -3 }, royaltyEffect = { popularity = 12 }, feed = "Animal rights groups praised your decision." },
+			{ text = "Make it a conservation education event", effects = { Happiness = 8, Smarts = 5 }, royaltyEffect = { popularity = 20 }, setFlags = { conservation_royal = true }, feed = "You turned tradition into progress!" },
+		},
+	},
+	{
+		id = "royal_secret_revealed",
+		title = "🤫 Royal Secret Exposed",
+		emoji = "🤫",
+		text = "A palace insider has leaked information about a royal secret to the press. How do you handle this crisis?",
+		minAge = 20,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 8,
+		baseChance = 0.2,
+		choices = {
+			{ text = "Get ahead of the story - own it publicly", effects = { Happiness = -10 }, royaltyEffect = { popularity = 10 }, feed = "Your honesty was respected." },
+			{ text = "Deny everything through official channels", effects = { Happiness = -5 }, royaltyEffect = { popularity = -15 }, feed = "The cover-up made it worse." },
+			{ text = "Fire the leaker and tighten security", effects = { Happiness = -8 }, royaltyEffect = { popularity = -5 }, feed = "Trust in the palace is broken." },
+			{ text = "Address it with humor on social media", effects = { Happiness = 8 }, royaltyEffect = { popularity = 20 }, feed = "Your relatability won the day!" },
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════

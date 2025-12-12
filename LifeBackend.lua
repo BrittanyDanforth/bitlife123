@@ -3294,6 +3294,7 @@ end
 -- CRITICAL FIX #12: Annual Cost of Living Expenses
 -- Players should have annual expenses that scale with lifestyle
 -- Without this, money only goes up, never down from basic living costs
+-- CRITICAL FIX #318: Young adults (18-22) without jobs live with parents = lower expenses
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:applyLivingExpenses(state)
 	-- Don't apply expenses if player is under 18 (parents support them)
@@ -3306,16 +3307,56 @@ function LifeBackend:applyLivingExpenses(state)
 		return
 	end
 	
-	local baseCost = 8000 -- $8,000/year minimum for basic living
-	local totalExpenses = baseCost
-	
-	-- Add housing costs if no owned property
+	local age = state.Age or 18
+	local hasJob = state.Job and state.Job.title and state.Job.title ~= "" and state.Job.title ~= "Unemployed"
+	local inCollege = state.Education and (state.Education.inCollege or state.Education.enrolled)
 	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
-	if not hasProperty then
-		totalExpenses = totalExpenses + 12000 -- Rent: $1,000/month
+	
+	-- CRITICAL FIX #318: Young adults (18-22) living situations
+	-- If no job and young, they likely live with parents (much lower expenses)
+	-- If in college, they have student living expenses (moderate)
+	-- If employed, normal adult expenses
+	local baseCost = 8000 -- Default $8,000/year minimum for basic living
+	local totalExpenses = 0
+	local expenseDescription = "living expenses"
+	
+	if age <= 22 and not hasJob and not hasProperty then
+		-- CRITICAL FIX #318: Young adults without jobs live with parents
+		if inCollege then
+			-- College student: dorm/shared housing, meal plan
+			baseCost = 3000 -- Just personal expenses, food plan covered
+			totalExpenses = baseCost
+			expenseDescription = "college living costs"
+		else
+			-- Living with parents - minimal expenses
+			baseCost = 1500 -- Phone, car insurance, personal items only
+			totalExpenses = baseCost
+			expenseDescription = "personal expenses (living with family)"
+		end
+	elseif age <= 25 and not hasJob then
+		-- 23-25 without job - struggling but parents may still help
+		baseCost = 4000
+		totalExpenses = baseCost
+		expenseDescription = "basic living costs"
+	else
+		-- Normal adult with or seeking employment
+		totalExpenses = baseCost
+		
+		-- Add housing costs if no owned property
+		if not hasProperty then
+			-- CRITICAL FIX #318: Rent scales with age/career stage
+			local rentCost = 9000 -- Base rent $750/month for starter apartment
+			if age > 30 then
+				rentCost = 12000 -- $1,000/month for established adult
+			end
+			if age > 45 then
+				rentCost = 15000 -- $1,250/month for established family
+			end
+			totalExpenses = totalExpenses + rentCost
+		end
 	end
 	
-	-- Add vehicle maintenance if owns vehicles
+	-- Add vehicle maintenance if owns vehicles (everyone pays this)
 	local numVehicles = state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles or 0
 	if numVehicles > 0 then
 		totalExpenses = totalExpenses + (numVehicles * 2000) -- $2,000/year per vehicle
@@ -3335,10 +3376,12 @@ function LifeBackend:applyLivingExpenses(state)
 		totalExpenses = totalExpenses + (childCount * 5000) -- $5,000/year per child
 	end
 	
-	-- Healthcare costs increase with age
-	if (state.Age or 0) > 50 then
-		local ageFactor = ((state.Age or 50) - 50) / 10
+	-- Healthcare costs increase with age (only for adults 30+)
+	if age > 50 then
+		local ageFactor = (age - 50) / 10
 		totalExpenses = totalExpenses + math.floor(2000 * ageFactor)
+	elseif age > 30 then
+		totalExpenses = totalExpenses + 500 -- Small health insurance costs
 	end
 	
 	-- Apply expenses (but don't go below 0)
@@ -3351,7 +3394,7 @@ function LifeBackend:applyLivingExpenses(state)
 		table.insert(state.YearLog, {
 			type = "expenses",
 			emoji = "🏠",
-			text = string.format("Paid $%s in living expenses", formatMoney(totalExpenses)),
+			text = string.format("Paid $%s in %s", formatMoney(totalExpenses), expenseDescription),
 			amount = -totalExpenses,
 		})
 	else
@@ -3366,7 +3409,7 @@ function LifeBackend:applyLivingExpenses(state)
 		table.insert(state.YearLog, {
 			type = "expenses",
 			emoji = "💸",
-			text = string.format("Couldn't afford $%s in expenses - went broke!", formatMoney(totalExpenses)),
+			text = string.format("Couldn't afford $%s in %s - struggling!", formatMoney(totalExpenses), expenseDescription),
 			amount = -paidAmount,
 		})
 	end
