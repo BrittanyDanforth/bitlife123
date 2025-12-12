@@ -1322,15 +1322,19 @@ godModeOverlay.Visible = false
 godModeOverlay.ZIndex = 150
 godModeOverlay.Parent = mainContainer
 
--- CRITICAL FIX #163: Create God Mode Button in header area
-local godModeBtnSize = Device.IS_TINY_PHONE and 28 or 36
+-- CRITICAL FIX #163 & #275: Create God Mode Button in header area
+-- CRITICAL FIX #275: Better mobile positioning - centered in header right side
+local godModeBtnSize = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 32 or 36)
 godModeButton = Instance.new("TextButton")
 godModeButton.Name = "GodModeBtn"
 godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
-godModeButton.Position = UDim2.new(1, -(godModeBtnSize + (Device.IS_TINY_PHONE and 80 or 120)), 0.5, -godModeBtnSize/2)
+-- Position: Right side of header, before any other buttons, properly centered
+local godModeBtnOffset = Device.IS_TINY_PHONE and 50 or (Device.IS_SMALL_PHONE and 60 or 80)
+godModeButton.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
+godModeButton.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
 godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
 godModeButton.Text = "⚡"
-godModeButton.TextSize = Device.IS_TINY_PHONE and 14 or 18
+godModeButton.TextSize = Device.IS_TINY_PHONE and 16 or 18
 godModeButton.ZIndex = 8
 godModeButton.Visible = false -- Hidden by default, shown if hasGodMode
 godModeButton.Parent = headerBar
@@ -4115,28 +4119,32 @@ do
 		{ id = "Indigenous", label = "🪶 Indigenous" }, { id = "Mixed", label = "🌈 Mixed" },
 	}
 	
+	-- CRITICAL FIX #274: Helper function to create ethnicity buttons (isolates locals)
 	IntroUI.ethnicityBtns = {}
-	for _, eth in ipairs(ethOpts) do
-		local b = Instance.new("TextButton")
-		b.Name = eth.id
-		b.Size = UDim2.new(0, 100, 0, 34)
-		b.BackgroundColor3 = eth.id == "Random" and C.Purple or C.Gray200
-		b.Text = eth.label
-		b.TextColor3 = eth.id == "Random" and C.White or C.Gray600
-		b.TextSize = Device.IS_TINY_PHONE and 10 or 11
-		b.Font = F.Medium
-		b.TextTruncate = Enum.TextTruncate.AtEnd
-		b.ZIndex = 74
-		b.Parent = ef
-		corner(b, 6)
-		IntroUI.ethnicityBtns[eth.id] = b
-		b.MouseButton1Click:Connect(function()
-			GodModeCreateData.ethnicity = eth.id
+	local function createEthBtn(ethId, ethLabel)
+		local btn = Instance.new("TextButton")
+		btn.Name = ethId
+		btn.Size = UDim2.new(0, 100, 0, 34)
+		btn.BackgroundColor3 = ethId == "Random" and C.Purple or C.Gray200
+		btn.Text = ethLabel
+		btn.TextColor3 = ethId == "Random" and C.White or C.Gray600
+		btn.TextSize = Device.IS_TINY_PHONE and 10 or 11
+		btn.Font = F.Medium
+		btn.TextTruncate = Enum.TextTruncate.AtEnd
+		btn.ZIndex = 74
+		btn.Parent = ef
+		corner(btn, 6)
+		IntroUI.ethnicityBtns[ethId] = btn
+		btn.MouseButton1Click:Connect(function()
+			GodModeCreateData.ethnicity = ethId
 			for id, bt in pairs(IntroUI.ethnicityBtns) do
-				bt.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
-				bt.TextColor3 = id == eth.id and C.White or C.Gray600
+				bt.BackgroundColor3 = id == ethId and C.Purple or C.Gray200
+				bt.TextColor3 = id == ethId and C.White or C.Gray600
 			end
 		end)
+	end
+	for _, eth in ipairs(ethOpts) do
+		createEthBtn(eth.id, eth.label)
 	end
 end
 
@@ -4166,35 +4174,50 @@ do
 			return false
 		end
 		
-		-- CRITICAL FIX #250: Wrap loop in do-end block to prevent "Out of local registers" error
-		-- Lua bytecode has a 200 local register limit per function scope
-		for i, w in ipairs(wOpts) do do
+		-- CRITICAL FIX #291: Helper function to create wealth buttons (isolates local registers)
+		local function createWealthBtn(parent, wealthData, layoutOrder, checkRoyalty)
 			local btn = Instance.new("TextButton")
-			btn.Name = w.id; btn.Size = UDim2.new(1, 0, 0, 44)
-			local isRoyal = w.id == "Royal"
-			local hasRoyal = isRoyal and hasRoyaltyGamepass()
-			local defaultColor = w.id == "Middle Class" and C.Green or (isRoyal and (hasRoyal and Color3.fromRGB(255, 215, 0) or C.Gray300) or C.Gray100)
+			btn.Name = wealthData.id
+			btn.Size = UDim2.new(1, 0, 0, 44)
+			local isRoyal = wealthData.id == "Royal"
+			local hasRoyal = isRoyal and checkRoyalty()
+			local defaultColor = wealthData.id == "Middle Class" and C.Green or (isRoyal and (hasRoyal and Color3.fromRGB(255, 215, 0) or C.Gray300) or C.Gray100)
 			btn.BackgroundColor3 = defaultColor
-			btn.Text = ""; btn.LayoutOrder = i + 1; btn.ZIndex = 74; btn.Parent = ws
+			btn.Text = ""
+			btn.LayoutOrder = layoutOrder
+			btn.ZIndex = 74
+			btn.Parent = parent
 			corner(btn, 8)
+			
 			local lbl = Instance.new("TextLabel")
-			lbl.Size = UDim2.new(1, -16, 0, 24); lbl.Position = UDim2.new(0, 8, 0, 4)
+			lbl.Size = UDim2.new(1, -16, 0, 24)
+			lbl.Position = UDim2.new(0, 8, 0, 4)
 			lbl.BackgroundTransparency = 1
-			lbl.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or w.label
-			lbl.TextColor3 = w.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
-			lbl.TextSize = 14; lbl.Font = F.Medium; lbl.TextXAlignment = Enum.TextXAlignment.Left
-			lbl.ZIndex = 75; lbl.Parent = btn
+			lbl.Text = isRoyal and (hasRoyal and "👑 Royal Family" or "🔒 Royal Family") or wealthData.label
+			lbl.TextColor3 = wealthData.id == "Middle Class" and C.White or (isRoyal and (hasRoyal and C.Gray900 or C.Gray500) or C.Gray800)
+			lbl.TextSize = 14
+			lbl.Font = F.Medium
+			lbl.TextXAlignment = Enum.TextXAlignment.Left
+			lbl.ZIndex = 75
+			lbl.Parent = btn
+			
 			local desc = Instance.new("TextLabel")
-			desc.Size = UDim2.new(1, -16, 0, 16); desc.Position = UDim2.new(0, 8, 0, 26)
+			desc.Size = UDim2.new(1, -16, 0, 16)
+			desc.Position = UDim2.new(0, 8, 0, 26)
 			desc.BackgroundTransparency = 1
-			desc.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or w.desc
-			desc.TextColor3 = w.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
-			desc.TextSize = 11; desc.Font = F.Body; desc.TextXAlignment = Enum.TextXAlignment.Left
-			desc.ZIndex = 75; desc.Parent = btn
-			IntroUI.wealthBtns[w.id] = { btn = btn, label = lbl, desc = desc, isRoyal = isRoyal }
+			desc.Text = isRoyal and (hasRoyal and "$10M+ • Prince/Princess" or "Requires Royalty Gamepass") or wealthData.desc
+			desc.TextColor3 = wealthData.id == "Middle Class" and Color3.fromRGB(220, 252, 231) or (isRoyal and (hasRoyal and Color3.fromRGB(180, 150, 50) or C.Gray400) or C.Gray500)
+			desc.TextSize = 11
+			desc.Font = F.Body
+			desc.TextXAlignment = Enum.TextXAlignment.Left
+			desc.ZIndex = 75
+			desc.Parent = btn
+			
+			IntroUI.wealthBtns[wealthData.id] = { btn = btn, label = lbl, desc = desc, isRoyal = isRoyal }
+			
 			btn.MouseButton1Click:Connect(function()
-				if w.requiresGamepass then
-					local hasPass = hasRoyaltyGamepass()
+				if wealthData.requiresGamepass then
+					local hasPass = checkRoyalty()
 					if not hasPass then
 						if PromptGamepass then
 							pcall(function() PromptGamepass:FireServer("ROYALTY") end)
@@ -4202,12 +4225,12 @@ do
 						return
 					end
 				end
-				GodModeCreateData.familyWealth = w.id
-				GodModeCreateData.isRoyalBirth = (w.id == "Royal")
+				GodModeCreateData.familyWealth = wealthData.id
+				GodModeCreateData.isRoyalBirth = (wealthData.id == "Royal")
 				for id, dt in pairs(IntroUI.wealthBtns) do
-					local isSelected = id == w.id
+					local isSelected = id == wealthData.id
 					local isRoyalBtn = dt.isRoyal
-					local hasRoyalPass = isRoyalBtn and hasRoyaltyGamepass()
+					local hasRoyalPass = isRoyalBtn and checkRoyalty()
 					if isSelected then
 						dt.btn.BackgroundColor3 = isRoyalBtn and Color3.fromRGB(255, 215, 0) or C.Green
 						dt.label.TextColor3 = isRoyalBtn and C.Gray900 or C.White
@@ -4219,73 +4242,111 @@ do
 					end
 				end
 			end)
-		end end
+		end
+		
+		-- Create wealth buttons using helper function
+		for i, w in ipairs(wOpts) do
+			createWealthBtn(ws, w, i + 1, hasRoyaltyGamepass)
+		end
 end
 
--- Stats section
+-- CRITICAL FIX #273: Stats section - wrapped in helper function to avoid register limit
 do
 	local scroll = IntroUI.godModeScroll
 	local ss = makeGodModeSection(scroll, "📊 Starting Stats", 5)
-		IntroUI.statSliders = {}
-		local statData = {{ key = "Happiness", icon = "😊", color = C.Yellow }, { key = "Health", icon = "❤️", color = C.Green }, { key = "Smarts", icon = "🧠", color = C.Purple }, { key = "Looks", icon = "💄", color = C.Pink }}
-		for i, s in ipairs(statData) do
-			local r = Instance.new("Frame")
-			r.Size = UDim2.new(1, 0, 0, 36); r.BackgroundTransparency = 1; r.LayoutOrder = i + 1; r.ZIndex = 73; r.Parent = ss
-			local lb = Instance.new("TextLabel")
-			lb.Size = UDim2.new(0, 80, 1, 0); lb.BackgroundTransparency = 1
-			lb.Text = s.icon .. " " .. s.key; lb.TextColor3 = C.Gray700; lb.TextSize = 13
-			lb.Font = F.Medium; lb.TextXAlignment = Enum.TextXAlignment.Left; lb.ZIndex = 74; lb.Parent = r
-			local bg = Instance.new("Frame")
-			bg.Size = UDim2.new(1, -130, 0, 12); bg.Position = UDim2.new(0, 85, 0.5, 0)
-			bg.AnchorPoint = Vector2.new(0, 0.5); bg.BackgroundColor3 = C.Gray200; bg.ZIndex = 74; bg.Parent = r
-			corner(bg, 6)
-			local fl = Instance.new("Frame")
-			fl.Size = UDim2.new(GodModeCreateData.stats[s.key] / 100, 0, 1, 0)
-			fl.BackgroundColor3 = s.color; fl.ZIndex = 75; fl.Parent = bg
-			corner(fl, 6)
-			local vl = Instance.new("TextLabel")
-			vl.Size = UDim2.new(0, 40, 1, 0); vl.Position = UDim2.new(1, -40, 0, 0)
-			vl.BackgroundTransparency = 1; vl.Text = tostring(GodModeCreateData.stats[s.key]) .. "%"
-			vl.TextColor3 = C.Gray700; vl.TextSize = 13; vl.Font = F.Medium
-			vl.TextXAlignment = Enum.TextXAlignment.Right; vl.ZIndex = 74; vl.Parent = r
-			IntroUI.statSliders[s.key] = { fill = fl, value = vl, bg = bg }
-			
-			-- CRITICAL UI FIX: Draggable stat sliders with proper touch/mouse support
-			local dragging = false
-			local function updateSlider(posX)
-				local relX = math.clamp((posX - bg.AbsolutePosition.X) / bg.AbsoluteSize.X, 0, 1)
-				local newVal = math.floor(relX * 100)
-				GodModeCreateData.stats[s.key] = newVal
-				fl.Size = UDim2.new(relX, 0, 1, 0)
-				vl.Text = tostring(newVal) .. "%"
-			end
-			
-			bg.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = true
-					updateSlider(input.Position.X)
-				end
-			end)
-			
-			bg.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = false
-				end
-			end)
-			
-			-- Listen for mouse/touch movement globally while dragging
-			game:GetService("UserInputService").InputChanged:Connect(function(input)
-				if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-					updateSlider(input.Position.X)
-				end
-			end)
-			
-			game:GetService("UserInputService").InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					dragging = false
-				end
-			end)
+	IntroUI.statSliders = {}
+	
+	-- Helper function to create each slider (isolates local variables)
+	local function createStatSlider(parent, statKey, statIcon, statColor, layoutOrder)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 36)
+		row.BackgroundTransparency = 1
+		row.LayoutOrder = layoutOrder
+		row.ZIndex = 73
+		row.Parent = parent
+		
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(0, 80, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = statIcon .. " " .. statKey
+		label.TextColor3 = C.Gray700
+		label.TextSize = 13
+		label.Font = F.Medium
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.ZIndex = 74
+		label.Parent = row
+		
+		local sliderBg = Instance.new("Frame")
+		sliderBg.Size = UDim2.new(1, -130, 0, 12)
+		sliderBg.Position = UDim2.new(0, 85, 0.5, 0)
+		sliderBg.AnchorPoint = Vector2.new(0, 0.5)
+		sliderBg.BackgroundColor3 = C.Gray200
+		sliderBg.ZIndex = 74
+		sliderBg.Parent = row
+		corner(sliderBg, 6)
+		
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(GodModeCreateData.stats[statKey] / 100, 0, 1, 0)
+		fill.BackgroundColor3 = statColor
+		fill.ZIndex = 75
+		fill.Parent = sliderBg
+		corner(fill, 6)
+		
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Size = UDim2.new(0, 40, 1, 0)
+		valueLabel.Position = UDim2.new(1, -40, 0, 0)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Text = tostring(GodModeCreateData.stats[statKey]) .. "%"
+		valueLabel.TextColor3 = C.Gray700
+		valueLabel.TextSize = 13
+		valueLabel.Font = F.Medium
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.ZIndex = 74
+		valueLabel.Parent = row
+		
+		IntroUI.statSliders[statKey] = { fill = fill, value = valueLabel, bg = sliderBg }
+		
+		-- Dragging logic
+		local dragging = false
+		local function updateSlider(posX)
+			local relX = math.clamp((posX - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+			local newVal = math.floor(relX * 100)
+			GodModeCreateData.stats[statKey] = newVal
+			fill.Size = UDim2.new(relX, 0, 1, 0)
+			valueLabel.Text = tostring(newVal) .. "%"
 		end
+		
+		sliderBg.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				updateSlider(input.Position.X)
+			end
+		end)
+		
+		sliderBg.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+		
+		game:GetService("UserInputService").InputChanged:Connect(function(input)
+			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				updateSlider(input.Position.X)
+			end
+		end)
+		
+		game:GetService("UserInputService").InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+	end
+	
+	-- Create sliders using helper function
+	createStatSlider(ss, "Happiness", "😊", C.Yellow, 2)
+	createStatSlider(ss, "Health", "❤️", C.Green, 3)
+	createStatSlider(ss, "Smarts", "🧠", C.Purple, 4)
+	createStatSlider(ss, "Looks", "💄", C.Pink, 5)
 end
 
 -- Country section with flag emojis
@@ -4320,18 +4381,30 @@ do
 		cl.CanvasSize = UDim2.new(0, 0, 0, #cOpts * 32)
 		cl.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		corner(cl, 8); stroke(cl, 1, 0.5, C.Gray300)
+		-- CRITICAL FIX #290: Helper function to create country buttons (isolates locals)
 		local cll = Instance.new("UIListLayout"); cll.Parent = cl
-		for _, c in ipairs(cOpts) do
-			local cb = Instance.new("TextButton")
-			cb.Size = UDim2.new(1, -6, 0, 32); cb.BackgroundColor3 = C.White
-			cb.Text = c.flag .. " " .. c.id; cb.TextColor3 = C.Gray700
-			cb.TextSize = 13; cb.Font = F.Body; cb.ZIndex = 81; cb.Parent = cl
-			cb.MouseEnter:Connect(function() cb.BackgroundColor3 = C.Gray100 end)
-			cb.MouseLeave:Connect(function() cb.BackgroundColor3 = C.White end)
-			cb.MouseButton1Click:Connect(function()
-				GodModeCreateData.country = c.id; dd.Text = c.flag .. " " .. c.id
-				cl.Visible = false; cl.Size = UDim2.new(1, 0, 0, 0); exp = false
+		local function createCountryBtn(countryId, countryFlag)
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, -6, 0, 32)
+			btn.BackgroundColor3 = C.White
+			btn.Text = countryFlag .. " " .. countryId
+			btn.TextColor3 = C.Gray700
+			btn.TextSize = 13
+			btn.Font = F.Body
+			btn.ZIndex = 81
+			btn.Parent = cl
+			btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.Gray100 end)
+			btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.White end)
+			btn.MouseButton1Click:Connect(function()
+				GodModeCreateData.country = countryId
+				dd.Text = countryFlag .. " " .. countryId
+				cl.Visible = false
+				cl.Size = UDim2.new(1, 0, 0, 0)
+				exp = false
 			end)
+		end
+		for _, c in ipairs(cOpts) do
+			createCountryBtn(c.id, c.flag)
 		end
 	dd.MouseButton1Click:Connect(function()
 		exp = not exp; cl.Visible = exp
