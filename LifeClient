@@ -4571,30 +4571,70 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #103: Add "Born Royal" button to GENDER selection screen
 -- This allows Royalty gamepass owners to be born as royalty WITHOUT needing God Mode
--- Works independently of God Mode - just needs Royalty gamepass
+-- CRITICAL FIX: Split into multiple do-blocks to stay under 200 register limit
 -- ═══════════════════════════════════════════════════════════════════════════════
-do
-	-- Helper to check Royalty gamepass ownership
-	local function hasRoyaltyGamepass()
-		if CheckGamepass then
-			local success, owns = pcall(function()
-				return CheckGamepass:InvokeServer("ROYALTY")
-			end)
-			return success and owns == true
-		end
-		return false
+
+-- Royal birth shared state (module level to avoid register issues)
+IntroUI.RoyalBirthData = {
+	gender = "Male",
+	name = "",
+	ethnicity = "Random",
+	overlay = nil,
+}
+
+IntroUI.RoyalCountries = {
+	{ id = "uk", name = "United Kingdom", emoji = "🇬🇧" },
+	{ id = "spain", name = "Spain", emoji = "🇪🇸" },
+	{ id = "sweden", name = "Sweden", emoji = "🇸🇪" },
+	{ id = "japan", name = "Japan", emoji = "🇯🇵" },
+	{ id = "monaco", name = "Monaco", emoji = "🇲🇨" },
+	{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦" },
+	{ id = "thailand", name = "Thailand", emoji = "🇹🇭" },
+	{ id = "morocco", name = "Morocco", emoji = "🇲🇦" },
+	{ id = "jordan", name = "Jordan", emoji = "🇯🇴" },
+	{ id = "belgium", name = "Belgium", emoji = "🇧🇪" },
+	{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱" },
+	{ id = "norway", name = "Norway", emoji = "🇳🇴" },
+	{ id = "denmark", name = "Denmark", emoji = "🇩🇰" },
+}
+
+IntroUI.EthnicityOptions = {
+	{ id = "Random", label = "🎲 Random" },
+	{ id = "Caucasian", label = "🧑‍🦱 Caucasian" },
+	{ id = "African", label = "👨🏿 African" },
+	{ id = "Asian", label = "🧑🏻 Asian" },
+	{ id = "Hispanic", label = "🧑🏽 Hispanic" },
+	{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
+	{ id = "Mixed", label = "🌈 Mixed" },
+}
+
+-- Helper to check Royalty gamepass ownership (module level)
+local function checkRoyaltyGamepass()
+	if CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer("ROYALTY")
+		end)
+		return success and owns == true
 	end
-	
+	return false
+end
+
+-- Forward declare Royal UI functions at module level
+IntroUI.showRoyalCountrySelection = nil
+IntroUI.showRoyalGenderSelection = nil
+
+-- Royal button setup block
+do
 	local royaltyBtn = Instance.new("TextButton")
 	royaltyBtn.Name = "RoyaltyGenderBtn"
 	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 48)
-	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Royal Gold
+	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 	royaltyBtn.Font = F.Title
 	royaltyBtn.TextSize = 16
 	royaltyBtn.TextColor3 = C.Gray900
 	royaltyBtn.Text = "👑 Born Royal"
 	royaltyBtn.AutoButtonColor = false
-	royaltyBtn.LayoutOrder = 9 -- Before Customize, after Female
+	royaltyBtn.LayoutOrder = 9
 	royaltyBtn.ZIndex = 72
 	royaltyBtn.Parent = IntroUI.genderBtns
 	pill(royaltyBtn)
@@ -4609,65 +4649,53 @@ do
 		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
 	end)
 	
-	-- Royal country selection state
-	local royalCountryOverlay = nil
-	local selectedRoyalCountry = nil
+	royaltyBtn.MouseButton1Click:Connect(function()
+		if checkRoyaltyGamepass() then
+			if IntroUI.showRoyalCountrySelection then
+				IntroUI.showRoyalCountrySelection()
+			end
+		else
+			if PromptGamepass then
+				pcall(function() PromptGamepass:InvokeServer("ROYALTY") end)
+			end
+		end
+	end)
 	
-	-- CRITICAL FIX: Forward declare functions to avoid nil errors
-	local showRoyalGenderSelection
-	local showRoyalCountrySelection
+	IntroUI.updateRoyaltyGenderBtn = function()
+		local hasRoyal = checkRoyaltyGamepass()
+		if hasRoyal then
+			royaltyBtn.Text = "👑 Born Royal"
+			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
+		else
+			royaltyBtn.Text = "🔒 Born Royal (Gamepass)"
+			royaltyBtn.BackgroundColor3 = C.Gray300
+			stroke(royaltyBtn, 1, 0.5, C.Gray400)
+		end
+	end
 	
-	-- Royal birth customization data (must be before functions that use it)
-	local RoyalBirthData = {
-		gender = "Male",
-		name = "",
-		ethnicity = "Random",
-	}
-	
-	-- Ethnicity options for royal birth
-	local EthnicityOptions = {
-		{ id = "Random", label = "🎲 Random" },
-		{ id = "Caucasian", label = "🧑‍🦱 Caucasian" },
-		{ id = "African", label = "👨🏿 African" },
-		{ id = "Asian", label = "🧑🏻 Asian" },
-		{ id = "Hispanic", label = "🧑🏽 Hispanic" },
-		{ id = "Middle Eastern", label = "🧔🏽 Middle Eastern" },
-		{ id = "Mixed", label = "🌈 Mixed" },
-	}
-	
-	-- Royal countries list
-	local RoyalCountries = {
-		{ id = "uk", name = "United Kingdom", emoji = "🇬🇧", flag = "🇬🇧" },
-		{ id = "spain", name = "Spain", emoji = "🇪🇸", flag = "🇪🇸" },
-		{ id = "sweden", name = "Sweden", emoji = "🇸🇪", flag = "🇸🇪" },
-		{ id = "japan", name = "Japan", emoji = "🇯🇵", flag = "🇯🇵" },
-		{ id = "monaco", name = "Monaco", emoji = "🇲🇨", flag = "🇲🇨" },
-		{ id = "saudi", name = "Saudi Arabia", emoji = "🇸🇦", flag = "🇸🇦" },
-		{ id = "thailand", name = "Thailand", emoji = "🇹🇭", flag = "🇹🇭" },
-		{ id = "morocco", name = "Morocco", emoji = "🇲🇦", flag = "🇲🇦" },
-		{ id = "jordan", name = "Jordan", emoji = "🇯🇴", flag = "🇯🇴" },
-		{ id = "belgium", name = "Belgium", emoji = "🇧🇪", flag = "🇧🇪" },
-		{ id = "netherlands", name = "Netherlands", emoji = "🇳🇱", flag = "🇳🇱" },
-		{ id = "norway", name = "Norway", emoji = "🇳🇴", flag = "🇳🇴" },
-		{ id = "denmark", name = "Denmark", emoji = "🇩🇰", flag = "🇩🇰" },
-	}
-	
-	showRoyalCountrySelection = function()
-		if royalCountryOverlay then return end
+	task.defer(IntroUI.updateRoyaltyGenderBtn)
+end
+
+-- Royal Country Selection function block
+do
+	IntroUI.showRoyalCountrySelection = function()
+		if IntroUI.RoyalBirthData.overlay then return end
 		
 		-- Reset royal birth data
-		RoyalBirthData.gender = "Male"
-		RoyalBirthData.name = ""
-		RoyalBirthData.ethnicity = "Random"
+		IntroUI.RoyalBirthData.gender = "Male"
+		IntroUI.RoyalBirthData.name = ""
+		IntroUI.RoyalBirthData.ethnicity = "Random"
 		
 		-- Create overlay
-		royalCountryOverlay = Instance.new("Frame")
-		royalCountryOverlay.Name = "RoyalCountryOverlay"
-		royalCountryOverlay.Size = UDim2.fromScale(1, 1)
-		royalCountryOverlay.BackgroundColor3 = C.Black
-		royalCountryOverlay.BackgroundTransparency = 0.4
-		royalCountryOverlay.ZIndex = 80
-		royalCountryOverlay.Parent = screenGui
+		local overlay = Instance.new("Frame")
+		overlay.Name = "RoyalCountryOverlay"
+		overlay.Size = UDim2.fromScale(1, 1)
+		overlay.BackgroundColor3 = C.Black
+		overlay.BackgroundTransparency = 0.4
+		overlay.ZIndex = 80
+		overlay.Parent = screenGui
+		IntroUI.RoyalBirthData.overlay = overlay
 		
 		-- Card with slide animation
 		local card = Instance.new("Frame")
@@ -4678,7 +4706,7 @@ do
 		card.Position = UDim2.fromScale(-0.5, 0.5) -- Start off-screen left
 		card.BackgroundColor3 = C.White
 		card.ZIndex = 81
-		card.Parent = royalCountryOverlay
+		card.Parent = overlay
 		
 		-- Slide in animation
 		tween(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -4729,7 +4757,7 @@ do
 		scrollLayout.Padding = UDim.new(0, 6)
 		scrollLayout.Parent = scroll
 		
-		for _, country in ipairs(RoyalCountries) do
+		for _, country in ipairs(IntroUI.RoyalCountries) do
 			local countryBtn = Instance.new("TextButton")
 			countryBtn.Size = UDim2.new(1, 0, 0, 44)
 			countryBtn.BackgroundColor3 = Color3.fromRGB(255, 248, 220)
@@ -4750,18 +4778,18 @@ do
 			end)
 			
 			countryBtn.MouseButton1Click:Connect(function()
-				selectedRoyalCountry = country.id
-				
 				-- Slide out animation then show customization
 				tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
 					Position = UDim2.fromScale(-0.5, 0.5)
 				})
 				task.delay(0.25, function()
-					if royalCountryOverlay then
-						royalCountryOverlay:Destroy()
-						royalCountryOverlay = nil
+					if IntroUI.RoyalBirthData.overlay then
+						IntroUI.RoyalBirthData.overlay:Destroy()
+						IntroUI.RoyalBirthData.overlay = nil
 					end
-					showRoyalGenderSelection(country)
+					if IntroUI.showRoyalGenderSelection then
+						IntroUI.showRoyalGenderSelection(country)
+					end
 				end)
 			end)
 		end
@@ -4779,19 +4807,20 @@ do
 		corner(randomBtn, 8)
 		
 		randomBtn.MouseButton1Click:Connect(function()
-			local randomCountry = RoyalCountries[math.random(1, #RoyalCountries)]
-			selectedRoyalCountry = randomCountry.id
+			local randomCountry = IntroUI.RoyalCountries[math.random(1, #IntroUI.RoyalCountries)]
 			
 			-- Slide out animation then show customization
 			tween(card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
 				Position = UDim2.fromScale(-0.5, 0.5)
 			})
 			task.delay(0.25, function()
-				if royalCountryOverlay then
-					royalCountryOverlay:Destroy()
-					royalCountryOverlay = nil
+				if IntroUI.RoyalBirthData.overlay then
+					IntroUI.RoyalBirthData.overlay:Destroy()
+					IntroUI.RoyalBirthData.overlay = nil
 				end
-				showRoyalGenderSelection(randomCountry)
+				if IntroUI.showRoyalGenderSelection then
+					IntroUI.showRoyalGenderSelection(randomCountry)
+				end
 			end)
 		end)
 		
@@ -4813,15 +4842,18 @@ do
 				Position = UDim2.fromScale(-0.5, 0.5)
 			})
 			task.delay(0.2, function()
-				if royalCountryOverlay then
-					royalCountryOverlay:Destroy()
-					royalCountryOverlay = nil
+				if IntroUI.RoyalBirthData.overlay then
+					IntroUI.RoyalBirthData.overlay:Destroy()
+					IntroUI.RoyalBirthData.overlay = nil
 				end
 			end)
 		end)
 	end
-	
-	showRoyalGenderSelection = function(country)
+end
+
+-- Royal Gender/Customization Selection function block
+do
+	IntroUI.showRoyalGenderSelection = function(country)
 		-- Create overlay for customization
 		local customOverlay = Instance.new("Frame")
 		customOverlay.Name = "RoyalCustomizeOverlay"
@@ -4920,7 +4952,7 @@ do
 		genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		genderBtnLayout.Parent = genderBtnFrame
 		
-		RoyalBirthData.gender = "Male"
+		IntroUI.RoyalBirthData.gender = "Male"
 		
 		local princeBtn = Instance.new("TextButton")
 		princeBtn.Size = UDim2.new(0, 120, 0, 48)
@@ -4946,7 +4978,7 @@ do
 		corner(princessBtn, 10)
 		
 		princeBtn.MouseButton1Click:Connect(function()
-			RoyalBirthData.gender = "Male"
+			IntroUI.RoyalBirthData.gender = "Male"
 			princeBtn.BackgroundColor3 = C.Male
 			princeBtn.TextColor3 = C.White
 			stroke(princeBtn, 2, 0, Color3.fromRGB(30, 100, 180))
@@ -4957,7 +4989,7 @@ do
 		end)
 		
 		princessBtn.MouseButton1Click:Connect(function()
-			RoyalBirthData.gender = "Female"
+			IntroUI.RoyalBirthData.gender = "Female"
 			princessBtn.BackgroundColor3 = C.Female
 			princessBtn.TextColor3 = C.White
 			stroke(princessBtn, 2, 0, Color3.fromRGB(180, 50, 120))
@@ -5010,7 +5042,7 @@ do
 		corner(nameInput, 8)
 		
 		nameInput:GetPropertyChangedSignal("Text"):Connect(function()
-			RoyalBirthData.name = nameInput.Text
+			IntroUI.RoyalBirthData.name = nameInput.Text
 		end)
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
@@ -5055,7 +5087,7 @@ do
 		ethGridLayout.Parent = ethGrid
 		
 		local ethBtns = {}
-		for _, eth in ipairs(EthnicityOptions) do
+		for _, eth in ipairs(IntroUI.EthnicityOptions) do
 			local btn = Instance.new("TextButton")
 			btn.Name = eth.id
 			btn.Size = UDim2.new(0, 90, 0, 32)
@@ -5071,7 +5103,7 @@ do
 			ethBtns[eth.id] = btn
 			
 			btn.MouseButton1Click:Connect(function()
-				RoyalBirthData.ethnicity = eth.id
+				IntroUI.RoyalBirthData.ethnicity = eth.id
 				for id, b in pairs(ethBtns) do
 					b.BackgroundColor3 = id == eth.id and C.Purple or C.Gray200
 					b.TextColor3 = id == eth.id and C.White or C.Gray600
@@ -5124,18 +5156,18 @@ do
 			})
 			task.delay(0.25, function()
 				customOverlay:Destroy()
-				showRoyalCountrySelection()
+				IntroUI.showRoyalCountrySelection()
 			end)
 		end)
 		
 		-- Start Royal Life
 		startBtn.MouseButton1Click:Connect(function()
 			-- Get final name
-			local finalName = RoyalBirthData.name:gsub("^%s+", ""):gsub("%s+$", "")
+			local finalName = IntroUI.RoyalBirthData.name:gsub("^%s+", ""):gsub("%s+$", "")
 			if finalName == "" then
 				local maleNames = {"William", "Charles", "Henry", "Edward", "George", "Philip", "James", "Alexander"}
 				local femaleNames = {"Elizabeth", "Victoria", "Charlotte", "Catherine", "Diana", "Margaret", "Anne", "Alexandra"}
-				local names = RoyalBirthData.gender == "Male" and maleNames or femaleNames
+				local names = IntroUI.RoyalBirthData.gender == "Male" and maleNames or femaleNames
 				finalName = names[math.random(1, #names)]
 			end
 			
@@ -5148,10 +5180,10 @@ do
 				customOverlay:Destroy()
 				
 				-- CRITICAL FIX: Set selectedGender
-				selectedGender = RoyalBirthData.gender
+				selectedGender = IntroUI.RoyalBirthData.gender
 				
 				-- CRITICAL FIX: Set currentState properly
-				currentState.Gender = RoyalBirthData.gender
+				currentState.Gender = IntroUI.RoyalBirthData.gender
 				currentState.Name = finalName
 				currentState.Flags = currentState.Flags or {}
 				currentState.Flags.is_royalty = true
@@ -5162,7 +5194,7 @@ do
 				-- CRITICAL FIX: Send proper format to server
 				if SetLifeInfo then
 					pcall(function()
-						SetLifeInfo:FireServer(finalName, RoyalBirthData.gender)
+						SetLifeInfo:FireServer(finalName, IntroUI.RoyalBirthData.gender)
 					end)
 				end
 				
@@ -5171,11 +5203,11 @@ do
 					pcall(function()
 						GodModeEdit:InvokeServer({
 							name = finalName,
-							gender = RoyalBirthData.gender,
+							gender = IntroUI.RoyalBirthData.gender,
 							isRoyalBirth = true,
 							royalCountry = country.id,
 							royalCountryName = country.name,
-							ethnicity = RoyalBirthData.ethnicity,
+							ethnicity = IntroUI.RoyalBirthData.ethnicity,
 							familyWealth = "Royal",
 						})
 					end)
@@ -5191,41 +5223,6 @@ do
 			end)
 		end)
 	end
-	
-	royaltyBtn.MouseButton1Click:Connect(function()
-		-- Check for Royalty gamepass ownership
-		local hasRoyal = hasRoyaltyGamepass()
-		if hasRoyal then
-			showRoyalCountrySelection()
-		else
-			-- Prompt to purchase Royalty gamepass
-			if PromptGamepass then
-				pcall(function()
-					PromptGamepass:InvokeServer("ROYALTY")
-				end)
-			end
-		end
-	end)
-	
-	-- Update button appearance based on Royalty gamepass status
-	local function updateRoyaltyGenderBtn()
-		local hasRoyal = hasRoyaltyGamepass()
-		if hasRoyal then
-			royaltyBtn.Text = "👑 Born Royal"
-			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
-		else
-			royaltyBtn.Text = "🔒 Born Royal (Gamepass)"
-			royaltyBtn.BackgroundColor3 = C.Gray300
-			stroke(royaltyBtn, 1, 0.5, C.Gray400)
-		end
-	end
-	
-	-- Update on show
-	task.defer(updateRoyaltyGenderBtn)
-	
-	-- Store update function for later use
-	IntroUI.updateRoyaltyGenderBtn = updateRoyaltyGenderBtn
 end
 
 showIntro = function()
