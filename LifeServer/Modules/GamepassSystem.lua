@@ -1204,9 +1204,27 @@ function GamepassSystem:setGamepassPurchasedCallback(callback)
 end
 
 function GamepassSystem:notifyGamepassPurchased(player, gamepassKey)
-	-- Clear ownership cache to force re-check
-	if self.playerOwnership[player.UserId] then
-		self.playerOwnership[player.UserId][gamepassKey] = nil
+	-- CRITICAL FIX #400: Clear ownership cache properly using correct cache key format
+	-- Cache uses format: playerId .. "_" .. gamepassKey
+	local playerId = player.UserId
+	local cacheKey = playerId .. "_" .. gamepassKey
+	
+	-- Clear this specific gamepass cache entry
+	self.playerOwnership[cacheKey] = nil
+	
+	-- CRITICAL FIX #401: Immediately re-check and cache the new ownership status
+	-- This ensures the next check returns the updated value
+	local success, owns = pcall(function()
+		local gamepass = self.Gamepasses[gamepassKey]
+		if gamepass and gamepass.id and gamepass.id ~= 0 then
+			return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
+		end
+		return false
+	end)
+	
+	if success then
+		self.playerOwnership[cacheKey] = owns
+		print("[GamepassSystem] Updated ownership cache for", player.Name, gamepassKey, "=", owns)
 	end
 	
 	-- Call callback if set
