@@ -8,6 +8,7 @@ local startTime = tick()
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService      = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 
@@ -170,6 +171,40 @@ local function refreshGodModeStatus()
 end
 
 refreshGodModeStatus()
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Listen for gamepass purchases to update UI smoothly
+-- When user buys a gamepass, update all related buttons immediately
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GAMEPASS_IDS = {
+	ROYALTY = 1626378001,
+	GOD_MODE = 1628050729,
+	MAFIA = 1626238769,
+	CELEBRITY = 1626461980,
+	TIME_MACHINE = 1630681215,
+}
+
+local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
+	if plr ~= player or not wasPurchased then return end
+	
+	-- Refresh gamepass status
+	refreshGodModeStatus()
+	
+	-- Update all gamepass buttons in intro UI
+	task.defer(function()
+		-- Update God Mode button
+		if IntroUI and IntroUI.updateCustomizeGenderBtn then
+			IntroUI.updateCustomizeGenderBtn()
+		end
+		
+		-- Update Royalty button
+		if IntroUI and IntroUI.updateRoyaltyGenderBtn then
+			IntroUI.updateRoyaltyGenderBtn()
+		end
+	end)
+end
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(onGamepassPurchaseFinished)
 
 -- Forward declarations
 local showEvent, hideEvent
@@ -2891,16 +2926,31 @@ local function buildDeathUI()
 	DeathUI.epitaph.ZIndex = 122
 	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
-	-- Restart button section (EXPANDED: Time Machine + New Life)
+	-- Restart button section (EXPANDED: Time Machine + New Life + Promo)
 	DeathUI.buttonSection = Instance.new("Frame")
 	DeathUI.buttonSection.Name = "ButtonSection"
-	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 240)
+	-- CRITICAL FIX: Increased height to fit promo section
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 300)
 	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	DeathUI.buttonSection.ZIndex = 121
 	DeathUI.buttonSection.LayoutOrder = 5
 	DeathUI.buttonSection.Parent = DeathUI.scroll
 	
 	-- TIME MACHINE SECTION (BitLife-style premium feature)
+	-- CRITICAL FIX: Check if user has Time Machine gamepass
+	local hasTimeMachineGamepass = false
+	local function checkTimeMachineGamepass()
+		if CheckGamepass then
+			local success, owns = pcall(function()
+				return CheckGamepass:InvokeServer("TIME_MACHINE")
+			end)
+			if success then
+				hasTimeMachineGamepass = owns == true
+			end
+		end
+		return hasTimeMachineGamepass
+	end
+	
 	local tmTitle = Instance.new("TextLabel")
 	tmTitle.Size = UDim2.new(1, 0, 0, 30)
 	tmTitle.Position = UDim2.new(0, 0, 0, 8)
@@ -2911,6 +2961,7 @@ local function buildDeathUI()
 	tmTitle.Text = "⏰ TIME MACHINE"
 	tmTitle.ZIndex = 122
 	tmTitle.Parent = DeathUI.buttonSection
+	DeathUI.tmTitle = tmTitle
 	
 	-- Time Machine buttons container
 	local tmContainer = Instance.new("Frame")
@@ -2920,6 +2971,7 @@ local function buildDeathUI()
 	tmContainer.ZIndex = 122
 	tmContainer.Parent = DeathUI.buttonSection
 	corner(tmContainer, 12)
+	DeathUI.tmContainer = tmContainer
 	
 	local tmGrid = Instance.new("UIGridLayout")
 	tmGrid.CellSize = UDim2.new(0.48, 0, 0, 36)
@@ -2934,7 +2986,51 @@ local function buildDeathUI()
 	tmPad.PaddingRight = UDim.new(0, 6)
 	tmPad.Parent = tmContainer
 	
+	-- CRITICAL FIX: Add "Get Unlimited Rewinds" promo button for users without gamepass
+	local tmPromoContainer = Instance.new("Frame")
+	tmPromoContainer.Name = "TimeMachinePromo"
+	tmPromoContainer.Size = UDim2.new(0.92, 0, 0, 50)
+	tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 40)
+	tmPromoContainer.BackgroundColor3 = Color3.fromRGB(45, 35, 60)
+	tmPromoContainer.ZIndex = 122
+	tmPromoContainer.Visible = false  -- Hidden by default, shown if no gamepass
+	tmPromoContainer.Parent = DeathUI.buttonSection
+	corner(tmPromoContainer, 12)
+	DeathUI.tmPromoContainer = tmPromoContainer
+	
+	local tmPromoBtn = Instance.new("TextButton")
+	tmPromoBtn.Size = UDim2.new(1, 0, 1, 0)
+	tmPromoBtn.BackgroundTransparency = 1
+	tmPromoBtn.Font = F.Title
+	tmPromoBtn.TextSize = 15
+	tmPromoBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+	tmPromoBtn.Text = "🔓 Get Unlimited Rewinds!"
+	tmPromoBtn.AutoButtonColor = false
+	tmPromoBtn.ZIndex = 123
+	tmPromoBtn.Parent = tmPromoContainer
+	
+	local tmPromoSubtext = Instance.new("TextLabel")
+	tmPromoSubtext.Size = UDim2.new(1, 0, 0, 16)
+	tmPromoSubtext.Position = UDim2.new(0, 0, 1, -18)
+	tmPromoSubtext.BackgroundTransparency = 1
+	tmPromoSubtext.Font = F.Body
+	tmPromoSubtext.TextSize = 11
+	tmPromoSubtext.TextColor3 = C.Gray400
+	tmPromoSubtext.Text = "Go back anytime with Time Machine Pass"
+	tmPromoSubtext.ZIndex = 123
+	tmPromoSubtext.Parent = tmPromoContainer
+	
+	-- CRITICAL FIX: Promo button prompts gamepass purchase
+	tmPromoBtn.MouseButton1Click:Connect(function()
+		local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
+		if PromptGamepass then
+			PromptGamepass:FireServer("TIME_MACHINE")
+		end
+	end)
+	
 	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
+	local tmButtons = {}
+	
 	for i, opt in ipairs(tmOptions) do
 		local tmBtn = Instance.new("TextButton")
 		tmBtn.Name = "TM_" .. opt[1]
@@ -2942,12 +3038,13 @@ local function buildDeathUI()
 		tmBtn.Font = F.Button
 		tmBtn.TextSize = 13
 		tmBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
-		tmBtn.Text = "👑 " .. opt[2]
+		tmBtn.Text = "⏰ " .. opt[2]
 		tmBtn.AutoButtonColor = false
 		tmBtn.LayoutOrder = i
 		tmBtn.ZIndex = 123
 		tmBtn.Parent = tmContainer
 		corner(tmBtn, 8)
+		table.insert(tmButtons, {btn = tmBtn, opt = opt})
 		
 		tmBtn.MouseButton1Click:Connect(function()
 			local UseTimeMachine = remotesFolder:FindFirstChild("UseTimeMachine")
@@ -2979,23 +3076,52 @@ local function buildDeathUI()
 						updateFromState()
 					end
 				elseif ok and result and result.needsGamepass then
-					-- Player needs to purchase the gamepass - server already prompted
-					tmBtn.Text = "👑 " .. opt[2]
-					-- Flash the button to indicate it needs purchase
-					tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
-					task.delay(0.15, function()
-						tween(tmBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(80, 70, 20) })
-					end)
+					-- CRITICAL FIX: Player needs to purchase the gamepass
+					tmBtn.Text = "⏰ " .. opt[2]
+					-- Prompt the gamepass purchase
+					local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
+					if PromptGamepass then
+						PromptGamepass:FireServer("TIME_MACHINE")
+					end
 				else
-					tmBtn.Text = "👑 " .. opt[2]
+					tmBtn.Text = "⏰ " .. opt[2]
 				end
 			end
 		end)
 	end
+	
+	-- CRITICAL FIX: Function to update Time Machine UI based on gamepass ownership
+	DeathUI.updateTimeMachineUI = function()
+		checkTimeMachineGamepass()
+		if hasTimeMachineGamepass then
+			-- User owns gamepass - show full time machine UI
+			tmContainer.Visible = true
+			tmPromoContainer.Visible = false
+			tmTitle.Text = "⏰ TIME MACHINE"
+			for _, data in ipairs(tmButtons) do
+				data.btn.BackgroundColor3 = Color3.fromRGB(80, 70, 20)
+				data.btn.TextColor3 = Color3.fromRGB(255, 215, 0)
+				data.btn.Text = "⏰ " .. data.opt[2]
+			end
+		else
+			-- User doesn't own gamepass - show promo with limited options
+			tmContainer.Visible = true
+			tmPromoContainer.Visible = true
+			tmPromoContainer.Position = UDim2.new(0.04, 0, 0, 130)
+			tmTitle.Text = "⏰ TIME MACHINE (One-Time Use)"
+			-- Buttons work but will cost Robux per use
+			for _, data in ipairs(tmButtons) do
+				data.btn.BackgroundColor3 = Color3.fromRGB(60, 50, 30)
+				data.btn.TextColor3 = Color3.fromRGB(200, 170, 60)
+				data.btn.Text = "💰 " .. data.opt[2]
+			end
+		end
+	end
 
 	DeathUI.restart = Instance.new("TextButton")
 	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 135)
+	-- CRITICAL FIX: Moved down to accommodate promo section
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 195)
 	DeathUI.restart.BackgroundColor3 = C.Green
 	DeathUI.restart.Font = F.Button
 	DeathUI.restart.TextSize = 20
@@ -3098,6 +3224,11 @@ showDeathOverlay = function(causeText, age)
 	DeathUI.overlay.Visible = true
 	DeathUI.restart.Text = "🔄 Start New Life"
 	DeathUI.scroll.CanvasPosition = Vector2.new(0, 0)
+	
+	-- CRITICAL FIX: Update Time Machine UI based on gamepass ownership
+	if DeathUI.updateTimeMachineUI then
+		DeathUI.updateTimeMachineUI()
+	end
 
 	-- Clear old stats
 	for _, child in ipairs(DeathUI.statsFrame:GetChildren()) do
@@ -3725,19 +3856,22 @@ IntroUI.layout.Padding = UDim.new(0, 20)
 IntroUI.layout.Parent = IntroUI.content
 
 IntroUI.genderTitle = Instance.new("TextLabel")
-IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 36)
+-- CRITICAL FIX: Moved title higher and gave it more space so it doesn't overlap buttons
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 48)
 IntroUI.genderTitle.BackgroundTransparency = 1
 IntroUI.genderTitle.Font = F.Title
-IntroUI.genderTitle.TextSize = 24
+IntroUI.genderTitle.TextSize = 22
 IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
 IntroUI.genderTitle.Text = "Start by picking a gender"
+IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Top
 IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
 IntroUI.genderBtns = Instance.new("Frame")
--- CRITICAL FIX: Increased height to fit Male, Female, AND Customize Character buttons
-IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 220)
+-- CRITICAL FIX: Increased height to fit Male, Female, Born Royal, AND Customize Character buttons
+-- Mobile needs more space for touch targets
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 280)
 IntroUI.genderBtns.BackgroundTransparency = 1
 IntroUI.genderBtns.LayoutOrder = 2
 IntroUI.genderBtns.ZIndex = 71
@@ -3745,7 +3879,8 @@ IntroUI.genderBtns.Parent = IntroUI.content
 
 IntroUI.genderBtnLayout = Instance.new("UIListLayout")
 IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-IntroUI.genderBtnLayout.Padding = UDim.new(0, 14)
+-- CRITICAL FIX: Increased padding for better mobile touch targets
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 12)
 IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
 IntroUI.nameBtns = Instance.new("Frame")
@@ -4062,8 +4197,9 @@ do
 					local hasPass = hasRoyaltyGamepass()
 					if not hasPass then
 						-- Prompt to purchase Royalty gamepass
+						-- CRITICAL FIX: Use FireServer not InvokeServer (PromptGamepass is RemoteEvent)
 						if PromptGamepass then
-							pcall(function() PromptGamepass:InvokeServer("ROYALTY") end)
+							pcall(function() PromptGamepass:FireServer("ROYALTY") end)
 						end
 						return -- Don't select this option
 					end
@@ -4556,13 +4692,20 @@ do
 	local function updateCustomizeGenderBtn()
 		refreshGodModeStatus()
 		if hasGodMode then
+			-- CRITICAL FIX: Show unlocked gold color when gamepass owned
 			customizeGenderBtn.Text = "⚡ Customize Character"
 			customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+			customizeGenderBtn.TextColor3 = C.Gray900
 		else
-			customizeGenderBtn.Text = "🔓 Customize (God Mode)"
+			-- CRITICAL FIX: Show 🔒 locked style (was 🔓 which looks unlocked)
+			customizeGenderBtn.Text = "🔒 Customize (God Mode)"
 			customizeGenderBtn.BackgroundColor3 = C.Gray300
+			customizeGenderBtn.TextColor3 = C.Gray600
 		end
 	end
+	
+	-- CRITICAL FIX: Store the update function globally so it can be called on gamepass purchase
+	IntroUI.updateCustomizeGenderBtn = updateCustomizeGenderBtn
 	
 	-- Update on show
 	task.defer(updateCustomizeGenderBtn)
@@ -4655,8 +4798,9 @@ do
 				IntroUI.showRoyalCountrySelection()
 			end
 		else
+			-- CRITICAL FIX: Use FireServer not InvokeServer (PromptGamepass is RemoteEvent)
 			if PromptGamepass then
-				pcall(function() PromptGamepass:InvokeServer("ROYALTY") end)
+				pcall(function() PromptGamepass:FireServer("ROYALTY") end)
 			end
 		end
 	end)
@@ -4664,12 +4808,16 @@ do
 	IntroUI.updateRoyaltyGenderBtn = function()
 		local hasRoyal = checkRoyaltyGamepass()
 		if hasRoyal then
+			-- CRITICAL FIX: Show unlocked gold color when gamepass owned
 			royaltyBtn.Text = "👑 Born Royal"
 			royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+			royaltyBtn.TextColor3 = C.Gray900
 			stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
 		else
-			royaltyBtn.Text = "🔒 Born Royal (Gamepass)"
+			-- CRITICAL FIX: Show 🔒 locked style like God Mode button
+			royaltyBtn.Text = "🔒 Born Royal"
 			royaltyBtn.BackgroundColor3 = C.Gray300
+			royaltyBtn.TextColor3 = C.Gray600
 			stroke(royaltyBtn, 1, 0.5, C.Gray400)
 		end
 	end
