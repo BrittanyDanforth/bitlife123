@@ -420,12 +420,23 @@ end
 function MobSystem:getCurrentRank(lifeState)
 	local mobState = self:getMobState(lifeState)
 	
-	if not mobState.inMob then
+	if not mobState or not mobState.inMob then
 		return nil
 	end
 	
-	local family = self.Families[mobState.familyId]
-	return family.ranks[mobState.rankIndex]
+	-- CRITICAL FIX #119: Nil safety for family lookup
+	local family = mobState.familyId and self.Families[mobState.familyId]
+	if not family then
+		return nil
+	end
+	
+	-- CRITICAL FIX #120: Nil safety for rank index lookup
+	local rankIndex = mobState.rankIndex or 1
+	if not family.ranks or not family.ranks[rankIndex] then
+		return nil
+	end
+	
+	return family.ranks[rankIndex]
 end
 
 function MobSystem:getNextRank(lifeState)

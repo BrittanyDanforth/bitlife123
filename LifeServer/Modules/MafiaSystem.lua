@@ -422,27 +422,44 @@ end
 function MafiaSystem:getCurrentRank(lifeState)
 	local mobState = self:getMobState(lifeState)
 	
-	if not mobState.inMob then
+	if not mobState or not mobState.inMob then
 		return nil
 	end
 	
-	local family = self.Families[mobState.familyId]
-	return family.ranks[mobState.rankIndex]
+	-- CRITICAL FIX #121: Nil safety for family lookup
+	local family = mobState.familyId and self.Families[mobState.familyId]
+	if not family then
+		return nil
+	end
+	
+	-- CRITICAL FIX #122: Nil safety for rank index lookup
+	local rankIndex = mobState.rankIndex or 1
+	if not family.ranks or not family.ranks[rankIndex] then
+		return nil
+	end
+	
+	return family.ranks[rankIndex]
 end
 
 function MafiaSystem:getNextRank(lifeState)
 	local mobState = self:getMobState(lifeState)
 	
-	if not mobState.inMob then
+	if not mobState or not mobState.inMob then
 		return nil
 	end
 	
-	local family = self.Families[mobState.familyId]
-	if mobState.rankIndex >= #family.ranks then
+	-- CRITICAL FIX #123: Nil safety for family and ranks lookup
+	local family = mobState.familyId and self.Families[mobState.familyId]
+	if not family or not family.ranks then
+		return nil
+	end
+	
+	local rankIndex = mobState.rankIndex or 1
+	if rankIndex >= #family.ranks then
 		return nil -- Already at top
 	end
 	
-	return family.ranks[mobState.rankIndex + 1]
+	return family.ranks[rankIndex + 1]
 end
 
 function MafiaSystem:checkRankUp(lifeState)

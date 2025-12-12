@@ -988,4 +988,7 @@ RelationshipsExpanded.events = {
 	},
 }
 
+-- CRITICAL FIX #136: Export events in standard format for LifeEvents loader
+RelationshipsExpanded.LifeEvents = RelationshipsExpanded.events
+
 return RelationshipsExpanded

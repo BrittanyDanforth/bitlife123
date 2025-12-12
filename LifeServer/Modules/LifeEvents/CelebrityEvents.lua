@@ -1341,11 +1341,16 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 	end
 	
 	-- Random career event
+	-- CRITICAL FIX #117: Add nil safety for career events with proper stage checking
 	if career.events and #career.events > 0 then
 		if math.random(100) <= 15 then
 			local possibleEvents = {}
+			local currentStage = fameState.currentStage or 1
 			for _, event in ipairs(career.events) do
-				if fameState.currentStage >= event.minStage and fameState.currentStage <= event.maxStage then
+				-- CRITICAL FIX #118: Default minStage and maxStage to prevent nil comparisons
+				local minStage = event.minStage or 1
+				local maxStage = event.maxStage or 999
+				if currentStage >= minStage and currentStage <= maxStage then
 					table.insert(possibleEvents, event)
 				end
 			end

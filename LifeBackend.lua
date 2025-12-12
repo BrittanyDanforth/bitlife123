@@ -2350,13 +2350,26 @@ function LifeBackend:createInitialState(player)
 	end
 	
 	-- Siblings (random chance)
+	-- CRITICAL FIX #128: Improved sibling relationship generation with proper age handling
 	local numSiblings = RANDOM:NextInteger(0, 3)
 	for i = 1, numSiblings do
 		local isBrother = RANDOM:NextNumber() > 0.5
-		local siblingAge = RANDOM:NextInteger(-5, 8) -- Can be older or younger
+		local siblingAgeOffset = RANDOM:NextInteger(-5, 8) -- Can be older or younger
 		local siblingId = (isBrother and "brother_" or "sister_") .. tostring(i)
-		local siblingRole = siblingAge > 0 and (isBrother and "Older Brother" or "Older Sister") 
-			or (isBrother and "Younger Brother" or "Younger Sister")
+		
+		-- CRITICAL FIX #129: Determine role based on age offset
+		local siblingRole
+		if siblingAgeOffset > 0 then
+			siblingRole = isBrother and "Older Brother" or "Older Sister"
+		elseif siblingAgeOffset < 0 then
+			siblingRole = isBrother and "Younger Brother" or "Younger Sister"
+		else
+			siblingRole = isBrother and "Twin Brother" or "Twin Sister"
+		end
+		
+		-- CRITICAL FIX #130: Store actual sibling age (based on player age 0 at birth)
+		-- Older siblings have positive offset, younger have negative (born later)
+		local siblingAbsoluteAge = math.max(0, siblingAgeOffset) -- At player's birth, older siblings already exist
 		
 		state.Relationships[siblingId] = {
 			id = siblingId,
@@ -2364,11 +2377,12 @@ function LifeBackend:createInitialState(player)
 			type = "family",
 			role = siblingRole,
 			relationship = 55 + RANDOM:NextInteger(-10, 20),
-			age = math.max(1, siblingAge), -- Sibling age relative to player (stored as absolute later)
+			age = siblingAbsoluteAge,
 			gender = isBrother and "male" or "female",
 			alive = true,
 			isFamily = true,
-			ageOffset = siblingAge, -- Store the offset for updating later
+			ageOffset = siblingAgeOffset, -- Store the offset for updating later
+			birthOrder = siblingAgeOffset > 0 and "older" or (siblingAgeOffset < 0 and "younger" or "twin"),
 		}
 	end
 	
@@ -6135,7 +6149,16 @@ function LifeBackend:handlePromotion(player)
 	-- CRITICAL FIX #5: Actually change job title on promotion, not just salary!
 	-- Use CareerTracks to find the next job in the career path
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local currentJobId = state.CurrentJob.id
+	-- CRITICAL FIX #126: Nil safety for job ID access
+	local currentJobId = state.CurrentJob and state.CurrentJob.id
+	if not currentJobId then
+		-- Fallback: just do salary promotion
+		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.15)
+		local feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		self:pushState(player, feed)
+		return { success = true, message = feed }
+	end
+	
 	local promotedToNewTitle = false
 	local oldJobName = state.CurrentJob.name or "your old position"
 	local newJobName = nil
@@ -6415,11 +6438,20 @@ end
 -- ============================================================================
 
 function LifeBackend:findAssetById(list, assetId)
+	-- CRITICAL FIX #127: Nil safety for asset lookup
+	if not list or type(list) ~= "table" then
+		return nil
+	end
+	if not assetId then
+		return nil
+	end
+	
 	for _, asset in ipairs(list) do
-		if asset.id == assetId then
+		if asset and asset.id == assetId then
 			return asset
 		end
 	end
+	return nil
 end
 
 --[[
@@ -6783,19 +6815,38 @@ function LifeBackend:handleInteraction(player, payload)
 		return { success = false, message = "Invalid interaction payload." }
 	end
 
+	-- CRITICAL FIX #131: Nil safety for payload fields
 	local relType = payload.relationshipType or "family"
 	local actionId = payload.actionId
 	local targetId = payload.targetId
 	local targetStrength = tonumber(payload.relationshipStrength)
+	
+	-- CRITICAL FIX #132: Validate required fields
+	if not actionId then
+		return { success = false, message = "No action specified." }
+	end
 
 	local actionSet = InteractionEffects[relType]
 	if not actionSet then
-		return { success = false, message = "Unknown relationship type." }
+		-- CRITICAL FIX #133: Try fallback to common action sets
+		actionSet = InteractionEffects["family"]
+		if not actionSet then
+			return { success = false, message = "Unknown relationship type." }
+		end
 	end
 
 	local action = actionSet[actionId]
 	if not action then
-		return { success = false, message = "Unknown interaction." }
+		-- CRITICAL FIX #134: Try to find action in other sets
+		for setName, otherSet in pairs(InteractionEffects) do
+			if otherSet[actionId] then
+				action = otherSet[actionId]
+				break
+			end
+		end
+		if not action then
+			return { success = false, message = "Unknown interaction." }
+		end
 	end
 
 	state.Flags = state.Flags or {}
@@ -7754,10 +7805,49 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 				Duration = 5,
 			}
 		end
+		-- CRITICAL FIX #112: Full MobState reset with nil safety
 		if state.MobState then
 			state.MobState.inMob = false
 			state.MobState.family = nil
+			state.MobState.familyId = nil
+			state.MobState.familyName = nil
 			state.MobState.rank = nil
+			state.MobState.rankIndex = 1
+			state.MobState.rankLevel = 1
+			state.MobState.rankName = "Associate"
+			state.MobState.rankEmoji = "👤"
+			state.MobState.respect = 0
+			state.MobState.notoriety = 0
+			state.MobState.heat = 0
+			state.MobState.loyalty = 100
+			state.MobState.kills = 0
+			state.MobState.earnings = 0
+			state.MobState.yearsInMob = 0
+			state.MobState.operationsCompleted = 0
+			state.MobState.operationsFailed = 0
+		end
+		-- CRITICAL FIX #113: Full RoyalState reset on time travel to baby
+		if state.RoyalState then
+			state.RoyalState.isRoyal = false
+			state.RoyalState.isMonarch = false
+			state.RoyalState.country = nil
+			state.RoyalState.countryName = nil
+			state.RoyalState.title = nil
+			state.RoyalState.lineOfSuccession = 0
+			state.RoyalState.popularity = 0
+			state.RoyalState.scandals = 0
+			state.RoyalState.dutiesCompleted = 0
+			state.RoyalState.reignYears = 0
+			state.RoyalState.wealth = 0
+		end
+		-- CRITICAL FIX #114: Full FameState reset
+		if state.FameState then
+			state.FameState.isFamous = false
+			state.FameState.careerPath = nil
+			state.FameState.currentStage = 0
+			state.FameState.followers = 0
+			state.FameState.scandals = 0
+			state.FameState.yearsInCareer = 0
 		end
 		-- Clear most flags but keep some identity ones
 		local keepFlags = { gender = state.Flags.gender }

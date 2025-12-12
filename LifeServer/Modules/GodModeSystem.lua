@@ -407,12 +407,28 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 function GodModeSystem:setRelationshipLevel(lifeState, relationshipId, newLevel)
+	-- CRITICAL FIX #124: Full nil safety for relationship editing
+	if not lifeState then
+		return false, "No life state"
+	end
 	if not lifeState.Relationships then
+		lifeState.Relationships = {}
 		return false, "No relationships"
 	end
 	
+	-- CRITICAL FIX #125: Handle string and number IDs
 	local rel = lifeState.Relationships[relationshipId]
-	if not rel then
+	if not rel and type(relationshipId) == "string" then
+		-- Try to find by name
+		for id, relationship in pairs(lifeState.Relationships) do
+			if type(relationship) == "table" and relationship.name == relationshipId then
+				rel = relationship
+				break
+			end
+		end
+	end
+	
+	if not rel or type(rel) ~= "table" then
 		return false, "Relationship not found"
 	end
 	
