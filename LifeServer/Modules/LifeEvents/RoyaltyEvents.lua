@@ -2617,6 +2617,144 @@ RoyaltyEvents.LifeEvents = {
 			{ text = "Private ceremony - reject the spectacle", effects = { Happiness = 10 }, royaltyEffect = { popularity = -15, wealthCost = 1000000 }, setFlags = { coronation_complete = true, private_coronation = true }, feed = "A monarch without fanfare. Unusual but respected by some." },
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #464: ADDITIONAL ROYALTY EVENTS FOR DEEPER GAMEPLAY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ROYAL MILITARY SERVICE
+	{
+		id = "royal_military_service",
+		title = "⚔️ Military Service",
+		emoji = "⚔️",
+		text = "The nation expects royals to serve in the military. It's time to decide your path.",
+		minAge = 18,
+		maxAge = 25,
+		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { military_service = true, avoided_military = true } },
+		choices = {
+			{ text = "Join the Army", effects = { Happiness = 10, Health = 15 }, royaltyEffect = { popularity = 20 }, setFlags = { military_service = true, army_royal = true }, feed = "You trained with the Army. Respected." },
+			{ text = "Join the Navy", effects = { Happiness = 12, Health = 12 }, royaltyEffect = { popularity = 18 }, setFlags = { military_service = true, navy_royal = true }, feed = "A seafaring royal. Traditional and noble." },
+			{ text = "Join the Air Force", effects = { Happiness = 15, Smarts = 5 }, royaltyEffect = { popularity = 22 }, setFlags = { military_service = true, pilot_royal = true }, feed = "A royal pilot! The photos are incredible." },
+			{ text = "Skip military service", effects = { Happiness = 5 }, royaltyEffect = { popularity = -15 }, setFlags = { avoided_military = true }, feed = "Critics questioned your patriotism." },
+		},
+	},
+	
+	-- ROYAL TOUR
+	{
+		id = "royal_world_tour",
+		title = "🌍 World Tour",
+		emoji = "🌍",
+		text = "You're embarking on an official world tour to represent the monarchy abroad.",
+		minAge = 21,
+		maxAge = 70,
+		isRoyalOnly = true,
+		cooldown = 8,
+		maxOccurrences = 4,
+		choices = {
+			{ text = "Focus on charity and humanitarian causes", effects = { Happiness = 15 }, royaltyEffect = { popularity = 25 }, setFlags = { humanitarian_tour = true }, feed = "Your compassion touched millions worldwide." },
+			{ text = "Emphasize trade and diplomacy", effects = { Happiness = 8, Smarts = 8 }, royaltyEffect = { popularity = 15 }, setFlags = { diplomatic_tour = true }, feed = "You strengthened international ties." },
+			{ text = "Connect with the diaspora", effects = { Happiness = 12 }, royaltyEffect = { popularity = 20 }, setFlags = { diaspora_champion = true }, feed = "Expats felt connected to home through you." },
+			{ text = "Make it a low-key private tour", effects = { Happiness = 10 }, royaltyEffect = { popularity = 5 }, feed = "Less fanfare, more genuine connections." },
+		},
+	},
+	
+	-- ARRANGED MARRIAGE PROPOSAL
+	{
+		id = "arranged_marriage_proposal",
+		title = "💍 Arranged Match",
+		emoji = "💍",
+		text = "A strategic match has been proposed. This person could strengthen the monarchy's alliances.",
+		minAge = 21,
+		maxAge = 40,
+		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { married = true } },
+		choices = {
+			{ text = "Accept for duty to the crown", effects = { Happiness = -5 }, royaltyEffect = { popularity = 15 }, setFlags = { arranged_marriage = true }, feed = "A match made for politics, not passion." },
+			{ text = "Decline and marry for love", effects = { Happiness = 20 }, royaltyEffect = { popularity = 10 }, setFlags = { married_for_love = true }, feed = "You chose your heart over politics." },
+			{ text = "Request time to get to know them", effects = { Happiness = 5 }, royaltyEffect = { popularity = 8 }, setFlags = { considering_match = true }, feed = "A modern approach to an old tradition." },
+			{ text = "Cause a scandal by dating someone else", effects = { Happiness = 15 }, royaltyEffect = { popularity = -20, scandals = 1 }, setFlags = { rebellious_royal = true }, feed = "The tabloids are having a field day!" },
+		},
+	},
+	
+	-- ROYAL ILLNESS PUBLIC ANNOUNCEMENT
+	{
+		id = "royal_illness_announcement",
+		title = "🏥 Health Announcement",
+		emoji = "🏥",
+		text = "You're facing a health challenge. The palace must decide whether to inform the public.",
+		minAge = 35,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 15,
+		maxOccurrences = 1,
+		choices = {
+			{ text = "Full transparency about your condition", effects = { Happiness = 10, Health = 10 }, royaltyEffect = { popularity = 30 }, setFlags = { health_advocate = true }, feed = "Your courage inspired millions." },
+			{ text = "Brief statement, minimal details", effects = { Happiness = 0 }, royaltyEffect = { popularity = 10 }, feed = "Privacy maintained, concern addressed." },
+			{ text = "Complete media blackout", effects = { Happiness = -10 }, royaltyEffect = { popularity = -15 }, feed = "Rumors spread. The silence was worse." },
+		},
+	},
+	
+	-- ROYAL SCANDAL RESPONSE
+	{
+		id = "major_royal_scandal",
+		title = "📰 Major Scandal",
+		emoji = "📰",
+		text = "A significant scandal involving you has erupted. How do you respond?",
+		minAge = 18,
+		maxAge = 80,
+		isRoyalOnly = true,
+		cooldown = 10,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Address it head-on in a public interview", effects = { Happiness = 5 }, royaltyEffect = { popularity = 15 }, setFlags = { faced_scandal = true }, feed = "Your honesty helped contain the damage." },
+			{ text = "Let lawyers handle everything", effects = { Happiness = -5 }, royaltyEffect = { popularity = -10, wealthCost = 5000000 }, feed = "Legal but cold. People wanted humanity." },
+			{ text = "Retreat and wait for it to blow over", effects = { Happiness = -15 }, royaltyEffect = { popularity = -20 }, feed = "It didn't blow over. The story grew." },
+			{ text = "Apologize and commit to change", effects = { Happiness = 10 }, royaltyEffect = { popularity = 25 }, setFlags = { apologized_royal = true }, feed = "Your humility won back public support." },
+		},
+	},
+	
+	-- ROYAL PET
+	{
+		id = "royal_pet_moment",
+		title = "🐕 Royal Pet",
+		emoji = "🐕",
+		text = "Your beloved royal pet has become famous! The public loves seeing your furry companion.",
+		minAge = 10,
+		maxAge = 90,
+		isRoyalOnly = true,
+		cooldown = 5,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Feature them in official photos", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
+			{ text = "Start a pet charity in their name", effects = { Happiness = 12, Money = -50000 }, royaltyEffect = { popularity = 20 }, setFlags = { animal_advocate = true }, feed = "Your charity helps animals nationwide." },
+			{ text = "Keep your pet life private", effects = { Happiness = 8 }, royaltyEffect = { popularity = 3 }, feed = "Some things are just for you." },
+		},
+	},
+	
+	-- PALACE RENOVATION
+	{
+		id = "palace_renovation",
+		title = "🏰 Palace Renovation",
+		emoji = "🏰",
+		text = "The palace needs major renovations. The cost will be debated publicly.",
+		minAge = 25,
+		maxAge = 85,
+		isRoyalOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { requiresFlags = { is_monarch = true } },
+		choices = {
+			{ text = "Use public funds - it's national heritage", effects = { Happiness = 5 }, royaltyEffect = { popularity = -15, wealthCost = 0 }, setFlags = { used_public_funds = true }, feed = "Taxpayers weren't happy about the cost." },
+			{ text = "Pay from personal fortune", effects = { Happiness = 10 }, royaltyEffect = { popularity = 25, wealthCost = 100000000 }, setFlags = { paid_personally = true }, feed = "Your generosity impressed the nation." },
+			{ text = "Open the palace to tourists to fund it", effects = { Happiness = 8, Smarts = 5 }, royaltyEffect = { popularity = 20, wealthCost = 20000000 }, setFlags = { tourist_palace = true }, feed = "Crowds can now see the royal home!" },
+			{ text = "Delay indefinitely", effects = { Happiness = -5 }, royaltyEffect = { popularity = 5 }, feed = "The palace crumbles a bit more." },
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════

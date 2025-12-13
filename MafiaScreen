@@ -142,6 +142,9 @@ local hasMafiaGamepass = false
 -- CRITICAL FIX #446: Gamepass IDs for purchase detection
 local MAFIA_GAMEPASS_ID = 1626238769
 
+-- CRITICAL FIX #457: Track pending family join for auto-retry after purchase
+local pendingFamilyJoin = nil
+
 -- Crime Family data (matches MobSystem.lua)
 local CrimeFamilies = {
 	{
@@ -420,17 +423,29 @@ function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pla
 			hasMafiaGamepass = true
 			log("Mafia gamepass purchased! Refreshing UI...")
 			
-			-- Refresh the screen if it's visible
-			if self.isVisible then
-				task.defer(function()
-					self:refreshContent()
-				end)
-				-- Also retry after a short delay in case of API lag
-				task.delay(0.5, function()
+			-- CRITICAL FIX #458: Hide any result popup first
+			if self.resultOverlay and self.resultOverlay.Visible then
+				self:hideResult()
+			end
+			
+			-- CRITICAL FIX #459: Auto-retry joining the family if we were trying to join
+			if pendingFamilyJoin and self.isVisible then
+				local familyId = pendingFamilyJoin
+				pendingFamilyJoin = nil
+				
+				-- Small delay to ensure server cache is updated
+				task.delay(0.3, function()
 					if self.isVisible then
-						self:refreshContent()
+						self:attemptJoinFamily(familyId)
 					end
 				end)
+			else
+				-- Just refresh the screen
+				if self.isVisible then
+					task.defer(function()
+						self:refreshContent()
+					end)
+				end
 			end
 		end
 	end)
@@ -441,10 +456,28 @@ function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pla
 			if gamepassKey == "MAFIA" then
 				hasMafiaGamepass = true
 				log("Server confirmed Mafia gamepass! Refreshing UI...")
-				if self.isVisible then
-					task.defer(function()
-						self:refreshContent()
+				
+				-- CRITICAL FIX #460: Hide any result popup first
+				if self.resultOverlay and self.resultOverlay.Visible then
+					self:hideResult()
+				end
+				
+				-- CRITICAL FIX #461: Auto-retry joining the family if we were trying to join
+				if pendingFamilyJoin and self.isVisible then
+					local familyId = pendingFamilyJoin
+					pendingFamilyJoin = nil
+					
+					task.delay(0.3, function()
+						if self.isVisible then
+							self:attemptJoinFamily(familyId)
+						end
 					end)
+				else
+					if self.isVisible then
+						task.defer(function()
+							self:refreshContent()
+						end)
+					end
 				end
 			end
 		end)
@@ -1520,6 +1553,9 @@ function MafiaScreen:attemptJoinFamily(familyId)
 	
 	if success and result then
 		if result.success then
+			-- Clear pending join since we succeeded
+			pendingFamilyJoin = nil
+			
 			-- CRITICAL FIX: Update local state immediately with the returned mobState
 			if result.mobState and self.playerState then
 				self.playerState.MobState = result.mobState
@@ -1532,15 +1568,21 @@ function MafiaScreen:attemptJoinFamily(familyId)
 				self:refreshContent()
 			end)
 		elseif result.needsGamepass then
+			-- CRITICAL FIX #462: Store pending family for auto-retry after purchase
+			pendingFamilyJoin = familyId
+			log("Storing pending family join:", familyId)
+			
 			-- Prompt gamepass purchase
 			if PromptGamepass then
 				PromptGamepass:FireServer("MAFIA")
 			end
-			self:showResult(false, "Gamepass Required", result.message or "You need the Mafia gamepass.", "💎")
+			self:showResult(false, "Gamepass Required", result.message or "Purchase the Mafia gamepass to join!", "💎")
 		else
+			pendingFamilyJoin = nil
 			self:showResult(false, "Rejected", result.message or "The family rejected you.", "❌")
 		end
 	else
+		pendingFamilyJoin = nil
 		self:showResult(false, "Error", "Failed to contact the family.", "❌")
 	end
 end

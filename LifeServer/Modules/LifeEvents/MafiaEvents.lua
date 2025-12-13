@@ -2213,6 +2213,393 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #463: ADDITIONAL MAFIA EVENTS FOR DEEPER GAMEPLAY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- STREET LEVEL HUSTLE
+	{
+		id = "street_corner_control",
+		title = "🚬 Street Corner",
+		emoji = "🚬",
+		text = "A profitable street corner needs someone to oversee it. The boss is giving you a chance to prove yourself.",
+		question = "How do you run your corner?",
+		minAge = 18,
+		maxAge = 35,
+		isMafiaOnly = true,
+		cooldown = 4,
+		maxOccurrences = 3,
+		conditions = { 
+			requiresFlags = { in_mob = true },
+			blockedFlags = { is_capo = true },
+		},
+		choices = {
+			{
+				text = "Run it tight - discipline above all",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = 25, money = 15000, heat = 10 },
+				setFlags = { strict_leader = true },
+				feed = "Your corner is the most profitable in the district.",
+			},
+			{
+				text = "Be fair to the workers",
+				effects = { Happiness = 8 },
+				mafiaEffect = { respect = 15, money = 10000, loyalty = 20 },
+				setFlags = { fair_boss = true },
+				feed = "Your people are loyal. That counts for something.",
+			},
+			{
+				text = "Skim off the top secretly",
+				effects = { Happiness = 10, Money = 5000 },
+				successChance = 60,
+				successMafiaEffect = { money = 5000 },
+				failMafiaEffect = { respect = -30, heat = 15 },
+				setFlags = { skimmer = true },
+				feed = "Risky but profitable.",
+			},
+		},
+	},
+	
+	-- UNDERCOVER COP
+	{
+		id = "suspected_undercover",
+		title = "🕵️ Undercover Alert",
+		emoji = "🕵️",
+		text = "Someone in the organization might be an undercover cop. Suspicion is on a new recruit who's been asking too many questions.",
+		question = "How do you handle this?",
+		minAge = 21,
+		maxAge = 60,
+		isMafiaOnly = true,
+		cooldown = 8,
+		maxOccurrences = 2,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+		},
+		choices = {
+			{
+				text = "Investigate them quietly",
+				effects = { Happiness = -5, Smarts = 8 },
+				mafiaEffect = { respect = 20 },
+				setFlags = { careful_investigator = true },
+				feed = "You gathered information without tipping them off.",
+			},
+			{
+				text = "Set up a test - give them false info",
+				effects = { Happiness = 5, Smarts = 10 },
+				mafiaEffect = { respect = 30 },
+				setFlags = { counter_intelligence = true },
+				feed = "If they're a cop, you'll know soon.",
+			},
+			{
+				text = "Eliminate them immediately - can't take risks",
+				effects = { Happiness = -15 },
+				successChance = 70,
+				successMafiaEffect = { respect = 40, kills = 1, heat = 30 },
+				failMafiaEffect = { respect = -50, heat = 80, arrested = true, jailYears = 25 },
+				setFlags = { has_killed = true },
+				feed = "Paranoia can save your life. Or end it.",
+			},
+			{
+				text = "Report your concerns to the boss",
+				effects = { Happiness = 0 },
+				mafiaEffect = { respect = 10 },
+				feed = "The boss will handle it from here.",
+			},
+		},
+	},
+	
+	-- FAMILY CONFLICT
+	{
+		id = "inter_family_conflict",
+		title = "⚔️ Family War",
+		emoji = "⚔️",
+		text = "Tensions with a rival family have boiled over. A soldier from our family was killed. The boss is calling for war.",
+		question = "What's your role in this conflict?",
+		minAge = 21,
+		maxAge = 55,
+		isMafiaOnly = true,
+		cooldown = 10,
+		maxOccurrences = 2,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+		},
+		choices = {
+			{
+				text = "Lead a strike team",
+				effects = { Happiness = 5, Health = -10 },
+				successChance = 55,
+				successMafiaEffect = { respect = 80, kills = 2, heat = 50 },
+				failMafiaEffect = { respect = -20, Health = -30, heat = 40 },
+				setFlags = { has_killed = true, war_veteran = true },
+				feed = "Blood in the streets. This is war.",
+			},
+			{
+				text = "Gather intelligence on enemy movements",
+				effects = { Happiness = 3, Smarts = 8 },
+				mafiaEffect = { respect = 40, heat = 15 },
+				setFlags = { intelligence_gatherer = true },
+				feed = "Your intel gave us the upper hand.",
+			},
+			{
+				text = "Protect family assets and businesses",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = 30, heat = 10 },
+				setFlags = { family_protector = true },
+				feed = "Defense is just as important as offense.",
+			},
+			{
+				text = "Advocate for peace negotiations",
+				effects = { Happiness = 0, Smarts = 5 },
+				mafiaEffect = { respect = -10, loyalty = -15 },
+				setFlags = { peacemaker = true },
+				feed = "Some see you as wise. Others as weak.",
+			},
+		},
+	},
+	
+	-- LEGITIMATE FRONT
+	{
+		id = "legitimate_business_front",
+		title = "🏪 Going Legit",
+		emoji = "🏪",
+		text = "The family needs more legitimate fronts to launder money. You've been asked to run a business.",
+		question = "What business do you choose?",
+		minAge = 25,
+		maxAge = 60,
+		isMafiaOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { in_mob = true, made_member = true },
+			blockedFlags = { runs_front_business = true },
+		},
+		choices = {
+			{
+				text = "An upscale restaurant",
+				effects = { Happiness = 10 },
+				mafiaEffect = { respect = 30, money = 50000 },
+				setFlags = { runs_front_business = true, restaurant_owner = true },
+				feed = "Best Italian food in the city. Allegedly.",
+			},
+			{
+				text = "A waste management company",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = 40, money = 80000 },
+				setFlags = { runs_front_business = true, waste_company = true },
+				feed = "Nobody looks in the garbage trucks.",
+			},
+			{
+				text = "A nightclub",
+				effects = { Happiness = 15 },
+				mafiaEffect = { respect = 25, money = 100000, heat = 10 },
+				setFlags = { runs_front_business = true, nightclub_owner = true },
+				feed = "The VIP section is VERY exclusive.",
+			},
+			{
+				text = "A car dealership",
+				effects = { Happiness = 8 },
+				mafiaEffect = { respect = 35, money = 70000 },
+				setFlags = { runs_front_business = true, car_dealer = true },
+				feed = "Cash business. Perfect for cleaning money.",
+			},
+		},
+	},
+	
+	-- LOYALTY TEST FROM BOSS
+	{
+		id = "boss_loyalty_test",
+		title = "🔍 The Test",
+		emoji = "🔍",
+		text = "The boss has asked you to do something that will prove your loyalty beyond any doubt. It's a test.",
+		question = "What does he ask of you?",
+		minAge = 21,
+		maxAge = 55,
+		isMafiaOnly = true,
+		cooldown = 12,
+		maxOccurrences = 2,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+		},
+		choices = {
+			{
+				text = "Eliminate an old friend who betrayed us",
+				effects = { Happiness = -20 },
+				mafiaEffect = { respect = 60, kills = 1, loyalty = 30, heat = 20 },
+				setFlags = { has_killed = true, passed_test = true, killed_friend = true },
+				feed = "Business is business. Even when it hurts.",
+			},
+			{
+				text = "Destroy a competitor's shipment",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = 40, heat = 25 },
+				setFlags = { passed_test = true, saboteur = true },
+				feed = "Millions in product, up in smoke.",
+			},
+			{
+				text = "Corrupt a judge on an important case",
+				effects = { Happiness = 3, Smarts = 5 },
+				successChance = 65,
+				successMafiaEffect = { respect = 50 },
+				failMafiaEffect = { respect = -20, heat = 30 },
+				setFlags = { passed_test = true, corrupter = true },
+				feed = "Justice is blind. And expensive.",
+			},
+			{
+				text = "Refuse - some lines can't be crossed",
+				effects = { Happiness = -5 },
+				mafiaEffect = { respect = -30, loyalty = -40 },
+				setFlags = { refused_test = true },
+				feed = "The boss questions your commitment.",
+			},
+		},
+	},
+	
+	-- YOUNG SOLDIER PROBLEM
+	{
+		id = "soldier_problem",
+		title = "👶 Young Gun Problem",
+		emoji = "👶",
+		text = "A young soldier under your command is causing problems. He's reckless and drawing heat to the family.",
+		question = "How do you deal with him?",
+		minAge = 28,
+		maxAge = 60,
+		isMafiaOnly = true,
+		cooldown = 6,
+		maxOccurrences = 3,
+		conditions = { 
+			requiresFlags = { in_mob = true, is_capo = true },
+		},
+		choices = {
+			{
+				text = "Give him one warning - make it count",
+				effects = { Happiness = 5 },
+				mafiaEffect = { respect = 15 },
+				setFlags = { gives_chances = true },
+				feed = "He got the message. For now.",
+			},
+			{
+				text = "Reassign him to less visible work",
+				effects = { Happiness = 3, Smarts = 5 },
+				mafiaEffect = { respect = 10, loyalty = 10 },
+				setFlags = { smart_manager = true },
+				feed = "Different role, same family. Smart.",
+			},
+			{
+				text = "Make an example of him",
+				effects = { Happiness = -10 },
+				mafiaEffect = { respect = 35, heat = 15 },
+				setFlags = { enforcer = true },
+				feed = "No one will forget what happened to him.",
+			},
+			{
+				text = "Mentor him personally",
+				effects = { Happiness = 8, Smarts = 3 },
+				mafiaEffect = { respect = 20, loyalty = 25 },
+				setFlags = { mentor = true },
+				feed = "Under your guidance, he's becoming valuable.",
+			},
+		},
+	},
+	
+	-- MONEY DROP GONE WRONG
+	{
+		id = "money_drop_problem",
+		title = "💼 Drop Gone Wrong",
+		emoji = "💼",
+		text = "A scheduled money drop didn't go as planned. The courier claims he was robbed. The boss wants answers.",
+		question = "What do you do?",
+		minAge = 21,
+		maxAge = 55,
+		isMafiaOnly = true,
+		cooldown = 6,
+		maxOccurrences = 3,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+		},
+		choices = {
+			{
+				text = "Investigate - find the truth",
+				effects = { Happiness = -5, Smarts = 8 },
+				mafiaEffect = { respect = 25 },
+				setFlags = { investigator = true },
+				feed = "You found out what really happened.",
+			},
+			{
+				text = "Cover the loss from your own pocket",
+				effects = { Happiness = -10, Money = -50000 },
+				mafiaEffect = { respect = 20, loyalty = 30 },
+				setFlags = { takes_responsibility = true },
+				feed = "Expensive, but your reputation is intact.",
+			},
+			{
+				text = "Punish the courier regardless",
+				effects = { Happiness = 3 },
+				mafiaEffect = { respect = 15, heat = 10 },
+				setFlags = { no_excuses = true },
+				feed = "Message sent. True or not.",
+			},
+			{
+				text = "Track down the supposed robbers",
+				effects = { Happiness = 5 },
+				successChance = 50,
+				successMafiaEffect = { respect = 40, money = 75000 },
+				failMafiaEffect = { respect = -15, heat = 20 },
+				setFlags = { tracker = true },
+				feed = "Either you find thieves or a liar.",
+			},
+		},
+	},
+	
+	-- INFORMANT OPPORTUNITY
+	{
+		id = "become_informant",
+		title = "🤐 The Choice",
+		emoji = "🤐",
+		text = "The FBI approaches you with a deal. Become an informant and they'll protect you. Refuse and you're on your own.",
+		question = "What do you do?",
+		minAge = 25,
+		maxAge = 60,
+		isMafiaOnly = true,
+		cooldown = 15,
+		maxOccurrences = 1,
+		conditions = { 
+			requiresFlags = { in_mob = true, initiated = true },
+			blockedFlags = { informant = true },
+		},
+		choices = {
+			{
+				text = "Accept - save yourself",
+				effects = { Happiness = -15 },
+				mafiaEffect = { heatDecay = 50 },
+				setFlags = { informant = true, secret_rat = true },
+				feed = "You're a rat now. The guilt will never leave.",
+			},
+			{
+				text = "Refuse and report to the boss",
+				effects = { Happiness = 10 },
+				mafiaEffect = { respect = 50, loyalty = 40, heat = 20 },
+				setFlags = { loyal_soldier = true },
+				feed = "The family knows they can trust you with their lives.",
+			},
+			{
+				text = "Refuse silently - tell no one",
+				effects = { Happiness = 5 },
+				mafiaEffect = { heat = 10 },
+				setFlags = { silent_refusal = true },
+				feed = "What they don't know won't hurt them.",
+			},
+			{
+				text = "Feed them false information",
+				effects = { Happiness = 8, Smarts = 10 },
+				successChance = 40,
+				successMafiaEffect = { respect = 30, heatDecay = 20 },
+				failMafiaEffect = { arrested = true, jailYears = 15 },
+				setFlags = { double_agent = true },
+				feed = "Playing both sides is dangerous.",
+			},
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════

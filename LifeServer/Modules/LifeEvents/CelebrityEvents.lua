@@ -2073,6 +2073,286 @@ CelebrityEvents.GeneralFameEvents = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #465: ADDITIONAL CELEBRITY EVENTS FOR DEEPER GAMEPLAY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- BRAND DEAL CONTROVERSY
+	{
+		id = "brand_deal_controversy",
+		title = "💰 Problematic Sponsor",
+		emoji = "💰",
+		text = "One of your sponsors has been exposed for unethical practices. You're associated with their brand.",
+		minFame = 45,
+		cooldown = 8,
+		maxOccurrences = 2,
+		choices = {
+			{
+				text = "Drop them immediately and publicly",
+				effects = { Happiness = 10, Money = -200000 },
+				fameEffect = 15,
+				setFlags = { ethical_celebrity = true },
+				feed = "Your quick action was praised!",
+			},
+			{
+				text = "Stay quiet and let the contract expire",
+				effects = { Happiness = -10 },
+				fameEffect = -15,
+				feed = "Your silence was noticed. And criticized.",
+			},
+			{
+				text = "Donate your earnings to charity",
+				effects = { Happiness = 15, Money = -300000 },
+				fameEffect = 20,
+				setFlags = { charitable_celebrity = true },
+				feed = "You turned a scandal into something positive!",
+			},
+		},
+	},
+	
+	-- MUSIC STREAMING DISPUTE
+	{
+		id = "streaming_dispute",
+		title = "🎵 Streaming Fight",
+		emoji = "🎵",
+		text = "You're unhappy with what streaming platforms pay artists. Will you take a stand?",
+		minFame = 55,
+		cooldown = 10,
+		maxOccurrences = 2,
+		choices = {
+			{
+				text = "Remove your music from all platforms",
+				effects = { Happiness = 5, Money = -500000 },
+				fameEffect = 20,
+				setFlags = { streaming_boycott = true },
+				feed = "A bold move that sparked industry debate!",
+			},
+			{
+				text = "Release a statement but stay on platforms",
+				effects = { Happiness = 3 },
+				fameEffect = 8,
+				feed = "Words without action. Some were disappointed.",
+			},
+			{
+				text = "Start your own platform",
+				effects = { Happiness = 15, Money = -2000000, Smarts = 8 },
+				fameEffect = 25,
+				setFlags = { tech_entrepreneur = true },
+				feed = "You're now a tech mogul too!",
+			},
+		},
+	},
+	
+	-- PUBLICITY STUNT
+	{
+		id = "publicity_stunt_opportunity",
+		title = "🎪 Publicity Stunt",
+		emoji = "🎪",
+		text = "Your PR team proposes an outrageous publicity stunt. It's risky but could get massive attention.",
+		minFame = 35,
+		cooldown = 6,
+		maxOccurrences = 4,
+		choices = {
+			{
+				text = "Go for it - all attention is good attention",
+				effects = { Happiness = 15 },
+				successChance = 60,
+				successFame = 20,
+				successFeed = "It worked! Everyone's talking about you!",
+				failFame = -15,
+				failFeed = "That backfired spectacularly.",
+			},
+			{
+				text = "Tone it down to something safer",
+				effects = { Happiness = 8 },
+				fameEffect = 8,
+				feed = "Moderate buzz. Safe but not viral.",
+			},
+			{
+				text = "Decline - protect your image",
+				effects = { Happiness = 5 },
+				fameEffect = 0,
+				setFlags = { plays_it_safe = true },
+				feed = "Your brand stays consistent.",
+			},
+		},
+	},
+	
+	-- PERSONAL LIFE EXPOSED
+	{
+		id = "personal_life_exposed",
+		title = "📸 Private Photos Leaked",
+		emoji = "📸",
+		text = "Private photos of you were leaked online. Your privacy has been violated.",
+		minFame = 40,
+		cooldown = 12,
+		maxOccurrences = 2,
+		choices = {
+			{
+				text = "Take legal action aggressively",
+				effects = { Happiness = -10, Money = -500000 },
+				fameEffect = 10,
+				setFlags = { privacy_fighter = true },
+				feed = "You're fighting back through the courts.",
+			},
+			{
+				text = "Address it and move on",
+				effects = { Happiness = -5 },
+				fameEffect = 5,
+				feed = "You handled it with grace.",
+			},
+			{
+				text = "Turn it into a body positivity moment",
+				effects = { Happiness = 10 },
+				fameEffect = 20,
+				setFlags = { body_positive = true },
+				feed = "You transformed violation into empowerment!",
+			},
+		},
+	},
+	
+	-- CELEBRITY FEUD
+	{
+		id = "celebrity_feud",
+		title = "🔥 Celebrity Feud",
+		emoji = "🔥",
+		text = "Another celebrity made shady comments about you. The internet is waiting for your response.",
+		minFame = 45,
+		cooldown = 5,
+		maxOccurrences = 4,
+		choices = {
+			{
+				text = "Epic clap back on social media",
+				effects = { Happiness = 10 },
+				fameEffect = 15,
+				setFlags = { clap_back_champion = true },
+				feed = "Your response was legendary!",
+			},
+			{
+				text = "Take the high road publicly",
+				effects = { Happiness = 8, Smarts = 5 },
+				fameEffect = 10,
+				setFlags = { takes_high_road = true },
+				feed = "Maturity wins. Most people respect that.",
+			},
+			{
+				text = "Collab with them as a peace treaty",
+				effects = { Happiness = 15 },
+				fameEffect = 20,
+				setFlags = { peacemaker = true },
+				feed = "The unexpected collab broke the internet!",
+			},
+			{
+				text = "Ignore completely",
+				effects = { Happiness = 3 },
+				fameEffect = 0,
+				feed = "No engagement. The drama died down.",
+			},
+		},
+	},
+	
+	-- FAN SAVES YOUR LIFE
+	{
+		id = "fan_saves_life",
+		title = "🦸 Heroic Fan",
+		emoji = "🦸",
+		text = "A fan literally saved your life in an emergency situation. The story is everywhere.",
+		minFame = 50,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{
+				text = "Meet them privately and thank them",
+				effects = { Happiness = 20 },
+				fameEffect = 10,
+				setFlags = { grateful_celebrity = true },
+				feed = "A genuine private moment.",
+			},
+			{
+				text = "Grand public gesture of thanks",
+				effects = { Happiness = 18, Money = -50000 },
+				fameEffect = 20,
+				setFlags = { generous_celebrity = true },
+				feed = "You changed their life forever!",
+			},
+			{
+				text = "Feature them in your next project",
+				effects = { Happiness = 25 },
+				fameEffect = 25,
+				setFlags = { fan_champion = true },
+				feed = "The ultimate fan wish came true!",
+			},
+		},
+	},
+	
+	-- LIFETIME ACHIEVEMENT
+	{
+		id = "lifetime_achievement_award",
+		title = "🏆 Lifetime Achievement",
+		emoji = "🏆",
+		text = "You're being honored with a Lifetime Achievement Award. A career milestone!",
+		minFame = 80,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{
+				text = "Accept with emotional speech",
+				effects = { Happiness = 30 },
+				fameEffect = 15,
+				setFlags = { lifetime_achievement = true },
+				feed = "There wasn't a dry eye in the house.",
+			},
+			{
+				text = "Use the platform for a cause",
+				effects = { Happiness = 25, Smarts = 5 },
+				fameEffect = 20,
+				setFlags = { lifetime_achievement = true, activist_celebrity = true },
+				feed = "You used your moment to spotlight an issue.",
+			},
+			{
+				text = "Decline - you're not done yet",
+				effects = { Happiness = 10 },
+				fameEffect = 10,
+				setFlags = { still_going = true },
+				feed = "You're not ready to be a legend yet. Respect.",
+			},
+		},
+	},
+	
+	-- BIOPIC ANNOUNCEMENT
+	{
+		id = "biopic_announcement",
+		title = "🎬 Your Biopic",
+		emoji = "🎬",
+		text = "Hollywood wants to make a movie about your life! You have some creative control.",
+		minFame = 70,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{
+				text = "Let them tell the full story",
+				effects = { Happiness = 15, Money = 1000000 },
+				fameEffect = 20,
+				setFlags = { has_biopic = true },
+				feed = "The unfiltered story. Warts and all.",
+			},
+			{
+				text = "Demand a sanitized version",
+				effects = { Happiness = 10, Money = 500000 },
+				fameEffect = 10,
+				setFlags = { has_biopic = true },
+				feed = "A polished but less compelling story.",
+			},
+			{
+				text = "Play yourself in it",
+				effects = { Happiness = 25, Smarts = 5 },
+				fameEffect = 25,
+				setFlags = { has_biopic = true, played_self = true },
+				feed = "Bold and meta! Critics loved it!",
+			},
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
