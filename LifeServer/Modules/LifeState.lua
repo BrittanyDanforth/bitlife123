@@ -446,8 +446,56 @@ end
 -- RELATIONSHIPS
 -- ════════════════════════════════════════════════════════════════════════════
 
-function LifeState:AddRelationship(id, data)
-	self.Relationships[id] = data
+-- CRITICAL FIX #480: Support both 2-arg (id, data) and 3-arg (id, type, strength) signatures
+-- Event handlers in RelationshipsExpanded.lua use: state:AddRelationship("Partner", "romantic", 0.65)
+-- But the original signature was: state:AddRelationship(id, data)
+function LifeState:AddRelationship(id, typeOrData, strength)
+	if type(typeOrData) == "table" then
+		-- Original signature: (id, data)
+		self.Relationships[id] = typeOrData
+	else
+		-- Event handler signature: (id, type, strength)
+		-- Create a proper relationship object
+		local RANDOM = Random.new()
+		local maleNames = {"James", "Michael", "David", "John", "Robert", "William", "Thomas", "Daniel", "Matthew", "Anthony", "Liam", "Noah", "Oliver", "Ethan", "Lucas"}
+		local femaleNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Sarah", "Jessica", "Emily", "Ashley", "Rachel"}
+		
+		local relationshipType = typeOrData or "romance"
+		local relationshipStrength = strength or 0.5
+		
+		-- Determine gender based on player's gender and relationship type
+		local partnerGender = "female"
+		if self.Gender == "Female" then
+			partnerGender = "male"
+		end
+		-- Allow same-gender relationships randomly (~15% of the time for variety)
+		if RANDOM:NextNumber() < 0.15 then
+			partnerGender = self.Gender == "Male" and "male" or "female"
+		end
+		
+		local nameList = partnerGender == "male" and maleNames or femaleNames
+		local partnerName = nameList[RANDOM:NextInteger(1, #nameList)]
+		
+		local relationship = {
+			id = id:lower(),
+			name = partnerName,
+			type = relationshipType,
+			role = id, -- "Partner", "Date", etc.
+			relationship = math.floor(relationshipStrength * 100), -- Convert 0-1 to 0-100
+			gender = partnerGender,
+			age = math.max(18, (self.Age or 18) + RANDOM:NextInteger(-5, 5)),
+			alive = true,
+			metAge = self.Age or 18,
+		}
+		
+		-- Store in appropriate place based on type
+		if relationshipType == "romantic" or relationshipType == "romance" then
+			self.Relationships.partner = relationship
+			self.Relationships[id:lower()] = relationship
+		else
+			self.Relationships[id:lower()] = relationship
+		end
+	end
 	return self
 end
 

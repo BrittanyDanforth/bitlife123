@@ -757,8 +757,20 @@ function MafiaScreen:createResultPopup()
 	okBtn.Parent = self.resultCard
 	corner(okBtn, 10)
 	
+	-- CRITICAL FIX #470: Store reference for retry functionality
+	self.resultOkBtn = okBtn
+	
 	okBtn.MouseButton1Click:Connect(function()
-		self:hideResult()
+		-- CRITICAL FIX #471: If there's a pending family join, retry it
+		if pendingFamilyJoin then
+			local familyId = pendingFamilyJoin
+			self:hideResult()
+			task.delay(0.2, function()
+				self:attemptJoinFamily(familyId)
+			end)
+		else
+			self:hideResult()
+		end
 	end)
 end
 
@@ -1576,7 +1588,8 @@ function MafiaScreen:attemptJoinFamily(familyId)
 			if PromptGamepass then
 				PromptGamepass:FireServer("MAFIA")
 			end
-			self:showResult(false, "Gamepass Required", result.message or "Purchase the Mafia gamepass to join!", "💎")
+			-- CRITICAL FIX #472: Show retry button for gamepass required
+			self:showResult(false, "Gamepass Required", result.message or "Purchase the Mafia gamepass to join!", "💎", true)
 		else
 			pendingFamilyJoin = nil
 			self:showResult(false, "Rejected", result.message or "The family rejected you.", "❌")
