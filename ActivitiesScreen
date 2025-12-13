@@ -322,6 +322,57 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	self.currentTab = "mindbody"
 	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "InJail:", self:isInJail())
 	self:createUI()
+	
+	-- CRITICAL FIX #449: Listen for gamepass purchases to refresh UI immediately
+	local MarketplaceService = game:GetService("MarketplaceService")
+	local Players = game:GetService("Players")
+	local player = Players.LocalPlayer
+	
+	-- Gamepass IDs
+	local GAMEPASS_IDS = {
+		MAFIA = 1626238769,
+		ROYALTY = 1626378001,
+		CELEBRITY = 1626461980,
+	}
+	
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
+		if plr ~= player or not wasPurchased then return end
+		
+		-- Check if it's a relevant gamepass
+		for key, id in pairs(GAMEPASS_IDS) do
+			if gamePassId == id then
+				log(key .. " gamepass purchased! Refreshing UI...")
+				
+				-- Refresh the screen if it's visible
+				if self.isVisible then
+					task.defer(function()
+						self:switchTab(self.currentTab)
+					end)
+					-- Also retry after a short delay
+					task.delay(0.5, function()
+						if self.isVisible then
+							self:switchTab(self.currentTab)
+						end
+					end)
+				end
+				break
+			end
+		end
+	end)
+	
+	-- Also listen for server confirmation
+	local GamepassPurchased = getRemote("GamepassPurchased")
+	if GamepassPurchased then
+		GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
+			log("Server confirmed " .. gamepassKey .. " gamepass! Refreshing...")
+			if self.isVisible then
+				task.defer(function()
+					self:switchTab(self.currentTab)
+				end)
+			end
+		end)
+	end
+	
 	log("✅ ActivitiesScreen created successfully")
 	return self
 end

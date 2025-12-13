@@ -134,6 +134,13 @@ local LeaveMob = getRemote("LeaveMob")
 local DoMobOperation = getRemote("DoMobOperation")
 local CheckGamepass = getRemote("CheckGamepass")
 local PromptGamepass = getRemote("PromptGamepass")
+local GamepassPurchased = getRemote("GamepassPurchased")
+
+-- CRITICAL FIX #445: Track if Mafia gamepass is owned (cached)
+local hasMafiaGamepass = false
+
+-- CRITICAL FIX #446: Gamepass IDs for purchase detection
+local MAFIA_GAMEPASS_ID = 1626238769
 
 -- Crime Family data (matches MobSystem.lua)
 local CrimeFamilies = {
@@ -400,6 +407,49 @@ function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pla
 	self.onShowEventCard = onShowEventCard
 	
 	self:createUI()
+	
+	-- CRITICAL FIX #447: Listen for gamepass purchases to refresh UI immediately
+	local MarketplaceService = game:GetService("MarketplaceService")
+	local Players = game:GetService("Players")
+	local player = Players.LocalPlayer
+	
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
+		if plr ~= player or not wasPurchased then return end
+		
+		if gamePassId == MAFIA_GAMEPASS_ID then
+			hasMafiaGamepass = true
+			log("Mafia gamepass purchased! Refreshing UI...")
+			
+			-- Refresh the screen if it's visible
+			if self.isVisible then
+				task.defer(function()
+					self:refreshContent()
+				end)
+				-- Also retry after a short delay in case of API lag
+				task.delay(0.5, function()
+					if self.isVisible then
+						self:refreshContent()
+					end
+				end)
+			end
+		end
+	end)
+	
+	-- Also listen for server confirmation
+	if GamepassPurchased then
+		GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
+			if gamepassKey == "MAFIA" then
+				hasMafiaGamepass = true
+				log("Server confirmed Mafia gamepass! Refreshing UI...")
+				if self.isVisible then
+					task.defer(function()
+						self:refreshContent()
+					end)
+				end
+			end
+		end)
+	end
+	
 	log("✅ MafiaScreen created successfully")
 	return self
 end
@@ -1724,14 +1774,18 @@ end
 function MafiaScreen:show()
 	if self.isVisible then return end
 	
-	-- CRITICAL FIX #10: Check gamepass ownership before showing screen
-	local hasGamepass = false
-	if CheckGamepass then
+	-- CRITICAL FIX #448: Check gamepass ownership - use cache first, then server
+	local hasGamepass = hasMafiaGamepass
+	
+	if not hasGamepass and CheckGamepass then
 		local success, owns = pcall(function()
 			return CheckGamepass:InvokeServer("MAFIA")
 		end)
 		if success then
 			hasGamepass = owns
+			if owns then
+				hasMafiaGamepass = true  -- Update cache
+			end
 		end
 	end
 	

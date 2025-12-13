@@ -1450,6 +1450,629 @@ CelebrityEvents.GeneralFameEvents = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #452: MASSIVE CELEBRITY EVENT EXPANSION
+	-- 25+ new events for deeper celebrity gameplay
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- VIRAL MOMENT
+	{
+		id = "viral_moment",
+		title = "📱 Viral Moment",
+		emoji = "📱",
+		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
+		minFame = 20,
+		cooldown = 4,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Embrace it and lean into the meme",
+				effects = { Happiness = 20 },
+				fameEffect = 15,
+				setFlags = { meme_friendly = true },
+				feed = "You became the internet's favorite!",
+			},
+			{
+				text = "Use it to promote your work",
+				effects = { Happiness = 10, Money = 50000 },
+				fameEffect = 10,
+				setFlags = { savvy_promoter = true },
+				feed = "Smart marketing from a viral moment!",
+			},
+			{
+				text = "Ignore it completely",
+				effects = { Happiness = 5 },
+				fameEffect = 5,
+				feed = "It faded as quickly as it came.",
+			},
+			{
+				text = "Try to get it removed",
+				effects = { Happiness = -10 },
+				fameEffect = 10,
+				setFlags = { streisand_effect = true },
+				feed = "The Streisand Effect made it even bigger!",
+			},
+		},
+	},
+	
+	-- STALKER FAN
+	{
+		id = "stalker_fan",
+		title = "😰 Obsessed Fan",
+		emoji = "😰",
+		text = "Security discovered someone has been following you everywhere. They know your schedule, your home, everything.",
+		minFame = 40,
+		cooldown = 10,
+		maxOccurrences = 2,
+		choices = {
+			{
+				text = "Get a restraining order",
+				effects = { Happiness = -10, Money = -20000 },
+				fameEffect = 0,
+				setFlags = { has_restraining_order = true },
+				feed = "The courts are handling it now.",
+			},
+			{
+				text = "Upgrade security significantly",
+				effects = { Happiness = 5, Money = -100000 },
+				fameEffect = 0,
+				setFlags = { heavy_security = true },
+				feed = "You now travel with bodyguards everywhere.",
+			},
+			{
+				text = "Move to a new location",
+				effects = { Happiness = -5, Money = -500000 },
+				fameEffect = 0,
+				setFlags = { changed_residence = true },
+				feed = "Fresh start, new address, new peace.",
+			},
+			{
+				text = "Try to meet them and de-escalate",
+				effects = { Happiness = -20, Health = -5 },
+				successChance = 30,
+				successFame = 5,
+				successFeed = "They apologized and left you alone.",
+				failFame = -5,
+				failFeed = "That was a terrible idea. Security had to intervene.",
+			},
+		},
+	},
+	
+	-- CHARITY GALA HOST
+	{
+		id = "charity_gala_host",
+		title = "🎪 Gala Host",
+		emoji = "🎪",
+		text = "You've been asked to host the biggest charity gala of the year. All eyes will be on you.",
+		minFame = 60,
+		cooldown = 6,
+		maxOccurrences = 3,
+		choices = {
+			{
+				text = "Give an inspiring speech",
+				effects = { Happiness = 15, Smarts = 5 },
+				fameEffect = 12,
+				setFlags = { great_speaker = true },
+				feed = "Your words moved the room to tears and donations!",
+			},
+			{
+				text = "Donate a huge amount yourself",
+				effects = { Happiness = 20, Money = -1000000 },
+				fameEffect = 15,
+				setFlags = { generous_celebrity = true },
+				feed = "Your generosity made headlines!",
+			},
+			{
+				text = "Network with other celebrities",
+				effects = { Happiness = 10, Smarts = 3 },
+				fameEffect = 8,
+				setFlags = { well_connected = true },
+				feed = "You made valuable industry connections.",
+			},
+			{
+				text = "Just show up and smile",
+				effects = { Happiness = 5 },
+				fameEffect = 3,
+				feed = "You did the bare minimum.",
+			},
+		},
+	},
+	
+	-- COLLABORATION OFFER
+	{
+		id = "major_collaboration",
+		title = "🤝 Dream Collab",
+		emoji = "🤝",
+		text = "One of the biggest names in entertainment wants to collaborate with you. This could change everything.",
+		minFame = 50,
+		cooldown = 5,
+		maxOccurrences = 4,
+		choices = {
+			{
+				text = "Accept enthusiastically",
+				effects = { Happiness = 25 },
+				fameEffect = 20,
+				setFlags = { collaborated_legend = true },
+				feed = "This collaboration is already iconic!",
+			},
+			{
+				text = "Negotiate for creative control",
+				effects = { Happiness = 15, Smarts = 5 },
+				successChance = 50,
+				successFame = 25,
+				successFeed = "Your vision shapes the project!",
+				failFame = 10,
+				failFeed = "They went with someone else.",
+			},
+			{
+				text = "Decline - wrong fit for your brand",
+				effects = { Happiness = 5 },
+				fameEffect = -5,
+				setFlags = { brand_focused = true },
+				feed = "You stayed true to yourself.",
+			},
+		},
+	},
+	
+	-- AWARD SHOW PERFORMANCE
+	{
+		id = "award_show_performance",
+		title = "🎤 Award Show Stage",
+		emoji = "🎤",
+		text = "You've been invited to perform at the biggest award show of the year. Billions will be watching.",
+		minFame = 55,
+		cooldown = 4,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Go all out with production",
+				effects = { Happiness = 20, Money = -200000 },
+				fameEffect = 18,
+				setFlags = { show_stopper = true },
+				feed = "Everyone's talking about your performance!",
+			},
+			{
+				text = "Keep it simple and raw",
+				effects = { Happiness = 15 },
+				fameEffect = 12,
+				setFlags = { raw_talent = true },
+				feed = "Sometimes less is more. Stunning.",
+			},
+			{
+				text = "Add a controversial element",
+				effects = { Happiness = 10 },
+				successChance = 50,
+				successFame = 25,
+				successFeed = "Controversial but iconic!",
+				failFame = -15,
+				failFeed = "It backfired spectacularly.",
+			},
+			{
+				text = "Decline - too much pressure",
+				effects = { Happiness = -10 },
+				fameEffect = -5,
+				feed = "A missed opportunity.",
+			},
+		},
+	},
+	
+	-- PODCAST INTERVIEW
+	{
+		id = "major_podcast",
+		title = "🎙️ Big Podcast",
+		emoji = "🎙️",
+		text = "A popular podcast wants a deep-dive interview. No scripts, no edits. Just real conversation.",
+		minFame = 40,
+		cooldown = 4,
+		maxOccurrences = 6,
+		choices = {
+			{
+				text = "Be completely open and honest",
+				effects = { Happiness = 15 },
+				fameEffect = 15,
+				setFlags = { authentic_celebrity = true },
+				feed = "Fans love the real you!",
+			},
+			{
+				text = "Promote your latest project",
+				effects = { Happiness = 8, Money = 50000 },
+				fameEffect = 5,
+				feed = "A standard promo appearance.",
+			},
+			{
+				text = "Drop some tea about the industry",
+				effects = { Happiness = 12 },
+				fameEffect = 20,
+				setFlags = { spilled_tea = true },
+				feed = "The clips went viral!",
+			},
+			{
+				text = "Give vague non-answers",
+				effects = { Happiness = 5 },
+				fameEffect = -5,
+				feed = "Fans were disappointed.",
+			},
+		},
+	},
+	
+	-- MOVIE ROLE OFFER
+	{
+		id = "blockbuster_role",
+		title = "🎬 Blockbuster Role",
+		emoji = "🎬",
+		text = "A major studio wants you for their next blockbuster. But the role requires a dramatic transformation.",
+		minFame = 55,
+		cooldown = 6,
+		maxOccurrences = 3,
+		conditions = { blockedFlags = { retired = true } },
+		choices = {
+			{
+				text = "Commit fully - gain/lose weight, learn new skills",
+				effects = { Happiness = 15, Health = -15 },
+				fameEffect = 20,
+				setFlags = { method_actor = true },
+				money = 2000000,
+				feed = "Your dedication stunned critics!",
+			},
+			{
+				text = "Do it with movie magic instead",
+				effects = { Happiness = 10 },
+				fameEffect = 12,
+				money = 1500000,
+				feed = "A solid performance.",
+			},
+			{
+				text = "Ask for script changes to suit you",
+				effects = { Happiness = 8, Smarts = 5 },
+				successChance = 40,
+				successFame = 15,
+				successMoney = 2500000,
+				successFeed = "They rewrote the role for you!",
+				failFame = -10,
+				failFeed = "They cast someone else.",
+			},
+			{
+				text = "Pass on the role",
+				effects = { Happiness = 5 },
+				fameEffect = -3,
+				feed = "It went to another star.",
+			},
+		},
+	},
+	
+	-- FASHION LINE LAUNCH
+	{
+		id = "fashion_line_launch",
+		title = "👗 Fashion Empire",
+		emoji = "👗",
+		text = "A major fashion house wants you to launch your own clothing line. Your name on every label.",
+		minFame = 60,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { has_fashion_line = true } },
+		choices = {
+			{
+				text = "High-end luxury brand",
+				effects = { Happiness = 20, Money = 500000 },
+				fameEffect = 15,
+				setFlags = { has_fashion_line = true, luxury_brand = true },
+				feed = "Your couture line debuted to rave reviews!",
+			},
+			{
+				text = "Affordable accessible fashion",
+				effects = { Happiness = 18, Money = 1000000 },
+				fameEffect = 18,
+				setFlags = { has_fashion_line = true, accessible_brand = true },
+				feed = "Everyone can wear your designs now!",
+			},
+			{
+				text = "Sustainable eco-fashion",
+				effects = { Happiness = 22, Money = 300000 },
+				fameEffect = 20,
+				setFlags = { has_fashion_line = true, eco_brand = true },
+				feed = "Your eco-conscious brand is a hit!",
+			},
+			{
+				text = "Decline - stick to your core career",
+				effects = { Happiness = 5 },
+				fameEffect = 0,
+				feed = "Fashion isn't your thing.",
+			},
+		},
+	},
+	
+	-- REALITY TV OFFER
+	{
+		id = "reality_tv_offer",
+		title = "📺 Reality TV Offer",
+		emoji = "📺",
+		text = "Network executives want to document your life in a reality series. Fame and fortune, but zero privacy.",
+		minFame = 30,
+		cooldown = 8,
+		maxOccurrences = 2,
+		conditions = { blockedFlags = { has_reality_show = true } },
+		choices = {
+			{
+				text = "Let cameras follow everything",
+				effects = { Happiness = 10, Money = 2000000 },
+				fameEffect = 25,
+				setFlags = { has_reality_show = true, open_book = true },
+				feed = "Your show is a ratings hit!",
+			},
+			{
+				text = "Only film curated content",
+				effects = { Happiness = 8, Money = 1000000 },
+				fameEffect = 15,
+				setFlags = { has_reality_show = true, controlled_image = true },
+				feed = "A polished version of your life.",
+			},
+			{
+				text = "Decline - value privacy too much",
+				effects = { Happiness = 10 },
+				fameEffect = 0,
+				setFlags = { values_privacy = true },
+				feed = "Some things should stay private.",
+			},
+		},
+	},
+	
+	-- MUSIC COMEBACK
+	{
+		id = "comeback_opportunity",
+		title = "🎵 Comeback Time",
+		emoji = "🎵",
+		text = "After a break from the spotlight, the industry is ready for your comeback. Make it count.",
+		minFame = 40,
+		cooldown = 10,
+		maxOccurrences = 2,
+		conditions = { requiresFlags = { took_break = true } },
+		choices = {
+			{
+				text = "Complete reinvention",
+				effects = { Happiness = 20 },
+				fameEffect = 25,
+				setFlags = { reinvented = true },
+				feed = "The new you is even bigger than before!",
+			},
+			{
+				text = "Return to classic style",
+				effects = { Happiness = 15 },
+				fameEffect = 15,
+				setFlags = { classic_comeback = true },
+				feed = "Fans love the return to form!",
+			},
+			{
+				text = "Low-key indie project",
+				effects = { Happiness = 18, Money = -50000 },
+				fameEffect = 10,
+				setFlags = { artsy_comeback = true },
+				feed = "Critics praised your artistic growth.",
+			},
+		},
+	},
+	
+	-- SUPER BOWL HALFTIME
+	{
+		id = "superbowl_halftime",
+		title = "🏈 Super Bowl Halftime",
+		emoji = "🏈",
+		text = "You've been invited to headline the Super Bowl halftime show. THE biggest stage in entertainment.",
+		minFame = 80,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { blockedFlags = { did_superbowl = true } },
+		choices = {
+			{
+				text = "Pull out all the stops",
+				effects = { Happiness = 30, Money = -1000000 },
+				fameEffect = 20,
+				setFlags = { did_superbowl = true, legendary_performance = true },
+				feed = "The most-watched performance of the decade!",
+			},
+			{
+				text = "Bring out surprise guests",
+				effects = { Happiness = 25 },
+				fameEffect = 25,
+				setFlags = { did_superbowl = true, surprise_guests = true },
+				feed = "The surprise appearances broke the internet!",
+			},
+			{
+				text = "Focus on the music, not spectacle",
+				effects = { Happiness = 20 },
+				fameEffect = 12,
+				setFlags = { did_superbowl = true, purist_performance = true },
+				feed = "A stripped-down but powerful show.",
+			},
+		},
+	},
+	
+	-- TABLOID LIES
+	{
+		id = "tabloid_lies",
+		title = "📰 Tabloid Lies",
+		emoji = "📰",
+		text = "A major tabloid printed completely false stories about you. The lies are spreading everywhere.",
+		minFame = 35,
+		cooldown = 5,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Sue for defamation",
+				effects = { Happiness = -10, Money = -500000 },
+				successChance = 60,
+				successFame = 10,
+				successMoney = 2000000,
+				successFeed = "You won the lawsuit!",
+				failFame = -5,
+				failFeed = "The case was dismissed.",
+			},
+			{
+				text = "Address it publicly on social media",
+				effects = { Happiness = 5 },
+				fameEffect = 5,
+				feed = "Your fans rallied to support you.",
+			},
+			{
+				text = "Ignore it and move on",
+				effects = { Happiness = -5 },
+				fameEffect = -5,
+				feed = "Some believed the lies.",
+			},
+			{
+				text = "Post receipts proving them wrong",
+				effects = { Happiness = 15 },
+				fameEffect = 15,
+				setFlags = { exposed_tabloid = true },
+				feed = "The evidence destroyed their credibility!",
+			},
+		},
+	},
+	
+	-- FAN MEETUP
+	{
+		id = "surprise_fan_meetup",
+		title = "👋 Fan Meet",
+		emoji = "👋",
+		text = "Your fans organized a massive meetup hoping you'd show. Word got back to your team.",
+		minFame = 45,
+		cooldown = 4,
+		maxOccurrences = 8,
+		choices = {
+			{
+				text = "Surprise them by showing up!",
+				effects = { Happiness = 25 },
+				fameEffect = 15,
+				setFlags = { loves_fans = true },
+				feed = "Fans cried tears of joy! Videos went viral!",
+			},
+			{
+				text = "Send a video message instead",
+				effects = { Happiness = 10 },
+				fameEffect = 8,
+				feed = "They appreciated the acknowledgment.",
+			},
+			{
+				text = "Send them merchandise",
+				effects = { Happiness = 8, Money = -10000 },
+				fameEffect = 5,
+				feed = "Free swag is always welcome.",
+			},
+			{
+				text = "Ignore it",
+				effects = { Happiness = 0 },
+				fameEffect = -5,
+				feed = "Some fans were disappointed.",
+			},
+		},
+	},
+	
+	-- MENTORSHIP OPPORTUNITY
+	{
+		id = "mentor_rising_star",
+		title = "🌟 Mentoring Talent",
+		emoji = "🌟",
+		text = "A young rising star wants you to mentor them. You could shape the next generation.",
+		minFame = 60,
+		cooldown = 6,
+		maxOccurrences = 3,
+		choices = {
+			{
+				text = "Take them under your wing",
+				effects = { Happiness = 15, Smarts = 5 },
+				fameEffect = 10,
+				setFlags = { industry_mentor = true },
+				feed = "Your mentee is rising fast!",
+			},
+			{
+				text = "Collaborate on a project together",
+				effects = { Happiness = 12, Money = 100000 },
+				fameEffect = 12,
+				setFlags = { collaborative_mentor = true },
+				feed = "The cross-generational collab is a hit!",
+			},
+			{
+				text = "Decline - you're too busy",
+				effects = { Happiness = 0 },
+				fameEffect = -3,
+				feed = "Opportunity to give back missed.",
+			},
+		},
+	},
+	
+	-- VEGAS RESIDENCY
+	{
+		id = "vegas_residency_offer",
+		title = "🎰 Vegas Residency",
+		emoji = "🎰",
+		text = "A Las Vegas casino wants you for a multi-year residency. Guaranteed income, less travel.",
+		minFame = 65,
+		cooldown = 10,
+		maxOccurrences = 2,
+		conditions = { blockedFlags = { has_residency = true } },
+		choices = {
+			{
+				text = "Accept the lucrative deal",
+				effects = { Happiness = 12, Money = 5000000 },
+				fameEffect = 10,
+				setFlags = { has_residency = true, vegas_star = true },
+				feed = "Your Vegas show is sold out for years!",
+			},
+			{
+				text = "Negotiate for shorter commitment",
+				effects = { Happiness = 10, Money = 2000000 },
+				fameEffect = 8,
+				setFlags = { has_residency = true },
+				feed = "A flexible arrangement.",
+			},
+			{
+				text = "Decline - need to stay on the road",
+				effects = { Happiness = 5 },
+				fameEffect = 0,
+				feed = "You prefer touring the world.",
+			},
+		},
+	},
+	
+	-- MOVIE PREMIERE
+	{
+		id = "movie_premiere_event",
+		title = "🎬 World Premiere",
+		emoji = "🎬",
+		text = "It's the world premiere of your biggest movie! The red carpet stretches endlessly.",
+		minFame = 50,
+		cooldown = 4,
+		maxOccurrences = 8,
+		choices = {
+			{
+				text = "Wear a show-stopping outfit",
+				effects = { Happiness = 18, Money = -50000 },
+				fameEffect = 15,
+				setFlags = { fashion_risk_taker = true },
+				feed = "Your outfit dominated headlines!",
+			},
+			{
+				text = "Focus on thanking the cast and crew",
+				effects = { Happiness = 15, Smarts = 3 },
+				fameEffect = 10,
+				setFlags = { gracious_star = true },
+				feed = "Your humility was noted.",
+			},
+			{
+				text = "Bring your biggest fans to the premiere",
+				effects = { Happiness = 20 },
+				fameEffect = 18,
+				setFlags = { fan_favorite = true },
+				feed = "The fans-on-carpet moment went viral!",
+			},
+			{
+				text = "Skip the red carpet entirely",
+				effects = { Happiness = 5 },
+				fameEffect = -5,
+				feed = "People wondered where you were.",
+			},
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
