@@ -5776,6 +5776,12 @@ showIntro = function()
 	if IntroUI.updateRoyaltyGenderBtn then
 		IntroUI.updateRoyaltyGenderBtn()
 	end
+	
+	-- CRITICAL FIX #432: Update God Mode button appearance on intro show
+	-- This was MISSING - causing God Mode button to stay grey even after purchase!
+	if IntroUI.updateCustomizeGenderBtn then
+		IntroUI.updateCustomizeGenderBtn()
+	end
 
 	-- Fade in animation
 	IntroUI.content.Position = UDim2.new(0.5, 0, 0.55, 0)
@@ -6059,6 +6065,17 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 		-- SHOW INTRO MODAL
 		showIntro()
+		
+		-- CRITICAL FIX #434: Update gamepass buttons after new life starts
+		-- The gamepass caches were just updated from server state, so update UI
+		task.defer(function()
+			if IntroUI and IntroUI.updateCustomizeGenderBtn then
+				IntroUI.updateCustomizeGenderBtn()
+			end
+			if IntroUI and IntroUI.updateRoyaltyGenderBtn then
+				IntroUI.updateRoyaltyGenderBtn()
+			end
+		end)
 
 		-- Early return - don't process as normal sync
 		return
@@ -6136,8 +6153,13 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if ScreenInstances.mafia and ScreenInstances.mafia.updateState then
 		ScreenInstances.mafia:updateState(currentState)
 	end
-	if ScreenInstances.storypaths and ScreenInstances.storypaths.visible then
-		ScreenInstances.storypaths:updateUI()
+	-- CRITICAL FIX #435: Ensure storypaths gets proper updateState call
+	if ScreenInstances.storypaths then
+		if ScreenInstances.storypaths.updateState then
+			ScreenInstances.storypaths:updateState(currentState)
+		elseif ScreenInstances.storypaths.visible then
+			ScreenInstances.storypaths:updateUI()
+		end
 	end
 
 	-- CRITICAL FIX: Check for death FIRST before showing any popups

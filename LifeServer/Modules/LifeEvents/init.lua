@@ -1395,7 +1395,9 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 		
 		if #eligibleCelebEvents > 0 then
-			local chosenEvent = celebEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCelebEvents)]
+			-- CRITICAL FIX #433: Was using celebEvents instead of eligibleCelebEvents!
+			-- This could pick an ineligible event or cause index out of bounds
+			local chosenEvent = eligibleCelebEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCelebEvents)]
 			table.insert(selectedEvents, chosenEvent)
 			recordEventShown(state, chosenEvent)
 			return selectedEvents
