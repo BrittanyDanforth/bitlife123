@@ -2810,6 +2810,165 @@ Adult.events = {
 			{ text = "Watch from the sidelines", effects = { Happiness = 2 }, feedText = "Enjoyed watching others compete." },
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #456: EXPANDED ADULT EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CAREER CROSSROADS
+	{
+		id = "career_crossroads",
+		title = "Career Crossroads",
+		emoji = "🔀",
+		text = "You've been doing the same job for years. Is it time for a change?",
+		question = "What do you decide?",
+		minAge = 28, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 8,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Take a leap and change careers", effects = { Happiness = 15, Money = -5000 }, setFlags = { career_changer = true }, feedText = "Scary but exciting! New chapter begins." },
+			{ text = "Stay but ask for a promotion", effects = { Happiness = 5, Money = 5000 }, feedText = "You made your case. A raise is coming!" },
+			{ text = "Start a side business", effects = { Happiness = 10, Money = -2000, Smarts = 5 }, setFlags = { entrepreneur = true }, feedText = "Nights and weekends building your dream!" },
+			{ text = "Accept that this is your path", effects = { Happiness = -5 }, feedText = "Comfort is nice. Adventure can wait." },
+		},
+	},
+	
+	-- HOME PURCHASE
+	{
+		id = "first_home_purchase",
+		title = "Buying a Home!",
+		emoji = "🏠",
+		text = "You found the perfect house. It's time to make an offer!",
+		question = "How do you approach this?",
+		minAge = 25, maxAge = 50,
+		baseChance = 0.3,
+		oneTime = true,
+		maxOccurrences = 1,
+		blockedByFlags = { homeowner = true },
+		choices = {
+			{ text = "Offer asking price immediately", effects = { Happiness = 15, Money = -50000 }, setFlags = { homeowner = true }, feedText = "🏠 Keys in hand! You're a homeowner!" },
+			{ text = "Negotiate aggressively", effects = { Happiness = 12, Money = -40000, Smarts = 3 }, setFlags = { homeowner = true }, feedText = "🏠 Saved $10k with your negotiating skills!" },
+			{ text = "Keep renting for now", effects = { Happiness = -5 }, feedText = "Not ready for that commitment yet." },
+		},
+	},
+	
+	-- MARRIAGE PROPOSAL
+	{
+		id = "marriage_proposal_moment",
+		title = "The Big Question",
+		emoji = "💍",
+		text = "After much thought, it feels like the right time to propose to your partner!",
+		question = "How does it go?",
+		minAge = 22, maxAge = 55,
+		baseChance = 0.35,
+		oneTime = true,
+		maxOccurrences = 1,
+		blockedByFlags = { married = true, engaged = true },
+		requiresFlags = { in_relationship = true },
+		choices = {
+			{ text = "Grand romantic gesture", effects = { Happiness = 25, Money = -5000 }, setFlags = { engaged = true, romantic = true }, feedText = "💍 They said YES! What a magical moment!" },
+			{ text = "Simple and heartfelt", effects = { Happiness = 22 }, setFlags = { engaged = true }, feedText = "💍 They said YES! Sometimes simple is perfect." },
+			{ text = "They propose to you first!", effects = { Happiness = 25 }, setFlags = { engaged = true }, feedText = "💍 They beat you to it! How romantic!" },
+			{ text = "Wait for a better time", effects = { Happiness = -5 }, feedText = "Not yet. The timing will be right someday." },
+		},
+	},
+	
+	-- MIDLIFE REFLECTION
+	{
+		id = "midlife_reflection",
+		title = "Midlife Reflection",
+		emoji = "🪞",
+		text = "Halfway through life. Time to reflect on what you've accomplished and what's still ahead.",
+		question = "How do you feel about your life so far?",
+		minAge = 40, maxAge = 50,
+		baseChance = 0.5,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{ text = "Proud of what I've built", effects = { Happiness = 15 }, setFlags = { content_with_life = true }, feedText = "Looking back with satisfaction. You've done well!" },
+			{ text = "Time for a big change", effects = { Happiness = 10, Money = -10000 }, setFlags = { midlife_change = true }, feedText = "Bucket list time! New adventures await." },
+			{ text = "Regret some choices", effects = { Happiness = -10 }, setFlags = { has_regrets = true }, feedText = "Some roads not taken still haunt you." },
+			{ text = "Focus on what's ahead", effects = { Happiness = 8, Smarts = 5 }, setFlags = { forward_looking = true }, feedText = "The best is yet to come!" },
+		},
+	},
+	
+	-- UNEXPECTED INHERITANCE
+	{
+		id = "unexpected_inheritance",
+		title = "Surprise Inheritance",
+		emoji = "💰",
+		text = "A distant relative you barely knew passed away and left you in their will!",
+		question = "What did you inherit?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.15,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{ text = "A substantial sum of money", effects = { Happiness = 20, Money = 100000 }, feedText = "💰 $100,000! Life-changing money!" },
+			{ text = "A modest amount", effects = { Happiness = 10, Money = 15000 }, feedText = "💵 $15,000 - enough for something nice." },
+			{ text = "A property in need of work", effects = { Happiness = 8, Money = -5000 }, setFlags = { inherited_property = true }, feedText = "🏚️ A fixer-upper. Could be worth it!" },
+			{ text = "Just sentimental items", effects = { Happiness = 5 }, setFlags = { inherited_heirlooms = true }, feedText = "📦 Not valuable, but meaningful." },
+		},
+	},
+	
+	-- HEALTH SCARE
+	{
+		id = "adult_health_scare",
+		title = "Health Scare",
+		emoji = "🏥",
+		text = "The doctor found something concerning during your routine checkup.",
+		question = "What's the diagnosis?",
+		minAge = 35, maxAge = 75,
+		baseChance = 0.25,
+		cooldown = 10,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "False alarm - nothing serious", effects = { Happiness = 10, Health = 5 }, feedText = "😮‍💨 What a relief! All clear." },
+			{ text = "Caught early - very treatable", effects = { Happiness = -5, Health = -10, Money = -10000 }, setFlags = { health_survivor = true }, feedText = "Early detection saved you. Treatment successful!" },
+			{ text = "Lifestyle changes needed", effects = { Happiness = -8, Health = 15 }, setFlags = { health_conscious = true }, feedText = "Wake-up call. Time to get serious about health." },
+			{ text = "Long road ahead", effects = { Happiness = -20, Health = -25, Money = -50000 }, setFlags = { chronic_illness = true }, feedText = "This will be a journey. Stay strong." },
+		},
+	},
+	
+	-- FRIENDSHIP TEST
+	{
+		id = "friendship_test",
+		title = "Friendship Test",
+		emoji = "🤝",
+		text = "Your best friend asks you for a significant favor that would put you out.",
+		question = "What do you do?",
+		minAge = 20, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Help without hesitation", effects = { Happiness = 10, Money = -1000 }, setFlags = { loyal_friend = true }, feedText = "That's what friends are for. They'd do the same for you." },
+			{ text = "Help, but set boundaries", effects = { Happiness = 5, Smarts = 3 }, feedText = "You helped within your limits. Fair balance." },
+			{ text = "Decline - can't afford to right now", effects = { Happiness = -5 }, feedText = "They understand, but there's tension now." },
+			{ text = "Ghost them instead of saying no", effects = { Happiness = -10 }, setFlags = { conflict_avoider = true }, feedText = "Avoiding the conversation made it worse." },
+		},
+	},
+	
+	-- EMPTY NEST
+	{
+		id = "empty_nest_moment",
+		title = "Empty Nest",
+		emoji = "🐣",
+		text = "Your last child just moved out. The house feels so quiet now.",
+		question = "How do you handle this new phase?",
+		minAge = 45, maxAge = 65,
+		baseChance = 0.5,
+		oneTime = true,
+		maxOccurrences = 1,
+		requiresFlags = { has_children = true },
+		choices = {
+			{ text = "Rediscover yourself and hobbies", effects = { Happiness = 15 }, setFlags = { empty_nester = true, self_renewed = true }, feedText = "Freedom! Time to focus on YOU again." },
+			{ text = "Struggle with the silence", effects = { Happiness = -15 }, setFlags = { empty_nester = true }, feedText = "It's harder than expected. You miss them." },
+			{ text = "Renovate the house", effects = { Happiness = 10, Money = -20000 }, setFlags = { empty_nester = true }, feedText = "Finally turning that room into your dream space!" },
+			{ text = "Plan more visits and trips to see them", effects = { Happiness = 8, Money = -2000 }, setFlags = { empty_nester = true }, feedText = "Distance doesn't mean disconnection." },
+		},
+	},
 }
 
 return Adult

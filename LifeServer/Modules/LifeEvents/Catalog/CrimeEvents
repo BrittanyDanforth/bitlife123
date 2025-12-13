@@ -1372,6 +1372,281 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #454: EXPANDED CRIME EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	-- CAR THEFT
+	{
+		id = "grand_theft_auto",
+		emoji = "🚗",
+		title = "Car Opportunity",
+		text = "You spot a luxury car with the keys in the ignition. The owner is nowhere to be seen.",
+		category = "crime",
+		weight = 4,
+		minAge = 16,
+		maxAge = 45,
+		cooldown = 6,
+		maxOccurrences = 3,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Steal the car and sell it",
+				effects = { Happiness = 10 },
+				feedText = "Here goes nothing...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.55
+					if success then
+						local payout = RANDOM:NextInteger(15000, 50000)
+						state.Money = (state.Money or 0) + payout
+						if state.AddFeed then
+							state:AddFeed(string.format("🚗 You sold the car to a chop shop for $%d!", payout))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.car_thief = true
+					else
+						local years, isJuvie = incarceratePlayer(state, 2, 5, "Grand Theft Auto")
+						if state.AddFeed then
+							if isJuvie then
+								state:AddFeed(string.format("🚔 Caught stealing! Juvenile detention for %.1f years.", years))
+							else
+								state:AddFeed(string.format("🚔 Caught stealing! %d years in prison.", years))
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Just take it for a joyride",
+				effects = { Happiness = 15 },
+				feedText = "Time for a spin!",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.70
+					if success then
+						if state.AddFeed then
+							state:AddFeed("🏎️ That was a wild ride! You ditched it before anyone noticed.")
+						end
+					else
+						local years, isJuvie = incarceratePlayer(state, 1, 2, "Joyriding")
+						if state.AddFeed then
+							if isJuvie then
+								state:AddFeed(string.format("🚔 Police caught you! Juvie for %.1f years.", years))
+							else
+								state:AddFeed(string.format("🚔 Police caught you! %d years for joyriding.", years))
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Walk away - not worth the risk",
+				effects = { Happiness = -3 },
+				feedText = "You walked away...",
+			},
+		},
+	},
+	
+	-- IDENTITY THEFT
+	{
+		id = "identity_theft_opportunity",
+		emoji = "💳",
+		title = "Stolen Identity",
+		text = "You found someone's wallet with all their personal documents - credit cards, SSN, everything.",
+		category = "crime",
+		weight = 4,
+		minAge = 18,
+		maxAge = 55,
+		cooldown = 5,
+		maxOccurrences = 3,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Use their identity for credit fraud",
+				effects = { Happiness = 5 },
+				feedText = "Time to go shopping...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.50
+					if success then
+						local stolen = RANDOM:NextInteger(5000, 25000)
+						state.Money = (state.Money or 0) + stolen
+						if state.AddFeed then
+							state:AddFeed(string.format("💳 You bought $%d worth before ditching the cards.", stolen))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.identity_thief = true
+					else
+						local years, _ = incarceratePlayer(state, 2, 6, "Identity Theft")
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 Tracked through purchases. %d years in prison!", years))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Sell the identity online",
+				effects = { },
+				feedText = "Looking for buyers...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.65
+					if success then
+						local payout = RANDOM:NextInteger(2000, 8000)
+						state.Money = (state.Money or 0) + payout
+						if state.AddFeed then
+							state:AddFeed(string.format("🖥️ Sold the identity for $%d crypto.", payout))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🕵️ The buyer was undercover. You got away barely!")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -15)
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Return the wallet",
+				effects = { Happiness = 10 },
+				setFlags = { honest = true },
+				feedText = "You returned the wallet.",
+			},
+		},
+	},
+	
+	-- BURGLARY
+	{
+		id = "burglary_opportunity",
+		emoji = "🏠",
+		title = "Empty House",
+		text = "You notice a neighbor is on vacation and their security system seems off.",
+		category = "crime",
+		weight = 4,
+		minAge = 16,
+		maxAge = 50,
+		cooldown = 6,
+		maxOccurrences = 3,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Break in and steal valuables",
+				effects = { },
+				feedText = "Breaking in...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.50
+					if success then
+						local loot = RANDOM:NextInteger(3000, 15000)
+						state.Money = (state.Money or 0) + loot
+						if state.AddFeed then
+							state:AddFeed(string.format("🎒 You got away with $%d worth of stuff!", loot))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.burglar = true
+					else
+						local years, isJuvie = incarceratePlayer(state, 2, 6, "Burglary")
+						if state.AddFeed then
+							if isJuvie then
+								state:AddFeed(string.format("🚔 Silent alarm! Juvie for %.1f years.", years))
+							else
+								state:AddFeed(string.format("🚔 Silent alarm! %d years for burglary.", years))
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Just peek through windows",
+				effects = { },
+				feedText = "Just looking...",
+				onResolve = function(state)
+					local caught = RANDOM:NextNumber() < 0.30
+					if caught then
+						if state.AddFeed then
+							state:AddFeed("👀 A neighbor called cops! You ran before they arrived.")
+						end
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -10)
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("👀 Nothing interesting to see.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Mind your own business",
+				effects = { },
+				feedText = "Not your concern.",
+			},
+		},
+	},
+	
+	-- DRUG DEALING
+	{
+		id = "drug_dealing_offer",
+		emoji = "💊",
+		title = "Drug Business",
+		text = "Someone offers you quick money selling drugs in your neighborhood.",
+		category = "crime",
+		weight = 3,
+		minAge = 16,
+		maxAge = 40,
+		cooldown = 8,
+		maxOccurrences = 2,
+		blockedByFlags = { in_prison = true, drug_dealer = true },
+		choices = {
+			{
+				index = 1,
+				text = "Start dealing",
+				effects = { },
+				feedText = "Getting into the game...",
+				onResolve = function(state)
+					local success = RANDOM:NextNumber() < 0.55
+					if success then
+						local profit = RANDOM:NextInteger(2000, 8000)
+						state.Money = (state.Money or 0) + profit
+						if state.AddFeed then
+							state:AddFeed(string.format("💊 Made $%d your first week. Dangerous game.", profit))
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.drug_dealer = true
+					else
+						local years, isJuvie = incarceratePlayer(state, 3, 10, "Drug Distribution")
+						if state.AddFeed then
+							if isJuvie then
+								state:AddFeed(string.format("🚔 DEA sting! Juvie for %.1f years.", years))
+							else
+								state:AddFeed(string.format("🚔 DEA sting! %d years in prison.", years))
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Report them to police",
+				effects = { Happiness = 5 },
+				setFlags = { narced = true },
+				feedText = "Making an anonymous tip...",
+			},
+			{
+				index = 3,
+				text = "Decline the offer",
+				effects = { },
+				feedText = "Not for you.",
+			},
+		},
+	},
 }
 
 return events

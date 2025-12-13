@@ -2301,6 +2301,274 @@ Teen.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #455: EXPANDED TEEN EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- DATING DRAMA
+	{
+		id = "teen_dating_drama",
+		title = "Dating Drama",
+		emoji = "💔",
+		text = "Your crush started dating someone else. Your friends are expecting a reaction.",
+		question = "How do you handle this?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 4,
+		maxOccurrences = 3,
+		choices = {
+			{
+				text = "Act like you don't care",
+				effects = { Happiness = -5 },
+				setFlags = { plays_it_cool = true },
+				feedText = "You played it cool, but inside it hurts.",
+			},
+			{
+				text = "Express your feelings honestly",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { emotionally_mature = true },
+				feedText = "That took courage. You feel better for being honest.",
+			},
+			{
+				text = "Try to break them up",
+				effects = { Happiness = 5 },
+				setFlags = { drama_starter = true },
+				feedText = "This is going to get messy...",
+			},
+			{
+				text = "Focus on self-improvement",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { self_focused = true },
+				feedText = "You hit the gym and focused on yourself. Good choice!",
+			},
+		},
+	},
+	
+	-- PART-TIME JOB OFFER
+	{
+		id = "teen_first_job_offer",
+		title = "First Job Offer!",
+		emoji = "💼",
+		text = "A local business is looking for part-time help. They want to hire you!",
+		question = "What do you do?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.35,
+		oneTime = true,
+		maxOccurrences = 1,
+		blockedByFlags = { has_part_time_job = true },
+		choices = {
+			{
+				text = "Take the job eagerly",
+				effects = { Happiness = 10, Money = 200 },
+				setFlags = { has_part_time_job = true, hardworker = true },
+				feedText = "Your first paycheck! It's not much, but it's honest work.",
+			},
+			{
+				text = "Negotiate for better hours",
+				effects = { Happiness = 8, Money = 200, Smarts = 3 },
+				setFlags = { has_part_time_job = true, negotiator = true },
+				feedText = "They agreed to flexible hours! Smart move.",
+			},
+			{
+				text = "Decline - too busy with school",
+				effects = { Happiness = -3, Smarts = 5 },
+				feedText = "School comes first. Your grades thank you.",
+			},
+			{
+				text = "Decline - too busy with friends",
+				effects = { Happiness = 5 },
+				feedText = "Work can wait. You're enjoying your youth.",
+			},
+		},
+	},
+	
+	-- HOUSE PARTY
+	{
+		id = "teen_house_party",
+		title = "House Party!",
+		emoji = "🎉",
+		text = "Someone's parents are out of town. There's a huge party happening tonight!",
+		question = "Are you going?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 3,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Go and have a blast",
+				effects = { Happiness = 15, Health = -5 },
+				setFlags = { party_animal = true },
+				feedText = "Best night ever! You made memories (and maybe some mistakes).",
+			},
+			{
+				text = "Go but stay responsible",
+				effects = { Happiness = 8 },
+				setFlags = { responsible_fun = true },
+				feedText = "You had fun but stayed smart. Good balance!",
+			},
+			{
+				text = "Stay home - not worth the risk",
+				effects = { Happiness = -5 },
+				feedText = "FOMO is real, but so are consequences.",
+			},
+			{
+				text = "Tell parents and get it shut down",
+				effects = { Happiness = -10 },
+				setFlags = { snitch = true },
+				feedText = "You did the 'right' thing. No one's talking to you now.",
+			},
+		},
+	},
+	
+	-- GETTING CAUGHT
+	{
+		id = "teen_caught_sneaking",
+		title = "Caught!",
+		emoji = "😱",
+		text = "Your parents caught you sneaking back into the house at 3 AM!",
+		question = "What's your excuse?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 5,
+		maxOccurrences = 3,
+		choices = {
+			{
+				text = "Tell the truth",
+				effects = { Happiness = -5, Smarts = 5 },
+				setFlags = { honest_teen = true },
+				feedText = "Grounded for a week, but they respect your honesty.",
+			},
+			{
+				text = "Make up an elaborate lie",
+				effects = { Happiness = 5 },
+				setFlags = { good_liar = true },
+				feedText = "They... actually believed it? You're good at this.",
+			},
+			{
+				text = "Blame it on a friend",
+				effects = { Happiness = 3 },
+				setFlags = { throws_friends = true },
+				feedText = "Your friend is taking the heat for you. Yikes.",
+			},
+			{
+				text = "Say nothing and accept the punishment",
+				effects = { Happiness = -10 },
+				feedText = "Silence. Two weeks grounded. Worth it.",
+			},
+		},
+	},
+	
+	-- ACADEMIC CHALLENGE
+	{
+		id = "teen_ap_classes",
+		title = "Advanced Classes",
+		emoji = "📚",
+		text = "You've been offered a spot in Advanced Placement classes. They're harder but look great for college.",
+		question = "Do you take the challenge?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.4,
+		oneTime = true,
+		maxOccurrences = 1,
+		conditions = { minSmarts = 60 },
+		choices = {
+			{
+				text = "Accept all available AP classes",
+				effects = { Happiness = -5, Smarts = 15 },
+				setFlags = { ap_student = true, overachiever = true },
+				feedText = "It's brutal, but you're learning so much!",
+			},
+			{
+				text = "Take just one or two",
+				effects = { Smarts = 8 },
+				setFlags = { ap_student = true },
+				feedText = "A balanced approach. Challenging but manageable.",
+			},
+			{
+				text = "Decline - stay in regular classes",
+				effects = { Happiness = 5 },
+				feedText = "Less stress, more time for yourself.",
+			},
+		},
+	},
+	
+	-- DRIVER'S LICENSE
+	{
+		id = "teen_drivers_license",
+		title = "Driver's License!",
+		emoji = "🚗",
+		text = "You finally turned 16 and can get your driver's license! Time for the test.",
+		question = "How does the test go?",
+		minAge = 16, maxAge = 16,
+		baseChance = 0.9,
+		oneTime = true,
+		maxOccurrences = 1,
+		blockedByFlags = { has_license = true },
+		choices = {
+			{
+				text = "Nail it perfectly!",
+				effects = { Happiness = 20 },
+				setFlags = { has_license = true, good_driver = true },
+				feedText = "🚗 You passed! Freedom awaits!",
+			},
+			{
+				text = "Pass, but barely",
+				effects = { Happiness = 12 },
+				setFlags = { has_license = true },
+				feedText = "🚗 A pass is a pass! You got your license!",
+			},
+			{
+				text = "Fail miserably",
+				effects = { Happiness = -15 },
+				setFlags = { failed_driving_test = true },
+				feedText = "😬 You ran over three cones and a sign. Maybe next time.",
+			},
+			{
+				text = "Too nervous - reschedule",
+				effects = { Happiness = -5 },
+				feedText = "Anxiety got the best of you. There's always next month.",
+			},
+		},
+	},
+	
+	-- SOCIAL MEDIA DRAMA
+	{
+		id = "teen_social_media_drama",
+		title = "Online Drama",
+		emoji = "📱",
+		text = "Someone screenshot your private messages and shared them publicly. People are talking.",
+		question = "How do you handle this?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.35,
+		cooldown = 4,
+		maxOccurrences = 2,
+		choices = {
+			{
+				text = "Address it publicly and own it",
+				effects = { Happiness = 5 },
+				setFlags = { owns_mistakes = true },
+				feedText = "You faced it head-on. People respect that.",
+			},
+			{
+				text = "Go completely offline for a while",
+				effects = { Happiness = -10, Health = 5 },
+				setFlags = { digital_detox = true },
+				feedText = "The break was needed. You feel more centered.",
+			},
+			{
+				text = "Clap back and start a war",
+				effects = { Happiness = -5 },
+				setFlags = { clap_back_king = true },
+				feedText = "This is getting ugly. But you're winning.",
+			},
+			{
+				text = "Have your parents intervene",
+				effects = { Happiness = -15 },
+				setFlags = { parents_involved = true },
+				feedText = "It stopped, but now you're 'that kid.'",
+			},
+		},
+	},
 }
 
 return Teen

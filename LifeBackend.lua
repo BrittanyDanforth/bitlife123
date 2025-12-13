@@ -1,6 +1,7 @@
 local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local GamepassSystem
 
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
@@ -92,20 +93,30 @@ function LifeBackend:setupGamepassPurchaseListener()
 			-- Clear ownership cache to force re-check
 			GamepassSystem:notifyGamepassPurchased(player, purchasedKey)
 			
-			-- Update player state flags
+			-- CRITICAL FIX #402: Update player state flags AND GamepassOwnership
 			local state = self:getState(player)
 			if state then
 				state.Flags = state.Flags or {}
+				state.GamepassOwnership = state.GamepassOwnership or {}
+				
 				if purchasedKey == "ROYALTY" then
 					state.Flags.royalty_gamepass = true
+					state.GamepassOwnership.royalty = true
 				elseif purchasedKey == "GOD_MODE" then
 					state.Flags.god_mode_gamepass = true
+					state.GamepassOwnership.godMode = true
+					-- CRITICAL FIX #403: Initialize GodModeState when purchased
+					state.GodModeState = state.GodModeState or {}
+					state.GodModeState.enabled = true
 				elseif purchasedKey == "MAFIA" then
 					state.Flags.mafia_gamepass = true
+					state.GamepassOwnership.mafia = true
 				elseif purchasedKey == "CELEBRITY" then
 					state.Flags.celebrity_gamepass = true
+					state.GamepassOwnership.celebrity = true
 				elseif purchasedKey == "TIME_MACHINE" then
 					state.Flags.time_machine_gamepass = true
+					state.GamepassOwnership.timeMachine = true
 				end
 			end
 			
@@ -230,7 +241,7 @@ end
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local MarketplaceService = game:GetService("MarketplaceService")
+-- MarketplaceService is defined at top of file (needed early for ProcessReceipt setup)
 
 local ModulesFolder = script:FindFirstChild("Modules") or script.Parent:FindFirstChild("Modules")
 assert(ModulesFolder, "[LifeBackend] Missing Modules folder. Expected LifeServer/Modules.")
