@@ -1408,6 +1408,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 90,
 		isRoyalOnly = true,
+		-- CRITICAL FIX #440: Add cooldown and maxOccurrences to prevent spam
+		cooldown = 10,  -- At least 10 years between major scandals
+		maxOccurrences = 3,  -- Max 3 major scandals per lifetime
 		choices = {
 			{
 				text = "Issue a formal denial",
@@ -1447,6 +1450,9 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 14,
 		maxAge = 90,
 		isRoyalOnly = true,
+		-- CRITICAL FIX #439: Add cooldown and maxOccurrences to prevent spam
+		cooldown = 8,  -- At least 8 years between paparazzi incidents
+		maxOccurrences = 4,  -- Max 4 times per lifetime
 		choices = {
 			{
 				text = "Smile and wave professionally",

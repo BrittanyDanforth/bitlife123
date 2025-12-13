@@ -3974,6 +3974,14 @@ showEvent = function(payload)
 			local function handleChoice()
 				if not EventUI.currentEventId then return end
 
+				-- CRITICAL FIX #444: Handle mafia operations with callback instead of server
+				if payload.isMafiaOperation and payload.onMafiaChoice then
+					hideEvent()
+					-- Call the mafia choice callback with the accumulated modifiers from the choice
+					payload.onMafiaChoice(choiceIndex, choice.accumulatedMods or {})
+					return
+				end
+
 				if minigameType and minigamesInstance then
 					pendingMinigameEventId     = EventUI.currentEventId
 					pendingMinigameChoiceIndex = choiceIndex
@@ -6383,7 +6391,31 @@ ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",     
 ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
-ScreenInstances.mafia        = safeNew(MafiaScreen,         "MafiaScreen",         screenGui, blurOverlay, showBlur, hideBlur, currentState)
+
+-- CRITICAL FIX #443: Create MafiaScreen with onShowEventCard callback
+-- This allows mafia operations to close the MafiaScreen and show an event card in main UI
+local function onMafiaShowEventCard(eventCard, onChoiceCallback)
+	-- Hide the MafiaScreen first
+	if ScreenInstances.mafia and ScreenInstances.mafia.hide then
+		ScreenInstances.mafia:hide()
+	end
+	hideBlur()
+	
+	-- Show the event card on the main UI
+	if showEvent then
+		showEvent({
+			id = eventCard.id or "mafia_operation",
+			title = eventCard.title or "🔫 Operation",
+			emoji = eventCard.emoji or "🔫",
+			text = eventCard.text or "A risky operation...",
+			question = eventCard.question or "What do you do?",
+			choices = eventCard.choices or {{text = "Continue", index = 1}},
+			isMafiaOperation = true,
+			onMafiaChoice = onChoiceCallback,
+		})
+	end
+end
+ScreenInstances.mafia        = safeNew(MafiaScreen,         "MafiaScreen",         screenGui, blurOverlay, showBlur, hideBlur, currentState, onMafiaShowEventCard)
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)

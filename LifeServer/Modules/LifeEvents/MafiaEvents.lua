@@ -1249,6 +1249,50 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX #441: Added boss_dies event to properly set boss_dead flag
+	-- This event triggers for underbosses when the boss dies
+	{
+		id = "boss_dies",
+		title = "💀 The Boss Is Gone",
+		emoji = "💀",
+		text = "The boss has passed away. Natural causes, they say, though nothing is ever natural in this life. As underboss, all eyes turn to you.",
+		question = "The family needs leadership. What do you do?",
+		minAge = 30,
+		maxAge = 80,
+		isMafiaOnly = true,
+		isMilestone = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		priority = "critical",
+		conditions = { 
+			requiresFlags = { in_mob = true, underboss = true },
+			blockedFlags = { mob_boss = true, boss_dead = true },
+		},
+		choices = {
+			{
+				text = "Take your rightful place as boss",
+				effects = { Happiness = 20 },
+				mafiaEffect = { becomeBoss = true, respect = 100, money = 500000 },
+				setFlags = { mob_boss = true, peaceful_succession = true },
+				feed = "You're now the Boss. The family answers to you.",
+			},
+			{
+				text = "Consolidate power first",
+				effects = { Happiness = 10 },
+				mafiaEffect = { respect = 30 },
+				setFlags = { boss_dead = true },  -- This sets boss_dead so become_boss can trigger later
+				feed = "You'll take the throne, but carefully.",
+			},
+			{
+				text = "Step aside - you're not ready",
+				effects = { Happiness = -15 },
+				mafiaEffect = { respect = -50 },
+				setFlags = { refused_crown = true },
+				clearFlags = { underboss = true },
+				feed = "Someone else will lead the family.",
+			},
+		},
+	},
 	{
 		id = "family_succession",
 		title = "👑 Family Succession",
@@ -1258,8 +1302,12 @@ MafiaEvents.LifeEvents = {
 		minAge = 40,
 		maxAge = 70,
 		isMafiaOnly = true,
+		oneTime = true,
+		maxOccurrences = 1,
+		-- CRITICAL FIX #442: Prevent this from triggering for underbosses (they get boss_dies instead)
 		conditions = { 
 			requiresFlags = { in_mob = true, made_man = true },
+			blockedFlags = { underboss = true, mob_boss = true, boss_dead = true },
 			minRespect = 2000,
 		},
 		choices = {
@@ -1269,21 +1317,21 @@ MafiaEvents.LifeEvents = {
 				successChance = 30,
 				successMafiaEffect = { respect = 200, becomeBoss = true },
 				failMafiaEffect = { respect = -50, heat = 20 },
-				setFlags = { sought_leadership = true },
+				setFlags = { sought_leadership = true, mob_boss = true },
 				feed = "You threw your hat in the ring for the top spot.",
 			},
 			{
 				text = "Support the underboss's claim",
 				effects = { Happiness = 5 },
 				mafiaEffect = { respect = 40, loyalty = 20 },
-				setFlags = { supported_underboss = true },
+				setFlags = { supported_underboss = true, boss_dead = true },
 				feed = "The underboss will remember this loyalty.",
 			},
 			{
 				text = "Stay out of the politics",
 				effects = { Happiness = 3 },
 				mafiaEffect = { respect = 5 },
-				setFlags = { avoided_politics = true },
+				setFlags = { avoided_politics = true, boss_dead = true },
 				feed = "Safer to let others fight for power.",
 			},
 			{

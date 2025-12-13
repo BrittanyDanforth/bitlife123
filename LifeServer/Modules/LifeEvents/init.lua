@@ -487,18 +487,74 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
-	-- Check event conditions for premium flags
+	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
+	-- This was causing events like become_boss to trigger without underboss flag,
+	-- and prison_respect to trigger when not in prison!
+	if event.conditions and event.conditions.requiresFlags then
+		for flag, requiredValue in pairs(event.conditions.requiresFlags) do
+			local playerHasFlag = flags[flag]
+			
+			-- If requiredValue is true, player must have the flag
+			if requiredValue == true and not playerHasFlag then
+				return false -- Missing required flag
+			end
+			
+			-- If requiredValue is false, player must NOT have the flag
+			if requiredValue == false and playerHasFlag then
+				return false -- Has blocked flag
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #437: Check conditions.blockedFlags (dict format) 
+	-- This is DIFFERENT from cond.blockedFlags (array format) checked below
+	if event.conditions and event.conditions.blockedFlags then
+		if type(event.conditions.blockedFlags) == "table" then
+			-- Check if it's array format or dict format
+			if #event.conditions.blockedFlags > 0 then
+				-- Array format: {"flag1", "flag2"}
+				for _, flag in ipairs(event.conditions.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			else
+				-- Dict format: {flag1 = true, flag2 = true}
+				for flag, _ in pairs(event.conditions.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #438: Check minRank and minRespect conditions for mafia events
 	if event.conditions then
-		if event.conditions.requiresFlags then
-			-- Check for mafia_gamepass, royalty_gamepass, etc.
-			if event.conditions.requiresFlags.mafia_gamepass and not flags.mafia_gamepass then
-				return false
+		-- Check minimum mob rank
+		if event.conditions.minRank then
+			local mobState = state.MobState
+			local currentRank = mobState and mobState.rankIndex or 0
+			if currentRank < event.conditions.minRank then
+				return false -- Not high enough rank
 			end
-			if event.conditions.requiresFlags.royalty_gamepass and not flags.royalty_gamepass then
-				return false
+		end
+		
+		-- Check minimum respect
+		if event.conditions.minRespect then
+			local mobState = state.MobState
+			local currentRespect = mobState and mobState.respect or 0
+			if currentRespect < event.conditions.minRespect then
+				return false -- Not enough respect
 			end
-			if event.conditions.requiresFlags.celebrity_gamepass and not flags.celebrity_gamepass then
-				return false
+		end
+		
+		-- Check minimum heat for mafia
+		if event.conditions.minHeat then
+			local mobState = state.MobState
+			local currentHeat = mobState and mobState.heat or 0
+			if currentHeat < event.conditions.minHeat then
+				return false -- Not enough heat
 			end
 		end
 	end
