@@ -763,6 +763,433 @@ HealthEvents.events = {
 			{ text = "Overindulging", effects = { Happiness = -2, Health = -5, Money = -50 }, setFlags = { drinking_problem = true }, feedText = "🍺 Drinking too much. This is becoming a problem." },
 		},
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #231-250: DISEASE DIAGNOSIS CARDS
+	-- These events show exactly what illness the player has when diagnosed
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "health_diagnosis_cold_flu",
+		title = "🤒 Diagnosis: Cold or Flu",
+		emoji = "🤒",
+		text = "The doctor has diagnosed you with a cold or flu virus!",
+		question = "Your diagnosis: Common Cold/Flu\n\nSymptoms: Runny nose, cough, fever, body aches\nSeverity: Mild to Moderate\nRecovery Time: 1-2 weeks\n\nWhat do you want to do?",
+		minAge = 3, maxAge = 100,
+		baseChance = 0.15,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "cold", "flu", "illness" },
+		isDiagnosisCard = true,
+		diagnosisType = "cold_flu",
+		
+		choices = {
+			{ text = "Rest at home", effects = { Health = 3, Happiness = -2 }, setFlags = { has_cold = true }, feedText = "🤒 Resting at home. Should recover in a week." },
+			{ text = "Take medication", effects = { Money = -30, Health = 5, Happiness = 1 }, feedText = "🤒 Over-the-counter meds helping with symptoms." },
+			{ text = "Push through it", effects = { Health = -3, Happiness = -4 }, setFlags = { prolonged_illness = true }, feedText = "🤒 Made it worse by not resting. Recovery delayed." },
+		},
+	},
+	{
+		id = "health_diagnosis_diabetes",
+		title = "💉 Diagnosis: Diabetes",
+		emoji = "💉",
+		text = "After testing, the doctor has diagnosed you with diabetes.",
+		question = "Your diagnosis: TYPE 2 DIABETES\n\n🩸 Blood Sugar: Elevated\n⚠️ Severity: Chronic Condition\n💊 Treatment: Lifestyle changes + medication\n\nThis is a lifelong condition that requires management.",
+		minAge = 25, maxAge = 100,
+		baseChance = 0.05,
+		cooldown = 100, -- Only diagnose once
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "diabetes", "chronic" },
+		isDiagnosisCard = true,
+		diagnosisType = "diabetes",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local flags = state.Flags or {}
+			return health < 60 and not flags.diabetes
+		end,
+		
+		choices = {
+			{
+				text = "Accept treatment plan",
+				effects = { Happiness = -5, Health = -10 },
+				setFlags = { diabetes = true, chronic_illness = true, on_medication = true },
+				feedText = "💉 Diabetes diagnosis. Started insulin and lifestyle changes.",
+			},
+			{
+				text = "Get second opinion",
+				effects = { Money = -200, Happiness = -3 },
+				feedText = "💉 Second doctor confirmed. You have diabetes.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.diabetes = true
+					state.Flags.chronic_illness = true
+				end,
+			},
+			{
+				text = "Deny and ignore it",
+				effects = { Health = -15 },
+				setFlags = { diabetes = true, untreated_condition = true },
+				feedText = "💉 Ignoring diabetes is dangerous. Condition will worsen.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_heart_disease",
+		title = "❤️‍🩹 Diagnosis: Heart Disease",
+		emoji = "❤️‍🩹",
+		text = "Cardiac tests have revealed a serious condition.",
+		question = "Your diagnosis: HEART DISEASE\n\n💔 Condition: Coronary Artery Disease\n⚠️ Severity: SERIOUS\n🏥 Treatment Required: Yes\n💊 Medication: Blood thinners, statins\n\nThis requires immediate lifestyle changes.",
+		minAge = 40, maxAge = 100,
+		baseChance = 0.04,
+		cooldown = 100,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "heart", "serious" },
+		isDiagnosisCard = true,
+		diagnosisType = "heart_disease",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local age = state.Age or 30
+			local flags = state.Flags or {}
+			return (age > 45 and health < 55) and not flags.heart_disease
+		end,
+		
+		choices = {
+			{
+				text = "Start treatment immediately",
+				effects = { Happiness = -10, Money = -500, Health = -15 },
+				setFlags = { heart_disease = true, chronic_illness = true, on_heart_medication = true },
+				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
+			},
+			{
+				text = "Get bypass surgery if needed",
+				effects = { Happiness = -15, Money = -5000, Health = 5 },
+				setFlags = { heart_disease = true, had_heart_surgery = true },
+				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_cancer",
+		title = "🎗️ Diagnosis: Cancer",
+		emoji = "🎗️",
+		text = "The biopsy results have come back. The news is serious.",
+		question = "Your diagnosis: CANCER DETECTED\n\n🔬 Finding: Malignant cells detected\n⚠️ Severity: CRITICAL\n🏥 Treatment: Chemotherapy/Radiation/Surgery\n⏰ Early detection increases survival rate\n\nThis is a life-changing diagnosis.",
+		minAge = 20, maxAge = 100,
+		baseChance = 0.02,
+		cooldown = 100,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "cancer", "critical" },
+		isDiagnosisCard = true,
+		diagnosisType = "cancer",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return not flags.has_cancer and not flags.cancer_survivor
+		end,
+		
+		choices = {
+			{
+				text = "Fight it - start treatment",
+				effects = { Happiness = -20, Money = -10000, Health = -25 },
+				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
+				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
+				onResolve = function(state)
+					-- 60% chance of survival with treatment
+					local roll = math.random()
+					if roll < 0.60 then
+						state.Flags.cancer_survivor = true
+						state.Flags.in_remission = true
+						state:AddFeed("🎗️ After months of treatment, you're in remission! You beat it!")
+					else
+						state.Flags.terminal_illness = true
+						state:AddFeed("🎗️ Treatment isn't working as hoped. This is serious.")
+					end
+				end,
+			},
+			{
+				text = "Refuse treatment (accept fate)",
+				effects = { Happiness = -30, Health = -40 },
+				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
+				feedText = "🎗️ Choosing to live remaining time without treatment.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_depression",
+		title = "😔 Diagnosis: Clinical Depression",
+		emoji = "😔",
+		text = "After evaluation, the psychiatrist has made a diagnosis.",
+		question = "Your diagnosis: CLINICAL DEPRESSION\n\n🧠 Type: Major Depressive Disorder\n⏰ Duration: You've been struggling for a while\n💊 Treatment: Therapy + possible medication\n\nMental health is real health. Help is available.",
+		minAge = 12, maxAge = 100,
+		baseChance = 0.08,
+		cooldown = 100,
+		stage = STAGE,
+		ageBand = "any",
+		category = "mental_health",
+		tags = { "diagnosis", "depression", "mental_health" },
+		isDiagnosisCard = true,
+		diagnosisType = "depression",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local happiness = (state.Stats and state.Stats.Happiness) or 50
+			local flags = state.Flags or {}
+			return happiness < 35 and not flags.depression
+		end,
+		
+		choices = {
+			{
+				text = "Start therapy and medication",
+				effects = { Money = -100, Happiness = 5, Health = 3 },
+				setFlags = { depression = true, mental_illness = true, depression_treatment = true, therapy = true },
+				feedText = "😔 Depression diagnosed. Starting treatment. It gets better.",
+			},
+			{
+				text = "Try therapy only",
+				effects = { Money = -80, Happiness = 3 },
+				setFlags = { depression = true, mental_illness = true, therapy = true },
+				feedText = "😔 Starting therapy for depression. Taking the first step.",
+			},
+			{
+				text = "Deny the diagnosis",
+				effects = { Happiness = -10, Health = -5 },
+				setFlags = { depression = true, untreated_depression = true },
+				feedText = "😔 Refusing to accept the diagnosis. The struggle continues.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_anxiety",
+		title = "😰 Diagnosis: Anxiety Disorder",
+		emoji = "😰",
+		text = "Your symptoms have been evaluated by a mental health professional.",
+		question = "Your diagnosis: GENERALIZED ANXIETY DISORDER\n\n🧠 Type: GAD (Generalized Anxiety Disorder)\n⚡ Symptoms: Constant worry, panic attacks, restlessness\n💊 Treatment: Therapy, possible medication\n\nAnxiety is treatable. You don't have to live like this.",
+		minAge = 12, maxAge = 100,
+		baseChance = 0.07,
+		cooldown = 100,
+		stage = STAGE,
+		ageBand = "any",
+		category = "mental_health",
+		tags = { "diagnosis", "anxiety", "mental_health" },
+		isDiagnosisCard = true,
+		diagnosisType = "anxiety",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return not flags.anxiety and (flags.stressed or flags.panic_attacks or flags.nervous)
+		end,
+		
+		choices = {
+			{
+				text = "Start treatment",
+				effects = { Money = -100, Happiness = 5 },
+				setFlags = { anxiety = true, mental_illness = true, anxiety_treatment = true },
+				feedText = "😰 Anxiety diagnosed. Starting therapy and learning coping strategies.",
+			},
+			{
+				text = "Try medication",
+				effects = { Money = -50, Happiness = 3, Health = 1 },
+				setFlags = { anxiety = true, on_anxiety_meds = true },
+				feedText = "😰 Anti-anxiety medication prescribed. Taking the edge off.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_std",
+		title = "🦠 Diagnosis: STI Detected",
+		emoji = "🦠",
+		text = "Your test results are back. You've contracted an STI.",
+		question = "Your diagnosis: SEXUALLY TRANSMITTED INFECTION\n\n🔬 Status: Positive\n⚠️ Type: Bacterial/Viral STI detected\n💊 Treatment: Antibiotics/Antivirals available\n🩺 Follow-up: Required\n\nPlease inform recent partners.",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.05,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "std", "sexual_health" },
+		isDiagnosisCard = true,
+		diagnosisType = "std",
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return flags.sexually_active and not flags.always_safe and not flags.has_std
+		end,
+		
+		choices = {
+			{
+				text = "Get treated immediately",
+				effects = { Money = -200, Happiness = -10, Health = 5 },
+				setFlags = { had_std = true },
+				feedText = "🦠 STI treated with antibiotics. Cured! Be more careful.",
+			},
+			{
+				text = "Ignore it (dangerous!)",
+				effects = { Health = -15, Happiness = -5 },
+				setFlags = { has_std = true, untreated_std = true },
+				feedText = "🦠 Ignoring an STI is dangerous. Will get worse.",
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_hiv",
+		title = "🩸 Diagnosis: HIV Positive",
+		emoji = "🩸",
+		text = "The HIV test results have come back positive.",
+		question = "Your diagnosis: HIV POSITIVE\n\n🩸 Status: HIV Positive\n⚠️ Severity: LIFELONG CONDITION\n💊 Treatment: Antiretroviral therapy (ART)\n✅ With treatment: Normal life expectancy possible\n\nThis is treatable. You can live a full life.",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.01,
+		cooldown = 100,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "hiv", "serious" },
+		isDiagnosisCard = true,
+		diagnosisType = "hiv",
+		oneTime = true,
+		maxOccurrences = 1,
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return not flags.hiv_positive
+		end,
+		
+		choices = {
+			{
+				text = "Start antiretroviral treatment",
+				effects = { Money = -300, Happiness = -15, Health = -5 },
+				setFlags = { hiv_positive = true, chronic_illness = true, on_art_treatment = true },
+				feedText = "🩸 HIV positive. Starting ART. With treatment, you can live normally.",
+			},
+			{
+				text = "Seek support groups",
+				effects = { Happiness = -10, Health = -3 },
+				setFlags = { hiv_positive = true, hiv_support = true },
+				feedText = "🩸 Finding community and support. You're not alone in this.",
+				onResolve = function(state)
+					state.Flags.on_art_treatment = true
+				end,
+			},
+		},
+	},
+	{
+		id = "health_diagnosis_broken_bone",
+		title = "🦴 Diagnosis: Broken Bone",
+		emoji = "🦴",
+		text = "The X-ray confirms it - you have a fracture.",
+		question = "Your diagnosis: BONE FRACTURE\n\n🦴 Type: Fracture detected\n📍 Location: [varies]\n⏰ Recovery: 6-8 weeks\n🏥 Treatment: Cast/splint required\n\nNo heavy lifting for a while!",
+		minAge = 5, maxAge = 90,
+		baseChance = 0.08,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "diagnosis", "injury", "bone" },
+		isDiagnosisCard = true,
+		diagnosisType = "broken_bone",
+		
+		choices = {
+			{
+				text = "Get it set and wear the cast",
+				effects = { Money = -500, Health = -5, Happiness = -5 },
+				setFlags = { broken_bone = true, in_cast = true },
+				feedText = "🦴 Bone set, cast on. 6 weeks of limited mobility.",
+			},
+			{
+				text = "Surgery if needed",
+				effects = { Money = -3000, Health = 5, Happiness = -8 },
+				setFlags = { had_bone_surgery = true },
+				feedText = "🦴 Needed surgery to fix properly. Pins and plates inserted.",
+			},
+		},
+	},
+	{
+		id = "health_checkup_results_detailed",
+		title = "📋 Detailed Health Report",
+		emoji = "📋",
+		text = "Your comprehensive health checkup results are ready!",
+		question = "Your Health Report Card:",
+		minAge = 18, maxAge = 100,
+		baseChance = 0.15,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "checkup", "report", "detailed" },
+		isDiagnosisCard = true,
+		diagnosisType = "checkup",
+		
+		-- Dynamic question based on health state
+		preProcess = function(state, eventDef)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local flags = state.Flags or {}
+			local conditions = {}
+			
+			-- Check for existing conditions
+			if flags.diabetes then table.insert(conditions, "💉 Diabetes: Managed") end
+			if flags.heart_disease then table.insert(conditions, "❤️‍🩹 Heart Disease: Monitoring") end
+			if flags.depression then table.insert(conditions, "😔 Depression: " .. (flags.depression_treatment and "In Treatment" or "Untreated")) end
+			if flags.anxiety then table.insert(conditions, "😰 Anxiety: " .. (flags.anxiety_treatment and "In Treatment" or "Untreated")) end
+			if flags.chronic_illness then table.insert(conditions, "⚕️ Chronic Condition: Active") end
+			if flags.hiv_positive then table.insert(conditions, "🩸 HIV: " .. (flags.on_art_treatment and "Controlled w/ ART" or "Uncontrolled")) end
+			
+			local healthStatus = "Unknown"
+			if health >= 80 then healthStatus = "✅ EXCELLENT"
+			elseif health >= 60 then healthStatus = "👍 GOOD"
+			elseif health >= 40 then healthStatus = "⚠️ FAIR - Needs Attention"
+			elseif health >= 20 then healthStatus = "⚠️ POOR - Treatment Needed"
+			else healthStatus = "🚨 CRITICAL - Immediate Care Needed"
+			end
+			
+			local reportText = "📋 COMPREHENSIVE HEALTH REPORT\n\n"
+			reportText = reportText .. "Overall Health: " .. healthStatus .. "\n"
+			reportText = reportText .. "Health Score: " .. tostring(health) .. "/100\n\n"
+			
+			if #conditions > 0 then
+				reportText = reportText .. "Current Conditions:\n"
+				for _, condition in ipairs(conditions) do
+					reportText = reportText .. "• " .. condition .. "\n"
+				end
+			else
+				reportText = reportText .. "✅ No chronic conditions detected!\n"
+			end
+			
+			reportText = reportText .. "\nWhat would you like to do?"
+			
+			eventDef.question = reportText
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "Review results with doctor",
+				effects = { Money = -50, Happiness = 3, Smarts = 2 },
+				feedText = "📋 Discussed results. Now have a clear health plan.",
+			},
+			{
+				text = "Schedule follow-up tests",
+				effects = { Money = -100, Health = 2 },
+				feedText = "📋 Booked additional tests for thorough assessment.",
+			},
+			{
+				text = "File it away (ignore)",
+				effects = { Happiness = 1 },
+				feedText = "📋 Put it in a drawer. Out of sight, out of mind.",
+			},
+		},
+	},
 }
+
+-- CRITICAL FIX #251: Export events in standard format for LifeEvents loader
+HealthEvents.LifeEvents = HealthEvents.events
 
 return HealthEvents

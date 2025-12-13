@@ -1018,6 +1018,66 @@ end
 -- YEARLY UPDATE
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX #311-320: MAFIA HEAT AND RESPECT CALCULATION FIXES
+function MafiaSystem:calculateHeat(lifeState, baseHeat, riskMod)
+	local mobState = self:getMobState(lifeState)
+	if not mobState then return baseHeat end
+	
+	-- Higher ranks attract more heat
+	local rankMod = 1 + ((mobState.rankIndex or 1) * 0.1)
+	-- More operations = more attention
+	local opsMod = 1 + ((mobState.operationsCompleted or 0) * 0.01)
+	-- Risk modifier from operation
+	riskMod = riskMod or 1.0
+	
+	local finalHeat = math.floor(baseHeat * rankMod * opsMod * riskMod)
+	return math.max(0, math.min(100, finalHeat))
+end
+
+function MafiaSystem:calculateRespect(baseRespect, mobState, successMod)
+	if not mobState then return baseRespect end
+	
+	-- Loyalty bonus
+	local loyaltyMod = 1 + ((mobState.loyalty or 100) / 500)
+	-- Success modifier from operation
+	successMod = successMod or 1.0
+	-- Years in mob bonus
+	local experienceMod = 1 + ((mobState.yearsInMob or 0) * 0.02)
+	
+	local finalRespect = math.floor(baseRespect * loyaltyMod * successMod * experienceMod)
+	return math.max(0, finalRespect)
+end
+
+function MafiaSystem:addHeat(lifeState, amount)
+	local mobState = self:getMobState(lifeState)
+	if not mobState then return end
+	
+	mobState.heat = math.min(100, math.max(0, (mobState.heat or 0) + amount))
+	
+	-- High heat consequences
+	if mobState.heat >= 80 then
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.high_heat = true
+		lifeState.Flags.feds_watching = true
+	elseif mobState.heat < 50 then
+		if lifeState.Flags then
+			lifeState.Flags.high_heat = nil
+			lifeState.Flags.feds_watching = nil
+		end
+	end
+end
+
+function MafiaSystem:addRespect(lifeState, amount)
+	local mobState = self:getMobState(lifeState)
+	if not mobState then return end
+	
+	mobState.respect = math.max(0, (mobState.respect or 0) + amount)
+	
+	-- Check for rank up
+	local rankUpMsg = self:checkRankUp(lifeState)
+	return rankUpMsg
+end
+
 function MafiaSystem:onYearPass(lifeState)
 	local mobState = self:getMobState(lifeState)
 	local events = {}
@@ -1028,8 +1088,9 @@ function MafiaSystem:onYearPass(lifeState)
 	
 	mobState.yearsInMob = mobState.yearsInMob + 1
 	
-	-- Heat decays over time
-	mobState.heat = math.max(0, mobState.heat - 10)
+	-- CRITICAL FIX #321: Heat decays based on rank (bosses have more scrutiny)
+	local baseDecay = 15 - (mobState.rankIndex or 1) * 2 -- Higher rank = slower decay
+	mobState.heat = math.max(0, mobState.heat - math.max(5, baseDecay))
 	
 	-- Random mob events
 	local roll = math.random(100)
@@ -1096,6 +1157,7 @@ end
 -- SERIALIZATION
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX #322-330: ENHANCED SERIALIZATION WITH PROPER COLOR HANDLING
 function MafiaSystem:serialize(lifeState)
 	local mobState = self:getMobState(lifeState)
 	
@@ -1106,6 +1168,8 @@ function MafiaSystem:serialize(lifeState)
 			familyId = nil,
 			familyName = nil,
 			familyEmoji = nil,
+			familyColor = nil,
+			familyColorHex = nil,
 			rankLevel = 1,
 			rankName = nil,
 			rankEmoji = nil,
@@ -1114,6 +1178,7 @@ function MafiaSystem:serialize(lifeState)
 			heat = 0,
 			yearsInMob = 0,
 			operationsCompleted = 0,
+			operationsFailed = 0,
 			earnings = 0,
 			kills = 0,
 			operations = {},
@@ -1143,31 +1208,81 @@ function MafiaSystem:serialize(lifeState)
 				minReward = op.reward.min,
 				maxReward = op.reward.max,
 				rankRequired = required,
+				-- CRITICAL FIX #323: Add scenario flag for operations with scenarios
+				hasScenarios = self:hasScenarios(op.id),
 			})
 		end
+	end
+	
+	-- CRITICAL FIX #324: Properly serialize color for client
+	local familyColorArray = nil
+	local familyColorHex = nil
+	local familyColorDark = nil
+	
+	if family.color then
+		-- Serialize as array [R, G, B] values 0-1
+		familyColorArray = { family.color.R, family.color.G, family.color.B }
+		-- Also provide hex string for easier CSS usage
+		familyColorHex = string.format("#%02X%02X%02X", 
+			math.floor(family.color.R * 255),
+			math.floor(family.color.G * 255),
+			math.floor(family.color.B * 255))
+	end
+	if family.colorDark then
+		familyColorDark = { family.colorDark.R, family.colorDark.G, family.colorDark.B }
+	end
+	
+	-- CRITICAL FIX #325: Calculate progress to next rank
+	local progressToNextRank = 0
+	if nextRank then
+		local currentRespect = mobState.respect or 0
+		local currentRankRespect = currentRank.respect or 0
+		local nextRankRespect = nextRank.respect or 100
+		local needed = nextRankRespect - currentRankRespect
+		local progress = currentRespect - currentRankRespect
+		if needed > 0 then
+			progressToNextRank = math.min(100, math.floor((progress / needed) * 100))
+		end
+	else
+		progressToNextRank = 100 -- At max rank
 	end
 	
 	return {
 		inMob = true,
 		familyId = mobState.familyId,
 		familyName = family.name,
+		familyFullName = family.fullName,
 		familyEmoji = family.emoji,
-		familyColor = { family.color.R, family.color.G, family.color.B },
+		familyDescription = family.description,
+		familyColor = familyColorArray,
+		familyColorHex = familyColorHex,
+		familyColorDark = familyColorDark,
 		rankName = currentRank.name,
 		rankEmoji = currentRank.emoji,
 		rankLevel = mobState.rankIndex,
 		maxRank = #family.ranks,
 		respect = mobState.respect,
+		respectDisplay = self:formatMoney(mobState.respect), -- CRITICAL FIX: Formatted display
 		nextRankRespect = nextRank and nextRank.respect or nil,
+		nextRankName = nextRank and nextRank.name or nil,
+		progressToNextRank = progressToNextRank,
 		notoriety = mobState.notoriety,
 		heat = mobState.heat,
+		heatLevel = mobState.heat >= 80 and "EXTREME" or (mobState.heat >= 60 and "HIGH" or (mobState.heat >= 40 and "MODERATE" or (mobState.heat >= 20 and "LOW" or "NONE"))),
 		loyalty = mobState.loyalty,
 		kills = mobState.kills,
 		earnings = mobState.earnings,
+		earningsDisplay = self:formatMoney(mobState.earnings),
 		yearsInMob = mobState.yearsInMob,
 		operationsCompleted = mobState.operationsCompleted,
+		operationsFailed = mobState.operationsFailed or 0,
 		lastEvent = mobState.lastEvent,
 		operations = operationsSummary,
+		-- CRITICAL FIX #326: Add flags for client to know player's status
+		isBoss = mobState.rankIndex >= 5,
+		isUnderboss = mobState.rankIndex >= 4,
+		isCaptain = mobState.rankIndex >= 3,
+		isMade = mobState.rankIndex >= 2,
 	}
 end
 
