@@ -145,6 +145,31 @@ local MAFIA_GAMEPASS_ID = 1626238769
 -- CRITICAL FIX #457: Track pending family join for auto-retry after purchase
 local pendingFamilyJoin = nil
 
+-- CRITICAL FIX #466: Module-level purchase callbacks for reliable detection
+local mafiaScreenInstance = nil
+local purchaseCallbacks = {}
+
+-- Set up module-level purchase listener (runs once when module loads)
+local MarketplaceServiceModule = game:GetService("MarketplaceService")
+local PlayersModule = game:GetService("Players")
+local localPlayer = PlayersModule.LocalPlayer
+
+MarketplaceServiceModule.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
+	if plr ~= localPlayer then return end
+	
+	print("[MafiaScreen] PromptGamePassPurchaseFinished:", gamePassId, wasPurchased)
+	
+	if gamePassId == MAFIA_GAMEPASS_ID and wasPurchased then
+		hasMafiaGamepass = true
+		print("[MafiaScreen] Mafia gamepass purchased via module listener!")
+		
+		-- Fire all registered callbacks
+		for _, callback in ipairs(purchaseCallbacks) do
+			task.spawn(callback)
+		end
+	end
+end)
+
 -- Crime Family data (matches MobSystem.lua)
 local CrimeFamilies = {
 	{
@@ -411,74 +436,49 @@ function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pla
 	
 	self:createUI()
 	
-	-- CRITICAL FIX #447: Listen for gamepass purchases to refresh UI immediately
-	local MarketplaceService = game:GetService("MarketplaceService")
-	local Players = game:GetService("Players")
-	local player = Players.LocalPlayer
+	-- CRITICAL FIX #467: Store instance reference for module-level callbacks
+	mafiaScreenInstance = self
 	
-	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
-		if plr ~= player or not wasPurchased then return end
+	-- CRITICAL FIX #468: Register callback for module-level purchase detection
+	local function onMafiaPurchased()
+		log("Purchase callback fired!")
 		
-		if gamePassId == MAFIA_GAMEPASS_ID then
-			hasMafiaGamepass = true
-			log("Mafia gamepass purchased! Refreshing UI...")
+		-- Hide any result popup first
+		if self.resultOverlay and self.resultOverlay.Visible then
+			self:hideResult()
+		end
+		
+		-- Auto-retry joining the family if we were trying to join
+		if pendingFamilyJoin and self.isVisible then
+			local familyId = pendingFamilyJoin
+			pendingFamilyJoin = nil
 			
-			-- CRITICAL FIX #458: Hide any result popup first
-			if self.resultOverlay and self.resultOverlay.Visible then
-				self:hideResult()
-			end
-			
-			-- CRITICAL FIX #459: Auto-retry joining the family if we were trying to join
-			if pendingFamilyJoin and self.isVisible then
-				local familyId = pendingFamilyJoin
-				pendingFamilyJoin = nil
-				
-				-- Small delay to ensure server cache is updated
-				task.delay(0.3, function()
-					if self.isVisible then
-						self:attemptJoinFamily(familyId)
-					end
-				end)
-			else
-				-- Just refresh the screen
+			-- Small delay to ensure server cache is updated
+			task.delay(0.5, function()
 				if self.isVisible then
-					task.defer(function()
-						self:refreshContent()
-					end)
+					log("Auto-retrying join for family:", familyId)
+					self:attemptJoinFamily(familyId)
 				end
+			end)
+		else
+			-- Just refresh the screen
+			if self.isVisible then
+				task.delay(0.3, function()
+					self:refreshContent()
+				end)
 			end
 		end
-	end)
+	end
+	
+	table.insert(purchaseCallbacks, onMafiaPurchased)
 	
 	-- Also listen for server confirmation
 	if GamepassPurchased then
 		GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
 			if gamepassKey == "MAFIA" then
 				hasMafiaGamepass = true
-				log("Server confirmed Mafia gamepass! Refreshing UI...")
-				
-				-- CRITICAL FIX #460: Hide any result popup first
-				if self.resultOverlay and self.resultOverlay.Visible then
-					self:hideResult()
-				end
-				
-				-- CRITICAL FIX #461: Auto-retry joining the family if we were trying to join
-				if pendingFamilyJoin and self.isVisible then
-					local familyId = pendingFamilyJoin
-					pendingFamilyJoin = nil
-					
-					task.delay(0.3, function()
-						if self.isVisible then
-							self:attemptJoinFamily(familyId)
-						end
-					end)
-				else
-					if self.isVisible then
-						task.defer(function()
-							self:refreshContent()
-						end)
-					end
-				end
+				log("Server confirmed Mafia gamepass!")
+				onMafiaPurchased()
 			end
 		end)
 	end
@@ -1787,11 +1787,25 @@ end
 -- RESULT POPUP
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-function MafiaScreen:showResult(isSuccess, title, message, emoji)
+function MafiaScreen:showResult(isSuccess, title, message, emoji, showRetry)
 	self.resultEmoji.Text = emoji or (isSuccess and "✅" or "❌")
 	self.resultTitle.Text = title
 	self.resultTitle.TextColor3 = isSuccess and C.Green or C.Red
 	self.resultMessage.Text = message
+	
+	-- CRITICAL FIX #469: Update button text based on context
+	local okBtn = self.resultCard:FindFirstChild("OKBtn")
+	if okBtn then
+		if showRetry and pendingFamilyJoin then
+			okBtn.Text = "🔄 Retry Join"
+			okBtn.BackgroundColor3 = MafiaColors.Blood
+			okBtn.TextColor3 = C.White
+		else
+			okBtn.Text = "Continue"
+			okBtn.BackgroundColor3 = MafiaColors.Gold
+			okBtn.TextColor3 = C.Black
+		end
+	end
 	
 	self.resultOverlay.Visible = true
 	self.resultCard.Position = UDim2.new(0.5, 0, 0.6, 0)
