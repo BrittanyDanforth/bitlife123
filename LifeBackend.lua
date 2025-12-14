@@ -1171,6 +1171,25 @@ for _, job in ipairs(JobCatalogList) do
 	JobCatalog[job.id] = job
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #691: PromotionOnlyJobs must be defined BEFORE getJobEligibility
+-- Was causing "attempt to index nil with 'content_creator'" error at line 6693
+-- because it was defined AFTER the function that uses it
+-- ═══════════════════════════════════════════════════════════════════════════════
+local PromotionOnlyJobs = {
+	["racing_legend"] = true, ["racing_team_owner"] = true,
+	["star_athlete"] = true, ["sports_legend"] = true, ["team_owner"] = true,
+	["movie_star"] = true, ["director"] = true, ["producer"] = true,
+	["gaming_legend"] = true, ["esports_team_owner"] = true,
+	["music_icon"] = true, ["record_label_owner"] = true,
+	["cto"] = true, ["ceo"] = true, ["cfo"] = true, ["cmo"] = true, ["coo"] = true,
+	["partner"] = true, ["senior_partner"] = true,
+	["chief_of_surgery"] = true, ["hospital_director"] = true,
+	["chief_pilot"] = true, ["airline_executive"] = true,
+	["cia_director"] = true, ["fbi_director"] = true,
+	["senator"] = true, ["governor"] = true, ["president"] = true,
+}
+
 function LifeBackend:findJobByInput(query)
 	if not query or query == "" then
 		return nil
@@ -6756,20 +6775,7 @@ local JobRejectionMessages = {
 	},
 }
 
--- CRITICAL FIX: Server-side list of jobs that can only be obtained through promotion
-local PromotionOnlyJobs = {
-	["racing_legend"] = true, ["racing_team_owner"] = true,
-	["star_athlete"] = true, ["sports_legend"] = true, ["team_owner"] = true,
-	["movie_star"] = true, ["director"] = true, ["producer"] = true,
-	["gaming_legend"] = true, ["esports_team_owner"] = true,
-	["music_icon"] = true, ["record_label_owner"] = true,
-	["cto"] = true, ["ceo"] = true, ["cfo"] = true, ["cmo"] = true, ["coo"] = true,
-	["partner"] = true, ["senior_partner"] = true,
-	["chief_of_surgery"] = true, ["hospital_director"] = true,
-	["chief_pilot"] = true, ["airline_executive"] = true,
-	["cia_director"] = true, ["fbi_director"] = true,
-	["senator"] = true, ["governor"] = true, ["president"] = true,
-}
+-- NOTE: PromotionOnlyJobs is defined earlier (after JobCatalog) to fix scope issues
 
 function LifeBackend:handleJobApplication(player, jobId)
 	local state = self:getState(player)
