@@ -608,6 +608,23 @@ local EducationRanks = {
 	law         = 5,
 	medical     = 5,
 	phd         = 6,
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #711: ROYAL EDUCATION EQUIVALENCY (Client-side)
+	-- Royal education should count as equivalent to civilian education levels
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	royal_private = 1,              -- Palace tutors = high school equivalent
+	royal_prep = 1,                 -- Elite prep school = high school equivalent
+	royal_boarding = 1,             -- Elite boarding school = high school equivalent
+	royal_boarding_school = 1,      -- Completed boarding school = high school equivalent
+	royal_private_secondary = 1,    -- Private secondary education = high school equivalent
+	royal_military = 2,             -- Royal Military Academy = above high school
+	royal_university = 3,           -- Royal university (Oxford, Cambridge) = bachelor equivalent
+	private_education = 1,          -- Generic private education = high school equivalent
+	elite_prep = 1,                 -- Elite preparatory school = high school equivalent
+	boarding_school = 1,            -- Boarding school = high school equivalent
+	swiss_finishing = 2,            -- Swiss finishing school = above high school
+	trade = 2,                      -- Trade school
+	bootcamp = 2,                   -- Coding bootcamp
 }
 
 -- ════════════════════════════════════════════════════════════════════════════════════════════════
@@ -1153,6 +1170,20 @@ local EducationDisplayNames = {
 	medical = "Medical Degree (M.D.)",
 	doctorate = "Doctorate (Ph.D.)",
 	phd = "Doctorate (Ph.D.)",
+	-- CRITICAL FIX #731: Royal education display names
+	royal_private = "Royal Private Education",
+	royal_prep = "Elite Preparatory School",
+	royal_boarding = "Elite Boarding School",
+	royal_boarding_school = "Royal Boarding School Graduate",
+	royal_private_secondary = "Royal Private Secondary",
+	royal_military = "Royal Military Academy",
+	royal_university = "Royal University Degree",
+	private_education = "Private School Diploma",
+	elite_prep = "Elite Preparatory School",
+	boarding_school = "Boarding School Diploma",
+	swiss_finishing = "Swiss Finishing School",
+	trade = "Trade Certification",
+	bootcamp = "Coding Bootcamp",
 }
 
 function OccupationScreen:getEducationDisplayName(levelId)
@@ -2019,18 +2050,104 @@ function OccupationScreen:populateJobs()
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
-	-- CRITICAL FIX #2: Only show ENTRY-LEVEL jobs (not promotions)
-	-- Promotion jobs must be earned through work performance
-	-- Also sorts by difficulty and salary
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #701-710: ONLY SHOW JOBS PLAYER QUALIFIES FOR
+	-- Instead of showing all jobs with lock emoji, ONLY show eligible jobs
+	-- This cleans up the UI and prevents overwhelming players with inaccessible options
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local sortedJobs = {}
 	
 	-- CRITICAL FIX #686-690: Get gamepass ownership from state
-	local flags = self.currentState and self.currentState.Flags or {}
-	local gamepassOwnership = self.currentState and self.currentState.GamepassOwnership or {}
+	local state = self.playerState or {}
+	local flags = state.Flags or {}
+	local gamepassOwnership = state.GamepassOwnership or {}
 	local hasCelebrity = gamepassOwnership.Celebrity or gamepassOwnership.celebrity 
 		or flags.celebrity_gamepass or false
 	local hasMafia = gamepassOwnership.Mafia or gamepassOwnership.mafia 
 		or flags.mafia_gamepass or false
+	
+	-- CRITICAL FIX #702: Get player stats for stat requirement checks
+	local playerStats = state.Stats or {}
+	local playerHealth = playerStats.Health or state.Health or 50
+	local playerSmarts = playerStats.Smarts or state.Smarts or 50
+	local playerLooks = playerStats.Looks or state.Looks or 50
+	
+	-- CRITICAL FIX #703: Enhanced education level check (includes royal education)
+	local function getEffectiveEducationRank()
+		local baseRank = EducationRanks[eduLevel] or 0
+		
+		-- Check education data for royal education
+		if state.EducationData then
+			local eduDataLevel = state.EducationData.Level
+			if eduDataLevel then
+				local eduDataRank = EducationRanks[eduDataLevel] or 0
+				baseRank = math.max(baseRank, eduDataRank)
+			end
+			-- Royal education flag means at least high school equivalent
+			if state.EducationData.isRoyalEducation then
+				baseRank = math.max(baseRank, 1)
+			end
+		end
+		
+		-- Check flags for additional education qualifications
+		if flags.private_education or flags.royal_education_started or flags.palace_educated 
+			or flags.prep_school_student or flags.boarding_student or flags.high_school_graduate 
+			or flags.graduated_high_school or flags.has_ged or flags.has_ged_or_diploma then
+			baseRank = math.max(baseRank, 1) -- High school level
+		end
+		
+		if flags.college_graduate or flags.oxford_graduate or flags.cambridge_graduate 
+			or flags.ivy_league_graduate then
+			baseRank = math.max(baseRank, 3) -- Bachelor level
+		end
+		
+		return baseRank
+	end
+	
+	local effectiveEduRank = getEffectiveEducationRank()
+	
+	-- CRITICAL FIX #704: Check if player meets experience requirements
+	local function meetsExperienceReqs(job)
+		-- If no experience requirement, eligible
+		if not job.requiresExp and not job.requiresFlags then
+			return true
+		end
+		
+		-- Check server eligibility data
+		if self.jobEligibility and self.jobEligibility[job.id] then
+			return self.jobEligibility[job.id].eligible
+		end
+		
+		-- Check flags requirements
+		if job.requiresFlags then
+			for _, flagName in ipairs(job.requiresFlags) do
+				if flags[flagName] then
+					return true
+				end
+			end
+			return false
+		end
+		
+		return true
+	end
+	
+	-- CRITICAL FIX #705: Check if player meets stat requirements
+	local function meetsStatReqs(job)
+		if not job.minStats then return true end
+		
+		for statName, minValue in pairs(job.minStats) do
+			local playerValue = 50
+			if statName == "Health" then playerValue = playerHealth
+			elseif statName == "Smarts" then playerValue = playerSmarts
+			elseif statName == "Looks" then playerValue = playerLooks
+			end
+			
+			if playerValue < minValue then
+				return false
+			end
+		end
+		return true
+	end
 	
 	for _, job in ipairs(Jobs) do
 		if job.id ~= currentJob then
@@ -2047,6 +2164,34 @@ function OccupationScreen:populateJobs()
 					elseif gamepassReq == "mafia" and not hasMafia then
 						showJob = false
 					end
+				end
+				
+				-- CRITICAL FIX #706: Check age requirement - ONLY show if player is old enough
+				if showJob and job.minAge and age < job.minAge then
+					showJob = false
+				end
+				
+				-- CRITICAL FIX #707: Check education requirement using enhanced royal education check
+				if showJob and job.requirement then
+					local reqRank = EducationRanks[job.requirement] or 0
+					if effectiveEduRank < reqRank then
+						showJob = false
+					end
+				end
+				
+				-- CRITICAL FIX #708: Check stat requirements
+				if showJob and not meetsStatReqs(job) then
+					showJob = false
+				end
+				
+				-- CRITICAL FIX #709: Check experience/flag requirements
+				if showJob and not meetsExperienceReqs(job) then
+					showJob = false
+				end
+				
+				-- CRITICAL FIX #710: Don't show jobs if player is in jail
+				if showJob and inJail then
+					showJob = false
 				end
 				
 				if showJob then

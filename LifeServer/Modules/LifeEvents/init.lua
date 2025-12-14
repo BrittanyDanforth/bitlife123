@@ -264,6 +264,10 @@ function LifeEvents.init()
 		{ name = "CrimeEvents",    category = "crime" },
 		{ name = "CoreMilestones", category = "milestones" },
 		
+		-- CRITICAL FIX #716: Progressive Life Events for ages 0-30
+		-- Adds 50+ new varied events to prevent repetition
+		{ name = "ProgressiveLifeEvents", category = "childhood" },
+		
 		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
@@ -721,19 +725,38 @@ local function canEventTrigger(event, state)
 		return false
 	end
 	
-	-- Cooldown check (years since last occurrence)
-	local cooldown = event.cooldown or 3
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #712-715: IMPROVED COOLDOWN & VARIETY SYSTEM
+	-- Events need stronger cooldowns to prevent repetition across lives
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX #712: Longer default cooldown for generic events
+	local cooldown = event.cooldown or 5 -- Increased from 3 to 5 years
+	
+	-- CRITICAL FIX #713: Even longer cooldowns for repeating childhood/teen events
+	local eventCategory = event._category or event.category or ""
+	if eventCategory == "childhood" or eventCategory == "teen" then
+		cooldown = event.cooldown or 8 -- Longer cooldowns for formative years events
+	end
+	
+	-- CRITICAL FIX #714: Generic random events need extra-long cooldowns
+	if eventCategory == "random" then
+		cooldown = event.cooldown or 7
+	end
+	
 	local lastAge = history.lastOccurrence[event.id]
 	if lastAge and (age - lastAge) < cooldown then
 		return false
 	end
 	
-	-- Max occurrences limit
-	local maxOccur = event.maxOccurrences or 10
+	-- CRITICAL FIX #715: Track total occurrences to prevent common events from dominating
 	local occurCount = history.occurrences[event.id] or 0
-	if occurCount >= maxOccur then
+	local maxAllowed = event.maxOccurrences or 3 -- Reduced from 10 to 3
+	if occurCount >= maxAllowed then
 		return false
 	end
+	
+	-- NOTE: Max occurrences is now checked above in CRITICAL FIX #715
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CATEGORY-BASED COOLDOWN - Prevent spamming of similar events
@@ -1076,27 +1099,47 @@ end
 -- These events WILL trigger at specific ages (unless already triggered)
 -- This ensures players don't miss important life moments like DMV, graduation, etc.
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #717-730: EXPANDED AGE MILESTONE EVENTS
+-- More varied milestones at each age to prevent repetition
+-- The system will pick ONE eligible event from the list for each age
+-- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
-	[0] = { "royal_birth_announcement" }, -- CRITICAL FIX #99: Royal birth milestone
-	[1] = { "royal_christening" },
-	[3] = { "first_public_appearance" }, -- Royal first public appearance
-	[5] = { "first_day_kindergarten", "royal_education_choice" },
-	[6] = { "first_day_school" },
-	[8] = { "learning_to_ride_bike" },
-	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery" }, -- CRITICAL FIX #87: Talent discovery
-	[14] = { "class_selection" },
-	[15] = { "learning_to_drive" },
-	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite", "fame_audition" }, -- CRITICAL FIX #100: Fame audition
-	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball" }, -- Royal coming of age
-	[19] = { "college_experience" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service" }, -- Royal military service option
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure" }, -- Royal engagement pressure
-	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough" }, -- CRITICAL FIX #100: Fame breakthrough opportunity
-	[35] = { "royal_charity_focus", "career_peak" },
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark" },
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater" },
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp" },
+	[9] = { "discovered_passion", "child_first_crush" },
+	[10] = { "child_puberty_begins", "talent_show" },
+	[11] = { "middle_school_start", "royal_summer_vacation" },
+	[12] = { "elementary_graduation", "growing_up_fast" },
+	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut" },
+	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama" },
+	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning" },
+	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak" },
+	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite", "senior_year" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle" },
+	[19] = { "college_experience", "young_adult_first_apartment" },
+	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service" },
+	[22] = { "young_adult_career_crossroads", "college_graduation" },
+	[23] = { "young_adult_relationship_milestone", "first_real_job" },
+	[24] = { "quarter_life_reflection" },
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious" },
+	[26] = { "late_20s_social_circle_shift" },
+	[27] = { "late_20s_health_wake_up", "career_advancement" },
+	[28] = { "late_20s_life_assessment" },
+	[29] = { "approaching_30", "relationship_milestone" },
+	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough" },
+	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection" },
 	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign" },
-	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee" }, -- CRITICAL FIX #99: Royal jubilee
-	[60] = { "golden_jubilee" },
+	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee" },
+	[60] = { "golden_jubilee", "retirement_consideration" },
 	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning" },
 	[70] = { "golden_years", "legacy_planning", "diamond_jubilee" },
 	[75] = { "platinum_jubilee" },

@@ -1909,6 +1909,23 @@ local EducationRanks = {
 	law = 5,
 	medical = 5,
 	phd = 6,
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #692: ROYAL EDUCATION EQUIVALENCY
+	-- Royal education from private tutors, elite boarding schools, and academies
+	-- should count as equivalent to (or better than) their civilian counterparts
+	-- This allows royals to apply for jobs and enroll in colleges requiring high_school
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	royal_private = 1,              -- Palace tutors = high school equivalent
+	royal_prep = 1,                 -- Elite prep school = high school equivalent
+	royal_boarding = 1,             -- Elite boarding school (Eton, etc) = high school equivalent
+	royal_boarding_school = 1,      -- Completed boarding school = high school equivalent
+	royal_private_secondary = 1,    -- Private secondary education = high school equivalent
+	royal_military = 2,             -- Royal Military Academy (Sandhurst) = above high school
+	royal_university = 3,           -- Royal university (Oxford, Cambridge) = bachelor equivalent
+	private_education = 1,          -- Generic private education = high school equivalent
+	elite_prep = 1,                 -- Elite preparatory school = high school equivalent
+	boarding_school = 1,            -- Boarding school = high school equivalent
+	swiss_finishing = 2,            -- Swiss finishing school = above high school
 }
 
 -- ============================================================================
@@ -6599,7 +6616,73 @@ function LifeBackend:meetsEducationRequirement(state, requirement)
 	if not requirement then
 		return true
 	end
-	local playerRank = EducationRanks[state.Education or "none"] or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #693-700: COMPREHENSIVE ROYAL EDUCATION CHECK
+	-- Royals may have their education stored in EducationData.Level instead of state.Education
+	-- Also check royal flags that indicate completed education
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local playerEducation = state.Education or "none"
+	local playerRank = EducationRanks[playerEducation] or 0
+	
+	-- CRITICAL FIX #694: Check EducationData.Level for royal education
+	if state.EducationData then
+		local eduLevel = state.EducationData.Level
+		if eduLevel then
+			local eduLevelRank = EducationRanks[eduLevel] or 0
+			if eduLevelRank > playerRank then
+				playerRank = eduLevelRank
+			end
+		end
+		
+		-- CRITICAL FIX #695: Royal education flag means at least high school equivalent
+		if state.EducationData.isRoyalEducation then
+			playerRank = math.max(playerRank, 1) -- At least high school level
+		end
+	end
+	
+	-- CRITICAL FIX #696: Check education flags for additional qualifications
+	local flags = state.Flags or {}
+	
+	-- Royal education flags indicate high school equivalent or better
+	if flags.private_education or flags.royal_education_started or flags.palace_educated 
+		or flags.prep_school_student or flags.boarding_student then
+		playerRank = math.max(playerRank, 1) -- At least high school level
+	end
+	
+	-- Graduated flags indicate completed education
+	if flags.high_school_graduate or flags.graduated_high_school 
+		or flags.royal_graduated or flags.elite_boarding_graduate then
+		playerRank = math.max(playerRank, 1) -- Confirmed high school level
+	end
+	
+	-- CRITICAL FIX #697: has_ged counts as high school equivalent
+	if flags.has_ged or flags.has_ged_or_diploma then
+		playerRank = math.max(playerRank, 1)
+	end
+	
+	-- CRITICAL FIX #698: College-related flags indicate higher education
+	if flags.college_bound or flags.in_college then
+		-- They're pursuing higher education, so they must have high school
+		playerRank = math.max(playerRank, 1)
+	end
+	
+	if flags.college_graduate then
+		playerRank = math.max(playerRank, 3) -- Bachelor's level
+	end
+	
+	-- CRITICAL FIX #699: Royal university completion
+	if flags.oxford_graduate or flags.cambridge_graduate or flags.st_andrews_graduate 
+		or flags.ivy_league_graduate or flags.royal_university_graduate then
+		playerRank = math.max(playerRank, 3) -- Bachelor's level
+	end
+	
+	-- CRITICAL FIX #700: Military academy counts as education
+	if flags.sandhurst_graduate or flags.military_academy_graduate or flags.officer_candidate then
+		playerRank = math.max(playerRank, 2) -- Above high school
+	end
+	
 	local jobRank = EducationRanks[requirement] or 0
 	return playerRank >= jobRank
 end
