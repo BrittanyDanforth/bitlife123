@@ -669,4 +669,310 @@ function LifeStageSystem.isMilestoneAge(age)
 	return MilestoneAges[age] ~= nil
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #466-469: ENHANCED STAGE TRANSITION HANDLING
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Process what happens during a stage transition
+function LifeStageSystem.onStageTransition(state, fromStage, toStage)
+	local results = {
+		messages = {},
+		statChanges = {},
+		flagsSet = {},
+	}
+	
+	state.Flags = state.Flags or {}
+	
+	-- Track stage history
+	state.Flags["reached_" .. toStage.id] = true
+	
+	-- Set current stage flag
+	state.Flags.current_life_stage = toStage.id
+	
+	-- Stage-specific transitions
+	if toStage.id == "young_adult" then
+		-- Becoming an adult - ensure graduation
+		if not state.Education or state.Education == "none" then
+			state.Education = "high_school"
+		end
+		state.Flags.is_adult = true
+		state.Flags.graduated_high_school = true
+		table.insert(results.messages, "You've graduated high school!")
+		
+	elseif toStage.id == "senior" then
+		-- Auto-calculate pension if employed
+		if state.CurrentJob and state.CurrentJob.salary then
+			local pension = math.floor(state.CurrentJob.salary * 0.4)
+			state.Flags.eligible_pension = pension
+			table.insert(results.messages, string.format("You're eligible for a pension of $%d/year", pension))
+		end
+		state.Flags.retirement_eligible = true
+		
+	elseif toStage.id == "teen" then
+		-- Can start part-time work
+		state.Flags.can_work_part_time = true
+		table.insert(results.messages, "You can now get a part-time job!")
+	end
+	
+	-- Clear inappropriate flags
+	if toStage.id ~= "baby" and toStage.id ~= "toddler" then
+		state.Flags.needs_diaper = nil
+		state.Flags.breastfed = nil
+	end
+	
+	return results
+end
+
+-- Calculate expected life events for a given stage
+function LifeStageSystem.getStageExpectations(stageId)
+	local expectations = {
+		baby = {
+			canWork = false,
+			canDate = false,
+			canDrive = false,
+			canVote = false,
+			canDrink = false,
+			inSchool = false,
+			eventCategories = { "childhood", "family" },
+		},
+		toddler = {
+			canWork = false,
+			canDate = false,
+			canDrive = false,
+			canVote = false,
+			canDrink = false,
+			inSchool = false,
+			eventCategories = { "childhood", "family" },
+		},
+		child = {
+			canWork = false,
+			canDate = false,
+			canDrive = false,
+			canVote = false,
+			canDrink = false,
+			inSchool = true,
+			eventCategories = { "childhood", "school", "family", "hobbies" },
+		},
+		teen = {
+			canWork = true, -- Part-time
+			canDate = true,
+			canDrive = true, -- At 16
+			canVote = false,
+			canDrink = false,
+			inSchool = true,
+			eventCategories = { "teen", "school", "relationships", "family", "hobbies" },
+		},
+		young_adult = {
+			canWork = true,
+			canDate = true,
+			canDrive = true,
+			canVote = true,
+			canDrink = true, -- At 21
+			inSchool = false, -- Unless in college
+			eventCategories = { "career", "relationships", "financial", "family" },
+		},
+		adult = {
+			canWork = true,
+			canDate = true,
+			canDrive = true,
+			canVote = true,
+			canDrink = true,
+			inSchool = false,
+			eventCategories = { "career", "relationships", "financial", "family", "health" },
+		},
+		middle_age = {
+			canWork = true,
+			canDate = true,
+			canDrive = true,
+			canVote = true,
+			canDrink = true,
+			inSchool = false,
+			eventCategories = { "career", "health", "family", "financial" },
+		},
+		senior = {
+			canWork = true, -- Can still work
+			canDate = true,
+			canDrive = true,
+			canVote = true,
+			canDrink = true,
+			inSchool = false,
+			canRetire = true,
+			eventCategories = { "senior", "health", "family", "legacy" },
+		},
+	}
+	
+	return expectations[stageId] or expectations.adult
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #470-472: INHERITANCE AND LEGACY CALCULATION
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeStageSystem.calculateInheritance(deceasedState)
+	local inheritance = {
+		money = 0,
+		assets = {},
+		totalValue = 0,
+	}
+	
+	-- Cash inheritance (minus funeral costs)
+	local funeralCost = 10000
+	local estateValue = (deceasedState.Money or 0) - funeralCost
+	
+	-- Asset values
+	local assetTotal = 0
+	if deceasedState.Assets then
+		if deceasedState.Assets.properties then
+			for _, prop in ipairs(deceasedState.Assets.properties) do
+				local value = prop.currentValue or prop.purchasePrice or 0
+				assetTotal = assetTotal + value
+				table.insert(inheritance.assets, {
+					type = "property",
+					name = prop.name or "Property",
+					value = value,
+				})
+			end
+		end
+		if deceasedState.Assets.vehicles then
+			for _, vehicle in ipairs(deceasedState.Assets.vehicles) do
+				local value = vehicle.currentValue or 0
+				assetTotal = assetTotal + value
+				table.insert(inheritance.assets, {
+					type = "vehicle",
+					name = vehicle.name or "Vehicle",
+					value = value,
+				})
+			end
+		end
+	end
+	
+	inheritance.money = math.max(0, estateValue)
+	inheritance.assetValue = assetTotal
+	inheritance.totalValue = inheritance.money + assetTotal
+	
+	return inheritance
+end
+
+function LifeStageSystem.calculateLegacyScore(state)
+	local score = 0
+	
+	-- Age lived
+	score = score + math.min(state.Age or 0, 100)
+	
+	-- Wealth accumulated
+	local netWorth = (state.Money or 0) + ((state.NetWorth or 0))
+	score = score + math.floor(netWorth / 100000) * 10
+	
+	-- Family
+	if state.Relationships then
+		for _, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				if rel.role == "Child" or rel.type == "child" then
+					score = score + 20
+				elseif rel.role == "Partner" then
+					score = score + 15
+				end
+			end
+		end
+	end
+	
+	-- Achievements (flags)
+	local flags = state.Flags or {}
+	if flags.famous then score = score + 50 end
+	if flags.millionaire then score = score + 30 end
+	if flags.billionaire then score = score + 100 end
+	if flags.was_monarch then score = score + 75 end
+	if flags.mob_boss then score = score + 40 end
+	if flags.phd then score = score + 25 end
+	if flags.homeowner then score = score + 15 end
+	
+	return score
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #473-475: RETIREMENT INCOME PROCESSING
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeStageSystem.processRetirementIncome(state)
+	if not state.Flags then return 0 end
+	if not state.Flags.retired then return 0 end
+	
+	local income = 0
+	
+	-- Pension
+	if state.Flags.pension_amount then
+		income = income + state.Flags.pension_amount
+	end
+	
+	-- Social security (basic minimum for seniors)
+	if state.Age and state.Age >= 65 then
+		income = income + 15000 -- Base social security
+	end
+	
+	-- Investment income (simplified)
+	local savings = state.Money or 0
+	local investmentReturn = math.floor(savings * 0.04) -- 4% withdrawal rate
+	income = income + investmentReturn
+	
+	return income
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #476: COMPREHENSIVE EVENT VALIDATION
+-- Enhanced validation with education and career checks
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeStageSystem.validateEventComprehensive(event, state)
+	-- First run basic validation
+	if not LifeStageSystem.validateEvent(event, state) then
+		return false, "Basic validation failed"
+	end
+	
+	local conditions = event.conditions or {}
+	
+	-- Education requirements
+	if conditions.requiresEducation then
+		local playerEd = state.Education or "none"
+		local requiredEd = conditions.requiresEducation
+		
+		local edLevels = { 
+			none = 0, high_school = 1, associate = 2, 
+			bachelor = 3, master = 4, law = 5, medical = 6, phd = 7 
+		}
+		
+		if (edLevels[playerEd] or 0) < (edLevels[requiredEd] or 0) then
+			return false, "Education requirement not met"
+		end
+	end
+	
+	-- Employment requirements
+	if conditions.requiresEmployed and not (state.CurrentJob or (state.Flags and state.Flags.employed)) then
+		return false, "Must be employed"
+	end
+	
+	if conditions.requiresUnemployed and (state.CurrentJob or (state.Flags and state.Flags.employed)) then
+		return false, "Must be unemployed"
+	end
+	
+	-- Wealth requirements
+	if conditions.minMoney and (state.Money or 0) < conditions.minMoney then
+		return false, "Not enough money"
+	end
+	
+	-- Premium feature requirements
+	if conditions.requiresMob and not (state.MobState and state.MobState.inMob) then
+		return false, "Must be in mafia"
+	end
+	
+	if conditions.requiresRoyalty and not (state.RoyalState and state.RoyalState.isRoyal) then
+		return false, "Must be royalty"
+	end
+	
+	if conditions.requiresFame and not (state.FameState and state.FameState.careerPath) then
+		return false, "Must be famous"
+	end
+	
+	return true, nil
+end
+
 return LifeStageSystem

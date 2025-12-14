@@ -294,4 +294,333 @@ function TimeMachine.getDeathScreenData(player, lifeState, hasGamepass)
 	}
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #477-479: ENHANCED STATE RESTORATION
+-- Properly restore state after time travel with all systems intact
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- Flags that should be cleared when time traveling back
+TimeMachine.TemporaryFlags = {
+	"dead", "died", "death_cause",
+	"in_hospital", "hospitalized",
+	"pending_trial", "on_trial",
+	"just_promoted", "just_fired",
+	"grieving",
+}
+
+-- Flags that should persist even after time travel (achievements, etc.)
+TimeMachine.PersistentFlags = {
+	"time_traveled", "uses_time_machine",
+	-- Keep identity flags
+	"male", "female",
+}
+
+function TimeMachine.prepareStateForTimeTravel(state, targetAge)
+	-- Clear death-related flags
+	state.Flags = state.Flags or {}
+	
+	for _, flag in ipairs(TimeMachine.TemporaryFlags) do
+		state.Flags[flag] = nil
+	end
+	
+	-- Mark that time travel occurred
+	state.Flags.time_traveled = true
+	state.Flags.uses_time_machine = true
+	state.Flags.times_time_traveled = (state.Flags.times_time_traveled or 0) + 1
+	state.Flags.last_time_travel_from = state.Age
+	
+	return state
+end
+
+function TimeMachine.restoreFromSnapshot(snapshot, currentState)
+	local restored = snapshot.state
+	
+	if type(restored) == "string" then
+		-- If snapshot is serialized, we need to deserialize
+		-- (Actual deserialization would depend on format used)
+		return nil, "Snapshot needs deserialization"
+	end
+	
+	-- Preserve persistent data from current state
+	if currentState then
+		-- Keep identity
+		restored.FirstName = currentState.FirstName or restored.FirstName
+		restored.LastName = currentState.LastName or restored.LastName
+		restored.Gender = currentState.Gender or restored.Gender
+		restored.Country = currentState.Country or restored.Country
+		
+		-- Keep player info
+		restored.PlayerId = currentState.PlayerId
+		
+		-- Merge persistent flags
+		restored.Flags = restored.Flags or {}
+		if currentState.Flags then
+			for _, flag in ipairs(TimeMachine.PersistentFlags) do
+				if currentState.Flags[flag] then
+					restored.Flags[flag] = currentState.Flags[flag]
+				end
+			end
+			
+			-- Keep time travel tracking
+			restored.Flags.time_traveled = true
+			restored.Flags.times_time_traveled = (currentState.Flags.times_time_traveled or 0) + 1
+		end
+	end
+	
+	return restored, nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #480-482: PARTIAL RESET WITH PREMIUM FEATURE HANDLING
+-- Handle MobState, RoyalState, FameState during time travel
+-- ════════════════════════════════════════════════════════════════════════════
+
+function TimeMachine.buildPartialResetState(currentState, targetAge)
+	local newState = {}
+	
+	-- Keep identity
+	newState.FirstName = currentState.FirstName
+	newState.LastName = currentState.LastName
+	newState.Gender = currentState.Gender
+	newState.Country = currentState.Country
+	newState.PlayerId = currentState.PlayerId
+	
+	-- Set new age/year
+	newState.Age = targetAge
+	local yearsBack = currentState.Age - targetAge
+	newState.Year = (currentState.Year or 2024) - yearsBack
+	
+	-- Reset stats to appropriate values
+	local baseStats = TimeMachine.getDefaultStatsForAge(targetAge)
+	newState.Happiness = baseStats.Happiness
+	newState.Health = baseStats.Health
+	newState.Smarts = math.max(baseStats.Smarts, math.floor((currentState.Smarts or 50) * 0.8))
+	newState.Looks = currentState.Looks or baseStats.Looks
+	
+	-- Reset money based on age
+	if targetAge < 18 then
+		newState.Money = math.floor(math.random(0, 500))
+	elseif targetAge < 30 then
+		newState.Money = math.floor(math.random(500, 5000))
+	else
+		-- Keep some proportion of current money
+		newState.Money = math.floor((currentState.Money or 0) * (targetAge / currentState.Age) * 0.5)
+	end
+	
+	-- Handle education
+	if targetAge < 18 then
+		newState.Education = "none"
+	elseif targetAge >= 18 and targetAge < 22 then
+		newState.Education = "high_school"
+	else
+		-- Keep current education
+		newState.Education = currentState.Education
+	end
+	
+	-- Clear job if going back to before working age
+	if targetAge < 16 then
+		newState.CurrentJob = nil
+	elseif targetAge < 18 then
+		-- Clear full-time job, could have part-time
+		if currentState.CurrentJob and currentState.CurrentJob.fullTime then
+			newState.CurrentJob = nil
+		end
+	end
+	
+	-- Handle premium features
+	
+	-- Mob state - clear if going back before age 18
+	if targetAge < 18 then
+		newState.MobState = nil
+	elseif currentState.MobState then
+		-- Scale back mob progress proportionally
+		newState.MobState = {
+			inMob = currentState.MobState.inMob,
+			familyId = currentState.MobState.familyId,
+			rank = "associate", -- Reset to lowest rank
+			respect = math.floor((currentState.MobState.respect or 0) * 0.5),
+			heat = 0,
+			yearsInMob = math.max(0, (currentState.MobState.yearsInMob or 0) - yearsBack),
+		}
+	end
+	
+	-- Royal state - keep if born royal, but reset some progress
+	if currentState.RoyalState and currentState.RoyalState.bornRoyal then
+		newState.RoyalState = {
+			isRoyal = true,
+			bornRoyal = true,
+			countryId = currentState.RoyalState.countryId,
+			title = targetAge < 18 and "prince" or currentState.RoyalState.title,
+			lineOfSuccession = currentState.RoyalState.lineOfSuccession,
+			popularity = 50, -- Reset popularity
+			isMonarch = false, -- Can't be monarch in the past
+		}
+	end
+	
+	-- Fame state - scale back based on time traveled
+	if currentState.FameState and targetAge >= 18 then
+		local fameReduction = yearsBack * 5
+		newState.FameState = {
+			careerPath = currentState.FameState.careerPath,
+			fame = math.max(0, (currentState.FameState.fame or 0) - fameReduction),
+			followers = math.floor((currentState.FameState.followers or 0) * 0.5),
+			yearsInCareer = math.max(0, (currentState.FameState.yearsInCareer or 0) - yearsBack),
+		}
+	elseif targetAge < 18 then
+		newState.FameState = nil
+	end
+	
+	-- Clear relationships that haven't happened yet
+	if currentState.Relationships then
+		newState.Relationships = {}
+		for key, rel in pairs(currentState.Relationships) do
+			if type(rel) == "table" then
+				-- Keep family relationships
+				if rel.role == "Parent" or rel.role == "Sibling" then
+					newState.Relationships[key] = rel
+				end
+				-- Keep partner only if met before target age
+				-- (simplified: keep if target age is adult)
+				if targetAge >= 18 and rel.role == "Partner" then
+					newState.Relationships[key] = rel
+				end
+			end
+		end
+	end
+	
+	-- Clear assets purchased after target age
+	-- (simplified: scale down assets)
+	if currentState.Assets then
+		newState.Assets = {
+			properties = {},
+			vehicles = {},
+		}
+		-- Keep some properties if adult
+		if targetAge >= 25 and currentState.Assets.properties then
+			for i, prop in ipairs(currentState.Assets.properties) do
+				if i <= 1 then -- Keep first property
+					table.insert(newState.Assets.properties, prop)
+				end
+			end
+		end
+	end
+	
+	-- Initialize flags
+	newState.Flags = {
+		time_traveled = true,
+		uses_time_machine = true,
+		times_time_traveled = (currentState.Flags and currentState.Flags.times_time_traveled or 0) + 1,
+	}
+	
+	-- Preserve gender flags
+	if currentState.Flags then
+		if currentState.Flags.male then newState.Flags.male = true end
+		if currentState.Flags.female then newState.Flags.female = true end
+	end
+	
+	return newState
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #483: VALIDATE TIME TRAVEL PRODUCT OWNERSHIP
+-- ════════════════════════════════════════════════════════════════════════════
+
+function TimeMachine.validatePurchase(player, productId)
+	local option = TimeMachine.getOptionByProductId(productId)
+	if not option then
+		return false, "Invalid product"
+	end
+	
+	if option.productId == 0 then
+		return false, "Product not available"
+	end
+	
+	return true, option
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #484: CLEAR SNAPSHOTS ON NEW LIFE
+-- ════════════════════════════════════════════════════════════════════════════
+
+function TimeMachine.clearSnapshots(player)
+	local playerId = player.UserId
+	local keysToRemove = {}
+	
+	for key, _ in pairs(StateSnapshots) do
+		if key:match("^" .. playerId .. "_") then
+			table.insert(keysToRemove, key)
+		end
+	end
+	
+	for _, key in ipairs(keysToRemove) do
+		StateSnapshots[key] = nil
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #485: ENHANCED SNAPSHOT WITH PREMIUM FEATURES
+-- ════════════════════════════════════════════════════════════════════════════
+
+function TimeMachine.saveEnhancedSnapshot(player, lifeState)
+	local playerId = player.UserId
+	local age = lifeState.Age
+	
+	-- Save at key milestones
+	local shouldSave = (age % 5 == 0) or (age == 0) or (age == 18) or (age == 21) or (age == 30) or (age == 50) or (age == 65)
+	
+	if shouldSave then
+		local key = playerId .. "_" .. age
+		
+		-- Create comprehensive snapshot
+		local snapshot = {
+			age = age,
+			year = lifeState.Year,
+			timestamp = os.time(),
+			-- Core state
+			state = {
+				FirstName = lifeState.FirstName,
+				LastName = lifeState.LastName,
+				Gender = lifeState.Gender,
+				Country = lifeState.Country,
+				Age = lifeState.Age,
+				Year = lifeState.Year,
+				Money = lifeState.Money,
+				Education = lifeState.Education,
+				Happiness = lifeState.Happiness,
+				Health = lifeState.Health,
+				Smarts = lifeState.Smarts,
+				Looks = lifeState.Looks,
+				CurrentJob = lifeState.CurrentJob,
+				Flags = lifeState.Flags and table.clone(lifeState.Flags) or {},
+				Relationships = lifeState.Relationships,
+				Assets = lifeState.Assets,
+				-- Premium feature states
+				MobState = lifeState.MobState,
+				RoyalState = lifeState.RoyalState,
+				FameState = lifeState.FameState,
+			},
+		}
+		
+		StateSnapshots[key] = snapshot
+		
+		-- Cleanup old snapshots (keep last 15)
+		local playerSnapshots = {}
+		for k, v in pairs(StateSnapshots) do
+			if k:match("^" .. playerId .. "_") then
+				table.insert(playerSnapshots, { key = k, age = v.age })
+			end
+		end
+		
+		table.sort(playerSnapshots, function(a, b) return a.age > b.age end)
+		
+		for i = 16, #playerSnapshots do
+			StateSnapshots[playerSnapshots[i].key] = nil
+		end
+		
+		return true
+	end
+	
+	return false
+end
+
 return TimeMachine

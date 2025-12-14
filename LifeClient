@@ -5780,6 +5780,33 @@ showIntro = function()
 	IntroUI.genderBtns.Visible = true
 	IntroUI.nameBtns.Visible = false
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #643-645: Reset gender button transparency after death/new life
+	-- The buttons may have been faded out in a previous animation and need to be
+	-- fully visible again for the new life selection screen
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	for _, child in ipairs(IntroUI.genderBtns:GetChildren()) do
+		if child:IsA("TextButton") then
+			child.BackgroundTransparency = 0
+			child.TextTransparency = 0
+			child.Visible = true
+			-- CRITICAL FIX #644: Reset button size in case it was mid-animation
+			if child.Name ~= "CustomizeGenderBtn" and child.Name ~= "RoyaltyGenderBtn" then
+				child.Size = UDim2.new(0.85, 0, 0, 58)
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #645: Also reset name buttons in case they were in a bad state
+	for _, child in ipairs(IntroUI.nameBtns:GetChildren()) do
+		if child:IsA("TextButton") then
+			child.BackgroundTransparency = 0
+			child.TextTransparency = 0
+			child.Visible = true
+			child.Size = UDim2.new(0.85, 0, 0, 54)
+		end
+	end
+
 	-- CRITICAL FIX #104: Update Royalty button appearance on intro show
 	if IntroUI.updateRoyaltyGenderBtn then
 		IntroUI.updateRoyaltyGenderBtn()

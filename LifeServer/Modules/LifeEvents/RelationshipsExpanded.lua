@@ -986,6 +986,325 @@ RelationshipsExpanded.events = {
 			{ text = "Fight fire with fire", effects = { Happiness = -2 }, setFlags = { gossiper = true }, feedText = "🗣️ Spread some of your own. War escalated." },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #205-210: MEET ROYALTY EVENTS
+	-- These events allow commoners to meet and potentially marry royalty
+	-- Like a fairy tale - meeting a prince or princess!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "rel_meet_royalty_chance",
+		title = "👑 Royal Encounter!",
+		emoji = "👑",
+		text = "Through an incredible twist of fate, you've caught the eye of a REAL prince/princess from a foreign kingdom! They seem genuinely interested in you.",
+		question = "This is like a fairy tale! What do you do?",
+		minAge = 18, maxAge = 40,
+		baseChance = 0.008, -- Very rare! 0.8% chance
+		cooldown = 10,
+		requiresSingle = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "royalty", "fairy_tale", "romance", "prince", "princess" },
+		weight = 5,
+		
+		-- CRITICAL: This is the fairy tale event!
+		choices = {
+			{
+				text = "💕 Try to charm them (be yourself)",
+				effects = {},
+				feedText = "Taking a chance at a royal romance...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.25 + (looks / 250) + (smarts / 500)
+					
+					if roll < successChance then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating_royalty = true
+						state.Flags.royal_romance = true
+						state.Money = (state.Money or 0) + 50000 -- Royal gifts!
+						
+						-- Create royal partner relationship
+						local royalTitles = {"Prince", "Princess"}
+						local royalCountries = {"Monaco", "Sweden", "Denmark", "Netherlands", "Belgium"}
+						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe"}
+						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte"}
+						
+						local partnerGender = state.Gender == "Female" and "male" or "female"
+						local title = partnerGender == "male" and "Prince" or "Princess"
+						local names = partnerGender == "male" and royalNames_male or royalNames_female
+						local country = royalCountries[math.random(1, #royalCountries)]
+						local name = names[math.random(1, #names)]
+						
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "royal_partner",
+							name = title .. " " .. name .. " of " .. country,
+							type = "romantic",
+							role = "Royal Partner",
+							relationship = 75,
+							gender = partnerGender,
+							age = (state.Age or 25) + math.random(-5, 5),
+							alive = true,
+							metAge = state.Age,
+							isRoyalty = true,
+							royalCountry = country,
+							royalTitle = title,
+						}
+						
+						state:AddFeed("👑💕 FAIRY TALE ROMANCE! You're dating " .. title .. " " .. name .. " of " .. country .. "! The world is watching your love story!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👑 They were charming, but the connection didn't spark. Still, what an experience!")
+					end
+				end,
+			},
+			{
+				text = "🙈 Be too intimidated to approach",
+				effects = { Happiness = -5 },
+				feedText = "👑 You froze up. The chance passed. What could have been...",
+			},
+			{
+				text = "📸 Just ask for a photo",
+				effects = { Happiness = 8 },
+				feedText = "👑 Got a royal selfie! You'll treasure this memory.",
+				setFlags = { met_royalty = true },
+			},
+		},
+	},
+	{
+		id = "rel_royal_proposal",
+		title = "👑💍 Royal Proposal!",
+		emoji = "👑",
+		text = "Your royal partner is proposing! They want to marry you and make you part of the royal family! This is a life-changing moment!",
+		question = "Will you become royalty through marriage?",
+		minAge = 20, maxAge = 50,
+		baseChance = 0.8, -- High chance if you have the flags
+		cooldown = 100, -- One-time event
+		oneTime = true,
+		maxOccurrences = 1,
+		requiresFlags = { dating_royalty = true, royal_romance = true },
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "royalty", "proposal", "wedding", "fairy_tale" },
+		priority = "high",
+		
+		choices = {
+			{
+				text = "💍 YES! Become royalty!",
+				effects = { Happiness = 30 },
+				setFlags = { engaged = true, engaged_to_royalty = true, married_into_royalty = true },
+				feedText = "Planning the royal wedding...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.is_royalty = true -- Become royalty through marriage!
+					state.Flags.royal_by_marriage = true
+					state.Flags.married = true
+					state.Flags.engaged = nil
+					state.Flags.dating_royalty = nil
+					
+					-- Massive wealth boost from marrying royalty
+					state.Money = (state.Money or 0) + 10000000
+					
+					-- Initialize royal state
+					state.RoyalState = state.RoyalState or {}
+					state.RoyalState.isRoyal = true
+					state.RoyalState.isMonarch = false
+					state.RoyalState.marriedIntoRoyalty = true
+					state.RoyalState.popularity = 70
+					state.RoyalState.lineOfSuccession = 99 -- Not in direct succession
+					
+					local partner = state.Relationships and state.Relationships.partner
+					if partner then
+						partner.role = "Royal Spouse"
+						state.RoyalState.country = partner.royalCountry or "Monaco"
+						state.RoyalState.countryName = partner.royalCountry or "Monaco"
+						state.RoyalState.title = state.Gender == "Male" and "Prince Consort" or "Princess"
+					end
+					
+					state.Fame = math.min(100, (state.Fame or 0) + 50)
+					
+					state:AddFeed("👑💒 ROYAL WEDDING! You married into royalty! You are now " .. (state.RoyalState.title or "Royal") .. "! Your life will never be the same!")
+				end,
+			},
+			{
+				text = "❤️ Yes, but keep it private",
+				effects = { Happiness = 25 },
+				setFlags = { married = true, married_into_royalty = true, private_royal_wedding = true },
+				feedText = "A quiet royal wedding...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.is_royalty = true
+					state.Flags.royal_by_marriage = true
+					state.Flags.dating_royalty = nil
+					state.Money = (state.Money or 0) + 5000000
+					
+					state.RoyalState = state.RoyalState or {}
+					state.RoyalState.isRoyal = true
+					state.RoyalState.marriedIntoRoyalty = true
+					state.RoyalState.popularity = 60
+					
+					local partner = state.Relationships and state.Relationships.partner
+					if partner then
+						partner.role = "Royal Spouse"
+					end
+					
+					state:AddFeed("👑💒 Private royal wedding! You married into royalty discreetly. A fairytale with privacy.")
+				end,
+			},
+			{
+				text = "💔 I can't handle that life... (decline)",
+				effects = { Happiness = -15 },
+				setFlags = { rejected_royalty = true, recently_single = true },
+				feedText = "👑 The pressure of royal life was too much. You turned down the fairy tale...",
+			},
+		},
+	},
+	{
+		id = "rel_royal_life_adjustment",
+		title = "👑 Royal Life Adjustment",
+		emoji = "👑",
+		text = "Life as a royal spouse is challenging. The media scrutinizes everything, protocols are strict, and privacy is a dream.",
+		question = "How do you handle royal life?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.6,
+		cooldown = 3,
+		requiresFlags = { married_into_royalty = true },
+		stage = STAGE,
+		ageBand = "adult",
+		category = "royalty",
+		tags = { "royalty", "adjustment", "celebrity" },
+		
+		choices = {
+			{
+				text = "Embrace it - become a beloved royal",
+				effects = { Happiness = 10 },
+				feedText = "Embracing royal duties...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						if state.RoyalState then
+							state.RoyalState.popularity = math.min(100, (state.RoyalState.popularity or 50) + 20)
+						end
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👑 You're a natural! The public adores you!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👑 It's harder than it looks. Royal life is exhausting.")
+					end
+				end,
+			},
+			{
+				text = "Focus on charity work",
+				effects = { Happiness = 12 },
+				setFlags = { royal_charity_focus = true },
+				feedText = "👑 You found purpose in helping others through your platform!",
+				onResolve = function(state)
+					if state.RoyalState then
+						state.RoyalState.popularity = math.min(100, (state.RoyalState.popularity or 50) + 15)
+						state.RoyalState.charitiesPatronized = state.RoyalState.charitiesPatronized or {}
+						table.insert(state.RoyalState.charitiesPatronized, "Mental Health Foundation")
+					end
+				end,
+			},
+			{
+				text = "Struggle with the scrutiny",
+				effects = { Happiness = -10, Health = -5 },
+				setFlags = { royal_struggle = true },
+				feedText = "👑 The constant attention is overwhelming. This isn't the fairy tale you imagined.",
+			},
+		},
+	},
+	{
+		id = "rel_celebrity_party_royal",
+		title = "🎉 Exclusive Gala Invite",
+		emoji = "🎉",
+		text = "You've been invited to an exclusive charity gala attended by celebrities and... actual royalty! A prince/princess might be there!",
+		question = "This is your chance to meet royalty!",
+		minAge = 21, maxAge = 45,
+		baseChance = 0.03, -- 3% chance per year
+		cooldown = 5,
+		requiresSingle = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "romance",
+		tags = { "royalty", "gala", "romance", "celebrity" },
+		
+		-- Requirements: Need some wealth or fame
+		eligibility = function(state)
+			local money = state.Money or 0
+			local fame = state.Fame or 0
+			return money >= 100000 or fame >= 30
+		end,
+		
+		choices = {
+			{
+				text = "💃 Attend and try to mingle with royalty",
+				effects = { Money = -5000 }, -- Gala ticket and outfit
+				feedText = "Heading to the gala...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local fame = state.Fame or 0
+					local roll = math.random()
+					local meetChance = 0.15 + (looks / 300) + (fame / 300)
+					
+					if roll < meetChance then
+						-- Met royalty!
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.met_royalty_at_gala = true
+						
+						local anotherRoll = math.random()
+						if anotherRoll < 0.4 then
+							-- Romantic connection!
+							state.Flags.has_partner = true
+							state.Flags.dating_royalty = true
+							state.Flags.royal_romance = true
+							
+							local royalNames = {"Prince Henrik", "Princess Madeleine", "Prince Joachim", "Princess Beatrice"}
+							local chosenName = royalNames[math.random(1, #royalNames)]
+							
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "royal_partner",
+								name = chosenName,
+								type = "romantic",
+								role = "Royal Partner",
+								relationship = 65,
+								gender = chosenName:find("Princess") and "female" or "male",
+								age = (state.Age or 30) + math.random(-7, 7),
+								alive = true,
+								isRoyalty = true,
+							}
+							
+							state:AddFeed("🎉👑💕 INCREDIBLE! You hit it off with " .. chosenName .. "! They asked for your number!")
+						else
+							state:AddFeed("🎉👑 You spoke with actual royalty! They were charming but no romantic spark.")
+						end
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎉 Great gala! Didn't meet royalty, but made valuable connections.")
+					end
+				end,
+			},
+			{
+				text = "🍾 Just enjoy the party",
+				effects = { Money = -5000, Happiness = 8 },
+				feedText = "🎉 Amazing night! Great food, music, and people!",
+			},
+			{
+				text = "Skip it - too fancy for me",
+				effects = { Happiness = -2 },
+				feedText = "🎉 Stayed home. Was it a missed opportunity?",
+			},
+		},
+	},
 }
 
 -- CRITICAL FIX #136: Export events in standard format for LifeEvents loader

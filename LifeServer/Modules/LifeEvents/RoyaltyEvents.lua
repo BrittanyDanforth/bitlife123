@@ -812,13 +812,14 @@ RoyaltyEvents.LifeEvents = {
 	-- These events keep the royal experience alive during teenage years
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "royal_boarding_school",
+		id = "royal_school_life",
 		title = "🏫 Royal School Life",
 		emoji = "🏫",
 		text = "Life at your exclusive boarding school is full of privilege... and pressure.",
 		minAge = 13,
 		maxAge = 17,
 		isRoyalOnly = true,
+		requiresFlags = { in_boarding_school = true },
 		cooldown = 2,
 		choices = {
 			{
@@ -1179,9 +1180,11 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 20 },
 				setFlags = { grand_wedding = true, married = true },
 				feed = "Your fairy-tale wedding captivated the world!",
-				-- CRITICAL FIX #306: Actually deduct the money!
+				-- CRITICAL FIX #540: Royal treasury covers wedding costs with overflow protection
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 50000000
+					local cost = 50000000
+					-- Royal treasury can go into debt for state events, but cap deduction
+					state.Money = math.max(0, (state.Money or 0) - cost)
 					if state.AddFeed then
 						state:AddFeed("💒 Your grand royal wedding cost $50 million!")
 					end
@@ -1193,8 +1196,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 25 },
 				setFlags = { intimate_wedding = true, relatable_royal = true, married = true },
 				feed = "Your intimate wedding touched hearts everywhere!",
+				-- CRITICAL FIX #541: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 10000000
+					state.Money = math.max(0, (state.Money or 0) - 10000000)
 					if state.AddFeed then
 						state:AddFeed("💒 Your intimate royal wedding cost $10 million.")
 					end
@@ -1206,8 +1210,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = -10 },
 				setFlags = { extravagant_wedding = true, married = true },
 				feed = "Your extravagant wedding drew criticism for its cost.",
+				-- CRITICAL FIX #542: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 100000000
+					state.Money = math.max(0, (state.Money or 0) - 100000000)
 					if state.AddFeed then
 						state:AddFeed("💒 Your lavish royal wedding cost $100 million!")
 					end
@@ -1219,8 +1224,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 10, scandals = 1 },
 				setFlags = { eloped = true, rebellious_royal = true, married = true },
 				feed = "You shocked the world by eloping!",
+				-- CRITICAL FIX #543: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 100000
+					state.Money = math.max(0, (state.Money or 0) - 100000)
 					if state.AddFeed then
 						state:AddFeed("💒 You eloped and saved millions!")
 					end
@@ -2203,7 +2209,8 @@ RoyaltyEvents.LifeEvents = {
 						state.Money = (state.Money or 0) + 5000000
 						state:AddFeed("💰 Your green investment paid off! +$5M")
 					else
-						state.Money = (state.Money or 0) - 2000000
+						-- CRITICAL FIX #544: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000000)
 						state:AddFeed("📉 The investment underperformed. -$2M")
 					end
 				end,
@@ -2213,7 +2220,8 @@ RoyaltyEvents.LifeEvents = {
 				effects = { Happiness = 8 },
 				feed = "A new vacation spot for the family!",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 20000000
+					-- CRITICAL FIX #545: Prevent negative money on large purchase
+					state.Money = math.max(0, (state.Money or 0) - 20000000)
 					local roll = math.random()
 					if roll < 0.5 then
 						state.Money = (state.Money or 0) + 8000000
@@ -3361,6 +3369,1265 @@ function RoyaltyEvents.performDuty(lifeState, dutyId)
 	}
 	
 	return true, string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain), result
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #441-445: ROYAL WEALTH MANAGEMENT SYSTEM
+-- Track royal finances, allowances, estates, and expenses
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.WealthSources = {
+	crown_estate = {
+		name = "Crown Estate Income",
+		description = "Revenue from royal lands and properties",
+		baseIncome = 5000000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	government_stipend = {
+		name = "Sovereign Grant",
+		description = "Government funding for official duties",
+		baseIncome = 2000000,
+		monarchMultiplier = 5.0,
+		heirMultiplier = 1.5,
+		otherMultiplier = 0.5,
+	},
+	private_investments = {
+		name = "Private Investments",
+		description = "Personal investment portfolio returns",
+		baseIncome = 1000000,
+		percentageOfWealth = 0.04, -- 4% annual return
+	},
+	royal_properties = {
+		name = "Royal Property Income",
+		description = "Rental income from royal properties",
+		baseIncome = 500000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 0.5,
+		otherMultiplier = 0.2,
+	},
+}
+
+RoyaltyEvents.WealthExpenses = {
+	palace_maintenance = {
+		name = "Palace Maintenance",
+		baseExpense = 2000000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 0.5,
+		otherMultiplier = 0.2,
+	},
+	staff_salaries = {
+		name = "Royal Staff",
+		baseExpense = 1500000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	security = {
+		name = "Security Detail",
+		baseExpense = 3000000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.5,
+	},
+	official_functions = {
+		name = "Official Functions",
+		baseExpense = 1000000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	charitable_giving = {
+		name = "Royal Charities",
+		baseExpense = 500000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.5,
+	},
+}
+
+function RoyaltyEvents.calculateYearlyIncome(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return 0
+	end
+	
+	local isMonarch = royalState.isMonarch
+	local isHeir = (royalState.lineOfSuccession or 99) == 1
+	local totalIncome = 0
+	
+	for sourceId, source in pairs(RoyaltyEvents.WealthSources) do
+		local multiplier = source.otherMultiplier or 1.0
+		if isMonarch then
+			multiplier = source.monarchMultiplier or 1.0
+		elseif isHeir then
+			multiplier = source.heirMultiplier or 1.0
+		end
+		
+		local income = source.baseIncome * multiplier
+		
+		-- Add percentage-based income
+		if source.percentageOfWealth then
+			income = income + ((royalState.wealth or 0) * source.percentageOfWealth)
+		end
+		
+		totalIncome = totalIncome + income
+	end
+	
+	-- Popularity affects income
+	local popularity = royalState.popularity or 50
+	local popularityMultiplier = 0.5 + (popularity / 100) -- 0.5 to 1.5
+	totalIncome = math.floor(totalIncome * popularityMultiplier)
+	
+	return totalIncome
+end
+
+function RoyaltyEvents.calculateYearlyExpenses(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return 0
+	end
+	
+	local isMonarch = royalState.isMonarch
+	local isHeir = (royalState.lineOfSuccession or 99) == 1
+	local totalExpenses = 0
+	
+	for expenseId, expense in pairs(RoyaltyEvents.WealthExpenses) do
+		local multiplier = expense.otherMultiplier or 1.0
+		if isMonarch then
+			multiplier = expense.monarchMultiplier or 1.0
+		elseif isHeir then
+			multiplier = expense.heirMultiplier or 1.0
+		end
+		
+		totalExpenses = totalExpenses + (expense.baseExpense * multiplier)
+	end
+	
+	return math.floor(totalExpenses)
+end
+
+function RoyaltyEvents.processYearlyRoyalFinances(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return nil
+	end
+	
+	local income = RoyaltyEvents.calculateYearlyIncome(lifeState)
+	local expenses = RoyaltyEvents.calculateYearlyExpenses(lifeState)
+	local netIncome = income - expenses
+	
+	-- Update money
+	lifeState.Money = (lifeState.Money or 0) + netIncome
+	
+	-- Update royal wealth tracking
+	royalState.wealth = (royalState.wealth or lifeState.Money)
+	royalState.yearlyIncome = income
+	royalState.yearlyExpenses = expenses
+	
+	-- Track reign finances for monarchs
+	if royalState.isMonarch then
+		royalState.reignYears = (royalState.reignYears or 0) + 1
+		royalState.totalReignIncome = (royalState.totalReignIncome or 0) + income
+		royalState.totalReignExpenses = (royalState.totalReignExpenses or 0) + expenses
+	end
+	
+	return {
+		income = income,
+		expenses = expenses,
+		netIncome = netIncome,
+		newBalance = lifeState.Money,
+	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #446-448: ROYAL ESTATE MANAGEMENT
+-- Buy, sell, and manage royal properties
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.RoyalEstates = {
+	{ id = "countryside_estate", name = "Countryside Estate", price = 15000000, income = 200000, prestige = 10, emoji = "🏰" },
+	{ id = "beach_villa", name = "Royal Beach Villa", price = 25000000, income = 300000, prestige = 15, emoji = "🏖️" },
+	{ id = "hunting_lodge", name = "Royal Hunting Lodge", price = 8000000, income = 50000, prestige = 8, emoji = "🦌" },
+	{ id = "ski_chalet", name = "Alpine Ski Chalet", price = 20000000, income = 250000, prestige = 12, emoji = "⛷️" },
+	{ id = "yacht", name = "Royal Yacht", price = 100000000, income = 0, prestige = 25, emoji = "🛥️" },
+	{ id = "private_island", name = "Private Island", price = 200000000, income = 500000, prestige = 40, emoji = "🏝️" },
+	{ id = "vineyard", name = "Royal Vineyard", price = 30000000, income = 800000, prestige = 15, emoji = "🍷" },
+	{ id = "castle", name = "Historic Castle", price = 50000000, income = 400000, prestige = 30, emoji = "🏯" },
+}
+
+function RoyaltyEvents.purchaseEstate(lifeState, estateId)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	-- Find estate
+	local estate = nil
+	for _, e in ipairs(RoyaltyEvents.RoyalEstates) do
+		if e.id == estateId then
+			estate = e
+			break
+		end
+	end
+	
+	if not estate then
+		return false, "Unknown estate"
+	end
+	
+	-- Check if already own
+	royalState.estates = royalState.estates or {}
+	for _, owned in ipairs(royalState.estates) do
+		if owned.id == estateId then
+			return false, "Already own this estate"
+		end
+	end
+	
+	-- Check funds
+	if (lifeState.Money or 0) < estate.price then
+		return false, "Insufficient funds"
+	end
+	
+	-- Purchase
+	lifeState.Money = lifeState.Money - estate.price
+	
+	table.insert(royalState.estates, {
+		id = estate.id,
+		name = estate.name,
+		emoji = estate.emoji,
+		purchasePrice = estate.price,
+		purchaseYear = lifeState.Year,
+		income = estate.income,
+		prestige = estate.prestige,
+	})
+	
+	-- Fame boost from prestige
+	local fameBoost = math.floor(estate.prestige / 5)
+	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameBoost)
+	
+	return true, string.format("%s Acquired %s! (+%d prestige)", estate.emoji, estate.name, estate.prestige)
+end
+
+function RoyaltyEvents.getEstateIncome(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.estates then
+		return 0
+	end
+	
+	local total = 0
+	for _, estate in ipairs(royalState.estates) do
+		total = total + (estate.income or 0)
+	end
+	
+	return total
+end
+
+function RoyaltyEvents.getTotalPrestige(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState then
+		return 0
+	end
+	
+	local prestige = 0
+	
+	-- Base prestige from title
+	if royalState.isMonarch then
+		prestige = prestige + 100
+	elseif (royalState.lineOfSuccession or 99) == 1 then
+		prestige = prestige + 50
+	else
+		prestige = prestige + 20
+	end
+	
+	-- Estate prestige
+	if royalState.estates then
+		for _, estate in ipairs(royalState.estates) do
+			prestige = prestige + (estate.prestige or 0)
+		end
+	end
+	
+	-- Duties completed prestige
+	prestige = prestige + ((royalState.dutiesCompleted or 0) * 2)
+	
+	-- Scandal penalty
+	prestige = prestige - ((royalState.scandals or 0) * 10)
+	
+	return math.max(0, prestige)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #449-451: ROYAL CHARITY AND PUBLIC IMAGE
+-- Manage charitable works and public perception
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.RoyalCharities = {
+	{ id = "childrens_hospital", name = "Children's Hospital", focus = "health", minDonation = 100000, popularityGain = 5, emoji = "🏥" },
+	{ id = "wildlife_conservation", name = "Wildlife Conservation", focus = "environment", minDonation = 50000, popularityGain = 4, emoji = "🦁" },
+	{ id = "arts_foundation", name = "Arts Foundation", focus = "culture", minDonation = 75000, popularityGain = 3, emoji = "🎨" },
+	{ id = "veterans_fund", name = "Veterans Support", focus = "military", minDonation = 100000, popularityGain = 6, emoji = "🎖️" },
+	{ id = "disaster_relief", name = "Disaster Relief", focus = "humanitarian", minDonation = 200000, popularityGain = 8, emoji = "🆘" },
+	{ id = "education_fund", name = "Education Fund", focus = "education", minDonation = 80000, popularityGain = 5, emoji = "📚" },
+	{ id = "mental_health", name = "Mental Health Awareness", focus = "health", minDonation = 60000, popularityGain = 7, emoji = "🧠" },
+	{ id = "climate_action", name = "Climate Action Fund", focus = "environment", minDonation = 150000, popularityGain = 6, emoji = "🌍" },
+}
+
+function RoyaltyEvents.donateToCharity(lifeState, charityId, amount)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	-- Find charity
+	local charity = nil
+	for _, c in ipairs(RoyaltyEvents.RoyalCharities) do
+		if c.id == charityId then
+			charity = c
+			break
+		end
+	end
+	
+	if not charity then
+		return false, "Unknown charity"
+	end
+	
+	-- Check minimum
+	if amount < charity.minDonation then
+		return false, string.format("Minimum donation is $%d", charity.minDonation)
+	end
+	
+	-- Check funds
+	if (lifeState.Money or 0) < amount then
+		return false, "Insufficient funds"
+	end
+	
+	-- Make donation
+	lifeState.Money = lifeState.Money - amount
+	
+	-- Track donations
+	royalState.charitiesPatronized = royalState.charitiesPatronized or {}
+	local found = false
+	for _, patronized in ipairs(royalState.charitiesPatronized) do
+		if patronized.id == charityId then
+			patronized.totalDonated = (patronized.totalDonated or 0) + amount
+			patronized.donations = (patronized.donations or 0) + 1
+			found = true
+			break
+		end
+	end
+	
+	if not found then
+		table.insert(royalState.charitiesPatronized, {
+			id = charity.id,
+			name = charity.name,
+			emoji = charity.emoji,
+			focus = charity.focus,
+			totalDonated = amount,
+			donations = 1,
+			firstDonationYear = lifeState.Year,
+		})
+	end
+	
+	-- Popularity gain (scaled by donation size)
+	local baseGain = charity.popularityGain
+	local sizeMultiplier = math.min(3, amount / charity.minDonation)
+	local popGain = math.floor(baseGain * sizeMultiplier)
+	
+	royalState.popularity = math.min(100, (royalState.popularity or 50) + popGain)
+	
+	-- Set flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.charitable_royal = true
+	lifeState.Flags["supports_" .. charity.focus] = true
+	
+	return true, string.format("%s Donated $%s to %s! (+%d popularity)", 
+		charity.emoji, 
+		RoyaltyEvents.formatMoney(amount), 
+		charity.name, 
+		popGain)
+end
+
+function RoyaltyEvents.getTotalCharitableDonations(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.charitiesPatronized then
+		return 0
+	end
+	
+	local total = 0
+	for _, charity in ipairs(royalState.charitiesPatronized) do
+		total = total + (charity.totalDonated or 0)
+	end
+	
+	return total
+end
+
+function RoyaltyEvents.formatMoney(amount)
+	if amount >= 1000000000 then
+		return string.format("%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("%.1fK", amount / 1000)
+	else
+		return tostring(amount)
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #546-560: ROYAL EDUCATION SYSTEM
+-- Royals do NOT attend normal public schools!
+-- They have private tutors, elite boarding schools, and prestigious academies
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.RoyalEducation = {
+	-- Childhood Education (Ages 5-13)
+	childhood = {
+		{
+			id = "royal_tutors_childhood",
+			name = "Palace Tutors",
+			emoji = "👨‍🏫",
+			description = "Private tutors at the palace",
+			smartsGain = { min = 3, max = 6 },
+			cost = 50000,
+			prestige = 60,
+			socialSkills = 30,
+		},
+		{
+			id = "elite_prep_school",
+			name = "Elite Preparatory School",
+			emoji = "🏫",
+			description = "Exclusive private day school for nobility",
+			smartsGain = { min = 4, max = 7 },
+			cost = 75000,
+			prestige = 70,
+			socialSkills = 60,
+			famousPrepSchools = { "Hill House", "Wetherby", "Thomas's Battersea" },
+		},
+		{
+			id = "junior_boarding_school",
+			name = "Junior Boarding School",
+			emoji = "🏰",
+			description = "Elite boarding school for young royals",
+			smartsGain = { min = 5, max = 8 },
+			cost = 100000,
+			prestige = 80,
+			socialSkills = 70,
+			independence = 50,
+			famousSchools = { "Ludgrove", "Papplewick", "Summer Fields" },
+		},
+	},
+	
+	-- Teen Education (Ages 13-18)
+	secondary = {
+		{
+			id = "elite_boarding_school",
+			name = "Elite Boarding School",
+			emoji = "🎓",
+			description = "World-renowned boarding school",
+			smartsGain = { min = 6, max = 10 },
+			cost = 150000,
+			prestige = 90,
+			socialSkills = 80,
+			connections = 90,
+			famousSchools = { "Eton College", "Harrow", "Westminster", "Gordonstoun", "Le Rosey", "Andover", "Exeter" },
+		},
+		{
+			id = "royal_military_academy",
+			name = "Royal Military Academy",
+			emoji = "🎖️",
+			description = "Military training for future monarchs",
+			smartsGain = { min = 5, max = 8 },
+			healthGain = { min = 5, max = 10 },
+			cost = 100000,
+			prestige = 85,
+			discipline = 95,
+			leadership = 80,
+			famousAcademies = { "Sandhurst", "West Point", "Saint-Cyr" },
+		},
+		{
+			id = "swiss_finishing_school",
+			name = "Swiss Finishing School",
+			emoji = "🇨🇭",
+			description = "Elite Swiss school focused on etiquette and refinement",
+			smartsGain = { min = 4, max = 7 },
+			looksGain = { min = 3, max = 6 },
+			cost = 200000,
+			prestige = 95,
+			etiquette = 100,
+			languages = 80,
+			famousSchools = { "Institut Le Rosey", "Institut auf dem Rosenberg", "Aiglon College" },
+		},
+		{
+			id = "palace_private_tutoring",
+			name = "Palace Private Tutoring",
+			emoji = "👑",
+			description = "World-class tutors at the palace",
+			smartsGain = { min = 6, max = 9 },
+			cost = 125000,
+			prestige = 75,
+			privacy = 100,
+			flexibility = 95,
+		},
+	},
+	
+	-- University Education (Ages 18+)
+	university = {
+		{
+			id = "oxbridge",
+			name = "Oxford/Cambridge",
+			emoji = "🎓",
+			description = "Britain's most prestigious universities",
+			smartsGain = { min = 10, max = 15 },
+			cost = 50000,
+			prestige = 100,
+			connections = 95,
+			careerBoost = 90,
+			duration = 3,
+			famousCampuses = { "Oxford", "Cambridge" },
+		},
+		{
+			id = "ivy_league",
+			name = "Ivy League University",
+			emoji = "🏛️",
+			description = "America's elite universities",
+			smartsGain = { min = 10, max = 15 },
+			cost = 75000,
+			prestige = 95,
+			connections = 90,
+			careerBoost = 85,
+			duration = 4,
+			famousCampuses = { "Harvard", "Yale", "Princeton", "Columbia" },
+		},
+		{
+			id = "european_elite",
+			name = "Elite European University",
+			emoji = "🇪🇺",
+			description = "Prestigious continental universities",
+			smartsGain = { min = 9, max = 13 },
+			cost = 40000,
+			prestige = 85,
+			connections = 80,
+			careerBoost = 75,
+			duration = 3,
+			famousCampuses = { "Sciences Po", "ETH Zurich", "Leiden" },
+		},
+		{
+			id = "military_officer_training",
+			name = "Military Officer Training",
+			emoji = "⚔️",
+			description = "Commissioned officer training",
+			smartsGain = { min = 6, max = 10 },
+			healthGain = { min = 8, max = 15 },
+			cost = 0,
+			prestige = 80,
+			discipline = 100,
+			leadership = 95,
+			duration = 2,
+		},
+	},
+}
+
+-- CRITICAL FIX #561: Royal Education Events
+RoyaltyEvents.RoyalEducationEvents = {
+	-- CHILDHOOD ROYAL EDUCATION (replaces normal elementary/middle school)
+	{
+		id = "royal_childhood_education_start",
+		title = "👑 Royal Education Begins",
+		emoji = "👑",
+		text = "As a young royal, you won't attend ordinary school like other children. Your education will be befitting of your status. The palace advisors present options for your early education.",
+		minAge = 5,
+		maxAge = 6,
+		oneTime = true,
+		isRoyalOnly = true,
+		priority = "high",
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true, royalty_gamepass = true } },
+		blockedByFlags = { royal_education_started = true },
+		choices = {
+			{
+				text = "Palace tutors - Learn at home with the best educators",
+				effects = { Smarts = 5, Happiness = 8 },
+				royaltyEffect = { popularity = 3 },
+				setFlags = { royal_education_started = true, palace_educated = true, has_royal_tutors = true },
+				feed = "You begin your education with world-class private tutors at the palace.",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Royal Palace Tutors"
+					state.EducationData.Level = "royal_private"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_school = true
+					state.Flags.private_education = true
+					if state.AddFeed then
+						state:AddFeed("👨‍🏫 Your private tutors arrive at the palace! Only the finest education for royalty.")
+					end
+				end,
+			},
+			{
+				text = "Elite preparatory school - Mix with other noble children",
+				effects = { Smarts = 4, Happiness = 6, Looks = 2 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { royal_education_started = true, prep_school_student = true },
+				feed = "You'll attend an exclusive preparatory school for children of nobility.",
+				onResolve = function(state)
+					local schools = { "Hill House", "Wetherby School", "Thomas's Battersea" }
+					local school = schools[math.random(1, #schools)]
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = school
+					state.EducationData.Level = "royal_prep"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_school = true
+					state.Flags.private_education = true
+					if state.AddFeed then
+						state:AddFeed(string.format("🏫 You begin at %s, one of the most exclusive schools in the world!", school))
+					end
+				end,
+			},
+		},
+	},
+	
+	-- BOARDING SCHOOL TRANSITION
+	{
+		id = "royal_boarding_school",
+		title = "🏰 Elite Boarding School",
+		emoji = "🏰",
+		text = "At 13, it's tradition for young royals to attend an elite boarding school. This will prepare you for your future duties and build connections with other influential families.",
+		minAge = 13,
+		maxAge = 14,
+		oneTime = true,
+		isRoyalOnly = true,
+		priority = "high",
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true, royalty_gamepass = true } },
+		blockedByFlags = { in_boarding_school = true, declined_boarding_school = true },
+		choices = {
+			{
+				text = "Eton College - Britain's most famous school",
+				effects = { Smarts = 8, Happiness = 5 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { in_boarding_school = true, eton_student = true, elite_connections = true },
+				feed = "You'll join the ranks of kings, prime ministers, and leaders at Eton!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Eton College"
+					state.EducationData.Level = "royal_boarding"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 5
+					state.EducationData.isRoyalEducation = true
+					state.EducationData.isBoarding = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_high_school = true -- For compatibility
+					state.Flags.private_education = true
+					state.Flags.boarding_student = true
+					state.Money = math.max(0, (state.Money or 0) - 150000)
+					if state.AddFeed then
+						state:AddFeed("🎓 You arrive at Eton College! Centuries of tradition await.")
+					end
+				end,
+			},
+			{
+				text = "Le Rosey (Switzerland) - The 'School of Kings'",
+				effects = { Smarts = 7, Happiness = 8, Looks = 3 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { in_boarding_school = true, le_rosey_student = true, international_connections = true },
+				feed = "The most expensive and exclusive school in the world awaits!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Institut Le Rosey"
+					state.EducationData.Level = "royal_boarding"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 5
+					state.EducationData.isRoyalEducation = true
+					state.EducationData.isBoarding = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_high_school = true
+					state.Flags.private_education = true
+					state.Flags.boarding_student = true
+					state.Flags.speaks_french = true
+					state.Money = math.max(0, (state.Money or 0) - 200000)
+					if state.AddFeed then
+						state:AddFeed("🇨🇭 You jet off to Switzerland to attend the legendary Le Rosey!")
+					end
+				end,
+			},
+			{
+				text = "Gordonstoun - Where Prince Charles and Prince Philip went",
+				effects = { Smarts = 6, Health = 5, Happiness = 3 },
+				royaltyEffect = { popularity = 6 },
+				setFlags = { in_boarding_school = true, gordonstoun_student = true, outdoor_trained = true },
+				feed = "A rigorous outdoor education in the Scottish Highlands!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Gordonstoun"
+					state.EducationData.Level = "royal_boarding"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 5
+					state.EducationData.isRoyalEducation = true
+					state.EducationData.isBoarding = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_high_school = true
+					state.Flags.private_education = true
+					state.Flags.boarding_student = true
+					state.Flags.outdoor_survival = true
+					state.Money = math.max(0, (state.Money or 0) - 120000)
+					if state.AddFeed then
+						state:AddFeed("🏴󠁧󠁢󠁳󠁣󠁴󠁿 You arrive at Gordonstoun! Cold showers and character building await!")
+					end
+				end,
+			},
+			{
+				text = "Continue with palace tutors - Stay close to family",
+				effects = { Smarts = 5, Happiness = 10 },
+				royaltyEffect = { popularity = -2 },
+				setFlags = { declined_boarding_school = true, palace_educated = true },
+				feed = "You'll continue your private education at the palace.",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Royal Palace Academy"
+					state.EducationData.Level = "royal_private_secondary"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.in_high_school = true
+					state.Flags.private_education = true
+					if state.AddFeed then
+						state:AddFeed("👨‍🏫 Your private tutors will continue your secondary education at the palace.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ROYAL UNIVERSITY
+	{
+		id = "royal_university_choice",
+		title = "🎓 Royal University Decision",
+		emoji = "🎓",
+		text = "As you complete your elite secondary education, it's time to choose your university path. Where will the next chapter of your royal education take place?",
+		minAge = 18,
+		maxAge = 19,
+		oneTime = true,
+		isRoyalOnly = true,
+		priority = "high",
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true, royalty_gamepass = true } },
+		blockedByFlags = { royal_university_chosen = true },
+		choices = {
+			{
+				text = "Oxford University - History and tradition",
+				effects = { Smarts = 12, Happiness = 7 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { royal_university_chosen = true, oxford_student = true, in_university = true },
+				feed = "Oxford University welcomes you!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "University of Oxford"
+					state.EducationData.Level = "royal_university"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 3
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.college_bound = true
+					state.Flags.in_college = true
+					if state.AddFeed then
+						state:AddFeed("🎓 You walk through the ancient halls of Oxford! Generations of royals have studied here.")
+					end
+				end,
+			},
+			{
+				text = "University of St Andrews - Meet your future spouse?",
+				effects = { Smarts = 10, Happiness = 10, Looks = 2 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { royal_university_chosen = true, st_andrews_student = true, in_university = true },
+				feed = "St Andrews - where Prince William met Kate!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "University of St Andrews"
+					state.EducationData.Level = "royal_university"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 4
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.college_bound = true
+					state.Flags.in_college = true
+					state.Flags.might_find_love = true
+					if state.AddFeed then
+						state:AddFeed("🏴󠁧󠁢󠁳󠁣󠁴󠁿 You arrive at St Andrews! This is where royal love stories begin...")
+					end
+				end,
+			},
+			{
+				text = "Royal Military Academy Sandhurst - Serve your country",
+				effects = { Smarts = 6, Health = 12, Happiness = 5 },
+				royaltyEffect = { popularity = 12 },
+				setFlags = { royal_university_chosen = true, sandhurst_cadet = true, military_training = true },
+				feed = "You'll train as a military officer!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Institution = "Royal Military Academy Sandhurst"
+					state.EducationData.Level = "royal_military"
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Duration = 1
+					state.EducationData.isRoyalEducation = true
+					state.Flags = state.Flags or {}
+					state.Flags.military_training = true
+					state.Flags.officer_candidate = true
+					if state.AddFeed then
+						state:AddFeed("🎖️ You begin officer training at Sandhurst! Many royals have served before you.")
+					end
+				end,
+			},
+			{
+				text = "Gap year - Royal duties and travel first",
+				effects = { Happiness = 12, Looks = 3 },
+				royaltyEffect = { popularity = 5, dutiesCompleted = 3 },
+				setFlags = { royal_university_chosen = true, gap_year = true },
+				feed = "A royal gap year awaits!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.traveled_world = true
+					state.Flags.royal_gap_year = true
+					if state.AddFeed then
+						state:AddFeed("🌍 You'll spend a year on royal tours and charitable work before university!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- BOARDING SCHOOL EXPERIENCES
+	{
+		id = "boarding_school_experience",
+		title = "🏫 Boarding School Life",
+		emoji = "🏫",
+		text = "Life at boarding school is unique for a royal. Everyone knows who you are, but you're expected to fit in.",
+		minAge = 14,
+		maxAge = 17,
+		isRoyalOnly = true,
+		cooldown = 2,
+		conditions = { requiresFlags = { in_boarding_school = true } },
+		choices = {
+			{
+				text = "Become a prefect - Show leadership",
+				effects = { Smarts = 3, Happiness = 5 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { school_prefect = true, natural_leader = true },
+				feed = "You're appointed as a school prefect!",
+			},
+			{
+				text = "Join the sports team - Excel athletically",
+				effects = { Health = 5, Happiness = 6, Looks = 2 },
+				royaltyEffect = { popularity = 4 },
+				setFlags = { school_athlete = true },
+				feed = "You become a star athlete at school!",
+			},
+			{
+				text = "Focus on academics - Top of the class",
+				effects = { Smarts = 7, Happiness = 3 },
+				setFlags = { top_student = true, academic_excellence = true },
+				feed = "Your grades are exceptional!",
+			},
+			{
+				text = "Sneak out for adventures - Break the rules",
+				effects = { Happiness = 8, Smarts = -2 },
+				royaltyEffect = { popularity = -3, scandals = 1 },
+				setFlags = { rebellious_teen = true, broke_school_rules = true },
+				feed = "You got caught sneaking out! The tabloids are having a field day.",
+			},
+		},
+	},
+	
+	-- ROYAL GRADUATION
+	{
+		id = "royal_graduation",
+		title = "🎓 Royal Graduation Day",
+		emoji = "🎓",
+		text = "Graduation day! The press and cameras are everywhere as you complete your education. This is a major royal milestone.",
+		minAge = 18,
+		maxAge = 22,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { in_boarding_school = true } },
+		blockedByFlags = { royal_graduated = true },
+		choices = {
+			{
+				text = "Graduate with honors - Make the family proud",
+				effects = { Smarts = 5, Happiness = 12 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { royal_graduated = true, graduated_with_honors = true },
+				feed = "You graduate with distinction! The nation celebrates!",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "graduated"
+					state.Education = "royal_boarding_school"
+					state.Flags = state.Flags or {}
+					state.Flags.high_school_graduate = true
+					state.Flags.private_education = true
+					state.Flags.in_boarding_school = nil
+					if state.AddFeed then
+						state:AddFeed("🎓 You've graduated from one of the world's most elite institutions!")
+					end
+				end,
+			},
+			{
+				text = "Graduate quietly - Avoid the spotlight",
+				effects = { Smarts = 3, Happiness = 8 },
+				royaltyEffect = { popularity = 3 },
+				setFlags = { royal_graduated = true, quiet_graduation = true },
+				feed = "A private graduation ceremony, away from the press.",
+				onResolve = function(state)
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "graduated"
+					state.Education = "royal_boarding_school"
+					state.Flags = state.Flags or {}
+					state.Flags.high_school_graduate = true
+					state.Flags.in_boarding_school = nil
+				end,
+			},
+		},
+	},
+}
+
+-- Add royal education events to the main events list
+for _, event in ipairs(RoyaltyEvents.RoyalEducationEvents) do
+	table.insert(RoyaltyEvents.LifeEvents, event)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #562-575: MORE ROYAL LIFE EVENTS
+-- Expanded royal experiences, duties, and drama
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.ExpandedRoyalEvents = {
+	-- ROYAL CHILDHOOD EXPERIENCES
+	{
+		id = "royal_first_public_appearance",
+		title = "👶 First Public Appearance",
+		emoji = "👶",
+		text = "The palace announces your first official public appearance! The world wants to see the young royal.",
+		minAge = 1,
+		maxAge = 3,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Wave to the crowd adorably",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { first_appearance = true, adorable_royal = true },
+				feed = "The world falls in love with the adorable young royal!",
+			},
+			{
+				text = "Cry and hide - Too overwhelming",
+				effects = { Happiness = -3 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { first_appearance = true, shy_child = true },
+				feed = "You cried, but the public found it endearing anyway!",
+			},
+		},
+	},
+	
+	{
+		id = "royal_christmas_broadcast",
+		title = "🎄 Royal Christmas",
+		emoji = "🎄",
+		text = "It's Christmas at the palace! The royal family gathers for celebrations and traditions.",
+		minAge = 3,
+		maxAge = 100,
+		isRoyalOnly = true,
+		cooldown = 3,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Join in all the royal traditions",
+				effects = { Happiness = 10 },
+				royaltyEffect = { popularity = 3 },
+				setFlags = { loves_traditions = true },
+				feed = "A magical royal Christmas with the whole family!",
+			},
+			{
+				text = "Appear in the Christmas photo",
+				effects = { Happiness = 6, Looks = 1 },
+				royaltyEffect = { popularity = 5 },
+				feed = "The official Christmas photo is shared worldwide!",
+			},
+			{
+				text = "Skip some events - Need private time",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = -2 },
+				setFlags = { values_privacy = true },
+				feed = "You took some time for yourself amid the festivities.",
+			},
+		},
+	},
+	
+	-- ROYAL TEEN EXPERIENCES
+	{
+		id = "royal_first_solo_engagement",
+		title = "👑 First Solo Engagement",
+		emoji = "👑",
+		text = "At last! Your first official royal engagement without your parents. A hospital visit to meet young patients.",
+		minAge = 16,
+		maxAge = 18,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Charm everyone with natural warmth",
+				effects = { Happiness = 8, Smarts = 2 },
+				royaltyEffect = { popularity = 12 },
+				setFlags = { natural_charmer = true, good_with_public = true },
+				feed = "Your natural warmth wins hearts! A future star of the royal family!",
+			},
+			{
+				text = "Follow protocol perfectly",
+				effects = { Happiness = 5, Smarts = 3 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { follows_protocol = true },
+				feed = "You handled everything with perfect royal composure.",
+			},
+			{
+				text = "Nervous but get through it",
+				effects = { Happiness = 3 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { nervous_in_public = true },
+				feed = "It was nerve-wracking, but you did it!",
+			},
+		},
+	},
+	
+	{
+		id = "royal_media_training",
+		title = "📺 Royal Media Training",
+		emoji = "📺",
+		text = "The palace has arranged media training for you. You'll learn how to handle interviews, speeches, and the ever-present cameras.",
+		minAge = 14,
+		maxAge = 20,
+		oneTime = true,
+		isRoyalOnly = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Take it seriously - Master the skills",
+				effects = { Smarts = 5, Happiness = 3 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { media_trained = true, polished_speaker = true },
+				feed = "You've become an expert at handling the media!",
+			},
+			{
+				text = "Learn the basics, nothing more",
+				effects = { Smarts = 2 },
+				setFlags = { basic_media_skills = true },
+				feed = "You learned enough to get by.",
+			},
+			{
+				text = "Reject all the PR coaching",
+				effects = { Happiness = 5, Smarts = -1 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { unpolished = true, authentic = true },
+				feed = "You want to be yourself, not a PR creation.",
+			},
+		},
+	},
+	
+	-- ROYAL ADULT EXPERIENCES
+	{
+		id = "royal_charity_patron",
+		title = "🎗️ Become Charity Patron",
+		emoji = "🎗️",
+		text = "You've been asked to become the official patron of a major charity. This will be your signature cause.",
+		minAge = 21,
+		maxAge = 50,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { requiresFlags = { is_royalty = true, royal_adult = true } },
+		choices = {
+			{
+				text = "Children's charity - Help the young",
+				effects = { Happiness = 10 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { charity_patron = true, childrens_advocate = true },
+				feed = "You become patron of a major children's charity!",
+			},
+			{
+				text = "Mental health charity - Break stigma",
+				effects = { Happiness = 8, Smarts = 2 },
+				royaltyEffect = { popularity = 12 },
+				setFlags = { charity_patron = true, mental_health_advocate = true },
+				feed = "You champion mental health awareness!",
+			},
+			{
+				text = "Environmental charity - Save the planet",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { charity_patron = true, environmental_advocate = true },
+				feed = "You dedicate yourself to environmental causes!",
+			},
+			{
+				text = "Military charity - Support veterans",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 12 },
+				setFlags = { charity_patron = true, military_supporter = true },
+				feed = "You honor those who served!",
+			},
+		},
+	},
+	
+	{
+		id = "royal_world_tour",
+		title = "🌍 Royal World Tour",
+		emoji = "🌍",
+		text = "You're embarking on an official royal tour! Multiple countries, weeks of engagements, and global media attention.",
+		minAge = 21,
+		maxAge = 70,
+		isRoyalOnly = true,
+		cooldown = 5,
+		conditions = { requiresFlags = { is_royalty = true, royal_adult = true } },
+		choices = {
+			{
+				text = "Commonwealth tour - Strengthen ties",
+				effects = { Happiness = 8, Health = -5 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { completed_royal_tour = true, commonwealth_ambassador = true },
+				feed = "A successful tour through Commonwealth nations!",
+				onResolve = function(state)
+					state.RoyalState = state.RoyalState or {}
+					state.RoyalState.stateVisits = state.RoyalState.stateVisits or {}
+					table.insert(state.RoyalState.stateVisits, {
+						type = "commonwealth",
+						year = state.Year,
+						success = true,
+					})
+				end,
+			},
+			{
+				text = "Diplomatic tour - Important meetings",
+				effects = { Smarts = 5, Happiness = 5, Health = -3 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { completed_royal_tour = true, diplomatic_experience = true },
+				feed = "You met world leaders and discussed important matters!",
+			},
+			{
+				text = "Charity-focused tour - Help those in need",
+				effects = { Happiness = 12, Health = -4 },
+				royaltyEffect = { popularity = 18 },
+				setFlags = { completed_royal_tour = true, humanitarian_royal = true },
+				feed = "You brought attention to important causes around the world!",
+			},
+		},
+	},
+	
+	-- ROYAL SENIOR EVENTS
+	{
+		id = "royal_memoir",
+		title = "📚 Royal Memoir",
+		emoji = "📚",
+		text = "A publisher has offered a massive advance for your memoirs. But what will you reveal?",
+		minAge = 50,
+		maxAge = 90,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Write a dignified, careful memoir",
+				effects = { Happiness = 8, Money = 5000000 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { wrote_memoir = true, dignified_author = true },
+				feed = "Your tasteful memoir becomes a bestseller!",
+			},
+			{
+				text = "Tell ALL the secrets - Explosive revelations!",
+				effects = { Happiness = 10, Money = 20000000 },
+				royaltyEffect = { popularity = -20, scandals = 3 },
+				setFlags = { wrote_memoir = true, tell_all_author = true, family_outcast = true },
+				feed = "Your explosive memoir rocks the royal family! Millions sold!",
+			},
+			{
+				text = "Decline - Some things are private",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { refused_memoir = true, maintains_dignity = true },
+				feed = "You choose to keep royal secrets private.",
+			},
+		},
+	},
+	
+	{
+		id = "royal_legacy_foundation",
+		title = "🏛️ Royal Legacy",
+		emoji = "🏛️",
+		text = "As a senior royal, you want to establish your lasting legacy. What will you be remembered for?",
+		minAge = 60,
+		maxAge = 100,
+		isRoyalOnly = true,
+		oneTime = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Establish a major foundation",
+				effects = { Happiness = 12, Money = -10000000 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { established_foundation = true, philanthropist = true },
+				feed = "Your foundation will help millions for generations!",
+			},
+			{
+				text = "Commission a lasting monument",
+				effects = { Happiness = 8, Money = -5000000 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { commissioned_monument = true },
+				feed = "A beautiful monument will bear your name forever!",
+			},
+			{
+				text = "Focus on family - Your children are your legacy",
+				effects = { Happiness = 15 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { family_focused_legacy = true },
+				feed = "Your greatest legacy is the family you've raised.",
+			},
+		},
+	},
+}
+
+-- Add expanded events to main list
+for _, event in ipairs(RoyaltyEvents.ExpandedRoyalEvents) do
+	table.insert(RoyaltyEvents.LifeEvents, event)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #576: Helper function to check if education is royal
+-- Prevents royals from getting normal school events
+-- ════════════════════════════════════════════════════════════════════════════
+function RoyaltyEvents.isRoyalEducation(state)
+	if not state then return false end
+	
+	-- Check if player is royalty
+	if state.Flags and state.Flags.is_royalty then
+		return true
+	end
+	
+	if state.RoyalState and state.RoyalState.isRoyal then
+		return true
+	end
+	
+	-- Check education data
+	if state.EducationData and state.EducationData.isRoyalEducation then
+		return true
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX #577: Block normal school for royals
+function RoyaltyEvents.shouldBlockNormalSchool(state)
+	return RoyaltyEvents.isRoyalEducation(state)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

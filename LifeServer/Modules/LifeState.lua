@@ -415,6 +415,75 @@ function LifeState:SetStat(statName, value)
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #252-260: COMPREHENSIVE STAT SYNCHRONIZATION
+-- Ensures Stats table and root properties are always in sync
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:SyncStats()
+	-- Sync from Stats table to root properties
+	if self.Stats then
+		self.Happiness = self.Stats.Happiness
+		self.Health = self.Stats.Health
+		self.Smarts = self.Stats.Smarts
+		self.Looks = self.Stats.Looks
+	end
+	return self
+end
+
+function LifeState:SyncStatsFromRoot()
+	-- Sync from root properties to Stats table
+	self.Stats = self.Stats or {}
+	self.Stats.Happiness = self.Happiness or 50
+	self.Stats.Health = self.Health or 50
+	self.Stats.Smarts = self.Smarts or 50
+	self.Stats.Looks = self.Looks or 50
+	return self
+end
+
+function LifeState:EnsureStatSync()
+	-- Ensures both directions are synced - called after events
+	self.Stats = self.Stats or {}
+	
+	-- If Stats has values, use them as source of truth
+	if self.Stats.Happiness ~= nil then
+		self.Happiness = self.Stats.Happiness
+	elseif self.Happiness ~= nil then
+		self.Stats.Happiness = self.Happiness
+	else
+		self.Stats.Happiness = 50
+		self.Happiness = 50
+	end
+	
+	if self.Stats.Health ~= nil then
+		self.Health = self.Stats.Health
+	elseif self.Health ~= nil then
+		self.Stats.Health = self.Health
+	else
+		self.Stats.Health = 50
+		self.Health = 50
+	end
+	
+	if self.Stats.Smarts ~= nil then
+		self.Smarts = self.Stats.Smarts
+	elseif self.Smarts ~= nil then
+		self.Stats.Smarts = self.Smarts
+	else
+		self.Stats.Smarts = 50
+		self.Smarts = 50
+	end
+	
+	if self.Stats.Looks ~= nil then
+		self.Looks = self.Stats.Looks
+	elseif self.Looks ~= nil then
+		self.Stats.Looks = self.Looks
+	else
+		self.Stats.Looks = 50
+		self.Looks = 50
+	end
+	
+	return self
+end
+
 function LifeState:AddMoney(amount)
 	self.Money = math.max(0, self.Money + amount)
 	return self
@@ -647,6 +716,182 @@ end
 function LifeState:ClearFlag(flagName)
 	self.Flags[flagName] = nil
 	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #261-270: JAIL RELEASE - CLEAR ALL FLAGS
+-- When released from jail, need to clear ALL prison-related flags
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:ReleaseFromJail()
+	self.InJail = false
+	self.JailYearsLeft = 0
+	
+	-- Clear all prison-related flags
+	local jailFlags = {
+		"in_prison", "incarcerated", "serving_time", "jail_time",
+		"on_death_row", "life_sentence", "awaiting_trial",
+		"in_solitary", "prison_gang", "prison_politics",
+		"escaped_prisoner", "attempted_escape", "prison_informant",
+	}
+	
+	for _, flag in ipairs(jailFlags) do
+		self.Flags[flag] = nil
+	end
+	
+	-- Restore education if it was suspended
+	if self.EducationData and self.EducationData.StatusBeforeJail then
+		self.EducationData.Status = self.EducationData.StatusBeforeJail
+		self.EducationData.StatusBeforeJail = nil
+	end
+	
+	-- Set released flag
+	self.Flags.released_from_prison = true
+	self.Flags.ex_convict = true
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #271-280: RELATIONSHIP DUPLICATE PREVENTION
+-- Prevents creating duplicate relationships
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:HasRelationship(roleOrName)
+	if not self.Relationships then return false end
+	
+	-- Check by role
+	if self.Relationships[roleOrName:lower()] then
+		return true
+	end
+	
+	-- Check partner specifically
+	if roleOrName:lower() == "partner" and self.Relationships.partner then
+		return true
+	end
+	
+	-- Check by name
+	for _, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.name == roleOrName then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function LifeState:GetPartner()
+	return self.Relationships and self.Relationships.partner
+end
+
+function LifeState:HasPartner()
+	local partner = self:GetPartner()
+	return partner and partner.alive ~= false
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #281-290: EDUCATION DEBT TRACKING
+-- Proper debt accumulation and tracking
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:AddEducationDebt(amount)
+	self.EducationData = self.EducationData or {}
+	self.EducationData.Debt = (self.EducationData.Debt or 0) + amount
+	self.Flags.has_student_loans = true
+	self.Flags.in_debt = true
+	return self
+end
+
+function LifeState:PayEducationDebt(amount)
+	if not self.EducationData or not self.EducationData.Debt then
+		return false, "No debt to pay"
+	end
+	
+	local debtBefore = self.EducationData.Debt
+	local payment = math.min(amount, debtBefore)
+	
+	self.EducationData.Debt = debtBefore - payment
+	self.Money = math.max(0, (self.Money or 0) - payment)
+	
+	-- Clear debt flags if paid off
+	if self.EducationData.Debt <= 0 then
+		self.EducationData.Debt = 0
+		self.Flags.has_student_loans = nil
+		self.Flags.student_debt_paid = true
+		
+		-- Check if all debt is cleared
+		local totalDebt = self.EducationData.Debt
+		if totalDebt <= 0 then
+			self.Flags.in_debt = nil
+			self.Flags.debt_free = true
+		end
+	end
+	
+	return true, payment
+end
+
+function LifeState:GetTotalDebt()
+	local total = 0
+	if self.EducationData and self.EducationData.Debt then
+		total = total + self.EducationData.Debt
+	end
+	-- Could add other debt types here (mortgage, car loan, etc.)
+	return total
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #291-300: CAREER SALARY UPDATES
+-- Ensures salary updates correctly after promotions
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:ApplyPromotion(newTitle, salaryIncrease)
+	if not self.CurrentJob then
+		return false, "No current job"
+	end
+	
+	-- Update job title if provided
+	if newTitle then
+		self.CurrentJob.name = newTitle
+	end
+	
+	-- Apply salary increase
+	local currentSalary = self.CurrentJob.salary or 30000
+	if type(salaryIncrease) == "number" then
+		if salaryIncrease > 1 then
+			-- Flat increase
+			self.CurrentJob.salary = currentSalary + salaryIncrease
+		else
+			-- Percentage increase (e.g., 0.15 = 15%)
+			self.CurrentJob.salary = math.floor(currentSalary * (1 + salaryIncrease))
+		end
+	else
+		-- Default 15% raise
+		self.CurrentJob.salary = math.floor(currentSalary * 1.15)
+	end
+	
+	-- Track promotion
+	self.CareerInfo = self.CareerInfo or {}
+	self.CareerInfo.promotions = (self.CareerInfo.promotions or 0) + 1
+	self.CareerInfo.promotionProgress = 0 -- Reset progress
+	self.CareerInfo.performance = math.min(100, (self.CareerInfo.performance or 50) + 10)
+	
+	-- Set flags
+	self.Flags.promoted = true
+	self.Flags.recently_promoted = true
+	
+	return true, self.CurrentJob.salary
+end
+
+function LifeState:ApplyRaise(raisePercent)
+	if not self.CurrentJob then
+		return false, "No current job"
+	end
+	
+	raisePercent = raisePercent or 0.05 -- Default 5%
+	local currentSalary = self.CurrentJob.salary or 30000
+	self.CurrentJob.salary = math.floor(currentSalary * (1 + raisePercent))
+	
+	-- Track raise
+	self.CareerInfo = self.CareerInfo or {}
+	self.CareerInfo.raises = (self.CareerInfo.raises or 0) + 1
+	
+	return true, self.CurrentJob.salary
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -909,6 +1154,545 @@ function LifeState:EnableGodMode()
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #331-340: ROYALTY POPULARITY UPDATE FUNCTIONS
+-- Ensures royalty popularity is properly tracked and updated
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:ModifyRoyalPopularity(delta)
+	if not self.RoyalState or not self.RoyalState.isRoyal then
+		return self
+	end
+	
+	local currentPop = self.RoyalState.popularity or 50
+	self.RoyalState.popularity = math.clamp(currentPop + delta, 0, 100)
+	
+	-- Update flags based on popularity
+	self.Flags = self.Flags or {}
+	if self.RoyalState.popularity >= 80 then
+		self.Flags.beloved_royal = true
+		self.Flags.unpopular_royal = nil
+	elseif self.RoyalState.popularity <= 20 then
+		self.Flags.unpopular_royal = true
+		self.Flags.beloved_royal = nil
+	else
+		self.Flags.beloved_royal = nil
+		self.Flags.unpopular_royal = nil
+	end
+	
+	return self
+end
+
+function LifeState:AddRoyalScandal()
+	if not self.RoyalState or not self.RoyalState.isRoyal then
+		return self
+	end
+	
+	self.RoyalState.scandals = (self.RoyalState.scandals or 0) + 1
+	
+	-- Scandals hurt popularity
+	local popLoss = math.random(5, 15)
+	self:ModifyRoyalPopularity(-popLoss)
+	
+	self.Flags = self.Flags or {}
+	self.Flags.royal_scandal = true
+	
+	if self.RoyalState.scandals >= 5 then
+		self.Flags.scandal_plagued = true
+	end
+	
+	return self
+end
+
+function LifeState:CompleteRoyalDuty(dutyId)
+	if not self.RoyalState or not self.RoyalState.isRoyal then
+		return self
+	end
+	
+	self.RoyalState.dutiesCompleted = (self.RoyalState.dutiesCompleted or 0) + 1
+	self.RoyalState.dutyStreak = (self.RoyalState.dutyStreak or 0) + 1
+	
+	-- Duties increase popularity
+	local popGain = math.random(2, 8)
+	self:ModifyRoyalPopularity(popGain)
+	
+	-- Track consecutive duty completions
+	if self.RoyalState.dutyStreak >= 5 then
+		self.Flags = self.Flags or {}
+		self.Flags.dutiful_royal = true
+	end
+	
+	return self
+end
+
+function LifeState:FailRoyalDuty()
+	if not self.RoyalState or not self.RoyalState.isRoyal then
+		return self
+	end
+	
+	-- Reset streak
+	self.RoyalState.dutyStreak = 0
+	
+	-- Failing duties hurts popularity
+	self:ModifyRoyalPopularity(math.random(-3, -8))
+	
+	self.Flags = self.Flags or {}
+	self.Flags.neglecting_duties = true
+	
+	return self
+end
+
+function LifeState:BecomeMonarch()
+	if not self.RoyalState or not self.RoyalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	self.RoyalState.isMonarch = true
+	self.RoyalState.lineOfSuccession = 0
+	self.RoyalState.reignYears = 0
+	
+	-- Determine title
+	local gender = (self.Gender or "Male"):lower()
+	if gender == "male" then
+		self.RoyalState.title = "King"
+	else
+		self.RoyalState.title = "Queen"
+	end
+	
+	self.Flags = self.Flags or {}
+	self.Flags.is_monarch = true
+	self.Flags.ascended_throne = true
+	
+	-- Boost fame and popularity
+	self.Fame = math.min(100, (self.Fame or 0) + 30)
+	self:ModifyRoyalPopularity(20)
+	
+	return true, "You are now the " .. self.RoyalState.title .. "!"
+end
+
+function LifeState:Abdicate()
+	if not self.RoyalState or not self.RoyalState.isMonarch then
+		return false, "Not a monarch"
+	end
+	
+	self.RoyalState.isMonarch = false
+	self.RoyalState.title = (self.Gender == "Male") and "Former King" or "Former Queen"
+	
+	self.Flags = self.Flags or {}
+	self.Flags.abdicated = true
+	self.Flags.is_monarch = nil
+	
+	return true, "You have abdicated the throne."
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #341-350: DISEASE FLAG MANAGEMENT
+-- Ensures disease flags persist properly and are tracked consistently
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:AddDisease(diseaseId, diseaseData)
+	self.Flags = self.Flags or {}
+	
+	-- Set the disease flag
+	self.Flags[diseaseId] = true
+	
+	-- Track in a dedicated diseases list
+	self.Diseases = self.Diseases or {}
+	self.Diseases[diseaseId] = diseaseData or {
+		id = diseaseId,
+		diagnosedAge = self.Age,
+		severity = "moderate",
+	}
+	
+	-- Set general illness flag
+	self.Flags.has_illness = true
+	
+	-- Certain diseases set additional flags
+	local chronicDiseases = {
+		"diabetes", "heart_disease", "cancer", "hiv_positive", 
+		"chronic_illness", "depression", "anxiety", "bipolar"
+	}
+	for _, chronic in ipairs(chronicDiseases) do
+		if diseaseId == chronic then
+			self.Flags.chronic_illness = true
+			break
+		end
+	end
+	
+	local terminalDiseases = {
+		"terminal_cancer", "terminal_illness", "aids"
+	}
+	for _, terminal in ipairs(terminalDiseases) do
+		if diseaseId == terminal then
+			self.Flags.terminal_illness = true
+			break
+		end
+	end
+	
+	return self
+end
+
+function LifeState:RemoveDisease(diseaseId)
+	self.Flags = self.Flags or {}
+	self.Flags[diseaseId] = nil
+	
+	if self.Diseases then
+		self.Diseases[diseaseId] = nil
+	end
+	
+	-- Check if any diseases remain
+	local hasAnyDisease = false
+	if self.Diseases then
+		for _ in pairs(self.Diseases) do
+			hasAnyDisease = true
+			break
+		end
+	end
+	
+	if not hasAnyDisease then
+		self.Flags.has_illness = nil
+		self.Flags.chronic_illness = nil
+		self.Flags.terminal_illness = nil
+	end
+	
+	return self
+end
+
+function LifeState:GetActiveDiseases()
+	local diseases = {}
+	local diseaseFlags = {
+		"cold", "flu", "food_poisoning", "sick", "injured",
+		"diabetes", "heart_disease", "cancer", "has_cancer",
+		"hiv_positive", "has_std", "hepatitis", "herpes",
+		"depression", "anxiety", "bipolar", "schizophrenia",
+		"chronic_illness", "terminal_illness", "mental_illness",
+	}
+	
+	for _, flag in ipairs(diseaseFlags) do
+		if self.Flags and self.Flags[flag] then
+			table.insert(diseases, flag)
+		end
+	end
+	
+	return diseases
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #351-360: ADDICTION FLAG MANAGEMENT
+-- Ensures addiction flags are consistently tracked and managed
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:AddAddiction(addictionType)
+	self.Flags = self.Flags or {}
+	self.Addictions = self.Addictions or {}
+	
+	-- Set the specific addiction flag
+	self.Flags[addictionType] = true
+	
+	-- Track when addiction started
+	self.Addictions[addictionType] = {
+		startAge = self.Age,
+		severity = "moderate",
+		yearsAddicted = 0,
+	}
+	
+	-- Set general addiction flag
+	self.Flags.has_addiction = true
+	self.Flags.addicted = true
+	
+	-- Set specific category flags for consistency
+	local substanceAddictions = {
+		"alcoholic", "alcohol_addiction", "drug_addict",
+		"cocaine_addiction", "heroin_addiction", "meth_addiction",
+		"pill_addiction", "opioid_addiction", "nicotine_addict",
+	}
+	for _, substance in ipairs(substanceAddictions) do
+		if addictionType == substance then
+			self.Flags.substance_abuse = true
+			break
+		end
+	end
+	
+	return self
+end
+
+function LifeState:RemoveAddiction(addictionType)
+	self.Flags = self.Flags or {}
+	self.Flags[addictionType] = nil
+	
+	if self.Addictions then
+		self.Addictions[addictionType] = nil
+	end
+	
+	-- Set recovery flag
+	self.Flags["recovered_" .. addictionType] = true
+	
+	-- Check if any addictions remain
+	local hasAnyAddiction = false
+	if self.Addictions then
+		for _ in pairs(self.Addictions) do
+			hasAnyAddiction = true
+			break
+		end
+	end
+	
+	if not hasAnyAddiction then
+		self.Flags.has_addiction = nil
+		self.Flags.addicted = nil
+		self.Flags.substance_abuse = nil
+		self.Flags.in_recovery = true
+	end
+	
+	return self
+end
+
+function LifeState:GetActiveAddictions()
+	local addictions = {}
+	local addictionFlags = {
+		"alcoholic", "alcohol_addiction", "heavy_drinker",
+		"drug_addict", "cocaine_addiction", "heroin_addiction",
+		"meth_addiction", "pill_addiction", "opioid_addiction",
+		"nicotine_addict", "smoking_addiction", "vaping_addiction",
+		"marijuana_addiction", "gambling_addict", "gambling_addiction",
+		"gaming_addiction", "social_media_addiction", "shopping_addiction",
+	}
+	
+	for _, flag in ipairs(addictionFlags) do
+		if self.Flags and self.Flags[flag] then
+			table.insert(addictions, flag)
+		end
+	end
+	
+	return addictions
+end
+
+function LifeState:TickAddictions()
+	-- Called yearly to progress addictions
+	if not self.Addictions then return self end
+	
+	for addictionType, data in pairs(self.Addictions) do
+		data.yearsAddicted = (data.yearsAddicted or 0) + 1
+		
+		-- Addictions worsen over time if untreated
+		if data.yearsAddicted > 5 and data.severity == "moderate" then
+			data.severity = "severe"
+			self.Flags["severe_" .. addictionType] = true
+		end
+		
+		-- Severe addictions affect health
+		if data.severity == "severe" then
+			self:ModifyStat("Health", -2)
+		end
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #361-370: EVENT SERIALIZATION FOR CLIENT DISPLAY
+-- Ensures events are properly serialized for the client to display
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:SerializeEvent(eventDef, choices)
+	if not eventDef then return nil end
+	
+	-- Determine event category for God Mode options
+	local category = eventDef.category or eventDef._category or "general"
+	
+	-- Check if this is a special event type
+	local isMafiaEvent = eventDef.isMafiaOnly or eventDef.isMafiaEvent
+	local isRoyaltyEvent = eventDef.isRoyaltyOnly or eventDef.isRoyaltyEvent
+	local isDiagnosisCard = eventDef.isDiagnosisCard
+	
+	local serialized = {
+		-- Basic event info
+		id = eventDef.id,
+		title = eventDef.title or "Event",
+		emoji = eventDef.emoji or "📋",
+		text = eventDef.text or "",
+		question = eventDef.question or "",
+		
+		-- Event metadata
+		category = category,
+		tags = eventDef.tags or {},
+		isMilestone = eventDef.isMilestone,
+		priority = eventDef.priority,
+		
+		-- Special event types
+		isMafiaEvent = isMafiaEvent,
+		isRoyaltyEvent = isRoyaltyEvent,
+		isDiagnosisCard = isDiagnosisCard,
+		diagnosisType = eventDef.diagnosisType,
+		
+		-- Choices (simplified for client)
+		choices = {},
+	}
+	
+	-- Serialize choices
+	if eventDef.choices then
+		for i, choice in ipairs(eventDef.choices) do
+			local choiceData = {
+				index = i,
+				text = choice.text or ("Option " .. i),
+				feedText = choice.feedText,
+			}
+			
+			-- Include effect previews if visible
+			if choice.effects then
+				choiceData.effectPreview = {}
+				for stat, delta in pairs(choice.effects) do
+					if type(delta) == "number" then
+						local sign = delta >= 0 and "+" or ""
+						table.insert(choiceData.effectPreview, {
+							stat = stat,
+							delta = delta,
+							display = sign .. tostring(delta),
+						})
+					end
+				end
+			end
+			
+			table.insert(serialized.choices, choiceData)
+		end
+	end
+	
+	return serialized
+end
+
+function LifeState:GetEventWithGodModeOptions(eventDef, hasGodMode)
+	local serialized = self:SerializeEvent(eventDef)
+	if not serialized then return nil end
+	
+	-- Add God Mode options (greyed out if no God Mode)
+	serialized.godModeOptions = {}
+	
+	local category = serialized.category
+	
+	-- Import standard God Mode options based on category
+	local godModeOptionsByCategory = {
+		health = {
+			{ id = "god_mode_cure", text = "⚡ Cure Instantly (God Mode)", action = "cure_disease" },
+			{ id = "god_mode_max_health", text = "⚡ Max Health (God Mode)", action = "max_health" },
+		},
+		relationship = {
+			{ id = "god_mode_charm", text = "⚡ Irresistible Charm (God Mode)", action = "charm_success" },
+			{ id = "god_mode_fix_rel", text = "⚡ Fix Relationship (God Mode)", action = "max_relationship" },
+		},
+		career = {
+			{ id = "god_mode_promotion", text = "⚡ Force Promotion (God Mode)", action = "instant_promotion" },
+			{ id = "god_mode_raise", text = "⚡ Huge Raise (God Mode)", action = "triple_salary" },
+		},
+		legal = {
+			{ id = "god_mode_escape", text = "⚡ Escape Justice (God Mode)", action = "escape_jail" },
+			{ id = "god_mode_clear", text = "⚡ Clear Record (God Mode)", action = "clear_record" },
+		},
+		financial = {
+			{ id = "god_mode_money", text = "⚡ Create $1M (God Mode)", action = "create_money" },
+			{ id = "god_mode_debt", text = "⚡ Clear Debt (God Mode)", action = "clear_debt" },
+		},
+		mafia = {
+			{ id = "god_mode_respect", text = "⚡ +500 Respect (God Mode)", action = "add_respect" },
+			{ id = "god_mode_heat", text = "⚡ Clear Heat (God Mode)", action = "clear_heat" },
+			{ id = "god_mode_rank", text = "⚡ Rank Up (God Mode)", action = "rank_up" },
+		},
+		royalty = {
+			{ id = "god_mode_popularity", text = "⚡ Max Popularity (God Mode)", action = "max_popularity" },
+			{ id = "god_mode_scandal", text = "⚡ Cover Scandal (God Mode)", action = "clear_scandal" },
+		},
+		general = {
+			{ id = "god_mode_perfect", text = "⚡ Perfect Outcome (God Mode)", action = "perfect_outcome" },
+		},
+	}
+	
+	-- Add category-specific options
+	local options = godModeOptionsByCategory[category] or godModeOptionsByCategory.general
+	for _, opt in ipairs(options) do
+		table.insert(serialized.godModeOptions, {
+			id = opt.id,
+			text = opt.text,
+			action = opt.action,
+			isLocked = not hasGodMode,
+			lockedReason = not hasGodMode and "Requires God Mode Gamepass" or nil,
+		})
+	end
+	
+	-- Always add general option
+	if category ~= "general" then
+		table.insert(serialized.godModeOptions, {
+			id = "god_mode_perfect",
+			text = "⚡ Perfect Outcome (God Mode)",
+			action = "perfect_outcome",
+			isLocked = not hasGodMode,
+			lockedReason = not hasGodMode and "Requires God Mode Gamepass" or nil,
+		})
+	end
+	
+	return serialized
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #371-375: ENHANCED SERIALIZATION WITH FULL STATE
+-- Adds helper functions for complete client state
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:GetHealthStatus()
+	local health = (self.Stats and self.Stats.Health) or 50
+	local status = "Unknown"
+	
+	if health >= 90 then status = "Excellent"
+	elseif health >= 70 then status = "Good"
+	elseif health >= 50 then status = "Fair"
+	elseif health >= 30 then status = "Poor"
+	elseif health >= 10 then status = "Critical"
+	else status = "Near Death"
+	end
+	
+	return {
+		value = health,
+		status = status,
+		diseases = self:GetActiveDiseases(),
+		addictions = self:GetActiveAddictions(),
+		isHospitalized = self.Flags and self.Flags.hospitalized,
+		isTerminal = self.Flags and self.Flags.terminal_illness,
+	}
+end
+
+function LifeState:GetFinancialStatus()
+	local money = self.Money or 0
+	local status = "Unknown"
+	local class = "lower"
+	
+	if money >= 1000000000 then
+		status = "Billionaire"
+		class = "ultra_rich"
+	elseif money >= 10000000 then
+		status = "Multi-Millionaire"
+		class = "wealthy"
+	elseif money >= 1000000 then
+		status = "Millionaire"
+		class = "upper"
+	elseif money >= 100000 then
+		status = "Well-Off"
+		class = "upper_middle"
+	elseif money >= 30000 then
+		status = "Middle Class"
+		class = "middle"
+	elseif money >= 5000 then
+		status = "Working Class"
+		class = "working"
+	elseif money >= 0 then
+		status = "Struggling"
+		class = "lower"
+	else
+		status = "In Debt"
+		class = "poverty"
+	end
+	
+	return {
+		money = money,
+		status = status,
+		class = class,
+		netWorth = self:GetNetWorth(),
+		debt = self:GetTotalDebt(),
+		hasJob = self.CurrentJob ~= nil,
+	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #95: Set gamepass flags from ownership data
 -- This ensures all gamepass-related flags are properly set in state
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1018,6 +1802,1014 @@ function LifeState:ApplyGodModeEdit(statKey, newValue)
 	self.GodModeState.lastEditAge = self.Age
 	
 	return true, string.format("%s set to %d", statKey, newValue)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #399-400: DISEASE PROGRESSION OVER TIME
+-- Diseases can worsen, improve, or remain stable based on treatment
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:TickDiseases()
+	if not self.Diseases then return self end
+	
+	for diseaseId, data in pairs(self.Diseases) do
+		local yearsWithDisease = (self.Age or 0) - (data.diagnosedAge or 0)
+		
+		-- Different disease progressions
+		local progressionRules = {
+			-- Curable with time (cold, flu, food poisoning)
+			cold = { healChance = 0.90, healAfterYears = 0 },
+			flu = { healChance = 0.85, healAfterYears = 0 },
+			food_poisoning = { healChance = 0.95, healAfterYears = 0 },
+			
+			-- Chronic but manageable
+			diabetes = { healthLoss = 1, worsenChance = 0.05 },
+			heart_disease = { healthLoss = 2, worsenChance = 0.10, deathChance = 0.02 },
+			depression = { happinessLoss = 3, worsenChance = 0.08, healChance = 0.05 },
+			anxiety = { happinessLoss = 2, worsenChance = 0.05, healChance = 0.10 },
+			
+			-- Serious conditions
+			cancer = { healthLoss = 5, worsenChance = 0.20, deathChance = 0.15 },
+			has_cancer = { healthLoss = 5, worsenChance = 0.20, deathChance = 0.15 },
+			hiv_positive = { healthLoss = 2, worsenChance = 0.08 },
+			
+			-- Terminal
+			terminal_cancer = { healthLoss = 10, deathChance = 0.40 },
+			terminal_illness = { healthLoss = 10, deathChance = 0.35 },
+			aids = { healthLoss = 8, deathChance = 0.25 },
+		}
+		
+		local rules = progressionRules[diseaseId]
+		if rules then
+			-- Apply health loss
+			if rules.healthLoss then
+				self:ModifyStat("Health", -rules.healthLoss)
+			end
+			
+			-- Apply happiness loss (mental health)
+			if rules.happinessLoss then
+				self:ModifyStat("Happiness", -rules.happinessLoss)
+			end
+			
+			-- Check for natural healing
+			if rules.healChance and math.random() < rules.healChance then
+				if yearsWithDisease >= (rules.healAfterYears or 0) then
+					self:RemoveDisease(diseaseId)
+					self.Flags["recovered_from_" .. diseaseId] = true
+				end
+			end
+			
+			-- Check for worsening
+			if rules.worsenChance and math.random() < rules.worsenChance then
+				data.severity = data.severity == "mild" and "moderate" or "severe"
+				self.Flags["severe_" .. diseaseId] = true
+			end
+			
+			-- Check for death (handled by death system)
+			if rules.deathChance then
+				-- If severity is severe, double death chance
+				local deathChance = rules.deathChance
+				if data.severity == "severe" then
+					deathChance = deathChance * 2
+				end
+				
+				if math.random() < deathChance then
+					self.Flags.disease_death_risk = diseaseId
+				end
+			end
+		end
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #401-402: ADDICTION RECOVERY MECHANICS
+-- Proper rehab and recovery system
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:AttemptAddictionRecovery(addictionType, method)
+	if not self.Addictions or not self.Addictions[addictionType] then
+		return false, "No such addiction"
+	end
+	
+	local data = self.Addictions[addictionType]
+	method = method or "willpower"
+	
+	-- Recovery chances by method
+	local methodChances = {
+		willpower = 0.05,      -- Very hard on your own
+		aa_meetings = 0.15,   -- 12-step programs
+		outpatient = 0.25,    -- Outpatient rehab
+		inpatient = 0.45,     -- Inpatient rehab (expensive)
+		luxury_rehab = 0.60,  -- Celebrity-style rehab
+	}
+	
+	local baseChance = methodChances[method] or 0.10
+	
+	-- Modifiers
+	local modifier = 0
+	
+	-- Severity makes it harder
+	if data.severity == "severe" then
+		modifier = modifier - 0.15
+	elseif data.severity == "mild" then
+		modifier = modifier + 0.10
+	end
+	
+	-- Years addicted makes it harder
+	if (data.yearsAddicted or 0) > 10 then
+		modifier = modifier - 0.10
+	elseif (data.yearsAddicted or 0) < 2 then
+		modifier = modifier + 0.10
+	end
+	
+	-- Happiness helps
+	if (self.Stats.Happiness or 50) > 70 then
+		modifier = modifier + 0.05
+	end
+	
+	-- Support system helps
+	if self.Flags.strong_support_system or self.Flags.loving_family then
+		modifier = modifier + 0.10
+	end
+	
+	local finalChance = math.clamp(baseChance + modifier, 0.02, 0.90)
+	
+	if math.random() < finalChance then
+		-- Success!
+		self:RemoveAddiction(addictionType)
+		self.Flags["beat_" .. addictionType] = true
+		self.Flags.sober = true
+		
+		-- Track sobriety start
+		self.SobrietyData = self.SobrietyData or {}
+		self.SobrietyData.startAge = self.Age
+		self.SobrietyData.method = method
+		
+		return true, "You've successfully recovered from " .. addictionType:gsub("_", " ") .. "!"
+	else
+		-- Failed attempt
+		data.recoveryAttempts = (data.recoveryAttempts or 0) + 1
+		
+		-- Failed recovery can worsen condition
+		if math.random() < 0.20 then
+			data.severity = "severe"
+		end
+		
+		return false, "Recovery attempt failed. Don't give up!"
+	end
+end
+
+function LifeState:TickSobriety()
+	if not self.SobrietyData then return self end
+	
+	local yearssSober = (self.Age or 0) - (self.SobrietyData.startAge or 0)
+	
+	-- Track sobriety milestones
+	if yearsSober >= 1 and not self.Flags.one_year_sober then
+		self.Flags.one_year_sober = true
+	end
+	if yearsSober >= 5 and not self.Flags.five_years_sober then
+		self.Flags.five_years_sober = true
+	end
+	if yearsSober >= 10 and not self.Flags.ten_years_sober then
+		self.Flags.ten_years_sober = true
+	end
+	
+	-- Relapse risk (decreases over time)
+	local relapseRisk = 0.15 - (yearsSober * 0.02)
+	relapseRisk = math.max(0.02, relapseRisk) -- Always some risk
+	
+	-- Stress increases relapse risk
+	if (self.Stats.Happiness or 50) < 30 then
+		relapseRisk = relapseRisk + 0.10
+	end
+	
+	self.SobrietyData.relapseRisk = relapseRisk
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #403-404: RELATIONSHIP AGING AND DEATH
+-- Relationships age with player, partners can die
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:TickRelationships()
+	if not self.Relationships then return self end
+	
+	for id, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.age then
+			-- Age the relationship
+			rel.age = (rel.age or 0) + 1
+			
+			-- Update relationship status based on time
+			local yearsTogether = (self.Age or 0) - (rel.metAge or 0)
+			if yearsTogether >= 10 and not rel.longTermPartner then
+				rel.longTermPartner = true
+			end
+			
+			-- Partner death chance increases with age
+			if rel.alive ~= false then
+				local deathChance = 0
+				
+				if rel.age >= 80 then
+					deathChance = 0.15
+				elseif rel.age >= 70 then
+					deathChance = 0.08
+				elseif rel.age >= 60 then
+					deathChance = 0.03
+				elseif rel.age >= 50 then
+					deathChance = 0.01
+				end
+				
+				-- Random accidents (any age)
+				deathChance = deathChance + 0.002
+				
+				if math.random() < deathChance then
+					rel.alive = false
+					rel.deathAge = rel.age
+					rel.deathYear = self.Year
+					
+					-- Set grief flags
+					self.Flags = self.Flags or {}
+					if rel.role == "Partner" or rel.type == "romantic" then
+						self.Flags.widowed = true
+						self.Flags.lost_partner = true
+						self:ModifyStat("Happiness", -30)
+					elseif rel.role == "Parent" or rel.relationship == "parent" then
+						self.Flags.lost_parent = true
+						self:ModifyStat("Happiness", -25)
+					elseif rel.role == "Child" then
+						self.Flags.lost_child = true
+						self:ModifyStat("Happiness", -40)
+					else
+						self:ModifyStat("Happiness", -15)
+					end
+				end
+			end
+		end
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #405-406: PET LIFECYCLE MANAGEMENT
+-- Pets age and can die based on species lifespan
+-- ════════════════════════════════════════════════════════════════════════════
+local PetLifespans = {
+	dog = { min = 10, max = 15 },
+	cat = { min = 12, max = 18 },
+	hamster = { min = 2, max = 3 },
+	goldfish = { min = 5, max = 10 },
+	parrot = { min = 20, max = 50 },
+	rabbit = { min = 8, max = 12 },
+	turtle = { min = 30, max = 80 },
+	horse = { min = 25, max = 35 },
+	snake = { min = 15, max = 25 },
+	lizard = { min = 10, max = 20 },
+}
+
+function LifeState:AddPet(petData)
+	self.PetData = self.PetData or {}
+	
+	local petId = petData.id or ("pet_" .. tostring(tick()))
+	local species = petData.species or "dog"
+	local lifespan = PetLifespans[species:lower()] or { min = 10, max = 15 }
+	
+	self.PetData[petId] = {
+		id = petId,
+		name = petData.name or "Pet",
+		species = species,
+		age = petData.age or 0,
+		maxAge = math.random(lifespan.min, lifespan.max),
+		health = 100,
+		happiness = 80,
+		adoptedAge = self.Age,
+		alive = true,
+	}
+	
+	self.Flags = self.Flags or {}
+	self.Flags.has_pet = true
+	self.Flags["has_" .. species:lower()] = true
+	
+	return self, petId
+end
+
+function LifeState:TickPets()
+	if not self.PetData then return self end
+	
+	local hasAlivePet = false
+	
+	for petId, pet in pairs(self.PetData) do
+		if pet.alive then
+			-- Age the pet
+			pet.age = (pet.age or 0) + 1
+			
+			-- Pet health declines with age
+			if pet.age > pet.maxAge * 0.7 then
+				pet.health = math.max(0, (pet.health or 100) - math.random(5, 15))
+			end
+			
+			-- Check for death
+			local deathChance = 0
+			if pet.age >= pet.maxAge then
+				deathChance = 0.50
+			elseif pet.age >= pet.maxAge * 0.9 then
+				deathChance = 0.20
+			elseif pet.age >= pet.maxAge * 0.8 then
+				deathChance = 0.10
+			end
+			
+			-- Low health increases death chance
+			if (pet.health or 100) < 30 then
+				deathChance = deathChance + 0.15
+			end
+			
+			if math.random() < deathChance then
+				pet.alive = false
+				pet.deathAge = pet.age
+				pet.deathYear = self.Year
+				
+				-- Grief
+				self.Flags["lost_pet_" .. pet.species] = true
+				self:ModifyStat("Happiness", -15)
+			else
+				hasAlivePet = true
+			end
+		end
+	end
+	
+	-- Update has_pet flag
+	self.Flags = self.Flags or {}
+	self.Flags.has_pet = hasAlivePet
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #407-408: EDUCATION GPA CALCULATIONS
+-- Proper GPA tracking and academic performance
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:CalculateGPA()
+	if not self.EducationData then return nil end
+	
+	local smarts = self.Stats.Smarts or 50
+	local baseGPA = smarts / 25 -- 0-4 scale based on smarts
+	
+	-- Study habits modifier
+	if self.Flags.studious then
+		baseGPA = baseGPA + 0.3
+	end
+	if self.Flags.lazy_student then
+		baseGPA = baseGPA - 0.5
+	end
+	
+	-- Extracurriculars (slight penalty for too many)
+	local activities = 0
+	if self.Flags.plays_sports then activities = activities + 1 end
+	if self.Flags.in_band then activities = activities + 1 end
+	if self.Flags.in_drama then activities = activities + 1 end
+	
+	if activities >= 3 then
+		baseGPA = baseGPA - 0.2
+	end
+	
+	-- Party penalty
+	if self.Flags.party_animal then
+		baseGPA = baseGPA - 0.4
+	end
+	
+	-- Clamp to valid GPA range
+	return math.clamp(baseGPA, 0.0, 4.0)
+end
+
+function LifeState:UpdateGPA()
+	if self.EducationData and self.EducationData.Status == "enrolled" then
+		self.EducationData.GPA = self:CalculateGPA()
+	end
+	return self
+end
+
+function LifeState:GetGPADescription()
+	local gpa = self.EducationData and self.EducationData.GPA
+	if not gpa then return "N/A" end
+	
+	if gpa >= 3.9 then return "Summa Cum Laude (4.0)"
+	elseif gpa >= 3.7 then return "Magna Cum Laude"
+	elseif gpa >= 3.5 then return "Cum Laude"
+	elseif gpa >= 3.0 then return "Dean's List"
+	elseif gpa >= 2.5 then return "Good Standing"
+	elseif gpa >= 2.0 then return "Passing"
+	elseif gpa >= 1.0 then return "Academic Probation"
+	else return "Failing"
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #409-410: ASSET DEPRECIATION CALCULATIONS
+-- Vehicles depreciate, properties appreciate/depreciate
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:TickAssets()
+	if not self.Assets then return self end
+	
+	-- Depreciate vehicles
+	if self.Assets.Vehicles then
+		for _, vehicle in ipairs(self.Assets.Vehicles) do
+			if vehicle.value and vehicle.value > 0 then
+				-- Cars depreciate ~15% per year
+				local depreciation = vehicle.value * 0.15
+				vehicle.value = math.max(500, vehicle.value - depreciation)
+				
+				-- Age the vehicle
+				vehicle.age = (vehicle.age or 0) + 1
+				
+				-- Old vehicles need repairs
+				if vehicle.age > 5 and math.random() < 0.20 then
+					vehicle.needsRepairs = true
+					vehicle.repairCost = math.random(500, 3000)
+				end
+			end
+		end
+	end
+	
+	-- Properties can appreciate or depreciate
+	if self.Assets.Properties then
+		for _, property in ipairs(self.Assets.Properties) do
+			if property.value and property.value > 0 then
+				-- Market fluctuation (-5% to +8% per year)
+				local marketChange = (math.random() - 0.4) * 0.13
+				property.value = math.floor(property.value * (1 + marketChange))
+				
+				-- Minimum value
+				property.value = math.max(property.purchasePrice and property.purchasePrice * 0.3 or 10000, property.value)
+			end
+		end
+	end
+	
+	-- Update net worth
+	self.cachedNetWorth = self:GetNetWorth()
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #411-412: RETIREMENT PENSION CALCULATIONS
+-- Proper pension based on career history
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:CalculateRetirementPension()
+	local pension = 0
+	
+	-- Base social security
+	local socialSecurity = 12000
+	
+	-- Work history bonus
+	local yearsWorked = self.CareerInfo and self.CareerInfo.yearsAtJob or 0
+	if self.CareerInfo and self.CareerInfo.careerHistory then
+		yearsWorked = #self.CareerInfo.careerHistory * 3 + yearsWorked
+	end
+	
+	-- Cap at 40 years of work
+	yearsWorked = math.min(40, yearsWorked)
+	
+	-- More years = higher pension
+	local workBonus = yearsWorked * 500
+	
+	-- Final salary matters
+	local lastSalary = 0
+	if self.CurrentJob and self.CurrentJob.salary then
+		lastSalary = self.CurrentJob.salary
+	end
+	
+	-- Pension is ~40% of final salary + social security
+	local salaryPension = lastSalary * 0.40
+	
+	-- 401k/savings contribution (if wealthy)
+	local savingsBonus = 0
+	if self.Money and self.Money > 500000 then
+		savingsBonus = self.Money * 0.04 -- 4% withdrawal rate
+	end
+	
+	pension = socialSecurity + workBonus + salaryPension + savingsBonus
+	
+	-- Government pensions for certain careers
+	if self.Flags.was_military then
+		pension = pension * 1.5
+	end
+	if self.Flags.was_government then
+		pension = pension * 1.3
+	end
+	
+	return math.floor(pension)
+end
+
+function LifeState:Retire()
+	if self.Age < 50 then
+		return false, "Too young to retire"
+	end
+	
+	-- Calculate pension
+	local pension = self:CalculateRetirementPension()
+	
+	-- Set retirement flags
+	self.Flags = self.Flags or {}
+	self.Flags.retired = true
+	self.Flags.pension_amount = pension
+	self.Flags.retirement_age = self.Age
+	
+	-- Clear job
+	if self.CurrentJob then
+		-- Track final career for history
+		self.CareerInfo = self.CareerInfo or {}
+		self.CareerInfo.careerHistory = self.CareerInfo.careerHistory or {}
+		table.insert(self.CareerInfo.careerHistory, {
+			job = self.CurrentJob.name,
+			company = self.CurrentJob.company,
+			salary = self.CurrentJob.salary,
+			endReason = "retired",
+			endAge = self.Age,
+		})
+	end
+	
+	self.CurrentJob = nil
+	self.Flags.employed = nil
+	self.Flags.has_job = nil
+	
+	return true, pension
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #413-414: CRIMINAL RECORD EFFECTS
+-- Criminal records affect job prospects, relationships, etc.
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:GetCriminalRecordEffects()
+	local effects = {
+		jobPenalty = 0,
+		relationshipPenalty = 0,
+		housingPenalty = 0,
+		loanPenalty = 0,
+		travelRestricted = false,
+	}
+	
+	if not self.Flags then return effects end
+	
+	-- Felony record has major effects
+	if self.Flags.felony_record or self.Flags.convicted_felon then
+		effects.jobPenalty = 0.50 -- 50% less likely to get jobs
+		effects.relationshipPenalty = 0.30
+		effects.housingPenalty = 0.40
+		effects.loanPenalty = 0.60
+		effects.travelRestricted = true
+	-- Misdemeanor has moderate effects
+	elseif self.Flags.misdemeanor_record then
+		effects.jobPenalty = 0.20
+		effects.relationshipPenalty = 0.10
+		effects.housingPenalty = 0.15
+		effects.loanPenalty = 0.25
+	-- Arrest but no conviction has minor effects
+	elseif self.Flags.arrested then
+		effects.jobPenalty = 0.05
+	end
+	
+	-- Specific crimes have additional effects
+	if self.Flags.sex_offender then
+		effects.jobPenalty = 0.80
+		effects.relationshipPenalty = 0.70
+		effects.housingPenalty = 0.90
+		effects.travelRestricted = true
+	end
+	
+	if self.Flags.financial_crimes then
+		effects.loanPenalty = 0.80
+		effects.jobPenalty = math.max(effects.jobPenalty, 0.60)
+	end
+	
+	-- Time reduces effects
+	if self.Flags.years_since_conviction then
+		local years = self.Flags.years_since_conviction
+		local reduction = math.min(0.5, years * 0.05) -- 5% per year, max 50%
+		
+		effects.jobPenalty = effects.jobPenalty * (1 - reduction)
+		effects.relationshipPenalty = effects.relationshipPenalty * (1 - reduction)
+		effects.housingPenalty = effects.housingPenalty * (1 - reduction)
+		effects.loanPenalty = effects.loanPenalty * (1 - reduction)
+	end
+	
+	return effects
+end
+
+function LifeState:TickCriminalRecord()
+	-- Track years since conviction
+	if self.Flags and (self.Flags.felony_record or self.Flags.misdemeanor_record) then
+		self.Flags.years_since_conviction = (self.Flags.years_since_conviction or 0) + 1
+		
+		-- After enough time, can get record expunged (except serious crimes)
+		if self.Flags.years_since_conviction >= 10 and not self.Flags.sex_offender and not self.Flags.violent_felony then
+			self.Flags.can_expunge_record = true
+		end
+	end
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #415-416: HEALTH INSURANCE SYSTEM
+-- Track health insurance and medical costs
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:SetHealthInsurance(insuranceData)
+	self.HealthInsurance = insuranceData or {
+		type = "none",
+		premium = 0,
+		deductible = 0,
+		coverage = 0,
+	}
+	
+	self.Flags = self.Flags or {}
+	self.Flags.has_health_insurance = insuranceData and insuranceData.type ~= "none"
+	
+	return self
+end
+
+function LifeState:GetMedicalCostMultiplier()
+	if not self.HealthInsurance or self.HealthInsurance.type == "none" then
+		return 1.0 -- Full cost
+	end
+	
+	local coverage = self.HealthInsurance.coverage or 0
+	return 1.0 - (coverage / 100) -- e.g., 80% coverage = 0.20 multiplier
+end
+
+function LifeState:PayMedicalBill(baseCost)
+	local multiplier = self:GetMedicalCostMultiplier()
+	local actualCost = math.floor(baseCost * multiplier)
+	
+	-- Apply deductible if not met
+	local deductible = self.HealthInsurance and self.HealthInsurance.deductible or 0
+	local deductibleMet = self.HealthInsurance and self.HealthInsurance.deductibleMet or 0
+	
+	if deductibleMet < deductible then
+		local deductibleRemaining = deductible - deductibleMet
+		local deductiblePayment = math.min(deductibleRemaining, baseCost)
+		actualCost = deductiblePayment + (baseCost - deductiblePayment) * multiplier
+		
+		if self.HealthInsurance then
+			self.HealthInsurance.deductibleMet = deductibleMet + deductiblePayment
+		end
+	end
+	
+	self.Money = math.max(0, (self.Money or 0) - actualCost)
+	
+	return actualCost
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #417: COMPREHENSIVE YEARLY TICK
+-- Calls all yearly update functions in the correct order
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeState:TickYear()
+	-- Disease progression
+	self:TickDiseases()
+	
+	-- Addiction progression
+	self:TickAddictions()
+	
+	-- Sobriety tracking
+	self:TickSobriety()
+	
+	-- Relationship aging
+	self:TickRelationships()
+	
+	-- Pet lifecycle
+	self:TickPets()
+	
+	-- Asset depreciation
+	self:TickAssets()
+	
+	-- Criminal record effects
+	self:TickCriminalRecord()
+	
+	-- Update GPA if in school
+	self:UpdateGPA()
+	
+	-- Pay health insurance premium
+	if self.HealthInsurance and self.HealthInsurance.premium then
+		self.Money = math.max(0, (self.Money or 0) - self.HealthInsurance.premium)
+		
+		-- Reset deductible at start of year
+		self.HealthInsurance.deductibleMet = 0
+	end
+	
+	-- Clear recently_ flags
+	local recentFlags = {"recently_promoted", "recently_married", "recently_divorced"}
+	for _, flag in ipairs(recentFlags) do
+		self.Flags[flag] = nil
+	end
+	
+	-- Sync stats
+	self:EnsureStatSync()
+	
+	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #504-508: SAFE MONEY OPERATIONS
+-- Prevents money from going negative and validates expensive operations
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:CanAfford(amount)
+	return (self.Money or 0) >= amount
+end
+
+function LifeState:SafeSubtractMoney(amount, description)
+	local currentMoney = self.Money or 0
+	if currentMoney >= amount then
+		self.Money = currentMoney - amount
+		return true, amount
+	else
+		-- Can't afford full amount - take what's available
+		local actualDeduction = currentMoney
+		self.Money = 0
+		return false, actualDeduction
+	end
+end
+
+function LifeState:GetAffordableAmount(desiredAmount)
+	local currentMoney = self.Money or 0
+	return math.min(desiredAmount, currentMoney)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #509-512: SAFE RELATIONSHIP OPERATIONS
+-- Ensures relationships are properly created and validated
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:HasPartner()
+	if not self.Relationships then return false end
+	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
+		return true
+	end
+	-- Check for partner in other locations
+	for _, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+			return true
+		end
+	end
+	return false
+end
+
+function LifeState:GetPartner()
+	if not self.Relationships then return nil end
+	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
+		return self.Relationships.partner
+	end
+	for _, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+			return rel
+		end
+	end
+	return nil
+end
+
+function LifeState:CreatePartner(partnerData)
+	self.Relationships = self.Relationships or {}
+	
+	-- Validate partner data
+	local partner = {
+		id = partnerData.id or "partner",
+		name = partnerData.name or "Unknown",
+		type = "romance",
+		role = "Partner",
+		relationship = partnerData.relationship or 65,
+		age = partnerData.age or (self.Age + math.random(-5, 5)),
+		gender = partnerData.gender or (self.Gender == "male" and "female" or "male"),
+		alive = true,
+	}
+	
+	-- Validate age - partner shouldn't be too young
+	if partner.age < 18 and self.Age >= 18 then
+		partner.age = 18
+	end
+	
+	self.Relationships.partner = partner
+	
+	-- Set flags
+	self.Flags = self.Flags or {}
+	self.Flags.has_partner = true
+	self.Flags.dating = true
+	
+	return partner
+end
+
+function LifeState:EndRelationship(relationshipId)
+	relationshipId = relationshipId or "partner"
+	
+	if self.Relationships and self.Relationships[relationshipId] then
+		self.Relationships[relationshipId] = nil
+	end
+	
+	-- Clear partner flags if ending partner relationship
+	if relationshipId == "partner" and self.Flags then
+		self.Flags.has_partner = nil
+		self.Flags.dating = nil
+		self.Flags.engaged = nil
+		self.Flags.married = nil
+		self.Flags.recently_single = true
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #513-516: CHILD AND FAMILY OPERATIONS
+-- Proper child tracking and family validation
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:GetChildCount()
+	local count = 0
+	if self.Relationships then
+		for _, rel in pairs(self.Relationships) do
+			if type(rel) == "table" and (rel.isChild or rel.role == "Child" or rel.role == "Son" or rel.role == "Daughter") then
+				count = count + 1
+			end
+		end
+	end
+	-- Also check ChildCount field
+	return math.max(count, self.ChildCount or 0)
+end
+
+function LifeState:HasChildren()
+	return self:GetChildCount() > 0
+end
+
+function LifeState:AddChild(childData)
+	self.Relationships = self.Relationships or {}
+	
+	local childId = childData.id or ("child_" .. tostring(os.clock()):gsub("%.", ""))
+	local isBoy = childData.gender == "male" or (childData.gender == nil and math.random() > 0.5)
+	
+	local child = {
+		id = childId,
+		name = childData.name or "Baby",
+		type = "family",
+		role = isBoy and "Son" or "Daughter",
+		relationship = childData.relationship or 100,
+		age = childData.age or 0,
+		gender = isBoy and "male" or "female",
+		alive = true,
+		isChild = true,
+		isFamily = true,
+		birthYear = self.Year or 2025,
+	}
+	
+	self.Relationships[childId] = child
+	self.ChildCount = (self.ChildCount or 0) + 1
+	
+	-- Set flags
+	self.Flags = self.Flags or {}
+	self.Flags.parent = true
+	self.Flags.has_child = true
+	
+	return child
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #517-520: CAREER VALIDATION
+-- Ensures career operations are properly validated
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:HasJob()
+	return self.CurrentJob ~= nil and self.CurrentJob.name ~= nil
+end
+
+function LifeState:GetJobCategory()
+	if self.CurrentJob and self.CurrentJob.category then
+		return self.CurrentJob.category
+	end
+	return nil
+end
+
+function LifeState:MatchesJobCategory(category)
+	local currentCategory = self:GetJobCategory()
+	if not currentCategory then return false end
+	return currentCategory:lower() == category:lower()
+end
+
+function LifeState:ClearCareer()
+	if self.CurrentJob then
+		-- Save to career history
+		self.CareerInfo = self.CareerInfo or {}
+		self.CareerInfo.careerHistory = self.CareerInfo.careerHistory or {}
+		table.insert(self.CareerInfo.careerHistory, {
+			job = self.CurrentJob,
+			startAge = self.CareerInfo.startAge,
+			endAge = self.Age,
+			endYear = self.Year,
+		})
+	end
+	
+	self.CurrentJob = nil
+	
+	-- Clear job flags
+	self.Flags = self.Flags or {}
+	self.Flags.employed = nil
+	self.Flags.has_job = nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #521-524: ELIGIBILITY HELPERS
+-- Common eligibility checks for events
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:IsInPrison()
+	return self.InJail == true or (self.Flags and self.Flags.in_prison)
+end
+
+function LifeState:IsSingle()
+	return not self:HasPartner()
+end
+
+function LifeState:IsMarried()
+	return self.Flags and self.Flags.married == true
+end
+
+function LifeState:IsEmployed()
+	return self:HasJob() or (self.Flags and self.Flags.employed)
+end
+
+function LifeState:IsAdult()
+	return (self.Age or 0) >= 18
+end
+
+function LifeState:IsSenior()
+	return (self.Age or 0) >= 65
+end
+
+function LifeState:IsInMob()
+	return self.MobState and self.MobState.inMob == true
+end
+
+function LifeState:IsRoyal()
+	return self.RoyalState and self.RoyalState.isRoyal == true
+end
+
+function LifeState:IsFamous()
+	return self.FameState and self.FameState.isFamous == true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #525-528: STAT BOUNDS VALIDATION
+-- Ensures stats stay within valid bounds
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:ValidateStats()
+	self.Stats = self.Stats or {}
+	
+	for stat, value in pairs(self.Stats) do
+		if type(value) == "number" then
+			self.Stats[stat] = math.clamp(value, 0, 100)
+		end
+	end
+	
+	-- Sync shortcuts
+	self.Happiness = self.Stats.Happiness
+	self.Health = self.Stats.Health
+	self.Smarts = self.Stats.Smarts
+	self.Looks = self.Stats.Looks
+	
+	-- Validate money
+	self.Money = math.max(0, self.Money or 0)
+	
+	-- Validate fame
+	self.Fame = math.clamp(self.Fame or 0, 0, 100)
+end
+
+function LifeState:ValidateAll()
+	self:ValidateStats()
+	
+	-- Validate age
+	self.Age = math.max(0, self.Age or 0)
+	
+	-- Validate education data
+	if self.EducationData then
+		self.EducationData.Debt = math.max(0, self.EducationData.Debt or 0)
+		self.EducationData.Progress = math.clamp(self.EducationData.Progress or 0, 0, 100)
+	end
+	
+	-- Validate mob state
+	if self.MobState then
+		self.MobState.respect = math.max(0, self.MobState.respect or 0)
+		self.MobState.heat = math.clamp(self.MobState.heat or 0, 0, 100)
+		self.MobState.loyalty = math.clamp(self.MobState.loyalty or 0, 0, 100)
+	end
+	
+	-- Validate royal state
+	if self.RoyalState then
+		self.RoyalState.popularity = math.clamp(self.RoyalState.popularity or 0, 0, 100)
+	end
+	
+	-- Validate fame state
+	if self.FameState then
+		self.FameState.followers = math.max(0, self.FameState.followers or 0)
+	end
+	
+	return self
 end
 
 return LifeState

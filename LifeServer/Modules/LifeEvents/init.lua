@@ -264,6 +264,10 @@ function LifeEvents.init()
 		{ name = "CrimeEvents",    category = "crime" },
 		{ name = "CoreMilestones", category = "milestones" },
 		
+		-- CRITICAL FIX #716: Progressive Life Events for ages 0-30
+		-- Adds 50+ new varied events to prevent repetition
+		{ name = "ProgressiveLifeEvents", category = "childhood" },
+		
 		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
@@ -487,6 +491,55 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #646-650: ROYAL EDUCATION BLOCKING
+	-- Royals do NOT attend normal public schools!
+	-- They have private tutors, elite boarding schools, and prestigious academies
+	-- Block normal school events for royal players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth 
+		or (state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal then
+		-- List of normal school event IDs that royals should NOT see
+		local normalSchoolEventIds = {
+			"starting_school", "first_day_school", "elementary_start", "middle_school_start",
+			"high_school_start", "public_school", "first_grade", "kindergarten",
+			"school_bully", "homework_help", "cafeteria", "school_detention",
+			"school_play", "school_dance", "school_suspension", "normal_education",
+			"public_education", "regular_school", "school_registration",
+		}
+		
+		-- Check if this is a normal school event
+		local eventId = event.id and event.id:lower() or ""
+		local eventTitle = event.title and event.title:lower() or ""
+		
+		for _, schoolId in ipairs(normalSchoolEventIds) do
+			if eventId:find(schoolId) or eventTitle:find(schoolId) then
+				-- CRITICAL FIX #647: Only block if event is NOT marked as royal education
+				if not event.isRoyalOnly and not event.isRoyalEducation then
+					return false -- Royals don't attend normal school!
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #648: Also check for generic school tags
+		if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
+			return false -- Block any explicitly public school events
+		end
+		
+		-- CRITICAL FIX #649: Check education type requirements
+		if event.requiresEducationType then
+			local eduType = event.requiresEducationType:lower()
+			if eduType == "public" or eduType == "normal" or eduType == "public_school" then
+				return false -- Royals don't have public school education
+			end
+		end
+		
+		-- CRITICAL FIX #650: Boost royal education events for royals
+		-- (This is handled in the weight calculation section)
+	end
+	
 	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
 	-- This was causing events like become_boss to trigger without underboss flag,
 	-- and prison_respect to trigger when not in prison!
@@ -672,19 +725,38 @@ local function canEventTrigger(event, state)
 		return false
 	end
 	
-	-- Cooldown check (years since last occurrence)
-	local cooldown = event.cooldown or 3
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #712-715: IMPROVED COOLDOWN & VARIETY SYSTEM
+	-- Events need stronger cooldowns to prevent repetition across lives
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX #712: Longer default cooldown for generic events
+	local cooldown = event.cooldown or 5 -- Increased from 3 to 5 years
+	
+	-- CRITICAL FIX #713: Even longer cooldowns for repeating childhood/teen events
+	local eventCategory = event._category or event.category or ""
+	if eventCategory == "childhood" or eventCategory == "teen" then
+		cooldown = event.cooldown or 8 -- Longer cooldowns for formative years events
+	end
+	
+	-- CRITICAL FIX #714: Generic random events need extra-long cooldowns
+	if eventCategory == "random" then
+		cooldown = event.cooldown or 7
+	end
+	
 	local lastAge = history.lastOccurrence[event.id]
 	if lastAge and (age - lastAge) < cooldown then
 		return false
 	end
 	
-	-- Max occurrences limit
-	local maxOccur = event.maxOccurrences or 10
+	-- CRITICAL FIX #715: Track total occurrences to prevent common events from dominating
 	local occurCount = history.occurrences[event.id] or 0
-	if occurCount >= maxOccur then
+	local maxAllowed = event.maxOccurrences or 3 -- Reduced from 10 to 3
+	if occurCount >= maxAllowed then
 		return false
 	end
+	
+	-- NOTE: Max occurrences is now checked above in CRITICAL FIX #715
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CATEGORY-BASED COOLDOWN - Prevent spamming of similar events
@@ -1027,30 +1099,75 @@ end
 -- These events WILL trigger at specific ages (unless already triggered)
 -- This ensures players don't miss important life moments like DMV, graduation, etc.
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #717-730: EXPANDED AGE MILESTONE EVENTS
+-- More varied milestones at each age to prevent repetition
+-- The system will pick ONE eligible event from the list for each age
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #736-740: MASSIVELY EXPANDED AGE MILESTONES
+-- Each age now has 4-8 possible events to choose from
+-- This dramatically reduces repetition across different lives
+-- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
-	[0] = { "royal_birth_announcement" }, -- CRITICAL FIX #99: Royal birth milestone
-	[1] = { "royal_christening" },
-	[3] = { "first_public_appearance" }, -- Royal first public appearance
-	[5] = { "first_day_kindergarten", "royal_education_choice" },
-	[6] = { "first_day_school" },
-	[8] = { "learning_to_ride_bike" },
-	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery" }, -- CRITICAL FIX #87: Talent discovery
-	[14] = { "class_selection" },
-	[15] = { "learning_to_drive" },
-	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite", "fame_audition" }, -- CRITICAL FIX #100: Fame audition
-	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball" }, -- Royal coming of age
-	[19] = { "college_experience" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service" }, -- Royal military service option
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure" }, -- Royal engagement pressure
-	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough" }, -- CRITICAL FIX #100: Fame breakthrough opportunity
-	[35] = { "royal_charity_focus", "career_peak" },
-	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign" },
-	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee" }, -- CRITICAL FIX #99: Royal jubilee
-	[60] = { "golden_jubilee" },
-	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning" },
-	[70] = { "golden_years", "legacy_planning", "diamond_jubilee" },
-	[75] = { "platinum_jubilee" },
+	-- BABY/TODDLER (0-4) - Lots of variety in early years
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase" },
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
+	
+	-- EARLY CHILDHOOD (5-8) - School and discovery
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer" },
+	
+	-- LATE CHILDHOOD (9-12) - Growing up
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation" },
+	[10] = { "child_puberty_begins", "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending" },
+	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
+	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
+	
+	-- EARLY TEEN (13-15) - Identity formation
+	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", "first_crush_serious", "style_change", "friend_drama" },
+	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
+	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
+	
+	-- LATE TEEN (16-18) - Major milestones
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep" },
+	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time" },
+	
+	-- YOUNG ADULT (19-24) - Independence and discovery
+	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
+	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits" },
+	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start" },
+	[23] = { "young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality" },
+	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
+	
+	-- MID-LATE 20s (25-29) - Settling into adulthood
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure" },
+	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
+	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
+	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
+	[29] = { "approaching_30", "relationship_milestone", "decade_reflection", "bucket_list_rush", "life_audit" },
+	
+	-- 30s-40s - Established adulthood
+	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough", "dirty_thirty", "real_adult_now", "life_reassessment" },
+	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection", "biological_deadline", "life_stability", "half_life_crisis" },
+	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign", "over_the_hill", "wisdom_gained", "health_priority" },
+	
+	-- 50s-60s - Later adulthood
+	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee", "half_century", "empty_nest", "grandparent_maybe" },
+	[60] = { "golden_jubilee", "retirement_consideration", "senior_discount", "legacy_thoughts", "health_checks" },
+	
+	-- 65+ - Senior years
+	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning", "medicare_eligible", "golden_years_begin" },
+	[70] = { "golden_years", "legacy_planning", "diamond_jubilee", "seven_decades", "life_wisdom", "family_patriarch" },
+	[75] = { "platinum_jubilee", "diamond_anniversary_life", "remarkable_longevity", "great_grandparent" },
+	[80] = { "eighty_years_young", "centenarian_path", "family_elder", "life_celebration" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -1526,9 +1643,34 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- Priority events (milestones) always trigger first
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #735: Use WEIGHTED RANDOM for priority events too!
+	-- The old code always picked the highest-weighted event, causing "learning_to_ride_bike"
+	-- and other milestone events to repeat every life since they had the same weight boost.
+	-- Now we use weighted random selection to pick from ALL eligible milestone events.
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #priorityEvents > 0 then
-		table.sort(priorityEvents, function(a, b) return a.weight > b.weight end)
+		-- Use weighted random selection instead of just picking highest weight
+		local totalPriorityWeight = 0
+		for _, candidate in ipairs(priorityEvents) do
+			totalPriorityWeight = totalPriorityWeight + candidate.weight
+		end
+		
+		if totalPriorityWeight > 0 then
+			local roll = RANDOM:NextNumber() * totalPriorityWeight
+			local cumulative = 0
+			
+			for _, candidate in ipairs(priorityEvents) do
+				cumulative = cumulative + candidate.weight
+				if roll <= cumulative then
+					table.insert(selectedEvents, candidate.event)
+					recordEventShown(state, candidate.event)
+					return selectedEvents
+				end
+			end
+		end
+		
+		-- Fallback: pick first if weighted selection somehow failed
 		local chosen = priorityEvents[1]
 		table.insert(selectedEvents, chosen.event)
 		recordEventShown(state, chosen.event)
@@ -2048,7 +2190,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 				outcome.feedText = choice.successFeedText
 			end
 			if choice.successMoney then
-				state.Money = (state.Money or 0) + choice.successMoney
+				-- CRITICAL FIX #529: Protect money from going negative
+				state.Money = math.max(0, (state.Money or 0) + choice.successMoney)
 				outcome.moneyChange = choice.successMoney
 			end
 			if choice.successFame then
@@ -2061,7 +2204,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 					state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
 				end
 				if mEffect.money then
-					state.Money = (state.Money or 0) + mEffect.money
+					-- CRITICAL FIX #530: Protect mafia money from going negative
+					state.Money = math.max(0, (state.Money or 0) + mEffect.money)
 					outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
 				end
 				if mEffect.heat then
@@ -2177,7 +2321,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
 		end
 		if mEffect.money then
-			state.Money = (state.Money or 0) + mEffect.money
+			-- CRITICAL FIX #531: Protect mafia money effect from going negative
+			state.Money = math.max(0, (state.Money or 0) + mEffect.money)
 			outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
 		end
 		if mEffect.heat then
@@ -2484,6 +2629,326 @@ end
 
 -- Expose the engine
 LifeEvents.EventEngine = EventEngine
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #452-455: ENHANCED EVENT WEIGHT CALCULATION
+-- Additional weight modifiers for better event balance
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.WeightModifiers = {
+	-- Base weights for different event categories
+	categoryWeights = {
+		milestones = 3.0,  -- High priority
+		career = 2.0,
+		relationships = 1.8,
+		health = 1.5,
+		financial = 1.5,
+		random = 1.0,
+		crime = 0.8,  -- Slightly less common
+		mafia = 1.5,  -- Good for mob members
+		royalty = 1.5,  -- Good for royals
+		celebrity = 1.5,  -- Good for famous
+	},
+	
+	-- Boost events based on player flags
+	flagBoosts = {
+		employed = { "career", "financial" },
+		married = { "relationships" },
+		has_children = { "relationships" },
+		wealthy = { "financial", "assets" },
+		famous = { "celebrity" },
+		in_mob = { "mafia", "crime" },
+		is_royalty = { "royalty" },
+	},
+}
+
+function LifeEvents.getWeightModifier(event, state)
+	local modifier = 1.0
+	local flags = state.Flags or {}
+	
+	-- Category weight
+	local category = event._category or "random"
+	modifier = modifier * (LifeEvents.WeightModifiers.categoryWeights[category] or 1.0)
+	
+	-- Flag-based boosts
+	for flag, categories in pairs(LifeEvents.WeightModifiers.flagBoosts) do
+		if flags[flag] then
+			for _, cat in ipairs(categories) do
+				if category == cat then
+					modifier = modifier * 1.5
+				end
+			end
+		end
+	end
+	
+	-- Event-specific modifiers
+	if event.weightMultiplier then
+		modifier = modifier * event.weightMultiplier
+	end
+	
+	return modifier
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #456-458: LIFE STAGE TRANSITION HELPERS
+-- Detect and trigger life stage changes
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.LifeStageTransitions = {
+	{ fromAge = 2, toAge = 3, fromStage = "baby", toStage = "toddler", event = "stage_toddler" },
+	{ fromAge = 4, toAge = 5, fromStage = "toddler", toStage = "child", event = "stage_childhood" },
+	{ fromAge = 12, toAge = 13, fromStage = "child", toStage = "teen", event = "stage_teen" },
+	{ fromAge = 17, toAge = 18, fromStage = "teen", toStage = "young_adult", event = "stage_adult" },
+	{ fromAge = 29, toAge = 30, fromStage = "young_adult", toStage = "adult", event = "stage_thirties" },
+	{ fromAge = 49, toAge = 50, fromStage = "adult", toStage = "middle_age", event = "stage_midlife" },
+	{ fromAge = 64, toAge = 65, fromStage = "middle_age", toStage = "senior", event = "stage_retirement" },
+}
+
+function LifeEvents.checkLifeStageTransition(state, oldAge, newAge)
+	for _, transition in ipairs(LifeEvents.LifeStageTransitions) do
+		if oldAge <= transition.fromAge and newAge >= transition.toAge then
+			return {
+				transitioned = true,
+				fromStage = transition.fromStage,
+				toStage = transition.toStage,
+				eventId = transition.event,
+			}
+		end
+	end
+	return { transitioned = false }
+end
+
+function LifeEvents.getLifeStageEvents(stage)
+	local events = {}
+	
+	-- Get categories for this stage
+	local categories = StageCategories[stage]
+	if not categories then
+		return events
+	end
+	
+	-- Collect events from those categories
+	for _, category in ipairs(categories) do
+		local categoryEvents = EventsByCategory[category] or {}
+		for _, event in ipairs(categoryEvents) do
+			table.insert(events, event)
+		end
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #459-461: CAREER SKILL REQUIREMENTS SYSTEM
+-- Check if player has required skills for jobs
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.CareerSkillRequirements = {
+	-- Tech careers
+	software_engineer = { Smarts = 70, skills = { "programming" } },
+	data_scientist = { Smarts = 75, skills = { "programming", "math" } },
+	it_manager = { Smarts = 65, skills = { "programming", "leadership" } },
+	
+	-- Medical careers
+	doctor = { Smarts = 85, education = "medical" },
+	nurse = { Smarts = 60, education = "bachelor" },
+	surgeon = { Smarts = 90, education = "medical", skills = { "surgery" } },
+	
+	-- Finance careers
+	investment_banker = { Smarts = 75, education = "bachelor", skills = { "finance" } },
+	accountant = { Smarts = 65, education = "bachelor" },
+	cfo = { Smarts = 80, education = "master", skills = { "finance", "leadership" } },
+	
+	-- Legal careers
+	lawyer = { Smarts = 75, education = "law" },
+	judge = { Smarts = 80, education = "law", yearsExperience = 10 },
+	
+	-- Entertainment careers
+	actor = { Looks = 60 },
+	model = { Looks = 75 },
+	musician = { skills = { "music" } },
+	
+	-- Leadership
+	ceo = { Smarts = 70, skills = { "leadership" }, yearsExperience = 8 },
+	politician = { Smarts = 60, Looks = 50, skills = { "public_speaking" } },
+}
+
+function LifeEvents.checkCareerRequirements(state, careerId)
+	local requirements = LifeEvents.CareerSkillRequirements[careerId]
+	if not requirements then
+		return true, nil -- No requirements
+	end
+	
+	local missing = {}
+	
+	-- Check stats
+	for stat, minValue in pairs({ Smarts = requirements.Smarts, Looks = requirements.Looks }) do
+		if minValue then
+			local playerValue = (state.Stats and state.Stats[stat]) or state[stat] or 0
+			if playerValue < minValue then
+				table.insert(missing, string.format("%s %d+ (have %d)", stat, minValue, playerValue))
+			end
+		end
+	end
+	
+	-- Check education
+	if requirements.education then
+		local playerEd = state.Education or "none"
+		local edLevels = { none = 0, high_school = 1, associate = 2, bachelor = 3, master = 4, law = 5, medical = 6, phd = 7 }
+		
+		if (edLevels[playerEd] or 0) < (edLevels[requirements.education] or 0) then
+			table.insert(missing, string.format("%s degree required", requirements.education))
+		end
+	end
+	
+	-- Check skills
+	if requirements.skills then
+		local playerSkills = (state.CareerInfo and state.CareerInfo.skills) or {}
+		for _, skill in ipairs(requirements.skills) do
+			if not playerSkills[skill] then
+				table.insert(missing, string.format("%s skill required", skill))
+			end
+		end
+	end
+	
+	-- Check experience
+	if requirements.yearsExperience then
+		local yearsAtJob = (state.CareerInfo and state.CareerInfo.yearsAtJob) or 0
+		if yearsAtJob < requirements.yearsExperience then
+			table.insert(missing, string.format("%d years experience required", requirements.yearsExperience))
+		end
+	end
+	
+	if #missing > 0 then
+		return false, missing
+	end
+	
+	return true, nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #462-464: RELATIONSHIP EVENT REQUIREMENTS
+-- Check relationship requirements for events
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.checkRelationshipRequirements(event, state)
+	local requirements = event.relationshipRequirements or event.requiresRelationship
+	if not requirements then
+		return true
+	end
+	
+	local relationships = state.Relationships or {}
+	
+	-- Check for specific relationship type
+	if type(requirements) == "string" then
+		-- Simple requirement like "partner" or "parent"
+		if relationships[requirements:lower()] then
+			return true
+		end
+		
+		-- Check for partner
+		if requirements == "partner" then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and (rel.type == "romantic" or rel.role == "Partner") then
+					if rel.alive ~= false then
+						return true
+					end
+				end
+			end
+		end
+		
+		return false
+	end
+	
+	-- Complex requirements
+	if type(requirements) == "table" then
+		-- Requires any relationship
+		if requirements.hasAny then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					return true
+				end
+			end
+			return false
+		end
+		
+		-- Requires specific type
+		if requirements.type then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.type == requirements.type then
+					if rel.alive ~= false then
+						-- Check relationship strength if required
+						if requirements.minStrength then
+							if (rel.relationship or 0) >= requirements.minStrength then
+								return true
+							end
+						else
+							return true
+						end
+					end
+				end
+			end
+			return false
+		end
+		
+		-- Requires minimum count
+		if requirements.minCount then
+			local count = 0
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					count = count + 1
+				end
+			end
+			return count >= requirements.minCount
+		end
+	end
+	
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #465: COMPREHENSIVE YEARLY PROGRESSION CHECK
+-- Called to process all yearly updates for premium features
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.processYearlyProgression(state)
+	local results = {
+		events = {},
+		messages = {},
+	}
+	
+	-- Check for life stage transition
+	local prevAge = (state.Age or 1) - 1
+	local transition = LifeEvents.checkLifeStageTransition(state, prevAge, state.Age)
+	if transition.transitioned then
+		table.insert(results.messages, string.format("Life Stage: %s → %s", 
+			transition.fromStage:gsub("_", " "):gsub("^%l", string.upper),
+			transition.toStage:gsub("_", " "):gsub("^%l", string.upper)))
+	end
+	
+	-- Fame career progression
+	if state.FameState and state.FameState.careerPath then
+		state.FameState.yearsInCareer = (state.FameState.yearsInCareer or 0) + 1
+	end
+	
+	-- Royal reign progression
+	if state.RoyalState and state.RoyalState.isMonarch then
+		state.RoyalState.reignYears = (state.RoyalState.reignYears or 0) + 1
+	end
+	
+	-- Mafia years progression
+	if state.MobState and state.MobState.inMob then
+		state.MobState.yearsInMob = (state.MobState.yearsInMob or 0) + 1
+	end
+	
+	-- Career years progression
+	if state.CurrentJob then
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.yearsAtJob = (state.CareerInfo.yearsAtJob or 0) + 1
+	end
+	
+	return results
+end
 
 -- ════════════════════════════════════════════════════════════════════════════════════
 -- AUTO-INITIALIZATION

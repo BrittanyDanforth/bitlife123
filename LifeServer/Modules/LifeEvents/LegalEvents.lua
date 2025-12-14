@@ -47,11 +47,13 @@ LegalEvents.events = {
 						state:AddFeed("🚗 Insurance covered everything! Smooth claim!")
 					elseif roll < 0.70 then
 						state:ModifyStat("Happiness", -3)
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX #538: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state:AddFeed("🚗 Partial coverage. Deductible plus extra costs.")
 					else
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX #539: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state.Flags = state.Flags or {}
 						state.Flags.insurance_dispute = true
 						state:AddFeed("🚗 Insurance denied claim! Disputing. Lawyer maybe needed.")

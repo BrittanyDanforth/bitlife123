@@ -593,4 +593,329 @@ function EventEngine.selectYearEvents(events, state, options)
 	return selected
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #486-488: ENHANCED EVENT SELECTION WITH DEDUPLICATION
+-- Prevents same event appearing multiple times in a year
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.selectYearEventsEnhanced(events, state, options)
+	options = options or {}
+	local eligible = {}
+	local usedEventIds = {}
+	local eventHistory = state.EventHistory or {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			-- Check cooldown
+			local cooldown = event.cooldown or 0
+			local lastOccurrence = eventHistory[event.id]
+			
+			if lastOccurrence then
+				local yearsSince = (state.Age or 0) - (lastOccurrence.age or 0)
+				if yearsSince < cooldown then
+					-- Skip - still on cooldown
+					continue
+				end
+			end
+			
+			-- Check one-time events
+			if event.oneTime or event.maxOccurrences == 1 then
+				if eventHistory[event.id] then
+					continue
+				end
+			end
+			
+			-- Check max occurrences
+			if event.maxOccurrences then
+				local occurrences = lastOccurrence and lastOccurrence.count or 0
+				if occurrences >= event.maxOccurrences then
+					continue
+				end
+			end
+			
+			table.insert(eligible, event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	-- Sort by priority first
+	table.sort(eligible, function(a, b)
+		local priorityA = a.priority == "high" and 3 or (a.priority == "medium" and 2 or 1)
+		local priorityB = b.priority == "high" and 3 or (b.priority == "medium" and 2 or 1)
+		return priorityA > priorityB
+	end)
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	
+	-- Always include high priority events first
+	for _, event in ipairs(eligible) do
+		if event.priority == "high" and not usedEventIds[event.id] then
+			table.insert(selected, clone(event))
+			usedEventIds[event.id] = true
+		end
+		if #selected >= maxEvents then
+			break
+		end
+	end
+	
+	-- Fill remaining slots with weighted random selection
+	while #selected < maxEvents and #eligible > 0 do
+		-- Filter out already used events
+		local remaining = {}
+		for _, event in ipairs(eligible) do
+			if not usedEventIds[event.id] then
+				table.insert(remaining, event)
+			end
+		end
+		
+		if #remaining == 0 then
+			break
+		end
+		
+		local pick = weightedPick(remaining)
+		if pick and not usedEventIds[pick.id] then
+			table.insert(selected, clone(pick))
+			usedEventIds[pick.id] = true
+		end
+	end
+	
+	return selected
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #489-491: EVENT HISTORY TRACKING
+-- Records event occurrences for cooldown and one-time tracking
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.recordEventOccurrence(state, eventId)
+	state.EventHistory = state.EventHistory or {}
+	
+	local existing = state.EventHistory[eventId]
+	if existing then
+		existing.count = (existing.count or 1) + 1
+		existing.lastAge = state.Age
+		existing.lastYear = state.Year
+	else
+		state.EventHistory[eventId] = {
+			count = 1,
+			firstAge = state.Age,
+			lastAge = state.Age,
+			firstYear = state.Year,
+			lastYear = state.Year,
+		}
+	end
+end
+
+function EventEngine.getEventOccurrenceCount(state, eventId)
+	if not state.EventHistory or not state.EventHistory[eventId] then
+		return 0
+	end
+	return state.EventHistory[eventId].count or 0
+end
+
+function EventEngine.hasEventOccurred(state, eventId)
+	return state.EventHistory and state.EventHistory[eventId] ~= nil
+end
+
+function EventEngine.getLastEventAge(state, eventId)
+	if not state.EventHistory or not state.EventHistory[eventId] then
+		return nil
+	end
+	return state.EventHistory[eventId].lastAge
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #492-494: IMPROVED WEIGHTED SELECTION WITH CATEGORY BALANCING
+-- Ensures diverse event categories appear
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.selectBalancedEvents(events, state, options)
+	options = options or {}
+	local eligible = {}
+	local byCategory = {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			table.insert(eligible, event)
+			
+			local category = event.category or "misc"
+			byCategory[category] = byCategory[category] or {}
+			table.insert(byCategory[category], event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	local usedCategories = {}
+	
+	-- First pass: try to get events from different categories
+	for category, categoryEvents in pairs(byCategory) do
+		if #selected >= maxEvents then
+			break
+		end
+		
+		if not usedCategories[category] then
+			local pick = weightedPick(categoryEvents)
+			if pick then
+				table.insert(selected, clone(pick))
+				usedCategories[category] = true
+			end
+		end
+	end
+	
+	-- Second pass: fill remaining slots with any eligible event
+	while #selected < maxEvents and #eligible > 0 do
+		local pick = weightedPick(eligible)
+		if pick then
+			-- Avoid duplicates
+			local isDuplicate = false
+			for _, existing in ipairs(selected) do
+				if existing.id == pick.id then
+					isDuplicate = true
+					break
+				end
+			end
+			
+			if not isDuplicate then
+				table.insert(selected, clone(pick))
+			else
+				-- Remove from eligible to avoid infinite loop
+				for i, e in ipairs(eligible) do
+					if e.id == pick.id then
+						table.remove(eligible, i)
+						break
+					end
+				end
+			end
+		end
+	end
+	
+	return selected
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #495-497: DYNAMIC WEIGHT CALCULATION
+-- Adjusts event weights based on player state and history
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.calculateDynamicWeight(event, state)
+	local baseWeight = event.weight or 1
+	local multiplier = 1.0
+	
+	-- Boost events relevant to player's flags
+	local flags = state.Flags or {}
+	if event.boostIfFlag then
+		for _, flag in ipairs(event.boostIfFlag) do
+			if flags[flag] then
+				multiplier = multiplier * 1.5
+			end
+		end
+	end
+	
+	-- Reduce weight for recently seen events
+	if state.EventHistory and state.EventHistory[event.id] then
+		local history = state.EventHistory[event.id]
+		local yearsSince = (state.Age or 0) - (history.lastAge or 0)
+		if yearsSince < 5 then
+			multiplier = multiplier * (0.3 + yearsSince * 0.14) -- 0.3 at 0 years, 1.0 at 5 years
+		end
+	end
+	
+	-- Boost events that match player's career
+	if event.category == "career" and state.CurrentJob then
+		multiplier = multiplier * 1.3
+	end
+	
+	-- Boost relationship events for people with partners
+	if event.category == "relationships" and flags.married then
+		multiplier = multiplier * 1.2
+	end
+	
+	-- Boost health events for older players
+	if event.category == "health" and (state.Age or 0) > 50 then
+		multiplier = multiplier * 1.2
+	end
+	
+	-- Premium feature boosts
+	if event.requiresMob and state.MobState and state.MobState.inMob then
+		multiplier = multiplier * 2.0 -- Mafia members get more mafia events
+	end
+	
+	if event.requiresRoyal and state.RoyalState and state.RoyalState.isRoyal then
+		multiplier = multiplier * 2.0 -- Royals get more royal events
+	end
+	
+	if event.requiresFame and state.FameState and state.FameState.isFamous then
+		multiplier = multiplier * 2.0 -- Famous people get more fame events
+	end
+	
+	return baseWeight * multiplier
+end
+
+function EventEngine.selectEventsWithDynamicWeights(events, state, options)
+	options = options or {}
+	local eligible = {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			local eventCopy = clone(event)
+			eventCopy._dynamicWeight = EventEngine.calculateDynamicWeight(event, state)
+			table.insert(eligible, eventCopy)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	-- Use dynamic weights for selection
+	local function dynamicWeightedPick(eventList)
+		local total = 0
+		for _, event in ipairs(eventList) do
+			total = total + (event._dynamicWeight or event.weight or 1)
+		end
+		local roll = Random.new():NextNumber() * total
+		for _, event in ipairs(eventList) do
+			roll = roll - (event._dynamicWeight or event.weight or 1)
+			if roll <= 0 then
+				return event
+			end
+		end
+		return eventList[#eventList]
+	end
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	local usedEventIds = {}
+	
+	for i = 1, maxEvents do
+		local remaining = {}
+		for _, event in ipairs(eligible) do
+			if not usedEventIds[event.id] then
+				table.insert(remaining, event)
+			end
+		end
+		
+		if #remaining == 0 then
+			break
+		end
+		
+		local pick = dynamicWeightedPick(remaining)
+		if pick and not usedEventIds[pick.id] then
+			table.insert(selected, pick)
+			usedEventIds[pick.id] = true
+		end
+	end
+	
+	return selected
+end
+
 return EventEngine

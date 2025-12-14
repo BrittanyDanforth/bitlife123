@@ -76,6 +76,27 @@ GodModeSystem.EditableStats = {
 		description = "Public recognition and celebrity status",
 		category = "social",
 	},
+	-- CRITICAL FIX #187: Money editing in God Mode
+	{
+		key = "Money",
+		emoji = "💰",
+		name = "Money",
+		min = 0,
+		max = 999999999999, -- Up to 999 billion
+		description = "Edit your bank balance directly",
+		category = "financial",
+		isMoney = true, -- Flag to indicate this is money, not a 0-100 stat
+	},
+	-- CRITICAL FIX #188: Fertility editing in God Mode
+	{
+		key = "Fertility",
+		emoji = "👶",
+		name = "Fertility",
+		min = 0,
+		max = 100,
+		description = "Ability to have children",
+		category = "health",
+	},
 }
 
 GodModeSystem.EditableProperties = {
@@ -179,6 +200,35 @@ function GodModeSystem:editStat(lifeState, statKey, newValue)
 	newValue = math.clamp(tonumber(newValue) or 0, statConfig.min, statConfig.max)
 	newValue = math.floor(newValue)
 	
+	-- CRITICAL FIX #189: Handle Money specially (not a 0-100 stat)
+	if statKey == "Money" or statConfig.isMoney then
+		lifeState.Money = newValue
+		-- Track edit
+		if lifeState.GodModeState then
+			lifeState.GodModeState.editsThisLife = (lifeState.GodModeState.editsThisLife or 0) + 1
+			lifeState.GodModeState.lastEditAge = lifeState.Age
+		end
+		return true, string.format("%s %s set to %s", statConfig.emoji, statConfig.name, self:formatMoney(newValue))
+	end
+	
+	-- CRITICAL FIX #190: Handle Fertility specially
+	if statKey == "Fertility" then
+		lifeState.Fertility = newValue
+		lifeState.Flags = lifeState.Flags or {}
+		if newValue == 0 then
+			lifeState.Flags.infertile = true
+			lifeState.Flags.can_have_children = nil
+		else
+			lifeState.Flags.infertile = nil
+			lifeState.Flags.can_have_children = true
+		end
+		if lifeState.GodModeState then
+			lifeState.GodModeState.editsThisLife = (lifeState.GodModeState.editsThisLife or 0) + 1
+			lifeState.GodModeState.lastEditAge = lifeState.Age
+		end
+		return true, string.format("%s %s set to %d%%", statConfig.emoji, statConfig.name, newValue)
+	end
+	
 	-- Apply to state
 	if lifeState.Stats and lifeState.Stats[statKey] ~= nil then
 		lifeState.Stats[statKey] = newValue
@@ -199,6 +249,12 @@ function GodModeSystem:editStat(lifeState, statKey, newValue)
 			end
 		end
 	end
+	
+	-- CRITICAL FIX #191: Sync both Stats table and root property
+	if lifeState.Stats then
+		lifeState.Stats[statKey] = newValue
+	end
+	lifeState[statKey] = newValue
 	
 	-- Track edit
 	if lifeState.GodModeState then
@@ -731,28 +787,54 @@ GodModeSystem.Presets = {
 			return true, "✨ Perfect life applied!"
 		end,
 	},
+	-- CRITICAL FIX #301: Enhanced Billionaire preset with proper flags
 	{
 		id = "rich",
 		name = "Billionaire",
 		emoji = "💎",
-		description = "Set money to $1 billion",
+		description = "Set money to $1 billion with billionaire status",
 		apply = function(self, lifeState)
-			lifeState.Money = 1000000000
-			return true, "💎 You're now a billionaire!"
+			lifeState.Money = 1000000000 -- $1 billion
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.billionaire = true
+			lifeState.Flags.wealthy = true
+			lifeState.Flags.self_made_millionaire = true
+			lifeState.Flags.financial_success = true
+			lifeState.Flags.upper_class = true
+			return true, "💎 You're now a BILLIONAIRE with $1,000,000,000!"
+		end,
+	},
+	-- CRITICAL FIX #302: Instant Millionaire preset (more accessible)
+	{
+		id = "millionaire",
+		name = "Millionaire",
+		emoji = "💰",
+		description = "Set money to $10 million",
+		apply = function(self, lifeState)
+			lifeState.Money = 10000000 -- $10 million
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.millionaire = true
+			lifeState.Flags.wealthy = true
+			lifeState.Flags.financial_success = true
+			return true, "💰 You're now a millionaire with $10,000,000!"
 		end,
 	},
 	{
 		id = "famous",
 		name = "Famous",
 		emoji = "⭐",
-		description = "Max fame to 100",
+		description = "Max fame to 100 with 10M followers",
 		apply = function(self, lifeState)
 			lifeState.Fame = 100
-			if lifeState.FameState then
-				lifeState.FameState.isFamous = true
-				lifeState.FameState.fameLevel = "Legend"
-			end
-			return true, "⭐ You're now legendary famous!"
+			lifeState.FameState = lifeState.FameState or {}
+			lifeState.FameState.isFamous = true
+			lifeState.FameState.fameLevel = "Legend"
+			lifeState.FameState.followers = 10000000
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.famous = true
+			lifeState.Flags.celebrity = true
+			lifeState.Flags.famous_social_media = true
+			return true, "⭐ You're now legendary famous with 10M followers!"
 		end,
 	},
 	{
@@ -776,6 +858,9 @@ GodModeSystem.Presets = {
 		apply = function(self, lifeState)
 			lifeState.Stats.Smarts = 100
 			lifeState.Smarts = 100
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.genius = true
+			lifeState.Flags.highly_intelligent = true
 			return true, "🧠 You're now a genius!"
 		end,
 	},
@@ -786,6 +871,59 @@ GodModeSystem.Presets = {
 		description = "Clear all negative flags",
 		apply = function(self, lifeState)
 			return self:clearAllNegativeFlags(lifeState)
+		end,
+	},
+	-- CRITICAL FIX #303: Mafia Boss preset
+	{
+		id = "mafia_boss",
+		name = "Mafia Boss",
+		emoji = "🔫",
+		description = "Become a powerful mob boss instantly",
+		apply = function(self, lifeState)
+			lifeState.MobState = lifeState.MobState or {}
+			lifeState.MobState.inMob = true
+			lifeState.MobState.familyId = "italian"
+			lifeState.MobState.familyName = "Italian Mafia"
+			lifeState.MobState.familyEmoji = "🇮🇹"
+			lifeState.MobState.rankIndex = 5
+			lifeState.MobState.rankLevel = 5
+			lifeState.MobState.rankName = "Boss"
+			lifeState.MobState.rankEmoji = "👑"
+			lifeState.MobState.respect = 15000
+			lifeState.MobState.loyalty = 100
+			lifeState.MobState.heat = 0
+			lifeState.MobState.earnings = 5000000
+			lifeState.Money = (lifeState.Money or 0) + 10000000
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.in_mob = true
+			lifeState.Flags.mob_boss = true
+			lifeState.Flags.mafia_member = true
+			return true, "🔫👑 You are now THE BOSS of the Italian Mafia!"
+		end,
+	},
+	-- CRITICAL FIX #304: Royalty preset
+	{
+		id = "royalty",
+		name = "Become Royalty",
+		emoji = "👑",
+		description = "Become the King/Queen of a country",
+		apply = function(self, lifeState)
+			lifeState.RoyalState = lifeState.RoyalState or {}
+			lifeState.RoyalState.isRoyal = true
+			lifeState.RoyalState.isMonarch = true
+			lifeState.RoyalState.country = "monaco"
+			lifeState.RoyalState.countryName = "Monaco"
+			lifeState.RoyalState.countryEmoji = "🇲🇨"
+			lifeState.RoyalState.title = (lifeState.Gender == "Male") and "King" or "Queen"
+			lifeState.RoyalState.lineOfSuccession = 0
+			lifeState.RoyalState.popularity = 85
+			lifeState.RoyalState.wealth = 500000000
+			lifeState.Money = 500000000
+			lifeState.Fame = 90
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.is_royalty = true
+			lifeState.Flags.is_monarch = true
+			return true, string.format("👑 You are now the %s of Monaco!", lifeState.RoyalState.title)
 		end,
 	},
 }
@@ -835,6 +973,639 @@ function GodModeSystem:serializeForClient()
 		clearableFlags = self:getClearableFlagsInfo(),
 		presets = self:getPresetsInfo(),
 	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #192-200: GOD MODE EVENT CARD OPTIONS
+-- These are premium options that appear in event popups (greyed out if no God Mode)
+-- Buying God Mode unlocks these special choices in event cards!
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- God Mode options for different event categories
+GodModeSystem.EventCardOptions = {
+	-- Health events - cure instantly
+	health = {
+		{
+			id = "god_mode_cure",
+			text = "⚡ Cure Instantly (God Mode)",
+			emoji = "⚡",
+			description = "Use your divine powers to instantly cure any illness",
+			action = "cure_disease",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_max_health",
+			text = "⚡ Restore Full Health (God Mode)",
+			emoji = "💪",
+			description = "Restore your health to 100%",
+			action = "max_health",
+			requiresGodMode = true,
+		},
+	},
+	-- Relationship events - instant success
+	relationship = {
+		{
+			id = "god_mode_charm",
+			text = "⚡ Use Irresistible Charm (God Mode)",
+			emoji = "💕",
+			description = "Guarantee they say yes to anything",
+			action = "charm_success",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_fix_relationship",
+			text = "⚡ Instantly Fix Relationship (God Mode)",
+			emoji = "❤️‍🩹",
+			description = "Repair any damaged relationship to 100%",
+			action = "max_relationship",
+			requiresGodMode = true,
+		},
+	},
+	-- Career events - instant promotion
+	career = {
+		{
+			id = "god_mode_promotion",
+			text = "⚡ Force Promotion (God Mode)",
+			emoji = "📈",
+			description = "Instantly get promoted regardless of performance",
+			action = "instant_promotion",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_salary",
+			text = "⚡ Demand Huge Raise (God Mode)",
+			emoji = "💰",
+			description = "Triple your current salary",
+			action = "triple_salary",
+			requiresGodMode = true,
+		},
+	},
+	-- Legal/crime events - escape consequences
+	legal = {
+		{
+			id = "god_mode_escape",
+			text = "⚡ Escape Justice (God Mode)",
+			emoji = "🏃",
+			description = "Avoid all legal consequences",
+			action = "escape_jail",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_clear_record",
+			text = "⚡ Erase Criminal Record (God Mode)",
+			emoji = "📋",
+			description = "Completely wipe your criminal history",
+			action = "clear_record",
+			requiresGodMode = true,
+		},
+	},
+	-- Financial events - instant wealth
+	financial = {
+		{
+			id = "god_mode_money",
+			text = "⚡ Create Money (God Mode)",
+			emoji = "🤑",
+			description = "Generate $1 million out of thin air",
+			action = "create_money",
+			amount = 1000000,
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_clear_debt",
+			text = "⚡ Clear All Debt (God Mode)",
+			emoji = "💳",
+			description = "Erase all your debts instantly",
+			action = "clear_debt",
+			requiresGodMode = true,
+		},
+	},
+	-- Mafia events - special mob powers
+	-- CRITICAL FIX #211-220: Expanded Mafia God Mode Options
+	mafia = {
+		{
+			id = "god_mode_respect",
+			text = "⚡ Demand Respect (God Mode)",
+			emoji = "👑",
+			description = "Instantly gain 500 respect",
+			action = "add_respect",
+			amount = 500,
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_clear_heat",
+			text = "⚡ Eliminate Heat (God Mode)",
+			emoji = "❄️",
+			description = "Clear all police heat instantly",
+			action = "clear_heat",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_rank_up",
+			text = "⚡ Force Rank Up (God Mode)",
+			emoji = "🎖️",
+			description = "Instantly rise to the next rank",
+			action = "rank_up",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_become_boss",
+			text = "⚡ Seize Control as Boss (God Mode)",
+			emoji = "🔫👑",
+			description = "Instantly become the Boss of your family",
+			action = "become_mafia_boss",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_max_loyalty",
+			text = "⚡ Max Loyalty (God Mode)",
+			emoji = "🤝",
+			description = "Set loyalty to 100% - the family trusts you completely",
+			action = "max_loyalty",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_operation_success",
+			text = "⚡ Guarantee Success (God Mode)",
+			emoji = "✅",
+			description = "This operation will succeed with max rewards",
+			action = "operation_success",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_mafia_money",
+			text = "⚡ Skim $1M (God Mode)",
+			emoji = "💵",
+			description = "Take $1 million from family earnings (no consequences)",
+			action = "mafia_money",
+			amount = 1000000,
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_eliminate_rival",
+			text = "⚡ Eliminate Rival (God Mode)",
+			emoji = "💀",
+			description = "Take out a rival with no heat or consequences",
+			action = "eliminate_rival",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_leave_mob_safe",
+			text = "⚡ Leave Safely (God Mode)",
+			emoji = "🚪",
+			description = "Leave the mob with no consequences - keep your money",
+			action = "leave_mob_safely",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_max_notoriety",
+			text = "⚡ Legendary Status (God Mode)",
+			emoji = "⭐",
+			description = "Become a legendary figure in the underworld",
+			action = "max_notoriety",
+			requiresGodMode = true,
+		},
+	},
+	-- Royalty events - royal powers
+	royalty = {
+		{
+			id = "god_mode_popularity",
+			text = "⚡ Max Popularity (God Mode)",
+			emoji = "👸",
+			description = "Boost royal popularity to 100%",
+			action = "max_popularity",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_no_scandal",
+			text = "⚡ Cover Up Scandal (God Mode)",
+			emoji = "🤫",
+			description = "Make any scandal disappear",
+			action = "clear_scandal",
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_become_monarch",
+			text = "⚡ Seize the Throne (God Mode)",
+			emoji = "👑",
+			description = "Instantly become the ruling monarch",
+			action = "become_monarch",
+			requiresGodMode = true,
+		},
+	},
+	-- Celebrity events - fame powers
+	celebrity = {
+		{
+			id = "god_mode_viral",
+			text = "⚡ Go Viral (God Mode)",
+			emoji = "📱",
+			description = "Instantly gain 1 million followers",
+			action = "add_followers",
+			amount = 1000000,
+			requiresGodMode = true,
+		},
+		{
+			id = "god_mode_award",
+			text = "⚡ Win Award (God Mode)",
+			emoji = "🏆",
+			description = "Guarantee winning the award",
+			action = "win_award",
+			requiresGodMode = true,
+		},
+	},
+	-- General - universal powers
+	general = {
+		{
+			id = "god_mode_perfect_outcome",
+			text = "⚡ Perfect Outcome (God Mode)",
+			emoji = "✨",
+			description = "Guarantee the best possible result",
+			action = "perfect_outcome",
+			requiresGodMode = true,
+		},
+	},
+}
+
+-- Get God Mode options for an event card
+function GodModeSystem:getEventCardOptions(eventDef, hasGodMode)
+	local options = {}
+	local category = eventDef.category or eventDef._category or "general"
+	
+	-- Get category-specific options
+	local categoryOptions = self.EventCardOptions[category] or self.EventCardOptions["general"]
+	
+	for _, option in ipairs(categoryOptions) do
+		table.insert(options, {
+			id = option.id,
+			text = option.text,
+			emoji = option.emoji,
+			description = option.description,
+			action = option.action,
+			amount = option.amount,
+			requiresGodMode = true,
+			isLocked = not hasGodMode, -- GREYED OUT if no God Mode
+			lockedReason = not hasGodMode and "Requires God Mode Gamepass" or nil,
+		})
+	end
+	
+	-- Also add general options
+	if category ~= "general" then
+		for _, option in ipairs(self.EventCardOptions["general"]) do
+			table.insert(options, {
+				id = option.id,
+				text = option.text,
+				emoji = option.emoji,
+				description = option.description,
+				action = option.action,
+				requiresGodMode = true,
+				isLocked = not hasGodMode,
+				lockedReason = not hasGodMode and "Requires God Mode Gamepass" or nil,
+			})
+		end
+	end
+	
+	return options
+end
+
+-- Execute a God Mode event card option
+function GodModeSystem:executeEventCardOption(lifeState, optionId)
+	-- Find the option
+	local option = nil
+	for category, options in pairs(self.EventCardOptions) do
+		for _, opt in ipairs(options) do
+			if opt.id == optionId then
+				option = opt
+				break
+			end
+		end
+		if option then break end
+	end
+	
+	if not option then
+		return false, "Invalid God Mode option"
+	end
+	
+	-- Execute the action
+	local action = option.action
+	local message = ""
+	
+	if action == "cure_disease" then
+		return self:cureDiseases(lifeState)
+	elseif action == "max_health" then
+		return self:editStat(lifeState, "Health", 100)
+	elseif action == "charm_success" then
+		-- Set flag for next relationship interaction
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.god_mode_charm_active = true
+		return true, "💕 Your charm is irresistible! They'll say yes!"
+	elseif action == "max_relationship" then
+		return self:maxAllRelationships(lifeState)
+	elseif action == "instant_promotion" then
+		if lifeState.CareerInfo then
+			lifeState.CareerInfo.promotionProgress = 100
+			lifeState.CareerInfo.performance = 100
+		end
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.god_mode_promotion_pending = true
+		return true, "📈 Promotion guaranteed on your next work day!"
+	elseif action == "triple_salary" then
+		if lifeState.CurrentJob and lifeState.CurrentJob.salary then
+			lifeState.CurrentJob.salary = lifeState.CurrentJob.salary * 3
+			return true, string.format("💰 Salary tripled to $%s!", self:formatMoney(lifeState.CurrentJob.salary))
+		end
+		return false, "No current job to increase salary"
+	elseif action == "escape_jail" then
+		return self:releaseFromJail(lifeState)
+	elseif action == "clear_record" then
+		return self:clearCriminalRecord(lifeState)
+	elseif action == "create_money" then
+		local amount = option.amount or 1000000
+		lifeState.Money = (lifeState.Money or 0) + amount
+		return true, string.format("🤑 Created $%s out of thin air!", self:formatMoney(amount))
+	elseif action == "clear_debt" then
+		return self:clearDebt(lifeState)
+	elseif action == "add_respect" then
+		if lifeState.MobState then
+			lifeState.MobState.respect = (lifeState.MobState.respect or 0) + (option.amount or 500)
+			return true, string.format("👑 Gained %d respect!", option.amount or 500)
+		end
+		return false, "Not in a crime family"
+	elseif action == "clear_heat" then
+		if lifeState.MobState then
+			lifeState.MobState.heat = 0
+			return true, "❄️ All heat eliminated! The cops have forgotten you."
+		end
+		return false, "Not in a crime family"
+	elseif action == "rank_up" then
+		if lifeState.MobState and lifeState.MobState.inMob then
+			lifeState.MobState.rankIndex = math.min(5, (lifeState.MobState.rankIndex or 1) + 1)
+			lifeState.MobState.rankLevel = lifeState.MobState.rankIndex
+			-- Update rank name and emoji based on index
+			local rankNames = {"Associate", "Soldier", "Caporegime", "Underboss", "Boss"}
+			local rankEmojis = {"👤", "🔫", "💰", "🎩", "👑"}
+			lifeState.MobState.rankName = rankNames[lifeState.MobState.rankIndex] or "Associate"
+			lifeState.MobState.rankEmoji = rankEmojis[lifeState.MobState.rankIndex] or "👤"
+			return true, string.format("🎖️ Promoted to %s %s!", lifeState.MobState.rankEmoji, lifeState.MobState.rankName)
+		end
+		return false, "Not in a crime family"
+	-- CRITICAL FIX #221-230: NEW MAFIA GOD MODE ACTIONS
+	elseif action == "become_mafia_boss" then
+		if lifeState.MobState and lifeState.MobState.inMob then
+			lifeState.MobState.rankIndex = 5
+			lifeState.MobState.rankLevel = 5
+			lifeState.MobState.rankName = "Boss"
+			lifeState.MobState.rankEmoji = "👑"
+			lifeState.MobState.respect = math.max(lifeState.MobState.respect or 0, 10000)
+			lifeState.MobState.loyalty = 100
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.mob_boss = true
+			lifeState.Flags.underboss = nil
+			lifeState.Flags.is_capo = true
+			return true, "👑 You are now the BOSS! The entire family answers to you!"
+		end
+		return false, "Not in a crime family"
+	elseif action == "max_loyalty" then
+		if lifeState.MobState then
+			lifeState.MobState.loyalty = 100
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.trusted_by_boss = true
+			lifeState.Flags.inner_circle = true
+			return true, "🤝 Loyalty maxed! The family trusts you completely!"
+		end
+		return false, "Not in a crime family"
+	elseif action == "operation_success" then
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.god_mode_operation_guaranteed = true
+		return true, "✅ Your next operation is guaranteed to succeed with maximum rewards!"
+	elseif action == "mafia_money" then
+		local amount = option.amount or 1000000
+		lifeState.Money = (lifeState.Money or 0) + amount
+		if lifeState.MobState then
+			lifeState.MobState.earnings = (lifeState.MobState.earnings or 0) + amount
+		end
+		return true, string.format("💵 Skimmed $%s from family earnings with no consequences!", self:formatMoney(amount))
+	elseif action == "eliminate_rival" then
+		if lifeState.MobState and lifeState.MobState.inMob then
+			lifeState.MobState.respect = (lifeState.MobState.respect or 0) + 100
+			lifeState.MobState.kills = (lifeState.MobState.kills or 0) + 1
+			-- NO heat increase - God Mode protects you
+			return true, "💀 Rival eliminated with divine protection! +100 respect, no heat!"
+		end
+		return false, "Not in a crime family"
+	elseif action == "leave_mob_safely" then
+		if lifeState.MobState and lifeState.MobState.inMob then
+			-- Keep all money and stats
+			local earnings = lifeState.MobState.earnings or 0
+			
+			-- Reset mob state but keep money
+			lifeState.MobState.inMob = false
+			lifeState.MobState.familyId = nil
+			lifeState.MobState.heat = 0
+			
+			-- Clear mob-related flags
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.in_mob = nil
+			lifeState.Flags.mob_boss = nil
+			lifeState.Flags.underboss = nil
+			lifeState.Flags.is_capo = nil
+			lifeState.Flags.mob_fugitive = nil
+			lifeState.Flags.hit_on_you = nil
+			
+			return true, string.format("🚪 Left the mob safely! Kept $%s in earnings. The family respected your decision.", self:formatMoney(earnings))
+		end
+		return false, "Not in a crime family"
+	elseif action == "max_notoriety" then
+		if lifeState.MobState and lifeState.MobState.inMob then
+			lifeState.MobState.notoriety = 100
+			lifeState.MobState.respect = math.max(lifeState.MobState.respect or 0, 5000)
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.legendary_mobster = true
+			lifeState.Flags.feared = true
+			return true, "⭐ You are now a LEGENDARY figure in the underworld! Everyone knows your name!"
+		end
+		return false, "Not in a crime family"
+	elseif action == "max_popularity" then
+		if lifeState.RoyalState then
+			lifeState.RoyalState.popularity = 100
+			return true, "👸 Royal popularity maxed at 100%!"
+		end
+		return false, "Not royalty"
+	elseif action == "clear_scandal" then
+		if lifeState.RoyalState then
+			lifeState.RoyalState.scandals = 0
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.scandal = nil
+			lifeState.Flags.royal_scandal = nil
+			return true, "🤫 All scandals covered up successfully!"
+		end
+		return false, "Not royalty"
+	elseif action == "become_monarch" then
+		if lifeState.RoyalState and lifeState.RoyalState.isRoyal then
+			lifeState.RoyalState.isMonarch = true
+			lifeState.RoyalState.lineOfSuccession = 0
+			local gender = (lifeState.Gender or "Male"):lower()
+			lifeState.RoyalState.title = gender == "male" and "King" or "Queen"
+			return true, string.format("👑 You are now the %s! Long may you reign!", lifeState.RoyalState.title)
+		end
+		return false, "Not royalty"
+	elseif action == "add_followers" then
+		lifeState.FameState = lifeState.FameState or {}
+		lifeState.FameState.followers = (lifeState.FameState.followers or 0) + (option.amount or 1000000)
+		lifeState.Fame = math.min(100, (lifeState.Fame or 0) + 20)
+		return true, string.format("📱 Gained %s followers! Fame increased!", self:formatMoney(option.amount or 1000000))
+	elseif action == "win_award" then
+		lifeState.FameState = lifeState.FameState or {}
+		lifeState.FameState.awards = lifeState.FameState.awards or {}
+		table.insert(lifeState.FameState.awards, {
+			name = "God Mode Award",
+			year = lifeState.Year or 2025,
+		})
+		lifeState.Fame = math.min(100, (lifeState.Fame or 0) + 15)
+		return true, "🏆 Award won! Your fame increases!"
+	elseif action == "perfect_outcome" then
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.god_mode_perfect_outcome = true
+		return true, "✨ The universe bends to your will! Perfect outcome guaranteed!"
+	end
+	
+	return false, "Unknown action"
+end
+
+-- CRITICAL FIX #201: Edit Age (within limits)
+function GodModeSystem:editAge(lifeState, newAge)
+	local currentAge = lifeState.Age or 0
+	newAge = math.clamp(tonumber(newAge) or currentAge, 0, 120)
+	newAge = math.floor(newAge)
+	
+	local ageDiff = newAge - currentAge
+	
+	lifeState.Age = newAge
+	lifeState.Year = (lifeState.Year or 2025) + ageDiff
+	
+	-- Track edit
+	if lifeState.GodModeState then
+		lifeState.GodModeState.editsThisLife = (lifeState.GodModeState.editsThisLife or 0) + 1
+		lifeState.GodModeState.lastEditAge = newAge
+	end
+	
+	return true, string.format("🕐 Age changed to %d", newAge)
+end
+
+-- CRITICAL FIX #202: Set max skills for career
+function GodModeSystem:maxSkills(lifeState)
+	lifeState.CareerInfo = lifeState.CareerInfo or {}
+	lifeState.CareerInfo.skills = lifeState.CareerInfo.skills or {}
+	
+	local skillTypes = {"communication", "leadership", "technical", "creativity", "sales", "management"}
+	for _, skill in ipairs(skillTypes) do
+		lifeState.CareerInfo.skills[skill] = 100
+	end
+	
+	lifeState.CareerInfo.performance = 100
+	
+	return true, "🎯 All skills maxed to 100%!"
+end
+
+-- CRITICAL FIX #203: Get current health conditions for display
+function GodModeSystem:getHealthConditions(lifeState)
+	local conditions = {}
+	local flags = lifeState.Flags or {}
+	
+	-- Check all disease/condition flags
+	local conditionMap = {
+		-- STDs
+		has_std = { name = "STD", emoji = "🦠", severity = "serious" },
+		hiv_positive = { name = "HIV Positive", emoji = "🩸", severity = "critical" },
+		hepatitis = { name = "Hepatitis", emoji = "🦠", severity = "serious" },
+		herpes = { name = "Herpes", emoji = "🦠", severity = "chronic" },
+		chlamydia = { name = "Chlamydia", emoji = "🦠", severity = "treatable" },
+		gonorrhea = { name = "Gonorrhea", emoji = "🦠", severity = "treatable" },
+		-- Cancer
+		has_cancer = { name = "Cancer", emoji = "🎗️", severity = "critical" },
+		cancer = { name = "Cancer", emoji = "🎗️", severity = "critical" },
+		tumor = { name = "Tumor", emoji = "🎗️", severity = "serious" },
+		leukemia = { name = "Leukemia", emoji = "🎗️", severity = "critical" },
+		-- Chronic conditions
+		chronic_illness = { name = "Chronic Illness", emoji = "💊", severity = "chronic" },
+		terminal_illness = { name = "Terminal Illness", emoji = "⚠️", severity = "terminal" },
+		diabetes = { name = "Diabetes", emoji = "💉", severity = "chronic" },
+		heart_disease = { name = "Heart Disease", emoji = "❤️‍🩹", severity = "serious" },
+		lung_disease = { name = "Lung Disease", emoji = "🫁", severity = "serious" },
+		kidney_disease = { name = "Kidney Disease", emoji = "💊", severity = "serious" },
+		liver_disease = { name = "Liver Disease", emoji = "💊", severity = "serious" },
+		-- Mental health
+		mental_illness = { name = "Mental Illness", emoji = "🧠", severity = "chronic" },
+		depression = { name = "Depression", emoji = "😔", severity = "chronic" },
+		anxiety = { name = "Anxiety", emoji = "😰", severity = "chronic" },
+		bipolar = { name = "Bipolar Disorder", emoji = "🔄", severity = "chronic" },
+		schizophrenia = { name = "Schizophrenia", emoji = "🧠", severity = "serious" },
+		ptsd = { name = "PTSD", emoji = "😖", severity = "chronic" },
+		ocd = { name = "OCD", emoji = "🔁", severity = "chronic" },
+		adhd = { name = "ADHD", emoji = "⚡", severity = "chronic" },
+		insomnia = { name = "Insomnia", emoji = "😴", severity = "chronic" },
+		eating_disorder = { name = "Eating Disorder", emoji = "🍽️", severity = "serious" },
+		-- Physical
+		injured = { name = "Injured", emoji = "🩹", severity = "temporary" },
+		seriously_injured = { name = "Seriously Injured", emoji = "🏥", severity = "serious" },
+		hospitalized = { name = "Hospitalized", emoji = "🏥", severity = "serious" },
+		disabled = { name = "Disabled", emoji = "♿", severity = "permanent" },
+		paralyzed = { name = "Paralyzed", emoji = "♿", severity = "permanent" },
+		broken_bone = { name = "Broken Bone", emoji = "🦴", severity = "temporary" },
+		-- Misc
+		sick = { name = "Sick", emoji = "🤒", severity = "temporary" },
+		prolonged_illness = { name = "Prolonged Illness", emoji = "🤒", severity = "chronic" },
+		food_poisoning = { name = "Food Poisoning", emoji = "🤢", severity = "temporary" },
+	}
+	
+	for flag, info in pairs(conditionMap) do
+		if flags[flag] then
+			table.insert(conditions, {
+				id = flag,
+				name = info.name,
+				emoji = info.emoji,
+				severity = info.severity,
+			})
+		end
+	end
+	
+	return conditions
+end
+
+-- CRITICAL FIX #204: Get current addictions for display
+function GodModeSystem:getAddictions(lifeState)
+	local addictions = {}
+	local flags = lifeState.Flags or {}
+	
+	local addictionMap = {
+		alcoholic = { name = "Alcoholism", emoji = "🍺", severity = "serious" },
+		alcohol_addiction = { name = "Alcohol Addiction", emoji = "🍺", severity = "serious" },
+		drug_addict = { name = "Drug Addiction", emoji = "💊", severity = "critical" },
+		cocaine_addiction = { name = "Cocaine Addiction", emoji = "❄️", severity = "critical" },
+		heroin_addiction = { name = "Heroin Addiction", emoji = "💉", severity = "critical" },
+		meth_addiction = { name = "Meth Addiction", emoji = "💊", severity = "critical" },
+		pill_addiction = { name = "Pill Addiction", emoji = "💊", severity = "serious" },
+		opioid_addiction = { name = "Opioid Addiction", emoji = "💊", severity = "critical" },
+		nicotine_addict = { name = "Nicotine Addiction", emoji = "🚬", severity = "moderate" },
+		smoking_addiction = { name = "Smoking Addiction", emoji = "🚬", severity = "moderate" },
+		gambling_addict = { name = "Gambling Addiction", emoji = "🎰", severity = "serious" },
+		gambling_addiction = { name = "Gambling Addiction", emoji = "🎰", severity = "serious" },
+		marijuana_addiction = { name = "Marijuana Addiction", emoji = "🌿", severity = "moderate" },
+		gaming_addiction = { name = "Gaming Addiction", emoji = "🎮", severity = "moderate" },
+		social_media_addiction = { name = "Social Media Addiction", emoji = "📱", severity = "moderate" },
+		shopping_addiction = { name = "Shopping Addiction", emoji = "🛍️", severity = "moderate" },
+	}
+	
+	for flag, info in pairs(addictionMap) do
+		if flags[flag] then
+			table.insert(addictions, {
+				id = flag,
+				name = info.name,
+				emoji = info.emoji,
+				severity = info.severity,
+			})
+		end
+	end
+	
+	return addictions
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
