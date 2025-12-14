@@ -291,6 +291,8 @@ local JobCategories = {
 	{ id = "racing", name = "Racing", emoji = "🏎️" },
 	{ id = "hacker", name = "Hacker/Cyber", emoji = "💻🔓" },
 	{ id = "esports", name = "Esports/Gaming", emoji = "🎮" },
+	-- CRITICAL FIX #651-652: CELEBRITY CAREERS (Celebrity Gamepass)
+	{ id = "celebrity", name = "Celebrity/Fame", emoji = "⭐" },
 }
 
 -- Job Data - Must match server's JobListings IDs exactly!
@@ -550,6 +552,39 @@ local Jobs = {
 	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 150000, minAge = 16, requirement = nil, category = "esports", difficulty = 6, minStats = { Smarts = 60 } },
 	{ id = "esports_champion", name = "Esports Champion", company = "World Champions", emoji = "🏆", salary = 1500000, minAge = 18, requirement = nil, category = "esports", difficulty = 8, minStats = { Smarts = 70 } },
 	{ id = "gaming_legend", name = "Gaming Legend", company = "Hall of Fame", emoji = "👑", salary = 5000000, minAge = 22, requirement = nil, category = "esports", difficulty = 10 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #653-670: CELEBRITY CAREERS (Requires Celebrity Gamepass)
+	-- Full career paths for Streamer, Rapper, Musician, Influencer, and Actor
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- STREAMER / CONTENT CREATOR PATH
+	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Streaming experience required" },
+	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Affiliate status required" },
+	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Established streaming presence required" },
+	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch Partner", emoji = "💎", salary = 300000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 6, requiresGamepass = "celebrity", requiresExp = "Growing streamer status required" },
+	{ id = "top_streamer", name = "Top Streamer", company = "Platform Featured", emoji = "⭐", salary = 2000000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Partner status required" },
+	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Top streamer status required" },
+	
+	-- RAPPER / HIP-HOP PATH
+	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 0, minAge = 14, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	{ id = "local_rapper", name = "Local Rapper", company = "City Scene", emoji = "📍", salary = 8000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Underground experience required" },
+	{ id = "buzzing_rapper", name = "Buzzing Artist", company = "Blog Famous", emoji = "📈", salary = 35000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Local scene experience required" },
+	{ id = "signed_rapper", name = "Signed Rapper", company = "Record Label", emoji = "📝", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Industry buzz required" },
+	{ id = "hot_rapper", name = "Hot Rapper", company = "Major Label", emoji = "🔥", salary = 500000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresGamepass = "celebrity", requiresExp = "Label experience required" },
+	{ id = "mainstream_rapper", name = "Mainstream Rapper", company = "A-List", emoji = "⭐", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Chart success required" },
+	{ id = "superstar_rapper", name = "Superstar Rapper", company = "Global", emoji = "💎", salary = 20000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 9, requiresGamepass = "celebrity", requiresExp = "Mainstream success required" },
+	{ id = "rap_legend", name = "Hip-Hop Legend", company = "GOAT Status", emoji = "👑", salary = 75000000, minAge = 28, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Superstar status required" },
+	
+	-- SOCIAL MEDIA INFLUENCER PATH
+	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Content creation experience required" },
+	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Micro influencer status required" },
+	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Growing following required" },
+	{ id = "famous_influencer", name = "Famous Influencer", company = "Millions of Followers", emoji = "⭐", salary = 600000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresGamepass = "celebrity", requiresExp = "Established presence required" },
+	{ id = "mega_influencer", name = "Mega Influencer", company = "Media Empire", emoji = "💎", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Famous status required" },
+	{ id = "influencer_icon", name = "Social Media Icon", company = "Cultural Icon", emoji = "👑", salary = 50000000, minAge = 24, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Mega influencer status required" },
 }
 
 -- Education Data - Must match server's EducationOptions IDs!
@@ -611,6 +646,13 @@ local PromotionOnlyJobs = {
 	"crew_leader", "crime_boss",
 	-- Hacker promotions
 	"elite_hacker", "cyber_crime_boss", "ransomware_kingpin", "ciso",
+	-- CRITICAL FIX #681-685: Celebrity career promotions (requires working up through the ranks)
+	-- Streamer promotions
+	"affiliate_streamer", "small_streamer", "growing_streamer", "partner_streamer", "top_streamer", "streaming_legend",
+	-- Rapper promotions
+	"local_rapper", "buzzing_rapper", "signed_rapper", "hot_rapper", "mainstream_rapper", "superstar_rapper", "rap_legend",
+	-- Influencer promotions
+	"micro_influencer", "growing_influencer", "established_influencer", "famous_influencer", "mega_influencer", "influencer_icon",
 	-- Racing promotions
 	"racing_legend", "racing_team_owner",
 	-- Esports promotions
@@ -688,6 +730,32 @@ local CareerPaths = {
 	actor = "movie_star",
 	musician_local = "musician_signed",
 	musician_signed = "pop_star",
+	
+	-- CRITICAL FIX #671-680: CELEBRITY CAREER PROGRESSION PATHS
+	-- Streamer path
+	hobbyist_streamer = "affiliate_streamer",
+	affiliate_streamer = "small_streamer",
+	small_streamer = "growing_streamer",
+	growing_streamer = "partner_streamer",
+	partner_streamer = "top_streamer",
+	top_streamer = "streaming_legend",
+	
+	-- Rapper path
+	underground_rapper = "local_rapper",
+	local_rapper = "buzzing_rapper",
+	buzzing_rapper = "signed_rapper",
+	signed_rapper = "hot_rapper",
+	hot_rapper = "mainstream_rapper",
+	mainstream_rapper = "superstar_rapper",
+	superstar_rapper = "rap_legend",
+	
+	-- Influencer path
+	new_influencer = "micro_influencer",
+	micro_influencer = "growing_influencer",
+	growing_influencer = "established_influencer",
+	established_influencer = "famous_influencer",
+	famous_influencer = "mega_influencer",
+	mega_influencer = "influencer_icon",
 	
 	-- Government path
 	police_officer = "detective",
@@ -1955,12 +2023,32 @@ function OccupationScreen:populateJobs()
 	-- Promotion jobs must be earned through work performance
 	-- Also sorts by difficulty and salary
 	local sortedJobs = {}
+	
+	-- CRITICAL FIX #686-690: Get gamepass ownership from state
+	local flags = self.currentState and self.currentState.Flags or {}
+	local gamepassOwnership = self.currentState and self.currentState.GamepassOwnership or {}
+	local hasCelebrity = gamepassOwnership.Celebrity or gamepassOwnership.celebrity 
+		or flags.celebrity_gamepass or false
+	local hasMafia = gamepassOwnership.Mafia or gamepassOwnership.mafia 
+		or flags.mafia_gamepass or false
+	
 	for _, job in ipairs(Jobs) do
 		if job.id ~= currentJob then
 			-- CRITICAL FIX: Skip promotion-only jobs - they can't be applied to directly
 			if isEntryLevelJob(job.id) then
 				-- Apply category filter
 				local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
+				
+				-- CRITICAL FIX #687: Check gamepass requirements for jobs
+				if showJob and job.requiresGamepass then
+					local gamepassReq = job.requiresGamepass:lower()
+					if gamepassReq == "celebrity" and not hasCelebrity then
+						showJob = false
+					elseif gamepassReq == "mafia" and not hasMafia then
+						showJob = false
+					end
+				end
+				
 				if showJob then
 					table.insert(sortedJobs, job)
 				end

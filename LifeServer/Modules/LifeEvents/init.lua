@@ -487,6 +487,55 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #646-650: ROYAL EDUCATION BLOCKING
+	-- Royals do NOT attend normal public schools!
+	-- They have private tutors, elite boarding schools, and prestigious academies
+	-- Block normal school events for royal players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth 
+		or (state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal then
+		-- List of normal school event IDs that royals should NOT see
+		local normalSchoolEventIds = {
+			"starting_school", "first_day_school", "elementary_start", "middle_school_start",
+			"high_school_start", "public_school", "first_grade", "kindergarten",
+			"school_bully", "homework_help", "cafeteria", "school_detention",
+			"school_play", "school_dance", "school_suspension", "normal_education",
+			"public_education", "regular_school", "school_registration",
+		}
+		
+		-- Check if this is a normal school event
+		local eventId = event.id and event.id:lower() or ""
+		local eventTitle = event.title and event.title:lower() or ""
+		
+		for _, schoolId in ipairs(normalSchoolEventIds) do
+			if eventId:find(schoolId) or eventTitle:find(schoolId) then
+				-- CRITICAL FIX #647: Only block if event is NOT marked as royal education
+				if not event.isRoyalOnly and not event.isRoyalEducation then
+					return false -- Royals don't attend normal school!
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #648: Also check for generic school tags
+		if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
+			return false -- Block any explicitly public school events
+		end
+		
+		-- CRITICAL FIX #649: Check education type requirements
+		if event.requiresEducationType then
+			local eduType = event.requiresEducationType:lower()
+			if eduType == "public" or eduType == "normal" or eduType == "public_school" then
+				return false -- Royals don't have public school education
+			end
+		end
+		
+		-- CRITICAL FIX #650: Boost royal education events for royals
+		-- (This is handled in the weight calculation section)
+	end
+	
 	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
 	-- This was causing events like become_boss to trigger without underboss flag,
 	-- and prison_respect to trigger when not in prison!

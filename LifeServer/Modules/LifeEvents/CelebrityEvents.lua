@@ -2944,11 +2944,862 @@ function CelebrityEvents.hasMajorAward(lifeState)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #578-595: STREAMER CAREER PATH
+-- Full streaming/content creator career with proper progression
+-- ════════════════════════════════════════════════════════════════════════════
+
+CelebrityEvents.StreamerCareer = {
+	name = "Streamer",
+	emoji = "🎮",
+	description = "Build an audience streaming games and content",
+	minStartAge = 13,
+	maxStartAge = 45,
+	
+	platforms = {
+		{ id = "twitch", name = "Twitch", emoji = "🟣", focus = "gaming" },
+		{ id = "youtube_gaming", name = "YouTube Gaming", emoji = "🎮", focus = "gaming" },
+		{ id = "kick", name = "Kick", emoji = "🟢", focus = "gaming" },
+		{ id = "youtube_live", name = "YouTube Live", emoji = "📺", focus = "variety" },
+	},
+	
+	stages = {
+		{
+			id = "hobbyist",
+			name = "Hobbyist Streamer",
+			emoji = "🎮",
+			salary = { min = 0, max = 50 },
+			subscribers = 10,
+			fameRequired = 0,
+			fameGainPerYear = { min = 0, max = 1 },
+			yearsToAdvance = { min = 1, max = 2 },
+			description = "Streaming to a few friends",
+			activities = { "Stream to empty rooms", "Learn OBS", "Dream of making it big" },
+		},
+		{
+			id = "affiliate",
+			name = "Affiliate Streamer",
+			emoji = "🟣",
+			salary = { min = 100, max = 500 },
+			subscribers = 100,
+			fameRequired = 3,
+			fameGainPerYear = { min = 1, max = 3 },
+			yearsToAdvance = { min = 1, max = 2 },
+			description = "Earned affiliate status",
+			activities = { "Get your first subscribers", "Earn bits and cheers", "Build a small community" },
+		},
+		{
+			id = "small_streamer",
+			name = "Small Streamer",
+			emoji = "📺",
+			salary = { min = 1000, max = 5000 },
+			subscribers = 1000,
+			fameRequired = 8,
+			fameGainPerYear = { min = 2, max = 5 },
+			yearsToAdvance = { min = 1, max = 3 },
+			description = "A dedicated audience forming",
+			activities = { "Regular streaming schedule", "First sponsorship offers", "Recognize regular viewers" },
+		},
+		{
+			id = "mid_streamer",
+			name = "Growing Streamer",
+			emoji = "📈",
+			salary = { min = 8000, max = 25000 },
+			subscribers = 10000,
+			fameRequired = 15,
+			fameGainPerYear = { min = 4, max = 8 },
+			yearsToAdvance = { min = 2, max = 3 },
+			description = "A real following developing",
+			activities = { "Brand deals coming in", "Your clips go viral", "Community growing fast" },
+		},
+		{
+			id = "established_streamer",
+			name = "Established Streamer",
+			emoji = "✅",
+			salary = { min = 50000, max = 150000 },
+			subscribers = 50000,
+			fameRequired = 30,
+			fameGainPerYear = { min = 6, max = 12 },
+			yearsToAdvance = { min = 2, max = 4 },
+			description = "A known name in streaming",
+			activities = { "Attend gaming events", "Major sponsor deals", "Launch your merch line" },
+		},
+		{
+			id = "partner",
+			name = "Partner Streamer",
+			emoji = "💎",
+			salary = { min = 200000, max = 500000 },
+			subscribers = 200000,
+			fameRequired = 50,
+			fameGainPerYear = { min = 8, max = 15 },
+			yearsToAdvance = { min = 2, max = 4 },
+			description = "Full partner with all perks",
+			activities = { "Prime time streaming", "Invited to major tournaments", "Celebrity collaborations" },
+		},
+		{
+			id = "top_streamer",
+			name = "Top Streamer",
+			emoji = "⭐",
+			salary = { min = 1000000, max = 5000000 },
+			subscribers = 1000000,
+			fameRequired = 70,
+			fameGainPerYear = { min = 5, max = 10 },
+			yearsToAdvance = { min = 3, max = 5 },
+			description = "Among the most watched",
+			activities = { "Massive contract deals", "Start your own org", "Shape the platform" },
+		},
+		{
+			id = "legendary_streamer",
+			name = "Streaming Legend",
+			emoji = "👑",
+			salary = { min = 10000000, max = 50000000 },
+			subscribers = 10000000,
+			fameRequired = 90,
+			fameGainPerYear = { min = 2, max = 5 },
+			yearsToAdvance = nil,
+			description = "A legend of streaming",
+			activities = { "Your name is iconic", "Multi-platform deals", "Retired numbers at TwitchCon" },
+		},
+	},
+	
+	events = {
+		{
+			id = "first_raid",
+			title = "🎮 You Got Raided!",
+			text = "A bigger streamer just raided your channel! Thousands of new viewers are flooding in!",
+			minStage = 1,
+			maxStage = 4,
+			choices = {
+				{ text = "Welcome them with energy", fameGain = 8, subscribersGain = 500 },
+				{ text = "Keep calm and carry on", fameGain = 3, message = "Some viewers stick around." },
+			},
+		},
+		{
+			id = "viral_clip",
+			title = "📹 Clip Goes Viral!",
+			text = "One of your stream clips is blowing up on social media! Millions of views!",
+			minStage = 2,
+			maxStage = 6,
+			choices = {
+				{ text = "Capitalize on the moment", fameGain = 15, subscribersGain = 10000, salaryBonus = 50000 },
+				{ text = "Stay humble", fameGain = 8, message = "Fans appreciate your authenticity." },
+			},
+		},
+		{
+			id = "sponsorship_deal",
+			title = "💰 Major Sponsorship!",
+			text = "A gaming chair company / energy drink brand wants you as their face!",
+			minStage = 3,
+			maxStage = 7,
+			choices = {
+				{ text = "Take the deal", salaryBonus = 100000, fameGain = 5 },
+				{ text = "Negotiate higher", successChance = 50, salaryBonus = 250000, failMessage = "They went with another streamer." },
+				{ text = "Decline - Not my brand", fameGain = 2, message = "Your audience respects your integrity." },
+			},
+		},
+		{
+			id = "banned_controversy",
+			title = "⚠️ You Got Banned!",
+			text = "You received a platform ban! Was it deserved or unfair?",
+			minStage = 2,
+			maxStage = 8,
+			choices = {
+				{ text = "Appeal and apologize", fameGain = -5, message = "Ban overturned after a week." },
+				{ text = "Move to another platform", fameGain = 0, subscribersLoss = 30, message = "You rebuilt on a new platform." },
+				{ text = "Create drama about it", successChance = 40, fameGain = 10, failFameLoss = 20, failMessage = "The drama backfired badly." },
+			},
+		},
+		{
+			id = "tournament_win",
+			title = "🏆 Tournament Victory!",
+			text = "You won a major gaming tournament on stream! Your skills are elite!",
+			minStage = 4,
+			maxStage = 8,
+			choices = {
+				{ text = "Celebrate with viewers", fameGain = 20, salaryBonus = 500000, subscribersGain = 50000 },
+				{ text = "Stay professional", fameGain = 12, message = "Your composure impresses sponsors." },
+			},
+		},
+		{
+			id = "org_offer",
+			title = "🎯 Esports Org Offer",
+			text = "A major esports organization wants to sign you!",
+			minStage = 4,
+			maxStage = 7,
+			choices = {
+				{ text = "Join the org", salaryBonus = 300000, fameGain = 10, setFlags = { esports_signed = true } },
+				{ text = "Stay independent", fameGain = 5, message = "You maintain full control." },
+				{ text = "Start your own org", successChance = 40, salaryBonus = 1000000, fameGain = 15, failMessage = "Running an org is harder than expected." },
+			},
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #596-615: RAPPER/HIP-HOP CAREER PATH
+-- Full rapper career with proper progression from underground to superstar
+-- ════════════════════════════════════════════════════════════════════════════
+
+CelebrityEvents.RapperCareer = {
+	name = "Rapper",
+	emoji = "🎤",
+	description = "Rise from the underground to hip-hop royalty",
+	minStartAge = 14,
+	maxStartAge = 35,
+	
+	subgenres = {
+		{ id = "trap", name = "Trap", emoji = "🔥" },
+		{ id = "boom_bap", name = "Boom Bap", emoji = "🎧" },
+		{ id = "drill", name = "Drill", emoji = "🔫" },
+		{ id = "conscious", name = "Conscious Rap", emoji = "💭" },
+		{ id = "cloud", name = "Cloud Rap", emoji = "☁️" },
+		{ id = "melodic", name = "Melodic Rap", emoji = "🎵" },
+	},
+	
+	stages = {
+		{
+			id = "underground",
+			name = "Underground Rapper",
+			emoji = "🎤",
+			salary = { min = 0, max = 500 },
+			streams = 100,
+			fameRequired = 0,
+			fameGainPerYear = { min = 0, max = 2 },
+			yearsToAdvance = { min = 1, max = 3 },
+			description = "Spitting bars in cyphers",
+			activities = { "Record in bedrooms", "Rap battle at open mics", "Upload to SoundCloud" },
+		},
+		{
+			id = "local_rapper",
+			name = "Local Rapper",
+			emoji = "📍",
+			salary = { min = 1000, max = 5000 },
+			streams = 10000,
+			fameRequired = 5,
+			fameGainPerYear = { min = 2, max = 4 },
+			yearsToAdvance = { min = 1, max = 2 },
+			description = "Known in your city",
+			activities = { "Open for local shows", "Build a local buzz", "Get played on local radio" },
+		},
+		{
+			id = "buzzing",
+			name = "Buzzing Artist",
+			emoji = "📈",
+			salary = { min = 10000, max = 40000 },
+			streams = 100000,
+			fameRequired = 15,
+			fameGainPerYear = { min = 4, max = 8 },
+			yearsToAdvance = { min = 1, max = 3 },
+			description = "The blogs are talking",
+			activities = { "Get on hip-hop blogs", "First mixtape drops", "Connect with producers" },
+		},
+		{
+			id = "signed_rapper",
+			name = "Signed Rapper",
+			emoji = "📝",
+			salary = { min = 50000, max = 200000 },
+			streams = 1000000,
+			fameRequired = 25,
+			fameGainPerYear = { min = 6, max = 12 },
+			yearsToAdvance = { min = 2, max = 3 },
+			description = "Record deal secured",
+			activities = { "Sign your first deal", "Studio time with pros", "Features with bigger artists" },
+		},
+		{
+			id = "hot_rapper",
+			name = "Hot Rapper",
+			emoji = "🔥",
+			salary = { min = 250000, max = 750000 },
+			streams = 10000000,
+			fameRequired = 40,
+			fameGainPerYear = { min = 8, max = 15 },
+			yearsToAdvance = { min = 2, max = 4 },
+			description = "Your songs are everywhere",
+			activities = { "Chart-topping singles", "Headlining shows", "XXL Freshman list" },
+		},
+		{
+			id = "mainstream",
+			name = "Mainstream Rapper",
+			emoji = "⭐",
+			salary = { min = 1000000, max = 5000000 },
+			streams = 100000000,
+			fameRequired = 60,
+			fameGainPerYear = { min = 10, max = 18 },
+			yearsToAdvance = { min = 2, max = 4 },
+			description = "A household name",
+			activities = { "Platinum albums", "Arena tours", "Multiple #1 hits" },
+		},
+		{
+			id = "superstar_rapper",
+			name = "Superstar Rapper",
+			emoji = "💎",
+			salary = { min = 10000000, max = 40000000 },
+			streams = 1000000000,
+			fameRequired = 80,
+			fameGainPerYear = { min = 5, max = 12 },
+			yearsToAdvance = { min = 3, max = 5 },
+			description = "One of the biggest in the game",
+			activities = { "Stadium tours", "Fashion deals", "Business empire" },
+		},
+		{
+			id = "legend_rapper",
+			name = "Hip-Hop Legend",
+			emoji = "👑",
+			salary = { min = 30000000, max = 150000000 },
+			streams = 10000000000,
+			fameRequired = 95,
+			fameGainPerYear = { min = 1, max = 3 },
+			yearsToAdvance = nil,
+			description = "A true legend of hip-hop",
+			activities = { "GOAT debates include your name", "Inducted into hall of fame", "Changed the culture forever" },
+		},
+	},
+	
+	events = {
+		{
+			id = "first_viral_song",
+			title = "🔥 Song Goes Viral!",
+			text = "Your track is blowing up! TikTok, Instagram, everywhere!",
+			minStage = 1,
+			maxStage = 5,
+			choices = {
+				{ text = "Drop a music video ASAP", fameGain = 15, salaryBonus = 100000, streamGain = 5000000 },
+				{ text = "Stay mysterious", fameGain = 8, message = "The intrigue builds your legend." },
+			},
+		},
+		{
+			id = "beef_starts",
+			title = "😤 Rap Beef!",
+			text = "Another rapper just dissed you on a track! The internet is watching your response.",
+			minStage = 2,
+			maxStage = 7,
+			choices = {
+				{ text = "Drop a devastating diss track", successChance = 70, fameGain = 20, failFameLoss = 10, message = "You won the beef!", failMessage = "Your diss track fell flat..." },
+				{ text = "Rise above it", fameGain = 5, message = "Fans respect your maturity." },
+				{ text = "Take it to social media", fameGain = 10, message = "The drama keeps you in headlines." },
+			},
+		},
+		{
+			id = "xxl_freshman",
+			title = "📰 XXL Freshman List!",
+			text = "You've been nominated for the XXL Freshman class! This is huge exposure.",
+			minStage = 3,
+			maxStage = 5,
+			choices = {
+				{ text = "Nail your freestyle", successChance = 60, fameGain = 25, message = "Your cypher is all anyone talks about!", failMessage = "Your freestyle was mid..." },
+				{ text = "Do something controversial", fameGain = 15, message = "The memes are everywhere." },
+			},
+		},
+		{
+			id = "collab_drake",
+			title = "🎤 Big Feature Opportunity",
+			text = "One of the biggest rappers in the game wants you on their album!",
+			minStage = 4,
+			maxStage = 7,
+			choices = {
+				{ text = "Steal the show", successChance = 50, fameGain = 30, salaryBonus = 500000, message = "Your verse is the best on the album!", failMessage = "You got outshined..." },
+				{ text = "Play it safe", fameGain = 15, salaryBonus = 200000, message = "A solid feature." },
+			},
+		},
+		{
+			id = "album_drop",
+			title = "💿 Album Drop Decision",
+			text = "Your album is ready. How do you want to release it?",
+			minStage = 3,
+			maxStage = 8,
+			choices = {
+				{ text = "Surprise drop (Beyoncé style)", successChance = 40, fameGain = 35, salaryBonus = 5000000, failMessage = "Nobody noticed the drop..." },
+				{ text = "Full marketing campaign", fameGain = 20, salaryBonus = 2000000, message = "A successful rollout!" },
+				{ text = "Leak it yourself for buzz", fameGain = 15, message = "The leak strategy worked!" },
+			},
+		},
+		{
+			id = "label_issues",
+			title = "📋 Label Problems",
+			text = "Your label is holding your music hostage! What do you do?",
+			minStage = 4,
+			maxStage = 7,
+			choices = {
+				{ text = "Public war with the label", fameGain = 10, message = "Fans support you!" },
+				{ text = "Buy out your contract", salaryLoss = 2000000, setFlags = { independent_artist = true }, message = "Freedom isn't free, but it's yours!" },
+				{ text = "Wait it out", message = "Patience is a virtue..." },
+			},
+		},
+		{
+			id = "grammy_rap",
+			title = "🏆 Grammy Nomination!",
+			text = "You've been nominated for Best Rap Album!",
+			minStage = 5,
+			maxStage = 8,
+			choices = {
+				{ text = "Win and give epic speech", successChance = 25, fameGain = 40, message = "You won! Your speech goes viral!" },
+				{ text = "Get snubbed and complain", fameGain = 10, message = "The Grammys don't understand hip-hop anyway." },
+			},
+		},
+	},
+}
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #616-630: CELEBRITY CAREER CHOICE EVENTS
+-- Proper progression from nobody to celebrity with structured career choices
+-- ════════════════════════════════════════════════════════════════════════════
+
+CelebrityEvents.CareerProgressionEvents = {
+	-- CELEBRITY CAREER START - CHOOSING YOUR PATH
+	{
+		id = "celebrity_career_choice",
+		title = "🌟 Choose Your Fame Path",
+		emoji = "🌟",
+		text = "You have the Celebrity gamepass! You can pursue fame through various paths. Which career calls to you?",
+		minAge = 16,
+		maxAge = 35,
+		oneTime = true,
+		isCelebrityOnly = true,
+		priority = "high",
+		isMilestone = true,
+		conditions = { requiresFlags = { celebrity_gamepass = true } },
+		blockedByFlags = { celebrity_career_chosen = true },
+		choices = {
+			{
+				text = "🎬 Acting - Hollywood dreams",
+				effects = { Happiness = 10 },
+				setFlags = { celebrity_career_chosen = true, pursuing_acting = true, celebrity_path = "actor" },
+				feed = "You've decided to pursue an acting career!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "actor"
+					state.FameState.stage = 1
+					state.FameState.stageName = "Extra"
+					state.FameState.yearsInStage = 0
+					state.CurrentJob = {
+						name = "Extra",
+						category = "entertainment",
+						salary = math.random(500, 2000),
+						isActing = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🎬 Your acting journey begins! Starting as an extra...")
+					end
+				end,
+			},
+			{
+				text = "🎵 Music - Become a singer",
+				effects = { Happiness = 10 },
+				setFlags = { celebrity_career_chosen = true, pursuing_music = true, celebrity_path = "musician" },
+				feed = "You've decided to pursue a music career!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "musician"
+					state.FameState.stage = 1
+					state.FameState.stageName = "Street Performer"
+					state.FameState.yearsInStage = 0
+					state.CurrentJob = {
+						name = "Street Performer",
+						category = "entertainment",
+						salary = math.random(50, 500),
+						isMusic = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🎵 Your music journey begins! Playing for tips...")
+					end
+				end,
+			},
+			{
+				text = "🎤 Rapper - Hip-hop dreams",
+				effects = { Happiness = 10 },
+				setFlags = { celebrity_career_chosen = true, pursuing_rap = true, celebrity_path = "rapper" },
+				feed = "You've decided to become a rapper!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "rapper"
+					state.FameState.stage = 1
+					state.FameState.stageName = "Underground Rapper"
+					state.FameState.yearsInStage = 0
+					state.CurrentJob = {
+						name = "Underground Rapper",
+						category = "entertainment",
+						salary = math.random(0, 500),
+						isRapper = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🎤 Your rap journey begins! Spitting bars in cyphers...")
+					end
+				end,
+			},
+			{
+				text = "🎮 Streamer - Content creator",
+				effects = { Happiness = 10 },
+				setFlags = { celebrity_career_chosen = true, pursuing_streaming = true, celebrity_path = "streamer" },
+				feed = "You've decided to become a streamer!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "streamer"
+					state.FameState.stage = 1
+					state.FameState.stageName = "Hobbyist Streamer"
+					state.FameState.yearsInStage = 0
+					state.FameState.subscribers = 10
+					state.CurrentJob = {
+						name = "Hobbyist Streamer",
+						category = "entertainment",
+						salary = math.random(0, 50),
+						isStreamer = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🎮 Your streaming journey begins! Time to go live!")
+					end
+				end,
+			},
+			{
+				text = "📱 Influencer - Social media fame",
+				effects = { Happiness = 10 },
+				setFlags = { celebrity_career_chosen = true, pursuing_influencer = true, celebrity_path = "influencer" },
+				feed = "You've decided to become a social media influencer!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "influencer"
+					state.FameState.stage = 1
+					state.FameState.stageName = "New Creator"
+					state.FameState.yearsInStage = 0
+					state.FameState.followers = 100
+					state.CurrentJob = {
+						name = "Content Creator",
+						category = "entertainment",
+						salary = math.random(0, 100),
+						isInfluencer = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("📱 Your influencer journey begins! Time to build that following!")
+					end
+				end,
+			},
+			{
+				text = "🏆 Athlete - Sports superstar",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { celebrity_career_chosen = true, pursuing_sports = true, celebrity_path = "athlete" },
+				feed = "You've decided to pursue professional sports!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "athlete"
+					state.FameState.stage = 1
+					state.FameState.stageName = "Amateur"
+					state.FameState.yearsInStage = 0
+					state.CurrentJob = {
+						name = "Amateur Athlete",
+						category = "sports",
+						salary = 0,
+						isAthlete = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🏆 Your athletic journey begins! Train hard!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- NEW CELEBRITY - First year events
+	{
+		id = "celebrity_year_one",
+		title = "⭐ Your First Year",
+		emoji = "⭐",
+		text = "Your first year pursuing fame has been eventful. The journey is just beginning.",
+		minAge = 17,
+		maxAge = 100,
+		isCelebrityOnly = true,
+		cooldown = 1,
+		conditions = { requiresFlags = { celebrity_career_chosen = true } },
+		blockedByFlags = { completed_year_one = true },
+		choices = {
+			{
+				text = "Work extra hard - Grind mode",
+				effects = { Happiness = 3, Health = -5 },
+				fameGain = 5,
+				setFlags = { completed_year_one = true, hard_worker = true },
+				feed = "Your dedication is paying off!",
+			},
+			{
+				text = "Balance work and life",
+				effects = { Happiness = 8 },
+				fameGain = 2,
+				setFlags = { completed_year_one = true, balanced_life = true },
+				feed = "You're finding a healthy balance.",
+			},
+			{
+				text = "Network aggressively",
+				effects = { Happiness = 5 },
+				fameGain = 8,
+				setFlags = { completed_year_one = true, good_networker = true },
+				feed = "You've made valuable connections!",
+			},
+		},
+	},
+	
+	-- CAREER STAGE PROGRESSION
+	{
+		id = "celebrity_promotion",
+		title = "📈 Career Advancement!",
+		emoji = "📈",
+		text = "Your hard work is paying off! You're ready to move up in your career.",
+		minAge = 17,
+		maxAge = 100,
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state)
+				if not state.FameState then return false end
+				local yearsInStage = state.FameState.yearsInStage or 0
+				return yearsInStage >= 2 and (state.Fame or 0) >= 15
+			end,
+		},
+		choices = {
+			{
+				text = "Accept the promotion",
+				effects = { Happiness = 15, Money = 50000 },
+				fameGain = 10,
+				setFlags = { got_promoted = true },
+				feed = "You've moved up in your career!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.stage = (state.FameState.stage or 1) + 1
+					state.FameState.yearsInStage = 0
+					state.FameState.promotions = (state.FameState.promotions or 0) + 1
+					
+					-- Update salary based on new stage
+					local baseSalary = 50000 * (state.FameState.stage or 1)
+					if state.CurrentJob then
+						state.CurrentJob.salary = baseSalary + math.random(0, baseSalary)
+					end
+					
+					if state.AddFeed then
+						state:AddFeed("🎉 Your career has advanced to the next level!")
+					end
+				end,
+			},
+			{
+				text = "Stay where you are - Not ready",
+				effects = { Happiness = 2 },
+				feed = "You decided to keep building your foundation.",
+			},
+		},
+	},
+	
+	-- OLDER CELEBRITY EVENTS
+	{
+		id = "celebrity_midlife",
+		title = "🌟 Established Star",
+		emoji = "🌟",
+		text = "You're now an established name in your industry. What's next for your career?",
+		minAge = 35,
+		maxAge = 50,
+		isCelebrityOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state)
+				return (state.Fame or 0) >= 50
+			end,
+		},
+		choices = {
+			{
+				text = "Mentor the next generation",
+				effects = { Happiness = 12, Smarts = 3 },
+				fameGain = 5,
+				setFlags = { is_mentor = true, respected_veteran = true },
+				feed = "You become a mentor to rising stars!",
+			},
+			{
+				text = "Launch a business empire",
+				effects = { Money = 5000000 },
+				fameGain = 8,
+				setFlags = { business_owner = true, mogul_status = true },
+				feed = "You leverage your fame into business success!",
+			},
+			{
+				text = "Keep grinding - Stay at the top",
+				effects = { Happiness = 5, Health = -3 },
+				fameGain = 10,
+				feed = "You refuse to slow down!",
+			},
+			{
+				text = "Step back - Enjoy your success",
+				effects = { Happiness = 15, Health = 5 },
+				fameGain = -3,
+				setFlags = { semi_retired = true },
+				feed = "You take time to enjoy the fruits of your labor.",
+			},
+		},
+	},
+	
+	-- SENIOR CELEBRITY - LEGEND STATUS
+	{
+		id = "celebrity_legend",
+		title = "👑 Legend Status",
+		emoji = "👑",
+		text = "You've become a true legend in your field. Your legacy is secure.",
+		minAge = 55,
+		maxAge = 100,
+		isCelebrityOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state)
+				return (state.Fame or 0) >= 80
+			end,
+		},
+		blockedByFlags = { achieved_legend = true },
+		choices = {
+			{
+				text = "Accept lifetime achievement award",
+				effects = { Happiness = 20, Money = 1000000 },
+				fameGain = 10,
+				setFlags = { achieved_legend = true, lifetime_achievement = true },
+				feed = "You receive a lifetime achievement award! A legend of the industry!",
+			},
+			{
+				text = "Write your memoirs",
+				effects = { Happiness = 12, Money = 10000000 },
+				fameGain = 5,
+				setFlags = { achieved_legend = true, wrote_memoirs = true },
+				feed = "Your autobiography becomes a bestseller!",
+			},
+			{
+				text = "Start a foundation in your name",
+				effects = { Happiness = 15, Money = -5000000 },
+				fameGain = 15,
+				setFlags = { achieved_legend = true, philanthropist = true },
+				feed = "Your foundation will help others for generations!",
+			},
+		},
+	},
+	
+	-- GRANDPA/GRANDMA CELEBRITY
+	{
+		id = "celebrity_elder",
+		title = "🏆 Icon of an Era",
+		emoji = "🏆",
+		text = "You're now considered an icon who defined an era. Young artists study your work.",
+		minAge = 70,
+		maxAge = 100,
+		isCelebrityOnly = true,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state)
+				return (state.Fame or 0) >= 60
+			end,
+		},
+		blockedByFlags = { elder_icon = true },
+		choices = {
+			{
+				text = "Make a comeback - One more time",
+				effects = { Happiness = 12, Health = -5 },
+				fameGain = 15,
+				setFlags = { elder_icon = true, made_comeback = true },
+				feed = "Your comeback is celebrated! Proving legends never die!",
+			},
+			{
+				text = "Pass on your wisdom",
+				effects = { Happiness = 15 },
+				fameGain = 5,
+				setFlags = { elder_icon = true, elder_statesman = true },
+				feed = "You become a respected elder voice in your industry.",
+			},
+			{
+				text = "Retire gracefully",
+				effects = { Happiness = 20, Health = 5 },
+				setFlags = { elder_icon = true, graceful_retirement = true },
+				feed = "You retire on top, a legend remembered fondly.",
+			},
+		},
+	},
+}
+
+-- Add career progression events to main list
+for _, event in ipairs(CelebrityEvents.CareerProgressionEvents) do
+	table.insert(CelebrityEvents.events or {}, event)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #631-640: Celebrity career helper functions
+-- ════════════════════════════════════════════════════════════════════════════
+
+function CelebrityEvents.getCareerData(path)
+	local careers = {
+		actor = CelebrityEvents.ActingCareer,
+		musician = CelebrityEvents.MusicCareer,
+		influencer = CelebrityEvents.InfluencerCareer,
+		athlete = CelebrityEvents.AthleteCareer,
+		streamer = CelebrityEvents.StreamerCareer,
+		rapper = CelebrityEvents.RapperCareer,
+	}
+	return careers[path]
+end
+
+function CelebrityEvents.getStageInfo(state)
+	if not state or not state.FameState then return nil end
+	
+	local path = state.FameState.careerPath
+	local stage = state.FameState.stage or 1
+	local career = CelebrityEvents.getCareerData(path)
+	
+	if career and career.stages and career.stages[stage] then
+		return career.stages[stage]
+	end
+	
+	return nil
+end
+
+function CelebrityEvents.processYearlyFameUpdates(state)
+	if not state or not state.FameState then return {} end
+	
+	local events = {}
+	local fameState = state.FameState
+	
+	-- Increment years in stage
+	fameState.yearsInStage = (fameState.yearsInStage or 0) + 1
+	
+	-- Get current stage info
+	local stageInfo = CelebrityEvents.getStageInfo(state)
+	if not stageInfo then return events end
+	
+	-- Apply yearly fame gain
+	local fameGain = math.random(stageInfo.fameGainPerYear.min, stageInfo.fameGainPerYear.max)
+	state.Fame = math.min(100, (state.Fame or 0) + fameGain)
+	
+	-- Apply yearly salary
+	local salary = math.random(stageInfo.salary.min, stageInfo.salary.max)
+	state.Money = (state.Money or 0) + salary
+	
+	-- Update job info
+	if state.CurrentJob then
+		state.CurrentJob.salary = salary
+	end
+	
+	-- Check for automatic promotion
+	local yearsToAdvance = stageInfo.yearsToAdvance
+	if yearsToAdvance then
+		local requiredYears = math.random(yearsToAdvance.min, yearsToAdvance.max)
+		local nextStage = fameState.stage + 1
+		local career = CelebrityEvents.getCareerData(fameState.careerPath)
+		
+		if career and career.stages[nextStage] then
+			local nextStageInfo = career.stages[nextStage]
+			if fameState.yearsInStage >= requiredYears and (state.Fame or 0) >= nextStageInfo.fameRequired then
+				-- Eligible for promotion
+				state.Flags = state.Flags or {}
+				state.Flags.eligible_for_promotion = true
+			end
+		end
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #42: Export events in standard format for LifeEvents loader
 -- The init.lua module loader expects .events, .Events, or .LifeEvents array
 -- Combines GeneralFameEvents with all career-specific events
 -- ════════════════════════════════════════════════════════════════════════════
-CelebrityEvents.events = {}
+CelebrityEvents.events = CelebrityEvents.events or {}
 
 -- Add general fame events
 for _, event in ipairs(CelebrityEvents.GeneralFameEvents or {}) do
@@ -2986,6 +3837,28 @@ if CelebrityEvents.InfluencerCareer and CelebrityEvents.InfluencerCareer.events 
 		event.isCelebrityOnly = true
 		event.careerPath = "influencer"
 		event.minAge = event.minAge or 13
+		event.maxAge = event.maxAge or 99
+		table.insert(CelebrityEvents.events, event)
+	end
+end
+
+-- CRITICAL FIX #641: Add streamer career events
+if CelebrityEvents.StreamerCareer and CelebrityEvents.StreamerCareer.events then
+	for _, event in ipairs(CelebrityEvents.StreamerCareer.events) do
+		event.isCelebrityOnly = true
+		event.careerPath = "streamer"
+		event.minAge = event.minAge or 13
+		event.maxAge = event.maxAge or 99
+		table.insert(CelebrityEvents.events, event)
+	end
+end
+
+-- CRITICAL FIX #642: Add rapper career events
+if CelebrityEvents.RapperCareer and CelebrityEvents.RapperCareer.events then
+	for _, event in ipairs(CelebrityEvents.RapperCareer.events) do
+		event.isCelebrityOnly = true
+		event.careerPath = "rapper"
+		event.minAge = event.minAge or 14
 		event.maxAge = event.maxAge or 99
 		table.insert(CelebrityEvents.events, event)
 	end
