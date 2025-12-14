@@ -1179,9 +1179,11 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 20 },
 				setFlags = { grand_wedding = true, married = true },
 				feed = "Your fairy-tale wedding captivated the world!",
-				-- CRITICAL FIX #306: Actually deduct the money!
+				-- CRITICAL FIX #540: Royal treasury covers wedding costs with overflow protection
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 50000000
+					local cost = 50000000
+					-- Royal treasury can go into debt for state events, but cap deduction
+					state.Money = math.max(0, (state.Money or 0) - cost)
 					if state.AddFeed then
 						state:AddFeed("💒 Your grand royal wedding cost $50 million!")
 					end
@@ -1193,8 +1195,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 25 },
 				setFlags = { intimate_wedding = true, relatable_royal = true, married = true },
 				feed = "Your intimate wedding touched hearts everywhere!",
+				-- CRITICAL FIX #541: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 10000000
+					state.Money = math.max(0, (state.Money or 0) - 10000000)
 					if state.AddFeed then
 						state:AddFeed("💒 Your intimate royal wedding cost $10 million.")
 					end
@@ -1206,8 +1209,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = -10 },
 				setFlags = { extravagant_wedding = true, married = true },
 				feed = "Your extravagant wedding drew criticism for its cost.",
+				-- CRITICAL FIX #542: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 100000000
+					state.Money = math.max(0, (state.Money or 0) - 100000000)
 					if state.AddFeed then
 						state:AddFeed("💒 Your lavish royal wedding cost $100 million!")
 					end
@@ -1219,8 +1223,9 @@ RoyaltyEvents.LifeEvents = {
 				royaltyEffect = { popularity = 10, scandals = 1 },
 				setFlags = { eloped = true, rebellious_royal = true, married = true },
 				feed = "You shocked the world by eloping!",
+				-- CRITICAL FIX #543: Prevent negative money
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 100000
+					state.Money = math.max(0, (state.Money or 0) - 100000)
 					if state.AddFeed then
 						state:AddFeed("💒 You eloped and saved millions!")
 					end
@@ -2203,7 +2208,8 @@ RoyaltyEvents.LifeEvents = {
 						state.Money = (state.Money or 0) + 5000000
 						state:AddFeed("💰 Your green investment paid off! +$5M")
 					else
-						state.Money = (state.Money or 0) - 2000000
+						-- CRITICAL FIX #544: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000000)
 						state:AddFeed("📉 The investment underperformed. -$2M")
 					end
 				end,
@@ -2213,7 +2219,8 @@ RoyaltyEvents.LifeEvents = {
 				effects = { Happiness = 8 },
 				feed = "A new vacation spot for the family!",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 20000000
+					-- CRITICAL FIX #545: Prevent negative money on large purchase
+					state.Money = math.max(0, (state.Money or 0) - 20000000)
 					local roll = math.random()
 					if roll < 0.5 then
 						state.Money = (state.Money or 0) + 8000000

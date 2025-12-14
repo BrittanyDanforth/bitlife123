@@ -2510,4 +2510,306 @@ function LifeState:TickYear()
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #504-508: SAFE MONEY OPERATIONS
+-- Prevents money from going negative and validates expensive operations
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:CanAfford(amount)
+	return (self.Money or 0) >= amount
+end
+
+function LifeState:SafeSubtractMoney(amount, description)
+	local currentMoney = self.Money or 0
+	if currentMoney >= amount then
+		self.Money = currentMoney - amount
+		return true, amount
+	else
+		-- Can't afford full amount - take what's available
+		local actualDeduction = currentMoney
+		self.Money = 0
+		return false, actualDeduction
+	end
+end
+
+function LifeState:GetAffordableAmount(desiredAmount)
+	local currentMoney = self.Money or 0
+	return math.min(desiredAmount, currentMoney)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #509-512: SAFE RELATIONSHIP OPERATIONS
+-- Ensures relationships are properly created and validated
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:HasPartner()
+	if not self.Relationships then return false end
+	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
+		return true
+	end
+	-- Check for partner in other locations
+	for _, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+			return true
+		end
+	end
+	return false
+end
+
+function LifeState:GetPartner()
+	if not self.Relationships then return nil end
+	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
+		return self.Relationships.partner
+	end
+	for _, rel in pairs(self.Relationships) do
+		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+			return rel
+		end
+	end
+	return nil
+end
+
+function LifeState:CreatePartner(partnerData)
+	self.Relationships = self.Relationships or {}
+	
+	-- Validate partner data
+	local partner = {
+		id = partnerData.id or "partner",
+		name = partnerData.name or "Unknown",
+		type = "romance",
+		role = "Partner",
+		relationship = partnerData.relationship or 65,
+		age = partnerData.age or (self.Age + math.random(-5, 5)),
+		gender = partnerData.gender or (self.Gender == "male" and "female" or "male"),
+		alive = true,
+	}
+	
+	-- Validate age - partner shouldn't be too young
+	if partner.age < 18 and self.Age >= 18 then
+		partner.age = 18
+	end
+	
+	self.Relationships.partner = partner
+	
+	-- Set flags
+	self.Flags = self.Flags or {}
+	self.Flags.has_partner = true
+	self.Flags.dating = true
+	
+	return partner
+end
+
+function LifeState:EndRelationship(relationshipId)
+	relationshipId = relationshipId or "partner"
+	
+	if self.Relationships and self.Relationships[relationshipId] then
+		self.Relationships[relationshipId] = nil
+	end
+	
+	-- Clear partner flags if ending partner relationship
+	if relationshipId == "partner" and self.Flags then
+		self.Flags.has_partner = nil
+		self.Flags.dating = nil
+		self.Flags.engaged = nil
+		self.Flags.married = nil
+		self.Flags.recently_single = true
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #513-516: CHILD AND FAMILY OPERATIONS
+-- Proper child tracking and family validation
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:GetChildCount()
+	local count = 0
+	if self.Relationships then
+		for _, rel in pairs(self.Relationships) do
+			if type(rel) == "table" and (rel.isChild or rel.role == "Child" or rel.role == "Son" or rel.role == "Daughter") then
+				count = count + 1
+			end
+		end
+	end
+	-- Also check ChildCount field
+	return math.max(count, self.ChildCount or 0)
+end
+
+function LifeState:HasChildren()
+	return self:GetChildCount() > 0
+end
+
+function LifeState:AddChild(childData)
+	self.Relationships = self.Relationships or {}
+	
+	local childId = childData.id or ("child_" .. tostring(os.clock()):gsub("%.", ""))
+	local isBoy = childData.gender == "male" or (childData.gender == nil and math.random() > 0.5)
+	
+	local child = {
+		id = childId,
+		name = childData.name or "Baby",
+		type = "family",
+		role = isBoy and "Son" or "Daughter",
+		relationship = childData.relationship or 100,
+		age = childData.age or 0,
+		gender = isBoy and "male" or "female",
+		alive = true,
+		isChild = true,
+		isFamily = true,
+		birthYear = self.Year or 2025,
+	}
+	
+	self.Relationships[childId] = child
+	self.ChildCount = (self.ChildCount or 0) + 1
+	
+	-- Set flags
+	self.Flags = self.Flags or {}
+	self.Flags.parent = true
+	self.Flags.has_child = true
+	
+	return child
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #517-520: CAREER VALIDATION
+-- Ensures career operations are properly validated
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:HasJob()
+	return self.CurrentJob ~= nil and self.CurrentJob.name ~= nil
+end
+
+function LifeState:GetJobCategory()
+	if self.CurrentJob and self.CurrentJob.category then
+		return self.CurrentJob.category
+	end
+	return nil
+end
+
+function LifeState:MatchesJobCategory(category)
+	local currentCategory = self:GetJobCategory()
+	if not currentCategory then return false end
+	return currentCategory:lower() == category:lower()
+end
+
+function LifeState:ClearCareer()
+	if self.CurrentJob then
+		-- Save to career history
+		self.CareerInfo = self.CareerInfo or {}
+		self.CareerInfo.careerHistory = self.CareerInfo.careerHistory or {}
+		table.insert(self.CareerInfo.careerHistory, {
+			job = self.CurrentJob,
+			startAge = self.CareerInfo.startAge,
+			endAge = self.Age,
+			endYear = self.Year,
+		})
+	end
+	
+	self.CurrentJob = nil
+	
+	-- Clear job flags
+	self.Flags = self.Flags or {}
+	self.Flags.employed = nil
+	self.Flags.has_job = nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #521-524: ELIGIBILITY HELPERS
+-- Common eligibility checks for events
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:IsInPrison()
+	return self.InJail == true or (self.Flags and self.Flags.in_prison)
+end
+
+function LifeState:IsSingle()
+	return not self:HasPartner()
+end
+
+function LifeState:IsMarried()
+	return self.Flags and self.Flags.married == true
+end
+
+function LifeState:IsEmployed()
+	return self:HasJob() or (self.Flags and self.Flags.employed)
+end
+
+function LifeState:IsAdult()
+	return (self.Age or 0) >= 18
+end
+
+function LifeState:IsSenior()
+	return (self.Age or 0) >= 65
+end
+
+function LifeState:IsInMob()
+	return self.MobState and self.MobState.inMob == true
+end
+
+function LifeState:IsRoyal()
+	return self.RoyalState and self.RoyalState.isRoyal == true
+end
+
+function LifeState:IsFamous()
+	return self.FameState and self.FameState.isFamous == true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #525-528: STAT BOUNDS VALIDATION
+-- Ensures stats stay within valid bounds
+-- ════════════════════════════════════════════════════════════════════════════
+
+function LifeState:ValidateStats()
+	self.Stats = self.Stats or {}
+	
+	for stat, value in pairs(self.Stats) do
+		if type(value) == "number" then
+			self.Stats[stat] = math.clamp(value, 0, 100)
+		end
+	end
+	
+	-- Sync shortcuts
+	self.Happiness = self.Stats.Happiness
+	self.Health = self.Stats.Health
+	self.Smarts = self.Stats.Smarts
+	self.Looks = self.Stats.Looks
+	
+	-- Validate money
+	self.Money = math.max(0, self.Money or 0)
+	
+	-- Validate fame
+	self.Fame = math.clamp(self.Fame or 0, 0, 100)
+end
+
+function LifeState:ValidateAll()
+	self:ValidateStats()
+	
+	-- Validate age
+	self.Age = math.max(0, self.Age or 0)
+	
+	-- Validate education data
+	if self.EducationData then
+		self.EducationData.Debt = math.max(0, self.EducationData.Debt or 0)
+		self.EducationData.Progress = math.clamp(self.EducationData.Progress or 0, 0, 100)
+	end
+	
+	-- Validate mob state
+	if self.MobState then
+		self.MobState.respect = math.max(0, self.MobState.respect or 0)
+		self.MobState.heat = math.clamp(self.MobState.heat or 0, 0, 100)
+		self.MobState.loyalty = math.clamp(self.MobState.loyalty or 0, 0, 100)
+	end
+	
+	-- Validate royal state
+	if self.RoyalState then
+		self.RoyalState.popularity = math.clamp(self.RoyalState.popularity or 0, 0, 100)
+	end
+	
+	-- Validate fame state
+	if self.FameState then
+		self.FameState.followers = math.max(0, self.FameState.followers or 0)
+	end
+	
+	return self
+end
+
 return LifeState

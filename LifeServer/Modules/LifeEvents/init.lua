@@ -2048,7 +2048,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 				outcome.feedText = choice.successFeedText
 			end
 			if choice.successMoney then
-				state.Money = (state.Money or 0) + choice.successMoney
+				-- CRITICAL FIX #529: Protect money from going negative
+				state.Money = math.max(0, (state.Money or 0) + choice.successMoney)
 				outcome.moneyChange = choice.successMoney
 			end
 			if choice.successFame then
@@ -2061,7 +2062,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 					state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
 				end
 				if mEffect.money then
-					state.Money = (state.Money or 0) + mEffect.money
+					-- CRITICAL FIX #530: Protect mafia money from going negative
+					state.Money = math.max(0, (state.Money or 0) + mEffect.money)
 					outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
 				end
 				if mEffect.heat then
@@ -2177,7 +2179,8 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
 		end
 		if mEffect.money then
-			state.Money = (state.Money or 0) + mEffect.money
+			-- CRITICAL FIX #531: Protect mafia money effect from going negative
+			state.Money = math.max(0, (state.Money or 0) + mEffect.money)
 			outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
 		end
 		if mEffect.heat then

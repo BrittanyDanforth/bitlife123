@@ -87,19 +87,27 @@ HealthEvents.events = {
 					elseif roll < 0.70 then
 						state:ModifyStat("Health", -5)
 						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX #532: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("🩹 Moderate injury. Sprain or strain. Weeks to heal.")
 					elseif roll < 0.90 then
 						state:ModifyStat("Health", -10)
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX #533: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.serious_injury = true
 						state:AddFeed("🩹 Serious injury. Broken bone. Surgery needed. Months of recovery.")
 					else
 						state:ModifyStat("Health", -15)
 						state:ModifyStat("Happiness", -12)
-						state.Money = (state.Money or 0) - 2000
+						-- CRITICAL FIX #534: Prevent money going negative, add medical debt flag
+						local medCost = 2000
+						if (state.Money or 0) < medCost then
+							state.Flags = state.Flags or {}
+							state.Flags.medical_debt = true
+						end
+						state.Money = math.max(0, (state.Money or 0) - medCost)
 						state.Flags = state.Flags or {}
 						state.Flags.major_injury = true
 						state:AddFeed("🩹 Major trauma. Emergency room. Long rehabilitation ahead.")
@@ -187,17 +195,20 @@ HealthEvents.events = {
 						state:AddFeed("🦷 No cavities! Perfect teeth! Gold star!")
 					elseif roll < 0.75 then
 						state:ModifyStat("Happiness", -2)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX #535: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("🦷 One cavity. Filling needed. $100 more.")
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", -5)
 						state:ModifyStat("Health", -2)
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX #536: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state:AddFeed("🦷 Multiple issues. Crown or root canal. $300. Painful.")
 					else
 						state:ModifyStat("Happiness", -8)
 						state:ModifyStat("Health", -3)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX #537: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state:AddFeed("🦷 Major dental work. Implants or extractions. $1000+. Rough.")
 					end
 				end,
