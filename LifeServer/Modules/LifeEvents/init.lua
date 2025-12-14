@@ -288,6 +288,12 @@ function LifeEvents.init()
 		-- All players can play, premium choices enhance but don't force purchases
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "PremiumIntegratedEvents", category = "random" },    -- 20+ events with tasteful gamepass options
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RAPPER & CONTENT CREATOR EXPANSION - MASSIVE career paths
+		-- From underground nobody to legendary superstar
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RapperContentCreatorEvents", category = "career_music" }, -- 50+ rapper/creator events
 	}
 	
 	local totalEvents = 0
@@ -908,9 +914,52 @@ local function canEventTrigger(event, state)
 		if not state.CurrentJob then
 			return false
 		end
-		local jobCat = state.CurrentJob.category or state.CurrentJob.Category or ""
-		if jobCat:lower() ~= event.requiresJobCategory:lower() then
-			return false -- Wrong job category
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- CRITICAL FIX #504: Support both string and array for requiresJobCategory
+		-- Entertainment careers (rapper, musician, actor, etc.) should NOT get corporate events
+		local allowedCategories = event.requiresJobCategory
+		if type(allowedCategories) == "string" then
+			-- Single category string
+			if jobCat ~= allowedCategories:lower() then
+				return false
+			end
+		elseif type(allowedCategories) == "table" then
+			-- Array of allowed categories
+			local categoryMatch = false
+			for _, allowedCat in ipairs(allowedCategories) do
+				if jobCat == allowedCat:lower() then
+					categoryMatch = true
+					break
+				end
+			end
+			if not categoryMatch then
+				return false -- Job category not in allowed list
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #505: Block corporate events for entertainment careers
+	-- Rappers, musicians, actors, etc. should NOT get "CEO email" events
+	if event.requiresJob and state.CurrentJob then
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- Check if this is an entertainment career
+		local isEntertainment = jobCat == "entertainment" or jobCat == "creative" or jobCat == "music"
+			or jobId:find("rapper") or jobId:find("musician") or jobId:find("actor")
+			or jobId:find("influencer") or jobId:find("youtuber") or jobId:find("streamer")
+			or jobId:find("singer") or jobId:find("artist") or jobId:find("celebrity")
+		
+		-- Block corporate-specific events for entertainment careers
+		local eventId = event.id or ""
+		local isCorporateEvent = eventId:find("layoff") or eventId:find("fired_for_cause")
+			or eventId:find("toxic_coworker") or eventId:find("ceo_") or eventId:find("hr_")
+			or eventId:find("office_") or eventId:find("corporate")
+		
+		if isEntertainment and isCorporateEvent then
+			return false -- Entertainment careers don't get corporate events
 		end
 	end
 	
