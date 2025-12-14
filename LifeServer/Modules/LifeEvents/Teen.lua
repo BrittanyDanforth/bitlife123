@@ -1686,7 +1686,7 @@ Teen.events = {
 		id = "teen_acne_struggle",
 		title = "Skin Problems",
 		emoji = "😣",
-		text = "Puberty hit your skin hard. Breakouts are ruining your confidence.",
+		text = "Stress and bad luck have caused skin breakouts. It's ruining your confidence.",
 		question = "How do you deal with it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
