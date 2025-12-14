@@ -2051,13 +2051,13 @@ function OccupationScreen:populateJobs()
 	badgeLabel.Parent = badge
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #701-710: ONLY SHOW JOBS PLAYER QUALIFIES FOR
-	-- Instead of showing all jobs with lock emoji, ONLY show eligible jobs
-	-- This cleans up the UI and prevents overwhelming players with inaccessible options
+	-- CRITICAL FIX #732: SMART JOB FILTERING
+	-- Show jobs player can ACTUALLY apply for, hide ones they can't
+	-- But be smart about it - don't hide everything!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local sortedJobs = {}
 	
-	-- CRITICAL FIX #686-690: Get gamepass ownership from state
+	-- Get state data
 	local state = self.playerState or {}
 	local flags = state.Flags or {}
 	local gamepassOwnership = state.GamepassOwnership or {}
@@ -2066,13 +2066,13 @@ function OccupationScreen:populateJobs()
 	local hasMafia = gamepassOwnership.Mafia or gamepassOwnership.mafia 
 		or flags.mafia_gamepass or false
 	
-	-- CRITICAL FIX #702: Get player stats for stat requirement checks
+	-- Get player stats for stat requirement checks
 	local playerStats = state.Stats or {}
 	local playerHealth = playerStats.Health or state.Health or 50
 	local playerSmarts = playerStats.Smarts or state.Smarts or 50
 	local playerLooks = playerStats.Looks or state.Looks or 50
 	
-	-- CRITICAL FIX #703: Enhanced education level check (includes royal education)
+	-- CRITICAL FIX #733: Enhanced education level check (includes royal education)
 	local function getEffectiveEducationRank()
 		local baseRank = EducationRanks[eduLevel] or 0
 		
@@ -2083,22 +2083,26 @@ function OccupationScreen:populateJobs()
 				local eduDataRank = EducationRanks[eduDataLevel] or 0
 				baseRank = math.max(baseRank, eduDataRank)
 			end
-			-- Royal education flag means at least high school equivalent
 			if state.EducationData.isRoyalEducation then
-				baseRank = math.max(baseRank, 1)
+				baseRank = math.max(baseRank, 1) -- At least high school
 			end
 		end
 		
-		-- Check flags for additional education qualifications
+		-- Check flags for education qualifications
 		if flags.private_education or flags.royal_education_started or flags.palace_educated 
 			or flags.prep_school_student or flags.boarding_student or flags.high_school_graduate 
 			or flags.graduated_high_school or flags.has_ged or flags.has_ged_or_diploma then
-			baseRank = math.max(baseRank, 1) -- High school level
+			baseRank = math.max(baseRank, 1)
 		end
 		
 		if flags.college_graduate or flags.oxford_graduate or flags.cambridge_graduate 
 			or flags.ivy_league_graduate then
-			baseRank = math.max(baseRank, 3) -- Bachelor level
+			baseRank = math.max(baseRank, 3)
+		end
+		
+		-- CRITICAL: Age 18+ defaults to high school equivalent if nothing else
+		if baseRank == 0 and age >= 18 then
+			baseRank = 1
 		end
 		
 		return baseRank
@@ -2106,57 +2110,27 @@ function OccupationScreen:populateJobs()
 	
 	local effectiveEduRank = getEffectiveEducationRank()
 	
-	-- CRITICAL FIX #704: Check if player meets experience requirements
-	local function meetsExperienceReqs(job)
-		-- If no experience requirement, eligible
-		if not job.requiresExp and not job.requiresFlags then
-			return true
-		end
-		
-		-- Check server eligibility data
-		if self.jobEligibility and self.jobEligibility[job.id] then
-			return self.jobEligibility[job.id].eligible
-		end
-		
-		-- Check flags requirements
-		if job.requiresFlags then
-			for _, flagName in ipairs(job.requiresFlags) do
-				if flags[flagName] then
-					return true
-				end
-			end
-			return false
-		end
-		
-		return true
-	end
-	
-	-- CRITICAL FIX #705: Check if player meets stat requirements
+	-- CRITICAL FIX #734: Check stat requirements
 	local function meetsStatReqs(job)
 		if not job.minStats then return true end
-		
 		for statName, minValue in pairs(job.minStats) do
 			local playerValue = 50
 			if statName == "Health" then playerValue = playerHealth
 			elseif statName == "Smarts" then playerValue = playerSmarts
 			elseif statName == "Looks" then playerValue = playerLooks
 			end
-			
-			if playerValue < minValue then
-				return false
-			end
+			if playerValue < minValue then return false end
 		end
 		return true
 	end
 	
 	for _, job in ipairs(Jobs) do
 		if job.id ~= currentJob then
-			-- CRITICAL FIX: Skip promotion-only jobs - they can't be applied to directly
+			-- Skip promotion-only jobs
 			if isEntryLevelJob(job.id) then
-				-- Apply category filter
 				local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
 				
-				-- CRITICAL FIX #687: Check gamepass requirements for jobs
+				-- HIDE jobs requiring gamepasses player doesn't own
 				if showJob and job.requiresGamepass then
 					local gamepassReq = job.requiresGamepass:lower()
 					if gamepassReq == "celebrity" and not hasCelebrity then
@@ -2166,12 +2140,12 @@ function OccupationScreen:populateJobs()
 					end
 				end
 				
-				-- CRITICAL FIX #706: Check age requirement - ONLY show if player is old enough
+				-- HIDE jobs player is too young for
 				if showJob and job.minAge and age < job.minAge then
 					showJob = false
 				end
 				
-				-- CRITICAL FIX #707: Check education requirement using enhanced royal education check
+				-- HIDE jobs requiring education player doesn't have
 				if showJob and job.requirement then
 					local reqRank = EducationRanks[job.requirement] or 0
 					if effectiveEduRank < reqRank then
@@ -2179,20 +2153,19 @@ function OccupationScreen:populateJobs()
 					end
 				end
 				
-				-- CRITICAL FIX #708: Check stat requirements
+				-- HIDE jobs requiring stats player doesn't have
 				if showJob and not meetsStatReqs(job) then
 					showJob = false
 				end
 				
-				-- CRITICAL FIX #709: Check experience/flag requirements
-				if showJob and not meetsExperienceReqs(job) then
-					showJob = false
-				end
-				
-				-- CRITICAL FIX #710: Don't show jobs if player is in jail
+				-- HIDE jobs if player is in jail
 				if showJob and inJail then
 					showJob = false
 				end
+				
+				-- NOTE: Experience requirements (requiresExp) are just descriptive text
+				-- The actual check happens server-side when applying
+				-- We don't hide these - they show as available but may fail on apply
 				
 				if showJob then
 					table.insert(sortedJobs, job)

@@ -1104,45 +1104,70 @@ end
 -- More varied milestones at each age to prevent repetition
 -- The system will pick ONE eligible event from the list for each age
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #736-740: MASSIVELY EXPANDED AGE MILESTONES
+-- Each age now has 4-8 possible events to choose from
+-- This dramatically reduces repetition across different lives
+-- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
-	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh" },
-	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain" },
-	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion" },
-	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark" },
-	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater" },
-	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson" },
-	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp" },
-	[9] = { "discovered_passion", "child_first_crush" },
-	[10] = { "child_puberty_begins", "talent_show" },
-	[11] = { "middle_school_start", "royal_summer_vacation" },
-	[12] = { "elementary_graduation", "growing_up_fast" },
-	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut" },
-	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama" },
-	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning" },
-	[16] = { "learning_to_drive", "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak" },
-	[17] = { "high_school_graduation", "learning_to_drive", "prom_invite", "senior_year" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle" },
-	[19] = { "college_experience", "young_adult_first_apartment" },
-	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service" },
-	[22] = { "young_adult_career_crossroads", "college_graduation" },
-	[23] = { "young_adult_relationship_milestone", "first_real_job" },
-	[24] = { "quarter_life_reflection" },
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious" },
-	[26] = { "late_20s_social_circle_shift" },
-	[27] = { "late_20s_health_wake_up", "career_advancement" },
-	[28] = { "late_20s_life_assessment" },
-	[29] = { "approaching_30", "relationship_milestone" },
-	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough" },
-	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection" },
-	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign" },
-	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee" },
-	[60] = { "golden_jubilee", "retirement_consideration" },
-	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning" },
-	[70] = { "golden_years", "legacy_planning", "diamond_jubilee" },
-	[75] = { "platinum_jubilee" },
+	-- BABY/TODDLER (0-4) - Lots of variety in early years
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase" },
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
+	
+	-- EARLY CHILDHOOD (5-8) - School and discovery
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer" },
+	
+	-- LATE CHILDHOOD (9-12) - Growing up
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation" },
+	[10] = { "child_puberty_begins", "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending" },
+	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
+	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
+	
+	-- EARLY TEEN (13-15) - Identity formation
+	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", "first_crush_serious", "style_change", "friend_drama" },
+	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
+	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
+	
+	-- LATE TEEN (16-18) - Major milestones
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep" },
+	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time" },
+	
+	-- YOUNG ADULT (19-24) - Independence and discovery
+	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
+	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits" },
+	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start" },
+	[23] = { "young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality" },
+	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
+	
+	-- MID-LATE 20s (25-29) - Settling into adulthood
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure" },
+	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
+	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
+	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
+	[29] = { "approaching_30", "relationship_milestone", "decade_reflection", "bucket_list_rush", "life_audit" },
+	
+	-- 30s-40s - Established adulthood
+	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough", "dirty_thirty", "real_adult_now", "life_reassessment" },
+	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection", "biological_deadline", "life_stability", "half_life_crisis" },
+	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign", "over_the_hill", "wisdom_gained", "health_priority" },
+	
+	-- 50s-60s - Later adulthood
+	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee", "half_century", "empty_nest", "grandparent_maybe" },
+	[60] = { "golden_jubilee", "retirement_consideration", "senior_discount", "legacy_thoughts", "health_checks" },
+	
+	-- 65+ - Senior years
+	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning", "medicare_eligible", "golden_years_begin" },
+	[70] = { "golden_years", "legacy_planning", "diamond_jubilee", "seven_decades", "life_wisdom", "family_patriarch" },
+	[75] = { "platinum_jubilee", "diamond_anniversary_life", "remarkable_longevity", "great_grandparent" },
+	[80] = { "eighty_years_young", "centenarian_path", "family_elder", "life_celebration" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -1618,9 +1643,34 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- Priority events (milestones) always trigger first
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #735: Use WEIGHTED RANDOM for priority events too!
+	-- The old code always picked the highest-weighted event, causing "learning_to_ride_bike"
+	-- and other milestone events to repeat every life since they had the same weight boost.
+	-- Now we use weighted random selection to pick from ALL eligible milestone events.
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #priorityEvents > 0 then
-		table.sort(priorityEvents, function(a, b) return a.weight > b.weight end)
+		-- Use weighted random selection instead of just picking highest weight
+		local totalPriorityWeight = 0
+		for _, candidate in ipairs(priorityEvents) do
+			totalPriorityWeight = totalPriorityWeight + candidate.weight
+		end
+		
+		if totalPriorityWeight > 0 then
+			local roll = RANDOM:NextNumber() * totalPriorityWeight
+			local cumulative = 0
+			
+			for _, candidate in ipairs(priorityEvents) do
+				cumulative = cumulative + candidate.weight
+				if roll <= cumulative then
+					table.insert(selectedEvents, candidate.event)
+					recordEventShown(state, candidate.event)
+					return selectedEvents
+				end
+			end
+		end
+		
+		-- Fallback: pick first if weighted selection somehow failed
 		local chosen = priorityEvents[1]
 		table.insert(selectedEvents, chosen.event)
 		recordEventShown(state, chosen.event)

@@ -812,13 +812,14 @@ RoyaltyEvents.LifeEvents = {
 	-- These events keep the royal experience alive during teenage years
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "royal_boarding_school",
+		id = "royal_school_life",
 		title = "🏫 Royal School Life",
 		emoji = "🏫",
 		text = "Life at your exclusive boarding school is full of privilege... and pressure.",
 		minAge = 13,
 		maxAge = 17,
 		isRoyalOnly = true,
+		requiresFlags = { in_boarding_school = true },
 		cooldown = 2,
 		choices = {
 			{
