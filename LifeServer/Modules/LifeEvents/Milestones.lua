@@ -691,20 +691,110 @@ Milestones.events = {
 		tags = { "job", "promotion", "senior_role" },
 		careerTags = { "management" },
 
-		-- CRITICAL FIX: Actually update the job when promoted!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #11: major_promotion MUST use CareerTracks to sync with OccupationScreen!
+		-- The old code just prefixed "Senior " to job titles, breaking the career track system.
+		-- Now we look up the actual next job in the career track and promote to THAT job.
+		-- This fixes the disconnect between major_promotion events and career progression display.
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		onComplete = function(state, choice, eventDef, outcome)
-			if state.CurrentJob and state.CurrentJob.salary then
-				local oldSalary = state.CurrentJob.salary
-				local oldTitle = state.CurrentJob.name or "Employee"
+			if not state.CurrentJob or not state.CurrentJob.salary then
+				return
+			end
+			
+			local oldSalary = state.CurrentJob.salary
+			local oldTitle = state.CurrentJob.name or "Employee"
+			local oldJobId = state.CurrentJob.id
+			
+			-- Try to find next job in career track
+			local promotedToTrackJob = false
+			local newJobData = nil
+			
+			-- CRITICAL FIX: Use the global CareerTracks and JobCatalog from LifeBackend
+			-- These are accessed through the event resolution context or require
+			local careerTracksRef = nil
+			local jobCatalogRef = nil
+			
+			-- Try to get CareerTracks from parent module context
+			local ModulesFolder = script.Parent and script.Parent.Parent
+			if ModulesFolder then
+				local success, backendRef = pcall(function()
+					-- CareerTracks are exported through the init module
+					return nil -- We'll build them inline for this event
+				end)
+			end
+			
+			-- CRITICAL FIX: Define career tracks inline for promotion lookup
+			-- This mirrors the CareerTracks in LifeBackend.lua
+			local CareerTracks = {
+				office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "office_manager", "project_manager", "operations_director", "coo" },
+				tech_dev = { "it_support", "junior_developer", "developer", "senior_developer", "tech_lead", "software_architect", "cto" },
+				tech_web = { "web_developer", "developer", "senior_developer", "tech_lead" },
+				medical_nursing = { "hospital_orderly", "medical_assistant", "nurse_lpn", "nurse_rn", "nurse_practitioner" },
+				medical_doctor = { "doctor_resident", "doctor", "surgeon", "chief_of_medicine" },
+				legal = { "legal_assistant", "paralegal", "associate_lawyer", "lawyer", "senior_partner" },
+				finance_banking = { "bank_teller", "loan_officer", "accountant_jr", "accountant", "cpa", "cfo" },
+				finance_invest = { "financial_analyst", "investment_banker_jr", "investment_banker", "hedge_fund_manager" },
+				creative_design = { "graphic_designer_jr", "graphic_designer", "art_director" },
+				creative_media = { "journalist_jr", "journalist", "editor" },
+				creative_marketing = { "social_media_manager", "marketing_associate", "marketing_manager", "cmo" },
+				creative_acting = { "actor_extra", "actor", "movie_star" },
+				creative_music = { "musician_local", "musician_signed", "pop_star" },
+				gov_police = { "police_officer", "detective", "police_chief" },
+				education_school = { "teaching_assistant", "substitute_teacher", "teacher", "department_head", "principal", "superintendent" },
+				education_university = { "professor_assistant", "professor", "dean" },
+				science = { "lab_technician", "research_assistant", "scientist", "senior_scientist", "research_director" },
+				sports_player = { "minor_league", "professional_athlete", "star_athlete" },
+				sports_coach = { "gym_instructor", "sports_coach", "head_coach" },
+				military_enlisted = { "enlisted", "sergeant" },
+				military_officer = { "officer", "captain", "colonel", "general" },
+				esports = { "casual_gamer", "content_creator", "pro_gamer", "esports_champion", "gaming_legend" },
+				racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend" },
+				hacker_whitehat = { "script_kiddie", "freelance_hacker", "pen_tester", "security_consultant", "ciso" },
+			}
+			
+			-- Look up the next job in the career track
+			if oldJobId then
+				for trackName, trackJobs in pairs(CareerTracks) do
+					for i, jobId in ipairs(trackJobs) do
+						if jobId == oldJobId then
+							-- Found current job - get next position
+							local nextJobId = trackJobs[i + 1]
+							if nextJobId then
+								promotedToTrackJob = true
+								newJobData = {
+									id = nextJobId,
+									name = nextJobId:gsub("_", " "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end),
+								}
+								
+								-- Update the actual job ID so career track is in sync!
+								state.CurrentJob.id = nextJobId
+							end
+							break
+						end
+					end
+					if promotedToTrackJob then break end
+				end
+			end
+			
+			-- Calculate new salary (25% raise for track promotion, 20-35% for generic)
+			local RANDOM_PROMO = Random.new()
+			local newSalary
+			local promotedTitle
+			
+			if promotedToTrackJob and newJobData then
+				-- CRITICAL: Use the track job name instead of fake "Senior X" titles!
+				newSalary = math.floor(oldSalary * 1.25)
+				promotedTitle = newJobData.name
+				state.CurrentJob.name = promotedTitle
+				state.CurrentJob.title = promotedTitle
+			else
+				-- Fallback: No next track job (top of career) - just salary bump with title tweak
+				local raisePercent = RANDOM_PROMO:NextInteger(15, 25) / 100
+				newSalary = math.floor(oldSalary * (1 + raisePercent))
 				
-				-- Give a 20-35% raise on promotion
-				-- CRITICAL FIX: Use consistent Random API
-				local RANDOM_PROMO = Random.new()
-				local raisePercent = RANDOM_PROMO:NextInteger(20, 35) / 100
-				local newSalary = math.floor(oldSalary * (1 + raisePercent))
-				
-				-- Generate a promoted title
-				local promotedTitle = "Senior " .. oldTitle
+				-- Generate a promoted title only as fallback
+				promotedTitle = "Senior " .. oldTitle
 				if oldTitle:find("Junior") then
 					promotedTitle = oldTitle:gsub("Junior ", "")
 				elseif oldTitle:find("Associate") then
@@ -717,27 +807,38 @@ Milestones.events = {
 					promotedTitle = "Director of " .. (state.CurrentJob.company or "Operations")
 				end
 				
-				-- Update the job
 				state.CurrentJob.name = promotedTitle
-				state.CurrentJob.salary = newSalary
-				
-				-- Update CareerInfo
-				state.CareerInfo = state.CareerInfo or {}
-				state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
-				state.CareerInfo.lastPromotion = state.Age
-				state.CareerInfo.promotionHistory = state.CareerInfo.promotionHistory or {}
-				table.insert(state.CareerInfo.promotionHistory, {
-					fromTitle = oldTitle,
-					toTitle = promotedTitle,
-					age = state.Age,
-					year = state.Year,
-					salaryIncrease = newSalary - oldSalary,
-				})
-				
-				-- Update feed with actual promotion details
-				if state.AddFeed then
-					state:AddFeed("📈 Promoted to " .. promotedTitle .. "! Salary: $" .. tostring(newSalary) .. "/year (+$" .. tostring(newSalary - oldSalary) .. ")")
+				state.CurrentJob.title = promotedTitle
+			end
+			
+			state.CurrentJob.salary = newSalary
+			
+			-- Update CareerInfo - CRITICAL: Reset promotion progress!
+			state.CareerInfo = state.CareerInfo or {}
+			state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
+			state.CareerInfo.lastPromotion = state.Age
+			state.CareerInfo.promotionProgress = 0 -- CRITICAL FIX #10: Reset progress after promotion!
+			state.CareerInfo.yearsAtJob = 0 -- Reset years at new position
+			state.CareerInfo.raises = 0 -- Reset raises for new role
+			state.CareerInfo.promotionHistory = state.CareerInfo.promotionHistory or {}
+			table.insert(state.CareerInfo.promotionHistory, {
+				fromTitle = oldTitle,
+				toTitle = promotedTitle,
+				fromJobId = oldJobId,
+				toJobId = state.CurrentJob.id,
+				age = state.Age,
+				year = state.Year,
+				salaryIncrease = newSalary - oldSalary,
+				wasTrackPromotion = promotedToTrackJob,
+			})
+			
+			-- Update feed with actual promotion details
+			if state.AddFeed then
+				local feedMsg = "📈 Promoted to " .. promotedTitle .. "! Salary: $" .. tostring(newSalary) .. "/year (+$" .. tostring(newSalary - oldSalary) .. ")"
+				if promotedToTrackJob then
+					feedMsg = "🎉 CAREER ADVANCEMENT: " .. feedMsg
 				end
+				state:AddFeed(feedMsg)
 			end
 		end,
 
