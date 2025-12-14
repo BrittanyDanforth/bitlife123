@@ -282,6 +282,12 @@ function LifeEvents.init()
 		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events
 		{ name = "CelebrityEvents", category = "celebrity" },         -- Celebrity/Fame gamepass events  
 		{ name = "MafiaEvents",     category = "mafia" },             -- Mafia gamepass events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM INTEGRATED EVENTS - Events with optional gamepass choices
+		-- All players can play, premium choices enhance but don't force purchases
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "PremiumIntegratedEvents", category = "random" },    -- 20+ events with tasteful gamepass options
 	}
 	
 	local totalEvents = 0
@@ -2150,6 +2156,77 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			end
 		else
 			warn("[EventEngine] Choice eligibility function error:", eligible)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #502: Check requiresGamepass on choices for premium options
+	-- Premium choices (God Mode, Mafia, Celebrity, Royalty) require gamepass ownership
+	-- This enables tasteful gamepass integration without forcing purchases
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.requiresGamepass then
+		local gamepassKey = choice.requiresGamepass
+		local flags = state.Flags or {}
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+		}
+		local gamepassToOwnership = {
+			GOD_MODE = "godMode",
+			MAFIA = "mafia",
+			CELEBRITY = "celebrity",
+			ROYALTY = "royalty",
+			TIME_MACHINE = "timeMachine",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownershipName = gamepassToOwnership[gamepassKey]
+		local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+		
+		if not hasGamepass then
+			-- Player doesn't have the required gamepass
+			local gamepassNames = {
+				GOD_MODE = "God Mode",
+				MAFIA = "Mafia",
+				CELEBRITY = "Celebrity",
+				ROYALTY = "Royalty",
+				TIME_MACHINE = "Time Machine",
+			}
+			local gamepassName = gamepassNames[gamepassKey] or gamepassKey
+			local emoji = choice.gamepassEmoji or "🔒"
+			
+			return {
+				success = false,
+				failed = true,
+				requiresGamepass = true,
+				gamepassKey = gamepassKey,
+				gamepassName = gamepassName,
+				failReason = string.format("%s This premium option requires the %s gamepass!", emoji, gamepassName),
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+		
+		-- Also check requiresFlags on premium choices (e.g., must be in mob for mafia options)
+		if choice.requiresFlags then
+			for flagName, requiredValue in pairs(choice.requiresFlags) do
+				local playerHasFlag = flags[flagName]
+				if requiredValue == true and not playerHasFlag then
+					return {
+						success = false,
+						failed = true,
+						failReason = "You don't meet the requirements for this option.",
+						eventId = eventDef.id,
+						choiceIndex = choiceIndex,
+					}
+				end
+			end
 		end
 	end
 	

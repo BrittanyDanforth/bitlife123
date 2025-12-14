@@ -3645,7 +3645,11 @@ end
 function LifeBackend:onPlayerAdded(player)
 	local state = self:createInitialState(player)
 	self.playerStates[player] = state
-	self:pushState(player, "A new life begins...")
+	-- CRITICAL FIX #500: DON'T push "A new life begins..." here!
+	-- The setLifeInfo function will send the proper birth message.
+	-- Sending a message here causes duplicate/overlapping messages at spawn.
+	-- Only sync the initial state without a feed message.
+	self:pushState(player, nil)
 end
 
 function LifeBackend:onPlayerRemoving(player)
@@ -5582,12 +5586,61 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 		choices = {},
 	}
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #503: Include premium choice info in serialization
+	-- This allows the client to display premium choices with appropriate styling
+	-- (e.g., show gamepass emoji, lock icon for unowned, different color)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state and state.Flags or {}
+	local gamepassOwnership = state and state.GamepassOwnership or {}
+	
 	for index, choice in ipairs(eventDef.choices or {}) do
-		eventPayload.choices[index] = {
+		local choiceData = {
 			index = index,
 			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
 			minigame = choice.minigame,
 		}
+		
+		-- Add premium choice info if this choice requires a gamepass
+		if choice.requiresGamepass then
+			choiceData.requiresGamepass = choice.requiresGamepass
+			choiceData.gamepassEmoji = choice.gamepassEmoji
+			
+			-- Check if player owns this gamepass
+			local gamepassToFlag = {
+				GOD_MODE = "god_mode_gamepass",
+				MAFIA = "mafia_gamepass", 
+				CELEBRITY = "celebrity_gamepass",
+				ROYALTY = "royalty_gamepass",
+				TIME_MACHINE = "time_machine_gamepass",
+			}
+			local gamepassToOwnership = {
+				GOD_MODE = "godMode",
+				MAFIA = "mafia",
+				CELEBRITY = "celebrity",
+				ROYALTY = "royalty",
+				TIME_MACHINE = "timeMachine",
+			}
+			
+			local flagName = gamepassToFlag[choice.requiresGamepass]
+			local ownershipName = gamepassToOwnership[choice.requiresGamepass]
+			local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+			
+			choiceData.hasGamepass = hasGamepass
+			
+			-- Also check additional flag requirements (e.g., must be in mob for mafia options)
+			if choice.requiresFlags and hasGamepass then
+				for flagName, requiredValue in pairs(choice.requiresFlags) do
+					if requiredValue == true and not flags[flagName] then
+						choiceData.hasGamepass = false
+						choiceData.missingRequirement = true
+						break
+					end
+				end
+			end
+		end
+		
+		eventPayload.choices[index] = choiceData
 	end
 
 	local pending = self.pendingEvents[player.UserId] or {}
@@ -9803,7 +9856,10 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	local feedText = payload.godModeCreate 
 		and "⚡ A custom life begins..." 
 		or ("⚡ God Mode update: " .. table.concat(summaries, " • "))
-	appendFeed(state, feedText)
+	-- CRITICAL FIX #501: DON'T call appendFeed here!
+	-- appendFeed stores to PendingFeed which shows again at Age 1
+	-- pushState already sends the message immediately to the client
+	-- Calling both causes the message to appear TWICE (now + Age 1)
 	self:pushState(player, feedText)
 
 	return { success = true, message = feedText, changes = summaries }
