@@ -812,6 +812,38 @@ local JobCatalogList = {
 		difficulty = 1, description = "Fun summer job with kids" },
 	{ id = "newspaper_delivery", name = "Newspaper Delivery", company = "Daily News", emoji = "📰", salary = 15000, minAge = 12, requirement = nil, category = "entry",
 		difficulty = 1, description = "Early morning route delivery" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #51: Added entry_career and career progression jobs
+	-- These jobs allow players who get generic first jobs to progress through career tracks
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "entry_career", name = "Associate", company = "Local Company", emoji = "💼", salary = 35000, minAge = 18, requirement = nil, category = "entry",
+		difficulty = 2, grantsFlags = { "entry_level_experience", "employed" },
+		description = "Generic entry-level career position" },
+	{ id = "retail_worker", name = "Retail Associate", company = "RetailMart", emoji = "🛒", salary = 26000, minAge = 16, requirement = nil, category = "entry",
+		difficulty = 1, grantsFlags = { "retail_experience", "customer_service" },
+		description = "Help customers and stock shelves" },
+	{ id = "shift_supervisor", name = "Shift Supervisor", company = "RetailMart", emoji = "👔", salary = 38000, minAge = 20, requirement = "high_school", category = "entry",
+		difficulty = 3, requiresFlags = { "retail_experience", "customer_service" }, grantsFlags = { "supervisor_experience", "leadership_basics" },
+		description = "Supervise a retail shift - requires retail experience" },
+	{ id = "store_manager", name = "Store Manager", company = "RetailMart", emoji = "🏪", salary = 55000, minAge = 24, requirement = "high_school", category = "entry",
+		difficulty = 4, requiresFlags = { "supervisor_experience", "leadership_basics" }, grantsFlags = { "management_experience", "store_operations" },
+		description = "Manage an entire store - requires supervisor experience" },
+	{ id = "district_manager", name = "District Manager", company = "RetailMart Corp", emoji = "🏢", salary = 85000, minAge = 30, requirement = "bachelor", category = "office",
+		difficulty = 6, requiresFlags = { "management_experience", "store_operations" }, grantsFlags = { "regional_management", "executive_experience" },
+		description = "Manage multiple stores - requires store management experience" },
+	{ id = "fast_food_worker", name = "Fast Food Team Member", company = "QuickBurger", emoji = "🍟", salary = 22000, minAge = 14, requirement = nil, category = "entry",
+		difficulty = 1, grantsFlags = { "food_service_experience", "customer_service" },
+		description = "Work the fryer and register" },
+	{ id = "server", name = "Server", company = "Family Restaurant", emoji = "🍽️", salary = 30000, minAge = 16, requirement = nil, category = "service",
+		difficulty = 2, grantsFlags = { "food_service_experience", "customer_service", "server_experience" },
+		description = "Wait tables and serve customers" },
+	{ id = "shift_lead", name = "Shift Lead", company = "QuickBurger", emoji = "🎖️", salary = 35000, minAge = 18, requirement = "high_school", category = "service",
+		difficulty = 3, requiresFlags = { "food_service_experience" }, grantsFlags = { "supervisor_experience", "team_leadership" },
+		description = "Lead a restaurant shift" },
+	{ id = "restaurant_manager", name = "Restaurant Manager", company = "Family Restaurant", emoji = "🍴", salary = 52000, minAge = 24, requirement = "high_school", category = "service",
+		difficulty = 5, requiresFlags = { "supervisor_experience", "food_service_experience" }, grantsFlags = { "management_experience", "hospitality_management" },
+		description = "Manage the entire restaurant" },
 
 	-- SERVICE
 	{ id = "waiter", name = "Waiter/Waitress", company = "The Grand Restaurant", emoji = "🍽️", salary = 32000, minAge = 16, requirement = nil, category = "service" },
@@ -1533,6 +1565,15 @@ end
 -- Each track is an ordered list where promotions move you up the list
 -- ════════════════════════════════════════════════════════════════════════════════════════════════
 local CareerTracks = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #50: Added entry-level career track for generic first jobs
+	-- This ensures players who get "entry_career" jobs can still progress properly
+	-- The entry track leads into the office/business track
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	entry = { "entry_career", "office_assistant", "administrative_assistant", "office_manager", "project_manager" },
+	entry_service = { "retail_worker", "cashier", "shift_supervisor", "store_manager", "district_manager" },
+	entry_food = { "fast_food_worker", "server", "shift_lead", "restaurant_manager" },
+	
 	-- Office/Business path
 	office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "office_manager", "project_manager", "operations_director", "coo" },
 	hr = { "hr_coordinator", "recruiter", "hr_manager" },
@@ -2528,34 +2569,84 @@ function LifeBackend:buildCareerEvent(state)
 	local jobCategory = (job.category and string.lower(job.category)) or ""
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #8: Career events for different job categories
+	-- CRITICAL FIX #47: Career events MUST match job category EXACTLY
+	-- OLD BUG: String matching in job IDs caused tech events to fire for non-tech workers
+	-- NEW: Only use explicit job category, and validate player has relevant experience flags
+	-- This prevents "coding card popped up but I didn't do any coding" issues
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	local eventPool = nil
 	local eventSource = nil
+	state.Flags = state.Flags or {}
 	
-	-- Police/Detective events
-	if jobId:find("police") or jobId:find("detective") or jobId:find("fbi") or jobId:find("cia") then
-		eventPool = PoliceCareerEvents
-		eventSource = "career_police"
-	-- Tech events
-	elseif jobCategory == "tech" or jobId:find("developer") or jobId:find("engineer") or jobId:find("cto") then
-		eventPool = TechCareerEvents
-		eventSource = "career_tech"
-	-- Medical events
-	elseif jobCategory == "medical" or jobId:find("doctor") or jobId:find("nurse") or jobId:find("surgeon") then
-		eventPool = MedicalCareerEvents
-		eventSource = "career_medical"
-	-- Office events
-	elseif jobCategory == "office" or jobId:find("manager") or jobId:find("coo") or jobId:find("director") then
+	-- CRITICAL: Use ONLY explicit job category for matching - NO string matching!
+	-- This ensures career events are truly specific to the player's actual career path
+	
+	-- Police/Government law enforcement events
+	if jobCategory == "government" and (jobId:find("police") or jobId:find("detective") or jobId:find("fbi") or jobId:find("cia")) then
+		-- Additional check: must have law enforcement flag
+		if state.Flags.law_enforcement or state.Flags.police_experience then
+			eventPool = PoliceCareerEvents
+			eventSource = "career_police"
+		end
+	-- Tech events - STRICT: Must have tech category AND coder/tech flags
+	elseif jobCategory == "tech" then
+		-- CRITICAL FIX #48: Tech events require player to have tech experience flags
+		-- This prevents coding events from firing for someone who never learned to code
+		if state.Flags.coder or state.Flags.tech_experience or state.Flags.developer_experience or state.Flags.computer_skills then
+			eventPool = TechCareerEvents
+			eventSource = "career_tech"
+		else
+			-- Player has tech job but no tech flags - use generic office events instead
+			eventPool = OfficeCareerEvents
+			eventSource = "career_office_generic"
+		end
+	-- Medical events - STRICT: Must have medical category
+	elseif jobCategory == "medical" then
+		if state.Flags.medical_experience or state.Flags.nursing_experience or state.Flags.hospital_work then
+			eventPool = MedicalCareerEvents
+			eventSource = "career_medical"
+		end
+	-- Office events - STRICT: Must have office category
+	elseif jobCategory == "office" then
 		eventPool = OfficeCareerEvents
 		eventSource = "career_office"
-	-- Finance events
-	elseif jobCategory == "finance" or jobId:find("banker") or jobId:find("accountant") or jobId:find("cfo") then
-		eventPool = FinanceCareerEvents
-		eventSource = "career_finance"
+	-- Finance events - STRICT: Must have finance category
+	elseif jobCategory == "finance" then
+		if state.Flags.banking_experience or state.Flags.accounting_experience or state.Flags.financial_analysis then
+			eventPool = FinanceCareerEvents
+			eventSource = "career_finance"
+		else
+			eventPool = OfficeCareerEvents
+			eventSource = "career_office_generic"
+		end
+	-- Entry-level/service/retail events - use office events as fallback
+	elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" then
+		eventPool = OfficeCareerEvents
+		eventSource = "career_entry"
+	-- Creative category (acting, music, etc.)
+	elseif jobCategory == "creative" then
+		eventPool = OfficeCareerEvents -- Use generic office events for creative
+		eventSource = "career_creative"
+	-- Hacker category
+	elseif jobCategory == "hacker" then
+		if state.Flags.coder or state.Flags.hacker_experience then
+			eventPool = TechCareerEvents
+			eventSource = "career_hacker"
+		end
+	-- Racing category - no specific events, skip
+	elseif jobCategory == "racing" then
+		return nil -- Racing has its own event system
+	-- Science category - use tech events if they have analytical skills
+	elseif jobCategory == "science" then
+		if state.Flags.research_experience or state.Flags.scientific_background then
+			eventPool = TechCareerEvents
+			eventSource = "career_science"
+		end
 	end
 	
+	-- CRITICAL FIX #49: If no matching event pool, return nil instead of random events
+	-- This prevents career events from firing for incompatible job categories
 	if not eventPool or #eventPool == 0 then
 		return nil
 	end
@@ -8040,85 +8131,124 @@ function LifeBackend:handlePromotion(player)
 		end
 	end
 	
-	-- Find current job's career track and next position
-	for trackName, trackJobs in pairs(CareerTracks) do
-		for i, jobId in ipairs(trackJobs) do
-			if jobId == currentJobId then
-				-- Found current job, check if there's a next position
-				local nextJobId = trackJobs[i + 1]
-				if nextJobId then
-					local nextJob = JobCatalog[nextJobId]
-					if nextJob then
-						-- Check if player meets requirements for next job
-						local meetsReqs = true
-						local blockReason = nil
-						
-						-- Check minimum age
-						if nextJob.minAge and (state.Age or 0) < nextJob.minAge then
-							meetsReqs = false
-							blockReason = string.format("You need to be at least %d years old", nextJob.minAge)
-						end
-						
-						-- ═══════════════════════════════════════════════════════════════════
-						-- CRITICAL FIX #12: Check requiresFlags for promotion eligibility!
-						-- Players MUST have the required flags to be promoted.
-						-- This prevents unrealistic promotions (e.g., casual_gamer -> pro_gamer
-						-- without competitive gaming experience)
-						-- ═══════════════════════════════════════════════════════════════════
-						if meetsReqs and nextJob.requiresFlags then
-							local hasAnyFlag = false
-							for _, reqFlag in ipairs(nextJob.requiresFlags) do
-								if state.Flags[reqFlag] then
-									hasAnyFlag = true
-									break
-								end
-							end
-							if not hasAnyFlag then
-								meetsReqs = false
-								blockReason = "You need more experience in your field before this promotion"
-							end
-						end
-						
-						-- Check minimum stats if specified
-						if meetsReqs and nextJob.minStats then
-							state.Stats = state.Stats or {}
-							for statName, minValue in pairs(nextJob.minStats) do
-								local playerStat = state.Stats[statName] or state[statName] or 0
-								if playerStat < minValue then
-									meetsReqs = false
-									blockReason = string.format("Your %s needs to be at least %d", statName, minValue)
-									break
-								end
-							end
-						end
-						
-						if meetsReqs then
-							-- PROMOTE to next job!
-							state.CurrentJob = {
-								id = nextJob.id,
-								name = nextJob.name,
-								title = nextJob.name,
-								company = state.CurrentJob.company or nextJob.company, -- Keep same company
-								salary = math.floor((state.CurrentJob.salary or nextJob.salary) * 1.25), -- 25% raise on title change
-								emoji = nextJob.emoji,
-								category = nextJob.category,
-								hiredAt = state.Age,
-							}
-							promotedToNewTitle = true
-							newJobName = nextJob.name
-							info.yearsAtJob = 0 -- Reset years at job for new position
-							info.raises = 0 -- Reset raises for new position
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #61: Filter career tracks by job category to prevent cross-category promotions
+	-- This prevents entry-level workers from being promoted into tech tracks without tech experience
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local currentCategory = (state.CurrentJob.category and state.CurrentJob.category:lower()) or "entry"
+	
+	-- Map categories to allowed career tracks
+	local categoryToTracks = {
+		entry = { "entry", "entry_service", "entry_food", "office" },
+		service = { "entry_service", "entry_food" },
+		office = { "office" },
+		tech = { "tech_dev", "tech_web", "tech_mobile", "tech_data", "tech_security", "tech_devops" },
+		medical = { "medical_nursing", "medical_doctor", "medical_other" },
+		legal = { "legal", "legal_gov" },
+		finance = { "finance_banking", "finance_invest" },
+		creative = { "creative_design", "creative_media", "creative_marketing", "creative_acting", "creative_music" },
+		government = { "gov_police", "gov_fire", "gov_politics", "gov_federal" },
+		education = { "education_school", "education_university" },
+		science = { "science" },
+		sports = { "sports_player", "sports_coach" },
+		military = { "military_enlisted", "military_officer" },
+		esports = { "esports" },
+		racing = { "racing" },
+		hacker = { "hacker_whitehat", "hacker_blackhat" },
+		criminal = { "criminal_street", "criminal_crew" },
+	}
+	
+	local allowedTracks = categoryToTracks[currentCategory] or { "entry", "office" }
+	
+	-- Find current job's career track and next position - ONLY in allowed tracks!
+	for _, trackName in ipairs(allowedTracks) do
+		local trackJobs = CareerTracks[trackName]
+		if trackJobs then
+			for i, jobId in ipairs(trackJobs) do
+				if jobId == currentJobId then
+					-- Found current job, check if there's a next position
+					local nextJobId = trackJobs[i + 1]
+					if nextJobId then
+						local nextJob = JobCatalog[nextJobId]
+						if nextJob then
+							-- Check if player meets requirements for next job
+							local meetsReqs = true
+							local blockReason = nil
 							
-							-- Grant flags from the new job
-							if nextJob.grantsFlags then
-								for _, flagToGrant in ipairs(nextJob.grantsFlags) do
-									state.Flags[flagToGrant] = true
+							-- Check minimum age
+							if nextJob.minAge and (state.Age or 0) < nextJob.minAge then
+								meetsReqs = false
+								blockReason = string.format("You need to be at least %d years old", nextJob.minAge)
+							end
+							
+							-- ═══════════════════════════════════════════════════════════════════
+							-- CRITICAL FIX #12: Check requiresFlags for promotion eligibility!
+							-- Players MUST have the required flags to be promoted.
+							-- This prevents unrealistic promotions (e.g., casual_gamer -> pro_gamer
+							-- without competitive gaming experience)
+							-- ═══════════════════════════════════════════════════════════════════
+							if meetsReqs and nextJob.requiresFlags then
+								local hasAnyFlag = false
+								for _, reqFlag in ipairs(nextJob.requiresFlags) do
+									if state.Flags[reqFlag] then
+										hasAnyFlag = true
+										break
+									end
+								end
+								if not hasAnyFlag then
+									meetsReqs = false
+									blockReason = "You need more experience in your field before this promotion"
+								end
+							end
+							
+							-- Check minimum stats if specified
+							if meetsReqs and nextJob.minStats then
+								state.Stats = state.Stats or {}
+								for statName, minValue in pairs(nextJob.minStats) do
+									local playerStat = state.Stats[statName] or state[statName] or 0
+									if playerStat < minValue then
+										meetsReqs = false
+										blockReason = string.format("Your %s needs to be at least %d", statName, minValue)
+										break
+									end
+								end
+							end
+							
+							if meetsReqs then
+								-- PROMOTE to next job!
+								-- CRITICAL FIX #62: Preserve category if transitioning from entry to office
+								local newCategory = nextJob.category
+								if currentCategory == "entry" and newCategory == "office" then
+									-- Entry workers can transition to office
+									newCategory = "office"
+								end
+								
+								state.CurrentJob = {
+									id = nextJob.id,
+									name = nextJob.name,
+									title = nextJob.name,
+									company = state.CurrentJob.company or nextJob.company, -- Keep same company
+									salary = math.floor((state.CurrentJob.salary or nextJob.salary) * 1.25), -- 25% raise on title change
+									emoji = nextJob.emoji,
+									category = newCategory,
+									hiredAt = state.Age,
+								}
+								promotedToNewTitle = true
+								newJobName = nextJob.name
+								info.yearsAtJob = 0 -- Reset years at job for new position
+								info.raises = 0 -- Reset raises for new position
+								
+								-- Grant flags from the new job
+								if nextJob.grantsFlags then
+									for _, flagToGrant in ipairs(nextJob.grantsFlags) do
+										state.Flags[flagToGrant] = true
+									end
 								end
 							end
 						end
 					end
+					break
 				end
-				break
 			end
 		end
 		if promotedToNewTitle then break end

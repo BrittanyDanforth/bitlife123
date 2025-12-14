@@ -645,12 +645,19 @@ end
 function LifeState:SetCareer(jobData)
 	if type(jobData) ~= "table" then return self end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #59: Include emoji field in job data for proper display
+	-- Also preserve title field if provided (some jobs use title vs name)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	self.CurrentJob = {
 		id = jobData.id or "unknown",
 		name = jobData.name or jobData.jobTitle or "Job",
+		title = jobData.title or jobData.name or jobData.jobTitle or "Job",
 		company = jobData.company or jobData.employer or "Company",
 		salary = jobData.salary or 30000,
 		category = jobData.category or "general",
+		emoji = jobData.emoji or "💼", -- CRITICAL FIX: Include emoji for job display
+		hiredAt = self.Age, -- Track when hired for career progression
 	}
 	
 	self.CareerInfo.performance = 60
@@ -660,6 +667,22 @@ function LifeState:SetCareer(jobData)
 	
 	self.Flags.employed = true
 	self.Flags.has_job = true
+	
+	-- CRITICAL FIX #60: Grant experience flags based on job category
+	-- This ensures players build up relevant experience for career progression
+	if jobData.category == "entry" then
+		self.Flags.entry_level_experience = true
+	elseif jobData.category == "tech" then
+		self.Flags.tech_experience = true
+	elseif jobData.category == "medical" then
+		self.Flags.medical_experience = true
+	elseif jobData.category == "office" then
+		self.Flags.office_experience = true
+	elseif jobData.category == "finance" then
+		self.Flags.finance_experience = true
+	elseif jobData.category == "creative" then
+		self.Flags.creative_experience = true
+	end
 	
 	return self
 end

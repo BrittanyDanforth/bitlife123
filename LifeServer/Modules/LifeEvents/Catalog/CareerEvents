@@ -52,14 +52,19 @@ local events = {
 					
 					if won then
 						-- Aced the interview!
+						-- ═══════════════════════════════════════════════════════════════════════════════
+						-- CRITICAL FIX #57: Assign a proper entry-level job that's in CareerTracks
+						-- Use entry_career which progresses to office_assistant -> admin_assistant -> etc.
+						-- ═══════════════════════════════════════════════════════════════════════════════
 						local salary = 42000 + math.random(0, 10) * 1000 -- 42k-52k (better for acing it!)
 						if state.SetCareer then
 							state:SetCareer({
-								id = "entry_career",
+								id = "entry_career", -- CRITICAL: This ID is now in CareerTracks.entry
 								name = "Associate",
 								company = "Local Company",
 								salary = salary,
-								category = "entry",
+								category = "entry", -- CRITICAL: Entry category so they progress through entry track
+								emoji = "💼",
 							})
 						end
 						state.Flags = state.Flags or {}
@@ -68,6 +73,7 @@ local events = {
 						state.Flags.employed = true
 						state.Flags.has_job = true
 						state.Flags.interview_ace = true
+						state.Flags.entry_level_experience = true -- Grant experience flag for progression
 						state:ModifyStat("Happiness", 15)
 						state:ModifyStat("Smarts", 3)
 						if state.AddFeed then
@@ -90,14 +96,18 @@ local events = {
 				effects = { Happiness = 7, Smarts = 3 },
 				feedText = "You were genuine and authentic. The interviewer loved it. OFFER LETTER INCOMING!",
 				onResolve = function(state)
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX #58: Assign proper entry-level job that's in CareerTracks
+					-- ═══════════════════════════════════════════════════════════════════════════════
 					local salary = 38000 + math.random(0, 10) * 1000 -- 38k-48k
 					if state.SetCareer then
 						state:SetCareer({
-							id = "entry_career",
+							id = "entry_career", -- CRITICAL: This ID is now in CareerTracks.entry
 							name = "Associate",
 							company = "Local Company",
 							salary = salary,
-							category = "entry",
+							category = "entry", -- CRITICAL: Entry category for proper progression
+							emoji = "💼",
 						})
 					end
 					state.Flags = state.Flags or {}
@@ -105,6 +115,7 @@ local events = {
 					state.Flags.career_started = true
 					state.Flags.employed = true
 					state.Flags.has_job = true
+					state.Flags.entry_level_experience = true -- Grant experience flag for progression
 					if state.AddFeed then
 						state:AddFeed(string.format("🎉 You got the job! Salary: $%d. Your career begins NOW!", salary))
 					end

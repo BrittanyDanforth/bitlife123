@@ -724,63 +724,119 @@ Milestones.events = {
 				end)
 			end
 			
-			-- CRITICAL FIX: Define career tracks inline for promotion lookup
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #52: Define career tracks inline for promotion lookup
 			-- This mirrors the CareerTracks in LifeBackend.lua
+			-- INCLUDES entry-level track so generic first jobs can progress!
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			local CareerTracks = {
+				-- CRITICAL FIX #53: Entry-level tracks for players who got generic first jobs
+				entry = { "entry_career", "office_assistant", "administrative_assistant", "office_manager", "project_manager" },
+				entry_service = { "retail_worker", "cashier", "shift_supervisor", "store_manager", "district_manager" },
+				entry_food = { "fast_food_worker", "server", "shift_lead", "restaurant_manager" },
+				-- Office tracks
 				office = { "receptionist", "office_assistant", "data_entry", "administrative_assistant", "office_manager", "project_manager", "operations_director", "coo" },
+				-- Tech tracks (require coder/tech flags)
 				tech_dev = { "it_support", "junior_developer", "developer", "senior_developer", "tech_lead", "software_architect", "cto" },
 				tech_web = { "web_developer", "developer", "senior_developer", "tech_lead" },
+				-- Medical tracks
 				medical_nursing = { "hospital_orderly", "medical_assistant", "nurse_lpn", "nurse_rn", "nurse_practitioner" },
 				medical_doctor = { "doctor_resident", "doctor", "surgeon", "chief_of_medicine" },
+				-- Legal tracks
 				legal = { "legal_assistant", "paralegal", "associate_lawyer", "lawyer", "senior_partner" },
+				-- Finance tracks
 				finance_banking = { "bank_teller", "loan_officer", "accountant_jr", "accountant", "cpa", "cfo" },
 				finance_invest = { "financial_analyst", "investment_banker_jr", "investment_banker", "hedge_fund_manager" },
+				-- Creative tracks
 				creative_design = { "graphic_designer_jr", "graphic_designer", "art_director" },
 				creative_media = { "journalist_jr", "journalist", "editor" },
 				creative_marketing = { "social_media_manager", "marketing_associate", "marketing_manager", "cmo" },
 				creative_acting = { "actor_extra", "actor", "movie_star" },
 				creative_music = { "musician_local", "musician_signed", "pop_star" },
+				-- Government tracks
 				gov_police = { "police_officer", "detective", "police_chief" },
+				-- Education tracks
 				education_school = { "teaching_assistant", "substitute_teacher", "teacher", "department_head", "principal", "superintendent" },
 				education_university = { "professor_assistant", "professor", "dean" },
+				-- Science tracks
 				science = { "lab_technician", "research_assistant", "scientist", "senior_scientist", "research_director" },
+				-- Sports tracks
 				sports_player = { "minor_league", "professional_athlete", "star_athlete" },
 				sports_coach = { "gym_instructor", "sports_coach", "head_coach" },
+				-- Military tracks
 				military_enlisted = { "enlisted", "sergeant" },
 				military_officer = { "officer", "captain", "colonel", "general" },
+				-- Esports tracks (require gamer flag)
 				esports = { "casual_gamer", "content_creator", "pro_gamer", "esports_champion", "gaming_legend" },
+				-- Racing tracks
 				racing = { "go_kart_racer", "amateur_racer", "professional_racer", "f1_driver", "racing_legend" },
+				-- Hacker tracks (require coder flag)
 				hacker_whitehat = { "script_kiddie", "freelance_hacker", "pen_tester", "security_consultant", "ciso" },
 			}
 			
-			-- Look up the next job in the career track
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #54: Map job categories to their allowed tracks
+			-- This prevents players from being promoted into incompatible career tracks
+			-- (e.g., entry worker shouldn't suddenly become a tech lead)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local categoryToTracks = {
+				entry = { "entry", "entry_service", "entry_food", "office" },
+				service = { "entry_service", "entry_food" },
+				office = { "office" },
+				tech = { "tech_dev", "tech_web" },
+				medical = { "medical_nursing", "medical_doctor" },
+				legal = { "legal" },
+				finance = { "finance_banking", "finance_invest" },
+				creative = { "creative_design", "creative_media", "creative_marketing", "creative_acting", "creative_music" },
+				government = { "gov_police" },
+				education = { "education_school", "education_university" },
+				science = { "science" },
+				sports = { "sports_player", "sports_coach" },
+				military = { "military_enlisted", "military_officer" },
+				esports = { "esports" },
+				racing = { "racing" },
+				hacker = { "hacker_whitehat" },
+			}
+			
+			-- Get current job category
+			local currentCategory = (state.CurrentJob.category and state.CurrentJob.category:lower()) or "entry"
+			local allowedTracks = categoryToTracks[currentCategory] or { "entry", "office" }
+			
+			-- Look up the next job in the career track - ONLY in allowed tracks!
 			if oldJobId then
-				for trackName, trackJobs in pairs(CareerTracks) do
-					for i, jobId in ipairs(trackJobs) do
-						if jobId == oldJobId then
-							-- Found current job - get next position
-							local nextJobId = trackJobs[i + 1]
-							if nextJobId then
-								promotedToTrackJob = true
-								newJobData = {
-									id = nextJobId,
-									name = nextJobId:gsub("_", " "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end),
-								}
-								
-								-- Update the actual job ID so career track is in sync!
-								state.CurrentJob.id = nextJobId
+				for _, trackName in ipairs(allowedTracks) do
+					local trackJobs = CareerTracks[trackName]
+					if trackJobs then
+						for i, jobId in ipairs(trackJobs) do
+							if jobId == oldJobId then
+								-- Found current job - get next position
+								local nextJobId = trackJobs[i + 1]
+								if nextJobId then
+									promotedToTrackJob = true
+									newJobData = {
+										id = nextJobId,
+										name = nextJobId:gsub("_", " "):gsub("(%a)([%w_']*)", function(f,r) return f:upper()..r:lower() end),
+									}
+									
+									-- Update the actual job ID so career track is in sync!
+									state.CurrentJob.id = nextJobId
+									-- CRITICAL FIX #55: Preserve job category during promotion
+									-- Don't change category - player stays in their career path
+								end
+								break
 							end
-							break
 						end
 					end
 					if promotedToTrackJob then break end
 				end
 			end
 			
-			-- Calculate new salary (25% raise for track promotion, 20-35% for generic)
+			-- Calculate new salary (25% raise for track promotion, 15-25% for generic)
+			-- CRITICAL FIX #56: Cap salary increases to prevent unrealistic jumps
 			local RANDOM_PROMO = Random.new()
 			local newSalary
 			local promotedTitle
+			local maxSalaryIncrease = oldSalary * 0.40 -- Max 40% increase to prevent huge jumps
 			
 			if promotedToTrackJob and newJobData then
 				-- CRITICAL: Use the track job name instead of fake "Senior X" titles!
