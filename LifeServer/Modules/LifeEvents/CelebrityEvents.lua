@@ -3370,11 +3370,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Extra"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #38: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "extra", -- CRITICAL: Job ID must match JobCatalog
 						name = "Extra",
+						company = "Casting Agency",
 						category = "entertainment",
+						emoji = "👥",
 						salary = math.random(500, 2000),
 						isActing = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎬 Your acting journey begins! Starting as an extra...")
@@ -3392,11 +3397,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Street Performer"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #37: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "street_performer", -- CRITICAL: Job ID must match JobCatalog
 						name = "Street Performer",
+						company = "Self-Employed",
 						category = "entertainment",
+						emoji = "🎸",
 						salary = math.random(50, 500),
 						isMusic = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎵 Your music journey begins! Playing for tips...")
@@ -3414,11 +3424,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Underground Rapper"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #33: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "underground_rapper", -- CRITICAL: Job ID must match JobCatalog
 						name = "Underground Rapper",
+						company = "Independent",
 						category = "entertainment",
 						salary = math.random(0, 500),
+						emoji = "🎤",
 						isRapper = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎤 Your rap journey begins! Spitting bars in cyphers...")
@@ -3434,14 +3449,19 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "streamer"
 					state.FameState.stage = 1
-					state.FameState.stageName = "Hobbyist Streamer"
+					state.FameState.stageName = "New Streamer"
 					state.FameState.yearsInStage = 0
 					state.FameState.subscribers = 10
+					-- CRITICAL FIX #41: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Hobbyist Streamer",
+						id = "new_streamer", -- CRITICAL: Job ID must match JobCatalog
+						name = "New Streamer",
+						company = "Twitch",
 						category = "entertainment",
+						emoji = "🎮",
 						salary = math.random(0, 50),
 						isStreamer = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎮 Your streaming journey begins! Time to go live!")
@@ -3460,11 +3480,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stageName = "New Creator"
 					state.FameState.yearsInStage = 0
 					state.FameState.followers = 100
+					-- CRITICAL FIX #34: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Content Creator",
+						id = "new_creator", -- CRITICAL: Job ID must match JobCatalog
+						name = "New Creator",
+						company = "Social Media",
 						category = "entertainment",
+						emoji = "📱",
 						salary = math.random(0, 100),
 						isInfluencer = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("📱 Your influencer journey begins! Time to build that following!")
@@ -3482,11 +3507,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Amateur"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #39: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Amateur Athlete",
-						category = "sports",
-						salary = 0,
+						id = "amateur_athlete", -- CRITICAL: Job ID must match JobCatalog
+						name = "Amateur",
+						company = "Local Leagues",
+						category = "entertainment",
+						emoji = "🏃",
+						salary = math.random(0, 500),
 						isAthlete = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🏆 Your athletic journey begins! Train hard!")
