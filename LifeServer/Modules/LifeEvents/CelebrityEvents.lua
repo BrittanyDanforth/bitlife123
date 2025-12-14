@@ -2353,6 +2353,285 @@ CelebrityEvents.GeneralFameEvents = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #71: EXPANDED CELEBRITY EVENTS FOR DEEPER GAMEPLAY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- WORLD TOUR OFFER
+	{
+		id = "world_tour_offer",
+		title = "🌍 World Tour Opportunity",
+		emoji = "🌍",
+		text = "A promoter wants to send you on a massive world tour. 50 cities, 6 months on the road.",
+		minFame = 55,
+		cooldown = 8,
+		maxOccurrences = 3,
+		choices = {
+			{
+				text = "Full commitment - 50 city tour",
+				effects = { Happiness = 15, Health = -20, Money = 5000000 },
+				fameEffect = 25,
+				setFlags = { world_tour_veteran = true, road_warrior = true },
+				feed = "Grueling but legendary! Fans worldwide saw you live!",
+			},
+			{
+				text = "Scaled down - 20 major cities",
+				effects = { Happiness = 10, Health = -10, Money = 2000000 },
+				fameEffect = 15,
+				setFlags = { toured_world = true },
+				feed = "Hit the major markets. Solid tour!",
+			},
+			{
+				text = "Decline - focus on studio work",
+				effects = { Happiness = 5, Smarts = 3 },
+				fameEffect = 0,
+				feed = "You stayed home to create instead.",
+			},
+		},
+	},
+	
+	-- CELEBRITY DATING RUMORS
+	{
+		id = "celebrity_dating_rumors",
+		title = "💕 Celebrity Romance Rumors",
+		emoji = "💕",
+		text = "Tabloids are linking you romantically with another A-lister. Paparazzi are everywhere!",
+		minFame = 40,
+		cooldown = 3,
+		maxOccurrences = 6,
+		choices = {
+			{
+				text = "Confirm the relationship",
+				effects = { Happiness = 15 },
+				fameEffect = 20,
+				setFlags = { power_couple = true },
+				feed = "You're now one of Hollywood's hottest couples!",
+			},
+			{
+				text = "Deny everything",
+				effects = { Happiness = -5 },
+				fameEffect = 5,
+				feed = "They didn't believe you but whatever.",
+			},
+			{
+				text = "No comment - keep them guessing",
+				effects = { Happiness = 8 },
+				fameEffect = 15,
+				setFlags = { mysterious = true },
+				feed = "The mystery only made it bigger news!",
+			},
+		},
+	},
+	
+	-- MUSIC VIDEO MILESTONE
+	{
+		id = "music_video_billion",
+		title = "📺 Billion View Video!",
+		emoji = "📺",
+		text = "Your music video just hit ONE BILLION views! You're in elite company.",
+		minFame = 70,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{
+				text = "Throw a massive celebration",
+				effects = { Happiness = 25, Money = -100000 },
+				fameEffect = 15,
+				setFlags = { billion_club = true },
+				feed = "The party of the year!",
+			},
+			{
+				text = "Thank fans with a surprise drop",
+				effects = { Happiness = 20 },
+				fameEffect = 20,
+				setFlags = { billion_club = true, fan_favorite = true },
+				feed = "The surprise track went viral!",
+			},
+			{
+				text = "Stay humble - acknowledge the team",
+				effects = { Happiness = 18, Smarts = 5 },
+				fameEffect = 12,
+				setFlags = { billion_club = true, humble_celebrity = true },
+				feed = "Your gratitude was refreshing.",
+			},
+		},
+	},
+	
+	-- SOLD OUT ARENA
+	{
+		id = "sold_out_arena",
+		title = "🏟️ Arena Sellout!",
+		emoji = "🏟️",
+		text = "Your arena show sold out in minutes! Fans are reselling tickets for insane prices.",
+		minFame = 60,
+		cooldown = 5,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Add more dates to meet demand",
+				effects = { Happiness = 15, Health = -5, Money = 2000000 },
+				fameEffect = 15,
+				setFlags = { arena_headliner = true },
+				feed = "More shows, more fans, more revenue!",
+			},
+			{
+				text = "Keep it exclusive",
+				effects = { Happiness = 10 },
+				fameEffect = 10,
+				setFlags = { exclusive_performer = true },
+				feed = "Scarcity made it legendary.",
+			},
+			{
+				text = "Cancel scalped tickets, release at face value",
+				effects = { Happiness = 20, Money = -500000 },
+				fameEffect = 20,
+				setFlags = { fan_advocate = true },
+				feed = "Fans LOVE you for fighting scalpers!",
+			},
+		},
+	},
+	
+	-- SOCIAL MEDIA CONTROVERSY
+	{
+		id = "social_media_controversy",
+		title = "📱 Tweet Causes Chaos",
+		emoji = "📱",
+		text = "Something you posted online is causing a massive controversy! Your mentions are on fire.",
+		minFame = 35,
+		cooldown = 4,
+		maxOccurrences = 5,
+		choices = {
+			{
+				text = "Delete and apologize immediately",
+				effects = { Happiness = -10 },
+				fameEffect = -10,
+				feed = "Quick damage control. Some accepted it.",
+			},
+			{
+				text = "Double down - stand by your words",
+				effects = { Happiness = 5 },
+				successChance = 40,
+				successFame = 15,
+				successFeed = "Your boldness won respect!",
+				failFame = -25,
+				failFeed = "That made everything so much worse.",
+			},
+			{
+				text = "Clarify with a thoughtful response",
+				effects = { Happiness = 0, Smarts = 3 },
+				fameEffect = 5,
+				setFlags = { measured_response = true },
+				feed = "Nuance in the age of outrage. Respect.",
+			},
+		},
+	},
+	
+	-- AWARD NOMINATION
+	{
+		id = "major_award_nomination",
+		title = "🏆 Major Award Nomination!",
+		emoji = "🏆",
+		text = "You've been nominated for one of the biggest awards in your industry!",
+		minFame = 50,
+		cooldown = 3,
+		maxOccurrences = 10,
+		choices = {
+			{
+				text = "Campaign hard for the win",
+				effects = { Happiness = 10, Money = -200000 },
+				successChance = 50,
+				successFame = 25,
+				successFeed = "YOU WON! Standing ovation!",
+				failFame = 8,
+				failFeed = "You lost, but the nomination was an honor.",
+				setFlags = { award_campaigner = true },
+			},
+			{
+				text = "Let the work speak for itself",
+				effects = { Happiness = 8 },
+				successChance = 30,
+				successFame = 30,
+				successFeed = "You won without campaigning! Pure merit!",
+				failFame = 5,
+				failFeed = "Didn't win, but you stayed classy.",
+			},
+			{
+				text = "Skip the ceremony",
+				effects = { Happiness = 5 },
+				fameEffect = -5,
+				feed = "Some thought it was disrespectful.",
+			},
+		},
+	},
+	
+	-- MAGAZINE COVER
+	{
+		id = "magazine_cover_offer",
+		title = "📰 Magazine Cover Feature",
+		emoji = "📰",
+		text = "A prestigious magazine wants you on their cover with an exclusive interview.",
+		minFame = 45,
+		cooldown = 4,
+		maxOccurrences = 8,
+		choices = {
+			{
+				text = "Do a revealing personal interview",
+				effects = { Happiness = 8 },
+				fameEffect = 15,
+				setFlags = { open_book = true },
+				feed = "The candid interview resonated with millions.",
+			},
+			{
+				text = "Keep it professional - career focused",
+				effects = { Happiness = 5, Smarts = 3 },
+				fameEffect = 10,
+				feed = "A polished industry piece.",
+			},
+			{
+				text = "Demand editorial control",
+				effects = { Happiness = 3 },
+				successChance = 40,
+				successFame = 12,
+				successFeed = "You got final approval!",
+				failFame = -3,
+				failFeed = "They went with someone else.",
+			},
+		},
+	},
+	
+	-- FRAGRANCE DEAL
+	{
+		id = "fragrance_line_offer",
+		title = "✨ Fragrance Deal",
+		emoji = "✨",
+		text = "A major fragrance company wants to create a signature scent with your name on it.",
+		minFame = 50,
+		oneTime = true,
+		maxOccurrences = 1,
+		choices = {
+			{
+				text = "Full creative involvement",
+				effects = { Happiness = 15, Money = 2000000 },
+				fameEffect = 12,
+				setFlags = { has_fragrance = true, creative_celeb = true },
+				feed = "Your signature scent is a bestseller!",
+			},
+			{
+				text = "Just put your name on it",
+				effects = { Happiness = 8, Money = 5000000 },
+				fameEffect = 8,
+				setFlags = { has_fragrance = true },
+				feed = "Easy money. Fragrance sells okay.",
+			},
+			{
+				text = "Decline - not your brand",
+				effects = { Happiness = 3 },
+				fameEffect = 0,
+				feed = "Not everything needs your name.",
+			},
+		},
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -3370,11 +3649,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Extra"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #38: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "extra", -- CRITICAL: Job ID must match JobCatalog
 						name = "Extra",
+						company = "Casting Agency",
 						category = "entertainment",
+						emoji = "👥",
 						salary = math.random(500, 2000),
 						isActing = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎬 Your acting journey begins! Starting as an extra...")
@@ -3392,11 +3676,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Street Performer"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #37: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "street_performer", -- CRITICAL: Job ID must match JobCatalog
 						name = "Street Performer",
+						company = "Self-Employed",
 						category = "entertainment",
+						emoji = "🎸",
 						salary = math.random(50, 500),
 						isMusic = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎵 Your music journey begins! Playing for tips...")
@@ -3414,11 +3703,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Underground Rapper"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #33: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
+						id = "underground_rapper", -- CRITICAL: Job ID must match JobCatalog
 						name = "Underground Rapper",
+						company = "Independent",
 						category = "entertainment",
 						salary = math.random(0, 500),
+						emoji = "🎤",
 						isRapper = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎤 Your rap journey begins! Spitting bars in cyphers...")
@@ -3434,14 +3728,19 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "streamer"
 					state.FameState.stage = 1
-					state.FameState.stageName = "Hobbyist Streamer"
+					state.FameState.stageName = "New Streamer"
 					state.FameState.yearsInStage = 0
 					state.FameState.subscribers = 10
+					-- CRITICAL FIX #41: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Hobbyist Streamer",
+						id = "new_streamer", -- CRITICAL: Job ID must match JobCatalog
+						name = "New Streamer",
+						company = "Twitch",
 						category = "entertainment",
+						emoji = "🎮",
 						salary = math.random(0, 50),
 						isStreamer = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🎮 Your streaming journey begins! Time to go live!")
@@ -3460,11 +3759,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stageName = "New Creator"
 					state.FameState.yearsInStage = 0
 					state.FameState.followers = 100
+					-- CRITICAL FIX #34: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Content Creator",
+						id = "new_creator", -- CRITICAL: Job ID must match JobCatalog
+						name = "New Creator",
+						company = "Social Media",
 						category = "entertainment",
+						emoji = "📱",
 						salary = math.random(0, 100),
 						isInfluencer = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("📱 Your influencer journey begins! Time to build that following!")
@@ -3482,11 +3786,16 @@ CelebrityEvents.CareerProgressionEvents = {
 					state.FameState.stage = 1
 					state.FameState.stageName = "Amateur"
 					state.FameState.yearsInStage = 0
+					-- CRITICAL FIX #39: Use proper job ID that exists in JobCatalog!
 					state.CurrentJob = {
-						name = "Amateur Athlete",
-						category = "sports",
-						salary = 0,
+						id = "amateur_athlete", -- CRITICAL: Job ID must match JobCatalog
+						name = "Amateur",
+						company = "Local Leagues",
+						category = "entertainment",
+						emoji = "🏃",
+						salary = math.random(0, 500),
 						isAthlete = true,
+						isFameCareer = true,
 					}
 					if state.AddFeed then
 						state:AddFeed("🏆 Your athletic journey begins! Train hard!")

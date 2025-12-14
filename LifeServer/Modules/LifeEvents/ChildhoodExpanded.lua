@@ -972,7 +972,7 @@ ChildhoodExpanded.events = {
 			{ text = "Tripped in front of the whole class", effects = { Happiness = -5, Health = -1 }, feedText = "Face-first. Everyone saw. You wanted to disappear." },
 			{ text = "Called the teacher 'Mom/Dad'", effects = { Happiness = -4 }, feedText = "The whole class laughed. You're never living this down." },
 			{ text = "Split your pants", effects = { Happiness = -6, Looks = -2 }, feedText = "RIP to those pants and your dignity." },
-			{ text = "Voice cracked during presentation", effects = { Happiness = -4 }, feedText = "In the middle of your speech. Puberty is cruel." },
+			{ text = "Sneezed during presentation", effects = { Happiness = -4 }, feedText = "In the middle of your speech. So embarrassing!" },
 			{ text = "Farted loudly and everyone heard", effects = { Happiness = -7 }, feedText = "The room fell silent. Then the giggles. Then the ROAR of laughter." },
 		},
 	},

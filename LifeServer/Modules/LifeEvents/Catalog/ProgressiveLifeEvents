@@ -557,42 +557,7 @@ ProgressiveLifeEvents.events = {
 			},
 		},
 	},
-	{
-		id = "child_puberty_begins",
-		title = "🌱 Growing Up",
-		emoji = "🌱",
-		text = "Your body is starting to change. This is called puberty.",
-		minAge = 10, maxAge = 12,
-		oneTime = true,
-		isMilestone = true,
-		category = "childhood",
-		tags = { "puberty", "health", "milestone" },
-		choices = {
-			{
-				text = "Embrace the changes",
-				effects = { Happiness = 3, Health = 2 },
-				setFlags = { handles_puberty_well = true },
-				feedText = "Growing up is an adventure! You're handling it well.",
-			},
-			{
-				text = "Feel embarrassed",
-				effects = { Happiness = -3 },
-				setFlags = { puberty_awkward = true },
-				feedText = "This is SO embarrassing. Why does this happen?",
-			},
-			{
-				text = "Learn everything you can",
-				effects = { Smarts = 4 },
-				setFlags = { puberty_curious = true },
-				feedText = "You read up on what's happening to your body.",
-			},
-			{
-				text = "Ignore it",
-				effects = { Happiness = 1 },
-				feedText = "Maybe if you ignore it, it'll go away? (Spoiler: it won't)",
-			},
-		},
-	},
+	-- REMOVED: child_puberty_begins - Roblox TOS compliance
 	{
 		id = "child_summer_camp",
 		title = "🏕️ Summer Camp",

@@ -333,27 +333,7 @@ SchoolExpanded.events = {
 			{ text = "Got assigned next to your crush", effects = { Happiness = 7 }, setFlags = { near_crush = true }, feedText = "🔒 Heart pounds every time you get books. Best luck!" },
 		},
 	},
-	{
-		id = "middle_puberty_moment",
-		title = "Growing Up Moment",
-		emoji = "🌱",
-		text = "Puberty is hitting and it's... a lot.",
-		question = "What's the awkward change?",
-		minAge = 11, maxAge = 14,
-		baseChance = 0.5,
-		cooldown = 3,
-		stage = "teen",
-		ageBand = "teen",
-		category = "health",
-		tags = { "puberty", "growing_up", "awkward" },
-		
-		choices = {
-			{ text = "Voice cracking at worst moment", effects = { Happiness = -4, Looks = 1 }, feedText = "🌱 Squeaked during class presentation. Wanted to disappear." },
-			{ text = "Growth spurt - clothes don't fit", effects = { Happiness = 2, Looks = 2, Money = -50 }, feedText = "🌱 Grew 3 inches! Need new everything." },
-			{ text = "Acne breakout", effects = { Happiness = -5, Looks = -3 }, setFlags = { acne_issues = true }, feedText = "🌱 Skin has declared war on your face. Brutal." },
-			{ text = "Handling it better than most", effects = { Happiness = 4, Health = 2 }, feedText = "🌱 Puberty isn't that bad for you. Lucky genes!" },
-		},
-	},
+	-- REMOVED: middle_puberty_moment - Roblox TOS compliance
 	{
 		id = "middle_clique_navigation",
 		title = "Middle School Social Groups",

@@ -1125,7 +1125,7 @@ local AgeMilestoneEvents = {
 	
 	-- LATE CHILDHOOD (9-12) - Growing up
 	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation" },
-	[10] = { "child_puberty_begins", "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending" },
+	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence" },
 	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
 	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
 	
