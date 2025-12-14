@@ -2486,6 +2486,326 @@ end
 LifeEvents.EventEngine = EventEngine
 
 -- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #452-455: ENHANCED EVENT WEIGHT CALCULATION
+-- Additional weight modifiers for better event balance
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.WeightModifiers = {
+	-- Base weights for different event categories
+	categoryWeights = {
+		milestones = 3.0,  -- High priority
+		career = 2.0,
+		relationships = 1.8,
+		health = 1.5,
+		financial = 1.5,
+		random = 1.0,
+		crime = 0.8,  -- Slightly less common
+		mafia = 1.5,  -- Good for mob members
+		royalty = 1.5,  -- Good for royals
+		celebrity = 1.5,  -- Good for famous
+	},
+	
+	-- Boost events based on player flags
+	flagBoosts = {
+		employed = { "career", "financial" },
+		married = { "relationships" },
+		has_children = { "relationships" },
+		wealthy = { "financial", "assets" },
+		famous = { "celebrity" },
+		in_mob = { "mafia", "crime" },
+		is_royalty = { "royalty" },
+	},
+}
+
+function LifeEvents.getWeightModifier(event, state)
+	local modifier = 1.0
+	local flags = state.Flags or {}
+	
+	-- Category weight
+	local category = event._category or "random"
+	modifier = modifier * (LifeEvents.WeightModifiers.categoryWeights[category] or 1.0)
+	
+	-- Flag-based boosts
+	for flag, categories in pairs(LifeEvents.WeightModifiers.flagBoosts) do
+		if flags[flag] then
+			for _, cat in ipairs(categories) do
+				if category == cat then
+					modifier = modifier * 1.5
+				end
+			end
+		end
+	end
+	
+	-- Event-specific modifiers
+	if event.weightMultiplier then
+		modifier = modifier * event.weightMultiplier
+	end
+	
+	return modifier
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #456-458: LIFE STAGE TRANSITION HELPERS
+-- Detect and trigger life stage changes
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.LifeStageTransitions = {
+	{ fromAge = 2, toAge = 3, fromStage = "baby", toStage = "toddler", event = "stage_toddler" },
+	{ fromAge = 4, toAge = 5, fromStage = "toddler", toStage = "child", event = "stage_childhood" },
+	{ fromAge = 12, toAge = 13, fromStage = "child", toStage = "teen", event = "stage_teen" },
+	{ fromAge = 17, toAge = 18, fromStage = "teen", toStage = "young_adult", event = "stage_adult" },
+	{ fromAge = 29, toAge = 30, fromStage = "young_adult", toStage = "adult", event = "stage_thirties" },
+	{ fromAge = 49, toAge = 50, fromStage = "adult", toStage = "middle_age", event = "stage_midlife" },
+	{ fromAge = 64, toAge = 65, fromStage = "middle_age", toStage = "senior", event = "stage_retirement" },
+}
+
+function LifeEvents.checkLifeStageTransition(state, oldAge, newAge)
+	for _, transition in ipairs(LifeEvents.LifeStageTransitions) do
+		if oldAge <= transition.fromAge and newAge >= transition.toAge then
+			return {
+				transitioned = true,
+				fromStage = transition.fromStage,
+				toStage = transition.toStage,
+				eventId = transition.event,
+			}
+		end
+	end
+	return { transitioned = false }
+end
+
+function LifeEvents.getLifeStageEvents(stage)
+	local events = {}
+	
+	-- Get categories for this stage
+	local categories = StageCategories[stage]
+	if not categories then
+		return events
+	end
+	
+	-- Collect events from those categories
+	for _, category in ipairs(categories) do
+		local categoryEvents = EventsByCategory[category] or {}
+		for _, event in ipairs(categoryEvents) do
+			table.insert(events, event)
+		end
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #459-461: CAREER SKILL REQUIREMENTS SYSTEM
+-- Check if player has required skills for jobs
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.CareerSkillRequirements = {
+	-- Tech careers
+	software_engineer = { Smarts = 70, skills = { "programming" } },
+	data_scientist = { Smarts = 75, skills = { "programming", "math" } },
+	it_manager = { Smarts = 65, skills = { "programming", "leadership" } },
+	
+	-- Medical careers
+	doctor = { Smarts = 85, education = "medical" },
+	nurse = { Smarts = 60, education = "bachelor" },
+	surgeon = { Smarts = 90, education = "medical", skills = { "surgery" } },
+	
+	-- Finance careers
+	investment_banker = { Smarts = 75, education = "bachelor", skills = { "finance" } },
+	accountant = { Smarts = 65, education = "bachelor" },
+	cfo = { Smarts = 80, education = "master", skills = { "finance", "leadership" } },
+	
+	-- Legal careers
+	lawyer = { Smarts = 75, education = "law" },
+	judge = { Smarts = 80, education = "law", yearsExperience = 10 },
+	
+	-- Entertainment careers
+	actor = { Looks = 60 },
+	model = { Looks = 75 },
+	musician = { skills = { "music" } },
+	
+	-- Leadership
+	ceo = { Smarts = 70, skills = { "leadership" }, yearsExperience = 8 },
+	politician = { Smarts = 60, Looks = 50, skills = { "public_speaking" } },
+}
+
+function LifeEvents.checkCareerRequirements(state, careerId)
+	local requirements = LifeEvents.CareerSkillRequirements[careerId]
+	if not requirements then
+		return true, nil -- No requirements
+	end
+	
+	local missing = {}
+	
+	-- Check stats
+	for stat, minValue in pairs({ Smarts = requirements.Smarts, Looks = requirements.Looks }) do
+		if minValue then
+			local playerValue = (state.Stats and state.Stats[stat]) or state[stat] or 0
+			if playerValue < minValue then
+				table.insert(missing, string.format("%s %d+ (have %d)", stat, minValue, playerValue))
+			end
+		end
+	end
+	
+	-- Check education
+	if requirements.education then
+		local playerEd = state.Education or "none"
+		local edLevels = { none = 0, high_school = 1, associate = 2, bachelor = 3, master = 4, law = 5, medical = 6, phd = 7 }
+		
+		if (edLevels[playerEd] or 0) < (edLevels[requirements.education] or 0) then
+			table.insert(missing, string.format("%s degree required", requirements.education))
+		end
+	end
+	
+	-- Check skills
+	if requirements.skills then
+		local playerSkills = (state.CareerInfo and state.CareerInfo.skills) or {}
+		for _, skill in ipairs(requirements.skills) do
+			if not playerSkills[skill] then
+				table.insert(missing, string.format("%s skill required", skill))
+			end
+		end
+	end
+	
+	-- Check experience
+	if requirements.yearsExperience then
+		local yearsAtJob = (state.CareerInfo and state.CareerInfo.yearsAtJob) or 0
+		if yearsAtJob < requirements.yearsExperience then
+			table.insert(missing, string.format("%d years experience required", requirements.yearsExperience))
+		end
+	end
+	
+	if #missing > 0 then
+		return false, missing
+	end
+	
+	return true, nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #462-464: RELATIONSHIP EVENT REQUIREMENTS
+-- Check relationship requirements for events
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.checkRelationshipRequirements(event, state)
+	local requirements = event.relationshipRequirements or event.requiresRelationship
+	if not requirements then
+		return true
+	end
+	
+	local relationships = state.Relationships or {}
+	
+	-- Check for specific relationship type
+	if type(requirements) == "string" then
+		-- Simple requirement like "partner" or "parent"
+		if relationships[requirements:lower()] then
+			return true
+		end
+		
+		-- Check for partner
+		if requirements == "partner" then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and (rel.type == "romantic" or rel.role == "Partner") then
+					if rel.alive ~= false then
+						return true
+					end
+				end
+			end
+		end
+		
+		return false
+	end
+	
+	-- Complex requirements
+	if type(requirements) == "table" then
+		-- Requires any relationship
+		if requirements.hasAny then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					return true
+				end
+			end
+			return false
+		end
+		
+		-- Requires specific type
+		if requirements.type then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.type == requirements.type then
+					if rel.alive ~= false then
+						-- Check relationship strength if required
+						if requirements.minStrength then
+							if (rel.relationship or 0) >= requirements.minStrength then
+								return true
+							end
+						else
+							return true
+						end
+					end
+				end
+			end
+			return false
+		end
+		
+		-- Requires minimum count
+		if requirements.minCount then
+			local count = 0
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					count = count + 1
+				end
+			end
+			return count >= requirements.minCount
+		end
+	end
+	
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #465: COMPREHENSIVE YEARLY PROGRESSION CHECK
+-- Called to process all yearly updates for premium features
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.processYearlyProgression(state)
+	local results = {
+		events = {},
+		messages = {},
+	}
+	
+	-- Check for life stage transition
+	local prevAge = (state.Age or 1) - 1
+	local transition = LifeEvents.checkLifeStageTransition(state, prevAge, state.Age)
+	if transition.transitioned then
+		table.insert(results.messages, string.format("Life Stage: %s → %s", 
+			transition.fromStage:gsub("_", " "):gsub("^%l", string.upper),
+			transition.toStage:gsub("_", " "):gsub("^%l", string.upper)))
+	end
+	
+	-- Fame career progression
+	if state.FameState and state.FameState.careerPath then
+		state.FameState.yearsInCareer = (state.FameState.yearsInCareer or 0) + 1
+	end
+	
+	-- Royal reign progression
+	if state.RoyalState and state.RoyalState.isMonarch then
+		state.RoyalState.reignYears = (state.RoyalState.reignYears or 0) + 1
+	end
+	
+	-- Mafia years progression
+	if state.MobState and state.MobState.inMob then
+		state.MobState.yearsInMob = (state.MobState.yearsInMob or 0) + 1
+	end
+	
+	-- Career years progression
+	if state.CurrentJob then
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.yearsAtJob = (state.CareerInfo.yearsAtJob or 0) + 1
+	end
+	
+	return results
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
 -- AUTO-INITIALIZATION
 -- ════════════════════════════════════════════════════════════════════════════════════
 

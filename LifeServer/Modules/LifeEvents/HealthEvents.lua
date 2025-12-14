@@ -1192,4 +1192,322 @@ HealthEvents.events = {
 -- CRITICAL FIX #251: Export events in standard format for LifeEvents loader
 HealthEvents.LifeEvents = HealthEvents.events
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #498-500: DISEASE TRACKING AND PROGRESSION SYSTEM
+-- Tracks active diseases and their effects over time
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+HealthEvents.DiseaseTypes = {
+	cold_flu = { 
+		name = "Cold/Flu", 
+		severity = "mild", 
+		duration = 1, 
+		healthImpact = -2,
+		canSpread = true,
+	},
+	diabetes = {
+		name = "Diabetes",
+		severity = "chronic",
+		duration = -1, -- Lifelong
+		healthImpact = -3, -- Per year if untreated
+		manageable = true,
+		managedHealthImpact = -1,
+	},
+	heart_disease = {
+		name = "Heart Disease",
+		severity = "serious",
+		duration = -1,
+		healthImpact = -5,
+		manageable = true,
+		managedHealthImpact = -2,
+		fatalityRisk = 0.05,
+	},
+	cancer = {
+		name = "Cancer",
+		severity = "critical",
+		duration = -1,
+		healthImpact = -10,
+		treatmentRequired = true,
+		fatalityRisk = 0.15,
+		treatedFatalityRisk = 0.03,
+	},
+	depression = {
+		name = "Clinical Depression",
+		severity = "moderate",
+		duration = -1,
+		healthImpact = -1,
+		happinessImpact = -5,
+		manageable = true,
+		managedHappinessImpact = -1,
+	},
+	anxiety = {
+		name = "Anxiety Disorder",
+		severity = "moderate",
+		duration = -1,
+		healthImpact = -1,
+		happinessImpact = -3,
+		manageable = true,
+	},
+	hiv = {
+		name = "HIV",
+		severity = "serious",
+		duration = -1,
+		healthImpact = -5,
+		manageable = true,
+		managedHealthImpact = -1,
+		fatalityRisk = 0.02,
+	},
+	broken_bone = {
+		name = "Broken Bone",
+		severity = "moderate",
+		duration = 1,
+		healthImpact = -5,
+	},
+}
+
+function HealthEvents.initDiseaseTracking(state)
+	state.ActiveDiseases = state.ActiveDiseases or {}
+	state.MedicalHistory = state.MedicalHistory or {}
+end
+
+function HealthEvents.addDisease(state, diseaseType, options)
+	HealthEvents.initDiseaseTracking(state)
+	options = options or {}
+	
+	local diseaseInfo = HealthEvents.DiseaseTypes[diseaseType]
+	if not diseaseInfo then
+		return false, "Unknown disease type"
+	end
+	
+	-- Check if already has this disease
+	if state.ActiveDiseases[diseaseType] then
+		return false, "Already has this disease"
+	end
+	
+	state.ActiveDiseases[diseaseType] = {
+		type = diseaseType,
+		name = diseaseInfo.name,
+		severity = diseaseInfo.severity,
+		diagnosedAge = state.Age,
+		diagnosedYear = state.Year,
+		inTreatment = options.inTreatment or false,
+		managed = options.managed or false,
+		yearsWithCondition = 0,
+	}
+	
+	-- Set flag
+	state.Flags = state.Flags or {}
+	state.Flags[diseaseType] = true
+	state.Flags.has_illness = true
+	
+	if diseaseInfo.severity == "chronic" or diseaseInfo.severity == "serious" or diseaseInfo.severity == "critical" then
+		state.Flags.chronic_illness = true
+	end
+	
+	-- Record in medical history
+	table.insert(state.MedicalHistory, {
+		type = "diagnosis",
+		disease = diseaseType,
+		name = diseaseInfo.name,
+		age = state.Age,
+		year = state.Year,
+	})
+	
+	return true, diseaseInfo
+end
+
+function HealthEvents.removeDisease(state, diseaseType)
+	HealthEvents.initDiseaseTracking(state)
+	
+	if not state.ActiveDiseases[diseaseType] then
+		return false, "Does not have this disease"
+	end
+	
+	local disease = state.ActiveDiseases[diseaseType]
+	state.ActiveDiseases[diseaseType] = nil
+	
+	-- Clear flag
+	if state.Flags then
+		state.Flags[diseaseType] = nil
+	end
+	
+	-- Check if any diseases remain
+	local hasAnyDisease = false
+	for _ in pairs(state.ActiveDiseases) do
+		hasAnyDisease = true
+		break
+	end
+	if not hasAnyDisease and state.Flags then
+		state.Flags.has_illness = nil
+	end
+	
+	-- Record in medical history
+	table.insert(state.MedicalHistory, {
+		type = "recovery",
+		disease = diseaseType,
+		name = disease.name,
+		age = state.Age,
+		year = state.Year,
+		yearsAfflicted = disease.yearsWithCondition,
+	})
+	
+	return true
+end
+
+function HealthEvents.tickDiseases(state)
+	HealthEvents.initDiseaseTracking(state)
+	
+	local effects = {
+		healthChange = 0,
+		happinessChange = 0,
+		died = false,
+		deathCause = nil,
+		messages = {},
+	}
+	
+	for diseaseType, disease in pairs(state.ActiveDiseases) do
+		local info = HealthEvents.DiseaseTypes[diseaseType]
+		if not info then continue end
+		
+		disease.yearsWithCondition = (disease.yearsWithCondition or 0) + 1
+		
+		-- Check for natural recovery (temporary illnesses)
+		if info.duration > 0 and disease.yearsWithCondition >= info.duration then
+			HealthEvents.removeDisease(state, diseaseType)
+			table.insert(effects.messages, "Recovered from " .. info.name)
+			continue
+		end
+		
+		-- Apply health impact
+		local healthImpact = info.healthImpact or 0
+		if disease.managed and info.managedHealthImpact then
+			healthImpact = info.managedHealthImpact
+		end
+		effects.healthChange = effects.healthChange + healthImpact
+		
+		-- Apply happiness impact (mental health conditions)
+		if info.happinessImpact then
+			local happinessImpact = info.happinessImpact
+			if disease.managed and info.managedHappinessImpact then
+				happinessImpact = info.managedHappinessImpact
+			end
+			effects.happinessChange = effects.happinessChange + happinessImpact
+		end
+		
+		-- Check fatality risk
+		local fatalityRisk = info.fatalityRisk or 0
+		if disease.inTreatment and info.treatedFatalityRisk then
+			fatalityRisk = info.treatedFatalityRisk
+		end
+		
+		if fatalityRisk > 0 then
+			local roll = math.random()
+			if roll < fatalityRisk then
+				effects.died = true
+				effects.deathCause = info.name
+				break
+			end
+		end
+	end
+	
+	return effects
+end
+
+function HealthEvents.getActiveDiseaseCount(state)
+	HealthEvents.initDiseaseTracking(state)
+	local count = 0
+	for _ in pairs(state.ActiveDiseases) do
+		count = count + 1
+	end
+	return count
+end
+
+function HealthEvents.hasChronicCondition(state)
+	HealthEvents.initDiseaseTracking(state)
+	for diseaseType, _ in pairs(state.ActiveDiseases) do
+		local info = HealthEvents.DiseaseTypes[diseaseType]
+		if info and (info.severity == "chronic" or info.severity == "serious") then
+			return true
+		end
+	end
+	return false
+end
+
+function HealthEvents.setTreatment(state, diseaseType, inTreatment)
+	HealthEvents.initDiseaseTracking(state)
+	if state.ActiveDiseases[diseaseType] then
+		state.ActiveDiseases[diseaseType].inTreatment = inTreatment
+		state.ActiveDiseases[diseaseType].managed = inTreatment
+		return true
+	end
+	return false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #501-503: HEALTH SUMMARY AND REPORTING
+-- Generates comprehensive health reports for the player
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function HealthEvents.getHealthSummary(state)
+	HealthEvents.initDiseaseTracking(state)
+	
+	local summary = {
+		overallHealth = (state.Stats and state.Stats.Health) or state.Health or 50,
+		activeDiseases = {},
+		chronicConditions = 0,
+		inTreatment = 0,
+		healthRisks = {},
+	}
+	
+	-- List active diseases
+	for diseaseType, disease in pairs(state.ActiveDiseases) do
+		local info = HealthEvents.DiseaseTypes[diseaseType]
+		table.insert(summary.activeDiseases, {
+			name = info and info.name or diseaseType,
+			severity = info and info.severity or "unknown",
+			yearsAfflicted = disease.yearsWithCondition,
+			inTreatment = disease.inTreatment,
+			managed = disease.managed,
+		})
+		
+		if info and (info.severity == "chronic" or info.severity == "serious") then
+			summary.chronicConditions = summary.chronicConditions + 1
+		end
+		
+		if disease.inTreatment then
+			summary.inTreatment = summary.inTreatment + 1
+		end
+	end
+	
+	-- Check health risks based on flags
+	local flags = state.Flags or {}
+	if flags.smoker then
+		table.insert(summary.healthRisks, "Smoking increases cancer and heart disease risk")
+	end
+	if flags.heavy_drinker then
+		table.insert(summary.healthRisks, "Heavy drinking damages liver and heart")
+	end
+	if flags.obese then
+		table.insert(summary.healthRisks, "Obesity increases diabetes and heart disease risk")
+	end
+	if flags.sedentary then
+		table.insert(summary.healthRisks, "Sedentary lifestyle reduces overall health")
+	end
+	
+	-- Calculate overall status
+	if summary.overallHealth >= 80 and #summary.activeDiseases == 0 then
+		summary.status = "EXCELLENT"
+	elseif summary.overallHealth >= 60 then
+		summary.status = "GOOD"
+	elseif summary.overallHealth >= 40 then
+		summary.status = "FAIR"
+	elseif summary.overallHealth >= 20 then
+		summary.status = "POOR"
+	else
+		summary.status = "CRITICAL"
+	end
+	
+	return summary
+end
+
 return HealthEvents

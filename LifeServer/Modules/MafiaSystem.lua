@@ -1483,6 +1483,530 @@ function MafiaSystem:generateOperationEvent(lifeState, operationId)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #418-420: RANK-BASED OPERATION REWARD MULTIPLIERS
+-- Higher ranks get better cuts from operations
+-- ════════════════════════════════════════════════════════════════════════════
+
+MafiaSystem.RankRewardMultipliers = {
+	[1] = 1.0,   -- Associate - standard cut
+	[2] = 1.25,  -- Soldier - 25% bonus
+	[3] = 1.5,   -- Caporegime - 50% bonus
+	[4] = 2.0,   -- Underboss - double rewards
+	[5] = 3.0,   -- Boss - triple rewards
+}
+
+function MafiaSystem:getRankRewardMultiplier(lifeState)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return 1.0
+	end
+	
+	local rankIndex = mobState.rankIndex or 1
+	return self.RankRewardMultipliers[rankIndex] or 1.0
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #421-422: MAFIA TERRITORY SYSTEM
+-- Control territories for passive income and influence
+-- ════════════════════════════════════════════════════════════════════════════
+
+MafiaSystem.TerritoryTypes = {
+	{ id = "docks", name = "The Docks", income = 5000, control = 0, emoji = "🚢" },
+	{ id = "downtown", name = "Downtown", income = 8000, control = 0, emoji = "🏙️" },
+	{ id = "chinatown", name = "Chinatown", income = 6000, control = 0, emoji = "🏮" },
+	{ id = "suburbs", name = "The Suburbs", income = 3000, control = 0, emoji = "🏡" },
+	{ id = "industrial", name = "Industrial District", income = 4000, control = 0, emoji = "🏭" },
+	{ id = "entertainment", name = "Entertainment District", income = 10000, control = 0, emoji = "🎰" },
+}
+
+function MafiaSystem:getTerritoryIncome(lifeState)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return 0
+	end
+	
+	local totalIncome = 0
+	local territories = mobState.territories or {}
+	
+	for _, territory in ipairs(territories) do
+		local control = territory.control or 0
+		local baseIncome = territory.income or 0
+		-- Income scales with control percentage
+		totalIncome = totalIncome + math.floor(baseIncome * (control / 100))
+	end
+	
+	-- Apply rank multiplier
+	local rankMultiplier = self:getRankRewardMultiplier(lifeState)
+	return math.floor(totalIncome * rankMultiplier)
+end
+
+function MafiaSystem:claimTerritory(lifeState, territoryId)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return false, "Not in a mob"
+	end
+	
+	-- Must be at least Caporegime (rank 3) to claim territory
+	if (mobState.rankIndex or 1) < 3 then
+		return false, "Must be Caporegime or higher to claim territory"
+	end
+	
+	-- Find territory
+	local territory = nil
+	for _, t in ipairs(self.TerritoryTypes) do
+		if t.id == territoryId then
+			territory = {
+				id = t.id,
+				name = t.name,
+				income = t.income,
+				emoji = t.emoji,
+				control = 25, -- Start with 25% control
+				claimedYear = lifeState.Year,
+			}
+			break
+		end
+	end
+	
+	if not territory then
+		return false, "Unknown territory"
+	end
+	
+	-- Check if already controlling this territory
+	mobState.territories = mobState.territories or {}
+	for _, t in ipairs(mobState.territories) do
+		if t.id == territoryId then
+			return false, "Already controlling this territory"
+		end
+	end
+	
+	table.insert(mobState.territories, territory)
+	return true, string.format("You've claimed %s %s!", territory.emoji, territory.name)
+end
+
+function MafiaSystem:expandTerritoryControl(lifeState, territoryId, amount)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.territories then
+		return false, "No territories"
+	end
+	
+	for _, t in ipairs(mobState.territories) do
+		if t.id == territoryId then
+			t.control = math.min(100, (t.control or 0) + amount)
+			return true, string.format("Control of %s increased to %d%%", t.name, t.control)
+		end
+	end
+	
+	return false, "Territory not found"
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #423-425: MAFIA WAR SYSTEM
+-- Handle family wars and conflicts
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:startWar(lifeState, rivalFamilyId)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return false, "Not in a mob"
+	end
+	
+	mobState.activeWar = {
+		rivalFamily = rivalFamilyId,
+		startYear = lifeState.Year,
+		kills = 0,
+		losses = 0,
+		intensity = 50, -- 0-100
+	}
+	
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.mob_war = true
+	
+	return true, "War has begun!"
+end
+
+function MafiaSystem:tickWar(lifeState)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.activeWar then
+		return nil
+	end
+	
+	local war = mobState.activeWar
+	local events = {}
+	
+	-- War can escalate or de-escalate
+	local roll = math.random(100)
+	
+	if roll <= 20 then
+		-- Casualties on your side
+		war.losses = war.losses + 1
+		table.insert(events, "💀 One of your soldiers was killed in the war.")
+	elseif roll <= 40 then
+		-- You score a hit
+		war.kills = war.kills + 1
+		mobState.respect = (mobState.respect or 0) + 25
+		table.insert(events, "🎯 You took out an enemy soldier.")
+	elseif roll <= 50 then
+		-- War escalates
+		war.intensity = math.min(100, war.intensity + 15)
+		table.insert(events, "⚔️ The war is escalating!")
+	elseif roll <= 60 then
+		-- War de-escalates
+		war.intensity = math.max(0, war.intensity - 10)
+		if war.intensity <= 0 then
+			-- War ends
+			mobState.activeWar = nil
+			lifeState.Flags.mob_war = nil
+			table.insert(events, "🕊️ A truce has been called. The war is over.")
+		end
+	end
+	
+	-- High intensity increases heat
+	if war and war.intensity >= 70 then
+		mobState.heat = math.min(100, (mobState.heat or 0) + 5)
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #426-427: MAFIA CREW SYSTEM
+-- Recruit and manage crew members
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:recruitCrewMember(lifeState)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.inMob then
+		return false, "Not in a mob"
+	end
+	
+	-- Must be at least Soldier (rank 2) to recruit
+	if (mobState.rankIndex or 1) < 2 then
+		return false, "Must be at least Soldier to recruit crew"
+	end
+	
+	-- Max crew size based on rank
+	local maxCrew = (mobState.rankIndex or 1) * 2
+	mobState.crew = mobState.crew or {}
+	
+	if #mobState.crew >= maxCrew then
+		return false, "Crew is at maximum size for your rank"
+	end
+	
+	-- Generate random crew member
+	local names = {"Tony", "Vinnie", "Sal", "Joey", "Frankie", "Rico", "Marco", "Luca", "Nico", "Vito"}
+	local skills = {"muscle", "driver", "tech", "smooth_talker", "hitman"}
+	
+	local member = {
+		id = "crew_" .. tostring(tick()),
+		name = names[math.random(#names)],
+		skill = skills[math.random(#skills)],
+		loyalty = 60 + math.random(30),
+		experience = math.random(1, 10),
+		alive = true,
+	}
+	
+	table.insert(mobState.crew, member)
+	
+	return true, string.format("You recruited %s (Skill: %s)", member.name, member.skill)
+end
+
+function MafiaSystem:getCrewBonus(lifeState, operationType)
+	local mobState = self:getMobState(lifeState)
+	if not mobState or not mobState.crew then
+		return 1.0, 1.0 -- No bonus
+	end
+	
+	local successBonus = 1.0
+	local rewardBonus = 1.0
+	
+	for _, member in ipairs(mobState.crew) do
+		if member.alive then
+			-- Each crew member adds small bonus
+			successBonus = successBonus + 0.02
+			
+			-- Specific skills help specific operations
+			if operationType == "heist" and member.skill == "tech" then
+				successBonus = successBonus + 0.05
+			elseif operationType == "protection" and member.skill == "muscle" then
+				rewardBonus = rewardBonus + 0.10
+			elseif operationType == "smuggling" and member.skill == "driver" then
+				successBonus = successBonus + 0.05
+			end
+		end
+	end
+	
+	return successBonus, rewardBonus
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #428-430: ENHANCED YEARLY MAFIA UPDATE
+-- Comprehensive yearly update with all systems
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:onYearPassEnhanced(lifeState)
+	local mobState = self:getMobState(lifeState)
+	local events = {}
+	
+	if not mobState.inMob then
+		return events
+	end
+	
+	mobState.yearsInMob = mobState.yearsInMob + 1
+	
+	-- Heat decay (faster at lower ranks)
+	local baseDecay = 15 - (mobState.rankIndex or 1) * 2
+	mobState.heat = math.max(0, mobState.heat - math.max(5, baseDecay))
+	
+	-- Territory income
+	local territoryIncome = self:getTerritoryIncome(lifeState)
+	if territoryIncome > 0 then
+		lifeState.Money = (lifeState.Money or 0) + territoryIncome
+		mobState.earnings = (mobState.earnings or 0) + territoryIncome
+		table.insert(events, {
+			type = "income",
+			message = string.format("💰 Your territories generated $%s this year.", self:formatMoney(territoryIncome)),
+		})
+	end
+	
+	-- War events
+	if mobState.activeWar then
+		local warEvents = self:tickWar(lifeState)
+		if warEvents then
+			for _, e in ipairs(warEvents) do
+				table.insert(events, { type = "war", message = e })
+			end
+		end
+	end
+	
+	-- Crew loyalty decay
+	if mobState.crew then
+		for _, member in ipairs(mobState.crew) do
+			if member.alive then
+				-- Loyalty slowly decreases
+				member.loyalty = math.max(0, (member.loyalty or 100) - math.random(1, 5))
+				
+				-- Low loyalty members might betray
+				if member.loyalty < 20 and math.random(100) <= 15 then
+					member.alive = false
+					table.insert(events, {
+						type = "betrayal",
+						message = string.format("😤 %s has betrayed you to the feds!", member.name),
+					})
+					mobState.heat = math.min(100, mobState.heat + 20)
+				end
+			end
+		end
+	end
+	
+	-- Random mob events
+	local roll = math.random(100)
+	
+	if roll <= 5 then
+		-- Family war starts
+		if not mobState.activeWar then
+			local rivalFamilies = {"italian", "russian", "yakuza", "cartel", "triad"}
+			local rival = rivalFamilies[math.random(#rivalFamilies)]
+			if rival ~= mobState.familyId then
+				self:startWar(lifeState, rival)
+				local rivalFamily = self.Families[rival]
+				table.insert(events, {
+					type = "war",
+					message = string.format("⚔️ War has begun with the %s!", rivalFamily and rivalFamily.name or "rival family"),
+				})
+			end
+		end
+	elseif roll <= 10 then
+		-- Police crackdown
+		if mobState.heat > 50 then
+			mobState.heat = math.min(100, mobState.heat + 20)
+			table.insert(events, {
+				type = "crackdown",
+				message = "🚔 Police are cracking down on organized crime. Lay low!",
+			})
+		end
+	elseif roll <= 15 then
+		-- Opportunity to claim territory
+		if (mobState.rankIndex or 1) >= 3 then
+			table.insert(events, {
+				type = "opportunity",
+				message = "🏙️ A territory is available for the taking!",
+			})
+		end
+	elseif roll <= 20 then
+		-- Tribute payment
+		local tribute = math.floor((mobState.respect or 0) * 10)
+		if lifeState.Money >= tribute then
+			lifeState.Money = lifeState.Money - tribute
+			mobState.loyalty = math.min(100, (mobState.loyalty or 100) + 5)
+			table.insert(events, {
+				type = "tribute",
+				message = string.format("💰 You paid $%s in tribute to the boss.", self:formatMoney(tribute)),
+			})
+		else
+			mobState.loyalty = math.max(0, (mobState.loyalty or 100) - 20)
+			table.insert(events, {
+				type = "tribute_failed",
+				message = "😰 You couldn't pay tribute. The family is not pleased...",
+			})
+		end
+	elseif roll <= 25 then
+		-- Respect bonus for loyalty
+		if (mobState.loyalty or 100) >= 90 then
+			local bonus = math.random(10, 50)
+			mobState.respect = (mobState.respect or 0) + bonus
+			table.insert(events, {
+				type = "bonus",
+				message = string.format("🤝 Your loyalty is rewarded with %d respect.", bonus),
+			})
+		end
+	end
+	
+	-- Low loyalty consequences
+	if (mobState.loyalty or 100) < 30 then
+		local betrayalChance = 100 - (mobState.loyalty or 100)
+		if math.random(100) <= betrayalChance / 2 then
+			table.insert(events, {
+				type = "warning",
+				message = "⚠️ The family suspects you might be disloyal...",
+			})
+		end
+	end
+	
+	-- Check for rank up
+	local rankUpMsg = self:checkRankUp(lifeState)
+	if rankUpMsg then
+		table.insert(events, {
+			type = "promotion",
+			message = rankUpMsg,
+		})
+	end
+	
+	if #events > 0 then
+		mobState.lastEvent = events[#events].message
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #431: ENHANCED OPERATION WITH ALL BONUSES
+-- Applies crew bonuses, rank multipliers, and territory effects
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:doEnhancedOperation(lifeState, operationId, scenarioMods)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return false, "You're not in a crime family!", nil
+	end
+	
+	if lifeState.InJail then
+		return false, "You can't do operations from jail!", nil
+	end
+	
+	local family = self.Families[mobState.familyId]
+	local operation = nil
+	
+	for _, op in ipairs(family.operations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return false, "Unknown operation.", nil
+	end
+	
+	-- Apply all modifiers
+	scenarioMods = scenarioMods or {}
+	local rankMultiplier = self:getRankRewardMultiplier(lifeState)
+	local crewSuccessBonus, crewRewardBonus = self:getCrewBonus(lifeState, operation.category)
+	
+	local successMod = (scenarioMods.successMod or 1.0) * crewSuccessBonus
+	local riskMod = scenarioMods.riskMod or 1.0
+	local rewardMod = (scenarioMods.rewardMod or 1.0) * rankMultiplier * crewRewardBonus
+	local costMod = scenarioMods.costMod or 0
+	local respectBonus = scenarioMods.respectBonus or 0
+	
+	-- Calculate success
+	local baseChance = 100 - (operation.risk * riskMod)
+	local rankBonus = mobState.rankIndex * 5
+	local successChance = math.min(95, (baseChance + rankBonus) * successMod)
+	
+	local roll = math.random(100)
+	local success = roll <= successChance
+	
+	local result = {
+		operation = operation.name,
+		operationEmoji = operation.emoji,
+		success = success,
+		money = 0,
+		respect = 0,
+		heat = 0,
+		message = "",
+		rankMultiplier = rankMultiplier,
+		crewBonus = crewSuccessBonus > 1.0,
+	}
+	
+	if success then
+		-- Calculate enhanced rewards
+		local baseReward = math.random(operation.reward.min, operation.reward.max)
+		result.money = math.floor(baseReward * rewardMod * (1 - costMod))
+		result.respect = math.floor((operation.respect + math.random(0, 10) + respectBonus) * successMod)
+		result.heat = self:calculateHeat(lifeState, operation.risk / 10, riskMod)
+		
+		-- Apply rewards
+		lifeState.Money = (lifeState.Money or 0) + result.money
+		self:addRespect(lifeState, result.respect)
+		self:addHeat(lifeState, result.heat)
+		mobState.earnings = (mobState.earnings or 0) + result.money
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+		
+		result.message = string.format(
+			"%s Operation successful! You earned $%s and gained %d respect.",
+			operation.emoji,
+			self:formatMoney(result.money),
+			result.respect
+		)
+		
+		if rankMultiplier > 1 then
+			result.message = result.message .. string.format(" (%.0f%% rank bonus!)", (rankMultiplier - 1) * 100)
+		end
+		
+		-- Check for rank up
+		local rankUpMsg = self:checkRankUp(lifeState)
+		if rankUpMsg then
+			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
+		end
+	else
+		-- Failed operation
+		result.heat = self:calculateHeat(lifeState, operation.risk / 5, riskMod)
+		self:addHeat(lifeState, result.heat)
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+		
+		-- Risk of arrest
+		local arrestChance = (operation.risk * riskMod) / 2
+		if math.random(100) <= arrestChance then
+			local jailYears = math.ceil((operation.risk * riskMod) / 20)
+			lifeState.InJail = true
+			lifeState.JailYearsLeft = jailYears
+			result.message = string.format(
+				"%s Operation failed! You got caught and sentenced to %d years!",
+				operation.emoji,
+				jailYears
+			)
+			result.arrested = true
+		else
+			result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+		end
+	end
+	
+	return true, result.message, result
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 

@@ -3364,6 +3364,407 @@ function RoyaltyEvents.performDuty(lifeState, dutyId)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #441-445: ROYAL WEALTH MANAGEMENT SYSTEM
+-- Track royal finances, allowances, estates, and expenses
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.WealthSources = {
+	crown_estate = {
+		name = "Crown Estate Income",
+		description = "Revenue from royal lands and properties",
+		baseIncome = 5000000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	government_stipend = {
+		name = "Sovereign Grant",
+		description = "Government funding for official duties",
+		baseIncome = 2000000,
+		monarchMultiplier = 5.0,
+		heirMultiplier = 1.5,
+		otherMultiplier = 0.5,
+	},
+	private_investments = {
+		name = "Private Investments",
+		description = "Personal investment portfolio returns",
+		baseIncome = 1000000,
+		percentageOfWealth = 0.04, -- 4% annual return
+	},
+	royal_properties = {
+		name = "Royal Property Income",
+		description = "Rental income from royal properties",
+		baseIncome = 500000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 0.5,
+		otherMultiplier = 0.2,
+	},
+}
+
+RoyaltyEvents.WealthExpenses = {
+	palace_maintenance = {
+		name = "Palace Maintenance",
+		baseExpense = 2000000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 0.5,
+		otherMultiplier = 0.2,
+	},
+	staff_salaries = {
+		name = "Royal Staff",
+		baseExpense = 1500000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	security = {
+		name = "Security Detail",
+		baseExpense = 3000000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.5,
+	},
+	official_functions = {
+		name = "Official Functions",
+		baseExpense = 1000000,
+		monarchMultiplier = 3.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.3,
+	},
+	charitable_giving = {
+		name = "Royal Charities",
+		baseExpense = 500000,
+		monarchMultiplier = 2.0,
+		heirMultiplier = 1.0,
+		otherMultiplier = 0.5,
+	},
+}
+
+function RoyaltyEvents.calculateYearlyIncome(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return 0
+	end
+	
+	local isMonarch = royalState.isMonarch
+	local isHeir = (royalState.lineOfSuccession or 99) == 1
+	local totalIncome = 0
+	
+	for sourceId, source in pairs(RoyaltyEvents.WealthSources) do
+		local multiplier = source.otherMultiplier or 1.0
+		if isMonarch then
+			multiplier = source.monarchMultiplier or 1.0
+		elseif isHeir then
+			multiplier = source.heirMultiplier or 1.0
+		end
+		
+		local income = source.baseIncome * multiplier
+		
+		-- Add percentage-based income
+		if source.percentageOfWealth then
+			income = income + ((royalState.wealth or 0) * source.percentageOfWealth)
+		end
+		
+		totalIncome = totalIncome + income
+	end
+	
+	-- Popularity affects income
+	local popularity = royalState.popularity or 50
+	local popularityMultiplier = 0.5 + (popularity / 100) -- 0.5 to 1.5
+	totalIncome = math.floor(totalIncome * popularityMultiplier)
+	
+	return totalIncome
+end
+
+function RoyaltyEvents.calculateYearlyExpenses(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return 0
+	end
+	
+	local isMonarch = royalState.isMonarch
+	local isHeir = (royalState.lineOfSuccession or 99) == 1
+	local totalExpenses = 0
+	
+	for expenseId, expense in pairs(RoyaltyEvents.WealthExpenses) do
+		local multiplier = expense.otherMultiplier or 1.0
+		if isMonarch then
+			multiplier = expense.monarchMultiplier or 1.0
+		elseif isHeir then
+			multiplier = expense.heirMultiplier or 1.0
+		end
+		
+		totalExpenses = totalExpenses + (expense.baseExpense * multiplier)
+	end
+	
+	return math.floor(totalExpenses)
+end
+
+function RoyaltyEvents.processYearlyRoyalFinances(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return nil
+	end
+	
+	local income = RoyaltyEvents.calculateYearlyIncome(lifeState)
+	local expenses = RoyaltyEvents.calculateYearlyExpenses(lifeState)
+	local netIncome = income - expenses
+	
+	-- Update money
+	lifeState.Money = (lifeState.Money or 0) + netIncome
+	
+	-- Update royal wealth tracking
+	royalState.wealth = (royalState.wealth or lifeState.Money)
+	royalState.yearlyIncome = income
+	royalState.yearlyExpenses = expenses
+	
+	-- Track reign finances for monarchs
+	if royalState.isMonarch then
+		royalState.reignYears = (royalState.reignYears or 0) + 1
+		royalState.totalReignIncome = (royalState.totalReignIncome or 0) + income
+		royalState.totalReignExpenses = (royalState.totalReignExpenses or 0) + expenses
+	end
+	
+	return {
+		income = income,
+		expenses = expenses,
+		netIncome = netIncome,
+		newBalance = lifeState.Money,
+	}
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #446-448: ROYAL ESTATE MANAGEMENT
+-- Buy, sell, and manage royal properties
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.RoyalEstates = {
+	{ id = "countryside_estate", name = "Countryside Estate", price = 15000000, income = 200000, prestige = 10, emoji = "🏰" },
+	{ id = "beach_villa", name = "Royal Beach Villa", price = 25000000, income = 300000, prestige = 15, emoji = "🏖️" },
+	{ id = "hunting_lodge", name = "Royal Hunting Lodge", price = 8000000, income = 50000, prestige = 8, emoji = "🦌" },
+	{ id = "ski_chalet", name = "Alpine Ski Chalet", price = 20000000, income = 250000, prestige = 12, emoji = "⛷️" },
+	{ id = "yacht", name = "Royal Yacht", price = 100000000, income = 0, prestige = 25, emoji = "🛥️" },
+	{ id = "private_island", name = "Private Island", price = 200000000, income = 500000, prestige = 40, emoji = "🏝️" },
+	{ id = "vineyard", name = "Royal Vineyard", price = 30000000, income = 800000, prestige = 15, emoji = "🍷" },
+	{ id = "castle", name = "Historic Castle", price = 50000000, income = 400000, prestige = 30, emoji = "🏯" },
+}
+
+function RoyaltyEvents.purchaseEstate(lifeState, estateId)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	-- Find estate
+	local estate = nil
+	for _, e in ipairs(RoyaltyEvents.RoyalEstates) do
+		if e.id == estateId then
+			estate = e
+			break
+		end
+	end
+	
+	if not estate then
+		return false, "Unknown estate"
+	end
+	
+	-- Check if already own
+	royalState.estates = royalState.estates or {}
+	for _, owned in ipairs(royalState.estates) do
+		if owned.id == estateId then
+			return false, "Already own this estate"
+		end
+	end
+	
+	-- Check funds
+	if (lifeState.Money or 0) < estate.price then
+		return false, "Insufficient funds"
+	end
+	
+	-- Purchase
+	lifeState.Money = lifeState.Money - estate.price
+	
+	table.insert(royalState.estates, {
+		id = estate.id,
+		name = estate.name,
+		emoji = estate.emoji,
+		purchasePrice = estate.price,
+		purchaseYear = lifeState.Year,
+		income = estate.income,
+		prestige = estate.prestige,
+	})
+	
+	-- Fame boost from prestige
+	local fameBoost = math.floor(estate.prestige / 5)
+	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameBoost)
+	
+	return true, string.format("%s Acquired %s! (+%d prestige)", estate.emoji, estate.name, estate.prestige)
+end
+
+function RoyaltyEvents.getEstateIncome(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.estates then
+		return 0
+	end
+	
+	local total = 0
+	for _, estate in ipairs(royalState.estates) do
+		total = total + (estate.income or 0)
+	end
+	
+	return total
+end
+
+function RoyaltyEvents.getTotalPrestige(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState then
+		return 0
+	end
+	
+	local prestige = 0
+	
+	-- Base prestige from title
+	if royalState.isMonarch then
+		prestige = prestige + 100
+	elseif (royalState.lineOfSuccession or 99) == 1 then
+		prestige = prestige + 50
+	else
+		prestige = prestige + 20
+	end
+	
+	-- Estate prestige
+	if royalState.estates then
+		for _, estate in ipairs(royalState.estates) do
+			prestige = prestige + (estate.prestige or 0)
+		end
+	end
+	
+	-- Duties completed prestige
+	prestige = prestige + ((royalState.dutiesCompleted or 0) * 2)
+	
+	-- Scandal penalty
+	prestige = prestige - ((royalState.scandals or 0) * 10)
+	
+	return math.max(0, prestige)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #449-451: ROYAL CHARITY AND PUBLIC IMAGE
+-- Manage charitable works and public perception
+-- ════════════════════════════════════════════════════════════════════════════
+
+RoyaltyEvents.RoyalCharities = {
+	{ id = "childrens_hospital", name = "Children's Hospital", focus = "health", minDonation = 100000, popularityGain = 5, emoji = "🏥" },
+	{ id = "wildlife_conservation", name = "Wildlife Conservation", focus = "environment", minDonation = 50000, popularityGain = 4, emoji = "🦁" },
+	{ id = "arts_foundation", name = "Arts Foundation", focus = "culture", minDonation = 75000, popularityGain = 3, emoji = "🎨" },
+	{ id = "veterans_fund", name = "Veterans Support", focus = "military", minDonation = 100000, popularityGain = 6, emoji = "🎖️" },
+	{ id = "disaster_relief", name = "Disaster Relief", focus = "humanitarian", minDonation = 200000, popularityGain = 8, emoji = "🆘" },
+	{ id = "education_fund", name = "Education Fund", focus = "education", minDonation = 80000, popularityGain = 5, emoji = "📚" },
+	{ id = "mental_health", name = "Mental Health Awareness", focus = "health", minDonation = 60000, popularityGain = 7, emoji = "🧠" },
+	{ id = "climate_action", name = "Climate Action Fund", focus = "environment", minDonation = 150000, popularityGain = 6, emoji = "🌍" },
+}
+
+function RoyaltyEvents.donateToCharity(lifeState, charityId, amount)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	-- Find charity
+	local charity = nil
+	for _, c in ipairs(RoyaltyEvents.RoyalCharities) do
+		if c.id == charityId then
+			charity = c
+			break
+		end
+	end
+	
+	if not charity then
+		return false, "Unknown charity"
+	end
+	
+	-- Check minimum
+	if amount < charity.minDonation then
+		return false, string.format("Minimum donation is $%d", charity.minDonation)
+	end
+	
+	-- Check funds
+	if (lifeState.Money or 0) < amount then
+		return false, "Insufficient funds"
+	end
+	
+	-- Make donation
+	lifeState.Money = lifeState.Money - amount
+	
+	-- Track donations
+	royalState.charitiesPatronized = royalState.charitiesPatronized or {}
+	local found = false
+	for _, patronized in ipairs(royalState.charitiesPatronized) do
+		if patronized.id == charityId then
+			patronized.totalDonated = (patronized.totalDonated or 0) + amount
+			patronized.donations = (patronized.donations or 0) + 1
+			found = true
+			break
+		end
+	end
+	
+	if not found then
+		table.insert(royalState.charitiesPatronized, {
+			id = charity.id,
+			name = charity.name,
+			emoji = charity.emoji,
+			focus = charity.focus,
+			totalDonated = amount,
+			donations = 1,
+			firstDonationYear = lifeState.Year,
+		})
+	end
+	
+	-- Popularity gain (scaled by donation size)
+	local baseGain = charity.popularityGain
+	local sizeMultiplier = math.min(3, amount / charity.minDonation)
+	local popGain = math.floor(baseGain * sizeMultiplier)
+	
+	royalState.popularity = math.min(100, (royalState.popularity or 50) + popGain)
+	
+	-- Set flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.charitable_royal = true
+	lifeState.Flags["supports_" .. charity.focus] = true
+	
+	return true, string.format("%s Donated $%s to %s! (+%d popularity)", 
+		charity.emoji, 
+		RoyaltyEvents.formatMoney(amount), 
+		charity.name, 
+		popGain)
+end
+
+function RoyaltyEvents.getTotalCharitableDonations(lifeState)
+	local royalState = lifeState.RoyalState
+	if not royalState or not royalState.charitiesPatronized then
+		return 0
+	end
+	
+	local total = 0
+	for _, charity in ipairs(royalState.charitiesPatronized) do
+		total = total + (charity.totalDonated or 0)
+	end
+	
+	return total
+end
+
+function RoyaltyEvents.formatMoney(amount)
+	if amount >= 1000000000 then
+		return string.format("%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("%.1fK", amount / 1000)
+	else
+		return tostring(amount)
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #43: Export events in standard format for LifeEvents loader
 -- The init.lua module loader expects .events, .Events, or .LifeEvents array
 -- ════════════════════════════════════════════════════════════════════════════

@@ -1233,9 +1233,371 @@ function GamepassSystem:notifyGamepassPurchased(player, gamepassKey)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #376-385: COMPREHENSIVE GAMEPASS VALIDATION
+-- Enhanced validation for all gamepass features
+-- ════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:validateFeatureAccess(player, featureId, lifeState)
+	local requiredPass = self:getRequiredGamepassForFeature(featureId)
+	
+	if not requiredPass then
+		return true, nil -- Feature doesn't require a gamepass
+	end
+	
+	local hasPass = self:checkOwnership(player, requiredPass)
+	
+	if not hasPass then
+		return false, {
+			reason = "gamepass_required",
+			gamepass = requiredPass,
+			gamepassInfo = self:getGamepassInfo(requiredPass),
+		}
+	end
+	
+	-- Additional validation based on feature type
+	if featureId == "royal_birth" and lifeState then
+		if lifeState.Age > 0 then
+			return false, { reason = "must_be_newborn", message = "Royalty must be selected at birth" }
+		end
+	end
+	
+	if featureId == "join_mafia" and lifeState then
+		if lifeState.Age < 18 then
+			return false, { reason = "too_young", message = "Must be 18+ to join the mafia" }
+		end
+		if lifeState.MobState and lifeState.MobState.inMob then
+			return false, { reason = "already_in_mob", message = "Already in a crime family" }
+		end
+	end
+	
+	return true, nil
+end
+
+function GamepassSystem:getFeatureLockedInfo(featureId)
+	local requiredPass = self:getRequiredGamepassForFeature(featureId)
+	if not requiredPass then
+		return nil -- Not locked
+	end
+	
+	local passInfo = self:getGamepassInfo(requiredPass)
+	return {
+		isLocked = true,
+		requiredGamepass = requiredPass,
+		gamepassName = passInfo and passInfo.name or requiredPass,
+		gamepassEmoji = passInfo and passInfo.emoji or "🔒",
+		gamepassPrice = passInfo and passInfo.price or 0,
+		gamepassId = passInfo and passInfo.id or 0,
+	}
+end
+
+-- CRITICAL FIX #386: Check all gamepasses at once for batch operations
+function GamepassSystem:checkAllOwnership(player)
+	local ownership = {}
+	for key, _ in pairs(self.Gamepasses) do
+		ownership[key] = self:checkOwnership(player, key)
+	end
+	return ownership
+end
+
+-- CRITICAL FIX #387: Immediate callback after gamepass purchase
+function GamepassSystem:setupPurchaseFinishedListener()
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamepassId, wasPurchased)
+		if wasPurchased then
+			-- Find which gamepass was purchased
+			for key, data in pairs(self.Gamepasses) do
+				if data.id == gamepassId then
+					print("[GamepassSystem] Player", player.Name, "purchased", key)
+					self:notifyGamepassPurchased(player, key)
+					break
+				end
+			end
+		end
+	end)
+end
+
+-- CRITICAL FIX #388: Celebrity career stage progression check
+function GamepassSystem:canProgressFameCareer(lifeState)
+	if not lifeState.FameState then
+		return false, "No fame career"
+	end
+	
+	local fameState = lifeState.FameState
+	local careerPath = fameState.careerPath
+	local currentStage = fameState.currentStage
+	
+	if not careerPath then
+		return false, "No career path selected"
+	end
+	
+	local paths = self:getCelebrityCareerPaths()
+	local path = paths[careerPath]
+	
+	if not path then
+		return false, "Invalid career path"
+	end
+	
+	local nextStage = path.stages[currentStage + 1]
+	if not nextStage then
+		return false, "Already at max stage"
+	end
+	
+	-- Check requirements
+	local yearsInCareer = fameState.yearsInCareer or 0
+	local currentFame = lifeState.Fame or 0
+	
+	if yearsInCareer < (nextStage.yearsRequired or 0) then
+		return false, string.format("Need %d years (have %d)", nextStage.yearsRequired, yearsInCareer)
+	end
+	
+	if currentFame < (nextStage.fame or 0) then
+		return false, string.format("Need %d fame (have %d)", nextStage.fame, currentFame)
+	end
+	
+	return true, nextStage
+end
+
+-- CRITICAL FIX #389: Progress fame career to next stage
+function GamepassSystem:progressFameCareer(lifeState)
+	local canProgress, nextStageOrReason = self:canProgressFameCareer(lifeState)
+	
+	if not canProgress then
+		return false, nextStageOrReason
+	end
+	
+	local nextStage = nextStageOrReason
+	local fameState = lifeState.FameState
+	local careerPath = fameState.careerPath
+	local paths = self:getCelebrityCareerPaths()
+	local path = paths[careerPath]
+	
+	-- Update fame state
+	fameState.currentStage = fameState.currentStage + 1
+	fameState.stageName = nextStage.name
+	fameState.lastPromotionYear = lifeState.Year or 2025
+	
+	-- Update salary
+	local newSalary = math.random(nextStage.salary[1], nextStage.salary[2])
+	if lifeState.CurrentJob then
+		lifeState.CurrentJob.name = nextStage.name
+		lifeState.CurrentJob.salary = newSalary
+	end
+	
+	-- Update fame
+	lifeState.Fame = math.max(lifeState.Fame or 0, nextStage.fame or 0)
+	
+	-- Update followers if applicable
+	if nextStage.followers then
+		fameState.followers = math.max(fameState.followers or 0, nextStage.followers)
+	end
+	
+	-- Check if now famous
+	if (lifeState.Fame or 0) >= 30 then
+		fameState.isFamous = true
+	end
+	
+	return true, string.format("Promoted to %s! Salary: $%s", nextStage.name, newSalary)
+end
+
+-- CRITICAL FIX #390: Fame decay over time for celebrities
+function GamepassSystem:tickFameDecay(lifeState)
+	if not lifeState.FameState or not lifeState.FameState.isFamous then
+		return
+	end
+	
+	local fame = lifeState.Fame or 0
+	local fameState = lifeState.FameState
+	
+	-- Fame decays if not active in career
+	local yearsInCareer = fameState.yearsInCareer or 0
+	local yearsSincePromotion = (lifeState.Year or 2025) - (fameState.lastPromotionYear or 2025)
+	
+	-- Decay faster if inactive
+	local decayRate = 1
+	if yearsSincePromotion > 3 then
+		decayRate = 2
+	end
+	if yearsSincePromotion > 5 then
+		decayRate = 3
+	end
+	
+	-- Random fame decay (some years fame drops)
+	if math.random() < 0.3 then
+		lifeState.Fame = math.max(0, fame - decayRate)
+	end
+	
+	-- Followers can also drop
+	if fameState.followers and fameState.followers > 0 and math.random() < 0.2 then
+		local followerLoss = math.floor(fameState.followers * 0.05) -- 5% loss
+		fameState.followers = math.max(0, fameState.followers - followerLoss)
+	end
+end
+
+-- CRITICAL FIX #391: Royalty succession handling
+function GamepassSystem:checkRoyalSuccession(lifeState)
+	if not lifeState.RoyalState or not lifeState.RoyalState.isRoyal then
+		return false, "Not royalty"
+	end
+	
+	local royalState = lifeState.RoyalState
+	
+	-- Already monarch
+	if royalState.isMonarch then
+		return false, "Already the monarch"
+	end
+	
+	-- First in line? 10% chance per year of ascending
+	if royalState.lineOfSuccession == 1 then
+		if math.random() < 0.10 then
+			return true, "The monarch has passed. You are now first in line to ascend!"
+		end
+	end
+	
+	-- Move up in succession line (5% chance per year)
+	if math.random() < 0.05 and royalState.lineOfSuccession > 1 then
+		royalState.lineOfSuccession = royalState.lineOfSuccession - 1
+		return false, string.format("Moved up in succession. Now #%d in line.", royalState.lineOfSuccession)
+	end
+	
+	return false, nil
+end
+
+-- CRITICAL FIX #392: Execute royal succession (become monarch)
+function GamepassSystem:executeRoyalSuccession(lifeState)
+	if not lifeState.RoyalState then
+		return false, "Not royalty"
+	end
+	
+	local royalState = lifeState.RoyalState
+	royalState.isMonarch = true
+	royalState.lineOfSuccession = 0
+	royalState.reignYears = 0
+	
+	-- Update title
+	local gender = (lifeState.Gender or "Male"):lower()
+	if gender == "male" then
+		royalState.title = "King"
+	else
+		royalState.title = "Queen"
+	end
+	
+	-- Set flags
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.is_monarch = true
+	lifeState.Flags.ascended_throne = true
+	lifeState.Flags.coronation_year = lifeState.Year
+	
+	-- Fame boost
+	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + 40)
+	
+	-- Popularity boost
+	royalState.popularity = math.min(100, (royalState.popularity or 50) + 20)
+	
+	return true, string.format("👑 Long live %s %s! You are now the ruling monarch!", royalState.title, lifeState.Name or "")
+end
+
+-- CRITICAL FIX #393: Mafia rank-based operation reward multipliers
+function GamepassSystem:getMafiaRewardMultiplier(lifeState)
+	if not lifeState.MobState or not lifeState.MobState.inMob then
+		return 1.0
+	end
+	
+	local rankIndex = lifeState.MobState.rankIndex or 1
+	-- Higher ranks get better cuts
+	local multipliers = { 1.0, 1.2, 1.5, 2.0, 3.0 }
+	return multipliers[rankIndex] or 1.0
+end
+
+-- CRITICAL FIX #394: Mafia loyalty decay
+function GamepassSystem:tickMafiaLoyalty(lifeState)
+	if not lifeState.MobState or not lifeState.MobState.inMob then
+		return
+	end
+	
+	local mobState = lifeState.MobState
+	
+	-- Loyalty decays if not doing operations
+	local opsCompleted = mobState.operationsCompleted or 0
+	local yearsInMob = mobState.yearsInMob or 0
+	
+	local opsPerYear = 0
+	if yearsInMob > 0 then
+		opsPerYear = opsCompleted / yearsInMob
+	end
+	
+	-- If less than 2 operations per year, loyalty slowly drops
+	if opsPerYear < 2 then
+		mobState.loyalty = math.max(0, (mobState.loyalty or 100) - 5)
+	end
+	
+	-- Very low loyalty triggers events
+	if (mobState.loyalty or 100) < 30 then
+		lifeState.Flags = lifeState.Flags or {}
+		lifeState.Flags.low_mob_loyalty = true
+	end
+end
+
+-- CRITICAL FIX #395: Event cooldown validation
+function GamepassSystem:validateEventCooldown(lifeState, eventId, cooldownYears)
+	if not lifeState.EventHistory then
+		return true -- No history, can trigger
+	end
+	
+	local lastOccurrence = lifeState.EventHistory.lastOccurrence
+	if not lastOccurrence or not lastOccurrence[eventId] then
+		return true -- Never occurred
+	end
+	
+	local lastAge = lastOccurrence[eventId]
+	local currentAge = lifeState.Age or 0
+	local yearsSince = currentAge - lastAge
+	
+	return yearsSince >= (cooldownYears or 1)
+end
+
+-- CRITICAL FIX #396: Record event occurrence for cooldown
+function GamepassSystem:recordEventOccurrence(lifeState, eventId)
+	lifeState.EventHistory = lifeState.EventHistory or {}
+	lifeState.EventHistory.occurrences = lifeState.EventHistory.occurrences or {}
+	lifeState.EventHistory.lastOccurrence = lifeState.EventHistory.lastOccurrence or {}
+	
+	lifeState.EventHistory.occurrences[eventId] = (lifeState.EventHistory.occurrences[eventId] or 0) + 1
+	lifeState.EventHistory.lastOccurrence[eventId] = lifeState.Age or 0
+end
+
+-- CRITICAL FIX #397: Career skill requirements check
+function GamepassSystem:checkCareerSkillRequirements(lifeState, jobRequirements)
+	if not jobRequirements then
+		return true, nil
+	end
+	
+	local skills = (lifeState.CareerInfo and lifeState.CareerInfo.skills) or {}
+	local missing = {}
+	
+	for skill, required in pairs(jobRequirements) do
+		local playerSkill = skills[skill] or 0
+		if playerSkill < required then
+			table.insert(missing, {
+				skill = skill,
+				required = required,
+				have = playerSkill,
+			})
+		end
+	end
+	
+	if #missing > 0 then
+		return false, missing
+	end
+	
+	return true, nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 
 local instance = GamepassSystem.new()
+
+-- CRITICAL FIX #398: Auto-setup purchase listener
+instance:setupPurchaseFinishedListener()
 
 return instance

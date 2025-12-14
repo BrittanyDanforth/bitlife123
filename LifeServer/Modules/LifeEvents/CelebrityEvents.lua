@@ -2617,6 +2617,333 @@ function CelebrityEvents.serializeFameState(lifeState)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #432-436: COMPREHENSIVE ENDORSEMENT SYSTEM
+-- Track endorsement deals, their value, duration, and effects
+-- ════════════════════════════════════════════════════════════════════════════
+
+CelebrityEvents.EndorsementBrands = {
+	-- Luxury
+	{ id = "rolex", name = "Luxury Watch Brand", category = "luxury", minFame = 60, payment = { min = 500000, max = 5000000 }, duration = 3, emoji = "⌚" },
+	{ id = "louis_vuitton", name = "Designer Fashion House", category = "luxury", minFame = 70, payment = { min = 1000000, max = 10000000 }, duration = 2, emoji = "👜" },
+	{ id = "bentley", name = "Luxury Car Brand", category = "luxury", minFame = 75, payment = { min = 2000000, max = 15000000 }, duration = 3, emoji = "🚗" },
+	
+	-- Tech
+	{ id = "apple", name = "Tech Giant", category = "tech", minFame = 50, payment = { min = 1000000, max = 8000000 }, duration = 2, emoji = "📱" },
+	{ id = "samsung", name = "Electronics Company", category = "tech", minFame = 45, payment = { min = 500000, max = 4000000 }, duration = 2, emoji = "📺" },
+	{ id = "beats", name = "Audio Brand", category = "tech", minFame = 40, payment = { min = 200000, max = 2000000 }, duration = 3, emoji = "🎧" },
+	
+	-- Sports
+	{ id = "nike", name = "Athletic Brand", category = "sports", minFame = 35, payment = { min = 500000, max = 20000000 }, duration = 5, emoji = "👟" },
+	{ id = "gatorade", name = "Sports Drink", category = "sports", minFame = 45, payment = { min = 300000, max = 5000000 }, duration = 3, emoji = "🥤" },
+	{ id = "underarmour", name = "Athletic Apparel", category = "sports", minFame = 40, payment = { min = 400000, max = 8000000 }, duration = 4, emoji = "👕" },
+	
+	-- Beauty
+	{ id = "loreal", name = "Beauty Brand", category = "beauty", minFame = 30, payment = { min = 200000, max = 3000000 }, duration = 2, emoji = "💄" },
+	{ id = "maybelline", name = "Cosmetics Company", category = "beauty", minFame = 25, payment = { min = 100000, max = 1000000 }, duration = 2, emoji = "💋" },
+	{ id = "dior", name = "Luxury Perfume", category = "beauty", minFame = 55, payment = { min = 500000, max = 5000000 }, duration = 3, emoji = "🌸" },
+	
+	-- Food & Beverage
+	{ id = "pepsi", name = "Soft Drink Giant", category = "food", minFame = 40, payment = { min = 1000000, max = 10000000 }, duration = 2, emoji = "🥤" },
+	{ id = "mcdonalds", name = "Fast Food Chain", category = "food", minFame = 35, payment = { min = 500000, max = 5000000 }, duration = 1, emoji = "🍟" },
+	{ id = "protein_powder", name = "Fitness Supplement", category = "food", minFame = 25, payment = { min = 50000, max = 500000 }, duration = 2, emoji = "💪" },
+	
+	-- Lifestyle
+	{ id = "airbnb", name = "Travel Platform", category = "lifestyle", minFame = 45, payment = { min = 300000, max = 3000000 }, duration = 2, emoji = "🏠" },
+	{ id = "uber", name = "Ride Share App", category = "lifestyle", minFame = 40, payment = { min = 200000, max = 2000000 }, duration = 2, emoji = "🚕" },
+	
+	-- Gaming
+	{ id = "gaming_chair", name = "Gaming Gear Brand", category = "gaming", minFame = 20, payment = { min = 50000, max = 500000 }, duration = 2, emoji = "🎮" },
+	{ id = "energy_drink", name = "Energy Drink", category = "gaming", minFame = 25, payment = { min = 100000, max = 1000000 }, duration = 2, emoji = "⚡" },
+}
+
+function CelebrityEvents.getAvailableEndorsements(lifeState)
+	local fame = lifeState.Fame or 0
+	local fameState = lifeState.FameState
+	local currentEndorsements = fameState and fameState.endorsements or {}
+	
+	local available = {}
+	
+	for _, brand in ipairs(CelebrityEvents.EndorsementBrands) do
+		if fame >= brand.minFame then
+			-- Check if already have this endorsement
+			local hasEndorsement = false
+			for _, endorsement in ipairs(currentEndorsements) do
+				if endorsement.brandId == brand.id then
+					hasEndorsement = true
+					break
+				end
+			end
+			
+			if not hasEndorsement then
+				table.insert(available, brand)
+			end
+		end
+	end
+	
+	return available
+end
+
+function CelebrityEvents.signEndorsementDeal(lifeState, brandId)
+	local fameState = lifeState.FameState
+	if not fameState then
+		return false, "Not a celebrity"
+	end
+	
+	-- Find the brand
+	local brand = nil
+	for _, b in ipairs(CelebrityEvents.EndorsementBrands) do
+		if b.id == brandId then
+			brand = b
+			break
+		end
+	end
+	
+	if not brand then
+		return false, "Unknown brand"
+	end
+	
+	-- Check fame requirement
+	if (lifeState.Fame or 0) < brand.minFame then
+		return false, "Not famous enough"
+	end
+	
+	-- Calculate payment based on fame
+	local fameMultiplier = (lifeState.Fame or 0) / 100
+	local payment = math.floor(math.random(brand.payment.min, brand.payment.max) * fameMultiplier)
+	
+	-- Create endorsement
+	fameState.endorsements = fameState.endorsements or {}
+	local endorsement = {
+		brandId = brand.id,
+		brandName = brand.name,
+		category = brand.category,
+		emoji = brand.emoji,
+		totalPayment = payment,
+		yearlyPayment = math.floor(payment / brand.duration),
+		startYear = lifeState.Year,
+		endYear = lifeState.Year + brand.duration,
+		duration = brand.duration,
+		yearsRemaining = brand.duration,
+		active = true,
+	}
+	
+	table.insert(fameState.endorsements, endorsement)
+	
+	-- Initial signing bonus (20% upfront)
+	local signingBonus = math.floor(payment * 0.2)
+	lifeState.Money = (lifeState.Money or 0) + signingBonus
+	
+	-- Fame boost
+	local fameBoost = math.random(2, 5)
+	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameBoost)
+	
+	return true, string.format("Signed endorsement deal with %s %s for $%s! (+%d Fame)", 
+		brand.emoji, brand.name, 
+		CelebrityEvents.formatMoney(payment),
+		fameBoost)
+end
+
+function CelebrityEvents.processEndorsementYearly(lifeState)
+	local fameState = lifeState.FameState
+	if not fameState or not fameState.endorsements then
+		return {}
+	end
+	
+	local results = {}
+	local currentYear = lifeState.Year or 2025
+	local totalYearlyIncome = 0
+	
+	for i = #fameState.endorsements, 1, -1 do
+		local endorsement = fameState.endorsements[i]
+		
+		if endorsement.active then
+			endorsement.yearsRemaining = endorsement.yearsRemaining - 1
+			
+			if endorsement.yearsRemaining > 0 then
+				-- Pay yearly amount
+				local yearlyPayment = endorsement.yearlyPayment
+				lifeState.Money = (lifeState.Money or 0) + yearlyPayment
+				totalYearlyIncome = totalYearlyIncome + yearlyPayment
+			else
+				-- Contract ended
+				endorsement.active = false
+				table.insert(results, {
+					type = "ended",
+					message = string.format("%s endorsement with %s ended", endorsement.emoji, endorsement.brandName),
+					brandId = endorsement.brandId,
+				})
+				
+				-- 50% chance they want to renew
+				if math.random() < 0.50 then
+					table.insert(results, {
+						type = "renewal_offer",
+						message = string.format("%s wants to renew your endorsement deal!", endorsement.brandName),
+						brandId = endorsement.brandId,
+					})
+				end
+			end
+		end
+	end
+	
+	if totalYearlyIncome > 0 then
+		table.insert(results, 1, {
+			type = "income",
+			message = string.format("💰 Endorsement income: $%s", CelebrityEvents.formatMoney(totalYearlyIncome)),
+			amount = totalYearlyIncome,
+		})
+	end
+	
+	return results
+end
+
+function CelebrityEvents.getEndorsementIncome(lifeState)
+	local fameState = lifeState.FameState
+	if not fameState or not fameState.endorsements then
+		return 0
+	end
+	
+	local total = 0
+	for _, endorsement in ipairs(fameState.endorsements) do
+		if endorsement.active then
+			total = total + endorsement.yearlyPayment
+		end
+	end
+	
+	return total
+end
+
+function CelebrityEvents.getActiveEndorsements(lifeState)
+	local fameState = lifeState.FameState
+	if not fameState or not fameState.endorsements then
+		return {}
+	end
+	
+	local active = {}
+	for _, endorsement in ipairs(fameState.endorsements) do
+		if endorsement.active then
+			table.insert(active, endorsement)
+		end
+	end
+	
+	return active
+end
+
+function CelebrityEvents.formatMoney(amount)
+	if amount >= 1000000000 then
+		return string.format("%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("%.1fK", amount / 1000)
+	else
+		return tostring(amount)
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #437-440: CELEBRITY AWARD TRACKING
+-- Track awards won throughout career
+-- ════════════════════════════════════════════════════════════════════════════
+
+CelebrityEvents.AwardTypes = {
+	-- Acting
+	{ id = "oscar", name = "Academy Award", category = "acting", prestige = 100, emoji = "🏆" },
+	{ id = "golden_globe", name = "Golden Globe", category = "acting", prestige = 80, emoji = "🌟" },
+	{ id = "emmy", name = "Emmy Award", category = "acting", prestige = 75, emoji = "📺" },
+	{ id = "sag", name = "SAG Award", category = "acting", prestige = 70, emoji = "🎭" },
+	
+	-- Music
+	{ id = "grammy", name = "Grammy Award", category = "music", prestige = 95, emoji = "🎵" },
+	{ id = "mtv_vma", name = "MTV VMA", category = "music", prestige = 60, emoji = "📺" },
+	{ id = "ama", name = "American Music Award", category = "music", prestige = 55, emoji = "🇺🇸" },
+	{ id = "brit_award", name = "BRIT Award", category = "music", prestige = 65, emoji = "🇬🇧" },
+	
+	-- Influencer
+	{ id = "streamy", name = "Streamy Award", category = "influencer", prestige = 40, emoji = "🎬" },
+	{ id = "shorty", name = "Shorty Award", category = "influencer", prestige = 35, emoji = "📱" },
+	
+	-- Sports
+	{ id = "mvp", name = "MVP Award", category = "sports", prestige = 90, emoji = "🏅" },
+	{ id = "champion", name = "Championship", category = "sports", prestige = 95, emoji = "🏆" },
+	{ id = "allstar", name = "All-Star Selection", category = "sports", prestige = 50, emoji = "⭐" },
+	
+	-- General
+	{ id = "peoples_choice", name = "People's Choice Award", category = "general", prestige = 45, emoji = "🏆" },
+	{ id = "teen_choice", name = "Teen Choice Award", category = "general", prestige = 30, emoji = "🎯" },
+}
+
+function CelebrityEvents.winAward(lifeState, awardId)
+	local fameState = lifeState.FameState
+	if not fameState then
+		fameState = { awards = {} }
+		lifeState.FameState = fameState
+	end
+	
+	fameState.awards = fameState.awards or {}
+	
+	-- Find award
+	local award = nil
+	for _, a in ipairs(CelebrityEvents.AwardTypes) do
+		if a.id == awardId then
+			award = a
+			break
+		end
+	end
+	
+	if not award then
+		return false, "Unknown award"
+	end
+	
+	-- Create award record
+	local awardRecord = {
+		id = award.id,
+		name = award.name,
+		category = award.category,
+		emoji = award.emoji,
+		year = lifeState.Year,
+		age = lifeState.Age,
+	}
+	
+	table.insert(fameState.awards, awardRecord)
+	
+	-- Fame boost based on prestige
+	local fameBoost = math.floor(award.prestige / 10)
+	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameBoost)
+	
+	-- Happiness boost
+	lifeState.Stats = lifeState.Stats or {}
+	lifeState.Stats.Happiness = math.min(100, (lifeState.Stats.Happiness or 50) + 15)
+	
+	return true, string.format("%s You won the %s! (+%d Fame)", award.emoji, award.name, fameBoost)
+end
+
+function CelebrityEvents.getAwardCount(lifeState)
+	local fameState = lifeState.FameState
+	if not fameState or not fameState.awards then
+		return 0
+	end
+	return #fameState.awards
+end
+
+function CelebrityEvents.hasMajorAward(lifeState)
+	local fameState = lifeState.FameState
+	if not fameState or not fameState.awards then
+		return false
+	end
+	
+	local majorAwards = {"oscar", "grammy", "mvp", "champion", "emmy"}
+	for _, award in ipairs(fameState.awards) do
+		for _, major in ipairs(majorAwards) do
+			if award.id == major then
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #42: Export events in standard format for LifeEvents loader
 -- The init.lua module loader expects .events, .Events, or .LifeEvents array
 -- Combines GeneralFameEvents with all career-specific events
