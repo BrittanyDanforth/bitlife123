@@ -2329,49 +2329,714 @@ local PrisonActions = {
 	prison_goodbehavior = { jailReduction = 0.5, feed = "kept a low profile" },
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-1: COMPREHENSIVE ASSET CATALOGS WITH FULL GAMEPLAY EFFECTS
+-- Every asset now has: happiness bonus, status/fame effect, maintenance cost, 
+-- unlocked flags, eligibility effects, resale value modifier, and more!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local Properties = {
-	{ id = "studio", name = "Studio Apartment", price = 85000, income = 500 },
-	{ id = "1br_condo", name = "1BR Condo", price = 175000, income = 1000 },
-	{ id = "family_house", name = "Family House", price = 350000, income = 2000 },
-	{ id = "beach_house", name = "Beach House", price = 1200000, income = 5000 },
-	{ id = "penthouse", name = "Luxury Penthouse", price = 2500000, income = 10000 },
-	{ id = "mansion", name = "Mansion", price = 8500000, income = 25000 },
+	{ 
+		id = "studio", 
+		name = "Studio Apartment", 
+		emoji = "🏢",
+		price = 85000, 
+		income = 500,
+		tier = "starter",
+		happinessBonus = 2,      -- Annual happiness boost
+		statusBonus = 0,          -- Fame/status points
+		maintenanceCost = 1200,   -- Annual maintenance
+		resaleModifier = 0.85,    -- Sells for 85% of value
+		minAge = 18,
+		description = "A cozy starter home in the city",
+		grantsFlags = { "homeowner", "has_apartment", "independent" },
+		effects = { Happiness = 3 },
+	},
+	{ 
+		id = "1br_condo", 
+		name = "1BR Condo", 
+		emoji = "🏬",
+		price = 175000, 
+		income = 1000,
+		tier = "nice",
+		happinessBonus = 4,
+		statusBonus = 1,
+		maintenanceCost = 2500,
+		resaleModifier = 0.88,
+		minAge = 18,
+		description = "Modern condo with great amenities",
+		grantsFlags = { "homeowner", "condo_owner", "nice_place" },
+		effects = { Happiness = 5 },
+	},
+	{ 
+		id = "family_house", 
+		name = "Family House", 
+		emoji = "🏠",
+		price = 350000, 
+		income = 2000,
+		tier = "comfortable",
+		happinessBonus = 6,
+		statusBonus = 2,
+		maintenanceCost = 5000,
+		resaleModifier = 0.90,
+		minAge = 18,
+		description = "3 bed, 2 bath suburban home",
+		grantsFlags = { "homeowner", "house_owner", "suburban_life", "family_home" },
+		effects = { Happiness = 8, Health = 2 },
+		familyBonus = true,  -- Extra happiness if has family
+	},
+	{ 
+		id = "beach_house", 
+		name = "Beach House", 
+		emoji = "🏖️",
+		price = 1200000, 
+		income = 5000,
+		tier = "luxury",
+		happinessBonus = 10,
+		statusBonus = 5,
+		maintenanceCost = 15000,
+		resaleModifier = 0.92,
+		minAge = 21,
+		description = "Stunning oceanfront property",
+		grantsFlags = { "homeowner", "beach_property", "luxury_lifestyle", "vacation_home" },
+		effects = { Happiness = 12, Health = 5 },
+		fameBonus = 2,
+	},
+	{ 
+		id = "penthouse", 
+		name = "Luxury Penthouse", 
+		emoji = "🌆",
+		price = 2500000, 
+		income = 10000,
+		tier = "elite",
+		happinessBonus = 15,
+		statusBonus = 10,
+		maintenanceCost = 30000,
+		resaleModifier = 0.93,
+		minAge = 21,
+		description = "Top floor luxury with city views",
+		grantsFlags = { "homeowner", "penthouse_owner", "elite_lifestyle", "high_society" },
+		effects = { Happiness = 15, Looks = 3 },
+		fameBonus = 5,
+	},
+	{ 
+		id = "mansion", 
+		name = "Mansion", 
+		emoji = "🏰",
+		price = 8500000, 
+		income = 25000,
+		tier = "ultra",
+		happinessBonus = 25,
+		statusBonus = 20,
+		maintenanceCost = 100000,
+		resaleModifier = 0.95,
+		minAge = 21,
+		description = "Grand estate with pool, tennis court, and staff quarters",
+		grantsFlags = { "homeowner", "mansion_owner", "ultra_wealthy", "celebrity_lifestyle", "has_staff" },
+		effects = { Happiness = 25, Looks = 5, Health = 3 },
+		fameBonus = 10,
+		canHostParties = true,
+	},
+	-- NEW PROPERTIES FOR MORE VARIETY
+	{ 
+		id = "mobile_home", 
+		name = "Mobile Home", 
+		emoji = "🚐",
+		price = 25000, 
+		income = 100,
+		tier = "budget",
+		happinessBonus = 1,
+		statusBonus = -1,
+		maintenanceCost = 500,
+		resaleModifier = 0.60,
+		minAge = 18,
+		description = "Affordable mobile living",
+		grantsFlags = { "homeowner", "mobile_home" },
+		effects = { Happiness = 1 },
+	},
+	{ 
+		id = "townhouse", 
+		name = "Townhouse", 
+		emoji = "🏘️",
+		price = 275000, 
+		income = 1500,
+		tier = "nice",
+		happinessBonus = 5,
+		statusBonus = 2,
+		maintenanceCost = 3500,
+		resaleModifier = 0.89,
+		minAge = 18,
+		description = "Multi-level urban townhome",
+		grantsFlags = { "homeowner", "townhouse_owner" },
+		effects = { Happiness = 6, Health = 1 },
+	},
+	{ 
+		id = "lakehouse", 
+		name = "Lakehouse", 
+		emoji = "🏞️",
+		price = 800000, 
+		income = 4000,
+		tier = "luxury",
+		happinessBonus = 12,
+		statusBonus = 6,
+		maintenanceCost = 12000,
+		resaleModifier = 0.91,
+		minAge = 21,
+		description = "Peaceful lakefront retreat",
+		grantsFlags = { "homeowner", "lakehouse_owner", "vacation_home" },
+		effects = { Happiness = 10, Health = 8 },
+		fameBonus = 3,
+	},
+	{ 
+		id = "island", 
+		name = "Private Island", 
+		emoji = "🏝️",
+		price = 50000000, 
+		income = 100000,
+		tier = "billionaire",
+		happinessBonus = 50,
+		statusBonus = 50,
+		maintenanceCost = 500000,
+		resaleModifier = 0.97,
+		minAge = 25,
+		description = "Your own private paradise",
+		grantsFlags = { "homeowner", "island_owner", "billionaire_lifestyle", "untouchable" },
+		effects = { Happiness = 50, Health = 10, Looks = 5 },
+		fameBonus = 25,
+	},
 }
 
 local Vehicles = {
-	{ id = "used_civic", name = "Used Honda Civic", price = 8000 },
-	{ id = "camry", name = "Toyota Camry", price = 28000 },
-	{ id = "bmw", name = "BMW 3 Series", price = 55000 },
-	{ id = "tesla", name = "Tesla Model S", price = 95000 },
-	{ id = "porsche", name = "Porsche 911", price = 180000 },
-	{ id = "lambo", name = "Lamborghini", price = 300000 },
-	{ id = "ferrari", name = "Ferrari F8", price = 350000 },
-	{ id = "yacht", name = "Yacht", price = 2000000 },
-	{ id = "jet", name = "Private Jet", price = 15000000 },
+	{ 
+		id = "used_civic", 
+		name = "Used Honda Civic", 
+		emoji = "🚗",
+		price = 8000,
+		tier = "budget",
+		happinessBonus = 1,
+		statusBonus = 0,
+		maintenanceCost = 800,
+		depreciationRate = 0.20,
+		fuelCost = 1200,
+		resaleModifier = 0.65,
+		minAge = 16,
+		description = "Reliable used car",
+		grantsFlags = { "car_owner", "has_transport" },
+		effects = { Happiness = 2 },
+	},
+	{ 
+		id = "camry", 
+		name = "Toyota Camry", 
+		emoji = "🚙",
+		price = 28000,
+		tier = "reliable",
+		happinessBonus = 3,
+		statusBonus = 1,
+		maintenanceCost = 1500,
+		depreciationRate = 0.15,
+		fuelCost = 1500,
+		resaleModifier = 0.75,
+		minAge = 16,
+		description = "Dependable family sedan",
+		grantsFlags = { "car_owner", "has_transport", "reliable_car" },
+		effects = { Happiness = 4 },
+	},
+	{ 
+		id = "bmw", 
+		name = "BMW 3 Series", 
+		emoji = "🚘",
+		price = 55000,
+		tier = "premium",
+		happinessBonus = 6,
+		statusBonus = 3,
+		maintenanceCost = 3500,
+		depreciationRate = 0.18,
+		fuelCost = 2000,
+		resaleModifier = 0.72,
+		minAge = 18,
+		description = "The Ultimate Driving Machine",
+		grantsFlags = { "car_owner", "has_transport", "nice_car", "bmw_owner" },
+		effects = { Happiness = 7, Looks = 2 },
+		fameBonus = 1,
+	},
+	{ 
+		id = "tesla", 
+		name = "Tesla Model S", 
+		emoji = "⚡",
+		price = 95000,
+		tier = "premium",
+		happinessBonus = 8,
+		statusBonus = 5,
+		maintenanceCost = 1500,  -- EVs have lower maintenance
+		depreciationRate = 0.22,
+		fuelCost = 600,  -- Electricity is cheap
+		resaleModifier = 0.70,
+		minAge = 18,
+		description = "Electric luxury performance",
+		grantsFlags = { "car_owner", "has_transport", "nice_car", "tesla_owner", "eco_conscious" },
+		effects = { Happiness = 10, Smarts = 2 },
+		fameBonus = 2,
+	},
+	{ 
+		id = "porsche", 
+		name = "Porsche 911", 
+		emoji = "🏎️",
+		price = 180000,
+		tier = "luxury",
+		happinessBonus = 12,
+		statusBonus = 8,
+		maintenanceCost = 8000,
+		depreciationRate = 0.12,  -- Porsche holds value
+		fuelCost = 3000,
+		resaleModifier = 0.82,
+		minAge = 21,
+		description = "Iconic sports car perfection",
+		grantsFlags = { "car_owner", "has_transport", "luxury_car", "porsche_owner", "car_enthusiast" },
+		effects = { Happiness = 15, Looks = 5 },
+		fameBonus = 4,
+	},
+	{ 
+		id = "lambo", 
+		name = "Lamborghini", 
+		emoji = "🦁",
+		price = 300000,
+		tier = "supercar",
+		happinessBonus = 20,
+		statusBonus = 15,
+		maintenanceCost = 15000,
+		depreciationRate = 0.15,
+		fuelCost = 5000,
+		resaleModifier = 0.78,
+		minAge = 21,
+		description = "Italian supercar perfection",
+		grantsFlags = { "car_owner", "has_transport", "supercar_owner", "lambo_owner", "celebrity_car" },
+		effects = { Happiness = 25, Looks = 8 },
+		fameBonus = 8,
+	},
+	{ 
+		id = "ferrari", 
+		name = "Ferrari F8", 
+		emoji = "🐎",
+		price = 350000,
+		tier = "supercar",
+		happinessBonus = 22,
+		statusBonus = 18,
+		maintenanceCost = 18000,
+		depreciationRate = 0.10,  -- Ferraris hold value well
+		fuelCost = 5500,
+		resaleModifier = 0.85,
+		minAge = 21,
+		description = "Prancing Horse perfection",
+		grantsFlags = { "car_owner", "has_transport", "supercar_owner", "ferrari_owner", "celebrity_car" },
+		effects = { Happiness = 28, Looks = 10 },
+		fameBonus = 10,
+	},
+	{ 
+		id = "yacht", 
+		name = "Yacht", 
+		emoji = "🛥️",
+		price = 2000000,
+		tier = "ultra",
+		happinessBonus = 30,
+		statusBonus = 25,
+		maintenanceCost = 100000,
+		depreciationRate = 0.08,
+		fuelCost = 20000,
+		resaleModifier = 0.75,
+		minAge = 25,
+		description = "Luxury seafaring vessel",
+		grantsFlags = { "yacht_owner", "ultra_wealthy", "boat_owner", "can_sail" },
+		effects = { Happiness = 30, Health = 5 },
+		fameBonus = 15,
+		canHostParties = true,
+	},
+	{ 
+		id = "jet", 
+		name = "Private Jet", 
+		emoji = "✈️",
+		price = 15000000,
+		tier = "billionaire",
+		happinessBonus = 50,
+		statusBonus = 50,
+		maintenanceCost = 500000,
+		depreciationRate = 0.05,
+		fuelCost = 200000,
+		resaleModifier = 0.80,
+		minAge = 25,
+		description = "Ultimate travel luxury",
+		grantsFlags = { "jet_owner", "billionaire_lifestyle", "can_fly_private", "elite" },
+		effects = { Happiness = 50, Health = 3 },
+		fameBonus = 30,
+		fastTravel = true,
+	},
+	-- NEW VEHICLES FOR MORE VARIETY
+	{ 
+		id = "motorcycle", 
+		name = "Motorcycle", 
+		emoji = "🏍️",
+		price = 12000,
+		tier = "budget",
+		happinessBonus = 4,
+		statusBonus = 1,
+		maintenanceCost = 500,
+		depreciationRate = 0.15,
+		fuelCost = 400,
+		resaleModifier = 0.70,
+		minAge = 16,
+		description = "Freedom on two wheels",
+		grantsFlags = { "motorcycle_owner", "has_transport", "biker" },
+		effects = { Happiness = 6 },
+		riskFactor = 1.5,  -- Higher accident chance
+	},
+	{ 
+		id = "truck", 
+		name = "Pickup Truck", 
+		emoji = "🛻",
+		price = 45000,
+		tier = "reliable",
+		happinessBonus = 4,
+		statusBonus = 1,
+		maintenanceCost = 2500,
+		depreciationRate = 0.14,
+		fuelCost = 3000,
+		resaleModifier = 0.78,
+		minAge = 16,
+		description = "American workhorse",
+		grantsFlags = { "car_owner", "has_transport", "truck_owner" },
+		effects = { Happiness = 5 },
+		utilityBonus = true,
+	},
+	{ 
+		id = "helicopter", 
+		name = "Helicopter", 
+		emoji = "🚁",
+		price = 3000000,
+		tier = "ultra",
+		happinessBonus = 35,
+		statusBonus = 30,
+		maintenanceCost = 150000,
+		depreciationRate = 0.06,
+		fuelCost = 50000,
+		resaleModifier = 0.82,
+		minAge = 25,
+		description = "Beat the traffic entirely",
+		grantsFlags = { "helicopter_owner", "ultra_wealthy", "can_fly" },
+		effects = { Happiness = 35, Health = 2 },
+		fameBonus = 20,
+		fastTravel = true,
+	},
 }
 
 local ShopItems = {
-	{ id = "sneakers", name = "Sneakers", price = 350 },
-	{ id = "iphone", name = "iPhone", price = 1200 },
-	{ id = "bag", name = "Designer Bag", price = 2500 },
-	{ id = "gaming_pc", name = "Gaming PC", price = 3000 },
-	{ id = "necklace", name = "Gold Necklace", price = 3500 },
-	{ id = "watch", name = "Designer Watch", price = 5000 },
-	{ id = "ring", name = "Diamond Ring", price = 15000 },
-	{ id = "piano", name = "Grand Piano", price = 50000 },
+	{ 
+		id = "sneakers", 
+		name = "Sneakers", 
+		emoji = "👟",
+		price = 350,
+		tier = "basic",
+		happinessBonus = 1,
+		looksBonus = 2,
+		minAge = 10,
+		description = "Fresh kicks",
+		grantsFlags = { "stylish" },
+		effects = { Happiness = 1, Looks = 2 },
+	},
+	{ 
+		id = "iphone", 
+		name = "iPhone", 
+		emoji = "📱",
+		price = 1200,
+		tier = "tech",
+		happinessBonus = 3,
+		smartsBonus = 1,
+		minAge = 10,
+		description = "Latest smartphone",
+		grantsFlags = { "has_phone", "connected", "tech_savvy" },
+		effects = { Happiness = 3, Smarts = 1 },
+	},
+	{ 
+		id = "bag", 
+		name = "Designer Bag", 
+		emoji = "👜",
+		price = 2500,
+		tier = "fashion",
+		happinessBonus = 4,
+		looksBonus = 5,
+		statusBonus = 2,
+		minAge = 14,
+		description = "Luxury fashion statement",
+		grantsFlags = { "fashionista", "designer_clothes" },
+		effects = { Happiness = 4, Looks = 5 },
+		fameBonus = 1,
+	},
+	{ 
+		id = "gaming_pc", 
+		name = "Gaming PC", 
+		emoji = "🖥️",
+		price = 3000,
+		tier = "tech",
+		happinessBonus = 5,
+		smartsBonus = 3,
+		minAge = 10,
+		description = "Ultimate gaming rig",
+		grantsFlags = { "gamer", "has_computer", "tech_enthusiast" },
+		effects = { Happiness = 8, Smarts = 3 },
+		unlocksCareers = { "content_creator", "pro_gamer", "streamer" },
+	},
+	{ 
+		id = "necklace", 
+		name = "Gold Necklace", 
+		emoji = "📿",
+		price = 3500,
+		tier = "jewelry",
+		happinessBonus = 3,
+		looksBonus = 4,
+		statusBonus = 2,
+		minAge = 16,
+		description = "Elegant gold jewelry",
+		grantsFlags = { "jewelry_owner", "stylish" },
+		effects = { Happiness = 3, Looks = 4 },
+		fameBonus = 1,
+		appreciates = true,  -- Can increase in value
+	},
+	{ 
+		id = "watch", 
+		name = "Designer Watch", 
+		emoji = "⌚",
+		price = 5000,
+		tier = "luxury",
+		happinessBonus = 5,
+		looksBonus = 6,
+		statusBonus = 4,
+		minAge = 16,
+		description = "Luxury timepiece",
+		grantsFlags = { "watch_collector", "stylish", "refined" },
+		effects = { Happiness = 5, Looks = 6 },
+		fameBonus = 2,
+		appreciates = true,
+	},
+	{ 
+		id = "ring", 
+		name = "Diamond Ring", 
+		emoji = "💍",
+		price = 15000,
+		tier = "jewelry",
+		happinessBonus = 8,
+		looksBonus = 5,
+		statusBonus = 5,
+		minAge = 18,
+		description = "Stunning diamond ring",
+		grantsFlags = { "jewelry_owner", "diamond_owner" },
+		effects = { Happiness = 8, Looks = 5 },
+		fameBonus = 3,
+		appreciates = true,
+		canPropose = true,  -- Can use for marriage proposal
+	},
+	{ 
+		id = "piano", 
+		name = "Grand Piano", 
+		emoji = "🎹",
+		price = 50000,
+		tier = "luxury",
+		happinessBonus = 10,
+		smartsBonus = 5,
+		statusBonus = 8,
+		minAge = 18,
+		description = "Beautiful grand piano",
+		grantsFlags = { "piano_owner", "cultured", "musician" },
+		effects = { Happiness = 10, Smarts = 5 },
+		fameBonus = 4,
+		skillBonus = { Music = 10 },
+	},
+	-- NEW ITEMS FOR MORE VARIETY
+	{ 
+		id = "laptop", 
+		name = "Laptop", 
+		emoji = "💻",
+		price = 1500,
+		tier = "tech",
+		happinessBonus = 2,
+		smartsBonus = 3,
+		minAge = 10,
+		description = "Portable computing power",
+		grantsFlags = { "has_computer", "can_work_remote" },
+		effects = { Happiness = 2, Smarts = 3 },
+	},
+	{ 
+		id = "camera", 
+		name = "Professional Camera", 
+		emoji = "📸",
+		price = 4000,
+		tier = "hobby",
+		happinessBonus = 4,
+		minAge = 14,
+		description = "Capture moments professionally",
+		grantsFlags = { "photographer", "creative" },
+		effects = { Happiness = 5, Smarts = 2 },
+		unlocksCareers = { "photographer", "content_creator" },
+	},
+	{ 
+		id = "guitar", 
+		name = "Electric Guitar", 
+		emoji = "🎸",
+		price = 2000,
+		tier = "hobby",
+		happinessBonus = 5,
+		minAge = 10,
+		description = "Rock out!",
+		grantsFlags = { "plays_guitar", "musician" },
+		effects = { Happiness = 6 },
+		skillBonus = { Music = 5 },
+		unlocksCareers = { "musician_local", "street_performer" },
+	},
+	{ 
+		id = "luxury_watch", 
+		name = "Rolex Watch", 
+		emoji = "⌚",
+		price = 25000,
+		tier = "ultra_luxury",
+		happinessBonus = 10,
+		looksBonus = 8,
+		statusBonus = 10,
+		minAge = 21,
+		description = "Status symbol on your wrist",
+		grantsFlags = { "rolex_owner", "high_roller", "luxury_lifestyle" },
+		effects = { Happiness = 12, Looks = 8 },
+		fameBonus = 5,
+		appreciates = true,
+	},
+	{ 
+		id = "art_collection", 
+		name = "Art Collection", 
+		emoji = "🖼️",
+		price = 100000,
+		tier = "investment",
+		happinessBonus = 8,
+		statusBonus = 15,
+		minAge = 25,
+		description = "Curated fine art pieces",
+		grantsFlags = { "art_collector", "cultured", "sophisticated" },
+		effects = { Happiness = 8, Smarts = 3 },
+		fameBonus = 8,
+		appreciates = true,
+		appreciationRate = 0.08,  -- 8% annual appreciation
+	},
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-13: Comprehensive Education Catalog with INSTITUTIONS and DEGREES
+-- The user complained that it showed "Bachelor Degree" instead of university name
+-- Now each program has: institution (where you go), degree (what you earn), and name (for display)
+-- ═══════════════════════════════════════════════════════════════════════════════
 local EducationCatalog = {
-	-- CRITICAL FIX: Added minAge to prevent underage enrollment
-	community = { name = "Community College", cost = 15000, duration = 2, requirement = "high_school", minAge = 18 },
-	bachelor = { name = "Bachelor's Degree", cost = 80000, duration = 4, requirement = "high_school", minAge = 18 },
-	trade = { name = "Trade School", cost = 30000, duration = 2, requirement = "high_school", minAge = 18 },
-	bootcamp = { name = "Coding Bootcamp", cost = 12000, duration = 1, requirement = "high_school", minAge = 18 },
-	master = { name = "Master's Degree", cost = 60000, duration = 2, requirement = "bachelor", minAge = 22 },
-	business = { name = "MBA Program", cost = 90000, duration = 2, requirement = "bachelor", minAge = 22 },
-	law = { name = "Law School", cost = 150000, duration = 3, requirement = "bachelor", minAge = 22 },
-	medical = { name = "Medical School", cost = 200000, duration = 4, requirement = "bachelor", minAge = 22 },
-	phd = { name = "PhD Program", cost = 100000, duration = 5, requirement = "master", minAge = 24 },
+	community = { 
+		name = "Community College", 
+		institution = "City Community College",
+		degree = "Associate's Degree",
+		cost = 15000, 
+		duration = 2, 
+		requirement = "high_school", 
+		minAge = 18,
+		description = "Affordable 2-year college - earn an Associate's degree",
+		grantsFlags = { "community_college_student", "college_experience" },
+		statBonuses = { Smarts = 8 },
+	},
+	bachelor = { 
+		name = "State University", 
+		institution = "State University",
+		degree = "Bachelor's Degree",
+		cost = 80000, 
+		duration = 4, 
+		requirement = "high_school", 
+		minAge = 18,
+		description = "4-year university - earn a Bachelor's degree",
+		grantsFlags = { "university_student", "college_experience", "in_college" },
+		statBonuses = { Smarts = 15 },
+	},
+	trade = { 
+		name = "Trade School", 
+		institution = "Technical Institute",
+		degree = "Trade Certification",
+		cost = 30000, 
+		duration = 2, 
+		requirement = "high_school", 
+		minAge = 18,
+		description = "Learn skilled trades - plumbing, electrical, HVAC, etc.",
+		grantsFlags = { "trade_school_student", "learning_trade", "hands_on_skills" },
+		statBonuses = { Smarts = 5, Health = 2 },
+	},
+	bootcamp = { 
+		name = "Coding Bootcamp", 
+		institution = "TechStack Academy",
+		degree = "Developer Certification",
+		cost = 12000, 
+		duration = 1, 
+		requirement = "high_school", 
+		minAge = 18,
+		description = "Intensive coding program - become a developer fast",
+		grantsFlags = { "bootcamp_student", "coding_bootcamp", "tech_skills", "coder" },
+		statBonuses = { Smarts = 12 },
+	},
+	master = { 
+		name = "Graduate School", 
+		institution = "State University Graduate School",
+		degree = "Master's Degree",
+		cost = 60000, 
+		duration = 2, 
+		requirement = "bachelor", 
+		minAge = 22,
+		description = "Advanced degree - specialize in your field",
+		grantsFlags = { "graduate_student", "masters_program" },
+		statBonuses = { Smarts = 18 },
+	},
+	business = { 
+		name = "Business School", 
+		institution = "Elite Business School",
+		degree = "MBA",
+		cost = 90000, 
+		duration = 2, 
+		requirement = "bachelor", 
+		minAge = 22,
+		description = "Master of Business Administration - leadership track",
+		grantsFlags = { "mba_student", "business_education", "executive_track" },
+		statBonuses = { Smarts = 15 },
+	},
+	law = { 
+		name = "Law School", 
+		institution = "College of Law",
+		degree = "Juris Doctor (J.D.)",
+		cost = 150000, 
+		duration = 3, 
+		requirement = "bachelor", 
+		minAge = 22,
+		description = "Become a lawyer - 3 years of intensive legal study",
+		grantsFlags = { "law_student", "legal_education", "bar_eligible" },
+		statBonuses = { Smarts = 20 },
+	},
+	medical = { 
+		name = "Medical School", 
+		institution = "School of Medicine",
+		degree = "Doctor of Medicine (M.D.)",
+		cost = 200000, 
+		duration = 4, 
+		requirement = "bachelor", 
+		minAge = 22,
+		description = "Become a doctor - 4 years of medical training",
+		grantsFlags = { "medical_student", "pre_residency", "medical_education" },
+		statBonuses = { Smarts = 25 },
+	},
+	phd = { 
+		name = "PhD Program", 
+		institution = "Research University",
+		degree = "Doctorate (Ph.D.)",
+		cost = 100000, 
+		duration = 5, 
+		requirement = "master", 
+		minAge = 24,
+		description = "Highest academic degree - become an expert in your field",
+		grantsFlags = { "phd_student", "doctoral_candidate", "researcher" },
+		statBonuses = { Smarts = 30 },
+	},
 }
 
 local EducationRanks = {
@@ -2599,6 +3264,248 @@ local MedicalCareerEvents = {
 			{ text = "Hope they don't notice", deltas = { Happiness = -10 }, setFlags = { medical_negligent = true }, feedText = "The patient had a reaction and sued the hospital." },
 		},
 	},
+	{
+		id = "medical_grateful_patient",
+		title = "Grateful Patient",
+		emoji = "💗",
+		text = "A patient you treated last month returns to thank you. They say you saved their life.",
+		question = "How do you respond?",
+		choices = {
+			{ text = "Accept their gratitude warmly", deltas = { Happiness = 10 }, setFlags = { medical_compassionate = true }, feedText = "A heartwarming moment that reminds you why you do this." },
+			{ text = "Stay professional", deltas = { Happiness = 3, Smarts = 1 }, feedText = "You maintained composure while feeling proud inside." },
+		},
+	},
+	{
+		id = "medical_long_shift",
+		title = "Double Shift Emergency",
+		emoji = "😴",
+		text = "Short-staffed. Your supervisor asks you to work a double shift during a patient surge.",
+		question = "What do you say?",
+		cooldown = 2,
+		choices = {
+			{ text = "Stay and help", deltas = { Health = -5, Happiness = -2, Money = 300 }, setFlags = { medical_dedicated = true }, feedText = "Exhausted but you powered through. Patients needed you." },
+			{ text = "Decline - safety first", deltas = { Happiness = 2, Health = 1 }, feedText = "You need rest to provide good care. Smart call." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-6: TRADES CAREER EVENTS
+-- Construction, electrician, plumber, mechanic specific events
+-- ═══════════════════════════════════════════════════════════════════════════════
+local TradesCareerEvents = {
+	{
+		id = "trades_dangerous_site",
+		title = "Dangerous Job Site",
+		emoji = "⚠️",
+		text = "The job site has serious safety violations. Your boss tells you to ignore them and keep working.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Report to OSHA", deltas = { Happiness = 2 }, setFlags = { trades_whistleblower = true }, feedText = "You reported it. Safety first. Boss is furious but you're protected." },
+			{ text = "Refuse to work until fixed", deltas = { Happiness = 3, Money = -100 }, setFlags = { trades_safety_conscious = true }, feedText = "You stood your ground. Eventually got fixed." },
+			{ text = "Keep working", deltas = { Health = -5, Money = 50 }, feedText = "You risked it. Got extra pay but feel uneasy." },
+		},
+	},
+	{
+		id = "trades_apprentice",
+		title = "Teaching the Apprentice",
+		emoji = "🔧",
+		text = "A new apprentice is assigned to you. They're eager but completely clueless.",
+		question = "How do you train them?",
+		cooldown = 3,
+		choices = {
+			{ text = "Be patient and thorough", deltas = { Happiness = 3, Smarts = 2 }, setFlags = { trades_mentor = true }, feedText = "You passed on your knowledge. They're improving fast." },
+			{ text = "Sink or swim approach", deltas = { Happiness = 1 }, feedText = "They'll figure it out. You did." },
+			{ text = "Do their work for them", deltas = { Happiness = -2, Health = -1 }, feedText = "Easier than explaining. But now you're doing double the work." },
+		},
+	},
+	{
+		id = "trades_side_job",
+		title = "Cash Side Job",
+		emoji = "💵",
+		text = "A homeowner offers you $500 cash to do a job on the side - off the books.",
+		question = "Do you take it?",
+		cooldown = 2,
+		choices = {
+			{ text = "Take the cash job", deltas = { Money = 500, Happiness = 3 }, setFlags = { trades_side_hustle = true }, feedText = "Easy money. Just don't tell the boss." },
+			{ text = "Decline - not worth the risk", deltas = { Happiness = 1 }, feedText = "You stayed legit. Less money but peace of mind." },
+			{ text = "Refer them to your company", deltas = { Smarts = 2 }, setFlags = { trades_company_man = true }, feedText = "You brought in new business. Might get a bonus." },
+		},
+	},
+	{
+		id = "trades_major_project",
+		title = "Big Contract",
+		emoji = "🏗️",
+		text = "Your company lands a huge contract. Everyone's working overtime.",
+		question = "How do you handle the crunch?",
+		cooldown = 3,
+		choices = {
+			{ text = "Work the overtime", deltas = { Money = 800, Health = -3, Happiness = -1 }, feedText = "Paychecks are FAT. Body is tired." },
+			{ text = "Stick to your hours", deltas = { Happiness = 2 }, feedText = "Work-life balance is important. Less money but more sanity." },
+			{ text = "Lead a crew", deltas = { Money = 400, Smarts = 3 }, setFlags = { trades_foreman_potential = true }, feedText = "You stepped up. Management noticed." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-7: FINANCE CAREER EVENTS  
+-- Banking, accounting, investment specific events
+-- ═══════════════════════════════════════════════════════════════════════════════
+local FinanceCareerEvents = {
+	{
+		id = "finance_insider_tip",
+		title = "Insider Information",
+		emoji = "📊",
+		text = "A colleague slips you insider info about a stock that's about to soar.",
+		question = "What do you do?",
+		choices = {
+			{ text = "Trade on it", deltas = { Money = 15000, Happiness = 3 }, setFlags = { finance_insider_trading = true }, feedText = "Big profits! But you broke the law. Hope no one finds out." },
+			{ text = "Report it to compliance", deltas = { Happiness = 2 }, setFlags = { finance_ethical = true }, feedText = "You did the right thing. Colleague got fired." },
+			{ text = "Ignore it", deltas = { Happiness = 1 }, feedText = "You stayed out of it. Probably for the best." },
+		},
+	},
+	{
+		id = "finance_audit",
+		title = "Audit Findings",
+		emoji = "🔍",
+		text = "During an audit, you discover someone has been cooking the books for years.",
+		question = "What do you do?",
+		cooldown = 4,
+		oneTime = true,
+		choices = {
+			{ text = "Report to regulators", deltas = { Happiness = 5 }, setFlags = { finance_whistleblower = true }, feedText = "You exposed the fraud. Major scandal but you're a hero." },
+			{ text = "Confront the person privately", deltas = { Happiness = 2 }, feedText = "They offered to fix it quietly. You're watching them now." },
+			{ text = "Pretend you didn't see it", deltas = { Happiness = -5 }, setFlags = { finance_complicit = true }, feedText = "You closed your eyes. Hope it doesn't come back to haunt you." },
+		},
+	},
+	{
+		id = "finance_big_client",
+		title = "Whale Client",
+		emoji = "💰",
+		text = "A high-net-worth client wants YOU to manage their $10M portfolio.",
+		question = "How do you respond?",
+		cooldown = 3,
+		choices = {
+			{ text = "Accept confidently", deltas = { Happiness = 8, Money = 2000 }, setFlags = { finance_big_player = true }, feedText = "Major responsibility but huge commissions. Career defining." },
+			{ text = "Recommend a senior colleague", deltas = { Happiness = 2 }, setFlags = { finance_humble = true }, feedText = "You played it safe. Maybe too safe?" },
+		},
+	},
+	{
+		id = "finance_market_crash",
+		title = "Market Crash",
+		emoji = "📉",
+		text = "The market is crashing. Clients are panicking and calling non-stop.",
+		question = "How do you handle the chaos?",
+		cooldown = 5,
+		choices = {
+			{ text = "Stay calm, reassure clients", deltas = { Happiness = -2, Smarts = 3 }, setFlags = { finance_steady = true }, feedText = "You kept your cool when others lost theirs. Clients trust you more." },
+			{ text = "Panic with everyone else", deltas = { Happiness = -5, Smarts = -2 }, feedText = "You made some bad calls in the chaos. Costly mistakes." },
+			{ text = "Spot opportunities", deltas = { Money = 5000, Smarts = 5 }, setFlags = { finance_opportunist = true }, feedText = "While others panicked, you found undervalued stocks. Smart money." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-8: EDUCATION CAREER EVENTS
+-- Teacher, professor, administrator specific events
+-- ═══════════════════════════════════════════════════════════════════════════════
+local EducationCareerEvents = {
+	{
+		id = "education_difficult_student",
+		title = "Challenging Student",
+		emoji = "📚",
+		text = "A student is constantly disruptive and disrespectful in your class.",
+		question = "How do you handle it?",
+		cooldown = 2,
+		choices = {
+			{ text = "Work with them one-on-one", deltas = { Happiness = 3, Health = -1 }, setFlags = { education_patient = true }, feedText = "Extra effort paid off. They're actually smart, just troubled." },
+			{ text = "Strict discipline", deltas = { Happiness = 1 }, feedText = "You enforced the rules. Order restored but they resent you." },
+			{ text = "Send them to the principal", deltas = { Happiness = -1 }, feedText = "Not your problem anymore. But you wonder if you could have helped." },
+		},
+	},
+	{
+		id = "education_breakthrough",
+		title = "Teaching Breakthrough",
+		emoji = "💡",
+		text = "A struggling student finally 'gets it' thanks to your teaching approach.",
+		question = "How does this affect you?",
+		cooldown = 3,
+		choices = {
+			{ text = "Feel proud and motivated", deltas = { Happiness = 10 }, setFlags = { education_inspired = true }, feedText = "THIS is why you teach. Powerful moment." },
+			{ text = "Just doing your job", deltas = { Happiness = 3, Smarts = 1 }, feedText = "Another day, another lightbulb moment. You're good at this." },
+		},
+	},
+	{
+		id = "education_parent_conflict",
+		title = "Angry Parent",
+		emoji = "😤",
+		text = "A parent is furious their child got a bad grade. They're threatening to go to the principal.",
+		question = "How do you respond?",
+		cooldown = 2,
+		choices = {
+			{ text = "Stand by your grading", deltas = { Happiness = 2 }, setFlags = { education_firm = true }, feedText = "You explained your standards. They eventually backed down." },
+			{ text = "Change the grade to avoid conflict", deltas = { Happiness = -5 }, setFlags = { education_pushover = true }, feedText = "Path of least resistance. But other parents will expect the same." },
+			{ text = "Invite them to a meeting", deltas = { Happiness = 3, Smarts = 2 }, setFlags = { education_diplomatic = true }, feedText = "Open communication resolved the issue. Professional handling." },
+		},
+	},
+	{
+		id = "education_grant",
+		title = "Research Grant Opportunity",
+		emoji = "🎓",
+		text = "There's a prestigious research grant available. Application deadline is in a week.",
+		question = "Do you apply?",
+		cooldown = 4,
+		choices = {
+			{ text = "Apply with strong proposal", deltas = { Smarts = 3, Happiness = 2 }, setFlags = { education_researcher = true }, feedText = "You submitted a compelling proposal. Fingers crossed!" },
+			{ text = "Skip it - too busy", deltas = { Happiness = 1 }, feedText = "Maybe next year. Teaching comes first." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEGA-9: LEGAL CAREER EVENTS
+-- Lawyer, paralegal, judge specific events
+-- ═══════════════════════════════════════════════════════════════════════════════
+local LegalCareerEvents = {
+	{
+		id = "legal_guilty_client",
+		title = "Guilty Client",
+		emoji = "⚖️",
+		text = "Your client confesses to you privately that they're guilty of a serious crime.",
+		question = "What do you do?",
+		cooldown = 4,
+		choices = {
+			{ text = "Continue their defense", deltas = { Happiness = -2, Money = 2000 }, setFlags = { legal_pragmatic = true }, feedText = "Everyone deserves a defense. That's the law." },
+			{ text = "Withdraw from the case", deltas = { Happiness = 3, Money = -1000 }, setFlags = { legal_moral = true }, feedText = "You couldn't do it. Conscience over career." },
+			{ text = "Try to negotiate a plea", deltas = { Happiness = 2, Smarts = 3 }, setFlags = { legal_strategic = true }, feedText = "You got them a better deal while serving justice. Best outcome." },
+		},
+	},
+	{
+		id = "legal_big_case",
+		title = "Career-Defining Case",
+		emoji = "🏛️",
+		text = "You've been assigned to a high-profile case. The whole firm is watching.",
+		question = "How do you approach it?",
+		cooldown = 3,
+		choices = {
+			{ text = "Work around the clock", deltas = { Health = -5, Happiness = 3, Smarts = 5 }, setFlags = { legal_workaholic = true }, feedText = "You won the case! Your reputation soared." },
+			{ text = "Collaborate with the team", deltas = { Happiness = 4, Smarts = 3 }, setFlags = { legal_team_player = true }, feedText = "Together you achieved victory. Good leadership material." },
+			{ text = "Play it safe", deltas = { Happiness = 1 }, feedText = "Decent outcome. But you didn't stand out." },
+		},
+	},
+	{
+		id = "legal_ethics_violation",
+		title = "Ethical Violation",
+		emoji = "🚫",
+		text = "A senior partner asks you to hide evidence that could help the opposing side.",
+		question = "What do you do?",
+		oneTime = true,
+		choices = {
+			{ text = "Refuse and report", deltas = { Happiness = 5 }, setFlags = { legal_ethical = true }, feedText = "You reported it to the bar. Partner was sanctioned. Your conscience is clear." },
+			{ text = "Do as asked", deltas = { Money = 5000, Happiness = -8 }, setFlags = { legal_corrupt = true }, feedText = "You crossed the line. It haunts you." },
+			{ text = "Anonymously leak it", deltas = { Happiness = 3 }, setFlags = { legal_whistleblower = true }, feedText = "The truth came out without your fingerprints. Justice served." },
+		},
+	},
 }
 
 local OfficeCareerEvents = {
@@ -2768,6 +3675,28 @@ function LifeBackend:buildCareerEvent(state)
 			eventPool = TechCareerEvents
 			eventSource = "career_science"
 		end
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-10: TRADES CATEGORY - Construction, plumber, electrician, mechanic
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif jobCategory == "trades" or jobCategory == "construction" or jobCategory == "manual" then
+		eventPool = TradesCareerEvents
+		eventSource = "career_trades"
+		-- Set trades experience flag when working in trades
+		state.Flags.trades_experience = true
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-11: EDUCATION CATEGORY - Teacher, professor, administrator
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif jobCategory == "education" then
+		eventPool = EducationCareerEvents
+		eventSource = "career_education"
+		state.Flags.education_experience = true
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-12: LEGAL CATEGORY - Lawyer, paralegal, judge
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif jobCategory == "legal" or jobCategory == "law" then
+		eventPool = LegalCareerEvents
+		eventSource = "career_legal"
+		state.Flags.legal_experience = true
 	end
 	
 	-- CRITICAL FIX #49: If no matching event pool, return nil instead of random events
@@ -4139,37 +5068,75 @@ function LifeBackend:updateEducationProgress(state)
 				-- High School and above get proper graduation messages
 				eduData.Status = "completed"
 				state.Education = eduData.Level
-				state.PendingFeed = string.format("🎓 You graduated from %s!", eduData.Institution or "school")
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX #MEGA-16: Enhanced graduation with degree display and remaining stat bonuses
+				-- Show BOTH institution AND degree earned in the graduation message
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				local institutionName = eduData.Institution or "school"
+				local degreeName = eduData.Degree
+				if degreeName then
+					state.PendingFeed = string.format("🎓 You graduated from %s! Earned: %s", institutionName, degreeName)
+				else
+					state.PendingFeed = string.format("🎓 You graduated from %s!", institutionName)
+				end
+				
+				-- Apply remaining stat bonuses (70% on completion)
+				local program = EducationCatalog[level]
+				if program and program.statBonuses then
+					local remainingBonus = {}
+					for stat, bonus in pairs(program.statBonuses) do
+						remainingBonus[stat] = math.ceil(bonus * 0.7)  -- Remaining 70%
+					end
+					self:applyStatChanges(state, remainingBonus)
+				end
 				
 				-- Set appropriate flags
 				state.Flags = state.Flags or {}
 				if level == "high_school" then
 					state.Flags.graduated_high_school = true
 					state.Flags.high_school_graduate = true
+					state.Flags.has_ged_or_diploma = true  -- Important for job eligibility
 				elseif level == "trade" then
 					state.Flags.trade_certified = true
+					state.Flags.trades_experience = true
+					state.Flags.skilled_worker = true
 				elseif level == "bootcamp" then
 					state.Flags.bootcamp_graduate = true
-				elseif level == "bachelor" or level == "community" or level == "associate" then
+					state.Flags.coder = true
+					state.Flags.tech_experience = true
+					state.Flags.coding_bootcamp = true
+				elseif level == "community" or level == "associate" then
 					state.Flags.college_graduate = true
-					if level == "bachelor" then
-						state.Flags.has_degree = true
-					end
+					state.Flags.has_associates = true
+				elseif level == "bachelor" then
+					state.Flags.college_graduate = true
+					state.Flags.has_degree = true
+					state.Flags.has_bachelors = true
 				elseif level == "business" then
 					state.Flags.masters_degree = true
 					state.Flags.has_degree = true
+					state.Flags.has_mba = true
+					state.Flags.executive_track = true
 				elseif level == "master" then
 					state.Flags.masters_degree = true
 					state.Flags.has_degree = true
+					state.Flags.has_masters = true
 				elseif level == "law" then
 					state.Flags.law_degree = true
 					state.Flags.has_degree = true
+					state.Flags.bar_eligible = true
+					state.Flags.legal_education = true
 				elseif level == "medical" then
 					state.Flags.medical_degree = true
 					state.Flags.has_degree = true
+					state.Flags.medical_education = true
+					state.Flags.can_practice_medicine = true
 				elseif level == "phd" or level == "doctorate" then
 					state.Flags.doctorate = true
 					state.Flags.has_degree = true
+					state.Flags.has_phd = true
+					state.Flags.expert_in_field = true
 				end
 			end
 		end
@@ -8881,30 +9848,62 @@ function LifeBackend:enrollEducation(player, programId, options)
 	-- CRITICAL FIX: Track loan separately from total cost for proper messaging
 	local totalDebt = prevDebt + loanNeeded -- Only add the loan portion to debt, not what was paid
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-14: Enhanced EducationData with institution AND degree
+	-- Now properly tracks: what institution you attend AND what degree you'll earn
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	state.EducationData = {
 		Status = "enrolled",
 		Level = programId,
 		Progress = 0,
 		Duration = program.duration,
-		Institution = program.name,
+		Institution = program.institution or program.name,  -- Where you go
+		InstitutionName = program.name,  -- Display name for the program
+		Degree = program.degree,  -- What degree you'll earn upon completion
 		Debt = totalDebt,
-		LoanAmount = loanNeeded, -- Track how much was borrowed this enrollment
+		LoanAmount = loanNeeded,
+		Description = program.description,  -- Store description for UI
 	}
 	state.Career = state.Career or {}
 	state.Career.education = programId
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-15: Apply education program flags and stat bonuses on enrollment
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	
 	-- Set student loan flag if they took a loan
 	if loanNeeded > 0 then
-		state.Flags = state.Flags or {}
 		state.Flags.has_student_loans = true
 		state.Flags.student_loan_amount = (state.Flags.student_loan_amount or 0) + loanNeeded
 	end
+	
+	-- Apply program-specific flags
+	if program.grantsFlags then
+		for _, flag in ipairs(program.grantsFlags) do
+			state.Flags[flag] = true
+		end
+	end
+	
+	-- Apply initial stat bonuses (partial - more on completion)
+	if program.statBonuses then
+		local partialBonus = {}
+		for stat, bonus in pairs(program.statBonuses) do
+			partialBonus[stat] = math.floor(bonus * 0.3)  -- 30% on enrollment, 70% on completion
+		end
+		self:applyStatChanges(state, partialBonus)
+	end
 
+	-- Create enrollment message showing BOTH institution and future degree
 	local feed
+	local institutionDisplay = program.institution or program.name
+	local degreeDisplay = program.degree or program.name
 	if loanNeeded > 0 then
-		feed = string.format("You enrolled in %s! Took out %s in student loans.", program.name, formatMoney(loanNeeded))
+		feed = string.format("🎓 You enrolled at %s! You'll earn: %s. Took out %s in student loans.", 
+			institutionDisplay, degreeDisplay, formatMoney(loanNeeded))
 	else
-		feed = string.format("You enrolled in %s! Paid tuition in full.", program.name)
+		feed = string.format("🎓 You enrolled at %s! You'll earn: %s. Paid tuition in full.", 
+			institutionDisplay, degreeDisplay)
 	end
 	if not skipPush then
 		self:pushState(player, feed)
@@ -8996,16 +9995,43 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	end
 
 	state.Assets[assetType] = state.Assets[assetType] or {}
-	table.insert(state.Assets[assetType], {
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-2: Store ALL asset data including effects
+	-- This allows TickAssets to properly apply all bonuses
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local storedAsset = {
 		id = asset.id,
 		name = asset.name,
-		emoji = asset.emoji,
+		emoji = asset.emoji or "",
 		value = asset.price,
 		price = asset.price,
-		income = asset.income,
+		income = asset.income or 0,
 		acquiredAge = state.Age,
 		acquiredYear = state.Year,
-	})
+		-- New comprehensive data
+		tier = asset.tier or "basic",
+		happinessBonus = asset.happinessBonus or 0,
+		statusBonus = asset.statusBonus or 0,
+		maintenanceCost = asset.maintenanceCost or 0,
+		fuelCost = asset.fuelCost or 0,
+		resaleModifier = asset.resaleModifier or 0.70,
+		depreciationRate = asset.depreciationRate or 0.10,
+		fameBonus = asset.fameBonus or 0,
+		effects = asset.effects,
+		grantsFlags = asset.grantsFlags,
+		appreciates = asset.appreciates or false,
+		appreciationRate = asset.appreciationRate or 0.03,
+		riskFactor = asset.riskFactor,
+		canHostParties = asset.canHostParties,
+		familyBonus = asset.familyBonus,
+		fastTravel = asset.fastTravel,
+		canPropose = asset.canPropose,
+		skillBonus = asset.skillBonus,
+		unlocksCareers = asset.unlocksCareers,
+	}
+	
+	table.insert(state.Assets[assetType], storedAsset)
 	
 	debugPrint("  SUCCESS: Added to state.Assets." .. assetType)
 	debugPrint("    Total items in " .. assetType .. ":", #state.Assets[assetType])
@@ -9013,16 +10039,113 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		debugPrint("      [" .. i .. "]", a.id, a.name)
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-3: Apply ALL effects immediately upon purchase
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Apply immediate stat effects
+	if asset.effects then
+		for statName, value in pairs(asset.effects) do
+			if state.Stats and state.Stats[statName] then
+				state.Stats[statName] = math.min(100, math.max(0, (state.Stats[statName] or 50) + value))
+			end
+		end
+	end
+	
+	-- Apply flags from asset
+	if asset.grantsFlags then
+		for _, flagName in ipairs(asset.grantsFlags) do
+			state.Flags[flagName] = true
+		end
+	end
+	
+	-- Apply fame bonus immediately
+	if asset.fameBonus and asset.fameBonus > 0 then
+		state.Fame = (state.Fame or 0) + asset.fameBonus
+	end
+	
+	-- Vehicle-specific flags
 	if assetType == "Vehicles" then
 		state.Flags.has_vehicle = true
 		state.Flags.has_car = true
+		state.Flags.car_owner = true
+		if asset.tier == "supercar" or asset.tier == "ultra" or asset.tier == "billionaire" then
+			state.Flags.luxury_car_owner = true
+		end
+		if asset.id == "yacht" then
+			state.Flags.yacht_owner = true
+			state.Flags.boat_owner = true
+		end
+		if asset.id == "jet" then
+			state.Flags.jet_owner = true
+			state.Flags.can_fly_private = true
+		end
+		if asset.id == "helicopter" then
+			state.Flags.helicopter_owner = true
+			state.Flags.can_fly = true
+		end
+		if asset.id == "motorcycle" then
+			state.Flags.motorcycle_owner = true
+			state.Flags.biker = true
+		end
+	-- Property-specific flags
 	elseif assetType == "Properties" then
 		state.Flags.has_property = true
 		state.Flags.homeowner = true
+		if asset.tier == "luxury" or asset.tier == "elite" or asset.tier == "ultra" or asset.tier == "billionaire" then
+			state.Flags.luxury_homeowner = true
+		end
+		if asset.id == "mansion" then
+			state.Flags.mansion_owner = true
+			state.Flags.ultra_wealthy = true
+		end
+		if asset.id == "penthouse" then
+			state.Flags.penthouse_owner = true
+		end
+		if asset.id == "island" then
+			state.Flags.island_owner = true
+			state.Flags.billionaire_lifestyle = true
+		end
+	-- Item-specific flags and career unlocks
+	elseif assetType == "Items" then
+		if asset.id == "gaming_pc" or asset.id == "laptop" then
+			state.Flags.has_computer = true
+			state.Flags.tech_savvy = true
+		end
+		if asset.id == "camera" then
+			state.Flags.photographer = true
+		end
+		if asset.id == "guitar" or asset.id == "piano" then
+			state.Flags.musician = true
+			state.Flags.plays_instrument = true
+		end
+		-- Apply skill bonuses
+		if asset.skillBonus then
+			state.Skills = state.Skills or {}
+			for skill, bonus in pairs(asset.skillBonus) do
+				state.Skills[skill] = (state.Skills[skill] or 0) + bonus
+			end
+		end
 	end
 
 	self:addMoney(state, -asset.price)
-	local feed = string.format("You purchased %s for %s.", asset.name, formatMoney(asset.price))
+	
+	-- Generate feed with tier-specific messaging
+	local tierMessages = {
+		budget = "You got yourself",
+		basic = "You bought",
+		reliable = "You purchased",
+		nice = "You treated yourself to",
+		premium = "Nice! You acquired",
+		luxury = "Congrats! You now own",
+		supercar = "WOW! You're now the proud owner of",
+		elite = "INCREDIBLE! You purchased",
+		ultra = "LEGENDARY! You now own",
+		billionaire = "BILLIONAIRE STATUS! You bought",
+		investment = "Smart investment:",
+	}
+	local tierMsg = tierMessages[asset.tier or "basic"] or "You purchased"
+	local feed = string.format("%s %s for %s!", tierMsg, asset.name, formatMoney(asset.price))
 	
 	-- Debug: Check assets before push
 	debugPrint("  Before pushState:")
@@ -9054,16 +10177,54 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 
 	for index, asset in ipairs(bucket) do
 		if asset.id == assetId then
-			local payout = math.floor((asset.value or 0) * 0.7)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #MEGA-4: Use proper resale modifier and handle appreciation
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local resaleModifier = asset.resaleModifier or 0.70
+			local currentValue = asset.value or asset.price or 0
+			
+			-- Check for appreciation (jewelry, art, some properties)
+			if asset.appreciates then
+				local yearsOwned = (state.Age or 0) - (asset.acquiredAge or 0)
+				local appreciationRate = asset.appreciationRate or 0.03
+				currentValue = currentValue * (1 + (appreciationRate * yearsOwned))
+			end
+			
+			local payout = math.floor(currentValue * resaleModifier)
 			table.remove(bucket, index)
 			self:addMoney(state, payout)
+			
+			-- Remove granted flags if this was the only asset providing them
+			if asset.grantsFlags then
+				for _, flagName in ipairs(asset.grantsFlags) do
+					-- Only remove if no other asset grants this flag
+					local stillHasFlag = false
+					for _, otherAsset in ipairs(bucket) do
+						if otherAsset.grantsFlags then
+							for _, otherFlag in ipairs(otherAsset.grantsFlags) do
+								if otherFlag == flagName then
+									stillHasFlag = true
+									break
+								end
+							end
+						end
+						if stillHasFlag then break end
+					end
+					if not stillHasFlag then
+						state.Flags[flagName] = nil
+					end
+				end
+			end
 
 			if assetType == "Vehicles" and #bucket == 0 then
 				state.Flags.has_vehicle = nil
 				state.Flags.has_car = nil
+				state.Flags.car_owner = nil
+				state.Flags.luxury_car_owner = nil
 			elseif assetType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
+				state.Flags.luxury_homeowner = nil
 			end
 
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))

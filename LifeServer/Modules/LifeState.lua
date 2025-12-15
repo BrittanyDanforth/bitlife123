@@ -2310,6 +2310,15 @@ function LifeState:TickAssets()
 	local totalVehicleValue = 0
 	local totalPropertyValue = 0
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MEGA-5: USE COMPREHENSIVE ASSET DATA FOR EFFECTS
+	-- Now uses the detailed data stored in each asset (happinessBonus, maintenanceCost, etc.)
+	-- Falls back to value-based calculation for legacy assets
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local totalFameBonus = 0
+	local totalStatusBonus = 0
+	local totalFuelCost = 0
+	
 	-- Depreciate vehicles AND apply happiness effects
 	if self.Assets.Vehicles then
 		for _, vehicle in ipairs(self.Assets.Vehicles) do
@@ -2317,52 +2326,96 @@ function LifeState:TickAssets()
 				-- Track total value
 				totalVehicleValue = totalVehicleValue + vehicle.value
 				
-				-- Cars depreciate ~15% per year
-				local depreciation = vehicle.value * 0.15
+				-- Use asset's depreciation rate if available, otherwise default 15%
+				local depreciationRate = vehicle.depreciationRate or 0.15
+				local depreciation = vehicle.value * depreciationRate
 				vehicle.value = math.max(500, vehicle.value - depreciation)
 				
 				-- Age the vehicle
 				vehicle.age = (vehicle.age or 0) + 1
 				
 				-- ═══════════════════════════════════════════════════════════════
-				-- VEHICLE HAPPINESS EFFECTS
+				-- VEHICLE HAPPINESS, STATUS, AND FAME EFFECTS
+				-- Uses comprehensive data from catalog if available
 				-- ═══════════════════════════════════════════════════════════════
-				local originalValue = vehicle.purchasePrice or vehicle.value
 				
-				-- Luxury vehicles (50k+) provide happiness and status
-				if originalValue >= 500000 then
-					totalHappinessBonus = totalHappinessBonus + 5
-					hasLuxuryVehicle = true
-					vehicle.tier = "supercar"
-				elseif originalValue >= 100000 then
-					totalHappinessBonus = totalHappinessBonus + 3
-					hasLuxuryVehicle = true
-					vehicle.tier = "luxury"
-				elseif originalValue >= 50000 then
-					totalHappinessBonus = totalHappinessBonus + 2
-					vehicle.tier = "premium"
-				elseif originalValue >= 25000 then
-					totalHappinessBonus = totalHappinessBonus + 1
-					vehicle.tier = "nice"
+				-- Use stored bonus if available (from new comprehensive catalog)
+				if vehicle.happinessBonus and vehicle.happinessBonus > 0 then
+					totalHappinessBonus = totalHappinessBonus + vehicle.happinessBonus
 				else
-					vehicle.tier = "basic"
+					-- Fallback to value-based calculation
+					local originalValue = vehicle.purchasePrice or vehicle.price or vehicle.value
+					if originalValue >= 500000 then
+						totalHappinessBonus = totalHappinessBonus + 5
+					elseif originalValue >= 100000 then
+						totalHappinessBonus = totalHappinessBonus + 3
+					elseif originalValue >= 50000 then
+						totalHappinessBonus = totalHappinessBonus + 2
+					elseif originalValue >= 25000 then
+						totalHappinessBonus = totalHappinessBonus + 1
+					end
+				end
+				
+				-- Status and fame bonuses from comprehensive data
+				if vehicle.statusBonus then
+					totalStatusBonus = totalStatusBonus + vehicle.statusBonus
+				end
+				if vehicle.fameBonus then
+					totalFameBonus = totalFameBonus + vehicle.fameBonus
+				end
+				
+				-- Check for luxury tier
+				if vehicle.tier == "supercar" or vehicle.tier == "ultra" or vehicle.tier == "billionaire" then
+					hasLuxuryVehicle = true
+				elseif vehicle.tier == "luxury" or vehicle.tier == "premium" then
+					hasLuxuryVehicle = true
+				elseif not vehicle.tier then
+					-- Set tier based on value for legacy assets
+					local originalValue = vehicle.purchasePrice or vehicle.price or vehicle.value
+					if originalValue >= 500000 then
+						vehicle.tier = "supercar"
+						hasLuxuryVehicle = true
+					elseif originalValue >= 100000 then
+						vehicle.tier = "luxury"
+						hasLuxuryVehicle = true
+					elseif originalValue >= 50000 then
+						vehicle.tier = "premium"
+					elseif originalValue >= 25000 then
+						vehicle.tier = "nice"
+					else
+						vehicle.tier = "basic"
+					end
 				end
 				
 				-- ═══════════════════════════════════════════════════════════════
-				-- VEHICLE MAINTENANCE & REPAIR COSTS
+				-- VEHICLE MAINTENANCE, FUEL & REPAIR COSTS
+				-- Uses comprehensive data from catalog if available
 				-- ═══════════════════════════════════════════════════════════════
-				-- Annual maintenance based on vehicle value
-				local annualMaintenance = math.floor(originalValue * 0.02) -- 2% of original value
-				totalMaintenanceCost = totalMaintenanceCost + annualMaintenance
 				
-				-- Old vehicles need repairs
-				if vehicle.age > 5 and math.random() < 0.25 then
+				-- Use stored maintenance cost if available
+				if vehicle.maintenanceCost and vehicle.maintenanceCost > 0 then
+					totalMaintenanceCost = totalMaintenanceCost + vehicle.maintenanceCost
+				else
+					-- Fallback: 2% of original value
+					local originalValue = vehicle.purchasePrice or vehicle.price or vehicle.value
+					totalMaintenanceCost = totalMaintenanceCost + math.floor(originalValue * 0.02)
+				end
+				
+				-- Add fuel costs
+				if vehicle.fuelCost then
+					totalFuelCost = totalFuelCost + vehicle.fuelCost
+				end
+				
+				-- Old vehicles need repairs (increased chance for high-risk vehicles)
+				local riskFactor = vehicle.riskFactor or 1.0
+				local baseRepairChance = vehicle.age > 10 and 0.40 or (vehicle.age > 5 and 0.25 or 0)
+				baseRepairChance = baseRepairChance * riskFactor
+				
+				if baseRepairChance > 0 and math.random() < baseRepairChance then
 					vehicle.needsRepairs = true
-					vehicle.repairCost = math.random(500, math.floor(originalValue * 0.05))
-					totalMaintenanceCost = totalMaintenanceCost + vehicle.repairCost
-				elseif vehicle.age > 10 and math.random() < 0.40 then
-					vehicle.needsRepairs = true
-					vehicle.repairCost = math.random(1000, math.floor(originalValue * 0.10))
+					local originalValue = vehicle.purchasePrice or vehicle.price or vehicle.value
+					local repairPercent = vehicle.age > 10 and 0.10 or 0.05
+					vehicle.repairCost = math.random(500, math.floor(originalValue * repairPercent))
 					totalMaintenanceCost = totalMaintenanceCost + vehicle.repairCost
 				end
 				
@@ -2389,45 +2442,119 @@ function LifeState:TickAssets()
 				property.value = math.max(property.purchasePrice and property.purchasePrice * 0.3 or 10000, property.value)
 				
 				-- ═══════════════════════════════════════════════════════════════
-				-- PROPERTY HAPPINESS EFFECTS
+				-- PROPERTY HAPPINESS, STATUS, AND FAME EFFECTS
+				-- Uses comprehensive data from catalog if available
 				-- ═══════════════════════════════════════════════════════════════
-				local originalValue = property.purchasePrice or property.value
 				
-				-- Property tier determines happiness boost
-				if originalValue >= 5000000 then
-					totalHappinessBonus = totalHappinessBonus + 8
-					hasLuxuryProperty = true
-					property.tier = "mansion"
-				elseif originalValue >= 1000000 then
-					totalHappinessBonus = totalHappinessBonus + 5
-					hasLuxuryProperty = true
-					property.tier = "luxury"
-				elseif originalValue >= 500000 then
-					totalHappinessBonus = totalHappinessBonus + 3
-					property.tier = "upscale"
-				elseif originalValue >= 200000 then
-					totalHappinessBonus = totalHappinessBonus + 2
-					property.tier = "nice"
-				elseif originalValue >= 100000 then
-					totalHappinessBonus = totalHappinessBonus + 1
-					property.tier = "starter"
+				-- Use stored bonus if available (from new comprehensive catalog)
+				if property.happinessBonus and property.happinessBonus > 0 then
+					totalHappinessBonus = totalHappinessBonus + property.happinessBonus
 				else
-					property.tier = "modest"
+					-- Fallback to value-based calculation
+					local originalValue = property.purchasePrice or property.price or property.value
+					if originalValue >= 5000000 then
+						totalHappinessBonus = totalHappinessBonus + 8
+					elseif originalValue >= 1000000 then
+						totalHappinessBonus = totalHappinessBonus + 5
+					elseif originalValue >= 500000 then
+						totalHappinessBonus = totalHappinessBonus + 3
+					elseif originalValue >= 200000 then
+						totalHappinessBonus = totalHappinessBonus + 2
+					elseif originalValue >= 100000 then
+						totalHappinessBonus = totalHappinessBonus + 1
+					end
+				end
+				
+				-- Status and fame bonuses from comprehensive data
+				if property.statusBonus then
+					totalStatusBonus = totalStatusBonus + property.statusBonus
+				end
+				if property.fameBonus then
+					totalFameBonus = totalFameBonus + property.fameBonus
+				end
+				
+				-- Family bonus - extra happiness if property supports family and player has family
+				if property.familyBonus and self.Flags and (self.Flags.married or self.Flags.has_children) then
+					totalHappinessBonus = totalHappinessBonus + 5
+				end
+				
+				-- Check for luxury tier
+				if property.tier == "elite" or property.tier == "ultra" or property.tier == "billionaire" then
+					hasLuxuryProperty = true
+				elseif property.tier == "luxury" then
+					hasLuxuryProperty = true
+				elseif not property.tier then
+					-- Set tier based on value for legacy assets
+					local originalValue = property.purchasePrice or property.price or property.value
+					if originalValue >= 5000000 then
+						property.tier = "mansion"
+						hasLuxuryProperty = true
+					elseif originalValue >= 1000000 then
+						property.tier = "luxury"
+						hasLuxuryProperty = true
+					elseif originalValue >= 500000 then
+						property.tier = "upscale"
+					elseif originalValue >= 200000 then
+						property.tier = "nice"
+					elseif originalValue >= 100000 then
+						property.tier = "starter"
+					else
+						property.tier = "modest"
+					end
 				end
 				
 				-- ═══════════════════════════════════════════════════════════════
 				-- PROPERTY MAINTENANCE COSTS
+				-- Uses comprehensive data from catalog if available
 				-- ═══════════════════════════════════════════════════════════════
-				-- Property taxes and maintenance (~1.5% of value annually)
-				local annualCosts = math.floor(property.value * 0.015)
-				totalMaintenanceCost = totalMaintenanceCost + annualCosts
 				
-				-- Random repair events
+				-- Use stored maintenance cost if available
+				if property.maintenanceCost and property.maintenanceCost > 0 then
+					totalMaintenanceCost = totalMaintenanceCost + property.maintenanceCost
+				else
+					-- Fallback: 1.5% of value annually
+					totalMaintenanceCost = totalMaintenanceCost + math.floor(property.value * 0.015)
+				end
+				
+				-- Random repair events (10% chance)
 				if math.random() < 0.10 then
 					local repairCost = math.random(500, 5000)
 					property.pendingRepair = repairCost
 					totalMaintenanceCost = totalMaintenanceCost + repairCost
 				end
+				
+				-- Property income (rent, etc.)
+				if property.income and property.income > 0 then
+					self.Money = (self.Money or 0) + property.income
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ITEMS EFFECTS (jewelry, tech, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if self.Assets.Items then
+		for _, item in ipairs(self.Assets.Items) do
+			-- Apply item happiness bonus
+			if item.happinessBonus and item.happinessBonus > 0 then
+				totalHappinessBonus = totalHappinessBonus + item.happinessBonus
+			end
+			
+			-- Apply status bonus
+			if item.statusBonus then
+				totalStatusBonus = totalStatusBonus + item.statusBonus
+			end
+			
+			-- Apply fame bonus
+			if item.fameBonus then
+				totalFameBonus = totalFameBonus + item.fameBonus
+			end
+			
+			-- Appreciating items (jewelry, art)
+			if item.appreciates and item.value then
+				local appreciationRate = item.appreciationRate or 0.03
+				item.value = math.floor(item.value * (1 + appreciationRate))
 			end
 		end
 	end
@@ -2436,11 +2563,16 @@ function LifeState:TickAssets()
 	-- APPLY ASSET EFFECTS TO PLAYER STATE
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Apply happiness bonus from assets (capped at +15)
-	local happinessEffect = math.min(15, totalHappinessBonus)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- APPLY COMPREHENSIVE ASSET EFFECTS TO PLAYER STATE
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Apply happiness bonus from assets (capped at +25 for billionaire-tier assets)
+	local happinessEffect = math.min(25, totalHappinessBonus)
 	if happinessEffect > 0 and self.ModifyStat then
-		-- Small happiness boost from nice assets (applied each year)
-		self:ModifyStat("Happiness", math.floor(happinessEffect / 3))
+		-- Happiness boost from nice assets (applied each year, scaled by tier)
+		local yearlyBoost = math.ceil(happinessEffect / 3)
+		self:ModifyStat("Happiness", yearlyBoost)
 	end
 	
 	-- Set asset-related flags
@@ -2449,11 +2581,13 @@ function LifeState:TickAssets()
 	if hasLuxuryVehicle then
 		self.Flags.luxury_car_owner = true
 		self.Flags.drives_nice_car = true
+		self.Flags.high_status = true
 	end
 	
 	if hasLuxuryProperty then
 		self.Flags.mansion_owner = true
 		self.Flags.lives_in_luxury = true
+		self.Flags.high_status = true
 	end
 	
 	if totalPropertyValue > 0 then
@@ -2463,44 +2597,93 @@ function LifeState:TickAssets()
 	
 	if totalVehicleValue > 0 then
 		self.Flags.car_owner = true
+		self.Flags.has_transport = true
 	end
 	
-	-- Fame boost from luxury assets
+	-- Wealth tier flags based on total asset value
+	local totalAssetValue = totalPropertyValue + totalVehicleValue
+	if totalAssetValue >= 50000000 then
+		self.Flags.billionaire_lifestyle = true
+		self.Flags.ultra_wealthy = true
+	elseif totalAssetValue >= 10000000 then
+		self.Flags.ultra_wealthy = true
+		self.Flags.multi_millionaire = true
+	elseif totalAssetValue >= 1000000 then
+		self.Flags.millionaire = true
+	elseif totalAssetValue >= 500000 then
+		self.Flags.wealthy = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FAME AND STATUS BONUSES FROM ASSETS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Apply fame bonus (capped annual increase)
+	if totalFameBonus > 0 then
+		local yearlyFameGain = math.min(5, math.ceil(totalFameBonus / 5))
+		self.Fame = math.min(100, (self.Fame or 0) + yearlyFameGain)
+	end
+	
+	-- Apply status to looks (high status improves perceived looks)
+	if totalStatusBonus > 0 and self.ModifyStat then
+		if totalStatusBonus >= 20 then
+			self:ModifyStat("Looks", 1)  -- Ultra-status gives looks boost
+		end
+	end
+	
+	-- Legacy fame boost from luxury assets
 	if hasLuxuryVehicle or hasLuxuryProperty then
-		if self.Fame and totalPropertyValue + totalVehicleValue > 1000000 then
+		if totalAssetValue > 1000000 then
 			self.Fame = math.min(100, (self.Fame or 0) + 1)
 		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- DEDUCT MAINTENANCE COSTS
+	-- DEDUCT MAINTENANCE COSTS + FUEL COSTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if totalMaintenanceCost > 0 and self.Money then
-		-- If player can't afford maintenance, happiness penalty
-		if self.Money < totalMaintenanceCost then
+	local totalAnnualCosts = totalMaintenanceCost + totalFuelCost
+	
+	if totalAnnualCosts > 0 and self.Money then
+		-- If player can't afford maintenance, happiness penalty and asset stress
+		if self.Money < totalAnnualCosts then
 			self.Flags.asset_financial_stress = true
 			if self.ModifyStat then
-				self:ModifyStat("Happiness", -3)
+				self:ModifyStat("Happiness", -5)  -- Increased penalty for not affording assets
 			end
-			-- Only deduct what they have
+			-- Only deduct what they have (lose 50% of remaining money to partial payments)
 			self.Money = math.max(0, self.Money - self.Money * 0.5)
+			
+			-- Add feed about financial struggle
+			if self.AddFeed then
+				self:AddFeed("💸 You're struggling to afford your assets! Consider selling some.")
+			end
 		else
-			self.Money = self.Money - totalMaintenanceCost
+			self.Money = self.Money - totalAnnualCosts
 			self.Flags.asset_financial_stress = nil
 		end
 		
 		-- Track total asset costs for year summary
 		self.AssetCosts = self.AssetCosts or {}
 		self.AssetCosts.lastYearMaintenance = totalMaintenanceCost
+		self.AssetCosts.lastYearFuel = totalFuelCost
+		self.AssetCosts.totalAnnualCosts = totalAnnualCosts
 	end
 	
-	-- Store asset summary for UI display
+	-- Store comprehensive asset summary for UI display
 	self.AssetSummary = {
 		totalVehicleValue = totalVehicleValue,
 		totalPropertyValue = totalPropertyValue,
+		totalAssetValue = totalVehicleValue + totalPropertyValue,
 		annualMaintenanceCost = totalMaintenanceCost,
+		annualFuelCost = totalFuelCost,
+		totalAnnualCosts = totalAnnualCosts,
 		happinessBonus = happinessEffect,
+		fameBonus = totalFameBonus,
+		statusBonus = totalStatusBonus,
 		hasLuxuryAssets = hasLuxuryVehicle or hasLuxuryProperty,
+		vehicleCount = self.Assets.Vehicles and #self.Assets.Vehicles or 0,
+		propertyCount = self.Assets.Properties and #self.Assets.Properties or 0,
+		itemCount = self.Assets.Items and #self.Assets.Items or 0,
 	}
 	
 	-- Update net worth
