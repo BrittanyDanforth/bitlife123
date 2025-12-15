@@ -7586,13 +7586,20 @@ function LifeBackend:handleJobApplication(player, jobId)
 		return { success = false, message = "Life data not loaded." }
 	end
 
-	local job = JobCatalog[jobId]
+	-- CRITICAL FIX #512: Use findJobByInput for flexible job lookup
+	-- This allows the client to send job IDs, names, or partial matches
+	-- Fixes "Unknown Job" for jobs like "Hobbyist Streamer" and "New Content Creator"
+	local job = JobCatalog[jobId] or self:findJobByInput(jobId)
 	if not job then
+		warn("[LifeBackend] Unknown job application:", jobId)
 		return { success = false, message = "Unknown job." }
 	end
 	
+	-- Use the actual job ID for further checks (in case client sent a name)
+	local actualJobId = job.id
+	
 	-- CRITICAL FIX: Block direct application to promotion-only positions
-	if PromotionOnlyJobs[jobId] then
+	if PromotionOnlyJobs[actualJobId] then
 		return { 
 			success = false, 
 			message = "This position requires years of experience and internal promotion. You can't apply directly." 

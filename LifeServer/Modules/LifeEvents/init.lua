@@ -36,14 +36,16 @@ local LoadedModules = {}
 -- ════════════════════════════════════════════════════════════════════════════════════
 
 local LifeStages = {
-	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.2 },
-	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.25 },
-	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.35 },
-	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.3 },
-	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.4 },
-	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.45 },
-	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.5 },
-	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.55 },
+	-- CRITICAL FIX #515: Reduced quietChance for MORE events per year!
+	-- Was causing too many "quiet years" where nothing happened
+	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.1 },
+	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.15 },
+	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.2 },
+	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.15 },
+	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.2 },
+	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.25 },
+	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.3 },
+	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.35 },
 }
 
 -- Category mappings per life stage
@@ -60,11 +62,13 @@ local StageCategories = {
 	baby        = { "childhood", "milestones", "royalty" },
 	toddler     = { "childhood", "milestones", "royalty" },
 	child       = { "childhood", "milestones", "random", "career_racing", "royalty" },
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
+	-- Also added career_entertainment for general entertainment careers
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_entertainment", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -738,22 +742,28 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #712-715: IMPROVED COOLDOWN & VARIETY SYSTEM
-	-- Events need stronger cooldowns to prevent repetition across lives
+	-- CRITICAL FIX #712-715: BALANCED COOLDOWN & VARIETY SYSTEM
+	-- Cooldowns prevent immediate repetition while still allowing variety
+	-- CRITICAL FIX #513: LOOSENED cooldowns for MORE event variety!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL FIX #712: Longer default cooldown for generic events
-	local cooldown = event.cooldown or 5 -- Increased from 3 to 5 years
+	-- CRITICAL FIX #513: Reduced default cooldown for more variety (was 5, now 3)
+	local cooldown = event.cooldown or 3
 	
-	-- CRITICAL FIX #713: Even longer cooldowns for repeating childhood/teen events
+	-- CRITICAL FIX #513: Reduced childhood/teen cooldowns (was 8, now 4)
 	local eventCategory = event._category or event.category or ""
 	if eventCategory == "childhood" or eventCategory == "teen" then
-		cooldown = event.cooldown or 8 -- Longer cooldowns for formative years events
+		cooldown = event.cooldown or 4 -- More variety in formative years
 	end
 	
-	-- CRITICAL FIX #714: Generic random events need extra-long cooldowns
+	-- CRITICAL FIX #513: Reduced random event cooldowns (was 7, now 4)
 	if eventCategory == "random" then
-		cooldown = event.cooldown or 7
+		cooldown = event.cooldown or 4
+	end
+	
+	-- CRITICAL FIX #514: Career events should have shorter cooldowns for more activity
+	if eventCategory:find("career") then
+		cooldown = event.cooldown or 2 -- Career events can repeat more often
 	end
 	
 	local lastAge = history.lastOccurrence[event.id]
@@ -761,9 +771,9 @@ local function canEventTrigger(event, state)
 		return false
 	end
 	
-	-- CRITICAL FIX #715: Track total occurrences to prevent common events from dominating
+	-- CRITICAL FIX #513: Increased max occurrences for more variety (was 3, now 6)
 	local occurCount = history.occurrences[event.id] or 0
-	local maxAllowed = event.maxOccurrences or 3 -- Reduced from 10 to 3
+	local maxAllowed = event.maxOccurrences or 6
 	if occurCount >= maxAllowed then
 		return false
 	end
