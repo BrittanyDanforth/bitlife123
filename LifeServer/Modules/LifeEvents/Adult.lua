@@ -63,7 +63,14 @@ Adult.events = {
 		text = "College is a whole new world of experiences.",
 		question = "What's your focus?",
 		minAge = 18, maxAge = 22,
-		requiresFlags = { college_bound = true },
+		-- CRITICAL FIX #516: Accept MULTIPLE flags for college eligibility
+		-- Was only checking college_bound but user could have in_college, enrolled_college, etc.
+		eligibility = function(state)
+			if not state.Flags then return false end
+			return state.Flags.college_bound or state.Flags.in_college or 
+			       state.Flags.enrolled_college or state.Flags.college_student or
+			       (state.EducationData and state.EducationData.Status == "enrolled")
+		end,
 		cooldown = 2,
 
 		-- META
@@ -74,28 +81,32 @@ Adult.events = {
 		tags = { "college", "lifestyle" },
 		careerTags = { "business" },
 
-		-- Ensure player is enrolled in college when this fires
+		-- CRITICAL FIX #517: Ensure player is enrolled in college when this fires
 		onComplete = function(state)
 			state.EducationData = state.EducationData or {}
 			state.EducationData.Status = "enrolled"
-			state.EducationData.Institution = "University"
-			state.EducationData.Level = "pursuing_bachelor"
+			state.EducationData.Institution = state.EducationData.Institution or "University"
+			state.EducationData.Level = state.EducationData.Level or "bachelor"
+			state.EducationData.Duration = state.EducationData.Duration or 4
+			state.EducationData.Progress = state.EducationData.Progress or 0
 
 			state.Flags = state.Flags or {}
 			state.Flags.in_college = true
+			state.Flags.college_student = true
+			state.Flags.enrolled_college = true
 		end,
 
 		choices = {
 			{
 				text = "Study hard, get great grades",
 				effects = { Smarts = 7, Happiness = -2, Health = -2 },
-				setFlags = { honors_student = true, in_college = true },
+				setFlags = { honors_student = true, in_college = true, college_student = true },
 				feedText = "You're crushing it academically!",
 			},
 			{
 				text = "Balance academics and social life",
 				effects = { Smarts = 4, Happiness = 5 },
-				setFlags = { in_college = true },
+				setFlags = { in_college = true, college_student = true },
 				feedText = "You're getting the full college experience.",
 			},
 			{

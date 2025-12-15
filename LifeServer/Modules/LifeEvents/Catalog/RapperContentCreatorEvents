@@ -216,11 +216,20 @@ RapperContentCreatorEvents.events = {
 		text = "A local venue is doing an open mic night. You could perform your tracks live for the first time. Terrifying but exciting!",
 		question = "Do you perform?",
 		minAge = 16, maxAge = 45,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.7, -- CRITICAL FIX #518: Increased from 0.5 to 0.7
+		cooldown = 1, -- CRITICAL FIX #519: Reduced from 3 to 1 for more events
 		oneTime = true,
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #520: Accept multiple flags for rapper eligibility
+		eligibility = function(state)
+			if state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper or state.Flags.underground_artist) then
+				return true
+			end
+			if state.CurrentJob and (state.CurrentJob.id or ""):lower():find("rapper") then
+				return true
+			end
+			return false
+		end,
 		blockedByFlags = { first_show_done = true },
 		
 		choices = {
@@ -261,10 +270,13 @@ RapperContentCreatorEvents.events = {
 		text = "Another underground rapper in your city reached out! They want to do a track together. They have 500 monthly listeners - bigger than you!",
 		question = "How do you respond?",
 		minAge = 15, maxAge = 45,
-		baseChance = 0.4,
-		cooldown = 2,
+		baseChance = 0.65, -- CRITICAL FIX #521: Increased from 0.4 to 0.65
+		cooldown = 1, -- CRITICAL FIX #522: Reduced from 2 to 1
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #523: Use eligibility function instead of requiresFlags
+		eligibility = function(state)
+			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+		end,
 		
 		choices = {
 			{
@@ -304,10 +316,13 @@ RapperContentCreatorEvents.events = {
 		text = "Someone at the local hip-hop meetup is calling you out! They want to battle rap. The crowd is forming a circle. Your reputation is on the line!",
 		question = "What do you do?",
 		minAge = 15, maxAge = 40,
-		baseChance = 0.35,
-		cooldown = 3,
+		baseChance = 0.6, -- CRITICAL FIX #524: Increased from 0.35 to 0.6
+		cooldown = 1, -- CRITICAL FIX #525: Reduced from 3 to 1
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #526: Use eligibility function
+		eligibility = function(state)
+			return isRapper(state) or (state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper))
+		end,
 		
 		choices = {
 			{
@@ -360,13 +375,12 @@ RapperContentCreatorEvents.events = {
 		text = "The local college radio station wants to play your track! This could be your first radio play!",
 		question = "How do you handle this opportunity?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.6, -- CRITICAL FIX #527: Increased from 0.3 to 0.6
+		cooldown = 2, -- CRITICAL FIX #528: Reduced from 4 to 2
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #529: Removed high listener requirement, just need to be a rapper
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 500, "Need at least 500 monthly listeners"
+			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
 		end,
 		
 		choices = {
@@ -402,13 +416,12 @@ RapperContentCreatorEvents.events = {
 		text = "A local club wants you to perform! They're offering $200 for a 20-minute set. This is PAID WORK as a rapper!",
 		question = "Do you take the gig?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.35,
-		cooldown = 3,
+		baseChance = 0.6, -- CRITICAL FIX #530: Increased from 0.35 to 0.6
+		cooldown = 1, -- CRITICAL FIX #531: Reduced from 3 to 1
 		category = "career_music",
-		requiresFlags = { first_show_done = true },
+		-- CRITICAL FIX #532: Loosened requirements - just need to be a rapper
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 300, "Need more buzz first"
+			return isRapper(state) or (state.Flags and (state.Flags.first_show_done or state.Flags.stage_experience or state.Flags.first_track_recorded))
 		end,
 		
 		choices = {
@@ -456,13 +469,12 @@ RapperContentCreatorEvents.events = {
 		text = "A popular underground hip-hop blog reached out! They want to write about you and premiere your next track. This could be HUGE for exposure!",
 		question = "How do you respond?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.55, -- CRITICAL FIX #533: Increased from 0.25 to 0.55
+		cooldown = 2, -- CRITICAL FIX #534: Reduced from 5 to 2
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #535: Loosened requirements - just need rapper status
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 1000, "Need at least 1000 monthly listeners"
+			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
 		end,
 		
 		choices = {
@@ -497,15 +509,14 @@ RapperContentCreatorEvents.events = {
 		text = "You've got enough tracks for a full project. Time to put together a mixtape and drop it!",
 		question = "What kind of project do you release?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 5,
+		baseChance = 0.65, -- CRITICAL FIX #538: Increased from 0.4 to 0.65
+		cooldown = 2, -- CRITICAL FIX #539: Reduced from 5 to 2
 		oneTime = false,
-		maxOccurrences = 5,
+		maxOccurrences = 10, -- CRITICAL FIX #540: Increased from 5 to 10
 		category = "career_music",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX #541: Loosened eligibility - just need rapper status
 		eligibility = function(state)
-			local tracks = state.FameState and state.FameState.tracksReleased or 0
-			return tracks >= 5, "Need at least 5 tracks first"
+			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
 		end,
 		
 		choices = {
@@ -554,14 +565,12 @@ RapperContentCreatorEvents.events = {
 		text = "An A&R from a mid-sized label sent you a DM! They've been watching your growth and want to have a conversation about 'opportunities.'",
 		question = "How do you respond?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 6,
+		baseChance = 0.5, -- CRITICAL FIX #542: Increased from 0.2 to 0.5
+		cooldown = 2, -- CRITICAL FIX #543: Reduced from 6 to 2
 		category = "career_music",
-		-- REMOVED isCelebrityOnly - ALL rappers should get label interest events!
-		requiresFlags = { has_mixtape = true },
+		-- CRITICAL FIX #544: Loosened eligibility - rappers can get label interest
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 10000, "Need at least 10K monthly listeners for label interest"
+			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep or state.Flags.first_track_recorded))
 		end,
 		
 		choices = {
@@ -614,13 +623,12 @@ RapperContentCreatorEvents.events = {
 		text = "A rapper with 500K monthly listeners reached out! They heard your mixtape and want you on their next single. This is MAJOR exposure!",
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.15,
-		cooldown = 8,
+		baseChance = 0.45, -- CRITICAL FIX #545: Increased from 0.15 to 0.45
+		cooldown = 2, -- CRITICAL FIX #546: Reduced from 8 to 2
 		category = "career_music",
-		-- REMOVED isCelebrityOnly - ALL rappers should get feature requests!
+		-- CRITICAL FIX #547: Loosened eligibility - any rapper can attract attention
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 15000, "Need more buzz to attract big artists"
+			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
 		end,
 		
 		choices = {
@@ -655,15 +663,14 @@ RapperContentCreatorEvents.events = {
 		text = "Someone used your track in a TikTok and it BLEW UP! 10 million views! Your streams are EXPLODING!",
 		question = "How do you capitalize?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.1,
-		cooldown = 10,
+		baseChance = 0.4, -- CRITICAL FIX #567: Increased from 0.1 to 0.4
+		cooldown = 2, -- CRITICAL FIX #568: Reduced from 10 to 2
 		oneTime = false,
-		maxOccurrences = 3,
+		maxOccurrences = 5, -- CRITICAL FIX #569: Increased from 3 to 5
 		category = "career_music",
-		-- REMOVED isCelebrityOnly - Viral moments can happen to ANY rapper!
+		-- CRITICAL FIX #570: Loosened eligibility - any rapper can go viral
 		eligibility = function(state)
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 5000, "Need some traction first"
+			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
 		end,
 		
 		choices = {
@@ -714,16 +721,14 @@ RapperContentCreatorEvents.events = {
 		text = "You've built enough buzz. It's time to drop a full ALBUM. This is the next level. Major investment needed.",
 		question = "What's your album strategy?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 10,
-		oneTime = true,
+		baseChance = 0.5, -- CRITICAL FIX #571: Increased from 0.3 to 0.5
+		cooldown = 3, -- CRITICAL FIX #572: Reduced from 10 to 3
+		oneTime = false, -- CRITICAL FIX #573: Changed to allow multiple albums
+		maxOccurrences = 5,
 		category = "career_music",
-		-- REMOVED isCelebrityOnly - ANY rapper can release an album!
-		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
+		-- CRITICAL FIX #574: Loosened eligibility - just need to be a rapper
 		eligibility = function(state)
-			if not isRapper(state) then return false end
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 100000, "Need 100K+ monthly listeners for album release"
+			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
 		end,
 		
 		choices = {
@@ -761,15 +766,12 @@ RapperContentCreatorEvents.events = {
 		text = "Another rapper dissed you in an interview! They called your music 'mid' and said you're 'overrated.' The internet is waiting for your response!",
 		question = "How do you respond?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.5, -- CRITICAL FIX #575: Increased from 0.25 to 0.5
+		cooldown = 2, -- CRITICAL FIX #576: Reduced from 5 to 2
 		category = "career_music",
-		-- REMOVED isCelebrityOnly - Beef happens to ALL rappers!
-		-- CRITICAL FIX #509: Use isRapper helper
+		-- CRITICAL FIX #577: Loosened eligibility - any rapper can get into beef
 		eligibility = function(state)
-			if not isRapper(state) then return false end
-			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			return listeners >= 50000, "Need to be relevant enough for beef"
+			return isRapper(state)
 		end,
 		
 		choices = {

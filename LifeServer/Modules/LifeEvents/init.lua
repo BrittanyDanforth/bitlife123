@@ -1130,18 +1130,28 @@ local function canEventTrigger(event, state)
 			if result == false then
 				return false -- Custom eligibility check failed
 			end
+			-- CRITICAL FIX #548: If eligibility returns nil or true, allow the event
+		else
+			-- CRITICAL FIX #549: If eligibility function errors, LOG but ALLOW the event
+			-- This prevents broken eligibility functions from blocking all events
+			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result))
+			-- Continue - don't block the event due to error
 		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RANDOM CHANCE - Final roll (only if all other checks pass)
+	-- CRITICAL FIX #550: Significantly boosted chance for never-seen events
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.baseChance then
 		local chance = event.baseChance
-		-- Boost chance slightly for never-seen events
+		-- CRITICAL FIX #551: MASSIVE boost for never-seen events (was 1.3x, now 2x)
 		if (history.occurrences[event.id] or 0) == 0 then
-			chance = math.min(1, chance * 1.3)
+			chance = math.min(1, chance * 2.0)
+		elseif (history.occurrences[event.id] or 0) == 1 then
+			-- CRITICAL FIX #552: Also boost events seen only once
+			chance = math.min(1, chance * 1.5)
 		end
 		if RANDOM:NextNumber() > chance then
 			return false
