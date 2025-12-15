@@ -143,6 +143,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "🎤 YOU DID IT! 4 hours in that basement, voice raw from 23 takes, but you walked out with YOUR FIRST SONG. It's aggressive, the 808s hit hard, and when you played it back in the car... goosebumps. You sent it to 3 friends - they're already asking for more. This is just the beginning. Your Spotify artist page is LIVE.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
@@ -157,6 +160,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'damn, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
@@ -171,6 +177,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "🎤 THE AUTO-TUNE MADE YOUR VOICE SOUND CRAZY. That melodic flow, the emotional delivery... Marcus had to double-check you hadn't done this before. You layered harmonies, ad-libs, everything. It sounds like something that could be on the radio. TikTok could blow this up. You're already thinking about the music video...",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
@@ -181,12 +190,18 @@ RapperContentCreatorEvents.events = {
 			{
 				text = "🔫 Drill/Street rap - raw and real",
 				effects = { Happiness = 12, Health = -4, Money = -50 },  -- ENHANCED: Drill is risky
+				setFlags = { first_track_recorded = true, drill_rapper = true },
 				feedText = "🎤 You recorded your first track! Hard drill beat. Streets will feel this!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "drill"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 		},
@@ -696,23 +711,34 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_bigger_artist_feature",
 		title = "🌟 Big Artist Wants You on Their Track!",
 		emoji = "🌟",
-		text = "A rapper with 500K monthly listeners reached out! They heard your music and want you on their next single. This is MAJOR exposure!",
+		-- CRITICAL FIX #USER-33: Use getDynamicText to dynamically show an artist BIGGER than you!
+		getDynamicText = function(state)
+			local myListeners = state.FameState and state.FameState.monthlyListeners or 0
+			-- Calculate a bigger artist (2x to 5x your listeners, minimum 50K)
+			local biggerArtist = math.max(50000, math.floor(myListeners * math.random(20, 50) / 10))
+			-- Format with K/M
+			local formattedListeners
+			if biggerArtist >= 1000000 then
+				formattedListeners = string.format("%.1fM", biggerArtist / 1000000)
+			else
+				formattedListeners = string.format("%dK", math.floor(biggerArtist / 1000))
+			end
+			return { text = string.format("A rapper with %s monthly listeners reached out! They heard your music and want you on their next single. This is MAJOR exposure!", formattedListeners) }
+		end,
+		text = "A bigger artist reached out! They heard your music and want you on their next single. This is MAJOR exposure!",
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.35, -- CRITICAL FIX #USER-2: Reduced from 0.45 to 0.35
-		cooldown = 4, -- CRITICAL FIX #USER-2: Increased from 2 to 4 years
-		maxOccurrences = 3, -- CRITICAL FIX #USER-2: Only 3 big collabs per career
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		-- CRITICAL FIX #USER-2: Require ACTUAL PROGRESSION before big artists notice you!
-		-- Underground rappers fresh out of recording don't get calls from 500K listener artists!
+		baseChance = 0.35,
+		cooldown = 4,
+		maxOccurrences = 3,
+		category = "career_rapper",
+		-- CRITICAL FIX #USER-33: Require real progression before big collabs
 		eligibility = function(state)
 			if not isRapper(state) then return false end
 			local flags = state.Flags or {}
-			-- Require: done at least one show, OR have a mixtape/EP, OR have some monthly listeners
 			local hasProgression = flags.did_first_show or flags.has_mixtape or flags.has_ep or 
 				flags.local_fame or flags.buzz or flags.did_local_show
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
-			-- Need EITHER some progression flags OR at least 10K monthly listeners
 			return hasProgression or listeners >= 10000
 		end,
 		
@@ -724,9 +750,13 @@ RapperContentCreatorEvents.events = {
 				feedText = "🌟 YOUR VERSE WENT CRAZY! Everyone saying you STOLE the song! Career-defining moment!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(30000, 80000)
+					-- Scale boost based on current size
+					local currentListeners = state.FameState.monthlyListeners or 0
+					local boost = math.max(30000, math.floor(currentListeners * 0.5) + math.random(20000, 50000))
+					state.FameState.monthlyListeners = currentListeners + boost
 					state.Fame = (state.Fame or 0) + 15
 					state.FameState.majorFeatures = (state.FameState.majorFeatures or 0) + 1
+					state:AddFeed(string.format("🌟 Feature dropped! You gained %d new listeners! HUGE W!", boost))
 				end,
 			},
 			{
@@ -735,7 +765,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "Solid verse but you held back. Some fans noticed. 'Should've went harder.' Missed opportunity to shine.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(10000, 25000)
+					local currentListeners = state.FameState.monthlyListeners or 0
+					local boost = math.max(10000, math.floor(currentListeners * 0.2) + math.random(5000, 15000))
+					state.FameState.monthlyListeners = currentListeners + boost
 					state.Fame = (state.Fame or 0) + 7
 				end,
 			},
@@ -748,14 +780,13 @@ RapperContentCreatorEvents.events = {
 		text = "Someone used your track in a TikTok and it BLEW UP! 10 million views! Your streams are EXPLODING!",
 		question = "How do you capitalize?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.4, -- CRITICAL FIX #567: Increased from 0.1 to 0.4
-		cooldown = 2, -- CRITICAL FIX #568: Reduced from 10 to 2
+		baseChance = 0.4,
+		cooldown = 2,
 		oneTime = false,
-		maxOccurrences = 5, -- CRITICAL FIX #569: Increased from 3 to 5
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		-- CRITICAL FIX #570: Loosened eligibility - any rapper can go viral
+		maxOccurrences = 5,
+		category = "career_rapper",
 		eligibility = function(state)
-			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
+			return isRapper(state)
 		end,
 		
 		choices = {
@@ -766,11 +797,38 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local boost = math.random(50000, 150000)
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
+					local newListeners = (state.FameState.monthlyListeners or 0) + boost
+					state.FameState.monthlyListeners = newListeners
 					state.Fame = (state.Fame or 0) + 25
 					state.FameState.viralMoments = (state.FameState.viralMoments or 0) + 1
-					state.Money = (state.Money or 0) + math.random(5000, 20000) -- Streaming revenue
-					state:AddFeed(string.format("📱 You gained %d new monthly listeners! VIRAL SUCCESS!", boost))
+					state.Money = (state.Money or 0) + math.random(5000, 20000)
+					
+					-- CRITICAL FIX #USER-32: UPDATE JOB TITLE based on new listener count!
+					-- This is the KEY fix - going viral should upgrade your career!
+					state.CurrentJob = state.CurrentJob or {}
+					if newListeners >= 500000 then
+						state.CurrentJob.name = "Hot Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 500000)
+						state.Flags = state.Flags or {}
+						state.Flags.charting_artist = true
+						state.Flags.hit_maker = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners and you're now a HOT RAPPER! 🔥", boost))
+					elseif newListeners >= 100000 then
+						state.CurrentJob.name = "Buzzing Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 25000)
+						state.Flags = state.Flags or {}
+						state.Flags.buzz = true
+						state.Flags.viral_potential = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners! You're BUZZING now! 🔊", boost))
+					elseif newListeners >= 25000 then
+						state.CurrentJob.name = "Local Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 3000)
+						state.Flags = state.Flags or {}
+						state.Flags.local_fame = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners! Local fame incoming!", boost))
+					else
+						state:AddFeed(string.format("📱 You gained %d new monthly listeners! VIRAL SUCCESS!", boost))
+					end
 				end,
 			},
 			{
@@ -779,8 +837,19 @@ RapperContentCreatorEvents.events = {
 				feedText = "📱 Went live! Thousands watching! Personal connection made! Loyal fanbase building!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(40000, 100000)
+					local boost = math.random(40000, 100000)
+					local newListeners = (state.FameState.monthlyListeners or 0) + boost
+					state.FameState.monthlyListeners = newListeners
 					state.Fame = (state.Fame or 0) + 20
+					
+					-- CRITICAL FIX #USER-32: Also update job for this choice
+					state.CurrentJob = state.CurrentJob or {}
+					if newListeners >= 100000 and (state.CurrentJob.name or ""):lower():find("underground") then
+						state.CurrentJob.name = "Buzzing Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 25000)
+						state.Flags = state.Flags or {}
+						state.Flags.buzz = true
+					end
 				end,
 			},
 			{
@@ -1128,9 +1197,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First video posted! Gaming content. 47 views. Everyone starts somewhere!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "streamer"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "gaming"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1140,9 +1214,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First vlog posted! Showing your life. Authentic! 32 views. The journey begins!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "vlogs"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1152,9 +1231,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First tutorial posted! Teaching what you know. 89 views! Helpful content finds an audience!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(10, 100)
 					state.FameState.totalViews = math.random(50, 300)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "educational"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1164,9 +1248,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First skit posted! Making people laugh. 156 views! Comedy travels!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(15, 150)
 					state.FameState.totalViews = math.random(100, 500)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "comedy"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 		},
@@ -1284,12 +1373,30 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local boost = math.random(50000, 200000)
-					state.FameState.subscribers = (state.FameState.subscribers or 0) + boost
+					local newSubs = (state.FameState.subscribers or 0) + boost
+					state.FameState.subscribers = newSubs
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + 5000000
 					state.FameState.viralVideos = (state.FameState.viralVideos or 0) + 1
 					state.Fame = (state.Fame or 0) + 20
 					state.Money = (state.Money or 0) + math.random(5000, 20000)
-					state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					
+					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones!
+					state.CurrentJob = state.CurrentJob or {}
+					if newSubs >= 1000000 then
+						state.CurrentJob.name = "Famous YouTuber (1M+)"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 500000)
+						state:AddFeed(string.format("🔥 VIRAL SUCCESS! Gained %d subs! You're a MILLION subscriber creator! 🥇", boost))
+					elseif newSubs >= 100000 then
+						state.CurrentJob.name = "Popular YouTuber (100K+)"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 75000)
+						state:AddFeed(string.format("🔥 VIRAL SUCCESS! Gained %d subs! Ready for Silver Play Button! 🥈", boost))
+					elseif newSubs >= 10000 then
+						state.CurrentJob.name = "Growing YouTuber"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 15000)
+						state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					else
+						state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					end
 				end,
 			},
 			{
@@ -1298,8 +1405,17 @@ RapperContentCreatorEvents.events = {
 				feedText = "🔥 Replying to EVERYONE! Community loves the engagement! Loyal fanbase forming!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(30000, 100000)
+					local boost = math.random(30000, 100000)
+					local newSubs = (state.FameState.subscribers or 0) + boost
+					state.FameState.subscribers = newSubs
 					state.Fame = (state.Fame or 0) + 15
+					
+					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones
+					state.CurrentJob = state.CurrentJob or {}
+					if newSubs >= 100000 and (state.CurrentJob.name or ""):lower():find("hobbyist") then
+						state.CurrentJob.name = "Growing YouTuber"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 15000)
+					end
 				end,
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION

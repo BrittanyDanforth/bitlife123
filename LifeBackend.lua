@@ -4627,10 +4627,29 @@ function LifeBackend:serializeState(state)
 		end
 		
 		-- CELEBRITY/FAME STATE
-		if state.FameState and state.FameState.careerPath then
+		-- CRITICAL FIX #USER-31: ALWAYS include full FameState to preserve stats!
+		-- Previously only included if careerPath was set, causing stats to be lost
+		if state.FameState then
+			-- Always pass the full FameState so all stats are preserved
 			serialized.FameState = state.FameState
+			-- Ensure the fame value is synced
+			serialized.FameState.fame = state.Fame or serialized.FameState.fame or 0
 		else
-			serialized.FameState = { isFamous = false, fame = state.Fame or 0 }
+			-- Fallback minimal state
+			serialized.FameState = { 
+				isFamous = false, 
+				fame = state.Fame or 0,
+				-- Include zeroed stats so client doesn't error
+				monthlyListeners = 0,
+				totalStreams = 0,
+				totalTracks = 0,
+				subscribers = 0,
+				totalViews = 0,
+				totalVideos = 0,
+				followers = 0,
+				totalPosts = 0,
+				totalLikes = 0,
+			}
 		end
 		
 		-- GOD MODE STATE
@@ -9302,12 +9321,27 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.fame_career = true
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #USER-31: Initialize FameState.careerPath for entertainment jobs
+	-- WITHOUT THIS, the serialization replaces FameState with a minimal object
+	-- and ALL career stats (monthlyListeners, subscribers, etc.) are LOST!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.FameState = state.FameState or {}
+	
 	-- CRITICAL FIX #563: Set rapper flags for rapper jobs
 	if jobIdLower:find("rapper") or jobNameLower:find("rapper") or jobNameLower:find("hip.?hop") then
 		state.Flags.rapper = true
 		state.Flags.pursuing_rap = true
 		state.Flags.hip_hop_experience = true
 		state.Flags.music_experience = true
+		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
+		state.FameState.careerPath = "rapper"
+		state.FameState.careerName = job.name
+		state.FameState.isFamous = true
+		-- Initialize stats if they don't exist
+		state.FameState.monthlyListeners = state.FameState.monthlyListeners or 0
+		state.FameState.totalStreams = state.FameState.totalStreams or 0
+		state.FameState.totalTracks = state.FameState.totalTracks or 0
 	end
 	
 	-- CRITICAL FIX #564: Set streamer/creator flags for those jobs
@@ -9315,18 +9349,40 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.streamer = true
 		state.Flags.content_creator = true
 		state.Flags.pursuing_streaming = true
+		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
+		if jobIdLower:find("streamer") then
+			state.FameState.careerPath = "streamer"
+		elseif jobIdLower:find("youtuber") then
+			state.FameState.careerPath = "youtuber"
+		else
+			state.FameState.careerPath = "influencer"
+		end
+		state.FameState.careerName = job.name
+		state.FameState.isFamous = true
+		-- Initialize stats if they don't exist
+		state.FameState.subscribers = state.FameState.subscribers or 0
+		state.FameState.totalViews = state.FameState.totalViews or 0
+		state.FameState.totalVideos = state.FameState.totalVideos or 0
 	end
 	
 	-- CRITICAL FIX #565: Set musician flags for music jobs
-	if jobIdLower:find("musician") or jobIdLower:find("singer") or jobIdLower:find("artist") then
+	if jobIdLower:find("musician") or jobIdLower:find("singer") or (jobIdLower:find("artist") and not jobIdLower:find("rapper")) then
 		state.Flags.musician = true
 		state.Flags.music_experience = true
+		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
+		state.FameState.careerPath = "musician"
+		state.FameState.careerName = job.name
+		state.FameState.isFamous = true
 	end
 	
 	-- CRITICAL FIX #566: Set actor flags for acting jobs
 	if jobIdLower:find("actor") or jobIdLower:find("actress") or jobNameLower:find("actor") then
 		state.Flags.actor = true
 		state.Flags.acting_experience = true
+		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
+		state.FameState.careerPath = "actor"
+		state.FameState.careerName = job.name
+		state.FameState.isFamous = true
 	end
 	
 	-- Clear application history for this job (fresh start)

@@ -175,10 +175,12 @@ function LifeState.new(player)
 	-- ════════════════════════════════════════════════════════════════════════════
 	-- PREMIUM FEATURE: Celebrity/Fame State
 	-- CRITICAL FIX #14: Full celebrity state initialization
+	-- CRITICAL FIX #USER-31: Added ALL entertainment career stat fields
+	-- These MUST exist for the client to display career stats properly!
 	-- ════════════════════════════════════════════════════════════════════════════
 	self.FameState = {
 		isFamous = false,
-		careerPath = nil, -- actor, musician, influencer, athlete, model
+		careerPath = nil, -- rapper, streamer, influencer, actor, musician
 		careerName = nil,
 		currentStage = 0,
 		stageName = nil,
@@ -190,6 +192,46 @@ function LifeState.new(player)
 		awards = {},
 		scandals = 0,
 		fameLevel = "Unknown",
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #USER-31: RAPPER/MUSICIAN STATS
+		-- These are set by rapper events and displayed in OccupationScreen
+		-- ═══════════════════════════════════════════════════════════════════════
+		monthlyListeners = 0,
+		totalStreams = 0,
+		totalTracks = 0,
+		albumsReleased = 0,
+		mixtapesReleased = 0,
+		epsReleased = 0,
+		showsPerformed = 0,
+		toursCompleted = 0,
+		collabs = 0,
+		battleWins = 0,
+		radioPlays = 0,
+		blogFeatures = 0,
+		viralMoments = 0,
+		majorFeatures = 0,
+		musicVideos = 0,
+		connections = 0,
+		style = nil,
+		producerConnect = false,
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #USER-31: STREAMER/YOUTUBER STATS
+		-- These are set by creator events and displayed in OccupationScreen
+		-- ═══════════════════════════════════════════════════════════════════════
+		subscribers = 0,
+		totalViews = 0,
+		totalVideos = 0,
+		viralVideos = 0,
+		contentType = nil,
+		brandDeals = 0,
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #USER-31: INFLUENCER STATS
+		-- ═══════════════════════════════════════════════════════════════════════
+		totalPosts = 0,
+		totalLikes = 0,
 	}
 	
 	-- ════════════════════════════════════════════════════════════════════════════
