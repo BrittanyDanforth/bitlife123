@@ -2376,11 +2376,12 @@ end
 
 -- BitLife-style nav: Jobs, Assets, Relationships, Activities, Story Paths
 -- CRITICAL FIX: Added Story Paths button that was missing from bottom navigation
-createNavButton({ icon = "💼", text = "Jobs",       screen = "occupation"   }, navLeft,  1)
-createNavButton({ icon = "🏠", text = "Assets",     screen = "assets"       }, navLeft,  2)
-createNavButton({ icon = "👥", text = "Relations",  screen = "relationships"}, navRight, 1)
-createNavButton({ icon = "⚡", text = "Activities", screen = "activities"   }, navRight, 2)
-createNavButton({ icon = "📖", text = "Paths",      screen = "storypaths"   }, navRight, 3)
+-- CRITICAL FIX #801: Shortened text labels to prevent overlap on right side
+createNavButton({ icon = "💼", text = "Jobs",    screen = "occupation"   }, navLeft,  1)
+createNavButton({ icon = "🏠", text = "Assets",  screen = "assets"       }, navLeft,  2)
+createNavButton({ icon = "👥", text = "People",  screen = "relationships"}, navRight, 1)  -- CRITICAL FIX #801: "Relations" -> "People"
+createNavButton({ icon = "⚡", text = "Actions", screen = "activities"   }, navRight, 2)  -- CRITICAL FIX #801: "Activities" -> "Actions"
+createNavButton({ icon = "📖", text = "Story",   screen = "storypaths"   }, navRight, 3)  -- CRITICAL FIX #801: "Paths" -> "Story"
 end)() -- End Nav Bar IIFE
 
 ----------------------------------------------------------------
@@ -2763,7 +2764,8 @@ local function buildEventModal()
 	EventUI.emoji.Parent = titleSection
 
 	-- MOBILE FIX: Responsive title text
-	local eventTitleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
+	-- CRITICAL FIX #804: Increased title text sizes for better readability
+	local eventTitleTextSize = Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 22 or textSize(28))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
@@ -2797,7 +2799,8 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- MOBILE FIX: Responsive body text with tighter line height
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(20))
+	-- CRITICAL FIX #802: Increased body text sizes for better readability
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(22))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
@@ -2815,7 +2818,8 @@ local function buildEventModal()
 	EventUI.body.Parent = bodySection
 
 	-- MOBILE FIX: Responsive question text
-	local eventQuestionTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
+	-- CRITICAL FIX #805: Increased question text sizes for better readability
+	local eventQuestionTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
@@ -3922,8 +3926,9 @@ showEvent = function(payload)
 		local choiceHandlers = {}
 
 		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
-		local baseMinHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
-		local choiceBtnTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
+		-- CRITICAL FIX #803: Increased button text sizes for better readability
+		local baseMinHeight = Device.IS_TINY_PHONE and 36 or (Device.IS_SMALL_PHONE and 40 or 48)
+		local choiceBtnTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 14 or 16)
 		local choiceBtnCorner = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or 12)
 		local choiceBtnPadH = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 10)
 		local choiceBtnPadV = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or 5)

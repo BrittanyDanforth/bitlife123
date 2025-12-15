@@ -298,17 +298,31 @@ function LifeState:AdvanceAge()
 	-- Age 18: Auto-graduate high school if player hasn't already via event
 	-- This ensures EVERYONE gets high school education by 18
 	-- CRITICAL FIX: Don't auto-graduate if player is in jail - they need to finish later
+	-- CRITICAL FIX #806: Don't overwrite college enrollment! Only auto-graduate if STILL in high school
 	if self.Age == 18 then
 		if not self.InJail then
-			if self.Education == "none" or self.EducationData.Status == "enrolled" then
-				self.Education = "high_school"
-				self.EducationData.Status = "completed"
-				self.EducationData.Level = "high_school"
-				self.Flags.graduated_high_school = true
-				self.Flags.high_school_graduate = true
-				self.Flags.in_high_school = nil
-				if not self.PendingFeed then
-					self.PendingFeed = "You automatically graduated from high school!"
+			-- CRITICAL FIX #806: Check if player has ALREADY enrolled in higher education via event
+			-- If EducationData.Level is bachelor/community/trade/etc., DON'T overwrite it!
+			local currentLevel = self.EducationData and self.EducationData.Level or "none"
+			local isHigherEd = currentLevel == "bachelor" or currentLevel == "community" or currentLevel == "trade" 
+				or currentLevel == "master" or currentLevel == "phd" or currentLevel == "law" or currentLevel == "medical"
+			local hasCollegeFlags = self.Flags.in_college or self.Flags.college_student or self.Flags.enrolled_college
+			
+			-- Only auto-graduate if NOT in higher education and NOT already graduated
+			if not isHigherEd and not hasCollegeFlags and not self.Flags.graduated_high_school then
+				if self.Education == "none" or (self.EducationData.Status == "enrolled" and 
+					(currentLevel == "high_school" or currentLevel == "middle_school" or currentLevel == "elementary" or currentLevel == nil or currentLevel == "none")) then
+					self.Education = "high_school"
+					self.EducationData.Status = "completed"
+					self.EducationData.Level = "high_school"
+					self.Flags.graduated_high_school = true
+					self.Flags.high_school_graduate = true
+					self.Flags.has_diploma = true
+					self.Flags.has_ged_or_diploma = true
+					self.Flags.in_high_school = nil
+					if not self.PendingFeed then
+						self.PendingFeed = "You automatically graduated from high school!"
+					end
 				end
 			end
 		else
