@@ -16,7 +16,7 @@ local events = {
 		text = "At a go-kart track, a scout notices your exceptional reflexes and racing instincts.",
 		category = "career_racing",
 		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
-		baseChance = 0.35, -- CRITICAL FIX: More likely to trigger
+		baseChance = 0.555, -- CRITICAL FIX: More likely to trigger
 		minAge = 10,
 		maxAge = 18, -- CRITICAL FIX: Extended age range
 		oneTime = true,
@@ -415,7 +415,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		requiresFlags = { pro_racer = true },
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,

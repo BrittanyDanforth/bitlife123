@@ -93,7 +93,7 @@ local events = {
 		weight = 5,
 		minAge = 13,
 		maxAge = 25,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -151,7 +151,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 40,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 4,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -204,7 +204,7 @@ local events = {
 		weight = 6,
 		minAge = 16,
 		maxAge = 45,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 5,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -258,7 +258,7 @@ local events = {
 		weight = 3,
 		minAge = 21,
 		maxAge = 50,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		requiresFlags = { illegal_runner = true },
 		blockedByFlags = { in_prison = true },
@@ -318,7 +318,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Only show this event when player is ACTUALLY broke!
@@ -380,7 +380,7 @@ local events = {
 		weight = 2,
 		minAge = 21,
 		maxAge = 55,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -438,7 +438,7 @@ local events = {
 		weight = 5,
 		minAge = 16,
 		maxAge = 40,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 4,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -503,7 +503,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -559,7 +559,7 @@ local events = {
 		category = "crime",
 		weight = 3,
 		minAge = 25,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
@@ -613,7 +613,7 @@ local events = {
 		weight = 3,
 		minAge = 25,
 		maxAge = 60,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
@@ -669,7 +669,7 @@ local events = {
 		weight = 2,
 		minAge = 25,
 		maxAge = 60,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { entrepreneur = true },
@@ -726,7 +726,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 50,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -787,7 +787,7 @@ local events = {
 		weight = 3,
 		minAge = 14,
 		maxAge = 30,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true, crew_member = true },
 		choices = {
@@ -839,7 +839,7 @@ local events = {
 		weight = 1,
 		minAge = 21,
 		maxAge = 55,
-		cooldown = 15,
+		cooldown = 5,
 		maxOccurrences = 1,
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { violent_criminal = true },
@@ -952,7 +952,7 @@ local events = {
 		weight = 3,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1084,7 +1084,7 @@ local events = {
 		weight = 4,
 		minAge = 21,
 		maxAge = 60,
-		cooldown = 10,
+		cooldown = 4,
 		isMafiaOnly = true,
 		conditions = { 
 			requiresFlags = { in_mob = true, mafia_gamepass = true },
@@ -1181,7 +1181,7 @@ local events = {
 		weight = 3,
 		minAge = 21,
 		maxAge = 55,
-		cooldown = 15,
+		cooldown = 5,
 		isMafiaOnly = true,
 		conditions = { 
 			requiresFlags = { in_mob = true, mafia_gamepass = true },
@@ -1387,7 +1387,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 45,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1460,7 +1460,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 55,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1530,7 +1530,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 50,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1601,7 +1601,7 @@ local events = {
 		weight = 3,
 		minAge = 16,
 		maxAge = 40,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true, drug_dealer = true },
 		choices = {

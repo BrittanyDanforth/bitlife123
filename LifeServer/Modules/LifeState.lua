@@ -298,17 +298,31 @@ function LifeState:AdvanceAge()
 	-- Age 18: Auto-graduate high school if player hasn't already via event
 	-- This ensures EVERYONE gets high school education by 18
 	-- CRITICAL FIX: Don't auto-graduate if player is in jail - they need to finish later
+	-- CRITICAL FIX #806: Don't overwrite college enrollment! Only auto-graduate if STILL in high school
 	if self.Age == 18 then
 		if not self.InJail then
-			if self.Education == "none" or self.EducationData.Status == "enrolled" then
-				self.Education = "high_school"
-				self.EducationData.Status = "completed"
-				self.EducationData.Level = "high_school"
-				self.Flags.graduated_high_school = true
-				self.Flags.high_school_graduate = true
-				self.Flags.in_high_school = nil
-				if not self.PendingFeed then
-					self.PendingFeed = "You automatically graduated from high school!"
+			-- CRITICAL FIX #806: Check if player has ALREADY enrolled in higher education via event
+			-- If EducationData.Level is bachelor/community/trade/etc., DON'T overwrite it!
+			local currentLevel = self.EducationData and self.EducationData.Level or "none"
+			local isHigherEd = currentLevel == "bachelor" or currentLevel == "community" or currentLevel == "trade" 
+				or currentLevel == "master" or currentLevel == "phd" or currentLevel == "law" or currentLevel == "medical"
+			local hasCollegeFlags = self.Flags.in_college or self.Flags.college_student or self.Flags.enrolled_college
+			
+			-- Only auto-graduate if NOT in higher education and NOT already graduated
+			if not isHigherEd and not hasCollegeFlags and not self.Flags.graduated_high_school then
+				if self.Education == "none" or (self.EducationData.Status == "enrolled" and 
+					(currentLevel == "high_school" or currentLevel == "middle_school" or currentLevel == "elementary" or currentLevel == nil or currentLevel == "none")) then
+					self.Education = "high_school"
+					self.EducationData.Status = "completed"
+					self.EducationData.Level = "high_school"
+					self.Flags.graduated_high_school = true
+					self.Flags.high_school_graduate = true
+					self.Flags.has_diploma = true
+					self.Flags.has_ged_or_diploma = true
+					self.Flags.in_high_school = nil
+					if not self.PendingFeed then
+						self.PendingFeed = "You automatically graduated from high school!"
+					end
 				end
 			end
 		else
@@ -668,7 +682,7 @@ function LifeState:SetCareer(jobData)
 	self.Flags.employed = true
 	self.Flags.has_job = true
 	
-	-- CRITICAL FIX #60: Grant experience flags based on job category
+	-- CRITICAL FIX #60/#553: Grant experience flags based on job category
 	-- This ensures players build up relevant experience for career progression
 	if jobData.category == "entry" then
 		self.Flags.entry_level_experience = true
@@ -682,6 +696,43 @@ function LifeState:SetCareer(jobData)
 		self.Flags.finance_experience = true
 	elseif jobData.category == "creative" then
 		self.Flags.creative_experience = true
+	-- CRITICAL FIX #554: Add entertainment/music career flags
+	elseif jobData.category == "entertainment" then
+		self.Flags.entertainment_experience = true
+		self.Flags.fame_career = true
+		-- CRITICAL FIX #555: Set specific flags for rapper jobs
+		local jobId = (jobData.id or ""):lower()
+		if jobId:find("rapper") then
+			self.Flags.rapper = true
+			self.Flags.pursuing_rap = true
+			self.Flags.hip_hop_experience = true
+		elseif jobId:find("streamer") or jobId:find("creator") then
+			self.Flags.streamer = true
+			self.Flags.content_creator = true
+			self.Flags.pursuing_streaming = true
+		elseif jobId:find("musician") or jobId:find("singer") or jobId:find("artist") then
+			self.Flags.musician = true
+			self.Flags.music_experience = true
+		elseif jobId:find("actor") then
+			self.Flags.actor = true
+			self.Flags.acting_experience = true
+		end
+	-- CRITICAL FIX #556: Add esports career flags
+	elseif jobData.category == "esports" then
+		self.Flags.esports_experience = true
+		self.Flags.gamer = true
+		self.Flags.streamer = true
+	end
+	
+	-- CRITICAL FIX #557: Also check job ID for rapper/streamer keywords regardless of category
+	local jobId = (jobData.id or ""):lower()
+	if jobId:find("rapper") or jobId:find("hip.?hop") then
+		self.Flags.rapper = true
+		self.Flags.pursuing_rap = true
+	end
+	if jobId:find("streamer") or jobId:find("content") then
+		self.Flags.streamer = true
+		self.Flags.content_creator = true
 	end
 	
 	return self
@@ -705,22 +756,33 @@ end
 function LifeState:EnrollEducation(eduData)
 	if type(eduData) ~= "table" then return self end
 	
+	-- CRITICAL FIX #558: Preserve existing debt when enrolling
+	local existingDebt = (self.EducationData and self.EducationData.Debt) or 0
+	
 	self.EducationData = {
 		Status = "enrolled",
-		Level = eduData.type or eduData.level or "college",
+		Level = eduData.type or eduData.level or "bachelor",
 		Progress = 0,
 		Duration = eduData.duration or 4,
 		Institution = eduData.name or eduData.institution or "University",
 		GPA = nil,
-		Debt = (self.EducationData.Debt or 0) + (eduData.cost or 0),
+		Debt = existingDebt + (eduData.cost or 0),
 		CreditsEarned = 0,
 		CreditsRequired = 120,
 		Year = 1,
 		TotalYears = eduData.duration or 4,
+		enrolledAge = self.Age, -- CRITICAL FIX #559: Track when enrolled
 	}
 	
+	-- CRITICAL FIX #560: Set ALL relevant college flags
 	self.Flags.in_college = true
 	self.Flags.college_student = true
+	self.Flags.enrolled_college = true
+	self.Flags.college_bound = true
+	self.Flags.in_school = true
+	
+	-- CRITICAL FIX #561: Set education level in main Education field
+	self.Education = eduData.type or eduData.level or "bachelor"
 	
 	return self
 end

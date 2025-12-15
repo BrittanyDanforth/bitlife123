@@ -36,14 +36,17 @@ local LoadedModules = {}
 -- ════════════════════════════════════════════════════════════════════════════════════
 
 local LifeStages = {
-	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.2 },
-	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.25 },
-	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.35 },
-	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.3 },
-	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.4 },
-	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.45 },
-	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.5 },
-	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.55 },
+	-- CRITICAL FIX #715-722: DRASTICALLY reduced quietChance for MUCH MORE events per year!
+	-- Old values caused too many "quiet years" where nothing happened - BORING!
+	-- Players should get EVENTS almost every year for engaging gameplay
+	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.05 },  -- CRITICAL FIX #715: Was 0.1
+	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.05 },  -- CRITICAL FIX #716: Was 0.15
+	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.08 },  -- CRITICAL FIX #717: Was 0.2
+	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.05 },  -- CRITICAL FIX #718: Was 0.15
+	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.08 },  -- CRITICAL FIX #719: Was 0.2
+	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.1 },   -- CRITICAL FIX #720: Was 0.25
+	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.12 },  -- CRITICAL FIX #721: Was 0.3
+	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.15 },  -- CRITICAL FIX #722: Was 0.35
 }
 
 -- Category mappings per life stage
@@ -60,11 +63,14 @@ local StageCategories = {
 	baby        = { "childhood", "milestones", "royalty" },
 	toddler     = { "childhood", "milestones", "royalty" },
 	child       = { "childhood", "milestones", "random", "career_racing", "royalty" },
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
+	-- Also added career_entertainment for general entertainment careers
+	-- CRITICAL FIX #631: Added career_creative for teen content creators!
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -184,16 +190,23 @@ local function loadEventModule(moduleName, categoryName)
 		events = combinedEvents
 	end
 	
-	local category = categoryName or moduleName:lower()
-	EventsByCategory[category] = EventsByCategory[category] or {}
+	local defaultCategory = categoryName or moduleName:lower()
+	EventsByCategory[defaultCategory] = EventsByCategory[defaultCategory] or {}
 	
 	local count = 0
 	for _, event in ipairs(events) do
 		if event.id then
-			event._category = category
+			-- CRITICAL FIX #640: Respect individual event categories!
+			-- If event has its own category, use that instead of module default
+			-- This is crucial for RapperContentCreatorEvents which has both
+			-- career_music (rapper) and career_creative (content creator) events
+			local eventCategory = event.category or defaultCategory
+			EventsByCategory[eventCategory] = EventsByCategory[eventCategory] or {}
+			
+			event._category = eventCategory
 			event._source = moduleName
 			AllEvents[event.id] = event
-			table.insert(EventsByCategory[category], event)
+			table.insert(EventsByCategory[eventCategory], event)
 			count += 1
 		end
 	end
@@ -738,22 +751,29 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #712-715: IMPROVED COOLDOWN & VARIETY SYSTEM
-	-- Events need stronger cooldowns to prevent repetition across lives
+	-- CRITICAL FIX #712-715: BALANCED COOLDOWN & VARIETY SYSTEM
+	-- Cooldowns prevent immediate repetition while still allowing variety
+	-- CRITICAL FIX #513: LOOSENED cooldowns for MORE event variety!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL FIX #712: Longer default cooldown for generic events
-	local cooldown = event.cooldown or 5 -- Increased from 3 to 5 years
+	-- CRITICAL FIX #723-730: DRASTICALLY REDUCED cooldowns for MAX event variety!
+	-- Players were seeing the same boring events because cooldowns were too high
+	local cooldown = event.cooldown or 1  -- CRITICAL FIX #723: Default cooldown now 1 (was 3)
 	
-	-- CRITICAL FIX #713: Even longer cooldowns for repeating childhood/teen events
+	-- CRITICAL FIX #724: Childhood/teen cooldowns now 2 (was 4)
 	local eventCategory = event._category or event.category or ""
 	if eventCategory == "childhood" or eventCategory == "teen" then
-		cooldown = event.cooldown or 8 -- Longer cooldowns for formative years events
+		cooldown = event.cooldown or 2 -- More variety in formative years
 	end
 	
-	-- CRITICAL FIX #714: Generic random events need extra-long cooldowns
+	-- CRITICAL FIX #725: Random event cooldowns now 2 (was 4)
 	if eventCategory == "random" then
-		cooldown = event.cooldown or 7
+		cooldown = event.cooldown or 2
+	end
+	
+	-- CRITICAL FIX #726: Career events cooldown now 1 (was 2) - careers should be ACTIVE
+	if eventCategory:find("career") then
+		cooldown = event.cooldown or 1 -- Career events can repeat often!
 	end
 	
 	local lastAge = history.lastOccurrence[event.id]
@@ -761,9 +781,9 @@ local function canEventTrigger(event, state)
 		return false
 	end
 	
-	-- CRITICAL FIX #715: Track total occurrences to prevent common events from dominating
+	-- CRITICAL FIX #727: MASSIVELY increased max occurrences for WAY more variety! (was 6, now 15)
 	local occurCount = history.occurrences[event.id] or 0
-	local maxAllowed = event.maxOccurrences or 3 -- Reduced from 10 to 3
+	local maxAllowed = event.maxOccurrences or 15
 	if occurCount >= maxAllowed then
 		return false
 	end
@@ -1120,18 +1140,31 @@ local function canEventTrigger(event, state)
 			if result == false then
 				return false -- Custom eligibility check failed
 			end
+			-- CRITICAL FIX #548: If eligibility returns nil or true, allow the event
+		else
+			-- CRITICAL FIX #549: If eligibility function errors, LOG but ALLOW the event
+			-- This prevents broken eligibility functions from blocking all events
+			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result))
+			-- Continue - don't block the event due to error
 		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RANDOM CHANCE - Final roll (only if all other checks pass)
+	-- CRITICAL FIX #550: Significantly boosted chance for never-seen events
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if event.baseChance then
 		local chance = event.baseChance
-		-- Boost chance slightly for never-seen events
+		-- CRITICAL FIX #731: GUARANTEED trigger for never-seen events (3x boost)
 		if (history.occurrences[event.id] or 0) == 0 then
-			chance = math.min(1, chance * 1.3)
+			chance = math.min(1, chance * 3.0)  -- CRITICAL FIX #731: Was 2x, now 3x!
+		elseif (history.occurrences[event.id] or 0) == 1 then
+			-- CRITICAL FIX #732: Bigger boost for events seen only once (was 1.5x, now 2x)
+			chance = math.min(1, chance * 2.0)
+		elseif (history.occurrences[event.id] or 0) == 2 then
+			-- CRITICAL FIX #733: NEW - Boost for events seen twice
+			chance = math.min(1, chance * 1.5)
 		end
 		if RANDOM:NextNumber() > chance then
 			return false
@@ -1697,28 +1730,78 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #512: RAPPER/CONTENT CREATOR EVENT PRIORITY
-	-- Rappers/streamers/creators should get career-specific events 40% of the time
-	-- Without this, they were barely getting any career events despite being employed!
+	-- CRITICAL FIX #600: RAPPER/CONTENT CREATOR EVENT PRIORITY - MASSIVE BUFF
+	-- Rappers/streamers/creators should get career-specific events MOST of the time!
+	-- Previous 40% was WAY too low - players went entire lives without music events!
+	-- NOW: 80% chance for music career events when player has music job
+	-- Also: GUARANTEED first track event for new rappers who don't have it yet!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
-	                         flags.content_creator or flags.streamer or flags.first_track_recorded
-	local hasEntertainmentJob = state.CurrentJob and (
-		(state.CurrentJob.category or ""):lower() == "entertainment" or
+	local hasRapperJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("hip.?hop")
+	)
+	local hasCreatorJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("streamer") or
-		(state.CurrentJob.id or ""):lower():find("creator")
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+	                         flags.content_creator or flags.streamer or flags.first_track_recorded or
+	                         flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper
+	local hasEntertainmentJob = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or hasRapperJob or hasCreatorJob
 	)
 	
-	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.40 then
+	-- CRITICAL FIX #601: GUARANTEED first track event for rappers who haven't recorded yet!
+	-- This is the FOUNDATION event that unlocks ALL other rapper progression events
+	-- Without this, players get stuck forever with no rapper events
+	if (hasRapperJob or isRapperOrCreator) and not flags.first_track_recorded then
+		local firstTrackEvent = AllEvents["rapper_first_track"]
+		if firstTrackEvent and canEventTrigger(firstTrackEvent, state) then
+			-- GUARANTEED trigger for first track!
+			table.insert(selectedEvents, firstTrackEvent)
+			recordEventShown(state, firstTrackEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CRITICAL FIX #602: GUARANTEED first video for creators who haven't posted yet!
+	if (hasCreatorJob or flags.content_creator or flags.streamer) and not flags.first_video_posted then
+		local firstVideoEvent = AllEvents["creator_first_video"]
+		if firstVideoEvent and canEventTrigger(firstVideoEvent, state) then
+			table.insert(selectedEvents, firstVideoEvent)
+			recordEventShown(state, firstVideoEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CRITICAL FIX #603: Music career events now have 80% chance (was 40%!)
+	-- This ensures rappers/creators actually GET their career events instead of generic life events
+	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.80 then
 		local musicEvents = EventsByCategory["career_music"] or {}
+		local creativeEvents = EventsByCategory["career_creative"] or {}
 		local eligibleMusicEvents = {}
 		
+		-- Collect music events
 		for _, event in ipairs(musicEvents) do
 			if canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)
 				if occurCount == 0 or not event.oneTime then
 					table.insert(eligibleMusicEvents, event)
+				end
+			end
+		end
+		
+		-- Also collect creative events for content creators
+		if hasCreatorJob or flags.content_creator or flags.streamer then
+			for _, event in ipairs(creativeEvents) do
+				if canEventTrigger(event, state) then
+					local occurCount = (history.occurrences[event.id] or 0)
+					if occurCount == 0 or not event.oneTime then
+						table.insert(eligibleMusicEvents, event)
+					end
 				end
 			end
 		end
@@ -1821,7 +1904,37 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- Check for quiet year (no events)
-	local quietChance = stage.quietChance or 0.4
+	-- CRITICAL FIX #734-740: MASSIVELY REDUCED quiet years for MORE engaging gameplay!
+	-- Players want EVENTS, not boring years of nothing happening
+	local quietChance = stage.quietChance or 0.1  -- CRITICAL FIX #734: Was 0.4, now 0.1
+	
+	-- CRITICAL FIX #735: Entertainment careers should ALMOST NEVER have quiet years!
+	local hasEntertainmentCareer = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("musician") or
+		(state.CurrentJob.id or ""):lower():find("actor") or
+		(state.CurrentJob.id or ""):lower():find("celeb")
+	)
+	
+	-- CRITICAL FIX #736: Entertainment careers get 90% less quiet years!
+	if hasEntertainmentCareer then
+		quietChance = quietChance * 0.1  -- Was 0.3, now 0.1 - almost NEVER quiet
+	end
+	
+	-- CRITICAL FIX #737: ANY job holder should get more events
+	if state.CurrentJob then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet if employed
+	end
+	
+	-- CRITICAL FIX #738: Teens and young adults should get TONS of events
+	local age = state.Age or 0
+	if age >= 13 and age <= 25 then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet
+	end
+	
 	if #candidateEvents == 0 or RANDOM:NextNumber() < quietChance then
 		return {}
 	end

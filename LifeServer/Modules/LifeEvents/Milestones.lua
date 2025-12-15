@@ -184,7 +184,7 @@ Milestones.events = {
 				effects = {},
 				feedText = "You went in unprepared...",
 				onResolve = function(state)
-					local baseChance = 0.30 -- bad approach
+					local baseChance = 0.550 -- bad approach
 					if state.Flags and state.Flags.good_driver then baseChance = 0.50 end
 					
 					if math.random() < baseChance then
@@ -675,8 +675,8 @@ Milestones.events = {
 		text = "You've been promoted to a senior position!",
 		question = "How do you handle the new responsibility?",
 		minAge = 28, maxAge = 55,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		priority = "high",
 		isMilestone = true,

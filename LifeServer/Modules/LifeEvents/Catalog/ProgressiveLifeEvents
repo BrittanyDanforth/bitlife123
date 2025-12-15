@@ -181,7 +181,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🔍",
 		text = "You found something interesting while exploring the house!",
 		minAge = 2, maxAge = 4,
-		cooldown = 10,
+		cooldown = 4,
 		category = "childhood",
 		tags = { "toddler", "exploration", "adventure" },
 		choices = {
@@ -236,7 +236,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "👶",
 		text = "You're learning to navigate life with siblings.",
 		minAge = 2, maxAge = 5,
-		cooldown = 10,
+		cooldown = 4,
 		category = "childhood",
 		tags = { "toddler", "family", "siblings" },
 		eligibility = function(state)
@@ -284,7 +284,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🎢",
 		text = "The playground is calling! What will you conquer today?",
 		minAge = 5, maxAge = 8,
-		cooldown = 8,
+		cooldown = 3,
 		category = "childhood",
 		tags = { "play", "physical", "social" },
 		choices = {
@@ -425,7 +425,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🏆",
 		text = "There's a kids' sports league in town. Want to try out?",
 		minAge = 6, maxAge = 10,
-		cooldown = 10,
+		cooldown = 4,
 		category = "childhood",
 		tags = { "sports", "activities", "social" },
 		choices = {
@@ -564,7 +564,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🏕️",
 		text = "Your parents are sending you to summer camp!",
 		minAge = 8, maxAge = 12,
-		cooldown = 10,
+		cooldown = 4,
 		category = "childhood",
 		tags = { "summer", "camp", "adventure" },
 		choices = {
@@ -676,7 +676,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "📚",
 		text = "High school is getting harder. How do you approach studying?",
 		minAge = 13, maxAge = 16,
-		cooldown = 10,
+		cooldown = 4,
 		category = "teen",
 		tags = { "school", "study", "academics" },
 		choices = {
@@ -712,7 +712,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "💼",
 		text = "You're old enough to get a part-time job now. Interested?",
 		minAge = 15, maxAge = 17,
-		cooldown = 10,
+		cooldown = 4,
 		category = "teen",
 		tags = { "work", "money", "responsibility" },
 		-- Only show if player doesn't already have a job
@@ -751,7 +751,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "😤",
 		text = "There's drama brewing in your friend group. What do you do?",
 		minAge = 13, maxAge = 17,
-		cooldown = 8,
+		cooldown = 3,
 		category = "teen",
 		tags = { "friends", "drama", "social" },
 		choices = {
@@ -786,7 +786,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🎓",
 		text = "Adults keep asking what you want to do after high school. Any ideas?",
 		minAge = 15, maxAge = 17,
-		cooldown = 10,
+		cooldown = 4,
 		category = "teen",
 		tags = { "future", "career", "planning" },
 		choices = {
@@ -935,7 +935,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🛤️",
 		text = "You're at a crossroads in your career. Time to decide.",
 		minAge = 22, maxAge = 28,
-		cooldown = 10,
+		cooldown = 4,
 		category = "adult",
 		tags = { "career", "decisions", "future" },
 		choices = {
@@ -971,7 +971,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "💪",
 		text = "You've decided to take fitness seriously. What's your approach?",
 		minAge = 18, maxAge = 30,
-		cooldown = 10,
+		cooldown = 4,
 		category = "adult",
 		tags = { "fitness", "health", "lifestyle" },
 		choices = {
@@ -1043,7 +1043,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "💕",
 		text = "Your relationship is getting more serious. Big decisions ahead.",
 		minAge = 20, maxAge = 30,
-		cooldown = 10,
+		cooldown = 4,
 		category = "adult",
 		tags = { "relationships", "love", "decisions" },
 		requiresPartner = true,
@@ -1121,7 +1121,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "🎯",
 		text = "A hobby has become more than just a pastime. Time to commit?",
 		minAge = 25, maxAge = 30,
-		cooldown = 10,
+		cooldown = 4,
 		category = "adult",
 		tags = { "hobbies", "passion", "lifestyle" },
 		choices = {
@@ -1192,7 +1192,7 @@ ProgressiveLifeEvents.events = {
 		emoji = "⚕️",
 		text = "Your body is reminding you that you're not a teenager anymore.",
 		minAge = 25, maxAge = 30,
-		cooldown = 10,
+		cooldown = 4,
 		category = "adult",
 		tags = { "health", "lifestyle", "awareness" },
 		choices = {

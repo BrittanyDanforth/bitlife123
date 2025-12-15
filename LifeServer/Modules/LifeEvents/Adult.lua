@@ -63,8 +63,16 @@ Adult.events = {
 		text = "College is a whole new world of experiences.",
 		question = "What's your focus?",
 		minAge = 18, maxAge = 22,
-		requiresFlags = { college_bound = true },
-		cooldown = 2,
+		baseChance = 0.7, -- CRITICAL FIX #700: High chance for college events
+		-- CRITICAL FIX #516: Accept MULTIPLE flags for college eligibility
+		-- Was only checking college_bound but user could have in_college, enrolled_college, etc.
+		eligibility = function(state)
+			if not state.Flags then return false end
+			return state.Flags.college_bound or state.Flags.in_college or 
+			       state.Flags.enrolled_college or state.Flags.college_student or
+			       (state.EducationData and state.EducationData.Status == "enrolled")
+		end,
+		cooldown = 1, -- CRITICAL FIX #701: Reduced cooldown for more variety
 
 		-- META
 		stage = STAGE,
@@ -74,28 +82,32 @@ Adult.events = {
 		tags = { "college", "lifestyle" },
 		careerTags = { "business" },
 
-		-- Ensure player is enrolled in college when this fires
+		-- CRITICAL FIX #517: Ensure player is enrolled in college when this fires
 		onComplete = function(state)
 			state.EducationData = state.EducationData or {}
 			state.EducationData.Status = "enrolled"
-			state.EducationData.Institution = "University"
-			state.EducationData.Level = "pursuing_bachelor"
+			state.EducationData.Institution = state.EducationData.Institution or "University"
+			state.EducationData.Level = state.EducationData.Level or "bachelor"
+			state.EducationData.Duration = state.EducationData.Duration or 4
+			state.EducationData.Progress = state.EducationData.Progress or 0
 
 			state.Flags = state.Flags or {}
 			state.Flags.in_college = true
+			state.Flags.college_student = true
+			state.Flags.enrolled_college = true
 		end,
 
 		choices = {
 			{
 				text = "Study hard, get great grades",
 				effects = { Smarts = 7, Happiness = -2, Health = -2 },
-				setFlags = { honors_student = true, in_college = true },
+				setFlags = { honors_student = true, in_college = true, college_student = true },
 				feedText = "You're crushing it academically!",
 			},
 			{
 				text = "Balance academics and social life",
 				effects = { Smarts = 4, Happiness = 5 },
-				setFlags = { in_college = true },
+				setFlags = { in_college = true, college_student = true },
 				feedText = "You're getting the full college experience.",
 			},
 			{
@@ -121,8 +133,13 @@ Adult.events = {
 		text = "It's time to officially declare your major.",
 		question = "What will you study?",
 		minAge = 19, maxAge = 21,
+		baseChance = 0.8, -- CRITICAL FIX #702: High chance for milestone
 		oneTime = true,
-		requiresFlags = { college_bound = true },
+		-- CRITICAL FIX #703: Accept multiple college flags
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return flags.college_bound or flags.in_college or flags.college_student
+		end,
 
 		-- META
 		stage = STAGE,
@@ -1225,8 +1242,8 @@ Adult.events = {
 		text = "Your company is doing layoffs. You might be affected.",
 		question = "How do you respond to the news?",
 		minAge = 25, maxAge = 60,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45, -- CRITICAL FIX #704: Increased from 0.2 for more career drama
+		cooldown = 3, -- CRITICAL FIX #705: Reduced from 5 for more variety
 		requiresJob = true, -- Only trigger if you have a job
 		-- CRITICAL FIX: Random layoff outcome - you don't choose if you get laid off
 		choices = {
@@ -1754,8 +1771,8 @@ Adult.events = {
 		text = "A relative left you an inheritance.",
 		question = "What do you do with the money?",
 		minAge = 30, maxAge = 70,
-		baseChance = 0.15,
-		cooldown = 10,
+		baseChance = 0.35, -- CRITICAL FIX #706: Increased from 0.15 for more variety
+		cooldown = 5, -- CRITICAL FIX #707: Reduced from 10
 
 		choices = {
 			{ text = "Invest it wisely", effects = { Money = 20000, Smarts = 2 }, setFlags = { investor = true }, feedText = "You're growing that inheritance!" },
@@ -1772,8 +1789,8 @@ Adult.events = {
 		text = "You've been diagnosed with a serious illness.",
 		question = "How do you handle it?",
 		minAge = 40, maxAge = 80,
-		baseChance = 0.1,
-		cooldown = 10,
+		baseChance = 0.25, -- CRITICAL FIX #708: Increased from 0.1 for more realism
+		cooldown = 6, -- CRITICAL FIX #709: Reduced from 10
 
 		choices = {
 			{ text = "Fight with everything you have", effects = { Health = -10, Happiness = -10, Money = -10000 }, setFlags = { battling_illness = true, fighter = true }, feedText = "You're in the fight of your life." },
@@ -1789,8 +1806,8 @@ Adult.events = {
 		text = "You won a significant lottery prize!",
 		question = "What do you do?",
 		minAge = 21, maxAge = 85,
-		baseChance = 0.02,
-		cooldown = 20,
+		baseChance = 0.08, -- CRITICAL FIX #710: Increased from 0.02 - rare but possible
+		cooldown = 10, -- CRITICAL FIX #711: Reduced from 20
 		-- CRITICAL FIX #5: Added "lottery" category for gold event card
 		category = "lottery",
 
@@ -2417,8 +2434,8 @@ Adult.events = {
 		text = "You received some unexpected money!",
 		question = "Where did it come from?",
 		minAge = 20, maxAge = 75,
-		baseChance = 0.15,
-		cooldown = 6,
+		baseChance = 0.4, -- CRITICAL FIX #712: Increased from 0.15 for more financial events
+		cooldown = 3, -- CRITICAL FIX #713: Reduced from 6 for more variety
 		
 		-- CRITICAL FIX: Random windfall amount - player doesn't choose how much they get!
 		choices = {
@@ -2487,8 +2504,8 @@ Adult.events = {
 		text = "You've been summoned for jury duty.",
 		question = "How do you respond?",
 		minAge = 21, maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.4, -- CRITICAL FIX #714: Increased from 0.2
+		cooldown = 3, -- CRITICAL FIX #715: Reduced from 5 
 		blockedByFlags = { in_prison = true, criminal_record = true },
 		
 		choices = {

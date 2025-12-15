@@ -47,7 +47,7 @@ MafiaEvents.LifeEvents = {
 		isMafiaOnly = true,
 		oneTime = true, -- CRITICAL FIX: Only once per life!
 		maxOccurrences = 1, -- CRITICAL FIX: Safety
-		cooldown = 100, -- CRITICAL FIX: Extra safety
+		cooldown = 40, -- CRITICAL FIX: Extra safety
 		conditions = { 
 			requiresFlags = { mafia_gamepass = true },
 			blockedFlags = { in_mob = true, approached_by_mob = true, rejected_mob = true, mob_enemy = true },
@@ -239,7 +239,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 60,
 		isMafiaOnly = true,
-		cooldown = 5, -- CRITICAL FIX: 5 year cooldown between heists
+		cooldown = 2, -- CRITICAL FIX: 5 year cooldown between heists
 		maxOccurrences = 3, -- CRITICAL FIX: Max 3 heists per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -346,7 +346,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 5, -- Don't test loyalty every year
+		cooldown = 2, -- Don't test loyalty every year
 		maxOccurrences = 3,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -442,7 +442,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 4, -- Don't get contracts every year
+		cooldown = 2, -- Don't get contracts every year
 		maxOccurrences = 5,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -497,7 +497,7 @@ MafiaEvents.LifeEvents = {
 		maxAge = 70,
 		isMafiaOnly = true,
 		isMilestone = true,
-		cooldown = 5, -- Promotions take time
+		cooldown = 2, -- Promotions take time
 		maxOccurrences = 4, -- Can only promote 4 times
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -672,7 +672,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 8, -- Wars don't happen every year
+		cooldown = 3, -- Wars don't happen every year
 		maxOccurrences = 3, -- Max 3 wars per lifetime
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -773,7 +773,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 5, -- Not every year
+		cooldown = 2, -- Not every year
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, in_prison = true },
@@ -814,7 +814,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isMafiaOnly = true,
-		cooldown = 6, -- Assassination attempts are rare
+		cooldown = 2, -- Assassination attempts are rare
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true },
@@ -1359,7 +1359,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		oneTime = true,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -1407,7 +1407,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		conditions = { requiresFlags = { in_mob = true, initiated = true } },
 		choices = {
 			{
@@ -1605,7 +1605,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 55,
 		isMafiaOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		conditions = { requiresFlags = { in_mob = true, initiated = true } },
 		choices = {
 			{
@@ -1653,7 +1653,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		conditions = { requiresFlags = { in_mob = true, initiated = true } },
 		choices = {
 			{
@@ -1752,7 +1752,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 60,
 		isMafiaOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -1802,7 +1802,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -1946,7 +1946,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 80,
 		isMafiaOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true },
@@ -1994,7 +1994,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -2047,7 +2047,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -2136,7 +2136,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 65,
 		isMafiaOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -2184,7 +2184,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 55,
 		isMafiaOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
@@ -2228,7 +2228,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 35,
 		isMafiaOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { 
 			requiresFlags = { in_mob = true },
@@ -2271,7 +2271,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 60,
 		isMafiaOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -2319,7 +2319,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 55,
 		isMafiaOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -2465,7 +2465,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 28,
 		maxAge = 60,
 		isMafiaOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { 
 			requiresFlags = { in_mob = true, is_capo = true },
@@ -2512,7 +2512,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 55,
 		isMafiaOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
@@ -2561,7 +2561,7 @@ MafiaEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 60,
 		isMafiaOnly = true,
-		cooldown = 15,
+		cooldown = 5,
 		maxOccurrences = 1,
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },

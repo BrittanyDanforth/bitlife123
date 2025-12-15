@@ -524,7 +524,7 @@ Senior.events = {
         question = "How do you adapt?",
         minAge = 70, maxAge = 90,
         baseChance = 0.5,
-        cooldown = 4,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -567,7 +567,7 @@ Senior.events = {
         question = "How do you handle these concerns?",
         minAge = 68, maxAge = 95,
         baseChance = 0.4,
-        cooldown = 5,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -641,7 +641,7 @@ Senior.events = {
         question = "How does the reunion go?",
         minAge = 60, maxAge = 90,
         baseChance = 0.4,
-        cooldown = 4,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior",
@@ -682,7 +682,7 @@ Senior.events = {
         question = "What does the assessment show?",
         minAge = 65, maxAge = 85,
         baseChance = 0.4,
-        cooldown = 4,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior",
@@ -741,7 +741,7 @@ Senior.events = {
         question = "How do you respond?",
         minAge = 72, maxAge = 92,
         baseChance = 0.4,
-        cooldown = 5,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -798,7 +798,7 @@ Senior.events = {
         question = "How do you handle this?",
         minAge = 65, maxAge = 90,
         baseChance = 0.4,
-        cooldown = 4,
+        cooldown = 2,
         requiresFlags = { has_child = true },
         
         stage = STAGE,
@@ -845,7 +845,7 @@ Senior.events = {
         question = "What do you decide?",
         minAge = 78, maxAge = 95,
         baseChance = 0.4,
-        cooldown = 5,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior_late",
@@ -887,7 +887,7 @@ Senior.events = {
         text = "A sudden health emergency sends you to the hospital!",
         question = "What happened?",
         minAge = 70, maxAge = 95,
-        baseChance = 0.25,
+        baseChance = 0.455,
         cooldown = 3,
         
         stage = STAGE,
@@ -1069,7 +1069,7 @@ Senior.events = {
         text = "Another friend from your generation has passed away. You're attending too many funerals lately.",
         question = "How does this affect you?",
         minAge = 72, maxAge = 95,
-        baseChance = 0.35,
+        baseChance = 0.555,
         cooldown = 2,
         
         stage = STAGE,
@@ -1368,7 +1368,7 @@ Senior.events = {
         question = "How do you volunteer?",
         minAge = 60, maxAge = 85,
         baseChance = 0.5,
-        cooldown = 4,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior",
@@ -1498,7 +1498,7 @@ Senior.events = {
         question = "What do you do?",
         minAge = 65, maxAge = 95,
         baseChance = 0.5,
-        cooldown = 5,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior",
@@ -1541,7 +1541,7 @@ Senior.events = {
         question = "How do you adapt?",
         minAge = 65, maxAge = 95,
         baseChance = 0.5,
-        cooldown = 4,
+        cooldown = 2,
         
         stage = STAGE,
         ageBand = "senior",

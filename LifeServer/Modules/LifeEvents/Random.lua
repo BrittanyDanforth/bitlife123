@@ -17,7 +17,7 @@ Random.events = {
 		text = "You found money on the ground!",
 		question = "What do you do with it?",
 		minAge = 6, maxAge = 90,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 3,
 		choices = {
 			{ text = "Keep it - finders keepers!", effects = { Happiness = 5, Money = 100 }, feedText = "You pocketed the cash. Lucky day!" },
@@ -32,7 +32,7 @@ Random.events = {
 		text = "Someone gave you a scratch lottery ticket.",
 		question = "How do you scratch it?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		-- CRITICAL FIX: Can't gamble from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -90,8 +90,8 @@ Random.events = {
 		text = "A distant relative you barely knew passed away and left you something in their will.",
 		question = "The lawyer calls you about the inheritance...",
 		minAge = 25, maxAge = 80,
-		baseChance = 0.15,
-		cooldown = 10,
+		baseChance = 0.4,
+		cooldown = 4,
 		oneTime = true,
 		-- CRITICAL FIX #4: Added "inheritance" category for green/gold event card
 		category = "inheritance",
@@ -173,7 +173,7 @@ Random.events = {
 		text = "You had an accident!",
 		question = "Do you seek medical attention?",
 		minAge = 5, maxAge = 80,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		category = "random", -- CRITICAL FIX: Added explicit category
 		-- CRITICAL FIX: Can't have accidents in prison (different event set)
@@ -238,7 +238,7 @@ Random.events = {
 		text = "Your car broke down!",
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		requiresFlags = { has_car = true },
 		-- CRITICAL FIX: Can't have car trouble in prison!
@@ -414,7 +414,7 @@ Random.events = {
 		text = "Your phone is broken/lost!",
 		question = "What do you do?",
 		minAge = 12, maxAge = 80,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		-- CRITICAL FIX #6: Can't lose phone in prison (no phones!)
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -512,7 +512,7 @@ Random.events = {
 		text = "You're feeling motivated to get in better shape.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 70,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		choices = {
 			{ text = "Start going to the gym", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You signed up for a gym membership! Time to get fit and feel great." },
@@ -532,8 +532,8 @@ Random.events = {
 		text = "You ran into a celebrity!",
 		question = "What do you do?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 		choices = {
 			{ text = "Ask for a selfie", effects = { Happiness = 10 }, feedText = "You got a photo with a celebrity!" },
 			{ text = "Play it cool", effects = { Happiness = 5, Smarts = 2 }, feedText = "You acted casual. Smooth." },
@@ -548,7 +548,7 @@ Random.events = {
 		text = "A stranger did something unexpectedly kind for you.",
 		question = "How did it make you feel?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		choices = {
 			{ text = "Restored faith in humanity", effects = { Happiness = 10 }, feedText = "People can be so good!" },
@@ -585,7 +585,7 @@ Random.events = {
 		text = "There's unusual weather today that might affect your plans.",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		choices = {
 			{ 
@@ -639,7 +639,7 @@ Random.events = {
 		text = "You can't find something important. You've searched everywhere!",
 		question = "How hard do you search?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		choices = {
 			{
@@ -689,7 +689,7 @@ Random.events = {
 		text = "You've discovered a new hobby!",
 		question = "What caught your interest?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		choices = {
 			{ text = "Gaming", effects = { Happiness = 7, Smarts = 2 }, setFlags = { gamer = true }, feedText = "You discovered video games and became hooked! Your reaction time improved." },
@@ -707,8 +707,8 @@ Random.events = {
 		text = "Something you posted went viral!",
 		question = "How do you handle the attention?",
 		minAge = 13, maxAge = 60,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 		choices = {
 			{ text = "Embrace the fame", effects = { Happiness = 10, Money = 100 }, setFlags = { internet_famous = true }, feedText = "You're internet famous!" },
 			{ text = "Stay humble", effects = { Happiness = 5, Smarts = 2 }, feedText = "You kept perspective." },
@@ -727,7 +727,7 @@ Random.events = {
 		text = "An opportunity to travel came up unexpectedly!",
 		question = "Do you go?",
 		minAge = 18, maxAge = 75,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		-- CRITICAL FIX #4: Can't travel from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
@@ -752,7 +752,7 @@ Random.events = {
 		text = "You spent some time helping others in need.",
 		question = "How did it feel?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		choices = {
 			{ text = "Incredibly rewarding", effects = { Happiness = 10 }, setFlags = { volunteer = true, community_minded = true }, feedText = "Helping others filled your heart." },
@@ -771,7 +771,7 @@ Random.events = {
 		text = "You took a nasty fall!",
 		question = "Do you go to the hospital?",
 		minAge = 3, maxAge = 85,
-		baseChance = 0.25,
+		baseChance = 0.455,
 		cooldown = 2,
 		category = "injury",
 		-- CRITICAL FIX: Random injury location/severity
@@ -861,7 +861,7 @@ Random.events = {
 		text = "You got injured playing sports!",
 		question = "How do you respond?",
 		minAge = 6, maxAge = 60,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		category = "injury",
 		-- CRITICAL FIX: Random injury type and severity
@@ -956,7 +956,7 @@ Random.events = {
 		question = "The ambulance arrives. What do you do?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 5,
+		cooldown = 2,
 		category = "injury",
 		-- CRITICAL FIX #1: MUST have a car to get in a car accident!
 		requiresFlags = { has_car = true },
@@ -1066,8 +1066,8 @@ Random.events = {
 		text = "There's been an accident at work! You got hurt.",
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 70,
-		baseChance = 0.15,
-		cooldown = 4,
+		baseChance = 0.4,
+		cooldown = 2,
 		category = "injury",
 		requiresJob = true,
 
@@ -1137,7 +1137,7 @@ Random.events = {
 		text = "You had an accident at home and got hurt!",
 		question = "What do you do?",
 		minAge = 3, maxAge = 90,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 2,
 		category = "injury",
 
@@ -1204,8 +1204,8 @@ Random.events = {
 		text = "Someone attacked you on the street!",
 		question = "What do you do?",
 		minAge = 12, maxAge = 80,
-		baseChance = 0.08,
-		cooldown = 6,
+		baseChance = 0.32,
+		cooldown = 2,
 		category = "injury",
 		blockedByFlags = { in_prison = true },
 
@@ -1327,7 +1327,7 @@ Random.events = {
 		question = "How do you react?",
 		minAge = 3, maxAge = 85,
 		baseChance = 0.1,
-		cooldown = 5,
+		cooldown = 2,
 		category = "injury",
 		choices = {
 			{
@@ -1421,7 +1421,7 @@ Random.events = {
 		text = "You caught the flu!",
 		question = "How do you deal with it?",
 		minAge = 3, maxAge = 90,
-		baseChance = 0.35,
+		baseChance = 0.555,
 		cooldown = 2,
 		category = "illness",
 
@@ -1504,7 +1504,7 @@ Random.events = {
 		text = "You got food poisoning from something you ate!",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 2,
 		category = "illness",
 
@@ -1564,7 +1564,7 @@ Random.events = {
 		text = "You've been struggling with your mental health lately.",
 		question = "What do you do about it?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 3,
 		category = "mental_health",
 
@@ -1640,7 +1640,7 @@ Random.events = {
 		question = "How do you react?",
 		minAge = 25, maxAge = 85,
 		baseChance = 0.1,
-		cooldown = 10,
+		cooldown = 4,
 		category = "illness",
 
 		choices = {
@@ -1709,8 +1709,8 @@ Random.events = {
 		text = "You've found a concerning lump or had abnormal test results.",
 		question = "The doctor wants to run more tests...",
 		minAge = 25, maxAge = 90,
-		baseChance = 0.05,
-		cooldown = 10,
+		baseChance = 0.25,
+		cooldown = 4,
 		category = "illness",
 		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
@@ -1773,7 +1773,7 @@ Random.events = {
 		text = "You've been recovering from an injury.",
 		question = "How's the recovery going?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 2,
 		requiresFlags = { hospitalized = true },
 		category = "recovery",
@@ -1889,8 +1889,8 @@ Random.events = {
 		text = "You're thinking about getting a pet!",
 		question = "What kind of pet?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Adopt a dog", effects = { Happiness = 15, Money = -500, Health = 3 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Best friend for life." },
@@ -1908,8 +1908,8 @@ Random.events = {
 		text = "Your beloved pet has passed away.",
 		question = "How do you cope?",
 		minAge = 10, maxAge = 90,
-		baseChance = 0.15,
-		cooldown = 10,
+		baseChance = 0.4,
+		cooldown = 4,
 		requiresFlags = { has_pet = true },
 
 		choices = {
@@ -1933,8 +1933,8 @@ Random.events = {
 		text = "You hear breaking glass in your home at night. Someone's breaking in!",
 		question = "What do you do?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.05,
-		cooldown = 10,
+		baseChance = 0.25,
+		cooldown = 4,
 		category = "crime",
 
 		choices = {
@@ -2022,7 +2022,7 @@ Random.events = {
 		question = "How do you handle this lawsuit?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 8,
+		cooldown = 3,
 		-- CRITICAL FIX: Random lawsuit outcome - player doesn't choose to win
 		choices = {
 			{
@@ -2106,7 +2106,7 @@ Random.events = {
 		text = "A natural disaster is bearing down on your area!",
 		question = "What do you do?",
 		minAge = 5, maxAge = 95,
-		baseChance = 0.05,
+		baseChance = 0.25,
 		cooldown = 15,
 		category = "disaster",
 		-- CRITICAL FIX: Random disaster damage - player doesn't choose outcome
@@ -2202,8 +2202,8 @@ Random.events = {
 		text = "You received a message that seems too good to be true. Someone claims you've won a prize, inherited money, or has an 'amazing investment opportunity' for you.",
 		question = "How do you respond?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.12,
-		cooldown = 4,
+		baseChance = 0.38,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Investigate it - could be legit!",
@@ -2266,8 +2266,8 @@ Random.events = {
 		text = "Someone noticed you have a natural ability for something!",
 		question = "Do you want to explore this talent?",
 		minAge = 8, maxAge = 70,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Absolutely! Show me what I've got!",
@@ -2304,7 +2304,7 @@ Random.events = {
 		text = "Someone showed up unexpectedly at your door!",
 		question = "Who is it?",
 		minAge = 15, maxAge = 85,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 3,
 
 		choices = {
@@ -2323,7 +2323,7 @@ Random.events = {
 		question = "What was your lucky break?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 5,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Found a valuable item", effects = { Money = 2000, Happiness = 10 }, feedText = "You found something valuable! What luck!" },
@@ -2341,7 +2341,7 @@ Random.events = {
 		text = "Something incredibly embarrassing just happened to you in public!",
 		question = "How do you handle it?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.15,
+		baseChance = 0.4,
 		cooldown = 3,
 
 		choices = {
@@ -2404,7 +2404,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.8, -- High chance if triggered
-		cooldown = 5,
+		cooldown = 2,
 		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
 		-- This prevents rich players from getting eviction notices!
 		requiresFlags = { bum_life = true },
@@ -2532,8 +2532,8 @@ Random.events = {
 		text = "Someone offers you a chance to get back on your feet.",
 		question = "What kind of help is it?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 10,
+		baseChance = 0.45,
+		cooldown = 4,
 		requiresFlags = { homeless = true },
 
 		choices = {
@@ -2588,8 +2588,8 @@ Random.events = {
 		weight = 6,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresNoJob = true, -- Only for unemployed
 		blockedByFlags = { in_prison = true },
 		
@@ -2708,8 +2708,8 @@ Random.events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 8,
+		baseChance = 0.45,
+		cooldown = 3,
 		requiresNoJob = true,
 		blockedByFlags = { in_prison = true },
 		
@@ -2770,8 +2770,8 @@ Random.events = {
 		weight = 5,
 		minAge = 25,
 		maxAge = 55,
-		baseChance = 0.2,
-		cooldown = 10,
+		baseChance = 0.45,
+		cooldown = 4,
 		requiresJob = true, -- Need a job to be headhunted
 		blockedByFlags = { in_prison = true },
 		
@@ -2835,8 +2835,8 @@ Random.events = {
 		weight = 6,
 		minAge = 16,
 		maxAge = 60,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -2874,7 +2874,7 @@ Random.events = {
 		weight = 4,
 		minAge = 22,
 		maxAge = 45,
-		baseChance = 0.15,
+		baseChance = 0.4,
 		cooldown = 15,
 		oneTime = true,
 		blockedByFlags = { in_prison = true, got_dream_job = true },
@@ -2943,8 +2943,8 @@ Random.events = {
 		weight = 6,
 		minAge = 10,
 		maxAge = 80,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		
 		choices = {
 			{
@@ -2972,8 +2972,8 @@ Random.events = {
 		weight = 5,
 		minAge = 16,
 		maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 10,
+		baseChance = 0.45,
+		cooldown = 4,
 		
 		choices = {
 			{
@@ -3012,7 +3012,7 @@ Random.events = {
 		weight = 4,
 		minAge = 10,
 		maxAge = 60,
-		baseChance = 0.15,
+		baseChance = 0.4,
 		cooldown = 15,
 		oneTime = true,
 		choices = {
@@ -3095,7 +3095,7 @@ Random.events = {
 		weight = 6,
 		minAge = 10,
 		maxAge = 80,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 3,
 		
 		choices = {
@@ -3130,8 +3130,8 @@ Random.events = {
 		weight = 5,
 		minAge = 10,
 		maxAge = 80,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 		
 		choices = {
 			{
@@ -3166,8 +3166,8 @@ Random.events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 80,
-		baseChance = 0.2,
-		cooldown = 8,
+		baseChance = 0.45,
+		cooldown = 3,
 		blockedByFlags = { homeless = true },
 		
 		choices = {

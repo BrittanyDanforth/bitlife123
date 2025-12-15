@@ -147,8 +147,8 @@ JobSpecificEvents.events = {
 		text = "A customer left you an unusually large tip!",
 		question = "How big was it?",
 		minAge = 16, maxAge = 35,
-		baseChance = 0.2,
-		cooldown = 4,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"service", "entry"})
@@ -242,7 +242,7 @@ JobSpecificEvents.events = {
 		text = "Working the late night/graveyard shift.",
 		question = "How's the night shift treating you?",
 		minAge = 18, maxAge = 40,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		requiresJob = true,
 		eligibility = function(state)
@@ -271,7 +271,7 @@ JobSpecificEvents.events = {
 		text = "The work site has some safety concerns today.",
 		question = "How do you handle the safety situation?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.35,
+		baseChance = 0.555,
 		cooldown = 3,
 		requiresJob = true,
 		eligibility = function(state)
@@ -337,8 +337,8 @@ JobSpecificEvents.events = {
 		text = "There's a major project that could be a big opportunity.",
 		question = "How do you approach the big project?",
 		minAge = 20, maxAge = 55,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
@@ -403,8 +403,8 @@ JobSpecificEvents.events = {
 		text = "A new apprentice is shadowing you and making mistakes.",
 		question = "How do you handle the apprentice?",
 		minAge = 25, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
@@ -452,8 +452,8 @@ JobSpecificEvents.events = {
 		text = "There's a chance to get an advanced certification.",
 		question = "Do you pursue the certification?",
 		minAge = 20, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 6,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
@@ -601,8 +601,8 @@ JobSpecificEvents.events = {
 		text = "Your side project is getting attention!",
 		question = "What happens with your side project?",
 		minAge = 20, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"tech", "technology"})
@@ -656,7 +656,7 @@ JobSpecificEvents.events = {
 		text = "Recruiters are sliding into your DMs constantly.",
 		question = "How do you respond to recruiters?",
 		minAge = 22, maxAge = 50,
-		baseChance = 0.35,
+		baseChance = 0.555,
 		cooldown = 3,
 		requiresJob = true,
 		eligibility = function(state)
@@ -768,8 +768,8 @@ JobSpecificEvents.events = {
 		text = "Emergency! A patient is crashing!",
 		question = "How do you respond to the code?",
 		minAge = 22, maxAge = 65,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
@@ -870,8 +870,8 @@ JobSpecificEvents.events = {
 		text = "You're worried you might have made a mistake.",
 		question = "What do you do about the potential error?",
 		minAge = 22, maxAge = 65,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
@@ -930,8 +930,8 @@ JobSpecificEvents.events = {
 		text = "A patient you've been treating is making a remarkable recovery!",
 		question = "How does the breakthrough affect you?",
 		minAge = 24, maxAge = 65,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
@@ -958,8 +958,8 @@ JobSpecificEvents.events = {
 		text = "A major deal/account is on the line.",
 		question = "How do you handle the high-pressure deal?",
 		minAge = 24, maxAge = 55,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1034,8 +1034,8 @@ JobSpecificEvents.events = {
 		text = "You've discovered something potentially unethical at work.",
 		question = "What do you do about the ethical concern?",
 		minAge = 24, maxAge = 55,
-		baseChance = 0.15,
-		cooldown = 6,
+		baseChance = 0.4,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1100,8 +1100,8 @@ JobSpecificEvents.events = {
 		text = "Markets are in turmoil. Clients are panicking.",
 		question = "How do you handle the market chaos?",
 		minAge = 24, maxAge = 55,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1143,8 +1143,8 @@ JobSpecificEvents.events = {
 		text = "An opportunity could be your big break!",
 		question = "How do you approach this opportunity?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1252,7 +1252,7 @@ JobSpecificEvents.events = {
 		text = "Your work received harsh criticism.",
 		question = "How do you handle the negative feedback?",
 		minAge = 18, maxAge = 55,
-		baseChance = 0.35,
+		baseChance = 0.555,
 		cooldown = 3,
 		requiresJob = true,
 		eligibility = function(state)
@@ -1277,8 +1277,8 @@ JobSpecificEvents.events = {
 		text = "Something you created is going viral!",
 		question = "What happens with your viral content?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.15,
-		cooldown = 6,
+		baseChance = 0.4,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1328,8 +1328,8 @@ JobSpecificEvents.events = {
 		text = "Someone wants to collaborate with you on a project!",
 		question = "Do you accept the collaboration?",
 		minAge = 18, maxAge = 55,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1450,8 +1450,8 @@ JobSpecificEvents.events = {
 		text = "A former student reached out to thank you for changing their life!",
 		question = "How does this affect you?",
 		minAge = 28, maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1499,8 +1499,8 @@ JobSpecificEvents.events = {
 		text = "Major curriculum changes are being implemented.",
 		question = "How do you adapt to the changes?",
 		minAge = 26, maxAge = 65,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1531,8 +1531,8 @@ JobSpecificEvents.events = {
 		question = "How do you handle deployment?",
 		minAge = 18, maxAge = 50,
 		oneTime = false,
-		baseChance = 0.25,
-		cooldown = 6,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"military"})
@@ -1606,8 +1606,8 @@ JobSpecificEvents.events = {
 		text = "Budget cuts are threatening positions.",
 		question = "How secure is your government job?",
 		minAge = 25, maxAge = 65,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"government"})
@@ -1658,8 +1658,8 @@ JobSpecificEvents.events = {
 		text = "The most important game/competition of the season!",
 		question = "How do you perform under pressure?",
 		minAge = 18, maxAge = 45,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})
@@ -1711,8 +1711,8 @@ JobSpecificEvents.events = {
 		text = "A recurring injury is getting worse.",
 		question = "How do you handle the injury situation?",
 		minAge = 20, maxAge = 45,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})
@@ -1779,7 +1779,7 @@ JobSpecificEvents.events = {
 		question = "How do you face the end of your playing career?",
 		minAge = 32, maxAge = 45,
 		oneTime = true,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})

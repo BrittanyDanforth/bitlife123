@@ -6241,13 +6241,27 @@ function LifeBackend:handleAgeUp(player)
 			local hadJobBeforeJail = state.CareerInfo and state.CareerInfo.lastJobBeforeJail
 			local lostJobName = hadJobBeforeJail and state.CareerInfo.lastJobBeforeJail.name or nil
 			
-			-- CRITICAL FIX #510: Double-check CurrentJob is cleared (should already be nil)
-			if state.CurrentJob then
-				-- This shouldn't happen, but clean up just in case
-				state.CurrentJob = nil
-				state.Flags.employed = nil
-				state.Flags.has_job = nil
-			end
+			-- CRITICAL FIX #510/#536: FORCE clear job and ALL related flags on jail release
+			-- This ensures no stale job data remains in the client UI
+			state.CurrentJob = nil
+			state.Flags.employed = nil
+			state.Flags.has_job = nil
+			state.Flags.has_teen_job = nil
+			state.Flags.working = nil
+			
+			-- CRITICAL FIX #537: Reset CareerInfo but preserve history
+			local careerHistory = state.CareerInfo and state.CareerInfo.careerHistory or {}
+			local totalYearsWorked = state.CareerInfo and state.CareerInfo.totalYearsWorked or 0
+			state.CareerInfo = {
+				performance = 0,
+				promotionProgress = 0,
+				yearsAtJob = 0,
+				raises = 0,
+				promotions = 0,
+				careerHistory = careerHistory,
+				totalYearsWorked = totalYearsWorked,
+				skills = state.CareerInfo and state.CareerInfo.skills or {},
+			}
 			
 			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
@@ -7586,13 +7600,20 @@ function LifeBackend:handleJobApplication(player, jobId)
 		return { success = false, message = "Life data not loaded." }
 	end
 
-	local job = JobCatalog[jobId]
+	-- CRITICAL FIX #512: Use findJobByInput for flexible job lookup
+	-- This allows the client to send job IDs, names, or partial matches
+	-- Fixes "Unknown Job" for jobs like "Hobbyist Streamer" and "New Content Creator"
+	local job = JobCatalog[jobId] or self:findJobByInput(jobId)
 	if not job then
+		warn("[LifeBackend] Unknown job application:", jobId)
 		return { success = false, message = "Unknown job." }
 	end
 	
+	-- Use the actual job ID for further checks (in case client sent a name)
+	local actualJobId = job.id
+	
 	-- CRITICAL FIX: Block direct application to promotion-only positions
-	if PromotionOnlyJobs[jobId] then
+	if PromotionOnlyJobs[actualJobId] then
 		return { 
 			success = false, 
 			message = "This position requires years of experience and internal promotion. You can't apply directly." 
@@ -8065,8 +8086,45 @@ function LifeBackend:handleJobApplication(player, jobId)
 		end
 	end
 	
+	-- CRITICAL FIX #562: Set category-specific career flags
+	local jobCategory = (job.category or ""):lower()
+	local jobIdLower = (job.id or ""):lower()
+	local jobNameLower = (job.name or ""):lower()
+	
+	if jobCategory == "entertainment" then
+		state.Flags.entertainment_experience = true
+		state.Flags.fame_career = true
+	end
+	
+	-- CRITICAL FIX #563: Set rapper flags for rapper jobs
+	if jobIdLower:find("rapper") or jobNameLower:find("rapper") or jobNameLower:find("hip.?hop") then
+		state.Flags.rapper = true
+		state.Flags.pursuing_rap = true
+		state.Flags.hip_hop_experience = true
+		state.Flags.music_experience = true
+	end
+	
+	-- CRITICAL FIX #564: Set streamer/creator flags for those jobs
+	if jobIdLower:find("streamer") or jobIdLower:find("creator") or jobIdLower:find("youtuber") or jobIdLower:find("influencer") then
+		state.Flags.streamer = true
+		state.Flags.content_creator = true
+		state.Flags.pursuing_streaming = true
+	end
+	
+	-- CRITICAL FIX #565: Set musician flags for music jobs
+	if jobIdLower:find("musician") or jobIdLower:find("singer") or jobIdLower:find("artist") then
+		state.Flags.musician = true
+		state.Flags.music_experience = true
+	end
+	
+	-- CRITICAL FIX #566: Set actor flags for acting jobs
+	if jobIdLower:find("actor") or jobIdLower:find("actress") or jobNameLower:find("actor") then
+		state.Flags.actor = true
+		state.Flags.acting_experience = true
+	end
+	
 	-- Clear application history for this job (fresh start)
-	state.JobApplications[jobId] = nil
+	state.JobApplications[actualJobId] = nil
 
 	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
 	self:pushState(player, feed)
