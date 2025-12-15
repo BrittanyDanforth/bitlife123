@@ -621,9 +621,36 @@ local Camera = workspace.CurrentCamera
 
 -- Device detection - consolidated into single table to reduce local register usage
 -- (Luau has a 200 local register limit per function scope)
+-- CRITICAL FIX: Improved mobile detection to prevent false positives on PC
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+
+-- More robust mobile detection:
+-- 1. Must have touch AND no keyboard (or mouse as primary)
+-- 2. Must NOT be in Studio (Studio always counts as PC)
+-- 3. Must NOT be console/ten-foot interface
+local function detectMobile()
+	-- Never consider Studio as mobile
+	if RunService:IsStudio() then
+		return false
+	end
+	-- Console is not mobile
+	if GuiService:IsTenFootInterface() then
+		return false
+	end
+	-- Mobile = touch enabled AND (no keyboard OR no mouse)
+	-- This prevents touch-screen PCs from being detected as mobile
+	local hasTouch = UserInputService.TouchEnabled
+	local hasKeyboard = UserInputService.KeyboardEnabled
+	local hasMouse = UserInputService.MouseEnabled
+	-- PC with touch screen has all three - NOT mobile
+	-- Mobile has touch but typically no mouse
+	return hasTouch and not hasMouse
+end
+
 local Device = {
 	ViewportSize = Camera.ViewportSize,
-	IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled,
+	IS_MOBILE = detectMobile(),
 	IS_TABLET = false,
 	IS_SMALL_PHONE = false,
 	IS_TINY_PHONE = false,
@@ -635,7 +662,7 @@ Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.Vie
 -- Viewport tracking
 local function updateViewport()
 	Device.ViewportSize = Camera.ViewportSize
-	Device.IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	Device.IS_MOBILE = detectMobile()
 	Device.IS_TABLET = Device.IS_MOBILE and (Device.ViewportSize.X >= 768 or Device.ViewportSize.Y >= 768)
 	Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X < 450 or Device.ViewportSize.Y < 750)
 	Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X <= 380 or Device.ViewportSize.Y <= 680)

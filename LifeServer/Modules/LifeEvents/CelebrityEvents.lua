@@ -4108,7 +4108,9 @@ function CelebrityEvents.processYearlyFameUpdates(state)
 	local yearsToAdvance = stageInfo.yearsToAdvance
 	if yearsToAdvance then
 		local requiredYears = math.random(yearsToAdvance.min, yearsToAdvance.max)
-		local nextStage = fameState.stage + 1
+		-- CRITICAL FIX: Handle nil fameState.stage (default to 1)
+		local currentStage = fameState.stage or 1
+		local nextStage = currentStage + 1
 		local career = CelebrityEvents.getCareerData(fameState.careerPath)
 		
 		if career and career.stages[nextStage] then
