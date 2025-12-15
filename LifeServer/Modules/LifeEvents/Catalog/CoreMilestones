@@ -327,10 +327,14 @@ local events = {
 					state.Flags.in_college = true
 					state.Flags.college_student = true
 					state.Flags.enrolled_college = true
-					
-					-- Set Education level indicator
-					state.Education = level
-					
+					state.Flags.college_bound = true  -- CRITICAL: Needed for college_graduation event
+
+					-- CRITICAL FIX: Do NOT set state.Education to "bachelor" here!
+					-- Education should remain "high_school" until they GRADUATE college.
+					-- EducationData.Level tracks what they're PURSUING, not what they've COMPLETED.
+					-- The college_graduation event sets state.Education = "bachelor" on completion.
+					state.Education = state.Education or "high_school"
+
 					state.PendingFeed = string.format("🎓 You're going to %s! New chapter begins!", collegeName)
 				end,
 			},
@@ -377,8 +381,13 @@ local events = {
 					
 					state.Flags.trade_school_student = true
 					state.Flags.in_trade_school = true
-					state.Education = "trade"
-					
+					state.Flags.trade_school_bound = true  -- Needed for trade school completion event
+
+					-- CRITICAL FIX: Do NOT set state.Education to "trade" here!
+					-- Education should remain "high_school" until they COMPLETE trade school.
+					-- EducationData.Level tracks what they're PURSUING, not COMPLETED.
+					state.Education = state.Education or "high_school"
+
 					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
 				end,
 			},

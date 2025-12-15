@@ -29,20 +29,28 @@ local RapperContentCreatorEvents = {}
 -- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
-	-- FIRST: Check if player is a streamer/creator - if so, return FALSE immediately!
+	-- CRITICAL FIX: Check if player is a streamer/creator BY JOB - if so, return FALSE immediately!
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
-		if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
-			return false  -- STREAMER/CREATOR - NOT a rapper!
+		local jobName = (state.CurrentJob.name or ""):lower()
+		if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer")
+		   or jobName:find("streamer") or jobName:find("content creator") or jobName:find("youtuber") then
+			return false  -- STREAMER/CREATOR JOB - NOT a rapper!
 		end
 	end
-	if state.Flags and (state.Flags.streamer or state.Flags.content_creator or state.Flags.pursuing_streaming) then
-		-- If player has streamer flags but NOT rapper flags, they're NOT a rapper
-		if not (state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist) then
-			return false
+
+	-- CRITICAL FIX: Check for streamer/creator FLAGS - these block rapper status
+	if state.Flags then
+		local hasStreamerFlags = state.Flags.streamer or state.Flags.content_creator
+			or state.Flags.pursuing_streaming or state.Flags.broadcaster
+			or state.Flags.first_video_uploaded or state.Flags.first_video_posted
+		local hasRapperFlags = state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist
+
+		if hasStreamerFlags and not hasRapperFlags then
+			return false  -- STREAMER FLAGS - NOT a rapper!
 		end
 	end
-	
+
 	-- Check for rapper job
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
@@ -50,16 +58,17 @@ local function isRapper(state)
 		if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
 			return true
 		end
-		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or 
+		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or
 		   jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper") then
 			return true
 		end
 	end
-	-- Check rapper flags
+
+	-- CRITICAL FIX: Check rapper-SPECIFIC flags (NOT first_track_recorded - not rapper-specific!)
 	if state.Flags then
-		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
+		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist
 		   or state.Flags.hip_hop_experience or state.Flags.trap_rapper or state.Flags.lyrical_rapper
-		   or state.Flags.melodic_rapper or state.Flags.drill_rapper or state.Flags.first_track_recorded then
+		   or state.Flags.melodic_rapper or state.Flags.drill_rapper then
 			return true
 		end
 	end
