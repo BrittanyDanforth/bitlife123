@@ -959,6 +959,21 @@ function OccupationScreen:isInJail()
 	return state.InJail == true or (state.Flags and state.Flags.in_prison) or false
 end
 
+-- CRITICAL FIX: Check if player is retired
+function OccupationScreen:isRetired()
+	local state = self.playerState
+	if not state then return false end
+	return (state.Flags and state.Flags.retired) == true
+end
+
+-- CRITICAL FIX: Get pension amount for retired players
+function OccupationScreen:getPension()
+	local state = self.playerState
+	if not state then return 0 end
+	-- Pension might be stored in various places
+	return state.Pension or (state.Career and state.Career.pension) or 0
+end
+
 function OccupationScreen:getJailYearsLeft()
 	local state = self.playerState
 	if not state then return 0 end
@@ -1875,9 +1890,10 @@ function OccupationScreen:populateJobs()
 	local currentJob = self:getCurrentJob()
 	local eduLevel = self:getEducationLevel()
 	local inJail = self:isInJail()
+	local isRetired = self:isRetired()
 	local selectedCategory = self.selectedCategory or "all"
 
-	log("Populating jobs - Age:", age, "CurrentJob:", currentJob, "EduLevel:", eduLevel, "InJail:", inJail, "Category:", selectedCategory)
+	log("Populating jobs - Age:", age, "CurrentJob:", currentJob, "EduLevel:", eduLevel, "InJail:", inJail, "Retired:", isRetired, "Category:", selectedCategory)
 
 	-- Prison warning (if in jail)
 	if inJail then
@@ -1936,8 +1952,142 @@ function OccupationScreen:populateJobs()
 		subText.Parent = prisonCard
 	end
 
-	-- Current job section (if employed and not in jail)
-	if currentJob and not inJail then
+	-- CRITICAL FIX: Show Retired card when player is retired
+	if isRetired and not inJail then
+		log("Showing RETIRED card for retired player")
+
+		local retiredCard = Instance.new("Frame")
+		retiredCard.Name = "RetiredCard"
+		retiredCard.Size = UDim2.new(1, 0, 0, 140)
+		retiredCard.BackgroundColor3 = C.PurplePale or Color3.fromRGB(237, 233, 254)
+		retiredCard.LayoutOrder = 0
+		retiredCard.ZIndex = 82
+		retiredCard.Parent = self.contentScroll
+		UI.corner(retiredCard, 18)
+		UI.stroke(retiredCard, 2, 0.5, C.Purple or Color3.fromRGB(147, 51, 234))
+
+		-- Retirement icon
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 60, 0, 60)
+		iconFrame.Position = UDim2.new(0, 16, 0, 16)
+		iconFrame.BackgroundColor3 = C.Purple or Color3.fromRGB(147, 51, 234)
+		iconFrame.ZIndex = 83
+		iconFrame.Parent = retiredCard
+		UI.corner(iconFrame, 14)
+
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = 32
+		iconLabel.Text = "🏖️"
+		iconLabel.TextColor3 = C.White
+		iconLabel.ZIndex = 84
+		iconLabel.Parent = iconFrame
+
+		-- Retired title
+		local retiredTitle = Instance.new("TextLabel")
+		retiredTitle.Size = UDim2.new(1, -100, 0, 28)
+		retiredTitle.Position = UDim2.new(0, 90, 0, 16)
+		retiredTitle.BackgroundTransparency = 1
+		retiredTitle.Font = F.Title
+		retiredTitle.TextSize = textSize(22)
+		retiredTitle.TextColor3 = C.Purple or Color3.fromRGB(147, 51, 234)
+		retiredTitle.TextXAlignment = Enum.TextXAlignment.Left
+		retiredTitle.Text = "Retired"
+		retiredTitle.ZIndex = 83
+		retiredTitle.Parent = retiredCard
+
+		-- Previous career info
+		local serverJob = self:getCurrentJobData()
+		local previousJobName = serverJob and serverJob.title or "Unknown Career"
+		local fameState = self:getFameState()
+
+		local prevJobLabel = Instance.new("TextLabel")
+		prevJobLabel.Size = UDim2.new(1, -100, 0, 20)
+		prevJobLabel.Position = UDim2.new(0, 90, 0, 44)
+		prevJobLabel.BackgroundTransparency = 1
+		prevJobLabel.Font = F.Body
+		prevJobLabel.TextSize = textSize(14)
+		prevJobLabel.TextColor3 = C.Gray600
+		prevJobLabel.TextXAlignment = Enum.TextXAlignment.Left
+		prevJobLabel.Text = "Former " .. previousJobName
+		prevJobLabel.ZIndex = 83
+		prevJobLabel.Parent = retiredCard
+
+		-- Stats row for retired content creators/influencers
+		if fameState and (fameState.subscribers or 0) > 0 then
+			local statsRow = Instance.new("Frame")
+			statsRow.Size = UDim2.new(1, -32, 0, 36)
+			statsRow.Position = UDim2.new(0, 16, 0, 90)
+			statsRow.BackgroundColor3 = C.White
+			statsRow.BackgroundTransparency = 0.5
+			statsRow.ZIndex = 83
+			statsRow.Parent = retiredCard
+			UI.corner(statsRow, 10)
+
+			local statsLayout = Instance.new("UIListLayout")
+			statsLayout.FillDirection = Enum.FillDirection.Horizontal
+			statsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			statsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+			statsLayout.Padding = UDim.new(0, 16)
+			statsLayout.Parent = statsRow
+
+			local function createRetiredStat(emoji, value, label)
+				local statFrame = Instance.new("Frame")
+				statFrame.Size = UDim2.new(0, 90, 1, 0)
+				statFrame.BackgroundTransparency = 1
+				statFrame.ZIndex = 84
+				statFrame.Parent = statsRow
+
+				local statText = Instance.new("TextLabel")
+				statText.Size = UDim2.fromScale(1, 1)
+				statText.BackgroundTransparency = 1
+				statText.Font = F.Body
+				statText.TextSize = textSize(12)
+				statText.TextColor3 = C.Gray700
+				statText.Text = emoji .. " " .. self:formatNumber(value) .. " " .. label
+				statText.ZIndex = 85
+				statText.Parent = statFrame
+			end
+
+			-- Show relevant stats based on career type
+			local subs = fameState.subscribers or 0
+			local followers = fameState.followers or 0
+			local views = fameState.totalViews or 0
+			local videos = fameState.totalVideos or 0
+
+			-- CRITICAL FIX: Use the stat that's actually populated (not 0)
+			local mainFollowers = (followers > 0) and followers or subs
+
+			if mainFollowers > 0 then
+				createRetiredStat("👥", mainFollowers, "Followers")
+			end
+			if views > 0 then
+				createRetiredStat("👀", views, "Views")
+			end
+			if videos > 0 then
+				createRetiredStat("📺", videos, "Videos")
+			end
+		end
+
+		-- Pension info
+		local pension = self:getPension()
+		if pension > 0 then
+			local pensionLabel = Instance.new("TextLabel")
+			pensionLabel.Size = UDim2.new(1, -100, 0, 18)
+			pensionLabel.Position = UDim2.new(0, 90, 0, 66)
+			pensionLabel.BackgroundTransparency = 1
+			pensionLabel.Font = F.Body
+			pensionLabel.TextSize = textSize(13)
+			pensionLabel.TextColor3 = C.Green or Color3.fromRGB(34, 197, 94)
+			pensionLabel.TextXAlignment = Enum.TextXAlignment.Left
+			pensionLabel.Text = "💰 Pension: " .. UI.formatMoney(pension) .. "/year"
+			pensionLabel.ZIndex = 83
+			pensionLabel.Parent = retiredCard
+		end
+	-- Current job section (if employed, not in jail, and NOT RETIRED)
+	elseif currentJob and not inJail and not isRetired then
 		local currentSection = Instance.new("Frame")
 		currentSection.Name = "CurrentJobSection"
 		currentSection.Size = UDim2.new(1, 0, 0, 0)
@@ -1987,7 +2137,7 @@ function OccupationScreen:populateJobs()
 		else
 			log("No job data found for currentJob:", currentJob)
 		end
-	elseif not currentJob and not inJail then
+	elseif not currentJob and not inJail and not isRetired then
 		-- CRITICAL UI FIX: Show "Unemployed" status card when player has no job
 		local unemployedCard = Instance.new("Frame")
 		unemployedCard.Name = "UnemployedCard"
@@ -2668,22 +2818,37 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 				labelText.Parent = statFrame
 			end
 			
+			-- CRITICAL FIX: In Lua, 0 is truthy! So "followers or subscribers" returns 0
+			-- even if subscribers has a value. Must check > 0 explicitly!
+			local function getBestFollowerCount()
+				local f = fameState.followers or 0
+				local s = fameState.subscribers or 0
+				if f > 0 then return f end
+				if s > 0 then return s end
+				return 0
+			end
+
 			if isRapper then
 				createStatDisplay("🎧", "Listeners", fameState.monthlyListeners or 0, 1)
 				createStatDisplay("📀", "Tracks", fameState.totalTracks or 0, 2)
 				createStatDisplay("▶️", "Streams", fameState.totalStreams or 0, 3)
 			elseif isStreamer then
-				createStatDisplay("👥", "Subs", fameState.subscribers or 0, 1)
+				-- CRITICAL FIX: Show actual subscriber/follower count
+				local subs = (fameState.subscribers or 0) > 0 and fameState.subscribers or getBestFollowerCount()
+				createStatDisplay("👥", "Subs", subs, 1)
 				createStatDisplay("👀", "Views", fameState.totalViews or 0, 2)
 				createStatDisplay("📺", "Videos", fameState.totalVideos or 0, 3)
 			elseif isInfluencer then
-				createStatDisplay("👥", "Followers", fameState.followers or fameState.subscribers or 0, 1)
+				-- CRITICAL FIX: Use subscribers if followers is 0 (creator events set subscribers)
+				createStatDisplay("👥", "Followers", getBestFollowerCount(), 1)
 				createStatDisplay("❤️", "Likes", fameState.totalLikes or 0, 2)
-				createStatDisplay("📱", "Posts", fameState.totalPosts or 0, 3)
+				-- CRITICAL FIX: Show videos/posts - content creators post videos!
+				local posts = (fameState.totalPosts or 0) > 0 and fameState.totalPosts or (fameState.totalVideos or 0)
+				createStatDisplay("📱", "Posts", posts, 3)
 			else
-				-- Generic fame stats
+				-- Generic fame stats - also use getBestFollowerCount
 				createStatDisplay("⭐", "Fame", self.playerState.Fame or 0, 1)
-				createStatDisplay("👥", "Followers", fameState.followers or 0, 2)
+				createStatDisplay("👥", "Followers", getBestFollowerCount(), 2)
 			end
 		end
 	end

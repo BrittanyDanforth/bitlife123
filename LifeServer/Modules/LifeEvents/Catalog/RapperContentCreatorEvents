@@ -1295,6 +1295,8 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(500, 2000)
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(5000, 20000)
+					-- CRITICAL FIX: Track video count - daily uploads = 30 videos/month
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 30
 				end,
 			},
 			{
@@ -1305,6 +1307,8 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(200, 800)
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(2000, 8000)
+					-- CRITICAL FIX: Track video count - weekly = 4 videos/month
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 4
 				end,
 			},
 			{
@@ -1314,6 +1318,8 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(50, 300)
+					-- CRITICAL FIX: Track video count - sporadic = 1-2 videos
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + math.random(1, 2)
 				end,
 			},
 		},
@@ -1344,6 +1350,8 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(200, 500)
+					-- CRITICAL FIX: Track video count
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 1
 				end,
 			},
 			{
@@ -1386,6 +1394,8 @@ RapperContentCreatorEvents.events = {
 					state.FameState.subscribers = newSubs
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + 5000000
 					state.FameState.viralVideos = (state.FameState.viralVideos or 0) + 1
+					-- CRITICAL FIX: Actually increment totalVideos when posting videos!
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 5
 					state.Fame = (state.Fame or 0) + 20
 					state.Money = (state.Money or 0) + math.random(5000, 20000)
 					
@@ -2122,6 +2132,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(30000, 100000)
 					state.Fame = (state.Fame or 0) + 15
+					-- CRITICAL FIX: Track video count
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 1
+					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(500000, 2000000)
 				end,
 			},
 			{
@@ -2132,6 +2145,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(50000, 150000)
 					state.Fame = (state.Fame or 0) + 20
+					-- CRITICAL FIX: Track video count - 5 video series
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 5
+					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(2000000, 8000000)
 				end,
 			},
 		},
@@ -2160,6 +2176,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.brandDeals = (state.FameState.brandDeals or 0) + 1
+					-- CRITICAL FIX: Track video count for sponsored video
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 1
+					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(10000, 50000)
 				end,
 			},
 			{
@@ -2210,6 +2229,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Track video count for response video
+					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 1
+					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(100000, 500000)
 					if roll < 0.5 then
 						state:ModifyStat("Happiness", 20)
 						state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(20000, 60000)
