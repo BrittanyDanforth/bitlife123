@@ -638,6 +638,29 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-18: Check minFame for celebrity events
+	-- Events with minFame property should only trigger for players with that fame level
+	-- This prevents Grammy nominations for hobbyist streamers, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minFame then
+		local playerFame = state.Fame or 0
+		if playerFame < event.minFame then
+			return false -- Player doesn't have enough fame for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-19: Check minSubscribers for content creator events
+	-- Events requiring certain subscriber count should be blocked for small creators
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minSubscribers then
+		local subs = (state.FameState and state.FameState.subscribers) or 0
+		if subs < event.minSubscribers then
+			return false -- Not enough subscribers for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
 	-- Only allow health-related, medical, or high-priority events for very sick players
 	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
@@ -1585,14 +1608,15 @@ function LifeEvents.buildYearQueue(state, options)
 		(state.CurrentJob.id or ""):lower():find("influencer")
 	)
 	
-	-- Add career_creator category ONLY for creators/streamers
+	-- Add career_creative category ONLY for creators/streamers
+	-- NOTE: Events use "career_creative" not "career_creator"
 	if isCreatorFlags or hasCreatorJob then
 		local hasCreatorCat = false
 		for _, cat in ipairs(categories) do
-			if cat == "career_creator" then hasCreatorCat = true break end
+			if cat == "career_creative" then hasCreatorCat = true break end
 		end
 		if not hasCreatorCat then
-			table.insert(categories, "career_creator")
+			table.insert(categories, "career_creative")
 		end
 	end
 	
@@ -1868,21 +1892,11 @@ function LifeEvents.buildYearQueue(state, options)
 	
 	-- CREATOR/STREAMER EVENTS (80% chance if they're a creator/streamer)
 	if (hasCreatorJob or isCreator) and RANDOM_LOCAL:NextNumber() < 0.80 then
-		local creatorEvents = EventsByCategory["career_creator"] or {}
+		-- NOTE: All creator/streamer events use "career_creative" category
 		local creativeEvents = EventsByCategory["career_creative"] or {}
 		local eligibleCreatorEvents = {}
 		
-		-- Collect creator-specific events
-		for _, event in ipairs(creatorEvents) do
-			if canEventTrigger(event, state) then
-				local occurCount = (history.occurrences[event.id] or 0)
-				if occurCount == 0 or not event.oneTime then
-					table.insert(eligibleCreatorEvents, event)
-				end
-			end
-		end
-		
-		-- Also include general creative events for creators
+		-- Collect all career_creative events
 		for _, event in ipairs(creativeEvents) do
 			if canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)

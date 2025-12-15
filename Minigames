@@ -3,9 +3,37 @@
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local Players = game:GetService("Players")
 
 local Minigames = {}
 Minigames.__index = Minigames
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Mobile detection and responsive scaling
+-- ═══════════════════════════════════════════════════════════════════════════════
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local SCREEN_SIZE = workspace.CurrentCamera.ViewportSize
+local IS_SMALL_SCREEN = SCREEN_SIZE.X < 600 or SCREEN_SIZE.Y < 400
+local IS_TINY_PHONE = SCREEN_SIZE.X < 400 or SCREEN_SIZE.Y < 300
+
+-- Mobile-responsive scaling helpers
+local function px(base)
+	if IS_TINY_PHONE then return math.floor(base * 0.7) end
+	if IS_SMALL_SCREEN then return math.floor(base * 0.85) end
+	return base
+end
+
+local function textSize(base)
+	if IS_TINY_PHONE then return math.floor(base * 0.75) end
+	if IS_SMALL_SCREEN then return math.floor(base * 0.85) end
+	return base
+end
+
+local function touchTarget(base)
+	if IS_MOBILE then return math.max(44, base * 1.2) end
+	return base
+end
 
 -- Premium Colors
 local C = {

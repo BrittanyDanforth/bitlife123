@@ -5187,17 +5187,32 @@ function LifeBackend:tickCareer(state)
 	info.promotionProgress = clamp(yearsProgress + perfProgress, 0, 100)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #AAA-9: AUTO-PROMOTION when progress hits 80%+ AND performance is good
-	-- This was the main bug - players had 80%+ but never got promoted!
+	-- CRITICAL FIX #MOBILE-17: IMPROVED AUTO-PROMOTION when progress hits 80%+
+	-- BUG: Players were stuck at 80% because promotion chance was too low (10%)
+	-- FIX: Higher chance for entertainment/celebrity careers (they're meant to be fast)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if info.promotionProgress >= 80 and info.performance >= 70 and (info.yearsAtJob or 0) >= 2 then
+	if info.promotionProgress >= 80 and info.performance >= 70 and (info.yearsAtJob or 0) >= 1 then  -- Reduced from 2 to 1 year
 		-- Check if we already tried this year
 		local lastAutoPromoAge = info.lastAutoPromoAttemptAge or 0
 		if (state.Age or 0) > lastAutoPromoAge then
 			info.lastAutoPromoAttemptAge = state.Age
 			
-			-- Random chance of auto-promotion (higher progress = higher chance)
-			local autoPromoChance = (info.promotionProgress - 70) / 100 -- 10% at 80%, 30% at 100%
+			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for entertainment careers
+			local baseChance = (info.promotionProgress - 70) / 100  -- 10% at 80%, 30% at 100%
+			
+			-- Entertainment/celebrity careers get BOOSTED promotion chance
+			local jobCategory = (state.CurrentJob.category or ""):lower()
+			local isCelebrityCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or 
+				(state.CurrentJob.id or ""):find("rapper") or 
+				(state.CurrentJob.id or ""):find("streamer") or
+				(state.CurrentJob.id or ""):find("influencer")
+			
+			if isCelebrityCareer then
+				baseChance = baseChance * 2.5  -- 25% at 80%, 75% at 100% for celebrity careers
+			end
+			
+			local autoPromoChance = math.min(0.90, baseChance)  -- Cap at 90%
+			
 			if RANDOM:NextNumber() < autoPromoChance then
 				-- Find next job in career track
 				local currentJobId = state.CurrentJob and state.CurrentJob.id
