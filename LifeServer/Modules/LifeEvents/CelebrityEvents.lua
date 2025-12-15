@@ -915,7 +915,7 @@ CelebrityEvents.GeneralFameEvents = {
 		text = "Someone has been obsessively following you. They've shown up at your home.",
 		minFame = 50,
 		oneTime = true, -- CRITICAL FIX: Only one stalker situation per lifetime
-		cooldown = 10, -- CRITICAL FIX: 10 year cooldown if it happens again
+		cooldown = 4, -- CRITICAL FIX: 10 year cooldown if it happens again
 		choices = {
 			{
 				text = "Get a restraining order",
@@ -1215,7 +1215,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did went incredibly viral! Millions of people have seen it.",
 		minFame = 15,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Lean into the attention",
@@ -1270,7 +1270,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "⚡",
 		text = "Another celebrity publicly called you out!",
 		minFame = 35,
-		cooldown = 4,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Clap back hard",
@@ -1321,7 +1321,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏆",
 		text = "You've been nominated for a major award!",
 		minFame = 55,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Campaign hard to win",
@@ -1351,7 +1351,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😔",
 		text = "The constant spotlight is taking its toll.",
 		minFame = 50,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Speak openly about struggles",
@@ -1430,7 +1430,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "❌",
 		text = "Something from your past surfaced. The internet mob is out for blood.",
 		minFame = 45,
-		cooldown = 8,
+		cooldown = 3,
 		choices = {
 			{
 				text = "Apologize sincerely",
@@ -1463,7 +1463,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
 		minFame = 20,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1503,7 +1503,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😰",
 		text = "Security discovered someone has been following you everywhere. They know your schedule, your home, everything.",
 		minFame = 40,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		choices = {
 			{
@@ -1546,7 +1546,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "You've been asked to host the biggest charity gala of the year. All eyes will be on you.",
 		minFame = 60,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1586,7 +1586,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🤝",
 		text = "One of the biggest names in entertainment wants to collaborate with you. This could change everything.",
 		minFame = 50,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -1622,7 +1622,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎤",
 		text = "You've been invited to perform at the biggest award show of the year. Billions will be watching.",
 		minFame = 55,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1664,7 +1664,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎙️",
 		text = "A popular podcast wants a deep-dive interview. No scripts, no edits. Just real conversation.",
 		minFame = 40,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 6,
 		choices = {
 			{
@@ -1703,7 +1703,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "A major studio wants you for their next blockbuster. But the role requires a dramatic transformation.",
 		minFame = 55,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { retired = true } },
 		choices = {
@@ -1789,7 +1789,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📺",
 		text = "Network executives want to document your life in a reality series. Fame and fortune, but zero privacy.",
 		minFame = 30,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		conditions = { blockedFlags = { has_reality_show = true } },
 		choices = {
@@ -1824,7 +1824,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎵",
 		text = "After a break from the spotlight, the industry is ready for your comeback. Make it count.",
 		minFame = 40,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		conditions = { requiresFlags = { took_break = true } },
 		choices = {
@@ -1894,7 +1894,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A major tabloid printed completely false stories about you. The lies are spreading everywhere.",
 		minFame = 35,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1936,7 +1936,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "👋",
 		text = "Your fans organized a massive meetup hoping you'd show. Word got back to your team.",
 		minFame = 45,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -1974,7 +1974,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🌟",
 		text = "A young rising star wants you to mentor them. You could shape the next generation.",
 		minFame = 60,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2007,7 +2007,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎰",
 		text = "A Las Vegas casino wants you for a multi-year residency. Guaranteed income, less travel.",
 		minFame = 65,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		conditions = { blockedFlags = { has_residency = true } },
 		choices = {
@@ -2041,7 +2041,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "It's the world premiere of your biggest movie! The red carpet stretches endlessly.",
 		minFame = 50,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -2085,7 +2085,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "💰",
 		text = "One of your sponsors has been exposed for unethical practices. You're associated with their brand.",
 		minFame = 45,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		choices = {
 			{
@@ -2118,7 +2118,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎵",
 		text = "You're unhappy with what streaming platforms pay artists. Will you take a stand?",
 		minFame = 55,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		choices = {
 			{
@@ -2151,7 +2151,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "Your PR team proposes an outrageous publicity stunt. It's risky but could get massive attention.",
 		minFame = 35,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2219,7 +2219,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🔥",
 		text = "Another celebrity made shady comments about you. The internet is waiting for your response.",
 		minFame = 45,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2365,7 +2365,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🌍",
 		text = "A promoter wants to send you on a massive world tour. 50 cities, 6 months on the road.",
 		minFame = 55,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2465,7 +2465,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏟️",
 		text = "Your arena show sold out in minutes! Fans are reselling tickets for insane prices.",
 		minFame = 60,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2499,7 +2499,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you posted online is causing a massive controversy! Your mentions are on fire.",
 		minFame = 35,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2572,7 +2572,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A prestigious magazine wants you on their cover with an exclusive interview.",
 		minFame = 45,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 8,
 		choices = {
 			{

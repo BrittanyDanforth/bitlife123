@@ -523,8 +523,8 @@ Relationships.events = {
 		text = "{{PARTNER_NAME}} has to move away for work/school. It would mean a long-distance relationship.",
 		question = "Can you make it work?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresPartner = true,
 		choices = {
 			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
@@ -731,7 +731,7 @@ Relationships.events = {
 		question = "How do you deal with it?",
 		minAge = 10, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 4,
+		cooldown = 2,
 		requiresFlags = { has_siblings = true },
 		choices = {
 			{ text = "Work it out together", effects = { Happiness = 5 }, feedText = "You reconciled with your sibling." },
@@ -747,8 +747,8 @@ Relationships.events = {
 		text = "Your relationship with your parents has been complicated.",
 		question = "How do you approach it?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		choices = {
 			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with your parents." },
 			{ text = "Set healthy boundaries", effects = { Happiness = 5, Smarts = 2 }, feedText = "You established boundaries." },
@@ -783,8 +783,8 @@ Relationships.events = {
 		text = "Someone close to you has passed away.",
 		question = "How do you cope with the loss?",
 		minAge = 20, maxAge = 90,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		choices = {
 			{ text = "Lean on others for support", effects = { Happiness = -5, Health = -2 }, feedText = "Grief is heavy, but you're not alone." },
 			{ text = "Celebrate their life", effects = { Happiness = -3, Smarts = 2 }, feedText = "You chose to remember the good times." },
@@ -910,8 +910,8 @@ Relationships.events = {
 		text = "Your ex has reached out wanting to reconnect.",
 		question = "What do you do?",
 		minAge = 18, maxAge = 55,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresSingle = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -958,8 +958,8 @@ Relationships.events = {
 		text = "A friend dragged you to a speed dating event. 5 minutes per person!",
 		question = "What's your strategy?",
 		minAge = 21, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresSingle = true,
 		-- CRITICAL FIX #11: Can't speed date from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -1024,7 +1024,7 @@ Relationships.events = {
 		text = "A friend set you up on a blind date. You don't know what they look like!",
 		question = "Where do you meet?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		requiresSingle = true,
 		-- CRITICAL FIX #12: Can't go on blind dates from prison!
@@ -1096,8 +1096,8 @@ Relationships.events = {
 		text = "You discovered {{PARTNER_NAME}} has been cheating on you. Your heart is shattered.",
 		question = "What do you do?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.15,
-		cooldown = 10,
+		baseChance = 0.4,
+		cooldown = 4,
 		requiresPartner = true,
 
 		choices = {
@@ -1181,7 +1181,7 @@ Relationships.events = {
 		text = "Jealousy is causing issues in your relationship.",
 		question = "Who's the jealous one?",
 		minAge = 16, maxAge = 60,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		requiresPartner = true,
 
@@ -1217,8 +1217,8 @@ Relationships.events = {
 		text = "You discovered a major secret {{PARTNER_NAME}} has been keeping from you.",
 		question = "What was it?",
 		minAge = 20, maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresPartner = true,
 
 		choices = {
@@ -1372,8 +1372,8 @@ Relationships.events = {
 		text = "A close friend betrayed your trust.",
 		question = "What did they do?",
 		minAge = 13, maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresFlags = { has_best_friend = true },
 
 		choices = {
@@ -1447,8 +1447,8 @@ Relationships.events = {
 		text = "A friendship has become toxic and draining.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Cut them off completely", effects = { Happiness = 5, Health = 3 }, setFlags = { ended_toxic_friendship = true }, feedText = "You're free from that negativity!" },
@@ -1536,8 +1536,8 @@ Relationships.events = {
 		text = "Your sibling achieved something major.",
 		question = "How do you feel?",
 		minAge = 15, maxAge = 70,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresFlags = { has_siblings = true },
 
 		choices = {
@@ -1554,8 +1554,8 @@ Relationships.events = {
 		text = "You discovered a major family secret.",
 		question = "What was it?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.15,
-		cooldown = 10,
+		baseChance = 0.4,
+		cooldown = 4,
 
 		choices = {
 			{ text = "You were adopted", effects = { Happiness = -15, Smarts = 2 }, setFlags = { discovered_adopted = true }, feedText = "Your whole identity is in question now." },
@@ -1571,8 +1571,8 @@ Relationships.events = {
 		text = "Your parent is getting remarried.",
 		question = "How do you feel about your new step-parent?",
 		minAge = 10, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 10,
+		baseChance = 0.55,
+		cooldown = 4,
 		requiresFlags = { parents_divorced = true },
 
 		choices = {
@@ -1589,8 +1589,8 @@ Relationships.events = {
 		text = "There's an unexpected pregnancy!",
 		question = "How do you react?",
 		minAge = 16, maxAge = 45,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 
 		choices = {
 			{ 
@@ -1662,8 +1662,8 @@ Relationships.events = {
 		text = "You and {{PARTNER_NAME}} are struggling to conceive. It's an emotional journey.",
 		question = "What do you do?",
 		minAge = 25, maxAge = 45,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresPartner = true,
 		requiresFlags = { trying_for_baby = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -1848,8 +1848,8 @@ Relationships.events = {
 		text = "The school called. Your child got into trouble.",
 		question = "How do you handle it?",
 		minAge = 30, maxAge = 60,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresFlags = { parent = true },
 
 		choices = {
@@ -1929,8 +1929,8 @@ Relationships.events = {
 		text = "Someone from your past wants to rekindle romance.",
 		question = "What do you do?",
 		minAge = 25, maxAge = 65,
-		baseChance = 0.2,
-		cooldown = 6,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
@@ -1977,8 +1977,8 @@ Relationships.events = {
 		text = "You're considering renewing your wedding vows.",
 		question = "How do you celebrate?",
 		minAge = 35, maxAge = 80,
-		baseChance = 0.3,
-		cooldown = 10,
+		baseChance = 0.55,
+		cooldown = 4,
 		requiresFlags = { married = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },
 

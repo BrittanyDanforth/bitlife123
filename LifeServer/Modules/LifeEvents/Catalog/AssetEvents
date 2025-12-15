@@ -106,8 +106,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.455,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -188,8 +188,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 60,
-		baseChance = 0.2,
-		cooldown = 10,
+		baseChance = 0.45,
+		cooldown = 4,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -249,8 +249,8 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.2,
-		cooldown = 8,
+		baseChance = 0.45,
+		cooldown = 3,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -361,7 +361,7 @@ local events = {
 		minAge = 18,
 		maxAge = 70,
 		baseChance = 0.1,
-		cooldown = 15,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car
 		eligibility = function(state)
@@ -441,8 +441,8 @@ local events = {
 		weight = 4,
 		minAge = 21,
 		maxAge = 65,
-		baseChance = 0.25,
-		cooldown = 6,
+		baseChance = 0.455,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -523,8 +523,8 @@ local events = {
 		weight = 6,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -595,8 +595,8 @@ local events = {
 		weight = 4,
 		minAge = 21,
 		maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 20,
+		baseChance = 0.45,
+		cooldown = 6,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must own a property AND have enough money for cheapest option
 		eligibility = function(state)
@@ -682,8 +682,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 70,
-		baseChance = 0.25,
-		cooldown = 8,
+		baseChance = 0.455,
+		cooldown = 3,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Verify player actually HAS assets before checking value
 		eligibility = function(state)
@@ -748,8 +748,8 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.08,
-		cooldown = 15,
+		baseChance = 0.32,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Vehicles")
@@ -828,8 +828,8 @@ local events = {
 		weight = 3,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.05,
-		cooldown = 20,
+		baseChance = 0.25,
+		cooldown = 6,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			-- Only for people WITHOUT their own vehicle
@@ -892,7 +892,7 @@ local events = {
 		weight = 3,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.05,
+		baseChance = 0.25,
 		cooldown = 30,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
@@ -977,7 +977,7 @@ local events = {
 		minAge = 18,
 		maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 15,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1035,8 +1035,8 @@ local events = {
 		weight = 6,
 		minAge = 21,
 		maxAge = 90,
-		baseChance = 0.15,
-		cooldown = 5,
+		baseChance = 0.4,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1100,8 +1100,8 @@ local events = {
 		weight = 4,
 		minAge = 25,
 		maxAge = 90,
-		baseChance = 0.2,
-		cooldown = 6,
+		baseChance = 0.45,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1133,8 +1133,8 @@ local events = {
 		weight = 6,
 		minAge = 21,
 		maxAge = 80,
-		baseChance = 0.25,
-		cooldown = 4,
+		baseChance = 0.455,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1208,8 +1208,8 @@ local events = {
 		weight = 5,
 		minAge = 25,
 		maxAge = 70,
-		baseChance = 0.2,
-		cooldown = 6,
+		baseChance = 0.45,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1261,7 +1261,7 @@ local events = {
 		minAge = 21,
 		maxAge = 90,
 		baseChance = 0.12,
-		cooldown = 6,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Items")
@@ -1313,7 +1313,7 @@ local events = {
 		minAge = 25,
 		maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 8,
+		cooldown = 3,
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Items")
@@ -1355,8 +1355,8 @@ local events = {
 		weight = 5,
 		minAge = 21,
 		maxAge = 70,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		-- CRITICAL FIX: Ensure player actually owns something worth showing off
 		eligibility = function(state)

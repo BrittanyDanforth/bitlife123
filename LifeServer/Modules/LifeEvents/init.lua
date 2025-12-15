@@ -36,16 +36,17 @@ local LoadedModules = {}
 -- ════════════════════════════════════════════════════════════════════════════════════
 
 local LifeStages = {
-	-- CRITICAL FIX #515: Reduced quietChance for MORE events per year!
-	-- Was causing too many "quiet years" where nothing happened
-	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.1 },
-	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.15 },
-	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.2 },
-	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.15 },
-	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.2 },
-	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.25 },
-	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.3 },
-	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.35 },
+	-- CRITICAL FIX #715-722: DRASTICALLY reduced quietChance for MUCH MORE events per year!
+	-- Old values caused too many "quiet years" where nothing happened - BORING!
+	-- Players should get EVENTS almost every year for engaging gameplay
+	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.05 },  -- CRITICAL FIX #715: Was 0.1
+	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.05 },  -- CRITICAL FIX #716: Was 0.15
+	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.08 },  -- CRITICAL FIX #717: Was 0.2
+	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.05 },  -- CRITICAL FIX #718: Was 0.15
+	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.08 },  -- CRITICAL FIX #719: Was 0.2
+	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.1 },   -- CRITICAL FIX #720: Was 0.25
+	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.12 },  -- CRITICAL FIX #721: Was 0.3
+	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.15 },  -- CRITICAL FIX #722: Was 0.35
 }
 
 -- Category mappings per life stage
@@ -755,23 +756,24 @@ local function canEventTrigger(event, state)
 	-- CRITICAL FIX #513: LOOSENED cooldowns for MORE event variety!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL FIX #513: Reduced default cooldown for more variety (was 5, now 3)
-	local cooldown = event.cooldown or 3
+	-- CRITICAL FIX #723-730: DRASTICALLY REDUCED cooldowns for MAX event variety!
+	-- Players were seeing the same boring events because cooldowns were too high
+	local cooldown = event.cooldown or 1  -- CRITICAL FIX #723: Default cooldown now 1 (was 3)
 	
-	-- CRITICAL FIX #513: Reduced childhood/teen cooldowns (was 8, now 4)
+	-- CRITICAL FIX #724: Childhood/teen cooldowns now 2 (was 4)
 	local eventCategory = event._category or event.category or ""
 	if eventCategory == "childhood" or eventCategory == "teen" then
-		cooldown = event.cooldown or 4 -- More variety in formative years
+		cooldown = event.cooldown or 2 -- More variety in formative years
 	end
 	
-	-- CRITICAL FIX #513: Reduced random event cooldowns (was 7, now 4)
+	-- CRITICAL FIX #725: Random event cooldowns now 2 (was 4)
 	if eventCategory == "random" then
-		cooldown = event.cooldown or 4
+		cooldown = event.cooldown or 2
 	end
 	
-	-- CRITICAL FIX #514: Career events should have shorter cooldowns for more activity
+	-- CRITICAL FIX #726: Career events cooldown now 1 (was 2) - careers should be ACTIVE
 	if eventCategory:find("career") then
-		cooldown = event.cooldown or 2 -- Career events can repeat more often
+		cooldown = event.cooldown or 1 -- Career events can repeat often!
 	end
 	
 	local lastAge = history.lastOccurrence[event.id]
@@ -779,9 +781,9 @@ local function canEventTrigger(event, state)
 		return false
 	end
 	
-	-- CRITICAL FIX #513: Increased max occurrences for more variety (was 3, now 6)
+	-- CRITICAL FIX #727: MASSIVELY increased max occurrences for WAY more variety! (was 6, now 15)
 	local occurCount = history.occurrences[event.id] or 0
-	local maxAllowed = event.maxOccurrences or 6
+	local maxAllowed = event.maxOccurrences or 15
 	if occurCount >= maxAllowed then
 		return false
 	end
@@ -1154,11 +1156,14 @@ local function canEventTrigger(event, state)
 	
 	if event.baseChance then
 		local chance = event.baseChance
-		-- CRITICAL FIX #551: MASSIVE boost for never-seen events (was 1.3x, now 2x)
+		-- CRITICAL FIX #731: GUARANTEED trigger for never-seen events (3x boost)
 		if (history.occurrences[event.id] or 0) == 0 then
-			chance = math.min(1, chance * 2.0)
+			chance = math.min(1, chance * 3.0)  -- CRITICAL FIX #731: Was 2x, now 3x!
 		elseif (history.occurrences[event.id] or 0) == 1 then
-			-- CRITICAL FIX #552: Also boost events seen only once
+			-- CRITICAL FIX #732: Bigger boost for events seen only once (was 1.5x, now 2x)
+			chance = math.min(1, chance * 2.0)
+		elseif (history.occurrences[event.id] or 0) == 2 then
+			-- CRITICAL FIX #733: NEW - Boost for events seen twice
 			chance = math.min(1, chance * 1.5)
 		end
 		if RANDOM:NextNumber() > chance then
@@ -1899,19 +1904,35 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- Check for quiet year (no events)
-	-- CRITICAL FIX #630: Entertainment careers should NEVER have quiet years!
-	-- Rappers/streamers/creators need consistent career events for progression
-	local quietChance = stage.quietChance or 0.4
+	-- CRITICAL FIX #734-740: MASSIVELY REDUCED quiet years for MORE engaging gameplay!
+	-- Players want EVENTS, not boring years of nothing happening
+	local quietChance = stage.quietChance or 0.1  -- CRITICAL FIX #734: Was 0.4, now 0.1
+	
+	-- CRITICAL FIX #735: Entertainment careers should ALMOST NEVER have quiet years!
 	local hasEntertainmentCareer = state.CurrentJob and (
 		(state.CurrentJob.category or ""):lower() == "entertainment" or
 		(state.CurrentJob.id or ""):lower():find("rapper") or
 		(state.CurrentJob.id or ""):lower():find("streamer") or
-		(state.CurrentJob.id or ""):lower():find("creator")
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("musician") or
+		(state.CurrentJob.id or ""):lower():find("actor") or
+		(state.CurrentJob.id or ""):lower():find("celeb")
 	)
 	
-	-- Entertainment careers get HALF the quiet chance - they need events!
+	-- CRITICAL FIX #736: Entertainment careers get 90% less quiet years!
 	if hasEntertainmentCareer then
-		quietChance = quietChance * 0.3  -- 70% less likely to be quiet
+		quietChance = quietChance * 0.1  -- Was 0.3, now 0.1 - almost NEVER quiet
+	end
+	
+	-- CRITICAL FIX #737: ANY job holder should get more events
+	if state.CurrentJob then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet if employed
+	end
+	
+	-- CRITICAL FIX #738: Teens and young adults should get TONS of events
+	local age = state.Age or 0
+	if age >= 13 and age <= 25 then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet
 	end
 	
 	if #candidateEvents == 0 or RANDOM:NextNumber() < quietChance then

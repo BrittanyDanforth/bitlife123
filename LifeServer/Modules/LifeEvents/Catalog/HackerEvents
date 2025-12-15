@@ -416,7 +416,7 @@ local events = {
 		minAge = 22,
 		maxAge = 50,
 		requiresFlags = { black_hat = true, bank_hacker = true },
-		cooldown = 4,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,
@@ -573,7 +573,7 @@ local events = {
 		minAge = 18,
 		maxAge = 60,
 		requiresFlags = { black_hat = true },
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,
@@ -642,7 +642,7 @@ local events = {
 		maxAge = 60,
 		requiresFlags = { elite_hacker = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },
-		cooldown = 4,
+		cooldown = 2,
 		choices = {
 			{
 				index = 1,

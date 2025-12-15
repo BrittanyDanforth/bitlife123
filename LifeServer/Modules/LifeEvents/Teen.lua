@@ -105,7 +105,7 @@ Teen.events = {
 		text = "School has been really hard lately. You're struggling with classes, maybe with teachers, maybe with other students. Some days you wonder if you should just quit.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.2, -- Rare but possible
+		baseChance = 0.45, -- Rare but possible
 		cooldown = 3,
 		requiresFlags = { in_high_school = true },
 		blockedByFlags = { honor_student = true, academic_path = true },
@@ -515,8 +515,8 @@ Teen.events = {
 		text = "A teacher suspects you of cheating on a test.",
 		question = "What really happened?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 
 		choices = {
 			{ text = "I actually cheated - own up", effects = { Happiness = -5, Smarts = -3 }, setFlags = { academic_probation = true, honest = true }, feedText = "You admitted it. There are consequences, but at least you were honest." },
@@ -609,8 +609,8 @@ Teen.events = {
 		text = "You're in a car with a friend who's driving recklessly.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Tell them to slow down", effects = { Happiness = 3, Health = 2 }, setFlags = { assertive = true }, feedText = "You spoke up and they listened. Smart move." },
@@ -626,8 +626,8 @@ Teen.events = {
 		text = "A video or post you made is going viral!",
 		question = "What kind of viral moment is it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresFlags = { social_online = true },
 
 		choices = {
@@ -799,8 +799,8 @@ Teen.events = {
 		text = "Someone at a party offers you something sketchy. They say it'll make you 'feel different.'",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Firmly say no and leave", effects = { Happiness = 5, Health = 3 }, setFlags = { resists_peer_pressure = true }, feedText = "You made a smart choice. You left the party." },
@@ -869,7 +869,7 @@ Teen.events = {
 				feedText = "Your nerves got the better of you...",
 				onResolve = function(state)
 					-- Lower chance when rushing
-					local baseChance = 0.35
+					local baseChance = 0.555
 					local smarts = state.Stats and state.Stats.Smarts or 50
 					local bonus = (smarts - 50) / 150
 					
@@ -1003,8 +1003,8 @@ Teen.events = {
 		text = "Your parents catch you with something you shouldn't have!",
 		question = "How do you handle the confrontation?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Lie about it", effects = { Happiness = -3 }, setFlags = { lies_to_parents = true }, feedText = "They didn't believe you. Now you're grounded AND they don't trust you." },
@@ -1089,8 +1089,8 @@ Teen.events = {
 		text = "You tried to sneak out at night but got caught!",
 		question = "What were you trying to do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Meet up with friends", effects = { Happiness = -4 }, setFlags = { grounded = true }, feedText = "Caught by mom on the way out. Grounded for a month." },
@@ -1124,8 +1124,8 @@ Teen.events = {
 		text = "Your best friend just told you they're moving to another state.",
 		question = "How do you handle this news?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.2,
-		cooldown = 5,
+		baseChance = 0.45,
+		cooldown = 2,
 		requiresFlags = { has_best_friend = true },
 
 		choices = {
@@ -1160,8 +1160,8 @@ Teen.events = {
 		text = "You got all dressed up for a date, but they never showed.",
 		question = "How do you react?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.2,
-		cooldown = 4,
+		baseChance = 0.45,
+		cooldown = 2,
 
 		choices = {
 			{ text = "Feel humiliated and cry", effects = { Happiness = -8, Looks = -2 }, feedText = "That really hurt. You deserved better." },
@@ -1207,7 +1207,7 @@ Teen.events = {
 				effects = {},
 				feedText = "You felt like you already knew what you were doing...",
 				onResolve = function(state)
-					local baseChance = 0.30 -- risky approach
+					local baseChance = 0.550 -- risky approach
 					
 					if math.random() < baseChance then
 						state:ModifyStat("Happiness", 5)
@@ -1385,8 +1385,8 @@ Teen.events = {
 		text = "Your English teacher nominated you for a prestigious essay contest!",
 		question = "What topic do you write about?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresStats = { Smarts = { min = 55 } },
 		
 		-- CRITICAL FIX: Random essay contest outcome
@@ -1453,7 +1453,7 @@ Teen.events = {
 		question = "What kind of car do you look for?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 5,
+		cooldown = 2,
 		requiresFlags = { has_license = true },
 		-- CRITICAL FIX: Check money requirement!
 		eligibility = function(state)
@@ -1560,8 +1560,8 @@ Teen.events = {
 		text = "You and your friends want to start a band together!",
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		
 		choices = {
 			{ text = "Lead vocals", effects = { Happiness = 8, Looks = 3 }, setFlags = { band_vocalist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the face of the band! Time to practice your stage presence." },
@@ -1671,7 +1671,7 @@ Teen.events = {
 		text = "You're having an anxiety attack. Heart racing, can't breathe...",
 		question = "How do you cope?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		
 		choices = {
@@ -1793,7 +1793,7 @@ Teen.events = {
 		text = "You see someone getting bullied at school.",
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.3,
+		baseChance = 0.55,
 		cooldown = 3,
 		
 		choices = {
@@ -1915,8 +1915,8 @@ Teen.events = {
 		text = "You got injured during practice or a game!",
 		question = "How serious is it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		requiresFlags = { varsity_athlete = true },
 		
 		-- CRITICAL FIX: Random injury severity
@@ -2269,7 +2269,7 @@ Teen.events = {
 		text = "Someone filmed you doing something and posted it online. It's blowing up!",
 		question = "What kind of viral moment was it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.25,
+		baseChance = 0.455,
 		oneTime = true,
 		
 		choices = {
@@ -2315,7 +2315,7 @@ Teen.events = {
 		question = "How do you handle this?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2353,7 +2353,7 @@ Teen.events = {
 		text = "A local business is looking for part-time help. They want to hire you!",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.35,
+		baseChance = 0.555,
 		oneTime = true,
 		maxOccurrences = 1,
 		blockedByFlags = { has_part_time_job = true },
@@ -2429,8 +2429,8 @@ Teen.events = {
 		text = "Your parents caught you sneaking back into the house at 3 AM!",
 		question = "What's your excuse?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2539,8 +2539,8 @@ Teen.events = {
 		text = "Someone screenshot your private messages and shared them publicly. People are talking.",
 		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.35,
-		cooldown = 4,
+		baseChance = 0.555,
+		cooldown = 2,
 		maxOccurrences = 2,
 		choices = {
 			{

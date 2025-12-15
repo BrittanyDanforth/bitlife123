@@ -1126,7 +1126,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 40,
 		isRoyalOnly = true,
 		oneTime = true, -- CRITICAL FIX #308: Only trigger once to prevent duplicate romance events
-		cooldown = 10, -- CRITICAL FIX: 10 year cooldown as extra safety
+		cooldown = 4, -- CRITICAL FIX: 10 year cooldown as extra safety
 		maxOccurrences = 1,
 		conditions = { 
 			requiresFlags = { married = nil },
@@ -1286,7 +1286,7 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		oneTime = true, -- CRITICAL FIX: Only happens once
 		maxOccurrences = 1,
-		cooldown = 100,
+		cooldown = 40,
 		conditions = { 
 			requiresFlags = { is_royalty = true },
 			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true },
@@ -1320,7 +1320,7 @@ RoyaltyEvents.LifeEvents = {
 	-- 1. Changed becomesMonarch to becomeMonarch (matching EventEngine)
 	-- 2. Added oneTime = true to prevent repeated coronations
 	-- 3. Added maxOccurrences = 1 as safety
-	-- 4. Added cooldown = 100 to prevent any repeat
+	-- 4. Added cooldown = 40 to prevent any repeat
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
@@ -1334,7 +1334,7 @@ RoyaltyEvents.LifeEvents = {
 		isMilestone = true,
 		oneTime = true, -- CRITICAL FIX: Only once ever!
 		maxOccurrences = 1, -- CRITICAL FIX: Safety - max 1 occurrence
-		cooldown = 100, -- CRITICAL FIX: Huge cooldown as extra safety
+		cooldown = 40, -- CRITICAL FIX: Huge cooldown as extra safety
 		priority = "critical",
 		conditions = { 
 			requiresFlags = { throne_ready = true },
@@ -1415,7 +1415,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 90,
 		isRoyalOnly = true,
 		-- CRITICAL FIX #440: Add cooldown and maxOccurrences to prevent spam
-		cooldown = 10,  -- At least 10 years between major scandals
+		cooldown = 4,  -- At least 10 years between major scandals
 		maxOccurrences = 3,  -- Max 3 major scandals per lifetime
 		choices = {
 			{
@@ -1457,7 +1457,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 90,
 		isRoyalOnly = true,
 		-- CRITICAL FIX #439: Add cooldown and maxOccurrences to prevent spam
-		cooldown = 8,  -- At least 8 years between paparazzi incidents
+		cooldown = 3,  -- At least 8 years between paparazzi incidents
 		maxOccurrences = 4,  -- Max 4 times per lifetime
 		choices = {
 			{
@@ -1497,7 +1497,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 8, -- CRITICAL FIX #315: 8 year cooldown to prevent spam
+		cooldown = 3, -- CRITICAL FIX #315: 8 year cooldown to prevent spam
 		maxOccurrences = 3, -- CRITICAL FIX: Limit to 3 family feuds per lifetime
 		choices = {
 			{
@@ -1815,7 +1815,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1888,7 +1888,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1923,7 +1923,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1994,7 +1994,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2032,7 +2032,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		choices = {
 			{ text = "Grand public celebration", effects = { Happiness = 15, Money = -500000 }, royaltyEffect = { popularity = 15 }, feed = "The nation celebrated!" },
 			{ text = "Intimate family gathering", effects = { Happiness = 20 }, royaltyEffect = { popularity = 5 }, feed = "A private celebration." },
@@ -2062,7 +2062,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{ text = "Issue dignified denial", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
 			{ text = "Sue for defamation", effects = { Happiness = -15, Money = -500000 }, royaltyEffect = { popularity = -3, scandals = 1 }, feed = "You took legal action." },
@@ -2141,7 +2141,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{ text = "Mental health", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!" },
 			{ text = "Environment", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!" },
@@ -2179,8 +2179,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 4,
-		baseChance = 0.3,
+		cooldown = 2,
+		baseChance = 0.55,
 		choices = {
 			{ text = "Sue the tabloid for defamation", effects = { Happiness = -5, Money = -500000 }, royaltyEffect = { popularity = 5 }, feed = "You fought back legally!" },
 			{ text = "Issue a dignified statement", effects = { Happiness = -3 }, royaltyEffect = { popularity = 8 }, feed = "Your grace under pressure impressed many." },
@@ -2196,7 +2196,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		choices = {
 			{
 				text = "Invest in sustainable energy",
@@ -2251,7 +2251,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		choices = {
 			{ text = "The pet stays - hire more staff", effects = { Happiness = 10, Money = -50000 }, feed = "Your loyalty to your pet is admirable!" },
 			{ text = "Get professional training", effects = { Happiness = 5, Money = -20000 }, feed = "Your pet is now palace-worthy." },
@@ -2333,7 +2333,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		choices = {
 			{ text = "Lead the traditional hunt", effects = { Health = 5, Happiness = 8 }, royaltyEffect = { popularity = -10 }, feed = "Traditionalists approved, activists didn't." },
 			{ text = "Convert it to a photography safari", effects = { Happiness = 10, Smarts = 3 }, royaltyEffect = { popularity = 15 }, feed = "Modern and environmentally conscious!" },
@@ -2349,8 +2349,8 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 20,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 8,
-		baseChance = 0.2,
+		cooldown = 3,
+		baseChance = 0.45,
 		choices = {
 			{ text = "Get ahead of the story - own it publicly", effects = { Happiness = -10 }, royaltyEffect = { popularity = 10 }, feed = "Your honesty was respected." },
 			{ text = "Deny everything through official channels", effects = { Happiness = -5 }, royaltyEffect = { popularity = -15 }, feed = "The cover-up made it worse." },
@@ -2396,7 +2396,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 20,
 		maxAge = 45,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 4,
 		conditions = { 
 			requiresFlags = { married = true },
@@ -2418,7 +2418,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 85,
 		isRoyalOnly = true,
-		cooldown = 4,
+		cooldown = 2,
 		maxOccurrences = 5,
 		choices = {
 			{ text = "Roll up sleeves and help personally", effects = { Happiness = 15, Health = -5 }, royaltyEffect = { popularity = 30 }, setFlags = { hands_on_royal = true }, feed = "Photos of you helping went viral!" },
@@ -2437,7 +2437,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		choices = {
 			{ text = "Divest immediately and apologize", effects = { Happiness = -5 }, royaltyEffect = { popularity = 10 }, setFlags = { ethical_investor = true }, feed = "Your swift action was praised." },
@@ -2475,7 +2475,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 60,
 		isRoyalOnly = true,
-		cooldown = 6,
+		cooldown = 2,
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { only_child = true } },
 		choices = {
@@ -2495,7 +2495,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		choices = {
 			{ text = "Issue a formal apology", effects = { Happiness = -10 }, royaltyEffect = { popularity = 10 }, setFlags = { apologized_diplomatically = true }, feed = "Crisis averted through diplomacy." },
@@ -2514,7 +2514,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 30,
 		maxAge = 95,
 		isRoyalOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		choices = {
 			{ text = "Full transparency about your condition", effects = { Happiness = 10, Health = 10 }, royaltyEffect = { popularity = 25 }, setFlags = { health_transparent = true }, feed = "The public sent overwhelming support." },
@@ -2553,7 +2553,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 2,
 		choices = {
 			{ text = "Increase security and continue duties", effects = { Happiness = -5, Health = -5 }, royaltyEffect = { popularity = 15 }, setFlags = { brave_royal = true }, feed = "Your courage under pressure impressed the nation." },
@@ -2659,7 +2659,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 8,
+		cooldown = 3,
 		maxOccurrences = 4,
 		choices = {
 			{ text = "Focus on charity and humanitarian causes", effects = { Happiness = 15 }, royaltyEffect = { popularity = 25 }, setFlags = { humanitarian_tour = true }, feed = "Your compassion touched millions worldwide." },
@@ -2698,7 +2698,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 35,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 15,
+		cooldown = 5,
 		maxOccurrences = 1,
 		choices = {
 			{ text = "Full transparency about your condition", effects = { Happiness = 10, Health = 10 }, royaltyEffect = { popularity = 30 }, setFlags = { health_advocate = true }, feed = "Your courage inspired millions." },
@@ -2716,7 +2716,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 10,
+		cooldown = 4,
 		maxOccurrences = 2,
 		choices = {
 			{ text = "Address it head-on in a public interview", effects = { Happiness = 5 }, royaltyEffect = { popularity = 15 }, setFlags = { faced_scandal = true }, feed = "Your honesty helped contain the damage." },
@@ -2735,7 +2735,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		maxOccurrences = 3,
 		choices = {
 			{ text = "Feature them in official photos", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
@@ -4488,7 +4488,7 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 5,
+		cooldown = 2,
 		conditions = { requiresFlags = { is_royalty = true, royal_adult = true } },
 		choices = {
 			{

@@ -835,8 +835,8 @@ RapperContentCreatorEvents.events = {
 		text = "A promoter wants you to do a 15-city tour! Opening for a bigger artist. This is MAJOR but grueling.",
 		question = "Do you take the tour?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 8,
+		baseChance = 0.45,
+		cooldown = 3,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - Tours happen to growing rappers!
 		-- CRITICAL FIX #509: Use isRapper helper
@@ -892,8 +892,8 @@ RapperContentCreatorEvents.events = {
 		text = "1 MILLION copies sold! Your single is officially PLATINUM! This is elite status!",
 		question = "How do you celebrate?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.15,
-		cooldown = 15,
+		baseChance = 0.4,
+		cooldown = 5,
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - Platinum can happen to any rapper!
@@ -942,7 +942,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you prepare?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.1,
-		cooldown = 20,
+		cooldown = 6,
 		oneTime = true,
 		category = "career_music",
 		isCelebrityOnly = true,
@@ -1134,7 +1134,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 5,
+		cooldown = 2,
 		oneTime = true,
 		category = "career_creative",
 		requiresFlags = { first_video_posted = true },
@@ -1174,8 +1174,8 @@ RapperContentCreatorEvents.events = {
 		text = "One of your videos EXPLODED! 5 million views and counting! Your phone won't stop buzzing with notifications!",
 		question = "How do you handle sudden fame?",
 		minAge = 13, maxAge = 50,
-		baseChance = 0.08,
-		cooldown = 10,
+		baseChance = 0.32,
+		cooldown = 4,
 		oneTime = false,
 		maxOccurrences = 5,
 		category = "career_creative",
@@ -1235,8 +1235,8 @@ RapperContentCreatorEvents.events = {
 		text = "YouTube sent you the SILVER PLAY BUTTON! 100,000 subscribers! You're officially a REAL creator!",
 		question = "How do you feel?",
 		minAge = 13, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 10,
+		baseChance = 0.55,
+		cooldown = 4,
 		oneTime = true,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Silver play button is a milestone for ANY creator!
@@ -1275,8 +1275,8 @@ RapperContentCreatorEvents.events = {
 		text = "ONE MILLION SUBSCRIBERS! You're in the TOP 0.1% of creators! The GOLD PLAY BUTTON arrives!",
 		question = "You made it! What now?",
 		minAge = 16, maxAge = 60,
-		baseChance = 0.2,
-		cooldown = 20,
+		baseChance = 0.45,
+		cooldown = 6,
 		oneTime = true,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Gold play button is a milestone for ANY creator!
@@ -1457,8 +1457,8 @@ RapperContentCreatorEvents.events = {
 		text = "Time to make a music video! Visuals are crucial for going viral. How much do you spend?",
 		question = "What's your budget approach?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.35,
-		cooldown = 4,
+		baseChance = 0.555,
+		cooldown = 2,
 		category = "career_music",
 		requiresFlags = { first_track_recorded = true },
 		
@@ -1547,8 +1547,8 @@ RapperContentCreatorEvents.events = {
 		text = "Your track with the fire sample is getting copyright claimed. The original artist's label wants $10,000 for clearance or they'll take down the song!",
 		question = "What do you do?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.455,
+		cooldown = 2,
 		category = "career_music",
 		requiresFlags = { has_mixtape = true },
 		
@@ -1595,8 +1595,8 @@ RapperContentCreatorEvents.events = {
 		text = "A mid-level rapper is performing in your city and needs an opening act. You could perform for 15 minutes to THEIR crowd!",
 		question = "Do you take the slot?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		category = "career_music",
 		requiresFlags = { stage_experience = true },
 		eligibility = function(state)
@@ -1641,7 +1641,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 16, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 5,
+		cooldown = 2,
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 10K is a milestone for ANY rapper!
@@ -1684,7 +1684,7 @@ RapperContentCreatorEvents.events = {
 		question = "You're leveling up!",
 		minAge = 17, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 8,
+		cooldown = 3,
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 100K is a milestone for ANY rapper!
@@ -1729,8 +1729,8 @@ RapperContentCreatorEvents.events = {
 		text = "HALF A MILLION MONTHLY LISTENERS! You're mainstream now! Radio play, playlist covers, brand deals incoming!",
 		question = "You've MADE IT!",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 10,
+		baseChance = 0.55,
+		cooldown = 4,
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 500K is a milestone for ANY rapper!
@@ -1775,8 +1775,8 @@ RapperContentCreatorEvents.events = {
 		text = "ONE MILLION! You're a STAR! Top of charts, sold out shows, everyone knows your name!",
 		question = "LEGENDARY STATUS!",
 		minAge = 18, maxAge = 65,
-		baseChance = 0.2,
-		cooldown = 15,
+		baseChance = 0.45,
+		cooldown = 5,
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 1M is a milestone for ANY rapper!
@@ -1825,7 +1825,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you handle burnout?",
 		minAge = 15, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 6,
+		cooldown = 2,
 		category = "career_creative",
 		eligibility = function(state)
 			return state.Flags and (state.Flags.daily_uploader or state.Flags.content_creator)
@@ -1870,8 +1870,8 @@ RapperContentCreatorEvents.events = {
 		text = "A creator with 500K subscribers reached out! They want to do a collab video. This could EXPLODE your growth!",
 		question = "How do you approach this?",
 		minAge = 15, maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 5,
+		baseChance = 0.455,
+		cooldown = 2,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Collabs happen to growing creators!
 		eligibility = function(state)
@@ -1910,8 +1910,8 @@ RapperContentCreatorEvents.events = {
 		text = "A brand wants to sponsor your videos! They're offering $1,000 per video to promote their product. But your audience might see it as selling out...",
 		question = "Do you take the sponsorship?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.35,
-		cooldown = 4,
+		baseChance = 0.555,
+		cooldown = 2,
 		category = "career_creative",
 		eligibility = function(state)
 			local subs = state.FameState and state.FameState.subscribers or 0
@@ -1961,8 +1961,8 @@ RapperContentCreatorEvents.events = {
 		text = "Another creator made a video about you! They're claiming you 'stole' their content idea. Your comments are a warzone!",
 		question = "How do you respond?",
 		minAge = 15, maxAge = 50,
-		baseChance = 0.25,
-		cooldown = 6,
+		baseChance = 0.455,
+		cooldown = 2,
 		category = "career_creative",
 		eligibility = function(state)
 			local subs = state.FameState and state.FameState.subscribers or 0
@@ -2011,8 +2011,8 @@ RapperContentCreatorEvents.events = {
 		text = "YouTube demonetized your latest video for 'guideline violations.' You didn't break any rules! This is your income!",
 		question = "What do you do?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.2,
-		cooldown = 8,
+		baseChance = 0.45,
+		cooldown = 3,
 		category = "career_creative",
 		requiresFlags = { monetized = true },
 		
@@ -2060,8 +2060,8 @@ RapperContentCreatorEvents.events = {
 		text = "Your audience is asking for merch! Time to launch your own clothing line. But it requires upfront investment...",
 		question = "How big do you go?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.3,
-		cooldown = 8,
+		baseChance = 0.55,
+		cooldown = 3,
 		category = "career_creative",
 		eligibility = function(state)
 			local subs = state.FameState and state.FameState.subscribers or 0

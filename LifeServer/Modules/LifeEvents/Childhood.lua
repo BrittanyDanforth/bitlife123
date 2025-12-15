@@ -355,7 +355,7 @@ Childhood.events = {
 		question = "Do you volunteer?",
 		minAge = 6, maxAge = 9,
 		baseChance = 0.7,
-		cooldown = 5,
+		cooldown = 2,
 
 		-- META
 		stage = STAGE,
@@ -602,7 +602,7 @@ Childhood.events = {
 		question = "How do you react?",
 		minAge = 5, maxAge = 10,
 		baseChance = 0.5,
-		cooldown = 4,
+		cooldown = 2,
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -624,7 +624,7 @@ Childhood.events = {
 		question = "What do you do?",
 		minAge = 3, maxAge = 8,
 		baseChance = 0.4,
-		cooldown = 5,
+		cooldown = 2,
 
 		stage = STAGE,
 		ageBand = "early_childhood",
@@ -1164,7 +1164,7 @@ Childhood.events = {
 		question = "What kind of hideout do you build?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 4,
+		cooldown = 2,
 
 		stage = STAGE,
 		ageBand = "late_childhood",
@@ -1320,7 +1320,7 @@ Childhood.events = {
 		question = "How do you handle the anxiety?",
 		minAge = 5, maxAge = 11,
 		baseChance = 0.4,
-		cooldown = 4,
+		cooldown = 2,
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2451,8 +2451,8 @@ Childhood.events = {
 		text = "You've become one of the popular kids at recess!",
 		question = "How do you use your popularity?",
 		minAge = 6, maxAge = 11,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.55,
+		cooldown = 2,
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2473,7 +2473,7 @@ Childhood.events = {
 		text = "Your beloved pet passed away...",
 		question = "How do you cope with the loss?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.2,
+		baseChance = 0.45,
 		cooldown = 6,
 		requiresFlags = { has_pet = true },
 		
@@ -2708,8 +2708,8 @@ Childhood.events = {
 		text = "You were eating and accidentally swallowed your loose tooth!",
 		question = "What do you do about the tooth fairy?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.3,
-		cooldown = 5,
+		baseChance = 0.55,
+		cooldown = 2,
 		
 		stage = STAGE,
 		ageBand = "childhood",

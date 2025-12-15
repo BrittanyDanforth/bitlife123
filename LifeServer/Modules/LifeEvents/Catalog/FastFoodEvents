@@ -246,7 +246,7 @@ local events = {
         weight = 6,
         minAge = 14,
         maxAge = 30,
-        cooldown = 4,
+        cooldown = 2,
         eligibility = hasServiceJob,
         choices = {
             {
@@ -304,7 +304,7 @@ local events = {
         weight = 7,
         minAge = 16,
         maxAge = 28,
-        cooldown = 5,
+        cooldown = 2,
         oneTime = true,
         eligibility = hasServiceJob,
         blockedByFlags = { shift_lead = true, manager = true },
@@ -368,7 +368,7 @@ local events = {
         weight = 6,
         minAge = 18,
         maxAge = 28,
-        cooldown = 6,
+        cooldown = 2,
         eligibility = hasServiceJob,
         choices = {
             {
@@ -417,7 +417,7 @@ local events = {
         weight = 5,
         minAge = 14,
         maxAge = 35,
-        cooldown = 5,
+        cooldown = 2,
         eligibility = hasServiceJob,
         choices = {
             {
@@ -468,7 +468,7 @@ local events = {
         weight = 6,
         minAge = 16,
         maxAge = 35,
-        cooldown = 6,
+        cooldown = 2,
         eligibility = hasServiceJob,
         choices = {
             {
@@ -525,7 +525,7 @@ local events = {
         weight = 6,
         minAge = 16,
         maxAge = 35,
-        cooldown = 8,
+        cooldown = 3,
         eligibility = hasServiceJob,
         choices = {
             {
