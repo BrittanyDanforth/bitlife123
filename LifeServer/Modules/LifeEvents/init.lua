@@ -64,7 +64,8 @@ local StageCategories = {
 	child       = { "childhood", "milestones", "random", "career_racing", "royalty" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_entertainment", "royalty", "celebrity" },
+	-- CRITICAL FIX #631: Added career_creative for teen content creators!
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "royalty", "celebrity" },
 	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
 	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
 	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
@@ -188,16 +189,23 @@ local function loadEventModule(moduleName, categoryName)
 		events = combinedEvents
 	end
 	
-	local category = categoryName or moduleName:lower()
-	EventsByCategory[category] = EventsByCategory[category] or {}
+	local defaultCategory = categoryName or moduleName:lower()
+	EventsByCategory[defaultCategory] = EventsByCategory[defaultCategory] or {}
 	
 	local count = 0
 	for _, event in ipairs(events) do
 		if event.id then
-			event._category = category
+			-- CRITICAL FIX #640: Respect individual event categories!
+			-- If event has its own category, use that instead of module default
+			-- This is crucial for RapperContentCreatorEvents which has both
+			-- career_music (rapper) and career_creative (content creator) events
+			local eventCategory = event.category or defaultCategory
+			EventsByCategory[eventCategory] = EventsByCategory[eventCategory] or {}
+			
+			event._category = eventCategory
 			event._source = moduleName
 			AllEvents[event.id] = event
-			table.insert(EventsByCategory[category], event)
+			table.insert(EventsByCategory[eventCategory], event)
 			count += 1
 		end
 	end
@@ -1717,28 +1725,78 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #512: RAPPER/CONTENT CREATOR EVENT PRIORITY
-	-- Rappers/streamers/creators should get career-specific events 40% of the time
-	-- Without this, they were barely getting any career events despite being employed!
+	-- CRITICAL FIX #600: RAPPER/CONTENT CREATOR EVENT PRIORITY - MASSIVE BUFF
+	-- Rappers/streamers/creators should get career-specific events MOST of the time!
+	-- Previous 40% was WAY too low - players went entire lives without music events!
+	-- NOW: 80% chance for music career events when player has music job
+	-- Also: GUARANTEED first track event for new rappers who don't have it yet!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
-	                         flags.content_creator or flags.streamer or flags.first_track_recorded
-	local hasEntertainmentJob = state.CurrentJob and (
-		(state.CurrentJob.category or ""):lower() == "entertainment" or
+	local hasRapperJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("hip.?hop")
+	)
+	local hasCreatorJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("streamer") or
-		(state.CurrentJob.id or ""):lower():find("creator")
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+	                         flags.content_creator or flags.streamer or flags.first_track_recorded or
+	                         flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper
+	local hasEntertainmentJob = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or hasRapperJob or hasCreatorJob
 	)
 	
-	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.40 then
+	-- CRITICAL FIX #601: GUARANTEED first track event for rappers who haven't recorded yet!
+	-- This is the FOUNDATION event that unlocks ALL other rapper progression events
+	-- Without this, players get stuck forever with no rapper events
+	if (hasRapperJob or isRapperOrCreator) and not flags.first_track_recorded then
+		local firstTrackEvent = AllEvents["rapper_first_track"]
+		if firstTrackEvent and canEventTrigger(firstTrackEvent, state) then
+			-- GUARANTEED trigger for first track!
+			table.insert(selectedEvents, firstTrackEvent)
+			recordEventShown(state, firstTrackEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CRITICAL FIX #602: GUARANTEED first video for creators who haven't posted yet!
+	if (hasCreatorJob or flags.content_creator or flags.streamer) and not flags.first_video_posted then
+		local firstVideoEvent = AllEvents["creator_first_video"]
+		if firstVideoEvent and canEventTrigger(firstVideoEvent, state) then
+			table.insert(selectedEvents, firstVideoEvent)
+			recordEventShown(state, firstVideoEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CRITICAL FIX #603: Music career events now have 80% chance (was 40%!)
+	-- This ensures rappers/creators actually GET their career events instead of generic life events
+	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.80 then
 		local musicEvents = EventsByCategory["career_music"] or {}
+		local creativeEvents = EventsByCategory["career_creative"] or {}
 		local eligibleMusicEvents = {}
 		
+		-- Collect music events
 		for _, event in ipairs(musicEvents) do
 			if canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)
 				if occurCount == 0 or not event.oneTime then
 					table.insert(eligibleMusicEvents, event)
+				end
+			end
+		end
+		
+		-- Also collect creative events for content creators
+		if hasCreatorJob or flags.content_creator or flags.streamer then
+			for _, event in ipairs(creativeEvents) do
+				if canEventTrigger(event, state) then
+					local occurCount = (history.occurrences[event.id] or 0)
+					if occurCount == 0 or not event.oneTime then
+						table.insert(eligibleMusicEvents, event)
+					end
 				end
 			end
 		end
@@ -1841,7 +1899,21 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- Check for quiet year (no events)
+	-- CRITICAL FIX #630: Entertainment careers should NEVER have quiet years!
+	-- Rappers/streamers/creators need consistent career events for progression
 	local quietChance = stage.quietChance or 0.4
+	local hasEntertainmentCareer = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator")
+	)
+	
+	-- Entertainment careers get HALF the quiet chance - they need events!
+	if hasEntertainmentCareer then
+		quietChance = quietChance * 0.3  -- 70% less likely to be quiet
+	end
+	
 	if #candidateEvents == 0 or RANDOM:NextNumber() < quietChance then
 		return {}
 	end

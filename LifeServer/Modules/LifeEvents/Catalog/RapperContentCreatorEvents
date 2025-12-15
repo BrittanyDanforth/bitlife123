@@ -85,19 +85,35 @@ RapperContentCreatorEvents.events = {
 		emoji = "🎤",
 		text = "You've been writing bars for months. Time to record something. You found a cheap studio willing to let you record for $50.",
 		question = "What kind of track do you make?",
-		minAge = 14, maxAge = 35,
-		baseChance = 0.8,
-		cooldown = 1,
+		minAge = 14, maxAge = 55,  -- CRITICAL FIX #610: Extended max age - anyone can start rapping!
+		baseChance = 1.0,  -- CRITICAL FIX #611: GUARANTEED trigger chance (was 0.8)
+		cooldown = 0,  -- CRITICAL FIX #612: No cooldown - this is a one-time foundation event
 		oneTime = true,
+		priority = "high",  -- CRITICAL FIX #613: High priority so it triggers ASAP
+		isMilestone = true,  -- CRITICAL FIX #614: Treat as milestone for priority selection
 		category = "career_music",
-		-- CRITICAL FIX #509: Check for rapper job OR pursuing_rap flag
+		-- CRITICAL FIX #615: Simplified eligibility - ANY rapper job or flag works
 		eligibility = function(state)
-			local hasRapperJob = state.CurrentJob and (
-				(state.CurrentJob.id or ""):lower():find("rapper") or
-				(state.CurrentJob.category or ""):lower() == "entertainment" and (state.CurrentJob.name or ""):lower():find("rapper")
-			)
-			local hasRapperFlag = state.Flags and (state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist)
-			return hasRapperJob or hasRapperFlag
+			-- Check job first
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local jobName = (state.CurrentJob.name or ""):lower()
+				local jobCat = (state.CurrentJob.category or ""):lower()
+				if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
+					return true
+				end
+				if jobCat == "entertainment" and (jobId:find("underground") or jobId:find("rapper")) then
+					return true
+				end
+			end
+			-- Check flags
+			if state.Flags then
+				if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
+				   or state.Flags.hip_hop_experience then
+					return true
+				end
+			end
+			return false
 		end,
 		blockedByFlags = { first_track_recorded = true },
 		
@@ -980,18 +996,33 @@ RapperContentCreatorEvents.events = {
 		emoji = "📹",
 		text = "You finally set up your YouTube/TikTok channel. Time to post your first video!",
 		question = "What kind of content do you make?",
-		minAge = 13, maxAge = 40,
-		baseChance = 0.6,
-		cooldown = 1,
+		minAge = 13, maxAge = 55,  -- CRITICAL FIX #620: Extended max age
+		baseChance = 1.0,  -- CRITICAL FIX #621: GUARANTEED trigger
+		cooldown = 0,  -- CRITICAL FIX #622: No cooldown for foundation event
 		oneTime = true,
+		priority = "high",  -- CRITICAL FIX #623: High priority
+		isMilestone = true,  -- CRITICAL FIX #624: Treat as milestone
 		category = "career_creative",
-		-- CRITICAL: Works with pursuing_streaming OR pursuing_influencer OR pursuing_content
+		-- CRITICAL FIX #625: Better eligibility check for content creators
 		eligibility = function(state)
+			-- Check job first
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local jobName = (state.CurrentJob.name or ""):lower()
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") then
+					return true
+				end
+				if jobName:find("creator") or jobName:find("streamer") or jobName:find("youtuber") then
+					return true
+				end
+			end
+			-- Check flags
 			local flags = state.Flags or {}
-			if flags.pursuing_streaming or flags.pursuing_influencer or flags.pursuing_content or flags.content_creator then
+			if flags.pursuing_streaming or flags.pursuing_influencer or flags.pursuing_content 
+			   or flags.content_creator or flags.streamer or flags.youtuber then
 				return true
 			end
-			return false, "Need to be pursuing content creation"
+			return false
 		end,
 		blockedByFlags = { first_video_posted = true },
 		
