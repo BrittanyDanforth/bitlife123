@@ -23,24 +23,43 @@ local RapperContentCreatorEvents = {}
 -- These helpers check BOTH the job AND the flags to ensure events trigger properly
 -- ════════════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MOBILE-7: STRICT rapper check - MUST NOT trigger for streamers!
+-- BUG: Rapper events were firing for streamers because checks were too loose
+-- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
-	-- Check job
+	-- FIRST: Check if player is a streamer/creator - if so, return FALSE immediately!
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+			return false  -- STREAMER/CREATOR - NOT a rapper!
+		end
+	end
+	if state.Flags and (state.Flags.streamer or state.Flags.content_creator or state.Flags.pursuing_streaming) then
+		-- If player has streamer flags but NOT rapper flags, they're NOT a rapper
+		if not (state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist) then
+			return false
+		end
+	end
+	
+	-- Check for rapper job
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
 		local jobName = (state.CurrentJob.name or ""):lower()
-		local jobCat = (state.CurrentJob.category or ""):lower()
 		if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
 			return true
 		end
-		if (jobCat == "entertainment" or jobCat == "music") and (jobId:find("underground") or jobId:find("local_rapper") or jobId:find("buzzing") or jobId:find("signed") or jobId:find("hot_rapper") or jobId:find("mainstream") or jobId:find("superstar") or jobId:find("legend")) then
+		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or 
+		   jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper") then
 			return true
 		end
 	end
-	-- Check flags
+	-- Check rapper flags
 	if state.Flags then
 		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
 		   or state.Flags.hip_hop_experience or state.Flags.trap_rapper or state.Flags.lyrical_rapper
-		   or state.Flags.melodic_rapper or state.Flags.drill_rapper then
+		   or state.Flags.melodic_rapper or state.Flags.drill_rapper or state.Flags.first_track_recorded then
 			return true
 		end
 	end
@@ -83,30 +102,29 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_first_track",
 		title = "🎤 Recording Your First Track",
 		emoji = "🎤",
-		text = "You've been writing bars for months. Time to record something. You found a cheap studio willing to let you record for $50.",
-		question = "What kind of track do you make?",
-		minAge = 14, maxAge = 55,  -- CRITICAL FIX #610: Extended max age - anyone can start rapping!
-		baseChance = 1.0,  -- CRITICAL FIX #611: GUARANTEED trigger chance (was 0.8)
-		cooldown = 0,  -- CRITICAL FIX #612: No cooldown - this is a one-time foundation event
+		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like weed and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
+		question = "This first track will shape your whole career. What's your style?",
+		minAge = 14, maxAge = 55,
+		baseChance = 1.0,
+		cooldown = 0,
 		oneTime = true,
-		priority = "high",  -- CRITICAL FIX #613: High priority so it triggers ASAP
-		isMilestone = true,  -- CRITICAL FIX #614: Treat as milestone for priority selection
-		category = "career_music",
-		-- CRITICAL FIX #615: Simplified eligibility - ANY rapper job or flag works
+		priority = "high",
+		isMilestone = true,
+		category = "career_rapper",
 		eligibility = function(state)
-			-- Check job first
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+					return false, "This event is for rappers, not content creators"
+				end
+			end
 			if state.CurrentJob then
 				local jobId = (state.CurrentJob.id or ""):lower()
 				local jobName = (state.CurrentJob.name or ""):lower()
-				local jobCat = (state.CurrentJob.category or ""):lower()
 				if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
 					return true
 				end
-				if jobCat == "entertainment" and (jobId:find("underground") or jobId:find("rapper")) then
-					return true
-				end
 			end
-			-- Check flags
 			if state.Flags then
 				if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
 				   or state.Flags.hip_hop_experience then
@@ -119,51 +137,71 @@ RapperContentCreatorEvents.events = {
 		
 		choices = {
 			{
-				text = "Aggressive trap banger",
-				effects = { Happiness = 10, Money = -50 },
+				text = "🔥 Aggressive trap banger - 808s and energy",
+				effects = { Happiness = 15, Smarts = 2, Health = -3, Money = -50 },  -- ENHANCED: Recording is tiring!
 				setFlags = { first_track_recorded = true, trap_rapper = true },
-				feedText = "🎤 You recorded your first track! Hard-hitting trap beat. Raw but it's YOURS!",
+				feedText = "🎤 YOU DID IT! 4 hours in that basement, voice raw from 23 takes, but you walked out with YOUR FIRST SONG. It's aggressive, the 808s hit hard, and when you played it back in the car... goosebumps. You sent it to 3 friends - they're already asking for more. This is just the beginning. Your Spotify artist page is LIVE.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "trap"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Lyrical conscious rap",
-				effects = { Happiness = 10, Money = -50 },
+				text = "📚 Lyrical conscious rap - real bars, real message",
+				effects = { Happiness = 12, Smarts = 5, Health = -2, Money = -50 },  -- ENHANCED: Lyrical = smarts boost
 				setFlags = { first_track_recorded = true, lyrical_rapper = true },
-				feedText = "🎤 You recorded your first track! Deep lyrics, real message. Underground heads will love it!",
+				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'damn, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "lyrical"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Melodic/Auto-tune vibes",
-				effects = { Happiness = 10, Money = -50 },
+				text = "🎵 Melodic auto-tune vibes - modern sound",
+				effects = { Happiness = 15, Looks = 2, Health = -2, Money = -50 },  -- ENHANCED: Melodic = image boost
 				setFlags = { first_track_recorded = true, melodic_rapper = true },
-				feedText = "🎤 You recorded your first track! Melodic flows and auto-tune. Modern sound!",
+				feedText = "🎤 THE AUTO-TUNE MADE YOUR VOICE SOUND CRAZY. That melodic flow, the emotional delivery... Marcus had to double-check you hadn't done this before. You layered harmonies, ad-libs, everything. It sounds like something that could be on the radio. TikTok could blow this up. You're already thinking about the music video...",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "melodic"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Drill/Street rap",
-				effects = { Happiness = 10, Money = -50 },
+				text = "🔫 Drill/Street rap - raw and real",
+				effects = { Happiness = 12, Health = -4, Money = -50 },  -- ENHANCED: Drill is risky
 				setFlags = { first_track_recorded = true, drill_rapper = true },
 				feedText = "🎤 You recorded your first track! Hard drill beat. Streets will feel this!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "drill"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 		},
@@ -176,9 +214,46 @@ RapperContentCreatorEvents.events = {
 		question = "How do you promote yourself?",
 		minAge = 14, maxAge = 40,
 		baseChance = 0.6,
-		cooldown = 2,
-		category = "career_music",
+		cooldown = 3, -- CRITICAL FIX: Increased cooldown to reduce spam
+		maxOccurrences = 2, -- CRITICAL FIX: Can only happen twice max
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #AAA-7: Block this event if player has progressed past underground stage
+		-- This was firing even when player had already done shows, gotten signed, etc.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		blockedByFlags = { 
+			first_show_done = true,      -- Already done live shows
+			signed_artist = true,        -- Already signed to a label
+			label_deal = true,           -- Has a label deal
+			charting_artist = true,      -- Has charted
+			mainstream_fame = true,      -- Is mainstream
+			buzz = true,                 -- Already has buzz
+			local_fame = true,           -- Known locally
+			viral_hit = true,            -- Had a viral moment
+			professional_music_career = true, -- Pro career
+		},
+		-- CRITICAL FIX: Also check career progression level
+		eligibility = function(state)
+			-- Block if job is beyond underground level
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				-- These are post-soundcloud-grind positions
+				if jobId:find("local_rapper") or jobId:find("buzzing") or jobId:find("signed") 
+				   or jobId:find("hot_rapper") or jobId:find("mainstream") or jobId:find("superstar") 
+				   or jobId:find("legend") then
+					return false
+				end
+			end
+			-- Block if fame is too high (past underground level)
+			if state.FameState then
+				local listeners = state.FameState.monthlyListeners or 0
+				if listeners > 5000 then
+					return false -- Too big for SoundCloud grind
+				end
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -235,7 +310,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.7, -- CRITICAL FIX #518: Increased from 0.5 to 0.7
 		cooldown = 1, -- CRITICAL FIX #519: Reduced from 3 to 1 for more events
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #520: Accept multiple flags for rapper eligibility
 		eligibility = function(state)
 			if state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper or state.Flags.underground_artist) then
@@ -288,10 +363,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 15, maxAge = 45,
 		baseChance = 0.65, -- CRITICAL FIX #521: Increased from 0.4 to 0.65
 		cooldown = 1, -- CRITICAL FIX #522: Reduced from 2 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #523: Use eligibility function instead of requiresFlags
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -334,10 +409,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 15, maxAge = 40,
 		baseChance = 0.6, -- CRITICAL FIX #524: Increased from 0.35 to 0.6
 		cooldown = 1, -- CRITICAL FIX #525: Reduced from 3 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #526: Use eligibility function
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper))
+			return isRapper(state)  -- FIXED: Strict rapper check
 		end,
 		
 		choices = {
@@ -393,10 +468,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.6, -- CRITICAL FIX #527: Increased from 0.3 to 0.6
 		cooldown = 2, -- CRITICAL FIX #528: Reduced from 4 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #529: Removed high listener requirement, just need to be a rapper
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -434,7 +509,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.6, -- CRITICAL FIX #530: Increased from 0.35 to 0.6
 		cooldown = 1, -- CRITICAL FIX #531: Reduced from 3 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #532: Loosened requirements - just need to be a rapper
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.first_show_done or state.Flags.stage_experience or state.Flags.first_track_recorded))
@@ -487,10 +562,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55, -- CRITICAL FIX #533: Increased from 0.25 to 0.55
 		cooldown = 2, -- CRITICAL FIX #534: Reduced from 5 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #535: Loosened requirements - just need rapper status
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -529,10 +604,10 @@ RapperContentCreatorEvents.events = {
 		cooldown = 2, -- CRITICAL FIX #539: Reduced from 5 to 2
 		oneTime = false,
 		maxOccurrences = 10, -- CRITICAL FIX #540: Increased from 5 to 10
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #541: Loosened eligibility - just need rapper status
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -583,7 +658,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #542: Increased from 0.2 to 0.5
 		cooldown = 2, -- CRITICAL FIX #543: Reduced from 6 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #544: Loosened eligibility - rappers can get label interest
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep or state.Flags.first_track_recorded))
@@ -636,15 +711,35 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_bigger_artist_feature",
 		title = "🌟 Big Artist Wants You on Their Track!",
 		emoji = "🌟",
-		text = "A rapper with 500K monthly listeners reached out! They heard your mixtape and want you on their next single. This is MAJOR exposure!",
+		-- CRITICAL FIX #USER-33: Use getDynamicText to dynamically show an artist BIGGER than you!
+		getDynamicText = function(state)
+			local myListeners = state.FameState and state.FameState.monthlyListeners or 0
+			-- Calculate a bigger artist (2x to 5x your listeners, minimum 50K)
+			local biggerArtist = math.max(50000, math.floor(myListeners * math.random(20, 50) / 10))
+			-- Format with K/M
+			local formattedListeners
+			if biggerArtist >= 1000000 then
+				formattedListeners = string.format("%.1fM", biggerArtist / 1000000)
+			else
+				formattedListeners = string.format("%dK", math.floor(biggerArtist / 1000))
+			end
+			return { text = string.format("A rapper with %s monthly listeners reached out! They heard your music and want you on their next single. This is MAJOR exposure!", formattedListeners) }
+		end,
+		text = "A bigger artist reached out! They heard your music and want you on their next single. This is MAJOR exposure!",
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.45, -- CRITICAL FIX #545: Increased from 0.15 to 0.45
-		cooldown = 2, -- CRITICAL FIX #546: Reduced from 8 to 2
-		category = "career_music",
-		-- CRITICAL FIX #547: Loosened eligibility - any rapper can attract attention
+		baseChance = 0.35,
+		cooldown = 4,
+		maxOccurrences = 3,
+		category = "career_rapper",
+		-- CRITICAL FIX #USER-33: Require real progression before big collabs
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
+			if not isRapper(state) then return false end
+			local flags = state.Flags or {}
+			local hasProgression = flags.did_first_show or flags.has_mixtape or flags.has_ep or 
+				flags.local_fame or flags.buzz or flags.did_local_show
+			local listeners = state.FameState and state.FameState.monthlyListeners or 0
+			return hasProgression or listeners >= 10000
 		end,
 		
 		choices = {
@@ -655,9 +750,13 @@ RapperContentCreatorEvents.events = {
 				feedText = "🌟 YOUR VERSE WENT CRAZY! Everyone saying you STOLE the song! Career-defining moment!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(30000, 80000)
+					-- Scale boost based on current size
+					local currentListeners = state.FameState.monthlyListeners or 0
+					local boost = math.max(30000, math.floor(currentListeners * 0.5) + math.random(20000, 50000))
+					state.FameState.monthlyListeners = currentListeners + boost
 					state.Fame = (state.Fame or 0) + 15
 					state.FameState.majorFeatures = (state.FameState.majorFeatures or 0) + 1
+					state:AddFeed(string.format("🌟 Feature dropped! You gained %d new listeners! HUGE W!", boost))
 				end,
 			},
 			{
@@ -666,7 +765,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "Solid verse but you held back. Some fans noticed. 'Should've went harder.' Missed opportunity to shine.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(10000, 25000)
+					local currentListeners = state.FameState.monthlyListeners or 0
+					local boost = math.max(10000, math.floor(currentListeners * 0.2) + math.random(5000, 15000))
+					state.FameState.monthlyListeners = currentListeners + boost
 					state.Fame = (state.Fame or 0) + 7
 				end,
 			},
@@ -679,14 +780,13 @@ RapperContentCreatorEvents.events = {
 		text = "Someone used your track in a TikTok and it BLEW UP! 10 million views! Your streams are EXPLODING!",
 		question = "How do you capitalize?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.4, -- CRITICAL FIX #567: Increased from 0.1 to 0.4
-		cooldown = 2, -- CRITICAL FIX #568: Reduced from 10 to 2
+		baseChance = 0.4,
+		cooldown = 2,
 		oneTime = false,
-		maxOccurrences = 5, -- CRITICAL FIX #569: Increased from 3 to 5
-		category = "career_music",
-		-- CRITICAL FIX #570: Loosened eligibility - any rapper can go viral
+		maxOccurrences = 5,
+		category = "career_rapper",
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)
 		end,
 		
 		choices = {
@@ -697,11 +797,38 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local boost = math.random(50000, 150000)
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
+					local newListeners = (state.FameState.monthlyListeners or 0) + boost
+					state.FameState.monthlyListeners = newListeners
 					state.Fame = (state.Fame or 0) + 25
 					state.FameState.viralMoments = (state.FameState.viralMoments or 0) + 1
-					state.Money = (state.Money or 0) + math.random(5000, 20000) -- Streaming revenue
-					state:AddFeed(string.format("📱 You gained %d new monthly listeners! VIRAL SUCCESS!", boost))
+					state.Money = (state.Money or 0) + math.random(5000, 20000)
+					
+					-- CRITICAL FIX #USER-32: UPDATE JOB TITLE based on new listener count!
+					-- This is the KEY fix - going viral should upgrade your career!
+					state.CurrentJob = state.CurrentJob or {}
+					if newListeners >= 500000 then
+						state.CurrentJob.name = "Hot Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 500000)
+						state.Flags = state.Flags or {}
+						state.Flags.charting_artist = true
+						state.Flags.hit_maker = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners and you're now a HOT RAPPER! 🔥", boost))
+					elseif newListeners >= 100000 then
+						state.CurrentJob.name = "Buzzing Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 25000)
+						state.Flags = state.Flags or {}
+						state.Flags.buzz = true
+						state.Flags.viral_potential = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners! You're BUZZING now! 🔊", boost))
+					elseif newListeners >= 25000 then
+						state.CurrentJob.name = "Local Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 3000)
+						state.Flags = state.Flags or {}
+						state.Flags.local_fame = true
+						state:AddFeed(string.format("📱 VIRAL SUCCESS! You gained %d listeners! Local fame incoming!", boost))
+					else
+						state:AddFeed(string.format("📱 You gained %d new monthly listeners! VIRAL SUCCESS!", boost))
+					end
 				end,
 			},
 			{
@@ -710,8 +837,19 @@ RapperContentCreatorEvents.events = {
 				feedText = "📱 Went live! Thousands watching! Personal connection made! Loyal fanbase building!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(40000, 100000)
+					local boost = math.random(40000, 100000)
+					local newListeners = (state.FameState.monthlyListeners or 0) + boost
+					state.FameState.monthlyListeners = newListeners
 					state.Fame = (state.Fame or 0) + 20
+					
+					-- CRITICAL FIX #USER-32: Also update job for this choice
+					state.CurrentJob = state.CurrentJob or {}
+					if newListeners >= 100000 and (state.CurrentJob.name or ""):lower():find("underground") then
+						state.CurrentJob.name = "Buzzing Rapper"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 25000)
+						state.Flags = state.Flags or {}
+						state.Flags.buzz = true
+					end
 				end,
 			},
 			{
@@ -741,7 +879,7 @@ RapperContentCreatorEvents.events = {
 		cooldown = 3, -- CRITICAL FIX #572: Reduced from 10 to 3
 		oneTime = false, -- CRITICAL FIX #573: Changed to allow multiple albums
 		maxOccurrences = 5,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #574: Loosened eligibility - just need to be a rapper
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
@@ -784,7 +922,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #575: Increased from 0.25 to 0.5
 		cooldown = 2, -- CRITICAL FIX #576: Reduced from 5 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #577: Loosened eligibility - any rapper can get into beef
 		eligibility = function(state)
 			return isRapper(state)
@@ -837,7 +975,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
 		cooldown = 3,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - Tours happen to growing rappers!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -895,7 +1033,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 5,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - Platinum can happen to any rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -944,11 +1082,36 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.1,
 		cooldown = 6,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		isCelebrityOnly = true,
+		-- CRITICAL FIX #MOBILE-16: STRICT eligibility - ONLY for established rappers with high fame
 		eligibility = function(state)
 			local fame = state.Fame or 0
-			return fame >= 50, "Need significant fame for Grammy nomination"
+			-- Must have at least 50 fame (Famous level)
+			if fame < 50 then
+				return false, "Need significant fame (50+) for Grammy nomination"
+			end
+			-- Must be a RAPPER, not a streamer/creator
+			local isActualRapper = false
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("rapper") then
+					isActualRapper = true
+				end
+			end
+			if state.Flags and (state.Flags.rapper or state.Flags.signed_artist or state.Flags.charting_artist) then
+				isActualRapper = true
+			end
+			-- BLOCK if player is a streamer/creator (not a rapper)
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+					if not isActualRapper then
+						return false, "Grammy nominations are for musicians, not content creators"
+					end
+				end
+			end
+			return isActualRapper, "Must be a rapper with music career"
 		end,
 		
 		choices = {
@@ -1034,9 +1197,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First video posted! Gaming content. 47 views. Everyone starts somewhere!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "streamer"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "gaming"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1046,9 +1214,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First vlog posted! Showing your life. Authentic! 32 views. The journey begins!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "vlogs"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1058,9 +1231,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First tutorial posted! Teaching what you know. 89 views! Helpful content finds an audience!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(10, 100)
 					state.FameState.totalViews = math.random(50, 300)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "educational"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
@@ -1070,9 +1248,14 @@ RapperContentCreatorEvents.events = {
 				feedText = "📹 First skit posted! Making people laugh. 156 views! Comedy travels!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
+					-- CRITICAL FIX: Set careerPath so FameState gets serialized!
+					state.FameState.careerPath = state.FameState.careerPath or "youtuber"
+					state.FameState.isFamous = true
 					state.FameState.subscribers = math.random(15, 150)
 					state.FameState.totalViews = math.random(100, 500)
+					state.FameState.totalVideos = 1
 					state.FameState.contentType = "comedy"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 		},
@@ -1190,12 +1373,30 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local boost = math.random(50000, 200000)
-					state.FameState.subscribers = (state.FameState.subscribers or 0) + boost
+					local newSubs = (state.FameState.subscribers or 0) + boost
+					state.FameState.subscribers = newSubs
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + 5000000
 					state.FameState.viralVideos = (state.FameState.viralVideos or 0) + 1
 					state.Fame = (state.Fame or 0) + 20
 					state.Money = (state.Money or 0) + math.random(5000, 20000)
-					state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					
+					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones!
+					state.CurrentJob = state.CurrentJob or {}
+					if newSubs >= 1000000 then
+						state.CurrentJob.name = "Famous YouTuber (1M+)"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 500000)
+						state:AddFeed(string.format("🔥 VIRAL SUCCESS! Gained %d subs! You're a MILLION subscriber creator! 🥇", boost))
+					elseif newSubs >= 100000 then
+						state.CurrentJob.name = "Popular YouTuber (100K+)"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 75000)
+						state:AddFeed(string.format("🔥 VIRAL SUCCESS! Gained %d subs! Ready for Silver Play Button! 🥈", boost))
+					elseif newSubs >= 10000 then
+						state.CurrentJob.name = "Growing YouTuber"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 15000)
+						state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					else
+						state:AddFeed(string.format("🔥 Gained %d subscribers from viral video! INSANE growth!", boost))
+					end
 				end,
 			},
 			{
@@ -1204,8 +1405,17 @@ RapperContentCreatorEvents.events = {
 				feedText = "🔥 Replying to EVERYONE! Community loves the engagement! Loyal fanbase forming!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(30000, 100000)
+					local boost = math.random(30000, 100000)
+					local newSubs = (state.FameState.subscribers or 0) + boost
+					state.FameState.subscribers = newSubs
 					state.Fame = (state.Fame or 0) + 15
+					
+					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones
+					state.CurrentJob = state.CurrentJob or {}
+					if newSubs >= 100000 and (state.CurrentJob.name or ""):lower():find("hobbyist") then
+						state.CurrentJob.name = "Growing YouTuber"
+						state.CurrentJob.salary = math.max(state.CurrentJob.salary or 0, 15000)
+					end
 				end,
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
@@ -1324,7 +1534,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 45,
 		baseChance = 0.6,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
 		eligibility = function(state) return isRapper(state) end,
 		
@@ -1354,43 +1564,57 @@ RapperContentCreatorEvents.events = {
 	},
 	{
 		id = "rapper_producer_connect",
-		title = "🎹 Producer Wants to Work",
+		title = "🎹 Producer Wants to Work With You!",
 		emoji = "🎹",
-		text = "A local producer heard your tracks. They make fire beats and want to work together. Free beats in exchange for split royalties!",
-		question = "Do you link up?",
+		text = "A local producer DM'd you on Instagram. They've been making beats for 5 years, worked with some underground artists in your city, and just dropped a crazy beat tape. They heard your tracks and think your flow would be PERFECT on their production. They're offering FREE beats in exchange for a 50/50 royalty split on any tracks you release together. This could be the start of a legendary partnership... or just another DM that goes nowhere.",
+		question = "A producer collab could change everything. What do you do?",
 		minAge = 14, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
-		category = "career_music",
+		category = "career_rapper",
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
 			{
-				text = "Let's make some hits!",
-				effects = { Happiness = 15 },
-				setFlags = { has_producer = true },
-				feedText = "🎹 Found your sound! The producer's beats + your bars = MAGIC!",
+				text = "🔥 Let's cook! Lock in and make hits together",
+				effects = { Happiness = 20, Smarts = 3, Health = -2 },  -- ENHANCED: More stats affected
+				setFlags = { has_producer = true, producer_collab = true },
+				feedText = "🎹 FIRE! You spent 3 weeks in the studio together. The producer's 808s hit DIFFERENT. Your flow rides the beats perfectly. You made 8 tracks and they're ALL heat. This is your sound now. The chemistry is REAL.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(200, 600)
+					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(500, 1500)
 					state.FameState.producerConnect = true
+					state.FameState.totalTracks = (state.FameState.totalTracks or 0) + 8
+					state.Money = (state.Money or 0) + math.random(200, 800)  -- Some streaming revenue
+					state.Fame = (state.Fame or 0) + 3
 				end,
 			},
 			{
-				text = "Negotiate - 80/20 split my favor",
-				effects = {},
-				feedText = "Negotiating...",
+				text = "💰 Negotiate better - I want 70/30 my favor",
+				effects = { Smarts = 5 },  -- Negotiating is smart
+				feedText = "You're learning to advocate for yourself in this industry...",
 				onResolve = function(state)
-					if math.random() < 0.4 then
-						state:ModifyStat("Happiness", 18)
+					if math.random() < 0.35 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.has_producer = true
+						state.Flags.negotiator = true
 						state.FameState = state.FameState or {}
-						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(300, 800)
-						state:AddFeed("🎹 They agreed! Better deal + fire beats = winning!")
+						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(600, 1200)
+						state.FameState.totalTracks = (state.FameState.totalTracks or 0) + 5
+						state.Money = (state.Money or 0) + math.random(500, 1500)
+						state:AddFeed("🎹 They agreed to 70/30! You made 5 tracks together. Smart business move AND fire music. Industry respect +100.")
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("They passed. Said you're not big enough to demand that. Humbling.")
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📉 They said 'You're not popping enough to demand that' and went to work with another artist. L taken. Maybe next time focus on the music first, money second.")
 					end
 				end,
+			},
+			{
+				text = "🚫 Nah, I make my own beats. Don't need you.",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { self_produced = true },
+				feedText = "You stay independent. Making your own beats is harder but you keep 100% of everything. Respect for the grind, but you might be missing opportunities.",
 			},
 		},
 	},
@@ -1403,7 +1627,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.5,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1459,7 +1683,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.555,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1505,7 +1729,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.45,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1549,7 +1773,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.455,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { has_mixtape = true },
 		
 		choices = {
@@ -1597,7 +1821,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { stage_experience = true },
 		eligibility = function(state)
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
@@ -1643,7 +1867,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 10K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1686,7 +1910,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 100K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1732,7 +1956,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.55,
 		cooldown = 4,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 500K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1778,7 +2002,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.45,
 		cooldown = 5,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 1M is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)

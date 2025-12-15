@@ -1853,6 +1853,7 @@ CelebrityEvents.GeneralFameEvents = {
 	},
 	
 	-- SUPER BOWL HALFTIME
+	-- CRITICAL FIX #MOBILE-15: Added strict eligibility check - this should ONLY fire for superstars!
 	{
 		id = "superbowl_halftime",
 		title = "🏈 Super Bowl Halftime",
@@ -1862,6 +1863,26 @@ CelebrityEvents.GeneralFameEvents = {
 		oneTime = true,
 		maxOccurrences = 1,
 		conditions = { blockedFlags = { did_superbowl = true } },
+		-- CRITICAL FIX: Strict eligibility - must be a SUPERSTAR (Fame >= 80) with music career
+		eligibility = function(state)
+			local fame = state.Fame or 0
+			if fame < 80 then
+				return false, "Need superstar fame (80+) to headline Super Bowl"
+			end
+			-- Must be in music/entertainment career
+			if state.CurrentJob then
+				local category = (state.CurrentJob.category or ""):lower()
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if category ~= "entertainment" and category ~= "music" and category ~= "celebrity" then
+					if not (jobId:find("rapper") or jobId:find("singer") or jobId:find("musician") or jobId:find("artist")) then
+						return false, "Not in a music career"
+					end
+				end
+			else
+				return false, "No entertainment job"
+			end
+			return true
+		end,
 		choices = {
 			{
 				text = "Pull out all the stops",
