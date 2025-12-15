@@ -1442,6 +1442,10 @@ local JobCatalogList = {
 	{ id = "new_creator", name = "New Creator", company = "Social Media", emoji = "📱", salary = 50, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence" }, isFameCareer = true,
 		description = "Just starting your social media journey" },
+	-- CRITICAL FIX #AAA-2: Add alias for client compatibility (client uses new_influencer)
+	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence", "influencer" }, isFameCareer = true,
+		description = "Just starting your content creation journey" },
 	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 2500, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "content_creator" }, grantsFlags = { "influencer", "small_following" }, isFameCareer = true,
 		description = "Building a small but engaged following" },
@@ -1606,19 +1610,52 @@ function LifeBackend:findJobByInput(query)
 		return nil
 	end
 	query = tostring(query):lower()
+	
+	-- Direct lookup by ID first
 	if JobCatalog[query] then
 		return JobCatalog[query]
 	end
+	
+	-- Check exact ID match (case insensitive)
 	for _, job in pairs(JobCatalog) do
 		if job.id and job.id:lower() == query then
 			return job
 		end
 	end
+	
+	-- Check exact name match (case insensitive)
+	for _, job in pairs(JobCatalog) do
+		if job.name and job.name:lower() == query then
+			return job
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-3: Handle common ID/name variations
+	-- Maps client job IDs/names to server IDs for cases where they don't match exactly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local jobAliases = {
+		["new content creator"] = "new_influencer",
+		["new_content_creator"] = "new_influencer",
+		["content creator"] = "new_influencer",
+		["hobbyist streamer"] = "hobbyist_streamer",
+		["hobbyist_streamer"] = "hobbyist_streamer",
+		["underground rapper"] = "underground_rapper",
+		["new influencer"] = "new_influencer",
+	}
+	
+	local aliasedId = jobAliases[query]
+	if aliasedId and JobCatalog[aliasedId] then
+		return JobCatalog[aliasedId]
+	end
+	
+	-- Partial name match as fallback
 	for _, job in pairs(JobCatalog) do
 		if job.name and job.name:lower():find(query, 1, true) then
 			return job
 		end
 	end
+	
 	return nil
 end
 
@@ -1707,6 +1744,26 @@ local CareerTracks = {
 	trades_electric = { "electrician_apprentice", "electrician" },
 	trades_plumb = { "plumber_apprentice", "plumber" },
 	trades_construct = { "construction", "foreman" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-10: ENTERTAINMENT/CELEBRITY CAREER TRACKS
+	-- These were completely missing, causing celebrity careers to never auto-promote!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Rapper career path
+	entertainment_rapper = { "underground_rapper", "local_rapper", "buzzing_rapper", "signed_rapper", "hot_rapper", "mainstream_rapper", "superstar_rapper", "legend_rapper" },
+	
+	-- Influencer/Content creator path  
+	entertainment_influencer = { "new_creator", "new_influencer", "micro_influencer", "rising_influencer", "established_influencer", "major_influencer", "mega_influencer" },
+	
+	-- Streamer path
+	entertainment_streamer = { "hobbyist_streamer", "new_streamer", "affiliate_streamer", "partner_streamer", "popular_streamer", "famous_streamer", "streaming_legend" },
+	
+	-- Musician path
+	entertainment_musician = { "street_performer", "local_artist", "indie_artist", "signed_artist", "touring_artist", "famous_artist", "music_legend" },
+	
+	-- Actor path
+	entertainment_actor = { "actor_extra", "actor", "tv_actor", "film_actor", "movie_star", "a_list_actor" },
 }
 
 -- Direct promotion mapping for quick lookups (job -> next job)
@@ -2563,6 +2620,8 @@ local OfficeCareerEvents = {
 		emoji = "💬",
 		text = "Coworkers are spreading rumors about a colleague's personal life. They want you to join in.",
 		question = "What do you do?",
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 2,
 		choices = {
 			{ text = "Refuse to participate", deltas = { Happiness = 2 }, setFlags = { office_professional = true }, feedText = "You stayed above the gossip." },
 			{ text = "Join the conversation", deltas = { Happiness = 1 }, setFlags = { office_gossiper = true }, feedText = "You participated in the gossip." },
@@ -2575,6 +2634,10 @@ local OfficeCareerEvents = {
 		emoji = "🏢",
 		text = "Your boss asks you to work this weekend. Again. You have family plans.",
 		question = "What do you say?",
+		-- CRITICAL FIX: Prevent spam with cooldown, max occurrences, and smart eligibility
+		cooldown = 3, -- At least 3 years between occurrences
+		maxOccurrences = 3, -- Can only happen 3 times total per life
+		weight = 3, -- Lower weight = less likely to be picked
 		choices = {
 			{ text = "Work the weekend", deltas = { Happiness = -4, Money = 200 }, setFlags = { office_workaholic = true }, feedText = "You cancelled plans to work." },
 			{ text = "Politely decline", deltas = { Happiness = 3 }, setFlags = { office_boundaries = true }, feedText = "You set healthy boundaries." },
@@ -2713,14 +2776,65 @@ function LifeBackend:buildCareerEvent(state)
 		return nil
 	end
 	
-	local template = chooseRandom(eventPool)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-11: Filter out events that are on cooldown or have maxed occurrences
+	-- This was the main cause of event spam - career events weren't respecting cooldowns
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.EventHistory = state.EventHistory or {}
+	local eligibleEvents = {}
+	
+	for _, template in ipairs(eventPool) do
+		local eventId = template.id
+		local history = state.EventHistory[eventId]
+		local isEligible = true
+		
+		-- Check cooldown (default 2 years for career events)
+		local cooldown = template.cooldown or 2
+		if history and history.lastAge then
+			local yearsSince = (state.Age or 0) - history.lastAge
+			if yearsSince < cooldown then
+				isEligible = false
+			end
+		end
+		
+		-- Check max occurrences (default 3 for career events)
+		local maxOccurrences = template.maxOccurrences or 3
+		if history and (history.count or 0) >= maxOccurrences then
+			isEligible = false
+		end
+		
+		-- Check one-time events
+		if template.oneTime and history then
+			isEligible = false
+		end
+		
+		if isEligible then
+			table.insert(eligibleEvents, template)
+		end
+	end
+	
+	-- If no eligible events, return nil
+	if #eligibleEvents == 0 then
+		return nil
+	end
+	
+	local template = chooseRandom(eligibleEvents)
 	if not template then
 		return nil
 	end
 	
+	-- Record this event occurrence
+	local eventId = template.id
+	if not state.EventHistory[eventId] then
+		state.EventHistory[eventId] = { count = 0 }
+	end
+	state.EventHistory[eventId].count = (state.EventHistory[eventId].count or 0) + 1
+	state.EventHistory[eventId].lastAge = state.Age or 0
+	
 	local eventDef = deepCopy(template)
 	eventDef.id = template.id .. "_" .. tostring(RANDOM:NextInteger(1000, 999999))
 	eventDef.source = eventSource
+	eventDef.baseEventId = template.id -- Keep track of base ID for history
 	return eventDef
 end
 
@@ -4098,12 +4212,122 @@ function LifeBackend:tickCareer(state)
 	info.performance = clamp((info.performance or 60) + RANDOM:NextInteger(-5, 5), 0, 100)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #25: Calculate promotion progress based on years and performance
-	-- This provides visual feedback to the player without auto-promoting
+	-- CRITICAL FIX #AAA-8: Calculate promotion progress properly - can now reach 100%!
+	-- Was capped at ~80% before which caused "80% progress but no promotion" bug
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local yearsProgress = math.min((info.yearsAtJob or 0) * 10, 30) -- Up to 30% from years (3 years min)
-	local perfProgress = (info.performance or 50) * 0.5 -- Up to 50% from performance
+	local yearsProgress = math.min((info.yearsAtJob or 0) * 15, 45) -- Up to 45% from years (3 years)
+	local perfProgress = (info.performance or 50) * 0.55 -- Up to 55% from performance
 	info.promotionProgress = clamp(yearsProgress + perfProgress, 0, 100)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-9: AUTO-PROMOTION when progress hits 80%+ AND performance is good
+	-- This was the main bug - players had 80%+ but never got promoted!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if info.promotionProgress >= 80 and info.performance >= 70 and (info.yearsAtJob or 0) >= 2 then
+		-- Check if we already tried this year
+		local lastAutoPromoAge = info.lastAutoPromoAttemptAge or 0
+		if (state.Age or 0) > lastAutoPromoAge then
+			info.lastAutoPromoAttemptAge = state.Age
+			
+			-- Random chance of auto-promotion (higher progress = higher chance)
+			local autoPromoChance = (info.promotionProgress - 70) / 100 -- 10% at 80%, 30% at 100%
+			if RANDOM:NextNumber() < autoPromoChance then
+				-- Find next job in career track
+				local currentJobId = state.CurrentJob and state.CurrentJob.id
+				if currentJobId then
+					local promoted = false
+					local currentCategory = (state.CurrentJob.category and state.CurrentJob.category:lower()) or "entry"
+					
+					-- Try to find next job in career tracks
+					for trackName, trackJobs in pairs(CareerTracks) do
+						for i, jobId in ipairs(trackJobs) do
+							if jobId == currentJobId then
+								local nextJobId = trackJobs[i + 1]
+								if nextJobId then
+									local nextJob = JobCatalog[nextJobId]
+									if nextJob then
+										-- Grant flags from current job first
+										local currentJob = JobCatalog[currentJobId]
+										if currentJob and currentJob.grantsFlags then
+											state.Flags = state.Flags or {}
+											for _, flag in ipairs(currentJob.grantsFlags) do
+												state.Flags[flag] = true
+											end
+										end
+										
+										-- Check requirements for next job
+										local canPromote = true
+										if nextJob.minAge and (state.Age or 0) < nextJob.minAge then
+											canPromote = false
+										end
+										if nextJob.requiresFlags then
+											state.Flags = state.Flags or {}
+											local hasFlag = false
+											for _, flagName in ipairs(nextJob.requiresFlags) do
+												if state.Flags[flagName] then
+													hasFlag = true
+													break
+												end
+											end
+											if not hasFlag then
+												canPromote = false
+											end
+										end
+										
+										if canPromote then
+											-- Apply the promotion!
+											local oldJobName = state.CurrentJob.name or "your old job"
+											local salaryIncrease = math.floor((nextJob.salary or state.CurrentJob.salary or 30000) * 0.15)
+											
+											state.CurrentJob = {
+												id = nextJob.id,
+												name = nextJob.name,
+												company = nextJob.company or state.CurrentJob.company,
+												salary = nextJob.salary or math.floor((state.CurrentJob.salary or 30000) * 1.20),
+												category = nextJob.category or state.CurrentJob.category,
+												emoji = nextJob.emoji,
+											}
+											
+											-- Reset promotion progress
+											info.promotionProgress = 0
+											info.yearsAtJob = 0
+											info.promotions = (info.promotions or 0) + 1
+											
+											-- Set promotion flags
+											state.Flags = state.Flags or {}
+											state.Flags.just_promoted = true
+											state.Flags.promoted_recently = true
+											
+											-- Grant flags from new job
+											if nextJob.grantsFlags then
+												for _, flag in ipairs(nextJob.grantsFlags) do
+													state.Flags[flag] = true
+												end
+											end
+											
+											-- Log the promotion
+											state.YearLog = state.YearLog or {}
+											table.insert(state.YearLog, {
+												type = "promotion",
+												emoji = "🎉",
+												text = string.format("Promoted from %s to %s! New salary: $%s", 
+													oldJobName, nextJob.name, formatMoney(state.CurrentJob.salary)),
+											})
+											
+											promoted = true
+											break
+										end
+									end
+								end
+								break
+							end
+						end
+						if promoted then break end
+					end
+				end
+			end
+		end
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Track career skills based on job category

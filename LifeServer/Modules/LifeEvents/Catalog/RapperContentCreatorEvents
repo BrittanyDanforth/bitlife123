@@ -176,9 +176,46 @@ RapperContentCreatorEvents.events = {
 		question = "How do you promote yourself?",
 		minAge = 14, maxAge = 40,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 3, -- CRITICAL FIX: Increased cooldown to reduce spam
+		maxOccurrences = 2, -- CRITICAL FIX: Can only happen twice max
 		category = "career_music",
 		requiresFlags = { first_track_recorded = true },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #AAA-7: Block this event if player has progressed past underground stage
+		-- This was firing even when player had already done shows, gotten signed, etc.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		blockedByFlags = { 
+			first_show_done = true,      -- Already done live shows
+			signed_artist = true,        -- Already signed to a label
+			label_deal = true,           -- Has a label deal
+			charting_artist = true,      -- Has charted
+			mainstream_fame = true,      -- Is mainstream
+			buzz = true,                 -- Already has buzz
+			local_fame = true,           -- Known locally
+			viral_hit = true,            -- Had a viral moment
+			professional_music_career = true, -- Pro career
+		},
+		-- CRITICAL FIX: Also check career progression level
+		eligibility = function(state)
+			-- Block if job is beyond underground level
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				-- These are post-soundcloud-grind positions
+				if jobId:find("local_rapper") or jobId:find("buzzing") or jobId:find("signed") 
+				   or jobId:find("hot_rapper") or jobId:find("mainstream") or jobId:find("superstar") 
+				   or jobId:find("legend") then
+					return false
+				end
+			end
+			-- Block if fame is too high (past underground level)
+			if state.FameState then
+				local listeners = state.FameState.monthlyListeners or 0
+				if listeners > 5000 then
+					return false -- Too big for SoundCloud grind
+				end
+			end
+			return true
+		end,
 		
 		choices = {
 			{

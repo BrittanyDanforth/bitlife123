@@ -36,8 +36,11 @@ local events = {
 		minAge = 18,
 		maxAge = 25,
 		oneTime = true,
-		-- CRITICAL FIX: Can't interview while in prison
-		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX #AAA-1: Block if player already has a job!
+		-- This was causing "first job interview" to fire for employed players
+		blockedByFlags = { in_prison = true, employed = true, has_job = true, got_first_real_job = true, career_started = true },
+		-- Also add requiresNoJob for extra safety
+		requiresNoJob = true,
 		choices = {
 			{
 				index = 1,
