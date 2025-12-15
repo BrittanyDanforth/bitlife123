@@ -307,36 +307,39 @@ local SellAsset = getRemote("SellAsset")
 local Gamble = getRemote("Gamble")
 
 -- Asset Data - MUST match server IDs in LifeRemoteHandlers!
+-- CRITICAL FIX #USER-6: Enhanced with happiness bonuses, maintenance, and effects!
 local Properties = {
-	{ id = "studio", name = "Studio Apartment", emoji = "🏢", price = 85000, income = 500, desc = "Cozy studio", minAge = 18 },
-	{ id = "1br_condo", name = "1BR Condo", emoji = "🏬", price = 175000, income = 1000, desc = "Modern condo", minAge = 18 },
-	{ id = "family_house", name = "Family House", emoji = "🏠", price = 350000, income = 2000, desc = "3 bed, 2 bath", minAge = 18 },
-	{ id = "beach_house", name = "Beach House", emoji = "🏖️", price = 1200000, income = 5000, desc = "Ocean views", minAge = 21 },
-	{ id = "penthouse", name = "Luxury Penthouse", emoji = "🌆", price = 2500000, income = 10000, desc = "Top floor luxury", minAge = 21 },
-	{ id = "mansion", name = "Mansion", emoji = "🏰", price = 8500000, income = 25000, desc = "Dream home", minAge = 21 },
+	{ id = "studio", name = "Studio Apartment", emoji = "🏢", price = 85000, income = 500, happiness = 2, maintenance = 1200, desc = "Cozy studio - +2 Happiness/yr", minAge = 18 },
+	{ id = "1br_condo", name = "1BR Condo", emoji = "🏬", price = 175000, income = 1000, happiness = 4, maintenance = 2000, desc = "Modern condo - +4 Happiness/yr", minAge = 18 },
+	{ id = "family_house", name = "Family House", emoji = "🏠", price = 350000, income = 2000, happiness = 6, maintenance = 4000, desc = "3 bed, 2 bath - +6 Happiness/yr", minAge = 18 },
+	{ id = "beach_house", name = "Beach House", emoji = "🏖️", price = 1200000, income = 5000, happiness = 10, maintenance = 8000, desc = "Ocean views - +10 Happiness/yr, +5 Fame", minAge = 21 },
+	{ id = "penthouse", name = "Luxury Penthouse", emoji = "🌆", price = 2500000, income = 10000, happiness = 15, maintenance = 15000, desc = "Top floor luxury - +15 Happiness/yr, +10 Fame", minAge = 21 },
+	{ id = "mansion", name = "Mansion", emoji = "🏰", price = 8500000, income = 25000, happiness = 25, maintenance = 35000, desc = "Dream home - +25 Happiness/yr, +20 Fame, +Status", minAge = 21 },
 }
 
+-- CRITICAL FIX #USER-6: All vehicles now show their ACTUAL gameplay effects!
 local Vehicles = {
-	{ id = "used_civic", name = "Used Honda Civic", emoji = "🚗", price = 8000, minAge = 16 },
-	{ id = "camry", name = "Toyota Camry", emoji = "🚙", price = 28000, minAge = 16 },
-	{ id = "bmw", name = "BMW 3 Series", emoji = "🚘", price = 55000, minAge = 18 },
-	{ id = "tesla", name = "Tesla Model S", emoji = "⚡", price = 95000, minAge = 18 },
-	{ id = "porsche", name = "Porsche 911", emoji = "🏎️", price = 180000, minAge = 21 },
-	{ id = "lambo", name = "Lamborghini", emoji = "🦁", price = 300000, minAge = 21 },
-	{ id = "ferrari", name = "Ferrari F8", emoji = "🐎", price = 350000, minAge = 21 },
-	{ id = "yacht", name = "Yacht", emoji = "🛥️", price = 2000000, minAge = 25 },
-	{ id = "jet", name = "Private Jet", emoji = "✈️", price = 15000000, minAge = 25 },
+	{ id = "used_civic", name = "Used Honda Civic", emoji = "🚗", price = 8000, happiness = 1, maintenance = 800, desc = "+1 Happiness/yr, $800 upkeep", minAge = 16 },
+	{ id = "camry", name = "Toyota Camry", emoji = "🚙", price = 28000, happiness = 2, maintenance = 1500, desc = "+2 Happiness/yr, $1.5K upkeep", minAge = 16 },
+	{ id = "bmw", name = "BMW 3 Series", emoji = "🚘", price = 55000, happiness = 4, maintenance = 3000, desc = "+4 Happiness/yr, +2 Status", minAge = 18 },
+	{ id = "tesla", name = "Tesla Model S", emoji = "⚡", price = 95000, happiness = 5, maintenance = 2000, desc = "+5 Happiness/yr, +3 Status, No gas!", minAge = 18 },
+	{ id = "porsche", name = "Porsche 911", emoji = "🏎️", price = 180000, happiness = 8, maintenance = 8000, desc = "+8 Happiness/yr, +5 Fame, +8 Status", minAge = 21 },
+	{ id = "lambo", name = "Lamborghini", emoji = "🦁", price = 300000, happiness = 12, maintenance = 15000, desc = "+12 Happiness/yr, +10 Fame, SUPERCAR!", minAge = 21 },
+	{ id = "ferrari", name = "Ferrari F8", emoji = "🐎", price = 350000, happiness = 15, maintenance = 18000, desc = "+15 Happiness/yr, +12 Fame, ELITE!", minAge = 21 },
+	{ id = "yacht", name = "Yacht", emoji = "🛥️", price = 2000000, happiness = 20, maintenance = 50000, desc = "+20 Happiness/yr, +20 Fame, LUXURY LIFE!", minAge = 25 },
+	{ id = "jet", name = "Private Jet", emoji = "✈️", price = 15000000, happiness = 35, maintenance = 200000, desc = "+35 Happiness/yr, +50 Fame, BILLIONAIRE!", minAge = 25 },
 }
 
+-- CRITICAL FIX #USER-6: Shop items now show their effects!
 local Shop = {
-	{ id = "sneakers", name = "Sneakers", emoji = "👟", price = 350, minAge = 10 },
-	{ id = "iphone", name = "iPhone", emoji = "📱", price = 1200, minAge = 10 },
-	{ id = "bag", name = "Designer Bag", emoji = "👜", price = 2500, minAge = 14 },
-	{ id = "gaming_pc", name = "Gaming PC", emoji = "🖥️", price = 3000, minAge = 10 },
-	{ id = "necklace", name = "Gold Necklace", emoji = "📿", price = 3500, minAge = 16 },
-	{ id = "watch", name = "Designer Watch", emoji = "⌚", price = 5000, minAge = 16 },
-	{ id = "ring", name = "Diamond Ring", emoji = "💍", price = 15000, minAge = 18 },
-	{ id = "piano", name = "Grand Piano", emoji = "🎹", price = 50000, minAge = 18 },
+	{ id = "sneakers", name = "Sneakers", emoji = "👟", price = 350, happiness = 1, desc = "+1 Happiness, +1 Looks", minAge = 10 },
+	{ id = "iphone", name = "iPhone", emoji = "📱", price = 1200, happiness = 2, desc = "+2 Happiness, Stay connected!", minAge = 10 },
+	{ id = "bag", name = "Designer Bag", emoji = "👜", price = 2500, happiness = 2, desc = "+2 Happiness, +3 Looks, +1 Fame", minAge = 14 },
+	{ id = "gaming_pc", name = "Gaming PC", emoji = "🖥️", price = 3000, happiness = 3, desc = "+3 Happiness, +2 Smarts (research!)", minAge = 10 },
+	{ id = "necklace", name = "Gold Necklace", emoji = "📿", price = 3500, happiness = 2, desc = "+2 Happiness, +2 Looks, +1 Fame", minAge = 16 },
+	{ id = "watch", name = "Designer Watch", emoji = "⌚", price = 5000, happiness = 3, desc = "+3 Happiness, +3 Looks, +2 Fame", minAge = 16 },
+	{ id = "ring", name = "Diamond Ring", emoji = "💍", price = 15000, happiness = 5, desc = "+5 Happiness, +5 Looks, +3 Fame", minAge = 18 },
+	{ id = "piano", name = "Grand Piano", emoji = "🎹", price = 50000, happiness = 8, desc = "+8 Happiness, +5 Smarts, Music skill!", minAge = 18 },
 }
 
 function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)

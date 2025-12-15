@@ -501,15 +501,24 @@ local function canEventTrigger(event, state)
 		end
 		-- CRITICAL FIX #69: Must actually have a fame career to get career events
 		-- General fame events (paparazzi, fans) just need some fame
+		local playerCareerPath = state.FameState and state.FameState.careerPath
 		local hasActiveFameCareer = flags.fame_career or flags.career_actor 
 			or flags.career_musician or flags.career_influencer or flags.career_athlete
-			or (state.FameState and state.FameState.careerPath)
+			or playerCareerPath
 		local hasFame = (state.Fame or 0) >= 20
 		
-		-- Career-specific events need the career, general events just need some fame
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #USER-1: Career-specific events MUST match player's career path!
+		-- This prevents streamer events from firing for rappers and vice versa
+		-- e.g., "Tournament Victory" should ONLY fire for streamers, NOT rappers
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		if event.careerPath then
-			if not hasActiveFameCareer then
-				return false -- Career events need active fame career
+			-- Event requires a specific career path - player must have THAT path
+			if not playerCareerPath then
+				return false -- Event needs a career path, player doesn't have one
+			end
+			if playerCareerPath ~= event.careerPath then
+				return false -- Player's career path doesn't match event's required path
 			end
 		elseif not hasActiveFameCareer and not hasFame then
 			return false -- Need either career or natural fame

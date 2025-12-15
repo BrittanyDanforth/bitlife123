@@ -102,25 +102,22 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_first_track",
 		title = "🎤 Recording Your First Track",
 		emoji = "🎤",
-		text = "You've been writing bars for months. Time to record something. You found a cheap studio willing to let you record for $50.",
-		question = "What kind of track do you make?",
+		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like weed and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
+		question = "This first track will shape your whole career. What's your style?",
 		minAge = 14, maxAge = 55,
 		baseChance = 1.0,
 		cooldown = 0,
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
-		category = "career_rapper",  -- CRITICAL FIX #MOBILE-5: Use career_rapper, NOT career_music!
-		-- CRITICAL FIX #MOBILE-6: STRICT eligibility - ONLY for rappers, NOT streamers!
+		category = "career_rapper",
 		eligibility = function(state)
-			-- BLOCK if player is a streamer/creator (NOT a rapper)
 			if state.CurrentJob then
 				local jobId = (state.CurrentJob.id or ""):lower()
 				if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
 					return false, "This event is for rappers, not content creators"
 				end
 			end
-			-- Check for rapper job
 			if state.CurrentJob then
 				local jobId = (state.CurrentJob.id or ""):lower()
 				local jobName = (state.CurrentJob.name or ""):lower()
@@ -128,7 +125,6 @@ RapperContentCreatorEvents.events = {
 					return true
 				end
 			end
-			-- Check flags
 			if state.Flags then
 				if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
 				   or state.Flags.hip_hop_experience then
@@ -141,45 +137,50 @@ RapperContentCreatorEvents.events = {
 		
 		choices = {
 			{
-				text = "Aggressive trap banger",
-				effects = { Happiness = 10, Money = -50 },
+				text = "🔥 Aggressive trap banger - 808s and energy",
+				effects = { Happiness = 15, Smarts = 2, Health = -3, Money = -50 },  -- ENHANCED: Recording is tiring!
 				setFlags = { first_track_recorded = true, trap_rapper = true },
-				feedText = "🎤 You recorded your first track! Hard-hitting trap beat. Raw but it's YOURS!",
+				feedText = "🎤 YOU DID IT! 4 hours in that basement, voice raw from 23 takes, but you walked out with YOUR FIRST SONG. It's aggressive, the 808s hit hard, and when you played it back in the car... goosebumps. You sent it to 3 friends - they're already asking for more. This is just the beginning. Your Spotify artist page is LIVE.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "trap"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Lyrical conscious rap",
-				effects = { Happiness = 10, Money = -50 },
+				text = "📚 Lyrical conscious rap - real bars, real message",
+				effects = { Happiness = 12, Smarts = 5, Health = -2, Money = -50 },  -- ENHANCED: Lyrical = smarts boost
 				setFlags = { first_track_recorded = true, lyrical_rapper = true },
-				feedText = "🎤 You recorded your first track! Deep lyrics, real message. Underground heads will love it!",
+				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'damn, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "lyrical"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Melodic/Auto-tune vibes",
-				effects = { Happiness = 10, Money = -50 },
+				text = "🎵 Melodic auto-tune vibes - modern sound",
+				effects = { Happiness = 15, Looks = 2, Health = -2, Money = -50 },  -- ENHANCED: Melodic = image boost
 				setFlags = { first_track_recorded = true, melodic_rapper = true },
-				feedText = "🎤 You recorded your first track! Melodic flows and auto-tune. Modern sound!",
+				feedText = "🎤 THE AUTO-TUNE MADE YOUR VOICE SOUND CRAZY. That melodic flow, the emotional delivery... Marcus had to double-check you hadn't done this before. You layered harmonies, ad-libs, everything. It sounds like something that could be on the radio. TikTok could blow this up. You're already thinking about the music video...",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
+					state.FameState.totalTracks = 1
 					state.FameState.style = "melodic"
+					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
 			{
-				text = "Drill/Street rap",
-				effects = { Happiness = 10, Money = -50 },
-				setFlags = { first_track_recorded = true, drill_rapper = true },
+				text = "🔫 Drill/Street rap - raw and real",
+				effects = { Happiness = 12, Health = -4, Money = -50 },  -- ENHANCED: Drill is risky
 				feedText = "🎤 You recorded your first track! Hard drill beat. Streets will feel this!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
@@ -695,15 +696,24 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_bigger_artist_feature",
 		title = "🌟 Big Artist Wants You on Their Track!",
 		emoji = "🌟",
-		text = "A rapper with 500K monthly listeners reached out! They heard your mixtape and want you on their next single. This is MAJOR exposure!",
+		text = "A rapper with 500K monthly listeners reached out! They heard your music and want you on their next single. This is MAJOR exposure!",
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.45, -- CRITICAL FIX #545: Increased from 0.15 to 0.45
-		cooldown = 2, -- CRITICAL FIX #546: Reduced from 8 to 2
+		baseChance = 0.35, -- CRITICAL FIX #USER-2: Reduced from 0.45 to 0.35
+		cooldown = 4, -- CRITICAL FIX #USER-2: Increased from 2 to 4 years
+		maxOccurrences = 3, -- CRITICAL FIX #USER-2: Only 3 big collabs per career
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		-- CRITICAL FIX #547: Loosened eligibility - any rapper can attract attention
+		-- CRITICAL FIX #USER-2: Require ACTUAL PROGRESSION before big artists notice you!
+		-- Underground rappers fresh out of recording don't get calls from 500K listener artists!
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
+			if not isRapper(state) then return false end
+			local flags = state.Flags or {}
+			-- Require: done at least one show, OR have a mixtape/EP, OR have some monthly listeners
+			local hasProgression = flags.did_first_show or flags.has_mixtape or flags.has_ep or 
+				flags.local_fame or flags.buzz or flags.did_local_show
+			local listeners = state.FameState and state.FameState.monthlyListeners or 0
+			-- Need EITHER some progression flags OR at least 10K monthly listeners
+			return hasProgression or listeners >= 10000
 		end,
 		
 		choices = {
@@ -1438,43 +1448,57 @@ RapperContentCreatorEvents.events = {
 	},
 	{
 		id = "rapper_producer_connect",
-		title = "🎹 Producer Wants to Work",
+		title = "🎹 Producer Wants to Work With You!",
 		emoji = "🎹",
-		text = "A local producer heard your tracks. They make fire beats and want to work together. Free beats in exchange for split royalties!",
-		question = "Do you link up?",
+		text = "A local producer DM'd you on Instagram. They've been making beats for 5 years, worked with some underground artists in your city, and just dropped a crazy beat tape. They heard your tracks and think your flow would be PERFECT on their production. They're offering FREE beats in exchange for a 50/50 royalty split on any tracks you release together. This could be the start of a legendary partnership... or just another DM that goes nowhere.",
+		question = "A producer collab could change everything. What do you do?",
 		minAge = 14, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
+		category = "career_rapper",
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
 			{
-				text = "Let's make some hits!",
-				effects = { Happiness = 15 },
-				setFlags = { has_producer = true },
-				feedText = "🎹 Found your sound! The producer's beats + your bars = MAGIC!",
+				text = "🔥 Let's cook! Lock in and make hits together",
+				effects = { Happiness = 20, Smarts = 3, Health = -2 },  -- ENHANCED: More stats affected
+				setFlags = { has_producer = true, producer_collab = true },
+				feedText = "🎹 FIRE! You spent 3 weeks in the studio together. The producer's 808s hit DIFFERENT. Your flow rides the beats perfectly. You made 8 tracks and they're ALL heat. This is your sound now. The chemistry is REAL.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(200, 600)
+					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(500, 1500)
 					state.FameState.producerConnect = true
+					state.FameState.totalTracks = (state.FameState.totalTracks or 0) + 8
+					state.Money = (state.Money or 0) + math.random(200, 800)  -- Some streaming revenue
+					state.Fame = (state.Fame or 0) + 3
 				end,
 			},
 			{
-				text = "Negotiate - 80/20 split my favor",
-				effects = {},
-				feedText = "Negotiating...",
+				text = "💰 Negotiate better - I want 70/30 my favor",
+				effects = { Smarts = 5 },  -- Negotiating is smart
+				feedText = "You're learning to advocate for yourself in this industry...",
 				onResolve = function(state)
-					if math.random() < 0.4 then
-						state:ModifyStat("Happiness", 18)
+					if math.random() < 0.35 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.has_producer = true
+						state.Flags.negotiator = true
 						state.FameState = state.FameState or {}
-						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(300, 800)
-						state:AddFeed("🎹 They agreed! Better deal + fire beats = winning!")
+						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(600, 1200)
+						state.FameState.totalTracks = (state.FameState.totalTracks or 0) + 5
+						state.Money = (state.Money or 0) + math.random(500, 1500)
+						state:AddFeed("🎹 They agreed to 70/30! You made 5 tracks together. Smart business move AND fire music. Industry respect +100.")
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("They passed. Said you're not big enough to demand that. Humbling.")
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📉 They said 'You're not popping enough to demand that' and went to work with another artist. L taken. Maybe next time focus on the music first, money second.")
 					end
 				end,
+			},
+			{
+				text = "🚫 Nah, I make my own beats. Don't need you.",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { self_produced = true },
+				feedText = "You stay independent. Making your own beats is harder but you keep 100% of everything. Respect for the grind, but you might be missing opportunities.",
 			},
 		},
 	},

@@ -1108,6 +1108,40 @@ function OccupationScreen:getRaises()
 	return 0
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #USER-5: Entertainment Career Stats Display
+-- Rappers get: Monthly Listeners, Total Streams, Tracks Released, Style
+-- Streamers get: Subscribers, Total Views, Videos Posted
+-- Influencers get: Followers, Engagement Rate, Posts
+-- ═══════════════════════════════════════════════════════════════════════════════
+function OccupationScreen:getFameState()
+	local state = self.playerState
+	if state and state.FameState then
+		return state.FameState
+	end
+	return nil
+end
+
+function OccupationScreen:isEntertainmentCareer()
+	local job = self:getCurrentJob()
+	if not job then return false end
+	local jobLower = job:lower()
+	return jobLower:find("rapper") or jobLower:find("streamer") or jobLower:find("youtuber") 
+		or jobLower:find("influencer") or jobLower:find("creator") or jobLower:find("musician")
+		or jobLower:find("singer") or jobLower:find("artist") or jobLower:find("actor")
+end
+
+function OccupationScreen:formatNumber(num)
+	if not num or num < 1000 then
+		return tostring(num or 0)
+	elseif num < 1000000 then
+		return string.format("%.1fK", num / 1000)
+	else
+		return string.format("%.1fM", num / 1000000)
+	end
+	return 0
+end
+
 -- ═══════════════════════════════════════════════════════════════
 -- EDUCATION HELPERS (GPA, Progress, Transcript, etc.)
 -- ═══════════════════════════════════════════════════════════════
@@ -2275,8 +2309,11 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- CRITICAL UI FIX: Proper card sizing (don't over-shrink!)
+	-- CRITICAL FIX #USER-5: Taller cards for entertainment careers (show stats)
 	-- ═══════════════════════════════════════════════════════════
-	local CARD_HEIGHT = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 340)
+	local isEntertainment = self:isEntertainmentCareer()
+	local entertainmentBonus = isEntertainment and (IS_TINY_PHONE and 45 or (IS_SMALL_PHONE and 55 or 70)) or 0
+	local CARD_HEIGHT = (IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 340)) + entertainmentBonus
 	local ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 60)
 	local MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 14)
 	local TITLE_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
@@ -2565,13 +2602,100 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	end
 
 	-- ═══════════════════════════════════════════════════════════
+	-- ENTERTAINMENT CAREER STATS (rappers, streamers, influencers)
+	-- CRITICAL FIX #USER-5: Show monthly listeners, subs, views, etc.
+	-- ═══════════════════════════════════════════════════════════
+	local entertainmentStatsYOffset = 0
+	if self:isEntertainmentCareer() then
+		local fameState = self:getFameState()
+		if fameState then
+			entertainmentStatsYOffset = IS_TINY_PHONE and 45 or (IS_SMALL_PHONE and 55 or 70)
+			
+			local statsY = IS_TINY_PHONE and 155 or (IS_SMALL_PHONE and 188 or 225)
+			local statsHeight = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 50 or 65)
+			local statsSection = Instance.new("Frame")
+			statsSection.Size = UDim2.new(1, -MARGIN * 2, 0, statsHeight)
+			statsSection.Position = UDim2.new(0, MARGIN, 0, statsY)
+			statsSection.BackgroundColor3 = C.PurplePale or Color3.fromRGB(243, 232, 255)
+			statsSection.ZIndex = 84
+			statsSection.Parent = card
+			UI.corner(statsSection, IS_TINY_PHONE and 8 or 12)
+			
+			local statsLayout = Instance.new("UIListLayout")
+			statsLayout.FillDirection = Enum.FillDirection.Horizontal
+			statsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			statsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+			statsLayout.Padding = UDim.new(0, IS_TINY_PHONE and 8 or 16)
+			statsLayout.Parent = statsSection
+			
+			-- Determine career type and show relevant stats
+			local currentJob = self:getCurrentJob() or ""
+			local jobLower = currentJob:lower()
+			local isRapper = jobLower:find("rapper") or jobLower:find("hip") or (fameState.style and (fameState.style == "trap" or fameState.style == "lyrical" or fameState.style == "melodic" or fameState.style == "drill"))
+			local isStreamer = jobLower:find("streamer") or jobLower:find("youtuber")
+			local isInfluencer = jobLower:find("influencer") or jobLower:find("creator")
+			
+			local statTextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 12)
+			local statValueSize = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 13 or 16)
+			
+			local function createStatDisplay(emoji, label, value, layoutOrder)
+				local statFrame = Instance.new("Frame")
+				statFrame.Size = UDim2.new(0, IS_TINY_PHONE and 70 or 100, 1, 0)
+				statFrame.BackgroundTransparency = 1
+				statFrame.LayoutOrder = layoutOrder
+				statFrame.ZIndex = 85
+				statFrame.Parent = statsSection
+				
+				local valueLabel = Instance.new("TextLabel")
+				valueLabel.Size = UDim2.new(1, 0, 0.6, 0)
+				valueLabel.BackgroundTransparency = 1
+				valueLabel.Font = F.Title
+				valueLabel.TextSize = statValueSize
+				valueLabel.TextColor3 = C.Purple or Color3.fromRGB(147, 51, 234)
+				valueLabel.Text = emoji .. " " .. self:formatNumber(value)
+				valueLabel.ZIndex = 86
+				valueLabel.Parent = statFrame
+				
+				local labelText = Instance.new("TextLabel")
+				labelText.Size = UDim2.new(1, 0, 0.4, 0)
+				labelText.Position = UDim2.new(0, 0, 0.6, 0)
+				labelText.BackgroundTransparency = 1
+				labelText.Font = F.Body
+				labelText.TextSize = statTextSize
+				labelText.TextColor3 = C.Gray600
+				labelText.Text = label
+				labelText.ZIndex = 86
+				labelText.Parent = statFrame
+			end
+			
+			if isRapper then
+				createStatDisplay("🎧", "Listeners", fameState.monthlyListeners or 0, 1)
+				createStatDisplay("📀", "Tracks", fameState.totalTracks or 0, 2)
+				createStatDisplay("▶️", "Streams", fameState.totalStreams or 0, 3)
+			elseif isStreamer then
+				createStatDisplay("👥", "Subs", fameState.subscribers or 0, 1)
+				createStatDisplay("👀", "Views", fameState.totalViews or 0, 2)
+				createStatDisplay("📺", "Videos", fameState.totalVideos or 0, 3)
+			elseif isInfluencer then
+				createStatDisplay("👥", "Followers", fameState.followers or fameState.subscribers or 0, 1)
+				createStatDisplay("❤️", "Likes", fameState.totalLikes or 0, 2)
+				createStatDisplay("📱", "Posts", fameState.totalPosts or 0, 3)
+			else
+				-- Generic fame stats
+				createStatDisplay("⭐", "Fame", self.playerState.Fame or 0, 1)
+				createStatDisplay("👥", "Followers", fameState.followers or 0, 2)
+			end
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 1: Work & Career Info - SCALED
 	-- ═══════════════════════════════════════════════════════════
 	-- CRITICAL UI FIX: Properly scaled button sizes for tiny phones
 	local actionBtnHeight = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 32 or 42)
 	local actionBtnTextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 14)
 	local actionBtnCorner = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 12)
-	local actionRow1YPos = IS_TINY_PHONE and 155 or (IS_SMALL_PHONE and 188 or 225)
+	local actionRow1YPos = (IS_TINY_PHONE and 155 or (IS_SMALL_PHONE and 188 or 225)) + entertainmentStatsYOffset
 
 	local actionRow1 = Instance.new("Frame")
 	actionRow1.Size = UDim2.new(1, -MARGIN * 2, 0, actionBtnHeight)

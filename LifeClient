@@ -2799,18 +2799,19 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- MOBILE FIX: Responsive body text with tighter line height
-	-- CRITICAL FIX #802: Increased body text sizes for better readability
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(22))
+	-- CRITICAL FIX #USER-3: Increased body text sizes for MUCH better readability on mobile!
+	-- User feedback: "text inside cards are a bit too small"
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.body.BackgroundTransparency = 1
 	EventUI.body.Font = F.Body
 	EventUI.body.TextSize = eventBodyTextSize
-	EventUI.body.TextColor3 = C.Gray600
+	EventUI.body.TextColor3 = C.Gray700  -- CRITICAL FIX #USER-3: Darker color for better readability
 	EventUI.body.TextWrapped = true
 	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
-	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or (Device.IS_SMALL_PHONE and 1.3 or 1.5)
+	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.25 or (Device.IS_SMALL_PHONE and 1.35 or 1.5)  -- Increased line height
 	EventUI.body.RichText = true
 	EventUI.body.Text = ""
 	EventUI.body.LayoutOrder = 1
@@ -2818,8 +2819,8 @@ local function buildEventModal()
 	EventUI.body.Parent = bodySection
 
 	-- MOBILE FIX: Responsive question text
-	-- CRITICAL FIX #805: Increased question text sizes for better readability
-	local eventQuestionTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
+	-- CRITICAL FIX #USER-4: Increased question text sizes for better readability
+	local eventQuestionTextSize = Device.IS_TINY_PHONE and 15 or (Device.IS_SMALL_PHONE and 17 or textSize(20))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
