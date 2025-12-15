@@ -559,7 +559,9 @@ local Jobs = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- STREAMER / CONTENT CREATOR PATH
-	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	-- CRITICAL FIX #MOBILE-8: Hobbyist Streamer is NOW FREE (no gamepass required)!
+	-- This is the entry point to streaming - anyone can try it
+	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
 	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Streaming experience required" },
 	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Affiliate status required" },
 	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Established streaming presence required" },
@@ -568,7 +570,9 @@ local Jobs = {
 	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Top streamer status required" },
 	
 	-- RAPPER / HIP-HOP PATH
-	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 0, minAge = 14, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	-- CRITICAL FIX #MOBILE-9: Underground Rapper is NOW FREE (no gamepass required)!
+	-- This is the entry point to rap career - anyone can try it
+	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 0, minAge = 14, requirement = nil, category = "celebrity", difficulty = 1 },
 	{ id = "local_rapper", name = "Local Rapper", company = "City Scene", emoji = "📍", salary = 8000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Underground experience required" },
 	{ id = "buzzing_rapper", name = "Buzzing Artist", company = "Blog Famous", emoji = "📈", salary = 35000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Local scene experience required" },
 	{ id = "signed_rapper", name = "Signed Rapper", company = "Record Label", emoji = "📝", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Industry buzz required" },
@@ -578,7 +582,9 @@ local Jobs = {
 	{ id = "rap_legend", name = "Hip-Hop Legend", company = "GOAT Status", emoji = "👑", salary = 75000000, minAge = 28, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Superstar status required" },
 	
 	-- SOCIAL MEDIA INFLUENCER PATH
-	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1, requiresGamepass = "celebrity" },
+	-- CRITICAL FIX #MOBILE-10: New Content Creator is NOW FREE (no gamepass required)!
+	-- This is the entry point to influencer career - anyone can try it
+	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
 	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Content creation experience required" },
 	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Micro influencer status required" },
 	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Growing following required" },
@@ -2124,19 +2130,29 @@ function OccupationScreen:populateJobs()
 		return true
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-11: Track LOCKED jobs separately to show with purchase prompt
+	-- Instead of hiding gamepass jobs, show them as LOCKED with a "Get Gamepass" button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local lockedJobs = {}  -- Jobs that need gamepass
+	
 	for _, job in ipairs(Jobs) do
 		if job.id ~= currentJob then
 			-- Skip promotion-only jobs
 			if isEntryLevelJob(job.id) then
 				local showJob = (selectedCategory == "all") or (job.category == selectedCategory)
+				local isLocked = false
+				local lockReason = nil
 				
-				-- HIDE jobs requiring gamepasses player doesn't own
+				-- CHECK gamepass requirements - mark as LOCKED instead of hiding
 				if showJob and job.requiresGamepass then
 					local gamepassReq = job.requiresGamepass:lower()
 					if gamepassReq == "celebrity" and not hasCelebrity then
-						showJob = false
+						isLocked = true
+						lockReason = "celebrity"
 					elseif gamepassReq == "mafia" and not hasMafia then
-						showJob = false
+						isLocked = true
+						lockReason = "mafia"
 					end
 				end
 				
@@ -2163,12 +2179,14 @@ function OccupationScreen:populateJobs()
 					showJob = false
 				end
 				
-				-- NOTE: Experience requirements (requiresExp) are just descriptive text
-				-- The actual check happens server-side when applying
-				-- We don't hide these - they show as available but may fail on apply
-				
+				-- Add to appropriate list
 				if showJob then
-					table.insert(sortedJobs, job)
+					if isLocked then
+						job._lockReason = lockReason  -- Track why it's locked
+						table.insert(lockedJobs, job)
+					else
+						table.insert(sortedJobs, job)
+					end
 				end
 			end
 		end
@@ -2181,19 +2199,35 @@ function OccupationScreen:populateJobs()
 		if diffA ~= diffB then
 			return diffA < diffB -- Lower difficulty first (easy at top)
 		end
-		-- Same difficulty: sort by salary (lower salary first)
 		local salA = a.salary or 0
 		local salB = b.salary or 0
 		return salA < salB
 	end)
 	
-	-- Add sorted jobs
+	-- Add sorted jobs (available jobs first)
 	local order = 1
 	local jobsShown = 0
 	for _, job in ipairs(sortedJobs) do
 		self:createJobCard(section, job, order, age, eduLevel)
 		order = order + 1
 		jobsShown = jobsShown + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-12: Show LOCKED jobs with purchase prompt (like Mafia)
+	-- These appear AFTER available jobs with a 🔒 indicator and purchase button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if #lockedJobs > 0 then
+		-- Sort locked jobs by difficulty too
+		table.sort(lockedJobs, function(a, b)
+			return (a.difficulty or 1) < (b.difficulty or 1)
+		end)
+		
+		for _, job in ipairs(lockedJobs) do
+			self:createLockedJobCard(section, job, order, job._lockReason)
+			order = order + 1
+			jobsShown = jobsShown + 1
+		end
 	end
 
 	-- CRITICAL FIX: Premium empty state card
@@ -3168,6 +3202,147 @@ function OccupationScreen:hideJobInfoModal()
 			self.jobInfoOverlay.Visible = false
 		end
 	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MOBILE-13: LOCKED JOB CARD for gamepass-required jobs
+-- Shows the job with a 🔒 lock icon and "Get Gamepass" purchase button
+-- This matches the Mafia screen pattern for premium content
+-- ═══════════════════════════════════════════════════════════════════════════════
+function OccupationScreen:createLockedJobCard(parent, job, order, lockReason)
+	local LOCKED_CARD_HEIGHT = IS_TINY_PHONE and 100 or (IS_SMALL_PHONE and 105 or 110)
+	local JOB_ICON_SIZE = iconSize(48)
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "LockedJob_" .. job.id
+	container.Size = UDim2.new(1, 0, 0, LOCKED_CARD_HEIGHT)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.Parent = parent
+	
+	-- Locked card with muted colors
+	local card = Instance.new("Frame")
+	card.Name = "LockedCard"
+	card.Size = UDim2.new(1, -px(8), 1, -px(8))
+	card.Position = UDim2.new(0, px(4), 0, px(4))
+	card.BackgroundColor3 = Color3.fromRGB(245, 245, 250)  -- Muted gray
+	card.Parent = container
+	UI.corner(card, 14)
+	UI.stroke(card, 1, 0.9, C.Gray300)
+	
+	-- Lock overlay
+	local lockOverlay = Instance.new("Frame")
+	lockOverlay.Name = "LockOverlay"
+	lockOverlay.Size = UDim2.new(1, 0, 1, 0)
+	lockOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	lockOverlay.BackgroundTransparency = 0.85
+	lockOverlay.Parent = card
+	UI.corner(lockOverlay, 14)
+	
+	-- Job emoji (muted)
+	local emoji = Instance.new("TextLabel")
+	emoji.Name = "Emoji"
+	emoji.Size = UDim2.new(0, JOB_ICON_SIZE, 0, JOB_ICON_SIZE)
+	emoji.Position = UDim2.new(0, px(12), 0.5, -JOB_ICON_SIZE/2)
+	emoji.BackgroundTransparency = 1
+	emoji.Text = job.emoji or "💼"
+	emoji.TextSize = textSize(28)
+	emoji.TextColor3 = C.Gray400
+	emoji.Font = Enum.Font.GothamBold
+	emoji.Parent = card
+	
+	-- Lock icon on top of emoji
+	local lockIcon = Instance.new("TextLabel")
+	lockIcon.Name = "Lock"
+	lockIcon.Size = UDim2.new(0, px(24), 0, px(24))
+	lockIcon.Position = UDim2.new(0, px(8), 0, px(8))
+	lockIcon.BackgroundColor3 = C.Purple
+	lockIcon.Text = "🔒"
+	lockIcon.TextSize = textSize(14)
+	lockIcon.TextColor3 = C.White
+	lockIcon.Font = Enum.Font.GothamBold
+	lockIcon.Parent = card
+	UI.corner(lockIcon, 6)
+	
+	-- Job name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "JobName"
+	nameLabel.Size = UDim2.new(0.5, -JOB_ICON_SIZE - px(20), 0, px(22))
+	nameLabel.Position = UDim2.new(0, JOB_ICON_SIZE + px(20), 0, px(14))
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = job.name or "Unknown Job"
+	nameLabel.TextColor3 = C.Gray500
+	nameLabel.TextSize = textSize(14)
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	nameLabel.Parent = card
+	
+	-- Gamepass required text
+	local gamepassName = (lockReason == "celebrity") and "⭐ Celebrity Gamepass" or "🔫 Mafia Gamepass"
+	local reqLabel = Instance.new("TextLabel")
+	reqLabel.Name = "GamepassReq"
+	reqLabel.Size = UDim2.new(0.5, -JOB_ICON_SIZE - px(20), 0, px(18))
+	reqLabel.Position = UDim2.new(0, JOB_ICON_SIZE + px(20), 0, px(38))
+	reqLabel.BackgroundTransparency = 1
+	reqLabel.Text = "Requires: " .. gamepassName
+	reqLabel.TextColor3 = C.Purple
+	reqLabel.TextSize = textSize(11)
+	reqLabel.Font = Enum.Font.Gotham
+	reqLabel.TextXAlignment = Enum.TextXAlignment.Left
+	reqLabel.Parent = card
+	
+	-- Description/perks text
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Name = "Description"
+	descLabel.Size = UDim2.new(0.5, -JOB_ICON_SIZE - px(20), 0, px(16))
+	descLabel.Position = UDim2.new(0, JOB_ICON_SIZE + px(20), 0, px(58))
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = "💎 Unlock exclusive career path & events!"
+	descLabel.TextColor3 = C.Gray400
+	descLabel.TextSize = textSize(10)
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.Parent = card
+	
+	-- GET GAMEPASS button - CRITICAL MOBILE FIX: Use touch target size for mobile
+	local BUTTON_WIDTH = IS_TINY_PHONE and px(80) or (IS_SMALL_PHONE and px(90) or px(100))
+	local BUTTON_HEIGHT = touchTarget(36)  -- Minimum 44px touch target on mobile
+	
+	local button = Instance.new("TextButton")
+	button.Name = "GetGamepass"
+	button.Size = UDim2.new(0, BUTTON_WIDTH, 0, BUTTON_HEIGHT)
+	button.Position = UDim2.new(1, -BUTTON_WIDTH - px(10), 0.5, -BUTTON_HEIGHT/2)
+	button.BackgroundColor3 = C.Purple
+	button.Text = IS_TINY_PHONE and "🔓" or "🔓 UNLOCK"  -- Shorter text on tiny phones
+	button.TextColor3 = C.White
+	button.TextSize = textSize(IS_TINY_PHONE and 16 or 12)
+	button.Font = Enum.Font.GothamBold
+	button.AutoButtonColor = true
+	button.Parent = card
+	UI.corner(button, 8)
+	
+	button.MouseButton1Click:Connect(function()
+		-- Trigger gamepass purchase
+		local MarketplaceService = game:GetService("MarketplaceService")
+		local Players = game:GetService("Players")
+		local player = Players.LocalPlayer
+		
+		-- Use appropriate gamepass ID based on lockReason
+		local gamepassId
+		if lockReason == "celebrity" then
+			gamepassId = 1071247916  -- Celebrity gamepass ID
+		else
+			gamepassId = 1071247917  -- Mafia gamepass ID
+		end
+		
+		pcall(function()
+			MarketplaceService:PromptGamePassPurchase(player, gamepassId)
+		end)
+	end)
+	
+	return container
 end
 
 function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)

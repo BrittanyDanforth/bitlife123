@@ -1526,30 +1526,73 @@ function LifeEvents.buildYearQueue(state, options)
 				table.insert(categories, "career_music")
 			end
 			
-			-- Also add celebrity category for fame careers
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #MOBILE-14: Only add celebrity category if player has ACTUAL FAME
+			-- BUG: Celebrity events (Grammy, Superbowl) were firing for hobbyist streamers
+			-- A hobbyist streamer is just starting out - they shouldn't get major celebrity events!
+			-- FIX: Only add celebrity category if Fame >= 30 (Rising Star level or higher)
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			local hasCelebCat = false
 			for _, cat in ipairs(categories) do
 				if cat == "celebrity" then hasCelebCat = true break end
 			end
-			if not hasCelebCat and state.CurrentJob.isFameCareer then
+			local playerFame = state.Fame or 0
+			if not hasCelebCat and state.CurrentJob.isFameCareer and playerFame >= 30 then
 				table.insert(categories, "celebrity")
 			end
 		end
 	end
 	
-	-- CRITICAL FIX #511: Also add career_music if player has rapper/creator flags (even without job)
-	local musicFlags = state.Flags and (
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-1: SPLIT RAPPER AND CREATOR/STREAMER CATEGORIES!
+	-- BUG: Rapper events were firing for streamers because they shared "career_music" category
+	-- FIX: Separate into career_rapper and career_creator categories
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CHECK IF PLAYER IS A RAPPER (music/rap career)
+	local isRapperFlags = state.Flags and (
 		state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist or
-		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
-		state.Flags.first_track_recorded or state.Flags.first_video_uploaded
+		state.Flags.hip_hop_experience or state.Flags.first_track_recorded or
+		state.Flags.trap_rapper or state.Flags.lyrical_rapper or state.Flags.melodic_rapper or state.Flags.drill_rapper
 	)
-	if musicFlags then
-		local hasMusicCat = false
+	local hasRapperJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("hip.?hop")
+	)
+	
+	-- Add career_rapper category ONLY for rappers
+	if isRapperFlags or hasRapperJob then
+		local hasRapperCat = false
 		for _, cat in ipairs(categories) do
-			if cat == "career_music" then hasMusicCat = true break end
+			if cat == "career_rapper" or cat == "career_music" then hasRapperCat = true break end
 		end
-		if not hasMusicCat then
-			table.insert(categories, "career_music")
+		if not hasRapperCat then
+			table.insert(categories, "career_rapper")
+			table.insert(categories, "career_music") -- Also add career_music for backwards compatibility
+		end
+	end
+	
+	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (NOT rapper!)
+	local isCreatorFlags = state.Flags and (
+		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
+		state.Flags.first_video_uploaded or state.Flags.broadcaster or state.Flags.influencer
+	)
+	local hasCreatorJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	
+	-- Add career_creator category ONLY for creators/streamers
+	if isCreatorFlags or hasCreatorJob then
+		local hasCreatorCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_creator" then hasCreatorCat = true break end
+		end
+		if not hasCreatorCat then
+			table.insert(categories, "career_creator")
 		end
 	end
 	
@@ -1730,34 +1773,40 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #600: RAPPER/CONTENT CREATOR EVENT PRIORITY - MASSIVE BUFF
-	-- Rappers/streamers/creators should get career-specific events MOST of the time!
-	-- Previous 40% was WAY too low - players went entire lives without music events!
-	-- NOW: 80% chance for music career events when player has music job
-	-- Also: GUARANTEED first track event for new rappers who don't have it yet!
+	-- CRITICAL FIX #MOBILE-2: SPLIT RAPPER AND CREATOR EVENTS COMPLETELY!
+	-- BUG: Rapper events fired for streamers because they were grouped together
+	-- FIX: Now we check SEPARATELY for rappers and creators - they are different careers!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CHECK IF PLAYER IS A RAPPER (hip-hop career)
 	local hasRapperJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("rapper") or
 		(state.CurrentJob.name or ""):lower():find("rapper") or
 		(state.CurrentJob.name or ""):lower():find("hip.?hop")
 	)
+	-- RAPPER FLAGS ONLY - NOT streamer/creator flags!
+	local isRapper = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+	                 flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper or
+	                 flags.melodic_rapper or flags.drill_rapper or flags.first_track_recorded
+	
+	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (YouTube/Twitch career)
 	local hasCreatorJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("streamer") or
 		(state.CurrentJob.id or ""):lower():find("creator") or
 		(state.CurrentJob.id or ""):lower():find("youtuber") or
 		(state.CurrentJob.id or ""):lower():find("influencer")
 	)
-	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
-	                         flags.content_creator or flags.streamer or flags.first_track_recorded or
-	                         flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper
+	-- CREATOR FLAGS ONLY - NOT rapper flags!
+	local isCreator = flags.content_creator or flags.streamer or flags.pursuing_streaming or
+	                  flags.first_video_uploaded or flags.broadcaster or flags.influencer
+	
 	local hasEntertainmentJob = state.CurrentJob and (
 		(state.CurrentJob.category or ""):lower() == "entertainment" or hasRapperJob or hasCreatorJob
 	)
 	
-	-- CRITICAL FIX #601: GUARANTEED first track event for rappers who haven't recorded yet!
-	-- This is the FOUNDATION event that unlocks ALL other rapper progression events
-	-- Without this, players get stuck forever with no rapper events
-	if (hasRapperJob or isRapperOrCreator) and not flags.first_track_recorded then
+	-- CRITICAL FIX #MOBILE-3: GUARANTEED first track event ONLY for RAPPERS!
+	-- This should NOT fire for streamers/creators - they get creator_first_video instead
+	if (hasRapperJob or isRapper) and not flags.first_track_recorded then
 		local firstTrackEvent = AllEvents["rapper_first_track"]
 		if firstTrackEvent and canEventTrigger(firstTrackEvent, state) then
 			-- GUARANTEED trigger for first track!
@@ -1777,37 +1826,74 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- CRITICAL FIX #603: Music career events now have 80% chance (was 40%!)
-	-- This ensures rappers/creators actually GET their career events instead of generic life events
-	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.80 then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-4: SEPARATE RAPPER AND CREATOR EVENT POOLS!
+	-- BUG: Rapper events were in the same pool as creator events, causing mixups
+	-- FIX: Rappers get career_rapper/career_music, Creators get career_creator
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- RAPPER EVENTS (80% chance if they're a rapper)
+	if (hasRapperJob or isRapper) and RANDOM_LOCAL:NextNumber() < 0.80 then
+		local rapperEvents = EventsByCategory["career_rapper"] or {}
 		local musicEvents = EventsByCategory["career_music"] or {}
-		local creativeEvents = EventsByCategory["career_creative"] or {}
-		local eligibleMusicEvents = {}
+		local eligibleRapperEvents = {}
 		
-		-- Collect music events
+		-- Collect rapper-specific events
+		for _, event in ipairs(rapperEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleRapperEvents, event)
+				end
+			end
+		end
+		
+		-- Also include general music events for rappers
 		for _, event in ipairs(musicEvents) do
 			if canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)
 				if occurCount == 0 or not event.oneTime then
-					table.insert(eligibleMusicEvents, event)
+					table.insert(eligibleRapperEvents, event)
 				end
 			end
 		end
 		
-		-- Also collect creative events for content creators
-		if hasCreatorJob or flags.content_creator or flags.streamer then
-			for _, event in ipairs(creativeEvents) do
-				if canEventTrigger(event, state) then
-					local occurCount = (history.occurrences[event.id] or 0)
-					if occurCount == 0 or not event.oneTime then
-						table.insert(eligibleMusicEvents, event)
-					end
+		if #eligibleRapperEvents > 0 then
+			local chosenEvent = eligibleRapperEvents[RANDOM_LOCAL:NextInteger(1, #eligibleRapperEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CREATOR/STREAMER EVENTS (80% chance if they're a creator/streamer)
+	if (hasCreatorJob or isCreator) and RANDOM_LOCAL:NextNumber() < 0.80 then
+		local creatorEvents = EventsByCategory["career_creator"] or {}
+		local creativeEvents = EventsByCategory["career_creative"] or {}
+		local eligibleCreatorEvents = {}
+		
+		-- Collect creator-specific events
+		for _, event in ipairs(creatorEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleCreatorEvents, event)
 				end
 			end
 		end
 		
-		if #eligibleMusicEvents > 0 then
-			local chosenEvent = eligibleMusicEvents[RANDOM_LOCAL:NextInteger(1, #eligibleMusicEvents)]
+		-- Also include general creative events for creators
+		for _, event in ipairs(creativeEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleCreatorEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleCreatorEvents > 0 then
+			local chosenEvent = eligibleCreatorEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCreatorEvents)]
 			table.insert(selectedEvents, chosenEvent)
 			recordEventShown(state, chosenEvent)
 			return selectedEvents

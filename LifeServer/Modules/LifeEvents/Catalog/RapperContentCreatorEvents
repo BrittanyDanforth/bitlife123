@@ -23,24 +23,43 @@ local RapperContentCreatorEvents = {}
 -- These helpers check BOTH the job AND the flags to ensure events trigger properly
 -- ════════════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MOBILE-7: STRICT rapper check - MUST NOT trigger for streamers!
+-- BUG: Rapper events were firing for streamers because checks were too loose
+-- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
-	-- Check job
+	-- FIRST: Check if player is a streamer/creator - if so, return FALSE immediately!
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+			return false  -- STREAMER/CREATOR - NOT a rapper!
+		end
+	end
+	if state.Flags and (state.Flags.streamer or state.Flags.content_creator or state.Flags.pursuing_streaming) then
+		-- If player has streamer flags but NOT rapper flags, they're NOT a rapper
+		if not (state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist) then
+			return false
+		end
+	end
+	
+	-- Check for rapper job
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
 		local jobName = (state.CurrentJob.name or ""):lower()
-		local jobCat = (state.CurrentJob.category or ""):lower()
 		if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
 			return true
 		end
-		if (jobCat == "entertainment" or jobCat == "music") and (jobId:find("underground") or jobId:find("local_rapper") or jobId:find("buzzing") or jobId:find("signed") or jobId:find("hot_rapper") or jobId:find("mainstream") or jobId:find("superstar") or jobId:find("legend")) then
+		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or 
+		   jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper") then
 			return true
 		end
 	end
-	-- Check flags
+	-- Check rapper flags
 	if state.Flags then
 		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
 		   or state.Flags.hip_hop_experience or state.Flags.trap_rapper or state.Flags.lyrical_rapper
-		   or state.Flags.melodic_rapper or state.Flags.drill_rapper then
+		   or state.Flags.melodic_rapper or state.Flags.drill_rapper or state.Flags.first_track_recorded then
 			return true
 		end
 	end
@@ -85,24 +104,27 @@ RapperContentCreatorEvents.events = {
 		emoji = "🎤",
 		text = "You've been writing bars for months. Time to record something. You found a cheap studio willing to let you record for $50.",
 		question = "What kind of track do you make?",
-		minAge = 14, maxAge = 55,  -- CRITICAL FIX #610: Extended max age - anyone can start rapping!
-		baseChance = 1.0,  -- CRITICAL FIX #611: GUARANTEED trigger chance (was 0.8)
-		cooldown = 0,  -- CRITICAL FIX #612: No cooldown - this is a one-time foundation event
+		minAge = 14, maxAge = 55,
+		baseChance = 1.0,
+		cooldown = 0,
 		oneTime = true,
-		priority = "high",  -- CRITICAL FIX #613: High priority so it triggers ASAP
-		isMilestone = true,  -- CRITICAL FIX #614: Treat as milestone for priority selection
-		category = "career_music",
-		-- CRITICAL FIX #615: Simplified eligibility - ANY rapper job or flag works
+		priority = "high",
+		isMilestone = true,
+		category = "career_rapper",  -- CRITICAL FIX #MOBILE-5: Use career_rapper, NOT career_music!
+		-- CRITICAL FIX #MOBILE-6: STRICT eligibility - ONLY for rappers, NOT streamers!
 		eligibility = function(state)
-			-- Check job first
+			-- BLOCK if player is a streamer/creator (NOT a rapper)
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+					return false, "This event is for rappers, not content creators"
+				end
+			end
+			-- Check for rapper job
 			if state.CurrentJob then
 				local jobId = (state.CurrentJob.id or ""):lower()
 				local jobName = (state.CurrentJob.name or ""):lower()
-				local jobCat = (state.CurrentJob.category or ""):lower()
 				if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
-					return true
-				end
-				if jobCat == "entertainment" and (jobId:find("underground") or jobId:find("rapper")) then
 					return true
 				end
 			end
@@ -178,7 +200,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.6,
 		cooldown = 3, -- CRITICAL FIX: Increased cooldown to reduce spam
 		maxOccurrences = 2, -- CRITICAL FIX: Can only happen twice max
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #AAA-7: Block this event if player has progressed past underground stage
@@ -272,7 +294,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.7, -- CRITICAL FIX #518: Increased from 0.5 to 0.7
 		cooldown = 1, -- CRITICAL FIX #519: Reduced from 3 to 1 for more events
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #520: Accept multiple flags for rapper eligibility
 		eligibility = function(state)
 			if state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper or state.Flags.underground_artist) then
@@ -325,10 +347,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 15, maxAge = 45,
 		baseChance = 0.65, -- CRITICAL FIX #521: Increased from 0.4 to 0.65
 		cooldown = 1, -- CRITICAL FIX #522: Reduced from 2 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #523: Use eligibility function instead of requiresFlags
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -371,10 +393,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 15, maxAge = 40,
 		baseChance = 0.6, -- CRITICAL FIX #524: Increased from 0.35 to 0.6
 		cooldown = 1, -- CRITICAL FIX #525: Reduced from 3 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #526: Use eligibility function
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and (state.Flags.first_track_recorded or state.Flags.rapper))
+			return isRapper(state)  -- FIXED: Strict rapper check
 		end,
 		
 		choices = {
@@ -430,10 +452,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.6, -- CRITICAL FIX #527: Increased from 0.3 to 0.6
 		cooldown = 2, -- CRITICAL FIX #528: Reduced from 4 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #529: Removed high listener requirement, just need to be a rapper
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -471,7 +493,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.6, -- CRITICAL FIX #530: Increased from 0.35 to 0.6
 		cooldown = 1, -- CRITICAL FIX #531: Reduced from 3 to 1
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #532: Loosened requirements - just need to be a rapper
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.first_show_done or state.Flags.stage_experience or state.Flags.first_track_recorded))
@@ -524,10 +546,10 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55, -- CRITICAL FIX #533: Increased from 0.25 to 0.55
 		cooldown = 2, -- CRITICAL FIX #534: Reduced from 5 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #535: Loosened requirements - just need rapper status
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -566,10 +588,10 @@ RapperContentCreatorEvents.events = {
 		cooldown = 2, -- CRITICAL FIX #539: Reduced from 5 to 2
 		oneTime = false,
 		maxOccurrences = 10, -- CRITICAL FIX #540: Increased from 5 to 10
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #541: Loosened eligibility - just need rapper status
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -620,7 +642,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #542: Increased from 0.2 to 0.5
 		cooldown = 2, -- CRITICAL FIX #543: Reduced from 6 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #544: Loosened eligibility - rappers can get label interest
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep or state.Flags.first_track_recorded))
@@ -678,7 +700,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45, -- CRITICAL FIX #545: Increased from 0.15 to 0.45
 		cooldown = 2, -- CRITICAL FIX #546: Reduced from 8 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #547: Loosened eligibility - any rapper can attract attention
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
@@ -720,10 +742,10 @@ RapperContentCreatorEvents.events = {
 		cooldown = 2, -- CRITICAL FIX #568: Reduced from 10 to 2
 		oneTime = false,
 		maxOccurrences = 5, -- CRITICAL FIX #569: Increased from 3 to 5
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #570: Loosened eligibility - any rapper can go viral
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and state.Flags.first_track_recorded)
+			return isRapper(state)  -- FIXED: Strict rapper check only, no fallback
 		end,
 		
 		choices = {
@@ -778,7 +800,7 @@ RapperContentCreatorEvents.events = {
 		cooldown = 3, -- CRITICAL FIX #572: Reduced from 10 to 3
 		oneTime = false, -- CRITICAL FIX #573: Changed to allow multiple albums
 		maxOccurrences = 5,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #574: Loosened eligibility - just need to be a rapper
 		eligibility = function(state)
 			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
@@ -821,7 +843,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #575: Increased from 0.25 to 0.5
 		cooldown = 2, -- CRITICAL FIX #576: Reduced from 5 to 2
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #577: Loosened eligibility - any rapper can get into beef
 		eligibility = function(state)
 			return isRapper(state)
@@ -874,7 +896,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
 		cooldown = 3,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - Tours happen to growing rappers!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -932,7 +954,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 5,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - Platinum can happen to any rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -981,11 +1003,36 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.1,
 		cooldown = 6,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		isCelebrityOnly = true,
+		-- CRITICAL FIX #MOBILE-16: STRICT eligibility - ONLY for established rappers with high fame
 		eligibility = function(state)
 			local fame = state.Fame or 0
-			return fame >= 50, "Need significant fame for Grammy nomination"
+			-- Must have at least 50 fame (Famous level)
+			if fame < 50 then
+				return false, "Need significant fame (50+) for Grammy nomination"
+			end
+			-- Must be a RAPPER, not a streamer/creator
+			local isActualRapper = false
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("rapper") then
+					isActualRapper = true
+				end
+			end
+			if state.Flags and (state.Flags.rapper or state.Flags.signed_artist or state.Flags.charting_artist) then
+				isActualRapper = true
+			end
+			-- BLOCK if player is a streamer/creator (not a rapper)
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer") then
+					if not isActualRapper then
+						return false, "Grammy nominations are for musicians, not content creators"
+					end
+				end
+			end
+			return isActualRapper, "Must be a rapper with music career"
 		end,
 		
 		choices = {
@@ -1361,7 +1408,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 45,
 		baseChance = 0.6,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
 		eligibility = function(state) return isRapper(state) end,
 		
@@ -1398,7 +1445,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.4,
 		cooldown = 3,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1440,7 +1487,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.5,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1496,7 +1543,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.555,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1542,7 +1589,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.45,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -1586,7 +1633,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.455,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { has_mixtape = true },
 		
 		choices = {
@@ -1634,7 +1681,7 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55,
 		cooldown = 2,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { stage_experience = true },
 		eligibility = function(state)
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
@@ -1680,7 +1727,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 10K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1723,7 +1770,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 100K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1769,7 +1816,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.55,
 		cooldown = 4,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 500K is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
@@ -1815,7 +1862,7 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.45,
 		cooldown = 5,
 		oneTime = true,
-		category = "career_music",
+		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 1M is a milestone for ANY rapper!
 		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
