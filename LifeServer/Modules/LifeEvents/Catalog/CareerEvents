@@ -141,13 +141,15 @@ local events = {
 		id = "toxic_coworker_conflict",
 		emoji = "😠",
 		title = "Your Coworker is Sabotaging You",
-		text = "Jessica from Accounting HATES you. You don't know why. She 'accidentally' leaves you off email chains. Takes credit for YOUR ideas in meetings. Talks shit about you to your boss. Today: she blamed YOU for HER mistake. A $5,000 error. Your boss believed HER. You're furious. HR is useless. This is affecting your performance reviews. What do you do?",
+		text = "Jessica from Accounting HATES you. You don't know why. She 'accidentally' leaves you off email chains. Takes credit for YOUR ideas in meetings. Badmouths you to your boss. Today: she blamed YOU for HER mistake. A $5,000 error. Your boss believed HER. You're furious. HR is useless. This is affecting your performance reviews. What do you do?",
 		question = "How do you handle this toxic coworker?",
 		category = "career",
 		weight = 7,
 		minAge = 22,
 		maxAge = 50,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for office/corporate jobs - NOT rappers, musicians, etc.
+		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government" },
 		choices = {
 			{
 				index = 1,
@@ -319,7 +321,7 @@ local events = {
 				text = "Report him to HR - formal complaint",
 				effects = { Happiness = -5, Smarts = 4 },
 				setFlags = { filed_hr_complaint = true, brave = true },
-				feedText = "You filed a complaint. HR 'investigated.' Marcus got a slap on the wrist. He KNOWS it was you. He's worse now. Subtle sabotage. You're fucked.",
+				feedText = "You filed a complaint. HR 'investigated.' Marcus got a slap on the wrist. He KNOWS it was you. He's worse now. Subtle sabotage. You're in trouble.",
 			},
 			{
 				index = 2,
@@ -350,13 +352,15 @@ local events = {
 		emoji = "📉",
 		title = "Company Layoffs - Are You Safe?",
 		-- CRITICAL FIX: Dynamic text instead of hardcoded "38 with 2 kids"
-		text = "CEO just sent an email: 'Due to market conditions, we're implementing workforce reductions. 15% of staff will be let go.' You're in a meeting room. Your manager looks nervous. HR is here. This is it. The meeting. 'We're sorry, but your position has been eliminated.' You're being LAID OFF. Severance: 2 months pay. You have 30 days. {{FAMILY_STATUS}} PANIC MODE.",
+		text = "Management just sent an email: 'Due to market conditions, we're implementing workforce reductions. 15% of staff will be let go.' You're in a meeting room. Your manager looks nervous. HR is here. This is it. The meeting. 'We're sorry, but your position has been eliminated.' You're being LAID OFF. Severance: 2 months pay. You have 30 days. {{FAMILY_STATUS}} Time to figure things out.",
 		question = "How do you react?",
 		category = "career",
 		weight = 5,
 		minAge = 25,
 		maxAge = 60,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for office/corporate jobs - NOT entertainment careers!
+		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government", "retail", "service" },
 		choices = {
 			{
 				index = 1,
@@ -536,13 +540,15 @@ local events = {
 		id = "fired_for_cause",
 		emoji = "🚪",
 		title = "You're Being Fired - For Cause",
-		text = "Your manager and HR are in the room. 'We're terminating your employment effective immediately. For cause.' WHAT?! For cause means NO SEVERANCE. They say you 'violated company policy.' Missed deadlines? Bad attitude? They're making up bullshit. This is retaliation for speaking up about the toxic VP. You're being FIRED. Escorted out by security. Box of your shit in your hands. 20 YEARS at this company. This is how it ends?",
+		text = "Your manager and HR are in the room. 'We're terminating your employment effective immediately. For cause.' WHAT?! For cause means NO SEVERANCE. They say you 'violated company policy.' Missed deadlines? Bad attitude? They're making up excuses. This is retaliation for speaking up about the toxic VP. You're being FIRED. Escorted out by security. Box of your belongings in your hands. Years at this company. This is how it ends?",
 		question = "How do you respond?",
 		category = "career",
 		weight = 3,
 		minAge = 35,
 		maxAge = 65,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for office/corporate jobs - NOT entertainment careers!
+		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government" },
 		choices = {
 			{
 				index = 1,
@@ -563,7 +569,7 @@ local events = {
 				text = "Threaten a lawsuit - scare them into severance",
 				effects = { Happiness = -8, Money = 15000, Smarts = 6 },
 				setFlags = { fired = true, negotiated_exit = true },
-				feedText = "'My lawyer will love this wrongful termination case.' HR panicked. Offered 3 months severance to sign an NDA. You took it. $15K. Small win in a shit situation.",
+				feedText = "'My lawyer will love this wrongful termination case.' HR panicked. Offered 3 months severance to sign an NDA. You took it. $15K. Small win in a bad situation.",
 			},
 			{
 				index = 4,

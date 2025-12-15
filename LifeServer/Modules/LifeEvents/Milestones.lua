@@ -682,6 +682,30 @@ Milestones.events = {
 		isMilestone = true,
 		-- CRITICAL: Block this event for retired players
 		blockedByFlags = { retired = true, semi_retired = true },
+		
+		-- CRITICAL FIX #506: Block for entertainment careers - they have their own progression!
+		-- Rappers, musicians, actors, influencers progress through Fame, not corporate promotions
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			local jobId = (state.CurrentJob.id or ""):lower()
+			
+			-- Block for entertainment careers
+			if jobCat == "entertainment" or jobCat == "creative" or jobCat == "music" then
+				return false, "Entertainment careers have their own progression"
+			end
+			-- Block for specific entertainment job IDs
+			if jobId:find("rapper") or jobId:find("musician") or jobId:find("actor") or
+			   jobId:find("singer") or jobId:find("streamer") or jobId:find("influencer") or
+			   jobId:find("creator") or jobId:find("celebrity") or jobId:find("athlete") then
+				return false, "Entertainment careers have their own progression"
+			end
+			-- Block if they have isFameCareer flag on their job
+			if state.CurrentJob.isFameCareer then
+				return false, "Fame careers have their own progression"
+			end
+			return true
+		end,
 
 		-- META
 		stage = "adult",

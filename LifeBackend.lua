@@ -1414,7 +1414,7 @@ local JobCatalogList = {
 	
 	-- RAPPER CAREER PATH (Celebrity gamepass)
 	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 250, minAge = 14, requirement = nil, category = "entertainment",
-		difficulty = 2, grantsFlags = { "rapper", "underground_artist", "hip_hop_experience" }, isFameCareer = true,
+		difficulty = 2, grantsFlags = { "rapper", "underground_artist", "hip_hop_experience", "pursuing_rap" }, isFameCareer = true,
 		description = "Starting your rap career from the underground" },
 	{ id = "local_rapper", name = "Local Rapper", company = "Local Scene", emoji = "📍", salary = 3000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "underground_artist", "rapper" }, grantsFlags = { "local_fame", "music_industry" }, isFameCareer = true,
@@ -1459,8 +1459,11 @@ local JobCatalogList = {
 		description = "A household name on social media" },
 	
 	-- STREAMER CAREER PATH (Celebrity gamepass)  
+	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
+		description = "Stream as a hobby - just for fun!" },
 	{ id = "new_streamer", name = "New Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
-		difficulty = 1, grantsFlags = { "streamer", "broadcaster" }, isFameCareer = true,
+		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Just started streaming" },
 	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 500, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "streamer" }, grantsFlags = { "affiliate", "monetized" }, isFameCareer = true,
@@ -3645,7 +3648,11 @@ end
 function LifeBackend:onPlayerAdded(player)
 	local state = self:createInitialState(player)
 	self.playerStates[player] = state
-	self:pushState(player, "A new life begins...")
+	-- CRITICAL FIX #500: DON'T push "A new life begins..." here!
+	-- The setLifeInfo function will send the proper birth message.
+	-- Sending a message here causes duplicate/overlapping messages at spawn.
+	-- Only sync the initial state without a feed message.
+	self:pushState(player, nil)
 end
 
 function LifeBackend:onPlayerRemoving(player)
@@ -5582,12 +5589,61 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 		choices = {},
 	}
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #503: Include premium choice info in serialization
+	-- This allows the client to display premium choices with appropriate styling
+	-- (e.g., show gamepass emoji, lock icon for unowned, different color)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state and state.Flags or {}
+	local gamepassOwnership = state and state.GamepassOwnership or {}
+	
 	for index, choice in ipairs(eventDef.choices or {}) do
-		eventPayload.choices[index] = {
+		local choiceData = {
 			index = index,
 			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
 			minigame = choice.minigame,
 		}
+		
+		-- Add premium choice info if this choice requires a gamepass
+		if choice.requiresGamepass then
+			choiceData.requiresGamepass = choice.requiresGamepass
+			choiceData.gamepassEmoji = choice.gamepassEmoji
+			
+			-- Check if player owns this gamepass
+			local gamepassToFlag = {
+				GOD_MODE = "god_mode_gamepass",
+				MAFIA = "mafia_gamepass", 
+				CELEBRITY = "celebrity_gamepass",
+				ROYALTY = "royalty_gamepass",
+				TIME_MACHINE = "time_machine_gamepass",
+			}
+			local gamepassToOwnership = {
+				GOD_MODE = "godMode",
+				MAFIA = "mafia",
+				CELEBRITY = "celebrity",
+				ROYALTY = "royalty",
+				TIME_MACHINE = "timeMachine",
+			}
+			
+			local flagName = gamepassToFlag[choice.requiresGamepass]
+			local ownershipName = gamepassToOwnership[choice.requiresGamepass]
+			local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+			
+			choiceData.hasGamepass = hasGamepass
+			
+			-- Also check additional flag requirements (e.g., must be in mob for mafia options)
+			if choice.requiresFlags and hasGamepass then
+				for flagName, requiredValue in pairs(choice.requiresFlags) do
+					if requiredValue == true and not flags[flagName] then
+						choiceData.hasGamepass = false
+						choiceData.missingRequirement = true
+						break
+					end
+				end
+			end
+		end
+		
+		eventPayload.choices[index] = choiceData
 	end
 
 	local pending = self.pendingEvents[player.UserId] or {}
@@ -6179,18 +6235,50 @@ function LifeBackend:handleAgeUp(player)
 			end
 			
 			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #510: Ensure job is cleared and player is notified about job loss
+			-- The job was cleared when going to jail, but UI might show stale data
+			-- ═══════════════════════════════════════════════════════════════════════
+			local hadJobBeforeJail = state.CareerInfo and state.CareerInfo.lastJobBeforeJail
+			local lostJobName = hadJobBeforeJail and state.CareerInfo.lastJobBeforeJail.name or nil
+			
+			-- CRITICAL FIX #510: Double-check CurrentJob is cleared (should already be nil)
+			if state.CurrentJob then
+				-- This shouldn't happen, but clean up just in case
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #7: Resume education that was suspended during incarceration
 			-- If player was in college before going to jail, they can now re-enroll
 			-- ═══════════════════════════════════════════════════════════════════════
 			if state.EducationData and state.EducationData.StatusBeforeJail == "enrolled" then
 				state.EducationData.Status = "enrolled"
 				state.EducationData.StatusBeforeJail = nil
-				state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+				if lostJobName then
+					state.PendingFeed = string.format("🎉 You've been released from prison! Time served. Your education has been reinstated. You lost your job as %s.", lostJobName)
+				else
+					state.PendingFeed = "🎉 You've been released from prison! Time served. Your education has been reinstated."
+				end
 			elseif state.MobState and state.MobState.inMob then
 				-- Special message for mob members
-				state.PendingFeed = "🎉 You've been released from prison! The family welcomes you back."
+				if lostJobName then
+					state.PendingFeed = string.format("🎉 You've been released! The family welcomes you back. You lost your job as %s.", lostJobName)
+				else
+					state.PendingFeed = "🎉 You've been released from prison! The family welcomes you back."
+				end
 			else
-				state.PendingFeed = "🎉 You've been released from prison! Time served."
+				if lostJobName then
+					state.PendingFeed = string.format("🎉 You've been released from prison! Time served. You lost your job as %s - time to start fresh.", lostJobName)
+				else
+					state.PendingFeed = "🎉 You've been released from prison! Time served."
+				end
+			end
+			
+			-- Clear the last job before jail reference now that we've notified the player
+			if state.CareerInfo then
+				state.CareerInfo.lastJobBeforeJail = nil
 			end
 			
 			debugPrint("Player released from prison after completing sentence:", player.Name)
@@ -9803,7 +9891,10 @@ function LifeBackend:handleGodModeEdit(player, payload)
 	local feedText = payload.godModeCreate 
 		and "⚡ A custom life begins..." 
 		or ("⚡ God Mode update: " .. table.concat(summaries, " • "))
-	appendFeed(state, feedText)
+	-- CRITICAL FIX #501: DON'T call appendFeed here!
+	-- appendFeed stores to PendingFeed which shows again at Age 1
+	-- pushState already sends the message immediately to the client
+	-- Calling both causes the message to appear TWICE (now + Age 1)
 	self:pushState(player, feedText)
 
 	return { success = true, message = feedText, changes = summaries }

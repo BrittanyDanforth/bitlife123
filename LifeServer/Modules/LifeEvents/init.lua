@@ -282,6 +282,18 @@ function LifeEvents.init()
 		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events
 		{ name = "CelebrityEvents", category = "celebrity" },         -- Celebrity/Fame gamepass events  
 		{ name = "MafiaEvents",     category = "mafia" },             -- Mafia gamepass events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM INTEGRATED EVENTS - Events with optional gamepass choices
+		-- All players can play, premium choices enhance but don't force purchases
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "PremiumIntegratedEvents", category = "random" },    -- 20+ events with tasteful gamepass options
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RAPPER & CONTENT CREATOR EXPANSION - MASSIVE career paths
+		-- From underground nobody to legendary superstar
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RapperContentCreatorEvents", category = "career_music" }, -- 50+ rapper/creator events
 	}
 	
 	local totalEvents = 0
@@ -902,9 +914,52 @@ local function canEventTrigger(event, state)
 		if not state.CurrentJob then
 			return false
 		end
-		local jobCat = state.CurrentJob.category or state.CurrentJob.Category or ""
-		if jobCat:lower() ~= event.requiresJobCategory:lower() then
-			return false -- Wrong job category
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- CRITICAL FIX #504: Support both string and array for requiresJobCategory
+		-- Entertainment careers (rapper, musician, actor, etc.) should NOT get corporate events
+		local allowedCategories = event.requiresJobCategory
+		if type(allowedCategories) == "string" then
+			-- Single category string
+			if jobCat ~= allowedCategories:lower() then
+				return false
+			end
+		elseif type(allowedCategories) == "table" then
+			-- Array of allowed categories
+			local categoryMatch = false
+			for _, allowedCat in ipairs(allowedCategories) do
+				if jobCat == allowedCat:lower() then
+					categoryMatch = true
+					break
+				end
+			end
+			if not categoryMatch then
+				return false -- Job category not in allowed list
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #505: Block corporate events for entertainment careers
+	-- Rappers, musicians, actors, etc. should NOT get "CEO email" events
+	if event.requiresJob and state.CurrentJob then
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- Check if this is an entertainment career
+		local isEntertainment = jobCat == "entertainment" or jobCat == "creative" or jobCat == "music"
+			or jobId:find("rapper") or jobId:find("musician") or jobId:find("actor")
+			or jobId:find("influencer") or jobId:find("youtuber") or jobId:find("streamer")
+			or jobId:find("singer") or jobId:find("artist") or jobId:find("celebrity")
+		
+		-- Block corporate-specific events for entertainment careers
+		local eventId = event.id or ""
+		local isCorporateEvent = eventId:find("layoff") or eventId:find("fired_for_cause")
+			or eventId:find("toxic_coworker") or eventId:find("ceo_") or eventId:find("hr_")
+			or eventId:find("office_") or eventId:find("corporate")
+		
+		if isEntertainment and isCorporateEvent then
+			return false -- Entertainment careers don't get corporate events
 		end
 	end
 	
@@ -1412,6 +1467,59 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #511: Add music/entertainment career events for rappers, streamers, creators
+	-- This was COMPLETELY MISSING - rapper events were never being selected because
+	-- the career_music category wasn't being added to the event pool!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.CurrentJob then
+		local jobCategory = (state.CurrentJob.category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobName = (state.CurrentJob.name or ""):lower()
+		
+		-- Check if this is an entertainment/music career
+		local isEntertainment = jobCategory == "entertainment" or jobCategory == "music" or jobCategory == "creative"
+		local isMusicJob = jobId:find("rapper") or jobId:find("musician") or jobId:find("singer")
+		                or jobId:find("streamer") or jobId:find("creator") or jobId:find("influencer")
+		                or jobId:find("youtuber") or jobId:find("actor")
+		                or jobName:find("rapper") or jobName:find("streamer")
+		
+		if isEntertainment or isMusicJob then
+			local hasMusicCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_music" then hasMusicCat = true break end
+			end
+			if not hasMusicCat then
+				table.insert(categories, "career_music")
+			end
+			
+			-- Also add celebrity category for fame careers
+			local hasCelebCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "celebrity" then hasCelebCat = true break end
+			end
+			if not hasCelebCat and state.CurrentJob.isFameCareer then
+				table.insert(categories, "celebrity")
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #511: Also add career_music if player has rapper/creator flags (even without job)
+	local musicFlags = state.Flags and (
+		state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist or
+		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
+		state.Flags.first_track_recorded or state.Flags.first_video_uploaded
+	)
+	if musicFlags then
+		local hasMusicCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_music" then hasMusicCat = true break end
+		end
+		if not hasMusicCat then
+			table.insert(categories, "career_music")
+		end
+	end
+	
 	-- CRITICAL FIX: Add street hustler events if player has hustler flags
 	-- Even without a "job", hustlers should get their events
 	if state.Flags and (state.Flags.street_hustler or state.Flags.dealer or state.Flags.supplier) then
@@ -1582,6 +1690,41 @@ function LifeEvents.buildYearQueue(state, options)
 			-- CRITICAL FIX #433: Was using celebEvents instead of eligibleCelebEvents!
 			-- This could pick an ineligible event or cause index out of bounds
 			local chosenEvent = eligibleCelebEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCelebEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #512: RAPPER/CONTENT CREATOR EVENT PRIORITY
+	-- Rappers/streamers/creators should get career-specific events 40% of the time
+	-- Without this, they were barely getting any career events despite being employed!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isRapperOrCreator = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+	                         flags.content_creator or flags.streamer or flags.first_track_recorded
+	local hasEntertainmentJob = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator")
+	)
+	
+	if (isRapperOrCreator or hasEntertainmentJob) and RANDOM_LOCAL:NextNumber() < 0.40 then
+		local musicEvents = EventsByCategory["career_music"] or {}
+		local eligibleMusicEvents = {}
+		
+		for _, event in ipairs(musicEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleMusicEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleMusicEvents > 0 then
+			local chosenEvent = eligibleMusicEvents[RANDOM_LOCAL:NextInteger(1, #eligibleMusicEvents)]
 			table.insert(selectedEvents, chosenEvent)
 			recordEventShown(state, chosenEvent)
 			return selectedEvents
@@ -2150,6 +2293,77 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			end
 		else
 			warn("[EventEngine] Choice eligibility function error:", eligible)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #502: Check requiresGamepass on choices for premium options
+	-- Premium choices (God Mode, Mafia, Celebrity, Royalty) require gamepass ownership
+	-- This enables tasteful gamepass integration without forcing purchases
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.requiresGamepass then
+		local gamepassKey = choice.requiresGamepass
+		local flags = state.Flags or {}
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+		}
+		local gamepassToOwnership = {
+			GOD_MODE = "godMode",
+			MAFIA = "mafia",
+			CELEBRITY = "celebrity",
+			ROYALTY = "royalty",
+			TIME_MACHINE = "timeMachine",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownershipName = gamepassToOwnership[gamepassKey]
+		local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+		
+		if not hasGamepass then
+			-- Player doesn't have the required gamepass
+			local gamepassNames = {
+				GOD_MODE = "God Mode",
+				MAFIA = "Mafia",
+				CELEBRITY = "Celebrity",
+				ROYALTY = "Royalty",
+				TIME_MACHINE = "Time Machine",
+			}
+			local gamepassName = gamepassNames[gamepassKey] or gamepassKey
+			local emoji = choice.gamepassEmoji or "🔒"
+			
+			return {
+				success = false,
+				failed = true,
+				requiresGamepass = true,
+				gamepassKey = gamepassKey,
+				gamepassName = gamepassName,
+				failReason = string.format("%s This premium option requires the %s gamepass!", emoji, gamepassName),
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+		
+		-- Also check requiresFlags on premium choices (e.g., must be in mob for mafia options)
+		if choice.requiresFlags then
+			for flagName, requiredValue in pairs(choice.requiresFlags) do
+				local playerHasFlag = flags[flagName]
+				if requiredValue == true and not playerHasFlag then
+					return {
+						success = false,
+						failed = true,
+						failReason = "You don't meet the requirements for this option.",
+						eventId = eventDef.id,
+						choiceIndex = choiceIndex,
+					}
+				end
+			end
 		end
 	end
 	

@@ -156,7 +156,7 @@ local events = {
                     if roll < 0.3 then
                         state.Money = (state.Money or 0) + 50
                         if state.AddFeed then
-                            state:AddFeed("💵 Wait! They actually gave you $50! 'Sorry, we forgot!' Holy crap!")
+                            state:AddFeed("💵 Wait! They actually gave you $50! 'Sorry, we forgot!' No way!")
                         end
                     else
                         if state.AddFeed then
@@ -393,7 +393,7 @@ local events = {
                 text = "Become the manager - own this place",
                 effects = { Happiness = 6, Smarts = 3 },
                 setFlags = { management_aspirations = true },
-                feedText = "If you can't beat 'em, lead 'em. You're going to become the BEST damn manager this place has ever seen. Move over, regional manager!",
+                feedText = "If you can't beat 'em, lead 'em. You're going to become the BEST manager this place has ever seen. Move over, regional manager!",
                 onResolve = function(state)
                     if state.AddFeed then
                         state:AddFeed("🎯 You've set your sights on management. Time to climb that corporate ladder!")
