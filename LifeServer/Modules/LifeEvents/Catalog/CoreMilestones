@@ -268,75 +268,118 @@ local events = {
 				index = 1,
 				text = "College - continue your education",
 				effects = { Happiness = 7, Smarts = 5 },
-				setFlags = { plans_for_college = true, higher_education_path = true },
-				feedText = "Planning for college...",
-				-- CRITICAL FIX: Money validation for $10000 college costs
+				setFlags = { plans_for_college = true, higher_education_path = true, in_college = true },
+				feedText = "Enrolled in college!",
+				-- CRITICAL FIX #507: Actually enroll in college - set EducationData properly!
 				onResolve = function(state)
 					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					local loanNeeded = 0
+					local collegeName = "State University"
+					local duration = 4
+					local level = "bachelor"
+					
 					if money >= 10000 then
 						state.Money = money - 10000
-						if state.AddFeed then
-							state:AddFeed("🎓 You're going to college! Dorms, meal plans, student loans. New chapter begins!")
-						end
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
 					elseif money >= 3000 then
 						-- Community college / scholarship route
 						state.Money = money - 3000
-						state.Flags = state.Flags or {}
 						state.Flags.community_college = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Community college for now - transfer to 4-year later! Smart savings!")
-						end
+						collegeName = "Community College"
+						duration = 2
+						level = "community"
 					elseif money >= 500 then
-						-- Financial aid / full scholarship
+						-- Financial aid / full scholarship - still go to university
 						state.Money = money - 500
-						state.Flags = state.Flags or {}
 						state.Flags.financial_aid = true
 						state.Flags.student_loans = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Financial aid and student loans approved! You're going to college!")
-						end
+						state.Flags.has_student_loans = true
+						loanNeeded = 9500 -- Rest is loans
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
 					else
-						-- Parents helping / work-study
-						state.Flags = state.Flags or {}
+						-- Parents helping / work-study - full loans
 						state.Flags.work_study = true
 						state.Flags.student_loans = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Work-study program and loans. Working your way through college!")
-						end
+						state.Flags.has_student_loans = true
+						loanNeeded = 10000
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
 					end
+					
+					-- CRITICAL FIX #507: Actually set up EducationData for college enrollment!
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Level = level
+					state.EducationData.Progress = 0
+					state.EducationData.Duration = duration
+					state.EducationData.Institution = collegeName
+					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
+					state.EducationData.LoanAmount = loanNeeded
+					state.EducationData.enrolledAge = state.Age
+					
+					-- Set proper flags
+					state.Flags.in_college = true
+					state.Flags.college_student = true
+					state.Flags.enrolled_college = true
+					
+					-- Set Education level indicator
+					state.Education = level
+					
+					state.PendingFeed = string.format("🎓 You're going to %s! New chapter begins!", collegeName)
 				end,
 			},
 			{
 				index = 2,
 				text = "Trade school - learn a real skill",
 				effects = { Happiness = 6, Smarts = 4 },
-				setFlags = { trade_school = true, practical_path = true },
-				feedText = "Enrolling in trade school...",
-				-- CRITICAL FIX: Money validation for $5000 trade school
+				setFlags = { trade_school = true, practical_path = true, in_trade_school = true },
+				feedText = "Enrolled in trade school!",
+				-- CRITICAL FIX #508: Actually enroll in trade school properly
 				onResolve = function(state)
 					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					local loanNeeded = 0
+					local schoolName = "Technical Institute"
+					
 					if money >= 5000 then
 						state.Money = money - 5000
-						if state.AddFeed then
-							state:AddFeed("🎓 Enrolled in trade school! Real skills, real jobs. No 4-year debt!")
-						end
+						schoolName = "Technical Institute"
 					elseif money >= 2000 then
 						state.Money = money - 2000
-						if state.AddFeed then
-							state:AddFeed("🎓 Apprenticeship program! Learning on the job with some classes.")
-						end
+						state.Flags.apprentice = true
+						schoolName = "Apprenticeship Program"
 					elseif money >= 500 then
 						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("🎓 Financial aid for trade school approved! Practical path!")
-						end
+						state.Flags.financial_aid = true
+						loanNeeded = 4500
+						state.Flags.has_student_loans = true
+						schoolName = "Technical Institute"
 					else
-						state.Flags = state.Flags or {}
 						state.Flags.apprentice = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Starting as an apprentice - learning on the job, earning while learning!")
-						end
+						schoolName = "Apprenticeship Program"
 					end
+					
+					-- CRITICAL FIX #508: Set up EducationData for trade school
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Level = "trade"
+					state.EducationData.Progress = 0
+					state.EducationData.Duration = 2
+					state.EducationData.Institution = schoolName
+					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
+					state.EducationData.enrolledAge = state.Age
+					
+					state.Flags.trade_school_student = true
+					state.Flags.in_trade_school = true
+					state.Education = "trade"
+					
+					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
 				end,
 			},
 			{

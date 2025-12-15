@@ -18,6 +18,60 @@
 local RapperContentCreatorEvents = {}
 
 -- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #509: Helper functions to check for rapper/creator careers
+-- The job grants "rapper" flag but events were checking "pursuing_rap" - MISMATCH!
+-- These helpers check BOTH the job AND the flags to ensure events trigger properly
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local function isRapper(state)
+	-- Check job
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobName = (state.CurrentJob.name or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
+			return true
+		end
+		if (jobCat == "entertainment" or jobCat == "music") and (jobId:find("underground") or jobId:find("local_rapper") or jobId:find("buzzing") or jobId:find("signed") or jobId:find("hot_rapper") or jobId:find("mainstream") or jobId:find("superstar") or jobId:find("legend")) then
+			return true
+		end
+	end
+	-- Check flags
+	if state.Flags then
+		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist 
+		   or state.Flags.hip_hop_experience or state.Flags.trap_rapper or state.Flags.lyrical_rapper
+		   or state.Flags.melodic_rapper or state.Flags.drill_rapper then
+			return true
+		end
+	end
+	return false
+end
+
+local function isContentCreator(state)
+	-- Check job
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobName = (state.CurrentJob.name or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") then
+			return true
+		end
+		if (jobCat == "entertainment" or jobCat == "creative") and (jobName:find("creator") or jobName:find("stream") or jobName:find("youtube")) then
+			return true
+		end
+	end
+	-- Check flags
+	if state.Flags then
+		if state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming 
+		   or state.Flags.pursuing_influencer or state.Flags.pursuing_content or state.Flags.youtuber
+		   or state.Flags.social_media_presence or state.Flags.first_video_uploaded then
+			return true
+		end
+	end
+	return false
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
 -- RAPPER CAREER EVENTS - From the basement to the main stage
 -- ════════════════════════════════════════════════════════════════════════════════════
 
@@ -36,7 +90,15 @@ RapperContentCreatorEvents.events = {
 		cooldown = 1,
 		oneTime = true,
 		category = "career_music",
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Check for rapper job OR pursuing_rap flag
+		eligibility = function(state)
+			local hasRapperJob = state.CurrentJob and (
+				(state.CurrentJob.id or ""):lower():find("rapper") or
+				(state.CurrentJob.category or ""):lower() == "entertainment" and (state.CurrentJob.name or ""):lower():find("rapper")
+			)
+			local hasRapperFlag = state.Flags and (state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist)
+			return hasRapperJob or hasRapperFlag
+		end,
 		blockedByFlags = { first_track_recorded = true },
 		
 		choices = {
@@ -657,8 +719,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - ANY rapper can release an album!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 100000, "Need 100K+ monthly listeners for album release"
 		end,
@@ -702,8 +765,9 @@ RapperContentCreatorEvents.events = {
 		cooldown = 5,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - Beef happens to ALL rappers!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 50000, "Need to be relevant enough for beef"
 		end,
@@ -757,8 +821,9 @@ RapperContentCreatorEvents.events = {
 		cooldown = 8,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - Tours happen to growing rappers!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 75000, "Need bigger fanbase for tour"
 		end,
@@ -814,8 +879,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - Platinum can happen to any rapper!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 500000, "Need 500K+ listeners for platinum"
 		end,
@@ -1226,7 +1292,8 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.6,
 		cooldown = 2,
 		category = "career_music",
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
+		eligibility = function(state) return isRapper(state) end,
 		
 		choices = {
 			{
@@ -1545,8 +1612,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 10K is a milestone for ANY rapper!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 10000, "Need 10K listeners"
 		end,
@@ -1587,8 +1655,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 100K is a milestone for ANY rapper!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 100000, "Need 100K listeners"
 		end,
@@ -1632,8 +1701,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 500K is a milestone for ANY rapper!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 500000, "Need 500K listeners"
 		end,
@@ -1677,8 +1747,9 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_music",
 		-- REMOVED isCelebrityOnly - 1M is a milestone for ANY rapper!
-		requiresFlags = { pursuing_rap = true },
+		-- CRITICAL FIX #509: Use isRapper helper
 		eligibility = function(state)
+			if not isRapper(state) then return false end
 			local listeners = state.FameState and state.FameState.monthlyListeners or 0
 			return listeners >= 1000000, "Need 1M listeners"
 		end,
