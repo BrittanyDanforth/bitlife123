@@ -2496,14 +2496,17 @@ function Minigames:startPurge(callback, options)
 
 	_purgeDisconnectAll(self)
 
-	-- Intro typewriter
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Intro text was getting cut off
+	-- User feedback: "LAST COUPLE WORDS GOT CUT OFF LIKE IT SAID WELCOME TO THE"
+	-- Solution: Shorter intro text and slower typewriter for dramatic effect
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local introText =
-		"😈 THE PURGE HAS COMMENCED 😈\n\n" ..
-		"For the next 24 hours, all crime is legal...\n\n" ..
-		"No police. No emergency services. No rules...\n\n" ..
-		"Trust no one. Fear everything.\n\n" ..
-		"Welcome to The Purge."
-	typeText(self.purgeIntroBody, introText, options.introCps or 38, self._purgeTypingToken)
+		"😈 THE PURGE HAS BEGUN 😈\n\n" ..
+		"For 24 hours, all crime is legal.\n\n" ..
+		"No police. No rules. No mercy.\n\n" ..
+		"Trust no one. Survive."
+	typeText(self.purgeIntroBody, introText, options.introCps or 32, self._purgeTypingToken)
 
 	self._purgeBeginConnection = self.purgeBeginBtn.MouseButton1Click:Connect(function()
 		if self.activeGame ~= "purge" then return end
@@ -2613,6 +2616,33 @@ function Minigames:purgeShowDeath()
 	self.purgeDeathCard.Visible = true
 
 	_purgeDisconnectAll(self)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show detailed death outcome with typewriter effect
+	-- User feedback: "HAVE IT ACTUALLY KILL YOU AND HAVE IT SAY OUTCOMES LIKE WHAT 
+	-- HAPPENED THEN CONTINUE TO NEXT ONE AND HAVE IT TYPE WRITER IT NICELY"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Random death causes for variety
+	local deathCauses = {
+		"You were caught by a purge gang. They showed no mercy.",
+		"A roaming death squad found your hiding spot.",
+		"You made a wrong turn and walked into an ambush.",
+		"Your barricade was breached. You didn't stand a chance.",
+		"Someone you trusted turned on you.",
+		"The purgers tracked your every move. There was no escape.",
+		"You fought bravely but were overwhelmed by numbers.",
+		"A trap was set. You walked right into it.",
+		"Your injuries from earlier choices proved fatal.",
+		"In the chaos, you became another victim of The Purge.",
+	}
+	
+	local causeOfDeath = deathCauses[math.random(1, #deathCauses)]
+	local deathMessage = "💀 YOU HAVE PERISHED 💀\n\n" .. causeOfDeath .. "\n\n" ..
+		"Scenarios Survived: " .. math.max(0, (self.purgeIndex or 1) - 1) .. " / " .. (#self.purgeRun or 10)
+	
+	-- Typewriter the death outcome
+	typeText(self.purgeDeathBody, deathMessage, 35, self._purgeTypingToken)
 
 	self._purgeContinueConnection = self.purgeContinueBtn.MouseButton1Click:Connect(function()
 		self:endPurge(false)
@@ -2620,23 +2650,83 @@ function Minigames:purgeShowDeath()
 end
 
 function Minigames:endPurge(won)
-	self.activeGame = nil
-	if self.purgeOverlay then
-		self.purgeOverlay.Visible = false
-	end
-	self.purgeIntroCard.Visible = false
-	self.purgeGameCard.Visible = false
-	self.purgeDeathCard.Visible = false
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show survival outcome before closing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if won then
+		-- Show victory card with typewriter effect before closing
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = false
+		self.purgeDeathCard.Visible = false
+		
+		-- Reuse intro card for survival message
+		self.purgeIntroCard.Visible = true
+		
+		local survivalMessages = {
+			"You made it through the night. The sun rises on your survival.",
+			"Against all odds, you survived The Purge. You're one of the lucky ones.",
+			"The sirens signal the end. You lived to see another day.",
+			"Your choices kept you alive. You survived The Purge.",
+			"Dawn breaks. The nightmare is over. You made it.",
+		}
+		
+		local survivalMsg = "🎉 YOU SURVIVED! 🎉\n\n" .. 
+			survivalMessages[math.random(1, #survivalMessages)] .. "\n\n" ..
+			"HP Remaining: " .. (self.purgeHp or 0) .. " / 100\n" ..
+			"Scenarios Completed: " .. (#self.purgeRun or 10) .. " / " .. (#self.purgeRun or 10)
+		
+		-- Typewriter the survival outcome
+		typeText(self.purgeIntroBody, survivalMsg, 35, self._purgeTypingToken)
+		
+		-- Change begin button to continue
+		self.purgeBeginBtn.Text = "🌅 Continue"
+		self.purgeBeginBtn.BackgroundColor3 = C.Green
+		
+		_purgeDisconnectAll(self)
+		
+		self._purgeBeginConnection = self.purgeBeginBtn.MouseButton1Click:Connect(function()
+			-- Now actually close and call callback
+			self.activeGame = nil
+			self.purgeOverlay.Visible = false
+			self.purgeIntroCard.Visible = false
+			
+			-- Reset button for next time
+			self.purgeBeginBtn.Text = "🚨 BEGIN APOCALYPSE 🚨"
+			self.purgeBeginBtn.BackgroundColor3 = C.Red
+			
+			if self.callback then
+				self.callback(true, {
+					hp = self.purgeHp or 0,
+					completed = self.purgeRun and #self.purgeRun or 0,
+					total = self.purgeRun and #self.purgeRun or 0,
+					survived = true,
+				})
+				self.callback = nil
+			end
+		end)
+	else
+		-- Death path - close immediately (death screen already shown)
+		self.activeGame = nil
+		if self.purgeOverlay then
+			self.purgeOverlay.Visible = false
+		end
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = false
+		self.purgeDeathCard.Visible = false
 
-	_purgeDisconnectAll(self)
+		_purgeDisconnectAll(self)
 
-	if self.callback then
-		self.callback(won, {
-			hp = self.purgeHp or 0,
-			completed = math.max(0, (self.purgeIndex or 1) - 1),
-			total = self.purgeRun and #self.purgeRun or 0,
-		})
-		self.callback = nil
+		if self.callback then
+			self.callback(false, {
+				hp = 0,
+				completed = math.max(0, (self.purgeIndex or 1) - 1),
+				total = self.purgeRun and #self.purgeRun or 0,
+				died = true,  -- Mark that player died
+				causeOfDeath = "The Purge",
+			})
+			self.callback = nil
+		end
 	end
 end
 

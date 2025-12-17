@@ -303,6 +303,13 @@ function LifeEvents.init()
 		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
+		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD AS HELL"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RandomLifeEvents",          category = "random" },            -- Random encounters, luck, surprises
+		{ name = "YoungLifeEvents",           category = "childhood" },         -- Childhood and teen random events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
 		-- PREMIUM GAMEPASS EVENT MODULES - Require specific gamepasses
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events

@@ -1452,18 +1452,24 @@ end
 ----------------------------------------------------------------
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX: Stats row positioning - was floating with gap
--- User feedback: "STATS FOR SOME REASON LIKE ITS FLOATING HIGH UP"
--- Solution: Calculate position based on nav bar height + age button to sit snugly
+-- CRITICAL FIX: Stats row positioning - sits directly above age button
+-- User feedback: "THE HAPPYNESS HEALTH, LOOKS, SMARTS STATS BAR IS FLOATING UP"
+-- Solution: Calculate exact position based on where age button top is
 -- ═══════════════════════════════════════════════════════════════════════════════
 
--- Get nav bar height (defined later but same calculation)
+-- Match the nav bar and age button calculations exactly
 local calcNavHeight = Device.IS_TINY_PHONE and 55 or (Device.IS_SMALL_PHONE and 65 or px(85))
-local calcAgeOffset = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 38 or px(50))
+local calcAgeBtnSize = Device.IS_TINY_PHONE and 54 or (Device.IS_SMALL_PHONE and 65 or px(90))
+local calcAgeBtnOffset = Device.IS_TINY_PHONE and 6 or padSize(10)
+
+-- Age button center is at: navHeight/2 + offset from bottom
+-- Age button TOP is at: navHeight/2 + offset + ageBtnSize/2
+-- Stats row should sit right above it with small gap (4-6px)
+local ageBtnTopFromBottom = (calcNavHeight / 2) + calcAgeBtnOffset + (calcAgeBtnSize / 2)
+local statsGapFromAgeBtn = Device.IS_TINY_PHONE and 4 or 6
 
 local statsRowHeight = Device.IS_TINY_PHONE and 42 or (Device.IS_SMALL_PHONE and 50 or 58)
--- Position stats row directly above age button with small gap
-local statsRowBottom = calcNavHeight + calcAgeOffset + (Device.IS_TINY_PHONE and 6 or 10)
+local statsRowBottom = ageBtnTopFromBottom + statsGapFromAgeBtn
 local statsGap = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 40 or 55)
 
 local statsRow = Instance.new("Frame")
@@ -6705,22 +6711,38 @@ if MinigamesModule then
 				interval = 90,       -- Check every 90 seconds (1.5 min)
 				totalScenarios = 10, -- 10 survival scenarios
 				onComplete = function(won, stats)
-					print("[LifeClient] 😈 Purge event completed! Won:", won)
-					-- Purge outcomes affect player stats
+					print("[LifeClient] 😈 Purge event completed! Won:", won, "Stats:", stats and stats.died or "nil")
+					
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX: Purge should ACTUALLY KILL the player if they die
+					-- User feedback: "WHEN THE PURGE HAPPENED I DIDN'T DIE HAVE IT ACTUALLY KILL YOU"
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					
 					if currentState then
-						local statDelta = won and { Health = 5, Happiness = 10 } or { Health = -20, Happiness = -15 }
-						for stat, delta in pairs(statDelta) do
-							if currentState[stat] then
-								currentState[stat] = math.clamp(currentState[stat] + delta, 0, 100)
+						if won then
+							-- Survived! Bonus stats
+							currentState.Health = math.clamp((currentState.Health or 50) + 10, 0, 100)
+							currentState.Happiness = math.clamp((currentState.Happiness or 50) + 15, 0, 100)
+							
+							-- Add feed message
+							currentState.Feed = currentState.Feed or {}
+							table.insert(currentState.Feed, "🎉 You survived The Purge! You're stronger now! (+Health, +Happiness)")
+							refreshInfo()
+						else
+							-- DIED IN THE PURGE - Trigger actual death!
+							currentState.Health = 0  -- Set health to 0
+							currentState.Feed = currentState.Feed or {}
+							table.insert(currentState.Feed, "💀 You perished in The Purge...")
+							
+							-- Trigger death overlay
+							local deathCause = "Killed during The Purge"
+							if stats and stats.completed then
+								deathCause = "Killed during The Purge (Survived " .. stats.completed .. " scenarios)"
 							end
+							
+							-- Show death screen
+							showDeathOverlay(deathCause, currentState.Age)
 						end
-						-- Add feed message
-						local feedMsg = won 
-							and "😈 You survived The Purge! (+Health, +Happiness)"
-							or "💀 You died in The Purge... (Lost Health & Happiness)"
-						currentState.Feed = currentState.Feed or {}
-						table.insert(currentState.Feed, feedMsg)
-						refreshInfo()
 					end
 				end,
 			})

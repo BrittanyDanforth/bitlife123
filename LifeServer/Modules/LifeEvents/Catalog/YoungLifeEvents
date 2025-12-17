@@ -1,0 +1,551 @@
+--[[
+	Young Life Events - Childhood and Teen random events
+	AAA-quality events with RANDOM outcomes for variety
+	Ensures young characters have interesting unique lives
+	
+	Event types:
+	- Childhood adventures
+	- School drama
+	- Teen experiences
+	- Growing up moments
+	- Friendship dynamics
+]]
+
+local YoungLifeEvents = {}
+
+YoungLifeEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CHILDHOOD ADVENTURES (5-12)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "young_lost_tooth",
+		title = "🦷 Lost a Tooth!",
+		emoji = "🦷",
+		text = "Your tooth finally came out! Now to see what the Tooth Fairy brings!",
+		category = "childhood",
+		weight = 15,
+		minAge = 5, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Put it under the pillow",
+				effects = { Happiness = 5 },
+				feedText = "Time for the Tooth Fairy...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local money = math.random(1, 5)
+						state.Money = (state.Money or 0) + money
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("🦷 Tooth Fairy left $%d! You're rich (kind of)!", money))
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🦷 Got a small gift instead of money. Still cool!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🦷 Nothing there in the morning. Did the Tooth Fairy forget you?")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_playground_dare",
+		title = "🎢 Playground Dare!",
+		emoji = "🎢",
+		text = "The other kids dare you to do something risky on the playground!",
+		category = "childhood",
+		weight = 14,
+		minAge = 6, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept the dare!",
+				effects = {},
+				feedText = "Here goes nothing!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.brave_kid = true
+						state:AddFeed("🎢 Nailed it! Everyone thinks you're the coolest kid now!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎢 Did it! Not perfectly but you completed the dare!")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", -8)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🎢 Fell and got a scrape. Ouch! But at least you tried!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.playground_injury = true
+						state:AddFeed("🎢 Bad fall! Had to go to the nurse. Parents were NOT happy!")
+					end
+				end,
+			},
+			{
+				text = "Say no - too scary",
+				effects = { Happiness = -3 },
+				feedText = "Playing it safe.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:AddFeed("🎢 Kids moved on. Nobody really cared.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎢 Got called 'chicken' for a week. Stings but you're safe.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_imaginary_friend",
+		title = "👻 Imaginary Friend",
+		emoji = "👻",
+		text = "You've been talking to your imaginary friend a lot lately. Adults are starting to notice...",
+		category = "childhood",
+		weight = 12,
+		minAge = 4, maxAge = 9,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Keep playing with your friend",
+				effects = {},
+				feedText = "Friends are friends, even imaginary ones!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("👻 Your imagination is incredible! Creativity boosted!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👻 Fun times with your invisible buddy!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👻 Parents took you to a doctor. They say you'll 'grow out of it.'")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_pet_request",
+		title = "🐕 Want a Pet!",
+		emoji = "🐕",
+		text = "You really REALLY want a pet! Time to ask your parents!",
+		category = "childhood",
+		weight = 13,
+		minAge = 5, maxAge = 14,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true, has_childhood_pet = true },
+		
+		choices = {
+			{
+				text = "Beg and promise to take care of it",
+				effects = {},
+				feedText = "Please please please please!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.has_childhood_pet = true
+						state:AddFeed("🐕 THEY SAID YES! You got a pet! This is the best day!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🐕 Maybe next birthday... There's still hope!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🐕 They said NO. Life is so unfair! (You cried)")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SCHOOL DRAMA (6-18)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "young_school_project",
+		title = "📚 Group Project Drama",
+		emoji = "📚",
+		text = "You got assigned a group project and your partners aren't doing ANY work!",
+		category = "school",
+		weight = 15,
+		minAge = 8, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Do the whole thing yourself",
+				effects = { Health = -3 },
+				feedText = "Fine, I'll do it myself...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📚 Got an A! Teacher noticed YOU did all the work. Respect earned!")
+					elseif roll <= 80 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📚 Project was decent. Group got credit. You got tired.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("📚 Burned out! Made mistakes. Group blamed YOU. So unfair!")
+					end
+				end,
+			},
+			{
+				text = "Tell the teacher",
+				effects = { Smarts = 2 },
+				feedText = "Reporting the slackers...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📚 Teacher made them do work! Justice served!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📚 Teacher helped a bit. Situation improved.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.called_snitch = true
+						state:AddFeed("📚 Group found out. Now they call you 'snitch'. Great.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_pop_quiz",
+		title = "📝 Surprise Pop Quiz!",
+		emoji = "📝",
+		text = "The teacher just announced a surprise pop quiz! You weren't prepared!",
+		category = "school",
+		weight = 14,
+		minAge = 7, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Do your best",
+				effects = {},
+				feedText = "Here goes nothing...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local roll = math.random(1, 100) + math.floor(smarts / 4)
+					
+					if roll >= 90 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("📝 ACED IT! You knew more than you thought!")
+					elseif roll >= 65 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📝 Passed! Could've been worse!")
+					elseif roll >= 40 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📝 Barely passed... Phew!")
+					else
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.failed_quiz = true
+						state:AddFeed("📝 Failed badly. Teacher wants to talk to your parents...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_class_crush",
+		title = "💕 Classroom Crush!",
+		emoji = "💕",
+		text = "You can't stop thinking about that cute person in your class!",
+		category = "school",
+		weight = 13,
+		minAge = 10, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Try to talk to them",
+				effects = {},
+				feedText = "Heart pounding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.first_crush_success = true
+						state:AddFeed("💕 THEY LIKE YOU TOO! This is the best feeling!")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💕 Nice conversation! Maybe there's a chance...")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💕 They were nice but... definitely friend-zoned.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💕 Totally embarrassed yourself. Couldn't even speak properly!")
+					end
+				end,
+			},
+			{
+				text = "Admire from afar",
+				effects = { Happiness = -2 },
+				feedText = "Maybe one day...",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEEN EXPERIENCES (13-19)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "young_first_party",
+		title = "🎉 First Real Party!",
+		emoji = "🎉",
+		text = "Someone invited you to their party! Your first real party!",
+		category = "teen",
+		weight = 14,
+		minAge = 14, maxAge = 19,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go to the party!",
+				effects = {},
+				feedText = "Party time!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.party_legend = true
+						state:AddFeed("🎉 BEST PARTY EVER! Made so many new friends! Legendary night!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🎉 Fun time! Danced, talked, lived a little!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎉 Kinda awkward. Didn't know anyone. Left early.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.party_disaster = true
+						state:AddFeed("🎉 DISASTER! Something embarrassing happened. Everyone saw!")
+					end
+				end,
+			},
+			{
+				text = "Stay home",
+				effects = { Happiness = -5 },
+				feedText = "Parties aren't your thing.",
+			},
+		},
+	},
+	
+	{
+		id = "young_drivers_license",
+		title = "🚗 Driver's Test Day!",
+		emoji = "🚗",
+		text = "Today's the day! You're taking your driver's license test!",
+		category = "teen",
+		weight = 12,
+		minAge = 16, maxAge = 19,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true, has_drivers_license = true },
+		
+		choices = {
+			{
+				text = "Take the test",
+				effects = {},
+				feedText = "Here we go...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.has_drivers_license = true
+						state:AddFeed("🚗 YOU PASSED! You can DRIVE now! Freedom feels amazing!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🚗 Failed! Made a mistake during the driving part. Try again next time.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🚗 EPIC FAIL! Almost hit the instructor's car. They were not happy.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "young_prom_invite",
+		title = "💃 Prom Season!",
+		emoji = "💃",
+		text = "Prom is coming up! This could be a magical night!",
+		category = "teen",
+		weight = 11,
+		minAge = 16, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Ask someone to prom",
+				effects = {},
+				feedText = "This is nerve-wracking...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.prom_date = true
+						state:AddFeed("💃 THEY SAID YES! Prom is going to be amazing!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💃 Going with friends instead! Still gonna be fun!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💃 Got rejected. Ouch. This stings.")
+					end
+				end,
+			},
+			{
+				text = "Skip prom",
+				effects = { Happiness = -3 },
+				feedText = "Proms are overrated anyway.",
+			},
+		},
+	},
+	
+	{
+		id = "young_rebellion_phase",
+		title = "🔥 Rebellious Phase",
+		emoji = "🔥",
+		text = "You're feeling rebellious! Want to do something your parents wouldn't approve of!",
+		category = "teen",
+		weight = 13,
+		minAge = 13, maxAge = 19,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Do something rebellious",
+				effects = { Happiness = 5 },
+				feedText = "Living on the edge!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local rebellions = {
+						"Snuck out at night",
+						"Got an unauthorized piercing",
+						"Dyed your hair a wild color",
+						"Stayed out way past curfew",
+						"Went somewhere you weren't supposed to",
+					}
+					local rebellion = rebellions[math.random(1, #rebellions)]
+					
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🔥 " .. rebellion .. "! Got away with it! Felt alive!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("🔥 " .. rebellion .. "! Worth it but there were consequences...")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.grounded = true
+						state:AddFeed("🔥 " .. rebellion .. "! GOT CAUGHT! Grounded for weeks!")
+					end
+				end,
+			},
+			{
+				text = "Be responsible",
+				effects = { Smarts = 2 },
+				feedText = "Not worth the risk.",
+			},
+		},
+	},
+	
+	{
+		id = "young_college_acceptance",
+		title = "📬 College Decision!",
+		emoji = "📬",
+		text = "The college acceptance letters are coming in! This is it!",
+		category = "teen",
+		weight = 10,
+		minAge = 17, maxAge = 19,
+		baseChance = 0.4,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Open the letter",
+				effects = {},
+				feedText = "Please please please...",
+				onResolve = function(state)
+					local smarts = state.Stats and state.Stats.Smarts or 50
+					local roll = math.random(1, 100) + math.floor(smarts / 3)
+					
+					if roll >= 100 then
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.top_college_accepted = true
+						state:AddFeed("📬 ACCEPTED TO YOUR DREAM SCHOOL! Full scholarship offer! Life changing!")
+					elseif roll >= 70 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.college_accepted = true
+						state:AddFeed("📬 Accepted! Not first choice but still a great school!")
+					elseif roll >= 45 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📬 Waitlisted... There's still hope! Sort of...")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("📬 Rejected. The dream dies. Time to rethink the plan...")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return YoungLifeEvents
