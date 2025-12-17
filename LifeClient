@@ -1049,28 +1049,25 @@ local function showResultPopup(data, callback)
 		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
 	end
 	
-	-- CRITICAL FIX: Dynamic text sizing for long result text (NO scrolling)
+	-- CRITICAL FIX: Dynamic text sizing for long result text - keep readable!
 	local textLen = #bodyText
-	local baseResultTextSize = Device.IS_TINY_PHONE and 15 or textSize(18)
+	local baseResultTextSize = Device.IS_TINY_PHONE and 16 or textSize(20)
 	local adjustedResultTextSize = baseResultTextSize
-	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.2 or 1.3
+	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.25 or 1.35
 	
-	-- Aggressively reduce text size for longer text
-	if textLen > 400 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 10 or 11
-		adjustedResultLineHeight = 1.1
-	elseif textLen > 300 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 11 or 12
-		adjustedResultLineHeight = 1.12
-	elseif textLen > 200 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 12 or 13
-		adjustedResultLineHeight = 1.15
-	elseif textLen > 150 then
+	-- Gently reduce text size - never go too small!
+	if textLen > 350 then
 		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 15
-		adjustedResultLineHeight = 1.18
-	elseif textLen > 100 then
+		adjustedResultLineHeight = 1.15
+	elseif textLen > 250 then
 		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 16
-		adjustedResultLineHeight = 1.2
+		adjustedResultLineHeight = 1.18
+	elseif textLen > 180 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 18
+		adjustedResultLineHeight = 1.22
+	elseif textLen > 120 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 19
+		adjustedResultLineHeight = 1.25
 	end
 	
 	ResultUI.body.TextSize = adjustedResultTextSize
@@ -3977,34 +3974,30 @@ showEvent = function(payload)
 		EventUI.title.Text     = payload.title or "Life Event"
 		
 		-- CRITICAL FIX: Dynamic text sizing for long event text
-		-- When text is very long, reduce text size to keep card compact (NO scrolling)
+		-- Gently reduce text size for longer text - keep it readable!
 		local bodyText = payload.text or ""
 		local textLen = #bodyText
-		local baseBodyTextSize = Device.IS_TINY_PHONE and 15 or (Device.IS_SMALL_PHONE and 17 or textSize(20))
+		local baseBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))
 		local adjustedBodyTextSize = baseBodyTextSize
-		local adjustedLineHeight = Device.IS_TINY_PHONE and 1.2 or (Device.IS_SMALL_PHONE and 1.25 or 1.35)
+		local adjustedLineHeight = Device.IS_TINY_PHONE and 1.25 or (Device.IS_SMALL_PHONE and 1.3 or 1.4)
 		
-		-- Aggressively reduce text size for longer text to fit without scrolling
-		if textLen > 500 then
-			-- Very very long text - minimum readable
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 11 or 12)
-			adjustedLineHeight = 1.1
-		elseif textLen > 350 then
-			-- Very long text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 13)
-			adjustedLineHeight = 1.12
-		elseif textLen > 250 then
-			-- Long text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 13 or 14)
-			adjustedLineHeight = 1.15
-		elseif textLen > 180 then
-			-- Medium-long text
+		-- Gently reduce text size - never go too small!
+		if textLen > 400 then
+			-- Very long text - still readable
 			adjustedBodyTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 14 or 16)
+			adjustedLineHeight = 1.15
+		elseif textLen > 300 then
+			-- Long text
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 15 or 17)
 			adjustedLineHeight = 1.18
-		elseif textLen > 120 then
-			-- Moderate text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 15 or 18)
-			adjustedLineHeight = 1.2
+		elseif textLen > 200 then
+			-- Medium-long text
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 15 or (Device.IS_SMALL_PHONE and 16 or 19)
+			adjustedLineHeight = 1.22
+		elseif textLen > 150 then
+			-- Moderate text - barely reduce
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 15 or (Device.IS_SMALL_PHONE and 17 or 20)
+			adjustedLineHeight = 1.25
 		end
 		
 		EventUI.body.TextSize = adjustedBodyTextSize
