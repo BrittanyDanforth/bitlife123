@@ -2280,6 +2280,70 @@ local ActivityCatalog = {
 		requiresAge = 18,
 		mafiaEffect = { heat = -15 },
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7: RETIREMENT ACTIVITIES
+	-- Players should be able to retire from their jobs and receive pension
+	-- ═══════════════════════════════════════════════════════════════════════════
+	retire = {
+		stats = { Happiness = 10, Health = 5 },
+		feed = "retired from your career! Time to enjoy life!",
+		cost = 0,
+		requiresAge = 50, -- Can retire early (with reduced pension)
+		requiresFlag = "employed", -- Must have a job to retire from
+		setFlags = { retired = true, happily_retired = true },
+		clearFlags = { employed = true, has_job = true, has_teen_job = true },
+		oneTime = false, -- Can un-retire and re-retire
+		isRetirement = true, -- Special handler flag
+	},
+	early_retire = {
+		stats = { Happiness = 12, Health = 8 },
+		feed = "took early retirement! Living the dream!",
+		cost = 0,
+		requiresAge = 40, -- Minimum 40 for early retirement
+		maxAge = 49, -- After 50, use normal retire
+		requiresFlag = "employed",
+		setFlags = { retired = true, happily_retired = true, early_retirement = true },
+		clearFlags = { employed = true, has_job = true, has_teen_job = true },
+		oneTime = false,
+		isRetirement = true,
+	},
+	work_part_time = {
+		stats = { Happiness = 3 },
+		feed = "went semi-retired, working part-time!",
+		cost = 0,
+		requiresAge = 55,
+		requiresFlag = "employed",
+		setFlags = { semi_retired = true },
+		oneTime = false,
+		isSemiRetirement = true,
+	},
+	
+	-- Rehab activities for addiction recovery
+	go_to_rehab = {
+		stats = { Health = 10, Happiness = -5 },
+		feed = "checked into rehab to get clean!",
+		cost = 5000,
+		requiresAge = 14,
+		setFlags = { in_rehab = true, seeking_help = true },
+	},
+	attend_aa = {
+		stats = { Health = 5, Happiness = 2 },
+		feed = "attended an AA meeting!",
+		cost = 0,
+		requiresAge = 14,
+		setFlags = { attending_aa = true, seeking_help = true },
+	},
+	complete_rehab = {
+		stats = { Health = 15, Happiness = 10 },
+		feed = "completed your rehab program! A fresh start!",
+		cost = 0,
+		requiresAge = 14,
+		requiresFlag = "in_rehab",
+		setFlags = { completed_rehab = true },
+		clearFlags = { in_rehab = true },
+		oneTime = false,
+	},
 }
 
 local CrimeCatalog = {
@@ -4741,8 +4805,24 @@ function LifeBackend:applyStatChanges(state, deltas)
 	end
 end
 
+-- CRITICAL FIX #9: Safe money operation that prevents negative values
 function LifeBackend:addMoney(state, amount)
-	state.Money = math.max(0, (state.Money or 0) + amount)
+	if not amount or type(amount) ~= "number" then
+		return -- Invalid amount
+	end
+	
+	local currentMoney = state.Money or 0
+	if type(currentMoney) ~= "number" then
+		currentMoney = 0
+	end
+	
+	-- CRITICAL FIX #9: Prevent negative money values
+	local newMoney = currentMoney + amount
+	state.Money = math.max(0, math.floor(newMoney)) -- Also ensure integer value
+	
+	-- CRITICAL FIX #9B: Cap maximum money to prevent overflow issues
+	local MAX_MONEY = 999999999999 -- ~1 trillion
+	state.Money = math.min(state.Money, MAX_MONEY)
 end
 
 -- ============================================================================
@@ -5059,6 +5139,71 @@ function LifeBackend:advanceRelationships(state)
 				rel.deceased = true
 				state.PendingFeed = (rel.name or "A loved one") .. " passed away."
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #4: Handle PARTNER/SPOUSE death SEPARATELY from family deaths
+	-- Partner death needs to clear partner data and relationship flags
+	-- This was missing, causing deceased partners to still show in relationships!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local partner = state.Relationships.partner
+	if partner and type(partner) == "table" and partner.alive ~= false then
+		local partnerAge = partner.age or (state.Age + RANDOM:NextInteger(-5, 5))
+		local partnerDeathChance = 0
+		
+		-- CRITICAL FIX #23: Relationship aging respecting death age limits
+		if partnerAge >= 100 then
+			partnerDeathChance = 0.40
+		elseif partnerAge >= 95 then
+			partnerDeathChance = 0.20
+		elseif partnerAge >= 90 then
+			partnerDeathChance = 0.10
+		elseif partnerAge >= 85 then
+			partnerDeathChance = 0.05
+		elseif partnerAge >= 80 then
+			partnerDeathChance = 0.025
+		elseif partnerAge >= 75 then
+			partnerDeathChance = 0.01
+		end
+		
+		if partnerDeathChance > 0 and RANDOM:NextNumber() < partnerDeathChance then
+			-- CRITICAL FIX #4: FULLY handle partner death
+			local partnerName = partner.name or partner.Name or "Your spouse"
+			local partnerRole = partner.role or "partner"
+			
+			-- Mark partner as deceased
+			partner.alive = false
+			partner.deceased = true
+			partner.deathAge = partnerAge
+			
+			-- CRITICAL FIX #4: Move to deceased partners list and CLEAR active partner
+			state.Relationships.deceased_partners = state.Relationships.deceased_partners or {}
+			table.insert(state.Relationships.deceased_partners, {
+				name = partnerName,
+				role = partnerRole,
+				deathAge = partnerAge,
+				deathYear = state.Year,
+			})
+			
+			-- CRITICAL FIX #4: CLEAR the partner reference and all related flags!
+			state.Relationships.partner = nil
+			state.Flags = state.Flags or {}
+			state.Flags.has_partner = nil
+			state.Flags.married = nil
+			state.Flags.engaged = nil
+			state.Flags.dating = nil
+			state.Flags.lives_with_partner = nil
+			state.Flags.widowed = true
+			state.Flags.recently_bereaved = true
+			state.Flags.lost_spouse = true
+			
+			-- Significant happiness impact for losing a spouse
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 35, 0, 100)
+			
+			state.PendingFeed = string.format("💔 Your %s, %s, passed away at age %d. You are now widowed.", 
+				partnerRole, partnerName, partnerAge)
 		end
 	end
 	
@@ -5483,6 +5628,7 @@ end
 -- CRITICAL FIX #10: Vehicle Depreciation System
 -- Vehicles lose value over time (10-15% per year) based on condition
 -- Without this, cars never lose value and can be sold for purchase price forever
+-- CRITICAL FIX #19: Some classic/collector vehicles APPRECIATE instead!
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickVehicleDepreciation(state)
 	state.Assets = state.Assets or {}
@@ -5492,20 +5638,53 @@ function LifeBackend:tickVehicleDepreciation(state)
 		return
 	end
 	
+	-- CRITICAL FIX #19: Vehicles that appreciate in value (classics, collectibles)
+	local appreciatingVehicles = {
+		"classic", "vintage", "antique", "collector", "ferrari_250", 
+		"porsche_911", "mustang_1967", "corvette_1963", "shelby_gt500"
+	}
+	
 	for _, vehicle in ipairs(vehicles) do
 		if vehicle.value and vehicle.value > 0 then
-			-- Depreciation rate: 10-15% per year, modified by condition
-			local baseDepreciation = 0.12 -- 12% base
-			local conditionMod = vehicle.condition and (1 - vehicle.condition / 200) or 1 -- Poor condition = faster depreciation
-			local depreciationRate = baseDepreciation * conditionMod
+			local vehicleId = (vehicle.id or ""):lower()
+			local vehicleName = (vehicle.name or ""):lower()
+			local vehicleTier = (vehicle.tier or ""):lower()
 			
-			-- Calculate depreciation
-			local depreciationAmount = math.floor(vehicle.value * depreciationRate)
-			vehicle.value = math.max(500, vehicle.value - depreciationAmount) -- Minimum $500 scrap value
+			-- CRITICAL FIX #19: Check if this is an appreciating vehicle
+			local doesAppreciate = vehicle.appreciates == true
+			if not doesAppreciate then
+				for _, appreciateKey in ipairs(appreciatingVehicles) do
+					if vehicleId:find(appreciateKey) or vehicleName:find(appreciateKey) or vehicleTier == "collector" then
+						doesAppreciate = true
+						break
+					end
+				end
+			end
 			
-			-- Condition also degrades slightly each year (1-5%)
-			if vehicle.condition then
-				vehicle.condition = math.max(0, vehicle.condition - RANDOM:NextInteger(1, 5))
+			if doesAppreciate then
+				-- CRITICAL FIX #19: Appreciating vehicles GAIN value (2-8% per year)
+				local appreciationRate = RANDOM:NextNumber() * 0.06 + 0.02 -- 2-8%
+				local appreciationAmount = math.floor(vehicle.value * appreciationRate)
+				vehicle.value = vehicle.value + appreciationAmount
+				
+				-- Collectors maintain their vehicles well
+				if vehicle.condition then
+					vehicle.condition = math.min(100, vehicle.condition + RANDOM:NextInteger(0, 2))
+				end
+			else
+				-- Normal depreciation for regular vehicles
+				local baseDepreciation = 0.12 -- 12% base
+				local conditionMod = vehicle.condition and (1 - vehicle.condition / 200) or 1 -- Poor condition = faster depreciation
+				local depreciationRate = baseDepreciation * conditionMod
+				
+				-- Calculate depreciation
+				local depreciationAmount = math.floor(vehicle.value * depreciationRate)
+				vehicle.value = math.max(500, vehicle.value - depreciationAmount) -- Minimum $500 scrap value
+				
+				-- Condition also degrades slightly each year (1-5%)
+				if vehicle.condition then
+					vehicle.condition = math.max(0, vehicle.condition - RANDOM:NextInteger(1, 5))
+				end
 			end
 		end
 	end
@@ -5515,6 +5694,7 @@ end
 -- CRITICAL FIX #11: Investment Value Fluctuation
 -- Investments should gain or lose value each year based on market conditions
 -- Without this, investments are just static numbers
+-- CRITICAL FIX #20: Cap returns to prevent unrealistic exponential growth
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickInvestments(state)
 	state.Assets = state.Assets or {}
@@ -5526,7 +5706,16 @@ function LifeBackend:tickInvestments(state)
 		if inv.value and inv.value > 0 then
 			local changePercent = RANDOM:NextNumber() * 0.25 - 0.10 -- -10% to +15%
 			local changeAmount = math.floor(inv.value * changePercent)
-			inv.value = math.max(0, inv.value + changeAmount)
+			local newValue = inv.value + changeAmount
+			
+			-- CRITICAL FIX #20: Cap maximum growth per year to 3x original purchase price
+			local originalPrice = inv.price or inv.value
+			local maxValue = originalPrice * 3
+			inv.value = math.max(0, math.min(newValue, maxValue))
+			
+			-- Track total return for display
+			inv.totalReturn = inv.value - originalPrice
+			inv.returnPercent = originalPrice > 0 and math.floor((inv.value / originalPrice - 1) * 100) or 0
 		end
 	end
 	
@@ -5535,7 +5724,16 @@ function LifeBackend:tickInvestments(state)
 		if coin.value and coin.value > 0 then
 			local changePercent = RANDOM:NextNumber() * 0.80 - 0.30 -- -30% to +50%
 			local changeAmount = math.floor(coin.value * changePercent)
-			coin.value = math.max(0, coin.value + changeAmount)
+			local newValue = coin.value + changeAmount
+			
+			-- CRITICAL FIX #20: Cap crypto growth to 5x original (still volatile but not infinite)
+			local originalPrice = coin.price or coin.value
+			local maxValue = originalPrice * 5
+			coin.value = math.max(0, math.min(newValue, maxValue))
+			
+			-- Track total return
+			coin.totalReturn = coin.value - originalPrice
+			coin.returnPercent = originalPrice > 0 and math.floor((coin.value / originalPrice - 1) * 100) or 0
 		end
 	end
 end
@@ -5614,16 +5812,49 @@ function LifeBackend:applyLivingExpenses(state)
 	
 	-- CRITICAL FIX #152: Count children from relationships instead of ChildCount
 	-- state.ChildCount was never being set, so child expenses were always $0!
+	-- CRITICAL FIX #21: Living expenses MUST scale with family size properly
 	local childCount = 0
+	local partnerCount = 0
 	if state.Relationships then
 		for _, rel in pairs(state.Relationships) do
-			if type(rel) == "table" and rel.isChild then
-				childCount = childCount + 1
+			if type(rel) == "table" then
+				-- Count children
+				if rel.isChild or rel.role == "Child" or rel.role == "Son" or rel.role == "Daughter" then
+					childCount = childCount + 1
+				end
+				-- Count partner/spouse
+				if rel.role == "Spouse" or rel.role == "Partner" or rel.role == "Fiancé" or rel.role == "Fiancée" then
+					partnerCount = 1
+				end
 			end
 		end
 	end
+	-- Also check the dedicated partner slot
+	if state.Relationships and state.Relationships.partner then
+		partnerCount = 1
+	end
+	-- CRITICAL FIX #21: Use Flags.married for backup partner detection
+	if (state.Flags and state.Flags.married) and partnerCount == 0 then
+		partnerCount = 1
+	end
+	
+	-- CRITICAL FIX #21: Family expenses scale properly
+	-- Partner adds to expenses (shared housing but food, utilities, etc.)
+	if partnerCount > 0 then
+		totalExpenses = totalExpenses + 3000 -- $3,000/year additional for partner
+	end
+	-- Children are expensive!
 	if childCount > 0 then
-		totalExpenses = totalExpenses + (childCount * 5000) -- $5,000/year per child
+		-- First child is most expensive (new baby stuff), subsequent are cheaper
+		local firstChildCost = 8000 -- $8,000/year for first child
+		local additionalChildCost = 5000 -- $5,000/year for additional children
+		totalExpenses = totalExpenses + firstChildCost + ((childCount - 1) * additionalChildCost)
+		
+		-- CRITICAL FIX: School-age children have additional costs
+		-- Estimate based on having school-age children (usually if player is 30+)
+		if age >= 30 and childCount > 0 then
+			totalExpenses = totalExpenses + (childCount * 2000) -- School supplies, activities, etc.
+		end
 	end
 	
 	-- Healthcare costs increase with age (only for adults 30+)
@@ -5725,6 +5956,8 @@ end
 -- CRITICAL FIX #14: Fame Decay System
 -- Fame should gradually decrease without maintenance
 -- Without this, once famous always famous
+-- CRITICAL FIX #14B: But decay should NOT be aggressive for low fame players!
+-- Low fame players (< 20) should have minimal decay to let them build up
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickFame(state)
 	local fame = state.Fame or 0
@@ -5732,8 +5965,28 @@ function LifeBackend:tickFame(state)
 		return
 	end
 	
-	-- Fame naturally decays 5-10% per year without maintenance
-	local decayRate = RANDOM:NextNumber() * 0.05 + 0.05 -- 5-10%
+	-- CRITICAL FIX: Low fame players get minimal decay to let them build up
+	-- This fixes the issue where new celebrities lost fame before they could grow
+	if fame < 10 then
+		-- Almost no decay for very low fame - let them establish themselves
+		local decayAmount = RANDOM:NextInteger(0, 1)
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	elseif fame < 20 then
+		-- Minimal decay for low fame
+		local decayAmount = RANDOM:NextInteger(0, 2)
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	elseif fame < 40 then
+		-- Reduced decay for moderate fame (1-3% per year)
+		local decayRate = RANDOM:NextNumber() * 0.02 + 0.01 -- 1-3%
+		local decayAmount = math.max(1, math.floor(fame * decayRate))
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	end
+	
+	-- Fame naturally decays 3-8% per year without maintenance (reduced from 5-10%)
+	local decayRate = RANDOM:NextNumber() * 0.05 + 0.03 -- 3-8%
 	local decayAmount = math.floor(fame * decayRate)
 	
 	-- Active careers that maintain fame slow decay
@@ -5741,14 +5994,25 @@ function LifeBackend:tickFame(state)
 		local jobId = state.CurrentJob.id or ""
 		local fameMaintainingJobs = {
 			"actor", "singer", "athlete", "influencer", "model", 
-			"tv_host", "youtuber", "politician", "celebrity"
+			"tv_host", "youtuber", "politician", "celebrity",
+			"rapper", "streamer", "musician", "entertainer", "host"
 		}
 		for _, job in ipairs(fameMaintainingJobs) do
 			if jobId:find(job) then
-				decayAmount = math.floor(decayAmount * 0.3) -- 70% slower decay
+				decayAmount = math.floor(decayAmount * 0.25) -- 75% slower decay for active careers
 				break
 			end
 		end
+	end
+	
+	-- CRITICAL FIX: Fame state career path also slows decay
+	if state.FameState and state.FameState.careerPath then
+		decayAmount = math.floor(decayAmount * 0.5) -- 50% slower if in fame career
+	end
+	
+	-- CRITICAL FIX: Royalty and mafia members have slower fame decay (public figures)
+	if (state.RoyalState and state.RoyalState.isRoyal) or (state.MobState and state.MobState.inMob) then
+		decayAmount = math.floor(decayAmount * 0.6) -- 40% slower
 	end
 	
 	state.Fame = math.max(0, fame - decayAmount)
@@ -5864,54 +6128,96 @@ function LifeBackend:tickPetLifecycle(state)
 	end
 	
 	-- Age dogs and check for death (lifespan 10-15 years)
+	-- CRITICAL FIX #24: Force death for very old pets (no dog lives past 20)
 	if state.Flags.has_dog and state.PetData.dogAge then
 		state.PetData.dogAge = state.PetData.dogAge + 1
 		local dogAge = state.PetData.dogAge
-		if dogAge >= 10 then
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 20+ years (world record is ~30, but 20 is very old)
+		if dogAge >= 20 then
+			shouldDie = true
+		elseif dogAge >= 10 then
 			local deathChance = (dogAge - 10) / 10 -- Increases each year after 10
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_dog = nil
-				state.Flags.lost_dog = true
-				state.PetData.dogAge = nil
-				local dogName = state.PetData.dogName or "your dog"
-				self:logYearEvent(state, "pet_death", 
-					string.format("💔 %s passed away after %d wonderful years together.", dogName, dogAge), "🐕")
-				state.Stats = state.Stats or {}
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 15, 0, 100)
+			-- CRITICAL FIX #24: Higher base death chance for older dogs
+			if dogAge >= 15 then
+				deathChance = math.max(deathChance, 0.60) -- At least 60% at 15+
+			elseif dogAge >= 13 then
+				deathChance = math.max(deathChance, 0.35) -- At least 35% at 13-14
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_dog = nil
+			state.Flags.lost_dog = true
+			state.PetData.dogAge = nil
+			local dogName = state.PetData.dogName or "your dog"
+			self:logYearEvent(state, "pet_death", 
+				string.format("💔 %s passed away after %d wonderful years together.", dogName, dogAge), "🐕")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 15, 0, 100)
 		end
 	end
 	
 	-- Age cats and check for death (lifespan 12-20 years)
+	-- CRITICAL FIX #24: Force death for very old cats (no cat lives past 25)
 	if state.Flags.has_cat and state.PetData.catAge then
 		state.PetData.catAge = state.PetData.catAge + 1
 		local catAge = state.PetData.catAge
-		if catAge >= 12 then
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 25+ years (world record is ~38, but 25 is very old)
+		if catAge >= 25 then
+			shouldDie = true
+		elseif catAge >= 12 then
 			local deathChance = (catAge - 12) / 15 -- Cats live longer
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_cat = nil
-				state.Flags.lost_cat = true
-				state.PetData.catAge = nil
-				local catName = state.PetData.catName or "your cat"
-				self:logYearEvent(state, "pet_death", 
-					string.format("💔 %s passed away at age %d. A faithful companion.", catName, catAge), "🐱")
-				state.Stats = state.Stats or {}
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 12, 0, 100)
+			-- CRITICAL FIX #24: Higher base death chance for older cats
+			if catAge >= 20 then
+				deathChance = math.max(deathChance, 0.65) -- At least 65% at 20+
+			elseif catAge >= 17 then
+				deathChance = math.max(deathChance, 0.40) -- At least 40% at 17-19
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_cat = nil
+			state.Flags.lost_cat = true
+			state.PetData.catAge = nil
+			local catName = state.PetData.catName or "your cat"
+			self:logYearEvent(state, "pet_death", 
+				string.format("💔 %s passed away at age %d. A faithful companion.", catName, catAge), "🐱")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 12, 0, 100)
 		end
 	end
 	
 	-- Small pets have shorter lifespans (2-5 years)
+	-- CRITICAL FIX #24: Force death for very old small pets (hamsters/etc max 7 years)
 	if state.Flags.has_small_pet and state.PetData.smallPetAge then
 		state.PetData.smallPetAge = state.PetData.smallPetAge + 1
-		if state.PetData.smallPetAge >= 3 then
-			local deathChance = (state.PetData.smallPetAge - 2) / 5
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_small_pet = nil
-				state.PetData.smallPetAge = nil
-				self:logYearEvent(state, "pet_death", "💔 Your small pet passed away.", "🐹")
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 5, 0, 100)
+		local petAge = state.PetData.smallPetAge
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 7+ years
+		if petAge >= 7 then
+			shouldDie = true
+		elseif petAge >= 3 then
+			local deathChance = (petAge - 2) / 5
+			-- Higher base chance for older small pets
+			if petAge >= 5 then
+				deathChance = math.max(deathChance, 0.50)
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_small_pet = nil
+			state.PetData.smallPetAge = nil
+			self:logYearEvent(state, "pet_death", "💔 Your small pet passed away.", "🐹")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 5, 0, 100)
 		end
 	elseif state.Flags.has_small_pet and not state.PetData.smallPetAge then
 		state.PetData.smallPetAge = 1
@@ -6042,6 +6348,49 @@ function LifeBackend:checkBankruptcy(state)
 			self:logYearEvent(state, "financial", 
 				"⚠️ You're in severe financial distress. Consider your options carefully.", "💸")
 		end
+	end
+	
+	-- CRITICAL FIX #26: If player has declared bankruptcy, ensure ALL debt is cleared
+	-- This fixes the bug where bankruptcy was declared but debt flags remained
+	if state.Flags.declared_bankruptcy and state.Flags.bankruptcy_pending then
+		-- Clear ALL debt flags
+		state.Flags.credit_card_debt = nil
+		state.Flags.mortgage_debt = nil
+		state.Flags.car_loan_balance = nil
+		state.Flags.car_loan_payment = nil
+		state.Flags.has_car_loan = nil
+		state.Flags.has_student_loans = nil -- Note: student loans can't be discharged IRL, but for gameplay
+		state.Flags.student_loan_amount = nil
+		state.Flags.debt_collection = nil
+		state.Flags.financial_crisis = nil
+		state.Flags.bad_debt = nil
+		state.Flags.defaulted = nil
+		state.Flags.bankruptcy_pending = nil
+		
+		-- Education debt is partially forgiven (student loans survive bankruptcy IRL, but reduced in game)
+		if state.EducationData and state.EducationData.Debt then
+			state.EducationData.Debt = math.floor(state.EducationData.Debt * 0.5) -- 50% forgiven
+		end
+		
+		-- Consequences of bankruptcy
+		state.Flags.bad_credit = true
+		state.Flags.bankruptcy_on_record = true
+		state.Flags.credit_score_tanked = true
+		
+		-- Lose some assets (liquidation)
+		if state.Assets then
+			-- Keep primary home, but lose luxury items
+			if state.Assets.Vehicles and #state.Assets.Vehicles > 1 then
+				-- Keep only one vehicle
+				local keptVehicle = state.Assets.Vehicles[1]
+				state.Assets.Vehicles = { keptVehicle }
+				self:logYearEvent(state, "financial", 
+					"🚗 Extra vehicles liquidated as part of bankruptcy.", "💸")
+			end
+		end
+		
+		self:logYearEvent(state, "financial", 
+			"💸 Bankruptcy finalized. Debts discharged but credit is damaged for years.", "⚖️")
 	end
 end
 
@@ -6366,35 +6715,37 @@ function LifeBackend:processAddictions(state)
 	state.Flags = state.Flags or {}
 	state.Stats = state.Stats or {}
 	
+	-- CRITICAL FIX #29: Increased addiction recovery chances (were too low!)
+	-- Old chances made recovery nearly impossible, frustrating players
 	local addictions = {
 		smoking = {
 			healthCost = 2,
 			moneyCost = 1500, -- Pack-a-day habit
-			quitDifficulty = 0.15,
+			quitDifficulty = 0.18, -- CRITICAL FIX #29: Was 0.15, now 18% chance
 		},
 		heavy_drinking = {
 			healthCost = 3,
 			happinessCost = 2,
 			moneyCost = 2500,
-			quitDifficulty = 0.12,
+			quitDifficulty = 0.15, -- CRITICAL FIX #29: Was 0.12, now 15% chance
 		},
 		alcoholic = {
 			healthCost = 5,
 			happinessCost = 4,
 			moneyCost = 4000,
-			quitDifficulty = 0.08,
+			quitDifficulty = 0.12, -- CRITICAL FIX #29: Was 0.08, now 12% chance
 			canLoseJob = true,
 		},
 		gambling_addiction = {
 			happinessCost = 5,
-			moneyCost = function(state) return math.floor((state.Money or 0) * 0.20) end, -- 20% of wealth
-			quitDifficulty = 0.10,
+			moneyCost = function(state) return math.floor((state.Money or 0) * 0.15) end, -- CRITICAL FIX: Reduced from 20% to 15%
+			quitDifficulty = 0.14, -- CRITICAL FIX #29: Was 0.10, now 14% chance
 		},
 		substance_user = {
 			healthCost = 4,
 			happinessCost = 3,
 			moneyCost = 3000,
-			quitDifficulty = 0.10,
+			quitDifficulty = 0.12, -- CRITICAL FIX #29: Was 0.10, now 12% chance
 			canGetArrested = true,
 		},
 		substance_addict = {
@@ -6402,11 +6753,20 @@ function LifeBackend:processAddictions(state)
 			happinessCost = 6,
 			smartsCost = 2,
 			moneyCost = 8000,
-			quitDifficulty = 0.05,
+			quitDifficulty = 0.08, -- CRITICAL FIX #29: Was 0.05, now 8% chance (still hard, but possible)
 			canGetArrested = true,
 			canOverdose = true,
 		},
 	}
+	
+	-- CRITICAL FIX #29B: Boost recovery chance if player has been to rehab or is actively trying to quit
+	local rehabBoost = 0
+	if state.Flags.in_rehab or state.Flags.attending_aa or state.Flags.seeking_help then
+		rehabBoost = 0.15 -- 15% bonus to quit chance if actively seeking help
+	end
+	if state.Flags.completed_rehab then
+		rehabBoost = rehabBoost + 0.10 -- Additional 10% if completed rehab
+	end
 	
 	for addictionName, addiction in pairs(addictions) do
 		if state.Flags[addictionName] then
@@ -6463,10 +6823,23 @@ function LifeBackend:processAddictions(state)
 				end
 			end
 			
-			-- Random chance to try to quit
-			if RANDOM:NextNumber() < addiction.quitDifficulty then
+			-- Random chance to try to quit (with rehab boost)
+			-- CRITICAL FIX #29: Apply rehab boost to recovery chance
+			local finalQuitChance = addiction.quitDifficulty + rehabBoost
+			
+			-- CRITICAL FIX #29C: High health and happiness also help recovery
+			local healthBonus = ((state.Stats.Health or 50) - 50) / 500 -- Up to +10% at 100 health
+			local happinessBonus = ((state.Stats.Happiness or 50) - 50) / 500 -- Up to +10% at 100 happiness
+			finalQuitChance = finalQuitChance + healthBonus + happinessBonus
+			
+			-- Cap at 50% max chance (still need some difficulty)
+			finalQuitChance = math.min(0.50, finalQuitChance)
+			
+			if RANDOM:NextNumber() < finalQuitChance then
 				state.Flags[addictionName] = nil
 				state.Flags[addictionName .. "_recovered"] = true
+				-- Clear rehab flags after successful recovery
+				state.Flags.in_rehab = nil
 				self:logYearEvent(state, "health",
 					string.format("🎉 Overcame %s! A new chapter begins.", addictionName:gsub("_", " ")), "💪")
 			end
@@ -8374,6 +8747,55 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		if royalEffect.diplomacy then
 			state.RoyaltyState.diplomacy = (state.RoyaltyState.diplomacy or 50) + royalEffect.diplomacy
 		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7: Handle RETIREMENT activities
+	-- This properly transitions player from employed state to retired state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isRetirement then
+		-- Calculate pension based on current job salary and years worked
+		local pensionAmount = 15000 -- Base social security minimum
+		if state.CurrentJob and state.CurrentJob.salary then
+			local yearsWorked = state.CareerInfo and state.CareerInfo.totalYearsWorked or 0
+			yearsWorked = yearsWorked + (state.CareerInfo and state.CareerInfo.yearsAtJob or 0)
+			
+			-- Pension calculation: 40% of salary + years worked bonus
+			-- Early retirement gets reduced pension
+			local pensionPercent = 0.4
+			if activity.setFlags and activity.setFlags.early_retirement then
+				pensionPercent = 0.25 -- 25% for early retirement
+			end
+			
+			pensionAmount = math.floor(state.CurrentJob.salary * pensionPercent)
+			pensionAmount = pensionAmount + (yearsWorked * 500) -- $500 per year worked
+			pensionAmount = math.max(15000, pensionAmount) -- Minimum pension
+		end
+		
+		-- Store pension amount in flags for annual payment
+		state.Flags.pension_amount = pensionAmount
+		
+		-- Save last job info for records
+		if state.CareerInfo then
+			state.CareerInfo.lastJob = state.CurrentJob
+			state.CareerInfo.lastJobSalary = state.CurrentJob and state.CurrentJob.salary
+		end
+		
+		-- CRITICAL: Clear current job
+		state.CurrentJob = nil
+		state.Flags.employed = nil
+		state.Flags.has_job = nil
+		
+		resultMessage = string.format("You retired! You'll receive $%s annual pension.", pensionAmount)
+	end
+	
+	-- Handle semi-retirement (working part-time)
+	if activity.isSemiRetirement then
+		-- Reduce salary but keep job
+		if state.CurrentJob and state.CurrentJob.salary then
+			state.CurrentJob.salary = math.floor(state.CurrentJob.salary * 0.5) -- Half salary
+		end
+		resultMessage = "You're now semi-retired, working part-time for reduced salary."
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
