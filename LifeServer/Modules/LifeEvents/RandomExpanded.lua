@@ -806,6 +806,8 @@ RandomExpanded.events = {
 		ageBand = "adult",
 		category = "crime",
 		tags = { "fraud", "identity", "crime" },
+		-- CRITICAL FIX: Can't get identity theft while in prison (no bank accounts accessible)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random identity theft severity
 		choices = {
@@ -816,24 +818,48 @@ RandomExpanded.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🔐 False alarm! Just a weird charge. All good.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("🔐 False alarm! Just a weird charge. All good.") end
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 100
-						state:AddFeed("🔐 Small fraud. Bank fixed it. Lost $100 and time.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						-- CRITICAL FIX: Can't lose more money than you have
+						local loss = math.min(100, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						if state.AddFeed then 
+							if loss > 0 then
+								state:AddFeed(string.format("🔐 Small fraud. Bank fixed it. Lost $%d and time.", loss))
+							else
+								state:AddFeed("🔐 Small fraud attempt. Bank caught it in time!")
+							end
+						end
 					elseif roll < 0.90 then
-						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						-- CRITICAL FIX: Can't lose more money than you have
+						local loss = math.min(500, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.identity_theft = true
-						state:AddFeed("🔐 Real identity theft. Months to fix. Lost $500.")
+						if state.AddFeed then 
+							if loss > 0 then
+								state:AddFeed(string.format("🔐 Real identity theft. Months to fix. Lost $%d.", loss))
+							else
+								state:AddFeed("🔐 Identity theft attempt! Caught early but took months to clear your name.")
+							end
+						end
 					else
-						state:ModifyStat("Happiness", -12)
-						state.Money = (state.Money or 0) - 2000
+						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
+						-- CRITICAL FIX: Can't lose more money than you have
+						local loss = math.min(2000, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.major_identity_theft = true
-						state:AddFeed("🔐 Major breach. Credit destroyed. Years to recover.")
+						if state.AddFeed then 
+							if loss > 0 then
+								state:AddFeed(string.format("🔐 Major breach. Credit destroyed. Lost $%d. Years to recover.", loss))
+							else
+								state:AddFeed("🔐 Major breach! Your credit is destroyed. Years to recover.")
+							end
+						end
 					end
 				end,
 			},

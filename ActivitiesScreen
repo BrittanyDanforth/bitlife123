@@ -168,83 +168,113 @@ local CommitCrime = getRemote("CommitCrime")
 local DoPrisonAction = getRemote("DoPrisonAction")
 
 -- Activity Data - Must match server's Activities IDs!
+-- CRITICAL FIX: Added minigames to MORE activities for increased variety and engagement!
 local MindBody = {
-	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0 },
+	-- CRITICAL FIX: Reading now has a QTE minigame (focus while reading)
+	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
-	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0 },
-	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0 },
-	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200 },
+	-- CRITICAL FIX: Running now has mash minigame (sprint!)
+	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Yoga now has QTE minigame (hold the pose!)
+	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Spa day now has QTE minigame (relaxation timing)
+	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200, hasMinigame = true, minigameType = "qte" },
 	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
 	-- CRITICAL FIX: Driver's license with QTE driving test minigame
 	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
 	-- NEW: Martial arts with fight minigame
-	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "fight" },
+	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "combat" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- EDUCATION (Like BitLife!) - Go back to school, get GED, etc.
+-- CRITICAL FIX: Added minigames to education for exam-style gameplay!
 -- ═══════════════════════════════════════════════════════════════════════════
 local Education = {
-	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school" },
+	-- CRITICAL FIX: GED test has mash minigame (cram session!)
+	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school", hasMinigame = true, minigameType = "mash" },
 	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "Back to School!", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
-	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma" },
-	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma" },
-	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000 },
-	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000 },
-	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree" },
-	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree" },
-	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree" },
+	-- CRITICAL FIX: College application has debate minigame (interview!)
+	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	-- CRITICAL FIX: Trade school has mash minigame (hands-on training!)
+	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Coding bootcamp has hacking minigame!
+	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000, hasMinigame = true, minigameType = "hacking" },
+	-- CRITICAL FIX: Professional schools have debate minigame (interview/exam!)
+	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
 }
 
+-- CRITICAL FIX: Added minigames to social activities for more engaging gameplay!
 local Social = {
-	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0 },
-	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0 },
+	-- CRITICAL FIX: Party now has mash minigame (dance off!)
+	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Hangout now has QTE minigame (social timing!)
+	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
-	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300 },
-	-- NEW: Karaoke with debate minigame
+	-- CRITICAL FIX: Host party now has QTE minigame (hosting is hard!)
+	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Karaoke with debate minigame (singing competition!)
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 	-- NEW: Pick a Fight with combat minigame
-	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true },
-	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true },
+	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
 }
 
+-- CRITICAL FIX: Added minigames to entertainment activities!
 local Entertainment = {
 	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+Happiness", minAge = 2, cost = 0 },
-	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
-	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20 },
-	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150 },
-	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000 },
-	-- NEW: Arcade with diverse minigames
+	-- CRITICAL FIX: Video games have mash minigame now (button mashing!)
+	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Movies now has QTE minigame (stay awake/engaged!)
+	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Concert now has mash minigame (moshing/dancing!)
+	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Vacation now has QTE minigame (adventure moments!)
+	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Arcade with mash minigame (classic arcade action!)
 	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+Happiness +Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
 }
 
 -- Crime IDs MUST match server's Crimes table exactly!
--- CRITICAL FIX: Added diverse minigames for different crimes
+-- CRITICAL FIX: Added diverse minigames for ALL crimes for maximum engagement!
 local Crimes = {
 	-- PETTY CRIMES
-	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
-	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
+	-- CRITICAL FIX: Porch pirate now has QTE minigame (grab and run!)
+	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Shoplift now has QTE minigame (slip items and escape!)
+	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8, hasMinigame = true, minigameType = "qte" },
 	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
-	-- VIOLENCE (NEW: Combat-based crimes)
-	{ id = "assault", name = "Assault", emoji = "👊", risk = 45, reward = "$0", minAge = 14, isCombat = true },
-	{ id = "mugging", name = "Mugging", emoji = "🔪", risk = 55, reward = "$50-$500", minAge = 16, isCombat = true },
+	-- VIOLENCE (Combat-based crimes with full combat system!)
+	{ id = "assault", name = "Assault", emoji = "👊", risk = 45, reward = "$0", minAge = 14, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	{ id = "mugging", name = "Mugging", emoji = "🔪", risk = 55, reward = "$50-$500", minAge = 16, isCombat = true, hasMinigame = true, minigameType = "combat" },
 	-- PROPERTY CRIMES
 	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
-	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16 },
+	-- CRITICAL FIX: Car theft now has getaway minigame!
+	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
 	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
 	-- WHITE COLLAR
-	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18 },
-	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16 },
+	-- CRITICAL FIX: Tax fraud now has hacking minigame (cooking the books!)
+	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18, hasMinigame = true, minigameType = "hacking" },
+	-- CRITICAL FIX: Identity theft now has hacking minigame!
+	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16, hasMinigame = true, minigameType = "hacking" },
 	-- SERIOUS CRIMES
-	{ id = "illegal_dealing", name = "Illegal Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
-	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18 },
-	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18 },
+	-- CRITICAL FIX: Dealing now has QTE minigame (make the deal!)
+	{ id = "illegal_dealing", name = "Illegal Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Extortion now has debate minigame (intimidation!)
+	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18, hasMinigame = true, minigameType = "debate" },
+	-- CRITICAL FIX: Arson now has QTE minigame (set the fire and run!)
+	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18, hasMinigame = true, minigameType = "qte" },
 	-- MAJOR CRIMES
 	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true, minigameType = "heist" },
-	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18 },
-	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18 },
+	-- CRITICAL FIX: Kidnapping now has combat minigame (subdue the target!)
+	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18, hasMinigame = true, minigameType = "combat" },
+	-- CRITICAL FIX: Murder now has combat minigame!
+	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18, hasMinigame = true, minigameType = "combat" },
 }
 
 -- CRITICAL FIX: Prison activities with appropriate minigames

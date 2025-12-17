@@ -58,11 +58,31 @@ local function safeRequireRS(name)
 	end
 	if child then
 		local s, r = pcall(require, child)
-		if s then return r end
+		if s then 
+			print("[LifeClient] ✅ Successfully loaded module:", name)
+			return r 
+		else
+			warn("[LifeClient] ❌ Failed to require module:", name, "-", tostring(r))
+		end
+	else
+		warn("[LifeClient] ⚠️ Module not found in ReplicatedStorage:", name)
 	end
 	return nil
 end
 MinigamesModule = safeRequireRS("Minigames")
+
+-- CRITICAL FIX: Print debug info about MinigamesModule loading status
+if MinigamesModule then
+	print("[LifeClient] 🎮 MinigamesModule loaded successfully. Type:", type(MinigamesModule))
+	if MinigamesModule.new then
+		print("[LifeClient] 🎮 MinigamesModule.new function is available")
+	else
+		warn("[LifeClient] ❌ MinigamesModule.new function is MISSING!")
+	end
+else
+	warn("[LifeClient] ⚠️ MinigamesModule is nil - minigames will NOT work!")
+	warn("[LifeClient] ⚠️ Please ensure 'Minigames' ModuleScript is in ReplicatedStorage")
+end
 
 ----------------------------------------------------------------
 -- REMOTES (robust - wait for server to create them)
@@ -6621,6 +6641,17 @@ if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
 	if ok and mg then 
 		minigamesInstance = mg
+		print("[LifeClient] 🎮 Minigames instance created successfully!")
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Verify the minigames instance has the play function
+		-- Without this, we silently fail when trying to play minigames
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if mg.play then
+			print("[LifeClient] 🎮 Minigames 'play' function is available!")
+		else
+			warn("[LifeClient] ❌ Minigames instance missing 'play' function!")
+		end
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Enable rare auto Purge event (0.5% chance every 90 seconds)
@@ -6652,7 +6683,16 @@ if MinigamesModule then
 				end,
 			})
 		end
+	else
+		-- CRITICAL FIX: Log the error if MinigamesModule.new failed
+		if not ok then
+			warn("[LifeClient] ❌ Failed to create minigames instance:", tostring(mg))
+		else
+			warn("[LifeClient] ⚠️ MinigamesModule.new returned nil or false")
+		end
 	end
+else
+	warn("[LifeClient] ⚠️ MinigamesModule not available - minigames will not work!")
 end
 
 ----------------------------------------------------------------

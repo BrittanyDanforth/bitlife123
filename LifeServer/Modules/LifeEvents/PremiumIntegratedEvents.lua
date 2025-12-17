@@ -742,6 +742,8 @@ PremiumIntegratedEvents.events = {
 		stage = STAGE,
 		category = "crime",
 		tags = { "danger", "crime", "robbery" },
+		-- CRITICAL FIX: Can't be mugged on the street while in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{

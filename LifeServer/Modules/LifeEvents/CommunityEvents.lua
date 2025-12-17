@@ -158,6 +158,8 @@ CommunityEvents.events = {
 		ageBand = "any",
 		category = "crime",
 		tags = { "crime", "neighborhood", "safety" },
+		-- CRITICAL FIX: Can't have neighborhood crime while YOU are in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{
@@ -167,14 +169,22 @@ CommunityEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
-						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						-- CRITICAL FIX: Don't go negative
+						local loss = math.min(500, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.home_burglarized = true
-						state:AddFeed("🚔 YOUR place was hit. Violated. Lost valuables.")
+						if state.AddFeed then 
+							if loss > 0 then
+								state:AddFeed(string.format("🚔 YOUR place was hit. Violated. Lost $%d in valuables.", loss))
+							else
+								state:AddFeed("🚔 YOUR place was hit. Luckily nothing valuable was taken.")
+							end
+						end
 					else
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("🚔 Neighbor got hit. Scary. Upgrading security.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then state:AddFeed("🚔 Neighbor got hit. Scary. Upgrading security.") end
 					end
 				end,
 			},

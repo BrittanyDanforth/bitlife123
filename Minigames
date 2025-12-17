@@ -1260,20 +1260,31 @@ function Minigames:createQuickTimeGame()
 	self.qteIndicator.Parent = self.qteBarBg
 	corner(self.qteIndicator, 4)
 
-	-- CRITICAL UI FIX: Larger tap button
+	-- CRITICAL MOBILE FIX: Even larger tap button for easy mobile tapping!
 	self.qteTapBtn = Instance.new("TextButton")
-	self.qteTapBtn.Size = UDim2.new(0.8, 0, 0, 100)
+	-- MOBILE OPTIMIZATION: Button is 90% width for massive tap target
+	self.qteTapBtn.Size = UDim2.new(0.9, 0, 0, 120)
 	self.qteTapBtn.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 210)
+	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 200)
 	self.qteTapBtn.BackgroundColor3 = C.Blue
 	self.qteTapBtn.Font = F.Title
-	self.qteTapBtn.TextSize = 32
+	self.qteTapBtn.TextSize = 36
 	self.qteTapBtn.TextColor3 = C.White
-	self.qteTapBtn.Text = "🎯 TAP!"
+	self.qteTapBtn.Text = "🎯 TAP NOW!"
 	self.qteTapBtn.AutoButtonColor = false
 	self.qteTapBtn.ZIndex = 202
 	self.qteTapBtn.Parent = self.qteCard
-	corner(self.qteTapBtn, 20)
+	corner(self.qteTapBtn, 24)
+	
+	-- MOBILE OPTIMIZATION: Visual feedback on touch
+	self.qteTapBtn.MouseButton1Down:Connect(function()
+		self.qteTapBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0) -- Green on press
+		self.qteTapBtn.Size = UDim2.new(0.88, 0, 0, 116) -- Slight shrink for feedback
+	end)
+	self.qteTapBtn.MouseButton1Up:Connect(function()
+		self.qteTapBtn.BackgroundColor3 = C.Blue
+		self.qteTapBtn.Size = UDim2.new(0.9, 0, 0, 120) -- Back to normal
+	end)
 
 	self.qteResult = Instance.new("TextLabel")
 	self.qteResult.Size = UDim2.new(1, 0, 0, 50)
@@ -1710,20 +1721,29 @@ function Minigames:createMashGame()
 	self.mashCount.ZIndex = 202
 	self.mashCount.Parent = self.mashCard
 
-	-- Big tap button
+	-- Big tap button - CRITICAL MOBILE FIX: Made MUCH larger for easy tapping!
 	self.mashButton = Instance.new("TextButton")
-	self.mashButton.Size = UDim2.new(0, 180, 0, 180)
+	-- MOBILE OPTIMIZATION: Button is now 70% of card width for bigger tap target
+	self.mashButton.Size = UDim2.new(0.7, 0, 0, 140)
 	self.mashButton.AnchorPoint = Vector2.new(0.5, 0)
-	self.mashButton.Position = UDim2.new(0.5, 0, 0, 210)
+	self.mashButton.Position = UDim2.new(0.5, 0, 0, 200)
 	self.mashButton.BackgroundColor3 = C.Blue
 	self.mashButton.Font = F.Title
-	self.mashButton.TextSize = 48
+	self.mashButton.TextSize = 42
 	self.mashButton.TextColor3 = C.White
-	self.mashButton.Text = "TAP!"
+	self.mashButton.Text = "👆 TAP!"
 	self.mashButton.AutoButtonColor = false
 	self.mashButton.ZIndex = 203
 	self.mashButton.Parent = self.mashCard
-	corner(self.mashButton, 90)
+	corner(self.mashButton, 24)  -- MOBILE FIX: Rounded rectangle instead of circle for bigger tap zone
+	
+	-- MOBILE OPTIMIZATION: Add visual feedback on tap
+	self.mashButton.MouseButton1Down:Connect(function()
+		self.mashButton.BackgroundColor3 = C.Green
+	end)
+	self.mashButton.MouseButton1Up:Connect(function()
+		self.mashButton.BackgroundColor3 = C.Blue
+	end)
 end
 
 function Minigames:startMash(callback, options)

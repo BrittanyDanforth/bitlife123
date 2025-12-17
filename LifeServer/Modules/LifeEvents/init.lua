@@ -438,6 +438,48 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JAIL-1: GLOBAL PRISON EVENT FILTER
+	-- Players who are incarcerated should ONLY receive prison-specific events!
+	-- BUG: Random events (identity_theft, home_invasion, mugged, etc.) were triggering
+	-- while player was serving a 21-year sentence - completely immersion-breaking!
+	-- FIX: Block ALL non-prison events when player is in jail
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isIncarcerated = state.InJail or flags.in_prison or flags.incarcerated
+	
+	if isIncarcerated then
+		-- Check if this is a prison-specific event (allowed while incarcerated)
+		local eventId = (event.id or ""):lower()
+		local eventCategory = (event.category or ""):lower()
+		local eventTitle = (event.title or ""):lower()
+		
+		-- Events explicitly marked as prison events are allowed
+		if event.isPrisonEvent or event.allowInPrison then
+			-- This event is explicitly allowed in prison, let it through
+		-- Events with prison-related IDs or categories are allowed
+		elseif eventId:find("prison") or eventId:find("jail") or eventId:find("inmate") 
+			or eventId:find("warden") or eventId:find("parole") or eventId:find("cell")
+			or eventId:find("sentence") or eventId:find("locked_up") or eventId:find("behind_bars")
+			or eventCategory == "prison" or eventCategory == "jail" or eventCategory == "incarceration"
+			or eventTitle:find("prison") or eventTitle:find("jail") then
+			-- Prison-related event, allow it
+		-- Events about family visiting or letter from family while in prison
+		elseif eventId:find("family_visit") or eventId:find("letter_from") then
+			-- Allow family interaction events even in prison
+		-- Health events can happen in prison (getting sick, etc.)
+		elseif eventId:find("health_decline") or eventId:find("sick") or eventId:find("medical")
+			or eventCategory == "health" then
+			-- Health can deteriorate in prison
+		-- Death events should still work in prison
+		elseif eventId:find("death") or event.isDeath then
+			-- Death events pass through
+		else
+			-- ALL OTHER EVENTS ARE BLOCKED WHILE IN PRISON!
+			-- This prevents identity_theft, home_invasion, mugged, community events, etc.
+			return false
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5/#14: PREMIUM GAMEPASS EVENT FILTERING
 	-- Events marked as premium-only MUST check for gamepass ownership!
 	-- Without this, players without gamepasses could get royalty/mafia/celebrity events!
