@@ -2891,7 +2891,15 @@ local function buildEventModal()
 	EventUI.title.ZIndex = 65
 	EventUI.title.Parent = titleSection
 
-	-- body + "What will you do?" question - MOBILE FIX: Responsive sizing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Scrollable body section for long text on mobile
+	-- User feedback: "cards getting cut off top and bottom on mobile"
+	-- Solution: Scrollable body area with max height, buttons always visible
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Calculate max body height based on screen - leave room for title, question, buttons
+	local maxBodyHeight = Device.IS_TINY_PHONE and 120 or (Device.IS_SMALL_PHONE and 150 or 200)
+
 	local bodySection = Instance.new("Frame")
 	bodySection.Size = UDim2.new(1, 0, 0, 0)
 	bodySection.AutomaticSize = Enum.AutomaticSize.Y
@@ -2909,11 +2917,22 @@ local function buildEventModal()
 	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Mobile event card body text - scaled for tiny phones
-	-- User feedback: "cards too big and cutting off" - need smaller text on tiny phones
-	-- Solution: More compact text with tighter line height on small devices
-	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Scrollable container for body text
+	-- This allows long event text to scroll while keeping buttons visible
+	EventUI.bodyScroll = Instance.new("ScrollingFrame")
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
+	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
+	EventUI.bodyScroll.BackgroundTransparency = 1
+	EventUI.bodyScroll.BorderSizePixel = 0
+	EventUI.bodyScroll.ScrollBarThickness = Device.IS_MOBILE and 4 or 6
+	EventUI.bodyScroll.ScrollBarImageColor3 = C.Gray400
+	EventUI.bodyScroll.CanvasSize = UDim2.new(1, 0, 0, 0)  -- Will be updated dynamically
+	EventUI.bodyScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	EventUI.bodyScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	EventUI.bodyScroll.LayoutOrder = 1
+	EventUI.bodyScroll.ZIndex = 65
+	EventUI.bodyScroll.Parent = bodySection
+
 	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
@@ -2928,9 +2947,8 @@ local function buildEventModal()
 	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.15 or (Device.IS_SMALL_PHONE and 1.25 or 1.4)
 	EventUI.body.RichText = true
 	EventUI.body.Text = ""
-	EventUI.body.LayoutOrder = 1
 	EventUI.body.ZIndex = 65
-	EventUI.body.Parent = bodySection
+	EventUI.body.Parent = EventUI.bodyScroll
 
 	-- MOBILE FIX: Responsive question text
 	-- CRITICAL FIX #USER-4: Increased question text sizes for better readability
@@ -4067,6 +4085,25 @@ showEvent = function(payload)
 		EventUI.body.LineHeight = adjustedLineHeight
 		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
+
+		-- CRITICAL FIX: Dynamically resize scroll frame based on actual text height
+		-- If text is short, shrink the scroll area. If long, cap at maxBodyHeight and enable scrolling
+		task.defer(function()
+			if EventUI.bodyScroll and EventUI.body then
+				local maxBodyHeight = Device.IS_TINY_PHONE and 120 or (Device.IS_SMALL_PHONE and 150 or 200)
+				local actualTextHeight = EventUI.body.AbsoluteSize.Y
+
+				if actualTextHeight < maxBodyHeight then
+					-- Short text - shrink scroll area to fit content (no scrolling needed)
+					EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, actualTextHeight + 4)
+					EventUI.bodyScroll.ScrollingEnabled = false
+				else
+					-- Long text - use max height and enable scrolling
+					EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
+					EventUI.bodyScroll.ScrollingEnabled = true
+				end
+			end
+		end)
 
 		local choiceHandlers = {}
 
