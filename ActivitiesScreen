@@ -382,7 +382,9 @@ function ActivitiesScreen:updateState(newState)
 
 	-- Store previous jail status using the SAME logic as isInJail()
 	local wasInJail = false
+	local wasAge = 0
 	if self.playerState then
+		wasAge = self.playerState.Age or 0
 		-- Priority: InJail (ExtendedState) > Flags.in_prison > Flags.incarcerated
 		if self.playerState.InJail == true then
 			wasInJail = true
@@ -395,6 +397,25 @@ function ActivitiesScreen:updateState(newState)
 
 	if newState then 
 		self.playerState = newState 
+
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #24: Detect new life and rebuild UI completely
+		-- If age went from high to 0-1, this is a new life - need fresh UI
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
+		if isNewLife then
+			log("🔄 NEW LIFE DETECTED! Rebuilding activities UI completely")
+			-- Reset to default tab for new life
+			self.currentTab = "mindbody"
+			if self.isVisible then
+				self:rebuildTabs()
+				self:updateInfoBar()
+				self:switchTab(self.currentTab)
+			end
+			return -- Don't process jail changes for new life
+		end
 
 		-- Check if jail status changed using consistent logic
 		local nowInJail = self:isInJail()

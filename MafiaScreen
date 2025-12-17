@@ -489,8 +489,17 @@ end
 
 function MafiaScreen:updateState(newState)
 	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #27: Detect new life and reset mafia state display
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
 		self.playerState = newState 
-		if self.isVisible then
+		
+		-- Force refresh on new life to show correct mafia status (should be not in mob)
+		if isNewLife or self.isVisible then
 			self:refreshContent()
 		end
 	end

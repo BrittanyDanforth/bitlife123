@@ -360,6 +360,13 @@ end
 function AssetsScreen:updateState(newState)
 	log("=== UPDATE STATE CALLED ===")
 	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #26: Detect new life and reset assets view
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 		
@@ -375,6 +382,12 @@ function AssetsScreen:updateState(newState)
 				end
 				return keys
 			end)(), ", "))
+		end
+		
+		-- Force refresh on new life to clear old assets display
+		if isNewLife then
+			log("🔄 NEW LIFE DETECTED! Forcing assets UI refresh")
+			self.currentTab = "shop" -- Reset to shop tab for new life (baby has no assets)
 		end
 		
 		-- Auto-refresh the current tab if screen is visible

@@ -4671,6 +4671,48 @@ function LifeBackend:pushState(player, feedText, resultData)
 	if not state then
 		return
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #21: Always sync stats before pushing to client
+	-- This ensures state.Health == state.Stats.Health, etc.
+	-- Without this, client can show different values than server intended
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Stats = state.Stats or {}
+	state.Health = state.Stats.Health or state.Health or 50
+	state.Happiness = state.Stats.Happiness or state.Happiness or 50
+	state.Smarts = state.Stats.Smarts or state.Smarts or 50
+	state.Looks = state.Stats.Looks or state.Looks or 50
+	
+	-- Also sync Stats from top-level in case they were set directly
+	state.Stats.Health = state.Health
+	state.Stats.Happiness = state.Happiness
+	state.Stats.Smarts = state.Smarts
+	state.Stats.Looks = state.Looks
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #22: Ensure employment flags match CurrentJob state
+	-- This prevents the "job shows but Work says no job" bug
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	if state.CurrentJob and state.CurrentJob.id then
+		state.Flags.employed = true
+		state.Flags.has_job = true
+	else
+		state.Flags.employed = nil
+		state.Flags.has_job = nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #23: Ensure prison flags match InJail state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.InJail then
+		state.Flags.in_prison = true
+		state.Flags.incarcerated = true
+	else
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+	end
+	
 	state.lastFeed = feedText or state.lastFeed
 	self.remotes.SyncState:FireClient(player, self:serializeState(state), feedText, resultData)
 end

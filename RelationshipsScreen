@@ -497,6 +497,13 @@ function RelationshipsScreen:updateState(newState)
 		return 
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #25: Detect new life and reset relationship view
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local wasAge = self.playerState and self.playerState.Age or 0
+	local newAge = newState.Age or 0
+	local isNewLife = (wasAge > 5 and newAge <= 1)
+
 	self.playerState = newState
 	log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 
@@ -517,6 +524,12 @@ function RelationshipsScreen:updateState(newState)
 		end
 	end
 	log("Total relationships from getRelationships():", relCount)
+
+	-- Force refresh on new life to show new family members
+	if isNewLife then
+		log("🔄 NEW LIFE DETECTED! Forcing relationship UI refresh")
+		self.currentTab = "family" -- Reset to family tab for new life
+	end
 
 	if self.isVisible then
 		self:updateInfoBar()
