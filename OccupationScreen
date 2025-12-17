@@ -3281,17 +3281,17 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	quitBtnShadow.Parent = quitBtn
 	UI.corner(quitBtnShadow, IS_SMALL_PHONE and 8 or 10)
 
-	-- MOBILE FIX: Responsive hover sizes
-	local quitHoverHeight = quitBtnHeight + 4
+	-- MOBILE FIX: Responsive hover sizes (use actionRow2Height which is the button height)
+	local quitHoverHeight = (actionRow2Height or 40) + 4
 	quitBtn.MouseEnter:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-			Size = UDim2.new(0.32, 0, 0, quitHoverHeight),
+			Size = UDim2.new(0.30, -4, 0, quitHoverHeight),
 			BackgroundColor3 = C.RedDark 
 		})
 	end)
 	quitBtn.MouseLeave:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12), { 
-			Size = UDim2.new(0.32, 0, 0, quitBtnHeight),
+			Size = UDim2.new(0.30, -4, 0, actionRow2Height or 40),
 			BackgroundColor3 = C.Red 
 		})
 	end)
