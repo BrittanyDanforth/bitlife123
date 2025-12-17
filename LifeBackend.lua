@@ -1410,30 +1410,41 @@ local JobCatalogList = {
 	-- Without proper IDs, they show as "Unknown Job" in the UI.
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- RAPPER CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RAPPER CAREER PATH - REQUIRES CELEBRITY GAMEPASS
+	-- User feedback: "ENSURE IT WORKS FOR BEING A RAPPER OR SOMETHING NOT A YOUTUBER"
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 250, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 2, grantsFlags = { "rapper", "underground_artist", "hip_hop_experience", "pursuing_rap" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Starting your rap career from the underground" },
 	{ id = "local_rapper", name = "Local Rapper", company = "Local Scene", emoji = "📍", salary = 3000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "underground_artist", "rapper" }, grantsFlags = { "local_fame", "music_industry" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Known in your local hip-hop scene" },
 	{ id = "buzzing_rapper", name = "Buzzing Rapper", company = "Blog Circuit", emoji = "🔊", salary = 25000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "local_fame", "rapper" }, grantsFlags = { "buzz", "viral_potential" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "The blogs are talking about you" },
 	{ id = "signed_rapper", name = "Signed Rapper", company = "Record Label", emoji = "📝", salary = 125000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "buzz", "rapper" }, grantsFlags = { "signed_artist", "label_deal" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Signed to a major or indie label" },
 	{ id = "hot_rapper", name = "Hot Rapper", company = "Major Label", emoji = "🔥", salary = 500000, minAge = 19, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "signed_artist", "rapper" }, grantsFlags = { "charting_artist", "hit_maker" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "You've got multiple hits" },
 	{ id = "mainstream_rapper", name = "Mainstream Rapper", company = "Global Records", emoji = "⭐", salary = 3000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "charting_artist", "rapper" }, grantsFlags = { "mainstream_fame", "celebrity" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Household name status" },
 	{ id = "superstar_rapper", name = "Superstar Rapper", company = "Empire Records", emoji = "💎", salary = 25000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "mainstream_fame", "rapper" }, grantsFlags = { "superstar", "mogul" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "One of the biggest names in hip-hop" },
 	{ id = "legend_rapper", name = "Hip-Hop Legend", company = "Hall of Fame", emoji = "👑", salary = 90000000, minAge = 28, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "superstar", "rapper" }, grantsFlags = { "legend", "goat_status" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "A true legend of hip-hop" },
 	
 	-- INFLUENCER/CONTENT CREATOR CAREER PATH (Celebrity gamepass)
@@ -1483,7 +1494,10 @@ local JobCatalogList = {
 		difficulty = 10, requiresFlags = { "famous_streamer" }, grantsFlags = { "streaming_legend", "icon" }, isFameCareer = true,
 		description = "A legend of the streaming world" },
 	
-	-- MUSIC CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MUSIC CAREER PATH - REQUIRES CELEBRITY GAMEPASS
+	-- Entry-level (street performer, local artist) is FREE but signed/pro requires gamepass
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "street_performer", name = "Street Performer", company = "Self-Employed", emoji = "🎸", salary = 275, minAge = 10, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "performer", "busker" }, isFameCareer = true,
 		description = "Playing for tips on the street" },
@@ -1495,21 +1509,29 @@ local JobCatalogList = {
 		description = "Self-released music gaining traction" },
 	{ id = "signed_artist", name = "Signed Artist", company = "Record Label", emoji = "📝", salary = 100000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "indie_artist" }, grantsFlags = { "signed_artist", "label_support" }, isFameCareer = true,
-		description = "Signed to a record label" },
+		requiresCelebrityGamepass = true,
+		description = "Signed to a record label - requires Celebrity Gamepass" },
 	{ id = "touring_artist", name = "Touring Artist", company = "Major Label", emoji = "🚌", salary = 350000, minAge = 19, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "signed_artist" }, grantsFlags = { "touring_musician", "headliner" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Headlining your own tours" },
 	{ id = "platinum_artist", name = "Platinum Artist", company = "Global Records", emoji = "💿", salary = 3000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "touring_musician" }, grantsFlags = { "platinum_seller", "award_winner" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Selling millions of records" },
 	{ id = "music_superstar", name = "Superstar", company = "Universal Music", emoji = "🌟", salary = 30000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "platinum_seller" }, grantsFlags = { "music_superstar", "global_fame" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Global superstar status" },
 	{ id = "music_icon", name = "Music Icon", company = "Hall of Fame", emoji = "👑", salary = 90000000, minAge = 28, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "music_superstar" }, grantsFlags = { "music_icon", "legend" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "An icon of the music industry" },
 	
-	-- ACTING CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ACTING CAREER PATH - REQUIRES CELEBRITY GAMEPASS for higher tiers
+	-- Entry-level (extra, background actor) is FREE but speaking roles+ require gamepass
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "extra", name = "Extra", company = "Casting Agency", emoji = "👥", salary = 1250, minAge = 6, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "actor", "background_work" }, isFameCareer = true,
 		description = "Stand in the background of scenes" },
@@ -1518,21 +1540,27 @@ local JobCatalogList = {
 		description = "Featured background roles" },
 	{ id = "bit_part_actor", name = "Bit Part Actor", company = "TV Studios", emoji = "🗣️", salary = 16500, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "featured_extra" }, grantsFlags = { "speaking_role", "sag_card" }, isFameCareer = true,
-		description = "Small speaking roles" },
+		requiresCelebrityGamepass = true,
+		description = "Small speaking roles - requires Celebrity Gamepass" },
 	{ id = "guest_star", name = "Guest Star", company = "Network TV", emoji = "📺", salary = 50000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "speaking_role" }, grantsFlags = { "recurring_role", "tv_presence" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Recurring guest appearances on TV shows" },
 	{ id = "supporting_actor", name = "Supporting Actor", company = "Film Production", emoji = "🎬", salary = 137500, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "recurring_role" }, grantsFlags = { "film_actor", "award_potential" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Notable supporting roles in films" },
 	{ id = "tv_lead", name = "TV Lead", company = "Major Network", emoji = "📺", salary = 350000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "film_actor" }, grantsFlags = { "lead_actor", "show_star" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Lead your own TV series" },
 	{ id = "movie_star_fame", name = "Movie Star", company = "Major Studios", emoji = "🎥", salary = 5500000, minAge = 24, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "lead_actor" }, grantsFlags = { "movie_star", "a_lister" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Lead roles in major films" },
 	{ id = "a_list_celebrity", name = "A-List Celebrity", company = "Hollywood Elite", emoji = "⭐", salary = 20000000, minAge = 26, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "movie_star" }, grantsFlags = { "a_list", "hollywood_royalty" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Hollywood's elite" },
 	{ id = "hollywood_legend", name = "Hollywood Legend", company = "Hall of Fame", emoji = "👑", salary = 62500000, minAge = 35, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "a_list" }, grantsFlags = { "hollywood_legend", "cinema_icon" }, isFameCareer = true,
@@ -10293,6 +10321,28 @@ function LifeBackend:handleJobApplication(player, jobId)
 			return { 
 				success = false, 
 				message = string.format("This job requires %s. You don't have the necessary background.", helpText)
+			}
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Celebrity Gamepass Check for Premium Fame Careers
+	-- User feedback: "THE CELEB GAMEPASS DOES NOTHING"
+	-- Rapper careers require celebrity gamepass, YouTuber/content creator stays free
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if job.requiresCelebrityGamepass then
+		state.Flags = state.Flags or {}
+		state.GamepassOwnership = state.GamepassOwnership or {}
+		local hasCelebGamepass = state.Flags.celebrity_gamepass or 
+			state.GamepassOwnership.celebrity or 
+			state.GamepassOwnership.Celebrity
+		
+		if not hasCelebGamepass then
+			return { 
+				success = false, 
+				message = "🌟 This career path requires the Celebrity Gamepass! Purchase it to pursue fame as a rapper, actor, or musician!",
+				requiresGamepass = "CELEBRITY",
+				gamepassId = 1626461980
 			}
 		end
 	end

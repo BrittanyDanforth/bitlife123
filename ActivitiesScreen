@@ -6275,15 +6275,34 @@ function ActivitiesScreen:showActivityEventCard(activityId, success, serverMessa
 	
 	-- Show the event card via the callback
 	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: ALWAYS show result after activity choice
+		-- User feedback: "I CLICK ONE OF THE CHOICES AND IT JUST DISAPPEARS NUN ELSE POPUPS"
+		-- The callback was only logging the choice but not showing any result!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
 		-- Handle combat event choices
 		if choiceData and choiceData.triggersCombat then
 			log("Combat triggered! Context:", choiceData.context)
 			-- The server would handle actual combat
-			-- For now, show a result
+			-- Show a combat result
 			self:showActivityResult(true, "The fight went down! " .. (choiceData.feed or ""), item, "👊")
 		else
-			-- Regular activity event choice
+			-- Regular activity event choice - SHOW THE RESULT!
 			log("Activity event choice made:", choiceIndex)
+			
+			-- Get the feed text from the choice (what happened)
+			local feedText = choiceData and choiceData.feed
+			if feedText then
+				-- Show result with the choice's feedback
+				self:showActivityResult(success, feedText, item, template.emoji or item.emoji or "✨")
+			elseif choiceData and choiceData.text then
+				-- Use choice text as result
+				self:showActivityResult(success, "You chose: " .. choiceData.text, item, template.emoji or item.emoji or "✨")
+			else
+				-- Generic success message based on original server message
+				self:showActivityResult(success, serverMessage or "Activity complete!", item, template.emoji or item.emoji or "✨")
+			end
 		end
 	end)
 end

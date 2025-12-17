@@ -4131,6 +4131,18 @@ showEvent = function(payload)
 					payload.onMafiaChoice(choiceIndex, choice.accumulatedMods or {})
 					return
 				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Handle activity events with callback
+				-- User feedback: "I CLICK ONE OF THE CHOICES AND IT JUST DISAPPEARS NUN ELSE POPUPS"
+				-- This was missing - activity choices need to call back to show results!
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if payload.isActivityEvent and payload.onActivityChoice then
+					hideEvent()
+					-- Call the activity choice callback
+					payload.onActivityChoice(choiceIndex, choice)
+					return
+				end
 
 				if minigameType and minigamesInstance then
 					pendingMinigameEventId     = EventUI.currentEventId

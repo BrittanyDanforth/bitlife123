@@ -3782,11 +3782,12 @@ function OccupationScreen:createLockedJobCard(parent, job, order, lockReason)
 		local player = Players.LocalPlayer
 		
 		-- Use appropriate gamepass ID based on lockReason
+		-- CRITICAL FIX: Use correct gamepass IDs from LifeBackend
 		local gamepassId
 		if lockReason == "celebrity" then
-			gamepassId = 1071247916  -- Celebrity gamepass ID
+			gamepassId = 1626461980  -- CORRECT Celebrity gamepass ID
 		else
-			gamepassId = 1071247917  -- Mafia gamepass ID
+			gamepassId = 1626238769  -- CORRECT Mafia gamepass ID
 		end
 		
 		pcall(function()
@@ -5584,7 +5585,27 @@ function OccupationScreen:applyForJob(jobId)
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Hired!" or "Rejected")
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Handle gamepass requirement response
+		-- User feedback: "GAMEPASS OPTIONS IN CHOICES ACTUALLY CAUSES GAMEPASS PURCHASE TO POPUP"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if result.requiresGamepass and result.gamepassId then
+			-- Show message then prompt gamepass purchase
+			self:showResult(false, result.message, "🌟 Premium Career")
+			
+			-- Prompt gamepass purchase after a brief delay
+			task.delay(0.5, function()
+				local MarketplaceService = game:GetService("MarketplaceService")
+				local Players = game:GetService("Players")
+				local player = Players.LocalPlayer
+				pcall(function()
+					MarketplaceService:PromptGamePassPurchase(player, result.gamepassId)
+				end)
+			end)
+		else
+			self:showResult(result.success, result.message, result.success and "Hired!" or "Rejected")
+		end
 	else
 		logWarn("Server returned nil!")
 		self:showResult(false, "Server error. Please try again.", "X")
