@@ -2344,6 +2344,69 @@ local ActivityCatalog = {
 		clearFlags = { in_rehab = true },
 		oneTime = false,
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #30: HEALTH & MEDICAL ACTIVITIES
+	-- Players need ways to heal and take care of their health
+	-- Insurance reduces costs for these activities
+	-- ═══════════════════════════════════════════════════════════════════════════
+	doctor_visit = {
+		stats = { Health = 8, Happiness = 2 },
+		feed = "went to the doctor for a checkup!",
+		cost = 500, -- Base cost, reduced by insurance
+		requiresAge = 0,
+		usesInsurance = true, -- Insurance reduces cost
+	},
+	hospital_treatment = {
+		stats = { Health = 25, Happiness = -5 },
+		feed = "received treatment at the hospital!",
+		cost = 5000, -- Base cost, reduced by insurance
+		requiresAge = 0,
+		usesInsurance = true,
+	},
+	therapy_session = {
+		stats = { Happiness = 10, Health = 3 },
+		feed = "had a therapy session - mental health matters!",
+		cost = 200, -- Base cost, reduced by insurance
+		requiresAge = 10,
+		usesInsurance = true,
+	},
+	dental_checkup = {
+		stats = { Health = 3, Looks = 2 },
+		feed = "got your teeth cleaned!",
+		cost = 200,
+		requiresAge = 3,
+		usesInsurance = true,
+	},
+	get_surgery = {
+		stats = { Health = 40, Happiness = -10 },
+		feed = "underwent surgery and are recovering!",
+		cost = 20000, -- Very expensive without insurance
+		requiresAge = 0,
+		usesInsurance = true,
+	},
+	buy_health_insurance = {
+		stats = { Happiness = 2 },
+		feed = "purchased health insurance coverage!",
+		cost = 3000, -- Annual premium
+		requiresAge = 18,
+		setFlags = { has_health_insurance = true },
+		clearFlags = { uninsured = true },
+	},
+	chiropractor = {
+		stats = { Health = 5, Happiness = 3 },
+		feed = "visited the chiropractor!",
+		cost = 100,
+		requiresAge = 16,
+		usesInsurance = true,
+	},
+	physical_therapy = {
+		stats = { Health = 10, Happiness = 1 },
+		feed = "attended physical therapy!",
+		cost = 300,
+		requiresAge = 5,
+		usesInsurance = true,
+	},
 }
 
 local CrimeCatalog = {
@@ -2374,6 +2437,15 @@ local CrimeCatalog = {
 	counterfeiting = { risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 } },
 	fraud = { risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 } },
 	embezzlement = { risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 } },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: PRISON CRIMES - Can be committed while incarcerated
+	-- Getting caught adds years to sentence instead of starting new sentence
+	-- ═══════════════════════════════════════════════════════════════════════════
+	prison_assault = { risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, isPrisonCrime = true },
+	prison_riot = { risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, isPrisonCrime = true },
+	prison_contraband = { risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, isPrisonCrime = true },
+	prison_gang_violence = { risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, isPrisonCrime = true },
 }
 
 local PrisonActions = {
@@ -4830,8 +4902,23 @@ end
 -- ============================================================================
 
 function LifeBackend:onPlayerAdded(player)
+	-- CRITICAL FIX #10: Initialize gamepass ownership FIRST before creating state
+	-- This ensures ownership is properly cached before any gamepass checks happen
+	if GamepassSystem and GamepassSystem.initializePlayerOwnership then
+		GamepassSystem:initializePlayerOwnership(player)
+	end
+	
 	local state = self:createInitialState(player)
 	self.playerStates[player] = state
+	
+	-- CRITICAL FIX #10: Ensure GamepassOwnership is stored in state for persistence
+	if state.GamepassOwnership then
+		-- Also tell GamepassSystem about any restored ownership from DataStore
+		if GamepassSystem and GamepassSystem.restoreOwnershipFromState then
+			GamepassSystem:restoreOwnershipFromState(player, state.GamepassOwnership)
+		end
+	end
+	
 	-- CRITICAL FIX #500: DON'T push "A new life begins..." here!
 	-- The setLifeInfo function will send the proper birth message.
 	-- Sending a message here causes duplicate/overlapping messages at spawn.
@@ -5602,10 +5689,35 @@ function LifeBackend:collectPropertyIncome(state)
 	end
 	
 	local totalIncome = 0
+	local propertyDetails = {}
+	
 	for _, prop in ipairs(properties) do
+		-- CRITICAL FIX #18: Handle ALL property types for income
 		local income = prop.income or 0
+		
+		-- If no explicit income, calculate based on property type and value
+		if income == 0 and prop.value and prop.value > 0 then
+			local propId = (prop.id or ""):lower()
+			local propName = (prop.name or ""):lower()
+			
+			-- Rental properties generate rental income (5-8% of value annually)
+			if propId:find("rental") or propId:find("apartment") or propName:find("rental") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.03 + 0.05)) -- 5-8%
+			-- Commercial properties generate business income (4-10% of value)
+			elseif propId:find("commercial") or propId:find("office") or propId:find("retail") or propId:find("storefront") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.06 + 0.04)) -- 4-10%
+			-- Vacation rentals have seasonal income (8-15% but variable)
+			elseif propId:find("vacation") or propId:find("cabin") or propId:find("beach") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.07 + 0.08)) -- 8-15%
+			-- Primary residence - no rental income (you live there)
+			elseif propId:find("house") or propId:find("mansion") or propId:find("penthouse") then
+				income = 0 -- No income from primary residence
+			end
+		end
+		
 		if income > 0 then
 			totalIncome = totalIncome + income
+			table.insert(propertyDetails, {name = prop.name or "Property", income = income})
 		end
 	end
 	
@@ -8658,13 +8770,42 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = "You can only do this once!" }
 	end
 
-	local shouldChargeCost = (not isEducationActivity) and activity.cost and activity.cost > 0
-	if shouldChargeCost and (state.Money or 0) < activity.cost then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #30: Health insurance reduces medical costs
+	-- Activities with usesInsurance = true get a discount if player has insurance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local actualCost = activity.cost or 0
+	if activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
+		-- Insurance covers 70-80% of medical costs
+		local insuranceDiscount = 0.75 -- 75% covered by insurance
+		actualCost = math.floor(actualCost * (1 - insuranceDiscount))
+	end
+	
+	local shouldChargeCost = (not isEducationActivity) and actualCost > 0
+	if shouldChargeCost and (state.Money or 0) < actualCost then
+		-- CRITICAL FIX #30: Different message if they don't have insurance
+		if activity.usesInsurance and not (state.Flags and state.Flags.has_health_insurance) then
+			return { success = false, message = string.format("You can't afford that! Without insurance, it costs $%d. Consider getting health insurance.", activity.cost) }
+		end
 		return { success = false, message = "You can't afford that right now." }
 	end
 
 	if shouldChargeCost then
-		self:addMoney(state, -activity.cost)
+		self:addMoney(state, -actualCost)
+		
+		-- If this was a medical expense with insurance, note the savings
+		if activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
+			local saved = (activity.cost or 0) - actualCost
+			if saved > 0 then
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "insurance_savings",
+					emoji = "🏥",
+					text = string.format("Insurance covered $%s of your medical costs", formatMoney(saved)),
+					amount = saved,
+				})
+			end
+		end
 	end
 
 	local deltas = shallowCopy(activity.stats or {})
@@ -8849,14 +8990,61 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	if not state then
 		return { success = false, message = "No life data loaded." }
 	end
-	if state.InJail then
-		-- MINOR FIX: More helpful error message
-		return { success = false, message = "You can't commit crimes while in prison. Serve your sentence first." }
-	end
-
+	
 	local crime = CrimeCatalog[crimeId]
 	if not crime then
 		return { success = false, message = "Unknown crime." }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Prison crimes - certain crimes CAN be committed in prison
+	-- These add to sentence if caught rather than blocking entirely
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local prisonCrimes = {
+		prison_assault = true,
+		prison_riot = true,
+		prison_contraband = true,
+		prison_gang_violence = true,
+		assault = true, -- Can assault other inmates
+	}
+	
+	if state.InJail then
+		if not prisonCrimes[crimeId] then
+			return { success = false, message = "You can't commit that crime while in prison. Try prison-specific crimes instead." }
+		end
+		
+		-- Prison crime - higher risk of getting caught (guards everywhere)
+		local prisonRoll = RANDOM:NextInteger(0, 100)
+		local prisonCaught = prisonRoll < (crime.risk + 30) -- +30% risk in prison
+		
+		if prisonCaught then
+			-- Add years to current sentence instead of starting new sentence
+			local additionalYears = RANDOM:NextInteger(1, 5)
+			state.JailYearsLeft = (state.JailYearsLeft or 0) + additionalYears
+			state.Flags.prison_incident = true
+			state.Flags.criminal_record = true
+			
+			self:applyStatChanges(state, { Happiness = -15, Health = -10 })
+			local message = string.format("Guards caught you! %d years added to your sentence.", additionalYears)
+			self:pushState(player, message)
+			return { success = false, caught = true, message = message, additionalYears = additionalYears }
+		else
+			-- Got away with it
+			local reward = 0
+			if crime.reward then
+				reward = RANDOM:NextInteger(crime.reward[1] or 0, crime.reward[2] or 100)
+				-- Prison rewards are lower (contraband value)
+				reward = math.floor(reward * 0.3)
+				self:addMoney(state, reward)
+			end
+			state.Flags.prison_tough = true
+			local message = "You got away with it. Your reputation in prison grew."
+			if reward > 0 then
+				message = string.format("Success! Gained $%d and prison respect.", reward)
+			end
+			self:pushState(player, message)
+			return { success = true, caught = false, message = message, money = reward }
+		end
 	end
 
 	state.Flags = state.Flags or {}
@@ -9815,26 +10003,91 @@ function LifeBackend:handleJobApplication(player, jobId)
 		statBonus = math.clamp((health - 50) / 400, -0.10, 0.10) -- +/-10% based on Health (was +/-25%)
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #22: Education GPA affects job applications
+	-- Good grades should help you get better jobs, bad grades hurt your chances
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local gpaBonus = 0
+	if state.EducationData and state.EducationData.GPA then
+		local gpa = state.EducationData.GPA or 0
+		-- GPA 4.0 = +10% bonus, GPA 2.0 = -5% penalty
+		if gpa >= 3.8 then
+			gpaBonus = 0.10 -- Summa cum laude - excellent!
+		elseif gpa >= 3.5 then
+			gpaBonus = 0.07 -- Magna cum laude - very good
+		elseif gpa >= 3.0 then
+			gpaBonus = 0.03 -- Dean's list - above average
+		elseif gpa >= 2.5 then
+			gpaBonus = 0 -- Average - no bonus or penalty
+		elseif gpa >= 2.0 then
+			gpaBonus = -0.05 -- Below average - slight penalty
+		else
+			gpaBonus = -0.10 -- Poor GPA - significant penalty
+		end
+		
+		-- GPA matters more for competitive jobs
+		if difficulty >= 6 then
+			gpaBonus = gpaBonus * 1.5 -- 50% more impact for competitive jobs
+		end
+	elseif state.Flags and state.Flags.honors_student then
+		gpaBonus = 0.05 -- Honors flag gives small bonus even without explicit GPA
+	elseif state.Flags and state.Flags.valedictorian then
+		gpaBonus = 0.10 -- Valedictorian gets significant boost
+	end
+	
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.20, (appHistory.attempts or 0) * 0.08) -- -8% per previous rejection, max -20%
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Criminal record affects job applications!
+	-- CRITICAL FIX #27: Criminal record affects job applications!
 	-- Employers run background checks - having a record makes it much harder to get hired
 	-- Some jobs (law enforcement, government, finance) outright reject ex-convicts
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local criminalPenalty = 0
 	if state.Flags and state.Flags.criminal_record then
 		-- Jobs that do strict background checks and won't hire ex-convicts
-		local strictBackgroundCheckJobs = {
+		local strictBackgroundCheckCategories = {
 			"law", "government", "finance", "education", "healthcare", "military", "security"
 		}
 		
+		-- CRITICAL FIX #27: Expanded list of specific jobs that require clean records
+		local strictBackgroundCheckJobIds = {
+			-- Law enforcement
+			"police", "officer", "detective", "sheriff", "fbi", "cia", "dea", "marshal", "agent",
+			-- Government
+			"senator", "congressman", "mayor", "governor", "president", "judge", "prosecutor", "attorney_general",
+			"city_council", "state_rep", "diplomat", "ambassador",
+			-- Finance
+			"banker", "accountant", "auditor", "financial_advisor", "broker", "trader",
+			-- Education
+			"teacher", "professor", "principal", "dean", "counselor", "coach",
+			-- Healthcare
+			"doctor", "nurse", "surgeon", "pharmacist", "dentist", "therapist", "emt", "paramedic",
+			-- Military/Security
+			"soldier", "marine", "pilot", "security_guard", "bodyguard", "guard",
+			-- Childcare
+			"daycare", "babysitter", "nanny", "childcare",
+		}
+		
 		local isStrictJob = false
-		for _, category in ipairs(strictBackgroundCheckJobs) do
-			if job.category == category or (job.id and string.find(job.id:lower(), category)) then
+		local jobIdLower = job.id and job.id:lower() or ""
+		local jobCategoryLower = job.category and job.category:lower() or ""
+		
+		-- Check category
+		for _, category in ipairs(strictBackgroundCheckCategories) do
+			if jobCategoryLower == category or jobIdLower:find(category) then
 				isStrictJob = true
 				break
+			end
+		end
+		
+		-- Check specific job IDs
+		if not isStrictJob then
+			for _, restrictedId in ipairs(strictBackgroundCheckJobIds) do
+				if jobIdLower:find(restrictedId) then
+					isStrictJob = true
+					break
+				end
 			end
 		end
 		
@@ -9860,7 +10113,8 @@ function LifeBackend:handleJobApplication(player, jobId)
 	local maxChance = 1.0 - (difficulty * 0.05) -- difficulty 10 caps at 50%, difficulty 1 caps at 95%
 	maxChance = math.clamp(maxChance, 0.30, 0.95)
 	
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
+	-- CRITICAL FIX #22: Include GPA bonus in final chance calculation
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
 	
 	-- Entry-level jobs (no requirements, low salary) - still have some chance of rejection
 	if not job.requirement and (job.salary or 0) < 35000 then
@@ -10745,6 +10999,33 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	state.Assets[assetType] = state.Assets[assetType] or {}
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #12: Check for duplicate items
+	-- Prevent buying the same unique item twice (e.g., same house, same car)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isUniqueAsset = assetType == "Properties" -- Properties are unique (you can't buy the same house twice)
+	
+	-- Some items can be duplicated (like generic cars), others can't (like a specific mansion)
+	if asset.unique == true or isUniqueAsset then
+		for _, existingAsset in ipairs(state.Assets[assetType]) do
+			if existingAsset.id == asset.id then
+				return { success = false, message = "You already own this!" }
+			end
+		end
+	end
+	
+	-- For non-unique items, still check if player has too many of the same type
+	local MAX_SAME_ITEM = 3 -- Can only own up to 3 of the exact same item
+	local sameItemCount = 0
+	for _, existingAsset in ipairs(state.Assets[assetType]) do
+		if existingAsset.id == asset.id then
+			sameItemCount = sameItemCount + 1
+		end
+	end
+	if sameItemCount >= MAX_SAME_ITEM then
+		return { success = false, message = string.format("You already own %d of these. Try something different!", MAX_SAME_ITEM) }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #MEGA-2: Store ALL asset data including effects
 	-- This allows TickAssets to properly apply all bonuses
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -10969,10 +11250,35 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 				state.Flags.has_car = nil
 				state.Flags.car_owner = nil
 				state.Flags.luxury_car_owner = nil
+				-- CRITICAL FIX #25: Clear car loan when selling financed vehicle
+				if asset.financed then
+					state.Flags.car_loan_balance = nil
+					state.Flags.car_loan_payment = nil
+					state.Flags.has_car_loan = nil
+				end
 			elseif assetType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
 				state.Flags.luxury_homeowner = nil
+				-- CRITICAL FIX #25: Clear mortgage when selling last property
+				-- When you sell your home, the mortgage is paid off from proceeds
+				if state.Flags.mortgage_debt then
+					-- Deduct mortgage from sale proceeds
+					local mortgageOwed = state.Flags.mortgage_debt or 0
+					if payout > mortgageOwed then
+						-- Sale covers mortgage, player keeps difference
+						state.Money = (state.Money or 0) - mortgageOwed
+						-- Note: payout already added above, so just subtract mortgage
+					end
+					state.Flags.mortgage_debt = nil
+					state.Flags.mortgage_trouble = nil
+				end
+			elseif assetType == "Properties" and #bucket > 0 then
+				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
+				if asset.hasMortgage then
+					state.Flags.mortgage_debt = nil
+					state.Flags.mortgage_trouble = nil
+				end
 			end
 
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
@@ -11131,6 +11437,30 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #13: More robust relationship lookup
+	-- Sometimes the targetId might not match exactly due to case or formatting
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if targetId then
+		local targetIdLower = targetId:lower()
+		-- Try to find by case-insensitive ID match
+		for relId, relationship in pairs(state.Relationships) do
+			if type(relId) == "string" and relId:lower() == targetIdLower then
+				return relationship
+			end
+		end
+		
+		-- Try to find by name match (user might send name instead of ID)
+		for relId, relationship in pairs(state.Relationships) do
+			if type(relationship) == "table" and relationship.name then
+				if relationship.name:lower() == targetIdLower or
+				   (relationship.id and relationship.id:lower() == targetIdLower) then
+					return relationship
+				end
+			end
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- FAMILY MEMBER HANDLING
 	-- For family types (mother, father, sibling, etc.), do NOT create generic entries.
 	-- Family members are created server-side in createInitialState(). If a family
@@ -11138,16 +11468,26 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	-- this person doesn't exist (preventing the "deleted family" bug).
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if relType == "family" then
-		-- If targetId is specified but doesn't exist, the family member doesn't exist
+		-- CRITICAL FIX #13: Also search by role type for family
 		if targetId then
-			local familyIds = {"mother", "father", "grandmother", "grandfather", "brother", "sister", "son", "daughter"}
-			for _, familyType in ipairs(familyIds) do
-				if targetId:lower():find(familyType) then
-					-- This is a family ID but it doesn't exist in state - return nil
-					debugPrint(string.format("Family member '%s' not found in state - returning nil", targetId))
-					return nil
+			local targetLower = targetId:lower()
+			local familyRoles = {"mother", "father", "grandmother", "grandfather", "brother", "sister", "son", "daughter", "child", "spouse"}
+			
+			for relId, relationship in pairs(state.Relationships) do
+				if type(relationship) == "table" then
+					-- Check if this relationship matches the target family member
+					local relRole = (relationship.role or ""):lower()
+					local relType2 = (relationship.type or ""):lower()
+					
+					for _, familyRole in ipairs(familyRoles) do
+						if targetLower:find(familyRole) and (relRole:find(familyRole) or relType2:find(familyRole)) then
+							return relationship
+						end
+					end
 				end
 			end
+			
+			debugPrint(string.format("Family member '%s' not found in state - returning nil", targetId))
 		end
 		
 		-- For generic family requests without targetId, also return nil (don't create randoms)

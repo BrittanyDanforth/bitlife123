@@ -464,6 +464,24 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- CRITICAL FIX #17: Also check events with "royal" in their ID or category
+	-- Even if isRoyalOnly isn't explicitly set, royal-themed events need the check
+	local eventId = event.id and event.id:lower() or ""
+	local eventCategory = event.category and event.category:lower() or ""
+	local isRoyalThemed = eventId:find("royal") or eventId:find("throne") or eventId:find("palace") 
+		or eventId:find("kingdom") or eventId:find("monarch") or eventId:find("prince") or eventId:find("princess")
+		or eventCategory == "royalty" or eventCategory == "royal"
+	
+	if isRoyalThemed and not event.isRoyalOnly then
+		-- This is a royal-themed event without explicit isRoyalOnly flag
+		-- Still require player to actually be royalty
+		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+			or (state.RoyalState and state.RoyalState.isRoyal)
+		if not isActuallyRoyal then
+			return false -- Block royal-themed events for non-royals
+		end
+	end
+	
 	-- MAFIA events require Mafia gamepass AND being in the mob
 	if event.isMafiaOnly then
 		if not flags.mafia_gamepass then

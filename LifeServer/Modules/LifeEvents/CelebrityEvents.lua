@@ -42,12 +42,20 @@ CelebrityEvents.FameLevels = {
 -- ACTING CAREER PATH
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #16: Added minStats requirements to celebrity careers
+-- Actors need Looks, Athletes need Health, Musicians need Smarts for composition
+-- ════════════════════════════════════════════════════════════════════════════
+
 CelebrityEvents.ActingCareer = {
 	name = "Acting",
 	emoji = "🎬",
 	description = "Pursue a career in film and television",
 	minStartAge = 6,
 	maxStartAge = 50,
+	-- CRITICAL FIX #16: Acting requires Looks for on-screen presence
+	primaryStat = "Looks",
+	minStartStat = 40, -- Need decent looks to start
 	
 	stages = {
 		{
@@ -56,6 +64,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "👥",
 			salary = { min = 500, max = 2000 },
 			fameRequired = 0,
+			minStats = { Looks = 30 }, -- Anyone can be an extra
 			fameGainPerYear = { min = 0, max = 2 },
 			yearsToAdvance = { min = 1, max = 3 },
 			description = "Stand in the background of scenes",
@@ -67,6 +76,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎭",
 			salary = { min = 2000, max = 8000 },
 			fameRequired = 2,
+			minStats = { Looks = 40 }, -- Need to look decent on camera
 			fameGainPerYear = { min = 1, max = 3 },
 			yearsToAdvance = { min = 1, max = 2 },
 			description = "Featured background roles",
@@ -78,6 +88,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🗣️",
 			salary = { min = 8000, max = 25000 },
 			fameRequired = 5,
+			minStats = { Looks = 50, Smarts = 30 }, -- Need memorization skills
 			fameGainPerYear = { min = 2, max = 5 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Small speaking roles",
@@ -89,6 +100,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "📺",
 			salary = { min = 25000, max = 75000 },
 			fameRequired = 15,
+			minStats = { Looks = 55, Smarts = 40 }, -- Need to carry scenes
 			fameGainPerYear = { min = 3, max = 8 },
 			yearsToAdvance = { min = 2, max = 3 },
 			description = "Recurring guest appearances on TV shows",
@@ -100,6 +112,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎬",
 			salary = { min = 75000, max = 200000 },
 			fameRequired = 25,
+			minStats = { Looks = 60 }, -- Hollywood standards
 			fameGainPerYear = { min = 5, max = 12 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Notable supporting roles in films",
@@ -111,6 +124,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "📺",
 			salary = { min = 200000, max = 500000 },
 			fameRequired = 40,
+			minStats = { Looks = 65, Smarts = 50 }, -- Need to carry a show
 			fameGainPerYear = { min = 8, max = 15 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Lead your own TV series",
@@ -122,6 +136,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎥",
 			salary = { min = 1000000, max = 10000000 },
 			fameRequired = 60,
+			minStats = { Looks = 70 }, -- Leading actor material
 			fameGainPerYear = { min = 10, max = 20 },
 			yearsToAdvance = { min = 3, max = 5 },
 			description = "Lead roles in major films",
@@ -133,6 +148,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "⭐",
 			salary = { min = 10000000, max = 30000000 },
 			fameRequired = 80,
+			minStats = { Looks = 75 }, -- Hollywood elite
 			fameGainPerYear = { min = 5, max = 10 },
 			yearsToAdvance = { min = 5, max = 10 },
 			description = "Hollywood's elite",
@@ -144,6 +160,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "👑",
 			salary = { min = 25000000, max = 100000000 },
 			fameRequired = 95,
+			minStats = { Looks = 70 }, -- Legends can age gracefully
 			fameGainPerYear = { min = 1, max = 3 },
 			yearsToAdvance = nil, -- Final stage
 			description = "An icon of cinema",
@@ -4115,10 +4132,44 @@ function CelebrityEvents.processYearlyFameUpdates(state)
 		
 		if career and career.stages[nextStage] then
 			local nextStageInfo = career.stages[nextStage]
-			if fameState.yearsInStage >= requiredYears and (state.Fame or 0) >= nextStageInfo.fameRequired then
+			
+			-- CRITICAL FIX #16: Check stat requirements for promotion
+			local meetsStatRequirements = true
+			if nextStageInfo.minStats then
+				state.Stats = state.Stats or {}
+				for statName, minValue in pairs(nextStageInfo.minStats) do
+					local playerStat = state.Stats[statName] or state[statName] or 50
+					if playerStat < minValue then
+						meetsStatRequirements = false
+						-- Store which stat is blocking promotion for UI feedback
+						state.Flags = state.Flags or {}
+						state.Flags.blocked_promotion_stat = statName
+						state.Flags.blocked_promotion_required = minValue
+						break
+					end
+				end
+			end
+			
+			if fameState.yearsInStage >= requiredYears and (state.Fame or 0) >= nextStageInfo.fameRequired and meetsStatRequirements then
 				-- Eligible for promotion
 				state.Flags = state.Flags or {}
 				state.Flags.eligible_for_promotion = true
+				state.Flags.blocked_promotion_stat = nil
+				state.Flags.blocked_promotion_required = nil
+			elseif not meetsStatRequirements then
+				-- CRITICAL FIX #16: Notify player they need to improve stats
+				table.insert(events, {
+					id = "stat_block_promotion",
+					title = "📉 Career Progress Blocked",
+					text = string.format("You need higher %s to advance to %s. Work on improving yourself!", 
+						state.Flags.blocked_promotion_stat or "stats", 
+						nextStageInfo.name or "the next level"),
+					emoji = "⚠️",
+					category = "career",
+					choices = {
+						{ text = "Work on improving", deltas = {}, feed = "resolved to work harder" },
+					}
+				})
 			end
 		end
 	end
