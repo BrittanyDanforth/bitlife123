@@ -4858,6 +4858,86 @@ function ActivitiesScreen:doActivity(item, bonus)
 	log("Activity ID:", item.id, "Name:", item.name, "Bonus:", bonus or false)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT ACTIVITIES: Trigger the full combat minigame!
+	-- Activities like "Pick a Fight" and "Bar Fight" use the interactive combat system
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat then
+		log("COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
+		logAction("COMBAT_START", item.id, item.name, "Launching interactive combat minigame")
+		
+		-- Hide this screen first
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context based on activity
+		local combatContext = "street"
+		if item.id == "bar_fight" then
+			combatContext = "bar"
+		elseif item.id == "martial_arts" then
+			combatContext = "school"
+		elseif item.id == "pick_fight" then
+			combatContext = math.random() > 0.5 and "street" or "random"
+		end
+		
+		-- Get minigames reference and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting COMBAT minigame with context:", combatContext)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Combat result - Won:", won, "Stats:", combatResult)
+				logAction("COMBAT_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Damage Dealt: %d | Damage Taken: %d", 
+						combatResult.rounds or 0, combatResult.damageDealt or 0, combatResult.damageTaken or 0))
+				
+				-- Call server to process combat outcome
+				local serverSuccess, serverResult = pcall(function()
+					return DoActivity:InvokeServer(item.id, {
+						isCombat = true,
+						won = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Show result card
+				local resultTitle = won and "🏆 Victory!" or "😵 Defeated!"
+				local resultMessage = won 
+					and "You won the fight! " .. (combatResult.technique or "")
+					or "You lost the fight. " .. (combatResult.technique or "")
+				
+				if combatResult.escaped then
+					resultTitle = "🏃 Escaped!"
+					resultMessage = "You managed to run away from the fight."
+				end
+				
+				-- Show proper result after combat
+				self:show()
+				self:showActivityResult(won, resultMessage, item, resultTitle)
+			end, { 
+				context = combatContext,
+				difficulty = item.id == "martial_arts" and "weak" or "average"
+			})
+		else
+			log("Minigames module not found! Falling back to server-only handling.")
+			-- Fallback: Call server directly if minigames unavailable
+			local success, result = pcall(function()
+				return DoActivity:InvokeServer(item.id, bonus or false)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR ACTIVITIES: Standard server call with event cards
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not DoActivity then
 		logWarn("DoActivity remote not available!")
 		self:showActivityResult(false, "Server not available", item, "Error")
@@ -4902,6 +4982,109 @@ function ActivitiesScreen:doCrime(item)
 	log("Crime ID:", item.id, "Name:", item.name, "Risk:", item.risk)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT-BASED CRIMES: Trigger full combat minigame for assault/mugging
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat then
+		log("COMBAT CRIME DETECTED! Launching combat minigame for:", item.id)
+		logAction("COMBAT_CRIME_START", item.id, item.name, "Launching combat for crime")
+		
+		-- Hide this screen first
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context based on crime
+		local combatContext = "street"
+		if item.id == "assault" then
+			combatContext = "revenge"
+		elseif item.id == "mugging" then
+			combatContext = "defense" -- Victim might fight back
+		end
+		
+		-- Get minigames reference and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting COMBAT minigame for crime:", item.id, "context:", combatContext)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Combat crime result - Won:", won)
+				logAction("COMBAT_CRIME_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Crime: %s", combatResult.rounds or 0, item.id))
+				
+				-- Call server to process combat crime outcome
+				local serverSuccess, serverResult = pcall(function()
+					return CommitCrime:InvokeServer(item.id, {
+						isCombat = true,
+						won = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Determine result
+				local crimeSuccess = won and not combatResult.escaped
+				local resultTitle
+				local resultMessage
+				local emoji
+				
+				if combatResult.escaped then
+					resultTitle = "🏃 Ran Away!"
+					resultMessage = "You fled the scene before completing the crime."
+					emoji = "🏃"
+				elseif won then
+					-- Won the fight - crime potentially successful
+					if serverResult and serverResult.success then
+						resultTitle = "💰 Crime Successful!"
+						resultMessage = serverResult.message or "You got away with it!"
+						emoji = "💰"
+					elseif serverResult and serverResult.caught then
+						resultTitle = "🚔 Caught!"
+						resultMessage = serverResult.message or "The cops showed up!"
+						emoji = "🚔"
+					else
+						resultTitle = "👊 Assault Complete"
+						resultMessage = "You beat them down."
+						emoji = "👊"
+					end
+				else
+					-- Lost the fight
+					resultTitle = "😵 Fight Lost!"
+					resultMessage = "Your victim fought back and won! You're the one who got beat up."
+					if serverResult and serverResult.caught then
+						resultMessage = resultMessage .. " And the cops got you too!"
+						emoji = "🚔"
+					else
+						emoji = "😵"
+					end
+				end
+				
+				-- Show proper result after combat
+				self:show()
+				self:showActivityResult(crimeSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
+			end, { 
+				context = combatContext,
+				difficulty = item.id == "mugging" and "weak" or "average" -- Mugging targets are usually weaker
+			})
+		else
+			log("Minigames module not found! Falling back to server-only handling.")
+			-- Fallback to regular crime handling
+			local success, result = pcall(function()
+				return CommitCrime:InvokeServer(item.id)
+			end)
+			if result then
+				self:show()
+				self:showActivityResult(result.success, result.message, item, result.caught and "🚔" or "💰", result.caught)
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR CRIMES: Standard server call
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not CommitCrime then
 		logWarn("CommitCrime remote not available!")
 		self:showActivityResult(false, "Server not available", item, "Error")
@@ -4947,6 +5130,115 @@ function ActivitiesScreen:doPrisonActivity(item)
 		return
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRISON COMBAT ACTIVITIES: Join crew, riot, fight - use combat minigame!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat or item.id == "prison_crew" or item.id == "prison_riot" then
+		log("PRISON COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
+		logAction("PRISON_COMBAT_START", item.id, item.name, "Launching prison combat")
+		
+		-- Hide this screen
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Prison combat context
+		local combatContext = "prison"
+		local combatDifficulty = "strong" -- Prison inmates are tough
+		
+		if item.id == "prison_crew" then
+			combatDifficulty = "trained" -- Gang initiation is brutal
+		elseif item.id == "prison_riot" then
+			combatDifficulty = "average"
+		end
+		
+		-- Get minigames and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting PRISON COMBAT minigame:", item.id, "difficulty:", combatDifficulty)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Prison combat result - Won:", won)
+				logAction("PRISON_COMBAT_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Activity: %s", combatResult.rounds or 0, item.id))
+				
+				-- Call server with combat result
+				local serverSuccess, serverResult = pcall(function()
+					return DoPrisonAction:InvokeServer(item.id, {
+						combatCompleted = true,
+						combatWon = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Determine result
+				local resultTitle
+				local resultMessage
+				local emoji
+				
+				if item.id == "prison_crew" then
+					if won then
+						resultTitle = "⛓️ Earned Your Place!"
+						resultMessage = "You proved yourself in the yard. You're now part of the crew."
+						emoji = "⛓️"
+					else
+						resultTitle = "😵 Initiation Failed"
+						resultMessage = "You got beat down. The crew doesn't want weaklings."
+						emoji = "😵"
+					end
+				elseif item.id == "prison_riot" then
+					if won then
+						resultTitle = "🔥 Riot Success!"
+						resultMessage = serverResult and serverResult.message or "The riot went off! Chaos erupted!"
+						emoji = "🔥"
+					else
+						resultTitle = "🚔 Riot Crushed"
+						resultMessage = "Guards put down the riot. You're in solitary now."
+						emoji = "🚔"
+					end
+				else
+					resultTitle = won and "👊 Victory" or "😵 Beaten"
+					resultMessage = won and "You won the prison fight!" or "You got beat up in the yard."
+					emoji = won and "👊" or "😵"
+				end
+				
+				-- Apply server result if available
+				if serverSuccess and serverResult then
+					if serverResult.message then
+						resultMessage = serverResult.message
+					end
+					if serverResult.caught or serverResult.extraTime then
+						resultMessage = resultMessage .. " Guards added time to your sentence!"
+						emoji = "🚔"
+					end
+				end
+				
+				-- Show result
+				self:show()
+				self:showActivityResult(won, resultMessage, item, emoji)
+			end, {
+				context = combatContext,
+				difficulty = combatDifficulty,
+			})
+		else
+			log("Minigames not available, falling back to server")
+			self:show()
+			local success, result = pcall(function()
+				return DoPrisonAction:InvokeServer(item.id)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message, item, result.success and "✅" or "❌")
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR PRISON ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not DoPrisonAction then
 		logWarn("DoPrisonAction remote not available!")
 		self:showActivityResult(false, "Server not available", item, "Error")
@@ -4968,8 +5260,9 @@ function ActivitiesScreen:doPrisonActivity(item)
 	if result then
 		log("Success:", result.success, "Message:", result.message)
 		local emoji = result.success and "✅" or "❌"
-		if item.id == "prison_riot" then emoji = result.success and "🔥" or "🚔" end
 		if item.id == "prison_snitch" then emoji = result.success and "🤫" or "😱" end
+		if item.id == "prison_workout" then emoji = result.success and "💪" or "❌" end
+		if item.id == "prison_study" then emoji = result.success and "📚" or "❌" end
 		-- CRITICAL FIX: Use proper BitLife-style prison activity result card
 		self:showActivityResult(result.success, result.message, item, emoji)
 	else
@@ -5366,55 +5659,171 @@ end
 -- Activities now trigger narrative events with choices, outcomes, and consequences
 -- ═══════════════════════════════════════════════════════════════════════════════
 
--- Activity event templates for rich BitLife-style experiences
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COMPREHENSIVE Activity Event Templates for FULL BitLife-Style Experiences
+-- Expanded with 50+ unique event types with multiple variations, choices, and outcomes
+-- ═══════════════════════════════════════════════════════════════════════════════
 local ActivityEventTemplates = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FITNESS & HEALTH ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	gym = {
 		{
-			title = "💪 At the Gym",
+			title = "💪 Crushing It at the Gym!",
 			emoji = "💪",
 			texts = {
 				"You hit the weights hard today. The burn feels amazing!",
 				"You finished an intense workout session at the gym.",
 				"You pushed yourself to new limits during today's training.",
+				"The gym is your second home. Another great session!",
 			},
 			choices = {
-				{ text = "💪 Flex in the mirror", feed = "You admire your progress!" },
-				{ text = "📸 Post a gym selfie", feed = "Your followers are impressed!" },
-				{ text = "🚿 Hit the showers", feed = "Time to clean up." },
+				{ text = "💪 Flex in the mirror", feed = "Looking swole! You admire your progress!" },
+				{ text = "📸 Post a gym selfie", feed = "Your followers are impressed! #GymLife" },
+				{ text = "🏃 One more set!", feed = "You pushed through for extra gains!" },
+				{ text = "🚿 Hit the showers", feed = "Time to clean up and recover." },
+			},
+		},
+		{
+			title = "🏋️ Personal Record!",
+			emoji = "🏋️",
+			texts = {
+				"You just lifted more than ever before!",
+				"NEW PR! Your hard work is paying off!",
+				"The weights felt light today - you're getting stronger!",
+			},
+			choices = {
+				{ text = "🎉 Celebrate!", feed = "You earned this victory!" },
+				{ text = "📝 Log it", feed = "Tracking progress is key!" },
+				{ text = "🎯 Set new goal", feed = "Always pushing higher!" },
 			},
 		},
 	},
 	meditate = {
 		{
-			title = "🧘 Meditation Session",
+			title = "🧘 Deep Meditation",
 			emoji = "🧘",
 			texts = {
 				"You found a quiet spot and cleared your mind...",
 				"Deep breaths. Your thoughts slowly fade away...",
-				"You achieved a state of pure relaxation.",
+				"You achieved a state of pure relaxation and clarity.",
+				"The world's chaos melts away as you find inner peace.",
 			},
 			choices = {
-				{ text = "☮️ Namaste", feed = "You feel at peace." },
-				{ text = "🌸 Embrace the calm", feed = "Inner peace achieved." },
+				{ text = "☮️ Namaste", feed = "You feel completely at peace with yourself." },
+				{ text = "🌸 Embrace the calm", feed = "Inner peace achieved. Stress melted away." },
+				{ text = "🧠 Practice mindfulness", feed = "Your mind feels clearer than ever." },
 			},
 		},
 	},
+	run = {
+		{
+			title = "🏃 Morning Run",
+			emoji = "🏃",
+			texts = {
+				"The pavement flies beneath your feet!",
+				"You're in the zone - runner's high achieved!",
+				"Fresh air fills your lungs as you push forward.",
+			},
+			choices = {
+				{ text = "🏃 Sprint finish!", feed = "You gave it everything at the end!" },
+				{ text = "📱 Check your pace", feed = "Not bad! You're getting faster!" },
+				{ text = "🧘 Cool down stretch", feed = "Proper recovery is important." },
+			},
+		},
+	},
+	yoga = {
+		{
+			title = "🧘‍♀️ Yoga Session",
+			emoji = "🧘‍♀️",
+			texts = {
+				"You flow through poses with grace.",
+				"Mind, body, and spirit in harmony.",
+				"Flexibility and strength in perfect balance.",
+			},
+			choices = {
+				{ text = "🙏 Savasana", feed = "Pure relaxation washes over you." },
+				{ text = "💪 Try a harder pose", feed = "You challenged yourself today!" },
+				{ text = "🌅 Sun salutation", feed = "Energized and centered." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL & PARTY ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	party = {
 		{
-			title = "🎉 Party Time!",
+			title = "🎉 Epic Party!",
 			emoji = "🎉",
 			texts = {
 				"The party is in full swing! Music pumping, people dancing!",
 				"You arrived at the party and the energy is electric!",
 				"What a night! The party is absolutely wild!",
+				"Everyone who's anyone is here tonight!",
 			},
 			choices = {
-				{ text = "🕺 Hit the dance floor", feed = "You danced the night away!" },
-				{ text = "🍹 Get a drink", feed = "You grabbed a refreshment." },
-				{ text = "💬 Socialize", feed = "You made new friends!" },
+				{ text = "🕺 Own the dance floor", feed = "You danced like nobody was watching!" },
+				{ text = "🍹 Get refreshments", feed = "You grabbed something tasty." },
+				{ text = "💬 Work the room", feed = "You made tons of new friends!" },
+				{ text = "📸 Take pics", feed = "These memories will last forever!" },
 			},
 		},
 	},
+	nightclub = {
+		{
+			title = "🪩 Club Night!",
+			emoji = "🪩",
+			texts = {
+				"The bass is pumping and the lights are flashing!",
+				"You hit the hottest club in town!",
+				"The nightclub is packed and the energy is insane!",
+				"VIP vibes only tonight!",
+			},
+			choices = {
+				{ text = "💃 Dance all night", feed = "You danced until your feet hurt!" },
+				{ text = "🥂 VIP section", feed = "Living that high life!" },
+				{ text = "🎧 Request a song", feed = "The DJ played your jam!" },
+				{ text = "🏠 Head home", feed = "What a legendary night!" },
+			},
+		},
+	},
+	bar = {
+		{
+			title = "🍹 Hangout Spot",
+			emoji = "🍹",
+			texts = {
+				"You head to your favorite juice bar to unwind.",
+				"The vibe at the hangout spot is perfect tonight.",
+				"Music plays as you settle in at the lounge.",
+			},
+			choices = {
+				{ text = "💬 Chat with strangers", feed = "You might have just made a new friend!" },
+				{ text = "🎱 Play some pool", feed = "Winner stays on!" },
+				{ text = "🎤 Karaoke time!", feed = "You killed it on the mic!" },
+			},
+		},
+	},
+	concert = {
+		{
+			title = "🎵 Live Concert!",
+			emoji = "🎵",
+			texts = {
+				"The crowd roars as the band takes the stage!",
+				"You're at the show of a lifetime!",
+				"The energy is absolutely electric!",
+			},
+			choices = {
+				{ text = "🤘 Rock out!", feed = "You lost your voice screaming!" },
+				{ text = "📱 Record a clip", feed = "The sound quality isn't great but memories!" },
+				{ text = "👕 Get merch", feed = "New favorite shirt acquired!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION & LEARNING ACTIVITIES  
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	study = {
 		{
 			title = "📚 Study Session",
@@ -5423,57 +5832,360 @@ local ActivityEventTemplates = {
 				"You opened your books and got to work...",
 				"Time to hit the books and expand your knowledge!",
 				"You settled in for some serious studying.",
+				"The library is your domain today.",
 			},
 			choices = {
-				{ text = "📖 Keep studying", feed = "Knowledge is power!" },
-				{ text = "☕ Take a break", feed = "A quick break helps." },
+				{ text = "📖 Deep focus mode", feed = "You absorbed so much knowledge!" },
+				{ text = "☕ Study break", feed = "A quick break helps retention." },
+				{ text = "👥 Form study group", feed = "Studying together is more fun!" },
 			},
 		},
 	},
 	read = {
 		{
-			title = "📖 Reading Time",
+			title = "📖 Lost in a Book",
 			emoji = "📖",
 			texts = {
 				"You picked up a book and got lost in its pages...",
 				"You found a quiet spot to read.",
-				"You immersed yourself in a good book.",
+				"You immersed yourself in a captivating story.",
+				"Page after page, you couldn't put it down.",
 			},
 			choices = {
-				{ text = "📚 Finish the chapter", feed = "What a great story!" },
-				{ text = "💤 Doze off", feed = "Reading makes you sleepy." },
+				{ text = "📚 One more chapter", feed = "Just one more... okay maybe two." },
+				{ text = "💭 Reflect on themes", feed = "This book really makes you think." },
+				{ text = "⭐ Rate it 5 stars", feed = "Adding to your favorites list!" },
 			},
 		},
 	},
+	library = {
+		{
+			title = "📚 Library Visit",
+			emoji = "🏛️",
+			texts = {
+				"The quiet of the library embraces you.",
+				"Rows and rows of knowledge await!",
+				"You find your favorite corner in the library.",
+			},
+			choices = {
+				{ text = "📖 Browse new arrivals", feed = "So many interesting titles!" },
+				{ text = "💻 Use the computers", feed = "Research time!" },
+				{ text = "📝 Find a study spot", feed = "Perfect quiet space found." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- VACATION & TRAVEL ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	vacation = {
 		{
-			title = "✈️ Vacation!",
+			title = "✈️ Dream Vacation!",
 			emoji = "🏝️",
 			texts = {
 				"You arrived at your vacation destination! Paradise!",
 				"The vacation is everything you dreamed of!",
 				"Sun, relaxation, and no responsibilities!",
+				"This is what life is all about!",
 			},
 			choices = {
-				{ text = "🏖️ Beach time", feed = "The sand between your toes feels amazing!" },
-				{ text = "🎢 Go on adventures", feed = "You explored everything!" },
-				{ text = "😴 Just relax", feed = "Ultimate relaxation achieved." },
+				{ text = "🏖️ Beach day", feed = "The sand between your toes feels amazing!" },
+				{ text = "🎢 Adventure time", feed = "You explored every attraction!" },
+				{ text = "🍹 Pool lounging", feed = "Maximum relaxation achieved." },
+				{ text = "📸 Tourist mode", feed = "Your camera roll is full of memories!" },
 			},
 		},
 	},
-	nightclub = {
+	beach = {
 		{
-			title = "🕺 Nightclub",
-			emoji = "🕺",
+			title = "🏖️ Beach Day!",
+			emoji = "🏖️",
 			texts = {
-				"The bass is pumping and the lights are flashing!",
-				"You hit the hottest club in town!",
-				"The nightclub is packed and the energy is insane!",
+				"White sand, crystal clear water, perfect weather!",
+				"The waves call your name!",
+				"Beach vibes only today!",
 			},
 			choices = {
-				{ text = "💃 Dance all night", feed = "You danced until sunrise!" },
-				{ text = "🍹 VIP section", feed = "Living the high life!" },
-				{ text = "🏠 Head home early", feed = "You called it a night." },
+				{ text = "🏄 Try surfing", feed = "Cowabunga! You caught a wave!" },
+				{ text = "🐚 Collect shells", feed = "You found some beautiful treasures!" },
+				{ text = "☀️ Work on your tan", feed = "Golden hour glow achieved." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MEDICAL & WELLNESS ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	doctor = {
+		{
+			title = "🩺 Doctor's Visit",
+			emoji = "🩺",
+			texts = {
+				"Time for your checkup.",
+				"The doctor will see you now.",
+				"Better safe than sorry - regular checkups are important!",
+			},
+			choices = {
+				{ text = "✅ Get full exam", feed = "Everything looks good! You're healthy!" },
+				{ text = "❓ Ask questions", feed = "The doctor answered all your concerns." },
+				{ text = "💊 Get prescriptions", feed = "You got what you needed." },
+			},
+		},
+	},
+	therapy = {
+		{
+			title = "🧠 Therapy Session",
+			emoji = "🧠",
+			texts = {
+				"You walk into your therapist's calming office.",
+				"Time to work on your mental health.",
+				"Taking care of your mind is just as important as your body.",
+			},
+			choices = {
+				{ text = "💭 Open up", feed = "Talking about it really helped." },
+				{ text = "📝 Set goals", feed = "You have a clear path forward." },
+				{ text = "🧘 Learn techniques", feed = "New coping strategies acquired." },
+			},
+		},
+	},
+	spa = {
+		{
+			title = "💆 Spa Day",
+			emoji = "💆",
+			texts = {
+				"Time to pamper yourself!",
+				"Relaxation and rejuvenation await.",
+				"You deserve this self-care day!",
+			},
+			choices = {
+				{ text = "💆 Full body massage", feed = "All tension has melted away." },
+				{ text = "🧖 Facial treatment", feed = "Your skin is glowing!" },
+				{ text = "🛁 Hot tub soak", feed = "Pure bliss in warm water." },
+			},
+		},
+	},
+	dentist = {
+		{
+			title = "🦷 Dentist Visit",
+			emoji = "🦷",
+			texts = {
+				"Open wide! Time for your dental checkup.",
+				"The dentist's chair awaits...",
+				"Keeping those pearly whites healthy!",
+			},
+			choices = {
+				{ text = "😁 Just a cleaning", feed = "Your teeth are sparkling clean!" },
+				{ text = "🔍 Full checkup", feed = "No cavities! Good job brushing!" },
+				{ text = "✨ Whitening treatment", feed = "Your smile is brighter than ever!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOBBY ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	music = {
+		{
+			title = "🎵 Making Music",
+			emoji = "🎵",
+			texts = {
+				"You pick up your instrument and start playing.",
+				"The notes flow naturally today.",
+				"Music is your therapy.",
+			},
+			choices = {
+				{ text = "🎸 Practice scales", feed = "Your technique is improving!" },
+				{ text = "🎤 Try a new song", feed = "Nailed it on the third try!" },
+				{ text = "🎹 Just jam", feed = "Creative expression at its finest!" },
+			},
+		},
+	},
+	art = {
+		{
+			title = "🎨 Creating Art",
+			emoji = "🎨",
+			texts = {
+				"Canvas ready, inspiration flowing!",
+				"Time to express yourself through art.",
+				"Creativity wants to come out and play!",
+			},
+			choices = {
+				{ text = "🖌️ Paint freely", feed = "Your creation is beautiful!" },
+				{ text = "✏️ Sketch something", feed = "Quick but satisfying art!" },
+				{ text = "🧪 Experiment", feed = "Art is all about trying new things!" },
+			},
+		},
+	},
+	gaming = {
+		{
+			title = "🎮 Gaming Time!",
+			emoji = "🎮",
+			texts = {
+				"Controller in hand, game loaded. Let's go!",
+				"Time for some quality gaming!",
+				"The virtual world awaits!",
+			},
+			choices = {
+				{ text = "🏆 Play ranked", feed = "You climbed the leaderboards!" },
+				{ text = "👥 Play with friends", feed = "Best squad ever!" },
+				{ text = "🎯 Just for fun", feed = "Games are meant to be enjoyed!" },
+			},
+		},
+	},
+	cooking = {
+		{
+			title = "👨‍🍳 Cooking Up Something",
+			emoji = "👨‍🍳",
+			texts = {
+				"Time to make something delicious!",
+				"The kitchen is your domain.",
+				"Let's see what masterpiece you can create!",
+			},
+			choices = {
+				{ text = "📖 Follow a recipe", feed = "It turned out perfectly!" },
+				{ text = "🧪 Improvise", feed = "Your culinary experiment was a success!" },
+				{ text = "🍰 Make dessert", feed = "Sweet treats are the best!" },
+			},
+		},
+	},
+	gardening = {
+		{
+			title = "🌱 Garden Time",
+			emoji = "🌱",
+			texts = {
+				"Hands in the dirt, seeds ready to plant!",
+				"Your garden needs some attention.",
+				"There's something therapeutic about gardening.",
+			},
+			choices = {
+				{ text = "🌺 Plant flowers", feed = "Beautiful blooms in your future!" },
+				{ text = "🥕 Grow veggies", feed = "Farm to table lifestyle!" },
+				{ text = "🌿 Tend to plants", feed = "Your green babies are thriving!" },
+			},
+		},
+	},
+	photography = {
+		{
+			title = "📷 Photo Walk",
+			emoji = "📷",
+			texts = {
+				"Camera in hand, ready to capture the world.",
+				"There's beauty everywhere if you look for it.",
+				"Time to find the perfect shot!",
+			},
+			choices = {
+				{ text = "🌅 Landscape shot", feed = "That golden hour light is perfect!" },
+				{ text = "🐕 Wildlife/pets", feed = "Captured the cutest moment!" },
+				{ text = "🏙️ Street photography", feed = "Urban stories in every frame!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MOVIES & ENTERTAINMENT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	movies = {
+		{
+			title = "🎬 Movie Time!",
+			emoji = "🎬",
+			texts = {
+				"Popcorn? Check. Comfy seat? Check. Let's go!",
+				"The previews are starting!",
+				"Nothing beats a good movie!",
+			},
+			choices = {
+				{ text = "🍿 Action movie", feed = "The explosions were epic!" },
+				{ text = "😂 Comedy", feed = "You laughed until you cried!" },
+				{ text = "💕 Romance", feed = "Right in the feels!" },
+				{ text = "😱 Horror", feed = "You definitely didn't scream... much." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRISON ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	prison_workout = {
+		{
+			title = "💪 Yard Workout",
+			emoji = "💪",
+			texts = {
+				"Time to get swole in the yard.",
+				"The prison weights are your best friend.",
+				"Working out passes the time inside.",
+			},
+			choices = {
+				{ text = "🏋️ Hit the weights", feed = "Your strength is growing!" },
+				{ text = "🏃 Run laps", feed = "Cardio keeps you sharp." },
+				{ text = "💪 Calisthenics", feed = "Bodyweight gains!" },
+			},
+		},
+	},
+	prison_study = {
+		{
+			title = "📚 Prison Library",
+			emoji = "📚",
+			texts = {
+				"Knowledge is freedom, even behind bars.",
+				"The prison library is quiet today.",
+				"Time to work on your education.",
+			},
+			choices = {
+				{ text = "📖 Study law", feed = "Working on that appeal!" },
+				{ text = "📚 Read novels", feed = "Books are an escape." },
+				{ text = "✍️ Write letters", feed = "Staying connected to the outside." },
+			},
+		},
+	},
+	prison_job = {
+		{
+			title = "🔧 Prison Work",
+			emoji = "🔧",
+			texts = {
+				"Another day on work detail.",
+				"The job keeps you busy at least.",
+				"Earning good time through work.",
+			},
+			choices = {
+				{ text = "👍 Work hard", feed = "Guards noticed your effort." },
+				{ text = "🤷 Do the minimum", feed = "Just getting through the day." },
+				{ text = "👀 Look for opportunities", feed = "You noticed something useful..." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ROYAL ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	royal_duty = {
+		{
+			title = "👑 Royal Duties",
+			emoji = "👑",
+			texts = {
+				"Your subjects await your presence!",
+				"Time to fulfill your royal obligations.",
+				"The crown weighs heavy, but duty calls.",
+			},
+			choices = {
+				{ text = "🎀 Open a charity event", feed = "The people love your generosity!" },
+				{ text = "🤝 Meet with nobles", feed = "Political alliances strengthened." },
+				{ text = "📜 Sign royal decrees", feed = "Your word is law!" },
+			},
+		},
+	},
+	royal_leisure = {
+		{
+			title = "🏰 Royal Leisure",
+			emoji = "🏰",
+			texts = {
+				"Even royalty needs time to relax.",
+				"The palace gardens are beautiful this time of day.",
+				"A rare moment of peace in royal life.",
+			},
+			choices = {
+				{ text = "🏇 Horseback riding", feed = "A gallant ride through the grounds!" },
+				{ text = "🎺 Royal concert", feed = "Music fit for a monarch!" },
+				{ text = "🍵 Tea in the garden", feed = "Refined and relaxing." },
 			},
 		},
 	},

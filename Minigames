@@ -189,6 +189,10 @@ function Minigames.new(screenGui)
 	self._purgeAutoThread = nil
 	self._purgeTypingToken = { id = 0 }
 
+	-- COMBAT minigame connections
+	self._combatConnections = {}
+	self._combatPhase = nil
+
 	-- Build UI once
 	self:createDebateGame()
 	self:createHeistGame()
@@ -198,6 +202,7 @@ function Minigames.new(screenGui)
 	self:createMashGame()
 	self:createHackingGame()
 	self:createPurgeGame()
+	self:createCombatGame()
 
 	return self
 end
@@ -2682,8 +2687,11 @@ function Minigames:play(gameType, callback, options)
 			-- Typing minigame - use mash as fallback
 			self:startMash(callback, options)
 		elseif gameType == "fight" then
-			-- CRITICAL FIX: Fight minigame for confrontational events
-			self:startFight(callback, options)
+			-- UPGRADED: Now uses full combat minigame instead of QTE
+			self:startCombat(callback, options)
+		elseif gameType == "combat" then
+			-- FULL COMBAT: BitLife-style interactive fighting
+			self:startCombat(callback, options)
 		elseif gameType == "confrontation" then
 			-- CRITICAL FIX: Confrontation minigame for verbal conflicts
 			self:startConfrontation(callback, options)
@@ -2776,6 +2784,12 @@ function Minigames:cancel()
 		self._purgeAutoThread = nil
 	end
 
+	-- Combat cleanup
+	if self.combatOverlay then self.combatOverlay.Visible = false end
+	if self.combatEndFrame then self.combatEndFrame.Visible = false end
+	disconnectAll(self._combatConnections)
+	self._combatConnections = {}
+
 	self.callback = nil
 end
 
@@ -2788,7 +2802,8 @@ function Minigames:getAvailableGames()
 		{ id = "prison_escape", name = "Prison Escape", emoji = "🔐", description = "Navigate the maze" },
 		{ id = "mash", name = "Mash", emoji = "👆", description = "Tap as fast as you can" },
 		{ id = "hacking", name = "Hacking", emoji = "💻", description = "Type codes to breach systems" },
-		{ id = "fight", name = "Fight", emoji = "👊", description = "Physical confrontation QTE" },
+		{ id = "combat", name = "Combat", emoji = "👊", description = "Full interactive fighting" },
+		{ id = "fight", name = "Fight", emoji = "🥊", description = "Physical fight (same as combat)" },
 		{ id = "confrontation", name = "Confrontation", emoji = "😤", description = "Verbal showdown" },
 		{ id = "purge", name = "The Purge", emoji = "😈", description = "Rare survival decision run" },
 	}
@@ -2845,6 +2860,960 @@ function Minigames:disableRareAutoPurge()
 		self._purgeAutoThread = nil
 		print("[Minigames] 😈 Disabled rare auto Purge trigger")
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COMBAT MINIGAME - Full BitLife-style interactive fighting
+-- Choose where to hit, how to attack, with health bars and round-by-round action
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Combat hit locations
+local CombatHitLocations = {
+	{ id = "head", name = "Head", emoji = "🧠", damage = {15, 35}, accuracy = 55, koChance = 15 },
+	{ id = "face", name = "Face", emoji = "😵", damage = {12, 28}, accuracy = 60, koChance = 12 },
+	{ id = "jaw", name = "Jaw", emoji = "😬", damage = {18, 40}, accuracy = 50, koChance = 20 },
+	{ id = "chin", name = "Chin", emoji = "🫢", damage = {16, 35}, accuracy = 55, koChance = 18 },
+	{ id = "body", name = "Body", emoji = "💪", damage = {10, 22}, accuracy = 75, koChance = 3 },
+	{ id = "ribs", name = "Ribs", emoji = "🦴", damage = {12, 25}, accuracy = 70, koChance = 5 },
+	{ id = "stomach", name = "Stomach", emoji = "😫", damage = {8, 20}, accuracy = 80, koChance = 2 },
+	{ id = "legs", name = "Legs", emoji = "🦵", damage = {6, 15}, accuracy = 85, koChance = 0 },
+	{ id = "groin", name = "Groin", emoji = "😱", damage = {20, 45}, accuracy = 45, koChance = 10, dirty = true },
+}
+
+-- Combat attack types
+local CombatAttackTypes = {
+	{ id = "jab", name = "Jab", emoji = "🥊", damageMod = 0.7, accMod = 1.3 },
+	{ id = "punch", name = "Punch", emoji = "👊", damageMod = 1.0, accMod = 1.0 },
+	{ id = "hook", name = "Hook", emoji = "🪝", damageMod = 1.3, accMod = 0.85 },
+	{ id = "uppercut", name = "Uppercut", emoji = "⬆️", damageMod = 1.5, accMod = 0.7, koBonus = 15 },
+	{ id = "kick", name = "Kick", emoji = "🦶", damageMod = 1.2, accMod = 0.9 },
+	{ id = "knee", name = "Knee Strike", emoji = "🦵", damageMod = 1.4, accMod = 0.75 },
+	{ id = "elbow", name = "Elbow", emoji = "💪", damageMod = 1.35, accMod = 0.8 },
+	{ id = "headbutt", name = "Headbutt", emoji = "🤕", damageMod = 1.6, accMod = 0.6, dirty = true, selfDmg = 10 },
+	{ id = "bite", name = "Bite", emoji = "🦷", damageMod = 0.8, accMod = 0.5, dirty = true },
+	{ id = "push", name = "Push", emoji = "🤲", damageMod = 0.3, accMod = 1.4 },
+	{ id = "dropkick", name = "Dropkick", emoji = "🦘", damageMod = 2.0, accMod = 0.4, selfFall = 60 },
+	{ id = "haymaker", name = "Haymaker", emoji = "💥", damageMod = 2.0, accMod = 0.5, koBonus = 25 },
+	{ id = "slap", name = "Slap", emoji = "🖐️", damageMod = 0.4, accMod = 1.5 },
+}
+
+-- Combat contexts
+local CombatContexts = {
+	{ id = "street", title = "Street Fight", emoji = "🌆", desc = "A stranger wants to fight you!" },
+	{ id = "school", title = "School Fight", emoji = "🏫", desc = "The bully is looking for trouble." },
+	{ id = "bar", title = "Bar Brawl", emoji = "🍺", desc = "Things got heated at the bar." },
+	{ id = "defense", title = "Self Defense", emoji = "⚠️", desc = "Someone attacked you!" },
+	{ id = "revenge", title = "Payback Time", emoji = "😤", desc = "Time to settle an old score." },
+	{ id = "prison", title = "Prison Yard", emoji = "⛓️", desc = "Another inmate is testing you." },
+	{ id = "random", title = "Random Attack", emoji = "❗", desc = "Someone just punched you!" },
+}
+
+-- Opponent types
+local CombatOpponents = {
+	{ id = "weak", name = "Weak", healthMod = 0.6, dmgMod = 0.5, desc = "a scrawny person" },
+	{ id = "average", name = "Average", healthMod = 1.0, dmgMod = 1.0, desc = "someone your size" },
+	{ id = "strong", name = "Strong", healthMod = 1.3, dmgMod = 1.4, desc = "a muscular person" },
+	{ id = "trained", name = "Trained", healthMod = 1.5, dmgMod = 1.6, desc = "a trained fighter" },
+	{ id = "drunk", name = "Drunk", healthMod = 0.8, dmgMod = 0.8, desc = "an intoxicated person" },
+}
+
+function Minigames:createCombatGame()
+	-- Connection tracking
+	self._combatConnections = {}
+	self._combatPhase = nil -- "location", "attack", "result"
+	
+	-- Main overlay
+	self.combatOverlay = Instance.new("Frame")
+	self.combatOverlay.Size = UDim2.fromScale(1, 1)
+	self.combatOverlay.BackgroundColor3 = C.Black
+	self.combatOverlay.BackgroundTransparency = 0.2
+	self.combatOverlay.Visible = false
+	self.combatOverlay.ZIndex = 200
+	self.combatOverlay.Parent = self.screenGui
+
+	-- Main card
+	self.combatCard = Instance.new("Frame")
+	self.combatCard.Size = UDim2.new(0.95, 0, 0.9, 0)
+	self.combatCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.combatCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.combatCard.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	self.combatCard.ZIndex = 201
+	self.combatCard.Parent = self.combatOverlay
+	corner(self.combatCard, px(16))
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, px(60))
+	header.BackgroundColor3 = C.Red
+	header.ZIndex = 202
+	header.Parent = self.combatCard
+	corner(header, px(16))
+
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0, px(30))
+	headerFix.Position = UDim2.new(0, 0, 1, -px(30))
+	headerFix.BackgroundColor3 = C.Red
+	headerFix.ZIndex = 202
+	headerFix.BorderSizePixel = 0
+	headerFix.Parent = header
+
+	self.combatTitle = Instance.new("TextLabel")
+	self.combatTitle.Size = UDim2.new(1, 0, 1, 0)
+	self.combatTitle.BackgroundTransparency = 1
+	self.combatTitle.Font = F.Title
+	self.combatTitle.TextSize = textSize(22)
+	self.combatTitle.TextColor3 = C.White
+	self.combatTitle.Text = "👊 FIGHT!"
+	self.combatTitle.ZIndex = 203
+	self.combatTitle.Parent = header
+
+	-- Health bars container
+	local healthContainer = Instance.new("Frame")
+	healthContainer.Size = UDim2.new(0.95, 0, 0, px(70))
+	healthContainer.AnchorPoint = Vector2.new(0.5, 0)
+	healthContainer.Position = UDim2.new(0.5, 0, 0, px(70))
+	healthContainer.BackgroundTransparency = 1
+	healthContainer.ZIndex = 202
+	healthContainer.Parent = self.combatCard
+
+	-- Player health
+	local playerHealthFrame = Instance.new("Frame")
+	playerHealthFrame.Size = UDim2.new(0.48, 0, 1, 0)
+	playerHealthFrame.BackgroundColor3 = Color3.fromRGB(30, 40, 50)
+	playerHealthFrame.ZIndex = 203
+	playerHealthFrame.Parent = healthContainer
+	corner(playerHealthFrame, px(8))
+
+	local playerHealthLabel = Instance.new("TextLabel")
+	playerHealthLabel.Size = UDim2.new(1, 0, 0, px(20))
+	playerHealthLabel.BackgroundTransparency = 1
+	playerHealthLabel.Font = F.Medium
+	playerHealthLabel.TextSize = textSize(12)
+	playerHealthLabel.TextColor3 = C.White
+	playerHealthLabel.Text = "👤 YOU"
+	playerHealthLabel.ZIndex = 204
+	playerHealthLabel.Parent = playerHealthFrame
+	pad(playerHealthLabel, px(8), 0, px(4), 0)
+
+	local playerBarBg = Instance.new("Frame")
+	playerBarBg.Size = UDim2.new(0.9, 0, 0, px(20))
+	playerBarBg.AnchorPoint = Vector2.new(0.5, 0)
+	playerBarBg.Position = UDim2.new(0.5, 0, 0, px(24))
+	playerBarBg.BackgroundColor3 = C.Gray700
+	playerBarBg.ZIndex = 204
+	playerBarBg.Parent = playerHealthFrame
+	pill(playerBarBg)
+
+	self.playerHealthBar = Instance.new("Frame")
+	self.playerHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.playerHealthBar.BackgroundColor3 = C.Green
+	self.playerHealthBar.ZIndex = 205
+	self.playerHealthBar.Parent = playerBarBg
+	pill(self.playerHealthBar)
+
+	self.playerHealthText = Instance.new("TextLabel")
+	self.playerHealthText.Size = UDim2.new(1, 0, 0, px(16))
+	self.playerHealthText.AnchorPoint = Vector2.new(0.5, 0)
+	self.playerHealthText.Position = UDim2.new(0.5, 0, 0, px(48))
+	self.playerHealthText.BackgroundTransparency = 1
+	self.playerHealthText.Font = F.Title
+	self.playerHealthText.TextSize = textSize(14)
+	self.playerHealthText.TextColor3 = C.Green
+	self.playerHealthText.Text = "100 HP"
+	self.playerHealthText.ZIndex = 204
+	self.playerHealthText.Parent = playerHealthFrame
+
+	-- Opponent health
+	local oppHealthFrame = Instance.new("Frame")
+	oppHealthFrame.Size = UDim2.new(0.48, 0, 1, 0)
+	oppHealthFrame.Position = UDim2.new(0.52, 0, 0, 0)
+	oppHealthFrame.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+	oppHealthFrame.ZIndex = 203
+	oppHealthFrame.Parent = healthContainer
+	corner(oppHealthFrame, px(8))
+
+	self.oppNameLabel = Instance.new("TextLabel")
+	self.oppNameLabel.Size = UDim2.new(1, 0, 0, px(20))
+	self.oppNameLabel.BackgroundTransparency = 1
+	self.oppNameLabel.Font = F.Medium
+	self.oppNameLabel.TextSize = textSize(12)
+	self.oppNameLabel.TextColor3 = C.White
+	self.oppNameLabel.Text = "😤 OPPONENT"
+	self.oppNameLabel.ZIndex = 204
+	self.oppNameLabel.Parent = oppHealthFrame
+	pad(self.oppNameLabel, px(8), 0, px(4), 0)
+
+	local oppBarBg = Instance.new("Frame")
+	oppBarBg.Size = UDim2.new(0.9, 0, 0, px(20))
+	oppBarBg.AnchorPoint = Vector2.new(0.5, 0)
+	oppBarBg.Position = UDim2.new(0.5, 0, 0, px(24))
+	oppBarBg.BackgroundColor3 = C.Gray700
+	oppBarBg.ZIndex = 204
+	oppBarBg.Parent = oppHealthFrame
+	pill(oppBarBg)
+
+	self.oppHealthBar = Instance.new("Frame")
+	self.oppHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.oppHealthBar.BackgroundColor3 = C.Red
+	self.oppHealthBar.ZIndex = 205
+	self.oppHealthBar.Parent = oppBarBg
+	pill(self.oppHealthBar)
+
+	self.oppHealthText = Instance.new("TextLabel")
+	self.oppHealthText.Size = UDim2.new(1, 0, 0, px(16))
+	self.oppHealthText.AnchorPoint = Vector2.new(0.5, 0)
+	self.oppHealthText.Position = UDim2.new(0.5, 0, 0, px(48))
+	self.oppHealthText.BackgroundTransparency = 1
+	self.oppHealthText.Font = F.Title
+	self.oppHealthText.TextSize = textSize(14)
+	self.oppHealthText.TextColor3 = C.Red
+	self.oppHealthText.Text = "100 HP"
+	self.oppHealthText.ZIndex = 204
+	self.oppHealthText.Parent = oppHealthFrame
+
+	-- Round indicator
+	self.combatRound = Instance.new("TextLabel")
+	self.combatRound.Size = UDim2.new(0.9, 0, 0, px(24))
+	self.combatRound.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatRound.Position = UDim2.new(0.5, 0, 0, px(145))
+	self.combatRound.BackgroundTransparency = 1
+	self.combatRound.Font = F.Medium
+	self.combatRound.TextSize = textSize(14)
+	self.combatRound.TextColor3 = C.Amber
+	self.combatRound.Text = "⚔️ ROUND 1"
+	self.combatRound.ZIndex = 202
+	self.combatRound.Parent = self.combatCard
+
+	-- Narrative text area
+	self.combatNarrative = Instance.new("TextLabel")
+	self.combatNarrative.Size = UDim2.new(0.9, 0, 0, px(60))
+	self.combatNarrative.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatNarrative.Position = UDim2.new(0.5, 0, 0, px(170))
+	self.combatNarrative.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+	self.combatNarrative.Font = F.Body
+	self.combatNarrative.TextSize = textSize(14)
+	self.combatNarrative.TextColor3 = C.White
+	self.combatNarrative.TextWrapped = true
+	self.combatNarrative.Text = "The fight is about to begin..."
+	self.combatNarrative.ZIndex = 202
+	self.combatNarrative.Parent = self.combatCard
+	corner(self.combatNarrative, px(8))
+	pad(self.combatNarrative, px(12), px(12), px(8), px(8))
+
+	-- Phase prompt
+	self.combatPrompt = Instance.new("TextLabel")
+	self.combatPrompt.Size = UDim2.new(0.9, 0, 0, px(28))
+	self.combatPrompt.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatPrompt.Position = UDim2.new(0.5, 0, 0, px(235))
+	self.combatPrompt.BackgroundTransparency = 1
+	self.combatPrompt.Font = F.Title
+	self.combatPrompt.TextSize = textSize(16)
+	self.combatPrompt.TextColor3 = C.Amber
+	self.combatPrompt.Text = "🎯 WHERE DO YOU ATTACK?"
+	self.combatPrompt.ZIndex = 202
+	self.combatPrompt.Parent = self.combatCard
+
+	-- Location buttons container (phase 1)
+	self.combatLocationFrame = Instance.new("ScrollingFrame")
+	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(200))
+	self.combatLocationFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatLocationFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	self.combatLocationFrame.BackgroundTransparency = 1
+	self.combatLocationFrame.ScrollBarThickness = 4
+	self.combatLocationFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	self.combatLocationFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	self.combatLocationFrame.ZIndex = 202
+	self.combatLocationFrame.Parent = self.combatCard
+
+	local locGrid = Instance.new("UIGridLayout")
+	locGrid.CellSize = UDim2.new(0.48, 0, 0, px(44))
+	locGrid.CellPadding = UDim2.new(0.02, 0, 0, px(6))
+	locGrid.Parent = self.combatLocationFrame
+
+	self.combatLocationBtns = {}
+	for i, loc in ipairs(CombatHitLocations) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Blue
+		btn.Font = F.Button
+		btn.TextSize = textSize(13)
+		btn.TextColor3 = C.White
+		btn.Text = loc.emoji .. " " .. loc.name
+		btn.AutoButtonColor = false
+		btn.ZIndex = 203
+		btn.Parent = self.combatLocationFrame
+		corner(btn, px(8))
+
+		self.combatLocationBtns[i] = { btn = btn, data = loc }
+	end
+
+	-- Defense buttons
+	local defendBtn = Instance.new("TextButton")
+	defendBtn.BackgroundColor3 = C.Purple
+	defendBtn.Font = F.Button
+	defendBtn.TextSize = textSize(13)
+	defendBtn.TextColor3 = C.White
+	defendBtn.Text = "🛡️ Block"
+	defendBtn.AutoButtonColor = false
+	defendBtn.ZIndex = 203
+	defendBtn.Parent = self.combatLocationFrame
+	corner(defendBtn, px(8))
+	self.combatDefendBtn = defendBtn
+
+	local runBtn = Instance.new("TextButton")
+	runBtn.BackgroundColor3 = C.Gray600
+	runBtn.Font = F.Button
+	runBtn.TextSize = textSize(13)
+	runBtn.TextColor3 = C.White
+	runBtn.Text = "🏃 Run Away"
+	runBtn.AutoButtonColor = false
+	runBtn.ZIndex = 203
+	runBtn.Parent = self.combatLocationFrame
+	corner(runBtn, px(8))
+	self.combatRunBtn = runBtn
+
+	-- Attack type buttons container (phase 2)
+	self.combatAttackFrame = Instance.new("ScrollingFrame")
+	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(200))
+	self.combatAttackFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatAttackFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	self.combatAttackFrame.BackgroundTransparency = 1
+	self.combatAttackFrame.ScrollBarThickness = 4
+	self.combatAttackFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	self.combatAttackFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	self.combatAttackFrame.Visible = false
+	self.combatAttackFrame.ZIndex = 202
+	self.combatAttackFrame.Parent = self.combatCard
+
+	local atkGrid = Instance.new("UIGridLayout")
+	atkGrid.CellSize = UDim2.new(0.48, 0, 0, px(44))
+	atkGrid.CellPadding = UDim2.new(0.02, 0, 0, px(6))
+	atkGrid.Parent = self.combatAttackFrame
+
+	self.combatAttackBtns = {}
+	for i, atk in ipairs(CombatAttackTypes) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Red
+		btn.Font = F.Button
+		btn.TextSize = textSize(13)
+		btn.TextColor3 = C.White
+		btn.Text = atk.emoji .. " " .. atk.name
+		btn.AutoButtonColor = false
+		btn.ZIndex = 203
+		btn.Parent = self.combatAttackFrame
+		corner(btn, px(8))
+
+		self.combatAttackBtns[i] = { btn = btn, data = atk }
+	end
+
+	-- Result panel (phase 3 - shown after round)
+	self.combatResultFrame = Instance.new("Frame")
+	self.combatResultFrame.Size = UDim2.new(0.95, 0, 0, px(200))
+	self.combatResultFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatResultFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	self.combatResultFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	self.combatResultFrame.Visible = false
+	self.combatResultFrame.ZIndex = 202
+	self.combatResultFrame.Parent = self.combatCard
+	corner(self.combatResultFrame, px(12))
+
+	self.combatResultText = Instance.new("TextLabel")
+	self.combatResultText.Size = UDim2.new(0.9, 0, 0.7, 0)
+	self.combatResultText.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatResultText.Position = UDim2.new(0.5, 0, 0, px(10))
+	self.combatResultText.BackgroundTransparency = 1
+	self.combatResultText.Font = F.Body
+	self.combatResultText.TextSize = textSize(14)
+	self.combatResultText.TextColor3 = C.White
+	self.combatResultText.TextWrapped = true
+	self.combatResultText.Text = ""
+	self.combatResultText.ZIndex = 203
+	self.combatResultText.Parent = self.combatResultFrame
+
+	self.combatContinueBtn = Instance.new("TextButton")
+	self.combatContinueBtn.Size = UDim2.new(0.8, 0, 0, px(44))
+	self.combatContinueBtn.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatContinueBtn.Position = UDim2.new(0.5, 0, 1, -px(10))
+	self.combatContinueBtn.BackgroundColor3 = C.Green
+	self.combatContinueBtn.Font = F.Button
+	self.combatContinueBtn.TextSize = textSize(16)
+	self.combatContinueBtn.TextColor3 = C.White
+	self.combatContinueBtn.Text = "Continue Fighting"
+	self.combatContinueBtn.AutoButtonColor = false
+	self.combatContinueBtn.ZIndex = 203
+	self.combatContinueBtn.Parent = self.combatResultFrame
+	corner(self.combatContinueBtn, px(8))
+
+	-- Final outcome panel
+	self.combatEndFrame = Instance.new("Frame")
+	self.combatEndFrame.Size = UDim2.new(0.95, 0, 0.7, 0)
+	self.combatEndFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.combatEndFrame.Position = UDim2.fromScale(0.5, 0.5)
+	self.combatEndFrame.BackgroundColor3 = Color3.fromRGB(25, 30, 40)
+	self.combatEndFrame.Visible = false
+	self.combatEndFrame.ZIndex = 210
+	self.combatEndFrame.Parent = self.combatCard
+	corner(self.combatEndFrame, px(16))
+
+	self.combatEndEmoji = Instance.new("TextLabel")
+	self.combatEndEmoji.Size = UDim2.new(1, 0, 0, px(80))
+	self.combatEndEmoji.BackgroundTransparency = 1
+	self.combatEndEmoji.Font = F.Title
+	self.combatEndEmoji.TextSize = px(60)
+	self.combatEndEmoji.Text = "🏆"
+	self.combatEndEmoji.ZIndex = 211
+	self.combatEndEmoji.Parent = self.combatEndFrame
+
+	self.combatEndTitle = Instance.new("TextLabel")
+	self.combatEndTitle.Size = UDim2.new(0.9, 0, 0, px(36))
+	self.combatEndTitle.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatEndTitle.Position = UDim2.new(0.5, 0, 0, px(80))
+	self.combatEndTitle.BackgroundTransparency = 1
+	self.combatEndTitle.Font = F.Title
+	self.combatEndTitle.TextSize = textSize(24)
+	self.combatEndTitle.TextColor3 = C.White
+	self.combatEndTitle.Text = "VICTORY!"
+	self.combatEndTitle.ZIndex = 211
+	self.combatEndTitle.Parent = self.combatEndFrame
+
+	self.combatEndText = Instance.new("TextLabel")
+	self.combatEndText.Size = UDim2.new(0.85, 0, 0, px(80))
+	self.combatEndText.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatEndText.Position = UDim2.new(0.5, 0, 0, px(120))
+	self.combatEndText.BackgroundTransparency = 1
+	self.combatEndText.Font = F.Body
+	self.combatEndText.TextSize = textSize(14)
+	self.combatEndText.TextColor3 = C.Gray300
+	self.combatEndText.TextWrapped = true
+	self.combatEndText.Text = ""
+	self.combatEndText.ZIndex = 211
+	self.combatEndText.Parent = self.combatEndFrame
+
+	self.combatEndStats = Instance.new("TextLabel")
+	self.combatEndStats.Size = UDim2.new(0.85, 0, 0, px(60))
+	self.combatEndStats.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatEndStats.Position = UDim2.new(0.5, 0, 0, px(200))
+	self.combatEndStats.BackgroundTransparency = 1
+	self.combatEndStats.Font = F.Medium
+	self.combatEndStats.TextSize = textSize(12)
+	self.combatEndStats.TextColor3 = C.Amber
+	self.combatEndStats.TextWrapped = true
+	self.combatEndStats.Text = ""
+	self.combatEndStats.ZIndex = 211
+	self.combatEndStats.Parent = self.combatEndFrame
+
+	self.combatEndBtn = Instance.new("TextButton")
+	self.combatEndBtn.Size = UDim2.new(0.7, 0, 0, px(50))
+	self.combatEndBtn.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatEndBtn.Position = UDim2.new(0.5, 0, 1, -px(20))
+	self.combatEndBtn.BackgroundColor3 = C.Blue
+	self.combatEndBtn.Font = F.Button
+	self.combatEndBtn.TextSize = textSize(18)
+	self.combatEndBtn.TextColor3 = C.White
+	self.combatEndBtn.Text = "Continue"
+	self.combatEndBtn.AutoButtonColor = false
+	self.combatEndBtn.ZIndex = 211
+	self.combatEndBtn.Parent = self.combatEndFrame
+	corner(self.combatEndBtn, px(10))
+end
+
+function Minigames:combatUpdateHealthBars()
+	local playerPct = math.clamp(self.combatState.playerHealth / 100, 0, 1)
+	local oppPct = math.clamp(self.combatState.oppHealth / self.combatState.oppMaxHealth, 0, 1)
+
+	tween(self.playerHealthBar, TweenInfo.new(0.3), { Size = UDim2.new(playerPct, 0, 1, 0) })
+	tween(self.oppHealthBar, TweenInfo.new(0.3), { Size = UDim2.new(oppPct, 0, 1, 0) })
+
+	self.playerHealthText.Text = math.floor(self.combatState.playerHealth) .. " HP"
+	self.oppHealthText.Text = math.floor(self.combatState.oppHealth) .. " HP"
+
+	-- Color based on health
+	if playerPct > 0.5 then
+		self.playerHealthBar.BackgroundColor3 = C.Green
+		self.playerHealthText.TextColor3 = C.Green
+	elseif playerPct > 0.25 then
+		self.playerHealthBar.BackgroundColor3 = C.Amber
+		self.playerHealthText.TextColor3 = C.Amber
+	else
+		self.playerHealthBar.BackgroundColor3 = C.Red
+		self.playerHealthText.TextColor3 = C.Red
+	end
+end
+
+function Minigames:combatShowPhase(phase)
+	self._combatPhase = phase
+	self.combatLocationFrame.Visible = (phase == "location")
+	self.combatAttackFrame.Visible = (phase == "attack")
+	self.combatResultFrame.Visible = (phase == "result")
+	self.combatEndFrame.Visible = (phase == "end")
+
+	if phase == "location" then
+		self.combatPrompt.Text = "🎯 WHERE DO YOU ATTACK?"
+	elseif phase == "attack" then
+		local locName = self.combatState.selectedLocation and self.combatState.selectedLocation.name or "target"
+		self.combatPrompt.Text = "⚔️ HOW DO YOU ATTACK THE " .. string.upper(locName) .. "?"
+	elseif phase == "result" then
+		self.combatPrompt.Text = "📊 ROUND " .. self.combatState.round .. " RESULT"
+	elseif phase == "end" then
+		self.combatPrompt.Text = ""
+	end
+end
+
+function Minigames:combatCalculateAttack(attack, location, isPlayer)
+	local baseDmg = math.random(location.damage[1], location.damage[2])
+	local dmg = baseDmg * attack.damageMod
+	local acc = location.accuracy * attack.accMod
+
+	-- Apply opponent modifiers if it's opponent attacking
+	if not isPlayer and self.combatState.opponent then
+		dmg = dmg * self.combatState.opponent.dmgMod
+	end
+
+	-- Roll for hit
+	local hit = math.random(100) <= acc
+	if not hit then
+		return { hit = false, damage = 0, crit = false, ko = false }
+	end
+
+	-- Critical hit
+	local critChance = 15 + (attack.koBonus or 0)
+	local crit = math.random(100) <= critChance
+	if crit then dmg = dmg * 1.5 end
+
+	-- Knockout check
+	local koChance = location.koChance + (attack.koBonus or 0)
+	if crit then koChance = koChance * 1.5 end
+	local ko = math.random(100) <= koChance
+
+	-- Self damage for dirty moves
+	local selfDmg = attack.selfDmg or 0
+	
+	-- Self fall for dropkick
+	if attack.selfFall and math.random(100) <= attack.selfFall then
+		selfDmg = selfDmg + 15
+	end
+
+	return {
+		hit = true,
+		damage = math.floor(dmg),
+		crit = crit,
+		ko = ko,
+		selfDamage = selfDmg,
+		dirty = attack.dirty or location.dirty,
+	}
+end
+
+function Minigames:combatProcessRound()
+	local state = self.combatState
+	local location = state.selectedLocation
+	local attack = state.selectedAttack
+	
+	local narrative = ""
+	
+	-- Player attacks
+	local playerResult = self:combatCalculateAttack(attack, location, true)
+	state.stats.attacksThrown = state.stats.attacksThrown + 1
+	
+	if playerResult.hit then
+		state.stats.attacksLanded = state.stats.attacksLanded + 1
+		state.oppHealth = state.oppHealth - playerResult.damage
+		state.stats.damageDealt = state.stats.damageDealt + playerResult.damage
+		
+		if playerResult.crit then
+			narrative = "💥 CRITICAL HIT! Your " .. attack.name:lower() .. " to their " .. location.name:lower() .. " deals " .. playerResult.damage .. " damage!"
+			state.stats.criticalHits = state.stats.criticalHits + 1
+		else
+			narrative = "Your " .. attack.name:lower() .. " connects with their " .. location.name:lower() .. " for " .. playerResult.damage .. " damage."
+		end
+		
+		if playerResult.dirty then
+			narrative = narrative .. " 😈 Dirty move!"
+		end
+		
+		-- Self damage
+		if playerResult.selfDamage > 0 then
+			state.playerHealth = state.playerHealth - playerResult.selfDamage
+			narrative = narrative .. " You take " .. playerResult.selfDamage .. " self-damage!"
+		end
+		
+		-- Check for knockout
+		if playerResult.ko or state.oppHealth <= 0 then
+			state.combatEnded = true
+			state.won = true
+			state.knockout = true
+			state.stats.knockouts = state.stats.knockouts + 1
+			narrative = narrative .. "\n\n🏆 KNOCKOUT! They're down and not getting up!"
+			self.combatResultText.Text = narrative
+			self:combatShowPhase("result")
+			return
+		end
+	else
+		narrative = "You swing with a " .. attack.name:lower() .. " but miss!"
+	end
+	
+	narrative = narrative .. "\n\n"
+	
+	-- Opponent attacks back
+	local oppAttack = CombatAttackTypes[math.random(#CombatAttackTypes)]
+	local oppLocation = CombatHitLocations[math.random(#CombatHitLocations)]
+	
+	local oppResult = self:combatCalculateAttack(oppAttack, oppLocation, false)
+	
+	-- Apply defense if player was blocking
+	if state.wasBlocking then
+		if oppResult.hit then
+			oppResult.damage = math.floor(oppResult.damage * 0.4)
+		end
+		narrative = narrative .. "🛡️ You blocked! "
+	end
+	
+	if oppResult.hit then
+		state.playerHealth = state.playerHealth - oppResult.damage
+		state.stats.damageTaken = state.stats.damageTaken + oppResult.damage
+		
+		if oppResult.crit then
+			narrative = narrative .. "💥 They land a devastating " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage!"
+		else
+			narrative = narrative .. "They hit you with a " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage."
+		end
+		
+		-- Check for player knockout
+		if oppResult.ko or state.playerHealth <= 0 then
+			state.combatEnded = true
+			state.won = false
+			state.knockout = true
+			narrative = narrative .. "\n\n💫 You got KNOCKED OUT!"
+			self.combatResultText.Text = narrative
+			self:combatShowPhase("result")
+			return
+		end
+	else
+		narrative = narrative .. "They swing but miss!"
+	end
+	
+	-- Health status
+	narrative = narrative .. "\n\n"
+	if state.playerHealth > 70 then
+		narrative = narrative .. "You're feeling strong."
+	elseif state.playerHealth > 40 then
+		narrative = narrative .. "You're hurt but still fighting."
+	else
+		narrative = narrative .. "You're badly injured!"
+	end
+	
+	if state.oppHealth > state.oppMaxHealth * 0.7 then
+		narrative = narrative .. " They look unfazed."
+	elseif state.oppHealth > state.oppMaxHealth * 0.4 then
+		narrative = narrative .. " They're showing damage."
+	else
+		narrative = narrative .. " They're on their last legs!"
+	end
+	
+	state.round = state.round + 1
+	self.combatResultText.Text = narrative
+	self:combatShowPhase("result")
+end
+
+function Minigames:combatSelectLocation(locationData)
+	if self._combatPhase ~= "location" then return end
+	
+	self.combatState.selectedLocation = locationData
+	self.combatState.wasBlocking = false
+	
+	-- Highlight selected button
+	for _, item in ipairs(self.combatLocationBtns) do
+		if item.data.id == locationData.id then
+			item.btn.BackgroundColor3 = C.Green
+		else
+			item.btn.BackgroundColor3 = C.Blue
+		end
+	end
+	
+	-- Show attack type selection
+	task.delay(0.2, function()
+		if self.activeGame == "combat" then
+			self:combatShowPhase("attack")
+		end
+	end)
+end
+
+function Minigames:combatSelectAttack(attackData)
+	if self._combatPhase ~= "attack" then return end
+	
+	self.combatState.selectedAttack = attackData
+	
+	-- Highlight selected button
+	for _, item in ipairs(self.combatAttackBtns) do
+		if item.data.id == attackData.id then
+			item.btn.BackgroundColor3 = C.Green
+		else
+			item.btn.BackgroundColor3 = C.Red
+		end
+	end
+	
+	-- Process the round
+	task.delay(0.3, function()
+		if self.activeGame == "combat" then
+			self:combatProcessRound()
+			self:combatUpdateHealthBars()
+		end
+	end)
+end
+
+function Minigames:combatDefend()
+	if self._combatPhase ~= "location" then return end
+	
+	self.combatState.wasBlocking = true
+	self.combatState.selectedLocation = CombatHitLocations[5] -- body
+	self.combatState.selectedAttack = CombatAttackTypes[1] -- jab (weak)
+	
+	self.combatDefendBtn.BackgroundColor3 = C.Green
+	
+	task.delay(0.3, function()
+		if self.activeGame == "combat" then
+			self:combatProcessRound()
+			self:combatUpdateHealthBars()
+		end
+	end)
+end
+
+function Minigames:combatRun()
+	if self._combatPhase ~= "location" then return end
+	
+	local escapeChance = 60
+	if self.combatState.opponent then
+		escapeChance = escapeChance - (self.combatState.round * 5) -- Harder to run as fight goes on
+	end
+	
+	if math.random(100) <= escapeChance then
+		self.combatState.combatEnded = true
+		self.combatState.escaped = true
+		self.combatResultText.Text = "🏃 You managed to escape the fight!\n\nYou ran away before things got worse. Smart? Maybe. Cowardly? Definitely."
+		self:combatShowPhase("result")
+	else
+		self.combatResultText.Text = "🏃❌ You tried to run but they caught you!\n\nNow they're even angrier..."
+		self.combatState.playerHealth = self.combatState.playerHealth - 10 -- Penalty for failed escape
+		self:combatUpdateHealthBars()
+		self:combatShowPhase("result")
+	end
+end
+
+function Minigames:combatContinue()
+	if self.combatState.combatEnded then
+		self:combatShowEnd()
+	else
+		-- Reset for next round
+		self.combatState.selectedLocation = nil
+		self.combatState.selectedAttack = nil
+		self.combatState.wasBlocking = false
+		
+		-- Reset button colors
+		for _, item in ipairs(self.combatLocationBtns) do
+			item.btn.BackgroundColor3 = C.Blue
+		end
+		for _, item in ipairs(self.combatAttackBtns) do
+			item.btn.BackgroundColor3 = C.Red
+		end
+		self.combatDefendBtn.BackgroundColor3 = C.Purple
+		self.combatRunBtn.BackgroundColor3 = C.Gray600
+		
+		self.combatRound.Text = "⚔️ ROUND " .. self.combatState.round
+		self:combatShowPhase("location")
+	end
+end
+
+function Minigames:combatShowEnd()
+	local state = self.combatState
+	
+	if state.won then
+		if state.knockout then
+			self.combatEndEmoji.Text = "🏆"
+			self.combatEndTitle.Text = "KNOCKOUT VICTORY!"
+			self.combatEndTitle.TextColor3 = C.Green
+			self.combatEndText.Text = "You knocked them out cold! They hit the ground hard and aren't getting back up."
+		else
+			self.combatEndEmoji.Text = "✊"
+			self.combatEndTitle.Text = "YOU WON!"
+			self.combatEndTitle.TextColor3 = C.Green
+			self.combatEndText.Text = "After a tough battle, you emerged victorious. They couldn't take any more."
+		end
+	elseif state.escaped then
+		self.combatEndEmoji.Text = "🏃"
+		self.combatEndTitle.Text = "ESCAPED!"
+		self.combatEndTitle.TextColor3 = C.Amber
+		self.combatEndText.Text = "You managed to get away before things got worse. Living to fight another day."
+	else
+		if state.knockout then
+			self.combatEndEmoji.Text = "💫"
+			self.combatEndTitle.Text = "KNOCKED OUT!"
+			self.combatEndTitle.TextColor3 = C.Red
+			self.combatEndText.Text = "Everything went black. You wake up on the ground, battered and bruised."
+		else
+			self.combatEndEmoji.Text = "😵"
+			self.combatEndTitle.Text = "YOU LOST"
+			self.combatEndTitle.TextColor3 = C.Red
+			self.combatEndText.Text = "They beat you badly. You couldn't take any more and had to give up."
+		end
+	end
+	
+	-- Stats
+	local accuracy = state.stats.attacksThrown > 0 and math.floor((state.stats.attacksLanded / state.stats.attacksThrown) * 100) or 0
+	self.combatEndStats.Text = string.format(
+		"📊 FIGHT STATS\nRounds: %d | Attacks: %d/%d (%d%% acc)\nDamage Dealt: %d | Damage Taken: %d | Critical Hits: %d",
+		state.round,
+		state.stats.attacksLanded,
+		state.stats.attacksThrown,
+		accuracy,
+		state.stats.damageDealt,
+		state.stats.damageTaken,
+		state.stats.criticalHits
+	)
+	
+	self:combatShowPhase("end")
+end
+
+function Minigames:combatEnd()
+	local state = self.combatState
+	self.activeGame = nil
+	self.combatOverlay.Visible = false
+	
+	-- Disconnect all
+	for _, conn in pairs(self._combatConnections) do
+		if typeof(conn) == "RBXScriptConnection" then
+			conn:Disconnect()
+		end
+	end
+	self._combatConnections = {}
+	
+	if self.callback then
+		self.callback(state.won or state.escaped, {
+			won = state.won,
+			escaped = state.escaped,
+			knockout = state.knockout,
+			rounds = state.round,
+			damageDealt = state.stats.damageDealt,
+			damageTaken = state.stats.damageTaken,
+			finalHealth = state.playerHealth,
+			opponentFinalHealth = state.oppHealth,
+			stats = state.stats,
+		})
+		self.callback = nil
+	end
+end
+
+function Minigames:startCombat(callback, options)
+	options = options or {}
+	print("[Minigames] 👊 Starting COMBAT minigame!")
+	
+	self.callback = callback
+	self.combatOverlay.Visible = true
+	self.activeGame = "combat"
+	
+	-- Pick context and opponent
+	local context = options.context
+	if not context then
+		context = CombatContexts[math.random(#CombatContexts)]
+	elseif type(context) == "string" then
+		for _, c in ipairs(CombatContexts) do
+			if c.id == context then context = c break end
+		end
+	end
+	
+	local opponent = options.opponent
+	if not opponent then
+		local difficulty = options.difficulty or "average"
+		for _, o in ipairs(CombatOpponents) do
+			if o.id == difficulty then opponent = o break end
+		end
+		if not opponent then
+			opponent = CombatOpponents[2] -- average
+		end
+	end
+	
+	-- Initialize combat state
+	self.combatState = {
+		context = context,
+		opponent = opponent,
+		round = 1,
+		playerHealth = 100,
+		oppHealth = math.floor(100 * opponent.healthMod),
+		oppMaxHealth = math.floor(100 * opponent.healthMod),
+		selectedLocation = nil,
+		selectedAttack = nil,
+		wasBlocking = false,
+		combatEnded = false,
+		won = false,
+		escaped = false,
+		knockout = false,
+		stats = {
+			attacksThrown = 0,
+			attacksLanded = 0,
+			damageDealt = 0,
+			damageTaken = 0,
+			criticalHits = 0,
+			knockouts = 0,
+		}
+	}
+	
+	-- Set up UI
+	self.combatTitle.Text = context.emoji .. " " .. context.title
+	self.combatNarrative.Text = context.desc .. "\n\nYou're facing " .. opponent.desc .. "."
+	self.oppNameLabel.Text = "😤 " .. string.upper(opponent.name)
+	self.combatRound.Text = "⚔️ ROUND 1"
+	
+	-- Reset health bars
+	self.playerHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.oppHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.playerHealthText.Text = "100 HP"
+	self.oppHealthText.Text = self.combatState.oppMaxHealth .. " HP"
+	self.playerHealthBar.BackgroundColor3 = C.Green
+	self.playerHealthText.TextColor3 = C.Green
+	
+	-- Reset button colors
+	for _, item in ipairs(self.combatLocationBtns) do
+		item.btn.BackgroundColor3 = C.Blue
+	end
+	for _, item in ipairs(self.combatAttackBtns) do
+		item.btn.BackgroundColor3 = C.Red
+	end
+	self.combatDefendBtn.BackgroundColor3 = C.Purple
+	self.combatRunBtn.BackgroundColor3 = C.Gray600
+	
+	-- Hide end panel
+	self.combatEndFrame.Visible = false
+	
+	-- Show location selection
+	self:combatShowPhase("location")
+	
+	-- Wire up buttons
+	for _, item in ipairs(self.combatLocationBtns) do
+		local conn = item.btn.MouseButton1Click:Connect(function()
+			self:combatSelectLocation(item.data)
+		end)
+		table.insert(self._combatConnections, conn)
+	end
+	
+	for _, item in ipairs(self.combatAttackBtns) do
+		local conn = item.btn.MouseButton1Click:Connect(function()
+			self:combatSelectAttack(item.data)
+		end)
+		table.insert(self._combatConnections, conn)
+	end
+	
+	table.insert(self._combatConnections, self.combatDefendBtn.MouseButton1Click:Connect(function()
+		self:combatDefend()
+	end))
+	
+	table.insert(self._combatConnections, self.combatRunBtn.MouseButton1Click:Connect(function()
+		self:combatRun()
+	end))
+	
+	table.insert(self._combatConnections, self.combatContinueBtn.MouseButton1Click:Connect(function()
+		self:combatContinue()
+	end))
+	
+	table.insert(self._combatConnections, self.combatEndBtn.MouseButton1Click:Connect(function()
+		self:combatEnd()
+	end))
 end
 
 return Minigames

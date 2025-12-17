@@ -1318,6 +1318,137 @@ Random.events = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ROAD RAGE ENCOUNTER WITH COMBAT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "road_rage",
+		title = "Road Rage!",
+		emoji = "🚗",
+		text = "Someone just cut you off in traffic and is now getting out of their car! They look furious!",
+		question = "The driver is approaching your car aggressively...",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 2,
+		category = "confrontation",
+		-- Must have a car and not be in prison
+		requiresFlags = {},
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "🚪 Get out and confront them!",
+				effects = {},
+				feedText = "You stepped out of your car...",
+				-- CRITICAL: Trigger the combat minigame!
+				triggerMinigame = "combat",
+				minigameOptions = { 
+					context = "street",
+					difficulty = "average",
+					opponentDescription = "Angry Driver"
+				},
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					
+					if won then
+						-- Player won the road rage fight!
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.road_rage_winner = true
+						state:AddFeed("🚗👊 You taught that driver a lesson! They won't road rage again.")
+					else
+						-- Player lost
+						local severity = math.random(1, 100)
+						if severity < 50 then
+							state:ModifyStat("Health", -15)
+							state:ModifyStat("Happiness", -12)
+							state:AddFeed("🚗👊 You got beat up on the side of the road. Humiliating.")
+						elseif severity < 80 then
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Happiness", -18)
+							state.Money = math.max(0, (state.Money or 0) - 2000)
+							state.Flags = state.Flags or {}
+							state.Flags.hospitalized = true
+							state:AddFeed("🚗👊 The fight went badly. You needed hospital treatment.")
+						else
+							-- Legal trouble
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -25)
+							state.Money = math.max(0, (state.Money or 0) - 5000)
+							state.Flags = state.Flags or {}
+							state.Flags.assault_charge = true
+							state:AddFeed("🚗👊 Witnesses called police. You both got arrested for assault!")
+						end
+					end
+				end,
+			},
+			{
+				text = "🔒 Stay in car, lock doors",
+				effects = {},
+				feedText = "You locked your doors...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 They banged on your window and yelled, but eventually drove off.")
+					elseif roll < 0.90 then
+						state:ModifyStat("Happiness", -8)
+						state.Money = math.max(0, (state.Money or 0) - math.random(200, 800))
+						state:AddFeed("🚗 They damaged your car! Key scratches and a broken mirror.")
+					else
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -12)
+						state.Money = math.max(0, (state.Money or 0) - 1500)
+						state:AddFeed("🚗 They smashed your window and pulled you out! It got ugly.")
+					end
+				end,
+			},
+			{
+				text = "📱 Call 911",
+				effects = {},
+				feedText = "You called for help...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚗👮 Police arrived quickly. The other driver got a ticket!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🚗 They drove off before police arrived. At least you're safe.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Money = math.max(0, (state.Money or 0) - math.random(100, 300))
+						state:AddFeed("🚗 They damaged your car before fleeing. Police took a report.")
+					end
+				end,
+			},
+			{
+				text = "🚗 Drive away quickly",
+				effects = {},
+				feedText = "You floored it!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🚗 You sped away before things could escalate. Smart move!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚗 They chased you for a while but eventually gave up. Heart racing!")
+					else
+						-- Car chase goes wrong
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -15)
+						state.Money = math.max(0, (state.Money or 0) - 3000)
+						state.Flags = state.Flags or {}
+						state.Flags.car_accident = true
+						state:AddFeed("🚗💥 You crashed while trying to escape! Needed medical attention.")
+					end
+				end,
+			},
+		},
+	},
+	
 	{
 		-- CRITICAL FIX: Animal attack is now RANDOM - no god mode choosing severity!
 		id = "injury_animal",

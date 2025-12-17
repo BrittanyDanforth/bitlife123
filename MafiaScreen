@@ -1721,37 +1721,56 @@ function MafiaScreen:getScenarioChoices(op)
 		},
 	}
 	
-	-- Custom choices for specific operations
+	-- Custom choices for specific operations (with combat options!)
 	local customChoices = {
 		intimidation = {
-			{ text = "Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
-			{ text = "Make an example to scare others", successMod = 0.9, riskMod = 1.3, rewardMod = 1.3, feed = "Fear is a powerful tool." },
-			{ text = "Offer protection services genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
+			{ text = "🗣️ Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
+			{ text = "👊 Beat them up as a warning", successMod = 1.0, riskMod = 1.0, rewardMod = 1.2, feed = "Physical intimidation!", triggersCombat = true },
+			{ text = "😤 Make an example - rough them up good", successMod = 0.9, riskMod = 1.3, rewardMod = 1.4, respectBonus = 15, feed = "Fear is a powerful tool.", triggersCombat = true },
+			{ text = "🤝 Offer protection genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
 		},
 		black_market = {
-			{ text = "Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
-			{ text = "Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
-			{ text = "Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
+			{ text = "💵 Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
+			{ text = "📦 Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
+			{ text = "🌙 Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
 		},
 		cyber = {
-			{ text = "Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
-			{ text = "Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
-			{ text = "Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
+			{ text = "🏢 Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
+			{ text = "💰 Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
+			{ text = "🌙 Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
 		},
 		weapons = {
-			{ text = "Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
-			{ text = "Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
-			{ text = "Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
+			{ text = "👁️ Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
+			{ text = "🤝 Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
+			{ text = "📍 Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
 		},
 		ransom = {
-			{ text = "Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public." },
-			{ text = "Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
-			{ text = "Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
+			{ text = "🎭 Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public.", triggersCombat = true },
+			{ text = "🚗 Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
+			{ text = "🕵️ Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
 		},
 		enforcer_hit = {
-			{ text = "Quick and clean - no witnesses", successMod = 1.1, riskMod = 0.9, feed = "Professional." },
-			{ text = "Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
-			{ text = "Send a message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 20, feed = "Fear spreads." },
+			{ text = "🔫 Quick and clean - confront them", successMod = 1.1, riskMod = 0.9, feed = "Professional.", triggersCombat = true, targetStrength = "average" },
+			{ text = "🎭 Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
+			{ text = "👊 Send a brutal message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 25, feed = "Fear spreads through the streets.", triggersCombat = true, targetStrength = "strong" },
+			{ text = "🏃 Ambush them", successMod = 1.2, riskMod = 0.7, feed = "They never saw it coming.", triggersCombat = true, targetStrength = "weak" },
+		},
+		protection = {
+			{ text = "🗣️ Polite but firm collection", successMod = 1.2, riskMod = 0.6, feed = "Business as usual." },
+			{ text = "👊 Rough up the reluctant ones", successMod = 1.0, riskMod = 1.0, rewardMod = 1.3, feed = "They paid up quick!", triggersCombat = true },
+			{ text = "🔥 Destroy property as a warning", successMod = 0.9, riskMod = 1.4, respectBonus = 10, feed = "Message received loud and clear." },
+			{ text = "📱 Let them slide this week", successMod = 1.0, riskMod = 0.3, rewardMod = 0.5, feed = "Show of mercy... or weakness?" },
+		},
+		heist = {
+			{ text = "🎯 Lead the crew - biggest cut", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, highest reward!" },
+			{ text = "🚗 Getaway driver - safer role", successMod = 1.2, riskMod = 0.6, rewardMod = 0.7, feed = "Fast and clean escape." },
+			{ text = "🔓 Safecracker specialist", successMod = 1.0, riskMod = 0.9, rewardMod = 1.0, feed = "The technical expert." },
+			{ text = "🔫 Armed backup", successMod = 1.1, riskMod = 1.0, rewardMod = 0.9, feed = "Ready for anything.", triggersCombat = true },
+		},
+		smuggling = {
+			{ text = "🚤 Speed boat at night", successMod = 0.9, riskMod = 1.3, rewardMod = 1.2, feed = "Fast and dangerous." },
+			{ text = "🚚 Hidden compartment in trucks", successMod = 1.2, riskMod = 0.7, feed = "Slow but reliable." },
+			{ text = "✈️ Private airfield drop", successMod = 1.1, riskMod = 0.9, costMod = 0.2, feed = "High altitude, low profile." },
 		},
 	}
 	
@@ -1760,13 +1779,179 @@ end
 
 -- Process scenario choice and execute operation
 function MafiaScreen:processScenarioChoice(op, choiceIndex, accumulatedMods)
+	-- Get the actual choice data to check for combat triggers
+	local choices = self:getScenarioChoices(op)
+	local chosenOption = choices[choiceIndex]
+	
+	-- Merge choice-specific modifiers
+	if chosenOption then
+		accumulatedMods = accumulatedMods or {}
+		accumulatedMods.triggersCombat = chosenOption.triggersCombat
+		accumulatedMods.targetStrength = chosenOption.targetStrength
+		accumulatedMods.respectBonus = chosenOption.respectBonus
+		accumulatedMods.feed = chosenOption.feed
+	end
+	
 	-- Execute the operation with modifiers
 	self:doOperation(op.id, accumulatedMods)
 end
 
+-- Combat-based mafia operations
+local CombatMafiaOperations = {
+	enforcer_hit = true,
+	intimidation = true,
+	protection = true, -- When they resist
+}
+
 function MafiaScreen:doOperation(operationId, modifiers)
 	if not DoMobOperation then return end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT-BASED MAFIA OPERATIONS
+	-- Some operations may involve physical confrontation - trigger combat minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if CombatMafiaOperations[operationId] and modifiers and modifiers.triggersCombat then
+		print("[MafiaScreen] Combat operation detected:", operationId)
+		
+		-- Hide mafia screen for combat
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context and difficulty
+		local combatContext = "defense"
+		local combatDifficulty = "average"
+		
+		if operationId == "enforcer_hit" then
+			combatContext = "revenge"
+			combatDifficulty = modifiers.targetStrength or "strong"
+		elseif operationId == "protection" then
+			combatContext = "bar"
+			combatDifficulty = "weak"
+		elseif operationId == "intimidation" then
+			combatContext = "street"
+			combatDifficulty = "average"
+		end
+		
+		-- Get minigames and start combat
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting combat for operation:", operationId)
+			minigameInstance:play("combat", function(won, combatResult)
+				print("[MafiaScreen] Combat result - Won:", won)
+				
+				-- Call server with combat results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						combatCompleted = true,
+						combatWon = won,
+						combatResult = combatResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				-- Show result
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local title = won and "Operation Complete!" or "Partial Success"
+						self:showResult(true, title, serverResult.message or "The job is done.", emoji)
+					else
+						local emoji = serverResult.arrested and "👮" or (won and "💨" or "😵")
+						self:showResult(false, "Operation Failed", serverResult.message or "Things went wrong.", emoji)
+					end
+				else
+					local title = won and "👊 Victory" or "😵 Beaten"
+					local message = won 
+						and "You dominated them! The family is impressed." 
+						or "You got beat up. This damages the family's reputation."
+					self:showResult(won, title, message, won and "💪" or "😵")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end, {
+				context = combatContext,
+				difficulty = combatDifficulty,
+			})
+		else
+			-- Fallback if minigames not available
+			self:show()
+			self:showResult(false, "Error", "Combat system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HEIST OPERATIONS - Trigger heist minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if operationId == "heist" and modifiers and not modifiers.heistCompleted then
+		print("[MafiaScreen] Heist operation - launching heist minigame!")
+		
+		if self.hide then
+			self:hide()
+		end
+		
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting heist minigame")
+			minigameInstance:play("heist", function(won, heistResult)
+				print("[MafiaScreen] Heist result - Won:", won)
+				
+				-- Call server with heist results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						heistCompleted = true,
+						heistSuccess = won,
+						heistResult = heistResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local money = serverResult.money or 0
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local message = won 
+							and string.format("The heist was a success! Your cut: $%d", money)
+							or "You got away but the score was small."
+						self:showResult(true, "💰 SCORE!", message, emoji)
+					else
+						local emoji = serverResult.arrested and "👮" or "💨"
+						self:showResult(false, "Heist Failed", serverResult.message or "The heist went wrong.", emoji)
+					end
+				else
+					self:showResult(won, won and "Heist Complete" or "Heist Failed", 
+						won and "Big score!" or "Things went sideways.", won and "💰" or "💨")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end)
+		else
+			self:show()
+			self:showResult(false, "Error", "Heist system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STANDARD OPERATIONS - Normal server call
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, result = pcall(function()
 		return DoMobOperation:InvokeServer(operationId, modifiers)
 	end)
