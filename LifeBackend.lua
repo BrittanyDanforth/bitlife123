@@ -10662,6 +10662,19 @@ function LifeBackend:handleJobApplication(player, jobId)
 	if jobCategory == "entertainment" then
 		state.Flags.entertainment_experience = true
 		state.Flags.fame_career = true
+		-- CRITICAL FIX: Set pursuing_fame for ALL entertainment careers!
+		-- This enables fame path events to trigger for free players (influencer/streamer)
+		-- User feedback: "Story paths don't do much" - events weren't triggering
+		state.Flags.pursuing_fame = true
+	end
+	
+	-- CRITICAL FIX: Esports careers are also fame careers!
+	if jobCategory == "esports" then
+		state.Flags.esports_experience = true
+		state.Flags.fame_career = true
+		state.Flags.pursuing_fame = true
+		state.Flags.gamer = true
+		state.Flags.content_creator = true
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -10692,6 +10705,8 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.streamer = true
 		state.Flags.content_creator = true
 		state.Flags.pursuing_streaming = true
+		-- CRITICAL FIX: Also set pursuing_fame to trigger fame path events!
+		state.Flags.pursuing_fame = true
 		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
 		if jobIdLower:find("streamer") then
 			state.FameState.careerPath = "streamer"

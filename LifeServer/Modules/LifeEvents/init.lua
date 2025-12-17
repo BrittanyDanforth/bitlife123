@@ -66,11 +66,13 @@ local StageCategories = {
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
+	-- career_gaming, career_acting, career_sports, career_intelligence, career_mafia were MISSING!
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -602,6 +604,42 @@ local function canEventTrigger(event, state)
 			end
 		elseif not hasActiveFameCareer and not hasFame then
 			return false -- Need either career or natural fame
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FAME EVENTS (free for all fame career holders)
+	-- User feedback: "Story paths don't do much" - free players couldn't get fame events!
+	-- isFameEvent events work for ANYONE pursuing fame, not just Celebrity gamepass owners
+	-- This enables influencer/streamer paths (which are FREE) to get fame-related events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.isFameEvent then
+		-- Check if player is pursuing fame through ANY means
+		local isPursuingFame = flags.pursuing_fame or flags.pursuing_streaming 
+			or flags.content_creator or flags.streamer or flags.influencer
+			or flags.broadcaster or flags.youtube_started or flags.tiktok_active
+		
+		-- Check if player has a fame career (influencer/streamer/etc)
+		local hasFameCareer = false
+		if state.CurrentJob then
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCategory = (state.CurrentJob.category or ""):lower()
+			hasFameCareer = jobCategory == "entertainment" or jobCategory == "esports"
+				or jobId:find("influencer") or jobId:find("streamer") 
+				or jobId:find("content") or jobId:find("creator")
+				or jobId:find("gamer") or state.CurrentJob.isFameCareer
+		end
+		
+		-- Check FameState
+		local hasFameState = state.FameState and (
+			state.FameState.pursuing or 
+			state.FameState.careerPath or 
+			(state.FameState.socialFollowers or 0) > 0
+		)
+		
+		-- Must have SOME indication of fame pursuit
+		if not isPursuingFame and not hasFameCareer and not hasFameState then
+			return false -- Not pursuing fame at all
 		end
 	end
 	

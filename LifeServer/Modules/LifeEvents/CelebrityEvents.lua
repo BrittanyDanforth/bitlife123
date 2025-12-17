@@ -4515,8 +4515,23 @@ local FamePathEvents = {
 }
 
 -- Add fame path events to main events list
+-- CRITICAL FIX: Fame path events should NOT be isCelebrityOnly!
+-- Free players pursuing fame via influencer/streamer careers should also get these events
+-- Only the rapper/signed musician paths require Celebrity gamepass, NOT influencer/streamer!
+-- User feedback: "Story paths don't do much" - this was blocking events for free fame pursuers
 for _, event in ipairs(FamePathEvents) do
-	event.isCelebrityOnly = true
+	-- CRITICAL: DO NOT set isCelebrityOnly = true here!
+	-- These events check for pursuing_fame flag OR fame career flags
+	-- This allows free players (influencer/streamer) to get fame-related events
+	event.isFameEvent = true -- Custom flag for fame events (doesn't require gamepass)
+	
+	-- Modify conditions to allow fame career holders too, not just story path users
+	if event.conditions then
+		event.conditions.allowsFameCareers = true -- Custom flag to enable fame career triggering
+	else
+		event.conditions = { allowsFameCareers = true }
+	end
+	
 	table.insert(CelebrityEvents.events, event)
 end
 
