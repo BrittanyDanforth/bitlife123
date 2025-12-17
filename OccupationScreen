@@ -886,26 +886,45 @@ function OccupationScreen:updateState(newState)
 		self.playerState = newState 
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		
-		-- CRITICAL FIX: Immediately update cached career info from state if available
-		-- This ensures raises/promotions from events are shown correctly
-		if newState.CareerInfo then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #1: ALWAYS clear cached data when state changes
+		-- This fixes the bug where after death/new life, old job still shows
+		-- The issue was that careerInfo wasn't being cleared when player had no job
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- Check if player actually has a job in the new state
+		local hasJob = newState.CurrentJob and newState.CurrentJob.id
+		
+		if hasJob and newState.CareerInfo then
+			-- Player has a job - update career info from state
 			self.careerInfo = newState.CareerInfo
 			log("Career info updated from state:", 
 				"raises:", self.careerInfo.raises or 0,
 				"promotions:", self.careerInfo.promotions or 0,
 				"yearsAtJob:", self.careerInfo.yearsAtJob or 0)
 		else
-			-- Only invalidate if we didn't get fresh data
+			-- CRITICAL FIX: Player has NO JOB - FORCE CLEAR all cached career data!
+			-- This was the root cause of the "job still shows after death" bug
 			self.careerInfo = nil
+			log("No job in state - CLEARED cached career info to prevent stale data")
 		end
+		
+		-- Always clear education info to force refresh
 		self.educationInfo = nil
+		
+		-- CRITICAL FIX #2: Also clear job eligibility cache on state change
+		-- This ensures fresh eligibility checks after death/new life
+		if not hasJob or (newState.Age and newState.Age == 0) then
+			self.jobEligibility = nil
+			log("Cleared job eligibility cache (new life or unemployed)")
+		end
 		
 		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
 		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
 		if self.isVisible then
 			task.spawn(function()
-				-- Only fetch career info from server if we didn't already get it from state
-				if self:getCurrentJob() and not self.careerInfo then
+				-- Only fetch career info from server if player has a job and we need it
+				if hasJob and not self.careerInfo then
 					self:fetchCareerInfo()
 				end
 				-- Always refresh UI if still visible and on jobs tab (even if no job!)
@@ -932,23 +951,53 @@ end
 function OccupationScreen:getCurrentJob()
 	local state = self.playerState
 	if not state then return nil end
-	-- Check both old and new job system
-	if state.CurrentJob and state.CurrentJob.id then
-		return state.CurrentJob.id -- Return job ID for matching
-	elseif state.CurrentJob and state.CurrentJob.title then
-		-- Fallback: try to find by title
-		return state.CurrentJob.title
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: More robust job detection
+	-- Previously, stale Career.current could return wrong job after death
+	-- Now we ONLY check CurrentJob - the authoritative source from server
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- PRIMARY: Check CurrentJob from server (authoritative source)
+	if state.CurrentJob then
+		-- Verify it's a valid job object, not an empty table
+		if state.CurrentJob.id then
+			return state.CurrentJob.id
+		elseif state.CurrentJob.title then
+			return state.CurrentJob.title
+		elseif state.CurrentJob.name then
+			return state.CurrentJob.name
+		end
+		-- If CurrentJob exists but has no id/title/name, it's invalid
+		-- This can happen with corrupted state - treat as no job
+		log("WARNING: CurrentJob exists but has no id/title/name - treating as unemployed")
+		return nil
 	end
-	return state.Job or (state.Career and state.Career.current)
+	
+	-- REMOVED: Don't use state.Job or Career.current as fallback
+	-- These can contain stale data from previous life and cause bugs
+	-- The server's CurrentJob is the ONLY authoritative source
+	return nil
 end
 
 function OccupationScreen:getCurrentJobData()
 	local state = self.playerState
 	if not state then return nil end
-	-- Return the full job object from server
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #6: Validate CurrentJob before returning
+	-- An empty or invalid CurrentJob object should return nil
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if state.CurrentJob then
-		log("getCurrentJobData - Found CurrentJob from server:", state.CurrentJob.title or "No title")
-		return state.CurrentJob
+		-- Validate that it's a real job, not an empty/corrupted object
+		if state.CurrentJob.id or state.CurrentJob.title or state.CurrentJob.name then
+			log("getCurrentJobData - Found valid CurrentJob:", state.CurrentJob.title or state.CurrentJob.name or state.CurrentJob.id)
+			return state.CurrentJob
+		else
+			-- CurrentJob exists but is invalid/empty - don't return it
+			log("getCurrentJobData - CurrentJob exists but is invalid (no id/title/name)")
+			return nil
+		end
 	end
 	return nil
 end
@@ -6582,11 +6631,26 @@ function OccupationScreen:show()
 	log("=== SHOWING OccupationScreen ===")
 	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 	
-	-- CRITICAL FIX: Clear cached career info if player is unemployed (fired/quit)
-	-- This ensures the UI shows correct state after being fired
-	if not self:getCurrentJob() then
-		log("No current job - clearing cached career info to ensure fresh UI")
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #3: COMPREHENSIVE cache clearing when screen opens
+	-- This ensures the UI shows correct state after death/new life/quit/fire
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasJob = self:getCurrentJob()
+	
+	if not hasJob then
+		log("No current job - FORCE clearing ALL cached career/job data")
 		self.careerInfo = nil
+		self.jobEligibility = nil
+	end
+	
+	-- CRITICAL FIX #4: Also check if this is a new life (age 0-1)
+	-- New life should always start with clean slate
+	local age = self:getAge()
+	if age <= 1 then
+		log("New life detected (age " .. tostring(age) .. ") - clearing all cached data")
+		self.careerInfo = nil
+		self.jobEligibility = nil
+		self.educationInfo = nil
 	end
 	
 	self:updateInfoBar()

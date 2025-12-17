@@ -7633,11 +7633,224 @@ end
 
 function LifeBackend:resetLife(player)
 	debugPrint("Resetting life for", player.Name)
-	-- CRITICAL FIX #15: Use createInitialState instead of raw LifeState.new
-	-- This ensures the player gets proper family members, Bitizenship bonuses, etc.
-	local newState = self:createInitialState(player)
-	self.playerStates[player] = newState
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7-20: COMPREHENSIVE STATE RESET ON NEW LIFE
+	-- Previously, many state fields persisted across lives causing bugs like:
+	-- - Old job showing after death
+	-- - Old career info persisting
+	-- - Old flags affecting new life
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Clear any pending events from previous life
 	self.pendingEvents[player.UserId] = nil
+	
+	-- Clear any pending minigame events
+	if self.pendingMinigameEvents then
+		self.pendingMinigameEvents[player.UserId] = nil
+	end
+	
+	-- Create a completely fresh state (includes family, gamepass bonuses, etc.)
+	local newState = self:createInitialState(player)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Ensure ALL job/career data is reset
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.CurrentJob = nil
+	newState.CareerInfo = {
+		performance = 0,
+		promotionProgress = 0,
+		yearsAtJob = 0,
+		raises = 0,
+		promotions = 0,
+		careerHistory = {},
+		skills = {},
+		totalYearsWorked = 0,
+	}
+	newState.Career = {
+		track = nil,
+		education = nil,
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #9: Clear ALL employment-related flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags = newState.Flags or {}
+	newState.Flags.employed = nil
+	newState.Flags.has_job = nil
+	newState.Flags.has_teen_job = nil
+	newState.Flags.between_jobs = nil
+	newState.Flags.unemployed = nil
+	newState.Flags.retired = nil
+	newState.Flags.semi_retired = nil
+	newState.Flags.pension_amount = nil
+	newState.Flags.happily_retired = nil
+	newState.Flags.retirement_eligible = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #10: Clear ALL prison/jail flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.InJail = false
+	newState.JailYearsLeft = 0
+	newState.Flags.in_prison = nil
+	newState.Flags.incarcerated = nil
+	newState.Flags.serving_time = nil
+	newState.Flags.criminal_record = nil
+	newState.Flags.ex_convict = nil
+	newState.Flags.on_parole = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #11: Reset education to fresh start
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Education = "none"
+	newState.EducationData = {
+		Status = "none",
+		Level = nil,
+		Progress = 0,
+		Duration = nil,
+		Institution = nil,
+		GPA = nil,
+		Debt = 0,
+		CreditsEarned = 0,
+		CreditsRequired = 0,
+		Year = 0,
+		TotalYears = 0,
+	}
+	newState.Flags.in_college = nil
+	newState.Flags.college_student = nil
+	newState.Flags.enrolled_college = nil
+	newState.Flags.in_school = nil
+	newState.Flags.graduated_high_school = nil
+	newState.Flags.has_degree = nil
+	newState.Flags.has_student_loans = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #12: Reset premium feature states (but preserve gamepass ownership!)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Reset MobState (mafia) - but check if in createInitialState it might set up royal birth
+	newState.MobState = {
+		inMob = false,
+		familyId = nil,
+		familyName = nil,
+		familyEmoji = nil,
+		familyColor = nil,
+		rankIndex = 1,
+		rankLevel = 1,
+		rankName = "Associate",
+		rankEmoji = "👤",
+		respect = 0,
+		notoriety = 0,
+		heat = 0,
+		loyalty = 100,
+		kills = 0,
+		earnings = 0,
+		yearsInMob = 0,
+		operationsCompleted = 0,
+		operationsFailed = 0,
+		operations = {},
+		territories = {},
+		lastEvent = nil,
+	}
+	newState.Flags.in_mob = nil
+	newState.Flags.mafia_member = nil
+	newState.Flags.criminal_lifestyle = nil
+	
+	-- Reset FameState
+	newState.FameState = {
+		isFamous = false,
+		careerPath = nil,
+		careerName = nil,
+		currentStage = 0,
+		stageName = nil,
+		subType = nil,
+		yearsInCareer = 0,
+		lastPromotionYear = 0,
+		followers = 0,
+		endorsements = {},
+		awards = {},
+		scandals = 0,
+		fameLevel = "Unknown",
+		monthlyListeners = 0,
+		totalStreams = 0,
+		totalTracks = 0,
+		albumsReleased = 0,
+		mixtapesReleased = 0,
+		epsReleased = 0,
+		showsPerformed = 0,
+		toursCompleted = 0,
+		collabs = 0,
+		battleWins = 0,
+		radioPlays = 0,
+		blogFeatures = 0,
+		viralMoments = 0,
+		majorFeatures = 0,
+		musicVideos = 0,
+		connections = 0,
+		style = nil,
+		producerConnect = false,
+		subscribers = 0,
+		totalViews = 0,
+		totalVideos = 0,
+		viralVideos = 0,
+		contentType = nil,
+		brandDeals = 0,
+		totalPosts = 0,
+		totalLikes = 0,
+	}
+	newState.Fame = 0
+	newState.Flags.famous = nil
+	newState.Flags.celebrity = nil
+	newState.Flags.fame_career = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #13: Clear death state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.dead = nil
+	newState.CauseOfDeath = nil
+	newState.DeathReason = nil
+	newState.DeathAge = nil
+	newState.DeathYear = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #14: Clear event history (prevents duplicate event issues)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.EventHistory = {
+		occurrences = {},
+		lastOccurrence = {},
+		completed = {},
+		recentCategories = {},
+		recentEvents = {},
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #15: Clear YearLog (prevents old feed text showing)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.YearLog = {}
+	newState.PendingFeed = nil
+	newState.lastFeed = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #16: Reset assets (new life starts with nothing)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Assets = {
+		Properties = {},
+		Vehicles = {},
+		Items = {},
+		Investments = {},
+		Crypto = {},
+		Businesses = {},
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #17: Clear job application history
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.JobApplications = {}
+	
+	-- Store the new state
+	self.playerStates[player] = newState
+	
+	debugPrint("Life reset complete for", player.Name, "- all state cleared")
 	self:pushState(player, "A new life begins...")
 end
 
