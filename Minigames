@@ -10,29 +10,54 @@ local Minigames = {}
 Minigames.__index = Minigames
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX: Mobile detection and responsive scaling
+-- CRITICAL FIX: Mobile detection and responsive scaling (DYNAMIC!)
+-- Now updates on screen resize/orientation changes
 -- ═══════════════════════════════════════════════════════════════════════════════
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local SCREEN_SIZE = workspace.CurrentCamera.ViewportSize
-local IS_SMALL_SCREEN = SCREEN_SIZE.X < 600 or SCREEN_SIZE.Y < 400
-local IS_TINY_PHONE = SCREEN_SIZE.X < 400 or SCREEN_SIZE.Y < 300
 
--- Mobile-responsive scaling helpers
+-- Dynamic screen size detection - call these functions instead of using static vars
+local function getScreenSize()
+	return workspace.CurrentCamera.ViewportSize
+end
+
+local function isSmallScreen()
+	local size = getScreenSize()
+	return size.X < 700 or size.Y < 500  -- CRITICAL FIX: Increased thresholds for more devices
+end
+
+local function isTinyPhone()
+	local size = getScreenSize()
+	return size.X < 450 or size.Y < 350  -- CRITICAL FIX: Increased thresholds
+end
+
+-- Mobile-responsive scaling helpers (now dynamic!)
 local function px(base)
-	if IS_TINY_PHONE then return math.floor(base * 0.7) end
-	if IS_SMALL_SCREEN then return math.floor(base * 0.85) end
+	if isTinyPhone() then return math.floor(base * 0.65) end  -- More aggressive scaling
+	if isSmallScreen() then return math.floor(base * 0.8) end
 	return base
 end
 
 local function textSize(base)
-	if IS_TINY_PHONE then return math.floor(base * 0.75) end
-	if IS_SMALL_SCREEN then return math.floor(base * 0.85) end
+	if isTinyPhone() then return math.floor(base * 0.7) end
+	if isSmallScreen() then return math.floor(base * 0.8) end
 	return base
 end
 
 local function touchTarget(base)
 	if IS_MOBILE then return math.max(44, base * 1.2) end
 	return base
+end
+
+-- CRITICAL FIX: Get card height that fits on screen (max 85% of screen height)
+local function getCardHeight(desiredHeight)
+	local screenHeight = getScreenSize().Y
+	local maxHeight = screenHeight * 0.85
+	if isTinyPhone() then
+		return math.min(desiredHeight * 0.65, maxHeight)
+	elseif isSmallScreen() then
+		return math.min(desiredHeight * 0.8, maxHeight)
+	end
+	return math.min(desiredHeight, maxHeight)
 end
 
 -- Premium Colors
@@ -225,6 +250,7 @@ function Minigames:createDebateGame()
 	self.debateCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.debateCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.debateCard.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+	self.debateCard.ClipsDescendants = true  -- Prevent overflow on mobile
 	self.debateCard.ZIndex = 201
 	self.debateCard.Parent = self.debateOverlay
 	corner(self.debateCard, 20)
@@ -616,7 +642,9 @@ function Minigames:createHeistGame()
 	self.heistOverlay.Parent = self.screenGui
 
 	self.heistCard = Instance.new("Frame")
-	self.heistCard.Size = UDim2.new(0.95, 0, 0, 500)
+	-- CRITICAL FIX: Use percentage height for mobile compatibility
+	self.heistCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.heistCard.ClipsDescendants = true
 	self.heistCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.heistCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.heistCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -935,11 +963,13 @@ function Minigames:createGetawayGame()
 	self.getawayOverlay.Parent = self.screenGui
 
 	self.getawayCard = Instance.new("Frame")
-	self.getawayCard.Size = UDim2.new(0.95, 0, 0, 450)
+	-- CRITICAL FIX: Use percentage-based height that fits on mobile screens
+	self.getawayCard.Size = UDim2.new(0.95, 0, 0.85, 0)  -- 85% of screen height
 	self.getawayCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.getawayCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.getawayCard.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
 	self.getawayCard.ZIndex = 201
+	self.getawayCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow
 	self.getawayCard.Parent = self.getawayOverlay
 	corner(self.getawayCard, 20)
 
@@ -1070,19 +1100,25 @@ function Minigames:showNextGetawaySequence()
 		btn.BackgroundColor3 = C.Gray600
 	end
 
+	-- CRITICAL FIX: SLOWER arrow display timing so players can actually follow!
+	-- Was 0.4s between arrows, 0.3s visible - way too fast!
+	-- Now 0.7s between arrows, 0.55s visible - much easier to track
+	local ARROW_INTERVAL = 0.7  -- Time between each arrow showing
+	local ARROW_VISIBLE_TIME = 0.55  -- How long each arrow stays lit
+
 	for i, btnIndex in ipairs(self.getawaySequence) do
-		task.delay(i * 0.4, function()
+		task.delay(i * ARROW_INTERVAL, function()
 			if self.activeGame ~= "getaway" then return end
 			local btn = self.getawayBtns[btnIndex]
 			btn.BackgroundColor3 = C.Amber
-			task.delay(0.3, function()
+			task.delay(ARROW_VISIBLE_TIME, function()
 				if self.activeGame ~= "getaway" then return end
 				btn.BackgroundColor3 = C.Gray600
 			end)
 		end)
 	end
 
-	task.delay((#self.getawaySequence + 1) * 0.4, function()
+	task.delay((#self.getawaySequence + 1) * ARROW_INTERVAL, function()
 		if self.activeGame ~= "getaway" then return end
 		self:highlightCurrentTarget()
 	end)
@@ -1198,9 +1234,10 @@ function Minigames:createQuickTimeGame()
 	self.qteOverlay.ZIndex = 200
 	self.qteOverlay.Parent = self.screenGui
 
-	-- CRITICAL UI FIX: Larger card for better spacing
+	-- CRITICAL UI FIX: Responsive card for mobile compatibility
 	self.qteCard = Instance.new("Frame")
-	self.qteCard.Size = UDim2.new(0.92, 0, 0, 420)
+	self.qteCard.Size = UDim2.new(0.92, 0, 0.8, 0)  -- 80% of screen height
+	self.qteCard.ClipsDescendants = true
 	self.qteCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.qteCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.qteCard.BackgroundColor3 = C.Gray800
@@ -1393,7 +1430,9 @@ function Minigames:createPrisonEscapeGame()
 	self.prisonOverlay.Parent = self.screenGui
 
 	self.prisonCard = Instance.new("Frame")
-	self.prisonCard.Size = UDim2.new(0.95, 0, 0, 480)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.prisonCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.prisonCard.ClipsDescendants = true
 	self.prisonCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.prisonCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.prisonCard.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
@@ -1648,7 +1687,9 @@ function Minigames:createMashGame()
 	self.mashOverlay.Parent = self.screenGui
 
 	self.mashCard = Instance.new("Frame")
-	self.mashCard.Size = UDim2.new(0.9, 0, 0, 400)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.mashCard.Size = UDim2.new(0.9, 0, 0.75, 0)
+	self.mashCard.ClipsDescendants = true
 	self.mashCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.mashCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.mashCard.BackgroundColor3 = C.Gray800
@@ -1859,7 +1900,9 @@ function Minigames:createHackingGame()
 	self.hackOverlay.Parent = self.screenGui
 
 	self.hackCard = Instance.new("Frame")
-	self.hackCard.Size = UDim2.new(0.95, 0, 0, 500)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.hackCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.hackCard.ClipsDescendants = true
 	self.hackCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.hackCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.hackCard.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
@@ -3065,12 +3108,13 @@ function Minigames:createCombatGame()
 	self.combatOverlay.ZIndex = 200
 	self.combatOverlay.Parent = self.screenGui
 
-	-- Main card
+	-- Main card - CRITICAL FIX: Responsive and clips content
 	self.combatCard = Instance.new("Frame")
-	self.combatCard.Size = UDim2.new(0.95, 0, 0.9, 0)
+	self.combatCard.Size = UDim2.new(0.95, 0, 0.88, 0)  -- Slightly reduced for mobile
 	self.combatCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.combatCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.combatCard.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	self.combatCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow on mobile
 	self.combatCard.ZIndex = 201
 	self.combatCard.Parent = self.combatOverlay
 	corner(self.combatCard, px(16))
