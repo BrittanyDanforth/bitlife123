@@ -1448,14 +1448,14 @@ local JobCatalogList = {
 		description = "A true legend of hip-hop" },
 	
 	-- INFLUENCER/CONTENT CREATOR CAREER PATH (Celebrity gamepass)
-	{ id = "new_creator", name = "New Creator", company = "Social Media", emoji = "📱", salary = 50, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_creator", name = "New Creator", company = "Social Media", emoji = "📱", salary = 2000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence" }, isFameCareer = true,
 		description = "Just starting your social media journey" },
 	-- CRITICAL FIX #AAA-2: Add alias for client compatibility (client uses new_influencer)
-	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 5000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence", "influencer" }, isFameCareer = true,
 		description = "Just starting your content creation journey" },
-	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 2500, minAge = 14, requirement = nil, category = "entertainment",
+	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 15000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "content_creator" }, grantsFlags = { "influencer", "small_following" }, isFameCareer = true,
 		description = "Building a small but engaged following" },
 	{ id = "rising_influencer", name = "Rising Influencer", company = "Social Media", emoji = "📈", salary = 25000, minAge = 15, requirement = nil, category = "entertainment",
@@ -1471,14 +1471,14 @@ local JobCatalogList = {
 		difficulty = 9, requiresFlags = { "major_following" }, grantsFlags = { "mega_fame", "household_name" }, isFameCareer = true,
 		description = "A household name on social media" },
 	
-	-- STREAMER CAREER PATH (Celebrity gamepass)  
-	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	-- STREAMER CAREER PATH (Celebrity gamepass)
+	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 1000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Stream as a hobby - just for fun!" },
-	{ id = "new_streamer", name = "New Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_streamer", name = "New Streamer", company = "Twitch", emoji = "🎮", salary = 3000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Just started streaming" },
-	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 500, minAge = 14, requirement = nil, category = "entertainment",
+	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 8000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "streamer" }, grantsFlags = { "affiliate", "monetized" }, isFameCareer = true,
 		description = "Earned affiliate status" },
 	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch", emoji = "✅", salary = 15000, minAge = 16, requirement = nil, category = "entertainment",
@@ -5587,27 +5587,33 @@ function LifeBackend:tickCareer(state)
 	-- BUG: Players were stuck at 80% because promotion chance was too low (10%)
 	-- FIX: Higher chance for entertainment/celebrity careers (they're meant to be fast)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if info.promotionProgress >= 80 and info.performance >= 70 and (info.yearsAtJob or 0) >= 1 then  -- Reduced from 2 to 1 year
+
+	-- Entertainment/celebrity careers get FASTER promotions (lower threshold)
+	local jobCategory = (state.CurrentJob.category or ""):lower()
+	local isCelebrityCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or
+		(state.CurrentJob.id or ""):find("rapper") or
+		(state.CurrentJob.id or ""):find("streamer") or
+		(state.CurrentJob.id or ""):find("influencer") or
+		(state.CurrentJob.id or ""):find("creator")
+
+	-- CRITICAL FIX: Lower threshold for fame careers (60% vs 80% for regular jobs)
+	local progressThreshold = isCelebrityCareer and 60 or 80
+	local performanceThreshold = isCelebrityCareer and 50 or 70
+
+	if info.promotionProgress >= progressThreshold and info.performance >= performanceThreshold and (info.yearsAtJob or 0) >= 1 then
 		-- Check if we already tried this year
 		local lastAutoPromoAge = info.lastAutoPromoAttemptAge or 0
 		if (state.Age or 0) > lastAutoPromoAge then
 			info.lastAutoPromoAttemptAge = state.Age
-			
+
 			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for entertainment careers
-			local baseChance = (info.promotionProgress - 70) / 100  -- 10% at 80%, 30% at 100%
-			
-			-- Entertainment/celebrity careers get BOOSTED promotion chance
-			local jobCategory = (state.CurrentJob.category or ""):lower()
-			local isCelebrityCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or 
-				(state.CurrentJob.id or ""):find("rapper") or 
-				(state.CurrentJob.id or ""):find("streamer") or
-				(state.CurrentJob.id or ""):find("influencer")
-			
+			local baseChance = (info.promotionProgress - 50) / 100  -- 10% at 60%, 50% at 100%
+
 			if isCelebrityCareer then
-				baseChance = baseChance * 2.5  -- 25% at 80%, 75% at 100% for celebrity careers
+				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for celebrity careers
 			end
-			
-			local autoPromoChance = math.min(0.90, baseChance)  -- Cap at 90%
+
+			local autoPromoChance = math.min(0.95, baseChance)  -- Cap at 95%
 			
 			if RANDOM:NextNumber() < autoPromoChance then
 				-- Find next job in career track
