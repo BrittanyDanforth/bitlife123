@@ -3158,24 +3158,30 @@ function Minigames:createCombatGame()
 	self.combatPrompt.Parent = self.combatCard
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: NO SCROLLING on combat UI - all buttons visible without scrolling
-	-- User feedback: "THE FIGHTING UI IS SOOOO GOOD IT JUST I DONT LIKE I HAVE TO SCROLL"
-	-- Solution: Use Frame instead of ScrollingFrame, smaller buttons, 3 columns
+	-- CRITICAL FIX: BIGGER BUTTONS that fill the combat area properly
+	-- User feedback: "THE FIGHTING MINIGAME SCREEN BUTTONS ARE REALLY SMALL FOR ME 
+	-- NOT FILLING THE THINGY AT BOTTOM"
+	-- Solution: Use larger buttons (48px height), bigger text (14px), fill the space
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Location buttons container (phase 1) - FIXED: No scrolling!
+	-- Calculate available space - card is 90% of screen, buttons should fill bottom
+	local COMBAT_BTN_HEIGHT = px(48)  -- BIGGER buttons for mobile
+	local COMBAT_BTN_TEXT = textSize(14)  -- BIGGER text for readability
+	local COMBAT_BTN_SPACING = px(6)  -- Good spacing between buttons
+	
+	-- Location buttons container (phase 1) - fills remaining card space
 	self.combatLocationFrame = Instance.new("Frame")
-	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(220))  -- Fixed height
+	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(320))  -- TALLER frame
 	self.combatLocationFrame.AnchorPoint = Vector2.new(0.5, 0)
 	self.combatLocationFrame.Position = UDim2.new(0.5, 0, 0, px(265))
 	self.combatLocationFrame.BackgroundTransparency = 1
 	self.combatLocationFrame.ZIndex = 202
 	self.combatLocationFrame.Parent = self.combatCard
 
-	-- 3-column grid for compact layout - no scrolling needed!
+	-- 3-column grid with BIGGER buttons
 	local locGrid = Instance.new("UIGridLayout")
-	locGrid.CellSize = UDim2.new(0.32, 0, 0, px(36))  -- Smaller buttons, 3 columns
-	locGrid.CellPadding = UDim2.new(0.01, 0, 0, px(4))  -- Tighter spacing
+	locGrid.CellSize = UDim2.new(0.32, 0, 0, COMBAT_BTN_HEIGHT)  -- BIGGER buttons
+	locGrid.CellPadding = UDim2.new(0.01, 0, 0, COMBAT_BTN_SPACING)
 	locGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	locGrid.Parent = self.combatLocationFrame
 
@@ -3184,45 +3190,45 @@ function Minigames:createCombatGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Blue
 		btn.Font = F.Button
-		btn.TextSize = textSize(11)  -- Smaller text for compact buttons
+		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 		btn.TextColor3 = C.White
 		btn.Text = loc.emoji .. " " .. loc.name
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatLocationFrame
-		corner(btn, px(6))
+		corner(btn, px(8))
 
 		self.combatLocationBtns[i] = { btn = btn, data = loc }
 	end
 
-	-- Defense buttons - FIXED: Always visible without scrolling
+	-- Defense buttons - BIGGER and more visible
 	local defendBtn = Instance.new("TextButton")
 	defendBtn.BackgroundColor3 = C.Purple
 	defendBtn.Font = F.Button
-	defendBtn.TextSize = textSize(11)
+	defendBtn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 	defendBtn.TextColor3 = C.White
 	defendBtn.Text = "🛡️ Block"
 	defendBtn.AutoButtonColor = false
 	defendBtn.ZIndex = 203
 	defendBtn.Parent = self.combatLocationFrame
-	corner(defendBtn, px(6))
+	corner(defendBtn, px(8))
 	self.combatDefendBtn = defendBtn
 
 	local runBtn = Instance.new("TextButton")
 	runBtn.BackgroundColor3 = C.Gray600
 	runBtn.Font = F.Button
-	runBtn.TextSize = textSize(11)
+	runBtn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 	runBtn.TextColor3 = C.White
-	runBtn.Text = "🏃 Run"  -- Shortened for compact fit
+	runBtn.Text = "🏃 Run Away"
 	runBtn.AutoButtonColor = false
 	runBtn.ZIndex = 203
 	runBtn.Parent = self.combatLocationFrame
-	corner(runBtn, px(6))
+	corner(runBtn, px(8))
 	self.combatRunBtn = runBtn
 
-	-- Attack type buttons container (phase 2) - FIXED: No scrolling!
+	-- Attack type buttons container (phase 2) - same sizing
 	self.combatAttackFrame = Instance.new("Frame")
-	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(220))  -- Fixed height
+	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(320))  -- TALLER frame
 	self.combatAttackFrame.AnchorPoint = Vector2.new(0.5, 0)
 	self.combatAttackFrame.Position = UDim2.new(0.5, 0, 0, px(265))
 	self.combatAttackFrame.BackgroundTransparency = 1
@@ -3230,10 +3236,10 @@ function Minigames:createCombatGame()
 	self.combatAttackFrame.ZIndex = 202
 	self.combatAttackFrame.Parent = self.combatCard
 
-	-- 3-column grid for attack types too
+	-- 3-column grid for attack types with BIGGER buttons
 	local atkGrid = Instance.new("UIGridLayout")
-	atkGrid.CellSize = UDim2.new(0.32, 0, 0, px(36))  -- Smaller buttons, 3 columns
-	atkGrid.CellPadding = UDim2.new(0.01, 0, 0, px(4))  -- Tighter spacing
+	atkGrid.CellSize = UDim2.new(0.32, 0, 0, COMBAT_BTN_HEIGHT)  -- BIGGER buttons
+	atkGrid.CellPadding = UDim2.new(0.01, 0, 0, COMBAT_BTN_SPACING)
 	atkGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	atkGrid.Parent = self.combatAttackFrame
 
@@ -3242,13 +3248,13 @@ function Minigames:createCombatGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Red
 		btn.Font = F.Button
-		btn.TextSize = textSize(11)  -- Smaller text for compact buttons
+		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 		btn.TextColor3 = C.White
 		btn.Text = atk.emoji .. " " .. atk.name
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatAttackFrame
-		corner(btn, px(6))
+		corner(btn, px(8))
 
 		self.combatAttackBtns[i] = { btn = btn, data = atk }
 	end

@@ -290,6 +290,19 @@ function LifeEvents.init()
 		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE CAREER EXPANSION - Job-specific events for all careers
+		-- User request: "HUGE HUGE HUGE EXPANSION ALL EVERY SINGLE ONE"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "TechCareerEvents",          category = "career_tech" },       -- DevOps, Security Consultant
+		{ name = "GamerCareerEvents",         category = "career_gaming" },     -- Pro Gamer, Esports
+		{ name = "ActorCareerEvents",         category = "career_acting" },     -- Actor, Movie Star
+		{ name = "MusicianCareerEvents",      category = "career_music" },      -- Signed Musician, Recording Artist
+		{ name = "InvestmentBankingEvents",   category = "career_finance" },    -- Investment Banking, Hedge Fund
+		{ name = "IntelligenceCareerEvents",  category = "career_intelligence" }, -- CIA Agent, FBI
+		{ name = "EnforcerEvents",            category = "career_mafia" },      -- Enforcer, Mob Muscle
+		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
 		-- PREMIUM GAMEPASS EVENT MODULES - Require specific gamepasses
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events

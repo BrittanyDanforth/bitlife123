@@ -6296,7 +6296,14 @@ end
 function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught)
 	-- CRITICAL: Log the result for debugging
 	log("=== SHOWING ACTIVITY RESULT ===")
-	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji)
+	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji, "wasCaught:", wasCaught)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: If wasCaught is true, ALWAYS show RED card (failure)
+	-- User feedback: "I WON IT SAYS I GOT CAUGHT AND WENT 4 YEARS AND THE CARD WAS GREEN STILL"
+	-- The minigame win reduces risk but doesn't guarantee success - if caught, show RED
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isActualSuccess = success and not wasCaught
 	
 	-- Determine the title based on context
 	local title = "Activity Complete!"
@@ -6310,27 +6317,27 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 		-- Check what kind of activity this was
 		if item.risk then
 			-- It's a crime
-			title = success and "Crime Successful!" or "Crime Failed!"
+			title = isActualSuccess and "Crime Successful!" or "Crime Failed!"
 		elseif item.id and (item.id:find("prison") or item.id:find("jail")) then
 			-- Prison activity
-			title = success and "Prison Activity" or "That Backfired!"
+			title = isActualSuccess and "Prison Activity" or "That Backfired!"
 		elseif item.id and (item.id:find("mischief") or item.id:find("prank") or item.id:find("sneak") or item.id:find("trouble")) then
 			-- Mischief
-			title = success and "Mischief Managed! 😈" or "Caught in the Act!"
+			title = isActualSuccess and "Mischief Managed! 😈" or "Caught in the Act!"
 		elseif item.effect then
 			-- Regular activity with stat effects
-			title = success and itemName or "Activity Failed"
+			title = isActualSuccess and itemName or "Activity Failed"
 		else
-			title = success and "Done!" or "Uh oh..."
+			title = isActualSuccess and "Done!" or "Uh oh..."
 		end
 	else
-		title = success and "Success!" or "Failed!"
+		title = isActualSuccess and "Success!" or "Failed!"
 	end
 	
-	-- Get proper colors
-	local shellColor = success and C.Green or C.Red
-	local shellStroke = success and C.GreenDark or C.RedDark
-	local pale = success and C.GreenPale or C.RedPale
+	-- CRITICAL FIX: Use isActualSuccess for colors (caught = ALWAYS RED)
+	local shellColor = isActualSuccess and C.Green or C.Red
+	local shellStroke = isActualSuccess and C.GreenDark or C.RedDark
+	local pale = isActualSuccess and C.GreenPale or C.RedPale
 	
 	-- Update the result modal UI
 	self.resultModal.shell.BackgroundColor3 = shellColor
@@ -6356,10 +6363,10 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	
 	-- Set title with activity name context
 	self.resultModal.titleLabel.Text = title
-	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
+	self.resultModal.titleLabel.TextColor3 = isActualSuccess and C.GreenDark or C.RedDark
 	
 	-- CRITICAL FIX: Better message formatting for BitLife-style
-	local displayMessage = message or (success and "You did it!" or "Something went wrong...")
+	local displayMessage = message or (isActualSuccess and "You did it!" or "Something went wrong...")
 	
 	-- Add activity context if message is too generic
 	if displayMessage == "Activity completed." or displayMessage == "You did it!" then
@@ -6373,7 +6380,7 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	
 	self.resultModal.messageLabel.Text = displayMessage
 	self.resultModal.okButton.BackgroundColor3 = shellColor
-	self.resultModal.okButton.Text = success and "👍 Awesome!" or "😔 Okay..."
+	self.resultModal.okButton.Text = isActualSuccess and "👍 Awesome!" or "😔 Okay..."
 
 	-- Show the modal
 	if self.resultModal.show then

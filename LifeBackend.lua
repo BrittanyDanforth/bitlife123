@@ -1079,9 +1079,7 @@ local JobCatalogList = {
 	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance",
 		difficulty = 9, minStats = { Smarts = 80 }, requiresFlags = { "senior_banker", "investment_experience", "market_analysis" }, grantsFlags = { "fund_manager", "portfolio_management" },
 		description = "Requires extensive investment banking experience" },
-	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance",
-		difficulty = 6, minStats = { Smarts = 75 }, grantsFlags = { "actuary_certified", "risk_analysis" },
-		description = "Requires passing actuarial exams - highly mathematical" },
+	-- REMOVED: Actuary job per user request (boring)
 	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance",
 		difficulty = 9, minStats = { Smarts = 80 }, requiresFlags = { "cpa_certified", "senior_accountant", "financial_analysis", "fund_manager" }, grantsFlags = { "c_level", "financial_executive" },
 		description = "Requires extensive finance leadership - top executive position" },

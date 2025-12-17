@@ -418,7 +418,7 @@ local Jobs = {
 	{ id = "investment_banker_jr", name = "Investment Banking Analyst", company = "Goldman & Partners", emoji = "💹", salary = 120000, minAge = 22, requirement = "bachelor", category = "finance", difficulty = 7, minStats = { Smarts = 70, Looks = 45 } },
 	{ id = "investment_banker", name = "Investment Banker", company = "Wall Street Bank", emoji = "💹", salary = 225000, minAge = 28, requirement = "master", category = "finance", difficulty = 8, minStats = { Smarts = 75 } },
 	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance", difficulty = 10, minStats = { Smarts = 85 } },
-	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance", difficulty = 8, minStats = { Smarts = 80 } },
+	-- REMOVED: Actuary job per user request (boring)
 	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance", difficulty = 9, minStats = { Smarts = 80 } },
 
 	-- ════════════════════════════════════════════════════════════════
@@ -4079,14 +4079,45 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 		diffText = "Easy"
 	end
 
-	-- Requirements row (age + difficulty badge) - SCALED
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Requirements row - difficulty badge was overlapping text
+	-- User feedback: "THE TEXT UNDER THE JOBS LIKE THAT SAYS NEED BACHELOR DEGREE 
+	-- THE LIKE EASY OR MEDIUM OR HARD IS OVER THE TEXT"
+	-- Solution: Put difficulty badge on RIGHT side of card, not next to requirement text
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	local reqY = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 58 or 66)
+	
+	-- Difficulty badge on RIGHT side (no overlap with text)
+	local diffBadgeWidth = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 45 or 55)
+	local diffBadgeHeight = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 16 or 18)
+	local diffBadge = Instance.new("Frame")
+	diffBadge.Size = UDim2.new(0, diffBadgeWidth, 0, diffBadgeHeight)
+	diffBadge.AnchorPoint = Vector2.new(1, 0)  -- Anchor to RIGHT
+	diffBadge.Position = UDim2.new(1, -(IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 60 or 90)), 0, reqY)
+	diffBadge.BackgroundColor3 = canApply and diffColor:Lerp(C.White, 0.7) or C.Gray100
+	diffBadge.ZIndex = 85
+	diffBadge.Parent = card
+	UI.pill(diffBadge)
+	
+	local diffLabel = Instance.new("TextLabel")
+	diffLabel.Size = UDim2.fromScale(1, 1)
+	diffLabel.BackgroundTransparency = 1
+	diffLabel.Font = F.Medium
+	diffLabel.TextSize = IS_TINY_PHONE and 7 or (IS_SMALL_PHONE and 8 or 9)
+	diffLabel.TextColor3 = canApply and diffColor:Lerp(C.Black, 0.3) or C.Gray500
+	diffLabel.Text = diffText
+	diffLabel.ZIndex = 86
+	diffLabel.Parent = diffBadge
+	
+	-- Requirement text (now has more space - doesn't overlap with difficulty badge)
 	local reqLabel = Instance.new("TextLabel")
-	reqLabel.Size = UDim2.new(0.3, 0, 0, IS_TINY_PHONE and 14 or 18)
+	reqLabel.Size = UDim2.new(0.55, 0, 0, IS_TINY_PHONE and 14 or 18)  -- Wider to use space
 	reqLabel.Position = UDim2.new(0, TEXT_START, 0, reqY)
 	reqLabel.BackgroundTransparency = 1
 	reqLabel.Font = F.Body
 	reqLabel.TextSize = REQ_SIZE
+	reqLabel.TextTruncate = Enum.TextTruncate.AtEnd  -- Truncate if too long
 	-- CRITICAL FIX #351: Amber color for experience requirements to show they're unlockable
 	local reqColor = C.Gray400
 	if not canApply then
@@ -4101,30 +4132,6 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	reqLabel.Text = reqText
 	reqLabel.ZIndex = 85
 	reqLabel.Parent = card
-	
-	-- Difficulty badge (compact, colored) - SCALED
-	-- CRITICAL: On tiny phones, hide difficulty to save space
-	if not IS_TINY_PHONE then
-		local diffBadgeWidth = IS_SMALL_PHONE and 45 or 55
-		local diffBadgeHeight = IS_SMALL_PHONE and 16 or 18
-		local diffBadge = Instance.new("Frame")
-		diffBadge.Size = UDim2.new(0, diffBadgeWidth, 0, diffBadgeHeight)
-		diffBadge.Position = UDim2.new(0, TEXT_START + (IS_SMALL_PHONE and 70 or 90), 0, reqY + (IS_SMALL_PHONE and 1 or 0))
-		diffBadge.BackgroundColor3 = canApply and diffColor:Lerp(C.White, 0.7) or C.Gray100
-		diffBadge.ZIndex = 85
-		diffBadge.Parent = card
-		UI.pill(diffBadge)
-		
-		local diffLabel = Instance.new("TextLabel")
-		diffLabel.Size = UDim2.fromScale(1, 1)
-		diffLabel.BackgroundTransparency = 1
-		diffLabel.Font = F.Medium
-		diffLabel.TextSize = IS_SMALL_PHONE and 8 or 9
-		diffLabel.TextColor3 = canApply and diffColor:Lerp(C.Black, 0.3) or C.Gray500
-		diffLabel.Text = diffText
-		diffLabel.ZIndex = 86
-		diffLabel.Parent = diffBadge
-	end
 
 	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly) - SCALED
 	local btnShadow
