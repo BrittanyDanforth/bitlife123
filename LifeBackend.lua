@@ -856,21 +856,43 @@ local JobCatalogList = {
 	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service" },
 
-	-- TRADES - CRITICAL FIX: Physical labor jobs now require health
+	-- TRADES - CRITICAL FIX: Physical labor jobs now require health and have proper progression flags!
 	{ id = "janitor", name = "Janitor", company = "CleanCo Services", emoji = "🧹", salary = 28000, minAge = 18, requirement = nil, category = "trades",
-		difficulty = 1, description = "Entry level maintenance work" },
+		difficulty = 1, grantsFlags = { "maintenance_experience", "facility_work" },
+		description = "Entry level maintenance work" },
 	{ id = "construction", name = "Construction Worker", company = "BuildRight Co", emoji = "👷", salary = 42000, minAge = 18, requirement = nil, category = "trades",
-		minStats = { Health = 45 }, difficulty = 2, description = "Physically demanding work" },
-	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades" },
-	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "plumber", name = "Licensed Plumber", company = "FlowRight Plumbing", emoji = "🔧", salary = 58000, minAge = 22, requirement = "high_school", category = "trades" },
-	{ id = "mechanic", name = "Auto Mechanic", company = "QuickFix Auto", emoji = "🔩", salary = 45000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "hvac_tech", name = "HVAC Technician", company = "CoolAir Systems", emoji = "❄️", salary = 52000, minAge = 20, requirement = "high_school", category = "trades" },
-	{ id = "welder", name = "Welder", company = "Steel Works Inc", emoji = "🔥", salary = 48000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "carpenter", name = "Carpenter", company = "WoodCraft Co", emoji = "🪚", salary = 46000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "truck_driver", name = "Truck Driver", company = "FastFreight Logistics", emoji = "🚛", salary = 55000, minAge = 21, requirement = "high_school", category = "trades" },
-	{ id = "foreman", name = "Construction Foreman", company = "BuildRight Co", emoji = "🏗️", salary = 72000, minAge = 28, requirement = "high_school", category = "trades" },
+		minStats = { Health = 45 }, difficulty = 2, grantsFlags = { "construction_experience", "labor_skills", "site_work" },
+		description = "Physically demanding work" },
+	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "electrical_training", "apprentice_electrician" },
+		description = "Learning electrical trade" },
+	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades",
+		difficulty = 4, requiresFlags = { "electrical_training", "apprentice_electrician" }, grantsFlags = { "licensed_electrician", "journeyman_electrician" },
+		description = "Licensed journeyman electrician" },
+	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "plumbing_training", "apprentice_plumber" },
+		description = "Learning plumbing trade" },
+	{ id = "plumber", name = "Licensed Plumber", company = "FlowRight Plumbing", emoji = "🔧", salary = 58000, minAge = 22, requirement = "high_school", category = "trades",
+		difficulty = 4, requiresFlags = { "plumbing_training", "apprentice_plumber" }, grantsFlags = { "licensed_plumber", "journeyman_plumber" },
+		description = "Licensed journeyman plumber" },
+	{ id = "mechanic", name = "Auto Mechanic", company = "QuickFix Auto", emoji = "🔩", salary = 45000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "mechanic_experience", "automotive_skills" },
+		description = "Repair and maintain vehicles" },
+	{ id = "hvac_tech", name = "HVAC Technician", company = "CoolAir Systems", emoji = "❄️", salary = 52000, minAge = 20, requirement = "high_school", category = "trades",
+		difficulty = 4, grantsFlags = { "hvac_experience", "climate_control" },
+		description = "Install and repair heating/cooling systems" },
+	{ id = "welder", name = "Welder", company = "Steel Works Inc", emoji = "🔥", salary = 48000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "welding_skills", "metalwork" },
+		description = "Join metal parts together" },
+	{ id = "carpenter", name = "Carpenter", company = "WoodCraft Co", emoji = "🪚", salary = 46000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "carpentry_skills", "woodworking" },
+		description = "Build and repair wooden structures" },
+	{ id = "truck_driver", name = "Truck Driver", company = "FastFreight Logistics", emoji = "🚛", salary = 55000, minAge = 21, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "cdl_license", "trucking_experience", "logistics" },
+		description = "Long-haul freight transportation" },
+	{ id = "foreman", name = "Construction Foreman", company = "BuildRight Co", emoji = "🏗️", salary = 72000, minAge = 28, requirement = "high_school", category = "trades",
+		difficulty = 5, requiresFlags = { "construction_experience", "labor_skills" }, grantsFlags = { "site_supervisor", "construction_leadership" },
+		description = "Supervise construction crews" },
 
 	-- OFFICE - CRITICAL FIX #69: Entry-level office jobs need grantsFlags for progression
 	{ id = "receptionist", name = "Receptionist", company = "Corporate Office", emoji = "📞", salary = 32000, minAge = 18, requirement = "high_school", category = "office",
@@ -1218,12 +1240,22 @@ local JobCatalogList = {
 		difficulty = 9, requiresFlags = { "tenured_professor", "research_leader" }, grantsFlags = { "university_administration", "academic_leadership" },
 		description = "Requires tenured professor experience" },
 
-	-- SCIENCE
-	{ id = "lab_technician", name = "Lab Technician", company = "Research Lab", emoji = "🔬", salary = 42000, minAge = 22, requirement = "bachelor", category = "science" },
-	{ id = "research_assistant", name = "Research Assistant", company = "University Lab", emoji = "🔬", salary = 48000, minAge = 22, requirement = "bachelor", category = "science" },
-	{ id = "scientist", name = "Scientist", company = "Research Institute", emoji = "🧪", salary = 85000, minAge = 26, requirement = "master", category = "science" },
-	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science" },
-	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science" },
+	-- SCIENCE - CRITICAL FIX: Science careers need proper progression flags!
+	{ id = "lab_technician", name = "Lab Technician", company = "Research Lab", emoji = "🔬", salary = 42000, minAge = 22, requirement = "bachelor", category = "science",
+		difficulty = 3, grantsFlags = { "lab_experience", "research_skills", "scientific_method" },
+		description = "Entry-level laboratory work" },
+	{ id = "research_assistant", name = "Research Assistant", company = "University Lab", emoji = "🔬", salary = 48000, minAge = 22, requirement = "bachelor", category = "science",
+		difficulty = 3, requiresFlags = { "lab_experience", "research_skills" }, grantsFlags = { "research_experience", "academic_research", "data_analysis" },
+		description = "Assist senior researchers with projects" },
+	{ id = "scientist", name = "Scientist", company = "Research Institute", emoji = "🧪", salary = 85000, minAge = 26, requirement = "master", category = "science",
+		difficulty = 5, requiresFlags = { "research_experience", "academic_research" }, grantsFlags = { "scientist", "published_researcher", "grant_writing" },
+		description = "Conduct independent research" },
+	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science",
+		difficulty = 7, requiresFlags = { "scientist", "published_researcher" }, grantsFlags = { "senior_researcher", "research_leadership", "principal_investigator" },
+		description = "Lead research projects and mentor junior scientists" },
+	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science",
+		difficulty = 8, requiresFlags = { "senior_researcher", "research_leadership" }, grantsFlags = { "research_director", "scientific_leadership" },
+		description = "Direct entire research departments" },
 
 	-- SPORTS - CRITICAL FIX #333: Sports careers now require proper progression!
 	-- Can't just become professional athlete - need to play sports as kid/teen
@@ -1258,19 +1290,25 @@ local JobCatalogList = {
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
 
-	-- MILITARY - CRITICAL FIX: All military jobs now require fitness!
+	-- MILITARY - CRITICAL FIX: All military jobs now require fitness and have proper progression flags!
 	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
-		minStats = { Health = 55 }, difficulty = 3, description = "Must pass physical fitness test" },
+		minStats = { Health = 55 }, difficulty = 3, grantsFlags = { "military_experience", "enlisted", "combat_training" },
+		description = "Must pass physical fitness test" },
 	{ id = "sergeant", name = "Sergeant", company = "US Army", emoji = "🪖", salary = 55000, minAge = 24, requirement = "high_school", category = "military",
-		minStats = { Health = 50 }, difficulty = 4, description = "Leadership and combat experience required" },
+		minStats = { Health = 50 }, difficulty = 4, requiresFlags = { "military_experience", "enlisted" }, grantsFlags = { "nco", "leadership_experience", "combat_veteran" },
+		description = "Leadership and combat experience required" },
 	{ id = "officer", name = "Military Officer", company = "US Armed Forces", emoji = "🎖️", salary = 75000, minAge = 22, requirement = "bachelor", category = "military",
-		minStats = { Health = 50, Smarts = 50 }, difficulty = 5, description = "Requires degree and fitness" },
+		minStats = { Health = 50, Smarts = 50 }, difficulty = 5, grantsFlags = { "military_officer", "commissioned", "leadership_experience" },
+		description = "Requires degree and fitness" },
 	{ id = "captain", name = "Captain", company = "US Armed Forces", emoji = "🎖️", salary = 95000, minAge = 28, requirement = "bachelor", category = "military",
-		minStats = { Health = 45, Smarts = 55 }, difficulty = 6, description = "Advanced military leadership" },
+		minStats = { Health = 45, Smarts = 55 }, difficulty = 6, requiresFlags = { "military_officer", "commissioned" }, grantsFlags = { "company_commander", "tactical_leadership" },
+		description = "Advanced military leadership" },
 	{ id = "colonel", name = "Colonel", company = "US Armed Forces", emoji = "🎖️", salary = 135000, minAge = 38, requirement = "master", category = "military",
-		minStats = { Smarts = 60 }, difficulty = 7, description = "High command position" },
+		minStats = { Smarts = 60 }, difficulty = 7, requiresFlags = { "company_commander", "tactical_leadership" }, grantsFlags = { "senior_officer", "strategic_command" },
+		description = "High command position" },
 	{ id = "general", name = "General", company = "Pentagon", emoji = "⭐", salary = 220000, minAge = 50, requirement = "master", category = "military",
-		minStats = { Smarts = 70 }, difficulty = 9, description = "Top military leadership" },
+		minStats = { Smarts = 70 }, difficulty = 9, requiresFlags = { "senior_officer", "strategic_command" }, grantsFlags = { "general_officer", "top_brass" },
+		description = "Top military leadership" },
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRIMINAL CAREERS - CRITICAL FIX #22: Criminal careers require proper crime background!
@@ -1348,8 +1386,8 @@ local JobCatalogList = {
 	-- Requires: High Smarts, tech skills
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- Entry points (shared) - These give experience flags for higher-tier jobs
-	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 0, minAge = 14, requirement = nil, category = "hacker",
-		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools" },
+	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 1500, minAge = 14, requirement = nil, category = "hacker",
+		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools - small side gigs" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
 		minStats = { Smarts = 65 }, requiresFlags = { "coder", "tech_experience" }, grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
 	
@@ -5588,17 +5626,23 @@ function LifeBackend:tickCareer(state)
 	-- FIX: Higher chance for entertainment/celebrity careers (they're meant to be fast)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- Entertainment/celebrity careers get FASTER promotions (lower threshold)
+	-- Entertainment/celebrity/talent-based careers get FASTER promotions (lower threshold)
+	-- These are careers where talent matters more than years of experience
 	local jobCategory = (state.CurrentJob.category or ""):lower()
-	local isCelebrityCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or
-		(state.CurrentJob.id or ""):find("rapper") or
-		(state.CurrentJob.id or ""):find("streamer") or
-		(state.CurrentJob.id or ""):find("influencer") or
-		(state.CurrentJob.id or ""):find("creator")
+	local jobId = (state.CurrentJob.id or ""):lower()
 
-	-- CRITICAL FIX: Lower threshold for fame careers (60% vs 80% for regular jobs)
-	local progressThreshold = isCelebrityCareer and 60 or 80
-	local performanceThreshold = isCelebrityCareer and 50 or 70
+	local isTalentCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or
+		jobCategory == "esports" or jobCategory == "racing" or jobCategory == "sports" or
+		jobCategory == "hacker" or jobCategory == "criminal" or
+		jobId:find("rapper") or jobId:find("streamer") or jobId:find("influencer") or
+		jobId:find("creator") or jobId:find("gamer") or jobId:find("racer") or
+		jobId:find("athlete") or jobId:find("musician") or jobId:find("actor")
+
+	-- CRITICAL FIX: Lower threshold for talent careers (60% vs 80% for regular jobs)
+	-- Talent careers: 60% progress, 50% performance needed
+	-- Regular jobs: 80% progress, 70% performance needed
+	local progressThreshold = isTalentCareer and 60 or 80
+	local performanceThreshold = isTalentCareer and 50 or 70
 
 	if info.promotionProgress >= progressThreshold and info.performance >= performanceThreshold and (info.yearsAtJob or 0) >= 1 then
 		-- Check if we already tried this year
@@ -5606,11 +5650,11 @@ function LifeBackend:tickCareer(state)
 		if (state.Age or 0) > lastAutoPromoAge then
 			info.lastAutoPromoAttemptAge = state.Age
 
-			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for entertainment careers
+			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for talent-based careers
 			local baseChance = (info.promotionProgress - 50) / 100  -- 10% at 60%, 50% at 100%
 
-			if isCelebrityCareer then
-				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for celebrity careers
+			if isTalentCareer then
+				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for talent careers
 			end
 
 			local autoPromoChance = math.min(0.95, baseChance)  -- Cap at 95%
