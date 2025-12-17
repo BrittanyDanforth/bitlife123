@@ -205,6 +205,9 @@ local Social = {
 	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300 },
 	-- NEW: Karaoke with debate minigame
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
+	-- NEW: Pick a Fight with combat minigame
+	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true },
+	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true },
 }
 
 local Entertainment = {
@@ -224,6 +227,9 @@ local Crimes = {
 	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
 	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
 	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- VIOLENCE (NEW: Combat-based crimes)
+	{ id = "assault", name = "Assault", emoji = "👊", risk = 45, reward = "$0", minAge = 14, isCombat = true },
+	{ id = "mugging", name = "Mugging", emoji = "🔪", risk = 55, reward = "$50-$500", minAge = 16, isCombat = true },
 	-- PROPERTY CRIMES
 	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
 	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16 },
@@ -334,7 +340,7 @@ local function logAction(actionType, actionId, actionName, details)
 	))
 end
 
-function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard)
 	log("=== CREATING ActivitiesScreen ===")
 	local self = setmetatable({}, ActivitiesScreen)
 	self.screenGui = screenGui
@@ -343,6 +349,8 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	self.hideBlur = hideBlurFunc
 	self.isVisible = false
 	self.currentTab = "mindbody"
+	-- CRITICAL FIX: Store callback for showing BitLife-style event cards
+	self.onShowEventCard = onShowEventCard
 	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "InJail:", self:isInJail())
 	self:createUI()
 	
@@ -4779,6 +4787,68 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 	end
 end
 
+-- Activities that should show full BitLife-style event cards
+local FULL_EVENT_ACTIVITIES = {
+	gym = true,
+	meditate = true,
+	party = true,
+	study = true,
+	read = true,
+	vacation = true,
+	nightclub = true,
+	yoga = true,
+	spa = true,
+	salon = true,
+	run = true,
+	host_party = true,
+	hangout = true,
+	concert = true,
+	movies = true,
+	tv = true,
+	games = true,
+	arcade = true,
+	karaoke = true,
+	martial_arts = true,
+	pick_fight = true,
+}
+
+-- Combat event templates for fight activities
+local CombatEventTemplates = {
+	pick_fight = {
+		{
+			title = "👊 Looking for Trouble",
+			emoji = "👊",
+			texts = {
+				"You're feeling aggressive. Time to pick a fight...",
+				"Your blood is boiling. You need to let off some steam.",
+				"Someone is going to regret crossing you today.",
+			},
+			question = "Who do you confront?",
+			choices = {
+				{ text = "🤼 Someone at a bar", feed = "You started a bar fight!", triggersCombat = true, context = "bar_fight" },
+				{ text = "😤 A stranger on the street", feed = "You picked a fight with a random person!", triggersCombat = true, context = "street_random" },
+				{ text = "🙅 Actually, never mind", feed = "You thought better of it." },
+			},
+		},
+	},
+	martial_arts = {
+		{
+			title = "🥋 Martial Arts Class",
+			emoji = "🥋",
+			texts = {
+				"You arrived at the dojo for training.",
+				"Time to practice your combat skills!",
+				"The instructor pairs you with a sparring partner.",
+			},
+			choices = {
+				{ text = "🥊 Practice sparring", feed = "You practiced your moves!", triggersCombat = true, context = "sparring" },
+				{ text = "📚 Learn techniques", feed = "You focused on form and technique." },
+				{ text = "💪 Conditioning only", feed = "You worked on your fitness." },
+			},
+		},
+	},
+}
+
 function ActivitiesScreen:doActivity(item, bonus)
 	-- CRITICAL FIX: Enhanced action logging for debugging
 	logAction("ACTIVITY", item.id, item.name, string.format("Bonus: %s | Age: %d | Money: %d", 
@@ -4808,8 +4878,15 @@ function ActivitiesScreen:doActivity(item, bonus)
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		-- CRITICAL FIX: Use proper BitLife-style activity result card
-		self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
+		
+		-- CRITICAL FIX: Use full BitLife-style event cards for supported activities
+		-- These show as proper popups in the main UI like real BitLife events
+		if result.success and FULL_EVENT_ACTIVITIES[item.id] and self.onShowEventCard then
+			self:showActivityEventCard(item.id, result.success, result.message, item)
+		else
+			-- Fall back to in-screen result modal for other activities
+			self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
+		end
 	else
 		logWarn("Server returned nil!")
 		self:showActivityResult(false, "Server error - no response", item, "Error")
@@ -5281,6 +5358,192 @@ function ActivitiesScreen:populateMafia()
 	jobDesc.Text = "You can get a regular job in the Jobs tab as a cover. Having legit income helps hide your criminal activities!"
 	jobDesc.ZIndex = 83
 	jobDesc.Parent = jobInfoCard
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: BitLife-Style Full Event Cards for Activities
+-- This shows activities as proper event cards in the main UI, just like real BitLife
+-- Activities now trigger narrative events with choices, outcomes, and consequences
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Activity event templates for rich BitLife-style experiences
+local ActivityEventTemplates = {
+	gym = {
+		{
+			title = "💪 At the Gym",
+			emoji = "💪",
+			texts = {
+				"You hit the weights hard today. The burn feels amazing!",
+				"You finished an intense workout session at the gym.",
+				"You pushed yourself to new limits during today's training.",
+			},
+			choices = {
+				{ text = "💪 Flex in the mirror", feed = "You admire your progress!" },
+				{ text = "📸 Post a gym selfie", feed = "Your followers are impressed!" },
+				{ text = "🚿 Hit the showers", feed = "Time to clean up." },
+			},
+		},
+	},
+	meditate = {
+		{
+			title = "🧘 Meditation Session",
+			emoji = "🧘",
+			texts = {
+				"You found a quiet spot and cleared your mind...",
+				"Deep breaths. Your thoughts slowly fade away...",
+				"You achieved a state of pure relaxation.",
+			},
+			choices = {
+				{ text = "☮️ Namaste", feed = "You feel at peace." },
+				{ text = "🌸 Embrace the calm", feed = "Inner peace achieved." },
+			},
+		},
+	},
+	party = {
+		{
+			title = "🎉 Party Time!",
+			emoji = "🎉",
+			texts = {
+				"The party is in full swing! Music pumping, people dancing!",
+				"You arrived at the party and the energy is electric!",
+				"What a night! The party is absolutely wild!",
+			},
+			choices = {
+				{ text = "🕺 Hit the dance floor", feed = "You danced the night away!" },
+				{ text = "🍹 Get a drink", feed = "You grabbed a refreshment." },
+				{ text = "💬 Socialize", feed = "You made new friends!" },
+			},
+		},
+	},
+	study = {
+		{
+			title = "📚 Study Session",
+			emoji = "📚",
+			texts = {
+				"You opened your books and got to work...",
+				"Time to hit the books and expand your knowledge!",
+				"You settled in for some serious studying.",
+			},
+			choices = {
+				{ text = "📖 Keep studying", feed = "Knowledge is power!" },
+				{ text = "☕ Take a break", feed = "A quick break helps." },
+			},
+		},
+	},
+	read = {
+		{
+			title = "📖 Reading Time",
+			emoji = "📖",
+			texts = {
+				"You picked up a book and got lost in its pages...",
+				"You found a quiet spot to read.",
+				"You immersed yourself in a good book.",
+			},
+			choices = {
+				{ text = "📚 Finish the chapter", feed = "What a great story!" },
+				{ text = "💤 Doze off", feed = "Reading makes you sleepy." },
+			},
+		},
+	},
+	vacation = {
+		{
+			title = "✈️ Vacation!",
+			emoji = "🏝️",
+			texts = {
+				"You arrived at your vacation destination! Paradise!",
+				"The vacation is everything you dreamed of!",
+				"Sun, relaxation, and no responsibilities!",
+			},
+			choices = {
+				{ text = "🏖️ Beach time", feed = "The sand between your toes feels amazing!" },
+				{ text = "🎢 Go on adventures", feed = "You explored everything!" },
+				{ text = "😴 Just relax", feed = "Ultimate relaxation achieved." },
+			},
+		},
+	},
+	nightclub = {
+		{
+			title = "🕺 Nightclub",
+			emoji = "🕺",
+			texts = {
+				"The bass is pumping and the lights are flashing!",
+				"You hit the hottest club in town!",
+				"The nightclub is packed and the energy is insane!",
+			},
+			choices = {
+				{ text = "💃 Dance all night", feed = "You danced until sunrise!" },
+				{ text = "🍹 VIP section", feed = "Living the high life!" },
+				{ text = "🏠 Head home early", feed = "You called it a night." },
+			},
+		},
+	},
+}
+
+function ActivitiesScreen:showActivityEventCard(activityId, success, serverMessage, item)
+	-- Check if we have the callback and should show full event cards
+	if not self.onShowEventCard then
+		-- Fall back to simple result modal
+		self:showActivityResult(success, serverMessage, item, item and item.emoji or "✨")
+		return
+	end
+	
+	-- Check for combat event templates first
+	local templates = CombatEventTemplates[activityId] or ActivityEventTemplates[activityId]
+	local template = templates and templates[math.random(#templates)]
+	
+	-- If no specific template, create a generic one
+	if not template then
+		local itemEmoji = item and item.emoji or "✨"
+		local itemName = item and item.name or "Activity"
+		
+		template = {
+			title = itemEmoji .. " " .. itemName,
+			emoji = itemEmoji,
+			texts = { serverMessage or "You completed the activity!" },
+			choices = {
+				{ text = success and "👍 Nice!" or "😔 Oh well", feed = success and "Done!" or "Better luck next time." },
+			},
+		}
+	end
+	
+	-- Pick a random text from the template
+	local eventText = template.texts[math.random(#template.texts)]
+	
+	-- Add the server result message if it's different
+	if serverMessage and serverMessage ~= eventText then
+		eventText = eventText .. "\n\n" .. serverMessage
+	end
+	
+	-- Add effect info if available (but not for combat activities where effect is unknown)
+	if item and item.effect and item.effect ~= "??" then
+		eventText = eventText .. "\n\n📊 " .. item.effect
+	end
+	
+	-- Create the event card
+	local eventCard = {
+		id = "activity_" .. activityId .. "_" .. math.random(10000),
+		title = template.title,
+		emoji = template.emoji,
+		text = eventText,
+		question = template.question or "What happened?",
+		choices = template.choices,
+		category = success and "activity" or "disaster",
+		isCombatEvent = item and item.isCombat,
+	}
+	
+	-- Show the event card via the callback
+	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		-- Handle combat event choices
+		if choiceData and choiceData.triggersCombat then
+			log("Combat triggered! Context:", choiceData.context)
+			-- The server would handle actual combat
+			-- For now, show a result
+			self:showActivityResult(true, "The fight went down! " .. (choiceData.feed or ""), item, "👊")
+		else
+			-- Regular activity event choice
+			log("Activity event choice made:", choiceIndex)
+		end
+	end)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════

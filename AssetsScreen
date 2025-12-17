@@ -460,7 +460,12 @@ function AssetsScreen:getAssets()
 		end
 	end
 
-	log("Total owned assets:", #flatAssets)
+	-- CRITICAL FIX: Count table entries properly (# only works for arrays, not hash tables)
+	local count = 0
+	for _ in pairs(flatAssets) do
+		count = count + 1
+	end
+	log("Total owned assets:", count)
 	return flatAssets
 end
 

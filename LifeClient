@@ -6564,8 +6564,33 @@ end
 ScreenInstances.occupation   = safeNew(OccupationScreen,    "OccupationScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
-ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
+
+-- CRITICAL FIX: Create ActivitiesScreen with onShowEventCard callback
+-- This allows activities to show proper BitLife-style event cards in the main UI
+local function onActivityShowEventCard(eventCard, onChoiceCallback)
+	-- Hide the ActivitiesScreen first
+	if ScreenInstances.activities and ScreenInstances.activities.hide then
+		ScreenInstances.activities:hide()
+	end
+	hideBlur()
+	
+	-- Show the event card on the main UI
+	if showEvent then
+		showEvent({
+			id = eventCard.id or "activity_event",
+			title = eventCard.title or "📋 Activity",
+			emoji = eventCard.emoji or "✨",
+			text = eventCard.text or "Something happened...",
+			question = eventCard.question or "What happened?",
+			choices = eventCard.choices or {{text = "Continue", index = 1}},
+			category = eventCard.category,
+			isActivityEvent = true,
+			onActivityChoice = onChoiceCallback,
+		})
+	end
+end
+ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard)
 
 -- CRITICAL FIX #443: Create MafiaScreen with onShowEventCard callback
 -- This allows mafia operations to close the MafiaScreen and show an event card in main UI
