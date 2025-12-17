@@ -938,6 +938,29 @@ local function createResultPopup()
 	ResultUI.title.Parent = ResultUI.card
 
 	-- Body - CRITICAL UI FIX: Much bigger text for readability
+	-- CRITICAL FIX: Wrap body in a scrollable frame to handle long text
+	ResultUI.bodyContainer = Instance.new("ScrollingFrame")
+	ResultUI.bodyContainer.Name = "BodyContainer"
+	ResultUI.bodyContainer.Size = UDim2.new(1, 0, 0, 0)
+	ResultUI.bodyContainer.AutomaticSize = Enum.AutomaticSize.Y
+	ResultUI.bodyContainer.BackgroundTransparency = 1
+	ResultUI.bodyContainer.ScrollBarThickness = Device.IS_MOBILE and 3 or 4
+	ResultUI.bodyContainer.ScrollBarImageColor3 = C.Gray400
+	ResultUI.bodyContainer.ScrollBarImageTransparency = 0.3
+	ResultUI.bodyContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ResultUI.bodyContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ResultUI.bodyContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+	ResultUI.bodyContainer.BorderSizePixel = 0
+	ResultUI.bodyContainer.LayoutOrder = 3
+	ResultUI.bodyContainer.ZIndex = 84
+	ResultUI.bodyContainer.Parent = ResultUI.card
+	
+	-- Max height for body to prevent card from taking whole screen
+	local maxResultBodyHeight = Device.IS_TINY_PHONE and 120 or (Device.IS_SMALL_PHONE and 150 or 180)
+	local resultBodyConstraint = Instance.new("UISizeConstraint")
+	resultBodyConstraint.MaxSize = Vector2.new(math.huge, maxResultBodyHeight)
+	resultBodyConstraint.Parent = ResultUI.bodyContainer
+	
 	ResultUI.body = Instance.new("TextLabel")
 	ResultUI.body.Size = UDim2.new(1, 0, 0, 0)
 	ResultUI.body.AutomaticSize = Enum.AutomaticSize.Y
@@ -950,9 +973,8 @@ local function createResultPopup()
 	ResultUI.body.LineHeight = Device.IS_TINY_PHONE and 1.25 or 1.4
 	ResultUI.body.RichText = true
 	ResultUI.body.Text = ""
-	ResultUI.body.LayoutOrder = 3
 	ResultUI.body.ZIndex = 84
-	ResultUI.body.Parent = ResultUI.card
+	ResultUI.body.Parent = ResultUI.bodyContainer
 
 	-- Stats container - tighter on tiny phones
 	ResultUI.statsPreview = Instance.new("Frame")
@@ -1048,6 +1070,30 @@ local function showResultPopup(data, callback)
 	if bodyText == "" then
 		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
 	end
+	
+	-- CRITICAL FIX: Dynamic text sizing for long result text
+	local textLen = #bodyText
+	local baseResultTextSize = Device.IS_TINY_PHONE and 16 or textSize(20)
+	local adjustedResultTextSize = baseResultTextSize
+	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.25 or 1.4
+	
+	-- Reduce text size for longer text to prevent overflow
+	if textLen > 300 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 12 or 13
+		adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.15 or 1.2
+	elseif textLen > 200 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 14
+		adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.18 or 1.25
+	elseif textLen > 150 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 16
+		adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.2 or 1.3
+	elseif textLen > 100 then
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 18
+		adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.22 or 1.35
+	end
+	
+	ResultUI.body.TextSize = adjustedResultTextSize
+	ResultUI.body.LineHeight = adjustedResultLineHeight
 	ResultUI.body.Text = bodyText
 
 	-- Clear old stat previews
@@ -2808,13 +2854,30 @@ local function buildEventModal()
 	EventUI.title.Parent = titleSection
 
 	-- body + "What will you do?" question - MOBILE FIX: Responsive sizing
-	local bodySection = Instance.new("Frame")
+	-- CRITICAL FIX: Use ScrollingFrame for body to handle very long text gracefully
+	local bodySection = Instance.new("ScrollingFrame")
+	bodySection.Name = "BodySection"
 	bodySection.Size = UDim2.new(1, 0, 0, 0)
 	bodySection.AutomaticSize = Enum.AutomaticSize.Y
 	bodySection.BackgroundTransparency = 1
 	bodySection.LayoutOrder = 3
 	bodySection.ZIndex = 64
+	bodySection.ScrollBarThickness = Device.IS_MOBILE and 4 or 6
+	bodySection.ScrollBarImageColor3 = C.Gray400
+	bodySection.ScrollBarImageTransparency = 0.3
+	bodySection.CanvasSize = UDim2.new(0, 0, 0, 0)
+	bodySection.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	bodySection.ScrollingDirection = Enum.ScrollingDirection.Y
+	bodySection.BorderSizePixel = 0
 	bodySection.Parent = EventUI.card
+	
+	-- CRITICAL: Max height for body section to prevent card from taking whole screen
+	-- This ensures buttons are always visible
+	local maxBodyHeight = Device.IS_TINY_PHONE and 180 or (Device.IS_SMALL_PHONE and 220 or 280)
+	local bodySizeConstraint = Instance.new("UISizeConstraint")
+	bodySizeConstraint.MaxSize = Vector2.new(math.huge, maxBodyHeight)
+	bodySizeConstraint.Parent = bodySection
+	
 	local bodyPadSide = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or padSize(28))
 	local bodyPadBottom = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(12))
 	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
@@ -3948,7 +4011,37 @@ showEvent = function(payload)
 
 		EventUI.emoji.Text     = payload.emoji or "🙂"
 		EventUI.title.Text     = payload.title or "Life Event"
-		EventUI.body.Text      = payload.text or ""
+		
+		-- CRITICAL FIX: Dynamic text sizing for long event text
+		-- When text is very long, reduce text size to prevent card from taking entire screen
+		local bodyText = payload.text or ""
+		local textLen = #bodyText
+		local baseBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))
+		local adjustedBodyTextSize = baseBodyTextSize
+		local adjustedLineHeight = Device.IS_TINY_PHONE and 1.25 or (Device.IS_SMALL_PHONE and 1.35 or 1.5)
+		
+		-- Reduce text size progressively for longer text
+		if textLen > 400 then
+			-- Very long text - smallest readable size
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 13 or 14)
+			adjustedLineHeight = Device.IS_TINY_PHONE and 1.15 or 1.2
+		elseif textLen > 300 then
+			-- Long text - smaller size
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 14 or 15)
+			adjustedLineHeight = Device.IS_TINY_PHONE and 1.18 or 1.25
+		elseif textLen > 200 then
+			-- Medium-long text - slightly smaller
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 15 or 17)
+			adjustedLineHeight = Device.IS_TINY_PHONE and 1.2 or 1.3
+		elseif textLen > 150 then
+			-- Moderate text - small reduction
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 15 or (Device.IS_SMALL_PHONE and 16 or 19)
+			adjustedLineHeight = Device.IS_TINY_PHONE and 1.22 or 1.35
+		end
+		
+		EventUI.body.TextSize = adjustedBodyTextSize
+		EventUI.body.LineHeight = adjustedLineHeight
+		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
 
 		local choiceHandlers = {}
