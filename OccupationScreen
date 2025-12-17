@@ -883,19 +883,34 @@ end
 function OccupationScreen:updateState(newState)
 	log("Updating state...")
 	if newState then 
-		self.playerState = newState 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Deep copy state to prevent reference issues
+		-- Previously, self.playerState was a reference to LifeClient's currentState
+		-- which could cause stale data issues when the client mutated the state
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		self.playerState = newState
+		
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #1: ALWAYS clear cached data when state changes
 		-- This fixes the bug where after death/new life, old job still shows
-		-- The issue was that careerInfo wasn't being cleared when player had no job
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		
 		-- Check if player actually has a job in the new state
-		local hasJob = newState.CurrentJob and newState.CurrentJob.id
+		-- CRITICAL: Must check BOTH .CurrentJob existence AND it having an id/title
+		local hasJob = newState.CurrentJob and (newState.CurrentJob.id or newState.CurrentJob.title or newState.CurrentJob.name)
 		
-		if hasJob and newState.CareerInfo then
+		-- CRITICAL FIX: Check for new life (age 0 or 1) - ALWAYS clear everything
+		local isNewLife = (newState.Age or 0) <= 1
+		
+		if isNewLife then
+			-- NEW LIFE: Clear ALL cached data unconditionally
+			log("NEW LIFE DETECTED (age " .. tostring(newState.Age) .. ") - FORCE CLEARING ALL CACHES")
+			self.careerInfo = nil
+			self.jobEligibility = nil
+			self.educationInfo = nil
+		elseif hasJob and newState.CareerInfo then
 			-- Player has a job - update career info from state
 			self.careerInfo = newState.CareerInfo
 			log("Career info updated from state:", 
@@ -906,30 +921,28 @@ function OccupationScreen:updateState(newState)
 			-- CRITICAL FIX: Player has NO JOB - FORCE CLEAR all cached career data!
 			-- This was the root cause of the "job still shows after death" bug
 			self.careerInfo = nil
+			self.jobEligibility = nil
 			log("No job in state - CLEARED cached career info to prevent stale data")
 		end
 		
-		-- Always clear education info to force refresh
+		-- Always clear education info to force refresh on state change
 		self.educationInfo = nil
-		
-		-- CRITICAL FIX #2: Also clear job eligibility cache on state change
-		-- This ensures fresh eligibility checks after death/new life
-		if not hasJob or (newState.Age and newState.Age == 0) then
-			self.jobEligibility = nil
-			log("Cleared job eligibility cache (new life or unemployed)")
-		end
 		
 		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
 		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
 		if self.isVisible then
 			task.spawn(function()
 				-- Only fetch career info from server if player has a job and we need it
-				if hasJob and not self.careerInfo then
+				if hasJob and not self.careerInfo and not isNewLife then
 					self:fetchCareerInfo()
 				end
-				-- Always refresh UI if still visible and on jobs tab (even if no job!)
-				if self.isVisible and self.currentTab == "jobs" then
-					self:populateJobs()
+				-- Always refresh UI if still visible - force repopulate both tabs
+				if self.isVisible then
+					if self.currentTab == "jobs" then
+						self:populateJobs()
+					elseif self.currentTab == "education" then
+						self:populateEducation()
+					end
 				end
 			end)
 		end
@@ -958,14 +971,27 @@ function OccupationScreen:getCurrentJob()
 	-- Now we ONLY check CurrentJob - the authoritative source from server
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
+	-- CRITICAL FIX: If age is 0-17 and not working a teen job, definitely no job
+	-- Babies/children/teens under working age can't have jobs
+	local age = state.Age or 0
+	if age < 12 then
+		-- Children under 12 cannot have jobs at all
+		return nil
+	end
+	
 	-- PRIMARY: Check CurrentJob from server (authoritative source)
 	if state.CurrentJob then
-		-- Verify it's a valid job object, not an empty table
-		if state.CurrentJob.id then
+		-- Verify it's a valid job object, not an empty table or nil values
+		if type(state.CurrentJob) ~= "table" then
+			return nil
+		end
+		
+		-- Check for valid identifier
+		if state.CurrentJob.id and state.CurrentJob.id ~= "" then
 			return state.CurrentJob.id
-		elseif state.CurrentJob.title then
+		elseif state.CurrentJob.title and state.CurrentJob.title ~= "" then
 			return state.CurrentJob.title
-		elseif state.CurrentJob.name then
+		elseif state.CurrentJob.name and state.CurrentJob.name ~= "" then
 			return state.CurrentJob.name
 		end
 		-- If CurrentJob exists but has no id/title/name, it's invalid
@@ -2193,8 +2219,9 @@ function OccupationScreen:populateJobs()
 			pensionLabel.ZIndex = 83
 			pensionLabel.Parent = retiredCard
 		end
-	-- Current job section (if employed, not in jail, and NOT RETIRED)
-	elseif currentJob and not inJail and not isRetired then
+	-- Current job section (if employed, not in jail, NOT RETIRED, and old enough to work)
+	-- CRITICAL FIX: Children under 12 can NEVER have jobs, so don't show current job card
+	elseif currentJob and not inJail and not isRetired and age >= 12 then
 		local currentSection = Instance.new("Frame")
 		currentSection.Name = "CurrentJobSection"
 		currentSection.Size = UDim2.new(1, 0, 0, 0)
@@ -6128,6 +6155,14 @@ end
 
 function OccupationScreen:showCareerInfoModal()
 	log("=== SHOWING CAREER INFO MODAL ===")
+	
+	-- CRITICAL FIX: Don't show career info modal if player doesn't have a job
+	local currentJob = self:getCurrentJob()
+	if not currentJob then
+		log("No current job - cannot show career info modal")
+		self:showResult(false, "You need to have a job to view career info!", "📋")
+		return
+	end
 
 	-- Create modal if doesn't exist
 	if not self.careerInfoModal then
@@ -6692,26 +6727,31 @@ function OccupationScreen:show()
 	-- CRITICAL FIX #3: COMPREHENSIVE cache clearing when screen opens
 	-- This ensures the UI shows correct state after death/new life/quit/fire
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local age = self:getAge()
 	local hasJob = self:getCurrentJob()
 	
-	if not hasJob then
+	-- CRITICAL FIX: Check for new life or young age - FORCE clear everything
+	-- Age 0-11 means new life or child who can't work
+	if age <= 11 then
+		log("Young age detected (age " .. tostring(age) .. ") - FORCE clearing all cached data")
+		self.careerInfo = nil
+		self.jobEligibility = nil
+		self.educationInfo = nil
+	elseif not hasJob then
+		-- No job but older age - still clear job-related caches
 		log("No current job - FORCE clearing ALL cached career/job data")
 		self.careerInfo = nil
 		self.jobEligibility = nil
 	end
 	
-	-- CRITICAL FIX #4: Also check if this is a new life (age 0-1)
-	-- New life should always start with clean slate
-	local age = self:getAge()
-	if age <= 1 then
-		log("New life detected (age " .. tostring(age) .. ") - clearing all cached data")
-		self.careerInfo = nil
-		self.jobEligibility = nil
-		self.educationInfo = nil
-	end
-	
+	-- CRITICAL FIX: Always clear and refresh info bar
 	self:updateInfoBar()
+	
+	-- CRITICAL FIX: Force tab repopulation every time screen opens
+	-- This ensures stale UI is never shown
 	self:switchTab(self.currentTab)
+	
 	UI.slideInScreen(self.overlay, "right")
 	self.isVisible = true
 	log("✅ OccupationScreen is now visible")
