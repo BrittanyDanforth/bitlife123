@@ -358,7 +358,8 @@ local OperationScenarios = {
 }
 
 -- Debug logging
-local DEBUG = false
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[MafiaScreen]", ...) end
 end

@@ -125,7 +125,8 @@ local StoryPathsScreen = {}
 StoryPathsScreen.__index = StoryPathsScreen
 
 -- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[StoryPathsScreen]", ...) end
 end

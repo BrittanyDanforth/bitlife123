@@ -315,13 +315,23 @@ local BabyFun = {
 	{ id = "play_outside", name = "Play Outside", emoji = "🌳", effect = "+Health +Happiness", minAge = 1, maxAge = 5, cost = 0 },
 }
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - CRITICAL FIX: Enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[ActivitiesScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[ActivitiesScreen]", ...)
+end
+
+-- CRITICAL FIX: Action print helper for tracking button clicks
+local function logAction(actionType, actionId, actionName, details)
+	print(string.format("[ActivitiesScreen] 🔘 ACTION: %s | ID: %s | Name: %s | %s", 
+		actionType or "unknown", 
+		tostring(actionId or "nil"), 
+		tostring(actionName or "nil"),
+		details or ""
+	))
 end
 
 function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
@@ -2062,6 +2072,9 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 end
 
 function ActivitiesScreen:attemptJoinMob(familyId)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("JOIN_MOB", familyId, "Join Crime Family", string.format("Age: %d", self:getAge()))
+	
 	log("Attempting to join mob:", familyId)
 	local JoinMob = getRemote("JoinMob")
 	if JoinMob then
@@ -2094,15 +2107,15 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 				self.state.Flags = self.state.Flags or {}
 				self.state.Flags.in_mob = true
 			end
-			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
+			self:showActivityResult(true, result.message or "You've been initiated into the family!", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "🔫")
 			-- CRITICAL FIX #34: Delay refresh to allow state to propagate
 			task.delay(0.3, function()
 				self:switchTab("crime") -- Refresh to show mob operations
 			end)
 		elseif success and result then
-			self:showResult(false, result.message or "The family rejected you.", "❌")
+			self:showActivityResult(false, result.message or "The family rejected you.", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "❌")
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "❌")
 		end
 	else
 		-- Fallback for testing - also update local state
@@ -2122,7 +2135,7 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 			self.playerState.Flags = self.playerState.Flags or {}
 			self.playerState.Flags.in_mob = true
 		end
-		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		self:showActivityResult(true, "You've joined the crime family! Rise through the ranks...", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "🔫")
 		task.delay(0.3, function()
 			self:switchTab("crime")
 		end)
@@ -2130,6 +2143,9 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 end
 
 function ActivitiesScreen:attemptLeaveMob()
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("LEAVE_MOB", "leave_mob", "Leave Crime Family", "Risky action!")
+	
 	log("Attempting to leave mob")
 	local LeaveMob = getRemote("LeaveMob")
 	if LeaveMob then
@@ -2138,19 +2154,22 @@ function ActivitiesScreen:attemptLeaveMob()
 			return LeaveMob:InvokeServer()
 		end)
 		if success and result and result.success then
-			self:showResult(true, result.message or "You've left the family. Watch your back...", "🚪")
+			self:showActivityResult(true, result.message or "You've left the family. Watch your back...", {id = "leave_mob", name = "Leave Crime Family", emoji = "🚪"}, "🚪")
 			self:switchTab("crime") -- Refresh
 		elseif success and result then
-			self:showResult(false, result.message or "You can't leave... not alive anyway.", "💀")
+			self:showActivityResult(false, result.message or "You can't leave... not alive anyway.", {id = "leave_mob", name = "Leave Crime Family", emoji = "💀"}, "💀")
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = "leave_mob", name = "Leave Crime Family", emoji = "❌"}, "❌")
 		end
 	else
-		self:showResult(true, "You've left the crime family. They won't forget this...", "🚪")
+		self:showActivityResult(true, "You've left the crime family. They won't forget this...", {id = "leave_mob", name = "Leave Crime Family", emoji = "🚪"}, "🚪")
 	end
 end
 
 function ActivitiesScreen:doMobOperation(opId, opName)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("MOB_OPERATION", opId, opName, "Mafia activity")
+	
 	log("Doing mob operation:", opId)
 	local DoMobOp = getRemote("DoMobOperation")
 	if DoMobOp then
@@ -2160,7 +2179,7 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 		end)
 		if success and result and result.success then
 			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
-			self:showResult(true, msg, "💰")
+			self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
 			
 			-- CRITICAL FIX: Update local mob state after operation
 			if self.state and self.state.MobState then
@@ -2180,13 +2199,13 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			if result.arrested and self.state then
 				self.state.InJail = true
 			end
-			self:showResult(false, msg, result.arrested and "🚔" or "❌")
+			self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
 		end
 	else
 		-- Fallback for testing
-		self:showResult(true, opName .. " completed! You earned cash and respect.", "💰")
+		self:showActivityResult(true, opName .. " completed! You earned cash and respect.", {id = opId, name = opName, emoji = "💰"}, "💰")
 	end
 	self:updateInfoBar()
 	self:switchTab("crime") -- Refresh
@@ -2668,12 +2687,17 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 	end)
 
 	doBtn.MouseButton1Click:Connect(function()
+		-- CRITICAL FIX: Log action when mischief button is clicked
+		logAction("MISCHIEF_BTN_CLICK", item.id, item.name, "Trouble time!")
 		self:doMischief(item)
 	end)
 end
 
 -- Execute mischief activity
 function ActivitiesScreen:doMischief(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("MISCHIEF", item.id, item.name, string.format("Age: %d", self:getAge()))
+	
 	log("Doing mischief:", item.id, item.name)
 	
 	-- Use DoActivity remote for mischief (server handles it)
@@ -2684,9 +2708,10 @@ function ActivitiesScreen:doMischief(item)
 		end)
 		if success and result then
 			if result.success then
-				self:showResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item.emoji)
+				-- CRITICAL FIX: Use proper BitLife-style mischief result card
+				self:showActivityResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item, item.emoji)
 			else
-				self:showResult(false, result.message or "That didn't work out...", "😅")
+				self:showActivityResult(false, result.message or "That didn't work out...", item, "😅")
 			end
 		elseif not success then
 			-- Server error - use fallback message
@@ -2722,11 +2747,11 @@ function ActivitiesScreen:doMischief(item)
 			}
 			
 			local msg = messages[item.id] or ("You " .. string.lower(item.name) .. "!")
-			self:showResult(true, msg, item.emoji)
+			self:showActivityResult(true, msg, item, item.emoji)
 		end
 	else
 		logWarn("DoActivity remote not found!")
-		self:showResult(false, "Something went wrong!", "❌")
+		self:showActivityResult(false, "Something went wrong!", item, "❌")
 	end
 	
 	-- Update UI
@@ -3192,6 +3217,9 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 			if isLoading then return end
 			isLoading = true
 			
+			-- CRITICAL FIX: Log action when button is clicked
+			logAction("ACTIVITY_BTN_CLICK", item.id, item.name, item.hasMinigame and "Minigame" or "Direct")
+			
 			-- Loading state
 			actionBtn.Text = "⏳..."
 			UI.tween(actionBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
@@ -3407,6 +3435,10 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 		actionBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
 			isLoading = true
+			
+			-- CRITICAL FIX: Log action when crime button is clicked
+			logAction("CRIME_BTN_CLICK", item.id, item.name, string.format("Risk: %d%% | Minigame: %s", item.risk or 0, tostring(item.hasMinigame)))
+			
 			actionBtn.Text = "⏳..."
 			
 			-- CRITICAL FIX: Check for minigame BEFORE committing crime
@@ -3557,6 +3589,8 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
+			-- CRITICAL FIX: Log action when prison activity button is clicked
+			logAction("PRISON_BTN_CLICK", item.id, item.name, item.risk and ("Risk: " .. item.risk .. "%") or "No Risk")
 			self:doPrisonActivity(item)
 		end)
 	end
@@ -4432,7 +4466,8 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 					if won then
 						self:doActivity(item, true)  -- Bonus for winning minigame
 					else
-						self:showResult(false, "You didn't complete the challenge. No gains today!", "😅")
+						-- CRITICAL FIX: Use BitLife-style result card
+						self:showActivityResult(false, "You didn't complete the challenge. No gains today!", item, "😅")
 					end
 				end, {
 					difficulty = item.id == "gym" and "medium" or "easy",
@@ -4635,12 +4670,15 @@ function ActivitiesScreen:completeCrimeMinigame(success)
 end
 
 function ActivitiesScreen:doCrimeWithBonus(item, bonus)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("CRIME_MINIGAME", item.id, item.name, string.format("Bonus: %s", tostring(bonus)))
+	
 	log("=== COMMITTING CRIME (WITH MINIGAME RESULT) ===")
 	log("Crime:", item.id, "Bonus:", bonus)
 
 	if not CommitCrime then
 		logWarn("CommitCrime remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4653,11 +4691,12 @@ function ActivitiesScreen:doCrimeWithBonus(item, bonus)
 
 	if success and result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
-		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
+		-- CRITICAL FIX: Use BitLife-style result card
+		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error", item, "Error")
 	end
 end
 
@@ -4688,19 +4727,23 @@ function ActivitiesScreen:completeMinigame(success)
 			if success then
 				self:doActivity(self.currentMinigameItem, true)
 			else
-				self:showResult(false, "You gave up halfway through. No gains today!", "Failed")
+				-- CRITICAL FIX: Use BitLife-style result card
+				self:showActivityResult(false, "You gave up halfway through. No gains today!", self.currentMinigameItem, "😅")
 			end
 		end
 	end)
 end
 
 function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
+	-- CRITICAL FIX: Enhanced action logging
+	logAction("PRISON_ESCAPE_RESULT", "prison_escape", "Prison Escape", escaped and "SUCCESS" or "FAILED")
+	
 	log("=== PRISON ESCAPE MINIGAME RESULT ===")
 	log("Escaped:", escaped)
 
 	if not DoPrisonAction then
 		logWarn("DoPrisonAction remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		return
 	end
 
@@ -4717,7 +4760,7 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 			log("Server response:", result.success, result.message)
 			-- Server handles the popup via presentEvent - don't show duplicate!
 		else
-			self:showResult(false, "Server error", "Error")
+			self:showActivityResult(false, "Server error", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		end
 	else
 		-- Player failed minigame - got caught
@@ -4728,21 +4771,26 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 		end)
 		if callSuccess and serverResult then
 			log("Server response for failed escape:", serverResult.success, serverResult.message)
-			self:showResult(false, serverResult.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
+			-- CRITICAL FIX: Use BitLife-style result card
+			self:showActivityResult(false, serverResult.message or "You got caught trying to escape! More time added to your sentence.", {id = "prison_escape", name = "Prison Escape", emoji = "🚔"}, "🚔", true)
 		else
-			self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
+			self:showActivityResult(false, "You got caught trying to escape! More time added to your sentence.", {id = "prison_escape", name = "Prison Escape", emoji = "🚔"}, "🚔", true)
 		end
 	end
 end
 
 function ActivitiesScreen:doActivity(item, bonus)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("ACTIVITY", item.id, item.name, string.format("Bonus: %s | Age: %d | Money: %d", 
+		tostring(bonus or false), self:getAge(), self:getMoney()))
+	
 	log("=== DOING ACTIVITY ===")
 	log("Activity ID:", item.id, "Name:", item.name, "Bonus:", bonus or false)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
 	if not DoActivity then
 		logWarn("DoActivity remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4753,28 +4801,33 @@ function ActivitiesScreen:doActivity(item, bonus)
 	end)
 	if not success then
 		logWarn("DoActivity call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Done!" or "Failed")
+		-- CRITICAL FIX: Use proper BitLife-style activity result card
+		self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
 function ActivitiesScreen:doCrime(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("CRIME", item.id, item.name, string.format("Risk: %d%% | Age: %d | Money: %d", 
+		item.risk or 0, self:getAge(), self:getMoney()))
+	
 	log("=== COMMITTING CRIME ===")
 	log("Crime ID:", item.id, "Name:", item.name, "Risk:", item.risk)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
 	if not CommitCrime then
 		logWarn("CommitCrime remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4785,22 +4838,27 @@ function ActivitiesScreen:doCrime(item)
 	end)
 	if not success then
 		logWarn("CommitCrime call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
-		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
+		-- CRITICAL FIX: Use proper BitLife-style crime result card
+		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
 function ActivitiesScreen:doPrisonActivity(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("PRISON", item.id, item.name, string.format("Money: %d | Years Left: %d", 
+		self:getMoney(), self:getJailYearsLeft() or 0))
+	
 	log("=== DOING PRISON ACTIVITY ===")
 	log("Prison Activity ID:", item.id, "Name:", item.name)
 	log("Player Money:", self:getMoney())
@@ -4814,7 +4872,7 @@ function ActivitiesScreen:doPrisonActivity(item)
 
 	if not DoPrisonAction then
 		logWarn("DoPrisonAction remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4825,20 +4883,21 @@ function ActivitiesScreen:doPrisonActivity(item)
 	end)
 	if not success then
 		logWarn("DoPrisonAction call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		local emoji = result.success and "Done!" or "Failed"
-		if item.id == "prison_riot" then emoji = result.success and "Chaos!" or "Caught!" end
-		if item.id == "prison_snitch" then emoji = result.success and "Snitched!" or "Oops!" end
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.success and "✅" or "❌"
+		if item.id == "prison_riot" then emoji = result.success and "🔥" or "🚔" end
+		if item.id == "prison_snitch" then emoji = result.success and "🤫" or "😱" end
+		-- CRITICAL FIX: Use proper BitLife-style prison activity result card
+		self:showActivityResult(result.success, result.message, item, emoji)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
@@ -5224,6 +5283,102 @@ function ActivitiesScreen:populateMafia()
 	jobDesc.Parent = jobInfoCard
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: BitLife-Style Activity Result Card
+-- This creates a proper event-style card for activity completion, matching the
+-- look and feel of the main life event cards for a premium experience
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught)
+	-- CRITICAL: Log the result for debugging
+	log("=== SHOWING ACTIVITY RESULT ===")
+	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji)
+	
+	-- Determine the title based on context
+	local title = "Activity Complete!"
+	local itemName = item and item.name or "Activity"
+	local itemEmoji = item and item.emoji or emoji or "📋"
+	
+	-- Determine appropriate title based on the type of activity
+	if wasCaught then
+		title = "🚔 Busted!"
+	elseif item then
+		-- Check what kind of activity this was
+		if item.risk then
+			-- It's a crime
+			title = success and "Crime Successful!" or "Crime Failed!"
+		elseif item.id and (item.id:find("prison") or item.id:find("jail")) then
+			-- Prison activity
+			title = success and "Prison Activity" or "That Backfired!"
+		elseif item.id and (item.id:find("mischief") or item.id:find("prank") or item.id:find("sneak") or item.id:find("trouble")) then
+			-- Mischief
+			title = success and "Mischief Managed! 😈" or "Caught in the Act!"
+		elseif item.effect then
+			-- Regular activity with stat effects
+			title = success and itemName or "Activity Failed"
+		else
+			title = success and "Done!" or "Uh oh..."
+		end
+	else
+		title = success and "Success!" or "Failed!"
+	end
+	
+	-- Get proper colors
+	local shellColor = success and C.Green or C.Red
+	local shellStroke = success and C.GreenDark or C.RedDark
+	local pale = success and C.GreenPale or C.RedPale
+	
+	-- Update the result modal UI
+	self.resultModal.shell.BackgroundColor3 = shellColor
+	self.resultModal.shellStroke.Color = shellStroke
+	self.resultModal.emojiFrame.BackgroundColor3 = pale
+	
+	-- CRITICAL UI FIX: Better emoji display
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" or displayEmoji == "Done!" then
+		displayEmoji = success and (itemEmoji or "✨") or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" or displayEmoji == "Failed" then
+		displayEmoji = "❌"
+	elseif displayEmoji == "Success!" then
+		displayEmoji = itemEmoji or "💰"
+	elseif displayEmoji == "Caught!" then
+		displayEmoji = "🚔"
+	elseif displayEmoji == "Chaos!" then
+		displayEmoji = "🔥"
+	elseif displayEmoji == "Snitched!" then
+		displayEmoji = "🤫"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- Set title with activity name context
+	self.resultModal.titleLabel.Text = title
+	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
+	
+	-- CRITICAL FIX: Better message formatting for BitLife-style
+	local displayMessage = message or (success and "You did it!" or "Something went wrong...")
+	
+	-- Add activity context if message is too generic
+	if displayMessage == "Activity completed." or displayMessage == "You did it!" then
+		if item and item.name then
+			displayMessage = "You successfully completed " .. string.lower(item.name) .. "!"
+			if item.effect then
+				displayMessage = displayMessage .. "\n\n" .. item.effect
+			end
+		end
+	end
+	
+	self.resultModal.messageLabel.Text = displayMessage
+	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Awesome!" or "😔 Okay..."
+
+	-- Show the modal
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
+end
+
+-- Legacy showResult for backwards compatibility
 function ActivitiesScreen:showResult(success, message, emoji)
 	local shellColor = success and C.Green or C.Red
 	local shellStroke = success and C.GreenDark or C.RedDark

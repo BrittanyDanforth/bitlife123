@@ -853,13 +853,23 @@ local function getNextPromotion(jobId)
 	return CareerPaths[jobId]
 end
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - CRITICAL FIX: Enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[OccupationScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[OccupationScreen]", ...)
+end
+
+-- CRITICAL FIX: Action print helper for tracking button clicks
+local function logAction(actionType, actionId, actionName, details)
+	print(string.format("[OccupationScreen] 🔘 ACTION: %s | ID: %s | Name: %s | %s", 
+		actionType or "unknown", 
+		tostring(actionId or "nil"), 
+		tostring(actionName or "nil"),
+		details or ""
+	))
 end
 
 function OccupationScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
@@ -5520,6 +5530,9 @@ function OccupationScreen:createResultModal()
 end
 
 function OccupationScreen:applyForJob(jobId)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("APPLY_JOB", jobId, "Apply for Job", string.format("Age: %d | Money: %d", self:getAge(), self:getMoney()))
+	
 	log("=== APPLYING FOR JOB ===")
 	log("Job ID:", jobId)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
