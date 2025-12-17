@@ -5734,6 +5734,12 @@ function LifeBackend:tickCareer(state)
 		self:addMoney(state, salary)
 		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
 		
+		-- CRITICAL FIX: Store last paid salary for pension calculation
+		-- This ensures retirement events can calculate pension from actual income
+		-- (important for fame careers where CurrentJob.salary may be outdated)
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.lastPaidSalary = salary
+		
 		-- CRITICAL FIX #138: Add salary to YearLog so user sees they got paid!
 		-- This was the bug - salary was paid but user didn't see any message
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
@@ -8191,15 +8197,38 @@ function LifeBackend:handleAgeUp(player)
 		-- Get pension from stored amount (set during retirement event)
 		if state.Flags.pension_amount and type(state.Flags.pension_amount) == "number" then
 			pensionAmount = state.Flags.pension_amount
-		else
-			-- Fallback: Calculate based on career info
-			if state.CareerInfo and state.CareerInfo.lastJob then
-				local lastSalary = state.CareerInfo.lastJob.salary or 30000
-				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
-			else
-				pensionAmount = 15000 -- Minimum pension
+		end
+		
+		-- CRITICAL FIX: If pension seems suspiciously low, recalculate from better sources
+		-- This handles fame careers where state.CurrentJob.salary wasn't updated
+		if pensionAmount < 1000 then
+			local lastSalary = 0
+			
+			-- Try lastPaidSalary first (most accurate for fame careers)
+			if state.CareerInfo and state.CareerInfo.lastPaidSalary and state.CareerInfo.lastPaidSalary > 0 then
+				lastSalary = state.CareerInfo.lastPaidSalary
+			-- Try lastJobSalary (stored during retirement)
+			elseif state.CareerInfo and state.CareerInfo.lastJobSalary and state.CareerInfo.lastJobSalary > 0 then
+				lastSalary = state.CareerInfo.lastJobSalary
+			-- Try lastJob.salary
+			elseif state.CareerInfo and state.CareerInfo.lastJob and state.CareerInfo.lastJob.salary then
+				lastSalary = state.CareerInfo.lastJob.salary
 			end
-			-- Store for future years
+			
+			-- If we found a better salary, recalculate pension
+			if lastSalary > 0 then
+				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
+			end
+			
+			-- Estimate from net worth if still too low (for wealthy retirees)
+			if pensionAmount < 1000 and state.Money and state.Money > 1000000 then
+				pensionAmount = math.floor(state.Money * 0.06) -- 6% withdrawal rate
+			end
+			
+			-- Enforce minimum pension
+			pensionAmount = math.max(15000, pensionAmount)
+			
+			-- Store corrected pension for future years
 			state.Flags.pension_amount = pensionAmount
 		end
 		

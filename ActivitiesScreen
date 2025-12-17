@@ -140,6 +140,19 @@ local function formatMoneyShort(amount)
 	return string.format("$%d", amount)
 end
 
+-- CRITICAL FIX: formatNumber function for displaying large numbers nicely
+local function formatNumber(num)
+	num = tonumber(num) or 0
+	if num >= 1000000000 then
+		return string.format("%.1fB", num / 1000000000)
+	elseif num >= 1000000 then
+		return string.format("%.1fM", num / 1000000)
+	elseif num >= 1000 then
+		return string.format("%.1fK", num / 1000)
+	end
+	return tostring(math.floor(num))
+end
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 local ActivitiesScreen = {}
@@ -5023,7 +5036,7 @@ function ActivitiesScreen:populateFame()
 	fameText.Font = F.Medium or Enum.Font.GothamMedium
 	fameText.TextSize = 12
 	fameText.TextColor3 = Color3.fromRGB(139, 69, 19)
-	fameText.Text = "🌟 Fame: " .. fame .. "% | 👥 " .. UI.formatNumber(followers) .. " followers"
+	fameText.Text = "🌟 Fame: " .. fame .. "% | 👥 " .. formatNumber(followers) .. " followers"
 	fameText.ZIndex = 84
 	fameText.Parent = fameBadge
 	
