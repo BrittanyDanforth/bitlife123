@@ -1165,7 +1165,7 @@ function MafiaScreen:createOperationCard(op, order)
 		-- Check if this operation has scenarios (most do now)
 		local scenarioOps = {
 			"intimidation", "black_market", "cyber", "weapons", "ransom", 
-			"enforcer_hit", "protection", "gambling", "heist"
+			"enforcer_hit", "protection", "smuggling", "heist"  -- gambling removed (TOS)
 		}
 		
 		local hasScenario = false
@@ -1689,7 +1689,7 @@ function MafiaScreen:getScenarioText(op)
 		ransom = "Intelligence has identified a high-value target. This is your big score if you pull it off.",
 		enforcer_hit = "The boss has a problem that needs to disappear. This is a test of your loyalty to the family.",
 		protection = "Collection day. Several businesses owe the family money. Time to make the rounds.",
-		gambling = "Tonight's underground casino is expecting high rollers. You're running the operation.",
+		smuggling = "Tonight's shipment is coming in. You're running the operation.",
 		heist = "A major score awaits. The target has been scouted. Now it's time to execute.",
 	}
 	return texts[op.id] or op.description or "The family needs you to handle an operation."

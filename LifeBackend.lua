@@ -852,7 +852,7 @@ local JobCatalogList = {
 	{ id = "hotel_front_desk", name = "Hotel Receptionist", company = "Grand Hotel", emoji = "🏨", salary = 32000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "flight_attendant", name = "Flight Attendant", company = "SkyWays Airlines", emoji = "✈️", salary = 55000, minAge = 21, requirement = "high_school", category = "service" },
 	{ id = "tour_guide", name = "Tour Guide", company = "City Tours", emoji = "🗺️", salary = 35000, minAge = 18, requirement = "high_school", category = "service" },
-	{ id = "casino_dealer", name = "Casino Dealer", company = "Lucky Star Casino", emoji = "🎰", salary = 45000, minAge = 21, requirement = "high_school", category = "service" },
+	-- REMOVED: Casino Dealer job (gambling against Roblox TOS)
 	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service" },
 
@@ -4147,7 +4147,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.BuyVehicle = self:createRemote("BuyVehicle", "RemoteFunction")
 	self.remotes.BuyItem = self:createRemote("BuyItem", "RemoteFunction")
 	self.remotes.SellAsset = self:createRemote("SellAsset", "RemoteFunction")
-	self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
+	-- REMOVED: Gambling remote (against Roblox TOS)
+	-- self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
 
 	self.remotes.DoInteraction = self:createRemote("DoInteraction", "RemoteFunction")
 
@@ -4243,9 +4244,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.SellAsset.OnServerInvoke = function(player, assetId, assetType)
 		return self:handleAssetSale(player, assetId, assetType)
 	end
-	self.remotes.Gamble.OnServerInvoke = function(player, betAmount, finalSymbols)
-		return self:handleGamble(player, betAmount, finalSymbols)
-	end
+	-- REMOVED: Gambling handler (against Roblox TOS)
+	-- Gambling features have been removed to comply with Roblox Terms of Service
 
 	self.remotes.DoInteraction.OnServerInvoke = function(player, payload)
 		return self:handleInteraction(player, payload)
@@ -7133,10 +7133,11 @@ function LifeBackend:processAddictions(state)
 			quitDifficulty = 0.12, -- CRITICAL FIX #29: Was 0.08, now 12% chance
 			canLoseJob = true,
 		},
-		gambling_addiction = {
+		-- REMOVED: gambling_addiction (against Roblox TOS)
+		spending_addiction = {
 			happinessCost = 5,
-			moneyCost = function(state) return math.floor((state.Money or 0) * 0.15) end, -- CRITICAL FIX: Reduced from 20% to 15%
-			quitDifficulty = 0.14, -- CRITICAL FIX #29: Was 0.10, now 14% chance
+			moneyCost = function(state) return math.floor((state.Money or 0) * 0.10) end, -- Compulsive spending
+			quitDifficulty = 0.14,
 		},
 		substance_user = {
 			healthCost = 4,
@@ -11248,8 +11249,9 @@ function LifeBackend:enrollEducation(player, programId, options)
 end
 
 -- ============================================================================
--- Assets & Gambling
+-- Assets
 -- ============================================================================
+-- NOTE: Gambling features have been REMOVED to comply with Roblox Terms of Service
 
 function LifeBackend:findAssetById(list, assetId)
 	-- CRITICAL FIX #127: Nil safety for asset lookup
@@ -11624,82 +11626,8 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	return { success = false, message = "Asset not found." }
 end
 
-function LifeBackend:handleGamble(player, betAmount, finalSymbols)
-	local state = self:getState(player)
-	if not state then
-		return { success = false, message = "Life data missing." }
-	end
-
-	if betAmount <= 0 then
-		return { success = false, message = "Bet a positive amount." }
-	end
-
-	if (state.Money or 0) < betAmount then
-		return { success = false, message = "Not enough money to bet." }
-	end
-
-	self:addMoney(state, -betAmount)
-
-	-- For now, trust client symbols; you can swap this to a pure server roll later.
-	local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]
-	local payout = 0
-	local taxAmount = 0
-	local message
-	if won then
-		local grossPayout = betAmount * 5
-		
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX (deep-6): GAMBLING TAX
-		-- IRS taxes gambling winnings! Large wins are taxed at 24-37%
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		if grossPayout >= 5000 then
-			-- Large winnings are taxed at 24% federal rate
-			local taxRate = 0.24
-			if grossPayout >= 100000 then
-				taxRate = 0.37 -- Higher bracket for huge wins
-			elseif grossPayout >= 50000 then
-				taxRate = 0.32
-			end
-			
-			taxAmount = math.floor(grossPayout * taxRate)
-			payout = grossPayout - taxAmount
-			
-			message = string.format("JACKPOT! You won %s! (Taxes: -%s, Net: %s)", 
-				formatMoney(grossPayout), formatMoney(taxAmount), formatMoney(payout))
-			
-			state.YearLog = state.YearLog or {}
-			table.insert(state.YearLog, {
-				type = "gambling_tax",
-				emoji = "🎰",
-				text = string.format("Paid $%s in gambling taxes on $%s winnings", formatMoney(taxAmount), formatMoney(grossPayout)),
-				amount = -taxAmount,
-			})
-		else
-			payout = grossPayout
-			message = string.format("JACKPOT! You won %s!", formatMoney(payout))
-		end
-		
-		self:addMoney(state, payout)
-		
-		-- Track gambling stats
-		state.Flags = state.Flags or {}
-		state.Flags.gambling_winnings = (state.Flags.gambling_winnings or 0) + payout
-		state.Flags.gambling_taxes_paid = (state.Flags.gambling_taxes_paid or 0) + taxAmount
-		
-		-- Big winners might develop addiction
-		if payout >= 10000 and RANDOM:NextNumber() < 0.15 then
-			state.Flags.gambling_tendencies = true
-		end
-	else
-		message = "Better luck next time."
-		-- Track losses
-		state.Flags = state.Flags or {}
-		state.Flags.gambling_losses = (state.Flags.gambling_losses or 0) + betAmount
-	end
-
-	self:pushState(player, message)
-	return { success = won, winnings = payout, taxed = taxAmount, message = message }
-end
+-- REMOVED: handleGamble function (gambling is against Roblox Terms of Service)
+-- All gambling features have been removed from this game
 
 -- ============================================================================
 -- Relationships & Interactions

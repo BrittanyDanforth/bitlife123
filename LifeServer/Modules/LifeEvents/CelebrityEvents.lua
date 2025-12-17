@@ -2038,12 +2038,12 @@ CelebrityEvents.GeneralFameEvents = {
 		},
 	},
 	
-	-- VEGAS RESIDENCY
+	-- CONCERT VENUE RESIDENCY
 	{
-		id = "vegas_residency_offer",
-		title = "🎰 Vegas Residency",
-		emoji = "🎰",
-		text = "A Las Vegas casino wants you for a multi-year residency. Guaranteed income, less travel.",
+		id = "venue_residency_offer",
+		title = "🎤 Concert Residency",
+		emoji = "🎤",
+		text = "A famous concert venue wants you for a multi-year residency. Guaranteed income, less travel.",
 		minFame = 65,
 		cooldown = 4,
 		maxOccurrences = 2,
@@ -2053,8 +2053,8 @@ CelebrityEvents.GeneralFameEvents = {
 				text = "Accept the lucrative deal",
 				effects = { Happiness = 12, Money = 5000000 },
 				fameEffect = 10,
-				setFlags = { has_residency = true, vegas_star = true },
-				feed = "Your Vegas show is sold out for years!",
+				setFlags = { has_residency = true, concert_star = true },
+				feed = "Your concert show is sold out for years!",
 			},
 			{
 				text = "Negotiate for shorter commitment",

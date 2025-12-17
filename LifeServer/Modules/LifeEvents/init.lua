@@ -776,7 +776,7 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Enforce ageBand restrictions!
 	-- Many events set ageBand but it was NEVER enforced, letting kids get adult events
-	-- like stock investing, gambling, bankruptcy, etc.
+	-- like stock investing, bankruptcy, etc.
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local ageBand = event.ageBand
 	if ageBand and ageBand ~= "any" then
