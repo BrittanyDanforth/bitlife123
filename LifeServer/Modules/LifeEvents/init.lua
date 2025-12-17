@@ -1749,7 +1749,8 @@ function LifeEvents.buildYearQueue(state, options)
 	local flags = state.Flags or {}
 	
 	-- MAFIA: Only add category if player has gamepass AND is in mob
-	if flags.mafia_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Mafia) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.mafia_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Mafia or state.GamepassOwnership.mafia)) then
 		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
 		if isInMob then
 			-- Player is in mob - add mafia events
@@ -1773,7 +1774,8 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ROYALTY: Only add category if player has gamepass AND is royalty
-	if flags.royalty_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Royalty) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.royalty_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Royalty or state.GamepassOwnership.royalty)) then
 		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
 		if isRoyal then
 			local hasRoyalCat = false
@@ -1787,7 +1789,8 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- CELEBRITY: Only add category if player has gamepass AND has fame career OR natural fame
-	if flags.celebrity_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Celebrity) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.celebrity_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Celebrity or state.GamepassOwnership.celebrity)) then
 		local hasFameCareer = flags.fame_career or flags.career_actor 
 			or flags.career_musician or flags.career_influencer or flags.career_athlete
 			or (state.FameState and state.FameState.careerPath)

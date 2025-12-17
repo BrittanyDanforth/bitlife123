@@ -558,16 +558,17 @@ local Jobs = {
 	-- Full career paths for Streamer, Rapper, Musician, Influencer, and Actor
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- STREAMER / CONTENT CREATOR PATH
-	-- CRITICAL FIX #MOBILE-8: Hobbyist Streamer is NOW FREE (no gamepass required)!
-	-- This is the entry point to streaming - anyone can try it
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STREAMER / CONTENT CREATOR PATH - ALL FREE (NO GAMEPASS REQUIRED)
+	-- User feedback: "YouTuber can stay free" - entire streaming path is free!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
-	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Streaming experience required" },
-	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Affiliate status required" },
-	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Established streaming presence required" },
-	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch Partner", emoji = "💎", salary = 300000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 6, requiresGamepass = "celebrity", requiresExp = "Growing streamer status required" },
-	{ id = "top_streamer", name = "Top Streamer", company = "Platform Featured", emoji = "⭐", salary = 2000000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Partner status required" },
-	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Top streamer status required" },
+	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresExp = "Streaming experience required" },
+	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresExp = "Affiliate status required" },
+	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresExp = "Established streaming presence required" },
+	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch Partner", emoji = "💎", salary = 300000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 6, requiresExp = "Growing streamer status required" },
+	{ id = "top_streamer", name = "Top Streamer", company = "Platform Featured", emoji = "⭐", salary = 2000000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 8, requiresExp = "Partner status required" },
+	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresExp = "Top streamer status required" },
 	
 	-- RAPPER / HIP-HOP PATH
 	-- CRITICAL FIX #MOBILE-9: Underground Rapper is NOW FREE (no gamepass required)!
@@ -581,16 +582,17 @@ local Jobs = {
 	{ id = "superstar_rapper", name = "Superstar Rapper", company = "Global", emoji = "💎", salary = 20000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 9, requiresGamepass = "celebrity", requiresExp = "Mainstream success required" },
 	{ id = "rap_legend", name = "Hip-Hop Legend", company = "GOAT Status", emoji = "👑", salary = 75000000, minAge = 28, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Superstar status required" },
 	
-	-- SOCIAL MEDIA INFLUENCER PATH
-	-- CRITICAL FIX #MOBILE-10: New Content Creator is NOW FREE (no gamepass required)!
-	-- This is the entry point to influencer career - anyone can try it
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL MEDIA INFLUENCER PATH - ALL FREE (NO GAMEPASS REQUIRED)
+	-- User feedback: "YouTuber can stay free" - entire influencer path is free!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
-	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Content creation experience required" },
-	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Micro influencer status required" },
-	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Growing following required" },
-	{ id = "famous_influencer", name = "Famous Influencer", company = "Millions of Followers", emoji = "⭐", salary = 600000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresGamepass = "celebrity", requiresExp = "Established presence required" },
-	{ id = "mega_influencer", name = "Mega Influencer", company = "Media Empire", emoji = "💎", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Famous status required" },
-	{ id = "influencer_icon", name = "Social Media Icon", company = "Cultural Icon", emoji = "👑", salary = 50000000, minAge = 24, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Mega influencer status required" },
+	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresExp = "Content creation experience required" },
+	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresExp = "Micro influencer status required" },
+	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresExp = "Growing following required" },
+	{ id = "famous_influencer", name = "Famous Influencer", company = "Millions of Followers", emoji = "⭐", salary = 600000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresExp = "Established presence required" },
+	{ id = "mega_influencer", name = "Mega Influencer", company = "Media Empire", emoji = "💎", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresExp = "Famous status required" },
+	{ id = "influencer_icon", name = "Social Media Icon", company = "Cultural Icon", emoji = "👑", salary = 50000000, minAge = 24, requirement = nil, category = "celebrity", difficulty = 10, requiresExp = "Mega influencer status required" },
 }
 
 -- Education Data - Must match server's EducationOptions IDs!
