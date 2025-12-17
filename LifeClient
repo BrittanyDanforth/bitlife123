@@ -924,12 +924,12 @@ local function createResultPopup()
 	ResultUI.emoji.ZIndex = 84
 	ResultUI.emoji.Parent = ResultUI.card
 
-	-- Title - TINY PHONE FIX: Smaller text
+	-- Title - CRITICAL UI FIX: Bigger text for better readability
 	ResultUI.title = Instance.new("TextLabel")
-	ResultUI.title.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 20 or px(32))
+	ResultUI.title.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 28 or px(38))
 	ResultUI.title.BackgroundTransparency = 1
 	ResultUI.title.Font = F.Title
-	ResultUI.title.TextSize = Device.IS_TINY_PHONE and 15 or textSize(24)
+	ResultUI.title.TextSize = Device.IS_TINY_PHONE and 20 or textSize(28)
 	ResultUI.title.TextColor3 = C.Gray900
 	ResultUI.title.Text = "Result"
 	ResultUI.title.TextWrapped = true
@@ -937,17 +937,17 @@ local function createResultPopup()
 	ResultUI.title.ZIndex = 84
 	ResultUI.title.Parent = ResultUI.card
 
-	-- Body - TINY PHONE FIX: Smaller text with tighter line height
+	-- Body - CRITICAL UI FIX: Much bigger text for readability
 	ResultUI.body = Instance.new("TextLabel")
 	ResultUI.body.Size = UDim2.new(1, 0, 0, 0)
 	ResultUI.body.AutomaticSize = Enum.AutomaticSize.Y
 	ResultUI.body.BackgroundTransparency = 1
 	ResultUI.body.Font = F.Body
-	ResultUI.body.TextSize = Device.IS_TINY_PHONE and 11 or textSize(16)
+	ResultUI.body.TextSize = Device.IS_TINY_PHONE and 16 or textSize(20)
 	ResultUI.body.TextColor3 = C.Gray600
 	ResultUI.body.TextWrapped = true
 	ResultUI.body.TextXAlignment = Enum.TextXAlignment.Center
-	ResultUI.body.LineHeight = Device.IS_TINY_PHONE and 1.2 or 1.4
+	ResultUI.body.LineHeight = Device.IS_TINY_PHONE and 1.25 or 1.4
 	ResultUI.body.RichText = true
 	ResultUI.body.Text = ""
 	ResultUI.body.LayoutOrder = 3
@@ -968,20 +968,20 @@ local function createResultPopup()
 	statsLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(4))
 	statsLayout.Parent = ResultUI.statsPreview
 
-	-- OK Button - TINY PHONE FIX: Smaller but still tappable
-	local okBtnHeight = Device.IS_TINY_PHONE and 38 or btnHeight(52)
+	-- OK Button - CRITICAL UI FIX: Slightly smaller button, but still tappable
+	local okBtnHeight = Device.IS_TINY_PHONE and 36 or btnHeight(44)
 	ResultUI.okButton = Instance.new("TextButton")
 	ResultUI.okButton.Size = UDim2.new(1, 0, 0, okBtnHeight)
 	ResultUI.okButton.BackgroundColor3 = C.Green
 	ResultUI.okButton.Font = F.Button
-	ResultUI.okButton.TextSize = Device.IS_TINY_PHONE and 13 or textSize(18)
+	ResultUI.okButton.TextSize = Device.IS_TINY_PHONE and 14 or textSize(16)
 	ResultUI.okButton.TextColor3 = C.White
 	ResultUI.okButton.Text = "Continue"
 	ResultUI.okButton.AutoButtonColor = false
 	ResultUI.okButton.LayoutOrder = 99
 	ResultUI.okButton.ZIndex = 84
 	ResultUI.okButton.Parent = ResultUI.card
-	corner(ResultUI.okButton, Device.IS_TINY_PHONE and 8 or px(12))
+	corner(ResultUI.okButton, Device.IS_TINY_PHONE and 8 or px(10))
 
 	ResultUI.okButton.MouseEnter:Connect(function()
 		tween(ResultUI.okButton, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
@@ -3545,7 +3545,7 @@ showDeathOverlay = function(causeText, age)
 		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 4 },
 		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 5 },
 		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 6 },
-		{ icon = "🎓", label = "Education", value = education == "none" and "None" or education:gsub("^%l", string.upper), color = C.Teal, order = 7 },
+		{ icon = "🎓", label = "Education", value = education == "none" and (finalAge < 18 and "In School" or "None") or education:gsub("^%l", string.upper):gsub("_", " "), color = C.Teal, order = 7 },
 		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 8 },
 		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 9 },
 		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 10 },
@@ -3622,8 +3622,8 @@ showDeathOverlay = function(causeText, age)
 		table.insert(achievements, { icon = "🏥", text = "Doctor - Earned a Medical Degree" })
 	elseif education == "bachelor" then
 		table.insert(achievements, { icon = "🎓", text = "Graduate - Bachelor's Degree" })
-	elseif education == "none" and finalAge >= 18 then
-		table.insert(achievements, { icon = "🚫", text = "School Dropout - No diploma" })
+	elseif education == "none" and finalAge >= 22 then
+		table.insert(achievements, { icon = "🚫", text = "No Degree - Never completed higher education" })
 	end
 	
 	-- Family achievements

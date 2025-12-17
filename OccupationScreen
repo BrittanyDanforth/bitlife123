@@ -1291,7 +1291,65 @@ local EducationDisplayNames = {
 }
 
 function OccupationScreen:getEducationDisplayName(levelId)
+	-- CRITICAL UI FIX: Show current education status based on age if no degree yet
+	local state = self.playerState
+	local age = self:getAge() or 0
+	
+	-- Check if actively enrolled in something
+	local eduData = state and state.EducationData
+	local isEnrolled = eduData and eduData.Status == "enrolled"
+	local enrolledInstitution = eduData and eduData.Institution
+	local enrolledLevel = eduData and eduData.Level
+	local flags = state and state.Flags or {}
+	
+	-- If enrolled somewhere, show that
+	if isEnrolled and enrolledLevel then
+		local loweredLevel = enrolledLevel:lower()
+		if EducationDisplayNames[loweredLevel] then
+			return "📚 " .. EducationDisplayNames[loweredLevel]
+		elseif enrolledInstitution then
+			return "📚 " .. enrolledInstitution
+		end
+	end
+	
+	-- CRITICAL FIX: If no formal degree yet, show appropriate school status by age
 	if not levelId or levelId == "" or levelId == "none" then
+		-- Check for royal education flags first
+		if flags.royal_birth or flags.is_royalty then
+			if age >= 5 and age <= 10 then
+				return "📚 Royal Private Tutoring"
+			elseif age >= 11 and age <= 13 then
+				return "📚 Royal Preparatory School"
+			elseif age >= 14 and age <= 17 then
+				return "📚 Elite Boarding School"
+			elseif age >= 18 then
+				return "No Formal Degree Yet"
+			end
+		end
+		
+		-- Regular (non-royal) school status by age
+		if age >= 5 and age <= 10 then
+			return "📚 In Elementary School"
+		elseif age >= 11 and age <= 13 then
+			return "📚 In Middle School"
+		elseif age >= 14 and age <= 17 then
+			return "📚 In High School"
+		elseif flags.in_high_school then
+			return "📚 In High School"
+		elseif flags.in_school then
+			return "📚 Currently In School"
+		end
+		
+		-- Adult with no education
+		if age >= 18 then
+			return "No Formal Education"
+		end
+		
+		-- Child too young for school
+		if age < 5 then
+			return "Too Young for School"
+		end
+		
 		return "No Formal Education"
 	end
 	
@@ -3028,15 +3086,15 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 2: Promotion, Raise, Quit
+	-- CRITICAL UI FIX: Better spacing and sizing for mobile
 	-- ═══════════════════════════════════════════════════════════
-	-- MOBILE FIX: Responsive row 2 sizing
-	local actionRow2Height = IS_SMALL_PHONE and 30 or 40
-	local actionRow2YPos = IS_SMALL_PHONE and 212 or 270
-	local row2BtnTextSize = IS_SMALL_PHONE and 9 or 12
+	local actionRow2Height = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 34 or 40)
+	local actionRow2YPos = (IS_TINY_PHONE and 162 or (IS_SMALL_PHONE and 195 or 270)) + entertainmentStatsYOffset
+	local row2BtnTextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 13)
 
 	local actionRow2 = Instance.new("Frame")
-	actionRow2.Size = UDim2.new(1, IS_SMALL_PHONE and -16 or -28, 0, actionRow2Height)
-	actionRow2.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 14, 0, actionRow2YPos)
+	actionRow2.Size = UDim2.new(1, IS_TINY_PHONE and -12 or (IS_SMALL_PHONE and -16 or -28), 0, actionRow2Height)
+	actionRow2.Position = UDim2.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 14), 0, actionRow2YPos)
 	actionRow2.BackgroundTransparency = 1
 	actionRow2.ZIndex = 84
 	actionRow2.Parent = card
@@ -3044,23 +3102,23 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local actionLayout2 = Instance.new("UIListLayout")
 	actionLayout2.FillDirection = Enum.FillDirection.Horizontal
 	actionLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	actionLayout2.Padding = UDim.new(0, IS_SMALL_PHONE and 4 or 6)
+	actionLayout2.Padding = UDim.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 	actionLayout2.Parent = actionRow2
 
 	-- Request Promotion button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestPromo = hasPromotion and promotionProgress >= 80
 	local promoBtn = Instance.new("TextButton")
-	promoBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
+	promoBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	promoBtn.BackgroundColor3 = canRequestPromo and C.Purple or C.Gray300
 	promoBtn.Font = F.Button
 	promoBtn.TextSize = row2BtnTextSize
 	promoBtn.TextColor3 = canRequestPromo and C.White or C.Gray500
-	promoBtn.Text = IS_SMALL_PHONE and "🚀" or "🚀 Promote"
+	promoBtn.Text = IS_TINY_PHONE and "🚀 Promo" or (IS_SMALL_PHONE and "🚀 Promote" or "🚀 Promote")
 	promoBtn.AutoButtonColor = false
 	promoBtn.LayoutOrder = 1
 	promoBtn.ZIndex = 85
 	promoBtn.Parent = actionRow2
-	UI.corner(promoBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(promoBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 
 	if canRequestPromo then
 		-- Button shadow - MOBILE FIX
@@ -3108,14 +3166,14 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 		end)
 	end
 
-	-- CRITICAL FIX: Always show text on buttons
+	-- CRITICAL FIX: Always show text on buttons with appropriate sizing
 	local raiseBtnText = IS_TINY_PHONE and "💰 Raise" or "💰 Raise"
 	local quitBtnText = IS_TINY_PHONE and "🚪 Quit" or "🚪 Quit"
 	
 	-- Request Raise button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestRaise = performance >= 60 and raises < 5
 	local raiseBtn = Instance.new("TextButton")
-	raiseBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
+	raiseBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	raiseBtn.BackgroundColor3 = canRequestRaise and C.Amber or C.Gray300
 	raiseBtn.Font = F.Button
 	raiseBtn.TextSize = row2BtnTextSize
@@ -3125,7 +3183,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	raiseBtn.LayoutOrder = 2
 	raiseBtn.ZIndex = 85
 	raiseBtn.Parent = actionRow2
-	UI.corner(raiseBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(raiseBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 
 	if canRequestRaise then
 		-- Button shadow - MOBILE FIX
@@ -3173,19 +3231,18 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	end
 
 	-- Quit Job button (CRITICAL FIX: premium styling with shadow + hover) - MOBILE FIX
-	local quitBtnHeight = IS_SMALL_PHONE and 30 or 40
 	local quitBtn = Instance.new("TextButton")
-	quitBtn.Size = UDim2.new(0.32, 0, 0, quitBtnHeight)
+	quitBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	quitBtn.BackgroundColor3 = C.Red
 	quitBtn.Font = F.Button
-	quitBtn.TextSize = IS_SMALL_PHONE and 10 or 12
+	quitBtn.TextSize = row2BtnTextSize
 	quitBtn.TextColor3 = C.White
 	quitBtn.Text = quitBtnText
 	quitBtn.AutoButtonColor = false
 	quitBtn.LayoutOrder = 3
 	quitBtn.ZIndex = 85
 	quitBtn.Parent = actionRow2
-	UI.corner(quitBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(quitBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 	
 	-- Button shadow
 	local quitBtnShadow = Instance.new("Frame")
