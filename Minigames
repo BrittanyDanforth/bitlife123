@@ -3393,113 +3393,175 @@ function Minigames:createCombatGame()
 		self.combatAttackBtns[i] = { btn = btn, data = atk }
 	end
 
-	-- Result panel (phase 3 - shown after round)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Result panel - MOBILE RESPONSIVE with percentage-based sizing
+	-- Shows round-by-round combat results
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	self.combatResultFrame = Instance.new("Frame")
-	self.combatResultFrame.Size = UDim2.new(0.95, 0, 0, px(200))
-	self.combatResultFrame.AnchorPoint = Vector2.new(0.5, 0)
-	self.combatResultFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	-- Use percentage height and position relative to card
+	self.combatResultFrame.Size = UDim2.new(0.95, 0, 0.45, 0)  -- 45% of card height
+	self.combatResultFrame.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatResultFrame.Position = UDim2.new(0.5, 0, 1, -px(10))  -- Anchored to bottom
 	self.combatResultFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 	self.combatResultFrame.Visible = false
 	self.combatResultFrame.ZIndex = 202
+	self.combatResultFrame.ClipsDescendants = true
 	self.combatResultFrame.Parent = self.combatCard
 	corner(self.combatResultFrame, px(12))
 
+	-- Scrollable text area for round results
+	local resultScroll = Instance.new("ScrollingFrame")
+	resultScroll.Size = UDim2.new(1, 0, 1, -(isTinyPhone() and 50 or px(60)))
+	resultScroll.Position = UDim2.new(0, 0, 0, 0)
+	resultScroll.BackgroundTransparency = 1
+	resultScroll.BorderSizePixel = 0
+	resultScroll.ScrollBarThickness = 3
+	resultScroll.ScrollBarImageColor3 = C.Gray500
+	resultScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	resultScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
+	resultScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	resultScroll.ZIndex = 203
+	resultScroll.Parent = self.combatResultFrame
+
+	local resultPad = Instance.new("UIPadding")
+	resultPad.PaddingTop = UDim.new(0, 8)
+	resultPad.PaddingBottom = UDim.new(0, 8)
+	resultPad.PaddingLeft = UDim.new(0, 10)
+	resultPad.PaddingRight = UDim.new(0, 10)
+	resultPad.Parent = resultScroll
+
 	self.combatResultText = Instance.new("TextLabel")
-	self.combatResultText.Size = UDim2.new(0.9, 0, 0.7, 0)
-	self.combatResultText.AnchorPoint = Vector2.new(0.5, 0)
-	self.combatResultText.Position = UDim2.new(0.5, 0, 0, px(10))
+	self.combatResultText.Size = UDim2.new(1, 0, 0, 0)
+	self.combatResultText.AutomaticSize = Enum.AutomaticSize.Y
 	self.combatResultText.BackgroundTransparency = 1
 	self.combatResultText.Font = F.Body
-	self.combatResultText.TextSize = textSize(14)
+	self.combatResultText.TextSize = isTinyPhone() and 12 or (isSmallScreen() and 13 or textSize(14))
 	self.combatResultText.TextColor3 = C.White
 	self.combatResultText.TextWrapped = true
 	self.combatResultText.Text = ""
-	self.combatResultText.ZIndex = 203
-	self.combatResultText.Parent = self.combatResultFrame
+	self.combatResultText.ZIndex = 204
+	self.combatResultText.Parent = resultScroll
 
 	self.combatContinueBtn = Instance.new("TextButton")
-	self.combatContinueBtn.Size = UDim2.new(0.8, 0, 0, px(44))
+	self.combatContinueBtn.Size = UDim2.new(0.85, 0, 0, isTinyPhone() and 38 or px(44))
 	self.combatContinueBtn.AnchorPoint = Vector2.new(0.5, 1)
-	self.combatContinueBtn.Position = UDim2.new(0.5, 0, 1, -px(10))
+	self.combatContinueBtn.Position = UDim2.new(0.5, 0, 1, -px(8))
 	self.combatContinueBtn.BackgroundColor3 = C.Green
 	self.combatContinueBtn.Font = F.Button
-	self.combatContinueBtn.TextSize = textSize(16)
+	self.combatContinueBtn.TextSize = isTinyPhone() and 13 or textSize(16)
 	self.combatContinueBtn.TextColor3 = C.White
 	self.combatContinueBtn.Text = "Continue Fighting"
 	self.combatContinueBtn.AutoButtonColor = false
-	self.combatContinueBtn.ZIndex = 203
+	self.combatContinueBtn.ZIndex = 205
 	self.combatContinueBtn.Parent = self.combatResultFrame
 	corner(self.combatContinueBtn, px(8))
 
-	-- Final outcome panel
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Final outcome panel - MOBILE RESPONSIVE with scrollable content
+	-- User feedback: "fighting results UI is half cut off screen on mobile"
+	-- Solution: Use full card height, scrollable content, proper layout
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	self.combatEndFrame = Instance.new("Frame")
-	self.combatEndFrame.Size = UDim2.new(0.95, 0, 0.7, 0)
+	self.combatEndFrame.Size = UDim2.new(0.98, 0, 0.95, 0)  -- Almost full card size
 	self.combatEndFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.combatEndFrame.Position = UDim2.fromScale(0.5, 0.5)
 	self.combatEndFrame.BackgroundColor3 = Color3.fromRGB(25, 30, 40)
 	self.combatEndFrame.Visible = false
 	self.combatEndFrame.ZIndex = 210
+	self.combatEndFrame.ClipsDescendants = true
 	self.combatEndFrame.Parent = self.combatCard
 	corner(self.combatEndFrame, px(16))
 
+	-- Scrollable content container for the results
+	local combatEndScroll = Instance.new("ScrollingFrame")
+	combatEndScroll.Size = UDim2.new(1, 0, 1, -px(70))  -- Leave room for button at bottom
+	combatEndScroll.Position = UDim2.new(0, 0, 0, 0)
+	combatEndScroll.BackgroundTransparency = 1
+	combatEndScroll.BorderSizePixel = 0
+	combatEndScroll.ScrollBarThickness = 4
+	combatEndScroll.ScrollBarImageColor3 = C.Gray500
+	combatEndScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	combatEndScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
+	combatEndScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	combatEndScroll.ZIndex = 211
+	combatEndScroll.Parent = self.combatEndFrame
+
+	-- Use UIListLayout for proper stacking
+	local endLayout = Instance.new("UIListLayout")
+	endLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	endLayout.Padding = UDim.new(0, isTinyPhone() and 4 or 8)
+	endLayout.Parent = combatEndScroll
+
+	local endPadding = Instance.new("UIPadding")
+	endPadding.PaddingTop = UDim.new(0, isTinyPhone() and 8 or 12)
+	endPadding.PaddingBottom = UDim.new(0, isTinyPhone() and 8 or 12)
+	endPadding.PaddingLeft = UDim.new(0, 10)
+	endPadding.PaddingRight = UDim.new(0, 10)
+	endPadding.Parent = combatEndScroll
+
+	-- Smaller emoji on mobile
+	local emojiSize = isTinyPhone() and 50 or (isSmallScreen() and 60 or 80)
 	self.combatEndEmoji = Instance.new("TextLabel")
-	self.combatEndEmoji.Size = UDim2.new(1, 0, 0, px(80))
+	self.combatEndEmoji.Size = UDim2.new(1, 0, 0, emojiSize)
 	self.combatEndEmoji.BackgroundTransparency = 1
 	self.combatEndEmoji.Font = F.Title
-	self.combatEndEmoji.TextSize = px(60)
+	self.combatEndEmoji.TextSize = isTinyPhone() and 40 or (isSmallScreen() and 50 or 60)
 	self.combatEndEmoji.Text = "🏆"
-	self.combatEndEmoji.ZIndex = 211
-	self.combatEndEmoji.Parent = self.combatEndFrame
+	self.combatEndEmoji.LayoutOrder = 1
+	self.combatEndEmoji.ZIndex = 212
+	self.combatEndEmoji.Parent = combatEndScroll
 
 	self.combatEndTitle = Instance.new("TextLabel")
-	self.combatEndTitle.Size = UDim2.new(0.9, 0, 0, px(36))
-	self.combatEndTitle.AnchorPoint = Vector2.new(0.5, 0)
-	self.combatEndTitle.Position = UDim2.new(0.5, 0, 0, px(80))
+	self.combatEndTitle.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndTitle.AutomaticSize = Enum.AutomaticSize.Y
 	self.combatEndTitle.BackgroundTransparency = 1
 	self.combatEndTitle.Font = F.Title
-	self.combatEndTitle.TextSize = textSize(24)
+	self.combatEndTitle.TextSize = isTinyPhone() and 18 or (isSmallScreen() and 20 or 24)
 	self.combatEndTitle.TextColor3 = C.White
 	self.combatEndTitle.Text = "VICTORY!"
-	self.combatEndTitle.ZIndex = 211
-	self.combatEndTitle.Parent = self.combatEndFrame
+	self.combatEndTitle.TextWrapped = true
+	self.combatEndTitle.LayoutOrder = 2
+	self.combatEndTitle.ZIndex = 212
+	self.combatEndTitle.Parent = combatEndScroll
 
 	self.combatEndText = Instance.new("TextLabel")
-	self.combatEndText.Size = UDim2.new(0.85, 0, 0, px(80))
-	self.combatEndText.AnchorPoint = Vector2.new(0.5, 0)
-	self.combatEndText.Position = UDim2.new(0.5, 0, 0, px(120))
+	self.combatEndText.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndText.AutomaticSize = Enum.AutomaticSize.Y
 	self.combatEndText.BackgroundTransparency = 1
 	self.combatEndText.Font = F.Body
-	self.combatEndText.TextSize = textSize(14)
+	self.combatEndText.TextSize = isTinyPhone() and 12 or (isSmallScreen() and 13 or 14)
 	self.combatEndText.TextColor3 = C.Gray300
 	self.combatEndText.TextWrapped = true
 	self.combatEndText.Text = ""
-	self.combatEndText.ZIndex = 211
-	self.combatEndText.Parent = self.combatEndFrame
+	self.combatEndText.LayoutOrder = 3
+	self.combatEndText.ZIndex = 212
+	self.combatEndText.Parent = combatEndScroll
 
 	self.combatEndStats = Instance.new("TextLabel")
-	self.combatEndStats.Size = UDim2.new(0.85, 0, 0, px(60))
-	self.combatEndStats.AnchorPoint = Vector2.new(0.5, 0)
-	self.combatEndStats.Position = UDim2.new(0.5, 0, 0, px(200))
+	self.combatEndStats.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndStats.AutomaticSize = Enum.AutomaticSize.Y
 	self.combatEndStats.BackgroundTransparency = 1
 	self.combatEndStats.Font = F.Medium
-	self.combatEndStats.TextSize = textSize(12)
+	self.combatEndStats.TextSize = isTinyPhone() and 10 or (isSmallScreen() and 11 or 12)
 	self.combatEndStats.TextColor3 = C.Amber
 	self.combatEndStats.TextWrapped = true
 	self.combatEndStats.Text = ""
-	self.combatEndStats.ZIndex = 211
-	self.combatEndStats.Parent = self.combatEndFrame
+	self.combatEndStats.LayoutOrder = 4
+	self.combatEndStats.ZIndex = 212
+	self.combatEndStats.Parent = combatEndScroll
 
+	-- Continue button at BOTTOM of frame (not in scroll)
 	self.combatEndBtn = Instance.new("TextButton")
-	self.combatEndBtn.Size = UDim2.new(0.7, 0, 0, px(50))
+	self.combatEndBtn.Size = UDim2.new(0.8, 0, 0, isTinyPhone() and 40 or px(50))
 	self.combatEndBtn.AnchorPoint = Vector2.new(0.5, 1)
-	self.combatEndBtn.Position = UDim2.new(0.5, 0, 1, -px(20))
+	self.combatEndBtn.Position = UDim2.new(0.5, 0, 1, isTinyPhone() and -8 or -px(12))
 	self.combatEndBtn.BackgroundColor3 = C.Blue
 	self.combatEndBtn.Font = F.Button
-	self.combatEndBtn.TextSize = textSize(18)
+	self.combatEndBtn.TextSize = isTinyPhone() and 14 or textSize(18)
 	self.combatEndBtn.TextColor3 = C.White
 	self.combatEndBtn.Text = "Continue"
 	self.combatEndBtn.AutoButtonColor = false
-	self.combatEndBtn.ZIndex = 211
+	self.combatEndBtn.ZIndex = 213
 	self.combatEndBtn.Parent = self.combatEndFrame
 	corner(self.combatEndBtn, px(10))
 end
