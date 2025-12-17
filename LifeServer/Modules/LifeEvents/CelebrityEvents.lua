@@ -4247,6 +4247,279 @@ if CelebrityEvents.RapperCareer and CelebrityEvents.RapperCareer.events then
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Fame Path Events - trigger when player starts Celebrity story path
+-- User feedback: "The storypath doesn't rlly do much when I tried becoming famous"
+-- Solution: Add specific events that trigger based on pursuing_fame flag
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local FamePathEvents = {
+	-- Initial fame discovery event
+	{
+		id = "fame_path_youtube_idea",
+		title = "💡 YouTube Channel Idea",
+		emoji = "💡",
+		text = "You've been thinking about starting a YouTube channel! The idea of making videos and building an audience excites you. Maybe you could start posting content?",
+		category = "celebrity",
+		weight = 25,
+		minAge = 13,
+		maxAge = 35,
+		baseChance = 0.65,
+		oneTime = true,
+		conditions = { requiresFlags = { pursuing_fame = true } },
+		blockedByFlags = { youtube_started = true, content_creator = true },
+		choices = {
+			{
+				text = "Start a gaming channel! 🎮",
+				effects = { Happiness = 15, Smarts = 2 },
+				setFlags = { youtube_started = true, gaming_content = true, content_creator = true },
+				feedText = "You created your first gaming YouTube channel! Time to start uploading.",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+					state.FameState.contentPlatforms.youtube = true
+					state.Fame = (state.Fame or 0) + 2
+				end,
+			},
+			{
+				text = "Start a lifestyle/vlog channel 📹",
+				effects = { Happiness = 15, Looks = 2 },
+				setFlags = { youtube_started = true, vlog_content = true, content_creator = true },
+				feedText = "You started your vlogging journey! Your first video got 23 views.",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+					state.FameState.contentPlatforms.youtube = true
+					state.Fame = (state.Fame or 0) + 2
+				end,
+			},
+			{
+				text = "Maybe later...",
+				effects = { Happiness = -3 },
+				feedText = "You're not ready to start creating content yet.",
+			},
+		},
+	},
+	
+	-- TikTok opportunity
+	{
+		id = "fame_path_tiktok_viral",
+		title = "📱 TikTok Trend Opportunity",
+		emoji = "📱",
+		text = "There's a viral TikTok trend happening right now! This could be your chance to get noticed.",
+		category = "celebrity",
+		weight = 20,
+		minAge = 13,
+		maxAge = 30,
+		baseChance = 0.55,
+		cooldown = 2,
+		conditions = { requiresFlags = { pursuing_fame = true } },
+		choices = {
+			{
+				text = "Jump on the trend! 🔥",
+				effects = { Happiness = 10 },
+				setFlags = { tiktok_active = true },
+				feedText = "You posted your video!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local followers = math.random(100, 5000)
+						state.FameState = state.FameState or {}
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + followers
+						state.Fame = (state.Fame or 0) + math.floor(followers / 200)
+						if state.AddFeed then
+							state:AddFeed("📱 Your TikTok went semi-viral! +" .. followers .. " followers!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("📱 Your TikTok got some views but didn't blow up.")
+						end
+						state.Fame = (state.Fame or 0) + 1
+					end
+				end,
+			},
+			{
+				text = "Create something original instead",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { creative_creator = true },
+				feedText = "You're working on original content.",
+			},
+			{
+				text = "Not interested in TikTok",
+				effects = { Happiness = 2 },
+				feedText = "TikTok isn't for you.",
+			},
+		},
+	},
+	
+	-- Social media following milestone
+	{
+		id = "fame_path_first_1k_followers",
+		title = "🎉 First 1,000 Followers!",
+		emoji = "🎉",
+		text = "You've hit 1,000 followers on social media! People are starting to notice you!",
+		category = "celebrity",
+		weight = 18,
+		minAge = 13,
+		maxAge = 50,
+		baseChance = 0.6,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { pursuing_fame = true },
+			custom = function(state)
+				return state.FameState and (state.FameState.socialFollowers or 0) >= 500
+			end,
+		},
+		blockedByFlags = { hit_1k_followers = true },
+		choices = {
+			{
+				text = "Celebrate with a giveaway! 🎁",
+				effects = { Happiness = 15, Money = -100 },
+				setFlags = { hit_1k_followers = true, generous_creator = true },
+				feedText = "The giveaway brought in even more followers!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(200, 500)
+					state.Fame = (state.Fame or 0) + 5
+				end,
+			},
+			{
+				text = "Thank your followers with a special post ❤️",
+				effects = { Happiness = 12 },
+				setFlags = { hit_1k_followers = true, grateful_creator = true },
+				feedText = "Your followers appreciate your gratitude!",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 3
+				end,
+			},
+		},
+	},
+	
+	-- Brand deal opportunity
+	{
+		id = "fame_path_first_brand_deal",
+		title = "💼 Brand Deal Offer!",
+		emoji = "💼",
+		text = "A small brand wants to send you free products in exchange for a post! This is your first brand deal opportunity!",
+		category = "celebrity",
+		weight = 15,
+		minAge = 16,
+		maxAge = 45,
+		baseChance = 0.5,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { pursuing_fame = true },
+			custom = function(state)
+				return (state.Fame or 0) >= 5 or (state.FameState and (state.FameState.socialFollowers or 0) >= 1000)
+			end,
+		},
+		blockedByFlags = { first_brand_deal = true },
+		choices = {
+			{
+				text = "Accept the deal! Free stuff! 🎁",
+				effects = { Happiness = 12 },
+				setFlags = { first_brand_deal = true, has_brand_deals = true },
+				feedText = "You received your first brand partnership! Free products incoming!",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 3
+					-- Gift them some value from the products
+					state.Money = (state.Money or 0) + math.random(50, 200)
+				end,
+			},
+			{
+				text = "Negotiate for cash payment 💰",
+				effects = { Happiness = 8 },
+				feedText = "Negotiating for actual payment...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(100, 500)
+						state.Flags = state.Flags or {}
+						state.Flags.first_brand_deal = true
+						state.Flags.has_brand_deals = true
+						state.Fame = (state.Fame or 0) + 4
+						if state.AddFeed then
+							state:AddFeed("💰 They agreed to pay you! Smart negotiation!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.first_brand_deal = true
+						if state.AddFeed then
+							state:AddFeed("💼 They went with someone else. Maybe next time.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Decline - I want to stay authentic",
+				effects = { Happiness = 5 },
+				setFlags = { authentic_creator = true },
+				feedText = "You're staying true to yourself.",
+			},
+		},
+	},
+	
+	-- Hater/Critic event
+	{
+		id = "fame_path_first_hater",
+		title = "😠 Your First Hater",
+		emoji = "😠",
+		text = "Someone left a really mean comment on your content. They're criticizing everything about you. This is a rite of passage for creators...",
+		category = "celebrity",
+		weight = 20,
+		minAge = 13,
+		maxAge = 50,
+		baseChance = 0.55,
+		cooldown = 3,
+		conditions = { requiresFlags = { pursuing_fame = true, content_creator = true } },
+		choices = {
+			{
+				text = "Ignore them - haters gonna hate 😎",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { handles_criticism_well = true },
+				feedText = "You rose above the negativity. A true professional.",
+			},
+			{
+				text = "Respond with a clap-back 🔥",
+				effects = { Happiness = -2 },
+				feedText = "The drama might attract attention...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- Drama brings attention
+						state.Fame = (state.Fame or 0) + 5
+						state.FameState = state.FameState or {}
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(100, 500)
+						if state.AddFeed then
+							state:AddFeed("🔥 The drama went viral! People love the content!")
+						end
+					else
+						-- Backlash
+						state.Fame = math.max(0, (state.Fame or 0) - 2)
+						if state.AddFeed then
+							state:AddFeed("😬 The clap-back backfired. Some followers left...")
+						end
+					end
+				end,
+			},
+			{
+				text = "Delete the comment 🗑️",
+				effects = { Happiness = 3 },
+				feedText = "You deleted the negativity from your space.",
+			},
+		},
+	},
+}
+
+-- Add fame path events to main events list
+for _, event in ipairs(FamePathEvents) do
+	event.isCelebrityOnly = true
+	table.insert(CelebrityEvents.events, event)
+end
+
 -- Also expose as LifeEvents for backwards compatibility
 CelebrityEvents.LifeEvents = CelebrityEvents.events
 

@@ -3,6 +3,12 @@
 	Full AAA-quality racing career with minigame integration
 	Requires: QTE minigame for races, high Health (reflexes)
 	Danger element: Crashes can result in injury or end career
+	
+	═══════════════════════════════════════════════════════════════════════════════
+	CRITICAL FIX: Enhanced Junior Racing Division path with more interactive events
+	User feedback: "Join Junior Racing Division doesn't put you on any career path"
+	Solution: Added multiple progressive events that trigger after joining racing
+	═══════════════════════════════════════════════════════════════════════════════
 ]]
 
 local events = {
@@ -15,21 +21,26 @@ local events = {
 		title = "Racing Talent Discovered",
 		text = "At a go-kart track, a scout notices your exceptional reflexes and racing instincts.",
 		category = "career_racing",
-		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
-		baseChance = 0.555, -- CRITICAL FIX: More likely to trigger
+		weight = 20, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.65, -- CRITICAL FIX: More likely to trigger
 		minAge = 10,
 		maxAge = 18, -- CRITICAL FIX: Extended age range
 		oneTime = true,
-		-- REMOVED: requiresNoJob (too restrictive - teens can discover racing while in school)
-		requiresStats = { Health = 40 }, -- CRITICAL FIX: Lower threshold
+		requiresStats = { Health = 35 }, -- CRITICAL FIX: Lower threshold
 		blockedByFlags = { discovered_racing = true },
 		choices = {
 			{
 				index = 1,
 				text = "Join the junior racing program",
-				effects = { Happiness = 10, Health = 5 },
-				-- CRITICAL FIX #352: Grant karting_experience and racing_experience flags for job eligibility
-				setFlags = { discovered_racing = true, racing_aspirant = true, karting_experience = true, racing_experience = true },
+				effects = { Happiness = 15, Health = 5 },
+				-- CRITICAL FIX #352: Grant all racing flags for proper career path
+				setFlags = { 
+					discovered_racing = true, 
+					racing_aspirant = true, 
+					karting_experience = true, 
+					racing_experience = true,
+					on_racing_path = true  -- NEW: Flag to trigger follow-up events
+				},
 				feedText = "Your racing journey begins! You joined a junior karting program.",
 				triggerMinigame = "qte",
 				minigameOptions = { difficulty = "easy" },
@@ -39,6 +50,158 @@ local events = {
 				text = "Racing is too dangerous",
 				effects = { Happiness = -3 },
 				feedText = "You passed on the racing opportunity.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- JUNIOR RACING PROGRAM - FOLLOW-UP EVENTS (triggers after joining)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "first_kart_practice",
+		emoji = "🏎️",
+		title = "First Kart Practice",
+		text = "Your first day at the junior karting track! The instructor shows you the basics.",
+		category = "career_racing",
+		weight = 18,
+		minAge = 10,
+		maxAge = 16,
+		requiresFlags = { on_racing_path = true },
+		blockedByFlags = { completed_first_practice = true, in_prison = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Focus on learning the track",
+				effects = { Smarts = 5, Health = 3 },
+				setFlags = { completed_first_practice = true, smart_racer = true },
+				feedText = "You memorized every corner of the track!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "easy" },
+			},
+			{
+				index = 2,
+				text = "Push the limits immediately",
+				effects = { Health = 5, Happiness = 8 },
+				setFlags = { completed_first_practice = true, aggressive_racer = true },
+				feedText = "You showed raw speed but need to refine your technique.",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+			},
+		},
+	},
+	
+	{
+		id = "kart_mentor",
+		emoji = "👨‍🏫",
+		title = "Racing Mentor Offers Guidance",
+		text = "A retired racing champion notices your potential and offers to mentor you!",
+		category = "career_racing",
+		weight = 15,
+		minAge = 11,
+		maxAge = 18,
+		requiresFlags = { on_racing_path = true, completed_first_practice = true },
+		blockedByFlags = { has_racing_mentor = true, in_prison = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Accept the mentorship",
+				effects = { Happiness = 12, Smarts = 5 },
+				setFlags = { has_racing_mentor = true, mentored_racer = true },
+				feedText = "You now have a legendary mentor guiding your racing career!",
+			},
+			{
+				index = 2,
+				text = "I want to learn on my own",
+				effects = { Happiness = 3 },
+				setFlags = { self_taught_racer = true },
+				feedText = "You chose the harder path of self-discovery.",
+			},
+		},
+	},
+	
+	{
+		id = "junior_league_invite",
+		emoji = "📋",
+		title = "Junior Racing League Invitation",
+		text = "You've been invited to compete in the official Junior Racing League!",
+		category = "career_racing",
+		weight = 16,
+		minAge = 12,
+		maxAge = 17,
+		requiresFlags = { on_racing_path = true },
+		blockedByFlags = { in_junior_league = true, in_prison = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Join the Junior League!",
+				effects = { Happiness = 15 },
+				setFlags = { in_junior_league = true },
+				feedText = "You're now officially a Junior League racer!",
+				onResolve = function(state)
+					-- Give them a small stipend
+					state.Money = (state.Money or 0) + 5000
+					if state.AddFeed then
+						state:AddFeed("🏎️ You received a $5,000 stipend for joining the Junior League!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'm not ready yet",
+				effects = { Happiness = -5 },
+				feedText = "You turned down the invitation.",
+			},
+		},
+	},
+	
+	{
+		id = "first_sponsor",
+		emoji = "💰",
+		title = "First Racing Sponsor",
+		text = "A local business wants to sponsor your racing career! They'll cover equipment costs.",
+		category = "career_racing",
+		weight = 12,
+		minAge = 13,
+		maxAge = 20,
+		requiresFlags = { in_junior_league = true },
+		blockedByFlags = { has_first_sponsor = true, in_prison = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Accept the sponsorship!",
+				effects = { Happiness = 10, Money = 10000 },
+				setFlags = { has_first_sponsor = true, sponsored_racer = true },
+				feedText = "Your first sponsorship deal! Equipment costs are covered!",
+			},
+			{
+				index = 2,
+				text = "Negotiate for better terms",
+				effects = { Happiness = 8 },
+				feedText = "Trying to get a better deal...",
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + 15000
+						state.Flags = state.Flags or {}
+						state.Flags.has_first_sponsor = true
+						state.Flags.sponsored_racer = true
+						state.Flags.tough_negotiator = true
+						if state.AddFeed then
+							state:AddFeed("💰 You negotiated a better deal! $15,000 sponsorship!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.has_first_sponsor = true -- They still get the sponsor
+						state.Money = (state.Money or 0) + 8000
+						if state.AddFeed then
+							state:AddFeed("📋 The sponsor wasn't impressed by negotiations. $8,000 deal.")
+						end
+					end
+				end,
 			},
 		},
 	},

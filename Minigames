@@ -1799,8 +1799,11 @@ function Minigames:handleMashTap()
 end
 
 function Minigames:startMashTimer()
+	-- CRITICAL FIX: Wrap task.cancel in pcall to prevent "cannot cancel thread" error
+	-- This error occurs when trying to cancel an already-completed thread
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
+		self._mashTimerThread = nil
 	end
 
 	self._mashTimerThread = task.spawn(function()
@@ -1830,8 +1833,9 @@ function Minigames:endMash(success)
 	disconnect(self._mashConnection)
 	self._mashConnection = nil
 
+	-- CRITICAL FIX: Wrap task.cancel in pcall to prevent "cannot cancel thread" error
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
 		self._mashTimerThread = nil
 	end
 
@@ -2692,7 +2696,26 @@ function Minigames:play(gameType, callback, options)
 		if gameType == "debate" then
 			self:startDebate(callback)
 		elseif gameType == "heist" then
-			self:startHeist(callback)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: 4-digit guesser (heist) is ONLY for extremely hard missions!
+			-- User feedback: "THE ONLY HARD ASF MINIGAME U NEED REMOVE IS THAT 4 DIDGET GUESSER"
+			-- Solution: Only use heist for extremely hard missions (bank_robbery, etc.)
+			-- For normal difficulty, convert to easier QTE minigame
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local difficulty = options.difficulty or "normal"
+			local isExtremelyHard = (difficulty == "hard" or difficulty == "extreme" or difficulty == "legendary")
+			
+			-- Also check if this is explicitly a high-risk crime (risk >= 70)
+			local isHighRiskCrime = options.risk and options.risk >= 70
+			
+			if isExtremelyHard or isHighRiskCrime then
+				print("[Minigames] 🔓 Starting heist (4-digit guesser) for hard mission")
+				self:startHeist(callback)
+			else
+				-- Convert to easier QTE for normal missions
+				print("[Minigames] 🎯 Converting heist to QTE for normal difficulty")
+				self:startQTE(callback, "medium")
+			end
 		elseif gameType == "getaway" then
 			self:startGetaway(callback)
 		elseif gameType == "qte" then
@@ -2752,15 +2775,16 @@ function Minigames:cancel()
 	if self.hackOverlay then self.hackOverlay.Visible = false end
 
 	disconnectAll(self._debateButtonConnections)
+	-- CRITICAL FIX: Wrap all task.cancel calls in pcall to prevent "cannot cancel thread" errors
 	if self._debateTimerConnection then
-		task.cancel(self._debateTimerConnection)
+		pcall(function() task.cancel(self._debateTimerConnection) end)
 		self._debateTimerConnection = nil
 	end
 
 	disconnectAll(self._heistNumConnections)
 	disconnectAll(self._getawayButtonConnections)
 	if self._getawayCopChaseThread then
-		task.cancel(self._getawayCopChaseThread)
+		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 		self._getawayCopChaseThread = nil
 	end
 
@@ -2769,20 +2793,20 @@ function Minigames:cancel()
 
 	disconnectAll(self._prisonArrowConnections)
 	if self._prisonGuardThread then
-		task.cancel(self._prisonGuardThread)
+		pcall(function() task.cancel(self._prisonGuardThread) end)
 		self._prisonGuardThread = nil
 	end
 
 	disconnect(self._mashConnection)
 	self._mashConnection = nil
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
 		self._mashTimerThread = nil
 	end
 
 	disconnectAll(self._hackKeyConnections)
 	if self._hackTimerConnection then
-		task.cancel(self._hackTimerConnection)
+		pcall(function() task.cancel(self._hackTimerConnection) end)
 		self._hackTimerConnection = nil
 	end
 
@@ -3133,21 +3157,26 @@ function Minigames:createCombatGame()
 	self.combatPrompt.ZIndex = 202
 	self.combatPrompt.Parent = self.combatCard
 
-	-- Location buttons container (phase 1)
-	self.combatLocationFrame = Instance.new("ScrollingFrame")
-	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(200))
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NO SCROLLING on combat UI - all buttons visible without scrolling
+	-- User feedback: "THE FIGHTING UI IS SOOOO GOOD IT JUST I DONT LIKE I HAVE TO SCROLL"
+	-- Solution: Use Frame instead of ScrollingFrame, smaller buttons, 3 columns
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Location buttons container (phase 1) - FIXED: No scrolling!
+	self.combatLocationFrame = Instance.new("Frame")
+	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(220))  -- Fixed height
 	self.combatLocationFrame.AnchorPoint = Vector2.new(0.5, 0)
 	self.combatLocationFrame.Position = UDim2.new(0.5, 0, 0, px(265))
 	self.combatLocationFrame.BackgroundTransparency = 1
-	self.combatLocationFrame.ScrollBarThickness = 4
-	self.combatLocationFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-	self.combatLocationFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	self.combatLocationFrame.ZIndex = 202
 	self.combatLocationFrame.Parent = self.combatCard
 
+	-- 3-column grid for compact layout - no scrolling needed!
 	local locGrid = Instance.new("UIGridLayout")
-	locGrid.CellSize = UDim2.new(0.48, 0, 0, px(44))
-	locGrid.CellPadding = UDim2.new(0.02, 0, 0, px(6))
+	locGrid.CellSize = UDim2.new(0.32, 0, 0, px(36))  -- Smaller buttons, 3 columns
+	locGrid.CellPadding = UDim2.new(0.01, 0, 0, px(4))  -- Tighter spacing
+	locGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	locGrid.Parent = self.combatLocationFrame
 
 	self.combatLocationBtns = {}
@@ -3155,58 +3184,57 @@ function Minigames:createCombatGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Blue
 		btn.Font = F.Button
-		btn.TextSize = textSize(13)
+		btn.TextSize = textSize(11)  -- Smaller text for compact buttons
 		btn.TextColor3 = C.White
 		btn.Text = loc.emoji .. " " .. loc.name
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatLocationFrame
-		corner(btn, px(8))
+		corner(btn, px(6))
 
 		self.combatLocationBtns[i] = { btn = btn, data = loc }
 	end
 
-	-- Defense buttons
+	-- Defense buttons - FIXED: Always visible without scrolling
 	local defendBtn = Instance.new("TextButton")
 	defendBtn.BackgroundColor3 = C.Purple
 	defendBtn.Font = F.Button
-	defendBtn.TextSize = textSize(13)
+	defendBtn.TextSize = textSize(11)
 	defendBtn.TextColor3 = C.White
 	defendBtn.Text = "🛡️ Block"
 	defendBtn.AutoButtonColor = false
 	defendBtn.ZIndex = 203
 	defendBtn.Parent = self.combatLocationFrame
-	corner(defendBtn, px(8))
+	corner(defendBtn, px(6))
 	self.combatDefendBtn = defendBtn
 
 	local runBtn = Instance.new("TextButton")
 	runBtn.BackgroundColor3 = C.Gray600
 	runBtn.Font = F.Button
-	runBtn.TextSize = textSize(13)
+	runBtn.TextSize = textSize(11)
 	runBtn.TextColor3 = C.White
-	runBtn.Text = "🏃 Run Away"
+	runBtn.Text = "🏃 Run"  -- Shortened for compact fit
 	runBtn.AutoButtonColor = false
 	runBtn.ZIndex = 203
 	runBtn.Parent = self.combatLocationFrame
-	corner(runBtn, px(8))
+	corner(runBtn, px(6))
 	self.combatRunBtn = runBtn
 
-	-- Attack type buttons container (phase 2)
-	self.combatAttackFrame = Instance.new("ScrollingFrame")
-	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(200))
+	-- Attack type buttons container (phase 2) - FIXED: No scrolling!
+	self.combatAttackFrame = Instance.new("Frame")
+	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(220))  -- Fixed height
 	self.combatAttackFrame.AnchorPoint = Vector2.new(0.5, 0)
 	self.combatAttackFrame.Position = UDim2.new(0.5, 0, 0, px(265))
 	self.combatAttackFrame.BackgroundTransparency = 1
-	self.combatAttackFrame.ScrollBarThickness = 4
-	self.combatAttackFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-	self.combatAttackFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	self.combatAttackFrame.Visible = false
 	self.combatAttackFrame.ZIndex = 202
 	self.combatAttackFrame.Parent = self.combatCard
 
+	-- 3-column grid for attack types too
 	local atkGrid = Instance.new("UIGridLayout")
-	atkGrid.CellSize = UDim2.new(0.48, 0, 0, px(44))
-	atkGrid.CellPadding = UDim2.new(0.02, 0, 0, px(6))
+	atkGrid.CellSize = UDim2.new(0.32, 0, 0, px(36))  -- Smaller buttons, 3 columns
+	atkGrid.CellPadding = UDim2.new(0.01, 0, 0, px(4))  -- Tighter spacing
+	atkGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	atkGrid.Parent = self.combatAttackFrame
 
 	self.combatAttackBtns = {}
@@ -3214,13 +3242,13 @@ function Minigames:createCombatGame()
 		local btn = Instance.new("TextButton")
 		btn.BackgroundColor3 = C.Red
 		btn.Font = F.Button
-		btn.TextSize = textSize(13)
+		btn.TextSize = textSize(11)  -- Smaller text for compact buttons
 		btn.TextColor3 = C.White
 		btn.Text = atk.emoji .. " " .. atk.name
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatAttackFrame
-		corner(btn, px(8))
+		corner(btn, px(6))
 
 		self.combatAttackBtns[i] = { btn = btn, data = atk }
 	end

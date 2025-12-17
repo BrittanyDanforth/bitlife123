@@ -12188,8 +12188,45 @@ function LifeBackend:startStoryPath(player, pathId)
 	state.Paths[pathId] = 0
 	state.Paths.active = pathId
 	state.ActivePath = pathId
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Set path-specific flags to trigger related events!
+	-- User feedback: "Story paths don't do much" - need flags to enable event triggers
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	
+	if pathId == "celebrity" then
+		-- Celebrity/Fame path flags - triggers fame-related events
+		state.Flags.pursuing_fame = true
+		state.Flags.celebrity_aspirant = true
+		state.Flags.interested_in_fame = true
+		-- Initialize FameState if not exists
+		state.FameState = state.FameState or {
+			fame = 0,
+			careerPath = "aspiring",
+			socialFollowers = 0,
+			contentPlatforms = {},
+		}
+		state.FameState.pursuing = true
+		state.FameState.careerPath = state.FameState.careerPath or "aspiring"
+	elseif pathId == "political" then
+		-- Political path flags
+		state.Flags.pursuing_politics = true
+		state.Flags.political_aspirant = true
+		state.Flags.interested_in_politics = true
+	elseif pathId == "criminal" then
+		-- Crime path flags
+		state.Flags.pursuing_crime = true
+		state.Flags.criminal_aspirant = true
+		state.Flags.interested_in_crime = true
+	elseif pathId == "royal" then
+		-- Royal path flags
+		state.Flags.pursuing_royalty = true
+		state.Flags.royal_aspirant = true
+		state.Flags.interested_in_royalty = true
+	end
 
-	local feed = string.format("You began the %s path.", path.name)
+	local feed = string.format("🌟 You began the %s path!", path.name)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

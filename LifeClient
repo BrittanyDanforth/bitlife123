@@ -2661,17 +2661,27 @@ local function buildEventModal()
 	EventUI.overlay.ZIndex = 60
 	EventUI.overlay.Parent = screenGui
 
-	-- MOBILE FIX: Responsive modal sizing for ALL mobile devices
-	local eventWidth = modalWidth(360)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Better mobile event card sizing for small phones
+	-- User feedback: "cards are too big and cutting off on top and bottom of screen"
+	-- Solution: More aggressive height limits, smaller width on tiny phones
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local eventWidth
 	local maxEventHeight
+	
 	if Device.IS_TINY_PHONE then
-		maxEventHeight = Device.ViewportSize.Y - 80
+		-- ULTRA COMPACT: Tiny phones need much smaller cards
+		eventWidth = math.min(Device.ViewportSize.X - 16, 300)  -- Narrower
+		maxEventHeight = Device.ViewportSize.Y - 60  -- More screen estate for card
 	elseif Device.IS_SMALL_PHONE then
-		maxEventHeight = Device.ViewportSize.Y - 100
+		eventWidth = math.min(Device.ViewportSize.X - 20, 320)
+		maxEventHeight = Device.ViewportSize.Y - 80
 	elseif Device.IS_MOBILE then
-		maxEventHeight = Device.ViewportSize.Y - 120
+		eventWidth = modalWidth(340)
+		maxEventHeight = Device.ViewportSize.Y - 100
 	else
-		maxEventHeight = Device.ViewportSize.Y - 140
+		eventWidth = modalWidth(360)
+		maxEventHeight = Device.ViewportSize.Y - 120
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -2834,9 +2844,9 @@ local function buildEventModal()
 	EventUI.emoji.ZIndex = 65
 	EventUI.emoji.Parent = titleSection
 
-	-- MOBILE FIX: Responsive title text
-	-- CRITICAL FIX #804: Increased title text sizes for better readability
-	local eventTitleTextSize = Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 22 or textSize(28))
+	-- MOBILE FIX: Responsive title text - scaled for tiny phones
+	-- CRITICAL FIX: Smaller title on tiny phones to fit card better
+	local eventTitleTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 20 or textSize(26))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
@@ -2869,20 +2879,23 @@ local function buildEventModal()
 	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
-	-- MOBILE FIX: Responsive body text with tighter line height
-	-- CRITICAL FIX #USER-3: Increased body text sizes for MUCH better readability on mobile!
-	-- User feedback: "text inside cards are a bit too small"
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Mobile event card body text - scaled for tiny phones
+	-- User feedback: "cards too big and cutting off" - need smaller text on tiny phones
+	-- Solution: More compact text with tighter line height on small devices
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.body.BackgroundTransparency = 1
 	EventUI.body.Font = F.Body
 	EventUI.body.TextSize = eventBodyTextSize
-	EventUI.body.TextColor3 = C.Gray700  -- CRITICAL FIX #USER-3: Darker color for better readability
+	EventUI.body.TextColor3 = C.Gray700
 	EventUI.body.TextWrapped = true
 	EventUI.body.TextXAlignment = Enum.TextXAlignment.Center
-	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.25 or (Device.IS_SMALL_PHONE and 1.35 or 1.5)  -- Increased line height
+	-- CRITICAL FIX: Tighter line height on tiny phones to fit more text
+	EventUI.body.LineHeight = Device.IS_TINY_PHONE and 1.15 or (Device.IS_SMALL_PHONE and 1.25 or 1.4)
 	EventUI.body.RichText = true
 	EventUI.body.Text = ""
 	EventUI.body.LayoutOrder = 1
@@ -6483,15 +6496,20 @@ end)
 
 if MinigameStart then
 	MinigameStart.OnClientEvent:Connect(function(config)
-if EventUI.overlay.Visible then
+		-- CRITICAL FIX: Hide event overlay if visible when minigame starts
+		if EventUI.overlay.Visible then
 			hideEvent()
 		end
 
 		pendingMinigameEventId = config.eventId
 		pendingMinigameChoiceIndex = config.choiceIndex
 
+		-- CRITICAL FIX: Server sends "type" not "id"! This was causing nil minigame errors.
+		local minigameType = config.type or config.id
+		print("[LifeClient] 🎮 Minigame requested from event:", minigameType, "for event:", config.eventId)
+
 		if minigamesInstance and minigamesInstance.play then
-			minigamesInstance:play(config.id, function(won, data)
+			minigamesInstance:play(minigameType, function(won, data)
 
 				-- Send result back to server
 				if MinigameResult then

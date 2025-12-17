@@ -2248,25 +2248,45 @@ function OccupationScreen:populateJobs()
 		currentLayout.Padding = UDim.new(0, 10)
 		currentLayout.Parent = currentSection
 
-		-- Find current job data - first try local Jobs list by ID
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Promotion Pay Consistency
+		-- User feedback: "The backend promotion system doesn't have the pay right"
+		-- Problem: Local Jobs catalog has BASE salary, but server CurrentJob.salary
+		-- includes all raises and promotions. We must ALWAYS use server's salary!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- First get server job data (authoritative source for salary!)
+		local serverJob = self:getCurrentJobData()
+		local serverSalary = serverJob and serverJob.salary or 0
+		
+		-- Find current job data - try local Jobs list by ID for display info (emoji, etc.)
 		local jobData = nil
 		for _, j in ipairs(Jobs) do
 			if j.id == currentJob then
-				jobData = j
-				log("Found job in local Jobs list:", j.name)
+				-- CRITICAL: Clone the job data and use SERVER'S salary, not catalog base salary
+				jobData = {
+					id = j.id,
+					name = serverJob and serverJob.title or j.name, -- Server may have custom title
+					company = serverJob and serverJob.company or j.company,
+					emoji = j.emoji,
+					salary = serverSalary > 0 and serverSalary or j.salary, -- ALWAYS prefer server salary!
+					minAge = j.minAge,
+					requirement = j.requirement,
+					category = j.category,
+				}
+				log("Found job in local Jobs list:", jobData.name, "Server Salary:", serverSalary, "Catalog Salary:", j.salary, "Using:", jobData.salary)
 				break
 			end
 		end
 
 		-- If not found in local list, use server's job data directly
 		if not jobData then
-			local serverJob = self:getCurrentJobData()
 			if serverJob then
-				log("Using server job data - ID:", serverJob.id, "Title:", serverJob.title)
+				log("Using server job data - ID:", serverJob.id, "Title:", serverJob.title, "Salary:", serverJob.salary)
 				-- Create a compatible job object from server data
 				jobData = {
 					id = serverJob.id or "unknown",
-					name = serverJob.title or "Job",
+					name = serverJob.title or serverJob.name or "Job",
 					company = serverJob.company or "Company",
 					emoji = "💼", -- Default emoji
 					salary = serverJob.salary or 0,
