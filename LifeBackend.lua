@@ -12272,52 +12272,6 @@ function LifeBackend:startStoryPath(player, pathId)
 		}
 		state.FameState.pursuing = true
 		state.FameState.careerPath = state.FameState.careerPath or "aspiring"
-
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Assign Content Creator job when starting Fame path!
-		-- User feedback: "Fame path doesn't give me new content creator job"
-		-- This ensures OccupationScreen shows the job immediately after starting path
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		local contentCreatorJob = JobCatalog["new_influencer"]
-		if contentCreatorJob then
-			-- Assign the Content Creator job
-			state.CurrentJob = {
-				id = contentCreatorJob.id,
-				name = contentCreatorJob.name,
-				company = contentCreatorJob.company,
-				salary = contentCreatorJob.salary,
-				category = contentCreatorJob.category,
-				difficulty = contentCreatorJob.difficulty or 1,
-				minStats = contentCreatorJob.minStats,
-			}
-
-			-- Initialize career info
-			state.CareerInfo = state.CareerInfo or {}
-			state.CareerInfo.performance = 60
-			state.CareerInfo.promotionProgress = 0
-			state.CareerInfo.yearsAtJob = 0
-			state.CareerInfo.raises = 0
-			state.CareerInfo.promotions = 0
-
-			-- Set career track
-			state.Career = state.Career or {}
-			state.Career.track = contentCreatorJob.category
-
-			-- Set employment flags
-			state.Flags.employed = true
-			state.Flags.has_job = true
-			state.Flags.between_jobs = nil
-			state.Flags.unemployed = nil
-
-			-- Grant job flags (content_creator, social_media_presence, influencer)
-			if contentCreatorJob.grantsFlags then
-				for _, flagName in ipairs(contentCreatorJob.grantsFlags) do
-					state.Flags[flagName] = true
-				end
-			end
-
-			print("[FAME PATH] Assigned Content Creator job:", contentCreatorJob.name)
-		end
 	elseif pathId == "political" then
 		-- Political path flags
 		state.Flags.pursuing_politics = true

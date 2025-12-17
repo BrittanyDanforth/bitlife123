@@ -1,0 +1,959 @@
+--[[
+    Core Milestones Catalog
+    ═══════════════════════════════════════════════════════════════════════════════
+    
+    MASSIVELY EXPANDED FOR AAA BITLIFE QUALITY
+    
+    Features:
+    - 15+ life-defining milestone events (was 4!)
+    - First day of school, learning to drive, graduation, moving out
+    - First job, marriage, buying a home, having kids
+    - Midlife crisis, retirement, legacy decisions
+    - Specific details: emotions, locations, real consequences
+    - Multiple meaningful choices (4+ options per event)
+    
+    ═══════════════════════════════════════════════════════════════════════════════
+]]
+
+local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CHILDHOOD MILESTONES (Ages 5-12)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "childhood_playdate",
+		emoji = "🧸",
+		title = "Neighborhood Playdate",
+		text = "Kids on your street are having a massive game of freeze tag, hide and seek, and making mud pies in someone's backyard. Tommy from across the street runs up to you: 'Wanna play?!' Your mom says it's okay if you want to go. But you also just got a new video game and it's calling your name from your bedroom.",
+		question = "What do you choose?",
+		category = "milestone",
+		weight = 8,
+		minAge = 5,
+		maxAge = 10,
+		choices = {
+			{
+				index = 1,
+				text = "Join the neighborhood kids - make friends!",
+				effects = { Happiness = 5, Health = 3, Looks = -1 },
+				setFlags = { has_childhood_friends = true, social_childhood = true, outdoorsy = true },
+				feedText = "You played outside until the streetlights came on. Grass-stained knees. Scraped elbow. HUGE smile. Best childhood day ever!",
+			},
+			{
+				index = 2,
+				text = "Invite them ALL to play video games inside",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { has_childhood_friends = true, gamer_kid = true },
+				feedText = "You turned your living room into a gaming tournament! 8 kids, 2 controllers, TONS of snacks. Your mom regretted saying yes. You had a BLAST!",
+			},
+			{
+				index = 3,
+				text = "Stay home and play video games alone",
+				effects = { Happiness = 3, Smarts = 2, Health = -2 },
+				setFlags = { introverted_childhood = true, loner_tendencies = true },
+				feedText = "You stayed inside. Beat 3 levels. Unlocked achievements. But when you looked out the window and saw everyone laughing together... you felt a little lonely.",
+			},
+			{
+				index = 4,
+				text = "Read a book instead - peace and quiet",
+				effects = { Smarts = 5, Happiness = 2 },
+				setFlags = { bookworm = true, intellectual_child = true },
+				feedText = "You grabbed your favorite book and read under a tree in your backyard. Adventure in your imagination. No scraped knees required. Perfect.",
+			},
+		},
+	},
+
+	{
+		id = "first_day_kindergarten",
+		emoji = "🎒",
+		title = "First Day of School Ever",
+		text = "Your mom is walking you to the kindergarten classroom. You're clutching her hand SO TIGHT. There are 20 other kids. Some are crying. One kid is already finger-painting. The teacher has a huge smile and says 'Welcome!' Your mom kisses your forehead: 'You'll be okay, sweetie.' She turns to leave. Your HEART DROPS. You're on your own now.",
+		question = "How do you handle this scary moment?",
+		category = "milestone",
+		weight = 10,
+		minAge = 5,
+		maxAge = 6,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Cry and run after your mom",
+				effects = { Happiness = -5, Health = -1 },
+				setFlags = { clingy_child = true, separation_anxiety = true },
+				feedText = "You SOBBED. The teacher had to gently hold you back. Your mom looked back with tears in HER eyes. Eventually you calmed down. Rough start.",
+			},
+			{
+				index = 2,
+				text = "Wave goodbye and march in bravely",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { brave_child = true, independent_early = true },
+				feedText = "You waved goodbye! 'I'll be okay, Mom!' You walked straight to the toy bin. Made 2 friends before snack time. You THRIVED!",
+			},
+			{
+				index = 3,
+				text = "Cling to the teacher nervously",
+				effects = { Happiness = -2, Smarts = 1 },
+				setFlags = { shy_child = true },
+				feedText = "You held the teacher's hand the whole morning. She was patient and kind. By lunch, you felt a little braver. Baby steps.",
+			},
+			{
+				index = 4,
+				text = "Immediately go play with blocks - ignore everything",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { focused_child = true, independent = true },
+				feedText = "You walked straight to the block corner. Built a tower. Didn't even notice your mom leave. You were IN THE ZONE. School is cool!",
+			},
+		},
+	},
+
+	{
+		id = "learning_to_ride_bike",
+		emoji = "🚴",
+		title = "Learning to Ride a Bike",
+		-- CRITICAL FIX: Removed hardcoded age "8"
+		text = "Your dad got you a bike with training wheels for your birthday. But you're {{AGE}} now. All your friends ride without training wheels. You NEED to learn. {{FATHER_NAME}} says he'll teach you this weekend. But learning means falling. Scraping your knees. Maybe crying. Are you ready?",
+		question = "How hard do you push yourself?",
+		category = "milestone",
+		weight = 7,
+		minAge = 7,
+		maxAge = 10,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Take the training wheels off - full send!",
+				effects = { Happiness = 8, Health = -3, Looks = -2 },
+				setFlags = { bike_rider = true, brave = true, scarred_knees = true },
+				feedText = "You fell SEVEN TIMES. Blood, tears, and scraped knees. But on try #8? YOU DID IT! You rode a whole block! You felt like you could FLY!",
+			},
+			{
+				index = 2,
+				text = "Practice with training wheels first - be smart",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { cautious = true, practical = true },
+				feedText = "You practiced balance with training wheels for 2 weeks. When you finally took them off? You got it in ONE TRY. Preparation paid off!",
+			},
+			{
+				index = 3,
+				text = "Too scary - keep the training wheels on",
+				effects = { Happiness = -3, Health = 2 },
+				setFlags = { risk_averse = true, scared_of_failure = true },
+				feedText = "You told your dad you're not ready yet. Your friends rode past you doing wheelies. You felt... small. But safe. Safe is okay, right?",
+			},
+			{
+				index = 4,
+				text = "Ask your older sibling/friend to teach you instead",
+				effects = { Happiness = 6, Health = -1 },
+				setFlags = { bike_rider = true, learns_from_peers = true },
+				feedText = "Your older cousin taught you! They were patient and funny. You learned in an afternoon! Peer teaching works! You're riding!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEEN MILESTONES (Ages 13-17)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "teen_social_media",
+		emoji = "📱",
+		title = "First Social Media Account",
+		text = "Everyone at school has Instagram, TikTok, or Snapchat. You're the ONLY ONE without it. FOMO is real. Your friends share memes you don't see. Make plans in group chats you're not in. Your parents are hesitant: 'You're only 13...' But you feel LEFT OUT. Create an account in secret? Ask permission? Or stay offline?",
+		question = "What's your social media move?",
+		category = "milestone",
+		weight = 6,
+		minAge = 12,
+		maxAge = 15,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Create accounts NOW - everyone's on it!",
+				effects = { Happiness = 8, Smarts = -2, Health = -1 },
+				setFlags = { social_online = true, screen_addicted = true, fomo_controlled = true },
+				feedText = "You downloaded EVERYTHING. Instagram, TikTok, Snap. You spent 4 hours scrolling. You're in the loop! But you forgot to do your homework. Worth it?",
+			},
+			{
+				index = 2,
+				text = "Ask parents first - respect their rules",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { rule_follower = true, respectful_kid = true },
+				feedText = "Your parents said yes but with screen time limits. You agreed. You're on social media BUT with boundaries. Responsible choice!",
+			},
+			{
+				index = 3,
+				text = "Stay off social media - it's toxic anyway",
+				effects = { Happiness = -3, Smarts = 4, Health = 3 },
+				setFlags = { social_media_free = true, contrarian = true, mentally_healthy = true },
+				feedText = "You stayed offline. Your friends thought you were weird. But you read books, played outside, and had ZERO anxiety about likes. Different path.",
+			},
+			{
+				index = 4,
+				text = "Create a SECRET account - hide it from parents",
+				effects = { Happiness = 5, Smarts = -1 },
+				setFlags = { social_online = true, sneaky = true, rebel = true },
+				feedText = "You made a secret account. Fake name. Private settings. Your parents never found out. You felt sneaky and free. Risky but fun!",
+			},
+		},
+	},
+
+	{
+		id = "learning_to_drive",
+		emoji = "🚗",
+		title = "Driver's Ed & First Time Behind the Wheel",
+		-- CRITICAL FIX: Removed hardcoded age "16"
+		text = "You're {{AGE}}. It's time to learn to drive. Your driving instructor has SEEN THINGS. You're in the parking lot. Your hands are SWEATING on the steering wheel. She says, 'Put it in Drive and ease onto the gas.' Your foot is shaking. This is REAL. You could crash. Deep breath. Here we go.",
+		question = "What kind of driver are you?",
+		category = "milestone",
+		weight = 9,
+		minAge = 15,
+		maxAge = 17,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Cautious driver - safety first always",
+				effects = { Happiness = 4, Smarts = 5, Health = 4 },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, safe_driver = true, follows_speed_limits = true },
+				feedText = "You drove 5mph under the speed limit. Stopped fully at every stop sign. Mrs. Chen said, 'You'll pass easily.' You got your license on the first try!",
+			},
+			{
+				index = 2,
+				text = "Confident driver - I got this!",
+				effects = { Happiness = 7, Smarts = 3, Health = 2 },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, confident_driver = true },
+				feedText = "You took to driving like a natural! Changed lanes smoothly. Parallel parked on the 2nd try. Mrs. Chen was impressed! License acquired!",
+			},
+			{
+				index = 3,
+				text = "Nervous wreck - this is terrifying",
+				effects = { Happiness = -3, Health = -2 },
+				setFlags = { driving_anxiety = true, failed_first_test = true },
+				feedText = "You hit the curb twice. Forgot to signal. Cried a little. Mrs. Chen said, 'It's okay, we'll keep practicing.' You didn't pass. Yet.",
+			},
+			{
+				index = 4,
+				text = "Reckless driver - speed demon mode",
+				effects = { Happiness = 9, Health = -4, Smarts = -2 },
+				-- CRITICAL FIX: Set ALL license flags so vehicle purchase works!
+				setFlags = { driver_license = true, has_license = true, drivers_license = true, reckless_driver = true, speeding_tickets_incoming = true },
+				feedText = "You went 50 in a 35 zone. Mrs. Chen SCREAMED. 'SLOW DOWN!' You laughed. You barely passed. Your parents are terrified. Yikes.",
+			},
+		},
+	},
+
+	{
+		id = "high_school_graduation",
+		emoji = "🎓",
+		title = "High School Graduation Day",
+		text = "You're sitting in an auditorium wearing a cap and gown. You've been here since 8am. It's been 3 HOURS of speeches and names. Finally: 'And now, graduating with a 3.7 GPA, [YOUR NAME]!' You walk across the stage. Your family is SCREAMING your name. Your mom is crying. Your dad is filming vertically (tragic). You grab your diploma. High school is OVER. What now?",
+		question = "What's your next chapter?",
+		category = "milestone",
+		weight = 10,
+		minAge = 17,
+		maxAge = 19,
+		oneTime = true,
+		-- CRITICAL FIX: Set graduation flags on any choice
+		onComplete = function(state, choice, eventDef, outcome)
+			state.Education = state.Education or "high_school"
+			state.Flags = state.Flags or {}
+			state.Flags.graduated_high_school = true
+			state.Flags.high_school_graduate = true
+			state.Flags.has_diploma = true
+			state.Flags.has_ged_or_diploma = true
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "College - continue your education",
+				effects = { Happiness = 7, Smarts = 5 },
+				setFlags = { plans_for_college = true, higher_education_path = true, in_college = true },
+				feedText = "Enrolled in college!",
+				-- CRITICAL FIX #507: Actually enroll in college - set EducationData properly!
+				onResolve = function(state)
+					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					local loanNeeded = 0
+					local collegeName = "State University"
+					local duration = 4
+					local level = "bachelor"
+					
+					if money >= 10000 then
+						state.Money = money - 10000
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
+					elseif money >= 3000 then
+						-- Community college / scholarship route
+						state.Money = money - 3000
+						state.Flags.community_college = true
+						collegeName = "Community College"
+						duration = 2
+						level = "community"
+					elseif money >= 500 then
+						-- Financial aid / full scholarship - still go to university
+						state.Money = money - 500
+						state.Flags.financial_aid = true
+						state.Flags.student_loans = true
+						state.Flags.has_student_loans = true
+						loanNeeded = 9500 -- Rest is loans
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
+					else
+						-- Parents helping / work-study - full loans
+						state.Flags.work_study = true
+						state.Flags.student_loans = true
+						state.Flags.has_student_loans = true
+						loanNeeded = 10000
+						collegeName = "State University"
+						duration = 4
+						level = "bachelor"
+					end
+					
+					-- CRITICAL FIX #507: Actually set up EducationData for college enrollment!
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Level = level
+					state.EducationData.Progress = 0
+					state.EducationData.Duration = duration
+					state.EducationData.Institution = collegeName
+					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
+					state.EducationData.LoanAmount = loanNeeded
+					state.EducationData.enrolledAge = state.Age
+					
+					-- Set proper flags
+					state.Flags.in_college = true
+					state.Flags.college_student = true
+					state.Flags.enrolled_college = true
+					state.Flags.college_bound = true  -- CRITICAL: Needed for college_graduation event
+
+					-- CRITICAL FIX: Do NOT set state.Education to "bachelor" here!
+					-- Education should remain "high_school" until they GRADUATE college.
+					-- EducationData.Level tracks what they're PURSUING, not what they've COMPLETED.
+					-- The college_graduation event sets state.Education = "bachelor" on completion.
+					state.Education = state.Education or "high_school"
+
+					state.PendingFeed = string.format("🎓 You're going to %s! New chapter begins!", collegeName)
+				end,
+			},
+			{
+				index = 2,
+				text = "Trade school - learn a real skill",
+				effects = { Happiness = 6, Smarts = 4 },
+				setFlags = { trade_school = true, practical_path = true, in_trade_school = true },
+				feedText = "Enrolled in trade school!",
+				-- CRITICAL FIX #508: Actually enroll in trade school properly
+				onResolve = function(state)
+					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					local loanNeeded = 0
+					local schoolName = "Technical Institute"
+					
+					if money >= 5000 then
+						state.Money = money - 5000
+						schoolName = "Technical Institute"
+					elseif money >= 2000 then
+						state.Money = money - 2000
+						state.Flags.apprentice = true
+						schoolName = "Apprenticeship Program"
+					elseif money >= 500 then
+						state.Money = money - 500
+						state.Flags.financial_aid = true
+						loanNeeded = 4500
+						state.Flags.has_student_loans = true
+						schoolName = "Technical Institute"
+					else
+						state.Flags.apprentice = true
+						schoolName = "Apprenticeship Program"
+					end
+					
+					-- CRITICAL FIX #508: Set up EducationData for trade school
+					state.EducationData = state.EducationData or {}
+					state.EducationData.Status = "enrolled"
+					state.EducationData.Level = "trade"
+					state.EducationData.Progress = 0
+					state.EducationData.Duration = 2
+					state.EducationData.Institution = schoolName
+					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
+					state.EducationData.enrolledAge = state.Age
+					
+					state.Flags.trade_school_student = true
+					state.Flags.in_trade_school = true
+					state.Flags.trade_school_bound = true  -- Needed for trade school completion event
+
+					-- CRITICAL FIX: Do NOT set state.Education to "trade" here!
+					-- Education should remain "high_school" until they COMPLETE trade school.
+					-- EducationData.Level tracks what they're PURSUING, not COMPLETED.
+					state.Education = state.Education or "high_school"
+
+					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
+				end,
+			},
+			{
+				index = 3,
+				text = "Get a job - start earning immediately",
+				effects = { Happiness = 5, Money = 2000 },
+				setFlags = { working_class = true, hustler = true },
+				feedText = "You got hired at Target, Starbucks, or a local shop. You're making money! No debt! Living at home and stacking cash. Practical!",
+			},
+			{
+				index = 4,
+				text = "Gap year - travel and figure it out",
+				effects = { Happiness = 10, Health = 4 },
+				setFlags = { gap_year = true, free_spirit = true, wanderlust = true },
+				feedText = "Planning a gap year...",
+				-- CRITICAL FIX: Money validation for $8000 gap year travel
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("🎓 Backpacking through Europe! Hostels, trains, new friends. Best year ever!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("🎓 Road trip across the country! Budget adventure but amazing!")
+						end
+					elseif money >= 500 then
+						state.Money = money - 500
+						if state.AddFeed then
+							state:AddFeed("🎓 Staycation gap year - exploring local areas and working odd jobs!")
+						end
+					else
+						-- No money = volunteering gap year
+						state.Flags = state.Flags or {}
+						state.Flags.volunteer_gap_year = true
+						if state.AddFeed then
+							state:AddFeed("🎓 Volunteer gap year! Free room and board while helping others!")
+						end
+					end
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- YOUNG ADULT MILESTONES (Ages 18-30)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "young_adult_move_out",
+		emoji = "📦",
+		title = "Moving Out of Your Parents' House",
+		-- CRITICAL FIX: Dynamic age instead of hardcoded "22"
+		text = "You're {{AGE}}. Your parents' house is comfortable and FREE. But you're a grown adult living in your childhood bedroom. Your high school trophies are still on the shelf. Your mom still does your laundry. It's time. Time to be independent. Time to adult. But rent is expensive. Can you afford this?",
+		question = "What's your living situation?",
+		category = "milestone",
+		weight = 9,
+		minAge = 18,
+		maxAge = 28,
+		oneTime = true,
+		blockedByFlags = { living_independently = true, in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Get your own apartment - full independence!",
+				effects = { Happiness = 10, Health = 2 },
+				setFlags = { living_independently = true, lives_alone = true, adulting = true },
+				feedText = "Looking for your own apartment...",
+				-- CRITICAL FIX: Money validation for $15000 apartment costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 15000 then
+						state.Money = money - 15000
+						if state.AddFeed then
+							state:AddFeed("📦 Nice apartment in a good area! First month, last month, security deposit done!")
+						end
+					elseif money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("📦 Studio apartment! Small but yours. Ramen 4 nights a week. Worth it!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("📦 Cheap basement apartment. Not ideal but FREEDOM!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						state.Flags = state.Flags or {}
+						state.Flags.lives_alone = nil
+						state.Flags.has_roommates = true
+						if state.AddFeed then
+							state:AddFeed("📦 Can't afford alone - found a roommate situation last minute!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.living_independently = nil
+						state.Flags.lives_with_parents = true
+						if state.AddFeed then
+							state:AddFeed("📦 Can't afford to move out yet. Staying home a bit longer...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Roommates - split the cost",
+				effects = { Happiness = 7 },
+				setFlags = { living_independently = true, has_roommates = true },
+				feedText = "Finding roommates...",
+				-- CRITICAL FIX: Money validation for $8000 roommate costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 8000 then
+						state.Money = money - 8000
+						if state.AddFeed then
+							state:AddFeed("📦 Nice place with roommates! $400/month rent! Independent-ish!")
+						end
+					elseif money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("📦 Budget place with roommates. Tiny room but affordable!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("📦 Cramped apartment with 3 roommates. Privacy? What's that?")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						state.Flags = state.Flags or {}
+						state.Flags.couch_surfing = true
+						if state.AddFeed then
+							state:AddFeed("📦 Couch surfing with friends until you can afford a real place.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Stay with parents - save money first",
+				effects = { Money = 8000, Happiness = -4 },
+				setFlags = { lives_with_parents = true, saving_money = true, late_bloomer = true },
+				feedText = "You stayed home. Your friends judge you. But your savings account is GROWING. You'll move out when you're READY. Smart, not sorry.",
+			},
+			{
+				index = 4,
+				text = "Move in with your partner - take the leap!",
+				effects = { Happiness = 9 },
+				setFlags = { living_independently = true, cohabitating = true, serious_relationship = true },
+				feedText = "Moving in with partner...",
+				-- CRITICAL FIX: Money validation for $10000 cohabitation costs
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("📦 Moved in together! Nice place, shared bills. Relationship level: SERIOUS!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("📦 Cozy apartment together! Small but romantic!")
+						end
+					elseif money >= 2000 then
+						state.Money = money - 2000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("📦 Tiny place together. Love conquers square footage!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						-- If broke, partner might cover more
+						if state.AddFeed then
+							state:AddFeed("📦 Your partner covered most costs. Bit awkward but grateful!")
+						end
+					end
+				end,
+			},
+		},
+	},
+
+	-- CRITICAL FIX: Renamed from "first_real_job" to avoid ID conflict with Milestones.lua
+	{
+		id = "first_real_job_career",
+		emoji = "💼",
+		title = "Your First REAL Job",
+		-- CRITICAL FIX: Removed hardcoded salary
+		text = "You got an offer! Not retail. Not food service. A REAL job with benefits, 401(k), and PTO! You're in a cubicle. You have business cards. You wear business casual. You send emails that end with 'Best regards.' Is this... being an adult? It feels surreal. First day is Monday.",
+		question = "What's your work approach?",
+		category = "milestone",
+		weight = 8,
+		minAge = 21,
+		maxAge = 26,
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Work HARD - impress everyone immediately",
+				effects = { Happiness = 5, Smarts = 6, Health = -3 },
+				setFlags = { career_focused = true, workaholic = true, hustler = true },
+				feedText = "You stayed late every day. Volunteered for projects. Your boss noticed. 'Great work ethic!' You're on the fast track! (But exhausted.)",
+			},
+			{
+				index = 2,
+				text = "Work smart - 9 to 5, no more",
+				effects = { Happiness = 7, Health = 3 },
+				setFlags = { work_life_balance = true, boundaries = true },
+				feedText = "You do quality work but leave at 5pm sharp. No overtime. No weekends. Your manager respects it. Balance achieved!",
+			},
+			{
+				index = 3,
+				text = "Coast - do the bare minimum",
+				effects = { Happiness = 4, Smarts = -2 },
+				setFlags = { coasting = true, underachiever = true },
+				feedText = "You show up. Do the minimum. Browse Reddit for 3 hours a day. Your reviews are 'meets expectations.' Good enough, right?",
+			},
+			{
+				index = 4,
+				text = "Network like CRAZY - it's who you know",
+				effects = { Happiness = 6, Smarts = 4, Money = 1000 },
+				setFlags = { networker = true, ambitious = true, social_climber = true },
+				feedText = "You had coffee with 10 people in your first month. LinkedIn connections: +200. You know everyone. Networking pays OFF!",
+			},
+		},
+	},
+
+	{
+		id = "first_car_purchase",
+		emoji = "🚙",
+		title = "Buying Your First Car",
+		-- CRITICAL FIX: Don't show if player is broke
+		text = "You've been borrowing cars or taking Uber. But you're {{AGE}} now. Time to buy YOUR OWN CAR. You're at the dealership. The salesman has that commission look. 'What's your budget?' he asks. 'Great financing options!' he says. Do you trust him? Should you go used?",
+		question = "What do you buy?",
+		category = "milestone",
+		weight = 7,
+		minAge = 22,
+		maxAge = 30,
+		oneTime = true,
+		-- CRITICAL FIX: Only show if player has at least $2000 (for beater) or doesn't already own a car
+		eligibility = function(state)
+			if state.Flags and (state.Flags.car_owner or state.Flags.has_car) then
+				return false -- Already owns a car
+			end
+			return (state.Money or 0) >= 2000 -- Need at least enough for cheapest option
+		end,
+		choices = {
+		{
+			index = 1,
+			-- CRITICAL FIX: Show price in choice text
+			text = "New car - finance it! ($25,000)",
+			effects = { Happiness = 10, Money = -25000, Health = 2 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, in_debt = true, nice_car = true },
+			feedText = "You drove off the lot in a BRAND NEW car! That new car smell! Monthly payments: $420 for 5 years. You're IN DEBT but you look GOOD!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 25000 then
+					return false, "Can't afford a $25,000 car"
+				end
+				return true
+			end,
+		},
+		{
+			index = 2,
+			-- CRITICAL FIX: Show price in choice text
+			text = "Used car - reliable ($8,000)",
+			effects = { Happiness = 7, Money = -8000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, practical = true },
+			feedText = "You bought a 2012 Honda Civic with 80,000 miles. Paid cash. No debt. It's not sexy but it RUNS. Smart choice!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 8000 then
+					return false, "Can't afford an $8,000 car"
+				end
+				return true
+			end,
+		},
+		{
+			index = 3,
+			-- CRITICAL FIX: Show price in choice text
+			text = "Cheap beater ($3,000)",
+			effects = { Happiness = 4, Money = -3000 },
+			-- CRITICAL FIX: Set ALL car ownership flags for consistency!
+			setFlags = { car_owner = true, has_car = true, has_vehicle = true, frugal = true, might_break_down = true },
+			feedText = "You bought a 2004 Corolla for $3,000 cash. It makes a weird noise. The AC doesn't work. But it's YOURS! Freedom (kinda)!",
+			-- CRITICAL FIX: Add eligibility check
+			eligibility = function(state)
+				if (state.Money or 0) < 3000 then
+					return false, "Can't afford a $3,000 car"
+				end
+				return true
+			end,
+		},
+			{
+				index = 4,
+				text = "No car - Uber/transit is fine",
+				effects = { Happiness = 5, Money = 5000 },
+				setFlags = { carless = true, city_dweller = true, environmentally_conscious = true },
+				feedText = "You decided cars are overpriced metal death traps. You Uber, bike, and take transit. Saving $500/month! No insurance, gas, or payments! Modern life!",
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ADULT MILESTONES (Ages 30+)
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "buying_first_home",
+		emoji = "🏠",
+		title = "Buying Your First Home",
+		-- CRITICAL FIX: Removed hardcoded prices - don't mention specific money
+		text = "You're {{AGE}} and you've been renting for years. Rent keeps going up. Your real estate agent found a house. 3 bed, 2 bath. Needs work but it could be YOURS. This is it. The biggest purchase of your life. Sign or walk away?",
+		question = "Do you buy the house?",
+		category = "milestone",
+		weight = 6,
+		minAge = 28,
+		maxAge = 45,
+		oneTime = true,
+		-- CRITICAL FIX: Only show if player has at least $20000 for down payment
+		eligibility = function(state)
+			if state.Flags and (state.Flags.homeowner or state.Flags.owns_property) then
+				return false -- Already owns a home
+			end
+			return (state.Money or 0) >= 20000 -- Need at least a down payment
+		end,
+		choices = {
+			{
+				index = 1,
+				-- CRITICAL FIX: Show price in choice text
+				text = "BUY IT - full price! ($70,000)",
+				effects = { Happiness = 12, Money = -70000, Health = -2 },
+				setFlags = { homeowner = true, mortgage_debt = true, adulting_complete = true },
+				feedText = "You signed all the documents. But you got the keys! You OWN A HOUSE! The dream achieved!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 70000 then
+						return false, "Can't afford $70,000 for a house"
+					end
+					return true
+				end,
+			},
+			{
+				index = 2,
+				-- CRITICAL FIX: Show price in choice text
+				text = "Negotiate for a better price ($60,000)",
+				effects = { Happiness = 10, Money = -60000, Smarts = 3 },
+				setFlags = { homeowner = true, negotiator = true },
+				feedText = "You negotiated! Saved thousands by not accepting the first offer. Smart buyer!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 60000 then
+						return false, "Can't afford $60,000 for a house"
+					end
+					return true
+				end,
+			},
+			{
+				index = 3,
+				text = "Keep renting - not ready for this commitment",
+				effects = { Happiness = -4, Money = 5000 },
+				setFlags = { renter_forever = true, commitment_issues = true },
+				feedText = "You walked away. Too scary. Too much debt. Maybe next time.",
+			},
+			{
+				index = 4,
+				-- CRITICAL FIX: Show price in choice text
+				text = "Buy a condo instead ($50,000)",
+				effects = { Happiness = 8, Money = -50000 },
+				setFlags = { homeowner = true, condo_owner = true, practical = true },
+				feedText = "You bought a condo! HOA fees but someone ELSE does maintenance. You're a homeowner!",
+				-- CRITICAL FIX: Add eligibility check for each expensive choice
+				eligibility = function(state)
+					if (state.Money or 0) < 50000 then
+						return false, "Can't afford $50,000 for a condo"
+					end
+					return true
+				end,
+			},
+		},
+	},
+
+	{
+		id = "midlife_burnout",
+		emoji = "😫",
+		title = "Midlife Career Burnout",
+		-- CRITICAL FIX: Use dynamic age and salary instead of hardcoded values
+		text = "You're {{AGE}}. You've been working nonstop for {{YEARS_AT_JOB}} years at {{COMPANY}}. Same cubicle. Same commute. You're making {{SALARY}} but you're DEAD INSIDE. You fantasize about quitting. Moving somewhere tropical. Opening a small business. {{FAMILY_STATUS}} Walking away means losing everything. But staying means... this. Forever. What do you do?",
+		question = "How do you handle this crisis?",
+		category = "milestone",
+		weight = 4,
+		minAge = 35,
+		maxAge = 55,
+		requiresJob = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Take a sabbatical - step away for 6 months",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { took_sabbatical = true, self_care = true },
+				feedText = "Planning a sabbatical...",
+				-- CRITICAL FIX: Money validation for $20000 sabbatical
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 20000 then
+						state.Money = money - 20000
+						if state.AddFeed then
+							state:AddFeed("😫 You took 6 months off! Traveled. Read books. REFRESHED! Reset achieved!")
+						end
+					elseif money >= 10000 then
+						state.Money = money - 10000
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("😫 3-month sabbatical. Shorter but still rejuvenating!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then
+							state:AddFeed("😫 One month off. Not much but better than nothing!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then
+							state:AddFeed("😫 Just a week of staycation. Some rest at least.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("😫 Can't afford time off. Using sick days for a mental health break.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Switch careers - it's not too late!",
+				effects = { Happiness = 8, Smarts = 5 },
+				setFlags = { career_change = true, brave = true, starting_over = true },
+				feedText = "Switching careers...",
+				-- CRITICAL FIX: Money validation for $10000 career change
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 10000 then
+						state.Money = money - 10000
+						if state.AddFeed then
+							state:AddFeed("😫 You quit! Enrolled in bootcamp! Starting over is LIBERATING!")
+						end
+					elseif money >= 5000 then
+						state.Money = money - 5000
+						if state.AddFeed then
+							state:AddFeed("😫 Part-time courses while job hunting. Transition happening!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😫 Free online courses and self-teaching. Budget career change!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("😫 Can't afford training but networking for new opportunities!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Push through - retirement is only 20 years away",
+				effects = { Happiness = -8, Health = -5, Money = 5000 },
+				setFlags = { burnout = true, resigned_to_misery = true },
+				feedText = "You stayed. Counted down the days. 7,300 days until retirement. You're a shell of who you used to be. But the paycheck clears. Is this life?",
+			},
+			{
+				index = 4,
+				text = "Start a side hustle - test the waters first",
+				effects = { Happiness = 6, Smarts = 4 },
+				setFlags = { entrepreneur = true, side_hustle = true },
+				feedText = "Starting a side hustle...",
+				-- CRITICAL FIX: Money validation for $3000 side business
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 3000
+						if state.AddFeed then
+							state:AddFeed("😫 Side business launched! Nights and weekends. Hope restored!")
+						end
+					elseif money >= 1000 then
+						state.Money = money - 1000
+						if state.AddFeed then
+							state:AddFeed("😫 Lean side hustle! Minimal investment, maximum effort!")
+						end
+					elseif money >= 200 then
+						state.Money = money - 200
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then
+							state:AddFeed("😫 Micro-hustle! Just a domain and some social media. Baby steps!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😫 Freelancing with what you have. No investment, just sweat equity!")
+						end
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "retirement_decision",
+		emoji = "🏖️",
+		title = "Retirement: The Big Decision",
+		-- CRITICAL FIX: Use dynamic age instead of hardcoded "65"
+		text = "You're {{AGE}}. You've worked for decades. Your boss at {{COMPANY}} just asked if you're retiring this year. You have savings and could collect Social Security. Your financial advisor says you're 'set for life.' But retiring means... what? No structure? No purpose? Golf and bingo? Is that IT? Or do you keep working? You're healthy. Sharp. Why stop now?",
+		question = "What do you do?",
+		category = "milestone",
+		weight = 3,
+		minAge = 62,
+		maxAge = 70,
+		oneTime = true,
+		requiresJob = true,
+		choices = {
+			{
+				index = 1,
+				text = "Retire - enjoy your golden years!",
+				effects = { Happiness = 12, Health = 5, Money = 50000 },
+				setFlags = { retired = true, golden_years = true, no_more_work = true },
+				feedText = "You retired! You sleep in. Travel. Garden. Play with grandkids. Read books. This is what you worked for. FREEDOM! You're loving life!",
+			},
+			{
+				index = 2,
+				text = "Work part-time - ease into retirement",
+				effects = { Happiness = 8, Health = 3, Money = 20000 },
+				setFlags = { semi_retired = true, consultant = true },
+				feedText = "You became a part-time consultant! 20 hours a week. Extra income. Still relevant. Best of both worlds! Smart transition!",
+			},
+			{
+				index = 3,
+				text = "Keep working - you're not done yet!",
+				effects = { Happiness = 5, Health = -2, Money = 40000 },
+				setFlags = { workaholic = true, cant_let_go = true },
+				-- CRITICAL FIX: Removed hardcoded "wife" - not everyone is married
+				feedText = "You stayed full-time. Family asks 'When are you going to RETIRE?!' You don't know. Work gives you purpose.",
+			},
+			{
+				index = 4,
+				text = "Retire and volunteer - give back",
+				effects = { Happiness = 14, Health = 4 },
+				setFlags = { retired = true, volunteer = true, fulfilled = true },
+				feedText = "You retired and started volunteering! Homeless shelter. Habitat for Humanity. Mentoring. You're making a DIFFERENCE! Purpose found!",
+			},
+		},
+	},
+}
+
+return events

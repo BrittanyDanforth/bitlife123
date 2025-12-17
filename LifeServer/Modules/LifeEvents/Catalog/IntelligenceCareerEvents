@@ -1,0 +1,456 @@
+--[[
+	Intelligence / CIA Agent Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- CIA Agent
+	- Intelligence Analyst
+	- Undercover Agent
+	- Station Chief
+	- NSA Analyst
+	- FBI Agent
+]]
+
+local IntelligenceCareerEvents = {}
+
+-- Helper function to check if player has intelligence career
+local function hasIntelligenceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("cia") or jobId:find("fbi") or jobId:find("nsa") or 
+		   jobId:find("intelligence") or jobId:find("agent") or jobId:find("spy")
+end
+
+local function isCIAAgent(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("cia") or jobId:find("intelligence_officer")
+end
+
+IntelligenceCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CIA AGENT EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "cia_deep_cover_mission",
+		title = "🕵️ Deep Cover Assignment",
+		emoji = "🕵️",
+		text = "You've been selected for a deep cover operation. You'll assume a new identity and infiltrate a hostile foreign government for 2 years.",
+		category = "career_intelligence",
+		weight = 15,
+		minAge = 25, maxAge = 45,
+		baseChance = 0.45,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isCIAAgent,
+		blockedByFlags = { in_prison = true, on_deep_cover = true },
+		
+		choices = {
+			{
+				text = "Accept the mission",
+				effects = { Happiness = -5 },
+				feedText = "Going dark for your country...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state.Money = (state.Money or 0) + math.random(100000, 300000)
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.legendary_spy = true
+						state.Fame = (state.Fame or 0) + 10 -- Secret fame within the agency
+						state:AddFeed("🕵️ Mission successful! Extracted critical intelligence! Medal (classified) awarded!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🕵️ Mission completed. Some setbacks, but valuable intel gathered.")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -10)
+						state:AddFeed("🕵️ Cover blown! Barely escaped. Months of rehabilitation ahead.")
+					else
+						state:ModifyStat("Happiness", -30)
+						state:ModifyStat("Health", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.captured_abroad = true
+						state:AddFeed("🕵️ CAPTURED by foreign intelligence! Months of interrogation before prisoner swap.")
+					end
+				end,
+			},
+			{
+				text = "Decline - too risky",
+				effects = { Happiness = 5 },
+				feedText = "Family comes first.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:AddFeed("🕵️ Declined gracefully. No negative marks on your record.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.passed_on_mission = true
+						state:AddFeed("🕵️ Declined. Career ceiling just got lower. 'Not field material'.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_asset_turned",
+		title = "Asset Went Dark",
+		emoji = "🔴",
+		text = "Your key intelligence asset has gone silent. They might be compromised, captured, or turned. You need to make a call.",
+		category = "career_intelligence",
+		weight = 16,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isCIAAgent,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Extract them immediately",
+				effects = { Money = -10000 },
+				feedText = "Mounting a rescue operation...",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 25 or 0
+					
+					if roll + bonus >= 55 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.saved_asset = true
+						state:AddFeed("🔴 Asset extracted! They were in danger - you saved their life!")
+					elseif roll + bonus >= 30 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔴 Found them, but they'd been turned. Now you have a disinformation problem.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🔴 Extraction failed. Asset captured or killed. Major intelligence loss.")
+					end
+				end,
+			},
+			{
+				text = "Wait and gather intelligence first",
+				effects = { Smarts = 2 },
+				feedText = "Need more information...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🔴 Good call. They were fine, just had communications issues.")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔴 Waited too long. Asset escaped on their own, but it was close.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🔴 They were executed while you waited. You'll carry this forever.")
+					end
+				end,
+			},
+			{
+				text = "Burn the asset - assume compromised",
+				effects = { Smarts = 3, Happiness = -5 },
+				feedText = "Cutting losses...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔴 Right call. They were compromised. Prevented a security breach.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.abandoned_asset = true
+						state:AddFeed("🔴 They were fine. You abandoned a loyal asset. Hard to live with.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_foreign_recruit",
+		title = "Recruiting Foreign Official",
+		emoji = "🤝",
+		text = "You've identified a vulnerable foreign government official. They're in debt and disillusioned. Prime recruitment target.",
+		category = "career_intelligence",
+		weight = 14,
+		minAge = 26, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isCIAAgent,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Approach with a financial offer",
+				effects = { Money = -15000, Smarts = 2 },
+				feedText = "Everyone has a price...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(30000, 100000)
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.successful_recruitment = true
+						state:AddFeed("🤝 Recruited! You now have a source inside their government!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤝 They declined but didn't report you. Lucky escape.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.exposed_abroad = true
+						state:AddFeed("🤝 They reported you! Declared persona non grata! Career setback!")
+					end
+				end,
+			},
+			{
+				text = "Approach appealing to ideology",
+				effects = { Smarts = 3 },
+				feedText = "Some people just want to do right...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.ideological_asset = true
+						state:AddFeed("🤝 They believe in our values! Recruited a true believer - the best kind!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤝 They weren't interested. No harm done though.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🤝 They were offended! Caused a diplomatic incident!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_political_pressure",
+		title = "Political Interference",
+		emoji = "🏛️",
+		text = "A politician is pressuring your director to skew intelligence assessments to support their policy. This is a red line.",
+		category = "career_intelligence",
+		weight = 12,
+		minAge = 30, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasIntelligenceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Document everything and refuse",
+				effects = { Smarts = 5, Happiness = -3 },
+				setFlags = { integrity_maintained = true },
+				feedText = "Intelligence must remain objective.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏛️ Director backed you up! Integrity preserved! Promotion track intact!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.politically_blacklisted = true
+						state:AddFeed("🏛️ Career stalled. Labeled 'difficult' but you did the right thing.")
+					end
+				end,
+			},
+			{
+				text = "Go along with it carefully",
+				effects = { Happiness = -8 },
+				feedText = "Picking battles...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏛️ Threaded the needle. Technically accurate but favorably worded.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.compromised_integrity = true
+						state:AddFeed("🏛️ Analysis was wrong. Policy failed. Your assessment cited. Embarrassing.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_defector_handling",
+		title = "High-Value Defector",
+		emoji = "🛫",
+		text = "A high-ranking foreign intelligence officer wants to defect! They have information that could change everything!",
+		category = "career_intelligence",
+		weight = 10,
+		minAge = 28, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isCIAAgent,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Personally handle the extraction",
+				effects = { Health = -3 },
+				feedText = "This is what you trained for...",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 30 or 0
+					
+					if roll + bonus >= 50 then
+						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.defector_handler = true
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🛫 DEFECTOR SECURED! Intelligence goldmine! Career-making operation!")
+					elseif roll + bonus >= 25 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🛫 Got them out, but they had less intel than promised. Still valuable.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state:ModifyStat("Health", -10)
+						state:AddFeed("🛫 It was a trap! Barely escaped. Could have been killed!")
+					end
+				end,
+			},
+			{
+				text = "Coordinate from headquarters",
+				effects = { Smarts = 2 },
+				feedText = "Send a field team instead.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Money = (state.Money or 0) + math.random(30000, 100000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🛫 Operation successful! Your coordination was crucial!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🛫 Something went wrong in the field. Partial success at best.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_mole_hunt",
+		title = "🐀 Mole in the Agency",
+		emoji = "🐀",
+		text = "Counter-intelligence suspects there's a mole. You've been asked to help with the investigation. Anyone could be a suspect...",
+		category = "career_intelligence",
+		weight = 12,
+		minAge = 28, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasIntelligenceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Lead an aggressive investigation",
+				effects = { Happiness = -5, Smarts = 3 },
+				feedText = "Find the traitor...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + math.random(50000, 150000)
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_mole = true
+						state:AddFeed("🐀 CAUGHT THE MOLE! Your instincts were right! Agency hero!")
+					elseif roll <= 65 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🐀 Investigation ongoing. Made progress but no conclusive evidence yet.")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🐀 Accused the wrong person. Major embarrassment. Trust damaged.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.suspected_spy = true
+						state:AddFeed("🐀 Your investigation made THEM suspicious of YOU! Now you're being watched!")
+					end
+				end,
+			},
+			{
+				text = "Quietly gather evidence",
+				effects = { Smarts = 5 },
+				feedText = "Patient surveillance...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(30000, 80000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🐀 Your careful approach paid off. Solid case built against the mole.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🐀 Took too long. Mole fled before arrest could be made.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cia_retirement_offer",
+		title = "Private Sector Offer",
+		emoji = "💼",
+		text = "A private intelligence firm is offering you triple your salary. Many former colleagues have made the jump.",
+		category = "career_intelligence",
+		weight = 12,
+		minAge = 35, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasIntelligenceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the private sector job",
+				effects = { Happiness = 10 },
+				feedText = "Time to cash in experience...",
+				onResolve = function(state)
+					local salary = (state.CurrentJob and state.CurrentJob.salary or 100000) * 3
+					state.CurrentJob = state.CurrentJob or {}
+					state.CurrentJob.salary = salary
+					state.Money = (state.Money or 0) + math.random(50000, 100000)
+					state.Flags = state.Flags or {}
+					state.Flags.private_intel = true
+					state:AddFeed(string.format("💼 Joined private sector! $%s salary plus bonuses! Different game but same skills!", salary))
+				end,
+			},
+			{
+				text = "Stay with the agency",
+				effects = { Happiness = 5 },
+				setFlags = { agency_lifer = true },
+				feedText = "Service over money.",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("💼 Staying to serve. It's about more than money. Respect from colleagues.")
+				end,
+			},
+		},
+	},
+}
+
+return IntelligenceCareerEvents
