@@ -5213,11 +5213,70 @@ function LifeBackend:advanceRelationships(state)
 					rel.alive = false
 					rel.deceased = true
 					rel.deathAge = relAge
+					
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX (deep-5): INHERITANCE - Parents leave money when they die!
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					local inheritanceAmount = 0
+					local relRole = (rel.role or ""):lower()
+					
+					if relRole:find("mother") or relRole:find("father") or relRole:find("parent") then
+						-- Parents leave inheritance based on their "wealth" or random amount
+						local baseInheritance = rel.wealth or RANDOM:NextInteger(5000, 50000)
+						
+						-- Upper class parents leave more
+						if state.Flags and state.Flags.wealthy_family then
+							baseInheritance = baseInheritance * RANDOM:NextInteger(5, 20)
+						elseif state.Flags and state.Flags.upper_class then
+							baseInheritance = baseInheritance * RANDOM:NextInteger(2, 5)
+						end
+						
+						-- Split among siblings if any exist
+						local siblingCount = 0
+						for _, otherRel in pairs(state.Relationships) do
+							if type(otherRel) == "table" and otherRel.alive ~= false then
+								local otherRole = (otherRel.role or ""):lower()
+								if otherRole:find("brother") or otherRole:find("sister") or otherRole:find("sibling") then
+									siblingCount = siblingCount + 1
+								end
+							end
+						end
+						
+						inheritanceAmount = math.floor(baseInheritance / (siblingCount + 1))
+						
+						if inheritanceAmount > 0 then
+							self:addMoney(state, inheritanceAmount)
+							state.YearLog = state.YearLog or {}
+							table.insert(state.YearLog, {
+								type = "inheritance",
+								emoji = "💰",
+								text = string.format("Inherited $%s from %s's estate", formatMoney(inheritanceAmount), rel.name or "your parent"),
+								amount = inheritanceAmount,
+							})
+						end
+					elseif relRole:find("grandmother") or relRole:find("grandfather") or relRole:find("grandparent") then
+						-- Grandparents may leave smaller inheritance
+						local baseInheritance = rel.wealth or RANDOM:NextInteger(1000, 20000)
+						inheritanceAmount = math.floor(baseInheritance * RANDOM:NextNumber() * 0.5) -- Random portion
+						
+						if inheritanceAmount > 500 then
+							self:addMoney(state, inheritanceAmount)
+							state.YearLog = state.YearLog or {}
+							table.insert(state.YearLog, {
+								type = "inheritance",
+								emoji = "💰",
+								text = string.format("Received $%s from %s's will", formatMoney(inheritanceAmount), rel.name or "your grandparent"),
+								amount = inheritanceAmount,
+							})
+						end
+					end
+					
 					table.insert(familyDeaths, {
 						name = rel.name or "A loved one",
 						role = rel.role or "family member",
 						age = relAge,
 						id = relId,
+						inheritance = inheritanceAmount,
 					})
 				end
 			elseif rel.age > 95 and RANDOM:NextNumber() < 0.2 then
@@ -5363,11 +5422,29 @@ function LifeBackend:updateEducationProgress(state)
 				state.Education = eduData.Level
 				
 				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX (deep-2): Store degrees earned in a dedicated list
+				-- This ensures all degrees persist and are accessible for job applications
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				state.DegreesEarned = state.DegreesEarned or {}
+				local degreeName = eduData.Degree
+				local institutionName = eduData.Institution or "school"
+				
+				if degreeName then
+					table.insert(state.DegreesEarned, {
+						degree = degreeName,
+						institution = institutionName,
+						year = state.Year,
+						level = eduData.Level,
+						gpa = eduData.GPA,
+					})
+					state.Flags.has_degree = true
+					state.Flags.highest_degree = degreeName
+				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX #MEGA-16: Enhanced graduation with degree display and remaining stat bonuses
 				-- Show BOTH institution AND degree earned in the graduation message
 				-- ═══════════════════════════════════════════════════════════════════════════════
-				local institutionName = eduData.Institution or "school"
-				local degreeName = eduData.Degree
 				if degreeName then
 					state.PendingFeed = string.format("🎓 You graduated from %s! Earned: %s", institutionName, degreeName)
 				else
@@ -6065,6 +6142,79 @@ function LifeBackend:applyHabitEffects(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX (deep-11): SPOUSE INCOME
+-- If player is married and spouse works, they contribute to household income!
+-- This was completely missing - spouses were just decorative
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectSpouseIncome(state)
+	local partner = state.Relationships and state.Relationships.partner
+	if not partner or partner.alive == false then
+		return
+	end
+	
+	-- Only married couples share income
+	if not (state.Flags and (state.Flags.married or state.Flags.lives_with_partner)) then
+		return
+	end
+	
+	-- Check if spouse has a job
+	local spouseJob = partner.job or partner.occupation
+	local spouseSalary = partner.salary or 0
+	
+	-- If no explicit job data, estimate based on spouse age and education
+	if spouseSalary == 0 then
+		local spouseAge = partner.age or state.Age
+		
+		-- Only working-age spouses contribute
+		if spouseAge >= 18 and spouseAge < 65 then
+			-- Random chance they have a job (70% employment rate)
+			if RANDOM:NextNumber() < 0.70 then
+				-- Estimate salary based on factors
+				local baseSalary = RANDOM:NextInteger(25000, 60000)
+				
+				-- Adjust for education
+				if partner.education == "college" or partner.educated then
+					baseSalary = baseSalary * 1.5
+				elseif partner.education == "graduate" or partner.advanced_degree then
+					baseSalary = baseSalary * 2.5
+				end
+				
+				-- Adjust for experience (age-based)
+				local experienceMod = math.min(1.5, 1 + (spouseAge - 22) * 0.02)
+				spouseSalary = math.floor(baseSalary * experienceMod)
+				
+				-- Store for future reference
+				partner.salary = spouseSalary
+				partner.job = "Working Professional"
+			else
+				partner.job = "Not employed"
+				partner.salary = 0
+			end
+		elseif spouseAge >= 65 then
+			-- Retired spouse may have pension
+			local pension = RANDOM:NextInteger(10000, 30000)
+			spouseSalary = pension
+			partner.job = "Retired"
+			partner.salary = pension
+		end
+	end
+	
+	if spouseSalary > 0 then
+		self:addMoney(state, spouseSalary)
+		
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "spouse_income",
+			emoji = "💑",
+			text = string.format("%s contributed $%s to household income", 
+				partner.name or "Your spouse", 
+				formatMoney(spouseSalary)),
+			amount = spouseSalary,
+		})
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #14: Fame Decay System
 -- Fame should gradually decrease without maintenance
 -- Without this, once famous always famous
@@ -6374,10 +6524,28 @@ function LifeBackend:applyRelationshipDecay(state)
 		return
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX (deep-9): REDUCE relationship decay while in rehab/hospital
+	-- People understand you're getting treatment - they don't abandon you as fast
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local inTreatment = state.Flags and (
+		state.Flags.in_rehab or 
+		state.Flags.hospitalized or 
+		state.Flags.in_hospital or 
+		state.Flags.recovering or 
+		state.Flags.seeking_help or
+		state.Flags.attending_aa
+	)
+	
 	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
 			-- Relationships naturally decay 1-3 points per year without interaction
 			local decay = RANDOM:NextInteger(1, 3)
+			
+			-- CRITICAL FIX (deep-9): Treatment reduces decay - people are supportive
+			if inTreatment then
+				decay = math.floor(decay * 0.3) -- 70% less decay during treatment
+			end
 			
 			-- Close family decays slower
 			if rel.isFamily or rel.type == "family" then
@@ -6387,6 +6555,11 @@ function LifeBackend:applyRelationshipDecay(state)
 			-- Partners decay faster if not married (less commitment)
 			if rel.type == "romantic" and not state.Flags.married then
 				decay = decay + 1
+			end
+			
+			-- Prison causes faster decay (people move on)
+			if state.InJail then
+				decay = decay * 2
 			end
 			
 			rel.relationship = math.max(0, (rel.relationship or 50) - decay)
@@ -6554,23 +6727,62 @@ function LifeBackend:collectBusinessIncome(state)
 	end
 	
 	local totalIncome = 0
+	local totalEmployeeCosts = 0
 	
 	for _, biz in ipairs(businesses) do
 		if biz.value and biz.value > 0 then
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX (deep-18): Business income scales with employees!
+			-- More employees = more revenue potential but also higher costs
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local employeeCount = biz.employees or 0
+			local baseReturn = 0.15 -- 15% base return
+			
+			-- Employee scaling - more employees = higher potential return
+			local employeeBonus = math.min(0.15, employeeCount * 0.01) -- Up to +15% bonus for 15+ employees
+			local totalReturn = baseReturn + employeeBonus
+			
 			-- Business income is volatile: -20% to +40% of value annually
 			local performanceMultiplier = RANDOM:NextNumber() * 0.60 - 0.20 -- -20% to +40%
-			local annualIncome = math.floor(biz.value * performanceMultiplier * 0.15) -- 15% base return
+			
+			-- Employee productivity affects performance
+			if employeeCount > 0 then
+				local avgSkill = biz.employeeSkill or RANDOM:NextInteger(40, 80)
+				performanceMultiplier = performanceMultiplier * (avgSkill / 60) -- Scale by avg skill
+			end
+			
+			local grossIncome = math.floor(biz.value * performanceMultiplier * totalReturn)
+			
+			-- Calculate employee costs (salaries)
+			local avgSalary = biz.avgEmployeeSalary or 35000
+			local employeeCosts = employeeCount * avgSalary
+			totalEmployeeCosts = totalEmployeeCosts + employeeCosts
+			
+			local annualIncome = grossIncome - employeeCosts
 			
 			-- Track business performance
 			biz.lastYearProfit = annualIncome
+			biz.lastYearRevenue = grossIncome
+			biz.lastYearCosts = employeeCosts
 			
 			if annualIncome > 0 then
 				totalIncome = totalIncome + annualIncome
 				-- Good year - business grows
 				biz.value = math.floor(biz.value * (1 + RANDOM:NextNumber() * 0.05)) -- Up to 5% growth
+				
+				-- Businesses can hire more employees when doing well
+				if RANDOM:NextNumber() < 0.3 and annualIncome > 50000 then
+					biz.employees = (biz.employees or 0) + RANDOM:NextInteger(1, 3)
+				end
 			elseif annualIncome < 0 then
-				-- Bad year - might need to inject cash or business shrinks
+				-- Bad year - might need to layoff employees
 				biz.value = math.max(100, math.floor(biz.value * (1 - RANDOM:NextNumber() * 0.1))) -- Up to 10% decline
+				
+				-- May have to lay off employees
+				if biz.employees and biz.employees > 0 and RANDOM:NextNumber() < 0.4 then
+					local layoffs = math.min(biz.employees, RANDOM:NextInteger(1, 3))
+					biz.employees = biz.employees - layoffs
+				end
 			end
 		end
 	end
@@ -6616,6 +6828,79 @@ end
 -- Home mortgages should require monthly payments
 -- Without this, owning a home has no ongoing cost
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX (deep-20): CHILD SUPPORT PAYMENTS
+-- Divorced parents must pay child support until children turn 18
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyChildSupport(state)
+	if not state.Flags or not state.Flags.pays_child_support then
+		return
+	end
+	
+	local childSupportAmount = state.Flags.child_support_amount or 0
+	if childSupportAmount <= 0 then
+		state.Flags.pays_child_support = nil
+		return
+	end
+	
+	-- Check if any children are still minors
+	local minorChildCount = 0
+	for relId, rel in pairs(state.Relationships or {}) do
+		if type(rel) == "table" then
+			local role = (rel.role or ""):lower()
+			if role:find("son") or role:find("daughter") or role:find("child") then
+				if rel.age and rel.age < 18 and rel.alive ~= false then
+					minorChildCount = minorChildCount + 1
+				end
+			end
+		end
+	end
+	
+	if minorChildCount == 0 then
+		-- All children are adults, no more child support
+		state.Flags.pays_child_support = nil
+		state.Flags.child_support_amount = nil
+		state.Flags.child_support_children = nil
+		
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "child_support_ended",
+			emoji = "✅",
+			text = "Child support obligations have ended - all children are now adults!",
+			amount = 0,
+		})
+		return
+	end
+	
+	-- Recalculate based on current number of minor children
+	local perChildAmount = (state.Flags.child_support_children or 1) > 0 and 
+		childSupportAmount / state.Flags.child_support_children or childSupportAmount
+	local currentPayment = math.floor(perChildAmount * minorChildCount)
+	
+	-- Deduct child support
+	local canPay = math.min(currentPayment, state.Money or 0)
+	state.Money = (state.Money or 0) - canPay
+	
+	state.YearLog = state.YearLog or {}
+	if canPay < currentPayment then
+		-- Couldn't afford full payment
+		state.Flags.child_support_arrears = (state.Flags.child_support_arrears or 0) + (currentPayment - canPay)
+		table.insert(state.YearLog, {
+			type = "child_support_partial",
+			emoji = "⚠️",
+			text = string.format("Paid $%s of $%s child support. You're falling behind!", formatMoney(canPay), formatMoney(currentPayment)),
+			amount = -canPay,
+		})
+	else
+		table.insert(state.YearLog, {
+			type = "child_support",
+			emoji = "👶",
+			text = string.format("Paid $%s in child support for %d child(ren)", formatMoney(canPay), minorChildCount),
+			amount = -canPay,
+		})
+	end
+end
+
 function LifeBackend:applyMortgagePayments(state)
 	state.Flags = state.Flags or {}
 	
@@ -7716,6 +8001,7 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	self:collectSpouseIncome(state) -- CRITICAL FIX (deep-11): Spouse contributes to household income
 	self:tickVehicleDepreciation(state) -- CRITICAL FIX #10: Vehicles lose value over time
 	self:tickInvestments(state) -- CRITICAL FIX #11: Investments fluctuate in value
 	self:applyLivingExpenses(state) -- CRITICAL FIX #12: Annual cost of living
@@ -7731,6 +8017,7 @@ function LifeBackend:handleAgeUp(player)
 	self:applyCreditCardInterest(state) -- CRITICAL FIX #21: Credit card debt grows with interest
 	self:collectBusinessIncome(state) -- CRITICAL FIX #22: Business income/losses
 	self:applyMortgagePayments(state) -- CRITICAL FIX #23: Mortgage payments
+	self:applyChildSupport(state) -- CRITICAL FIX (deep-20): Child support payments
 	self:ageRelationships(state) -- CRITICAL FIX #24: Partners and family age with player
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
@@ -9052,6 +9339,53 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	local riskModifier = 0
 	if state.Flags.criminal_tendencies then
 		riskModifier = riskModifier - 10
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX (deep-15): Stats affect crime success rate!
+	-- High Smarts = better planning = less likely to get caught
+	-- High Health = faster getaway = less likely to get caught
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Stats = state.Stats or {}
+	local smarts = state.Stats.Smarts or state.Smarts or 50
+	local health = state.Stats.Health or state.Health or 50
+	
+	-- Smart criminals plan better (up to -15% risk)
+	if smarts >= 80 then
+		riskModifier = riskModifier - 15
+	elseif smarts >= 70 then
+		riskModifier = riskModifier - 10
+	elseif smarts >= 60 then
+		riskModifier = riskModifier - 5
+	elseif smarts < 30 then
+		riskModifier = riskModifier + 10 -- Dumb criminals make mistakes
+	end
+	
+	-- Physical crimes benefit from health (getaways, fights, etc.)
+	local physicalCrimes = { "assault", "burglary", "gta", "bank_robbery", "car_theft", "prison_assault" }
+	local isPhysicalCrime = false
+	for _, physCrime in ipairs(physicalCrimes) do
+		if crimeId:find(physCrime) then
+			isPhysicalCrime = true
+			break
+		end
+	end
+	
+	if isPhysicalCrime then
+		if health >= 80 then
+			riskModifier = riskModifier - 10
+		elseif health >= 60 then
+			riskModifier = riskModifier - 5
+		elseif health < 30 then
+			riskModifier = riskModifier + 15 -- Unhealthy = slow getaway
+		end
+	end
+	
+	-- Experience from prior crimes helps
+	if state.Flags.experienced_criminal or state.Flags.criminal_mastermind then
+		riskModifier = riskModifier - 10
+	elseif state.Flags.criminal_record then
+		riskModifier = riskModifier - 5 -- Some experience from past crimes
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -11309,17 +11643,62 @@ function LifeBackend:handleGamble(player, betAmount, finalSymbols)
 	-- For now, trust client symbols; you can swap this to a pure server roll later.
 	local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]
 	local payout = 0
+	local taxAmount = 0
 	local message
 	if won then
-		payout = betAmount * 5
+		local grossPayout = betAmount * 5
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX (deep-6): GAMBLING TAX
+		-- IRS taxes gambling winnings! Large wins are taxed at 24-37%
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if grossPayout >= 5000 then
+			-- Large winnings are taxed at 24% federal rate
+			local taxRate = 0.24
+			if grossPayout >= 100000 then
+				taxRate = 0.37 -- Higher bracket for huge wins
+			elseif grossPayout >= 50000 then
+				taxRate = 0.32
+			end
+			
+			taxAmount = math.floor(grossPayout * taxRate)
+			payout = grossPayout - taxAmount
+			
+			message = string.format("JACKPOT! You won %s! (Taxes: -%s, Net: %s)", 
+				formatMoney(grossPayout), formatMoney(taxAmount), formatMoney(payout))
+			
+			state.YearLog = state.YearLog or {}
+			table.insert(state.YearLog, {
+				type = "gambling_tax",
+				emoji = "🎰",
+				text = string.format("Paid $%s in gambling taxes on $%s winnings", formatMoney(taxAmount), formatMoney(grossPayout)),
+				amount = -taxAmount,
+			})
+		else
+			payout = grossPayout
+			message = string.format("JACKPOT! You won %s!", formatMoney(payout))
+		end
+		
 		self:addMoney(state, payout)
-		message = string.format("JACKPOT! You won %s!", formatMoney(payout))
+		
+		-- Track gambling stats
+		state.Flags = state.Flags or {}
+		state.Flags.gambling_winnings = (state.Flags.gambling_winnings or 0) + payout
+		state.Flags.gambling_taxes_paid = (state.Flags.gambling_taxes_paid or 0) + taxAmount
+		
+		-- Big winners might develop addiction
+		if payout >= 10000 and RANDOM:NextNumber() < 0.15 then
+			state.Flags.gambling_tendencies = true
+		end
 	else
 		message = "Better luck next time."
+		-- Track losses
+		state.Flags = state.Flags or {}
+		state.Flags.gambling_losses = (state.Flags.gambling_losses or 0) + betAmount
 	end
 
 	self:pushState(player, message)
-	return { success = won, winnings = payout, message = message }
+	return { success = won, winnings = payout, taxed = taxAmount, message = message }
 end
 
 -- ============================================================================
@@ -11637,11 +12016,101 @@ function LifeBackend:handleInteraction(player, payload)
 
 	-- Removal (breakup / ghost, etc.) – ONLY this relationship
 	if action.remove then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX (deep-19 & deep-20): DIVORCE MECHANICS
+		-- If married, divorce should split assets and calculate child support!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasDivorce = state.Flags and state.Flags.married and relType == "romance"
+		
+		if wasDivorce then
+			state.Flags.divorced = true
+			state.Flags.recently_divorced = true
+			
+			-- ASSET SPLITTING
+			local totalAssetValue = 0
+			state.Assets = state.Assets or {}
+			
+			-- Count total asset value
+			for _, vehicle in ipairs(state.Assets.Vehicles or {}) do
+				totalAssetValue = totalAssetValue + (vehicle.value or vehicle.price or 0)
+			end
+			for _, property in ipairs(state.Assets.Properties or {}) do
+				totalAssetValue = totalAssetValue + (property.value or property.price or 0)
+			end
+			for _, investment in ipairs(state.Assets.Investments or {}) do
+				totalAssetValue = totalAssetValue + (investment.value or 0)
+			end
+			
+			-- Split assets 50/50 (ex-spouse takes half)
+			local assetLoss = math.floor(totalAssetValue * 0.5)
+			
+			-- Also split cash
+			local cashLoss = math.floor((state.Money or 0) * 0.5)
+			state.Money = (state.Money or 0) - cashLoss
+			if state.Money < 0 then state.Money = 0 end
+			
+			local totalLoss = assetLoss + cashLoss
+			
+			if totalLoss > 0 then
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "divorce_settlement",
+					emoji = "💔",
+					text = string.format("Lost $%s in divorce settlement", formatMoney(totalLoss)),
+					amount = -totalLoss,
+				})
+			end
+			
+			-- CHILD SUPPORT - Check for children
+			local childCount = 0
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" then
+					local role = (rel.role or ""):lower()
+					if role:find("son") or role:find("daughter") or role:find("child") then
+						if rel.age and rel.age < 18 and rel.alive ~= false then
+							childCount = childCount + 1
+						end
+					end
+				end
+			end
+			
+			if childCount > 0 then
+				-- Calculate monthly child support based on income
+				local monthlySupport = math.floor(((state.CurrentJob and state.CurrentJob.salary) or 30000) * 0.15 / 12)
+				local annualSupport = monthlySupport * 12 * childCount
+				
+				state.Flags.pays_child_support = true
+				state.Flags.child_support_amount = annualSupport
+				state.Flags.child_support_children = childCount
+				
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "child_support",
+					emoji = "👶",
+					text = string.format("Ordered to pay $%s/year in child support for %d child(ren)", formatMoney(annualSupport), childCount),
+					amount = -annualSupport,
+				})
+			end
+			
+			-- Happiness penalty
+			self:applyStatChanges(state, { Happiness = -25 })
+		end
+		
 		if relationship.id and state.Relationships[relationship.id] then
 			state.Relationships[relationship.id] = nil
 		end
 
 		if relType == "romance" and state.Relationships.partner == relationship then
+			-- Store ex for history
+			state.Relationships.ex_partners = state.Relationships.ex_partners or {}
+			if relationship.name then
+				table.insert(state.Relationships.ex_partners, {
+					name = relationship.name,
+					wasMarried = wasDivorce,
+					endedYear = state.Year,
+				})
+			end
+			
 			state.Relationships.partner = nil
 			state.Flags.has_partner = nil
 			state.Flags.dating = nil
