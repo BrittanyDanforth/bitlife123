@@ -36,14 +36,13 @@ local function serializeState(state)
 
 	local serialized = {}
 
-	-- Core stats
+	-- Core info - CRITICAL: Use correct field names
+	serialized.Name = state.Name  -- Full name like "John Smith"
+	serialized.Gender = state.Gender
 	serialized.Age = state.Age
 	serialized.Money = state.Money
 	serialized.Fame = state.Fame
 	serialized.Karma = state.Karma
-	serialized.Gender = state.Gender
-	serialized.FirstName = state.FirstName
-	serialized.LastName = state.LastName
 	serialized.Country = state.Country
 	serialized.City = state.City
 	serialized.BirthYear = state.BirthYear
@@ -67,6 +66,10 @@ local function serializeState(state)
 			end
 		end
 	end
+
+	-- CRITICAL: Add flag to indicate this is restored data (skip intro!)
+	serialized.Flags = serialized.Flags or {}
+	serialized.Flags.data_restored = true
 
 	-- Career info
 	if state.CurrentJob then
@@ -5230,21 +5233,20 @@ function LifeBackend:onPlayerAdded(player)
 	local savedData = self:loadPlayerData(player)
 	local state
 
-	if savedData and savedData.Age and savedData.Age > 0 then
+	if savedData and savedData.Age and savedData.Age > 0 and savedData.Name then
 		-- Player has saved data - restore their progress!
-		print("[LifeBackend] 🔄 Restoring saved progress for", player.Name, "- Age:", savedData.Age)
+		print("[LifeBackend] 🔄 Restoring saved progress for", player.Name, "- Name:", savedData.Name, "Age:", savedData.Age)
 
 		-- Create base state structure
 		state = self:createInitialState(player)
 
-		-- Restore saved data over the base state
+		-- CRITICAL: Restore core identity FIRST
+		state.Name = savedData.Name  -- Full name like "John Smith"
+		state.Gender = savedData.Gender or state.Gender
 		state.Age = savedData.Age
 		state.Money = savedData.Money or state.Money
 		state.Fame = savedData.Fame or state.Fame
 		state.Karma = savedData.Karma or state.Karma
-		state.Gender = savedData.Gender or state.Gender
-		state.FirstName = savedData.FirstName or state.FirstName
-		state.LastName = savedData.LastName or state.LastName
 		state.Country = savedData.Country or state.Country
 		state.City = savedData.City or state.City
 		state.BirthYear = savedData.BirthYear or state.BirthYear
@@ -5256,6 +5258,11 @@ function LifeBackend:onPlayerAdded(player)
 			state.Stats.Happiness = savedData.Stats.Happiness or state.Stats.Happiness
 			state.Stats.Smarts = savedData.Stats.Smarts or state.Stats.Smarts
 			state.Stats.Looks = savedData.Stats.Looks or state.Stats.Looks
+			-- Also sync top-level stats (some code uses state.Health directly)
+			state.Health = state.Stats.Health
+			state.Happiness = state.Stats.Happiness
+			state.Smarts = state.Stats.Smarts
+			state.Looks = state.Stats.Looks
 		end
 
 		-- Restore flags (CRITICAL for story paths!)
@@ -5305,7 +5312,12 @@ function LifeBackend:onPlayerAdded(player)
 			state.Assets = savedData.Assets
 		end
 
-		print("[LifeBackend] ✅ Progress restored! Age:", state.Age, "Money: $" .. (state.Money or 0))
+		-- CRITICAL: Set flag to tell client to SKIP the intro (data was restored)
+		state.Flags = state.Flags or {}
+		state.Flags.data_restored = true
+		state.Flags.intro_complete = true  -- Also set this to skip intro check
+
+		print("[LifeBackend] ✅ Progress restored! Name:", state.Name, "Age:", state.Age, "Money: $" .. (state.Money or 0))
 	else
 		-- No saved data - create fresh state
 		state = self:createInitialState(player)

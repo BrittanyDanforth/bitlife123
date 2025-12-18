@@ -6271,6 +6271,9 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- ═══════════════════════════════════════════════════════════════
 	local isNewLife = false
 
+	-- CRITICAL: Check if data was RESTORED from save - if so, NEVER treat as new life!
+	local dataRestored = state.Flags and state.Flags.data_restored
+
 	-- Method 1: Explicit "new life" message from server (resetPlayerLife sends this)
 	if lastFeedText == "A new life begins..." then
 		isNewLife = true
@@ -6292,6 +6295,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- Method 4: Age is 0 and no name = definitely new life
 	if (state.Age == 0 or state.Age == nil) and (not state.Name or state.Name == "") then
 		isNewLife = true
+	end
+
+	-- CRITICAL OVERRIDE: If data was restored from save, this is NOT a new life!
+	-- This takes precedence over all other checks
+	if dataRestored and state.Name and state.Name ~= "" then
+		isNewLife = false
+		introComplete = true  -- Skip intro entirely
+		print("[LifeClient] 📂 Data restored from save - NOT a new life. Name:", state.Name, "Age:", state.Age)
 	end
 
 	-- ═══════════════════════════════════════════════════════════════
@@ -6621,7 +6632,16 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	end
 
 	-- Check if intro should be shown (shouldn't normally happen here, but safety check)
-	if not introComplete and (not currentState.Name or currentState.Name == "") then
+	-- CRITICAL: Skip intro if data was restored from save!
+	local dataRestored = currentState.Flags and currentState.Flags.data_restored
+	if dataRestored and currentState.Name and currentState.Name ~= "" then
+		-- Data was restored - skip intro entirely
+		introComplete = true
+		if IntroUI.overlay.Visible then
+			hideIntro()
+		end
+		print("[LifeClient] ✅ Restored from save - skipping intro. Name:", currentState.Name)
+	elseif not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
 	elseif currentState.Name and IntroUI.overlay.Visible then
 		hideIntro()
@@ -6925,7 +6945,13 @@ ageBtnContainer.Visible = false
 
 task.delay(0.5, function()
 	ageBtnContainer.Visible = true
-	if not currentState.Name then
+	-- CRITICAL: Don't show intro if data was restored from save!
+	local dataRestored = currentState.Flags and currentState.Flags.data_restored
+	if dataRestored and currentState.Name and currentState.Name ~= "" then
+		-- Data was restored - skip intro
+		introComplete = true
+		print("[LifeClient] ✅ Restored from save on initial load - skipping intro")
+	elseif not currentState.Name then
 		showIntro()
 	end
 end)
