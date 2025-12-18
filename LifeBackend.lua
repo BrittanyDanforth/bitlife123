@@ -8087,6 +8087,17 @@ function LifeBackend:handleAgeUp(player)
 	end
 
 	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Clear temporary flags at start of new year
+	-- These flags are meant to prevent events immediately after job changes
+	-- but should expire so the player can get new job-related events after a year
+	-- ════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	state.Flags.just_quit = nil     -- Allow job events again after quitting
+	state.Flags.just_fired = nil    -- Allow job events again after being fired
+	state.Flags.just_promoted = nil -- Allow promotion events again
+	state.Flags.just_hired = nil    -- Allow new hire events again
+
+	-- ════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #48: Save TimeMachine snapshots for time travel feature
 	-- Snapshots are saved every 5 years, at age 0, and at age 18
 	-- This allows players with TimeMachine gamepass to travel back in time
@@ -10958,6 +10969,7 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	state.Flags.employed = nil
 	state.Flags.has_job = nil
 	state.Flags.between_jobs = true
+	state.Flags.just_quit = true  -- CRITICAL FIX: Set just_quit flag to prevent job events immediately after quitting
 	
 	-- BITLIFE-STYLE: Different messages and effects based on quit style
 	local feed

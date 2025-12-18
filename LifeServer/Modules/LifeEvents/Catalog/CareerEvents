@@ -370,15 +370,27 @@ local events = {
 				index = 1,
 				text = "Negotiate a better severance package",
 				effects = { Happiness = -5, Money = 15000, Smarts = 6 },
-				setFlags = { negotiated_severance = true, smart_in_crisis = true },
+				setFlags = { negotiated_severance = true, smart_in_crisis = true, just_fired = true, laid_off = true },
 				feedText = "You asked for 4 months severance + extended benefits. They agreed! $15,000 extra! You turned a bad situation into a better one. Negotiation skills!",
+				-- CRITICAL FIX: Clear job after being laid off
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 			{
 				index = 2,
 				text = "Cry, pack your desk, leave immediately",
 				effects = { Happiness = -15, Health = -5 },
-				setFlags = { devastated = true, emotional = true },
+				setFlags = { devastated = true, emotional = true, just_fired = true, laid_off = true },
 				feedText = "You cried in front of everyone. Packed your desk in shame. Drove home sobbing. You're unemployed. You feel like a failure. It's not your fault but it FEELS like it is.",
+				-- CRITICAL FIX: Clear job after being laid off
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 			{
 				index = 3,
@@ -386,6 +398,13 @@ local events = {
 				effects = { Happiness = -2, Money = 8000, Smarts = 5 },
 				setFlags = { contractor = true, adaptable = true },
 				feedText = "'Can I stay on as a contractor?' They said YES! $45/hour. No benefits but INCOME continues! You bought yourself time. Smart pivot!",
+				-- NOTE: Keeps job as contractor - becomes self-employed
+				onResolve = function(state)
+					if state.CurrentJob then
+						state.CurrentJob.name = "Contractor"
+						state.CurrentJob.category = "freelance"
+					end
+				end,
 			},
 			{
 				index = 4,
@@ -393,6 +412,7 @@ local events = {
 				effects = { Happiness = 2, Smarts = 5, Money = 5000 },
 				setFlags = { networker = true, resilient = true },
 				feedText = "You called 20 contacts that SAME DAY. LinkedIn post: 'Open to opportunities!' 3 interviews within a WEEK! New job in 30 days! You turned it around FAST! Hustle!",
+				-- NOTE: Found new job so doesn't clear employment
 			},
 		},
 	},
@@ -558,29 +578,53 @@ local events = {
 				index = 1,
 				text = "Demand to see the documentation - fight it",
 				effects = { Happiness = -10, Smarts = 5 },
-				setFlags = { fired = true, fighting_termination = true },
+				setFlags = { fired = true, fighting_termination = true, just_fired = true },
 				feedText = "'Show me proof.' They fumbled. Weak documentation. You hired a lawyer. Wrongful termination suit. $45,000 settlement 9 months later. Justice served.",
+				-- CRITICAL FIX: Clear job after being fired
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 			{
 				index = 2,
 				text = "Leave quietly - don't burn bridges",
 				effects = { Happiness = -12, Money = -5000 },
-				setFlags = { fired = true, no_severance = true },
+				setFlags = { fired = true, no_severance = true, just_fired = true },
 				feedText = "You left. Humiliated. Security walked you out. 20 years of loyalty for THIS. You cried in your car. Unemployed. No severance. Rock bottom.",
+				-- CRITICAL FIX: Clear job after being fired
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 			{
 				index = 3,
 				text = "Threaten a lawsuit - scare them into severance",
 				effects = { Happiness = -8, Money = 15000, Smarts = 6 },
-				setFlags = { fired = true, negotiated_exit = true },
+				setFlags = { fired = true, negotiated_exit = true, just_fired = true },
 				feedText = "'My lawyer will love this wrongful termination case.' HR panicked. Offered 3 months severance to sign an NDA. You took it. $15K. Small win in a bad situation.",
+				-- CRITICAL FIX: Clear job after being fired
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 			{
 				index = 4,
 				text = "Yell, make a scene, burn it ALL down",
 				effects = { Happiness = -15, Health = -8 },
-				setFlags = { fired = true, burned_bridges = true, lost_control = true },
+				setFlags = { fired = true, burned_bridges = true, lost_control = true, just_fired = true },
 				feedText = "You SNAPPED. Yelled at your manager. Called HR corrupt. They called security. You were ESCORTED OUT. Video went viral internally. Your reputation is DESTROYED. Regret incoming.",
+				-- CRITICAL FIX: Clear job after being fired
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+				end,
 			},
 		},
 	},
