@@ -283,6 +283,13 @@ function LifeEvents.init()
 		-- Adds 50+ new varied events to prevent repetition
 		{ name = "ProgressiveLifeEvents", category = "childhood" },
 		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EARLY LIFE EXPANSION - 50+ new events for ages 0-17
+		-- User request: "THE GAME IS THE EXACT SAME FROM AGE 0-15 EXPAND SO MUCH"
+		-- All events have RANDOMIZED outcomes (BitLife style - can't pick outcome)
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "EarlyLifeEvents", category = "childhood" },
+		
 		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
