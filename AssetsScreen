@@ -1,6 +1,6 @@
 -- AssetsScreen.lua
 -- Premium BitLife-style Assets & Shop screen
--- Triple AAA polished UI with gambling minigame
+-- Triple AAA polished UI for managing assets and purchases
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -258,7 +258,8 @@ local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
 -- Debug logging (Disabled for production - was ENABLED to trace asset sync issues)
-local DEBUG = false
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end
@@ -360,6 +361,13 @@ end
 function AssetsScreen:updateState(newState)
 	log("=== UPDATE STATE CALLED ===")
 	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #26: Detect new life and reset assets view
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 		
@@ -375,6 +383,12 @@ function AssetsScreen:updateState(newState)
 				end
 				return keys
 			end)(), ", "))
+		end
+		
+		-- Force refresh on new life to clear old assets display
+		if isNewLife then
+			log("🔄 NEW LIFE DETECTED! Forcing assets UI refresh")
+			self.currentTab = "shop" -- Reset to shop tab for new life (baby has no assets)
 		end
 		
 		-- Auto-refresh the current tab if screen is visible
@@ -446,7 +460,12 @@ function AssetsScreen:getAssets()
 		end
 	end
 
-	log("Total owned assets:", #flatAssets)
+	-- CRITICAL FIX: Count table entries properly (# only works for arrays, not hash tables)
+	local count = 0
+	for _ in pairs(flatAssets) do
+		count = count + 1
+	end
+	log("Total owned assets:", count)
 	return flatAssets
 end
 
@@ -1549,26 +1568,27 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	iconFrame.Parent = iconRing
 	UI.corner(iconFrame, 14)
 
+	-- CRITICAL UI FIX: Responsive text sizes for asset cards
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 32
+	iconLabel.TextSize = IS_TINY_PHONE and 24 or (IS_SMALL_PHONE and 28 or 32)
 	iconLabel.Text = item.emoji
 	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CONTENT
+	-- CONTENT - CRITICAL UI FIX: Responsive sizing for mobile
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
+	-- Title (CRITICAL FIX: Responsive + truncation)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.45, -85, 0, 26)  -- Adjusted width with margin
-	titleLabel.Position = UDim2.new(0, 80, 0, 8)
+	titleLabel.Size = UDim2.new(0.45, IS_TINY_PHONE and -70 or -85, 0, IS_TINY_PHONE and 22 or 26)
+	titleLabel.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 6 or 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15  -- Slightly smaller for longer names
+	titleLabel.TextSize = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 15 or 17)
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1576,10 +1596,10 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Owned badge (prominent)
+	-- Owned badge (prominent) - CRITICAL UI FIX: Responsive sizing
 	local ownedBadge = Instance.new("Frame")
-	ownedBadge.Size = UDim2.new(0, 85, 0, 26)
-	ownedBadge.Position = UDim2.new(0, 80, 0, 36)
+	ownedBadge.Size = UDim2.new(0, IS_TINY_PHONE and 72 or 85, 0, IS_TINY_PHONE and 22 or 26)
+	ownedBadge.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 30 or 36)
 	ownedBadge.BackgroundColor3 = C.Green
 	ownedBadge.ZIndex = 85
 	ownedBadge.Parent = card
@@ -1589,17 +1609,17 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	ownedLabel.Size = UDim2.fromScale(1, 1)
 	ownedLabel.BackgroundTransparency = 1
 	ownedLabel.Font = F.Button
-	ownedLabel.TextSize = 12
+	ownedLabel.TextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	ownedLabel.TextColor3 = C.White
 	ownedLabel.Text = "✓ OWNED"
 	ownedLabel.ZIndex = 86
 	ownedLabel.Parent = ownedBadge
 
-	-- Value badge (sell price = 70% of purchase price)
+	-- Value badge (sell price = 70% of purchase price) - CRITICAL UI FIX: Responsive
 	local sellPrice = math.floor(item.price * 0.7)
 	local valueBadge = Instance.new("Frame")
-	valueBadge.Size = UDim2.new(0, 100, 0, 22)
-	valueBadge.Position = UDim2.new(0, 80, 0, 64)
+	valueBadge.Size = UDim2.new(0, IS_TINY_PHONE and 88 or 100, 0, IS_TINY_PHONE and 20 or 22)
+	valueBadge.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 54 or 64)
 	valueBadge.BackgroundColor3 = C.Gray100
 	valueBadge.ZIndex = 85
 	valueBadge.Parent = card
@@ -1609,36 +1629,39 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	valueLabel.Size = UDim2.fromScale(1, 1)
 	valueLabel.BackgroundTransparency = 1
 	valueLabel.Font = F.Medium
-	valueLabel.TextSize = 11
+	valueLabel.TextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	valueLabel.TextColor3 = C.Gray600
 	valueLabel.Text = "💎 Value: " .. UI.formatMoney(sellPrice)
 	valueLabel.ZIndex = 86
 	valueLabel.Parent = valueBadge
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- SELL BUTTON (premium with shadow)
+	-- SELL BUTTON (premium with shadow) - CRITICAL UI FIX: Responsive sizing
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local sellBtnW = IS_TINY_PHONE and 65 or (IS_SMALL_PHONE and 72 or 80)
+	local sellBtnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 45 or 50)
 	
 	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
 	local btnShadow = Instance.new("Frame")
 	btnShadow.Name = "SellBtnShadow"
-	btnShadow.Size = UDim2.new(0, 84, 0, 54)
+	btnShadow.Size = UDim2.new(0, sellBtnW + 4, 0, sellBtnH + 4)
 	btnShadow.AnchorPoint = Vector2.new(1, 0.5)
-	btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+	btnShadow.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -6, 0.5, 2)
 	btnShadow.BackgroundColor3 = C.AmberDark
 	btnShadow.BackgroundTransparency = 0.6
 	btnShadow.ZIndex = 94
 	btnShadow.Parent = card
-	UI.corner(btnShadow, 12)
+	UI.corner(btnShadow, IS_TINY_PHONE and 10 or 12)
 	
 	local sellBtn = Instance.new("TextButton")
 	sellBtn.Name = "SellBtn"
-	sellBtn.Size = UDim2.new(0, 80, 0, 50)
+	sellBtn.Size = UDim2.new(0, sellBtnW, 0, sellBtnH)
 	sellBtn.AnchorPoint = Vector2.new(1, 0.5)
-	sellBtn.Position = UDim2.new(1, -8, 0.5, 0)
+	sellBtn.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -8, 0.5, 0)
 	sellBtn.BackgroundColor3 = C.Amber
 	sellBtn.Font = F.Button
-	sellBtn.TextSize = 14
+	sellBtn.TextSize = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 14)
 	sellBtn.TextColor3 = C.White
 	sellBtn.Text = "💰 Sell"
 	sellBtn.AutoButtonColor = false

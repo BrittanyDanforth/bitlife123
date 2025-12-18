@@ -586,6 +586,8 @@ SeasonalEvents.events = {
 		category = "relationships",
 		tags = { "anniversary", "romance", "celebration" },
 		requiresPartner = true,
+		-- CRITICAL FIX: Can't celebrate anniversary while in prison (unless it's a prison event variant)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random anniversary outcome
 		choices = {

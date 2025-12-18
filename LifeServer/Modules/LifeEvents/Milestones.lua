@@ -949,11 +949,36 @@ Milestones.events = {
 
 		-- CRITICAL: Clear job when retiring to prevent career events from firing
 		onComplete = function(state, choice, eventDef, outcome)
-			-- Calculate pension based on career history
+			-- CRITICAL FIX: Calculate pension from multiple sources since state.CurrentJob.salary
+			-- may not reflect actual earnings (e.g., fame careers where catalog salary differs)
 			local pensionBase = 0
-			if state.CurrentJob and state.CurrentJob.salary then
-				pensionBase = math.floor(state.CurrentJob.salary * 0.4) -- 40% of last salary
+			local actualSalary = 0
+			
+			-- Try multiple sources to get the actual salary
+			-- 1. Check if there's stored salary info from last year's payment
+			if state.CareerInfo and state.CareerInfo.lastPaidSalary and state.CareerInfo.lastPaidSalary > 0 then
+				actualSalary = state.CareerInfo.lastPaidSalary
 			end
+			
+			-- 2. Check state.CurrentJob.salary (may be outdated for fame careers)
+			if actualSalary == 0 and state.CurrentJob and state.CurrentJob.salary then
+				actualSalary = state.CurrentJob.salary
+			end
+			
+			-- 3. Estimate from net worth growth if salary seems too low (fame career fix)
+			-- If salary is suspiciously low but player has high net worth, estimate from that
+			if actualSalary < 1000 and state.Money and state.Money > 1000000 then
+				-- Estimate salary as roughly 10-20% of net worth for famous people
+				actualSalary = math.floor(state.Money * 0.15)
+			end
+			
+			-- Calculate pension as 40% of actual salary
+			if actualSalary > 0 then
+				pensionBase = math.floor(actualSalary * 0.4)
+			end
+			
+			-- Ensure minimum pension of $15,000
+			pensionBase = math.max(15000, pensionBase)
 			
 			-- Store pension info before clearing career
 			state.Flags = state.Flags or {}
@@ -964,6 +989,7 @@ Milestones.events = {
 			if state.CurrentJob then
 				state.CareerInfo = state.CareerInfo or {}
 				state.CareerInfo.lastJob = state.CurrentJob
+				state.CareerInfo.lastJobSalary = actualSalary -- Store actual salary for records
 				state.CareerInfo.retirementAge = state.Age
 			end
 			

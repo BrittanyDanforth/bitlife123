@@ -66,11 +66,14 @@ local StageCategories = {
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
+	-- career_gaming, career_acting, career_sports, career_intelligence, career_mafia were MISSING!
+	-- CRITICAL FIX: Added crime_path and homeless categories for expanded gameplay
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -281,6 +284,13 @@ function LifeEvents.init()
 		-- Adds 50+ new varied events to prevent repetition
 		{ name = "ProgressiveLifeEvents", category = "childhood" },
 		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EARLY LIFE EXPANSION - 50+ new events for ages 0-17
+		-- User request: "THE GAME IS THE EXACT SAME FROM AGE 0-15 EXPAND SO MUCH"
+		-- All events have RANDOMIZED outcomes (BitLife style - can't pick outcome)
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "EarlyLifeEvents", category = "childhood" },
+		
 		-- Specialized career paths with minigame integration
 		{ name = "RacingEvents",   category = "career_racing" },
 		{ name = "HackerEvents",   category = "career_hacker" },
@@ -288,6 +298,34 @@ function LifeEvents.init()
 		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
 		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
 		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE CAREER EXPANSION - Job-specific events for all careers
+		-- User request: "HUGE HUGE HUGE EXPANSION ALL EVERY SINGLE ONE"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "TechCareerEvents",          category = "career_tech" },       -- DevOps, Security Consultant
+		{ name = "GamerCareerEvents",         category = "career_gaming" },     -- Pro Gamer, Esports
+		{ name = "ActorCareerEvents",         category = "career_acting" },     -- Actor, Movie Star
+		{ name = "MusicianCareerEvents",      category = "career_music" },      -- Signed Musician, Recording Artist
+		{ name = "InvestmentBankingEvents",   category = "career_finance" },    -- Investment Banking, Hedge Fund
+		{ name = "IntelligenceCareerEvents",  category = "career_intelligence" }, -- CIA Agent, FBI
+		{ name = "EnforcerEvents",            category = "career_mafia" },      -- Enforcer, Mob Muscle
+		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
+		{ name = "TradesCareerEvents",        category = "career_trades" },     -- Construction, Electrician, Plumber, Mechanic, Trucker
+		{ name = "ServiceCareerEvents",       category = "career_service" },    -- Waiter, Bartender, Flight Attendant, Personal Trainer
+		{ name = "MedicalCareerEvents",       category = "career_medical" },    -- EMT, Nurse, Doctor, Surgeon, Pharmacist
+		{ name = "OfficeCareerEvents",        category = "career_office" },     -- Data Entry, Secretary, HR, Marketing, Accounting
+		{ name = "EducationCareerEvents",     category = "career_education" },  -- Teacher, Professor, Principal, Dean
+		{ name = "MilitaryCareerEvents",      category = "career_military" },   -- Enlisted, Sergeant, Officer, General
+		{ name = "ScienceCareerEvents",       category = "career_science" },    -- Lab Tech, Scientist, Research Director
+		{ name = "CreativeCareerEvents",      category = "career_creative" },   -- Designer, Journalist, Marketing
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
+		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD AS HELL"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RandomLifeEvents",          category = "random" },            -- Random encounters, luck, surprises
+		{ name = "YoungLifeEvents",           category = "childhood" },         -- Childhood and teen random events
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- PREMIUM GAMEPASS EVENT MODULES - Require specific gamepasses
@@ -307,6 +345,20 @@ function LifeEvents.init()
 		-- From underground nobody to legendary superstar
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RapperContentCreatorEvents", category = "career_music" }, -- 50+ rapper/creator events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRIME EMPIRE PATH - Criminal story path events
+		-- Progressive crime career from street hustler to crime boss
+		-- Requires crime_path_active flag set by startStoryPath for "criminal" path
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "CrimeEmpireEvents", category = "crime_path" },  -- 30+ crime empire progression events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- HOMELESS LIFE EVENTS - Comprehensive homeless experience
+		-- From eviction to street survival to recovery
+		-- User request: "ENSURE U CAN GO HOMELESS AND EXPAND EXISTING STUFF"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "HomelessEvents", category = "homeless" },  -- 25+ homeless life events
 	}
 	
 	local totalEvents = 0
@@ -418,6 +470,17 @@ local function recordEventShown(state, event)
 		history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
 		history.lastCategoryOccurrence[eventCategory] = state.Age or 0
 	end
+	
+	-- CRITICAL FIX #SPAM-3: Also track keyword-based cooldowns
+	-- This prevents "viral", "first_", "hater" etc. events from spamming
+	local eventId = (event.id or ""):lower()
+	local spamKeywords = { "viral", "hater", "first_", "exploding", "millions" }
+	for _, keyword in ipairs(spamKeywords) do
+		if eventId:find(keyword) then
+			history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+			history.lastCategoryOccurrence["keyword_" .. keyword] = state.Age or 0
+		end
+	end
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════════
@@ -435,6 +498,48 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if state.IsDead or flags.dead or (state.Stats and state.Stats.Health and state.Stats.Health <= 0) then
 		return false -- Dead players can't have events
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JAIL-1: GLOBAL PRISON EVENT FILTER
+	-- Players who are incarcerated should ONLY receive prison-specific events!
+	-- BUG: Random events (identity_theft, home_invasion, mugged, etc.) were triggering
+	-- while player was serving a 21-year sentence - completely immersion-breaking!
+	-- FIX: Block ALL non-prison events when player is in jail
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isIncarcerated = state.InJail or flags.in_prison or flags.incarcerated
+	
+	if isIncarcerated then
+		-- Check if this is a prison-specific event (allowed while incarcerated)
+		local eventId = (event.id or ""):lower()
+		local eventCategory = (event.category or ""):lower()
+		local eventTitle = (event.title or ""):lower()
+		
+		-- Events explicitly marked as prison events are allowed
+		if event.isPrisonEvent or event.allowInPrison then
+			-- This event is explicitly allowed in prison, let it through
+		-- Events with prison-related IDs or categories are allowed
+		elseif eventId:find("prison") or eventId:find("jail") or eventId:find("inmate") 
+			or eventId:find("warden") or eventId:find("parole") or eventId:find("cell")
+			or eventId:find("sentence") or eventId:find("locked_up") or eventId:find("behind_bars")
+			or eventCategory == "prison" or eventCategory == "jail" or eventCategory == "incarceration"
+			or eventTitle:find("prison") or eventTitle:find("jail") then
+			-- Prison-related event, allow it
+		-- Events about family visiting or letter from family while in prison
+		elseif eventId:find("family_visit") or eventId:find("letter_from") then
+			-- Allow family interaction events even in prison
+		-- Health events can happen in prison (getting sick, etc.)
+		elseif eventId:find("health_decline") or eventId:find("sick") or eventId:find("medical")
+			or eventCategory == "health" then
+			-- Health can deteriorate in prison
+		-- Death events should still work in prison
+		elseif eventId:find("death") or event.isDeath then
+			-- Death events pass through
+		else
+			-- ALL OTHER EVENTS ARE BLOCKED WHILE IN PRISON!
+			-- This prevents identity_theft, home_invasion, mugged, community events, etc.
+			return false
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -461,6 +566,24 @@ local function canEventTrigger(event, state)
 			or (state.RoyalState and state.RoyalState.isRoyal)
 		if not isActuallyRoyal then
 			return false -- Must have chosen royal at birth or became royal somehow
+		end
+	end
+	
+	-- CRITICAL FIX #17: Also check events with "royal" in their ID or category
+	-- Even if isRoyalOnly isn't explicitly set, royal-themed events need the check
+	local eventId = event.id and event.id:lower() or ""
+	local eventCategory = event.category and event.category:lower() or ""
+	local isRoyalThemed = eventId:find("royal") or eventId:find("throne") or eventId:find("palace") 
+		or eventId:find("kingdom") or eventId:find("monarch") or eventId:find("prince") or eventId:find("princess")
+		or eventCategory == "royalty" or eventCategory == "royal"
+	
+	if isRoyalThemed and not event.isRoyalOnly then
+		-- This is a royal-themed event without explicit isRoyalOnly flag
+		-- Still require player to actually be royalty
+		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+			or (state.RoyalState and state.RoyalState.isRoyal)
+		if not isActuallyRoyal then
+			return false -- Block royal-themed events for non-royals
 		end
 	end
 	
@@ -522,6 +645,42 @@ local function canEventTrigger(event, state)
 			end
 		elseif not hasActiveFameCareer and not hasFame then
 			return false -- Need either career or natural fame
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FAME EVENTS (free for all fame career holders)
+	-- User feedback: "Story paths don't do much" - free players couldn't get fame events!
+	-- isFameEvent events work for ANYONE pursuing fame, not just Celebrity gamepass owners
+	-- This enables influencer/streamer paths (which are FREE) to get fame-related events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.isFameEvent then
+		-- Check if player is pursuing fame through ANY means
+		local isPursuingFame = flags.pursuing_fame or flags.pursuing_streaming 
+			or flags.content_creator or flags.streamer or flags.influencer
+			or flags.broadcaster or flags.youtube_started or flags.tiktok_active
+		
+		-- Check if player has a fame career (influencer/streamer/etc)
+		local hasFameCareer = false
+		if state.CurrentJob then
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCategory = (state.CurrentJob.category or ""):lower()
+			hasFameCareer = jobCategory == "entertainment" or jobCategory == "esports"
+				or jobId:find("influencer") or jobId:find("streamer") 
+				or jobId:find("content") or jobId:find("creator")
+				or jobId:find("gamer") or state.CurrentJob.isFameCareer
+		end
+		
+		-- Check FameState
+		local hasFameState = state.FameState and (
+			state.FameState.pursuing or 
+			state.FameState.careerPath or 
+			(state.FameState.socialFollowers or 0) > 0
+		)
+		
+		-- Must have SOME indication of fame pursuit
+		if not isPursuingFame and not hasFameCareer and not hasFameState then
+			return false -- Not pursuing fame at all
 		end
 	end
 	
@@ -758,7 +917,7 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Enforce ageBand restrictions!
 	-- Many events set ageBand but it was NEVER enforced, letting kids get adult events
-	-- like stock investing, gambling, bankruptcy, etc.
+	-- like stock investing, bankruptcy, etc.
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local ageBand = event.ageBand
 	if ageBand and ageBand ~= "any" then
@@ -829,13 +988,20 @@ local function canEventTrigger(event, state)
 	
 	local eventCategory = event.category or event._category
 	if eventCategory then
-		-- Define category cooldowns (years between events of same category)
+		-- CRITICAL FIX #SPAM-1: Define category cooldowns (years between events of same category)
+		-- User complaint: "STUFF IS GETTING SPAMMED LIKE EVENTS"
+		-- This prevents the same types of events from firing back-to-back
 		local categoryCooldowns = {
 			injury = 3,        -- At least 3 years between injury events
 			illness = 2,       -- At least 2 years between illness events
 			mental_health = 4, -- At least 4 years between mental health events
 			disaster = 5,      -- At least 5 years between disasters
 			crime = 2,         -- At least 2 years between crime events
+			social_media = 3,  -- CRITICAL FIX: Prevent viral post spam (was triggering every year!)
+			celebrity = 2,     -- At least 2 years between celebrity events
+			viral = 4,         -- At least 4 years between viral events
+			fame = 2,          -- At least 2 years between fame events
+			hater = 3,         -- At least 3 years between hater events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -845,6 +1011,28 @@ local function canEventTrigger(event, state)
 			local lastCatAge = history.lastCategoryOccurrence[eventCategory]
 			if lastCatAge and (age - lastCatAge) < catCooldown then
 				return false -- Too soon for another event of this category
+			end
+		end
+		
+		-- CRITICAL FIX #SPAM-2: Check event ID for spam-prone keywords
+		-- User complaint: "YOUR LATEST POST IS EXPLODING MILLIONS OF VIEWS I GOT IT TWICE"
+		local eventId = (event.id or ""):lower()
+		local spamKeywords = {
+			viral = 5,      -- At least 5 years between viral events
+			hater = 4,      -- At least 4 years between hater events  
+			first_ = 99,    -- "First X" events should be oneTime, enforce with long cooldown
+			exploding = 4,  -- Explosive growth events need cooldown
+			millions = 4,   -- Millions of views events need cooldown
+		}
+		
+		for keyword, keywordCooldown in pairs(spamKeywords) do
+			if eventId:find(keyword) then
+				history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+				local keywordKey = "keyword_" .. keyword
+				local lastKeywordAge = history.lastCategoryOccurrence[keywordKey]
+				if lastKeywordAge and (age - lastKeywordAge) < keywordCooldown then
+					return false -- Too soon for another event with this keyword
+				end
 			end
 		end
 	end
@@ -940,6 +1128,32 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- JOB/CAREER REQUIREMENTS - No career events if unemployed or retired!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX #QUIT-1: Events in career categories AUTOMATICALLY require a job
+	-- User complaint: "WHEN I QUIT IM STILL GETTING THE CARDS FOR JOBS I QUIT"
+	-- Events with category starting with "career_" should not trigger without a job
+	local eventCategory = (event.category or event._category or ""):lower()
+	local eventId = (event.id or ""):lower()
+	
+	-- Check if this is a career-related event that should require a job
+	local isCareerEvent = eventCategory:find("^career_") or eventCategory == "career"
+		or eventId:find("_job_") or eventId:find("work_") or eventId:find("promotion_")
+		or eventId:find("coworker_") or eventId:find("boss_") or eventId:find("office_")
+	
+	-- Automatically require job for career events
+	if isCareerEvent and not event.allowUnemployed then
+		if not state.CurrentJob then
+			return false -- Career events require a job
+		end
+		-- Check if player was just fired/quit (CurrentJob might be nil but flags still set)
+		if flags.retired or flags.just_quit or flags.just_fired then
+			return false -- Don't trigger career events right after leaving job
+		end
+		-- CRITICAL FIX: Also check if player is in prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
+		end
+	end
 	
 	if event.requiresJob then
 		if not state.CurrentJob then
@@ -1669,7 +1883,8 @@ function LifeEvents.buildYearQueue(state, options)
 	local flags = state.Flags or {}
 	
 	-- MAFIA: Only add category if player has gamepass AND is in mob
-	if flags.mafia_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Mafia) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.mafia_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Mafia or state.GamepassOwnership.mafia)) then
 		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
 		if isInMob then
 			-- Player is in mob - add mafia events
@@ -1693,7 +1908,8 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ROYALTY: Only add category if player has gamepass AND is royalty
-	if flags.royalty_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Royalty) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.royalty_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Royalty or state.GamepassOwnership.royalty)) then
 		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
 		if isRoyal then
 			local hasRoyalCat = false
@@ -1707,7 +1923,8 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- CELEBRITY: Only add category if player has gamepass AND has fame career OR natural fame
-	if flags.celebrity_gamepass or (state.GamepassOwnership and state.GamepassOwnership.Celebrity) then
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.celebrity_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Celebrity or state.GamepassOwnership.celebrity)) then
 		local hasFameCareer = flags.fame_career or flags.career_actor 
 			or flags.career_musician or flags.career_influencer or flags.career_athlete
 			or (state.FameState and state.FameState.careerPath)
@@ -2067,7 +2284,11 @@ function LifeEvents.buildYearQueue(state, options)
 		for i, candidate in ipairs(candidateEvents) do
 			cumulative = cumulative + candidate.weight
 			if roll <= cumulative then
-				table.insert(selectedEvents, candidate.event)
+				-- CRITICAL FIX #VARIETY-1: Apply text variations for event variety
+				-- User feedback: "HAVE MULTIPLE DIFFERENT TEXT LIKE FOR SAME SCENE"
+				local eventCopy = LifeEvents.applyTextVariation(candidate.event)
+				
+				table.insert(selectedEvents, eventCopy)
 				recordEventShown(state, candidate.event)
 				
 				-- Remove from pool and update total weight
@@ -2079,6 +2300,40 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	return selectedEvents
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- TEXT VARIATION SYSTEM - For variety so same events feel different
+-- User feedback: "HAVE MUTLIPLE LIKE DIFFERENT TEXT LIKE FOR SAME SCENE"
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.applyTextVariation(event)
+	-- If event has no text variations, return as-is
+	if not event.textVariants or type(event.textVariants) ~= "table" or #event.textVariants == 0 then
+		return event
+	end
+	
+	-- Create a shallow copy to avoid modifying the original event
+	local eventCopy = {}
+	for key, value in pairs(event) do
+		eventCopy[key] = value
+	end
+	
+	-- Randomly select a text variation
+	local selectedText = event.textVariants[RANDOM:NextInteger(1, #event.textVariants)]
+	eventCopy.text = selectedText
+	
+	-- Also check for title variants
+	if event.titleVariants and type(event.titleVariants) == "table" and #event.titleVariants > 0 then
+		eventCopy.title = event.titleVariants[RANDOM:NextInteger(1, #event.titleVariants)]
+	end
+	
+	-- And question variants
+	if event.questionVariants and type(event.questionVariants) == "table" and #event.questionVariants > 0 then
+		eventCopy.question = event.questionVariants[RANDOM:NextInteger(1, #event.questionVariants)]
+	end
+	
+	return eventCopy
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════════

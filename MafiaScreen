@@ -358,7 +358,8 @@ local OperationScenarios = {
 }
 
 -- Debug logging
-local DEBUG = false
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[MafiaScreen]", ...) end
 end
@@ -489,8 +490,17 @@ end
 
 function MafiaScreen:updateState(newState)
 	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #27: Detect new life and reset mafia state display
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
 		self.playerState = newState 
-		if self.isVisible then
+		
+		-- Force refresh on new life to show correct mafia status (should be not in mob)
+		if isNewLife or self.isVisible then
 			self:refreshContent()
 		end
 	end
@@ -1156,7 +1166,7 @@ function MafiaScreen:createOperationCard(op, order)
 		-- Check if this operation has scenarios (most do now)
 		local scenarioOps = {
 			"intimidation", "black_market", "cyber", "weapons", "ransom", 
-			"enforcer_hit", "protection", "gambling", "heist"
+			"enforcer_hit", "protection", "smuggling", "heist"  -- gambling removed (TOS)
 		}
 		
 		local hasScenario = false
@@ -1680,7 +1690,7 @@ function MafiaScreen:getScenarioText(op)
 		ransom = "Intelligence has identified a high-value target. This is your big score if you pull it off.",
 		enforcer_hit = "The boss has a problem that needs to disappear. This is a test of your loyalty to the family.",
 		protection = "Collection day. Several businesses owe the family money. Time to make the rounds.",
-		gambling = "Tonight's underground casino is expecting high rollers. You're running the operation.",
+		smuggling = "Tonight's shipment is coming in. You're running the operation.",
 		heist = "A major score awaits. The target has been scouted. Now it's time to execute.",
 	}
 	return texts[op.id] or op.description or "The family needs you to handle an operation."
@@ -1711,37 +1721,56 @@ function MafiaScreen:getScenarioChoices(op)
 		},
 	}
 	
-	-- Custom choices for specific operations
+	-- Custom choices for specific operations (with combat options!)
 	local customChoices = {
 		intimidation = {
-			{ text = "Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
-			{ text = "Make an example to scare others", successMod = 0.9, riskMod = 1.3, rewardMod = 1.3, feed = "Fear is a powerful tool." },
-			{ text = "Offer protection services genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
+			{ text = "🗣️ Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
+			{ text = "👊 Beat them up as a warning", successMod = 1.0, riskMod = 1.0, rewardMod = 1.2, feed = "Physical intimidation!", triggersCombat = true },
+			{ text = "😤 Make an example - rough them up good", successMod = 0.9, riskMod = 1.3, rewardMod = 1.4, respectBonus = 15, feed = "Fear is a powerful tool.", triggersCombat = true },
+			{ text = "🤝 Offer protection genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
 		},
 		black_market = {
-			{ text = "Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
-			{ text = "Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
-			{ text = "Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
+			{ text = "💵 Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
+			{ text = "📦 Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
+			{ text = "🌙 Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
 		},
 		cyber = {
-			{ text = "Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
-			{ text = "Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
-			{ text = "Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
+			{ text = "🏢 Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
+			{ text = "💰 Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
+			{ text = "🌙 Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
 		},
 		weapons = {
-			{ text = "Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
-			{ text = "Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
-			{ text = "Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
+			{ text = "👁️ Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
+			{ text = "🤝 Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
+			{ text = "📍 Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
 		},
 		ransom = {
-			{ text = "Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public." },
-			{ text = "Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
-			{ text = "Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
+			{ text = "🎭 Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public.", triggersCombat = true },
+			{ text = "🚗 Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
+			{ text = "🕵️ Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
 		},
 		enforcer_hit = {
-			{ text = "Quick and clean - no witnesses", successMod = 1.1, riskMod = 0.9, feed = "Professional." },
-			{ text = "Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
-			{ text = "Send a message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 20, feed = "Fear spreads." },
+			{ text = "🔫 Quick and clean - confront them", successMod = 1.1, riskMod = 0.9, feed = "Professional.", triggersCombat = true, targetStrength = "average" },
+			{ text = "🎭 Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
+			{ text = "👊 Send a brutal message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 25, feed = "Fear spreads through the streets.", triggersCombat = true, targetStrength = "strong" },
+			{ text = "🏃 Ambush them", successMod = 1.2, riskMod = 0.7, feed = "They never saw it coming.", triggersCombat = true, targetStrength = "weak" },
+		},
+		protection = {
+			{ text = "🗣️ Polite but firm collection", successMod = 1.2, riskMod = 0.6, feed = "Business as usual." },
+			{ text = "👊 Rough up the reluctant ones", successMod = 1.0, riskMod = 1.0, rewardMod = 1.3, feed = "They paid up quick!", triggersCombat = true },
+			{ text = "🔥 Destroy property as a warning", successMod = 0.9, riskMod = 1.4, respectBonus = 10, feed = "Message received loud and clear." },
+			{ text = "📱 Let them slide this week", successMod = 1.0, riskMod = 0.3, rewardMod = 0.5, feed = "Show of mercy... or weakness?" },
+		},
+		heist = {
+			{ text = "🎯 Lead the crew - biggest cut", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, highest reward!" },
+			{ text = "🚗 Getaway driver - safer role", successMod = 1.2, riskMod = 0.6, rewardMod = 0.7, feed = "Fast and clean escape." },
+			{ text = "🔓 Safecracker specialist", successMod = 1.0, riskMod = 0.9, rewardMod = 1.0, feed = "The technical expert." },
+			{ text = "🔫 Armed backup", successMod = 1.1, riskMod = 1.0, rewardMod = 0.9, feed = "Ready for anything.", triggersCombat = true },
+		},
+		smuggling = {
+			{ text = "🚤 Speed boat at night", successMod = 0.9, riskMod = 1.3, rewardMod = 1.2, feed = "Fast and dangerous." },
+			{ text = "🚚 Hidden compartment in trucks", successMod = 1.2, riskMod = 0.7, feed = "Slow but reliable." },
+			{ text = "✈️ Private airfield drop", successMod = 1.1, riskMod = 0.9, costMod = 0.2, feed = "High altitude, low profile." },
 		},
 	}
 	
@@ -1750,13 +1779,179 @@ end
 
 -- Process scenario choice and execute operation
 function MafiaScreen:processScenarioChoice(op, choiceIndex, accumulatedMods)
+	-- Get the actual choice data to check for combat triggers
+	local choices = self:getScenarioChoices(op)
+	local chosenOption = choices[choiceIndex]
+	
+	-- Merge choice-specific modifiers
+	if chosenOption then
+		accumulatedMods = accumulatedMods or {}
+		accumulatedMods.triggersCombat = chosenOption.triggersCombat
+		accumulatedMods.targetStrength = chosenOption.targetStrength
+		accumulatedMods.respectBonus = chosenOption.respectBonus
+		accumulatedMods.feed = chosenOption.feed
+	end
+	
 	-- Execute the operation with modifiers
 	self:doOperation(op.id, accumulatedMods)
 end
 
+-- Combat-based mafia operations
+local CombatMafiaOperations = {
+	enforcer_hit = true,
+	intimidation = true,
+	protection = true, -- When they resist
+}
+
 function MafiaScreen:doOperation(operationId, modifiers)
 	if not DoMobOperation then return end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT-BASED MAFIA OPERATIONS
+	-- Some operations may involve physical confrontation - trigger combat minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if CombatMafiaOperations[operationId] and modifiers and modifiers.triggersCombat then
+		print("[MafiaScreen] Combat operation detected:", operationId)
+		
+		-- Hide mafia screen for combat
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context and difficulty
+		local combatContext = "defense"
+		local combatDifficulty = "average"
+		
+		if operationId == "enforcer_hit" then
+			combatContext = "revenge"
+			combatDifficulty = modifiers.targetStrength or "strong"
+		elseif operationId == "protection" then
+			combatContext = "bar"
+			combatDifficulty = "weak"
+		elseif operationId == "intimidation" then
+			combatContext = "street"
+			combatDifficulty = "average"
+		end
+		
+		-- Get minigames and start combat
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting combat for operation:", operationId)
+			minigameInstance:play("combat", function(won, combatResult)
+				print("[MafiaScreen] Combat result - Won:", won)
+				
+				-- Call server with combat results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						combatCompleted = true,
+						combatWon = won,
+						combatResult = combatResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				-- Show result
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local title = won and "Operation Complete!" or "Partial Success"
+						self:showResult(true, title, serverResult.message or "The job is done.", emoji)
+					else
+						local emoji = serverResult.arrested and "👮" or (won and "💨" or "😵")
+						self:showResult(false, "Operation Failed", serverResult.message or "Things went wrong.", emoji)
+					end
+				else
+					local title = won and "👊 Victory" or "😵 Beaten"
+					local message = won 
+						and "You dominated them! The family is impressed." 
+						or "You got beat up. This damages the family's reputation."
+					self:showResult(won, title, message, won and "💪" or "😵")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end, {
+				context = combatContext,
+				difficulty = combatDifficulty,
+			})
+		else
+			-- Fallback if minigames not available
+			self:show()
+			self:showResult(false, "Error", "Combat system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HEIST OPERATIONS - Trigger heist minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if operationId == "heist" and modifiers and not modifiers.heistCompleted then
+		print("[MafiaScreen] Heist operation - launching heist minigame!")
+		
+		if self.hide then
+			self:hide()
+		end
+		
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting heist minigame")
+			minigameInstance:play("heist", function(won, heistResult)
+				print("[MafiaScreen] Heist result - Won:", won)
+				
+				-- Call server with heist results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						heistCompleted = true,
+						heistSuccess = won,
+						heistResult = heistResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local money = serverResult.money or 0
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local message = won 
+							and string.format("The heist was a success! Your cut: $%d", money)
+							or "You got away but the score was small."
+						self:showResult(true, "💰 SCORE!", message, emoji)
+					else
+						local emoji = serverResult.arrested and "👮" or "💨"
+						self:showResult(false, "Heist Failed", serverResult.message or "The heist went wrong.", emoji)
+					end
+				else
+					self:showResult(won, won and "Heist Complete" or "Heist Failed", 
+						won and "Big score!" or "Things went sideways.", won and "💰" or "💨")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end)
+		else
+			self:show()
+			self:showResult(false, "Error", "Heist system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STANDARD OPERATIONS - Normal server call
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, result = pcall(function()
 		return DoMobOperation:InvokeServer(operationId, modifiers)
 	end)
@@ -1837,6 +2032,216 @@ function MafiaScreen:hideResult()
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Premium BitLife-style purchase prompt for Mafia gamepass
+-- Matches the ActivitiesScreen style exactly as user requested
+-- ═══════════════════════════════════════════════════════════════════════════════
+function MafiaScreen:showGamepassPrompt()
+	if self.gamepassPromptOverlay then
+		self.gamepassPromptOverlay:Destroy()
+	end
+	
+	-- Mobile-responsive dimensions
+	local modalWidth = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local modalHeight = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 360)
+	local padX = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 20)
+	local padY = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 14 or 18)
+	local iconSize = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 52 or 64)
+	local titleSz = textSize(IS_TINY_PHONE and 16 or 20)
+	local descSz = textSize(IS_TINY_PHONE and 12 or 14)
+	local btnTextSz = textSize(IS_TINY_PHONE and 14 or 16)
+	local btnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 44 or 50)
+	
+	-- Dark mafia theme colors
+	local accentColor = Color3.fromRGB(55, 55, 55)
+	local accentDark = Color3.fromRGB(30, 30, 30)
+	local accentPale = Color3.fromRGB(80, 80, 80)
+	
+	-- Overlay background
+	local overlay = Instance.new("Frame")
+	overlay.Name = "GamepassPromptOverlay"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = C.Black
+	overlay.BackgroundTransparency = 0.35
+	overlay.ZIndex = 200
+	overlay.Parent = self.screenGui
+	self.gamepassPromptOverlay = overlay
+	
+	-- Click outside to close
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 200
+	closeArea.Parent = overlay
+	closeArea.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	-- Premium shadow
+	local shadowOffset = IS_TINY_PHONE and 6 or 10
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(0, modalWidth + shadowOffset, 0, modalHeight + shadowOffset)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, shadowOffset/2, 0.5, shadowOffset/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.65
+	shadow.ZIndex = 201
+	shadow.Parent = overlay
+	corner(shadow, IS_TINY_PHONE and 22 or 28)
+	
+	-- Dark outer shell (Mafia style)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = accentColor
+	shell.ZIndex = 202
+	shell.Parent = overlay
+	corner(shell, IS_TINY_PHONE and 20 or 26)
+	
+	-- Stroke for extra premium
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = accentDark
+	shellStroke.Thickness = 2
+	shellStroke.Parent = shell
+	
+	-- White inner card
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(1, -8, 1, -8)
+	inner.Position = UDim2.new(0, 4, 0, 4)
+	inner.BackgroundColor3 = C.White
+	inner.ZIndex = 203
+	inner.Parent = shell
+	corner(inner, IS_TINY_PHONE and 18 or 24)
+	
+	-- Gun icon frame
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, iconSize, 0, iconSize)
+	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
+	iconFrame.Position = UDim2.new(0.5, 0, 0, padY)
+	iconFrame.BackgroundColor3 = accentPale
+	iconFrame.ZIndex = 204
+	iconFrame.Parent = inner
+	corner(iconFrame, iconSize/2)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 34 or 40)
+	iconLabel.Text = "🔫"
+	iconLabel.ZIndex = 205
+	iconLabel.Parent = iconFrame
+	
+	-- "PREMIUM FEATURE" badge
+	local badgeFrame = Instance.new("Frame")
+	badgeFrame.Size = UDim2.new(0, IS_TINY_PHONE and 110 or 130, 0, IS_TINY_PHONE and 20 or 24)
+	badgeFrame.AnchorPoint = Vector2.new(0.5, 0)
+	badgeFrame.Position = UDim2.new(0.5, 0, 0, padY + iconSize + 6)
+	badgeFrame.BackgroundColor3 = accentColor
+	badgeFrame.ZIndex = 204
+	badgeFrame.Parent = inner
+	corner(badgeFrame, 12)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Bold
+	badgeLabel.TextSize = textSize(IS_TINY_PHONE and 10 or 12)
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "🔒 MAFIA BOSS PACK"
+	badgeLabel.ZIndex = 205
+	badgeLabel.Parent = badgeFrame
+	
+	-- Title
+	local titleY = padY + iconSize + (IS_TINY_PHONE and 32 or 40)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -padX*2, 0, titleSz + 8)
+	titleLabel.Position = UDim2.new(0, padX, 0, titleY)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = titleSz
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = "Unlock Mafia Boss Pack"
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 204
+	titleLabel.Parent = inner
+	
+	-- Description
+	local descY = titleY + titleSz + (IS_TINY_PHONE and 6 or 12)
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -padX*2, 0, IS_TINY_PHONE and 50 or 70)
+	descLabel.Position = UDim2.new(0, padX, 0, descY)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = descSz
+	descLabel.TextColor3 = C.Gray500
+	descLabel.TextWrapped = true
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
+	descLabel.Text = "Rise through the ranks of organized crime! Join families, run operations, order hits, and become The Don!"
+	descLabel.ZIndex = 204
+	descLabel.Parent = inner
+	
+	-- Buy button
+	local btnGap = IS_TINY_PHONE and 8 or 12
+	local buyBtn = Instance.new("TextButton")
+	buyBtn.Size = UDim2.new(1, -padX*2, 0, btnH)
+	buyBtn.Position = UDim2.new(0, padX, 1, -(btnH*2 + btnGap + padY))
+	buyBtn.BackgroundColor3 = accentColor
+	buyBtn.Font = F.Button
+	buyBtn.TextSize = btnTextSz
+	buyBtn.TextColor3 = C.White
+	buyBtn.Text = "🔫 Unlock Mafia Pack"
+	buyBtn.AutoButtonColor = false
+	buyBtn.ZIndex = 204
+	buyBtn.Parent = inner
+	corner(buyBtn, IS_TINY_PHONE and 10 or 14)
+	
+	-- Hover effect
+	buyBtn.MouseEnter:Connect(function()
+		tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+	end)
+	buyBtn.MouseLeave:Connect(function()
+		tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+	end)
+	
+	buyBtn.MouseButton1Click:Connect(function()
+		-- Prompt actual Roblox purchase
+		if PromptGamepass then
+			PromptGamepass:FireServer("MAFIA")
+		end
+		overlay:Destroy()
+	end)
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(1, -padX*2, 0, btnH - 8)
+	closeBtn.Position = UDim2.new(0, padX, 1, -(btnH - 8 + padY))
+	closeBtn.BackgroundColor3 = C.Gray100
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	closeBtn.TextColor3 = C.Gray500
+	closeBtn.Text = "Maybe Later"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 204
+	closeBtn.Parent = inner
+	corner(closeBtn, IS_TINY_PHONE and 8 or 12)
+	
+	closeBtn.MouseEnter:Connect(function()
+		tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray200 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
+	end)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	log("Showing Mafia gamepass prompt")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- SHOW/HIDE
 -- ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1858,11 +2263,10 @@ function MafiaScreen:show()
 		end
 	end
 	
-	-- If no gamepass, show purchase prompt
+	-- If no gamepass, show purchase prompt with nice card UI
 	if not hasGamepass then
-		if PromptGamepass then
-			PromptGamepass:FireServer("MAFIA")
-		end
+		-- CRITICAL FIX: Show nice card-style prompt instead of just server call
+		self:showGamepassPrompt()
 		-- Still show the screen but with locked content
 	end
 	

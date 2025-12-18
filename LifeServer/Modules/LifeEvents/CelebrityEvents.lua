@@ -42,12 +42,20 @@ CelebrityEvents.FameLevels = {
 -- ACTING CAREER PATH
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #16: Added minStats requirements to celebrity careers
+-- Actors need Looks, Athletes need Health, Musicians need Smarts for composition
+-- ════════════════════════════════════════════════════════════════════════════
+
 CelebrityEvents.ActingCareer = {
 	name = "Acting",
 	emoji = "🎬",
 	description = "Pursue a career in film and television",
 	minStartAge = 6,
 	maxStartAge = 50,
+	-- CRITICAL FIX #16: Acting requires Looks for on-screen presence
+	primaryStat = "Looks",
+	minStartStat = 40, -- Need decent looks to start
 	
 	stages = {
 		{
@@ -56,6 +64,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "👥",
 			salary = { min = 500, max = 2000 },
 			fameRequired = 0,
+			minStats = { Looks = 30 }, -- Anyone can be an extra
 			fameGainPerYear = { min = 0, max = 2 },
 			yearsToAdvance = { min = 1, max = 3 },
 			description = "Stand in the background of scenes",
@@ -67,6 +76,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎭",
 			salary = { min = 2000, max = 8000 },
 			fameRequired = 2,
+			minStats = { Looks = 40 }, -- Need to look decent on camera
 			fameGainPerYear = { min = 1, max = 3 },
 			yearsToAdvance = { min = 1, max = 2 },
 			description = "Featured background roles",
@@ -78,6 +88,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🗣️",
 			salary = { min = 8000, max = 25000 },
 			fameRequired = 5,
+			minStats = { Looks = 50, Smarts = 30 }, -- Need memorization skills
 			fameGainPerYear = { min = 2, max = 5 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Small speaking roles",
@@ -89,6 +100,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "📺",
 			salary = { min = 25000, max = 75000 },
 			fameRequired = 15,
+			minStats = { Looks = 55, Smarts = 40 }, -- Need to carry scenes
 			fameGainPerYear = { min = 3, max = 8 },
 			yearsToAdvance = { min = 2, max = 3 },
 			description = "Recurring guest appearances on TV shows",
@@ -100,6 +112,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎬",
 			salary = { min = 75000, max = 200000 },
 			fameRequired = 25,
+			minStats = { Looks = 60 }, -- Hollywood standards
 			fameGainPerYear = { min = 5, max = 12 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Notable supporting roles in films",
@@ -111,6 +124,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "📺",
 			salary = { min = 200000, max = 500000 },
 			fameRequired = 40,
+			minStats = { Looks = 65, Smarts = 50 }, -- Need to carry a show
 			fameGainPerYear = { min = 8, max = 15 },
 			yearsToAdvance = { min = 2, max = 4 },
 			description = "Lead your own TV series",
@@ -122,6 +136,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "🎥",
 			salary = { min = 1000000, max = 10000000 },
 			fameRequired = 60,
+			minStats = { Looks = 70 }, -- Leading actor material
 			fameGainPerYear = { min = 10, max = 20 },
 			yearsToAdvance = { min = 3, max = 5 },
 			description = "Lead roles in major films",
@@ -133,6 +148,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "⭐",
 			salary = { min = 10000000, max = 30000000 },
 			fameRequired = 80,
+			minStats = { Looks = 75 }, -- Hollywood elite
 			fameGainPerYear = { min = 5, max = 10 },
 			yearsToAdvance = { min = 5, max = 10 },
 			description = "Hollywood's elite",
@@ -144,6 +160,7 @@ CelebrityEvents.ActingCareer = {
 			emoji = "👑",
 			salary = { min = 25000000, max = 100000000 },
 			fameRequired = 95,
+			minStats = { Looks = 70 }, -- Legends can age gracefully
 			fameGainPerYear = { min = 1, max = 3 },
 			yearsToAdvance = nil, -- Final stage
 			description = "An icon of cinema",
@@ -2021,12 +2038,12 @@ CelebrityEvents.GeneralFameEvents = {
 		},
 	},
 	
-	-- VEGAS RESIDENCY
+	-- CONCERT VENUE RESIDENCY
 	{
-		id = "vegas_residency_offer",
-		title = "🎰 Vegas Residency",
-		emoji = "🎰",
-		text = "A Las Vegas casino wants you for a multi-year residency. Guaranteed income, less travel.",
+		id = "venue_residency_offer",
+		title = "🎤 Concert Residency",
+		emoji = "🎤",
+		text = "A famous concert venue wants you for a multi-year residency. Guaranteed income, less travel.",
 		minFame = 65,
 		cooldown = 4,
 		maxOccurrences = 2,
@@ -2036,8 +2053,8 @@ CelebrityEvents.GeneralFameEvents = {
 				text = "Accept the lucrative deal",
 				effects = { Happiness = 12, Money = 5000000 },
 				fameEffect = 10,
-				setFlags = { has_residency = true, vegas_star = true },
-				feed = "Your Vegas show is sold out for years!",
+				setFlags = { has_residency = true, concert_star = true },
+				feed = "Your concert show is sold out for years!",
 			},
 			{
 				text = "Negotiate for shorter commitment",
@@ -4115,10 +4132,44 @@ function CelebrityEvents.processYearlyFameUpdates(state)
 		
 		if career and career.stages[nextStage] then
 			local nextStageInfo = career.stages[nextStage]
-			if fameState.yearsInStage >= requiredYears and (state.Fame or 0) >= nextStageInfo.fameRequired then
+			
+			-- CRITICAL FIX #16: Check stat requirements for promotion
+			local meetsStatRequirements = true
+			if nextStageInfo.minStats then
+				state.Stats = state.Stats or {}
+				for statName, minValue in pairs(nextStageInfo.minStats) do
+					local playerStat = state.Stats[statName] or state[statName] or 50
+					if playerStat < minValue then
+						meetsStatRequirements = false
+						-- Store which stat is blocking promotion for UI feedback
+						state.Flags = state.Flags or {}
+						state.Flags.blocked_promotion_stat = statName
+						state.Flags.blocked_promotion_required = minValue
+						break
+					end
+				end
+			end
+			
+			if fameState.yearsInStage >= requiredYears and (state.Fame or 0) >= nextStageInfo.fameRequired and meetsStatRequirements then
 				-- Eligible for promotion
 				state.Flags = state.Flags or {}
 				state.Flags.eligible_for_promotion = true
+				state.Flags.blocked_promotion_stat = nil
+				state.Flags.blocked_promotion_required = nil
+			elseif not meetsStatRequirements then
+				-- CRITICAL FIX #16: Notify player they need to improve stats
+				table.insert(events, {
+					id = "stat_block_promotion",
+					title = "📉 Career Progress Blocked",
+					text = string.format("You need higher %s to advance to %s. Work on improving yourself!", 
+						state.Flags.blocked_promotion_stat or "stats", 
+						nextStageInfo.name or "the next level"),
+					emoji = "⚠️",
+					category = "career",
+					choices = {
+						{ text = "Work on improving", deltas = {}, feed = "resolved to work harder" },
+					}
+				})
 			end
 		end
 	end
@@ -4194,6 +4245,295 @@ if CelebrityEvents.RapperCareer and CelebrityEvents.RapperCareer.events then
 		event.maxAge = event.maxAge or 99
 		table.insert(CelebrityEvents.events, event)
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Fame Path Events - trigger when player starts Celebrity story path
+-- User feedback: "The storypath doesn't rlly do much when I tried becoming famous"
+-- Solution: Add specific events that trigger based on pursuing_fame flag
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local FamePathEvents = {
+	-- Initial fame discovery event
+	{
+		id = "fame_path_youtube_idea",
+		title = "💡 YouTube Channel Idea",
+		emoji = "💡",
+		text = "You've been thinking about starting a YouTube channel! The idea of making videos and building an audience excites you. Maybe you could start posting content?",
+		category = "celebrity",
+		weight = 25,
+		minAge = 13,
+		maxAge = 35,
+		baseChance = 0.65,
+		oneTime = true,
+		conditions = { requiresFlags = { pursuing_fame = true } },
+		blockedByFlags = { youtube_started = true, content_creator = true },
+		choices = {
+			{
+				text = "Start a gaming channel! 🎮",
+				effects = { Happiness = 15, Smarts = 2 },
+				setFlags = { youtube_started = true, gaming_content = true, content_creator = true },
+				feedText = "You created your first gaming YouTube channel! Time to start uploading.",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+					state.FameState.contentPlatforms.youtube = true
+					state.Fame = (state.Fame or 0) + 2
+				end,
+			},
+			{
+				text = "Start a lifestyle/vlog channel 📹",
+				effects = { Happiness = 15, Looks = 2 },
+				setFlags = { youtube_started = true, vlog_content = true, content_creator = true },
+				feedText = "You started your vlogging journey! Your first video got 23 views.",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+					state.FameState.contentPlatforms.youtube = true
+					state.Fame = (state.Fame or 0) + 2
+				end,
+			},
+			{
+				text = "Maybe later...",
+				effects = { Happiness = -3 },
+				feedText = "You're not ready to start creating content yet.",
+			},
+		},
+	},
+	
+	-- TikTok opportunity
+	{
+		id = "fame_path_tiktok_viral",
+		title = "📱 TikTok Trend Opportunity",
+		emoji = "📱",
+		text = "There's a viral TikTok trend happening right now! This could be your chance to get noticed.",
+		category = "celebrity",
+		weight = 20,
+		minAge = 13,
+		maxAge = 30,
+		baseChance = 0.55,
+		cooldown = 2,
+		conditions = { requiresFlags = { pursuing_fame = true } },
+		choices = {
+			{
+				text = "Jump on the trend! 🔥",
+				effects = { Happiness = 10 },
+				setFlags = { tiktok_active = true },
+				feedText = "You posted your video!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "easy" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local followers = math.random(100, 5000)
+						state.FameState = state.FameState or {}
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + followers
+						state.Fame = (state.Fame or 0) + math.floor(followers / 200)
+						if state.AddFeed then
+							state:AddFeed("📱 Your TikTok went semi-viral! +" .. followers .. " followers!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("📱 Your TikTok got some views but didn't blow up.")
+						end
+						state.Fame = (state.Fame or 0) + 1
+					end
+				end,
+			},
+			{
+				text = "Create something original instead",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { creative_creator = true },
+				feedText = "You're working on original content.",
+			},
+			{
+				text = "Not interested in TikTok",
+				effects = { Happiness = 2 },
+				feedText = "TikTok isn't for you.",
+			},
+		},
+	},
+	
+	-- Social media following milestone
+	{
+		id = "fame_path_first_1k_followers",
+		title = "🎉 First 1,000 Followers!",
+		emoji = "🎉",
+		text = "You've hit 1,000 followers on social media! People are starting to notice you!",
+		category = "celebrity",
+		weight = 18,
+		minAge = 13,
+		maxAge = 50,
+		baseChance = 0.6,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { pursuing_fame = true },
+			custom = function(state)
+				return state.FameState and (state.FameState.socialFollowers or 0) >= 500
+			end,
+		},
+		blockedByFlags = { hit_1k_followers = true },
+		choices = {
+			{
+				text = "Celebrate with a giveaway! 🎁",
+				effects = { Happiness = 15, Money = -100 },
+				setFlags = { hit_1k_followers = true, generous_creator = true },
+				feedText = "The giveaway brought in even more followers!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(200, 500)
+					state.Fame = (state.Fame or 0) + 5
+				end,
+			},
+			{
+				text = "Thank your followers with a special post ❤️",
+				effects = { Happiness = 12 },
+				setFlags = { hit_1k_followers = true, grateful_creator = true },
+				feedText = "Your followers appreciate your gratitude!",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 3
+				end,
+			},
+		},
+	},
+	
+	-- Brand deal opportunity
+	{
+		id = "fame_path_first_brand_deal",
+		title = "💼 Brand Deal Offer!",
+		emoji = "💼",
+		text = "A small brand wants to send you free products in exchange for a post! This is your first brand deal opportunity!",
+		category = "celebrity",
+		weight = 15,
+		minAge = 16,
+		maxAge = 45,
+		baseChance = 0.5,
+		oneTime = true,
+		conditions = { 
+			requiresFlags = { pursuing_fame = true },
+			custom = function(state)
+				return (state.Fame or 0) >= 5 or (state.FameState and (state.FameState.socialFollowers or 0) >= 1000)
+			end,
+		},
+		blockedByFlags = { first_brand_deal = true },
+		choices = {
+			{
+				text = "Accept the deal! Free stuff! 🎁",
+				effects = { Happiness = 12 },
+				setFlags = { first_brand_deal = true, has_brand_deals = true },
+				feedText = "You received your first brand partnership! Free products incoming!",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 3
+					-- Gift them some value from the products
+					state.Money = (state.Money or 0) + math.random(50, 200)
+				end,
+			},
+			{
+				text = "Negotiate for cash payment 💰",
+				effects = { Happiness = 8 },
+				feedText = "Negotiating for actual payment...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(100, 500)
+						state.Flags = state.Flags or {}
+						state.Flags.first_brand_deal = true
+						state.Flags.has_brand_deals = true
+						state.Fame = (state.Fame or 0) + 4
+						if state.AddFeed then
+							state:AddFeed("💰 They agreed to pay you! Smart negotiation!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.first_brand_deal = true
+						if state.AddFeed then
+							state:AddFeed("💼 They went with someone else. Maybe next time.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Decline - I want to stay authentic",
+				effects = { Happiness = 5 },
+				setFlags = { authentic_creator = true },
+				feedText = "You're staying true to yourself.",
+			},
+		},
+	},
+	
+	-- Hater/Critic event
+	-- CRITICAL FIX: "First Hater" should only happen ONCE (oneTime = true)
+	{
+		id = "fame_path_first_hater",
+		title = "😠 Your First Hater",
+		emoji = "😠",
+		text = "Someone left a really mean comment on your content. They're criticizing everything about you. This is a rite of passage for creators...",
+		category = "celebrity",
+		weight = 20,
+		minAge = 13,
+		maxAge = 50,
+		baseChance = 0.55,
+		oneTime = true, -- CRITICAL FIX: First hater should only happen ONCE!
+		conditions = { requiresFlags = { pursuing_fame = true, content_creator = true } },
+		choices = {
+			{
+				text = "Ignore them - haters gonna hate 😎",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { handles_criticism_well = true },
+				feedText = "You rose above the negativity. A true professional.",
+			},
+			{
+				text = "Respond with a clap-back 🔥",
+				effects = { Happiness = -2 },
+				feedText = "The drama might attract attention...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- Drama brings attention
+						state.Fame = (state.Fame or 0) + 5
+						state.FameState = state.FameState or {}
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(100, 500)
+						if state.AddFeed then
+							state:AddFeed("🔥 The drama went viral! People love the content!")
+						end
+					else
+						-- Backlash
+						state.Fame = math.max(0, (state.Fame or 0) - 2)
+						if state.AddFeed then
+							state:AddFeed("😬 The clap-back backfired. Some followers left...")
+						end
+					end
+				end,
+			},
+			{
+				text = "Delete the comment 🗑️",
+				effects = { Happiness = 3 },
+				feedText = "You deleted the negativity from your space.",
+			},
+		},
+	},
+}
+
+-- Add fame path events to main events list
+-- CRITICAL FIX: Fame path events should NOT be isCelebrityOnly!
+-- Free players pursuing fame via influencer/streamer careers should also get these events
+-- Only the rapper/signed musician paths require Celebrity gamepass, NOT influencer/streamer!
+-- User feedback: "Story paths don't do much" - this was blocking events for free fame pursuers
+for _, event in ipairs(FamePathEvents) do
+	-- CRITICAL: DO NOT set isCelebrityOnly = true here!
+	-- These events check for pursuing_fame flag OR fame career flags
+	-- This allows free players (influencer/streamer) to get fame-related events
+	event.isFameEvent = true -- Custom flag for fame events (doesn't require gamepass)
+	
+	-- Modify conditions to allow fame career holders too, not just story path users
+	if event.conditions then
+		event.conditions.allowsFameCareers = true -- Custom flag to enable fame career triggering
+	else
+		event.conditions = { allowsFameCareers = true }
+	end
+	
+	table.insert(CelebrityEvents.events, event)
 end
 
 -- Also expose as LifeEvents for backwards compatibility

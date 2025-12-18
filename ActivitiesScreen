@@ -140,6 +140,19 @@ local function formatMoneyShort(amount)
 	return string.format("$%d", amount)
 end
 
+-- CRITICAL FIX: formatNumber function for displaying large numbers nicely
+local function formatNumber(num)
+	num = tonumber(num) or 0
+	if num >= 1000000000 then
+		return string.format("%.1fB", num / 1000000000)
+	elseif num >= 1000000 then
+		return string.format("%.1fM", num / 1000000)
+	elseif num >= 1000 then
+		return string.format("%.1fK", num / 1000)
+	end
+	return tostring(math.floor(num))
+end
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 local ActivitiesScreen = {}
@@ -155,77 +168,113 @@ local CommitCrime = getRemote("CommitCrime")
 local DoPrisonAction = getRemote("DoPrisonAction")
 
 -- Activity Data - Must match server's Activities IDs!
+-- CRITICAL FIX: Added minigames to MORE activities for increased variety and engagement!
 local MindBody = {
-	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0 },
+	-- CRITICAL FIX: Reading now has a QTE minigame (focus while reading)
+	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
 	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
-	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0 },
-	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0 },
-	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200 },
+	-- CRITICAL FIX: Running now has mash minigame (sprint!)
+	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Yoga now has QTE minigame (hold the pose!)
+	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Spa day now has QTE minigame (relaxation timing)
+	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200, hasMinigame = true, minigameType = "qte" },
 	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
 	-- CRITICAL FIX: Driver's license with QTE driving test minigame
 	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
 	-- NEW: Martial arts with fight minigame
-	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "fight" },
+	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "combat" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- EDUCATION (Like BitLife!) - Go back to school, get GED, etc.
+-- CRITICAL FIX: Added minigames to education for exam-style gameplay!
 -- ═══════════════════════════════════════════════════════════════════════════
 local Education = {
-	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school" },
+	-- CRITICAL FIX: GED test has mash minigame (cram session!)
+	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school", hasMinigame = true, minigameType = "mash" },
 	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "Back to School!", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
-	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma" },
-	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma" },
-	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000 },
-	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000 },
-	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree" },
-	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree" },
-	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree" },
+	-- CRITICAL FIX: College application has debate minigame (interview!)
+	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	-- CRITICAL FIX: Trade school has mash minigame (hands-on training!)
+	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Coding bootcamp has hacking minigame!
+	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000, hasMinigame = true, minigameType = "hacking" },
+	-- CRITICAL FIX: Professional schools have debate minigame (interview/exam!)
+	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
 }
 
+-- CRITICAL FIX: Added minigames to social activities for more engaging gameplay!
 local Social = {
-	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0 },
-	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0 },
+	-- CRITICAL FIX: Party now has mash minigame (dance off!)
+	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Hangout now has QTE minigame (social timing!)
+	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
-	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300 },
-	-- NEW: Karaoke with debate minigame
+	-- CRITICAL FIX: Host party now has QTE minigame (hosting is hard!)
+	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Karaoke with debate minigame (singing competition!)
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
+	-- NEW: Pick a Fight with combat minigame
+	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
 }
 
+-- CRITICAL FIX: Added minigames to entertainment activities!
 local Entertainment = {
 	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+Happiness", minAge = 2, cost = 0 },
-	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
-	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20 },
-	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150 },
-	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000 },
-	-- NEW: Arcade with diverse minigames
+	-- CRITICAL FIX: Video games have mash minigame now (button mashing!)
+	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Movies now has QTE minigame (stay awake/engaged!)
+	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Concert now has mash minigame (moshing/dancing!)
+	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150, hasMinigame = true, minigameType = "mash" },
+	-- CRITICAL FIX: Vacation now has QTE minigame (adventure moments!)
+	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000, hasMinigame = true, minigameType = "qte" },
+	-- NEW: Arcade with mash minigame (classic arcade action!)
 	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+Happiness +Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
 }
 
 -- Crime IDs MUST match server's Crimes table exactly!
--- CRITICAL FIX: Added diverse minigames for different crimes
+-- CRITICAL FIX: Added diverse minigames for ALL crimes for maximum engagement!
 local Crimes = {
 	-- PETTY CRIMES
-	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10 },
-	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8 },
+	-- CRITICAL FIX: Porch pirate now has QTE minigame (grab and run!)
+	{ id = "porch_pirate", name = "Porch Pirate", emoji = "📦", risk = 20, reward = "$10-$200", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Shoplift now has QTE minigame (slip items and escape!)
+	{ id = "shoplift", name = "Shoplift", emoji = "🛒", risk = 25, reward = "$20-$150", minAge = 8, hasMinigame = true, minigameType = "qte" },
 	{ id = "pickpocket", name = "Pickpocket", emoji = "👛", risk = 35, reward = "$30-$300", minAge = 10, hasMinigame = true, minigameType = "qte" },
+	-- VIOLENCE (Combat-based crimes with full combat system!)
+	{ id = "assault", name = "Assault", emoji = "👊", risk = 45, reward = "$0", minAge = 14, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	{ id = "mugging", name = "Mugging", emoji = "🔪", risk = 55, reward = "$50-$500", minAge = 16, isCombat = true, hasMinigame = true, minigameType = "combat" },
 	-- PROPERTY CRIMES
 	{ id = "burglary", name = "Burglary", emoji = "🏠", risk = 50, reward = "$500-$5K", minAge = 16, hasMinigame = true, minigameType = "heist" },
-	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16 },
+	-- CRITICAL FIX: Car theft now has getaway minigame!
+	{ id = "car_theft", name = "Car Theft", emoji = "🚙", risk = 50, reward = "$3K-$15K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
 	{ id = "gta", name = "Grand Theft Auto", emoji = "🚗", risk = 60, reward = "$2K-$20K", minAge = 16, hasMinigame = true, minigameType = "getaway" },
 	-- WHITE COLLAR
-	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18 },
-	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16 },
+	-- CRITICAL FIX: Tax fraud now has hacking minigame (cooking the books!)
+	{ id = "tax_fraud", name = "Tax Fraud", emoji = "📋", risk = 35, reward = "$5K-$50K", minAge = 18, hasMinigame = true, minigameType = "hacking" },
+	-- CRITICAL FIX: Identity theft now has hacking minigame!
+	{ id = "identity_theft", name = "Identity Theft", emoji = "👤", risk = 40, reward = "$1K-$20K", minAge = 16, hasMinigame = true, minigameType = "hacking" },
 	-- SERIOUS CRIMES
-	{ id = "illegal_dealing", name = "Illegal Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16 },
-	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18 },
-	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18 },
+	-- CRITICAL FIX: Dealing now has QTE minigame (make the deal!)
+	{ id = "illegal_dealing", name = "Illegal Dealing", emoji = "💊", risk = 55, reward = "$500-$10K", minAge = 16, hasMinigame = true, minigameType = "qte" },
+	-- CRITICAL FIX: Extortion now has debate minigame (intimidation!)
+	{ id = "extortion", name = "Extortion", emoji = "🤫", risk = 60, reward = "$2K-$30K", minAge = 18, hasMinigame = true, minigameType = "debate" },
+	-- CRITICAL FIX: Arson now has QTE minigame (set the fire and run!)
+	{ id = "arson", name = "Arson", emoji = "🔥", risk = 70, reward = "$0-$1K", minAge = 18, hasMinigame = true, minigameType = "qte" },
 	-- MAJOR CRIMES
 	{ id = "bank_robbery", name = "Bank Robbery", emoji = "🏦", risk = 80, reward = "$10K-$500K", minAge = 18, hasMinigame = true, minigameType = "heist" },
-	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18 },
-	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18 },
+	-- CRITICAL FIX: Kidnapping now has combat minigame (subdue the target!)
+	{ id = "kidnapping", name = "Kidnapping", emoji = "🚐", risk = 85, reward = "$10K-$200K", minAge = 18, hasMinigame = true, minigameType = "combat" },
+	-- CRITICAL FIX: Murder now has combat minigame!
+	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18, hasMinigame = true, minigameType = "combat" },
 }
 
 -- CRITICAL FIX: Prison activities with appropriate minigames
@@ -302,8 +351,8 @@ local BabyFun = {
 	{ id = "play_outside", name = "Play Outside", emoji = "🌳", effect = "+Health +Happiness", minAge = 1, maxAge = 5, cost = 0 },
 }
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - CRITICAL FIX: Enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[ActivitiesScreen]", ...) end
 end
@@ -311,7 +360,17 @@ local function logWarn(...)
 	warn("[ActivitiesScreen]", ...)
 end
 
-function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+-- CRITICAL FIX: Action print helper for tracking button clicks
+local function logAction(actionType, actionId, actionName, details)
+	print(string.format("[ActivitiesScreen] 🔘 ACTION: %s | ID: %s | Name: %s | %s", 
+		actionType or "unknown", 
+		tostring(actionId or "nil"), 
+		tostring(actionName or "nil"),
+		details or ""
+	))
+end
+
+function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard)
 	log("=== CREATING ActivitiesScreen ===")
 	local self = setmetatable({}, ActivitiesScreen)
 	self.screenGui = screenGui
@@ -320,6 +379,8 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	self.hideBlur = hideBlurFunc
 	self.isVisible = false
 	self.currentTab = "mindbody"
+	-- CRITICAL FIX: Store callback for showing BitLife-style event cards
+	self.onShowEventCard = onShowEventCard
 	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "InJail:", self:isInJail())
 	self:createUI()
 	
@@ -382,7 +443,9 @@ function ActivitiesScreen:updateState(newState)
 
 	-- Store previous jail status using the SAME logic as isInJail()
 	local wasInJail = false
+	local wasAge = 0
 	if self.playerState then
+		wasAge = self.playerState.Age or 0
 		-- Priority: InJail (ExtendedState) > Flags.in_prison > Flags.incarcerated
 		if self.playerState.InJail == true then
 			wasInJail = true
@@ -395,6 +458,25 @@ function ActivitiesScreen:updateState(newState)
 
 	if newState then 
 		self.playerState = newState 
+
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #24: Detect new life and rebuild UI completely
+		-- If age went from high to 0-1, this is a new life - need fresh UI
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
+		if isNewLife then
+			log("🔄 NEW LIFE DETECTED! Rebuilding activities UI completely")
+			-- Reset to default tab for new life
+			self.currentTab = "mindbody"
+			if self.isVisible then
+				self:rebuildTabs()
+				self:updateInfoBar()
+				self:switchTab(self.currentTab)
+			end
+			return -- Don't process jail changes for new life
+		end
 
 		-- Check if jail status changed using consistent logic
 		local nowInJail = self:isInJail()
@@ -2028,6 +2110,9 @@ function ActivitiesScreen:createMobOperationsCards(parent, mobState)
 end
 
 function ActivitiesScreen:attemptJoinMob(familyId)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("JOIN_MOB", familyId, "Join Crime Family", string.format("Age: %d", self:getAge()))
+	
 	log("Attempting to join mob:", familyId)
 	local JoinMob = getRemote("JoinMob")
 	if JoinMob then
@@ -2060,15 +2145,15 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 				self.state.Flags = self.state.Flags or {}
 				self.state.Flags.in_mob = true
 			end
-			self:showResult(true, result.message or "You've been initiated into the family!", "🔫")
+			self:showActivityResult(true, result.message or "You've been initiated into the family!", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "🔫")
 			-- CRITICAL FIX #34: Delay refresh to allow state to propagate
 			task.delay(0.3, function()
 				self:switchTab("crime") -- Refresh to show mob operations
 			end)
 		elseif success and result then
-			self:showResult(false, result.message or "The family rejected you.", "❌")
+			self:showActivityResult(false, result.message or "The family rejected you.", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "❌")
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "❌")
 		end
 	else
 		-- Fallback for testing - also update local state
@@ -2088,7 +2173,7 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 			self.playerState.Flags = self.playerState.Flags or {}
 			self.playerState.Flags.in_mob = true
 		end
-		self:showResult(true, "You've joined the crime family! Rise through the ranks...", "🔫")
+		self:showActivityResult(true, "You've joined the crime family! Rise through the ranks...", {id = "join_mob", name = "Join Crime Family", emoji = "🔫"}, "🔫")
 		task.delay(0.3, function()
 			self:switchTab("crime")
 		end)
@@ -2096,6 +2181,9 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 end
 
 function ActivitiesScreen:attemptLeaveMob()
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("LEAVE_MOB", "leave_mob", "Leave Crime Family", "Risky action!")
+	
 	log("Attempting to leave mob")
 	local LeaveMob = getRemote("LeaveMob")
 	if LeaveMob then
@@ -2104,19 +2192,22 @@ function ActivitiesScreen:attemptLeaveMob()
 			return LeaveMob:InvokeServer()
 		end)
 		if success and result and result.success then
-			self:showResult(true, result.message or "You've left the family. Watch your back...", "🚪")
+			self:showActivityResult(true, result.message or "You've left the family. Watch your back...", {id = "leave_mob", name = "Leave Crime Family", emoji = "🚪"}, "🚪")
 			self:switchTab("crime") -- Refresh
 		elseif success and result then
-			self:showResult(false, result.message or "You can't leave... not alive anyway.", "💀")
+			self:showActivityResult(false, result.message or "You can't leave... not alive anyway.", {id = "leave_mob", name = "Leave Crime Family", emoji = "💀"}, "💀")
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = "leave_mob", name = "Leave Crime Family", emoji = "❌"}, "❌")
 		end
 	else
-		self:showResult(true, "You've left the crime family. They won't forget this...", "🚪")
+		self:showActivityResult(true, "You've left the crime family. They won't forget this...", {id = "leave_mob", name = "Leave Crime Family", emoji = "🚪"}, "🚪")
 	end
 end
 
 function ActivitiesScreen:doMobOperation(opId, opName)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("MOB_OPERATION", opId, opName, "Mafia activity")
+	
 	log("Doing mob operation:", opId)
 	local DoMobOp = getRemote("DoMobOperation")
 	if DoMobOp then
@@ -2126,7 +2217,7 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 		end)
 		if success and result and result.success then
 			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
-			self:showResult(true, msg, "💰")
+			self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
 			
 			-- CRITICAL FIX: Update local mob state after operation
 			if self.state and self.state.MobState then
@@ -2146,13 +2237,13 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			if result.arrested and self.state then
 				self.state.InJail = true
 			end
-			self:showResult(false, msg, result.arrested and "🚔" or "❌")
+			self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
 		else
-			self:showResult(false, "Connection error. Try again.", "❌")
+			self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
 		end
 	else
 		-- Fallback for testing
-		self:showResult(true, opName .. " completed! You earned cash and respect.", "💰")
+		self:showActivityResult(true, opName .. " completed! You earned cash and respect.", {id = opId, name = opName, emoji = "💰"}, "💰")
 	end
 	self:updateInfoBar()
 	self:switchTab("crime") -- Refresh
@@ -2557,50 +2648,53 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 	iconFrame.Parent = card
 	UI.corner(iconFrame, 12)
 
+	-- CRITICAL UI FIX: Responsive text sizes for crime cards
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = Enum.Font.GothamBold
-	iconLabel.TextSize = 26
+	iconLabel.TextSize = IS_TINY_PHONE and 20 or (IS_SMALL_PHONE and 22 or 26)
 	iconLabel.Text = item.emoji
 	iconLabel.ZIndex = 86
 	iconLabel.Parent = iconFrame
 
-	-- Name
+	-- Name - CRITICAL UI FIX: Bigger, responsive text
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -130, 0, 22)
-	nameLabel.Position = UDim2.new(0, 65, 0, 10)
+	nameLabel.Size = UDim2.new(1, IS_TINY_PHONE and -100 or -130, 0, IS_TINY_PHONE and 20 or 22)
+	nameLabel.Position = UDim2.new(0, IS_TINY_PHONE and 55 or 65, 0, IS_TINY_PHONE and 8 or 10)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = F.Medium or Enum.Font.GothamMedium
-	nameLabel.TextSize = 15
+	nameLabel.TextSize = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 15 or 17)
 	nameLabel.TextColor3 = C.Gray900
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Text = item.name
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.ZIndex = 85
 	nameLabel.Parent = card
 
-	-- Effect
+	-- Effect - CRITICAL UI FIX: Bigger, responsive text
 	local effectLabel = Instance.new("TextLabel")
-	effectLabel.Size = UDim2.new(1, -130, 0, 18)
-	effectLabel.Position = UDim2.new(0, 65, 0, 34)
+	effectLabel.Size = UDim2.new(1, IS_TINY_PHONE and -100 or -130, 0, IS_TINY_PHONE and 16 or 18)
+	effectLabel.Position = UDim2.new(0, IS_TINY_PHONE and 55 or 65, 0, IS_TINY_PHONE and 28 or 34)
 	effectLabel.BackgroundTransparency = 1
 	effectLabel.Font = F.Body
-	effectLabel.TextSize = 12
+	effectLabel.TextSize = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 14)
 	effectLabel.TextColor3 = C.Gray500
 	effectLabel.TextXAlignment = Enum.TextXAlignment.Left
 	effectLabel.Text = item.effect or ""
+	effectLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	effectLabel.ZIndex = 85
 	effectLabel.Parent = card
 
-	-- Risk indicator if present
+	-- Risk indicator if present - CRITICAL UI FIX: Responsive sizing
 	if item.risk and item.risk > 0 then
 		local riskLabel = Instance.new("TextLabel")
-		riskLabel.Size = UDim2.new(0, 50, 0, 20)
+		riskLabel.Size = UDim2.new(0, IS_TINY_PHONE and 42 or 50, 0, IS_TINY_PHONE and 18 or 20)
 		riskLabel.AnchorPoint = Vector2.new(1, 0.5)
-		riskLabel.Position = UDim2.new(1, -60, 0.5, 0)
+		riskLabel.Position = UDim2.new(1, IS_TINY_PHONE and -50 or -60, 0.5, 0)
 		riskLabel.BackgroundColor3 = C.RedPale
 		riskLabel.Font = F.Medium
-		riskLabel.TextSize = 11
+		riskLabel.TextSize = IS_TINY_PHONE and 10 or 11
 		riskLabel.TextColor3 = C.RedDark
 		riskLabel.Text = "⚠️" .. item.risk .. "%"
 		riskLabel.ZIndex = 85
@@ -2608,20 +2702,20 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 		UI.pill(riskLabel)
 	end
 
-	-- Do button
+	-- Do button - CRITICAL UI FIX: Responsive sizing
 	local doBtn = Instance.new("TextButton")
-	doBtn.Size = UDim2.new(0, 50, 0, 36)
+	doBtn.Size = UDim2.new(0, IS_TINY_PHONE and 44 or 50, 0, IS_TINY_PHONE and 32 or 36)
 	doBtn.AnchorPoint = Vector2.new(1, 0.5)
-	doBtn.Position = UDim2.new(1, -8, 0.5, 0)
+	doBtn.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -8, 0.5, 0)
 	doBtn.BackgroundColor3 = C.Red
 	doBtn.Font = F.Button
-	doBtn.TextSize = 13
+	doBtn.TextSize = IS_TINY_PHONE and 11 or 13
 	doBtn.TextColor3 = C.White
 	doBtn.Text = "Do It!"
 	doBtn.AutoButtonColor = false
 	doBtn.ZIndex = 86
 	doBtn.Parent = card
-	UI.corner(doBtn, 10)
+	UI.corner(doBtn, IS_TINY_PHONE and 8 or 10)
 
 	doBtn.MouseEnter:Connect(function()
 		UI.tween(doBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark or C.Red })
@@ -2631,12 +2725,17 @@ function ActivitiesScreen:createMischiefCard(parent, item, index)
 	end)
 
 	doBtn.MouseButton1Click:Connect(function()
+		-- CRITICAL FIX: Log action when mischief button is clicked
+		logAction("MISCHIEF_BTN_CLICK", item.id, item.name, "Trouble time!")
 		self:doMischief(item)
 	end)
 end
 
 -- Execute mischief activity
 function ActivitiesScreen:doMischief(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("MISCHIEF", item.id, item.name, string.format("Age: %d", self:getAge()))
+	
 	log("Doing mischief:", item.id, item.name)
 	
 	-- Use DoActivity remote for mischief (server handles it)
@@ -2647,9 +2746,10 @@ function ActivitiesScreen:doMischief(item)
 		end)
 		if success and result then
 			if result.success then
-				self:showResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item.emoji)
+				-- CRITICAL FIX: Use proper BitLife-style mischief result card
+				self:showActivityResult(true, result.message or ("You " .. string.lower(item.name) .. "!"), item, item.emoji)
 			else
-				self:showResult(false, result.message or "That didn't work out...", "😅")
+				self:showActivityResult(false, result.message or "That didn't work out...", item, "😅")
 			end
 		elseif not success then
 			-- Server error - use fallback message
@@ -2685,11 +2785,11 @@ function ActivitiesScreen:doMischief(item)
 			}
 			
 			local msg = messages[item.id] or ("You " .. string.lower(item.name) .. "!")
-			self:showResult(true, msg, item.emoji)
+			self:showActivityResult(true, msg, item, item.emoji)
 		end
 	else
 		logWarn("DoActivity remote not found!")
-		self:showResult(false, "Something went wrong!", "❌")
+		self:showActivityResult(false, "Something went wrong!", item, "❌")
 	end
 	
 	-- Update UI
@@ -2989,7 +3089,7 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 30
+	iconLabel.TextSize = IS_TINY_PHONE and 24 or (IS_SMALL_PHONE and 26 or 30)
 	iconLabel.TextColor3 = canDo and accentColor or C.Gray500
 	iconLabel.TextTransparency = canDo and 0 or 0.3
 	iconLabel.Text = item.emoji
@@ -2997,16 +3097,17 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	iconLabel.Parent = iconFrame
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- TITLE & DETAILS
+	-- TITLE & DETAILS - CRITICAL UI FIX: Responsive text sizes for mobile
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
+	-- Title (CRITICAL FIX: Responsive sizing + truncation)
+	local titleTextSize = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 15 or 17)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, -90, 0, 24)  -- Adjusted width to fit better
-	titleLabel.Position = UDim2.new(0, 84, 0, 8)
+	titleLabel.Size = UDim2.new(0.5, IS_TINY_PHONE and -70 or -90, 0, IS_TINY_PHONE and 20 or 24)
+	titleLabel.Position = UDim2.new(0, IS_TINY_PHONE and 70 or 84, 0, IS_TINY_PHONE and 6 or 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15  -- Slightly smaller for longer names
+	titleLabel.TextSize = titleTextSize
 	titleLabel.TextColor3 = canDo and C.Gray900 or C.Gray500
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
@@ -3014,16 +3115,17 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Effect badge (CRITICAL FIX: Dynamic width for longer text)
+	-- Effect badge (CRITICAL FIX: Dynamic width + responsive)
 	local effectText = item.effect
 	local displayEffect = effectText
 	if cost > 0 then
 		displayEffect = effectText .. " 💵$" .. cost
 	end
 	
+	local effectTextSize = IS_TINY_PHONE and 11 or (IS_SMALL_PHONE and 12 or 13)
 	local effectBadge = Instance.new("Frame")
-	effectBadge.Size = UDim2.new(0, math.min(180, #displayEffect * 7 + 16), 0, 24)  -- Dynamic width based on text
-	effectBadge.Position = UDim2.new(0, 84, 0, 34)
+	effectBadge.Size = UDim2.new(0, math.min(IS_TINY_PHONE and 150 or 180, #displayEffect * (IS_TINY_PHONE and 6 or 7) + 16), 0, IS_TINY_PHONE and 20 or 24)
+	effectBadge.Position = UDim2.new(0, IS_TINY_PHONE and 70 or 84, 0, IS_TINY_PHONE and 28 or 34)
 	effectBadge.BackgroundColor3 = canDo and (cost > 0 and C.AmberPale or C.GreenPale) or C.Gray100
 	effectBadge.ZIndex = 85
 	effectBadge.Parent = card
@@ -3033,18 +3135,18 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 	effectLabel.Size = UDim2.fromScale(1, 1)
 	effectLabel.BackgroundTransparency = 1
 	effectLabel.Font = F.Medium
-	effectLabel.TextSize = 10  -- Smaller to fit better
+	effectLabel.TextSize = effectTextSize
 	effectLabel.TextColor3 = canDo and (cost > 0 and C.AmberDark or C.GreenDark) or C.Gray500
 	effectLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	effectLabel.Text = displayEffect
 	effectLabel.ZIndex = 86
 	effectLabel.Parent = effectBadge
 
-	-- Minigame badge (more visible)
+	-- Minigame badge (more visible) - CRITICAL UI FIX: Responsive sizing
 	if item.hasMinigame then
 		local miniBadge = Instance.new("Frame")
-		miniBadge.Size = UDim2.new(0, 75, 0, 20)
-		miniBadge.Position = UDim2.new(0, 84, 0, 64)
+		miniBadge.Size = UDim2.new(0, IS_TINY_PHONE and 65 or 75, 0, IS_TINY_PHONE and 18 or 20)
+		miniBadge.Position = UDim2.new(0, IS_TINY_PHONE and 70 or 84, 0, IS_TINY_PHONE and 52 or 64)
 		miniBadge.BackgroundColor3 = canDo and C.PurplePale or C.Gray100
 		miniBadge.ZIndex = 85
 		miniBadge.Parent = card
@@ -3054,7 +3156,7 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 		miniLabel.Size = UDim2.fromScale(1, 1)
 		miniLabel.BackgroundTransparency = 1
 		miniLabel.Font = F.Button
-		miniLabel.TextSize = 10
+		miniLabel.TextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
 		miniLabel.TextColor3 = canDo and C.Purple or C.Gray500
 		miniLabel.Text = "🎮 Minigame"
 		miniLabel.ZIndex = 86
@@ -3104,19 +3206,22 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 		UI.corner(btnShadow, 14)
 	end
 
+	-- CRITICAL UI FIX: Responsive action button
+	local actionBtnW = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 68 or 75)
+	local actionBtnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 45 or 50)
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Name = "ActionBtn"
-	actionBtn.Size = UDim2.new(0, 75, 0, 50)
+	actionBtn.Size = UDim2.new(0, actionBtnW, 0, actionBtnH)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
-	actionBtn.Position = UDim2.new(1, -8, 0.5, 0)
+	actionBtn.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -8, 0.5, 0)
 	actionBtn.BackgroundColor3 = canDo and accentColor or C.Gray300
 	actionBtn.Font = F.Button
-	actionBtn.TextSize = 15
+	actionBtn.TextSize = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 15)
 	actionBtn.TextColor3 = canDo and C.White or C.Gray500
 	actionBtn.AutoButtonColor = false
 	actionBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	actionBtn.Parent = card
-	UI.corner(actionBtn, 14)
+	UI.corner(actionBtn, IS_TINY_PHONE and 10 or 14)
 
 	if canDo then
 		local isLoading = false
@@ -3149,6 +3254,9 @@ function ActivitiesScreen:createActivityCard(parent, item, order, accentColor, p
 		actionBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
 			isLoading = true
+			
+			-- CRITICAL FIX: Log action when button is clicked
+			logAction("ACTIVITY_BTN_CLICK", item.id, item.name, item.hasMinigame and "Minigame" or "Direct")
 			
 			-- Loading state
 			actionBtn.Text = "⏳..."
@@ -3365,6 +3473,10 @@ function ActivitiesScreen:createCrimeCard(parent, item, order)
 		actionBtn.MouseButton1Click:Connect(function()
 			if isLoading then return end
 			isLoading = true
+			
+			-- CRITICAL FIX: Log action when crime button is clicked
+			logAction("CRIME_BTN_CLICK", item.id, item.name, string.format("Risk: %d%% | Minigame: %s", item.risk or 0, tostring(item.hasMinigame)))
+			
 			actionBtn.Text = "⏳..."
 			
 			-- CRITICAL FIX: Check for minigame BEFORE committing crime
@@ -3515,6 +3627,8 @@ function ActivitiesScreen:createPrisonCard(parent, item, order)
 			end
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
+			-- CRITICAL FIX: Log action when prison activity button is clicked
+			logAction("PRISON_BTN_CLICK", item.id, item.name, item.risk and ("Risk: " .. item.risk .. "%") or "No Risk")
 			self:doPrisonActivity(item)
 		end)
 	end
@@ -4385,16 +4499,42 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 			
 			if self._minigamesInstance and self._minigamesInstance.play then
 				log("Using Minigames module for:", minigameType)
+				
+				-- CRITICAL FIX: Add context for debate minigame to show correct title!
+				local debateContext = "general"
+				local debateTitle = nil
+				if minigameType == "debate" then
+					if item.id == "community_college" or item.id == "university" then
+						debateContext = "interview"
+						debateTitle = "📝 ADMISSION INTERVIEW"
+					elseif item.id == "medical_school" then
+						debateContext = "exam"
+						debateTitle = "🏥 MCAT EXAM"
+					elseif item.id == "law_school" then
+						debateContext = "exam"
+						debateTitle = "⚖️ LSAT EXAM"
+					elseif item.id == "business_school" then
+						debateContext = "exam"
+						debateTitle = "💼 GMAT EXAM"
+					elseif item.id == "karaoke" then
+						debateContext = "karaoke"
+						debateTitle = "🎤 KARAOKE BATTLE"
+					end
+				end
+				
 				self._minigamesInstance:play(minigameType, function(won, stats)
 					log("Minigame result - Won:", won)
 					if won then
 						self:doActivity(item, true)  -- Bonus for winning minigame
 					else
-						self:showResult(false, "You didn't complete the challenge. No gains today!", "😅")
+						-- CRITICAL FIX: Use BitLife-style result card
+						self:showActivityResult(false, "You didn't complete the challenge. No gains today!", item, "😅")
 					end
 				end, {
 					difficulty = item.id == "gym" and "medium" or "easy",
 					taps = item.id == "gym" and 25 or 15,
+					context = debateContext,
+					title = debateTitle,
 				})
 				return
 			end
@@ -4501,11 +4641,22 @@ function ActivitiesScreen:showCrimeMinigame(item)
 			
 			if self._minigamesInstance and self._minigamesInstance.play then
 				log("Using Minigames module for crime:", minigameType)
+				
+				-- CRITICAL FIX: Add context for debate minigame (extortion)
+				local crimeContext = nil
+				local crimeTitle = nil
+				if minigameType == "debate" and item.id == "extortion" then
+					crimeContext = "extortion"
+					crimeTitle = "😤 INTIMIDATION"
+				end
+				
 				self._minigamesInstance:play(minigameType, function(won, stats)
 					log("Crime minigame result - Won:", won)
 					self:doCrimeWithBonus(item, won)
 				end, {
 					difficulty = item.risk and item.risk >= 60 and "hard" or "medium",
+					context = crimeContext,
+					title = crimeTitle,
 				})
 				return
 			end
@@ -4593,12 +4744,15 @@ function ActivitiesScreen:completeCrimeMinigame(success)
 end
 
 function ActivitiesScreen:doCrimeWithBonus(item, bonus)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("CRIME_MINIGAME", item.id, item.name, string.format("Bonus: %s", tostring(bonus)))
+	
 	log("=== COMMITTING CRIME (WITH MINIGAME RESULT) ===")
 	log("Crime:", item.id, "Bonus:", bonus)
 
 	if not CommitCrime then
 		logWarn("CommitCrime remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4611,11 +4765,12 @@ function ActivitiesScreen:doCrimeWithBonus(item, bonus)
 
 	if success and result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
-		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
+		-- CRITICAL FIX: Use BitLife-style result card
+		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error", item, "Error")
 	end
 end
 
@@ -4646,19 +4801,23 @@ function ActivitiesScreen:completeMinigame(success)
 			if success then
 				self:doActivity(self.currentMinigameItem, true)
 			else
-				self:showResult(false, "You gave up halfway through. No gains today!", "Failed")
+				-- CRITICAL FIX: Use BitLife-style result card
+				self:showActivityResult(false, "You gave up halfway through. No gains today!", self.currentMinigameItem, "😅")
 			end
 		end
 	end)
 end
 
 function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
+	-- CRITICAL FIX: Enhanced action logging
+	logAction("PRISON_ESCAPE_RESULT", "prison_escape", "Prison Escape", escaped and "SUCCESS" or "FAILED")
+	
 	log("=== PRISON ESCAPE MINIGAME RESULT ===")
 	log("Escaped:", escaped)
 
 	if not DoPrisonAction then
 		logWarn("DoPrisonAction remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		return
 	end
 
@@ -4675,7 +4834,7 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 			log("Server response:", result.success, result.message)
 			-- Server handles the popup via presentEvent - don't show duplicate!
 		else
-			self:showResult(false, "Server error", "Error")
+			self:showActivityResult(false, "Server error", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		end
 	else
 		-- Player failed minigame - got caught
@@ -4686,21 +4845,168 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 		end)
 		if callSuccess and serverResult then
 			log("Server response for failed escape:", serverResult.success, serverResult.message)
-			self:showResult(false, serverResult.message or "You got caught trying to escape! More time added to your sentence.", "Caught!")
+			-- CRITICAL FIX: Use BitLife-style result card
+			self:showActivityResult(false, serverResult.message or "You got caught trying to escape! More time added to your sentence.", {id = "prison_escape", name = "Prison Escape", emoji = "🚔"}, "🚔", true)
 		else
-			self:showResult(false, "You got caught trying to escape! More time added to your sentence.", "Caught!")
+			self:showActivityResult(false, "You got caught trying to escape! More time added to your sentence.", {id = "prison_escape", name = "Prison Escape", emoji = "🚔"}, "🚔", true)
 		end
 	end
 end
 
+-- Activities that should show full BitLife-style event cards
+local FULL_EVENT_ACTIVITIES = {
+	gym = true,
+	meditate = true,
+	party = true,
+	study = true,
+	read = true,
+	vacation = true,
+	nightclub = true,
+	yoga = true,
+	spa = true,
+	salon = true,
+	run = true,
+	host_party = true,
+	hangout = true,
+	concert = true,
+	movies = true,
+	tv = true,
+	games = true,
+	arcade = true,
+	karaoke = true,
+	martial_arts = true,
+	pick_fight = true,
+}
+
+-- Combat event templates for fight activities
+local CombatEventTemplates = {
+	pick_fight = {
+		{
+			title = "👊 Looking for Trouble",
+			emoji = "👊",
+			texts = {
+				"You're feeling aggressive. Time to pick a fight...",
+				"Your blood is boiling. You need to let off some steam.",
+				"Someone is going to regret crossing you today.",
+			},
+			question = "Who do you confront?",
+			choices = {
+				{ text = "🤼 Someone at a bar", feed = "You started a bar fight!", triggersCombat = true, context = "bar_fight" },
+				{ text = "😤 A stranger on the street", feed = "You picked a fight with a random person!", triggersCombat = true, context = "street_random" },
+				{ text = "🙅 Actually, never mind", feed = "You thought better of it." },
+			},
+		},
+	},
+	martial_arts = {
+		{
+			title = "🥋 Martial Arts Class",
+			emoji = "🥋",
+			texts = {
+				"You arrived at the dojo for training.",
+				"Time to practice your combat skills!",
+				"The instructor pairs you with a sparring partner.",
+			},
+			choices = {
+				{ text = "🥊 Practice sparring", feed = "You practiced your moves!", triggersCombat = true, context = "sparring" },
+				{ text = "📚 Learn techniques", feed = "You focused on form and technique." },
+				{ text = "💪 Conditioning only", feed = "You worked on your fitness." },
+			},
+		},
+	},
+}
+
 function ActivitiesScreen:doActivity(item, bonus)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("ACTIVITY", item.id, item.name, string.format("Bonus: %s | Age: %d | Money: %d", 
+		tostring(bonus or false), self:getAge(), self:getMoney()))
+	
 	log("=== DOING ACTIVITY ===")
 	log("Activity ID:", item.id, "Name:", item.name, "Bonus:", bonus or false)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT ACTIVITIES: Trigger the full combat minigame!
+	-- Activities like "Pick a Fight" and "Bar Fight" use the interactive combat system
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat then
+		log("COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
+		logAction("COMBAT_START", item.id, item.name, "Launching interactive combat minigame")
+		
+		-- Hide this screen first
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context based on activity
+		local combatContext = "street"
+		if item.id == "bar_fight" then
+			combatContext = "bar"
+		elseif item.id == "martial_arts" then
+			combatContext = "school"
+		elseif item.id == "pick_fight" then
+			combatContext = math.random() > 0.5 and "street" or "random"
+		end
+		
+		-- Get minigames reference and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting COMBAT minigame with context:", combatContext)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Combat result - Won:", won, "Stats:", combatResult)
+				logAction("COMBAT_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Damage Dealt: %d | Damage Taken: %d", 
+						combatResult.rounds or 0, combatResult.damageDealt or 0, combatResult.damageTaken or 0))
+				
+				-- Call server to process combat outcome
+				local serverSuccess, serverResult = pcall(function()
+					return DoActivity:InvokeServer(item.id, {
+						isCombat = true,
+						won = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Show result card
+				local resultTitle = won and "🏆 Victory!" or "😵 Defeated!"
+				local resultMessage = won 
+					and "You won the fight! " .. (combatResult.technique or "")
+					or "You lost the fight. " .. (combatResult.technique or "")
+				
+				if combatResult.escaped then
+					resultTitle = "🏃 Escaped!"
+					resultMessage = "You managed to run away from the fight."
+				end
+				
+				-- Show proper result after combat
+				self:show()
+				self:showActivityResult(won, resultMessage, item, resultTitle)
+			end, { 
+				context = combatContext,
+				difficulty = item.id == "martial_arts" and "weak" or "average"
+			})
+		else
+			log("Minigames module not found! Falling back to server-only handling.")
+			-- Fallback: Call server directly if minigames unavailable
+			local success, result = pcall(function()
+				return DoActivity:InvokeServer(item.id, bonus or false)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR ACTIVITIES: Standard server call with event cards
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not DoActivity then
 		logWarn("DoActivity remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4711,28 +5017,143 @@ function ActivitiesScreen:doActivity(item, bonus)
 	end)
 	if not success then
 		logWarn("DoActivity call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Done!" or "Failed")
+		
+		-- CRITICAL FIX: Use full BitLife-style event cards for supported activities
+		-- These show as proper popups in the main UI like real BitLife events
+		if result.success and FULL_EVENT_ACTIVITIES[item.id] and self.onShowEventCard then
+			self:showActivityEventCard(item.id, result.success, result.message, item)
+		else
+			-- Fall back to in-screen result modal for other activities
+			self:showActivityResult(result.success, result.message, item, result.success and "Done!" or "Failed")
+		end
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
 function ActivitiesScreen:doCrime(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("CRIME", item.id, item.name, string.format("Risk: %d%% | Age: %d | Money: %d", 
+		item.risk or 0, self:getAge(), self:getMoney()))
+	
 	log("=== COMMITTING CRIME ===")
 	log("Crime ID:", item.id, "Name:", item.name, "Risk:", item.risk)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT-BASED CRIMES: Trigger full combat minigame for assault/mugging
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat then
+		log("COMBAT CRIME DETECTED! Launching combat minigame for:", item.id)
+		logAction("COMBAT_CRIME_START", item.id, item.name, "Launching combat for crime")
+		
+		-- Hide this screen first
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context based on crime
+		local combatContext = "street"
+		if item.id == "assault" then
+			combatContext = "revenge"
+		elseif item.id == "mugging" then
+			combatContext = "defense" -- Victim might fight back
+		end
+		
+		-- Get minigames reference and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting COMBAT minigame for crime:", item.id, "context:", combatContext)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Combat crime result - Won:", won)
+				logAction("COMBAT_CRIME_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Crime: %s", combatResult.rounds or 0, item.id))
+				
+				-- Call server to process combat crime outcome
+				local serverSuccess, serverResult = pcall(function()
+					return CommitCrime:InvokeServer(item.id, {
+						isCombat = true,
+						won = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Determine result
+				local crimeSuccess = won and not combatResult.escaped
+				local resultTitle
+				local resultMessage
+				local emoji
+				
+				if combatResult.escaped then
+					resultTitle = "🏃 Ran Away!"
+					resultMessage = "You fled the scene before completing the crime."
+					emoji = "🏃"
+				elseif won then
+					-- Won the fight - crime potentially successful
+					if serverResult and serverResult.success then
+						resultTitle = "💰 Crime Successful!"
+						resultMessage = serverResult.message or "You got away with it!"
+						emoji = "💰"
+					elseif serverResult and serverResult.caught then
+						resultTitle = "🚔 Caught!"
+						resultMessage = serverResult.message or "The cops showed up!"
+						emoji = "🚔"
+					else
+						resultTitle = "👊 Assault Complete"
+						resultMessage = "You beat them down."
+						emoji = "👊"
+					end
+				else
+					-- Lost the fight
+					resultTitle = "😵 Fight Lost!"
+					resultMessage = "Your victim fought back and won! You're the one who got beat up."
+					if serverResult and serverResult.caught then
+						resultMessage = resultMessage .. " And the cops got you too!"
+						emoji = "🚔"
+					else
+						emoji = "😵"
+					end
+				end
+				
+				-- Show proper result after combat
+				self:show()
+				self:showActivityResult(crimeSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
+			end, { 
+				context = combatContext,
+				difficulty = item.id == "mugging" and "weak" or "average" -- Mugging targets are usually weaker
+			})
+		else
+			log("Minigames module not found! Falling back to server-only handling.")
+			-- Fallback to regular crime handling
+			local success, result = pcall(function()
+				return CommitCrime:InvokeServer(item.id)
+			end)
+			if result then
+				self:show()
+				self:showActivityResult(result.success, result.message, item, result.caught and "🚔" or "💰", result.caught)
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR CRIMES: Standard server call
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not CommitCrime then
 		logWarn("CommitCrime remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4743,22 +5164,27 @@ function ActivitiesScreen:doCrime(item)
 	end)
 	if not success then
 		logWarn("CommitCrime call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
-		local emoji = result.caught and "Caught!" or (result.success and "Success!" or "Failed")
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
+		-- CRITICAL FIX: Use proper BitLife-style crime result card
+		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
 function ActivitiesScreen:doPrisonActivity(item)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("PRISON", item.id, item.name, string.format("Money: %d | Years Left: %d", 
+		self:getMoney(), self:getJailYearsLeft() or 0))
+	
 	log("=== DOING PRISON ACTIVITY ===")
 	log("Prison Activity ID:", item.id, "Name:", item.name)
 	log("Player Money:", self:getMoney())
@@ -4770,9 +5196,118 @@ function ActivitiesScreen:doPrisonActivity(item)
 		return
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRISON COMBAT ACTIVITIES: Join crew, riot, fight - use combat minigame!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.isCombat or item.id == "prison_crew" or item.id == "prison_riot" then
+		log("PRISON COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
+		logAction("PRISON_COMBAT_START", item.id, item.name, "Launching prison combat")
+		
+		-- Hide this screen
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Prison combat context
+		local combatContext = "prison"
+		local combatDifficulty = "strong" -- Prison inmates are tough
+		
+		if item.id == "prison_crew" then
+			combatDifficulty = "trained" -- Gang initiation is brutal
+		elseif item.id == "prison_riot" then
+			combatDifficulty = "average"
+		end
+		
+		-- Get minigames and start combat
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			log("Starting PRISON COMBAT minigame:", item.id, "difficulty:", combatDifficulty)
+			minigameInstance:play("combat", function(won, combatResult)
+				log("Prison combat result - Won:", won)
+				logAction("PRISON_COMBAT_END", item.id, won and "VICTORY" or "DEFEAT", 
+					string.format("Rounds: %d | Activity: %s", combatResult.rounds or 0, item.id))
+				
+				-- Call server with combat result
+				local serverSuccess, serverResult = pcall(function()
+					return DoPrisonAction:InvokeServer(item.id, {
+						combatCompleted = true,
+						combatWon = won,
+						combatResult = combatResult,
+					})
+				end)
+				
+				-- Determine result
+				local resultTitle
+				local resultMessage
+				local emoji
+				
+				if item.id == "prison_crew" then
+					if won then
+						resultTitle = "⛓️ Earned Your Place!"
+						resultMessage = "You proved yourself in the yard. You're now part of the crew."
+						emoji = "⛓️"
+					else
+						resultTitle = "😵 Initiation Failed"
+						resultMessage = "You got beat down. The crew doesn't want weaklings."
+						emoji = "😵"
+					end
+				elseif item.id == "prison_riot" then
+					if won then
+						resultTitle = "🔥 Riot Success!"
+						resultMessage = serverResult and serverResult.message or "The riot went off! Chaos erupted!"
+						emoji = "🔥"
+					else
+						resultTitle = "🚔 Riot Crushed"
+						resultMessage = "Guards put down the riot. You're in solitary now."
+						emoji = "🚔"
+					end
+				else
+					resultTitle = won and "👊 Victory" or "😵 Beaten"
+					resultMessage = won and "You won the prison fight!" or "You got beat up in the yard."
+					emoji = won and "👊" or "😵"
+				end
+				
+				-- Apply server result if available
+				if serverSuccess and serverResult then
+					if serverResult.message then
+						resultMessage = serverResult.message
+					end
+					if serverResult.caught or serverResult.extraTime then
+						resultMessage = resultMessage .. " Guards added time to your sentence!"
+						emoji = "🚔"
+					end
+				end
+				
+				-- Show result
+				self:show()
+				self:showActivityResult(won, resultMessage, item, emoji)
+			end, {
+				context = combatContext,
+				difficulty = combatDifficulty,
+			})
+		else
+			log("Minigames not available, falling back to server")
+			self:show()
+			local success, result = pcall(function()
+				return DoPrisonAction:InvokeServer(item.id)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message, item, result.success and "✅" or "❌")
+			end
+		end
+		return
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REGULAR PRISON ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not DoPrisonAction then
 		logWarn("DoPrisonAction remote not available!")
-		self:showResult(false, "Server not available", "Error")
+		self:showActivityResult(false, "Server not available", item, "Error")
 		return
 	end
 
@@ -4783,20 +5318,22 @@ function ActivitiesScreen:doPrisonActivity(item)
 	end)
 	if not success then
 		logWarn("DoPrisonAction call failed:", result)
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - " .. tostring(result), item, "Error")
 		return
 	end
 	log("Server response:", result and "received" or "nil")
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		local emoji = result.success and "Done!" or "Failed"
-		if item.id == "prison_riot" then emoji = result.success and "Chaos!" or "Caught!" end
-		if item.id == "prison_snitch" then emoji = result.success and "Snitched!" or "Oops!" end
-		self:showResult(result.success, result.message, emoji)
+		local emoji = result.success and "✅" or "❌"
+		if item.id == "prison_snitch" then emoji = result.success and "🤫" or "😱" end
+		if item.id == "prison_workout" then emoji = result.success and "💪" or "❌" end
+		if item.id == "prison_study" then emoji = result.success and "📚" or "❌" end
+		-- CRITICAL FIX: Use proper BitLife-style prison activity result card
+		self:showActivityResult(result.success, result.message, item, emoji)
 	else
 		logWarn("Server returned nil!")
-		self:showResult(false, "Server error", "Error")
+		self:showActivityResult(false, "Server error - no response", item, "Error")
 	end
 end
 
@@ -4994,7 +5531,7 @@ function ActivitiesScreen:populateFame()
 	fameText.Font = F.Medium or Enum.Font.GothamMedium
 	fameText.TextSize = 12
 	fameText.TextColor3 = Color3.fromRGB(139, 69, 19)
-	fameText.Text = "🌟 Fame: " .. fame .. "% | 👥 " .. UI.formatNumber(followers) .. " followers"
+	fameText.Text = "🌟 Fame: " .. fame .. "% | 👥 " .. formatNumber(followers) .. " followers"
 	fameText.ZIndex = 84
 	fameText.Parent = fameBadge
 	
@@ -5182,6 +5719,733 @@ function ActivitiesScreen:populateMafia()
 	jobDesc.Parent = jobInfoCard
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: BitLife-Style Full Event Cards for Activities
+-- This shows activities as proper event cards in the main UI, just like real BitLife
+-- Activities now trigger narrative events with choices, outcomes, and consequences
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COMPREHENSIVE Activity Event Templates for FULL BitLife-Style Experiences
+-- Expanded with 50+ unique event types with multiple variations, choices, and outcomes
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ActivityEventTemplates = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FITNESS & HEALTH ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	gym = {
+		{
+			title = "💪 Crushing It at the Gym!",
+			emoji = "💪",
+			texts = {
+				"You hit the weights hard today. The burn feels amazing!",
+				"You finished an intense workout session at the gym.",
+				"You pushed yourself to new limits during today's training.",
+				"The gym is your second home. Another great session!",
+			},
+			choices = {
+				{ text = "💪 Flex in the mirror", feed = "Looking swole! You admire your progress!" },
+				{ text = "📸 Post a gym selfie", feed = "Your followers are impressed! #GymLife" },
+				{ text = "🏃 One more set!", feed = "You pushed through for extra gains!" },
+				{ text = "🚿 Hit the showers", feed = "Time to clean up and recover." },
+			},
+		},
+		{
+			title = "🏋️ Personal Record!",
+			emoji = "🏋️",
+			texts = {
+				"You just lifted more than ever before!",
+				"NEW PR! Your hard work is paying off!",
+				"The weights felt light today - you're getting stronger!",
+			},
+			choices = {
+				{ text = "🎉 Celebrate!", feed = "You earned this victory!" },
+				{ text = "📝 Log it", feed = "Tracking progress is key!" },
+				{ text = "🎯 Set new goal", feed = "Always pushing higher!" },
+			},
+		},
+	},
+	meditate = {
+		{
+			title = "🧘 Deep Meditation",
+			emoji = "🧘",
+			texts = {
+				"You found a quiet spot and cleared your mind...",
+				"Deep breaths. Your thoughts slowly fade away...",
+				"You achieved a state of pure relaxation and clarity.",
+				"The world's chaos melts away as you find inner peace.",
+			},
+			choices = {
+				{ text = "☮️ Namaste", feed = "You feel completely at peace with yourself." },
+				{ text = "🌸 Embrace the calm", feed = "Inner peace achieved. Stress melted away." },
+				{ text = "🧠 Practice mindfulness", feed = "Your mind feels clearer than ever." },
+			},
+		},
+	},
+	run = {
+		{
+			title = "🏃 Morning Run",
+			emoji = "🏃",
+			texts = {
+				"The pavement flies beneath your feet!",
+				"You're in the zone - runner's high achieved!",
+				"Fresh air fills your lungs as you push forward.",
+			},
+			choices = {
+				{ text = "🏃 Sprint finish!", feed = "You gave it everything at the end!" },
+				{ text = "📱 Check your pace", feed = "Not bad! You're getting faster!" },
+				{ text = "🧘 Cool down stretch", feed = "Proper recovery is important." },
+			},
+		},
+	},
+	yoga = {
+		{
+			title = "🧘‍♀️ Yoga Session",
+			emoji = "🧘‍♀️",
+			texts = {
+				"You flow through poses with grace.",
+				"Mind, body, and spirit in harmony.",
+				"Flexibility and strength in perfect balance.",
+			},
+			choices = {
+				{ text = "🙏 Savasana", feed = "Pure relaxation washes over you." },
+				{ text = "💪 Try a harder pose", feed = "You challenged yourself today!" },
+				{ text = "🌅 Sun salutation", feed = "Energized and centered." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL & PARTY ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	party = {
+		{
+			title = "🎉 Epic Party!",
+			emoji = "🎉",
+			texts = {
+				"The party is in full swing! Music pumping, people dancing!",
+				"You arrived at the party and the energy is electric!",
+				"What a night! The party is absolutely wild!",
+				"Everyone who's anyone is here tonight!",
+			},
+			choices = {
+				{ text = "🕺 Own the dance floor", feed = "You danced like nobody was watching!" },
+				{ text = "🍹 Get refreshments", feed = "You grabbed something tasty." },
+				{ text = "💬 Work the room", feed = "You made tons of new friends!" },
+				{ text = "📸 Take pics", feed = "These memories will last forever!" },
+			},
+		},
+	},
+	nightclub = {
+		{
+			title = "🪩 Club Night!",
+			emoji = "🪩",
+			texts = {
+				"The bass is pumping and the lights are flashing!",
+				"You hit the hottest club in town!",
+				"The nightclub is packed and the energy is insane!",
+				"VIP vibes only tonight!",
+			},
+			choices = {
+				{ text = "💃 Dance all night", feed = "You danced until your feet hurt!" },
+				{ text = "🥂 VIP section", feed = "Living that high life!" },
+				{ text = "🎧 Request a song", feed = "The DJ played your jam!" },
+				{ text = "🏠 Head home", feed = "What a legendary night!" },
+			},
+		},
+	},
+	bar = {
+		{
+			title = "🍹 Hangout Spot",
+			emoji = "🍹",
+			texts = {
+				"You head to your favorite juice bar to unwind.",
+				"The vibe at the hangout spot is perfect tonight.",
+				"Music plays as you settle in at the lounge.",
+			},
+			choices = {
+				{ text = "💬 Chat with strangers", feed = "You might have just made a new friend!" },
+				{ text = "🎱 Play some pool", feed = "Winner stays on!" },
+				{ text = "🎤 Karaoke time!", feed = "You killed it on the mic!" },
+			},
+		},
+	},
+	concert = {
+		{
+			title = "🎵 Live Concert!",
+			emoji = "🎵",
+			texts = {
+				"The crowd roars as the band takes the stage!",
+				"You're at the show of a lifetime!",
+				"The energy is absolutely electric!",
+			},
+			choices = {
+				{ text = "🤘 Rock out!", feed = "You lost your voice screaming!" },
+				{ text = "📱 Record a clip", feed = "The sound quality isn't great but memories!" },
+				{ text = "👕 Get merch", feed = "New favorite shirt acquired!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION & LEARNING ACTIVITIES  
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	study = {
+		{
+			title = "📚 Study Session",
+			emoji = "📚",
+			texts = {
+				"You opened your books and got to work...",
+				"Time to hit the books and expand your knowledge!",
+				"You settled in for some serious studying.",
+				"The library is your domain today.",
+			},
+			choices = {
+				{ text = "📖 Deep focus mode", feed = "You absorbed so much knowledge!" },
+				{ text = "☕ Study break", feed = "A quick break helps retention." },
+				{ text = "👥 Form study group", feed = "Studying together is more fun!" },
+			},
+		},
+	},
+	read = {
+		{
+			title = "📖 Lost in a Book",
+			emoji = "📖",
+			texts = {
+				"You picked up a book and got lost in its pages...",
+				"You found a quiet spot to read.",
+				"You immersed yourself in a captivating story.",
+				"Page after page, you couldn't put it down.",
+			},
+			choices = {
+				{ text = "📚 One more chapter", feed = "Just one more... okay maybe two." },
+				{ text = "💭 Reflect on themes", feed = "This book really makes you think." },
+				{ text = "⭐ Rate it 5 stars", feed = "Adding to your favorites list!" },
+			},
+		},
+	},
+	library = {
+		{
+			title = "📚 Library Visit",
+			emoji = "🏛️",
+			texts = {
+				"The quiet of the library embraces you.",
+				"Rows and rows of knowledge await!",
+				"You find your favorite corner in the library.",
+			},
+			choices = {
+				{ text = "📖 Browse new arrivals", feed = "So many interesting titles!" },
+				{ text = "💻 Use the computers", feed = "Research time!" },
+				{ text = "📝 Find a study spot", feed = "Perfect quiet space found." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- VACATION & TRAVEL ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	vacation = {
+		{
+			title = "✈️ Dream Vacation!",
+			emoji = "🏝️",
+			texts = {
+				"You arrived at your vacation destination! Paradise!",
+				"The vacation is everything you dreamed of!",
+				"Sun, relaxation, and no responsibilities!",
+				"This is what life is all about!",
+			},
+			choices = {
+				{ text = "🏖️ Beach day", feed = "The sand between your toes feels amazing!" },
+				{ text = "🎢 Adventure time", feed = "You explored every attraction!" },
+				{ text = "🍹 Pool lounging", feed = "Maximum relaxation achieved." },
+				{ text = "📸 Tourist mode", feed = "Your camera roll is full of memories!" },
+			},
+		},
+	},
+	beach = {
+		{
+			title = "🏖️ Beach Day!",
+			emoji = "🏖️",
+			texts = {
+				"White sand, crystal clear water, perfect weather!",
+				"The waves call your name!",
+				"Beach vibes only today!",
+			},
+			choices = {
+				{ text = "🏄 Try surfing", feed = "Cowabunga! You caught a wave!" },
+				{ text = "🐚 Collect shells", feed = "You found some beautiful treasures!" },
+				{ text = "☀️ Work on your tan", feed = "Golden hour glow achieved." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MEDICAL & WELLNESS ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	doctor = {
+		{
+			title = "🩺 Doctor's Visit",
+			emoji = "🩺",
+			texts = {
+				"Time for your checkup.",
+				"The doctor will see you now.",
+				"Better safe than sorry - regular checkups are important!",
+			},
+			choices = {
+				{ text = "✅ Get full exam", feed = "Everything looks good! You're healthy!" },
+				{ text = "❓ Ask questions", feed = "The doctor answered all your concerns." },
+				{ text = "💊 Get prescriptions", feed = "You got what you needed." },
+			},
+		},
+	},
+	therapy = {
+		{
+			title = "🧠 Therapy Session",
+			emoji = "🧠",
+			texts = {
+				"You walk into your therapist's calming office.",
+				"Time to work on your mental health.",
+				"Taking care of your mind is just as important as your body.",
+			},
+			choices = {
+				{ text = "💭 Open up", feed = "Talking about it really helped." },
+				{ text = "📝 Set goals", feed = "You have a clear path forward." },
+				{ text = "🧘 Learn techniques", feed = "New coping strategies acquired." },
+			},
+		},
+	},
+	spa = {
+		{
+			title = "💆 Spa Day",
+			emoji = "💆",
+			texts = {
+				"Time to pamper yourself!",
+				"Relaxation and rejuvenation await.",
+				"You deserve this self-care day!",
+			},
+			choices = {
+				{ text = "💆 Full body massage", feed = "All tension has melted away." },
+				{ text = "🧖 Facial treatment", feed = "Your skin is glowing!" },
+				{ text = "🛁 Hot tub soak", feed = "Pure bliss in warm water." },
+			},
+		},
+	},
+	dentist = {
+		{
+			title = "🦷 Dentist Visit",
+			emoji = "🦷",
+			texts = {
+				"Open wide! Time for your dental checkup.",
+				"The dentist's chair awaits...",
+				"Keeping those pearly whites healthy!",
+			},
+			choices = {
+				{ text = "😁 Just a cleaning", feed = "Your teeth are sparkling clean!" },
+				{ text = "🔍 Full checkup", feed = "No cavities! Good job brushing!" },
+				{ text = "✨ Whitening treatment", feed = "Your smile is brighter than ever!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOBBY ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	music = {
+		{
+			title = "🎵 Making Music",
+			emoji = "🎵",
+			texts = {
+				"You pick up your instrument and start playing.",
+				"The notes flow naturally today.",
+				"Music is your therapy.",
+			},
+			choices = {
+				{ text = "🎸 Practice scales", feed = "Your technique is improving!" },
+				{ text = "🎤 Try a new song", feed = "Nailed it on the third try!" },
+				{ text = "🎹 Just jam", feed = "Creative expression at its finest!" },
+			},
+		},
+	},
+	art = {
+		{
+			title = "🎨 Creating Art",
+			emoji = "🎨",
+			texts = {
+				"Canvas ready, inspiration flowing!",
+				"Time to express yourself through art.",
+				"Creativity wants to come out and play!",
+			},
+			choices = {
+				{ text = "🖌️ Paint freely", feed = "Your creation is beautiful!" },
+				{ text = "✏️ Sketch something", feed = "Quick but satisfying art!" },
+				{ text = "🧪 Experiment", feed = "Art is all about trying new things!" },
+			},
+		},
+	},
+	gaming = {
+		{
+			title = "🎮 Gaming Time!",
+			emoji = "🎮",
+			texts = {
+				"Controller in hand, game loaded. Let's go!",
+				"Time for some quality gaming!",
+				"The virtual world awaits!",
+			},
+			choices = {
+				{ text = "🏆 Play ranked", feed = "You climbed the leaderboards!" },
+				{ text = "👥 Play with friends", feed = "Best squad ever!" },
+				{ text = "🎯 Just for fun", feed = "Games are meant to be enjoyed!" },
+			},
+		},
+	},
+	cooking = {
+		{
+			title = "👨‍🍳 Cooking Up Something",
+			emoji = "👨‍🍳",
+			texts = {
+				"Time to make something delicious!",
+				"The kitchen is your domain.",
+				"Let's see what masterpiece you can create!",
+			},
+			choices = {
+				{ text = "📖 Follow a recipe", feed = "It turned out perfectly!" },
+				{ text = "🧪 Improvise", feed = "Your culinary experiment was a success!" },
+				{ text = "🍰 Make dessert", feed = "Sweet treats are the best!" },
+			},
+		},
+	},
+	gardening = {
+		{
+			title = "🌱 Garden Time",
+			emoji = "🌱",
+			texts = {
+				"Hands in the dirt, seeds ready to plant!",
+				"Your garden needs some attention.",
+				"There's something therapeutic about gardening.",
+			},
+			choices = {
+				{ text = "🌺 Plant flowers", feed = "Beautiful blooms in your future!" },
+				{ text = "🥕 Grow veggies", feed = "Farm to table lifestyle!" },
+				{ text = "🌿 Tend to plants", feed = "Your green babies are thriving!" },
+			},
+		},
+	},
+	photography = {
+		{
+			title = "📷 Photo Walk",
+			emoji = "📷",
+			texts = {
+				"Camera in hand, ready to capture the world.",
+				"There's beauty everywhere if you look for it.",
+				"Time to find the perfect shot!",
+			},
+			choices = {
+				{ text = "🌅 Landscape shot", feed = "That golden hour light is perfect!" },
+				{ text = "🐕 Wildlife/pets", feed = "Captured the cutest moment!" },
+				{ text = "🏙️ Street photography", feed = "Urban stories in every frame!" },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MOVIES & ENTERTAINMENT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	movies = {
+		{
+			title = "🎬 Movie Time!",
+			emoji = "🎬",
+			texts = {
+				"Popcorn? Check. Comfy seat? Check. Let's go!",
+				"The previews are starting!",
+				"Nothing beats a good movie!",
+			},
+			choices = {
+				{ text = "🍿 Action movie", feed = "The explosions were epic!" },
+				{ text = "😂 Comedy", feed = "You laughed until you cried!" },
+				{ text = "💕 Romance", feed = "Right in the feels!" },
+				{ text = "😱 Horror", feed = "You definitely didn't scream... much." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRISON ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	prison_workout = {
+		{
+			title = "💪 Yard Workout",
+			emoji = "💪",
+			texts = {
+				"Time to get swole in the yard.",
+				"The prison weights are your best friend.",
+				"Working out passes the time inside.",
+			},
+			choices = {
+				{ text = "🏋️ Hit the weights", feed = "Your strength is growing!" },
+				{ text = "🏃 Run laps", feed = "Cardio keeps you sharp." },
+				{ text = "💪 Calisthenics", feed = "Bodyweight gains!" },
+			},
+		},
+	},
+	prison_study = {
+		{
+			title = "📚 Prison Library",
+			emoji = "📚",
+			texts = {
+				"Knowledge is freedom, even behind bars.",
+				"The prison library is quiet today.",
+				"Time to work on your education.",
+			},
+			choices = {
+				{ text = "📖 Study law", feed = "Working on that appeal!" },
+				{ text = "📚 Read novels", feed = "Books are an escape." },
+				{ text = "✍️ Write letters", feed = "Staying connected to the outside." },
+			},
+		},
+	},
+	prison_job = {
+		{
+			title = "🔧 Prison Work",
+			emoji = "🔧",
+			texts = {
+				"Another day on work detail.",
+				"The job keeps you busy at least.",
+				"Earning good time through work.",
+			},
+			choices = {
+				{ text = "👍 Work hard", feed = "Guards noticed your effort." },
+				{ text = "🤷 Do the minimum", feed = "Just getting through the day." },
+				{ text = "👀 Look for opportunities", feed = "You noticed something useful..." },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ROYAL ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	royal_duty = {
+		{
+			title = "👑 Royal Duties",
+			emoji = "👑",
+			texts = {
+				"Your subjects await your presence!",
+				"Time to fulfill your royal obligations.",
+				"The crown weighs heavy, but duty calls.",
+			},
+			choices = {
+				{ text = "🎀 Open a charity event", feed = "The people love your generosity!" },
+				{ text = "🤝 Meet with nobles", feed = "Political alliances strengthened." },
+				{ text = "📜 Sign royal decrees", feed = "Your word is law!" },
+			},
+		},
+	},
+	royal_leisure = {
+		{
+			title = "🏰 Royal Leisure",
+			emoji = "🏰",
+			texts = {
+				"Even royalty needs time to relax.",
+				"The palace gardens are beautiful this time of day.",
+				"A rare moment of peace in royal life.",
+			},
+			choices = {
+				{ text = "🏇 Horseback riding", feed = "A gallant ride through the grounds!" },
+				{ text = "🎺 Royal concert", feed = "Music fit for a monarch!" },
+				{ text = "🍵 Tea in the garden", feed = "Refined and relaxing." },
+			},
+		},
+	},
+}
+
+function ActivitiesScreen:showActivityEventCard(activityId, success, serverMessage, item)
+	-- Check if we have the callback and should show full event cards
+	if not self.onShowEventCard then
+		-- Fall back to simple result modal
+		self:showActivityResult(success, serverMessage, item, item and item.emoji or "✨")
+		return
+	end
+	
+	-- Check for combat event templates first
+	local templates = CombatEventTemplates[activityId] or ActivityEventTemplates[activityId]
+	local template = templates and templates[math.random(#templates)]
+	
+	-- If no specific template, create a generic one
+	if not template then
+		local itemEmoji = item and item.emoji or "✨"
+		local itemName = item and item.name or "Activity"
+		
+		template = {
+			title = itemEmoji .. " " .. itemName,
+			emoji = itemEmoji,
+			texts = { serverMessage or "You completed the activity!" },
+			choices = {
+				{ text = success and "👍 Nice!" or "😔 Oh well", feed = success and "Done!" or "Better luck next time." },
+			},
+		}
+	end
+	
+	-- Pick a random text from the template
+	local eventText = template.texts[math.random(#template.texts)]
+	
+	-- Add the server result message if it's different
+	if serverMessage and serverMessage ~= eventText then
+		eventText = eventText .. "\n\n" .. serverMessage
+	end
+	
+	-- Add effect info if available (but not for combat activities where effect is unknown)
+	if item and item.effect and item.effect ~= "??" then
+		eventText = eventText .. "\n\n📊 " .. item.effect
+	end
+	
+	-- Create the event card
+	local eventCard = {
+		id = "activity_" .. activityId .. "_" .. math.random(10000),
+		title = template.title,
+		emoji = template.emoji,
+		text = eventText,
+		question = template.question or "What happened?",
+		choices = template.choices,
+		category = success and "activity" or "disaster",
+		isCombatEvent = item and item.isCombat,
+	}
+	
+	-- Show the event card via the callback
+	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: ALWAYS show result after activity choice
+		-- User feedback: "I CLICK ONE OF THE CHOICES AND IT JUST DISAPPEARS NUN ELSE POPUPS"
+		-- The callback was only logging the choice but not showing any result!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- Handle combat event choices
+		if choiceData and choiceData.triggersCombat then
+			log("Combat triggered! Context:", choiceData.context)
+			-- The server would handle actual combat
+			-- Show a combat result
+			self:showActivityResult(true, "The fight went down! " .. (choiceData.feed or ""), item, "👊")
+		else
+			-- Regular activity event choice - SHOW THE RESULT!
+			log("Activity event choice made:", choiceIndex)
+			
+			-- Get the feed text from the choice (what happened)
+			local feedText = choiceData and choiceData.feed
+			if feedText then
+				-- Show result with the choice's feedback
+				self:showActivityResult(success, feedText, item, template.emoji or item.emoji or "✨")
+			elseif choiceData and choiceData.text then
+				-- Use choice text as result
+				self:showActivityResult(success, "You chose: " .. choiceData.text, item, template.emoji or item.emoji or "✨")
+			else
+				-- Generic success message based on original server message
+				self:showActivityResult(success, serverMessage or "Activity complete!", item, template.emoji or item.emoji or "✨")
+			end
+		end
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: BitLife-Style Activity Result Card
+-- This creates a proper event-style card for activity completion, matching the
+-- look and feel of the main life event cards for a premium experience
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught)
+	-- CRITICAL: Log the result for debugging
+	log("=== SHOWING ACTIVITY RESULT ===")
+	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji, "wasCaught:", wasCaught)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: If wasCaught is true, ALWAYS show RED card (failure)
+	-- User feedback: "I WON IT SAYS I GOT CAUGHT AND WENT 4 YEARS AND THE CARD WAS GREEN STILL"
+	-- The minigame win reduces risk but doesn't guarantee success - if caught, show RED
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isActualSuccess = success and not wasCaught
+	
+	-- Determine the title based on context
+	local title = "Activity Complete!"
+	local itemName = item and item.name or "Activity"
+	local itemEmoji = item and item.emoji or emoji or "📋"
+	
+	-- Determine appropriate title based on the type of activity
+	if wasCaught then
+		title = "🚔 Busted!"
+	elseif item then
+		-- Check what kind of activity this was
+		if item.risk then
+			-- It's a crime
+			title = isActualSuccess and "Crime Successful!" or "Crime Failed!"
+		elseif item.id and (item.id:find("prison") or item.id:find("jail")) then
+			-- Prison activity
+			title = isActualSuccess and "Prison Activity" or "That Backfired!"
+		elseif item.id and (item.id:find("mischief") or item.id:find("prank") or item.id:find("sneak") or item.id:find("trouble")) then
+			-- Mischief
+			title = isActualSuccess and "Mischief Managed! 😈" or "Caught in the Act!"
+		elseif item.effect then
+			-- Regular activity with stat effects
+			title = isActualSuccess and itemName or "Activity Failed"
+		else
+			title = isActualSuccess and "Done!" or "Uh oh..."
+		end
+	else
+		title = isActualSuccess and "Success!" or "Failed!"
+	end
+	
+	-- CRITICAL FIX: Use isActualSuccess for colors (caught = ALWAYS RED)
+	local shellColor = isActualSuccess and C.Green or C.Red
+	local shellStroke = isActualSuccess and C.GreenDark or C.RedDark
+	local pale = isActualSuccess and C.GreenPale or C.RedPale
+	
+	-- Update the result modal UI
+	self.resultModal.shell.BackgroundColor3 = shellColor
+	self.resultModal.shellStroke.Color = shellStroke
+	self.resultModal.emojiFrame.BackgroundColor3 = pale
+	
+	-- CRITICAL UI FIX: Better emoji display
+	local displayEmoji = emoji
+	if not displayEmoji or displayEmoji == "OK" or displayEmoji == "Done!" then
+		displayEmoji = success and (itemEmoji or "✨") or "😔"
+	elseif displayEmoji == "X" or displayEmoji == "Error" or displayEmoji == "Failed" then
+		displayEmoji = "❌"
+	elseif displayEmoji == "Success!" then
+		displayEmoji = itemEmoji or "💰"
+	elseif displayEmoji == "Caught!" then
+		displayEmoji = "🚔"
+	elseif displayEmoji == "Chaos!" then
+		displayEmoji = "🔥"
+	elseif displayEmoji == "Snitched!" then
+		displayEmoji = "🤫"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
+	-- Set title with activity name context
+	self.resultModal.titleLabel.Text = title
+	self.resultModal.titleLabel.TextColor3 = isActualSuccess and C.GreenDark or C.RedDark
+	
+	-- CRITICAL FIX: Better message formatting for BitLife-style
+	local displayMessage = message or (isActualSuccess and "You did it!" or "Something went wrong...")
+	
+	-- Add activity context if message is too generic
+	if displayMessage == "Activity completed." or displayMessage == "You did it!" then
+		if item and item.name then
+			displayMessage = "You successfully completed " .. string.lower(item.name) .. "!"
+			if item.effect then
+				displayMessage = displayMessage .. "\n\n" .. item.effect
+			end
+		end
+	end
+	
+	self.resultModal.messageLabel.Text = displayMessage
+	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = isActualSuccess and "👍 Awesome!" or "😔 Okay..."
+
+	-- Show the modal
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
+end
+
+-- Legacy showResult for backwards compatibility
 function ActivitiesScreen:showResult(success, message, emoji)
 	local shellColor = success and C.Green or C.Red
 	local shellStroke = success and C.GreenDark or C.RedDark

@@ -1796,6 +1796,968 @@ JobSpecificEvents.events = {
 			{ text = "Struggle with identity loss", effects = { Happiness = -8 }, setFlags = { athlete_identity_crisis = true }, feedText = "If not an athlete, who are you? Hard transition." },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- LAW / LEGAL PROFESSION (lawyers, judges, paralegals)
+	-- CRITICAL FIX: User feedback - "only 20% of jobs have events"
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "law_big_case",
+		title = "Major Case Assignment",
+		emoji = "⚖️",
+		text = "You've been assigned a high-profile case that could make or break your career.",
+		question = "How do you approach this opportunity?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"law", "legal"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_law",
+		tags = { "law", "case", "career" },
+		
+		choices = {
+			{
+				text = "Prepare meticulously - leave nothing to chance",
+				effects = { Health = -3 },
+				feedText = "Working around the clock on this case...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.won_big_case = true
+						state:AddFeed("⚖️ WON THE CASE! Your reputation soars!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚖️ Lost the case despite preparation. Lessons learned.")
+					end
+				end,
+			},
+			{
+				text = "Trust your instincts in the courtroom",
+				effects = {},
+				feedText = "Going in confident...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state.Money = (state.Money or 0) + math.random(3000, 8000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("⚖️ Your charisma won the jury over! Case won!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚖️ Overconfidence backfired. Lost the case.")
+					end
+				end,
+			},
+			{
+				text = "Seek a settlement before trial",
+				effects = { Happiness = 3, Money = 2000 },
+				feedText = "Negotiated a favorable settlement. Safe play.",
+			},
+		},
+	},
+	{
+		id = "law_ethical_dilemma",
+		title = "Legal Ethics Dilemma",
+		emoji = "🤔",
+		text = "A client wants you to do something legally questionable. It would help them win, but...",
+		question = "What do you do?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"law", "legal"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_law",
+		tags = { "law", "ethics", "career" },
+		
+		choices = {
+			{
+				text = "Refuse - your integrity isn't for sale",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { ethical_lawyer = true },
+				feedText = "You might lose the client, but you keep your license.",
+			},
+			{
+				text = "Push ethical boundaries (risky)",
+				effects = {},
+				feedText = "Walking a thin line...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🤔 Got away with it. Client happy. This time.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.bar_investigation = true
+						state:AddFeed("🤔 Bar Association is investigating you. Career at risk!")
+					end
+				end,
+			},
+			{
+				text = "Find a legal loophole instead",
+				effects = { Smarts = 3 },
+				feedText = "Thinking creatively within the law...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state.Money = (state.Money or 0) + math.random(2000, 8000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🤔 Found a brilliant legal solution! Client impressed!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🤔 No loophole found. Had to decline client's request.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "law_partner_offer",
+		title = "Partnership Opportunity",
+		emoji = "🏛️",
+		text = "You're being considered for partner at your law firm!",
+		question = "How do you feel about this milestone?",
+		minAge = 30, maxAge = 55,
+		baseChance = 0.4,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"law", "legal"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_law",
+		tags = { "law", "promotion", "career" },
+		
+		choices = {
+			{
+				text = "Accept partnership eagerly",
+				effects = { Happiness = 15 },
+				setFlags = { law_partner = true },
+				feedText = "Evaluating your candidacy...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state.Money = (state.Money or 0) + math.random(20000, 50000)
+						state:AddFeed("🏛️ YOU MADE PARTNER! Your name is on the door!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏛️ Passed over for partnership. Maybe next year.")
+					end
+				end,
+			},
+			{
+				text = "Negotiate better terms first",
+				effects = { Smarts = 2 },
+				feedText = "You know your worth...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state.Money = (state.Money or 0) + math.random(30000, 70000)
+						state.Flags = state.Flags or {}
+						state.Flags.law_partner = true
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🏛️ Partner with excellent terms! Well negotiated!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🏛️ They found your demands excessive. Offer rescinded.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "law_difficult_client",
+		title = "Difficult Client",
+		emoji = "😤",
+		text = "Your client is being incredibly demanding and unreasonable about their case.",
+		question = "How do you handle this situation?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"law", "legal"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_law",
+		tags = { "law", "client", "conflict" },
+		
+		choices = {
+			{
+				text = "Set firm professional boundaries",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "Clear communication about expectations.",
+			},
+			{
+				text = "Drop the client entirely",
+				effects = { Money = -500, Happiness = 8 },
+				feedText = "Some clients aren't worth the stress.",
+			},
+			{
+				text = "Tolerate them - they pay well",
+				effects = { Happiness = -5, Money = 1000 },
+				feedText = "Money is money. Even if it costs your sanity.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- OFFICE / CORPORATE JOBS (admin, HR, management)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "office_meeting_marathon",
+		title = "Meeting Marathon",
+		emoji = "📅",
+		text = "Your calendar is completely packed with back-to-back meetings today.",
+		question = "How do you survive this meeting marathon?",
+		minAge = 20, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"office", "admin", "corporate"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_office",
+		tags = { "office", "meetings", "work" },
+		
+		choices = {
+			{
+				text = "Power through with coffee",
+				effects = { Health = -2, Happiness = -3 },
+				feedText = "So. Many. Meetings.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📅 Managed to contribute something valuable in one meeting!")
+					else
+						state:AddFeed("📅 Survived, but you can't remember what any meeting was about.")
+					end
+				end,
+			},
+			{
+				text = "Strategically decline some meetings",
+				effects = { Happiness = 5 },
+				feedText = "Work smarter, not harder...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:AddFeed("📅 Nobody even noticed you skipped those meetings!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📅 Boss noticed your absence. Got a talking-to.")
+					end
+				end,
+			},
+			{
+				text = "Multitask during boring meetings",
+				effects = { Smarts = 1 },
+				feedText = "Laptop open, looking productive...",
+			},
+		},
+	},
+	{
+		id = "office_watercooler_gossip",
+		title = "Office Gossip",
+		emoji = "🗣️",
+		text = "You overhear some juicy gossip about a coworker's personal life.",
+		question = "What do you do with this information?",
+		minAge = 18, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"office", "admin", "corporate", "entry", "service"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_office",
+		tags = { "office", "gossip", "social" },
+		
+		choices = {
+			{
+				text = "Keep it to yourself - not your business",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { trustworthy_coworker = true },
+				feedText = "Discretion is the better part of valor.",
+			},
+			{
+				text = "Share with one close work friend",
+				effects = { Happiness = 3 },
+				feedText = "You'll just tell ONE person...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:AddFeed("🗣️ The secret stayed between you two. Bonding moment!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.office_gossip_backfire = true
+						state:AddFeed("🗣️ It got back to the person. Awkward!")
+					end
+				end,
+			},
+			{
+				text = "Use the information strategically",
+				effects = {},
+				feedText = "Knowledge is power...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state.Money = (state.Money or 0) + math.random(500, 2000)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🗣️ Positioned yourself well in office politics.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🗣️ Your manipulation was noticed. Trust eroded.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_project_credit",
+		title = "Credit for Your Work",
+		emoji = "😠",
+		text = "A colleague is taking credit for work YOU did on a project!",
+		question = "How do you respond?",
+		minAge = 20, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"office", "admin", "corporate", "tech"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_office",
+		tags = { "office", "conflict", "work" },
+		
+		choices = {
+			{
+				text = "Confront them privately",
+				effects = {},
+				feedText = "Time for a difficult conversation...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😠 They apologized and gave you proper credit!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😠 They denied everything. At least you spoke up.")
+					end
+				end,
+			},
+			{
+				text = "Document everything and tell HR",
+				effects = { Smarts = 2 },
+				feedText = "Creating a paper trail...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.stood_up_for_self = true
+						state:AddFeed("😠 HR sided with you. Proper credit given!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😠 HR couldn't determine the truth. Frustrating.")
+					end
+				end,
+			},
+			{
+				text = "Let it go - not worth the drama",
+				effects = { Happiness = -4 },
+				feedText = "Sometimes you just have to move on...",
+			},
+		},
+	},
+	{
+		id = "office_work_from_home",
+		title = "Remote Work Request",
+		emoji = "🏠",
+		text = "You want to work from home more often. Time to ask the boss.",
+		question = "How do you approach this request?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"office", "admin", "corporate", "tech"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_office",
+		tags = { "office", "wfh", "work" },
+		
+		choices = {
+			{
+				text = "Present a formal proposal with productivity data",
+				effects = { Smarts = 3 },
+				feedText = "Showing you've thought this through...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.remote_approved = true
+						state:AddFeed("🏠 WFH approved! Hello, sweatpants productivity!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🏠 Request denied. Company culture, they said.")
+					end
+				end,
+			},
+			{
+				text = "Just casually mention it",
+				effects = {},
+				feedText = "Testing the waters...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏠 Boss was surprisingly cool with it!")
+					else
+						state:AddFeed("🏠 'We'll see' - the classic non-answer.")
+					end
+				end,
+			},
+			{
+				text = "Don't ask - just start doing it occasionally",
+				effects = {},
+				feedText = "Better to ask forgiveness than permission...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏠 Nobody seems to notice or care!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🏠 Got called out for not being in the office. Awkward.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SCIENCE / RESEARCH (scientists, researchers, lab workers)
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "science_research_breakthrough",
+		title = "Research Breakthrough",
+		emoji = "🔬",
+		text = "Your experiments are showing promising results! This could be huge!",
+		question = "How do you proceed with this discovery?",
+		minAge = 24, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"science", "research", "medical"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_science",
+		tags = { "science", "research", "discovery" },
+		
+		choices = {
+			{
+				text = "Publish immediately - stake your claim",
+				effects = {},
+				feedText = "Racing to publish...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state.Money = (state.Money or 0) + math.random(3000, 10000)
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.published_researcher = true
+						state:AddFeed("🔬 Published in a major journal! Your name in lights!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔬 Results didn't replicate. Back to the drawing board.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("🔬 Someone else published the same thing first!")
+					end
+				end,
+			},
+			{
+				text = "Verify results thoroughly first",
+				effects = { Smarts = 3 },
+				feedText = "Good science takes time...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 4)
+						state:AddFeed("🔬 Results verified and published! Solid science!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🔬 Found a flaw. Good thing you checked!")
+					end
+				end,
+			},
+			{
+				text = "Collaborate with another lab",
+				effects = { Happiness = 3 },
+				feedText = "Science is a team effort...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(2000, 6000)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🔬 Joint publication - shared credit but stronger results!")
+				end,
+			},
+		},
+	},
+	{
+		id = "science_grant_application",
+		title = "Grant Application",
+		emoji = "📝",
+		text = "A major research grant is available. The application deadline is approaching!",
+		question = "How do you approach the grant application?",
+		minAge = 26, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"science", "research", "education"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_science",
+		tags = { "science", "grant", "funding" },
+		
+		choices = {
+			{
+				text = "Submit a bold, innovative proposal",
+				effects = { Smarts = 2 },
+				feedText = "Thinking big...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + math.random(20000, 100000)
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.major_grant = true
+						state:AddFeed("📝 GRANT APPROVED! Funding secured for years!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📝 'Too risky' - reviewers didn't share your vision.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📝 Harsh feedback. Back to smaller grants.")
+					end
+				end,
+			},
+			{
+				text = "Play it safe with proven methods",
+				effects = {},
+				feedText = "Tried and true...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state.Money = (state.Money or 0) + math.random(10000, 40000)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📝 Grant approved! Solid funding for the lab!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📝 'Not innovative enough' - can't win!")
+					end
+				end,
+			},
+			{
+				text = "Skip this round - too much work",
+				effects = { Happiness = 3, Health = 2 },
+				feedText = "Sometimes self-care matters more.",
+			},
+		},
+	},
+	{
+		id = "science_lab_accident",
+		title = "Lab Incident",
+		emoji = "⚗️",
+		text = "There's been an accident in the lab! Equipment damaged, samples potentially contaminated.",
+		question = "How do you handle this crisis?",
+		minAge = 22, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"science", "research", "medical"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_science",
+		tags = { "science", "accident", "crisis" },
+		
+		choices = {
+			{
+				text = "Take full responsibility",
+				effects = { Happiness = -5 },
+				feedText = "Being accountable...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("⚗️ Administration appreciated your honesty. Small fine.")
+					else
+						state.Money = (state.Money or 0) - math.random(500, 2000)
+						state:AddFeed("⚗️ Serious consequences. Equipment costs deducted from budget.")
+					end
+				end,
+			},
+			{
+				text = "Investigate what went wrong first",
+				effects = { Smarts = 3 },
+				feedText = "Finding the root cause...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚗️ Equipment malfunction! Not your fault after all!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("⚗️ Turns out protocols weren't followed. Need better training.")
+					end
+				end,
+			},
+			{
+				text = "Quietly fix it - no one needs to know",
+				effects = {},
+				feedText = "What they don't know...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("⚗️ Crisis averted. Nobody noticed.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.lab_coverup_discovered = true
+						state:AddFeed("⚗️ Cover-up discovered. Trust severely damaged.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "science_peer_review",
+		title = "Peer Review Drama",
+		emoji = "📑",
+		text = "A peer reviewer gave your paper a harsh, possibly unfair rejection.",
+		question = "How do you respond?",
+		minAge = 26, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"science", "research", "education"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_science",
+		tags = { "science", "publishing", "conflict" },
+		
+		choices = {
+			{
+				text = "Appeal the decision professionally",
+				effects = { Smarts = 2 },
+				feedText = "Making your case...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📑 Appeal successful! Paper accepted!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📑 Appeal denied. Try another journal.")
+					end
+				end,
+			},
+			{
+				text = "Revise based on their feedback",
+				effects = { Happiness = -2, Smarts = 3 },
+				feedText = "Taking criticism constructively...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("📑 Paper stronger now. Resubmitting!")
+				end,
+			},
+			{
+				text = "Vent about it publicly on social media",
+				effects = {},
+				feedText = "Academic Twitter, here we go...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📑 Your rant went viral! Others had similar experiences!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📑 Came off as unprofessional. Bad look.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MORE MILITARY EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "military_promotion_board",
+		title = "Promotion Board",
+		emoji = "🎖️",
+		text = "You're up for promotion! Time to appear before the board.",
+		question = "How do you approach the promotion board?",
+		minAge = 20, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"military", "defense"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_military",
+		tags = { "military", "promotion", "career" },
+		
+		choices = {
+			{
+				text = "Demonstrate exceptional leadership",
+				effects = {},
+				feedText = "Presenting your service record...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state.Money = (state.Money or 0) + math.random(3000, 8000)
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.military_promoted = true
+						state:AddFeed("🎖️ PROMOTED! New rank comes with new responsibilities!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎖️ Not selected this time. Keep serving.")
+					end
+				end,
+			},
+			{
+				text = "Highlight technical expertise",
+				effects = { Smarts = 2 },
+				feedText = "Showing your skills...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state.Money = (state.Money or 0) + math.random(2000, 6000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎖️ Promoted for technical excellence!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎖️'Need more leadership experience' they said.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "military_family_sacrifice",
+		title = "Family vs. Duty",
+		emoji = "👨‍👩‍👧",
+		text = "Your service is taking a toll on family relationships. Missing important events, deployments...",
+		question = "How do you balance duty and family?",
+		minAge = 22, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"military", "defense"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_military",
+		tags = { "military", "family", "balance" },
+		
+		choices = {
+			{
+				text = "Request a stateside assignment",
+				effects = {},
+				feedText = "Prioritizing family...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.stateside_assignment = true
+						state:AddFeed("👨‍👩‍👧 Request approved! More time with family!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👨‍👩‍👧 Needs of the service come first. Request denied.")
+					end
+				end,
+			},
+			{
+				text = "Double down on service - family understands",
+				effects = { Happiness = -5 },
+				setFlags = { service_committed = true },
+				feedText = "Duty calls. They'll understand... hopefully.",
+			},
+			{
+				text = "Consider leaving the service",
+				effects = { Happiness = 5 },
+				setFlags = { considering_discharge = true },
+				feedText = "Maybe civilian life is calling...",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MORE GOVERNMENT EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "government_whistleblower",
+		title = "Witness Misconduct",
+		emoji = "🔔",
+		text = "You've discovered your department is wasting taxpayer money or breaking rules.",
+		question = "Do you blow the whistle?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 4,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"government", "public"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_government",
+		tags = { "government", "ethics", "whistleblower" },
+		
+		choices = {
+			{
+				text = "Report through official channels",
+				effects = {},
+				feedText = "Following proper procedures...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower_hero = true
+						state:AddFeed("🔔 Investigation launched! You're protected by whistleblower laws!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower_retaliation = true
+						state:AddFeed("🔔 Report 'lost in the system'. Subtle retaliation begins.")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔔 Problem quietly fixed. No credit given. At least it's fixed.")
+					end
+				end,
+			},
+			{
+				text = "Go to the media anonymously",
+				effects = {},
+				feedText = "Leaking the truth...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.anonymous_hero = true
+						state:AddFeed("🔔 Story breaks! Reform happens! You stay anonymous!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.leak_traced = true
+						state:AddFeed("🔔 Leak traced back to you. Career in jeopardy.")
+					end
+				end,
+			},
+			{
+				text = "Keep quiet - not your problem",
+				effects = { Happiness = -3 },
+				feedText = "Self-preservation wins. This time.",
+			},
+		},
+	},
+	{
+		id = "government_promotion_politics",
+		title = "Political Promotion",
+		emoji = "🏛️",
+		text = "A promotion is available, but it seems to be going to the director's friend who's less qualified.",
+		question = "How do you react to this situation?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			return isInJobCategory(state, {"government", "public"})
+		end,
+		stage = STAGE,
+		ageBand = "working_age",
+		category = "career_government",
+		tags = { "government", "promotion", "politics" },
+		
+		choices = {
+			{
+				text = "Apply anyway - merit should matter",
+				effects = { Smarts = 2 },
+				feedText = "Fighting the good fight...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.35 then
+						state.Money = (state.Money or 0) + math.random(5000, 12000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏛️ Against all odds, YOU got it! Merit won!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🏛️ Exactly as predicted. The friend got it. At least you tried.")
+					end
+				end,
+			},
+			{
+				text = "File a formal complaint",
+				effects = {},
+				feedText = "This isn't right...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🏛️ Investigation found impropriety! Process restarted!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🏛️ Complaint noted but nothing changed. Made some enemies.")
+					end
+				end,
+			},
+			{
+				text = "Accept it - that's how government works",
+				effects = { Happiness = -5 },
+				feedText = "Pick your battles...",
+			},
+		},
+	},
 }
 
 return JobSpecificEvents

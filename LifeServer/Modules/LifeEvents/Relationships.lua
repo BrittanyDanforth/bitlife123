@@ -1108,7 +1108,8 @@ Relationships.events = {
 				feedText = "You confronted them explosively...",
 				-- CRITICAL FIX: Confrontation minigame for dramatic cheating reveal!
 				triggerMinigame = "confrontation",
-				minigameOptions = { difficulty = "medium" },
+				-- CRITICAL FIX: Added context and title to prevent "Presidential Debate" showing!
+				minigameOptions = { difficulty = "medium", context = "cheating_confrontation", title = "💔 CONFRONTATION" },
 				onResolve = function(state, minigameResult)
 					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					state.Flags = state.Flags or {}

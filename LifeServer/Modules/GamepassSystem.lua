@@ -498,7 +498,74 @@ function GamepassSystem.new()
 	local self = setmetatable({}, GamepassSystem)
 	self.playerOwnership = {} -- Cache of player ownership
 	self.ownershipCallbacks = {} -- Callbacks for ownership changes
+	-- CRITICAL FIX #10: Persistent ownership cache to survive across server restarts
+	self.persistentOwnership = {}
 	return self
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #10: Initialize all gamepass ownership for a player on join
+-- This ensures ownership is checked once and cached immediately
+-- ════════════════════════════════════════════════════════════════════════════
+function GamepassSystem:initializePlayerOwnership(player)
+	if not player then return end
+	
+	local playerId = player.UserId
+	self.persistentOwnership[playerId] = self.persistentOwnership[playerId] or {}
+	
+	-- Check all gamepasses upfront
+	local gamepassesToCheck = { "ROYALTY", "GOD_MODE", "MAFIA", "CELEBRITY", "TIME_MACHINE", "BOSS_MODE", "BITIZENSHIP" }
+	
+	for _, gamepassKey in ipairs(gamepassesToCheck) do
+		local gamepass = self.Gamepasses[gamepassKey]
+		if gamepass and gamepass.id and gamepass.id > 0 then
+			local success, owns = pcall(function()
+				return MarketplaceService:UserOwnsGamePassAsync(playerId, gamepass.id)
+			end)
+			
+			if success and owns == true then
+				local cacheKey = playerId .. "_" .. gamepassKey
+				self.playerOwnership[cacheKey] = true
+				self.persistentOwnership[playerId][gamepassKey] = true
+			end
+		end
+	end
+	
+	return self.persistentOwnership[playerId]
+end
+
+-- CRITICAL FIX #10: Get all owned gamepasses for a player
+function GamepassSystem:getOwnedGamepasses(player)
+	if not player then return {} end
+	
+	local owned = {}
+	local playerId = player.UserId
+	
+	if self.persistentOwnership[playerId] then
+		for gamepassKey, ownsIt in pairs(self.persistentOwnership[playerId]) do
+			if ownsIt then
+				table.insert(owned, gamepassKey)
+			end
+		end
+	end
+	
+	return owned
+end
+
+-- CRITICAL FIX #10: Restore ownership from saved state
+function GamepassSystem:restoreOwnershipFromState(player, savedOwnership)
+	if not player or not savedOwnership then return end
+	
+	local playerId = player.UserId
+	self.persistentOwnership[playerId] = self.persistentOwnership[playerId] or {}
+	
+	for gamepassKey, ownsIt in pairs(savedOwnership) do
+		if ownsIt == true then
+			local cacheKey = playerId .. "_" .. gamepassKey
+			self.playerOwnership[cacheKey] = true
+			self.persistentOwnership[playerId][gamepassKey] = true
+		end
+	end
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -535,6 +602,15 @@ function GamepassSystem:checkOwnership(player, gamepassKey)
 	-- A purchased gamepass can never become unpurchased
 	if self.playerOwnership[cacheKey] == true then
 		return true
+	end
+	
+	-- CRITICAL FIX #10: Check persistent cache from DataStore first
+	-- This ensures ownership persists across server restarts and rejoins
+	if self.persistentOwnership and self.persistentOwnership[playerId] then
+		if self.persistentOwnership[playerId][gamepassKey] == true then
+			self.playerOwnership[cacheKey] = true
+			return true
+		end
 	end
 	
 	-- Only check server if we don't know or cache is false

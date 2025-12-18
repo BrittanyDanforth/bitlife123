@@ -852,25 +852,47 @@ local JobCatalogList = {
 	{ id = "hotel_front_desk", name = "Hotel Receptionist", company = "Grand Hotel", emoji = "🏨", salary = 32000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "flight_attendant", name = "Flight Attendant", company = "SkyWays Airlines", emoji = "✈️", salary = 55000, minAge = 21, requirement = "high_school", category = "service" },
 	{ id = "tour_guide", name = "Tour Guide", company = "City Tours", emoji = "🗺️", salary = 35000, minAge = 18, requirement = "high_school", category = "service" },
-	{ id = "casino_dealer", name = "Casino Dealer", company = "Lucky Star Casino", emoji = "🎰", salary = 45000, minAge = 21, requirement = "high_school", category = "service" },
+	-- REMOVED: Casino Dealer job (gambling against Roblox TOS)
 	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service" },
 	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service" },
 
-	-- TRADES - CRITICAL FIX: Physical labor jobs now require health
+	-- TRADES - CRITICAL FIX: Physical labor jobs now require health and have proper progression flags!
 	{ id = "janitor", name = "Janitor", company = "CleanCo Services", emoji = "🧹", salary = 28000, minAge = 18, requirement = nil, category = "trades",
-		difficulty = 1, description = "Entry level maintenance work" },
+		difficulty = 1, grantsFlags = { "maintenance_experience", "facility_work" },
+		description = "Entry level maintenance work" },
 	{ id = "construction", name = "Construction Worker", company = "BuildRight Co", emoji = "👷", salary = 42000, minAge = 18, requirement = nil, category = "trades",
-		minStats = { Health = 45 }, difficulty = 2, description = "Physically demanding work" },
-	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades" },
-	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "plumber", name = "Licensed Plumber", company = "FlowRight Plumbing", emoji = "🔧", salary = 58000, minAge = 22, requirement = "high_school", category = "trades" },
-	{ id = "mechanic", name = "Auto Mechanic", company = "QuickFix Auto", emoji = "🔩", salary = 45000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "hvac_tech", name = "HVAC Technician", company = "CoolAir Systems", emoji = "❄️", salary = 52000, minAge = 20, requirement = "high_school", category = "trades" },
-	{ id = "welder", name = "Welder", company = "Steel Works Inc", emoji = "🔥", salary = 48000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "carpenter", name = "Carpenter", company = "WoodCraft Co", emoji = "🪚", salary = 46000, minAge = 18, requirement = "high_school", category = "trades" },
-	{ id = "truck_driver", name = "Truck Driver", company = "FastFreight Logistics", emoji = "🚛", salary = 55000, minAge = 21, requirement = "high_school", category = "trades" },
-	{ id = "foreman", name = "Construction Foreman", company = "BuildRight Co", emoji = "🏗️", salary = 72000, minAge = 28, requirement = "high_school", category = "trades" },
+		minStats = { Health = 45 }, difficulty = 2, grantsFlags = { "construction_experience", "labor_skills", "site_work" },
+		description = "Physically demanding work" },
+	{ id = "electrician_apprentice", name = "Electrician Apprentice", company = "Spark Electric", emoji = "⚡", salary = 35000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "electrical_training", "apprentice_electrician" },
+		description = "Learning electrical trade" },
+	{ id = "electrician", name = "Electrician", company = "PowerPro Electric", emoji = "⚡", salary = 62000, minAge = 22, requirement = "high_school", category = "trades",
+		difficulty = 4, requiresFlags = { "electrical_training", "apprentice_electrician" }, grantsFlags = { "licensed_electrician", "journeyman_electrician" },
+		description = "Licensed journeyman electrician" },
+	{ id = "plumber_apprentice", name = "Plumber Apprentice", company = "DrainMaster", emoji = "🔧", salary = 32000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "plumbing_training", "apprentice_plumber" },
+		description = "Learning plumbing trade" },
+	{ id = "plumber", name = "Licensed Plumber", company = "FlowRight Plumbing", emoji = "🔧", salary = 58000, minAge = 22, requirement = "high_school", category = "trades",
+		difficulty = 4, requiresFlags = { "plumbing_training", "apprentice_plumber" }, grantsFlags = { "licensed_plumber", "journeyman_plumber" },
+		description = "Licensed journeyman plumber" },
+	{ id = "mechanic", name = "Auto Mechanic", company = "QuickFix Auto", emoji = "🔩", salary = 45000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "mechanic_experience", "automotive_skills" },
+		description = "Repair and maintain vehicles" },
+	{ id = "hvac_tech", name = "HVAC Technician", company = "CoolAir Systems", emoji = "❄️", salary = 52000, minAge = 20, requirement = "high_school", category = "trades",
+		difficulty = 4, grantsFlags = { "hvac_experience", "climate_control" },
+		description = "Install and repair heating/cooling systems" },
+	{ id = "welder", name = "Welder", company = "Steel Works Inc", emoji = "🔥", salary = 48000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "welding_skills", "metalwork" },
+		description = "Join metal parts together" },
+	{ id = "carpenter", name = "Carpenter", company = "WoodCraft Co", emoji = "🪚", salary = 46000, minAge = 18, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "carpentry_skills", "woodworking" },
+		description = "Build and repair wooden structures" },
+	{ id = "truck_driver", name = "Truck Driver", company = "FastFreight Logistics", emoji = "🚛", salary = 55000, minAge = 21, requirement = "high_school", category = "trades",
+		difficulty = 3, grantsFlags = { "cdl_license", "trucking_experience", "logistics" },
+		description = "Long-haul freight transportation" },
+	{ id = "foreman", name = "Construction Foreman", company = "BuildRight Co", emoji = "🏗️", salary = 72000, minAge = 28, requirement = "high_school", category = "trades",
+		difficulty = 5, requiresFlags = { "construction_experience", "labor_skills" }, grantsFlags = { "site_supervisor", "construction_leadership" },
+		description = "Supervise construction crews" },
 
 	-- OFFICE - CRITICAL FIX #69: Entry-level office jobs need grantsFlags for progression
 	{ id = "receptionist", name = "Receptionist", company = "Corporate Office", emoji = "📞", salary = 32000, minAge = 18, requirement = "high_school", category = "office",
@@ -1079,9 +1101,7 @@ local JobCatalogList = {
 	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance",
 		difficulty = 9, minStats = { Smarts = 80 }, requiresFlags = { "senior_banker", "investment_experience", "market_analysis" }, grantsFlags = { "fund_manager", "portfolio_management" },
 		description = "Requires extensive investment banking experience" },
-	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance",
-		difficulty = 6, minStats = { Smarts = 75 }, grantsFlags = { "actuary_certified", "risk_analysis" },
-		description = "Requires passing actuarial exams - highly mathematical" },
+	-- REMOVED: Actuary job per user request (boring)
 	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance",
 		difficulty = 9, minStats = { Smarts = 80 }, requiresFlags = { "cpa_certified", "senior_accountant", "financial_analysis", "fund_manager" }, grantsFlags = { "c_level", "financial_executive" },
 		description = "Requires extensive finance leadership - top executive position" },
@@ -1220,12 +1240,22 @@ local JobCatalogList = {
 		difficulty = 9, requiresFlags = { "tenured_professor", "research_leader" }, grantsFlags = { "university_administration", "academic_leadership" },
 		description = "Requires tenured professor experience" },
 
-	-- SCIENCE
-	{ id = "lab_technician", name = "Lab Technician", company = "Research Lab", emoji = "🔬", salary = 42000, minAge = 22, requirement = "bachelor", category = "science" },
-	{ id = "research_assistant", name = "Research Assistant", company = "University Lab", emoji = "🔬", salary = 48000, minAge = 22, requirement = "bachelor", category = "science" },
-	{ id = "scientist", name = "Scientist", company = "Research Institute", emoji = "🧪", salary = 85000, minAge = 26, requirement = "master", category = "science" },
-	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science" },
-	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science" },
+	-- SCIENCE - CRITICAL FIX: Science careers need proper progression flags!
+	{ id = "lab_technician", name = "Lab Technician", company = "Research Lab", emoji = "🔬", salary = 42000, minAge = 22, requirement = "bachelor", category = "science",
+		difficulty = 3, grantsFlags = { "lab_experience", "research_skills", "scientific_method" },
+		description = "Entry-level laboratory work" },
+	{ id = "research_assistant", name = "Research Assistant", company = "University Lab", emoji = "🔬", salary = 48000, minAge = 22, requirement = "bachelor", category = "science",
+		difficulty = 3, requiresFlags = { "lab_experience", "research_skills" }, grantsFlags = { "research_experience", "academic_research", "data_analysis" },
+		description = "Assist senior researchers with projects" },
+	{ id = "scientist", name = "Scientist", company = "Research Institute", emoji = "🧪", salary = 85000, minAge = 26, requirement = "master", category = "science",
+		difficulty = 5, requiresFlags = { "research_experience", "academic_research" }, grantsFlags = { "scientist", "published_researcher", "grant_writing" },
+		description = "Conduct independent research" },
+	{ id = "senior_scientist", name = "Senior Scientist", company = "BioTech Corp", emoji = "🧪", salary = 125000, minAge = 32, requirement = "phd", category = "science",
+		difficulty = 7, requiresFlags = { "scientist", "published_researcher" }, grantsFlags = { "senior_researcher", "research_leadership", "principal_investigator" },
+		description = "Lead research projects and mentor junior scientists" },
+	{ id = "research_director", name = "Research Director", company = "Innovation Labs", emoji = "🔬", salary = 195000, minAge = 40, requirement = "phd", category = "science",
+		difficulty = 8, requiresFlags = { "senior_researcher", "research_leadership" }, grantsFlags = { "research_director", "scientific_leadership" },
+		description = "Direct entire research departments" },
 
 	-- SPORTS - CRITICAL FIX #333: Sports careers now require proper progression!
 	-- Can't just become professional athlete - need to play sports as kid/teen
@@ -1260,19 +1290,25 @@ local JobCatalogList = {
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
 
-	-- MILITARY - CRITICAL FIX: All military jobs now require fitness!
+	-- MILITARY - CRITICAL FIX: All military jobs now require fitness and have proper progression flags!
 	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
-		minStats = { Health = 55 }, difficulty = 3, description = "Must pass physical fitness test" },
+		minStats = { Health = 55 }, difficulty = 3, grantsFlags = { "military_experience", "enlisted", "combat_training" },
+		description = "Must pass physical fitness test" },
 	{ id = "sergeant", name = "Sergeant", company = "US Army", emoji = "🪖", salary = 55000, minAge = 24, requirement = "high_school", category = "military",
-		minStats = { Health = 50 }, difficulty = 4, description = "Leadership and combat experience required" },
+		minStats = { Health = 50 }, difficulty = 4, requiresFlags = { "military_experience", "enlisted" }, grantsFlags = { "nco", "leadership_experience", "combat_veteran" },
+		description = "Leadership and combat experience required" },
 	{ id = "officer", name = "Military Officer", company = "US Armed Forces", emoji = "🎖️", salary = 75000, minAge = 22, requirement = "bachelor", category = "military",
-		minStats = { Health = 50, Smarts = 50 }, difficulty = 5, description = "Requires degree and fitness" },
+		minStats = { Health = 50, Smarts = 50 }, difficulty = 5, grantsFlags = { "military_officer", "commissioned", "leadership_experience" },
+		description = "Requires degree and fitness" },
 	{ id = "captain", name = "Captain", company = "US Armed Forces", emoji = "🎖️", salary = 95000, minAge = 28, requirement = "bachelor", category = "military",
-		minStats = { Health = 45, Smarts = 55 }, difficulty = 6, description = "Advanced military leadership" },
+		minStats = { Health = 45, Smarts = 55 }, difficulty = 6, requiresFlags = { "military_officer", "commissioned" }, grantsFlags = { "company_commander", "tactical_leadership" },
+		description = "Advanced military leadership" },
 	{ id = "colonel", name = "Colonel", company = "US Armed Forces", emoji = "🎖️", salary = 135000, minAge = 38, requirement = "master", category = "military",
-		minStats = { Smarts = 60 }, difficulty = 7, description = "High command position" },
+		minStats = { Smarts = 60 }, difficulty = 7, requiresFlags = { "company_commander", "tactical_leadership" }, grantsFlags = { "senior_officer", "strategic_command" },
+		description = "High command position" },
 	{ id = "general", name = "General", company = "Pentagon", emoji = "⭐", salary = 220000, minAge = 50, requirement = "master", category = "military",
-		minStats = { Smarts = 70 }, difficulty = 9, description = "Top military leadership" },
+		minStats = { Smarts = 70 }, difficulty = 9, requiresFlags = { "senior_officer", "strategic_command" }, grantsFlags = { "general_officer", "top_brass" },
+		description = "Top military leadership" },
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRIMINAL CAREERS - CRITICAL FIX #22: Criminal careers require proper crime background!
@@ -1350,8 +1386,8 @@ local JobCatalogList = {
 	-- Requires: High Smarts, tech skills
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- Entry points (shared) - These give experience flags for higher-tier jobs
-	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 0, minAge = 14, requirement = nil, category = "hacker",
-		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools" },
+	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 1500, minAge = 14, requirement = nil, category = "hacker",
+		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools - small side gigs" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
 		minStats = { Smarts = 65 }, requiresFlags = { "coder", "tech_experience" }, grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
 	
@@ -1412,41 +1448,52 @@ local JobCatalogList = {
 	-- Without proper IDs, they show as "Unknown Job" in the UI.
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- RAPPER CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RAPPER CAREER PATH - REQUIRES CELEBRITY GAMEPASS
+	-- User feedback: "ENSURE IT WORKS FOR BEING A RAPPER OR SOMETHING NOT A YOUTUBER"
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "underground_rapper", name = "Underground Rapper", company = "Independent", emoji = "🎤", salary = 250, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 2, grantsFlags = { "rapper", "underground_artist", "hip_hop_experience", "pursuing_rap" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Starting your rap career from the underground" },
 	{ id = "local_rapper", name = "Local Rapper", company = "Local Scene", emoji = "📍", salary = 3000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "underground_artist", "rapper" }, grantsFlags = { "local_fame", "music_industry" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Known in your local hip-hop scene" },
 	{ id = "buzzing_rapper", name = "Buzzing Rapper", company = "Blog Circuit", emoji = "🔊", salary = 25000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "local_fame", "rapper" }, grantsFlags = { "buzz", "viral_potential" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "The blogs are talking about you" },
 	{ id = "signed_rapper", name = "Signed Rapper", company = "Record Label", emoji = "📝", salary = 125000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "buzz", "rapper" }, grantsFlags = { "signed_artist", "label_deal" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Signed to a major or indie label" },
 	{ id = "hot_rapper", name = "Hot Rapper", company = "Major Label", emoji = "🔥", salary = 500000, minAge = 19, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "signed_artist", "rapper" }, grantsFlags = { "charting_artist", "hit_maker" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "You've got multiple hits" },
 	{ id = "mainstream_rapper", name = "Mainstream Rapper", company = "Global Records", emoji = "⭐", salary = 3000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "charting_artist", "rapper" }, grantsFlags = { "mainstream_fame", "celebrity" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Household name status" },
 	{ id = "superstar_rapper", name = "Superstar Rapper", company = "Empire Records", emoji = "💎", salary = 25000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "mainstream_fame", "rapper" }, grantsFlags = { "superstar", "mogul" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "One of the biggest names in hip-hop" },
 	{ id = "legend_rapper", name = "Hip-Hop Legend", company = "Hall of Fame", emoji = "👑", salary = 90000000, minAge = 28, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "superstar", "rapper" }, grantsFlags = { "legend", "goat_status" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "A true legend of hip-hop" },
 	
 	-- INFLUENCER/CONTENT CREATOR CAREER PATH (Celebrity gamepass)
-	{ id = "new_creator", name = "New Creator", company = "Social Media", emoji = "📱", salary = 50, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_creator", name = "New Creator", company = "Social Media", emoji = "📱", salary = 2000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence" }, isFameCareer = true,
 		description = "Just starting your social media journey" },
 	-- CRITICAL FIX #AAA-2: Add alias for client compatibility (client uses new_influencer)
-	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 5000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence", "influencer" }, isFameCareer = true,
 		description = "Just starting your content creation journey" },
-	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 2500, minAge = 14, requirement = nil, category = "entertainment",
+	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 15000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "content_creator" }, grantsFlags = { "influencer", "small_following" }, isFameCareer = true,
 		description = "Building a small but engaged following" },
 	{ id = "rising_influencer", name = "Rising Influencer", company = "Social Media", emoji = "📈", salary = 25000, minAge = 15, requirement = nil, category = "entertainment",
@@ -1462,14 +1509,14 @@ local JobCatalogList = {
 		difficulty = 9, requiresFlags = { "major_following" }, grantsFlags = { "mega_fame", "household_name" }, isFameCareer = true,
 		description = "A household name on social media" },
 	
-	-- STREAMER CAREER PATH (Celebrity gamepass)  
-	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	-- STREAMER CAREER PATH (Celebrity gamepass)
+	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 1000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Stream as a hobby - just for fun!" },
-	{ id = "new_streamer", name = "New Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "entertainment",
+	{ id = "new_streamer", name = "New Streamer", company = "Twitch", emoji = "🎮", salary = 3000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Just started streaming" },
-	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 500, minAge = 14, requirement = nil, category = "entertainment",
+	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 8000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "streamer" }, grantsFlags = { "affiliate", "monetized" }, isFameCareer = true,
 		description = "Earned affiliate status" },
 	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch", emoji = "✅", salary = 15000, minAge = 16, requirement = nil, category = "entertainment",
@@ -1485,7 +1532,10 @@ local JobCatalogList = {
 		difficulty = 10, requiresFlags = { "famous_streamer" }, grantsFlags = { "streaming_legend", "icon" }, isFameCareer = true,
 		description = "A legend of the streaming world" },
 	
-	-- MUSIC CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MUSIC CAREER PATH - REQUIRES CELEBRITY GAMEPASS
+	-- Entry-level (street performer, local artist) is FREE but signed/pro requires gamepass
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "street_performer", name = "Street Performer", company = "Self-Employed", emoji = "🎸", salary = 275, minAge = 10, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "performer", "busker" }, isFameCareer = true,
 		description = "Playing for tips on the street" },
@@ -1497,21 +1547,29 @@ local JobCatalogList = {
 		description = "Self-released music gaining traction" },
 	{ id = "signed_artist", name = "Signed Artist", company = "Record Label", emoji = "📝", salary = 100000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "indie_artist" }, grantsFlags = { "signed_artist", "label_support" }, isFameCareer = true,
-		description = "Signed to a record label" },
+		requiresCelebrityGamepass = true,
+		description = "Signed to a record label - requires Celebrity Gamepass" },
 	{ id = "touring_artist", name = "Touring Artist", company = "Major Label", emoji = "🚌", salary = 350000, minAge = 19, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "signed_artist" }, grantsFlags = { "touring_musician", "headliner" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Headlining your own tours" },
 	{ id = "platinum_artist", name = "Platinum Artist", company = "Global Records", emoji = "💿", salary = 3000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "touring_musician" }, grantsFlags = { "platinum_seller", "award_winner" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Selling millions of records" },
 	{ id = "music_superstar", name = "Superstar", company = "Universal Music", emoji = "🌟", salary = 30000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "platinum_seller" }, grantsFlags = { "music_superstar", "global_fame" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Global superstar status" },
 	{ id = "music_icon", name = "Music Icon", company = "Hall of Fame", emoji = "👑", salary = 90000000, minAge = 28, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "music_superstar" }, grantsFlags = { "music_icon", "legend" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "An icon of the music industry" },
 	
-	-- ACTING CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ACTING CAREER PATH - REQUIRES CELEBRITY GAMEPASS for higher tiers
+	-- Entry-level (extra, background actor) is FREE but speaking roles+ require gamepass
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "extra", name = "Extra", company = "Casting Agency", emoji = "👥", salary = 1250, minAge = 6, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "actor", "background_work" }, isFameCareer = true,
 		description = "Stand in the background of scenes" },
@@ -1520,21 +1578,27 @@ local JobCatalogList = {
 		description = "Featured background roles" },
 	{ id = "bit_part_actor", name = "Bit Part Actor", company = "TV Studios", emoji = "🗣️", salary = 16500, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "featured_extra" }, grantsFlags = { "speaking_role", "sag_card" }, isFameCareer = true,
-		description = "Small speaking roles" },
+		requiresCelebrityGamepass = true,
+		description = "Small speaking roles - requires Celebrity Gamepass" },
 	{ id = "guest_star", name = "Guest Star", company = "Network TV", emoji = "📺", salary = 50000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "speaking_role" }, grantsFlags = { "recurring_role", "tv_presence" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Recurring guest appearances on TV shows" },
 	{ id = "supporting_actor", name = "Supporting Actor", company = "Film Production", emoji = "🎬", salary = 137500, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "recurring_role" }, grantsFlags = { "film_actor", "award_potential" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Notable supporting roles in films" },
 	{ id = "tv_lead", name = "TV Lead", company = "Major Network", emoji = "📺", salary = 350000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "film_actor" }, grantsFlags = { "lead_actor", "show_star" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Lead your own TV series" },
 	{ id = "movie_star_fame", name = "Movie Star", company = "Major Studios", emoji = "🎥", salary = 5500000, minAge = 24, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "lead_actor" }, grantsFlags = { "movie_star", "a_lister" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Lead roles in major films" },
 	{ id = "a_list_celebrity", name = "A-List Celebrity", company = "Hollywood Elite", emoji = "⭐", salary = 20000000, minAge = 26, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "movie_star" }, grantsFlags = { "a_list", "hollywood_royalty" }, isFameCareer = true,
+		requiresCelebrityGamepass = true,
 		description = "Hollywood's elite" },
 	{ id = "hollywood_legend", name = "Hollywood Legend", company = "Hall of Fame", emoji = "👑", salary = 62500000, minAge = 35, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "a_list" }, grantsFlags = { "hollywood_legend", "cinema_icon" }, isFameCareer = true,
@@ -2280,6 +2344,133 @@ local ActivityCatalog = {
 		requiresAge = 18,
 		mafiaEffect = { heat = -15 },
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7: RETIREMENT ACTIVITIES
+	-- Players should be able to retire from their jobs and receive pension
+	-- ═══════════════════════════════════════════════════════════════════════════
+	retire = {
+		stats = { Happiness = 10, Health = 5 },
+		feed = "retired from your career! Time to enjoy life!",
+		cost = 0,
+		requiresAge = 50, -- Can retire early (with reduced pension)
+		requiresFlag = "employed", -- Must have a job to retire from
+		setFlags = { retired = true, happily_retired = true },
+		clearFlags = { employed = true, has_job = true, has_teen_job = true },
+		oneTime = false, -- Can un-retire and re-retire
+		isRetirement = true, -- Special handler flag
+	},
+	early_retire = {
+		stats = { Happiness = 12, Health = 8 },
+		feed = "took early retirement! Living the dream!",
+		cost = 0,
+		requiresAge = 40, -- Minimum 40 for early retirement
+		maxAge = 49, -- After 50, use normal retire
+		requiresFlag = "employed",
+		setFlags = { retired = true, happily_retired = true, early_retirement = true },
+		clearFlags = { employed = true, has_job = true, has_teen_job = true },
+		oneTime = false,
+		isRetirement = true,
+	},
+	work_part_time = {
+		stats = { Happiness = 3 },
+		feed = "went semi-retired, working part-time!",
+		cost = 0,
+		requiresAge = 55,
+		requiresFlag = "employed",
+		setFlags = { semi_retired = true },
+		oneTime = false,
+		isSemiRetirement = true,
+	},
+	
+	-- Rehab activities for addiction recovery
+	go_to_rehab = {
+		stats = { Health = 10, Happiness = -5 },
+		feed = "checked into rehab to get clean!",
+		cost = 5000,
+		requiresAge = 14,
+		setFlags = { in_rehab = true, seeking_help = true },
+	},
+	attend_aa = {
+		stats = { Health = 5, Happiness = 2 },
+		feed = "attended an AA meeting!",
+		cost = 0,
+		requiresAge = 14,
+		setFlags = { attending_aa = true, seeking_help = true },
+	},
+	complete_rehab = {
+		stats = { Health = 15, Happiness = 10 },
+		feed = "completed your rehab program! A fresh start!",
+		cost = 0,
+		requiresAge = 14,
+		requiresFlag = "in_rehab",
+		setFlags = { completed_rehab = true },
+		clearFlags = { in_rehab = true },
+		oneTime = false,
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #30: HEALTH & MEDICAL ACTIVITIES
+	-- Players need ways to heal and take care of their health
+	-- Insurance reduces costs for these activities
+	-- ═══════════════════════════════════════════════════════════════════════════
+	doctor_visit = {
+		stats = { Health = 8, Happiness = 2 },
+		feed = "went to the doctor for a checkup!",
+		cost = 500, -- Base cost, reduced by insurance
+		requiresAge = 0,
+		usesInsurance = true, -- Insurance reduces cost
+	},
+	hospital_treatment = {
+		stats = { Health = 25, Happiness = -5 },
+		feed = "received treatment at the hospital!",
+		cost = 5000, -- Base cost, reduced by insurance
+		requiresAge = 0,
+		usesInsurance = true,
+	},
+	therapy_session = {
+		stats = { Happiness = 10, Health = 3 },
+		feed = "had a therapy session - mental health matters!",
+		cost = 200, -- Base cost, reduced by insurance
+		requiresAge = 10,
+		usesInsurance = true,
+	},
+	dental_checkup = {
+		stats = { Health = 3, Looks = 2 },
+		feed = "got your teeth cleaned!",
+		cost = 200,
+		requiresAge = 3,
+		usesInsurance = true,
+	},
+	get_surgery = {
+		stats = { Health = 40, Happiness = -10 },
+		feed = "underwent surgery and are recovering!",
+		cost = 20000, -- Very expensive without insurance
+		requiresAge = 0,
+		usesInsurance = true,
+	},
+	buy_health_insurance = {
+		stats = { Happiness = 2 },
+		feed = "purchased health insurance coverage!",
+		cost = 3000, -- Annual premium
+		requiresAge = 18,
+		setFlags = { has_health_insurance = true },
+		clearFlags = { uninsured = true },
+	},
+	chiropractor = {
+		stats = { Health = 5, Happiness = 3 },
+		feed = "visited the chiropractor!",
+		cost = 100,
+		requiresAge = 16,
+		usesInsurance = true,
+	},
+	physical_therapy = {
+		stats = { Health = 10, Happiness = 1 },
+		feed = "attended physical therapy!",
+		cost = 300,
+		requiresAge = 5,
+		usesInsurance = true,
+	},
 }
 
 local CrimeCatalog = {
@@ -2310,6 +2501,15 @@ local CrimeCatalog = {
 	counterfeiting = { risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 } },
 	fraud = { risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 } },
 	embezzlement = { risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 } },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: PRISON CRIMES - Can be committed while incarcerated
+	-- Getting caught adds years to sentence instead of starting new sentence
+	-- ═══════════════════════════════════════════════════════════════════════════
+	prison_assault = { risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, isPrisonCrime = true },
+	prison_riot = { risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, isPrisonCrime = true },
+	prison_contraband = { risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, isPrisonCrime = true },
+	prison_gang_violence = { risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, isPrisonCrime = true },
 }
 
 local PrisonActions = {
@@ -3094,6 +3294,19 @@ local StoryPaths = {
 		requirements = {},
 		stages = { "hustler", "operator", "lieutenant", "underboss", "boss" },
 	},
+	-- CRITICAL FIX: Add "mafia" path to match StoryPathsScreen
+	-- The client defines a "mafia" path requiring MAFIA gamepass
+	mafia = {
+		id = "mafia",
+		name = "Mafia Boss",
+		description = "Rise through the ranks of organized crime.",
+		color = C and C.Gray700 or Color3.fromRGB(55, 65, 81),
+		minAge = 18,
+		requirements = {},
+		isPremium = true,
+		gamepassKey = "MAFIA",
+		stages = { "associate", "soldier", "capo", "underboss", "don" },
+	},
 	celebrity = {
 		id = "celebrity",
 		name = "Fame & Fortune",
@@ -3129,6 +3342,14 @@ local StoryPathActions = {
 		heist = { risk = 60, reward = { 5000, 100000 }, progress = 0.1 },
 		bribe = { cost = 25000, progress = 0.05 },
 		war = { risk = 80, stats = { Health = -10 }, progress = 0.12 },
+	},
+	-- CRITICAL FIX: Add mafia path actions
+	mafia = {
+		collect = { reward = { 2000, 15000 }, progress = 0.04 },
+		expand = { risk = 30, progress = 0.06 },
+		hit = { risk = 50, stats = { Health = -5 }, progress = 0.08 },
+		launder = { cost = 50000, progress = 0.05 },
+		war = { risk = 70, stats = { Health = -15 }, progress = 0.12 },
 	},
 	celebrity = {
 		post = { stats = { Happiness = 2 }, progress = 0.04 },
@@ -4011,7 +4232,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.BuyVehicle = self:createRemote("BuyVehicle", "RemoteFunction")
 	self.remotes.BuyItem = self:createRemote("BuyItem", "RemoteFunction")
 	self.remotes.SellAsset = self:createRemote("SellAsset", "RemoteFunction")
-	self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
+	-- REMOVED: Gambling remote (against Roblox TOS)
+	-- self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
 
 	self.remotes.DoInteraction = self:createRemote("DoInteraction", "RemoteFunction")
 
@@ -4107,9 +4329,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.SellAsset.OnServerInvoke = function(player, assetId, assetType)
 		return self:handleAssetSale(player, assetId, assetType)
 	end
-	self.remotes.Gamble.OnServerInvoke = function(player, betAmount, finalSymbols)
-		return self:handleGamble(player, betAmount, finalSymbols)
-	end
+	-- REMOVED: Gambling handler (against Roblox TOS)
+	-- Gambling features have been removed to comply with Roblox Terms of Service
 
 	self.remotes.DoInteraction.OnServerInvoke = function(player, payload)
 		return self:handleInteraction(player, payload)
@@ -4671,6 +4892,48 @@ function LifeBackend:pushState(player, feedText, resultData)
 	if not state then
 		return
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #21: Always sync stats before pushing to client
+	-- This ensures state.Health == state.Stats.Health, etc.
+	-- Without this, client can show different values than server intended
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Stats = state.Stats or {}
+	state.Health = state.Stats.Health or state.Health or 50
+	state.Happiness = state.Stats.Happiness or state.Happiness or 50
+	state.Smarts = state.Stats.Smarts or state.Smarts or 50
+	state.Looks = state.Stats.Looks or state.Looks or 50
+	
+	-- Also sync Stats from top-level in case they were set directly
+	state.Stats.Health = state.Health
+	state.Stats.Happiness = state.Happiness
+	state.Stats.Smarts = state.Smarts
+	state.Stats.Looks = state.Looks
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #22: Ensure employment flags match CurrentJob state
+	-- This prevents the "job shows but Work says no job" bug
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	if state.CurrentJob and state.CurrentJob.id then
+		state.Flags.employed = true
+		state.Flags.has_job = true
+	else
+		state.Flags.employed = nil
+		state.Flags.has_job = nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #23: Ensure prison flags match InJail state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.InJail then
+		state.Flags.in_prison = true
+		state.Flags.incarcerated = true
+	else
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+	end
+	
 	state.lastFeed = feedText or state.lastFeed
 	self.remotes.SyncState:FireClient(player, self:serializeState(state), feedText, resultData)
 end
@@ -4699,8 +4962,24 @@ function LifeBackend:applyStatChanges(state, deltas)
 	end
 end
 
+-- CRITICAL FIX #9: Safe money operation that prevents negative values
 function LifeBackend:addMoney(state, amount)
-	state.Money = math.max(0, (state.Money or 0) + amount)
+	if not amount or type(amount) ~= "number" then
+		return -- Invalid amount
+	end
+	
+	local currentMoney = state.Money or 0
+	if type(currentMoney) ~= "number" then
+		currentMoney = 0
+	end
+	
+	-- CRITICAL FIX #9: Prevent negative money values
+	local newMoney = currentMoney + amount
+	state.Money = math.max(0, math.floor(newMoney)) -- Also ensure integer value
+	
+	-- CRITICAL FIX #9B: Cap maximum money to prevent overflow issues
+	local MAX_MONEY = 999999999999 -- ~1 trillion
+	state.Money = math.min(state.Money, MAX_MONEY)
 end
 
 -- ============================================================================
@@ -4708,8 +4987,23 @@ end
 -- ============================================================================
 
 function LifeBackend:onPlayerAdded(player)
+	-- CRITICAL FIX #10: Initialize gamepass ownership FIRST before creating state
+	-- This ensures ownership is properly cached before any gamepass checks happen
+	if GamepassSystem and GamepassSystem.initializePlayerOwnership then
+		GamepassSystem:initializePlayerOwnership(player)
+	end
+	
 	local state = self:createInitialState(player)
 	self.playerStates[player] = state
+	
+	-- CRITICAL FIX #10: Ensure GamepassOwnership is stored in state for persistence
+	if state.GamepassOwnership then
+		-- Also tell GamepassSystem about any restored ownership from DataStore
+		if GamepassSystem and GamepassSystem.restoreOwnershipFromState then
+			GamepassSystem:restoreOwnershipFromState(player, state.GamepassOwnership)
+		end
+	end
+	
 	-- CRITICAL FIX #500: DON'T push "A new life begins..." here!
 	-- The setLifeInfo function will send the proper birth message.
 	-- Sending a message here causes duplicate/overlapping messages at spawn.
@@ -5004,11 +5298,70 @@ function LifeBackend:advanceRelationships(state)
 					rel.alive = false
 					rel.deceased = true
 					rel.deathAge = relAge
+					
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX (deep-5): INHERITANCE - Parents leave money when they die!
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					local inheritanceAmount = 0
+					local relRole = (rel.role or ""):lower()
+					
+					if relRole:find("mother") or relRole:find("father") or relRole:find("parent") then
+						-- Parents leave inheritance based on their "wealth" or random amount
+						local baseInheritance = rel.wealth or RANDOM:NextInteger(5000, 50000)
+						
+						-- Upper class parents leave more
+						if state.Flags and state.Flags.wealthy_family then
+							baseInheritance = baseInheritance * RANDOM:NextInteger(5, 20)
+						elseif state.Flags and state.Flags.upper_class then
+							baseInheritance = baseInheritance * RANDOM:NextInteger(2, 5)
+						end
+						
+						-- Split among siblings if any exist
+						local siblingCount = 0
+						for _, otherRel in pairs(state.Relationships) do
+							if type(otherRel) == "table" and otherRel.alive ~= false then
+								local otherRole = (otherRel.role or ""):lower()
+								if otherRole:find("brother") or otherRole:find("sister") or otherRole:find("sibling") then
+									siblingCount = siblingCount + 1
+								end
+							end
+						end
+						
+						inheritanceAmount = math.floor(baseInheritance / (siblingCount + 1))
+						
+						if inheritanceAmount > 0 then
+							self:addMoney(state, inheritanceAmount)
+							state.YearLog = state.YearLog or {}
+							table.insert(state.YearLog, {
+								type = "inheritance",
+								emoji = "💰",
+								text = string.format("Inherited $%s from %s's estate", formatMoney(inheritanceAmount), rel.name or "your parent"),
+								amount = inheritanceAmount,
+							})
+						end
+					elseif relRole:find("grandmother") or relRole:find("grandfather") or relRole:find("grandparent") then
+						-- Grandparents may leave smaller inheritance
+						local baseInheritance = rel.wealth or RANDOM:NextInteger(1000, 20000)
+						inheritanceAmount = math.floor(baseInheritance * RANDOM:NextNumber() * 0.5) -- Random portion
+						
+						if inheritanceAmount > 500 then
+							self:addMoney(state, inheritanceAmount)
+							state.YearLog = state.YearLog or {}
+							table.insert(state.YearLog, {
+								type = "inheritance",
+								emoji = "💰",
+								text = string.format("Received $%s from %s's will", formatMoney(inheritanceAmount), rel.name or "your grandparent"),
+								amount = inheritanceAmount,
+							})
+						end
+					end
+					
 					table.insert(familyDeaths, {
 						name = rel.name or "A loved one",
 						role = rel.role or "family member",
 						age = relAge,
 						id = relId,
+						inheritance = inheritanceAmount,
 					})
 				end
 			elseif rel.age > 95 and RANDOM:NextNumber() < 0.2 then
@@ -5017,6 +5370,71 @@ function LifeBackend:advanceRelationships(state)
 				rel.deceased = true
 				state.PendingFeed = (rel.name or "A loved one") .. " passed away."
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #4: Handle PARTNER/SPOUSE death SEPARATELY from family deaths
+	-- Partner death needs to clear partner data and relationship flags
+	-- This was missing, causing deceased partners to still show in relationships!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local partner = state.Relationships.partner
+	if partner and type(partner) == "table" and partner.alive ~= false then
+		local partnerAge = partner.age or (state.Age + RANDOM:NextInteger(-5, 5))
+		local partnerDeathChance = 0
+		
+		-- CRITICAL FIX #23: Relationship aging respecting death age limits
+		if partnerAge >= 100 then
+			partnerDeathChance = 0.40
+		elseif partnerAge >= 95 then
+			partnerDeathChance = 0.20
+		elseif partnerAge >= 90 then
+			partnerDeathChance = 0.10
+		elseif partnerAge >= 85 then
+			partnerDeathChance = 0.05
+		elseif partnerAge >= 80 then
+			partnerDeathChance = 0.025
+		elseif partnerAge >= 75 then
+			partnerDeathChance = 0.01
+		end
+		
+		if partnerDeathChance > 0 and RANDOM:NextNumber() < partnerDeathChance then
+			-- CRITICAL FIX #4: FULLY handle partner death
+			local partnerName = partner.name or partner.Name or "Your spouse"
+			local partnerRole = partner.role or "partner"
+			
+			-- Mark partner as deceased
+			partner.alive = false
+			partner.deceased = true
+			partner.deathAge = partnerAge
+			
+			-- CRITICAL FIX #4: Move to deceased partners list and CLEAR active partner
+			state.Relationships.deceased_partners = state.Relationships.deceased_partners or {}
+			table.insert(state.Relationships.deceased_partners, {
+				name = partnerName,
+				role = partnerRole,
+				deathAge = partnerAge,
+				deathYear = state.Year,
+			})
+			
+			-- CRITICAL FIX #4: CLEAR the partner reference and all related flags!
+			state.Relationships.partner = nil
+			state.Flags = state.Flags or {}
+			state.Flags.has_partner = nil
+			state.Flags.married = nil
+			state.Flags.engaged = nil
+			state.Flags.dating = nil
+			state.Flags.lives_with_partner = nil
+			state.Flags.widowed = true
+			state.Flags.recently_bereaved = true
+			state.Flags.lost_spouse = true
+			
+			-- Significant happiness impact for losing a spouse
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 35, 0, 100)
+			
+			state.PendingFeed = string.format("💔 Your %s, %s, passed away at age %d. You are now widowed.", 
+				partnerRole, partnerName, partnerAge)
 		end
 	end
 	
@@ -5089,11 +5507,29 @@ function LifeBackend:updateEducationProgress(state)
 				state.Education = eduData.Level
 				
 				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX (deep-2): Store degrees earned in a dedicated list
+				-- This ensures all degrees persist and are accessible for job applications
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				state.DegreesEarned = state.DegreesEarned or {}
+				local degreeName = eduData.Degree
+				local institutionName = eduData.Institution or "school"
+				
+				if degreeName then
+					table.insert(state.DegreesEarned, {
+						degree = degreeName,
+						institution = institutionName,
+						year = state.Year,
+						level = eduData.Level,
+						gpa = eduData.GPA,
+					})
+					state.Flags.has_degree = true
+					state.Flags.highest_degree = degreeName
+				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX #MEGA-16: Enhanced graduation with degree display and remaining stat bonuses
 				-- Show BOTH institution AND degree earned in the graduation message
 				-- ═══════════════════════════════════════════════════════════════════════════════
-				local institutionName = eduData.Institution or "school"
-				local degreeName = eduData.Degree
 				if degreeName then
 					state.PendingFeed = string.format("🎓 You graduated from %s! Earned: %s", institutionName, degreeName)
 				else
@@ -5210,27 +5646,39 @@ function LifeBackend:tickCareer(state)
 	-- BUG: Players were stuck at 80% because promotion chance was too low (10%)
 	-- FIX: Higher chance for entertainment/celebrity careers (they're meant to be fast)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if info.promotionProgress >= 80 and info.performance >= 70 and (info.yearsAtJob or 0) >= 1 then  -- Reduced from 2 to 1 year
+
+	-- Entertainment/celebrity/talent-based careers get FASTER promotions (lower threshold)
+	-- These are careers where talent matters more than years of experience
+	local jobCategory = (state.CurrentJob.category or ""):lower()
+	local jobId = (state.CurrentJob.id or ""):lower()
+
+	local isTalentCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or
+		jobCategory == "esports" or jobCategory == "racing" or jobCategory == "sports" or
+		jobCategory == "hacker" or jobCategory == "criminal" or
+		jobId:find("rapper") or jobId:find("streamer") or jobId:find("influencer") or
+		jobId:find("creator") or jobId:find("gamer") or jobId:find("racer") or
+		jobId:find("athlete") or jobId:find("musician") or jobId:find("actor")
+
+	-- CRITICAL FIX: Lower threshold for talent careers (60% vs 80% for regular jobs)
+	-- Talent careers: 60% progress, 50% performance needed
+	-- Regular jobs: 80% progress, 70% performance needed
+	local progressThreshold = isTalentCareer and 60 or 80
+	local performanceThreshold = isTalentCareer and 50 or 70
+
+	if info.promotionProgress >= progressThreshold and info.performance >= performanceThreshold and (info.yearsAtJob or 0) >= 1 then
 		-- Check if we already tried this year
 		local lastAutoPromoAge = info.lastAutoPromoAttemptAge or 0
 		if (state.Age or 0) > lastAutoPromoAge then
 			info.lastAutoPromoAttemptAge = state.Age
-			
-			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for entertainment careers
-			local baseChance = (info.promotionProgress - 70) / 100  -- 10% at 80%, 30% at 100%
-			
-			-- Entertainment/celebrity careers get BOOSTED promotion chance
-			local jobCategory = (state.CurrentJob.category or ""):lower()
-			local isCelebrityCareer = jobCategory == "entertainment" or jobCategory == "celebrity" or 
-				(state.CurrentJob.id or ""):find("rapper") or 
-				(state.CurrentJob.id or ""):find("streamer") or
-				(state.CurrentJob.id or ""):find("influencer")
-			
-			if isCelebrityCareer then
-				baseChance = baseChance * 2.5  -- 25% at 80%, 75% at 100% for celebrity careers
+
+			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for talent-based careers
+			local baseChance = (info.promotionProgress - 50) / 100  -- 10% at 60%, 50% at 100%
+
+			if isTalentCareer then
+				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for talent careers
 			end
-			
-			local autoPromoChance = math.min(0.90, baseChance)  -- Cap at 90%
+
+			local autoPromoChance = math.min(0.95, baseChance)  -- Cap at 95%
 			
 			if RANDOM:NextNumber() < autoPromoChance then
 				-- Find next job in career track
@@ -5383,6 +5831,12 @@ function LifeBackend:tickCareer(state)
 		self:addMoney(state, salary)
 		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
 		
+		-- CRITICAL FIX: Store last paid salary for pension calculation
+		-- This ensures retirement events can calculate pension from actual income
+		-- (important for fame careers where CurrentJob.salary may be outdated)
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.lastPaidSalary = salary
+		
 		-- CRITICAL FIX #138: Add salary to YearLog so user sees they got paid!
 		-- This was the bug - salary was paid but user didn't see any message
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
@@ -5415,10 +5869,35 @@ function LifeBackend:collectPropertyIncome(state)
 	end
 	
 	local totalIncome = 0
+	local propertyDetails = {}
+	
 	for _, prop in ipairs(properties) do
+		-- CRITICAL FIX #18: Handle ALL property types for income
 		local income = prop.income or 0
+		
+		-- If no explicit income, calculate based on property type and value
+		if income == 0 and prop.value and prop.value > 0 then
+			local propId = (prop.id or ""):lower()
+			local propName = (prop.name or ""):lower()
+			
+			-- Rental properties generate rental income (5-8% of value annually)
+			if propId:find("rental") or propId:find("apartment") or propName:find("rental") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.03 + 0.05)) -- 5-8%
+			-- Commercial properties generate business income (4-10% of value)
+			elseif propId:find("commercial") or propId:find("office") or propId:find("retail") or propId:find("storefront") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.06 + 0.04)) -- 4-10%
+			-- Vacation rentals have seasonal income (8-15% but variable)
+			elseif propId:find("vacation") or propId:find("cabin") or propId:find("beach") then
+				income = math.floor(prop.value * (RANDOM:NextNumber() * 0.07 + 0.08)) -- 8-15%
+			-- Primary residence - no rental income (you live there)
+			elseif propId:find("house") or propId:find("mansion") or propId:find("penthouse") then
+				income = 0 -- No income from primary residence
+			end
+		end
+		
 		if income > 0 then
 			totalIncome = totalIncome + income
+			table.insert(propertyDetails, {name = prop.name or "Property", income = income})
 		end
 	end
 	
@@ -5441,6 +5920,7 @@ end
 -- CRITICAL FIX #10: Vehicle Depreciation System
 -- Vehicles lose value over time (10-15% per year) based on condition
 -- Without this, cars never lose value and can be sold for purchase price forever
+-- CRITICAL FIX #19: Some classic/collector vehicles APPRECIATE instead!
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickVehicleDepreciation(state)
 	state.Assets = state.Assets or {}
@@ -5450,20 +5930,53 @@ function LifeBackend:tickVehicleDepreciation(state)
 		return
 	end
 	
+	-- CRITICAL FIX #19: Vehicles that appreciate in value (classics, collectibles)
+	local appreciatingVehicles = {
+		"classic", "vintage", "antique", "collector", "ferrari_250", 
+		"porsche_911", "mustang_1967", "corvette_1963", "shelby_gt500"
+	}
+	
 	for _, vehicle in ipairs(vehicles) do
 		if vehicle.value and vehicle.value > 0 then
-			-- Depreciation rate: 10-15% per year, modified by condition
-			local baseDepreciation = 0.12 -- 12% base
-			local conditionMod = vehicle.condition and (1 - vehicle.condition / 200) or 1 -- Poor condition = faster depreciation
-			local depreciationRate = baseDepreciation * conditionMod
+			local vehicleId = (vehicle.id or ""):lower()
+			local vehicleName = (vehicle.name or ""):lower()
+			local vehicleTier = (vehicle.tier or ""):lower()
 			
-			-- Calculate depreciation
-			local depreciationAmount = math.floor(vehicle.value * depreciationRate)
-			vehicle.value = math.max(500, vehicle.value - depreciationAmount) -- Minimum $500 scrap value
+			-- CRITICAL FIX #19: Check if this is an appreciating vehicle
+			local doesAppreciate = vehicle.appreciates == true
+			if not doesAppreciate then
+				for _, appreciateKey in ipairs(appreciatingVehicles) do
+					if vehicleId:find(appreciateKey) or vehicleName:find(appreciateKey) or vehicleTier == "collector" then
+						doesAppreciate = true
+						break
+					end
+				end
+			end
 			
-			-- Condition also degrades slightly each year (1-5%)
-			if vehicle.condition then
-				vehicle.condition = math.max(0, vehicle.condition - RANDOM:NextInteger(1, 5))
+			if doesAppreciate then
+				-- CRITICAL FIX #19: Appreciating vehicles GAIN value (2-8% per year)
+				local appreciationRate = RANDOM:NextNumber() * 0.06 + 0.02 -- 2-8%
+				local appreciationAmount = math.floor(vehicle.value * appreciationRate)
+				vehicle.value = vehicle.value + appreciationAmount
+				
+				-- Collectors maintain their vehicles well
+				if vehicle.condition then
+					vehicle.condition = math.min(100, vehicle.condition + RANDOM:NextInteger(0, 2))
+				end
+			else
+				-- Normal depreciation for regular vehicles
+				local baseDepreciation = 0.12 -- 12% base
+				local conditionMod = vehicle.condition and (1 - vehicle.condition / 200) or 1 -- Poor condition = faster depreciation
+				local depreciationRate = baseDepreciation * conditionMod
+				
+				-- Calculate depreciation
+				local depreciationAmount = math.floor(vehicle.value * depreciationRate)
+				vehicle.value = math.max(500, vehicle.value - depreciationAmount) -- Minimum $500 scrap value
+				
+				-- Condition also degrades slightly each year (1-5%)
+				if vehicle.condition then
+					vehicle.condition = math.max(0, vehicle.condition - RANDOM:NextInteger(1, 5))
+				end
 			end
 		end
 	end
@@ -5473,6 +5986,7 @@ end
 -- CRITICAL FIX #11: Investment Value Fluctuation
 -- Investments should gain or lose value each year based on market conditions
 -- Without this, investments are just static numbers
+-- CRITICAL FIX #20: Cap returns to prevent unrealistic exponential growth
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickInvestments(state)
 	state.Assets = state.Assets or {}
@@ -5484,7 +5998,16 @@ function LifeBackend:tickInvestments(state)
 		if inv.value and inv.value > 0 then
 			local changePercent = RANDOM:NextNumber() * 0.25 - 0.10 -- -10% to +15%
 			local changeAmount = math.floor(inv.value * changePercent)
-			inv.value = math.max(0, inv.value + changeAmount)
+			local newValue = inv.value + changeAmount
+			
+			-- CRITICAL FIX #20: Cap maximum growth per year to 3x original purchase price
+			local originalPrice = inv.price or inv.value
+			local maxValue = originalPrice * 3
+			inv.value = math.max(0, math.min(newValue, maxValue))
+			
+			-- Track total return for display
+			inv.totalReturn = inv.value - originalPrice
+			inv.returnPercent = originalPrice > 0 and math.floor((inv.value / originalPrice - 1) * 100) or 0
 		end
 	end
 	
@@ -5493,7 +6016,16 @@ function LifeBackend:tickInvestments(state)
 		if coin.value and coin.value > 0 then
 			local changePercent = RANDOM:NextNumber() * 0.80 - 0.30 -- -30% to +50%
 			local changeAmount = math.floor(coin.value * changePercent)
-			coin.value = math.max(0, coin.value + changeAmount)
+			local newValue = coin.value + changeAmount
+			
+			-- CRITICAL FIX #20: Cap crypto growth to 5x original (still volatile but not infinite)
+			local originalPrice = coin.price or coin.value
+			local maxValue = originalPrice * 5
+			coin.value = math.max(0, math.min(newValue, maxValue))
+			
+			-- Track total return
+			coin.totalReturn = coin.value - originalPrice
+			coin.returnPercent = originalPrice > 0 and math.floor((coin.value / originalPrice - 1) * 100) or 0
 		end
 	end
 end
@@ -5572,16 +6104,49 @@ function LifeBackend:applyLivingExpenses(state)
 	
 	-- CRITICAL FIX #152: Count children from relationships instead of ChildCount
 	-- state.ChildCount was never being set, so child expenses were always $0!
+	-- CRITICAL FIX #21: Living expenses MUST scale with family size properly
 	local childCount = 0
+	local partnerCount = 0
 	if state.Relationships then
 		for _, rel in pairs(state.Relationships) do
-			if type(rel) == "table" and rel.isChild then
-				childCount = childCount + 1
+			if type(rel) == "table" then
+				-- Count children
+				if rel.isChild or rel.role == "Child" or rel.role == "Son" or rel.role == "Daughter" then
+					childCount = childCount + 1
+				end
+				-- Count partner/spouse
+				if rel.role == "Spouse" or rel.role == "Partner" or rel.role == "Fiancé" or rel.role == "Fiancée" then
+					partnerCount = 1
+				end
 			end
 		end
 	end
+	-- Also check the dedicated partner slot
+	if state.Relationships and state.Relationships.partner then
+		partnerCount = 1
+	end
+	-- CRITICAL FIX #21: Use Flags.married for backup partner detection
+	if (state.Flags and state.Flags.married) and partnerCount == 0 then
+		partnerCount = 1
+	end
+	
+	-- CRITICAL FIX #21: Family expenses scale properly
+	-- Partner adds to expenses (shared housing but food, utilities, etc.)
+	if partnerCount > 0 then
+		totalExpenses = totalExpenses + 3000 -- $3,000/year additional for partner
+	end
+	-- Children are expensive!
 	if childCount > 0 then
-		totalExpenses = totalExpenses + (childCount * 5000) -- $5,000/year per child
+		-- First child is most expensive (new baby stuff), subsequent are cheaper
+		local firstChildCost = 8000 -- $8,000/year for first child
+		local additionalChildCost = 5000 -- $5,000/year for additional children
+		totalExpenses = totalExpenses + firstChildCost + ((childCount - 1) * additionalChildCost)
+		
+		-- CRITICAL FIX: School-age children have additional costs
+		-- Estimate based on having school-age children (usually if player is 30+)
+		if age >= 30 and childCount > 0 then
+			totalExpenses = totalExpenses + (childCount * 2000) -- School supplies, activities, etc.
+		end
 	end
 	
 	-- Healthcare costs increase with age (only for adults 30+)
@@ -5680,9 +6245,84 @@ function LifeBackend:applyHabitEffects(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX (deep-11): SPOUSE INCOME
+-- If player is married and spouse works, they contribute to household income!
+-- This was completely missing - spouses were just decorative
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectSpouseIncome(state)
+	local partner = state.Relationships and state.Relationships.partner
+	if not partner or partner.alive == false then
+		return
+	end
+	
+	-- Only married couples share income
+	if not (state.Flags and (state.Flags.married or state.Flags.lives_with_partner)) then
+		return
+	end
+	
+	-- Check if spouse has a job
+	local spouseJob = partner.job or partner.occupation
+	local spouseSalary = partner.salary or 0
+	
+	-- If no explicit job data, estimate based on spouse age and education
+	if spouseSalary == 0 then
+		local spouseAge = partner.age or state.Age
+		
+		-- Only working-age spouses contribute
+		if spouseAge >= 18 and spouseAge < 65 then
+			-- Random chance they have a job (70% employment rate)
+			if RANDOM:NextNumber() < 0.70 then
+				-- Estimate salary based on factors
+				local baseSalary = RANDOM:NextInteger(25000, 60000)
+				
+				-- Adjust for education
+				if partner.education == "college" or partner.educated then
+					baseSalary = baseSalary * 1.5
+				elseif partner.education == "graduate" or partner.advanced_degree then
+					baseSalary = baseSalary * 2.5
+				end
+				
+				-- Adjust for experience (age-based)
+				local experienceMod = math.min(1.5, 1 + (spouseAge - 22) * 0.02)
+				spouseSalary = math.floor(baseSalary * experienceMod)
+				
+				-- Store for future reference
+				partner.salary = spouseSalary
+				partner.job = "Working Professional"
+			else
+				partner.job = "Not employed"
+				partner.salary = 0
+			end
+		elseif spouseAge >= 65 then
+			-- Retired spouse may have pension
+			local pension = RANDOM:NextInteger(10000, 30000)
+			spouseSalary = pension
+			partner.job = "Retired"
+			partner.salary = pension
+		end
+	end
+	
+	if spouseSalary > 0 then
+		self:addMoney(state, spouseSalary)
+		
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "spouse_income",
+			emoji = "💑",
+			text = string.format("%s contributed $%s to household income", 
+				partner.name or "Your spouse", 
+				formatMoney(spouseSalary)),
+			amount = spouseSalary,
+		})
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #14: Fame Decay System
 -- Fame should gradually decrease without maintenance
 -- Without this, once famous always famous
+-- CRITICAL FIX #14B: But decay should NOT be aggressive for low fame players!
+-- Low fame players (< 20) should have minimal decay to let them build up
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:tickFame(state)
 	local fame = state.Fame or 0
@@ -5690,8 +6330,28 @@ function LifeBackend:tickFame(state)
 		return
 	end
 	
-	-- Fame naturally decays 5-10% per year without maintenance
-	local decayRate = RANDOM:NextNumber() * 0.05 + 0.05 -- 5-10%
+	-- CRITICAL FIX: Low fame players get minimal decay to let them build up
+	-- This fixes the issue where new celebrities lost fame before they could grow
+	if fame < 10 then
+		-- Almost no decay for very low fame - let them establish themselves
+		local decayAmount = RANDOM:NextInteger(0, 1)
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	elseif fame < 20 then
+		-- Minimal decay for low fame
+		local decayAmount = RANDOM:NextInteger(0, 2)
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	elseif fame < 40 then
+		-- Reduced decay for moderate fame (1-3% per year)
+		local decayRate = RANDOM:NextNumber() * 0.02 + 0.01 -- 1-3%
+		local decayAmount = math.max(1, math.floor(fame * decayRate))
+		state.Fame = math.max(0, fame - decayAmount)
+		return
+	end
+	
+	-- Fame naturally decays 3-8% per year without maintenance (reduced from 5-10%)
+	local decayRate = RANDOM:NextNumber() * 0.05 + 0.03 -- 3-8%
 	local decayAmount = math.floor(fame * decayRate)
 	
 	-- Active careers that maintain fame slow decay
@@ -5699,14 +6359,25 @@ function LifeBackend:tickFame(state)
 		local jobId = state.CurrentJob.id or ""
 		local fameMaintainingJobs = {
 			"actor", "singer", "athlete", "influencer", "model", 
-			"tv_host", "youtuber", "politician", "celebrity"
+			"tv_host", "youtuber", "politician", "celebrity",
+			"rapper", "streamer", "musician", "entertainer", "host"
 		}
 		for _, job in ipairs(fameMaintainingJobs) do
 			if jobId:find(job) then
-				decayAmount = math.floor(decayAmount * 0.3) -- 70% slower decay
+				decayAmount = math.floor(decayAmount * 0.25) -- 75% slower decay for active careers
 				break
 			end
 		end
+	end
+	
+	-- CRITICAL FIX: Fame state career path also slows decay
+	if state.FameState and state.FameState.careerPath then
+		decayAmount = math.floor(decayAmount * 0.5) -- 50% slower if in fame career
+	end
+	
+	-- CRITICAL FIX: Royalty and mafia members have slower fame decay (public figures)
+	if (state.RoyalState and state.RoyalState.isRoyal) or (state.MobState and state.MobState.inMob) then
+		decayAmount = math.floor(decayAmount * 0.6) -- 40% slower
 	end
 	
 	state.Fame = math.max(0, fame - decayAmount)
@@ -5822,54 +6493,96 @@ function LifeBackend:tickPetLifecycle(state)
 	end
 	
 	-- Age dogs and check for death (lifespan 10-15 years)
+	-- CRITICAL FIX #24: Force death for very old pets (no dog lives past 20)
 	if state.Flags.has_dog and state.PetData.dogAge then
 		state.PetData.dogAge = state.PetData.dogAge + 1
 		local dogAge = state.PetData.dogAge
-		if dogAge >= 10 then
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 20+ years (world record is ~30, but 20 is very old)
+		if dogAge >= 20 then
+			shouldDie = true
+		elseif dogAge >= 10 then
 			local deathChance = (dogAge - 10) / 10 -- Increases each year after 10
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_dog = nil
-				state.Flags.lost_dog = true
-				state.PetData.dogAge = nil
-				local dogName = state.PetData.dogName or "your dog"
-				self:logYearEvent(state, "pet_death", 
-					string.format("💔 %s passed away after %d wonderful years together.", dogName, dogAge), "🐕")
-				state.Stats = state.Stats or {}
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 15, 0, 100)
+			-- CRITICAL FIX #24: Higher base death chance for older dogs
+			if dogAge >= 15 then
+				deathChance = math.max(deathChance, 0.60) -- At least 60% at 15+
+			elseif dogAge >= 13 then
+				deathChance = math.max(deathChance, 0.35) -- At least 35% at 13-14
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_dog = nil
+			state.Flags.lost_dog = true
+			state.PetData.dogAge = nil
+			local dogName = state.PetData.dogName or "your dog"
+			self:logYearEvent(state, "pet_death", 
+				string.format("💔 %s passed away after %d wonderful years together.", dogName, dogAge), "🐕")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 15, 0, 100)
 		end
 	end
 	
 	-- Age cats and check for death (lifespan 12-20 years)
+	-- CRITICAL FIX #24: Force death for very old cats (no cat lives past 25)
 	if state.Flags.has_cat and state.PetData.catAge then
 		state.PetData.catAge = state.PetData.catAge + 1
 		local catAge = state.PetData.catAge
-		if catAge >= 12 then
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 25+ years (world record is ~38, but 25 is very old)
+		if catAge >= 25 then
+			shouldDie = true
+		elseif catAge >= 12 then
 			local deathChance = (catAge - 12) / 15 -- Cats live longer
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_cat = nil
-				state.Flags.lost_cat = true
-				state.PetData.catAge = nil
-				local catName = state.PetData.catName or "your cat"
-				self:logYearEvent(state, "pet_death", 
-					string.format("💔 %s passed away at age %d. A faithful companion.", catName, catAge), "🐱")
-				state.Stats = state.Stats or {}
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 12, 0, 100)
+			-- CRITICAL FIX #24: Higher base death chance for older cats
+			if catAge >= 20 then
+				deathChance = math.max(deathChance, 0.65) -- At least 65% at 20+
+			elseif catAge >= 17 then
+				deathChance = math.max(deathChance, 0.40) -- At least 40% at 17-19
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_cat = nil
+			state.Flags.lost_cat = true
+			state.PetData.catAge = nil
+			local catName = state.PetData.catName or "your cat"
+			self:logYearEvent(state, "pet_death", 
+				string.format("💔 %s passed away at age %d. A faithful companion.", catName, catAge), "🐱")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 12, 0, 100)
 		end
 	end
 	
 	-- Small pets have shorter lifespans (2-5 years)
+	-- CRITICAL FIX #24: Force death for very old small pets (hamsters/etc max 7 years)
 	if state.Flags.has_small_pet and state.PetData.smallPetAge then
 		state.PetData.smallPetAge = state.PetData.smallPetAge + 1
-		if state.PetData.smallPetAge >= 3 then
-			local deathChance = (state.PetData.smallPetAge - 2) / 5
-			if RANDOM:NextNumber() < deathChance then
-				state.Flags.has_small_pet = nil
-				state.PetData.smallPetAge = nil
-				self:logYearEvent(state, "pet_death", "💔 Your small pet passed away.", "🐹")
-				state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 5, 0, 100)
+		local petAge = state.PetData.smallPetAge
+		local shouldDie = false
+		
+		-- CRITICAL FIX #24: GUARANTEED death at 7+ years
+		if petAge >= 7 then
+			shouldDie = true
+		elseif petAge >= 3 then
+			local deathChance = (petAge - 2) / 5
+			-- Higher base chance for older small pets
+			if petAge >= 5 then
+				deathChance = math.max(deathChance, 0.50)
 			end
+			shouldDie = RANDOM:NextNumber() < deathChance
+		end
+		
+		if shouldDie then
+			state.Flags.has_small_pet = nil
+			state.PetData.smallPetAge = nil
+			self:logYearEvent(state, "pet_death", "💔 Your small pet passed away.", "🐹")
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 5, 0, 100)
 		end
 	elseif state.Flags.has_small_pet and not state.PetData.smallPetAge then
 		state.PetData.smallPetAge = 1
@@ -5914,10 +6627,28 @@ function LifeBackend:applyRelationshipDecay(state)
 		return
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX (deep-9): REDUCE relationship decay while in rehab/hospital
+	-- People understand you're getting treatment - they don't abandon you as fast
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local inTreatment = state.Flags and (
+		state.Flags.in_rehab or 
+		state.Flags.hospitalized or 
+		state.Flags.in_hospital or 
+		state.Flags.recovering or 
+		state.Flags.seeking_help or
+		state.Flags.attending_aa
+	)
+	
 	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
 			-- Relationships naturally decay 1-3 points per year without interaction
 			local decay = RANDOM:NextInteger(1, 3)
+			
+			-- CRITICAL FIX (deep-9): Treatment reduces decay - people are supportive
+			if inTreatment then
+				decay = math.floor(decay * 0.3) -- 70% less decay during treatment
+			end
 			
 			-- Close family decays slower
 			if rel.isFamily or rel.type == "family" then
@@ -5927,6 +6658,11 @@ function LifeBackend:applyRelationshipDecay(state)
 			-- Partners decay faster if not married (less commitment)
 			if rel.type == "romantic" and not state.Flags.married then
 				decay = decay + 1
+			end
+			
+			-- Prison causes faster decay (people move on)
+			if state.InJail then
+				decay = decay * 2
 			end
 			
 			rel.relationship = math.max(0, (rel.relationship or 50) - decay)
@@ -6001,6 +6737,49 @@ function LifeBackend:checkBankruptcy(state)
 				"⚠️ You're in severe financial distress. Consider your options carefully.", "💸")
 		end
 	end
+	
+	-- CRITICAL FIX #26: If player has declared bankruptcy, ensure ALL debt is cleared
+	-- This fixes the bug where bankruptcy was declared but debt flags remained
+	if state.Flags.declared_bankruptcy and state.Flags.bankruptcy_pending then
+		-- Clear ALL debt flags
+		state.Flags.credit_card_debt = nil
+		state.Flags.mortgage_debt = nil
+		state.Flags.car_loan_balance = nil
+		state.Flags.car_loan_payment = nil
+		state.Flags.has_car_loan = nil
+		state.Flags.has_student_loans = nil -- Note: student loans can't be discharged IRL, but for gameplay
+		state.Flags.student_loan_amount = nil
+		state.Flags.debt_collection = nil
+		state.Flags.financial_crisis = nil
+		state.Flags.bad_debt = nil
+		state.Flags.defaulted = nil
+		state.Flags.bankruptcy_pending = nil
+		
+		-- Education debt is partially forgiven (student loans survive bankruptcy IRL, but reduced in game)
+		if state.EducationData and state.EducationData.Debt then
+			state.EducationData.Debt = math.floor(state.EducationData.Debt * 0.5) -- 50% forgiven
+		end
+		
+		-- Consequences of bankruptcy
+		state.Flags.bad_credit = true
+		state.Flags.bankruptcy_on_record = true
+		state.Flags.credit_score_tanked = true
+		
+		-- Lose some assets (liquidation)
+		if state.Assets then
+			-- Keep primary home, but lose luxury items
+			if state.Assets.Vehicles and #state.Assets.Vehicles > 1 then
+				-- Keep only one vehicle
+				local keptVehicle = state.Assets.Vehicles[1]
+				state.Assets.Vehicles = { keptVehicle }
+				self:logYearEvent(state, "financial", 
+					"🚗 Extra vehicles liquidated as part of bankruptcy.", "💸")
+			end
+		end
+		
+		self:logYearEvent(state, "financial", 
+			"💸 Bankruptcy finalized. Debts discharged but credit is damaged for years.", "⚖️")
+	end
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -6051,23 +6830,62 @@ function LifeBackend:collectBusinessIncome(state)
 	end
 	
 	local totalIncome = 0
+	local totalEmployeeCosts = 0
 	
 	for _, biz in ipairs(businesses) do
 		if biz.value and biz.value > 0 then
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX (deep-18): Business income scales with employees!
+			-- More employees = more revenue potential but also higher costs
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local employeeCount = biz.employees or 0
+			local baseReturn = 0.15 -- 15% base return
+			
+			-- Employee scaling - more employees = higher potential return
+			local employeeBonus = math.min(0.15, employeeCount * 0.01) -- Up to +15% bonus for 15+ employees
+			local totalReturn = baseReturn + employeeBonus
+			
 			-- Business income is volatile: -20% to +40% of value annually
 			local performanceMultiplier = RANDOM:NextNumber() * 0.60 - 0.20 -- -20% to +40%
-			local annualIncome = math.floor(biz.value * performanceMultiplier * 0.15) -- 15% base return
+			
+			-- Employee productivity affects performance
+			if employeeCount > 0 then
+				local avgSkill = biz.employeeSkill or RANDOM:NextInteger(40, 80)
+				performanceMultiplier = performanceMultiplier * (avgSkill / 60) -- Scale by avg skill
+			end
+			
+			local grossIncome = math.floor(biz.value * performanceMultiplier * totalReturn)
+			
+			-- Calculate employee costs (salaries)
+			local avgSalary = biz.avgEmployeeSalary or 35000
+			local employeeCosts = employeeCount * avgSalary
+			totalEmployeeCosts = totalEmployeeCosts + employeeCosts
+			
+			local annualIncome = grossIncome - employeeCosts
 			
 			-- Track business performance
 			biz.lastYearProfit = annualIncome
+			biz.lastYearRevenue = grossIncome
+			biz.lastYearCosts = employeeCosts
 			
 			if annualIncome > 0 then
 				totalIncome = totalIncome + annualIncome
 				-- Good year - business grows
 				biz.value = math.floor(biz.value * (1 + RANDOM:NextNumber() * 0.05)) -- Up to 5% growth
+				
+				-- Businesses can hire more employees when doing well
+				if RANDOM:NextNumber() < 0.3 and annualIncome > 50000 then
+					biz.employees = (biz.employees or 0) + RANDOM:NextInteger(1, 3)
+				end
 			elseif annualIncome < 0 then
-				-- Bad year - might need to inject cash or business shrinks
+				-- Bad year - might need to layoff employees
 				biz.value = math.max(100, math.floor(biz.value * (1 - RANDOM:NextNumber() * 0.1))) -- Up to 10% decline
+				
+				-- May have to lay off employees
+				if biz.employees and biz.employees > 0 and RANDOM:NextNumber() < 0.4 then
+					local layoffs = math.min(biz.employees, RANDOM:NextInteger(1, 3))
+					biz.employees = biz.employees - layoffs
+				end
 			end
 		end
 	end
@@ -6113,6 +6931,79 @@ end
 -- Home mortgages should require monthly payments
 -- Without this, owning a home has no ongoing cost
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX (deep-20): CHILD SUPPORT PAYMENTS
+-- Divorced parents must pay child support until children turn 18
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:applyChildSupport(state)
+	if not state.Flags or not state.Flags.pays_child_support then
+		return
+	end
+	
+	local childSupportAmount = state.Flags.child_support_amount or 0
+	if childSupportAmount <= 0 then
+		state.Flags.pays_child_support = nil
+		return
+	end
+	
+	-- Check if any children are still minors
+	local minorChildCount = 0
+	for relId, rel in pairs(state.Relationships or {}) do
+		if type(rel) == "table" then
+			local role = (rel.role or ""):lower()
+			if role:find("son") or role:find("daughter") or role:find("child") then
+				if rel.age and rel.age < 18 and rel.alive ~= false then
+					minorChildCount = minorChildCount + 1
+				end
+			end
+		end
+	end
+	
+	if minorChildCount == 0 then
+		-- All children are adults, no more child support
+		state.Flags.pays_child_support = nil
+		state.Flags.child_support_amount = nil
+		state.Flags.child_support_children = nil
+		
+		state.YearLog = state.YearLog or {}
+		table.insert(state.YearLog, {
+			type = "child_support_ended",
+			emoji = "✅",
+			text = "Child support obligations have ended - all children are now adults!",
+			amount = 0,
+		})
+		return
+	end
+	
+	-- Recalculate based on current number of minor children
+	local perChildAmount = (state.Flags.child_support_children or 1) > 0 and 
+		childSupportAmount / state.Flags.child_support_children or childSupportAmount
+	local currentPayment = math.floor(perChildAmount * minorChildCount)
+	
+	-- Deduct child support
+	local canPay = math.min(currentPayment, state.Money or 0)
+	state.Money = (state.Money or 0) - canPay
+	
+	state.YearLog = state.YearLog or {}
+	if canPay < currentPayment then
+		-- Couldn't afford full payment
+		state.Flags.child_support_arrears = (state.Flags.child_support_arrears or 0) + (currentPayment - canPay)
+		table.insert(state.YearLog, {
+			type = "child_support_partial",
+			emoji = "⚠️",
+			text = string.format("Paid $%s of $%s child support. You're falling behind!", formatMoney(canPay), formatMoney(currentPayment)),
+			amount = -canPay,
+		})
+	else
+		table.insert(state.YearLog, {
+			type = "child_support",
+			emoji = "👶",
+			text = string.format("Paid $%s in child support for %d child(ren)", formatMoney(canPay), minorChildCount),
+			amount = -canPay,
+		})
+	end
+end
+
 function LifeBackend:applyMortgagePayments(state)
 	state.Flags = state.Flags or {}
 	
@@ -6324,35 +7215,38 @@ function LifeBackend:processAddictions(state)
 	state.Flags = state.Flags or {}
 	state.Stats = state.Stats or {}
 	
+	-- CRITICAL FIX #29: Increased addiction recovery chances (were too low!)
+	-- Old chances made recovery nearly impossible, frustrating players
 	local addictions = {
 		smoking = {
 			healthCost = 2,
 			moneyCost = 1500, -- Pack-a-day habit
-			quitDifficulty = 0.15,
+			quitDifficulty = 0.18, -- CRITICAL FIX #29: Was 0.15, now 18% chance
 		},
 		heavy_drinking = {
 			healthCost = 3,
 			happinessCost = 2,
 			moneyCost = 2500,
-			quitDifficulty = 0.12,
+			quitDifficulty = 0.15, -- CRITICAL FIX #29: Was 0.12, now 15% chance
 		},
 		alcoholic = {
 			healthCost = 5,
 			happinessCost = 4,
 			moneyCost = 4000,
-			quitDifficulty = 0.08,
+			quitDifficulty = 0.12, -- CRITICAL FIX #29: Was 0.08, now 12% chance
 			canLoseJob = true,
 		},
-		gambling_addiction = {
+		-- REMOVED: gambling_addiction (against Roblox TOS)
+		spending_addiction = {
 			happinessCost = 5,
-			moneyCost = function(state) return math.floor((state.Money or 0) * 0.20) end, -- 20% of wealth
-			quitDifficulty = 0.10,
+			moneyCost = function(state) return math.floor((state.Money or 0) * 0.10) end, -- Compulsive spending
+			quitDifficulty = 0.14,
 		},
 		substance_user = {
 			healthCost = 4,
 			happinessCost = 3,
 			moneyCost = 3000,
-			quitDifficulty = 0.10,
+			quitDifficulty = 0.12, -- CRITICAL FIX #29: Was 0.10, now 12% chance
 			canGetArrested = true,
 		},
 		substance_addict = {
@@ -6360,11 +7254,20 @@ function LifeBackend:processAddictions(state)
 			happinessCost = 6,
 			smartsCost = 2,
 			moneyCost = 8000,
-			quitDifficulty = 0.05,
+			quitDifficulty = 0.08, -- CRITICAL FIX #29: Was 0.05, now 8% chance (still hard, but possible)
 			canGetArrested = true,
 			canOverdose = true,
 		},
 	}
+	
+	-- CRITICAL FIX #29B: Boost recovery chance if player has been to rehab or is actively trying to quit
+	local rehabBoost = 0
+	if state.Flags.in_rehab or state.Flags.attending_aa or state.Flags.seeking_help then
+		rehabBoost = 0.15 -- 15% bonus to quit chance if actively seeking help
+	end
+	if state.Flags.completed_rehab then
+		rehabBoost = rehabBoost + 0.10 -- Additional 10% if completed rehab
+	end
 	
 	for addictionName, addiction in pairs(addictions) do
 		if state.Flags[addictionName] then
@@ -6421,10 +7324,23 @@ function LifeBackend:processAddictions(state)
 				end
 			end
 			
-			-- Random chance to try to quit
-			if RANDOM:NextNumber() < addiction.quitDifficulty then
+			-- Random chance to try to quit (with rehab boost)
+			-- CRITICAL FIX #29: Apply rehab boost to recovery chance
+			local finalQuitChance = addiction.quitDifficulty + rehabBoost
+			
+			-- CRITICAL FIX #29C: High health and happiness also help recovery
+			local healthBonus = ((state.Stats.Health or 50) - 50) / 500 -- Up to +10% at 100 health
+			local happinessBonus = ((state.Stats.Happiness or 50) - 50) / 500 -- Up to +10% at 100 happiness
+			finalQuitChance = finalQuitChance + healthBonus + happinessBonus
+			
+			-- Cap at 50% max chance (still need some difficulty)
+			finalQuitChance = math.min(0.50, finalQuitChance)
+			
+			if RANDOM:NextNumber() < finalQuitChance then
 				state.Flags[addictionName] = nil
 				state.Flags[addictionName .. "_recovered"] = true
+				-- Clear rehab flags after successful recovery
+				state.Flags.in_rehab = nil
 				self:logYearEvent(state, "health",
 					string.format("🎉 Overcame %s! A new chapter begins.", addictionName:gsub("_", " ")), "💪")
 			end
@@ -7171,6 +8087,17 @@ function LifeBackend:handleAgeUp(player)
 	end
 
 	-- ════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Clear temporary flags at start of new year
+	-- These flags are meant to prevent events immediately after job changes
+	-- but should expire so the player can get new job-related events after a year
+	-- ════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	state.Flags.just_quit = nil     -- Allow job events again after quitting
+	state.Flags.just_fired = nil    -- Allow job events again after being fired
+	state.Flags.just_promoted = nil -- Allow promotion events again
+	state.Flags.just_hired = nil    -- Allow new hire events again
+
+	-- ════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #48: Save TimeMachine snapshots for time travel feature
 	-- Snapshots are saved every 5 years, at age 0, and at age 18
 	-- This allows players with TimeMachine gamepass to travel back in time
@@ -7189,6 +8116,7 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	self:collectSpouseIncome(state) -- CRITICAL FIX (deep-11): Spouse contributes to household income
 	self:tickVehicleDepreciation(state) -- CRITICAL FIX #10: Vehicles lose value over time
 	self:tickInvestments(state) -- CRITICAL FIX #11: Investments fluctuate in value
 	self:applyLivingExpenses(state) -- CRITICAL FIX #12: Annual cost of living
@@ -7204,6 +8132,7 @@ function LifeBackend:handleAgeUp(player)
 	self:applyCreditCardInterest(state) -- CRITICAL FIX #21: Credit card debt grows with interest
 	self:collectBusinessIncome(state) -- CRITICAL FIX #22: Business income/losses
 	self:applyMortgagePayments(state) -- CRITICAL FIX #23: Mortgage payments
+	self:applyChildSupport(state) -- CRITICAL FIX (deep-20): Child support payments
 	self:ageRelationships(state) -- CRITICAL FIX #24: Partners and family age with player
 	self:applyHealthInsuranceCosts(state) -- CRITICAL FIX #25: Health insurance costs
 	self:applyCarLoanPayments(state) -- CRITICAL FIX #31: Car loan payments
@@ -7376,15 +8305,38 @@ function LifeBackend:handleAgeUp(player)
 		-- Get pension from stored amount (set during retirement event)
 		if state.Flags.pension_amount and type(state.Flags.pension_amount) == "number" then
 			pensionAmount = state.Flags.pension_amount
-		else
-			-- Fallback: Calculate based on career info
-			if state.CareerInfo and state.CareerInfo.lastJob then
-				local lastSalary = state.CareerInfo.lastJob.salary or 30000
-				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
-			else
-				pensionAmount = 15000 -- Minimum pension
+		end
+		
+		-- CRITICAL FIX: If pension seems suspiciously low, recalculate from better sources
+		-- This handles fame careers where state.CurrentJob.salary wasn't updated
+		if pensionAmount < 1000 then
+			local lastSalary = 0
+			
+			-- Try lastPaidSalary first (most accurate for fame careers)
+			if state.CareerInfo and state.CareerInfo.lastPaidSalary and state.CareerInfo.lastPaidSalary > 0 then
+				lastSalary = state.CareerInfo.lastPaidSalary
+			-- Try lastJobSalary (stored during retirement)
+			elseif state.CareerInfo and state.CareerInfo.lastJobSalary and state.CareerInfo.lastJobSalary > 0 then
+				lastSalary = state.CareerInfo.lastJobSalary
+			-- Try lastJob.salary
+			elseif state.CareerInfo and state.CareerInfo.lastJob and state.CareerInfo.lastJob.salary then
+				lastSalary = state.CareerInfo.lastJob.salary
 			end
-			-- Store for future years
+			
+			-- If we found a better salary, recalculate pension
+			if lastSalary > 0 then
+				pensionAmount = math.floor(lastSalary * 0.4) -- 40% of last salary
+			end
+			
+			-- Estimate from net worth if still too low (for wealthy retirees)
+			if pensionAmount < 1000 and state.Money and state.Money > 1000000 then
+				pensionAmount = math.floor(state.Money * 0.06) -- 6% withdrawal rate
+			end
+			
+			-- Enforce minimum pension
+			pensionAmount = math.max(15000, pensionAmount)
+			
+			-- Store corrected pension for future years
 			state.Flags.pension_amount = pensionAmount
 		end
 		
@@ -7633,11 +8585,303 @@ end
 
 function LifeBackend:resetLife(player)
 	debugPrint("Resetting life for", player.Name)
-	-- CRITICAL FIX #15: Use createInitialState instead of raw LifeState.new
-	-- This ensures the player gets proper family members, Bitizenship bonuses, etc.
-	local newState = self:createInitialState(player)
-	self.playerStates[player] = newState
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7-20: COMPREHENSIVE STATE RESET ON NEW LIFE
+	-- Previously, many state fields persisted across lives causing bugs like:
+	-- - Old job showing after death
+	-- - Old career info persisting
+	-- - Old flags affecting new life
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Clear any pending events from previous life
 	self.pendingEvents[player.UserId] = nil
+	
+	-- Clear any pending minigame events
+	if self.pendingMinigameEvents then
+		self.pendingMinigameEvents[player.UserId] = nil
+	end
+	
+	-- Create a completely fresh state (includes family, gamepass bonuses, etc.)
+	local newState = self:createInitialState(player)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Ensure ALL job/career data is reset
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.CurrentJob = nil
+	newState.CareerInfo = {
+		performance = 0,
+		promotionProgress = 0,
+		yearsAtJob = 0,
+		raises = 0,
+		promotions = 0,
+		careerHistory = {},
+		skills = {},
+		totalYearsWorked = 0,
+	}
+	newState.Career = {
+		track = nil,
+		education = nil,
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #9: Clear ALL employment-related flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags = newState.Flags or {}
+	newState.Flags.employed = nil
+	newState.Flags.has_job = nil
+	newState.Flags.has_teen_job = nil
+	newState.Flags.between_jobs = nil
+	newState.Flags.unemployed = nil
+	newState.Flags.retired = nil
+	newState.Flags.semi_retired = nil
+	newState.Flags.pension_amount = nil
+	newState.Flags.happily_retired = nil
+	newState.Flags.retirement_eligible = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #10: Clear ALL prison/jail flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.InJail = false
+	newState.JailYearsLeft = 0
+	newState.Flags.in_prison = nil
+	newState.Flags.incarcerated = nil
+	newState.Flags.serving_time = nil
+	newState.Flags.criminal_record = nil
+	newState.Flags.ex_convict = nil
+	newState.Flags.on_parole = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #11: Reset education to fresh start
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Education = "none"
+	newState.EducationData = {
+		Status = "none",
+		Level = nil,
+		Progress = 0,
+		Duration = nil,
+		Institution = nil,
+		GPA = nil,
+		Debt = 0,
+		CreditsEarned = 0,
+		CreditsRequired = 0,
+		Year = 0,
+		TotalYears = 0,
+	}
+	newState.Flags.in_college = nil
+	newState.Flags.college_student = nil
+	newState.Flags.enrolled_college = nil
+	newState.Flags.in_school = nil
+	newState.Flags.graduated_high_school = nil
+	newState.Flags.has_degree = nil
+	newState.Flags.has_student_loans = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #12: Reset premium feature states (but preserve gamepass ownership!)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Reset MobState (mafia) - but check if in createInitialState it might set up royal birth
+	newState.MobState = {
+		inMob = false,
+		familyId = nil,
+		familyName = nil,
+		familyEmoji = nil,
+		familyColor = nil,
+		rankIndex = 1,
+		rankLevel = 1,
+		rankName = "Associate",
+		rankEmoji = "👤",
+		respect = 0,
+		notoriety = 0,
+		heat = 0,
+		loyalty = 100,
+		kills = 0,
+		earnings = 0,
+		yearsInMob = 0,
+		operationsCompleted = 0,
+		operationsFailed = 0,
+		operations = {},
+		territories = {},
+		lastEvent = nil,
+	}
+	newState.Flags.in_mob = nil
+	newState.Flags.mafia_member = nil
+	newState.Flags.criminal_lifestyle = nil
+	
+	-- Reset FameState
+	newState.FameState = {
+		isFamous = false,
+		careerPath = nil,
+		careerName = nil,
+		currentStage = 0,
+		stageName = nil,
+		subType = nil,
+		yearsInCareer = 0,
+		lastPromotionYear = 0,
+		followers = 0,
+		endorsements = {},
+		awards = {},
+		scandals = 0,
+		fameLevel = "Unknown",
+		monthlyListeners = 0,
+		totalStreams = 0,
+		totalTracks = 0,
+		albumsReleased = 0,
+		mixtapesReleased = 0,
+		epsReleased = 0,
+		showsPerformed = 0,
+		toursCompleted = 0,
+		collabs = 0,
+		battleWins = 0,
+		radioPlays = 0,
+		blogFeatures = 0,
+		viralMoments = 0,
+		majorFeatures = 0,
+		musicVideos = 0,
+		connections = 0,
+		style = nil,
+		producerConnect = false,
+		subscribers = 0,
+		totalViews = 0,
+		totalVideos = 0,
+		viralVideos = 0,
+		contentType = nil,
+		brandDeals = 0,
+		totalPosts = 0,
+		totalLikes = 0,
+	}
+	newState.Fame = 0
+	newState.Flags.famous = nil
+	newState.Flags.celebrity = nil
+	newState.Flags.fame_career = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #13: Clear death state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.dead = nil
+	newState.CauseOfDeath = nil
+	newState.DeathReason = nil
+	newState.DeathAge = nil
+	newState.DeathYear = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #14: Clear event history (prevents duplicate event issues)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.EventHistory = {
+		occurrences = {},
+		lastOccurrence = {},
+		completed = {},
+		recentCategories = {},
+		recentEvents = {},
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #15: Clear YearLog (prevents old feed text showing)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.YearLog = {}
+	newState.PendingFeed = nil
+	newState.lastFeed = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #16: Reset assets (new life starts with nothing)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Assets = {
+		Properties = {},
+		Vehicles = {},
+		Items = {},
+		Investments = {},
+		Crypto = {},
+		Businesses = {},
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #17: Clear job application history
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.JobApplications = {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #18: Clear homeless and bum-life flags
+	-- These MUST be cleared or new life starts homeless!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.homeless = nil
+	newState.Flags.bum_life = nil
+	newState.Flags.at_risk_homeless = nil
+	newState.Flags.using_shelter = nil
+	newState.Flags.has_temp_housing = nil
+	newState.Flags.desperate_criminal = nil
+	newState.Flags.desperate_job_hunt = nil
+	newState.Flags.recovering = nil
+	newState.Flags.in_recovery_program = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #19: Clear ALL story path flags
+	-- Story paths should NOT persist across lives!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.ActivePath = nil
+	newState.StoryPathProgress = nil
+	newState.Flags.pursuing_fame = nil
+	newState.Flags.pursuing_politics = nil
+	newState.Flags.pursuing_crime = nil
+	newState.Flags.pursuing_mafia = nil
+	newState.Flags.pursuing_royalty = nil
+	newState.Flags.crime_path_active = nil
+	newState.Flags.mafia_path_active = nil
+	newState.Flags.criminal_aspirant = nil
+	newState.Flags.mafia_aspirant = nil
+	newState.Flags.royal_aspirant = nil
+	newState.Flags.political_aspirant = nil
+	newState.Flags.interested_in_crime = nil
+	newState.Flags.interested_in_politics = nil
+	newState.Flags.interested_in_royalty = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #20: Clear crime-related flags
+	-- Criminal history should NOT persist across lives!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.petty_criminal = nil
+	newState.Flags.street_smart = nil
+	newState.Flags.vandal = nil
+	newState.Flags.shoplifter = nil
+	newState.Flags.delinquent = nil
+	newState.Flags.criminal_tendencies = nil
+	newState.Flags.troublemaker = nil
+	newState.Flags.street_hustler = nil
+	newState.Flags.criminal_path = nil
+	newState.Flags.criminal = nil
+	newState.Flags.criminal_connections = nil
+	newState.Flags.violent_crimes = nil
+	newState.Flags.thief = nil
+	newState.Flags.burglar = nil
+	newState.Flags.first_hustle_done = nil
+	newState.Flags.has_crew = nil
+	newState.Flags.crime_reputation = nil
+	newState.Flags.is_underboss = nil
+	newState.Flags.is_crime_boss = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #21: Clear royalty-related flags (preserve gamepass ownership)
+	-- Royalty STATUS should not persist, but gamepass ownership does
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.is_royalty = nil
+	newState.Flags.royal_birth = nil
+	newState.Flags.royal_duties = nil
+	newState.Flags.embraced_royalty = nil
+	newState.Flags.married_royalty = nil
+	-- Reset RoyalState but don't remove it (createInitialState may set up royal birth)
+	if not (newState.RoyalState and newState.RoyalState.isRoyal) then
+		newState.RoyalState = {
+			isRoyal = false,
+			title = nil,
+			dutiesCompleted = 0,
+			publicApproval = 50,
+			heirs = {},
+		}
+	end
+	
+	-- Store the new state
+	self.playerStates[player] = newState
+	
+	debugPrint("Life reset complete for", player.Name, "- all state cleared")
 	self:pushState(player, "A new life begins...")
 end
 
@@ -8030,13 +9274,42 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		return { success = false, message = "You can only do this once!" }
 	end
 
-	local shouldChargeCost = (not isEducationActivity) and activity.cost and activity.cost > 0
-	if shouldChargeCost and (state.Money or 0) < activity.cost then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #30: Health insurance reduces medical costs
+	-- Activities with usesInsurance = true get a discount if player has insurance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local actualCost = activity.cost or 0
+	if activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
+		-- Insurance covers 70-80% of medical costs
+		local insuranceDiscount = 0.75 -- 75% covered by insurance
+		actualCost = math.floor(actualCost * (1 - insuranceDiscount))
+	end
+	
+	local shouldChargeCost = (not isEducationActivity) and actualCost > 0
+	if shouldChargeCost and (state.Money or 0) < actualCost then
+		-- CRITICAL FIX #30: Different message if they don't have insurance
+		if activity.usesInsurance and not (state.Flags and state.Flags.has_health_insurance) then
+			return { success = false, message = string.format("You can't afford that! Without insurance, it costs $%d. Consider getting health insurance.", activity.cost) }
+		end
 		return { success = false, message = "You can't afford that right now." }
 	end
 
 	if shouldChargeCost then
-		self:addMoney(state, -activity.cost)
+		self:addMoney(state, -actualCost)
+		
+		-- If this was a medical expense with insurance, note the savings
+		if activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
+			local saved = (activity.cost or 0) - actualCost
+			if saved > 0 then
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "insurance_savings",
+					emoji = "🏥",
+					text = string.format("Insurance covered $%s of your medical costs", formatMoney(saved)),
+					amount = saved,
+				})
+			end
+		end
 	end
 
 	local deltas = shallowCopy(activity.stats or {})
@@ -8122,6 +9395,55 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #7: Handle RETIREMENT activities
+	-- This properly transitions player from employed state to retired state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isRetirement then
+		-- Calculate pension based on current job salary and years worked
+		local pensionAmount = 15000 -- Base social security minimum
+		if state.CurrentJob and state.CurrentJob.salary then
+			local yearsWorked = state.CareerInfo and state.CareerInfo.totalYearsWorked or 0
+			yearsWorked = yearsWorked + (state.CareerInfo and state.CareerInfo.yearsAtJob or 0)
+			
+			-- Pension calculation: 40% of salary + years worked bonus
+			-- Early retirement gets reduced pension
+			local pensionPercent = 0.4
+			if activity.setFlags and activity.setFlags.early_retirement then
+				pensionPercent = 0.25 -- 25% for early retirement
+			end
+			
+			pensionAmount = math.floor(state.CurrentJob.salary * pensionPercent)
+			pensionAmount = pensionAmount + (yearsWorked * 500) -- $500 per year worked
+			pensionAmount = math.max(15000, pensionAmount) -- Minimum pension
+		end
+		
+		-- Store pension amount in flags for annual payment
+		state.Flags.pension_amount = pensionAmount
+		
+		-- Save last job info for records
+		if state.CareerInfo then
+			state.CareerInfo.lastJob = state.CurrentJob
+			state.CareerInfo.lastJobSalary = state.CurrentJob and state.CurrentJob.salary
+		end
+		
+		-- CRITICAL: Clear current job
+		state.CurrentJob = nil
+		state.Flags.employed = nil
+		state.Flags.has_job = nil
+		
+		resultMessage = string.format("You retired! You'll receive $%s annual pension.", pensionAmount)
+	end
+	
+	-- Handle semi-retirement (working part-time)
+	if activity.isSemiRetirement then
+		-- Reduce salary but keep job
+		if state.CurrentJob and state.CurrentJob.salary then
+			state.CurrentJob.salary = math.floor(state.CurrentJob.salary * 0.5) -- Half salary
+		end
+		resultMessage = "You're now semi-retired, working part-time for reduced salary."
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #302: Handle mafia-specific effects from mob operations
 	-- Without this, mafia activities wouldn't affect respect/heat/earnings
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -8172,14 +9494,61 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	if not state then
 		return { success = false, message = "No life data loaded." }
 	end
-	if state.InJail then
-		-- MINOR FIX: More helpful error message
-		return { success = false, message = "You can't commit crimes while in prison. Serve your sentence first." }
-	end
-
+	
 	local crime = CrimeCatalog[crimeId]
 	if not crime then
 		return { success = false, message = "Unknown crime." }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Prison crimes - certain crimes CAN be committed in prison
+	-- These add to sentence if caught rather than blocking entirely
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local prisonCrimes = {
+		prison_assault = true,
+		prison_riot = true,
+		prison_contraband = true,
+		prison_gang_violence = true,
+		assault = true, -- Can assault other inmates
+	}
+	
+	if state.InJail then
+		if not prisonCrimes[crimeId] then
+			return { success = false, message = "You can't commit that crime while in prison. Try prison-specific crimes instead." }
+		end
+		
+		-- Prison crime - higher risk of getting caught (guards everywhere)
+		local prisonRoll = RANDOM:NextInteger(0, 100)
+		local prisonCaught = prisonRoll < (crime.risk + 30) -- +30% risk in prison
+		
+		if prisonCaught then
+			-- Add years to current sentence instead of starting new sentence
+			local additionalYears = RANDOM:NextInteger(1, 5)
+			state.JailYearsLeft = (state.JailYearsLeft or 0) + additionalYears
+			state.Flags.prison_incident = true
+			state.Flags.criminal_record = true
+			
+			self:applyStatChanges(state, { Happiness = -15, Health = -10 })
+			local message = string.format("Guards caught you! %d years added to your sentence.", additionalYears)
+			self:pushState(player, message)
+			return { success = false, caught = true, message = message, additionalYears = additionalYears }
+		else
+			-- Got away with it
+			local reward = 0
+			if crime.reward then
+				reward = RANDOM:NextInteger(crime.reward[1] or 0, crime.reward[2] or 100)
+				-- Prison rewards are lower (contraband value)
+				reward = math.floor(reward * 0.3)
+				self:addMoney(state, reward)
+			end
+			state.Flags.prison_tough = true
+			local message = "You got away with it. Your reputation in prison grew."
+			if reward > 0 then
+				message = string.format("Success! Gained $%d and prison respect.", reward)
+			end
+			self:pushState(player, message)
+			return { success = true, caught = false, message = message, money = reward }
+		end
 	end
 
 	state.Flags = state.Flags or {}
@@ -8187,6 +9556,53 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	local riskModifier = 0
 	if state.Flags.criminal_tendencies then
 		riskModifier = riskModifier - 10
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX (deep-15): Stats affect crime success rate!
+	-- High Smarts = better planning = less likely to get caught
+	-- High Health = faster getaway = less likely to get caught
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Stats = state.Stats or {}
+	local smarts = state.Stats.Smarts or state.Smarts or 50
+	local health = state.Stats.Health or state.Health or 50
+	
+	-- Smart criminals plan better (up to -15% risk)
+	if smarts >= 80 then
+		riskModifier = riskModifier - 15
+	elseif smarts >= 70 then
+		riskModifier = riskModifier - 10
+	elseif smarts >= 60 then
+		riskModifier = riskModifier - 5
+	elseif smarts < 30 then
+		riskModifier = riskModifier + 10 -- Dumb criminals make mistakes
+	end
+	
+	-- Physical crimes benefit from health (getaways, fights, etc.)
+	local physicalCrimes = { "assault", "burglary", "gta", "bank_robbery", "car_theft", "prison_assault" }
+	local isPhysicalCrime = false
+	for _, physCrime in ipairs(physicalCrimes) do
+		if crimeId:find(physCrime) then
+			isPhysicalCrime = true
+			break
+		end
+	end
+	
+	if isPhysicalCrime then
+		if health >= 80 then
+			riskModifier = riskModifier - 10
+		elseif health >= 60 then
+			riskModifier = riskModifier - 5
+		elseif health < 30 then
+			riskModifier = riskModifier + 15 -- Unhealthy = slow getaway
+		end
+	end
+	
+	-- Experience from prior crimes helps
+	if state.Flags.experienced_criminal or state.Flags.criminal_mastermind then
+		riskModifier = riskModifier - 10
+	elseif state.Flags.criminal_record then
+		riskModifier = riskModifier - 5 -- Some experience from past crimes
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -9069,6 +10485,28 @@ function LifeBackend:handleJobApplication(player, jobId)
 			}
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Celebrity Gamepass Check for Premium Fame Careers
+	-- User feedback: "THE CELEB GAMEPASS DOES NOTHING"
+	-- Rapper careers require celebrity gamepass, YouTuber/content creator stays free
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if job.requiresCelebrityGamepass then
+		state.Flags = state.Flags or {}
+		state.GamepassOwnership = state.GamepassOwnership or {}
+		local hasCelebGamepass = state.Flags.celebrity_gamepass or 
+			state.GamepassOwnership.celebrity or 
+			state.GamepassOwnership.Celebrity
+		
+		if not hasCelebGamepass then
+			return { 
+				success = false, 
+				message = "🌟 This career path requires the Celebrity Gamepass! Purchase it to pursue fame as a rapper, actor, or musician!",
+				requiresGamepass = "CELEBRITY",
+				gamepassId = 1626461980
+			}
+		end
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Job Application Rejection System
@@ -9138,26 +10576,91 @@ function LifeBackend:handleJobApplication(player, jobId)
 		statBonus = math.clamp((health - 50) / 400, -0.10, 0.10) -- +/-10% based on Health (was +/-25%)
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #22: Education GPA affects job applications
+	-- Good grades should help you get better jobs, bad grades hurt your chances
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local gpaBonus = 0
+	if state.EducationData and state.EducationData.GPA then
+		local gpa = state.EducationData.GPA or 0
+		-- GPA 4.0 = +10% bonus, GPA 2.0 = -5% penalty
+		if gpa >= 3.8 then
+			gpaBonus = 0.10 -- Summa cum laude - excellent!
+		elseif gpa >= 3.5 then
+			gpaBonus = 0.07 -- Magna cum laude - very good
+		elseif gpa >= 3.0 then
+			gpaBonus = 0.03 -- Dean's list - above average
+		elseif gpa >= 2.5 then
+			gpaBonus = 0 -- Average - no bonus or penalty
+		elseif gpa >= 2.0 then
+			gpaBonus = -0.05 -- Below average - slight penalty
+		else
+			gpaBonus = -0.10 -- Poor GPA - significant penalty
+		end
+		
+		-- GPA matters more for competitive jobs
+		if difficulty >= 6 then
+			gpaBonus = gpaBonus * 1.5 -- 50% more impact for competitive jobs
+		end
+	elseif state.Flags and state.Flags.honors_student then
+		gpaBonus = 0.05 -- Honors flag gives small bonus even without explicit GPA
+	elseif state.Flags and state.Flags.valedictorian then
+		gpaBonus = 0.10 -- Valedictorian gets significant boost
+	end
+	
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.20, (appHistory.attempts or 0) * 0.08) -- -8% per previous rejection, max -20%
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Criminal record affects job applications!
+	-- CRITICAL FIX #27: Criminal record affects job applications!
 	-- Employers run background checks - having a record makes it much harder to get hired
 	-- Some jobs (law enforcement, government, finance) outright reject ex-convicts
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local criminalPenalty = 0
 	if state.Flags and state.Flags.criminal_record then
 		-- Jobs that do strict background checks and won't hire ex-convicts
-		local strictBackgroundCheckJobs = {
+		local strictBackgroundCheckCategories = {
 			"law", "government", "finance", "education", "healthcare", "military", "security"
 		}
 		
+		-- CRITICAL FIX #27: Expanded list of specific jobs that require clean records
+		local strictBackgroundCheckJobIds = {
+			-- Law enforcement
+			"police", "officer", "detective", "sheriff", "fbi", "cia", "dea", "marshal", "agent",
+			-- Government
+			"senator", "congressman", "mayor", "governor", "president", "judge", "prosecutor", "attorney_general",
+			"city_council", "state_rep", "diplomat", "ambassador",
+			-- Finance
+			"banker", "accountant", "auditor", "financial_advisor", "broker", "trader",
+			-- Education
+			"teacher", "professor", "principal", "dean", "counselor", "coach",
+			-- Healthcare
+			"doctor", "nurse", "surgeon", "pharmacist", "dentist", "therapist", "emt", "paramedic",
+			-- Military/Security
+			"soldier", "marine", "pilot", "security_guard", "bodyguard", "guard",
+			-- Childcare
+			"daycare", "babysitter", "nanny", "childcare",
+		}
+		
 		local isStrictJob = false
-		for _, category in ipairs(strictBackgroundCheckJobs) do
-			if job.category == category or (job.id and string.find(job.id:lower(), category)) then
+		local jobIdLower = job.id and job.id:lower() or ""
+		local jobCategoryLower = job.category and job.category:lower() or ""
+		
+		-- Check category
+		for _, category in ipairs(strictBackgroundCheckCategories) do
+			if jobCategoryLower == category or jobIdLower:find(category) then
 				isStrictJob = true
 				break
+			end
+		end
+		
+		-- Check specific job IDs
+		if not isStrictJob then
+			for _, restrictedId in ipairs(strictBackgroundCheckJobIds) do
+				if jobIdLower:find(restrictedId) then
+					isStrictJob = true
+					break
+				end
 			end
 		end
 		
@@ -9183,7 +10686,8 @@ function LifeBackend:handleJobApplication(player, jobId)
 	local maxChance = 1.0 - (difficulty * 0.05) -- difficulty 10 caps at 50%, difficulty 1 caps at 95%
 	maxChance = math.clamp(maxChance, 0.30, 0.95)
 	
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
+	-- CRITICAL FIX #22: Include GPA bonus in final chance calculation
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
 	
 	-- Entry-level jobs (no requirements, low salary) - still have some chance of rejection
 	if not job.requirement and (job.salary or 0) < 35000 then
@@ -9319,6 +10823,19 @@ function LifeBackend:handleJobApplication(player, jobId)
 	if jobCategory == "entertainment" then
 		state.Flags.entertainment_experience = true
 		state.Flags.fame_career = true
+		-- CRITICAL FIX: Set pursuing_fame for ALL entertainment careers!
+		-- This enables fame path events to trigger for free players (influencer/streamer)
+		-- User feedback: "Story paths don't do much" - events weren't triggering
+		state.Flags.pursuing_fame = true
+	end
+	
+	-- CRITICAL FIX: Esports careers are also fame careers!
+	if jobCategory == "esports" then
+		state.Flags.esports_experience = true
+		state.Flags.fame_career = true
+		state.Flags.pursuing_fame = true
+		state.Flags.gamer = true
+		state.Flags.content_creator = true
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -9349,6 +10866,8 @@ function LifeBackend:handleJobApplication(player, jobId)
 		state.Flags.streamer = true
 		state.Flags.content_creator = true
 		state.Flags.pursuing_streaming = true
+		-- CRITICAL FIX: Also set pursuing_fame to trigger fame path events!
+		state.Flags.pursuing_fame = true
 		-- CRITICAL FIX #USER-31: Set careerPath so FameState gets serialized!
 		if jobIdLower:find("streamer") then
 			state.FameState.careerPath = "streamer"
@@ -9450,6 +10969,7 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	state.Flags.employed = nil
 	state.Flags.has_job = nil
 	state.Flags.between_jobs = true
+	state.Flags.just_quit = true  -- CRITICAL FIX: Set just_quit flag to prevent job events immediately after quitting
 	
 	-- BITLIFE-STYLE: Different messages and effects based on quit style
 	local feed
@@ -9983,8 +11503,9 @@ function LifeBackend:enrollEducation(player, programId, options)
 end
 
 -- ============================================================================
--- Assets & Gambling
+-- Assets
 -- ============================================================================
+-- NOTE: Gambling features have been REMOVED to comply with Roblox Terms of Service
 
 function LifeBackend:findAssetById(list, assetId)
 	-- CRITICAL FIX #127: Nil safety for asset lookup
@@ -10066,6 +11587,33 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	end
 
 	state.Assets[assetType] = state.Assets[assetType] or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #12: Check for duplicate items
+	-- Prevent buying the same unique item twice (e.g., same house, same car)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isUniqueAsset = assetType == "Properties" -- Properties are unique (you can't buy the same house twice)
+	
+	-- Some items can be duplicated (like generic cars), others can't (like a specific mansion)
+	if asset.unique == true or isUniqueAsset then
+		for _, existingAsset in ipairs(state.Assets[assetType]) do
+			if existingAsset.id == asset.id then
+				return { success = false, message = "You already own this!" }
+			end
+		end
+	end
+	
+	-- For non-unique items, still check if player has too many of the same type
+	local MAX_SAME_ITEM = 3 -- Can only own up to 3 of the exact same item
+	local sameItemCount = 0
+	for _, existingAsset in ipairs(state.Assets[assetType]) do
+		if existingAsset.id == asset.id then
+			sameItemCount = sameItemCount + 1
+		end
+	end
+	if sameItemCount >= MAX_SAME_ITEM then
+		return { success = false, message = string.format("You already own %d of these. Try something different!", MAX_SAME_ITEM) }
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #MEGA-2: Store ALL asset data including effects
@@ -10292,10 +11840,35 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 				state.Flags.has_car = nil
 				state.Flags.car_owner = nil
 				state.Flags.luxury_car_owner = nil
+				-- CRITICAL FIX #25: Clear car loan when selling financed vehicle
+				if asset.financed then
+					state.Flags.car_loan_balance = nil
+					state.Flags.car_loan_payment = nil
+					state.Flags.has_car_loan = nil
+				end
 			elseif assetType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
 				state.Flags.luxury_homeowner = nil
+				-- CRITICAL FIX #25: Clear mortgage when selling last property
+				-- When you sell your home, the mortgage is paid off from proceeds
+				if state.Flags.mortgage_debt then
+					-- Deduct mortgage from sale proceeds
+					local mortgageOwed = state.Flags.mortgage_debt or 0
+					if payout > mortgageOwed then
+						-- Sale covers mortgage, player keeps difference
+						state.Money = (state.Money or 0) - mortgageOwed
+						-- Note: payout already added above, so just subtract mortgage
+					end
+					state.Flags.mortgage_debt = nil
+					state.Flags.mortgage_trouble = nil
+				end
+			elseif assetType == "Properties" and #bucket > 0 then
+				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
+				if asset.hasMortgage then
+					state.Flags.mortgage_debt = nil
+					state.Flags.mortgage_trouble = nil
+				end
 			end
 
 			local feed = string.format("You sold %s for %s.", asset.name or "an asset", formatMoney(payout))
@@ -10307,37 +11880,8 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	return { success = false, message = "Asset not found." }
 end
 
-function LifeBackend:handleGamble(player, betAmount, finalSymbols)
-	local state = self:getState(player)
-	if not state then
-		return { success = false, message = "Life data missing." }
-	end
-
-	if betAmount <= 0 then
-		return { success = false, message = "Bet a positive amount." }
-	end
-
-	if (state.Money or 0) < betAmount then
-		return { success = false, message = "Not enough money to bet." }
-	end
-
-	self:addMoney(state, -betAmount)
-
-	-- For now, trust client symbols; you can swap this to a pure server roll later.
-	local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]
-	local payout = 0
-	local message
-	if won then
-		payout = betAmount * 5
-		self:addMoney(state, payout)
-		message = string.format("JACKPOT! You won %s!", formatMoney(payout))
-	else
-		message = "Better luck next time."
-	end
-
-	self:pushState(player, message)
-	return { success = won, winnings = payout, message = message }
-end
+-- REMOVED: handleGamble function (gambling is against Roblox Terms of Service)
+-- All gambling features have been removed from this game
 
 -- ============================================================================
 -- Relationships & Interactions
@@ -10454,6 +11998,30 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #13: More robust relationship lookup
+	-- Sometimes the targetId might not match exactly due to case or formatting
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if targetId then
+		local targetIdLower = targetId:lower()
+		-- Try to find by case-insensitive ID match
+		for relId, relationship in pairs(state.Relationships) do
+			if type(relId) == "string" and relId:lower() == targetIdLower then
+				return relationship
+			end
+		end
+		
+		-- Try to find by name match (user might send name instead of ID)
+		for relId, relationship in pairs(state.Relationships) do
+			if type(relationship) == "table" and relationship.name then
+				if relationship.name:lower() == targetIdLower or
+				   (relationship.id and relationship.id:lower() == targetIdLower) then
+					return relationship
+				end
+			end
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- FAMILY MEMBER HANDLING
 	-- For family types (mother, father, sibling, etc.), do NOT create generic entries.
 	-- Family members are created server-side in createInitialState(). If a family
@@ -10461,16 +12029,26 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	-- this person doesn't exist (preventing the "deleted family" bug).
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if relType == "family" then
-		-- If targetId is specified but doesn't exist, the family member doesn't exist
+		-- CRITICAL FIX #13: Also search by role type for family
 		if targetId then
-			local familyIds = {"mother", "father", "grandmother", "grandfather", "brother", "sister", "son", "daughter"}
-			for _, familyType in ipairs(familyIds) do
-				if targetId:lower():find(familyType) then
-					-- This is a family ID but it doesn't exist in state - return nil
-					debugPrint(string.format("Family member '%s' not found in state - returning nil", targetId))
-					return nil
+			local targetLower = targetId:lower()
+			local familyRoles = {"mother", "father", "grandmother", "grandfather", "brother", "sister", "son", "daughter", "child", "spouse"}
+			
+			for relId, relationship in pairs(state.Relationships) do
+				if type(relationship) == "table" then
+					-- Check if this relationship matches the target family member
+					local relRole = (relationship.role or ""):lower()
+					local relType2 = (relationship.type or ""):lower()
+					
+					for _, familyRole in ipairs(familyRoles) do
+						if targetLower:find(familyRole) and (relRole:find(familyRole) or relType2:find(familyRole)) then
+							return relationship
+						end
+					end
 				end
 			end
+			
+			debugPrint(string.format("Family member '%s' not found in state - returning nil", targetId))
 		end
 		
 		-- For generic family requests without targetId, also return nil (don't create randoms)
@@ -10620,11 +12198,101 @@ function LifeBackend:handleInteraction(player, payload)
 
 	-- Removal (breakup / ghost, etc.) – ONLY this relationship
 	if action.remove then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX (deep-19 & deep-20): DIVORCE MECHANICS
+		-- If married, divorce should split assets and calculate child support!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasDivorce = state.Flags and state.Flags.married and relType == "romance"
+		
+		if wasDivorce then
+			state.Flags.divorced = true
+			state.Flags.recently_divorced = true
+			
+			-- ASSET SPLITTING
+			local totalAssetValue = 0
+			state.Assets = state.Assets or {}
+			
+			-- Count total asset value
+			for _, vehicle in ipairs(state.Assets.Vehicles or {}) do
+				totalAssetValue = totalAssetValue + (vehicle.value or vehicle.price or 0)
+			end
+			for _, property in ipairs(state.Assets.Properties or {}) do
+				totalAssetValue = totalAssetValue + (property.value or property.price or 0)
+			end
+			for _, investment in ipairs(state.Assets.Investments or {}) do
+				totalAssetValue = totalAssetValue + (investment.value or 0)
+			end
+			
+			-- Split assets 50/50 (ex-spouse takes half)
+			local assetLoss = math.floor(totalAssetValue * 0.5)
+			
+			-- Also split cash
+			local cashLoss = math.floor((state.Money or 0) * 0.5)
+			state.Money = (state.Money or 0) - cashLoss
+			if state.Money < 0 then state.Money = 0 end
+			
+			local totalLoss = assetLoss + cashLoss
+			
+			if totalLoss > 0 then
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "divorce_settlement",
+					emoji = "💔",
+					text = string.format("Lost $%s in divorce settlement", formatMoney(totalLoss)),
+					amount = -totalLoss,
+				})
+			end
+			
+			-- CHILD SUPPORT - Check for children
+			local childCount = 0
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" then
+					local role = (rel.role or ""):lower()
+					if role:find("son") or role:find("daughter") or role:find("child") then
+						if rel.age and rel.age < 18 and rel.alive ~= false then
+							childCount = childCount + 1
+						end
+					end
+				end
+			end
+			
+			if childCount > 0 then
+				-- Calculate monthly child support based on income
+				local monthlySupport = math.floor(((state.CurrentJob and state.CurrentJob.salary) or 30000) * 0.15 / 12)
+				local annualSupport = monthlySupport * 12 * childCount
+				
+				state.Flags.pays_child_support = true
+				state.Flags.child_support_amount = annualSupport
+				state.Flags.child_support_children = childCount
+				
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "child_support",
+					emoji = "👶",
+					text = string.format("Ordered to pay $%s/year in child support for %d child(ren)", formatMoney(annualSupport), childCount),
+					amount = -annualSupport,
+				})
+			end
+			
+			-- Happiness penalty
+			self:applyStatChanges(state, { Happiness = -25 })
+		end
+		
 		if relationship.id and state.Relationships[relationship.id] then
 			state.Relationships[relationship.id] = nil
 		end
 
 		if relType == "romance" and state.Relationships.partner == relationship then
+			-- Store ex for history
+			state.Relationships.ex_partners = state.Relationships.ex_partners or {}
+			if relationship.name then
+				table.insert(state.Relationships.ex_partners, {
+					name = relationship.name,
+					wasMarried = wasDivorce,
+					endedYear = state.Year,
+				})
+			end
+			
 			state.Relationships.partner = nil
 			state.Flags.has_partner = nil
 			state.Flags.dating = nil
@@ -10698,11 +12366,12 @@ function LifeBackend:startStoryPath(player, pathId)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #1: Premium path gamepass checks
-	-- Celebrity and Royal paths require gamepasses
+	-- Celebrity, Royal, and Mafia paths require gamepasses
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local premiumPaths = {
 		celebrity = { key = "CELEBRITY", displayName = "Fame Package" },
 		royal = { key = "ROYALTY", displayName = "Royalty Pass" },
+		mafia = { key = "MAFIA", displayName = "Mafia Boss Pack" },
 	}
 	
 	local premiumInfo = premiumPaths[pathId]
@@ -10745,8 +12414,114 @@ function LifeBackend:startStoryPath(player, pathId)
 	state.Paths[pathId] = 0
 	state.Paths.active = pathId
 	state.ActivePath = pathId
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Set path-specific flags to trigger related events!
+	-- User feedback: "Story paths don't do much" - need flags to enable event triggers
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Flags = state.Flags or {}
+	
+	if pathId == "celebrity" then
+		-- Celebrity/Fame path flags - triggers fame-related events
+		state.Flags.pursuing_fame = true
+		state.Flags.celebrity_aspirant = true
+		state.Flags.interested_in_fame = true
+		-- Initialize FameState if not exists
+		state.FameState = state.FameState or {
+			fame = 0,
+			careerPath = "aspiring",
+			socialFollowers = 0,
+			contentPlatforms = {},
+		}
+		state.FameState.pursuing = true
+		state.FameState.careerPath = state.FameState.careerPath or "aspiring"
 
-	local feed = string.format("You began the %s path.", path.name)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Assign Content Creator job when starting Fame path!
+		-- User feedback: "Fame path doesn't give me new content creator job"
+		-- This ensures OccupationScreen shows the job immediately after starting path
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local contentCreatorJob = JobCatalog["new_influencer"]
+		if contentCreatorJob then
+			-- Assign the Content Creator job
+			state.CurrentJob = {
+				id = contentCreatorJob.id,
+				name = contentCreatorJob.name,
+				company = contentCreatorJob.company,
+				salary = contentCreatorJob.salary,
+				category = contentCreatorJob.category,
+				difficulty = contentCreatorJob.difficulty or 1,
+				minStats = contentCreatorJob.minStats,
+			}
+
+			-- Initialize career info
+			state.CareerInfo = state.CareerInfo or {}
+			state.CareerInfo.performance = 60
+			state.CareerInfo.promotionProgress = 0
+			state.CareerInfo.yearsAtJob = 0
+			state.CareerInfo.raises = 0
+			state.CareerInfo.promotions = 0
+
+			-- Set career track
+			state.Career = state.Career or {}
+			state.Career.track = contentCreatorJob.category
+
+			-- Set employment flags
+			state.Flags.employed = true
+			state.Flags.has_job = true
+			state.Flags.between_jobs = nil
+			state.Flags.unemployed = nil
+
+			-- Grant job flags (content_creator, social_media_presence, influencer)
+			if contentCreatorJob.grantsFlags then
+				for _, flagName in ipairs(contentCreatorJob.grantsFlags) do
+					state.Flags[flagName] = true
+				end
+			end
+
+			print("[FAME PATH] Assigned Content Creator job:", contentCreatorJob.name)
+		end
+	elseif pathId == "political" then
+		-- Political path flags
+		state.Flags.pursuing_politics = true
+		state.Flags.political_aspirant = true
+		state.Flags.interested_in_politics = true
+	elseif pathId == "criminal" then
+		-- Crime path flags - enables crime empire events
+		state.Flags.pursuing_crime = true
+		state.Flags.criminal_aspirant = true
+		state.Flags.interested_in_crime = true
+		state.Flags.crime_path_active = true
+	elseif pathId == "mafia" then
+		-- CRITICAL FIX: Mafia path flags - enables mafia-specific events
+		state.Flags.pursuing_mafia = true
+		state.Flags.mafia_aspirant = true
+		state.Flags.interested_in_crime = true
+		state.Flags.mafia_path_active = true
+		-- Initialize MobState for mafia tracking
+		state.MobState = state.MobState or {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			rankIndex = 0,
+			rankLevel = 0,
+			rankName = "Outsider",
+			respect = 0,
+			notoriety = 0,
+			heat = 0,
+		}
+		state.MobState.aspirant = true
+	elseif pathId == "royal" then
+		-- Royal path flags - NOTE: Does NOT make you royalty!
+		-- The Royal path is about PURSUING/MARRYING INTO royalty, not being born royal
+		state.Flags.pursuing_royalty = true
+		state.Flags.royal_aspirant = true
+		state.Flags.interested_in_royalty = true
+		-- CRITICAL: Do NOT set is_royalty = true here!
+		-- Player must marry into royalty or be born royal to become royalty
+	end
+
+	local feed = string.format("🌟 You began the %s path!", path.name)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end

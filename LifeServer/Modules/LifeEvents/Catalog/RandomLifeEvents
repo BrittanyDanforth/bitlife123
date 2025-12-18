@@ -1,0 +1,1444 @@
+--[[
+	Random Life Events - BitLife-style random events for variety
+	AAA-quality events with RANDOM outcomes
+	User CANNOT control outcomes - everything is randomized
+	These events ensure no two lives are the same!
+	
+	Event types:
+	- Unexpected encounters
+	- Random luck events
+	- Strange occurrences
+	- Life surprises
+	- Social situations
+	- Weird moments
+]]
+
+local RandomLifeEvents = {}
+
+RandomLifeEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- UNEXPECTED ENCOUNTERS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_bird_poop",
+		title = "🐦 Bird Attack!",
+		emoji = "🐦",
+		text = "A bird just pooped directly on your head while you were walking down the street.",
+		category = "random",
+		weight = 12,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "React to the situation",
+				effects = {},
+				feedText = "Dealing with bird poop...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + math.random(50, 500)
+						state:AddFeed("🐦 An old lady saw and gave you money for 'good luck'! Some cultures say it's lucky!")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🐦 Washed it off in a nearby fountain. Gross but no big deal.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🐦 Ruined your favorite shirt. Day ruined.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🐦 Got bird poop in your mouth. You'll never forget this day.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_found_wallet",
+		title = "💰 Found Wallet!",
+		emoji = "💰",
+		text = "You found a wallet on the ground with $500 cash inside. There's an ID card too.",
+		category = "random",
+		weight = 14,
+		minAge = 10, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Keep the money",
+				effects = { Smarts = -2 },
+				feedText = "Pocketing the cash...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💰 Kept the $500. Nobody saw anything.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💰 The wallet was fake - some kind of social experiment. You're on camera.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_stealing = true
+						state:AddFeed("💰 The owner saw you take it! Called you a thief publicly!")
+					end
+				end,
+			},
+			{
+				text = "Return it to the owner",
+				effects = { Smarts = 3 },
+				feedText = "Doing the right thing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local reward = math.random(100, 1000)
+						state.Money = (state.Money or 0) + reward
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("💰 Owner was so grateful! Gave you $%d reward!", reward))
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💰 Owner thanked you warmly. Feels good to be honest!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💰 Owner accused you of taking money out before returning it! Ungrateful!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_stranger_argument",
+		title = "😤 Stranger Confrontation",
+		emoji = "😤",
+		text = "A random stranger on the street starts yelling at you for apparently looking at them wrong.",
+		category = "random",
+		weight = 13,
+		minAge = 14, maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Handle the situation",
+				effects = {},
+				feedText = "Dealing with the crazy person...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😤 Walked away calmly. They kept yelling but who cares.")
+					elseif roll <= 55 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😤 Got into a screaming match. Ruined your mood for hours.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -12)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("😤 It escalated! Got shoved around. Bruised ego and body.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.street_fight_injury = true
+						state:AddFeed("😤 Full-on street fight! Got hurt bad. What a day.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RANDOM LUCK EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_scratch_ticket",
+		title = "🎰 Free Scratch Ticket!",
+		emoji = "🎰",
+		text = "Someone handed you a free promotional scratch ticket on the street!",
+		category = "random",
+		weight = 14,
+		minAge = 18, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Scratch it!",
+				effects = { Happiness = 3 },
+				feedText = "Scratching the ticket...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 5 then
+						local jackpot = math.random(10000, 100000)
+						state.Money = (state.Money or 0) + jackpot
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.lottery_winner = true
+						state:AddFeed(string.format("🎰 JACKPOT!!! YOU WON $%s!!! UNBELIEVABLE!!!", jackpot))
+					elseif roll <= 20 then
+						local win = math.random(100, 1000)
+						state.Money = (state.Money or 0) + win
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🎰 Winner! $%s! Not bad for a free ticket!", win))
+					elseif roll <= 50 then
+						local win = math.random(5, 50)
+						state.Money = (state.Money or 0) + win
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("🎰 Won $%s. Enough for coffee!", win))
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎰 Nothing. Of course. These things are scams anyway.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_vending_machine",
+		title = "🎁 Vending Machine Jackpot!",
+		emoji = "🎁",
+		text = "The vending machine malfunctioned and dispensed way more than you paid for!",
+		category = "random",
+		weight = 12,
+		minAge = 8, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Grab everything!",
+				effects = { Happiness = 8 },
+				feedText = "Free snacks!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎁 Grabbed like 10 snacks! Best day ever!")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎁 Only got a couple extra, but still free!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎁 The employee saw everything. Had to give it all back. Awkward.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_win_raffle",
+		title = "🎪 Raffle Winner!",
+		emoji = "🎪",
+		text = "You won a raffle you don't remember entering! Time to claim your prize!",
+		category = "random",
+		weight = 10,
+		minAge = 12, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Claim the prize!",
+				effects = { Happiness = 10 },
+				feedText = "Collecting your winnings...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 15 then
+						local prize = math.random(5000, 25000)
+						state.Money = (state.Money or 0) + prize
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed(string.format("🎪 WOW! The prize was $%s cash!", prize))
+					elseif roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(200, 1000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎪 Won a nice gift card! Sweet!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎪 Prize was a cheap branded t-shirt. Better than nothing!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎪 It was a SCAM! They wanted your credit card info. Walked away.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STRANGE OCCURRENCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_deja_vu",
+		title = "🌀 Intense Déjà Vu",
+		emoji = "🌀",
+		text = "You just had the most intense déjà vu experience of your life. Everything feels... off.",
+		category = "random",
+		weight = 10,
+		minAge = 10, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Experience the moment",
+				effects = {},
+				feedText = "This feels so strange...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🌀 Had a profound realization about life. Feel oddly enlightened.")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🌀 Weird sensation passed. Must be tired.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌀 Can't shake the feeling something bad will happen...")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🌀 Started questioning reality. Existential crisis mode activated.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_wrong_number",
+		title = "📱 Wrong Number Call",
+		emoji = "📱",
+		text = "Someone called your number thinking you're someone else. The conversation gets interesting...",
+		category = "random",
+		weight = 12,
+		minAge = 12, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Play along",
+				effects = {},
+				feedText = "This could be fun...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.random_new_friend = true
+						state:AddFeed("📱 You both laughed! Ended up becoming friends! What are the odds?")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📱 Funny conversation! Both had a good laugh about the mix-up.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📱 They got angry when they realized. Hung up on you rudely.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📱 You heard something you REALLY shouldn't have. Awkward silence. Click.")
+					end
+				end,
+			},
+			{
+				text = "Tell them they have the wrong number",
+				effects = { Happiness = 1 },
+				feedText = "Being honest.",
+			},
+		},
+	},
+	
+	{
+		id = "random_celebrity_sighting",
+		title = "⭐ Celebrity Sighting!",
+		emoji = "⭐",
+		text = "Wait... is that a CELEBRITY!? You think you just spotted someone famous in public!",
+		category = "random",
+		weight = 11,
+		minAge = 8, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Approach them!",
+				effects = {},
+				feedText = "Going to meet a celebrity...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 15 then
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 5
+						state.Flags = state.Flags or {}
+						state.Flags.met_celebrity = true
+						state:AddFeed("⭐ IT WAS THEM! Got a selfie! They were SO NICE! Best day ever!")
+					elseif roll <= 35 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⭐ It was them! They said hi but were busy. Still cool though!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⭐ Wasn't them... just a really good lookalike. Embarrassing.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⭐ It was them but their bodyguard blocked you. Harsh!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⭐ It was them... and they were RUDE. Dreams crushed. Never meet your heroes.")
+					end
+				end,
+			},
+			{
+				text = "Watch from afar",
+				effects = { Happiness = 5 },
+				feedText = "Respecting their privacy.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL SITUATIONS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_public_embarrassment",
+		title = "😳 Public Embarrassment!",
+		emoji = "😳",
+		text = "You just did something incredibly embarrassing in public and EVERYONE saw it!",
+		category = "random",
+		weight = 13,
+		minAge = 8, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Deal with the aftermath",
+				effects = {},
+				feedText = "Oh no oh no oh no...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local embarrassments = {
+						"Waved back at someone who wasn't waving at you.",
+						"Walked into a glass door in front of a crowd.",
+						"Called a stranger 'mom' by accident.",
+						"Your phone played embarrassing music on full volume.",
+						"Tripped and fell in the most dramatic way possible.",
+						"Said 'you too' when a waiter said 'enjoy your food'.",
+						"Accidentally sent a text to the wrong person.",
+						"Laughed at a joke that wasn't funny. Alone. Loudly.",
+					}
+					local embarrassment = embarrassments[math.random(1, #embarrassments)]
+					
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😳 " .. embarrassment .. " But you owned it! People laughed WITH you!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("😳 " .. embarrassment .. " Will think about this at 3 AM for years.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("😳 " .. embarrassment .. " Someone recorded it. It's going viral...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_random_act_kindness",
+		title = "💝 Random Act of Kindness",
+		emoji = "💝",
+		text = "A complete stranger just did something incredibly kind for you out of nowhere!",
+		category = "random",
+		weight = 12,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept the kindness",
+				effects = { Happiness = 10 },
+				feedText = "Faith in humanity restored!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local kindActs = {
+						"Paid for your coffee in line behind you.",
+						"Held the door for you and gave a genuine compliment.",
+						"Saw you dropped something and ran to return it.",
+						"Offered their umbrella when it started raining.",
+						"Gave you directions and walked you there personally.",
+						"Left a kind note on your car.",
+					}
+					local kindAct = kindActs[math.random(1, #kindActs)]
+					
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("💝 " .. kindAct .. " Made your whole week!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💝 " .. kindAct .. " People can be so nice!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.pay_it_forward = true
+						state:AddFeed("💝 " .. kindAct .. " Inspired to pay it forward!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_mistaken_identity",
+		title = "🎭 Mistaken Identity",
+		emoji = "🎭",
+		text = "Someone is CONVINCED you're someone else and won't take no for an answer!",
+		category = "random",
+		weight = 11,
+		minAge = 14, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Try to sort this out",
+				effects = {},
+				feedText = "This is getting weird...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 12)
+						state.Money = (state.Money or 0) + math.random(50, 200)
+						state:AddFeed("🎭 They thought you were a doctor and paid you for 'advice'. Just nodded along.")
+					elseif roll <= 45 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎭 Finally convinced them. Awkward but resolved.")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎭 They got angry at 'your amnesia'. Walked away confused.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🎭 They called your 'family' over. Had to escape a dinner invitation. Wild.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- LIFE SURPRISES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "random_inheritance_letter",
+		title = "📜 Mysterious Letter",
+		emoji = "📜",
+		text = "You received an official-looking letter about a possible inheritance from a distant relative!",
+		category = "random",
+		weight = 10,
+		minAge = 18, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Open and investigate",
+				effects = {},
+				feedText = "This could change everything...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 10 then
+						local inheritance = math.random(50000, 500000)
+						state.Money = (state.Money or 0) + inheritance
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.received_inheritance = true
+						state:AddFeed(string.format("📜 IT'S REAL! Great Uncle you never knew left you $%s!", inheritance))
+					elseif roll <= 30 then
+						local inheritance = math.random(1000, 10000)
+						state.Money = (state.Money or 0) + inheritance
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("📜 Distant cousin left you $%s! Not huge but unexpected!", inheritance))
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📜 Was a scam. Classic 'Nigerian prince' type letter. Almost got you.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📜 Real inheritance letter... but the deceased had massive debt. You owe money now!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_old_photo",
+		title = "📸 Old Photo Discovery",
+		emoji = "📸",
+		text = "You found an old photo that reveals something unexpected about your family history!",
+		category = "random",
+		weight = 10,
+		minAge = 14, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Investigate the discovery",
+				effects = { Smarts = 2 },
+				feedText = "What secrets does this hold...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local discoveries = {
+						{ msg = "Your grandparent was secretly famous!", happy = 15 },
+						{ msg = "You have a long-lost sibling somewhere!", happy = 5 },
+						{ msg = "Your family had royal connections!", happy = 12 },
+						{ msg = "Someone in your family was a spy!", happy = 10 },
+						{ msg = "You're related to someone historically significant!", happy = 15 },
+						{ msg = "Family secret revealed: it's not that interesting actually.", happy = -3 },
+						{ msg = "Some things are better left unknown...", happy = -10 },
+					}
+					local discovery = discoveries[math.random(1, #discoveries)]
+					state:ModifyStat("Happiness", discovery.happy)
+					state:AddFeed("📸 " .. discovery.msg)
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_dream_came_true",
+		title = "✨ Dream Came True!",
+		emoji = "✨",
+		text = "Something you've always wanted to happen just randomly happened!",
+		category = "random",
+		weight = 8,
+		minAge = 10, maxAge = 100,
+		baseChance = 0.3,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Experience the joy!",
+				effects = { Happiness = 15 },
+				feedText = "Is this real life?",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local dreams = {
+						"Got recognized for something you worked hard on!",
+						"That person you've admired noticed you!",
+						"An opportunity you gave up on came back!",
+						"Something you lost long ago was returned!",
+						"A wish you made as a kid came true!",
+						"The perfect moment you imagined actually happened!",
+					}
+					local dream = dreams[math.random(1, #dreams)]
+					
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("✨ " .. dream .. " Life is beautiful!")
+					else
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("✨ " .. dream .. " Not exactly how you imagined, but still amazing!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_worst_timing",
+		title = "⏰ Worst Timing Ever",
+		emoji = "⏰",
+		text = "Something happened at literally the WORST possible moment!",
+		category = "random",
+		weight = 12,
+		minAge = 8, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Deal with the chaos",
+				effects = {},
+				feedText = "Why now of all times!?",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local badTimings = {
+						"Phone died right when you needed GPS.",
+						"Rain started the moment you left your umbrella.",
+						"Traffic hit just when you were already late.",
+						"Internet went out during something important.",
+						"Stomach growled loudly at the quiet moment.",
+						"Sneezed right when everyone was looking.",
+					}
+					local badTiming = badTimings[math.random(1, #badTimings)]
+					
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("⏰ " .. badTiming .. " But it worked out somehow!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⏰ " .. badTiming .. " Just your luck.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⏰ " .. badTiming .. " Caused a chain reaction of disasters.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MASSIVE VARIETY EXPANSION - 30+ NEW RANDOM EVENTS
+	-- User feedback: "every life is basically the same"
+	-- These events ensure DIFFERENT experiences each playthrough
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "random_deja_vu",
+		title = "🌀 Déjà Vu",
+		emoji = "🌀",
+		text = "You have an intense feeling of déjà vu. This exact moment feels like you've lived it before.",
+		category = "random",
+		weight = 8,
+		minAge = 8, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 6,
+		
+		choices = {
+			{
+				text = "Contemplate the mystery of existence",
+				effects = {},
+				feedText = "Pondering reality...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🌀 You had a moment of profound clarity about the nature of time.")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🌀 The feeling passed. Just a weird brain glitch probably.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🌀 The feeling was unsettling. Are you living in a simulation?")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_power_outage",
+		title = "💡 Power Outage",
+		emoji = "💡",
+		text = "The power goes out in your whole neighborhood. It's pitch black.",
+		category = "random",
+		weight = 12,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Wait it out",
+				effects = {},
+				feedText = "Sitting in the dark...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💡 Power came back in 10 minutes. Nice break from screens.")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💡 4 hours without power. Lost all the food in the fridge.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Money = (state.Money or 0) - math.random(100, 500)
+						state:AddFeed("💡 12 hours of no power. Hotel stay required.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_wrong_number",
+		title = "📱 Wrong Number",
+		emoji = "📱",
+		text = "Someone keeps calling you insisting you're someone named 'Gary' who owes them money.",
+		category = "random",
+		weight = 10,
+		minAge = 13, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "Deal with the situation",
+				effects = {},
+				feedText = "Handling the calls...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📱 Turned out to be a cute person your age. Now you're friends!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📱 They apologized after the 10th call. Gary must have big problems.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📱 They refuse to believe you're not Gary. Blocked the number.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_food_poisoning",
+		title = "🤢 Food Poisoning",
+		emoji = "🤢",
+		text = "Something you ate didn't agree with you. At ALL.",
+		category = "random",
+		weight = 14,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.5,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Suffer through it",
+				effects = {},
+				feedText = "The worst 24 hours...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🤢 24 hours of misery but you survived.")
+					elseif roll <= 80 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -15)
+						state.Money = (state.Money or 0) - 100
+						state:AddFeed("🤢 Had to get IV fluids. Never eating there again.")
+					else
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -20)
+						state.Money = (state.Money or 0) - 500
+						state:AddFeed("🤢 Hospitalized for 3 days. Severe food poisoning.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_viral_moment",
+		title = "📹 Caught on Camera",
+		emoji = "📹",
+		text = "Someone filmed you doing something random in public. It's going viral.",
+		category = "random",
+		weight = 10,
+		minAge = 10, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		
+		choices = {
+			{
+				text = "See what happens",
+				effects = {},
+				feedText = "Going viral...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 20)
+						state.Money = (state.Money or 0) + math.random(500, 2000)
+						state.Flags = state.Flags or {}
+						state.Flags.internet_famous = true
+						state:AddFeed("📹 You went VIRAL! People love you! Got sponsorship offers!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📹 Mildly viral. A few hundred thousand views. Fame faded quickly.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📹 People are mocking you. It'll blow over.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.internet_cringe = true
+						state:AddFeed("📹 You're a MEME now. In the bad way. Employers will find this.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_flat_tire",
+		title = "🚗 Flat Tire",
+		emoji = "🚗",
+		text = "Your tire went flat on the highway. You don't know how to change a tire.",
+		category = "random",
+		weight = 12,
+		minAge = 16, maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Figure it out",
+				effects = {},
+				feedText = "Stranded on the roadside...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.can_change_tire = true
+						state:AddFeed("🚗 YouTube tutorial saved you! Now you know how to change a tire!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚗 A kind stranger stopped to help. Faith in humanity restored.")
+					else
+						state.Money = (state.Money or 0) - math.random(100, 300)
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🚗 Had to call a tow truck. Expensive and embarrassing.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_bee_sting",
+		title = "🐝 Bee Attack",
+		emoji = "🐝",
+		text = "A bee just stung you! You didn't even do anything to it!",
+		category = "random",
+		weight = 12,
+		minAge = 3, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "React to the sting",
+				effects = {},
+				feedText = "Ouch!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🐝 Normal bee sting. Hurts but you'll live.")
+					elseif roll <= 90 then
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🐝 Bad swelling. The bee chose violence.")
+					else
+						state:ModifyStat("Health", -20)
+						state.Money = (state.Money or 0) - 500
+						state.Flags = state.Flags or {}
+						state.Flags.bee_allergy = true
+						state:AddFeed("🐝 ALLERGIC REACTION! Hospital visit. Now you carry an EpiPen.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_lottery_ticket",
+		title = "🎰 Found Lottery Ticket",
+		emoji = "🎰",
+		text = "You found a lottery ticket on the ground. The drawing is tonight!",
+		category = "random",
+		weight = 8,
+		minAge = 18, maxAge = 100,
+		baseChance = 0.3,
+		cooldown = 5,
+		
+		choices = {
+			{
+				text = "Check the results",
+				effects = {},
+				feedText = "Watching the numbers...",
+				onResolve = function(state)
+					local roll = math.random(1, 1000)
+					if roll <= 1 then
+						-- Jackpot! Super rare
+						state.Money = (state.Money or 0) + 1000000
+						state:ModifyStat("Happiness", 50)
+						state.Flags = state.Flags or {}
+						state.Flags.lottery_winner = true
+						state:AddFeed("🎰 JACKPOT!!! $1,000,000!!! Life changing moment!!!")
+					elseif roll <= 10 then
+						state.Money = (state.Money or 0) + math.random(10000, 50000)
+						state:ModifyStat("Happiness", 30)
+						state:AddFeed("🎰 Major winner! Tens of thousands! Not bad for a found ticket!")
+					elseif roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(100, 1000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎰 Small winner! Few hundred bucks! Free money!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎰 Not a winner. Oh well, it was free.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_strange_noise",
+		title = "👻 Strange Noise",
+		emoji = "👻",
+		text = "You hear a strange noise in your house at 3 AM. It's coming from the basement/closet.",
+		category = "random",
+		weight = 10,
+		minAge = 8, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "Investigate",
+				effects = {},
+				feedText = "Checking it out...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👻 It was just the cat knocking things over. Classic.")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("👻 Pipes settling. Heart attack for nothing.")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -15)
+						state.Money = (state.Money or 0) - 200
+						state:AddFeed("👻 A raccoon got in! Had to call animal control.")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(50, 200)
+						state:AddFeed("👻 Found your old piggy bank you forgot about!")
+					else
+						state:ModifyStat("Happiness", -25)
+						state:AddFeed("👻 Never found the source. Still hear it sometimes. Don't love that.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_surprise_visit",
+		title = "🚪 Surprise Visit",
+		emoji = "🚪",
+		text = "Someone from your past shows up at your door unexpectedly.",
+		category = "random",
+		weight = 10,
+		minAge = 18, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "See who it is",
+				effects = {},
+				feedText = "Opening the door...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🚪 An old friend you lost touch with! Amazing reunion!")
+					elseif roll <= 45 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🚪 A relative visiting. Nice but unexpected.")
+					elseif roll <= 65 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚪 An ex. Awkward conversation. Closed the door.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🚪 Someone asking for money. You said no.")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + math.random(100, 1000)
+						state:AddFeed("🚪 Someone repaying a debt you forgot about! Nice!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_dream_prophecy",
+		title = "💭 Prophetic Dream",
+		emoji = "💭",
+		text = "You had an incredibly vivid dream that felt like it meant something.",
+		category = "random",
+		weight = 8,
+		minAge = 8, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 5,
+		
+		choices = {
+			{
+				text = "Reflect on the dream",
+				effects = {},
+				feedText = "Thinking about it...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.lucid_dreamer = true
+						state:AddFeed("💭 The dream gave you an incredible idea! You feel inspired!")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💭 Just a weird dream. Fun to think about though.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💭 Nightmare elements you can't shake. Uneasy feeling all day.")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💭 Something from the dream actually happened today! Spooky!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_parallel_parking",
+		title = "🚙 Parking Disaster",
+		emoji = "🚙",
+		text = "You're trying to parallel park and everyone is watching. Pressure is on.",
+		category = "random",
+		weight = 12,
+		minAge = 16, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Attempt the park",
+				effects = {},
+				feedText = "Trying to park...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.parallel_park_pro = true
+						state:AddFeed("🚙 PERFECT first try! Someone even clapped!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚙 Took 3 tries but you got it. Nobody watched for that long.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🚙 Gave up and found a different spot. The shame.")
+					else
+						state.Money = (state.Money or 0) - math.random(200, 800)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚙 Bumped the car behind you. Had to exchange insurance info.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_wrong_address",
+		title = "📦 Mystery Package",
+		emoji = "📦",
+		text = "A package arrived at your door but it's not addressed to you. Looks expensive.",
+		category = "random",
+		weight = 10,
+		minAge = 18, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "Open it",
+				effects = {},
+				feedText = "Curiosity got you...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state.Money = (state.Money or 0) + math.random(200, 800)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📦 It was something you can sell! Finders keepers!")
+					elseif roll <= 50 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📦 It was cat food. 50 pounds of cat food. You don't have a cat.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📦 The owner came looking for it. Awkward explanation.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("📦 Delivery company tracked it. Now you're on a list.")
+					end
+				end,
+			},
+			{
+				text = "Return it to the right address",
+				effects = { Smarts = 2 },
+				feedText = "📦 Found the right address. Neighbor was grateful. Good karma.",
+			},
+		},
+	},
+	
+	{
+		id = "random_bad_haircut",
+		title = "✂️ Haircut Gone Wrong",
+		emoji = "✂️",
+		text = "Your haircut looks... not how you wanted it to look.",
+		category = "random",
+		weight = 12,
+		minAge = 8, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Live with it",
+				effects = {},
+				feedText = "Accepting your fate...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("✂️ Actually, people say it suits you! Maybe they're right?")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("✂️ Hat season for the next month. It'll grow back.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("✂️ Everyone noticed. Someone took a picture. Not ideal.")
+					else
+						state.Money = (state.Money or 0) - 100
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("✂️ Had to pay ANOTHER barber to fix it.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_identity_mistaken",
+		title = "👤 Mistaken Identity",
+		emoji = "👤",
+		text = "Someone on the street is CONVINCED you're someone famous. They want a photo.",
+		category = "random",
+		weight = 10,
+		minAge = 16, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "Play along",
+				effects = {},
+				feedText = "Pretending to be famous...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(20, 100)
+						state:AddFeed("👤 You took the photo and they tipped you! Easy money!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("👤 They were so happy! You made their day.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("👤 They realized you're not the person and got angry. Oops.")
+					end
+				end,
+			},
+			{
+				text = "Explain you're not famous",
+				effects = { Happiness = 2 },
+				feedText = "👤 They didn't believe you. Took a picture anyway. Confusing day.",
+			},
+		},
+	},
+	
+	{
+		id = "random_fire_alarm",
+		title = "🚨 Fire Alarm",
+		emoji = "🚨",
+		text = "The fire alarm is going off! Everyone's evacuating the building!",
+		category = "random",
+		weight = 12,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Evacuate",
+				effects = {},
+				feedText = "Getting out...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚨 False alarm. Someone burned their popcorn.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🚨 Small fire, quickly contained. Scary but okay.")
+					elseif roll <= 95 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚨 Real emergency. Inhaled some smoke. Firefighters handled it.")
+					else
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.fire_hero = true
+						state:AddFeed("🚨 You helped someone who was panicking get out! Hero!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_spider",
+		title = "🕷️ Spider Encounter",
+		emoji = "🕷️",
+		text = "There's a HUGE spider in your room. Like, unreasonably large.",
+		category = "random",
+		weight = 14,
+		minAge = 5, maxAge = 100,
+		baseChance = 0.5,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "Deal with it",
+				effects = {},
+				feedText = "Confronting your fears...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🕷️ Carefully caught it and released it outside. Proud moment.")
+					elseif roll <= 55 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🕷️ Killed it. Felt guilty but also relieved.")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🕷️ Lost track of it. Now you're sleeping on the couch.")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🕷️ Someone else had to kill it. Embarrassing but necessary.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🕷️ IT BIT YOU! Doctor says it's not venomous. Still traumatized.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_elevator_stuck",
+		title = "🛗 Stuck in Elevator",
+		emoji = "🛗",
+		text = "The elevator stopped between floors. You're trapped with strangers.",
+		category = "random",
+		weight = 10,
+		minAge = 10, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		
+		choices = {
+			{
+				text = "Wait for rescue",
+				effects = {},
+				feedText = "Trapped...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.made_elevator_friend = true
+						state:AddFeed("🛗 Made a genuine friend during the wait! Got their number!")
+					elseif roll <= 55 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🛗 20 minutes of awkward silence. Never using elevators again.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("🛗 Stuck for 2 hours. Panic attack material.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🛗 Someone in the elevator was claustrophobic. Chaos ensued.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "random_rainbow",
+		title = "🌈 Double Rainbow",
+		emoji = "🌈",
+		text = "You look up and see a perfect double rainbow across the sky.",
+		category = "random",
+		weight = 8,
+		minAge = 3, maxAge = 100,
+		baseChance = 0.35,
+		cooldown = 5,
+		
+		choices = {
+			{
+				text = "Appreciate the moment",
+				effects = {},
+				feedText = "Taking it in...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🌈 Sometimes nature reminds you to slow down and appreciate beauty.")
+					else
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.lucky_day = true
+						state:AddFeed("🌈 Perfect timing! Something good is about to happen. You can feel it.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return RandomLifeEvents

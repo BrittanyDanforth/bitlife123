@@ -1318,6 +1318,137 @@ Random.events = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ROAD RAGE ENCOUNTER WITH COMBAT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "road_rage",
+		title = "Road Rage!",
+		emoji = "🚗",
+		text = "Someone just cut you off in traffic and is now getting out of their car! They look furious!",
+		question = "The driver is approaching your car aggressively...",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 2,
+		category = "confrontation",
+		-- Must have a car and not be in prison
+		requiresFlags = {},
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "🚪 Get out and confront them!",
+				effects = {},
+				feedText = "You stepped out of your car...",
+				-- CRITICAL: Trigger the combat minigame!
+				triggerMinigame = "combat",
+				minigameOptions = { 
+					context = "street",
+					difficulty = "average",
+					opponentDescription = "Angry Driver"
+				},
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					
+					if won then
+						-- Player won the road rage fight!
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.road_rage_winner = true
+						state:AddFeed("🚗👊 You taught that driver a lesson! They won't road rage again.")
+					else
+						-- Player lost
+						local severity = math.random(1, 100)
+						if severity < 50 then
+							state:ModifyStat("Health", -15)
+							state:ModifyStat("Happiness", -12)
+							state:AddFeed("🚗👊 You got beat up on the side of the road. Humiliating.")
+						elseif severity < 80 then
+							state:ModifyStat("Health", -25)
+							state:ModifyStat("Happiness", -18)
+							state.Money = math.max(0, (state.Money or 0) - 2000)
+							state.Flags = state.Flags or {}
+							state.Flags.hospitalized = true
+							state:AddFeed("🚗👊 The fight went badly. You needed hospital treatment.")
+						else
+							-- Legal trouble
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -25)
+							state.Money = math.max(0, (state.Money or 0) - 5000)
+							state.Flags = state.Flags or {}
+							state.Flags.assault_charge = true
+							state:AddFeed("🚗👊 Witnesses called police. You both got arrested for assault!")
+						end
+					end
+				end,
+			},
+			{
+				text = "🔒 Stay in car, lock doors",
+				effects = {},
+				feedText = "You locked your doors...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 They banged on your window and yelled, but eventually drove off.")
+					elseif roll < 0.90 then
+						state:ModifyStat("Happiness", -8)
+						state.Money = math.max(0, (state.Money or 0) - math.random(200, 800))
+						state:AddFeed("🚗 They damaged your car! Key scratches and a broken mirror.")
+					else
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -12)
+						state.Money = math.max(0, (state.Money or 0) - 1500)
+						state:AddFeed("🚗 They smashed your window and pulled you out! It got ugly.")
+					end
+				end,
+			},
+			{
+				text = "📱 Call 911",
+				effects = {},
+				feedText = "You called for help...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚗👮 Police arrived quickly. The other driver got a ticket!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🚗 They drove off before police arrived. At least you're safe.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Money = math.max(0, (state.Money or 0) - math.random(100, 300))
+						state:AddFeed("🚗 They damaged your car before fleeing. Police took a report.")
+					end
+				end,
+			},
+			{
+				text = "🚗 Drive away quickly",
+				effects = {},
+				feedText = "You floored it!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.65 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🚗 You sped away before things could escalate. Smart move!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚗 They chased you for a while but eventually gave up. Heart racing!")
+					else
+						-- Car chase goes wrong
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -15)
+						state.Money = math.max(0, (state.Money or 0) - 3000)
+						state.Flags = state.Flags or {}
+						state.Flags.car_accident = true
+						state:AddFeed("🚗💥 You crashed while trying to escape! Needed medical attention.")
+					end
+				end,
+			},
+		},
+	},
+	
 	{
 		-- CRITICAL FIX: Animal attack is now RANDOM - no god mode choosing severity!
 		id = "injury_animal",
@@ -1936,6 +2067,8 @@ Random.events = {
 		baseChance = 0.25,
 		cooldown = 4,
 		category = "crime",
+		-- CRITICAL FIX: Can't be robbed at home while you're in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 
 		choices = {
 			{ 
@@ -1964,13 +2097,20 @@ Random.events = {
 						end
 					else
 						-- They got away with stuff
+						-- CRITICAL FIX: Prevent negative money!
 						state.Flags.burglarized = true
-						state.Money = (state.Money or 0) - math.random(2000, 5000)
+						local stolenAmount = math.random(2000, 5000)
+						stolenAmount = math.min(stolenAmount, state.Money or 0) -- Can't steal more than you have
+						state.Money = math.max(0, (state.Money or 0) - stolenAmount)
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
 						end
 						if state.AddFeed then
-							state:AddFeed("🚨 They got away with valuables before police arrived.")
+							if stolenAmount > 0 then
+								state:AddFeed(string.format("🚨 They got away with $%d before police arrived.", stolenAmount))
+							else
+								state:AddFeed("🚨 They ransacked the place but found nothing valuable to steal.")
+							end
 						end
 					end
 				end,
@@ -3201,6 +3341,710 @@ Random.events = {
 				text = "Just deal with it",
 				effects = { Happiness = -3 },
 				feedText = "You're being the bigger person. Sort of.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════════════
+	-- VEHICLE OWNERSHIP EVENTS
+	-- These events ONLY trigger for players who own vehicles (cars, motorcycles, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "vehicle_breakdown",
+		emoji = "🚗",
+		title = "Car Trouble!",
+		text = "Your car suddenly breaks down on the side of the road! Smoke billows from under the hood.",
+		question = "What do you do?",
+		category = "vehicle",
+		weight = 8,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Call a tow truck ($150)",
+				effects = { Happiness = -3 },
+				feedText = "Help is on the way...",
+				onResolve = function(state)
+					local cost = 150
+					if (state.Money or 0) >= cost then
+						state.Money = state.Money - cost
+						if state.AddFeed then
+							state:AddFeed("🚗 Tow truck came. Car's at the shop now. -$" .. cost)
+						end
+					else
+						state.Money = 0
+						if state.AddFeed then
+							state:AddFeed("🚗 Tow truck came but you barely had enough to pay!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Try to fix it yourself",
+				effects = { Happiness = -2, Health = -3 },
+				feedText = "You pop the hood and get your hands dirty...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local successChance = 0.2 + (smarts / 200) -- 20-70% based on smarts
+					
+					if math.random() < successChance then
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						state.Flags = state.Flags or {}
+						state.Flags.car_mechanic = true
+						if state.AddFeed then
+							state:AddFeed("🔧 You fixed it! Who needs a mechanic anyway?")
+						end
+					else
+						local cost = math.random(200, 500)
+						if (state.Money or 0) >= cost then
+							state.Money = state.Money - cost
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("💸 Made it worse! Had to call a mechanic anyway. -$%d", cost))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Call a friend for a ride",
+				effects = { Happiness = -5 },
+				feedText = "You wait for help to arrive...",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("🚗 Friend picked you up. Car's still stuck though...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_accident_minor",
+		emoji = "💥",
+		title = "Fender Bender!",
+		text = "Someone rear-ended your car at a red light! The damage looks minor but still...",
+		question = "How do you handle this?",
+		category = "vehicle",
+		weight = 7,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Exchange insurance information",
+				effects = { Happiness = -3 },
+				feedText = "You handle it by the book...",
+				onResolve = function(state)
+					if math.random() < 0.7 then
+						-- Insurance covers it
+						if state.AddFeed then
+							state:AddFeed("📋 Insurance covered the repairs. What a hassle though!")
+						end
+					else
+						-- Insurance doesn't cover it all
+						local cost = math.random(100, 300)
+						if (state.Money or 0) >= cost then
+							state.Money = state.Money - cost
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("📋 Insurance only covered part of it. You paid $%d out of pocket.", cost))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Demand they pay cash now!",
+				effects = { Happiness = -5 },
+				feedText = "You're pretty upset about this...",
+				onResolve = function(state)
+					if math.random() < 0.4 then
+						local payout = math.random(200, 500)
+						state.Money = (state.Money or 0) + payout
+						if state.AddFeed then
+							state:AddFeed(string.format("💰 They paid you $%d on the spot. Nice!", payout))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😤 They refused. Now you have to go through insurance anyway!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Let it go - it's just cosmetic",
+				effects = { Happiness = -2 },
+				feedText = "It's just a car...",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_car_show",
+		emoji = "🏆",
+		title = "Local Car Show",
+		text = "There's a car show happening this weekend! People are bringing their best rides.",
+		question = "Do you enter your car?",
+		category = "vehicle",
+		weight = 5,
+		minAge = 18,
+		maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Enter the competition ($50 entry fee)",
+				effects = { Happiness = 5 },
+				feedText = "Time to show off your ride...",
+				onResolve = function(state)
+					if (state.Money or 0) >= 50 then
+						state.Money = state.Money - 50
+					else
+						state.Money = 0
+					end
+					
+					local roll = math.random()
+					if roll < 0.15 then
+						-- Win first place!
+						local prize = math.random(500, 1500)
+						state.Money = (state.Money or 0) + prize
+						state.Flags = state.Flags or {}
+						state.Flags.car_show_winner = true
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed(string.format("🏆 FIRST PLACE! You won $%d! Your ride is a showstopper!", prize))
+						end
+					elseif roll < 0.4 then
+						-- Top 3
+						local prize = math.random(100, 300)
+						state.Money = (state.Money or 0) + prize
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed(string.format("🥈 Top 3 finish! Won $%d. Nice showing!", prize))
+						end
+					else
+						-- Didn't place
+						if state.AddFeed then
+							state:AddFeed("🚗 Didn't place, but people complimented your car!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Just attend as a spectator",
+				effects = { Happiness = 3 },
+				feedText = "You admire the beautiful cars.",
+			},
+			{
+				index = 3,
+				text = "Skip it - not my scene",
+				effects = {},
+				feedText = "Maybe next time.",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_road_trip",
+		emoji = "🛣️",
+		title = "Road Trip Opportunity!",
+		text = "Your friends are planning an epic road trip! They want you to drive since you have a car.",
+		question = "Do you join?",
+		category = "vehicle",
+		weight = 6,
+		minAge = 18,
+		maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Let's hit the road! ($200 for gas/expenses)",
+				effects = { Happiness = 15, Health = 5 },
+				feedText = "Adventure awaits!",
+				onResolve = function(state)
+					if (state.Money or 0) >= 200 then
+						state.Money = state.Money - 200
+					else
+						state.Money = 0
+					end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.road_trip_veteran = true
+					
+					local destinations = {
+						"the Grand Canyon",
+						"the beach",
+						"the mountains", 
+						"Las Vegas",
+						"California",
+						"the desert",
+						"a national park",
+						"a music festival",
+					}
+					local dest = destinations[math.random(1, #destinations)]
+					
+					if state.AddFeed then
+						state:AddFeed(string.format("🛣️ Amazing road trip to %s! Made unforgettable memories!", dest))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I'll pass - too expensive",
+				effects = { Happiness = -3 },
+				feedText = "FOMO hits hard.",
+			},
+			{
+				index = 3,
+				text = "Can't take time off work",
+				effects = { Happiness = -5 },
+				feedText = "Responsibilities...",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_theft_attempt",
+		emoji = "🚨",
+		title = "Car Theft Attempt!",
+		text = "You come back to your car and catch someone trying to break in!",
+		question = "What do you do?!",
+		category = "vehicle",
+		weight = 5,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.35,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		triggerMinigame = "combat",
+		
+		choices = {
+			{
+				index = 1,
+				text = "🥊 Confront them!",
+				effects = {},
+				feedText = "Not my car, you don't!",
+				triggerMinigame = "combat",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("💪 You scared them off! Your car is safe.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Call the police",
+				effects = { Happiness = -5 },
+				feedText = "You dial 911...",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🚔 Police arrived quickly. They caught the thief!")
+						end
+					else
+						local damage = math.random(100, 400)
+						if (state.Money or 0) >= damage then
+							state.Money = state.Money - damage
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("🚔 Thief got away but damaged your car. Repairs cost $%d", damage))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Honk and yell from a distance",
+				effects = { Happiness = -3 },
+				feedText = "You make a scene...",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("📢 They ran off! Could've been worse.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_speeding_ticket",
+		emoji = "🚓",
+		title = "Pulled Over!",
+		text = "Blue lights flash behind you. A cop pulls you over for speeding!",
+		question = "How do you handle this?",
+		category = "vehicle",
+		weight = 8,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.5,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Be polite and apologetic",
+				effects = { Happiness = -3 },
+				feedText = "You're respectful with the officer...",
+				onResolve = function(state)
+					if math.random() < 0.3 then
+						-- Warning
+						if state.AddFeed then
+							state:AddFeed("🚓 The officer let you off with a warning! Lucky!")
+						end
+					else
+						-- Ticket
+						local fine = math.random(150, 350)
+						if (state.Money or 0) >= fine then
+							state.Money = state.Money - fine
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("🚓 Got a speeding ticket. $%d fine. Ugh.", fine))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Try to talk your way out of it",
+				effects = { Happiness = -2 },
+				feedText = "You try to be charming...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local successChance = 0.1 + (looks / 300) -- 10-43% based on looks
+					
+					if math.random() < successChance then
+						if state.AddFeed then
+							state:AddFeed("😊 Your charm worked! Just a warning.")
+						end
+					else
+						local fine = math.random(200, 400)
+						if (state.Money or 0) >= fine then
+							state.Money = state.Money - fine
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("😬 That backfired. $%d ticket PLUS attitude.", fine))
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Accept your fate silently",
+				effects = { Happiness = -5 },
+				feedText = "You take the L...",
+				onResolve = function(state)
+					local fine = math.random(175, 325)
+					if (state.Money or 0) >= fine then
+						state.Money = state.Money - fine
+					else
+						state.Money = 0
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("🚓 $%d speeding ticket. Slow down next time.", fine))
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_upgrade_offer",
+		emoji = "🔧",
+		title = "Upgrade Your Ride!",
+		text = "A mechanic friend offers to do some upgrades on your car for cheap!",
+		question = "What upgrades do you want?",
+		category = "vehicle",
+		weight = 5,
+		minAge = 18,
+		maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Performance upgrades ($800)",
+				effects = { Happiness = 8 },
+				feedText = "Time to boost your ride...",
+				onResolve = function(state)
+					if (state.Money or 0) >= 800 then
+						state.Money = state.Money - 800
+						state.Flags = state.Flags or {}
+						state.Flags.car_upgraded = true
+						state.Flags.fast_car = true
+						if state.AddFeed then
+							state:AddFeed("🏎️ Your car is FAST now! That engine purrs!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💸 Not enough cash for the full upgrade package...")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Cosmetic upgrades ($500)",
+				effects = { Happiness = 6 },
+				feedText = "Making it look good...",
+				onResolve = function(state)
+					if (state.Money or 0) >= 500 then
+						state.Money = state.Money - 500
+						state.Flags = state.Flags or {}
+						state.Flags.car_customized = true
+						if state.ModifyStat then state:ModifyStat("Looks", 2) end
+						if state.AddFeed then
+							state:AddFeed("✨ Your car looks amazing! New paint and trim!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💸 Couldn't afford the full cosmetic package...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Pass - my car is fine as is",
+				effects = { Happiness = 2 },
+				feedText = "If it ain't broke...",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_racing_challenge",
+		emoji = "🏁",
+		title = "Street Racing Challenge!",
+		text = "Someone pulls up next to you at a red light and revs their engine, challenging you to race!",
+		question = "What do you do?",
+		category = "vehicle",
+		weight = 6,
+		minAge = 18,
+		maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		triggerMinigame = "qte",
+		
+		choices = {
+			{
+				index = 1,
+				text = "🏎️ Accept the challenge!",
+				effects = {},
+				feedText = "Green light... GO!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state)
+					-- Result depends on minigame outcome
+					if state.Flags and state.Flags.last_minigame_won then
+						local prize = math.random(200, 800)
+						state.Money = (state.Money or 0) + prize
+						state.Flags.street_racer = true
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then
+							state:AddFeed(string.format("🏆 YOU WON! They paid up $%d. Speed demon!", prize))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😤 You lost! They left you in their dust.")
+						end
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Ignore them - not worth the risk",
+				effects = { Happiness = -2 },
+				feedText = "You play it smart.",
+			},
+			{
+				index = 3,
+				text = "Roll down window and laugh",
+				effects = { Happiness = 3 },
+				feedText = "You're above petty challenges.",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_parking_disaster",
+		emoji = "🅿️",
+		title = "Parking Nightmare!",
+		text = "You return to your car and find someone has DOUBLE PARKED blocking you in!",
+		question = "What do you do?",
+		category = "vehicle",
+		weight = 7,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 2,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Wait for them to come back",
+				effects = { Happiness = -5 },
+				feedText = "You wait... and wait...",
+				onResolve = function(state)
+					if math.random() < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("⏰ They finally came back after 30 minutes. Unbelievable!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😤 An HOUR later... they didn't even apologize!")
+						end
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Call parking enforcement",
+				effects = { Happiness = -3 },
+				feedText = "Time to teach them a lesson...",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("🚔 They got a ticket AND towed! Justice served.")
+					end
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+				end,
+			},
+			{
+				index = 3,
+				text = "Try to squeeze out anyway",
+				effects = {},
+				feedText = "It's gonna be tight...",
+				onResolve = function(state)
+					if math.random() < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("🚗 You made it out! Tight squeeze but no scratches!")
+						end
+					else
+						local damage = math.random(100, 300)
+						if (state.Money or 0) >= damage then
+							state.Money = state.Money - damage
+						else
+							state.Money = 0
+						end
+						if state.AddFeed then
+							state:AddFeed(string.format("💥 Scraped your car getting out. $%d in damage...", damage))
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_gas_prices",
+		emoji = "⛽",
+		title = "Gas Price Shock!",
+		text = "You pull up to the gas station and see prices have SKYROCKETED!",
+		question = "What do you do?",
+		category = "vehicle",
+		weight = 8,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.5,
+		cooldown = 1,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { has_vehicle = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Fill up anyway - you need gas",
+				effects = { Happiness = -3 },
+				feedText = "You pump reluctantly...",
+				onResolve = function(state)
+					local cost = math.random(60, 100)
+					if (state.Money or 0) >= cost then
+						state.Money = state.Money - cost
+					else
+						state.Money = 0
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("⛽ $%d to fill up?! Highway robbery!", cost))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Just get $20 worth",
+				effects = { Happiness = -1 },
+				feedText = "A little is better than none.",
+				onResolve = function(state)
+					if (state.Money or 0) >= 20 then
+						state.Money = state.Money - 20
+					else
+						state.Money = 0
+					end
+					if state.AddFeed then
+						state:AddFeed("⛽ Got just enough to get by. These prices are crazy!")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Drive to a cheaper station",
+				effects = { Happiness = 2 },
+				feedText = "You hunt for a better deal...",
+				onResolve = function(state)
+					local cost = math.random(40, 70)
+					if (state.Money or 0) >= cost then
+						state.Money = state.Money - cost
+					else
+						state.Money = 0
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("⛽ Found cheaper gas! Only $%d to fill up.", cost))
+					end
+				end,
 			},
 		},
 	},

@@ -418,7 +418,7 @@ local Jobs = {
 	{ id = "investment_banker_jr", name = "Investment Banking Analyst", company = "Goldman & Partners", emoji = "💹", salary = 120000, minAge = 22, requirement = "bachelor", category = "finance", difficulty = 7, minStats = { Smarts = 70, Looks = 45 } },
 	{ id = "investment_banker", name = "Investment Banker", company = "Wall Street Bank", emoji = "💹", salary = 225000, minAge = 28, requirement = "master", category = "finance", difficulty = 8, minStats = { Smarts = 75 } },
 	{ id = "hedge_fund_manager", name = "Hedge Fund Manager", company = "Elite Capital", emoji = "🏦", salary = 750000, minAge = 35, requirement = "master", category = "finance", difficulty = 10, minStats = { Smarts = 85 } },
-	{ id = "actuary", name = "Actuary", company = "Insurance Corp", emoji = "🧮", salary = 125000, minAge = 26, requirement = "bachelor", category = "finance", difficulty = 8, minStats = { Smarts = 80 } },
+	-- REMOVED: Actuary job per user request (boring)
 	{ id = "cfo", name = "Chief Financial Officer", company = "Fortune 500", emoji = "💼", salary = 450000, minAge = 42, requirement = "master", category = "finance", difficulty = 9, minStats = { Smarts = 80 } },
 
 	-- ════════════════════════════════════════════════════════════════
@@ -558,16 +558,17 @@ local Jobs = {
 	-- Full career paths for Streamer, Rapper, Musician, Influencer, and Actor
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- STREAMER / CONTENT CREATOR PATH
-	-- CRITICAL FIX #MOBILE-8: Hobbyist Streamer is NOW FREE (no gamepass required)!
-	-- This is the entry point to streaming - anyone can try it
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STREAMER / CONTENT CREATOR PATH - ALL FREE (NO GAMEPASS REQUIRED)
+	-- User feedback: "YouTuber can stay free" - entire streaming path is free!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎮", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
-	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Streaming experience required" },
-	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Affiliate status required" },
-	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresGamepass = "celebrity", requiresExp = "Established streaming presence required" },
-	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch Partner", emoji = "💎", salary = 300000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 6, requiresGamepass = "celebrity", requiresExp = "Growing streamer status required" },
-	{ id = "top_streamer", name = "Top Streamer", company = "Platform Featured", emoji = "⭐", salary = 2000000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Partner status required" },
-	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Top streamer status required" },
+	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "🟣", salary = 5000, minAge = 14, requirement = nil, category = "celebrity", difficulty = 2, requiresExp = "Streaming experience required" },
+	{ id = "small_streamer", name = "Small Streamer", company = "Multi-Platform", emoji = "📺", salary = 25000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresExp = "Affiliate status required" },
+	{ id = "growing_streamer", name = "Growing Streamer", company = "YouTube/Twitch", emoji = "📈", salary = 75000, minAge = 17, requirement = nil, category = "celebrity", difficulty = 4, requiresExp = "Established streaming presence required" },
+	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch Partner", emoji = "💎", salary = 300000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 6, requiresExp = "Growing streamer status required" },
+	{ id = "top_streamer", name = "Top Streamer", company = "Platform Featured", emoji = "⭐", salary = 2000000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 8, requiresExp = "Partner status required" },
+	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 15000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 10, requiresExp = "Top streamer status required" },
 	
 	-- RAPPER / HIP-HOP PATH
 	-- CRITICAL FIX #MOBILE-9: Underground Rapper is NOW FREE (no gamepass required)!
@@ -581,16 +582,17 @@ local Jobs = {
 	{ id = "superstar_rapper", name = "Superstar Rapper", company = "Global", emoji = "💎", salary = 20000000, minAge = 22, requirement = nil, category = "celebrity", difficulty = 9, requiresGamepass = "celebrity", requiresExp = "Mainstream success required" },
 	{ id = "rap_legend", name = "Hip-Hop Legend", company = "GOAT Status", emoji = "👑", salary = 75000000, minAge = 28, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Superstar status required" },
 	
-	-- SOCIAL MEDIA INFLUENCER PATH
-	-- CRITICAL FIX #MOBILE-10: New Content Creator is NOW FREE (no gamepass required)!
-	-- This is the entry point to influencer career - anyone can try it
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SOCIAL MEDIA INFLUENCER PATH - ALL FREE (NO GAMEPASS REQUIRED)
+	-- User feedback: "YouTuber can stay free" - entire influencer path is free!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 0, minAge = 13, requirement = nil, category = "celebrity", difficulty = 1 },
-	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresGamepass = "celebrity", requiresExp = "Content creation experience required" },
-	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresGamepass = "celebrity", requiresExp = "Micro influencer status required" },
-	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresGamepass = "celebrity", requiresExp = "Growing following required" },
-	{ id = "famous_influencer", name = "Famous Influencer", company = "Millions of Followers", emoji = "⭐", salary = 600000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresGamepass = "celebrity", requiresExp = "Established presence required" },
-	{ id = "mega_influencer", name = "Mega Influencer", company = "Media Empire", emoji = "💎", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresGamepass = "celebrity", requiresExp = "Famous status required" },
-	{ id = "influencer_icon", name = "Social Media Icon", company = "Cultural Icon", emoji = "👑", salary = 50000000, minAge = 24, requirement = nil, category = "celebrity", difficulty = 10, requiresGamepass = "celebrity", requiresExp = "Mega influencer status required" },
+	{ id = "micro_influencer", name = "Micro Influencer", company = "Social Media", emoji = "📲", salary = 10000, minAge = 15, requirement = nil, category = "celebrity", difficulty = 2, requiresExp = "Content creation experience required" },
+	{ id = "growing_influencer", name = "Growing Influencer", company = "Brand Partnerships", emoji = "📈", salary = 50000, minAge = 16, requirement = nil, category = "celebrity", difficulty = 3, requiresExp = "Micro influencer status required" },
+	{ id = "established_influencer", name = "Established Influencer", company = "Verified Creator", emoji = "✅", salary = 150000, minAge = 18, requirement = nil, category = "celebrity", difficulty = 5, requiresExp = "Growing following required" },
+	{ id = "famous_influencer", name = "Famous Influencer", company = "Millions of Followers", emoji = "⭐", salary = 600000, minAge = 19, requirement = nil, category = "celebrity", difficulty = 7, requiresExp = "Established presence required" },
+	{ id = "mega_influencer", name = "Mega Influencer", company = "Media Empire", emoji = "💎", salary = 3000000, minAge = 20, requirement = nil, category = "celebrity", difficulty = 8, requiresExp = "Famous status required" },
+	{ id = "influencer_icon", name = "Social Media Icon", company = "Cultural Icon", emoji = "👑", salary = 50000000, minAge = 24, requirement = nil, category = "celebrity", difficulty = 10, requiresExp = "Mega influencer status required" },
 }
 
 -- Education Data - Must match server's EducationOptions IDs!
@@ -853,13 +855,23 @@ local function getNextPromotion(jobId)
 	return CareerPaths[jobId]
 end
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging - CRITICAL FIX: Enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[OccupationScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[OccupationScreen]", ...)
+end
+
+-- CRITICAL FIX: Action print helper for tracking button clicks
+local function logAction(actionType, actionId, actionName, details)
+	print(string.format("[OccupationScreen] 🔘 ACTION: %s | ID: %s | Name: %s | %s", 
+		actionType or "unknown", 
+		tostring(actionId or "nil"), 
+		tostring(actionName or "nil"),
+		details or ""
+	))
 end
 
 function OccupationScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
@@ -883,34 +895,66 @@ end
 function OccupationScreen:updateState(newState)
 	log("Updating state...")
 	if newState then 
-		self.playerState = newState 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Deep copy state to prevent reference issues
+		-- Previously, self.playerState was a reference to LifeClient's currentState
+		-- which could cause stale data issues when the client mutated the state
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		self.playerState = newState
+		
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		
-		-- CRITICAL FIX: Immediately update cached career info from state if available
-		-- This ensures raises/promotions from events are shown correctly
-		if newState.CareerInfo then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #1: ALWAYS clear cached data when state changes
+		-- This fixes the bug where after death/new life, old job still shows
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- Check if player actually has a job in the new state
+		-- CRITICAL: Must check BOTH .CurrentJob existence AND it having an id/title
+		local hasJob = newState.CurrentJob and (newState.CurrentJob.id or newState.CurrentJob.title or newState.CurrentJob.name)
+		
+		-- CRITICAL FIX: Check for new life (age 0 or 1) - ALWAYS clear everything
+		local isNewLife = (newState.Age or 0) <= 1
+		
+		if isNewLife then
+			-- NEW LIFE: Clear ALL cached data unconditionally
+			log("NEW LIFE DETECTED (age " .. tostring(newState.Age) .. ") - FORCE CLEARING ALL CACHES")
+			self.careerInfo = nil
+			self.jobEligibility = nil
+			self.educationInfo = nil
+		elseif hasJob and newState.CareerInfo then
+			-- Player has a job - update career info from state
 			self.careerInfo = newState.CareerInfo
 			log("Career info updated from state:", 
 				"raises:", self.careerInfo.raises or 0,
 				"promotions:", self.careerInfo.promotions or 0,
 				"yearsAtJob:", self.careerInfo.yearsAtJob or 0)
 		else
-			-- Only invalidate if we didn't get fresh data
+			-- CRITICAL FIX: Player has NO JOB - FORCE CLEAR all cached career data!
+			-- This was the root cause of the "job still shows after death" bug
 			self.careerInfo = nil
+			self.jobEligibility = nil
+			log("No job in state - CLEARED cached career info to prevent stale data")
 		end
+		
+		-- Always clear education info to force refresh on state change
 		self.educationInfo = nil
 		
 		-- CRITICAL FIX: Refresh UI when visible, regardless of job status
 		-- Previously only refreshed if player had a job, causing stale UI after quit/fire
 		if self.isVisible then
 			task.spawn(function()
-				-- Only fetch career info from server if we didn't already get it from state
-				if self:getCurrentJob() and not self.careerInfo then
+				-- Only fetch career info from server if player has a job and we need it
+				if hasJob and not self.careerInfo and not isNewLife then
 					self:fetchCareerInfo()
 				end
-				-- Always refresh UI if still visible and on jobs tab (even if no job!)
-				if self.isVisible and self.currentTab == "jobs" then
-					self:populateJobs()
+				-- Always refresh UI if still visible - force repopulate both tabs
+				if self.isVisible then
+					if self.currentTab == "jobs" then
+						self:populateJobs()
+					elseif self.currentTab == "education" then
+						self:populateEducation()
+					end
 				end
 			end)
 		end
@@ -932,23 +976,66 @@ end
 function OccupationScreen:getCurrentJob()
 	local state = self.playerState
 	if not state then return nil end
-	-- Check both old and new job system
-	if state.CurrentJob and state.CurrentJob.id then
-		return state.CurrentJob.id -- Return job ID for matching
-	elseif state.CurrentJob and state.CurrentJob.title then
-		-- Fallback: try to find by title
-		return state.CurrentJob.title
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: More robust job detection
+	-- Previously, stale Career.current could return wrong job after death
+	-- Now we ONLY check CurrentJob - the authoritative source from server
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX: If age is 0-17 and not working a teen job, definitely no job
+	-- Babies/children/teens under working age can't have jobs
+	local age = state.Age or 0
+	if age < 12 then
+		-- Children under 12 cannot have jobs at all
+		return nil
 	end
-	return state.Job or (state.Career and state.Career.current)
+	
+	-- PRIMARY: Check CurrentJob from server (authoritative source)
+	if state.CurrentJob then
+		-- Verify it's a valid job object, not an empty table or nil values
+		if type(state.CurrentJob) ~= "table" then
+			return nil
+		end
+		
+		-- Check for valid identifier
+		if state.CurrentJob.id and state.CurrentJob.id ~= "" then
+			return state.CurrentJob.id
+		elseif state.CurrentJob.title and state.CurrentJob.title ~= "" then
+			return state.CurrentJob.title
+		elseif state.CurrentJob.name and state.CurrentJob.name ~= "" then
+			return state.CurrentJob.name
+		end
+		-- If CurrentJob exists but has no id/title/name, it's invalid
+		-- This can happen with corrupted state - treat as no job
+		log("WARNING: CurrentJob exists but has no id/title/name - treating as unemployed")
+		return nil
+	end
+	
+	-- REMOVED: Don't use state.Job or Career.current as fallback
+	-- These can contain stale data from previous life and cause bugs
+	-- The server's CurrentJob is the ONLY authoritative source
+	return nil
 end
 
 function OccupationScreen:getCurrentJobData()
 	local state = self.playerState
 	if not state then return nil end
-	-- Return the full job object from server
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #6: Validate CurrentJob before returning
+	-- An empty or invalid CurrentJob object should return nil
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if state.CurrentJob then
-		log("getCurrentJobData - Found CurrentJob from server:", state.CurrentJob.title or "No title")
-		return state.CurrentJob
+		-- Validate that it's a real job, not an empty/corrupted object
+		if state.CurrentJob.id or state.CurrentJob.title or state.CurrentJob.name then
+			log("getCurrentJobData - Found valid CurrentJob:", state.CurrentJob.title or state.CurrentJob.name or state.CurrentJob.id)
+			return state.CurrentJob
+		else
+			-- CurrentJob exists but is invalid/empty - don't return it
+			log("getCurrentJobData - CurrentJob exists but is invalid (no id/title/name)")
+			return nil
+		end
 	end
 	return nil
 end
@@ -1242,7 +1329,65 @@ local EducationDisplayNames = {
 }
 
 function OccupationScreen:getEducationDisplayName(levelId)
+	-- CRITICAL UI FIX: Show current education status based on age if no degree yet
+	local state = self.playerState
+	local age = self:getAge() or 0
+	
+	-- Check if actively enrolled in something
+	local eduData = state and state.EducationData
+	local isEnrolled = eduData and eduData.Status == "enrolled"
+	local enrolledInstitution = eduData and eduData.Institution
+	local enrolledLevel = eduData and eduData.Level
+	local flags = state and state.Flags or {}
+	
+	-- If enrolled somewhere, show that
+	if isEnrolled and enrolledLevel then
+		local loweredLevel = enrolledLevel:lower()
+		if EducationDisplayNames[loweredLevel] then
+			return "📚 " .. EducationDisplayNames[loweredLevel]
+		elseif enrolledInstitution then
+			return "📚 " .. enrolledInstitution
+		end
+	end
+	
+	-- CRITICAL FIX: If no formal degree yet, show appropriate school status by age
 	if not levelId or levelId == "" or levelId == "none" then
+		-- Check for royal education flags first
+		if flags.royal_birth or flags.is_royalty then
+			if age >= 5 and age <= 10 then
+				return "📚 Royal Private Tutoring"
+			elseif age >= 11 and age <= 13 then
+				return "📚 Royal Preparatory School"
+			elseif age >= 14 and age <= 17 then
+				return "📚 Elite Boarding School"
+			elseif age >= 18 then
+				return "No Formal Degree Yet"
+			end
+		end
+		
+		-- Regular (non-royal) school status by age
+		if age >= 5 and age <= 10 then
+			return "📚 In Elementary School"
+		elseif age >= 11 and age <= 13 then
+			return "📚 In Middle School"
+		elseif age >= 14 and age <= 17 then
+			return "📚 In High School"
+		elseif flags.in_high_school then
+			return "📚 In High School"
+		elseif flags.in_school then
+			return "📚 Currently In School"
+		end
+		
+		-- Adult with no education
+		if age >= 18 then
+			return "No Formal Education"
+		end
+		
+		-- Child too young for school
+		if age < 5 then
+			return "Too Young for School"
+		end
+		
 		return "No Formal Education"
 	end
 	
@@ -2086,8 +2231,9 @@ function OccupationScreen:populateJobs()
 			pensionLabel.ZIndex = 83
 			pensionLabel.Parent = retiredCard
 		end
-	-- Current job section (if employed, not in jail, and NOT RETIRED)
-	elseif currentJob and not inJail and not isRetired then
+	-- Current job section (if employed, not in jail, NOT RETIRED, and old enough to work)
+	-- CRITICAL FIX: Children under 12 can NEVER have jobs, so don't show current job card
+	elseif currentJob and not inJail and not isRetired and age >= 12 then
 		local currentSection = Instance.new("Frame")
 		currentSection.Name = "CurrentJobSection"
 		currentSection.Size = UDim2.new(1, 0, 0, 0)
@@ -2104,25 +2250,45 @@ function OccupationScreen:populateJobs()
 		currentLayout.Padding = UDim.new(0, 10)
 		currentLayout.Parent = currentSection
 
-		-- Find current job data - first try local Jobs list by ID
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Promotion Pay Consistency
+		-- User feedback: "The backend promotion system doesn't have the pay right"
+		-- Problem: Local Jobs catalog has BASE salary, but server CurrentJob.salary
+		-- includes all raises and promotions. We must ALWAYS use server's salary!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- First get server job data (authoritative source for salary!)
+		local serverJob = self:getCurrentJobData()
+		local serverSalary = serverJob and serverJob.salary or 0
+		
+		-- Find current job data - try local Jobs list by ID for display info (emoji, etc.)
 		local jobData = nil
 		for _, j in ipairs(Jobs) do
 			if j.id == currentJob then
-				jobData = j
-				log("Found job in local Jobs list:", j.name)
+				-- CRITICAL: Clone the job data and use SERVER'S salary, not catalog base salary
+				jobData = {
+					id = j.id,
+					name = serverJob and serverJob.title or j.name, -- Server may have custom title
+					company = serverJob and serverJob.company or j.company,
+					emoji = j.emoji,
+					salary = serverSalary > 0 and serverSalary or j.salary, -- ALWAYS prefer server salary!
+					minAge = j.minAge,
+					requirement = j.requirement,
+					category = j.category,
+				}
+				log("Found job in local Jobs list:", jobData.name, "Server Salary:", serverSalary, "Catalog Salary:", j.salary, "Using:", jobData.salary)
 				break
 			end
 		end
 
 		-- If not found in local list, use server's job data directly
 		if not jobData then
-			local serverJob = self:getCurrentJobData()
 			if serverJob then
-				log("Using server job data - ID:", serverJob.id, "Title:", serverJob.title)
+				log("Using server job data - ID:", serverJob.id, "Title:", serverJob.title, "Salary:", serverJob.salary)
 				-- Create a compatible job object from server data
 				jobData = {
 					id = serverJob.id or "unknown",
-					name = serverJob.title or "Job",
+					name = serverJob.title or serverJob.name or "Job",
 					company = serverJob.company or "Company",
 					emoji = "💼", -- Default emoji
 					salary = serverJob.salary or 0,
@@ -2461,9 +2627,11 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	-- CRITICAL UI FIX: Proper card sizing (don't over-shrink!)
 	-- CRITICAL FIX #USER-5: Taller cards for entertainment careers (show stats)
 	-- ═══════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX #MOBILE-2: Increased card heights to prevent button overflow
+	-- after fixing the button row spacing issue
 	local isEntertainment = self:isEntertainmentCareer()
 	local entertainmentBonus = isEntertainment and (IS_TINY_PHONE and 45 or (IS_SMALL_PHONE and 55 or 70)) or 0
-	local CARD_HEIGHT = (IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 340)) + entertainmentBonus
+	local CARD_HEIGHT = (IS_TINY_PHONE and 320 or (IS_SMALL_PHONE and 340 or 360)) + entertainmentBonus
 	local ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 60)
 	local MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 14)
 	local TITLE_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
@@ -2979,15 +3147,20 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 2: Promotion, Raise, Quit
+	-- CRITICAL UI FIX #MOBILE-1: Fixed button bunching on mobile/tablets
+	-- Issue: Row 2 Y position was only 7px below Row 1 on tiny phones (162-155)
+	-- Fix: Row 2 Y = Row 1 Y + Row 1 height + proper gap
 	-- ═══════════════════════════════════════════════════════════
-	-- MOBILE FIX: Responsive row 2 sizing
-	local actionRow2Height = IS_SMALL_PHONE and 30 or 40
-	local actionRow2YPos = IS_SMALL_PHONE and 212 or 270
-	local row2BtnTextSize = IS_SMALL_PHONE and 9 or 12
+	local actionRow2Height = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 34 or 40)
+	-- CRITICAL FIX: Calculate proper Y position based on row 1 position + height + gap
+	-- Note: actionRow1YPos already includes entertainmentStatsYOffset, so don't add it again
+	local row2Gap = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 12)
+	local actionRow2YPos = actionRow1YPos + actionBtnHeight + row2Gap
+	local row2BtnTextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 13)
 
 	local actionRow2 = Instance.new("Frame")
-	actionRow2.Size = UDim2.new(1, IS_SMALL_PHONE and -16 or -28, 0, actionRow2Height)
-	actionRow2.Position = UDim2.new(0, IS_SMALL_PHONE and 8 or 14, 0, actionRow2YPos)
+	actionRow2.Size = UDim2.new(1, IS_TINY_PHONE and -12 or (IS_SMALL_PHONE and -16 or -28), 0, actionRow2Height)
+	actionRow2.Position = UDim2.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 14), 0, actionRow2YPos)
 	actionRow2.BackgroundTransparency = 1
 	actionRow2.ZIndex = 84
 	actionRow2.Parent = card
@@ -2995,23 +3168,23 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	local actionLayout2 = Instance.new("UIListLayout")
 	actionLayout2.FillDirection = Enum.FillDirection.Horizontal
 	actionLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	actionLayout2.Padding = UDim.new(0, IS_SMALL_PHONE and 4 or 6)
+	actionLayout2.Padding = UDim.new(0, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 	actionLayout2.Parent = actionRow2
 
 	-- Request Promotion button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestPromo = hasPromotion and promotionProgress >= 80
 	local promoBtn = Instance.new("TextButton")
-	promoBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
+	promoBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	promoBtn.BackgroundColor3 = canRequestPromo and C.Purple or C.Gray300
 	promoBtn.Font = F.Button
 	promoBtn.TextSize = row2BtnTextSize
 	promoBtn.TextColor3 = canRequestPromo and C.White or C.Gray500
-	promoBtn.Text = IS_SMALL_PHONE and "🚀" or "🚀 Promote"
+	promoBtn.Text = IS_TINY_PHONE and "🚀 Promo" or (IS_SMALL_PHONE and "🚀 Promote" or "🚀 Promote")
 	promoBtn.AutoButtonColor = false
 	promoBtn.LayoutOrder = 1
 	promoBtn.ZIndex = 85
 	promoBtn.Parent = actionRow2
-	UI.corner(promoBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(promoBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 
 	if canRequestPromo then
 		-- Button shadow - MOBILE FIX
@@ -3059,14 +3232,14 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 		end)
 	end
 
-	-- CRITICAL FIX: Always show text on buttons
+	-- CRITICAL FIX: Always show text on buttons with appropriate sizing
 	local raiseBtnText = IS_TINY_PHONE and "💰 Raise" or "💰 Raise"
 	local quitBtnText = IS_TINY_PHONE and "🚪 Quit" or "🚪 Quit"
 	
 	-- Request Raise button (CRITICAL FIX: premium styling + loading state) - MOBILE FIX
 	local canRequestRaise = performance >= 60 and raises < 5
 	local raiseBtn = Instance.new("TextButton")
-	raiseBtn.Size = UDim2.new(0.32, 0, 0, actionRow2Height)
+	raiseBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	raiseBtn.BackgroundColor3 = canRequestRaise and C.Amber or C.Gray300
 	raiseBtn.Font = F.Button
 	raiseBtn.TextSize = row2BtnTextSize
@@ -3076,7 +3249,7 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	raiseBtn.LayoutOrder = 2
 	raiseBtn.ZIndex = 85
 	raiseBtn.Parent = actionRow2
-	UI.corner(raiseBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(raiseBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 
 	if canRequestRaise then
 		-- Button shadow - MOBILE FIX
@@ -3124,19 +3297,18 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	end
 
 	-- Quit Job button (CRITICAL FIX: premium styling with shadow + hover) - MOBILE FIX
-	local quitBtnHeight = IS_SMALL_PHONE and 30 or 40
 	local quitBtn = Instance.new("TextButton")
-	quitBtn.Size = UDim2.new(0.32, 0, 0, quitBtnHeight)
+	quitBtn.Size = UDim2.new(0.30, -4, 0, actionRow2Height)
 	quitBtn.BackgroundColor3 = C.Red
 	quitBtn.Font = F.Button
-	quitBtn.TextSize = IS_SMALL_PHONE and 10 or 12
+	quitBtn.TextSize = row2BtnTextSize
 	quitBtn.TextColor3 = C.White
 	quitBtn.Text = quitBtnText
 	quitBtn.AutoButtonColor = false
 	quitBtn.LayoutOrder = 3
 	quitBtn.ZIndex = 85
 	quitBtn.Parent = actionRow2
-	UI.corner(quitBtn, IS_SMALL_PHONE and 8 or 10)
+	UI.corner(quitBtn, IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10))
 	
 	-- Button shadow
 	local quitBtnShadow = Instance.new("Frame")
@@ -3148,17 +3320,17 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	quitBtnShadow.Parent = quitBtn
 	UI.corner(quitBtnShadow, IS_SMALL_PHONE and 8 or 10)
 
-	-- MOBILE FIX: Responsive hover sizes
-	local quitHoverHeight = quitBtnHeight + 4
+	-- MOBILE FIX: Responsive hover sizes (use actionRow2Height which is the button height)
+	local quitHoverHeight = (actionRow2Height or 40) + 4
 	quitBtn.MouseEnter:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
-			Size = UDim2.new(0.32, 0, 0, quitHoverHeight),
+			Size = UDim2.new(0.30, -4, 0, quitHoverHeight),
 			BackgroundColor3 = C.RedDark 
 		})
 	end)
 	quitBtn.MouseLeave:Connect(function()
 		UI.tween(quitBtn, TweenInfo.new(0.12), { 
-			Size = UDim2.new(0.32, 0, 0, quitBtnHeight),
+			Size = UDim2.new(0.30, -4, 0, actionRow2Height or 40),
 			BackgroundColor3 = C.Red 
 		})
 	end)
@@ -3619,11 +3791,12 @@ function OccupationScreen:createLockedJobCard(parent, job, order, lockReason)
 		local player = Players.LocalPlayer
 		
 		-- Use appropriate gamepass ID based on lockReason
+		-- CRITICAL FIX: Use correct gamepass IDs from LifeBackend
 		local gamepassId
 		if lockReason == "celebrity" then
-			gamepassId = 1071247916  -- Celebrity gamepass ID
+			gamepassId = 1626461980  -- CORRECT Celebrity gamepass ID
 		else
-			gamepassId = 1071247917  -- Mafia gamepass ID
+			gamepassId = 1626238769  -- CORRECT Mafia gamepass ID
 		end
 		
 		pcall(function()
@@ -3916,14 +4089,45 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 		diffText = "Easy"
 	end
 
-	-- Requirements row (age + difficulty badge) - SCALED
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Requirements row - difficulty badge was overlapping text
+	-- User feedback: "THE TEXT UNDER THE JOBS LIKE THAT SAYS NEED BACHELOR DEGREE 
+	-- THE LIKE EASY OR MEDIUM OR HARD IS OVER THE TEXT"
+	-- Solution: Put difficulty badge on RIGHT side of card, not next to requirement text
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	local reqY = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 58 or 66)
+	
+	-- Difficulty badge on RIGHT side (no overlap with text)
+	local diffBadgeWidth = IS_TINY_PHONE and 38 or (IS_SMALL_PHONE and 45 or 55)
+	local diffBadgeHeight = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 16 or 18)
+	local diffBadge = Instance.new("Frame")
+	diffBadge.Size = UDim2.new(0, diffBadgeWidth, 0, diffBadgeHeight)
+	diffBadge.AnchorPoint = Vector2.new(1, 0)  -- Anchor to RIGHT
+	diffBadge.Position = UDim2.new(1, -(IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 60 or 90)), 0, reqY)
+	diffBadge.BackgroundColor3 = canApply and diffColor:Lerp(C.White, 0.7) or C.Gray100
+	diffBadge.ZIndex = 85
+	diffBadge.Parent = card
+	UI.pill(diffBadge)
+	
+	local diffLabel = Instance.new("TextLabel")
+	diffLabel.Size = UDim2.fromScale(1, 1)
+	diffLabel.BackgroundTransparency = 1
+	diffLabel.Font = F.Medium
+	diffLabel.TextSize = IS_TINY_PHONE and 7 or (IS_SMALL_PHONE and 8 or 9)
+	diffLabel.TextColor3 = canApply and diffColor:Lerp(C.Black, 0.3) or C.Gray500
+	diffLabel.Text = diffText
+	diffLabel.ZIndex = 86
+	diffLabel.Parent = diffBadge
+	
+	-- Requirement text (now has more space - doesn't overlap with difficulty badge)
 	local reqLabel = Instance.new("TextLabel")
-	reqLabel.Size = UDim2.new(0.3, 0, 0, IS_TINY_PHONE and 14 or 18)
+	reqLabel.Size = UDim2.new(0.55, 0, 0, IS_TINY_PHONE and 14 or 18)  -- Wider to use space
 	reqLabel.Position = UDim2.new(0, TEXT_START, 0, reqY)
 	reqLabel.BackgroundTransparency = 1
 	reqLabel.Font = F.Body
 	reqLabel.TextSize = REQ_SIZE
+	reqLabel.TextTruncate = Enum.TextTruncate.AtEnd  -- Truncate if too long
 	-- CRITICAL FIX #351: Amber color for experience requirements to show they're unlockable
 	local reqColor = C.Gray400
 	if not canApply then
@@ -3938,30 +4142,6 @@ function OccupationScreen:createJobCard(parent, job, order, age, eduLevel)
 	reqLabel.Text = reqText
 	reqLabel.ZIndex = 85
 	reqLabel.Parent = card
-	
-	-- Difficulty badge (compact, colored) - SCALED
-	-- CRITICAL: On tiny phones, hide difficulty to save space
-	if not IS_TINY_PHONE then
-		local diffBadgeWidth = IS_SMALL_PHONE and 45 or 55
-		local diffBadgeHeight = IS_SMALL_PHONE and 16 or 18
-		local diffBadge = Instance.new("Frame")
-		diffBadge.Size = UDim2.new(0, diffBadgeWidth, 0, diffBadgeHeight)
-		diffBadge.Position = UDim2.new(0, TEXT_START + (IS_SMALL_PHONE and 70 or 90), 0, reqY + (IS_SMALL_PHONE and 1 or 0))
-		diffBadge.BackgroundColor3 = canApply and diffColor:Lerp(C.White, 0.7) or C.Gray100
-		diffBadge.ZIndex = 85
-		diffBadge.Parent = card
-		UI.pill(diffBadge)
-		
-		local diffLabel = Instance.new("TextLabel")
-		diffLabel.Size = UDim2.fromScale(1, 1)
-		diffLabel.BackgroundTransparency = 1
-		diffLabel.Font = F.Medium
-		diffLabel.TextSize = IS_SMALL_PHONE and 8 or 9
-		diffLabel.TextColor3 = canApply and diffColor:Lerp(C.Black, 0.3) or C.Gray500
-		diffLabel.Text = diffText
-		diffLabel.ZIndex = 86
-		diffLabel.Parent = diffBadge
-	end
 
 	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly) - SCALED
 	local btnShadow
@@ -5387,6 +5567,9 @@ function OccupationScreen:createResultModal()
 end
 
 function OccupationScreen:applyForJob(jobId)
+	-- CRITICAL FIX: Enhanced action logging for debugging
+	logAction("APPLY_JOB", jobId, "Apply for Job", string.format("Age: %d | Money: %d", self:getAge(), self:getMoney()))
+	
 	log("=== APPLYING FOR JOB ===")
 	log("Job ID:", jobId)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
@@ -5411,7 +5594,27 @@ function OccupationScreen:applyForJob(jobId)
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
-		self:showResult(result.success, result.message, result.success and "Hired!" or "Rejected")
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Handle gamepass requirement response
+		-- User feedback: "GAMEPASS OPTIONS IN CHOICES ACTUALLY CAUSES GAMEPASS PURCHASE TO POPUP"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if result.requiresGamepass and result.gamepassId then
+			-- Show message then prompt gamepass purchase
+			self:showResult(false, result.message, "🌟 Premium Career")
+			
+			-- Prompt gamepass purchase after a brief delay
+			task.delay(0.5, function()
+				local MarketplaceService = game:GetService("MarketplaceService")
+				local Players = game:GetService("Players")
+				local player = Players.LocalPlayer
+				pcall(function()
+					MarketplaceService:PromptGamePassPurchase(player, result.gamepassId)
+				end)
+			end)
+		else
+			self:showResult(result.success, result.message, result.success and "Hired!" or "Rejected")
+		end
 	else
 		logWarn("Server returned nil!")
 		self:showResult(false, "Server error. Please try again.", "X")
@@ -6022,6 +6225,14 @@ end
 
 function OccupationScreen:showCareerInfoModal()
 	log("=== SHOWING CAREER INFO MODAL ===")
+	
+	-- CRITICAL FIX: Don't show career info modal if player doesn't have a job
+	local currentJob = self:getCurrentJob()
+	if not currentJob then
+		log("No current job - cannot show career info modal")
+		self:showResult(false, "You need to have a job to view career info!", "📋")
+		return
+	end
 
 	-- Create modal if doesn't exist
 	if not self.careerInfoModal then
@@ -6582,15 +6793,35 @@ function OccupationScreen:show()
 	log("=== SHOWING OccupationScreen ===")
 	log("Current state - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 	
-	-- CRITICAL FIX: Clear cached career info if player is unemployed (fired/quit)
-	-- This ensures the UI shows correct state after being fired
-	if not self:getCurrentJob() then
-		log("No current job - clearing cached career info to ensure fresh UI")
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #3: COMPREHENSIVE cache clearing when screen opens
+	-- This ensures the UI shows correct state after death/new life/quit/fire
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local age = self:getAge()
+	local hasJob = self:getCurrentJob()
+	
+	-- CRITICAL FIX: Check for new life or young age - FORCE clear everything
+	-- Age 0-11 means new life or child who can't work
+	if age <= 11 then
+		log("Young age detected (age " .. tostring(age) .. ") - FORCE clearing all cached data")
 		self.careerInfo = nil
+		self.jobEligibility = nil
+		self.educationInfo = nil
+	elseif not hasJob then
+		-- No job but older age - still clear job-related caches
+		log("No current job - FORCE clearing ALL cached career/job data")
+		self.careerInfo = nil
+		self.jobEligibility = nil
 	end
 	
+	-- CRITICAL FIX: Always clear and refresh info bar
 	self:updateInfoBar()
+	
+	-- CRITICAL FIX: Force tab repopulation every time screen opens
+	-- This ensures stale UI is never shown
 	self:switchTab(self.currentTab)
+	
 	UI.slideInScreen(self.overlay, "right")
 	self.isVisible = true
 	log("✅ OccupationScreen is now visible")

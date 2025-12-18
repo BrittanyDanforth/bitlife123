@@ -48,7 +48,7 @@ FamilyEvents.events = {
 						state.Flags.expecting = true
 						-- CRITICAL FIX: Use state.ChildCount not state.Stats.ChildCount for consistency
 						state.ChildCount = (state.ChildCount or 0) + 1
-						state:AddFeed("🤰 Pregnant! Excited and terrified! Ready or not!")
+						state:AddFeed("👶 Expecting a baby! Excited and nervous! Ready or not!")
 					end
 				end,
 			},
@@ -62,7 +62,7 @@ FamilyEvents.events = {
 				state.ChildCount = (state.ChildCount or 0) + 1
 			end,
 		},
-			{ text = "False alarm", effects = { Happiness = 2 }, feedText = "🤰 Thought we were pregnant. Mixed emotions about negative test." },
+			{ text = "False alarm", effects = { Happiness = 2 }, feedText = "👶 Thought we were expecting. Mixed emotions about the test results." },
 		},
 	},
 	{
