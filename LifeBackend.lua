@@ -8788,6 +8788,85 @@ function LifeBackend:resetLife(player)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	newState.JobApplications = {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #18: Clear homeless and bum-life flags
+	-- These MUST be cleared or new life starts homeless!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.homeless = nil
+	newState.Flags.bum_life = nil
+	newState.Flags.at_risk_homeless = nil
+	newState.Flags.using_shelter = nil
+	newState.Flags.has_temp_housing = nil
+	newState.Flags.desperate_criminal = nil
+	newState.Flags.desperate_job_hunt = nil
+	newState.Flags.recovering = nil
+	newState.Flags.in_recovery_program = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #19: Clear ALL story path flags
+	-- Story paths should NOT persist across lives!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.ActivePath = nil
+	newState.StoryPathProgress = nil
+	newState.Flags.pursuing_fame = nil
+	newState.Flags.pursuing_politics = nil
+	newState.Flags.pursuing_crime = nil
+	newState.Flags.pursuing_mafia = nil
+	newState.Flags.pursuing_royalty = nil
+	newState.Flags.crime_path_active = nil
+	newState.Flags.mafia_path_active = nil
+	newState.Flags.criminal_aspirant = nil
+	newState.Flags.mafia_aspirant = nil
+	newState.Flags.royal_aspirant = nil
+	newState.Flags.political_aspirant = nil
+	newState.Flags.interested_in_crime = nil
+	newState.Flags.interested_in_politics = nil
+	newState.Flags.interested_in_royalty = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #20: Clear crime-related flags
+	-- Criminal history should NOT persist across lives!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.petty_criminal = nil
+	newState.Flags.street_smart = nil
+	newState.Flags.vandal = nil
+	newState.Flags.shoplifter = nil
+	newState.Flags.delinquent = nil
+	newState.Flags.criminal_tendencies = nil
+	newState.Flags.troublemaker = nil
+	newState.Flags.street_hustler = nil
+	newState.Flags.criminal_path = nil
+	newState.Flags.criminal = nil
+	newState.Flags.criminal_connections = nil
+	newState.Flags.violent_crimes = nil
+	newState.Flags.thief = nil
+	newState.Flags.burglar = nil
+	newState.Flags.first_hustle_done = nil
+	newState.Flags.has_crew = nil
+	newState.Flags.crime_reputation = nil
+	newState.Flags.is_underboss = nil
+	newState.Flags.is_crime_boss = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #21: Clear royalty-related flags (preserve gamepass ownership)
+	-- Royalty STATUS should not persist, but gamepass ownership does
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.is_royalty = nil
+	newState.Flags.royal_birth = nil
+	newState.Flags.royal_duties = nil
+	newState.Flags.embraced_royalty = nil
+	newState.Flags.married_royalty = nil
+	-- Reset RoyalState but don't remove it (createInitialState may set up royal birth)
+	if not (newState.RoyalState and newState.RoyalState.isRoyal) then
+		newState.RoyalState = {
+			isRoyal = false,
+			title = nil,
+			dutiesCompleted = 0,
+			publicApproval = 50,
+			heirs = {},
+		}
+	end
+	
 	-- Store the new state
 	self.playerStates[player] = newState
 	
