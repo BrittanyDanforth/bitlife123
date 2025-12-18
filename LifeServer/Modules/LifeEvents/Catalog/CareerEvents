@@ -161,7 +161,8 @@ local events = {
 				feedText = "You're about to make a scene...",
 				-- CRITICAL FIX: Confrontation minigame for office drama!
 				triggerMinigame = "confrontation",
-				minigameOptions = { difficulty = "hard" },
+				-- CRITICAL FIX: Added context and title to prevent "Presidential Debate" showing!
+				minigameOptions = { difficulty = "hard", context = "office_confrontation", title = "😤 OFFICE SHOWDOWN" },
 				onResolve = function(state, minigameResult)
 					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					state.Flags = state.Flags or {}

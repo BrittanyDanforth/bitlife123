@@ -195,6 +195,35 @@ local Paths = {
 			{ id = "turf_war", name = "Turf War", emoji = "⚔️", effect = "Danger!", risk = 80 },
 		}
 	},
+	mafia = {
+		id = "mafia",
+		name = "Mafia Boss",
+		emoji = "🔫",
+		description = "Rise through the ranks of organized crime to become a powerful Mafia Boss!",
+		color = Color3.fromRGB(55, 55, 55),
+		colorPale = Color3.fromRGB(200, 200, 200),
+		colorDark = Color3.fromRGB(30, 30, 30),
+		minAge = 18,
+		requirements = {},
+		-- CRITICAL FIX: Mafia path requires MAFIA gamepass
+		isPremium = true,
+		gamepassKey = "MAFIA",
+		gamepassName = "Mafia Boss Pack",
+		stages = {
+			{ id = "associate", name = "Associate", emoji = "🤵", description = "Prove your loyalty" },
+			{ id = "soldier", name = "Soldier", emoji = "💪", description = "Made member" },
+			{ id = "capo", name = "Capo", emoji = "📋", description = "Lead your own crew" },
+			{ id = "underboss", name = "Underboss", emoji = "🎩", description = "The Boss's right hand" },
+			{ id = "don", name = "The Don", emoji = "👑", description = "Rule the family!" },
+		},
+		actions = {
+			{ id = "collect", name = "Collect Debts", emoji = "💰", effect = "+Money" },
+			{ id = "expand", name = "Expand Influence", emoji = "🏙️", effect = "+Territory", risk = 30 },
+			{ id = "hit", name = "Order a Hit", emoji = "🎯", effect = "Eliminate rival", risk = 50 },
+			{ id = "launder", name = "Launder Money", emoji = "🏦", effect = "+Clean Cash", cost = 50000 },
+			{ id = "war", name = "Declare War", emoji = "⚔️", effect = "Family conflict!", risk = 70 },
+		}
+	},
 	celebrity = {
 		id = "celebrity",
 		name = "Fame & Fortune",
@@ -1366,10 +1395,269 @@ function StoryPathsScreen:createResultModal()
 	end)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Check gamepass ownership before allowing premium paths
+-- ═══════════════════════════════════════════════════════════════════════════════
+function StoryPathsScreen:checkGamepassOwnership(gamepassKey)
+	local CheckGamepass = getRemote("CheckGamepass")
+	if CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer(gamepassKey)
+		end)
+		if success then
+			return owns == true
+		end
+	end
+	return false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Premium BitLife-style purchase prompt (same as ActivitiesScreen)
+-- User feedback: "IT DOESN'T LET ME BUY THE GAMEPASSES IN STORYPATH SCREEN"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function StoryPathsScreen:showGamepassPrompt(gamepassKey, title, description, pathColor)
+	if self.gamepassPromptOverlay then
+		self.gamepassPromptOverlay:Destroy()
+	end
+	
+	-- CRITICAL: Mobile-responsive dimensions
+	local modalWidth = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local modalHeight = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 360)
+	local padX = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 20)
+	local padY = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 14 or 18)
+	local crownSize = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 52 or 64)
+	local titleSz = textSize(IS_TINY_PHONE and 16 or 20)
+	local descSz = textSize(IS_TINY_PHONE and 12 or 14)
+	local btnTextSz = textSize(IS_TINY_PHONE and 14 or 16)
+	local btnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 44 or 50)
+	
+	-- Use path color or default gold
+	local accentColor = pathColor or Color3.fromRGB(255, 200, 50)
+	local accentDark = Color3.fromRGB(
+		math.floor(accentColor.R * 0.8 * 255),
+		math.floor(accentColor.G * 0.8 * 255),
+		math.floor(accentColor.B * 0.8 * 255)
+	)
+	
+	-- Overlay background
+	local overlay = Instance.new("Frame")
+	overlay.Name = "GamepassPromptOverlay"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = C.Black
+	overlay.BackgroundTransparency = 0.35
+	overlay.ZIndex = 200
+	overlay.Parent = self.screenGui
+	self.gamepassPromptOverlay = overlay
+	
+	-- Click outside to close
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 200
+	closeArea.Parent = overlay
+	closeArea.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	-- Premium shadow
+	local shadowOffset = IS_TINY_PHONE and 6 or 10
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(0, modalWidth + shadowOffset, 0, modalHeight + shadowOffset)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, shadowOffset/2, 0.5, shadowOffset/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.65
+	shadow.ZIndex = 201
+	shadow.Parent = overlay
+	UI.corner(shadow, IS_TINY_PHONE and 22 or 28)
+	
+	-- Colored outer shell (premium feel)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = accentColor
+	shell.ZIndex = 202
+	shell.Parent = overlay
+	UI.corner(shell, IS_TINY_PHONE and 20 or 26)
+	
+	-- Stroke for extra premium
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = accentDark
+	shellStroke.Thickness = 2
+	shellStroke.Parent = shell
+	
+	-- White inner card
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(1, -8, 1, -8)
+	inner.Position = UDim2.new(0, 4, 0, 4)
+	inner.BackgroundColor3 = C.White
+	inner.ZIndex = 203
+	inner.Parent = shell
+	UI.corner(inner, IS_TINY_PHONE and 18 or 24)
+	
+	-- Crown/lock icon frame
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, crownSize, 0, crownSize)
+	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
+	iconFrame.Position = UDim2.new(0.5, 0, 0, padY)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(
+		math.floor(accentColor.R * 255 * 0.9 + 25),
+		math.floor(accentColor.G * 255 * 0.9 + 25),
+		math.floor(accentColor.B * 255 * 0.9 + 25)
+	)
+	iconFrame.ZIndex = 204
+	iconFrame.Parent = inner
+	UI.corner(iconFrame, crownSize/2)
+	
+	local iconEmoji = "👑"
+	if gamepassKey == "MAFIA" then iconEmoji = "🔫"
+	elseif gamepassKey == "CELEBRITY" then iconEmoji = "⭐"
+	elseif gamepassKey == "ROYALTY" then iconEmoji = "👑"
+	end
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 34 or 40)
+	iconLabel.Text = iconEmoji
+	iconLabel.ZIndex = 205
+	iconLabel.Parent = iconFrame
+	
+	-- "PREMIUM PATH" badge
+	local badgeFrame = Instance.new("Frame")
+	badgeFrame.Size = UDim2.new(0, IS_TINY_PHONE and 100 or 120, 0, IS_TINY_PHONE and 20 or 24)
+	badgeFrame.AnchorPoint = Vector2.new(0.5, 0)
+	badgeFrame.Position = UDim2.new(0.5, 0, 0, padY + crownSize + 6)
+	badgeFrame.BackgroundColor3 = accentColor
+	badgeFrame.ZIndex = 204
+	badgeFrame.Parent = inner
+	UI.corner(badgeFrame, 12)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Bold
+	badgeLabel.TextSize = textSize(IS_TINY_PHONE and 10 or 12)
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "🔒 PREMIUM PATH"
+	badgeLabel.ZIndex = 205
+	badgeLabel.Parent = badgeFrame
+	
+	-- Title
+	local titleY = padY + crownSize + (IS_TINY_PHONE and 32 or 40)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -padX*2, 0, titleSz + 8)
+	titleLabel.Position = UDim2.new(0, padX, 0, titleY)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = titleSz
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = title
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 204
+	titleLabel.Parent = inner
+	
+	-- Description
+	local descY = titleY + titleSz + (IS_TINY_PHONE and 6 or 12)
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -padX*2, 0, IS_TINY_PHONE and 50 or 70)
+	descLabel.Position = UDim2.new(0, padX, 0, descY)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = descSz
+	descLabel.TextColor3 = C.Gray500
+	descLabel.TextWrapped = true
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
+	descLabel.Text = description
+	descLabel.ZIndex = 204
+	descLabel.Parent = inner
+	
+	-- Buy button
+	local btnGap = IS_TINY_PHONE and 8 or 12
+	local buyBtn = Instance.new("TextButton")
+	buyBtn.Size = UDim2.new(1, -padX*2, 0, btnH)
+	buyBtn.Position = UDim2.new(0, padX, 1, -(btnH*2 + btnGap + padY))
+	buyBtn.BackgroundColor3 = accentColor
+	buyBtn.Font = F.Button
+	buyBtn.TextSize = btnTextSz
+	buyBtn.TextColor3 = C.White
+	buyBtn.Text = "👑 Unlock " .. (gamepassKey == "MAFIA" and "Mafia" or gamepassKey == "CELEBRITY" and "Celebrity" or gamepassKey == "ROYALTY" and "Royalty" or "Premium") .. " Pass"
+	buyBtn.AutoButtonColor = false
+	buyBtn.ZIndex = 204
+	buyBtn.Parent = inner
+	UI.corner(buyBtn, IS_TINY_PHONE and 10 or 14)
+	
+	-- Hover effect
+	buyBtn.MouseEnter:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+	end)
+	buyBtn.MouseLeave:Connect(function()
+		UI.tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+	end)
+	
+	buyBtn.MouseButton1Click:Connect(function()
+		-- Prompt actual Roblox purchase
+		local PromptPurchase = getRemote("PromptGamepass")
+		if PromptPurchase then
+			PromptPurchase:FireServer(gamepassKey)
+		end
+		overlay:Destroy()
+	end)
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(1, -padX*2, 0, btnH - 8)
+	closeBtn.Position = UDim2.new(0, padX, 1, -(btnH - 8 + padY))
+	closeBtn.BackgroundColor3 = C.Gray100
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	closeBtn.TextColor3 = C.Gray500
+	closeBtn.Text = "Maybe Later"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 204
+	closeBtn.Parent = inner
+	UI.corner(closeBtn, IS_TINY_PHONE and 8 or 12)
+	
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray200 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
+	end)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	log("Showing gamepass prompt for:", gamepassKey)
+end
+
 function StoryPathsScreen:startPath(pathId)
 	log("=== STARTING STORY PATH ===")
 	log("Path ID:", pathId)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check gamepass requirements BEFORE calling server
+	-- User feedback: "IT DOESN'T LET ME BUY THE GAMEPASSES IN STORYPATH SCREEN"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local path = Paths[pathId]
+	if path and path.isPremium and path.gamepassKey then
+		local ownsPass = self:checkGamepassOwnership(path.gamepassKey)
+		if not ownsPass then
+			log("Player doesn't own required gamepass:", path.gamepassKey)
+			self:showGamepassPrompt(
+				path.gamepassKey,
+				path.name .. " Requires " .. (path.gamepassName or "Premium Pass"),
+				"Unlock the " .. path.name .. " story path! " .. path.description,
+				path.color
+			)
+			return
+		end
+	end
 
 	if not StartPath then
 		logWarn("StartPath remote not available!")
@@ -1391,6 +1679,18 @@ function StoryPathsScreen:startPath(pathId)
 
 	if result then
 		log("Success:", result.success, "Message:", result.message)
+		
+		-- CRITICAL FIX: If server says we need gamepass, show the prompt
+		if not result.success and result.requiresGamepass then
+			self:showGamepassPrompt(
+				result.gamepassKey or path.gamepassKey,
+				(path and path.name or "This Path") .. " Requires " .. (result.gamepassName or "Premium Pass"),
+				result.message or "Unlock this premium story path!",
+				path and path.color
+			)
+			return
+		end
+		
 		self:showResult(result.success, result.message, result.success and "Started!" or "Failed")
 	else
 		logWarn("Server returned nil!")

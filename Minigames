@@ -504,12 +504,17 @@ function Minigames:startDebate(callback, options)
 	local title = options.title
 	
 	-- Set appropriate title based on context
+	-- CRITICAL FIX: Expanded context handling to prevent "Presidential Debate" from showing incorrectly
 	if title then
 		self.debateStageTitle.Text = title
 	elseif context == "interview" or context == "job" then
 		self.debateStageTitle.Text = "🎤 JOB INTERVIEW"
 	elseif context == "argument" or context == "relationship" then
 		self.debateStageTitle.Text = "💬 HEATED ARGUMENT"
+	elseif context == "cheating_confrontation" then
+		self.debateStageTitle.Text = "💔 CONFRONTATION"
+	elseif context == "office_confrontation" or context == "office" then
+		self.debateStageTitle.Text = "😤 OFFICE SHOWDOWN"
 	elseif context == "exam" or context == "test" or context == "school" then
 		self.debateStageTitle.Text = "📝 EXAM TIME"
 	elseif context == "karaoke" or context == "singing" then
@@ -520,6 +525,14 @@ function Minigames:startDebate(callback, options)
 		self.debateStageTitle.Text = "🏛️ POLITICAL DEBATE"
 	elseif context == "internet" or context == "online" then
 		self.debateStageTitle.Text = "💻 ONLINE ARGUMENT"
+	elseif context == "negotiation" or context == "deal" then
+		self.debateStageTitle.Text = "🤝 NEGOTIATION"
+	elseif context == "court" or context == "legal" or context == "trial" then
+		self.debateStageTitle.Text = "⚖️ COURT BATTLE"
+	elseif context == "family" or context == "relatives" then
+		self.debateStageTitle.Text = "👨‍👩‍👧 FAMILY DRAMA"
+	elseif context == "friendship" or context == "friends" then
+		self.debateStageTitle.Text = "👫 FRIEND DISPUTE"
 	else
 		self.debateStageTitle.Text = "🎤 QUICK THINKING"
 	end
