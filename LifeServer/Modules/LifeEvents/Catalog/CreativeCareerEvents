@@ -1,0 +1,585 @@
+--[[
+	Creative Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Graphic Designer
+	- Art Director
+	- Photographer
+	- Videographer
+	- Journalist
+	- Social Media Manager
+	- Marketing Manager
+]]
+
+local CreativeCareerEvents = {}
+
+local function hasCreativeJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local category = (state.CurrentJob.category or ""):lower()
+	return category == "creative" or jobId:find("designer") or jobId:find("artist") 
+		or jobId:find("photographer") or jobId:find("videographer") or jobId:find("journalist")
+		or jobId:find("marketing") or jobId:find("editor") or jobId:find("creative")
+end
+
+local function isDesigner(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("designer") or jobId:find("art_director")
+end
+
+local function isJournalist(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("journalist") or jobId:find("editor") or jobId:find("reporter")
+end
+
+local function isMarketing(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("marketing") or jobId:find("social_media") or jobId:find("cmo")
+end
+
+CreativeCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DESIGNER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "creative_client_feedback",
+		title = "Client Feedback",
+		emoji = "😬",
+		text = "'Can you make the logo bigger? And use more colors? Also, my wife says it should pop more.'",
+		category = "career_creative",
+		weight = 18,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Make the client happy",
+				effects = { Happiness = -5 },
+				feedText = "The customer is always right...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😬 Compromised but they love it now. That's the job.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😬 Made every change and they STILL weren't happy. Classic.")
+					end
+				end,
+			},
+			{
+				text = "Push back professionally",
+				effects = { Smarts = 2 },
+				feedText = "Explaining design principles...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.respected_creative = true
+						state:AddFeed("😬 Educated them on why the original works. They trusted your expertise!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😬 They got offended. 'I know what I want.' Lost the argument.")
+					end
+				end,
+			},
+			{
+				text = "Create both versions",
+				effects = { Health = -3 },
+				feedText = "Double the work but keeps everyone happy...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("😬 Showed them both. Naturally, they picked yours. Told you so.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_big_campaign",
+		title = "Major Campaign",
+		emoji = "🎯",
+		text = "You're leading the creative for a MAJOR brand campaign. This is make-or-break for your reputation!",
+		category = "career_creative",
+		weight = 15,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take a bold creative risk",
+				effects = {},
+				feedText = "Going for breakthrough creative...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(10000, 50000)
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 25
+						state.Flags = state.Flags or {}
+						state.Flags.award_winning_creative = true
+						state:AddFeed("🎯 CAMPAIGN WENT VIRAL! Industry awards! Your name is everywhere!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎯 Campaign did okay. Bold idea didn't quite land but no disaster.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🎯 Campaign flopped. Client furious. 'Too risky.' Getting blamed.")
+					end
+				end,
+			},
+			{
+				text = "Play it safe",
+				effects = {},
+				feedText = "Reliable and effective...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:AddFeed("🎯 Campaign performed well! Metrics hit! Client happy!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎯 Forgettable campaign. 'It was fine.' Not what you want to hear.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_deadline_crunch",
+		title = "Deadline Crunch",
+		emoji = "⏰",
+		text = "Impossible deadline. Client added 50% more work. Want it done YESTERDAY. The creative life.",
+		category = "career_creative",
+		weight = 16,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Pull an all-nighter",
+				effects = { Health = -10, Happiness = -5 },
+				feedText = "Coffee. Lots of coffee...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("⏰ Made it! Delivered on time! Collapsed after but did it!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⏰ Delivered late anyway. Quality suffered. Was it worth it?")
+					end
+				end,
+			},
+			{
+				text = "Push back on scope",
+				effects = { Smarts = 2 },
+				feedText = "Setting realistic expectations...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⏰ They agreed to reduce scope. Work-life balance preserved!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⏰ They found another agency. Lost the client. Boundaries cost.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_portfolio_recognition",
+		title = "Portfolio Recognition",
+		emoji = "🏆",
+		text = "Your portfolio has been selected for a prestigious design/creative annual! Industry recognition!",
+		category = "career_creative",
+		weight = 12,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Celebrate this achievement!",
+				effects = { Happiness = 20 },
+				feedText = "Your work is being recognized!",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 20
+					state.Flags = state.Flags or {}
+					state.Flags.recognized_creative = true
+					state:AddFeed("🏆 Published in the annual! Your peers respect your work! Career milestone!")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- JOURNALIST EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "creative_breaking_story",
+		title = "Breaking Story",
+		emoji = "📰",
+		text = "You've stumbled onto a major scoop! This story could make your career - but there are risks...",
+		category = "career_creative",
+		weight = 14,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isJournalist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Publish immediately",
+				effects = {},
+				feedText = "Breaking news!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 35
+						state.Flags = state.Flags or {}
+						state.Flags.award_winning_journalist = true
+						state:AddFeed("📰 STORY BROKE BIG! National attention! Journalism award nomination!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📰 Story got traction. Good work. Career boost.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("📰 Fact-checking errors. Retraction needed. Reputation damaged.")
+					end
+				end,
+			},
+			{
+				text = "Investigate more thoroughly",
+				effects = { Smarts = 3 },
+				feedText = "Getting all the facts...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 20)
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:AddFeed("📰 Bulletproof story! Deep investigation! Can't be disputed!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📰 Another outlet scooped you while you verified. Story's cold now.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_source_pressure",
+		title = "Pressure to Reveal Source",
+		emoji = "🤐",
+		text = "Lawyers are demanding you reveal your confidential source. Your career vs. journalistic ethics.",
+		category = "career_creative",
+		weight = 10,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isJournalist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Protect your source",
+				effects = { Smarts = 5 },
+				feedText = "Journalistic integrity...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.principled_journalist = true
+						state:AddFeed("🤐 Held the line. Source protected. Your credibility is rock solid.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🤐 Contempt of court. Jail time. Worth it for principles?")
+					end
+				end,
+			},
+			{
+				text = "Cooperate with authorities",
+				effects = { Happiness = -10 },
+				feedText = "Self-preservation...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", -5)
+					state.Flags = state.Flags or {}
+					state.Flags.burned_source = true
+					state:AddFeed("🤐 Source revealed. They're in trouble now. No one will trust you with sensitive info again.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MARKETING EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "creative_viral_campaign",
+		title = "Viral Marketing",
+		emoji = "📱",
+		text = "Your social media campaign is EXPLODING! Millions of impressions! Marketing dream!",
+		category = "career_creative",
+		weight = 14,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isMarketing,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Double down with more content",
+				effects = {},
+				feedText = "Riding the wave!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(20000, 80000)
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 30
+						state:AddFeed("📱 MASSIVE ROI! Campaign broke company records! Bonus incoming!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📱 Momentum faded. Still a win but didn't maximize it.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_pr_crisis",
+		title = "PR Crisis",
+		emoji = "🔥",
+		text = "Social media disaster! Brand is getting roasted! You need to fix this NOW!",
+		category = "career_creative",
+		weight = 14,
+		minAge = 22, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isMarketing,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Craft a sincere apology",
+				effects = { Smarts = 3 },
+				feedText = "Damage control...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🔥 Apology went well! Crisis managed! You're the hero!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🔥 Apology made it worse. 'Corporate speak!' Getting worse.")
+					end
+				end,
+			},
+			{
+				text = "Stay silent and wait it out",
+				effects = {},
+				feedText = "The internet has short memory...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🔥 It blew over. People forgot. Crisis averted by doing nothing.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🔥 Silence was seen as not caring. Made it much worse.")
+					end
+				end,
+			},
+			{
+				text = "Lean into it with humor",
+				effects = {},
+				feedText = "If you can't beat 'em...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🔥 Self-aware response went VIRAL in a good way! Genius move!")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🔥 Joke fell flat. 'They're not taking this seriously.' Disaster.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_influencer_partnership",
+		title = "Influencer Deal",
+		emoji = "🤳",
+		text = "You've been offered a partnership with a major influencer for your brand. Big reach, big cost.",
+		category = "career_creative",
+		weight = 12,
+		minAge = 22, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isMarketing,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Sign them up!",
+				effects = {},
+				feedText = "Influencer marketing FTW...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(10000, 40000)
+						state:AddFeed("🤳 Partnership KILLED IT! Sales up 40%! ROI through the roof!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🤳 Decent results. Not amazing. Hard to measure influencer impact.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🤳 Influencer posted something controversial. Brand associated with drama. Nightmare.")
+					end
+				end,
+			},
+			{
+				text = "Pass - focus on organic growth",
+				effects = { Smarts = 2 },
+				feedText = "Influencer marketing is a bubble...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🤳 Sticking to fundamentals. Slower but more sustainable.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_freelance_offer",
+		title = "Freelance Opportunity",
+		emoji = "💼",
+		text = "A client wants you to do a big project on the side. Great money but might conflict with your day job.",
+		category = "career_creative",
+		weight = 14,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the freelance gig",
+				effects = { Health = -5 },
+				feedText = "Moonlighting...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local payment = math.random(5000, 20000)
+					
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + payment
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.freelance_hustle = true
+						state:AddFeed(string.format("💼 Freelance completed! $%d earned! Worth the late nights!", payment))
+					else
+						state.Money = (state.Money or 0) + payment
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed(string.format("💼 Got paid $%d but boss found out. Awkward conversation incoming.", payment))
+					end
+				end,
+			},
+			{
+				text = "Stay loyal to your employer",
+				effects = { Happiness = 3 },
+				feedText = "Focus on the day job...",
+				onResolve = function(state)
+					state:AddFeed("💼 Passed on it. Work-life balance maintained. Probably the right call.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "creative_imposter_syndrome",
+		title = "Imposter Syndrome",
+		emoji = "😰",
+		text = "Everyone thinks you're talented but you feel like a fraud. When will they figure out you're not that good?",
+		category = "career_creative",
+		weight = 15,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasCreativeJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Push through - fake it til you make it",
+				effects = {},
+				feedText = "Acting confident...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("😰 Realized everyone feels this way. You're actually good. Own it!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😰 Made a mistake. Confirmed your fears. Spiral continues.")
+					end
+				end,
+			},
+			{
+				text = "Talk to a therapist",
+				effects = { Smarts = 3 },
+				feedText = "Getting help...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 15)
+					state:ModifyStat("Health", 5)
+					state:AddFeed("😰 Therapy helping! Understanding the root. You ARE talented. Working through it.")
+				end,
+			},
+		},
+	},
+}
+
+return CreativeCareerEvents

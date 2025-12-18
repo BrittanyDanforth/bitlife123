@@ -1,0 +1,1159 @@
+--[[
+	ServiceCareerEvents.lua
+	
+	MASSIVE career events for Service Industry workers:
+	- Waiters/Waitresses, Bartenders, Baristas
+	- Hotel Staff, Flight Attendants, Tour Guides
+	- Personal Trainers, Cruise Ship Staff
+	
+	All events use randomized outcomes for variety!
+]]
+
+local ServiceCareerEvents = {}
+
+local CATEGORY = "career_service"
+
+ServiceCareerEvents.events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- WAITER/SERVER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "server_celebrity_table",
+		title = "🍽️ Celebrity Customer",
+		emoji = "🍽️",
+		text = "A famous celebrity just sat in your section. Everyone's watching how you handle it.",
+		question = "How do you serve them?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 16, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "waiter", "server" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Professional but memorable service",
+				effects = {},
+				feedText = "Serving with style...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local tip = math.random(200, 500)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.served_celebrity = true
+						state:AddFeed(string.format("🍽️ They loved you! $%d tip and a photo together!", tip))
+					else
+						local tip = math.random(50, 100)
+						state.Money = (state.Money or 0) + tip
+						state:AddFeed(string.format("🍽️ Standard service. $%d tip. They're just people after all.", tip))
+					end
+				end,
+			},
+			{
+				text = "Ask for a selfie",
+				effects = {},
+				feedText = "Being a fan...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🍽️ They were cool about it! Photo goes viral!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🍽️ They complained to management. No tip. Got written up.")
+					end
+				end,
+			},
+			{
+				text = "Pretend you don't recognize them",
+				effects = { Smarts = 2 },
+				feedText = "Playing it cool...",
+				onResolve = function(state)
+					local tip = math.random(100, 300)
+					state.Money = (state.Money or 0) + tip
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.discreet_server = true
+					state:AddFeed(string.format("🍽️ They appreciated not being treated special. $%d tip for 'respecting privacy'.", tip))
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "server_rude_customer",
+		title = "😤 Nightmare Table",
+		emoji = "😤",
+		text = "Table 7 is impossible. Complaints about everything, rude to staff, sending food back.",
+		question = "How do you handle them?",
+		category = CATEGORY,
+		weight = 18,
+		minAge = 16, maxAge = 50,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "waiter", "server" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Kill them with kindness",
+				effects = { Happiness = -5 },
+				feedText = "Staying positive...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local tip = math.random(30, 80)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.patient_server = true
+						state:AddFeed(string.format("😤 They eventually calmed down. $%d tip. Exhausting but handled.", tip))
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 They stiffed you on the tip. Some people just suck.")
+					end
+				end,
+			},
+			{
+				text = "Get the manager involved",
+				effects = {},
+				feedText = "Calling for backup...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😤 Manager comped their meal to shut them up. Not your problem anymore.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😤 Manager blamed you for not handling it. Unfair but that's the industry.")
+					end
+				end,
+			},
+			{
+				text = "Stand up for yourself",
+				effects = {},
+				feedText = "Drawing the line...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("😤 You called out their rudeness. They actually apologized! Rare win.")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 They complained but manager had your back. Satisfying.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("😤 Got in trouble with management. Worth it though.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "server_big_party",
+		title = "🎉 Party of 20",
+		emoji = "🎉",
+		text = "Huge birthday party just walked in. Your section. Potentially huge tip or total chaos.",
+		question = "Ready for the challenge?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "waiter", "server" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take it solo - more tips for me",
+				effects = { Health = -5 },
+				feedText = "Running around like crazy...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local tip = math.random(150, 350)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.clutch_server = true
+						state:AddFeed(string.format("🎉 CRUSHED IT! $%d in tips! Exhausted but rich!", tip))
+					elseif roll <= 75 then
+						local tip = math.random(50, 100)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed(string.format("🎉 Barely survived. $%d split among split checks.", tip))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🎉 Total disaster. Wrong orders, delays. They complained to corporate.")
+					end
+				end,
+			},
+			{
+				text = "Ask a coworker to help",
+				effects = {},
+				feedText = "Team effort...",
+				onResolve = function(state)
+					local tip = math.random(75, 150)
+					state.Money = (state.Money or 0) + tip
+					state:ModifyStat("Happiness", 8)
+					state.Flags = state.Flags or {}
+					state.Flags.team_player = true
+					state:AddFeed(string.format("🎉 Split the work, split the tips. $%d each. Party was happy!", tip))
+				end,
+			},
+			{
+				text = "Try to pass it to someone else",
+				effects = {},
+				feedText = "Dodging the bullet...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎉 Someone took it. You dodged chaos.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎉 Nobody wanted it. You're stuck with it anyway.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BARTENDER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "bartender_drunk_customer",
+		title = "🍸 Cut Off Time",
+		emoji = "🍸",
+		text = "A customer is clearly too drunk. They're demanding more drinks and getting aggressive.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 16,
+		minAge = 21, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "bartender" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Cut them off politely",
+				effects = {},
+				feedText = "Drawing the line...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.responsible_bartender = true
+						state:AddFeed("🍸 They grumbled but left. Manager thanked you for avoiding liability.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🍸 They made a scene. Security escorted them out. Stressful night.")
+					end
+				end,
+			},
+			{
+				text = "One more won't hurt",
+				effects = {},
+				feedText = "Serving them...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						local tip = math.random(20, 50)
+						state.Money = (state.Money or 0) + tip
+						state:AddFeed(string.format("🍸 They tipped $%d and stumbled home. Got lucky.", tip))
+					else
+						state.Money = (state.Money or 0) - 500
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🍸 They got in an accident. You got fired. Could face charges.")
+					end
+				end,
+			},
+			{
+				text = "Call them a cab instead",
+				effects = { Smarts = 3 },
+				feedText = "🍸 Ordered them an Uber. They thanked you the next day. Good call.",
+				setFlags = { responsible_bartender = true },
+			},
+		},
+	},
+	
+	{
+		id = "bartender_cocktail_competition",
+		title = "🍹 Mixology Contest",
+		emoji = "🍹",
+		text = "Local bar association is hosting a cocktail competition. Winner gets $1000 and industry fame.",
+		question = "Enter the competition?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 21, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "bartender" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Create a unique signature drink",
+				effects = { Happiness = 5 },
+				feedText = "Experimenting with flavors...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.award_winning_bartender = true
+						state:AddFeed("🍹 FIRST PLACE! $1000 and your cocktail is now on the menu!")
+					elseif roll <= 70 then
+						state.Money = (state.Money or 0) + 250
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🍹 Third place! $250 prize. Good exposure!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🍹 Didn't place. Tough competition but learned new techniques.")
+					end
+				end,
+			},
+			{
+				text = "Play it safe with a classic cocktail",
+				effects = {},
+				feedText = "Going traditional...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🍹 Second place with a perfect Old Fashioned! $500 prize!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🍹 Judges wanted creativity. Solid execution though.")
+					end
+				end,
+			},
+			{
+				text = "Skip it - not my thing",
+				effects = { Happiness = 2 },
+				feedText = "🍹 You watched from the crowd. Some impressive drinks out there.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BARISTA EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "barista_latte_art",
+		title = "☕ Latte Art Challenge",
+		emoji = "☕",
+		text = "A coffee influencer wants to feature your shop. They're judging your latte art skills.",
+		question = "Show off your skills?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 16, maxAge = 40,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "barista" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Pour your best work",
+				effects = { Happiness = 5 },
+				feedText = "Creating art in foam...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 15)
+						local bonus = math.random(50, 150)
+						state.Money = (state.Money or 0) + bonus
+						state.Flags = state.Flags or {}
+						state.Flags.latte_artist = true
+						state:AddFeed(string.format("☕ They loved it! Featured on their page! Boss gave you $%d bonus!", bonus))
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("☕ Not your best pour. They said it was 'cute' and moved on.")
+					end
+				end,
+			},
+			{
+				text = "Say you're not ready",
+				effects = { Happiness = -3 },
+				feedText = "☕ You passed. A coworker took the spotlight instead.",
+			},
+			{
+				text = "Try something experimental",
+				effects = {},
+				feedText = "Getting creative...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 20)
+						local bonus = math.random(100, 200)
+						state.Money = (state.Money or 0) + bonus
+						state.Flags = state.Flags or {}
+						state.Flags.coffee_innovator = true
+						state:AddFeed(string.format("☕ THEY WENT VIRAL! Your creation is famous! $%d tip!", bonus))
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("☕ It looked like a blob. They didn't post it.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "barista_rush_hour",
+		title = "⏰ Morning Rush",
+		emoji = "⏰",
+		text = "Monday morning. Line out the door. Three call-outs. It's just you and one trainee.",
+		question = "How do you survive?",
+		category = CATEGORY,
+		weight = 16,
+		minAge = 16, maxAge = 40,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "barista" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Power through - no breaks",
+				effects = { Health = -8 },
+				feedText = "Going full speed...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local tips = math.random(30, 80)
+						state.Money = (state.Money or 0) + tips
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.rush_survivor = true
+						state:AddFeed(string.format("⏰ SURVIVED! $%d in tips! Trainee learned fast!", tips))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⏰ Made a bunch of wrong orders. Complaints filed. Nightmare.")
+					end
+				end,
+			},
+			{
+				text = "Simplify the menu temporarily",
+				effects = { Smarts = 3 },
+				feedText = "Streamlining operations...",
+				onResolve = function(state)
+					local tips = math.random(25, 50)
+					state.Money = (state.Money or 0) + tips
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed(string.format("⏰ No blended drinks until backup arrives. Kept things moving. $%d tips.", tips))
+				end,
+			},
+			{
+				text = "Call in emergency backup",
+				effects = {},
+				feedText = "Calling for help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("⏰ Manager came in. Crisis averted.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⏰ Nobody available. You're on your own.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FLIGHT ATTENDANT EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "flight_attendant_medical_emergency",
+		title = "✈️ Medical Emergency",
+		emoji = "✈️",
+		text = "Passenger is having a medical emergency at 35,000 feet. No doctor on board.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 21, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "flight_attendant" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Follow emergency protocols exactly",
+				effects = {},
+				feedText = "Using your training...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.emergency_hero = true
+						state:AddFeed("✈️ Stabilized them until landing. EMTs said you saved their life!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("✈️ Did everything right but they didn't make it. Not your fault.")
+					end
+				end,
+			},
+			{
+				text = "Ask passengers if anyone has medical training",
+				effects = { Smarts = 2 },
+				feedText = "Seeking help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("✈️ A nurse was in row 15! Together you helped them!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("✈️ No medical professionals. You handled it yourself.")
+					end
+				end,
+			},
+			{
+				text = "Request emergency landing",
+				effects = {},
+				feedText = "Contacting the captain...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("✈️ Emergency landing. Paramedics took over. You did your job.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "flight_attendant_difficult_passenger",
+		title = "😠 Unruly Passenger",
+		emoji = "😠",
+		text = "Passenger is refusing to wear seatbelt, harassing others, and getting aggressive.",
+		question = "How do you handle it?",
+		category = CATEGORY,
+		weight = 16,
+		minAge = 21, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "flight_attendant" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Firmly but calmly enforce rules",
+				effects = {},
+				feedText = "De-escalating...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.de_escalation_pro = true
+						state:AddFeed("😠 They complied eventually. Crisis averted through professionalism.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😠 Had to get the captain involved. They're being met by police on landing.")
+					end
+				end,
+			},
+			{
+				text = "Alert the captain immediately",
+				effects = { Smarts = 2 },
+				feedText = "😠 Captain made an announcement. Passenger is on the no-fly list now.",
+			},
+			{
+				text = "Ask other passengers for help restraining",
+				effects = {},
+				feedText = "Seeking backup...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😠 Two guys helped restrain them. Everyone's safe.")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("😠 Situation got physical. You got hit. Filed assault charges on landing.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "flight_attendant_upgrade",
+		title = "🎁 First Class Favor",
+		emoji = "🎁",
+		text = "A nice passenger's flight was messed up. You could upgrade them to first class... against policy.",
+		question = "Bend the rules?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 21, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "flight_attendant" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Give them the upgrade",
+				effects = {},
+				feedText = "Bending the rules...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local tip = math.random(50, 200)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.kind_attendant = true
+						state:AddFeed(string.format("🎁 They were so grateful! Slipped you $%d and wrote a compliment letter!", tip))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎁 Got caught by lead attendant. Written warning.")
+					end
+				end,
+			},
+			{
+				text = "Follow policy - offer miles instead",
+				effects = { Smarts = 2 },
+				feedText = "🎁 Gave them bonus miles. They understood. Everyone happy.",
+			},
+			{
+				text = "Pretend you don't have authority",
+				effects = { Happiness = -3 },
+				feedText = "🎁 Passed the buck to gate agent. Not your problem.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOTEL STAFF EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hotel_vip_guest",
+		title = "🏨 VIP Arrival",
+		emoji = "🏨",
+		text = "A VIP guest (CEO of major company) is checking in. First impressions are everything.",
+		question = "How do you greet them?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "hotel_front_desk" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Full VIP treatment - name, preferences, upgrade",
+				effects = { Happiness = 5 },
+				feedText = "Rolling out the red carpet...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local tip = math.random(100, 300)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.vip_specialist = true
+						state:AddFeed(string.format("🏨 Impressed! $%d tip and a glowing review mentioning you by name!", tip))
+					else
+						local tip = math.random(20, 50)
+						state.Money = (state.Money or 0) + tip
+						state:AddFeed(string.format("🏨 Standard experience. $%d tip. They're used to this treatment.", tip))
+					end
+				end,
+			},
+			{
+				text = "Treat them like any other guest",
+				effects = {},
+				feedText = "Being professional...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏨 They appreciated being treated normally. No fuss.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🏨 They expected more. Complained about service.")
+					end
+				end,
+			},
+			{
+				text = "Nervously fumble everything",
+				effects = { Happiness = -10 },
+				feedText = "🏨 You were so star-struck you messed up the check-in. Embarrassing.",
+			},
+		},
+	},
+	
+	{
+		id = "hotel_overbooking",
+		title = "📋 Overbooked!",
+		emoji = "📋",
+		text = "Hotel is overbooked. Angry guest with confirmed reservation has no room available.",
+		question = "How do you handle this?",
+		category = CATEGORY,
+		weight = 15,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "hotel_front_desk" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Upgrade them to a suite if available",
+				effects = { Smarts = 3 },
+				feedText = "Finding a solution...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("📋 Suite was available! They went from furious to thrilled!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📋 No suites available. Had to arrange another hotel. Guest unhappy.")
+					end
+				end,
+			},
+			{
+				text = "Offer compensation and nearby hotel",
+				effects = {},
+				feedText = "Damage control...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📋 They accepted the free night voucher. Could have been worse.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📋 They wanted to speak to manager. Wrote a scathing review.")
+					end
+				end,
+			},
+			{
+				text = "Blame the system and apologize profusely",
+				effects = { Happiness = -8 },
+				feedText = "📋 They yelled at you for 20 minutes. Management got involved. Awful night.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PERSONAL TRAINER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "trainer_client_injury",
+		title = "💪 Client Injury",
+		emoji = "💪",
+		text = "A client hurt themselves during your session. They're blaming your instructions.",
+		question = "How do you respond?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "personal_trainer" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Document everything and contact insurance",
+				effects = { Smarts = 3 },
+				feedText = "Covering your bases...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.professional_trainer = true
+						state:AddFeed("💪 Waiver held up. Insurance covered it. You're protected.")
+					else
+						state.Money = (state.Money or 0) - 500
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💪 Still had to pay some out of pocket. Lesson learned about liability.")
+					end
+				end,
+			},
+			{
+				text = "Apologize and offer free sessions",
+				effects = {},
+				feedText = "Making amends...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💪 They appreciated the gesture. Kept them as a client.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💪 They still quit and left a bad review. Can't please everyone.")
+					end
+				end,
+			},
+			{
+				text = "Stand your ground - they didn't follow form",
+				effects = {},
+				feedText = "Defending yourself...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💪 Gym footage showed they ignored your warnings. You're vindicated!")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("💪 Came across as uncaring. Lost several clients over this.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "trainer_celebrity_client",
+		title = "⭐ Celebrity Wants You",
+		emoji = "⭐",
+		text = "A local celebrity wants you as their personal trainer. Big money but demanding schedule.",
+		question = "Take the high-profile client?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 22, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "personal_trainer" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Absolutely - this could change everything",
+				effects = { Happiness = 10 },
+				feedText = "Training a star...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(500, 1500)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.celebrity_trainer = true
+						state:AddFeed(string.format("⭐ They got amazing results! $%d/month and they post about you!", bonus))
+					elseif roll <= 80 then
+						local bonus = math.random(200, 500)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("⭐ Good working relationship. $%d/month. Demanding but worth it.", bonus))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⭐ They're impossible to please. Fired you after 2 weeks. Nightmare.")
+					end
+				end,
+			},
+			{
+				text = "Quote triple my normal rate",
+				effects = { Smarts = 3 },
+				feedText = "Negotiating...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local bonus = math.random(800, 2000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("⭐ They agreed! $%d/month for premium service!", bonus))
+					else
+						state:AddFeed("⭐ Too expensive. They went with someone cheaper.")
+					end
+				end,
+			},
+			{
+				text = "Turn it down - too much pressure",
+				effects = { Happiness = 3 },
+				feedText = "⭐ You value your peace. Passed on the opportunity.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- TOUR GUIDE EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "tour_guide_lost_tourist",
+		title = "🗺️ Tourist Left Behind",
+		emoji = "🗺️",
+		text = "After a stop, you realize one tourist from your group didn't get back on the bus.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "tour_guide" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go back immediately",
+				effects = {},
+				feedText = "Backtracking...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.responsible_guide = true
+						state:AddFeed("🗺️ Found them at the gift shop! Crisis averted. Group was understanding.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🗺️ They had already left in a cab. Angry family filed complaint.")
+					end
+				end,
+			},
+			{
+				text = "Call their cell phone first",
+				effects = { Smarts = 3 },
+				feedText = "🗺️ They answered! They were just in the bathroom. Waiting at the stop.",
+				setFlags = { quick_thinking = true },
+			},
+			{
+				text = "Keep going - they signed a waiver",
+				effects = {},
+				feedText = "Continuing the tour...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🗺️ They figured it out themselves. Complained but no major issue.")
+					else
+						state.Money = (state.Money or 0) - 200
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🗺️ They were a senior citizen. Company is furious. You're on probation.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "tour_guide_bad_weather",
+		title = "🌧️ Weather Disaster",
+		emoji = "🌧️",
+		text = "Sudden storm during your outdoor walking tour. Group is miserable and getting wet.",
+		question = "How do you salvage this?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "tour_guide" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Find indoor alternatives",
+				effects = { Smarts = 3 },
+				feedText = "Adapting the tour...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local tip = math.random(30, 100)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.adaptable_guide = true
+						state:AddFeed(string.format("🌧️ Moved to covered market and museum. Group loved it! $%d tips!", tip))
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🌧️ Did your best. Some complaints but mostly understanding.")
+					end
+				end,
+			},
+			{
+				text = "Push through - embrace the adventure",
+				effects = {},
+				feedText = "Making it fun...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local tip = math.random(50, 150)
+						state.Money = (state.Money or 0) + tip
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🌧️ They said it was the most memorable tour ever! $%d in tips!", tip))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🌧️ Everyone's sick of being wet. Bad reviews incoming.")
+					end
+				end,
+			},
+			{
+				text = "Offer refunds and reschedule",
+				effects = {},
+				feedText = "🌧️ Professional response. They appreciated the option. Good reputation saved.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRUISE SHIP STAFF EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "cruise_passenger_overboard",
+		title = "🚢 Man Overboard!",
+		emoji = "🚢",
+		text = "You witness a passenger fall overboard! This is a life-or-death emergency!",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 8,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 6,
+		oneTime = true,
+		requiresJob = true,
+		requiresJobId = { "cruise_staff" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Sound the alarm immediately",
+				effects = { Smarts = 5 },
+				feedText = "Emergency protocols...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.life_saver = true
+						state:AddFeed("🚢 Ship stopped in time! Rescue team saved them! You're a HERO!")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🚢 Did everything right but... they didn't make it. Traumatic.")
+					end
+				end,
+			},
+			{
+				text = "Throw a life preserver",
+				effects = {},
+				feedText = "Acting fast...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 18)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.quick_reflexes = true
+						state:AddFeed("🚢 Perfect throw! They grabbed it! Rescue came quickly!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚢 It landed near them. Others sounded the alarm. They're okay.")
+					end
+				end,
+			},
+			{
+				text = "Jump in after them",
+				effects = {},
+				feedText = "Being a hero...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Health", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.true_hero = true
+						state:AddFeed("🚢 You saved their life! Captain commended you! News story!")
+					elseif roll <= 70 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🚢 Both of you were rescued. Brave but risky.")
+					else
+						state:ModifyStat("Health", -25)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚢 Current was too strong. You almost drowned. Both rescued but hospitalized.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "cruise_tips_jackpot",
+		title = "💰 Tips Jackpot",
+		emoji = "💰",
+		text = "A wealthy family loved your service all week. They're handing out tips on the last day.",
+		question = "How do you handle it?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "cruise_staff" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Thank them graciously",
+				effects = { Happiness = 10 },
+				feedText = "Accepting gratefully...",
+				onResolve = function(state)
+					local tip = math.random(200, 800)
+					state.Money = (state.Money or 0) + tip
+					state.Flags = state.Flags or {}
+					state.Flags.excellent_service = true
+					state:AddFeed(string.format("💰 $%d tip! They said you made their vacation special!", tip))
+				end,
+			},
+			{
+				text = "Share the tip with coworkers",
+				effects = { Happiness = 8, Smarts = 2 },
+				feedText = "Splitting it fairly...",
+				onResolve = function(state)
+					local tip = math.random(100, 300)
+					state.Money = (state.Money or 0) + tip
+					state.Flags = state.Flags or {}
+					state.Flags.generous_coworker = true
+					state:AddFeed(string.format("💰 Split $%d with the team. Everyone appreciates you!", tip))
+				end,
+			},
+			{
+				text = "Ask for a reference instead",
+				effects = { Smarts = 5 },
+				feedText = "Thinking career...",
+				onResolve = function(state)
+					local tip = math.random(100, 200)
+					state.Money = (state.Money or 0) + tip
+					state.Flags = state.Flags or {}
+					state.Flags.has_reference = true
+					state:AddFeed(string.format("💰 Got $%d PLUS a LinkedIn recommendation from a Fortune 500 exec!", tip))
+				end,
+			},
+		},
+	},
+}
+
+return ServiceCareerEvents

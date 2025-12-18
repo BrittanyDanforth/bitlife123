@@ -1,0 +1,520 @@
+--[[
+	Musician / Music Industry Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Signed Musician
+	- Recording Artist
+	- Popstar
+	- Rock Star
+	- Music Producer
+	- DJ
+]]
+
+local MusicianCareerEvents = {}
+
+-- Helper function to check if player has a music career
+local function hasMusicJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	return jobId:find("musician") or jobId:find("singer") or jobId:find("artist") or 
+		   jobId:find("producer") or jobId:find("dj") or jobId:find("rapper") or
+		   jobCat == "music" or jobCat == "entertainment"
+end
+
+local function isSignedArtist(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("signed") or jobId:find("recording") or jobId:find("popstar") or
+		   jobId:find("rock_star") or (state.Flags and state.Flags.signed_artist)
+end
+
+MusicianCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SIGNED MUSICIAN EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "musician_album_release",
+		title = "🎵 Album Release Day!",
+		emoji = "🎵",
+		text = "Your new album drops at midnight! The entire industry is watching to see if you'll succeed or flop!",
+		category = "career_music",
+		weight = 18,
+		minAge = 16, maxAge = 70,
+		baseChance = 0.55,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Promote heavily on social media",
+				effects = { Health = -3 },
+				feedText = "Going live at midnight...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local sales = math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + sales
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 50
+						state.Flags = state.Flags or {}
+						state.Flags.platinum_album = true
+						state:AddFeed(string.format("🎵 PLATINUM ALBUM! %d streams in first week! You're a superstar!", sales * 100))
+					elseif roll <= 70 then
+						local sales = math.random(100000, 400000)
+						state.Money = (state.Money or 0) + sales
+						state:ModifyStat("Happiness", 10)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🎵 Solid numbers! Critics liked it, fans loved it!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("🎵 Album flopped. Only die-hard fans streamed it. Label is 'disappointed'.")
+					end
+				end,
+			},
+			{
+				text = "Let the music speak for itself",
+				effects = { Happiness = 3 },
+				feedText = "Real ones know...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						local sales = math.random(300000, 1000000)
+						state.Money = (state.Money or 0) + sales
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 30
+						state:AddFeed("🎵 Word of mouth went CRAZY! Album is a sleeper hit!")
+					elseif roll <= 65 then
+						local sales = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + sales
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎵 Modest sales. Core fans appreciate it. Not mainstream though.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎵 Nobody knew it came out. Should have promoted it!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_label_pressure",
+		title = "Label Demands Hit Song",
+		emoji = "💼",
+		text = "Your record label is pressuring you to make a 'radio-friendly' single. They want a guaranteed hit, not your artistic vision.",
+		category = "career_music",
+		weight = 15,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Give them what they want",
+				effects = { Happiness = -5 },
+				feedText = "It's just one song...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local money = math.random(100000, 500000)
+						state.Money = (state.Money or 0) + money
+						state:ModifyStat("Happiness", 15)
+						state.Fame = (state.Fame or 0) + 25
+						state:AddFeed(string.format("💼 Song went #1! $%s in royalties! Label loves you!", money))
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💼 Song flopped anyway. Sold out AND failed. Worst outcome.")
+					end
+				end,
+			},
+			{
+				text = "Fight for your artistic vision",
+				effects = { Smarts = 3 },
+				feedText = "My music, my way!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						local money = math.random(200000, 800000)
+						state.Money = (state.Money or 0) + money
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 35
+						state.Flags = state.Flags or {}
+						state.Flags.artistic_integrity = true
+						state:AddFeed("💼 Your vision was RIGHT! Critically acclaimed AND commercial success!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.artistic_integrity = true
+						state:AddFeed("💼 Compromise reached. Both sides somewhat happy.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state.Flags = state.Flags or {}
+						state.Flags.label_conflict = true
+						state:AddFeed("💼 Label dropped you. 'Creative differences.' Starting over...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_grammy_nomination",
+		title = "🏆 Grammy Nomination!",
+		emoji = "🏆",
+		text = "You've been nominated for a Grammy Award! The biggest night in music is approaching!",
+		category = "career_music",
+		weight = 10,
+		minAge = 18, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true, grammy_winner = true },
+		
+		choices = {
+			{
+				text = "Prepare an acceptance speech",
+				effects = { Happiness = 10 },
+				feedText = "I want to thank...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(200000, 1000000)
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 70
+						state.Flags = state.Flags or {}
+						state.Flags.grammy_winner = true
+						state:AddFeed("🏆 AND THE GRAMMY GOES TO... YOU! Grammy winner! Dreams come true!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state.Fame = (state.Fame or 0) + 20
+						state:AddFeed("🏆 Didn't win, but what an honor! Career boost from the exposure!")
+					end
+				end,
+			},
+			{
+				text = "Try not to think about it",
+				effects = { Happiness = 5 },
+				feedText = "Managing expectations...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + math.random(150000, 500000)
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 60
+						state.Flags = state.Flags or {}
+						state.Flags.grammy_winner = true
+						state:AddFeed("🏆 SURPRISE! You won! The most genuine reaction on TV!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🏆 Didn't win. Kept composure. Everyone respects a good loser.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_tour_offer",
+		title = "World Tour Opportunity!",
+		emoji = "🌍",
+		text = "A promoter is offering you a massive world tour! 50 cities across 6 continents!",
+		category = "career_music",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Book the full tour!",
+				effects = { Health = -10, Happiness = 5 },
+				feedText = "Life on the road!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local tourMoney = math.random(500000, 3000000)
+						state.Money = (state.Money or 0) + tourMoney
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 40
+						state.Flags = state.Flags or {}
+						state.Flags.world_toured = true
+						state:AddFeed(string.format("🌍 Tour was LEGENDARY! $%s grossed! Memories for life!", tourMoney))
+					elseif roll <= 80 then
+						local tourMoney = math.random(100000, 400000)
+						state.Money = (state.Money or 0) + tourMoney
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("🌍 Tour was good but exhausting. $%s earned.", tourMoney))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.tour_burnout = true
+						state:AddFeed("🌍 Tour was a disaster. Illness, cancelled shows, barely broke even.")
+					end
+				end,
+			},
+			{
+				text = "Do a smaller tour instead",
+				effects = { Health = -3, Happiness = 3 },
+				feedText = "Quality over quantity...",
+				onResolve = function(state)
+					local tourMoney = math.random(50000, 200000)
+					state.Money = (state.Money or 0) + tourMoney
+					state:ModifyStat("Happiness", 10)
+					state.Fame = (state.Fame or 0) + 15
+					state:AddFeed(string.format("🌍 Intimate tour was perfect! $%s and no burnout!", tourMoney))
+				end,
+			},
+			{
+				text = "Stay home and work on new music",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "Studio time is valuable.",
+			},
+		},
+	},
+	
+	{
+		id = "musician_song_stolen",
+		title = "Someone Stole Your Song!",
+		emoji = "😡",
+		text = "A major artist just released a song that sounds EXACTLY like your unreleased track! They must have heard your demo!",
+		category = "career_music",
+		weight = 12,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Sue for copyright infringement",
+				effects = { Money = -20000, Happiness = -5 },
+				feedText = "See you in court!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local settlement = math.random(200000, 1000000)
+						state.Money = (state.Money or 0) + settlement
+						state:ModifyStat("Happiness", 15)
+						state.Fame = (state.Fame or 0) + 20
+						state:AddFeed(string.format("😡 Won the lawsuit! $%s settlement! Justice served!", settlement))
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("😡 Settled out of court. Some money, but no public admission of guilt.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Money = (state.Money or 0) - 50000
+						state:AddFeed("😡 Lost the case. 'Musical ideas aren't copyrightable.' Brutal legal fees.")
+					end
+				end,
+			},
+			{
+				text = "Call them out on social media",
+				effects = {},
+				feedText = "Everyone needs to know!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 10)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("😡 Fans took your side! The other artist got cancelled! Justice!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😡 'He said, she said' situation. Nobody knows who to believe.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("😡 Backfired! You look jealous and petty. Their song still charting.")
+					end
+				end,
+			},
+			{
+				text = "Let it go - best revenge is success",
+				effects = { Happiness = 3, Smarts = 3 },
+				feedText = "Taking the high road.",
+			},
+		},
+	},
+	
+	{
+		id = "musician_collab_offer",
+		title = "Dream Collaboration!",
+		emoji = "🤝",
+		text = "Your musical idol wants to collaborate on a track with you! This is a once-in-a-lifetime opportunity!",
+		category = "career_music",
+		weight = 12,
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept immediately!",
+				effects = { Happiness = 20 },
+				feedText = "Dreams do come true!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state.Fame = (state.Fame or 0) + 35
+						state.Flags = state.Flags or {}
+						state.Flags.legendary_collab = true
+						state:AddFeed("🤝 The collab was FIRE! Charted in multiple countries! Legendary!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🤝 Song was good but didn't quite hit. Still, worked with your idol!")
+					end
+				end,
+			},
+			{
+				text = "Negotiate for equal credit",
+				effects = {},
+				feedText = "Making sure it's fair...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(150000, 600000)
+						state:ModifyStat("Happiness", 18)
+						state.Fame = (state.Fame or 0) + 40
+						state:AddFeed("🤝 Equal billing! Song was a smash! They respect your hustle!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🤝 They went with someone else. Don't look a gift horse in the mouth!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_voice_problem",
+		title = "Voice Problems!",
+		emoji = "🎤",
+		text = "Your doctor says you've damaged your vocal cords from overuse. You need to rest your voice for 3 months or risk permanent damage.",
+		category = "career_music",
+		weight = 12,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true, voice_damage = true },
+		
+		choices = {
+			{
+				text = "Take the medical leave",
+				effects = { Health = 10, Happiness = -5 },
+				feedText = "Voice is everything...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🎤 Voice recovered fully! Ready to sing again!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎤 Voice mostly recovered. Some high notes harder now.")
+					end
+				end,
+			},
+			{
+				text = "Keep performing - the show must go on",
+				effects = { Health = -5 },
+				feedText = "Can't let fans down...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + math.random(50000, 150000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎤 Pushed through! Voice held up somehow!")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:ModifyStat("Health", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.voice_damage = true
+						state:AddFeed("🎤 Permanent voice damage. Career as a singer might be over...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_one_hit_wonder",
+		title = "One-Hit Wonder Fear",
+		emoji = "😰",
+		text = "Your first hit was HUGE but your follow-up singles aren't performing. People are calling you a one-hit wonder!",
+		category = "career_music",
+		weight = 14,
+		minAge = 18, maxAge = 45,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Completely reinvent your sound",
+				effects = { Smarts = 3 },
+				feedText = "New era, new me!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(200000, 700000)
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.comeback_king = true
+						state:AddFeed("😰 COMEBACK! New sound was revolutionary! Critics love the evolution!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("😰 Mixed reception. Some love the new direction, others don't.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state.Fame = (state.Fame or 0) - 15
+						state:AddFeed("😰 Fans hated the change. 'We want the old you back!' Rough.")
+					end
+				end,
+			},
+			{
+				text = "Double down on what worked",
+				effects = {},
+				feedText = "Give the people what they want!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + math.random(100000, 400000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("😰 Formula still works! Another hit! Not a one-hit wonder!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("😰 Sounds too similar. 'Boring, repetitive' - the reviews are brutal.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return MusicianCareerEvents

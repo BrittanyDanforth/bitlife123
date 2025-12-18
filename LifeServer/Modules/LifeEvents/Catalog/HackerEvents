@@ -1,0 +1,766 @@
+--[[
+	Hacker/Cybersecurity Career Events
+	AAA-quality branching career path
+	
+	Two paths:
+	1. White Hat (Legit): Script Kiddie -> Pen Tester -> Security Consultant -> CISO
+	2. Black Hat (Criminal): Script Kiddie -> Black Hat -> Elite Hacker -> Cyber Crime Boss
+	
+	Uses: Hacking minigame for breaches, heist minigame for high-stakes operations
+]]
+
+local events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DISCOVERY AND ENTRY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hacker_discovery",
+		emoji = "💻",
+		title = "Natural Hacker",
+		text = "While messing around on the computer, you discover you have a talent for finding security flaws.",
+		category = "career_hacker",
+		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.4, -- CRITICAL FIX: More likely to trigger
+		minAge = 12,
+		maxAge = 22,
+		oneTime = true,
+		requiresStats = { Smarts = 45 }, -- CRITICAL FIX: Lower threshold for accessibility
+		blockedByFlags = { hacker_discovered = true },
+		choices = {
+			{
+				index = 1,
+				text = "Explore this talent further",
+				effects = { Smarts = 5, Happiness = 8 },
+				setFlags = { hacker_discovered = true, tech_interest = true },
+				feedText = "You dove deep into cybersecurity. A new world opens up!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 3, time = 45 },
+			},
+			{
+				index = 2,
+				text = "Seems illegal, ignore it",
+				effects = { Happiness = -2 },
+				feedText = "You ignored your hacking curiosity.",
+			},
+		},
+	},
+
+	{
+		id = "first_hack",
+		emoji = "🔓",
+		title = "First Real Hack",
+		text = "You've learned enough to try your first real hack. Your school's network has weak security...",
+		category = "career_hacker",
+		weight = 10,
+		minAge = 14,
+		maxAge = 22,
+		requiresFlags = { hacker_discovered = true },
+		blockedByFlags = { first_hack_done = true },
+		requiresStats = { Smarts = 60 },
+		choices = {
+			{
+				index = 1,
+				text = "Hack in and change grades",
+				effects = { Smarts = 3 },
+				feedText = "Time to test your skills!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 4, time = 40 },
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					state.Flags.first_hack_done = true
+					if minigameResult and minigameResult.success then
+						state.Flags.successful_hacker = true
+						state.Flags.criminal_record_risk = true
+						state.Stats = state.Stats or {}
+						state.Stats.Smarts = (state.Stats.Smarts or 50) + 5
+						if state.AddFeed then
+							state:AddFeed("🔓 You hacked the school! Grades changed. You're a real hacker now.")
+						end
+					else
+						-- Got caught!
+						state.Flags.caught_hacking = true
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						if state.AddFeed then
+							state:AddFeed("🚨 CAUGHT! School traced it back to you. Suspended!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Just look around, don't change anything",
+				effects = { Smarts = 4 },
+				setFlags = { first_hack_done = true, ethical_hacker = true },
+				feedText = "You explored but didn't cause harm. White hat instincts!",
+			},
+			{
+				index = 3,
+				text = "Report the vulnerability instead",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { first_hack_done = true, white_hat_path = true },
+				feedText = "You reported the flaw! The school thanked you.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- THE CHOICE: WHITE HAT OR BLACK HAT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hacker_path_choice",
+		emoji = "⚔️",
+		title = "The Crossroads",
+		text = "Your hacking skills have grown. You've been contacted by both a security firm AND a criminal organization.",
+		category = "career_hacker",
+		weight = 12,
+		minAge = 18,
+		maxAge = 30,
+		oneTime = true,
+		requiresFlags = { first_hack_done = true },
+		blockedByFlags = { path_chosen = true },
+		requiresStats = { Smarts = 65 },
+		choices = {
+			{
+				index = 1,
+				text = "Join the security firm (White Hat)",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { path_chosen = true, white_hat = true, employed = true, has_job = true },
+				feedText = "You chose the light side. Legal hacking pays well too!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "pen_tester",
+							name = "Penetration Tester",
+							company = "SecureIT Solutions",
+							salary = 95000,
+							category = "tech",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Join the criminal organization (Black Hat)",
+				effects = { Happiness = 5, Money = 50000 },
+				setFlags = { path_chosen = true, black_hat = true, criminal = true, employed = true, has_job = true },
+				feedText = "You chose the dark side. The money is incredible...",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "black_hat_hacker",
+							name = "Black Hat Hacker",
+							company = "Underground",
+							salary = 200000,
+							category = "hacker",
+						})
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Stay freelance for now",
+				effects = { Happiness = 3 },
+				setFlags = { freelance_hacker = true, employed = true, has_job = true },
+				feedText = "You'll take jobs from both sides. Dangerous game...",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "freelance_hacker",
+							name = "Freelance Hacker",
+							company = "Dark Web",
+							salary = 60000,
+							category = "hacker",
+						})
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- WHITE HAT PATH EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "corporate_pen_test",
+		emoji = "🔐",
+		title = "Corporate Penetration Test",
+		text = "A Fortune 500 company hired your firm to find vulnerabilities in their systems.",
+		category = "career_hacker",
+		weight = 10,
+		minAge = 20,
+		maxAge = 50,
+		requiresJob = true,
+		requiresFlags = { white_hat = true },
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Hack their systems (legally!)",
+				effects = { Happiness = 5 },
+				feedText = "Time to find those vulnerabilities!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 5, time = 35 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Money = (state.Money or 0) + 25000
+						state.Stats = state.Stats or {}
+						state.Stats.Smarts = (state.Stats.Smarts or 50) + 3
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 10
+						state.Flags = state.Flags or {}
+						state.Flags.successful_pentests = (state.Flags.successful_pentests or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("🔓 You found critical vulnerabilities! Big bonus earned!")
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						if state.AddFeed then
+							state:AddFeed("You couldn't crack their systems. Embarrassing.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Take a cautious approach",
+				effects = { Smarts = 2, Money = 5000 },
+				feedText = "Methodical work, decent findings.",
+			},
+		},
+	},
+
+	{
+		id = "security_consultant_promotion",
+		emoji = "📈",
+		title = "Senior Security Role",
+		text = "Your pen testing work has been exceptional. You're being promoted to Security Consultant!",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 24,
+		maxAge = 45,
+		requiresFlags = { white_hat = true },
+		requiresStats = { Smarts = 72 },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Accept the promotion!",
+				effects = { Happiness = 15, Money = 20000 },
+				feedText = "You're now a Security Consultant!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "security_consultant",
+							name = "Security Consultant",
+							company = "CyberGuard Inc",
+							salary = 165000,
+							category = "tech",
+						})
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.senior_security = true
+				end,
+			},
+			{
+				index = 2,
+				text = "I prefer hands-on hacking",
+				effects = { Happiness = 3, Money = 10000 },
+				feedText = "You stayed as a senior pen tester.",
+			},
+		},
+	},
+
+	{
+		id = "ciso_opportunity",
+		emoji = "👔",
+		title = "CISO Opportunity",
+		text = "A major corporation wants you as their Chief Information Security Officer!",
+		category = "career_hacker",
+		weight = 5,
+		minAge = 30,
+		maxAge = 55,
+		requiresFlags = { senior_security = true },
+		requiresStats = { Smarts = 80 },
+		oneTime = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Accept the CISO role!",
+				effects = { Happiness = 20, Money = 100000 },
+				setFlags = { ciso = true, executive = true },
+				feedText = "You're now a C-level executive! CISO of a Fortune 500!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "ciso",
+							name = "Chief Information Security Officer",
+							company = "Fortune 500",
+							salary = 420000,
+							category = "tech",
+						})
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Start my own security firm",
+				-- CRITICAL FIX: Validate money before starting business
+				effects = {}, -- Money handled in onResolve
+				setFlags = { entrepreneur = true, security_founder = true },
+				feedText = "Considering starting your own firm...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local startupCost = 100000
+					if money >= startupCost then
+						state.Money = money - startupCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("🏢 You invested $100K and started your own cybersecurity company!")
+						end
+					elseif money >= 50000 then
+						-- Smaller startup
+						state.Money = money - 50000
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("🏢 Started a smaller security firm with $50K. Bootstrap mode!")
+						end
+					elseif money >= 20000 then
+						-- Consulting
+						state.Money = money - 20000
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("💻 Started as a security consultant with $20K. Building up!")
+						end
+					else
+						-- Can't afford
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to start a business right now...")
+						end
+						-- Remove flags since we couldn't start
+						state.Flags = state.Flags or {}
+						state.Flags.entrepreneur = nil
+						state.Flags.security_founder = nil
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BLACK HAT PATH EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "bank_heist_hack",
+		emoji = "🏦",
+		title = "The Big Score",
+		text = "The organization wants you to hack a bank's systems and transfer millions.",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 20,
+		maxAge = 45,
+		requiresFlags = { black_hat = true },
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Execute the bank hack!",
+				effects = { Happiness = 5 },
+				feedText = "Millions on the line!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 6, time = 30 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local payout = math.random(100000, 500000)
+						state.Money = (state.Money or 0) + payout
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.bank_hacker = true
+						state.Flags.heat_level = (state.Flags.heat_level or 0) + 2
+						if state.AddFeed then
+							state:AddFeed("💰 JACKPOT! You stole $" .. payout .. " from the bank!")
+						end
+					else
+						-- FBI noticed!
+						state.Flags = state.Flags or {}
+						state.Flags.fbi_watch = true
+						state.Flags.heat_level = (state.Flags.heat_level or 0) + 3
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						if state.AddFeed then
+							state:AddFeed("🚨 The hack failed! FBI has started investigating!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Too risky, refuse",
+				effects = { Happiness = -5 },
+				setFlags = { coward_hacker = true },
+				feedText = "You turned down the job. The organization is displeased...",
+			},
+		},
+	},
+
+	{
+		id = "ransomware_attack",
+		emoji = "☠️",
+		title = "Ransomware Operation",
+		text = "Your organization wants to deploy ransomware against a hospital. Millions at stake.",
+		category = "career_hacker",
+		weight = 6,
+		minAge = 22,
+		maxAge = 50,
+		requiresFlags = { black_hat = true, bank_hacker = true },
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Deploy the ransomware!",
+				effects = { Happiness = -5 },
+				feedText = "This is dark... but the money...",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 5, time = 25 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local payout = math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + payout
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10 -- Guilt
+						state.Flags = state.Flags or {}
+						state.Flags.ransomware_criminal = true
+						state.Flags.heat_level = (state.Flags.heat_level or 0) + 5
+						state.Flags.most_wanted = true
+						if state.AddFeed then
+							state:AddFeed("💀 Ransomware deployed. $" .. payout .. " extorted. You're a monster now.")
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Health = (state.Stats.Health or 50) - 10
+						if state.AddFeed then
+							state:AddFeed("The ransomware failed. Your reputation takes a hit.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I won't attack a hospital",
+				effects = { Happiness = 5 },
+				setFlags = { has_ethics = true },
+				feedText = "Even criminals have limits. You refused.",
+			},
+			{
+				index = 3,
+				text = "Secretly tip off the FBI",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { double_agent = true },
+				feedText = "You're playing a dangerous game as a double agent...",
+			},
+		},
+	},
+
+	{
+		id = "elite_hacker_status",
+		emoji = "👤",
+		title = "Elite Status",
+		text = "Your hacking exploits have made you legendary in the underground. You're now Elite.",
+		category = "career_hacker",
+		weight = 6,
+		minAge = 25,
+		maxAge = 50,
+		requiresFlags = { black_hat = true, bank_hacker = true },
+		requiresStats = { Smarts = 80 },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Embrace my elite status",
+				effects = { Happiness = 15, Money = 200000 },
+				feedText = "You're now an Elite Hacker. Feared worldwide.",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "elite_hacker",
+							name = "Elite Hacker",
+							company = "Anonymous Collective",
+							salary = 500000,
+							category = "hacker",
+						})
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.elite_hacker = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Go dark, disappear",
+				effects = { Happiness = 5, Money = 100000 },
+				setFlags = { ghost = true },
+				feedText = "You vanished from the scene. Living in shadows.",
+			},
+		},
+	},
+
+	{
+		id = "cyber_crime_boss_rise",
+		emoji = "💀",
+		title = "Rise to Crime Boss",
+		text = "The current cyber crime boss wants you to take over the operation.",
+		category = "career_hacker",
+		weight = 4,
+		minAge = 28,
+		maxAge = 55,
+		requiresFlags = { elite_hacker = true },
+		requiresStats = { Smarts = 85 },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "Take control of the empire",
+				effects = { Happiness = 20, Money = 1000000 },
+				feedText = "You're now a Cyber Crime Boss!",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "cyber_crime_boss",
+							name = "Cyber Crime Boss",
+							company = "The Syndicate",
+							salary = 2000000,
+							category = "hacker",
+						})
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.crime_boss = true
+					state.Flags.most_wanted = true
+				end,
+			},
+			{
+				index = 2,
+				text = "Go legit - turn yourself in for immunity",
+				effects = { Happiness = -10, Money = -500000 },
+				setFlags = { reformed = true, white_hat = true, black_hat = false },
+				feedText = "You turned state's witness. New life as a consultant.",
+				onResolve = function(state)
+					if state.SetCareer then
+						state:SetCareer({
+							id = "security_consultant",
+							name = "Security Consultant",
+							company = "FBI Contractor",
+							salary = 165000,
+							category = "tech",
+						})
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DANGER EVENTS - GETTING CAUGHT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "fbi_raid",
+		emoji = "🚔",
+		title = "FBI RAID!",
+		text = "The FBI is at your door! They've been tracking your activities!",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 18,
+		maxAge = 60,
+		requiresFlags = { black_hat = true },
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Try to wipe everything and escape!",
+				effects = { Health = -5 },
+				feedText = "Quick! Destroy the evidence!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 4, time = 20 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Flags = state.Flags or {}
+						state.Flags.escaped_fbi = true
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) + 10
+						if state.AddFeed then
+							state:AddFeed("You wiped everything and escaped! Time to disappear...")
+						end
+					else
+						-- ARRESTED!
+						local jailYears = math.random(5, 15)
+						state.InJail = true
+						state.JailYearsLeft = jailYears
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+						if state.AddFeed then
+							state:AddFeed("🔒 ARRESTED! Sentenced to " .. jailYears .. " years for cybercrimes!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Surrender peacefully",
+				effects = { Happiness = -20 },
+				feedText = "You cooperated. Might get a reduced sentence.",
+				onResolve = function(state)
+					local jailYears = math.random(3, 8)
+					state.InJail = true
+					state.JailYearsLeft = jailYears
+					state.Flags = state.Flags or {}
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+					if state.AddFeed then
+						state:AddFeed("🔒 Arrested. " .. jailYears .. " years. Cooperation reduced sentence.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "rival_hackers_threat",
+		emoji = "⚠️",
+		title = "Rivals Closing In",
+		text = "A rival hacking group is trying to expose you and take you down. They want you out of business.",
+		category = "career_hacker",
+		weight = 5,
+		minAge = 22,
+		maxAge = 60,
+		requiresFlags = { elite_hacker = true },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Hack them first!",
+				effects = { Smarts = 3 },
+				feedText = "Best defense is a good offense!",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 6, time = 25 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						state.Money = (state.Money or 0) + 100000
+						state.Flags = state.Flags or {}
+						state.Flags.eliminated_rivals = true
+						if state.AddFeed then
+							state:AddFeed("You exposed them to the FBI. Rivals eliminated!")
+						end
+					else
+						state.Stats = state.Stats or {}
+						state.Stats.Health = (state.Stats.Health or 50) - 15
+						if state.AddFeed then
+							state:AddFeed("Your hack failed. They got your personal info and doxed you!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Go into hiding",
+				-- CRITICAL FIX: Validate money before going into hiding
+				effects = {}, -- Money handled in onResolve
+				setFlags = { in_hiding = true },
+				feedText = "Considering going off the grid...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local hidingCost = 50000
+					if money >= hidingCost then
+						state.Money = money - hidingCost
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then
+							state:AddFeed("🏃 You disappeared and went off the grid. $50K to set up a new identity.")
+						end
+					elseif money >= 10000 then
+						state.Money = money - 10000
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if state.AddFeed then
+							state:AddFeed("🏃 Went into hiding cheaply. $10K. Living rough but safe.")
+						end
+					else
+						-- Can't afford to hide properly
+						if state.ModifyStat then 
+							state:ModifyStat("Happiness", -20)
+							state:ModifyStat("Health", -10)
+						end
+						if state.AddFeed then
+							state:AddFeed("🏃 Can't afford to hide properly. Living in fear...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Pay them off",
+				-- CRITICAL FIX: Validate money before paying off rivals
+				effects = {}, -- Money handled in onResolve
+				feedText = "Trying to buy your way out...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local payoffCost = 200000
+					if money >= payoffCost then
+						state.Money = money - payoffCost
+						if state.AddFeed then
+							state:AddFeed("💰 Paid $200K to make them go away. Expensive peace.")
+						end
+					elseif money >= 100000 then
+						-- Partial payoff - risky
+						state.Money = money - 100000
+						local roll = math.random()
+						if roll < 0.6 then
+							if state.AddFeed then
+								state:AddFeed("💰 Paid $100K. They accepted... for now.")
+							end
+						else
+							if state.ModifyStat then state:ModifyStat("Health", -10) end
+							if state.AddFeed then
+								state:AddFeed("💰 $100K wasn't enough. They came after you anyway!")
+							end
+						end
+					elseif money >= 50000 then
+						state.Money = money - 50000
+						-- Very risky
+						local roll = math.random()
+						if roll < 0.3 then
+							if state.AddFeed then
+								state:AddFeed("💰 $50K barely satisfied them. You're on thin ice.")
+							end
+						else
+							if state.ModifyStat then 
+								state:ModifyStat("Health", -15)
+								state:ModifyStat("Happiness", -10)
+							end
+							if state.AddFeed then
+								state:AddFeed("💰 $50K wasn't enough. They attacked you!")
+							end
+						end
+					else
+						-- Can't afford
+						if state.ModifyStat then 
+							state:ModifyStat("Happiness", -15)
+							state:ModifyStat("Health", -20)
+						end
+						if state.AddFeed then
+							state:AddFeed("💸 Can't afford to pay them off. They destroyed you!")
+						end
+					end
+				end,
+			},
+		},
+	},
+}
+
+return events
