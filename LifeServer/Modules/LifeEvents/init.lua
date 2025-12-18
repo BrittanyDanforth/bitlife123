@@ -68,11 +68,12 @@ local StageCategories = {
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
 	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
 	-- career_gaming, career_acting, career_sports, career_intelligence, career_mafia were MISSING!
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX: Added crime_path category for Crime Empire story path events
+	teen        = { "teen", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity" },
+	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	adult       = { "adult", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
+	senior      = { "adult", "senior", "milestones", "relationships", "random", "crime_path", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "assets", "royalty", "celebrity" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -340,6 +341,13 @@ function LifeEvents.init()
 		-- From underground nobody to legendary superstar
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RapperContentCreatorEvents", category = "career_music" }, -- 50+ rapper/creator events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRIME EMPIRE PATH - Criminal story path events
+		-- Progressive crime career from street hustler to crime boss
+		-- Requires crime_path_active flag set by startStoryPath for "criminal" path
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "CrimeEmpireEvents", category = "crime_path" },  -- 30+ crime empire progression events
 	}
 	
 	local totalEvents = 0

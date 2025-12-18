@@ -627,20 +627,24 @@ PremiumIntegratedEvents.events = {
 				feedText = "⭐ You're going to be a STAR! Fame awaits!",
 				setFlags = { fame_career = true, chose_fame_life = true },
 			},
-			-- 👑 ROYALTY PREMIUM OPTION
-			{
-				text = "👑 [Royalty] Accept royal responsibilities",
-				effects = { Fame = 30, Money = 100000, Happiness = 10 },
-				requiresGamepass = "ROYALTY",
-				gamepassEmoji = "👑",
-				feedText = "👑 You've embraced your royal destiny!",
-				setFlags = { is_royalty = true, royal_duties = true },
-				onResolve = function(state)
-					state.RoyalState = state.RoyalState or {}
-					state.RoyalState.isRoyal = true
-					state.RoyalState.dutiesCompleted = 0
-				end,
-			},
+		-- 👑 ROYALTY PREMIUM OPTION
+		-- CRITICAL FIX: This choice should only be available to players who ARE ALREADY royalty
+		-- Buying the gamepass does NOT make you royalty - you must be born royal or marry into it
+		{
+			text = "👑 [Royalty] Embrace your royal duties",
+			effects = { Fame = 15, Happiness = 10 },
+			requiresGamepass = "ROYALTY",
+			requiresFlags = { is_royalty = true }, -- CRITICAL: Must already BE royalty!
+			gamepassEmoji = "👑",
+			feedText = "👑 You've embraced your royal responsibilities!",
+			setFlags = { royal_duties = true, embraced_royalty = true },
+			onResolve = function(state)
+				-- Only update royal state, don't CREATE it
+				if state.RoyalState and state.RoyalState.isRoyal then
+					state.RoyalState.dutiesCompleted = (state.RoyalState.dutiesCompleted or 0) + 1
+				end
+			end,
+		},
 		},
 	},
 	{

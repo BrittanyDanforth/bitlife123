@@ -3294,6 +3294,19 @@ local StoryPaths = {
 		requirements = {},
 		stages = { "hustler", "operator", "lieutenant", "underboss", "boss" },
 	},
+	-- CRITICAL FIX: Add "mafia" path to match StoryPathsScreen
+	-- The client defines a "mafia" path requiring MAFIA gamepass
+	mafia = {
+		id = "mafia",
+		name = "Mafia Boss",
+		description = "Rise through the ranks of organized crime.",
+		color = C and C.Gray700 or Color3.fromRGB(55, 65, 81),
+		minAge = 18,
+		requirements = {},
+		isPremium = true,
+		gamepassKey = "MAFIA",
+		stages = { "associate", "soldier", "capo", "underboss", "don" },
+	},
 	celebrity = {
 		id = "celebrity",
 		name = "Fame & Fortune",
@@ -3329,6 +3342,14 @@ local StoryPathActions = {
 		heist = { risk = 60, reward = { 5000, 100000 }, progress = 0.1 },
 		bribe = { cost = 25000, progress = 0.05 },
 		war = { risk = 80, stats = { Health = -10 }, progress = 0.12 },
+	},
+	-- CRITICAL FIX: Add mafia path actions
+	mafia = {
+		collect = { reward = { 2000, 15000 }, progress = 0.04 },
+		expand = { risk = 30, progress = 0.06 },
+		hit = { risk = 50, stats = { Health = -5 }, progress = 0.08 },
+		launder = { cost = 50000, progress = 0.05 },
+		war = { risk = 70, stats = { Health = -15 }, progress = 0.12 },
 	},
 	celebrity = {
 		post = { stats = { Happiness = 2 }, progress = 0.04 },
@@ -12254,11 +12275,12 @@ function LifeBackend:startStoryPath(player, pathId)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #1: Premium path gamepass checks
-	-- Celebrity and Royal paths require gamepasses
+	-- Celebrity, Royal, and Mafia paths require gamepasses
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local premiumPaths = {
 		celebrity = { key = "CELEBRITY", displayName = "Fame Package" },
 		royal = { key = "ROYALTY", displayName = "Royalty Pass" },
+		mafia = { key = "MAFIA", displayName = "Mafia Boss Pack" },
 	}
 	
 	local premiumInfo = premiumPaths[pathId]
@@ -12374,15 +12396,38 @@ function LifeBackend:startStoryPath(player, pathId)
 		state.Flags.political_aspirant = true
 		state.Flags.interested_in_politics = true
 	elseif pathId == "criminal" then
-		-- Crime path flags
+		-- Crime path flags - enables crime empire events
 		state.Flags.pursuing_crime = true
 		state.Flags.criminal_aspirant = true
 		state.Flags.interested_in_crime = true
+		state.Flags.crime_path_active = true
+	elseif pathId == "mafia" then
+		-- CRITICAL FIX: Mafia path flags - enables mafia-specific events
+		state.Flags.pursuing_mafia = true
+		state.Flags.mafia_aspirant = true
+		state.Flags.interested_in_crime = true
+		state.Flags.mafia_path_active = true
+		-- Initialize MobState for mafia tracking
+		state.MobState = state.MobState or {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			rankIndex = 0,
+			rankLevel = 0,
+			rankName = "Outsider",
+			respect = 0,
+			notoriety = 0,
+			heat = 0,
+		}
+		state.MobState.aspirant = true
 	elseif pathId == "royal" then
-		-- Royal path flags
+		-- Royal path flags - NOTE: Does NOT make you royalty!
+		-- The Royal path is about PURSUING/MARRYING INTO royalty, not being born royal
 		state.Flags.pursuing_royalty = true
 		state.Flags.royal_aspirant = true
 		state.Flags.interested_in_royalty = true
+		-- CRITICAL: Do NOT set is_royalty = true here!
+		-- Player must marry into royalty or be born royal to become royalty
 	end
 
 	local feed = string.format("🌟 You began the %s path!", path.name)
