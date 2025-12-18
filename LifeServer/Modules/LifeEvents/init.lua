@@ -313,6 +313,7 @@ function LifeEvents.init()
 		{ name = "TradesCareerEvents",        category = "career_trades" },     -- Construction, Electrician, Plumber, Mechanic, Trucker
 		{ name = "ServiceCareerEvents",       category = "career_service" },    -- Waiter, Bartender, Flight Attendant, Personal Trainer
 		{ name = "MedicalCareerEvents",       category = "career_medical" },    -- EMT, Nurse, Doctor, Surgeon, Pharmacist
+		{ name = "OfficeCareerEvents",        category = "career_office" },     -- Data Entry, Secretary, HR, Marketing, Accounting
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
@@ -449,6 +450,17 @@ local function recordEventShown(state, event)
 	if eventCategory then
 		history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
 		history.lastCategoryOccurrence[eventCategory] = state.Age or 0
+	end
+	
+	-- CRITICAL FIX #SPAM-3: Also track keyword-based cooldowns
+	-- This prevents "viral", "first_", "hater" etc. events from spamming
+	local eventId = (event.id or ""):lower()
+	local spamKeywords = { "viral", "hater", "first_", "exploding", "millions" }
+	for _, keyword in ipairs(spamKeywords) do
+		if eventId:find(keyword) then
+			history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+			history.lastCategoryOccurrence["keyword_" .. keyword] = state.Age or 0
+		end
 	end
 end
 
@@ -957,13 +969,20 @@ local function canEventTrigger(event, state)
 	
 	local eventCategory = event.category or event._category
 	if eventCategory then
-		-- Define category cooldowns (years between events of same category)
+		-- CRITICAL FIX #SPAM-1: Define category cooldowns (years between events of same category)
+		-- User complaint: "STUFF IS GETTING SPAMMED LIKE EVENTS"
+		-- This prevents the same types of events from firing back-to-back
 		local categoryCooldowns = {
 			injury = 3,        -- At least 3 years between injury events
 			illness = 2,       -- At least 2 years between illness events
 			mental_health = 4, -- At least 4 years between mental health events
 			disaster = 5,      -- At least 5 years between disasters
 			crime = 2,         -- At least 2 years between crime events
+			social_media = 3,  -- CRITICAL FIX: Prevent viral post spam (was triggering every year!)
+			celebrity = 2,     -- At least 2 years between celebrity events
+			viral = 4,         -- At least 4 years between viral events
+			fame = 2,          -- At least 2 years between fame events
+			hater = 3,         -- At least 3 years between hater events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -973,6 +992,28 @@ local function canEventTrigger(event, state)
 			local lastCatAge = history.lastCategoryOccurrence[eventCategory]
 			if lastCatAge and (age - lastCatAge) < catCooldown then
 				return false -- Too soon for another event of this category
+			end
+		end
+		
+		-- CRITICAL FIX #SPAM-2: Check event ID for spam-prone keywords
+		-- User complaint: "YOUR LATEST POST IS EXPLODING MILLIONS OF VIEWS I GOT IT TWICE"
+		local eventId = (event.id or ""):lower()
+		local spamKeywords = {
+			viral = 5,      -- At least 5 years between viral events
+			hater = 4,      -- At least 4 years between hater events  
+			first_ = 99,    -- "First X" events should be oneTime, enforce with long cooldown
+			exploding = 4,  -- Explosive growth events need cooldown
+			millions = 4,   -- Millions of views events need cooldown
+		}
+		
+		for keyword, keywordCooldown in pairs(spamKeywords) do
+			if eventId:find(keyword) then
+				history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+				local keywordKey = "keyword_" .. keyword
+				local lastKeywordAge = history.lastCategoryOccurrence[keywordKey]
+				if lastKeywordAge and (age - lastKeywordAge) < keywordCooldown then
+					return false -- Too soon for another event with this keyword
+				end
 			end
 		end
 	end
@@ -1068,6 +1109,32 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- JOB/CAREER REQUIREMENTS - No career events if unemployed or retired!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX #QUIT-1: Events in career categories AUTOMATICALLY require a job
+	-- User complaint: "WHEN I QUIT IM STILL GETTING THE CARDS FOR JOBS I QUIT"
+	-- Events with category starting with "career_" should not trigger without a job
+	local eventCategory = (event.category or event._category or ""):lower()
+	local eventId = (event.id or ""):lower()
+	
+	-- Check if this is a career-related event that should require a job
+	local isCareerEvent = eventCategory:find("^career_") or eventCategory == "career"
+		or eventId:find("_job_") or eventId:find("work_") or eventId:find("promotion_")
+		or eventId:find("coworker_") or eventId:find("boss_") or eventId:find("office_")
+	
+	-- Automatically require job for career events
+	if isCareerEvent and not event.allowUnemployed then
+		if not state.CurrentJob then
+			return false -- Career events require a job
+		end
+		-- Check if player was just fired/quit (CurrentJob might be nil but flags still set)
+		if flags.retired or flags.just_quit or flags.just_fired then
+			return false -- Don't trigger career events right after leaving job
+		end
+		-- CRITICAL FIX: Also check if player is in prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
+		end
+	end
 	
 	if event.requiresJob then
 		if not state.CurrentJob then
@@ -2198,7 +2265,11 @@ function LifeEvents.buildYearQueue(state, options)
 		for i, candidate in ipairs(candidateEvents) do
 			cumulative = cumulative + candidate.weight
 			if roll <= cumulative then
-				table.insert(selectedEvents, candidate.event)
+				-- CRITICAL FIX #VARIETY-1: Apply text variations for event variety
+				-- User feedback: "HAVE MULTIPLE DIFFERENT TEXT LIKE FOR SAME SCENE"
+				local eventCopy = LifeEvents.applyTextVariation(candidate.event)
+				
+				table.insert(selectedEvents, eventCopy)
 				recordEventShown(state, candidate.event)
 				
 				-- Remove from pool and update total weight
@@ -2210,6 +2281,40 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	return selectedEvents
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- TEXT VARIATION SYSTEM - For variety so same events feel different
+-- User feedback: "HAVE MUTLIPLE LIKE DIFFERENT TEXT LIKE FOR SAME SCENE"
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.applyTextVariation(event)
+	-- If event has no text variations, return as-is
+	if not event.textVariants or type(event.textVariants) ~= "table" or #event.textVariants == 0 then
+		return event
+	end
+	
+	-- Create a shallow copy to avoid modifying the original event
+	local eventCopy = {}
+	for key, value in pairs(event) do
+		eventCopy[key] = value
+	end
+	
+	-- Randomly select a text variation
+	local selectedText = event.textVariants[RANDOM:NextInteger(1, #event.textVariants)]
+	eventCopy.text = selectedText
+	
+	-- Also check for title variants
+	if event.titleVariants and type(event.titleVariants) == "table" and #event.titleVariants > 0 then
+		eventCopy.title = event.titleVariants[RANDOM:NextInteger(1, #event.titleVariants)]
+	end
+	
+	-- And question variants
+	if event.questionVariants and type(event.questionVariants) == "table" and #event.questionVariants > 0 then
+		eventCopy.question = event.questionVariants[RANDOM:NextInteger(1, #event.questionVariants)]
+	end
+	
+	return eventCopy
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════════

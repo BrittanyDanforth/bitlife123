@@ -4463,6 +4463,7 @@ local FamePathEvents = {
 	},
 	
 	-- Hater/Critic event
+	-- CRITICAL FIX: "First Hater" should only happen ONCE (oneTime = true)
 	{
 		id = "fame_path_first_hater",
 		title = "😠 Your First Hater",
@@ -4473,7 +4474,7 @@ local FamePathEvents = {
 		minAge = 13,
 		maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 3,
+		oneTime = true, -- CRITICAL FIX: First hater should only happen ONCE!
 		conditions = { requiresFlags = { pursuing_fame = true, content_creator = true } },
 		choices = {
 			{

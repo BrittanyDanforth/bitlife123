@@ -16,15 +16,35 @@ SocialMediaEvents.events = {
 		id = "social_viral_post",
 		title = "Viral Post Opportunity",
 		emoji = "📱",
+		-- CRITICAL FIX: Added text variations to prevent repetitive feel
+		textVariants = {
+			"One of your posts is gaining traction!",
+			"Whoa, your latest post is blowing up!",
+			"The algorithm chose YOU today! Post is trending!",
+			"Your content is getting shared everywhere!",
+			"Something you posted is resonating with people!",
+		},
 		text = "One of your posts is gaining traction!",
 		question = "How does the post perform?",
 		minAge = 13, maxAge = 80,
-		baseChance = 0.4,
-		cooldown = 2,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to 5 to prevent spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social_media",
 		tags = { "viral", "social_media", "fame" },
+		
+		-- CRITICAL FIX: Require player to have posted before (content_creator flag)
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player should have some form of social media presence
+			local hasPresence = flags.content_creator or flags.streamer or flags.influencer 
+				or flags.pursuing_fame or flags.youtube_channel or flags.social_media_active
+			if not hasPresence then
+				return false, "Need active social media presence"
+			end
+			return true
+		end,
 		
 		-- CRITICAL: Random viral post outcome
 		choices = {

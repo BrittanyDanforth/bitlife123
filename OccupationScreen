@@ -2627,9 +2627,11 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 	-- CRITICAL UI FIX: Proper card sizing (don't over-shrink!)
 	-- CRITICAL FIX #USER-5: Taller cards for entertainment careers (show stats)
 	-- ═══════════════════════════════════════════════════════════
+	-- CRITICAL UI FIX #MOBILE-2: Increased card heights to prevent button overflow
+	-- after fixing the button row spacing issue
 	local isEntertainment = self:isEntertainmentCareer()
 	local entertainmentBonus = isEntertainment and (IS_TINY_PHONE and 45 or (IS_SMALL_PHONE and 55 or 70)) or 0
-	local CARD_HEIGHT = (IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 340)) + entertainmentBonus
+	local CARD_HEIGHT = (IS_TINY_PHONE and 320 or (IS_SMALL_PHONE and 340 or 360)) + entertainmentBonus
 	local ICON_SIZE = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 60)
 	local MARGIN = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 14)
 	local TITLE_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
@@ -3145,10 +3147,15 @@ function OccupationScreen:createCurrentJobCard(parent, job)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- ACTION BUTTONS ROW 2: Promotion, Raise, Quit
-	-- CRITICAL UI FIX: Better spacing and sizing for mobile
+	-- CRITICAL UI FIX #MOBILE-1: Fixed button bunching on mobile/tablets
+	-- Issue: Row 2 Y position was only 7px below Row 1 on tiny phones (162-155)
+	-- Fix: Row 2 Y = Row 1 Y + Row 1 height + proper gap
 	-- ═══════════════════════════════════════════════════════════
 	local actionRow2Height = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 34 or 40)
-	local actionRow2YPos = (IS_TINY_PHONE and 162 or (IS_SMALL_PHONE and 195 or 270)) + entertainmentStatsYOffset
+	-- CRITICAL FIX: Calculate proper Y position based on row 1 position + height + gap
+	-- Note: actionRow1YPos already includes entertainmentStatsYOffset, so don't add it again
+	local row2Gap = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 10 or 12)
+	local actionRow2YPos = actionRow1YPos + actionBtnHeight + row2Gap
 	local row2BtnTextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 13)
 
 	local actionRow2 = Instance.new("Frame")
