@@ -303,6 +303,9 @@ function LifeEvents.init()
 		{ name = "IntelligenceCareerEvents",  category = "career_intelligence" }, -- CIA Agent, FBI
 		{ name = "EnforcerEvents",            category = "career_mafia" },      -- Enforcer, Mob Muscle
 		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
+		{ name = "TradesCareerEvents",        category = "career_trades" },     -- Construction, Electrician, Plumber, Mechanic, Trucker
+		{ name = "ServiceCareerEvents",       category = "career_service" },    -- Waiter, Bartender, Flight Attendant, Personal Trainer
+		{ name = "MedicalCareerEvents",       category = "career_medical" },    -- EMT, Nurse, Doctor, Surgeon, Pharmacist
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!

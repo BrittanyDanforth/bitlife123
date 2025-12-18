@@ -1985,7 +1985,7 @@ Teen.events = {
 				feedText = "You engaged in debate...",
 				-- CRITICAL FIX: Debate minigame for internet arguments!
 				triggerMinigame = "debate",
-				minigameOptions = { difficulty = "easy" },
+				minigameOptions = { difficulty = "easy", context = "internet", title = "💻 ONLINE ARGUMENT" },
 				onResolve = function(state, minigameResult)
 					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					if won then

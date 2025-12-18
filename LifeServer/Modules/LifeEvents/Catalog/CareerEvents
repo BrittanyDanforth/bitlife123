@@ -49,7 +49,7 @@ local events = {
 				feedText = "Time to prove yourself...",
 				-- CRITICAL FIX: Debate minigame for job interviews!
 				triggerMinigame = "debate",
-				minigameOptions = { difficulty = "medium" },
+				minigameOptions = { difficulty = "medium", context = "interview", title = "🎤 JOB INTERVIEW" },
 				onResolve = function(state, minigameResult)
 					local won = minigameResult and (minigameResult.success or minigameResult.won)
 					

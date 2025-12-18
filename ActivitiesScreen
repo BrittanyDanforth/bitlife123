@@ -4499,6 +4499,29 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 			
 			if self._minigamesInstance and self._minigamesInstance.play then
 				log("Using Minigames module for:", minigameType)
+				
+				-- CRITICAL FIX: Add context for debate minigame to show correct title!
+				local debateContext = "general"
+				local debateTitle = nil
+				if minigameType == "debate" then
+					if item.id == "community_college" or item.id == "university" then
+						debateContext = "interview"
+						debateTitle = "📝 ADMISSION INTERVIEW"
+					elseif item.id == "medical_school" then
+						debateContext = "exam"
+						debateTitle = "🏥 MCAT EXAM"
+					elseif item.id == "law_school" then
+						debateContext = "exam"
+						debateTitle = "⚖️ LSAT EXAM"
+					elseif item.id == "business_school" then
+						debateContext = "exam"
+						debateTitle = "💼 GMAT EXAM"
+					elseif item.id == "karaoke" then
+						debateContext = "karaoke"
+						debateTitle = "🎤 KARAOKE BATTLE"
+					end
+				end
+				
 				self._minigamesInstance:play(minigameType, function(won, stats)
 					log("Minigame result - Won:", won)
 					if won then
@@ -4510,6 +4533,8 @@ function ActivitiesScreen:showMinigame(item, accentColor)
 				end, {
 					difficulty = item.id == "gym" and "medium" or "easy",
 					taps = item.id == "gym" and 25 or 15,
+					context = debateContext,
+					title = debateTitle,
 				})
 				return
 			end
@@ -4616,11 +4641,22 @@ function ActivitiesScreen:showCrimeMinigame(item)
 			
 			if self._minigamesInstance and self._minigamesInstance.play then
 				log("Using Minigames module for crime:", minigameType)
+				
+				-- CRITICAL FIX: Add context for debate minigame (extortion)
+				local crimeContext = nil
+				local crimeTitle = nil
+				if minigameType == "debate" and item.id == "extortion" then
+					crimeContext = "extortion"
+					crimeTitle = "😤 INTIMIDATION"
+				end
+				
 				self._minigamesInstance:play(minigameType, function(won, stats)
 					log("Crime minigame result - Won:", won)
 					self:doCrimeWithBonus(item, won)
 				end, {
 					difficulty = item.risk and item.risk >= 60 and "hard" or "medium",
+					context = crimeContext,
+					title = crimeTitle,
 				})
 				return
 			end

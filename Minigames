@@ -233,7 +233,9 @@ function Minigames.new(screenGui)
 end
 
 ----------------------------------------------------------------
--- DEBATE MINIGAME (Presidential Path)
+-- DEBATE/CHALLENGE MINIGAME (Used for multiple contexts)
+-- CRITICAL FIX: Title is now DYNAMIC based on context!
+-- This minigame is used for: job interviews, debates, arguments, tests, etc.
 ----------------------------------------------------------------
 
 function Minigames:createDebateGame()
@@ -270,15 +272,16 @@ function Minigames:createDebateGame()
 	stageFix.ZIndex = 202
 	stageFix.Parent = stage
 
-	local stageTitle = Instance.new("TextLabel")
-	stageTitle.Size = UDim2.new(1, 0, 1, 0)
-	stageTitle.BackgroundTransparency = 1
-	stageTitle.Font = F.Title
-	stageTitle.TextSize = 24
-	stageTitle.TextColor3 = C.White
-	stageTitle.Text = "🎤 PRESIDENTIAL DEBATE"
-	stageTitle.ZIndex = 203
-	stageTitle.Parent = stage
+	-- CRITICAL FIX: Store reference to title so we can update it dynamically!
+	self.debateStageTitle = Instance.new("TextLabel")
+	self.debateStageTitle.Size = UDim2.new(1, 0, 1, 0)
+	self.debateStageTitle.BackgroundTransparency = 1
+	self.debateStageTitle.Font = F.Title
+	self.debateStageTitle.TextSize = isTinyPhone() and 18 or (isSmallScreen() and 20 or 24)
+	self.debateStageTitle.TextColor3 = C.White
+	self.debateStageTitle.Text = "🎤 CHALLENGE"  -- Default - will be overridden
+	self.debateStageTitle.ZIndex = 203
+	self.debateStageTitle.Parent = stage
 
 	-- Score display
 	self.debateScoreFrame = Instance.new("Frame")
@@ -489,15 +492,42 @@ function Minigames:createDebateGame()
 	}
 end
 
-function Minigames:startDebate(callback)
+function Minigames:startDebate(callback, options)
 	self.callback = callback
 	self.debateOverlay.Visible = true
 	self.activeGame = "debate"
 
+	-- CRITICAL FIX: Dynamic title based on context!
+	-- Options can contain: title, context, difficulty
+	options = options or {}
+	local context = options.context or "general"
+	local title = options.title
+	
+	-- Set appropriate title based on context
+	if title then
+		self.debateStageTitle.Text = title
+	elseif context == "interview" or context == "job" then
+		self.debateStageTitle.Text = "🎤 JOB INTERVIEW"
+	elseif context == "argument" or context == "relationship" then
+		self.debateStageTitle.Text = "💬 HEATED ARGUMENT"
+	elseif context == "exam" or context == "test" or context == "school" then
+		self.debateStageTitle.Text = "📝 EXAM TIME"
+	elseif context == "karaoke" or context == "singing" then
+		self.debateStageTitle.Text = "🎤 KARAOKE BATTLE"
+	elseif context == "extortion" or context == "intimidation" then
+		self.debateStageTitle.Text = "😤 INTIMIDATION"
+	elseif context == "politics" or context == "political" then
+		self.debateStageTitle.Text = "🏛️ POLITICAL DEBATE"
+	elseif context == "internet" or context == "online" then
+		self.debateStageTitle.Text = "💻 ONLINE ARGUMENT"
+	else
+		self.debateStageTitle.Text = "🎤 QUICK THINKING"
+	end
+
 	self.yourScore = 0
 	self.oppScore = 0
 	self.currentQuestion = 0
-	self.totalQuestions = 5
+	self.totalQuestions = options.questionCount or 5
 
 	self.yourScoreLabel.Text = "0"
 	self.oppScoreLabel.Text = "0"
@@ -2807,7 +2837,7 @@ function Minigames:startConfrontation(callback, options)
 	options = options or {}
 	print("[Minigames] 😤 Starting CONFRONTATION minigame!")
 	
-	-- Use debate system for verbal confrontations
+	-- Use debate system for verbal confrontations - CRITICAL FIX: Pass context!
 	self:startDebate(function(won, stats)
 		local confrontResult = {
 			won = won,
@@ -2817,7 +2847,7 @@ function Minigames:startConfrontation(callback, options)
 		if callback then
 			callback(won, confrontResult)
 		end
-	end)
+	end, { context = options.context or "argument", title = options.title })
 end
 
 function Minigames:play(gameType, callback, options)
@@ -2827,7 +2857,8 @@ function Minigames:play(gameType, callback, options)
 
 	local success, err = pcall(function()
 		if gameType == "debate" then
-			self:startDebate(callback)
+			-- CRITICAL FIX: Pass options to debate for context-aware title!
+			self:startDebate(callback, options)
 		elseif gameType == "heist" then
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: 4-digit guesser (heist) is ONLY for extremely hard missions!
