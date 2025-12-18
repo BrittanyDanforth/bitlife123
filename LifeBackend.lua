@@ -2,6 +2,236 @@ local LifeBackend = {}
 LifeBackend.__index = LifeBackend
 
 local MarketplaceService = game:GetService("MarketplaceService")
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- DATA PERSISTENCE SYSTEM
+-- Auto-saves player progress on leave/rejoin so they continue where they left off
+-- ════════════════════════════════════════════════════════════════════════════════
+
+local DATA_STORE_NAME = "BitLifePlayerData_v1"
+local playerDataStore = nil
+
+-- Initialize DataStore (wrapped in pcall for Studio testing)
+local function initDataStore()
+	if playerDataStore then return playerDataStore end
+	local success, store = pcall(function()
+		return DataStoreService:GetDataStore(DATA_STORE_NAME)
+	end)
+	if success then
+		playerDataStore = store
+		print("[LifeBackend] DataStore initialized:", DATA_STORE_NAME)
+	else
+		warn("[LifeBackend] Failed to initialize DataStore:", store)
+	end
+	return playerDataStore
+end
+
+-- Serialize state for saving (removes non-serializable data)
+local function serializeState(state)
+	if not state then return nil end
+
+	local serialized = {}
+
+	-- Core stats
+	serialized.Age = state.Age
+	serialized.Money = state.Money
+	serialized.Fame = state.Fame
+	serialized.Karma = state.Karma
+	serialized.Gender = state.Gender
+	serialized.FirstName = state.FirstName
+	serialized.LastName = state.LastName
+	serialized.Country = state.Country
+	serialized.City = state.City
+	serialized.BirthYear = state.BirthYear
+
+	-- Stats table
+	if state.Stats then
+		serialized.Stats = {
+			Health = state.Stats.Health,
+			Happiness = state.Stats.Happiness,
+			Smarts = state.Stats.Smarts,
+			Looks = state.Stats.Looks,
+		}
+	end
+
+	-- Flags (all of them - they're all serializable)
+	if state.Flags then
+		serialized.Flags = {}
+		for k, v in pairs(state.Flags) do
+			if type(v) ~= "function" and type(v) ~= "userdata" then
+				serialized.Flags[k] = v
+			end
+		end
+	end
+
+	-- Career info
+	if state.CurrentJob then
+		serialized.CurrentJob = state.CurrentJob
+	end
+	if state.CareerInfo then
+		serialized.CareerInfo = state.CareerInfo
+	end
+
+	-- Relationships (simplified for storage)
+	if state.Relationships then
+		serialized.Relationships = {}
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				serialized.Relationships[id] = {
+					id = rel.id,
+					type = rel.type,
+					name = rel.name,
+					age = rel.age,
+					relationship = rel.relationship,
+					alive = rel.alive,
+					gender = rel.gender,
+				}
+			end
+		end
+	end
+
+	-- Premium states
+	if state.RoyalState then
+		serialized.RoyalState = state.RoyalState
+	end
+	if state.MobState then
+		serialized.MobState = state.MobState
+	end
+	if state.FameState then
+		serialized.FameState = state.FameState
+	end
+
+	-- Gamepass ownership (critical for persistence)
+	if state.GamepassOwnership then
+		serialized.GamepassOwnership = state.GamepassOwnership
+	end
+
+	-- Education
+	serialized.Education = state.Education
+
+	-- Assets
+	if state.Assets then
+		serialized.Assets = state.Assets
+	end
+
+	-- Timestamp for debugging
+	serialized._savedAt = os.time()
+	serialized._version = 1
+
+	return serialized
+end
+
+-- Deserialize state from loaded data
+local function deserializeState(data, player)
+	if not data then return nil end
+
+	-- Return the data as-is, the onPlayerAdded will merge it with fresh state
+	return data
+end
+
+-- Save player data to DataStore
+function LifeBackend:savePlayerData(player)
+	local store = initDataStore()
+	if not store then
+		warn("[LifeBackend] Cannot save - DataStore not available")
+		return false
+	end
+
+	local state = self.playerStates[player]
+	if not state then
+		warn("[LifeBackend] Cannot save - no state for player:", player.Name)
+		return false
+	end
+
+	local serialized = serializeState(state)
+	if not serialized then
+		warn("[LifeBackend] Cannot save - serialization failed")
+		return false
+	end
+
+	local key = "Player_" .. player.UserId
+
+	local success, err = pcall(function()
+		store:SetAsync(key, serialized)
+	end)
+
+	if success then
+		print("[LifeBackend] ✅ Saved data for", player.Name, "Age:", serialized.Age or "?")
+		return true
+	else
+		warn("[LifeBackend] ❌ Failed to save data for", player.Name, "Error:", err)
+		return false
+	end
+end
+
+-- Load player data from DataStore
+function LifeBackend:loadPlayerData(player)
+	local store = initDataStore()
+	if not store then
+		print("[LifeBackend] DataStore not available - starting fresh")
+		return nil
+	end
+
+	local key = "Player_" .. player.UserId
+
+	local success, data = pcall(function()
+		return store:GetAsync(key)
+	end)
+
+	if success and data then
+		print("[LifeBackend] ✅ Loaded saved data for", player.Name, "Age:", data.Age or "?", "Saved at:", data._savedAt or "?")
+		return deserializeState(data, player)
+	elseif success then
+		print("[LifeBackend] No saved data for", player.Name, "- starting new life")
+		return nil
+	else
+		warn("[LifeBackend] ❌ Failed to load data for", player.Name, "Error:", data)
+		return nil
+	end
+end
+
+-- Auto-save all players (for periodic saves and shutdown)
+function LifeBackend:saveAllPlayers()
+	local savedCount = 0
+	for player, state in pairs(self.playerStates) do
+		if player and player.Parent then -- Player still in game
+			if self:savePlayerData(player) then
+				savedCount = savedCount + 1
+			end
+		end
+	end
+	print("[LifeBackend] Auto-saved", savedCount, "players")
+	return savedCount
+end
+
+-- Clear saved data (called when player starts a NEW life/rebirth)
+-- This ensures they don't reload their old life when rejoining
+function LifeBackend:clearSaveData(player)
+	local store = initDataStore()
+	if not store then
+		warn("[LifeBackend] Cannot clear save - DataStore not available")
+		return false
+	end
+
+	local key = "Player_" .. player.UserId
+
+	local success, err = pcall(function()
+		store:RemoveAsync(key)
+	end)
+
+	if success then
+		print("[LifeBackend] 🗑️ Cleared saved data for", player.Name, "(starting new life)")
+		return true
+	else
+		warn("[LifeBackend] ❌ Failed to clear save data:", err)
+		return false
+	end
+end
+
 local GamepassSystem
 
 function LifeBackend:checkGamepassOwnership(player, gamepassKey)
@@ -4992,10 +5222,98 @@ function LifeBackend:onPlayerAdded(player)
 	if GamepassSystem and GamepassSystem.initializePlayerOwnership then
 		GamepassSystem:initializePlayerOwnership(player)
 	end
-	
-	local state = self:createInitialState(player)
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL: TRY TO LOAD SAVED DATA FIRST
+	-- If player has saved progress, restore it instead of creating new state
+	-- ════════════════════════════════════════════════════════════════════════════════
+	local savedData = self:loadPlayerData(player)
+	local state
+
+	if savedData and savedData.Age and savedData.Age > 0 then
+		-- Player has saved data - restore their progress!
+		print("[LifeBackend] 🔄 Restoring saved progress for", player.Name, "- Age:", savedData.Age)
+
+		-- Create base state structure
+		state = self:createInitialState(player)
+
+		-- Restore saved data over the base state
+		state.Age = savedData.Age
+		state.Money = savedData.Money or state.Money
+		state.Fame = savedData.Fame or state.Fame
+		state.Karma = savedData.Karma or state.Karma
+		state.Gender = savedData.Gender or state.Gender
+		state.FirstName = savedData.FirstName or state.FirstName
+		state.LastName = savedData.LastName or state.LastName
+		state.Country = savedData.Country or state.Country
+		state.City = savedData.City or state.City
+		state.BirthYear = savedData.BirthYear or state.BirthYear
+
+		-- Restore stats
+		if savedData.Stats then
+			state.Stats = state.Stats or {}
+			state.Stats.Health = savedData.Stats.Health or state.Stats.Health
+			state.Stats.Happiness = savedData.Stats.Happiness or state.Stats.Happiness
+			state.Stats.Smarts = savedData.Stats.Smarts or state.Stats.Smarts
+			state.Stats.Looks = savedData.Stats.Looks or state.Stats.Looks
+		end
+
+		-- Restore flags (CRITICAL for story paths!)
+		if savedData.Flags then
+			state.Flags = state.Flags or {}
+			for k, v in pairs(savedData.Flags) do
+				state.Flags[k] = v
+			end
+		end
+
+		-- Restore career
+		if savedData.CurrentJob then
+			state.CurrentJob = savedData.CurrentJob
+		end
+		if savedData.CareerInfo then
+			state.CareerInfo = savedData.CareerInfo
+		end
+
+		-- Restore relationships
+		if savedData.Relationships then
+			state.Relationships = savedData.Relationships
+		end
+
+		-- Restore premium states
+		if savedData.RoyalState then
+			state.RoyalState = savedData.RoyalState
+		end
+		if savedData.MobState then
+			state.MobState = savedData.MobState
+		end
+		if savedData.FameState then
+			state.FameState = savedData.FameState
+		end
+
+		-- Restore gamepass ownership
+		if savedData.GamepassOwnership then
+			state.GamepassOwnership = savedData.GamepassOwnership
+		end
+
+		-- Restore education
+		if savedData.Education then
+			state.Education = savedData.Education
+		end
+
+		-- Restore assets
+		if savedData.Assets then
+			state.Assets = savedData.Assets
+		end
+
+		print("[LifeBackend] ✅ Progress restored! Age:", state.Age, "Money: $" .. (state.Money or 0))
+	else
+		-- No saved data - create fresh state
+		state = self:createInitialState(player)
+		print("[LifeBackend] 🆕 New player - starting fresh life for", player.Name)
+	end
+
 	self.playerStates[player] = state
-	
+
 	-- CRITICAL FIX #10: Ensure GamepassOwnership is stored in state for persistence
 	if state.GamepassOwnership then
 		-- Also tell GamepassSystem about any restored ownership from DataStore
@@ -5003,7 +5321,7 @@ function LifeBackend:onPlayerAdded(player)
 			GamepassSystem:restoreOwnershipFromState(player, state.GamepassOwnership)
 		end
 	end
-	
+
 	-- CRITICAL FIX #500: DON'T push "A new life begins..." here!
 	-- The setLifeInfo function will send the proper birth message.
 	-- Sending a message here causes duplicate/overlapping messages at spawn.
@@ -5012,6 +5330,14 @@ function LifeBackend:onPlayerAdded(player)
 end
 
 function LifeBackend:onPlayerRemoving(player)
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL: SAVE PLAYER DATA BEFORE THEY LEAVE
+	-- This ensures progress is not lost when leaving/rejoining
+	-- ════════════════════════════════════════════════════════════════════════════════
+	print("[LifeBackend] 💾 Saving data for", player.Name, "before they leave...")
+	self:savePlayerData(player)
+
+	-- Now clear the state
 	self.playerStates[player] = nil
 	self.pendingEvents[player.UserId] = nil
 end
@@ -8880,7 +9206,13 @@ function LifeBackend:resetLife(player)
 	
 	-- Store the new state
 	self.playerStates[player] = newState
-	
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL: Clear saved data when starting a NEW life
+	-- This prevents the old life from being restored on rejoin
+	-- ════════════════════════════════════════════════════════════════════════════════
+	self:clearSaveData(player)
+
 	debugPrint("Life reset complete for", player.Name, "- all state cleared")
 	self:pushState(player, "A new life begins...")
 end
@@ -13475,6 +13807,31 @@ function LifeBackend:start()
 	Players.PlayerRemoving:Connect(function(player)
 		self:onPlayerRemoving(player)
 	end)
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL: BIND TO CLOSE - Save all players when server shuts down
+	-- This prevents data loss during server restarts/shutdowns
+	-- ════════════════════════════════════════════════════════════════════════════════
+	game:BindToClose(function()
+		print("[LifeBackend] 🛑 Server shutting down - saving all player data...")
+		self:saveAllPlayers()
+		print("[LifeBackend] ✅ All data saved before shutdown")
+	end)
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- PERIODIC AUTO-SAVE - Save all players every 5 minutes as backup
+	-- This provides additional protection against data loss
+	-- ════════════════════════════════════════════════════════════════════════════════
+	local AUTO_SAVE_INTERVAL = 300 -- 5 minutes in seconds
+	task.spawn(function()
+		while true do
+			task.wait(AUTO_SAVE_INTERVAL)
+			print("[LifeBackend] ⏰ Periodic auto-save triggered...")
+			self:saveAllPlayers()
+		end
+	end)
+
+	print("[LifeBackend] ✅ Data persistence system initialized (auto-save every 5 min)")
 end
 
 local backendSingleton
