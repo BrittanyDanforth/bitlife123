@@ -51,7 +51,7 @@ local function isRapper(state)
 		end
 	end
 
-	-- Check for rapper job
+	-- Check for rapper job FIRST (most reliable)
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
 		local jobName = (state.CurrentJob.name or ""):lower()
@@ -61,6 +61,17 @@ local function isRapper(state)
 		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or
 		   jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper") then
 			return true
+		end
+		
+		-- CRITICAL FIX: If player has a REGULAR job (non-entertainment), they're NOT a rapper!
+		-- This prevents rapper events from firing for IT Support, Office workers, etc.
+		local cat = (state.CurrentJob.category or ""):lower()
+		if cat ~= "entertainment" and cat ~= "music" and cat ~= "fame" and cat ~= "celebrity" then
+			-- Not in entertainment, and didn't match rapper job - NOT a rapper!
+			-- Only exception: if they have strong rapper flags AND no job
+			if not (state.Flags and state.Flags.rapper) then
+				return false
+			end
 		end
 	end
 
@@ -76,7 +87,7 @@ local function isRapper(state)
 end
 
 local function isContentCreator(state)
-	-- Check job
+	-- Check job FIRST (most reliable)
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
 		local jobName = (state.CurrentJob.name or ""):lower()
@@ -87,13 +98,30 @@ local function isContentCreator(state)
 		if (jobCat == "entertainment" or jobCat == "creative") and (jobName:find("creator") or jobName:find("stream") or jobName:find("youtube")) then
 			return true
 		end
+		-- Check if it's a fame career
+		if state.CurrentJob.isFameCareer and state.FameState then
+			local careerPath = (state.FameState.careerPath or ""):lower()
+			if careerPath == "influencer" or careerPath == "streamer" or careerPath == "youtuber" then
+				return true
+			end
+		end
+		
+		-- CRITICAL FIX: If player has a REGULAR job, they're NOT a content creator!
+		-- This prevents content events from firing for IT Support, Office workers, etc.
+		if jobCat ~= "entertainment" and jobCat ~= "creative" and jobCat ~= "fame" and jobCat ~= "celebrity" then
+			-- Regular job category - NOT a content creator
+			return false
+		end
 	end
-	-- Check flags
-	if state.Flags then
-		if state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming 
-		   or state.Flags.pursuing_influencer or state.Flags.pursuing_content or state.Flags.youtuber
-		   or state.Flags.social_media_presence or state.Flags.first_video_uploaded then
-			return true
+	
+	-- Only allow flag-based check if player has NO job (pursuing content as career)
+	if not state.CurrentJob then
+		if state.Flags then
+			if state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming 
+			   or state.Flags.pursuing_influencer or state.Flags.pursuing_content or state.Flags.youtuber
+			   or state.Flags.social_media_presence or state.Flags.first_video_uploaded then
+				return true
+			end
 		end
 	end
 	return false
@@ -1279,10 +1307,28 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		category = "career_creative",
-		-- Works for any content creator
+		-- CRITICAL FIX: Must be ACTIVELY pursuing content creation career, not just casual
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return flags.first_video_posted or flags.content_creator or flags.pursuing_streaming
+			-- Must have started content creation
+			if not (flags.first_video_posted or flags.content_creator or flags.pursuing_streaming) then
+				return false
+			end
+			-- CRITICAL: Must NOT have a regular non-content job
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local jobName = (state.CurrentJob.name or ""):lower()
+				-- If they have a content creator job, allow
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") or
+				   jobName:find("creator") or jobName:find("streamer") or jobName:find("youtuber") or jobName:find("influencer") then
+					return true
+				end
+				-- If they have a regular job (like IT Support), block this event
+				if state.CurrentJob.isFameCareer ~= true then
+					return false
+				end
+			end
+			return true
 		end,
 		
 		choices = {
@@ -2070,8 +2116,33 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		category = "career_creative",
+		-- CRITICAL FIX: MUST be a content creator JOB, not just have a flag from posting once
 		eligibility = function(state)
-			return state.Flags and (state.Flags.daily_uploader or state.Flags.content_creator)
+			-- Must have the content creator flag
+			if not (state.Flags and (state.Flags.daily_uploader or state.Flags.content_creator or state.Flags.streamer or state.Flags.youtuber)) then
+				return false
+			end
+			-- CRITICAL: Must actually be in a content creator career!
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local jobName = (state.CurrentJob.name or ""):lower()
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") or
+				   jobName:find("creator") or jobName:find("streamer") or jobName:find("youtuber") or jobName:find("influencer") then
+					return true
+				end
+				-- Check if it's a fame career
+				if state.CurrentJob.isFameCareer and state.FameState then
+					local careerPath = (state.FameState.careerPath or ""):lower()
+					if careerPath == "influencer" or careerPath == "streamer" or careerPath == "youtuber" then
+						return true
+					end
+				end
+			end
+			-- Block if has a regular job - IT Support shouldn't get creator burnout!
+			if state.CurrentJob and not state.CurrentJob.isFameCareer then
+				return false
+			end
+			return true
 		end,
 		
 		choices = {
