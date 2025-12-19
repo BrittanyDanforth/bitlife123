@@ -762,6 +762,12 @@ function Minigames:showNextDebateQuestion()
 	end
 
 	local q = self.selectedQuestions[self.currentQuestion]
+	-- CRITICAL FIX: Guard against nil question
+	if not q or not q.q then
+		warn("[Minigames] Question is nil at index:", self.currentQuestion)
+		self:endDebate()
+		return
+	end
 	self.debateQuestion.Text = "Q" .. self.currentQuestion .. "/" .. #self.selectedQuestions .. ": " .. q.q
 
 	-- Shuffle answers
@@ -4239,10 +4245,10 @@ function Minigames:startCombat(callback, options)
 		}
 	}
 	
-	-- Set up UI
-	self.combatTitle.Text = context.emoji .. " " .. context.title
-	self.combatNarrative.Text = context.desc .. "\n\nYou're facing " .. opponent.desc .. "."
-	self.oppNameLabel.Text = "😤 " .. string.upper(opponent.name)
+	-- Set up UI (CRITICAL FIX: Guard against nil values)
+	self.combatTitle.Text = (context.emoji or "⚔️") .. " " .. (context.title or "Fight")
+	self.combatNarrative.Text = (context.desc or "A fight breaks out!") .. "\n\nYou're facing " .. (opponent.desc or "an opponent") .. "."
+	self.oppNameLabel.Text = "😤 " .. string.upper(opponent.name or "OPPONENT")
 	self.combatRound.Text = "⚔️ ROUND 1"
 	
 	-- Reset health bars

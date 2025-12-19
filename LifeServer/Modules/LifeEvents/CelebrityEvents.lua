@@ -2822,11 +2822,17 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 	if not career then
 		return events
 	end
-	
+
 	fameState.yearsInCareer = fameState.yearsInCareer + 1
-	
+
 	local currentStage = career.stages[fameState.currentStage]
-	
+
+	-- CRITICAL FIX: Guard against nil currentStage
+	if not currentStage or not currentStage.fameGainPerYear then
+		warn("[CelebrityEvents] currentStage or fameGainPerYear is nil for stage:", fameState.currentStage)
+		return events
+	end
+
 	-- Fame gain
 	local fameGain = math.random(currentStage.fameGainPerYear.min, currentStage.fameGainPerYear.max)
 	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameGain)
