@@ -2743,6 +2743,75 @@ function CelebrityEvents.checkPromotion(lifeState)
 	return false, nil
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Map CelebrityEvents stage IDs to OccupationScreen job IDs
+-- This fixes the mismatch between server and client job ID formats!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function getJobIdForStage(careerPath, stageId)
+	-- Influencer career mapping
+	if careerPath == "influencer" then
+		local mapping = {
+			newbie = "new_influencer",
+			micro = "micro_influencer",
+			growing = "growing_influencer",
+			established = "established_influencer",
+			famous = "famous_influencer",
+			mega = "mega_influencer",
+			celebrity = "mega_influencer", -- No separate ID, use mega
+			icon = "influencer_icon",
+		}
+		return mapping[stageId] or (stageId .. "_influencer")
+	end
+	
+	-- Streamer career mapping  
+	if careerPath == "streamer" then
+		local mapping = {
+			newbie = "new_streamer",
+			small = "small_streamer",
+			growing = "growing_streamer",
+			partner = "partner_streamer",
+			viral = "viral_streamer",
+			famous = "famous_streamer",
+			icon = "streamer_icon",
+		}
+		return mapping[stageId] or (stageId .. "_streamer")
+	end
+	
+	-- Rapper career mapping
+	if careerPath == "rapper" then
+		local mapping = {
+			underground = "underground_rapper",
+			local_rapper = "local_rapper",
+			buzzing = "buzzing_rapper",
+			signed = "signed_rapper",
+			hot = "hot_rapper",
+			mainstream = "mainstream_rapper",
+			superstar = "superstar_rapper",
+			legend = "legend_rapper",
+		}
+		return mapping[stageId] or (stageId .. "_rapper")
+	end
+	
+	-- Actor career mapping
+	if careerPath == "actor" then
+		local mapping = {
+			extra = "actor_extra",
+			background = "background_actor",
+			bit_part = "bit_part_actor",
+			guest_star = "guest_star_actor",
+			supporting = "supporting_actor",
+			lead_tv = "tv_lead",
+			lead_film = "movie_star",
+			a_list = "a_list_celebrity",
+			legend = "hollywood_legend",
+		}
+		return mapping[stageId] or (stageId .. "_actor")
+	end
+	
+	-- Default fallback
+	return careerPath .. "_" .. stageId
+end
+
 function CelebrityEvents.promoteToStage(lifeState, stageIndex)
 	local fameState = lifeState.FameState
 	if not fameState then
@@ -2761,12 +2830,23 @@ function CelebrityEvents.promoteToStage(lifeState, stageIndex)
 	
 	fameState.currentStage = stageIndex
 	fameState.stageName = stage.name
-	fameState.lastPromotionYear = fameState.yearsInCareer
+	fameState.yearsInStage = 0 -- CRITICAL FIX: Reset years in stage on promotion
+	fameState.lastPromotionYear = fameState.yearsInCareer or 0
 	
-	-- Update salary
+	-- CRITICAL FIX: Update the entire job object with correct ID and salary!
 	if lifeState.CurrentJob then
-		lifeState.CurrentJob.salary = math.random(stage.salary.min, stage.salary.max)
+		local newSalary = math.random(stage.salary.min, stage.salary.max)
+		
+		-- CRITICAL FIX: Update job ID to match OccupationScreen's Jobs catalog
+		lifeState.CurrentJob.id = getJobIdForStage(fameState.careerPath, stage.id)
 		lifeState.CurrentJob.name = stage.name
+		lifeState.CurrentJob.title = stage.name -- Some code uses .title instead of .name
+		lifeState.CurrentJob.salary = newSalary
+		
+		-- Update emoji if stage has one
+		if stage.emoji then
+			lifeState.CurrentJob.emoji = stage.emoji
+		end
 	end
 	
 	return true
@@ -2788,25 +2868,58 @@ function CelebrityEvents.initializeFameCareer(lifeState, careerPath, subType)
 		stageName = firstStage.name,
 		subType = subType, -- e.g., genre for music, sport for athlete
 		yearsInCareer = 0,
+		yearsInStage = 0,
 		lastPromotionYear = 0,
-		followers = firstStage.followers or 0,
+		followers = firstStage.followers or 100,
 		endorsements = {},
 		awards = {},
 		scandals = 0,
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Initialize ALL influencer/creator stats
+		-- These were missing and caused stats to show 0!
+		-- ═══════════════════════════════════════════════════════════════════════
+		subscribers = firstStage.followers or 100,
+		totalLikes = math.random(10, 500),
+		totalPosts = math.random(1, 10),
+		totalVideos = math.random(1, 5),
+		totalViews = math.random(100, 5000),
+		-- Rapper/musician stats
+		monthlyListeners = careerPath == "rapper" and math.random(10, 100) or 0,
+		totalStreams = careerPath == "rapper" and math.random(50, 500) or 0,
+		totalTracks = careerPath == "rapper" and 0 or nil,
 	}
 	
+	-- CRITICAL FIX: Use the proper job ID that matches OccupationScreen's Jobs catalog!
 	lifeState.CurrentJob = {
-		id = careerPath .. "_" .. firstStage.id,
+		id = getJobIdForStage(careerPath, firstStage.id),
 		name = firstStage.name,
+		title = firstStage.name, -- Some code uses .title instead of .name
 		company = career.name .. " Industry",
 		salary = math.random(firstStage.salary.min, firstStage.salary.max),
 		category = "entertainment",
+		emoji = firstStage.emoji or "⭐",
 		isFameCareer = true,
+		isInfluencer = (careerPath == "influencer"),
+		isStreamer = (careerPath == "streamer"),
+		isRapper = (careerPath == "rapper"),
+		isAthlete = (careerPath == "athlete"),
+		isActor = (careerPath == "actor"),
 	}
 	
 	lifeState.Flags = lifeState.Flags or {}
 	lifeState.Flags.fame_career = true
 	lifeState.Flags["career_" .. careerPath] = true
+	
+	-- Set specific career flags for event filtering
+	if careerPath == "influencer" then
+		lifeState.Flags.influencer = true
+		lifeState.Flags.content_creator = true
+	elseif careerPath == "streamer" then
+		lifeState.Flags.streamer = true
+		lifeState.Flags.content_creator = true
+	elseif careerPath == "rapper" then
+		lifeState.Flags.rapper = true
+	end
 	
 	return true, string.format("Started career as %s!", firstStage.name)
 end
@@ -2823,9 +2936,12 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 		return events
 	end
 	
-	fameState.yearsInCareer = fameState.yearsInCareer + 1
+	fameState.yearsInCareer = (fameState.yearsInCareer or 0) + 1
 	
-	local currentStage = career.stages[fameState.currentStage]
+	local currentStage = career.stages[fameState.currentStage or 1]
+	if not currentStage then
+		return events
+	end
 	
 	-- Fame gain
 	local fameGain = math.random(currentStage.fameGainPerYear.min, currentStage.fameGainPerYear.max)
@@ -2837,10 +2953,86 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 		lifeState.Money = (lifeState.Money or 0) + lifeState.CurrentJob.salary
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Update influencer-specific stats (followers, likes, posts)
+	-- This was missing and caused influencer stats to show 0!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if fameState.careerPath == "influencer" or fameState.careerPath == "streamer" or fameState.careerPath == "youtuber" then
+		-- Calculate follower growth based on current stage
+		local currentFollowers = fameState.followers or 0
+		local stageFollowerTarget = currentStage.followers or (currentFollowers * 1.2)
+		
+		-- Growth rate: faster when smaller, slower when bigger (diminishing returns)
+		local growthMultiplier = 0.1 + (math.random(5, 25) / 100) -- 15% to 35% growth
+		local followerGrowth = math.floor(math.max(100, currentFollowers * growthMultiplier))
+		
+		-- Also add flat bonus based on stage
+		local stageBonus = {
+			[1] = math.random(50, 200),      -- New Creator
+			[2] = math.random(500, 2000),    -- Micro Influencer
+			[3] = math.random(2000, 10000),  -- Growing Influencer
+			[4] = math.random(10000, 50000), -- Established Creator
+			[5] = math.random(50000, 200000), -- Famous Influencer
+			[6] = math.random(200000, 1000000), -- Mega Influencer
+			[7] = math.random(500000, 3000000), -- Internet Celebrity
+			[8] = math.random(1000000, 10000000), -- Social Media Icon
+		}
+		local bonus = stageBonus[fameState.currentStage or 1] or math.random(100, 1000)
+		
+		fameState.followers = currentFollowers + followerGrowth + bonus
+		
+		-- Also sync subscribers for streamers (they use both)
+		if fameState.careerPath == "streamer" then
+			fameState.subscribers = fameState.followers
+		end
+		
+		-- Update likes (proportional to followers, engagement rate)
+		local engagementRate = math.random(3, 15) / 100 -- 3% to 15% engagement
+		local yearlyPosts = math.random(50, 365) -- Posts per year
+		local likesPerPost = math.floor(fameState.followers * engagementRate)
+		local yearlyLikes = likesPerPost * yearlyPosts
+		fameState.totalLikes = (fameState.totalLikes or 0) + yearlyLikes
+		
+		-- Update posts/videos
+		fameState.totalPosts = (fameState.totalPosts or 0) + yearlyPosts
+		fameState.totalVideos = (fameState.totalVideos or 0) + math.random(12, 100)
+		
+		-- Update views for streamers/youtubers
+		if fameState.careerPath == "streamer" then
+			local viewsPerStream = math.floor(fameState.followers * math.random(5, 30) / 100)
+			local streamsPerYear = math.random(100, 365)
+			fameState.totalViews = (fameState.totalViews or 0) + (viewsPerStream * streamsPerYear)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Update rapper-specific stats (monthly listeners, streams, tracks)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if fameState.careerPath == "rapper" or fameState.careerPath == "musician" then
+		local currentListeners = fameState.monthlyListeners or 0
+		
+		-- Growth based on stage
+		local listenerGrowth = math.floor(math.max(100, currentListeners * (math.random(10, 40) / 100)))
+		fameState.monthlyListeners = currentListeners + listenerGrowth
+		
+		-- Yearly streams (monthly listeners * average monthly streams)
+		local monthlyStreamsPerListener = math.random(3, 15)
+		fameState.totalStreams = (fameState.totalStreams or 0) + (fameState.monthlyListeners * monthlyStreamsPerListener)
+		
+		-- New tracks released per year
+		fameState.totalTracks = (fameState.totalTracks or 0) + math.random(3, 20)
+	end
+	
 	-- Check promotion
 	local canPromote, nextStage = CelebrityEvents.checkPromotion(lifeState)
 	if canPromote then
 		CelebrityEvents.promoteToStage(lifeState, fameState.currentStage + 1)
+		
+		-- CRITICAL FIX: Update followers to match new stage's expected followers
+		if nextStage.followers then
+			fameState.followers = math.max(fameState.followers or 0, nextStage.followers)
+		end
+		
 		table.insert(events, {
 			type = "promotion",
 			message = string.format("🎉 You've been promoted to %s!", nextStage.name),
