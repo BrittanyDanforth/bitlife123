@@ -15,14 +15,23 @@
 
 local AthleteCareerEvents = {}
 
--- Helper function to check if player has an athletic career
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #16: Enhanced helper functions for athletic careers
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function hasAthleteJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- CRITICAL FIX #17: Exclude non-athlete entertainment careers
+	if jobId:find("actor") or jobId:find("singer") or jobId:find("musician")
+	   or jobId:find("rapper") or jobId:find("streamer") or jobId:find("youtuber") then
+		return false
+	end
 	return jobCat == "sports" or jobId:find("athlete") or jobId:find("player") or 
 		   jobId:find("football") or jobId:find("basketball") or jobId:find("baseball") or
-		   jobId:find("soccer") or jobId:find("mma") or jobId:find("fighter")
+		   jobId:find("soccer") or jobId:find("mma") or jobId:find("fighter") or
+		   jobId:find("tennis") or jobId:find("golf") or jobId:find("hockey") or
+		   jobId:find("boxing") or jobId:find("racing")
 end
 
 local function isProAthlete(state)
@@ -30,6 +39,34 @@ local function isProAthlete(state)
 	local jobId = (state.CurrentJob.id or ""):lower()
 	return jobId:find("pro") or jobId:find("professional") or 
 		   (state.Flags and state.Flags.signed_athlete)
+end
+
+-- CRITICAL FIX #18: Check for specific sport type
+local function isTeamSportAthlete(state)
+	if not hasAthleteJob(state) then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("football") or jobId:find("basketball") or jobId:find("baseball")
+		or jobId:find("soccer") or jobId:find("hockey")
+end
+
+-- CRITICAL FIX #19: Check for individual sport athlete
+local function isIndividualAthlete(state)
+	if not hasAthleteJob(state) then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("tennis") or jobId:find("golf") or jobId:find("mma")
+		or jobId:find("boxing") or jobId:find("racing") or jobId:find("swimmer")
+end
+
+-- CRITICAL FIX #20: Check if player is in prime athletic years
+local function isInPrime(state)
+	local age = state.Age or 25
+	return age >= 22 and age <= 34
+end
+
+-- CRITICAL FIX #21: Check if athlete is aging/declining
+local function isVeteranAthlete(state)
+	local age = state.Age or 25
+	return age >= 32 and hasAthleteJob(state)
 end
 
 AthleteCareerEvents.events = {

@@ -20,6 +20,49 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RoyaltyEvents = {}
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #8: Helper functions for royalty eligibility
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function hasRoyaltyGamepass(state)
+	return state.Flags and state.Flags.royalty_gamepass == true
+end
+
+local function isRoyal(state)
+	return state.Flags and (state.Flags.is_royal == true or state.Flags.born_royal == true)
+end
+
+local function isMonarch(state)
+	if not state.Flags then return false end
+	return state.Flags.is_monarch == true or state.Flags.became_monarch == true
+		or state.Flags.crowned == true
+end
+
+local function isHeirToThrone(state)
+	if not state.Flags then return false end
+	return state.Flags.heir_to_throne == true or state.Flags.crown_prince == true
+		or state.Flags.crown_princess == true
+end
+
+local function getRoyalPopularity(state)
+	if not state.Flags then return 50 end
+	return state.Flags.royal_popularity or 50
+end
+
+-- CRITICAL FIX #9: Prevent royal events for non-royals
+local function canHaveRoyalEvents(state)
+	if not hasRoyaltyGamepass(state) then return false end
+	if not isRoyal(state) then return false end
+	return true
+end
+
+-- CRITICAL FIX #10: Check if player is exiled or abdicated
+local function isActiveRoyal(state)
+	if not isRoyal(state) then return false end
+	if state.Flags and state.Flags.abdicated then return false end
+	if state.Flags and state.Flags.exiled then return false end
+	return true
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- ROYAL COUNTRIES AND TITLES
 -- ════════════════════════════════════════════════════════════════════════════
@@ -652,6 +695,8 @@ RoyaltyEvents.LifeEvents = {
 		title = "👑 Royal Playmates",
 		emoji = "👑",
 		text = "As a young royal, you're surrounded by children from noble families. Who do you want to be friends with?",
+		-- CRITICAL FIX #40: Eligibility check for royal events
+		eligibility = function(state) return canHaveRoyalEvents(state) and isActiveRoyal(state) end,
 		minAge = 8,
 		maxAge = 12,
 		isRoyalOnly = true,
@@ -688,6 +733,8 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 12,
 		isRoyalOnly = true,
 		oneTime = true,
+		-- CRITICAL FIX #41: Eligibility check for royal horse riding
+		eligibility = function(state) return canHaveRoyalEvents(state) end,
 		choices = {
 			{
 				text = "Mount up and ride like the wind!",
@@ -719,6 +766,8 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 14,
 		isRoyalOnly = true,
 		cooldown = 2,
+		-- CRITICAL FIX #42: Eligibility for Christmas events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Wave to the crowds from the balcony",
@@ -749,6 +798,8 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 14,
 		isRoyalOnly = true,
 		cooldown = 2,
+		-- CRITICAL FIX #43: Eligibility for tutor events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Study hard and impress them",
@@ -781,6 +832,8 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 16,
 		isRoyalOnly = true,
 		cooldown = 3,
+		-- CRITICAL FIX #44: Eligibility for summer vacation events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "The countryside estate",
@@ -821,6 +874,8 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		requiresFlags = { in_boarding_school = true },
 		cooldown = 2,
+		-- CRITICAL FIX #45: Eligibility for school events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Excel at academics",
@@ -861,6 +916,8 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		baseChance = 0.4,
 		cooldown = 2,
+		-- CRITICAL FIX #46: Eligibility for teen scandal events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Apologize publicly",
@@ -894,6 +951,8 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 18,
 		isRoyalOnly = true,
 		oneTime = true,
+		-- CRITICAL FIX #47: Eligibility for charity patron events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Children's hospital",
@@ -935,6 +994,8 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		oneTime = true,
 		isMilestone = true,
+		-- CRITICAL FIX #48: Eligibility for interview events
+		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
 			{
 				text = "Be polished and professional",
