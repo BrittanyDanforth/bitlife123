@@ -10,6 +10,45 @@
 
 local RANDOM = Random.new()
 
+-- CRITICAL FIX: Helper function to check if player has a formal corporate job
+-- Entertainment careers don't have "coworkers" or "company funds" for white collar crimes
+local function hasCorporateJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- Check for isFameCareer flag
+	if state.CurrentJob.isFameCareer then return false end
+	
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	local jobId = (state.CurrentJob.id or ""):lower()
+	
+	-- Block entertainment careers
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+	   jobCat == "racing" or jobCat == "gaming" then
+		return false
+	end
+	
+	-- Block specific entertainment job IDs
+	local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator", "model"}
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) then return false end
+	end
+	
+	-- Must be in a corporate-type job category
+	local corporateCategories = {"finance", "office", "corporate", "business", "admin", "tech", "government", "medical", "law"}
+	for _, cat in ipairs(corporateCategories) do
+		if jobCat == cat then return true end
+	end
+	
+	-- Check for corporate job keywords
+	local corporateKeywords = {"manager", "director", "accountant", "analyst", "banker", "executive", "officer", "supervisor", "administrator"}
+	for _, keyword in ipairs(corporateKeywords) do
+		if jobId:find(keyword) then return true end
+	end
+	
+	return true -- Default to true if has any job (for generic white collar crimes)
+end
+
 -- Helper function to properly incarcerate a player
 -- CRITICAL FIX: Now handles juvenile detention for minors automatically!
 local function incarceratePlayer(state, yearsMin, yearsMax, reason)
@@ -562,6 +601,8 @@ local events = {
 		cooldown = 2,
 		maxOccurrences = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for corporate jobs - influencers don't have "coworkers" with stock tips
+		eligibility = hasCorporateJob,
 		blockedByFlags = { in_prison = true },
 		choices = {
 			{
@@ -616,6 +657,8 @@ local events = {
 		cooldown = 3,
 		maxOccurrences = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for corporate jobs - influencers don't have "company funds"
+		eligibility = hasCorporateJob,
 		blockedByFlags = { in_prison = true },
 		choices = {
 			{

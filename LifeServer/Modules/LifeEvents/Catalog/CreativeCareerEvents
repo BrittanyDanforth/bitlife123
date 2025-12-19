@@ -26,8 +26,15 @@ local function isEntertainmentCareer(state)
 	local jobName = (state.CurrentJob.name or ""):lower()
 	local category = (state.CurrentJob.category or ""):lower()
 	
-	-- Block entertainment categories
-	if category == "entertainment" or category == "celebrity" or category == "fame" then
+	-- CRITICAL FIX: Block ALL entertainment-related categories
+	if category == "entertainment" or category == "celebrity" or category == "fame" or
+	   category == "sports" or category == "music" or category == "acting" or
+	   category == "racing" or category == "gaming" then
+		return true
+	end
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job
+	if state.CurrentJob.isFameCareer then
 		return true
 	end
 	

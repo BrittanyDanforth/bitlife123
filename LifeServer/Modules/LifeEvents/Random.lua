@@ -1073,13 +1073,16 @@ Random.events = {
 		-- CRITICAL FIX: Entertainment careers don't have traditional "workplace accidents" (ladders, equipment, etc.)
 		eligibility = function(state)
 			if not state.CurrentJob then return false end
+			-- CRITICAL FIX: Check isFameCareer flag FIRST
+			if state.CurrentJob.isFameCareer then return false end
 			local jobCat = (state.CurrentJob.category or ""):lower()
 			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
-			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+			   jobCat == "racing" or jobCat == "gaming" then
 				return false
 			end
 			local jobId = (state.CurrentJob.id or ""):lower()
-			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator", "racer", "gamer", "esports"}
 			for _, keyword in ipairs(entertainmentKeywords) do
 				if jobId:find(keyword) then return false end
 			end
@@ -2932,13 +2935,16 @@ Random.events = {
 		-- CRITICAL FIX: Block entertainment careers - they don't get "headhunted" by recruiters
 		eligibility = function(state)
 			if not state.CurrentJob then return false end
+			-- CRITICAL FIX: Check isFameCareer flag FIRST
+			if state.CurrentJob.isFameCareer then return false end
 			local jobCat = (state.CurrentJob.category or ""):lower()
 			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
-			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+			   jobCat == "racing" or jobCat == "gaming" then
 				return false
 			end
 			local jobId = (state.CurrentJob.id or ""):lower()
-			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator", "racer", "gamer", "esports"}
 			for _, keyword in ipairs(entertainmentKeywords) do
 				if jobId:find(keyword) then return false end
 			end
