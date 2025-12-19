@@ -13,6 +13,28 @@ local ServiceCareerEvents = {}
 
 local CATEGORY = "career_service"
 
+-- CRITICAL FIX: Helper function to verify player is in a service career
+local function hasServiceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	if jobCat == "service" or jobCat == "hospitality" then
+		return true
+	end
+	
+	local serviceKeywords = {
+		"waiter", "server", "bartender", "barista", "hotel", "flight_attendant",
+		"tour_guide", "trainer", "cruise", "receptionist", "concierge"
+	}
+	for _, keyword in ipairs(serviceKeywords) do
+		if jobId:find(keyword) then
+			return true
+		end
+	end
+	return false
+end
+
 ServiceCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- WAITER/SERVER EVENTS

@@ -12,6 +12,60 @@ local Adult = {}
 
 local STAGE = "adult"
 
+-- CRITICAL FIX: Helper function to check if player is in entertainment/celebrity career
+-- Entertainment careers have their own event files and shouldn't see generic office events
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job FIRST
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+	
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+	   jobCat == "racing" or jobCat == "gaming" then
+		return true
+	end
+	
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "dj", "producer_music", "artist",
+		"athlete", "player", "football", "basketball", "baseball", "soccer", "mma", "boxer",
+		"racer", "f1_driver", "racing", "gamer", "esports", "pro_gamer"
+	}
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+	
+	if state.Flags then
+		if state.Flags.isInfluencer or state.Flags.isStreamer or state.Flags.isRapper or
+		   state.Flags.isAthlete or state.Flags.isActor or state.Flags.isCelebrity then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Helper to check if player has a formal workplace job
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	if isEntertainmentCareer(state) then return false end
+	if state.Flags then
+		if state.Flags.street_hustler or state.Flags.dealer or state.Flags.criminal_career then
+			return false
+		end
+	end
+	return true
+end
+
 Adult.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- YOUNG ADULT (18-29)
@@ -726,9 +780,24 @@ Adult.events = {
 		question = "How's the adjustment going?",
 		minAge = 19, maxAge = 28,
 		oneTime = true,
-		-- CRITICAL: Requires player to actually HAVE a job
+		-- CRITICAL: Requires player to actually HAVE a job AND be in a formal workplace
 		requiresJob = true,
-		requiresFlags = { employed = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't have "9-5 grind"
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			-- Block entertainment careers
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 
 		choices = {
 			{ text = "Imposter syndrome is real", effects = { Happiness = -3, Smarts = 4 }, setFlags = { imposter_syndrome = true }, feedText = "You feel like a fraud, but you're learning fast." },
@@ -1136,6 +1205,8 @@ Adult.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
+		-- CRITICAL FIX: Entertainment careers have their own career path events
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Chase the promotion", effects = { Money = 1000, Happiness = -3, Health = -3 }, setFlags = { workaholic = true }, hintCareer = "management", feedText = "You're climbing the ladder. At what cost?" },
@@ -1155,6 +1226,8 @@ Adult.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
+		-- CRITICAL FIX: Entertainment careers don't have traditional "coworkers"
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Try to work it out professionally", effects = { Smarts = 3, Happiness = 2 }, feedText = "You handled it maturely. Conflict resolved." },
@@ -1174,6 +1247,8 @@ Adult.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
+		-- CRITICAL FIX: Entertainment careers have their own advancement systems
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -1245,6 +1320,8 @@ Adult.events = {
 		baseChance = 0.45, -- CRITICAL FIX #704: Increased from 0.2 for more career drama
 		cooldown = 3, -- CRITICAL FIX #705: Reduced from 5 for more variety
 		requiresJob = true, -- Only trigger if you have a job
+		-- CRITICAL FIX: Entertainment careers don't get "laid off" from companies
+		eligibility = hasFormalWorkplaceJob,
 		-- CRITICAL FIX: Random layoff outcome - you don't choose if you get laid off
 		choices = {
 			{
@@ -2599,6 +2676,8 @@ Adult.events = {
 		baseChance = 0.3,
 		cooldown = 4,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers have different progression
+		eligibility = hasFormalWorkplaceJob,
 		
 		choices = {
 			{
@@ -2759,6 +2838,8 @@ Adult.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers make "friends" through industry, not coworkers
+		eligibility = hasFormalWorkplaceJob,
 		
 		choices = {
 			{ text = "Best work friend ever", effects = { Happiness = 8 }, setFlags = { has_work_friend = true }, feedText = "Work is so much better with a good friend there!" },

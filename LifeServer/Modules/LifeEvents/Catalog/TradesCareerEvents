@@ -14,6 +14,71 @@ local TradesCareerEvents = {}
 
 local CATEGORY = "career_trades"
 
+-- CRITICAL FIX: Helper function to check if player is in an entertainment career
+-- Entertainment careers should NEVER see trades events
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- CRITICAL FIX: Block ALL entertainment-related categories
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+	   jobCat == "racing" or jobCat == "gaming" then
+		return true
+	end
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+	
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model",
+		"rapper", "musician", "singer", "athlete", "player"
+	}
+	
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Helper function to check if player has a trades/construction job
+local function hasTradesJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL: Exclude entertainment careers
+	if isEntertainmentCareer(state) then return false end
+	
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check categories
+	if jobCat == "trades" or jobCat == "construction" or jobCat == "manual" then
+		return true
+	end
+	
+	-- Check specific job IDs
+	local tradesKeywords = {
+		"construction", "electrician", "plumber", "mechanic", "hvac",
+		"welder", "carpenter", "janitor", "foreman", "trucker", "truck_driver"
+	}
+	
+	for _, keyword in ipairs(tradesKeywords) do
+		if jobId:find(keyword) then
+			return true
+		end
+	end
+	
+	return false
+end
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CONSTRUCTION WORKER EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -31,7 +96,7 @@ TradesCareerEvents.events = {
 		baseChance = 0.45,
 		cooldown = 3,
 		requiresJob = true,
-		requiresJobCategory = "trades",
+		eligibility = hasTradesJob, -- CRITICAL FIX: Use proper eligibility function
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -99,7 +164,7 @@ TradesCareerEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
-		requiresJobCategory = "trades",
+		eligibility = hasTradesJob, -- CRITICAL FIX: Use proper eligibility function
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -153,7 +218,7 @@ TradesCareerEvents.events = {
 		cooldown = 5,
 		oneTime = true,
 		requiresJob = true,
-		requiresJobCategory = "trades",
+		eligibility = hasTradesJob, -- CRITICAL FIX: Use proper eligibility function
 		blockedByFlags = { in_prison = true },
 		
 		choices = {

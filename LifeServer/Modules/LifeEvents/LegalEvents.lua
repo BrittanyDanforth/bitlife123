@@ -8,6 +8,62 @@ local LegalEvents = {}
 
 local STAGE = "random"
 
+-- CRITICAL FIX: Helper to check if player is in entertainment/celebrity career
+-- Entertainment careers handle workplace issues differently (contracts, agents, etc.)
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job FIRST
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+	
+	-- Check by category
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+	   jobCat == "racing" or jobCat == "gaming" then
+		return true
+	end
+	
+	-- Check by job ID/name keywords
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "dj", "producer_music", "artist",
+		"athlete", "player", "football", "basketball", "baseball", "soccer", "mma", "boxer",
+		"host", "anchor", "presenter", "comedian", "performer", "entertainer",
+		"racer", "f1_driver", "racing", "gamer", "esports", "pro_gamer"
+	}
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+	
+	-- Check flags for entertainment careers
+	if state.Flags then
+		if state.Flags.isInfluencer or state.Flags.isStreamer or state.Flags.isRapper or
+		   state.Flags.isAthlete or state.Flags.isActor or state.Flags.isCelebrity or
+		   state.Flags.rapper or state.Flags.content_creator or state.Flags.streamer or
+		   state.Flags.signed_athlete or state.Flags.signed_artist or state.Flags.pro_racer or
+		   state.Flags.f1_driver or state.Flags.pro_gamer then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Helper to check if player has formal workplace job
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	if isEntertainmentCareer(state) then return false end
+	return true
+end
+
 LegalEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- CIVIL LEGAL MATTERS
@@ -307,6 +363,8 @@ LegalEvents.events = {
 		category = "legal",
 		tags = { "workplace", "lawsuit", "employment" },
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers have contract disputes, not workplace lawsuits
+		eligibility = hasFormalWorkplaceJob,
 		
 		-- CRITICAL: Random workplace legal outcome
 		choices = {

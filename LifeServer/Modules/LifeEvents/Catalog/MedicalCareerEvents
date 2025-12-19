@@ -13,6 +13,28 @@ local MedicalCareerEvents = {}
 
 local CATEGORY = "career_medical"
 
+-- CRITICAL FIX: Helper function to verify player is in a medical career
+local function hasMedicalJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	if jobCat == "medical" or jobCat == "healthcare" then
+		return true
+	end
+	
+	local medicalKeywords = {
+		"emt", "paramedic", "nurse", "doctor", "surgeon", "dentist", "pharmacist",
+		"therapist", "orderly", "medical_assistant", "physician"
+	}
+	for _, keyword in ipairs(medicalKeywords) do
+		if jobId:find(keyword) then
+			return true
+		end
+	end
+	return false
+end
+
 MedicalCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- EMT/PARAMEDIC EVENTS
@@ -31,6 +53,7 @@ MedicalCareerEvents.events = {
 		requiresJob = true,
 		requiresJobId = { "emt" },
 		blockedByFlags = { in_prison = true },
+		eligibility = hasMedicalJob,
 		
 		choices = {
 			{

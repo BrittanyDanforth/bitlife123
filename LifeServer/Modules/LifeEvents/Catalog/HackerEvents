@@ -9,6 +9,24 @@
 	Uses: Hacking minigame for breaches, heist minigame for high-stakes operations
 ]]
 
+-- CRITICAL FIX: Helper function to verify player is on hacker/cyber career path
+local function hasHackerCareer(state)
+	if state.Flags then
+		if state.Flags.hacker_discovered or state.Flags.tech_interest or
+		   state.Flags.black_hat or state.Flags.white_hat or
+		   state.Flags.elite_hacker or state.Flags.security_consultant then
+			return true
+		end
+	end
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		if jobId:find("hacker") or jobId:find("security") or jobId:find("cyber") then
+			return true
+		end
+	end
+	return false
+end
+
 local events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- DISCOVERY AND ENTRY

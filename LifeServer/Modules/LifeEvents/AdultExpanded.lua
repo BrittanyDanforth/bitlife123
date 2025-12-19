@@ -8,6 +8,45 @@ local AdultExpanded = {}
 
 local STAGE = "adult"
 
+-- CRITICAL FIX: Helper function to check if player is in entertainment/celebrity career
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job FIRST
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+	
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or
+	   jobCat == "racing" or jobCat == "gaming" then
+		return true
+	end
+	
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "athlete", "player", "racer", "gamer"
+	}
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Helper for formal workplace jobs
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	if isEntertainmentCareer(state) then return false end
+	return true
+end
+
 AdultExpanded.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- YOUNG ADULT TRANSITION (Ages 18-25)
@@ -414,6 +453,21 @@ AdultExpanded.events = {
 		baseChance = 0.455,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they have different career setbacks
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -437,6 +491,21 @@ AdultExpanded.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they have their own achievement events
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -708,6 +777,8 @@ AdultExpanded.events = {
 		baseChance = 0.455,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers negotiate contracts, not salaries
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -1517,6 +1588,8 @@ AdultExpanded.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers have different work-life dynamics
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "lifestyle",

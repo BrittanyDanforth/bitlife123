@@ -1803,14 +1803,37 @@ function LifeEvents.buildYearQueue(state, options)
 		state.Flags.hip_hop_experience or state.Flags.first_track_recorded or
 		state.Flags.trap_rapper or state.Flags.lyrical_rapper or state.Flags.melodic_rapper or state.Flags.drill_rapper
 	)
-	local hasRapperJob = state.CurrentJob and (
+	local hasRapperJob_cat = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("rapper") or
 		(state.CurrentJob.name or ""):lower():find("rapper") or
 		(state.CurrentJob.name or ""):lower():find("hip.?hop")
 	)
 	
+	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (NOT rapper!)
+	local isCreatorFlags = state.Flags and (
+		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
+		state.Flags.first_video_uploaded or state.Flags.broadcaster or state.Flags.influencer
+	)
+	local hasCreatorJob_cat = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	
+	-- CRITICAL FIX: Check if player has a REGULAR job (not entertainment)
+	-- If they have IT Support, Office, etc. - they should NOT get rapper/creator categories from old flags!
+	local hasRegularJobForCategories = false
+	if state.CurrentJob and not hasRapperJob_cat and not hasCreatorJob_cat then
+		local cat = (state.CurrentJob.category or ""):lower()
+		if cat ~= "entertainment" and cat ~= "music" and cat ~= "fame" and cat ~= "celebrity" and cat ~= "" then
+			hasRegularJobForCategories = true
+		end
+	end
+	
 	-- Add career_rapper category ONLY for rappers
-	if isRapperFlags or hasRapperJob then
+	-- CRITICAL FIX: Don't add if player has a regular job (like IT Support)!
+	if hasRapperJob_cat or (isRapperFlags and not hasRegularJobForCategories) then
 		local hasRapperCat = false
 		for _, cat in ipairs(categories) do
 			if cat == "career_rapper" or cat == "career_music" then hasRapperCat = true break end
@@ -1821,21 +1844,10 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (NOT rapper!)
-	local isCreatorFlags = state.Flags and (
-		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
-		state.Flags.first_video_uploaded or state.Flags.broadcaster or state.Flags.influencer
-	)
-	local hasCreatorJob = state.CurrentJob and (
-		(state.CurrentJob.id or ""):lower():find("streamer") or
-		(state.CurrentJob.id or ""):lower():find("creator") or
-		(state.CurrentJob.id or ""):lower():find("youtuber") or
-		(state.CurrentJob.id or ""):lower():find("influencer")
-	)
-	
 	-- Add career_creative category ONLY for creators/streamers
 	-- NOTE: Events use "career_creative" not "career_creator"
-	if isCreatorFlags or hasCreatorJob then
+	-- CRITICAL FIX: Don't add if player has a regular job (like IT Support)!
+	if hasCreatorJob_cat or (isCreatorFlags and not hasRegularJobForCategories) then
 		local hasCreatorCat = false
 		for _, cat in ipairs(categories) do
 			if cat == "career_creative" then hasCreatorCat = true break end
@@ -2036,10 +2048,29 @@ function LifeEvents.buildYearQueue(state, options)
 		(state.CurrentJob.name or ""):lower():find("rapper") or
 		(state.CurrentJob.name or ""):lower():find("hip.?hop")
 	)
-	-- RAPPER FLAGS ONLY - NOT streamer/creator flags!
-	local isRapper = flags.rapper or flags.pursuing_rap or flags.underground_artist or
-	                 flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper or
-	                 flags.melodic_rapper or flags.drill_rapper or flags.first_track_recorded
+	
+	-- CRITICAL FIX: Check if player has a non-entertainment regular job
+	-- If they work in IT Support, Office, etc. - they should NOT get rapper events from old flags!
+	local hasNonEntertainmentJob = false
+	if state.CurrentJob and not hasRapperJob then
+		local cat = (state.CurrentJob.category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		-- Check if it's NOT an entertainment career
+		if cat ~= "entertainment" and cat ~= "music" and cat ~= "fame" and cat ~= "celebrity" and cat ~= "" then
+			-- Also verify it's not a creator job
+			if not (jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer")) then
+				hasNonEntertainmentJob = true
+			end
+		end
+	end
+	
+	-- RAPPER FLAGS ONLY - BUT BLOCKED if they have a regular job!
+	local isRapper = false
+	if not hasNonEntertainmentJob then
+		isRapper = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+		           flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper or
+		           flags.melodic_rapper or flags.drill_rapper or flags.first_track_recorded
+	end
 	
 	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (YouTube/Twitch career)
 	local hasCreatorJob = state.CurrentJob and (
@@ -2048,9 +2079,23 @@ function LifeEvents.buildYearQueue(state, options)
 		(state.CurrentJob.id or ""):lower():find("youtuber") or
 		(state.CurrentJob.id or ""):lower():find("influencer")
 	)
-	-- CREATOR FLAGS ONLY - NOT rapper flags!
-	local isCreator = flags.content_creator or flags.streamer or flags.pursuing_streaming or
-	                  flags.first_video_uploaded or flags.broadcaster or flags.influencer
+	
+	-- CRITICAL FIX: Check if player has a REGULAR job (not entertainment)
+	-- If they have IT Support, Office, etc. - they should NOT get creator events from old flags!
+	local hasRegularJob = false
+	if state.CurrentJob and not hasCreatorJob and not hasRapperJob then
+		local cat = (state.CurrentJob.category or ""):lower()
+		if cat ~= "entertainment" and cat ~= "music" and cat ~= "fame" and cat ~= "celebrity" and cat ~= "" then
+			hasRegularJob = true
+		end
+	end
+	
+	-- CREATOR FLAGS ONLY - BUT BLOCKED if they have a regular job!
+	local isCreator = false
+	if not hasRegularJob then
+		isCreator = flags.content_creator or flags.streamer or flags.pursuing_streaming or
+		            flags.first_video_uploaded or flags.broadcaster or flags.influencer
+	end
 	
 	local hasEntertainmentJob = state.CurrentJob and (
 		(state.CurrentJob.category or ""):lower() == "entertainment" or hasRapperJob or hasCreatorJob
@@ -2069,7 +2114,8 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- CRITICAL FIX #602: GUARANTEED first video for creators who haven't posted yet!
-	if (hasCreatorJob or flags.content_creator or flags.streamer) and not flags.first_video_posted then
+	-- CRITICAL FIX: Only if they don't have a regular job like IT Support!
+	if (hasCreatorJob or (isCreator and not hasRegularJob)) and not flags.first_video_posted then
 		local firstVideoEvent = AllEvents["creator_first_video"]
 		if firstVideoEvent and canEventTrigger(firstVideoEvent, state) then
 			table.insert(selectedEvents, firstVideoEvent)

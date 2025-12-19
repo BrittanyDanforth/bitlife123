@@ -15,31 +15,130 @@
 
 local CreativeCareerEvents = {}
 
-local function hasCreativeJob(state)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper function to identify ENTERTAINMENT careers that should NOT
+-- get creative career events (influencers, streamers, rappers, content creators, etc.)
+-- These careers have their own specialized event systems!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
 	local category = (state.CurrentJob.category or ""):lower()
-	return category == "creative" or jobId:find("designer") or jobId:find("artist") 
+	
+	-- CRITICAL FIX: Block ALL entertainment-related categories
+	if category == "entertainment" or category == "celebrity" or category == "fame" or
+	   category == "sports" or category == "music" or category == "acting" or
+	   category == "racing" or category == "gaming" then
+		return true
+	end
+	
+	-- CRITICAL FIX: Check for isFameCareer flag on job
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+	
+	-- Block influencer careers (micro, growing, established, famous, mega, icon)
+	if jobId:find("influencer") or jobName:find("influencer") then
+		return true
+	end
+	
+	-- Block content creator careers
+	if jobId:find("creator") or jobName:find("creator") then
+		return true
+	end
+	
+	-- Block streamer careers
+	if jobId:find("streamer") or jobName:find("streamer") then
+		return true
+	end
+	
+	-- Block YouTuber careers
+	if jobId:find("youtuber") or jobName:find("youtuber") then
+		return true
+	end
+	
+	-- Block rapper/musician careers
+	if jobId:find("rapper") or jobName:find("rapper") or jobId:find("musician") or jobName:find("musician") then
+		return true
+	end
+	
+	-- Block actor careers
+	if jobId:find("actor") or jobName:find("actor") or jobId:find("actress") then
+		return true
+	end
+	
+	-- Block athlete careers
+	if jobId:find("athlete") or jobName:find("athlete") or jobId:find("player") then
+		return true
+	end
+	
+	-- Block model careers
+	if jobId:find("model") and not jobId:find("modeling_agency") then
+		return true
+	end
+	
+	-- Check flags for entertainment careers
+	if state.Flags then
+		local entertainmentFlags = {
+			"influencer", "content_creator", "streamer", "youtuber", "rapper",
+			"pursuing_streaming", "pursuing_influencer", "pursuing_rap",
+			"first_video_posted", "first_track_recorded", "mega_influencer",
+			"famous_influencer", "established_influencer", "growing_influencer"
+		}
+		for _, flag in ipairs(entertainmentFlags) do
+			if state.Flags[flag] then
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
+local function hasCreativeJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL FIX: Entertainment careers (influencers, streamers, etc.) should NOT
+	-- get creative career events - they have their own specialized event systems!
+	if isEntertainmentCareer(state) then
+		return false
+	end
+	
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local category = (state.CurrentJob.category or ""):lower()
+	
+	-- Only return true for actual creative industry jobs
+	-- (designers, photographers, journalists, marketing professionals, editors)
+	return category == "creative" or jobId:find("designer") or jobId:find("art_director") 
 		or jobId:find("photographer") or jobId:find("videographer") or jobId:find("journalist")
-		or jobId:find("marketing") or jobId:find("editor") or jobId:find("creative")
+		or jobId:find("marketing") or jobId:find("editor") or jobId:find("graphic")
+		or jobId:find("copywriter") or jobId:find("advertis")
 end
 
 local function isDesigner(state)
 	if not state.CurrentJob then return false end
+	-- CRITICAL FIX: Exclude entertainment careers
+	if isEntertainmentCareer(state) then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
-	return jobId:find("designer") or jobId:find("art_director")
+	return jobId:find("designer") or jobId:find("art_director") or jobId:find("graphic")
 end
 
 local function isJournalist(state)
 	if not state.CurrentJob then return false end
+	-- CRITICAL FIX: Exclude entertainment careers
+	if isEntertainmentCareer(state) then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	return jobId:find("journalist") or jobId:find("editor") or jobId:find("reporter")
 end
 
 local function isMarketing(state)
 	if not state.CurrentJob then return false end
+	-- CRITICAL FIX: Exclude entertainment careers - influencers are NOT marketing managers!
+	if isEntertainmentCareer(state) then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
-	return jobId:find("marketing") or jobId:find("social_media") or jobId:find("cmo")
+	-- CRITICAL FIX: Removed "social_media" check - that was catching influencers incorrectly!
+	return jobId:find("marketing") or jobId:find("cmo") or jobId:find("brand_manager")
 end
 
 CreativeCareerEvents.events = {

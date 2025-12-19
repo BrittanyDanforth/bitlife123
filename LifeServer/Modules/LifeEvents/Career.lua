@@ -7,6 +7,86 @@ local Career = {}
 
 local STAGE = "adult" -- working-life events
 
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper function to check if player is in an entertainment/celebrity career
+-- Entertainment careers (influencers, streamers, rappers, athletes, actors) have their OWN
+-- dedicated event files and should NOT see generic workplace events like "office drama",
+-- "promotion opportunity", "layoff threat", etc.
+-- ════════════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+
+	-- CRITICAL FIX: Check for isFameCareer flag on job FIRST (most reliable)
+	if state.CurrentJob.isFameCareer then
+		return true
+	end
+
+	-- Check job categories that are entertainment-based
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" or 
+	   jobCat == "racing" or jobCat == "gaming" or jobCat == "hacker" then
+		return true
+	end
+
+	-- Check specific entertainment job IDs/names
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "dj", "producer_music", "artist",
+		"athlete", "player", "football", "basketball", "baseball", "soccer", "mma", "boxer",
+		"host", "anchor", "presenter", "comedian", "performer", "entertainer",
+		"racer", "f1_driver", "racing", "gamer", "esports", "pro_gamer"
+	}
+
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+
+	-- Check flags that indicate entertainment career
+	if state.Flags then
+		if state.Flags.isInfluencer or state.Flags.isStreamer or state.Flags.isRapper or
+		   state.Flags.isAthlete or state.Flags.isActor or state.Flags.isCelebrity or
+		   state.Flags.rapper or state.Flags.content_creator or state.Flags.streamer or
+		   state.Flags.signed_athlete or state.Flags.signed_artist or state.Flags.pro_racer or
+		   state.Flags.f1_driver or state.Flags.pro_gamer then
+			return true
+		end
+	end
+
+	-- Check FameState for career paths
+	if state.FameState then
+		local careerPath = (state.FameState.careerPath or ""):lower()
+		if careerPath == "influencer" or careerPath == "streamer" or careerPath == "rapper" or
+		   careerPath == "youtuber" or careerPath == "athlete" or careerPath == "actor" or
+		   careerPath == "musician" then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- CRITICAL FIX: Helper to check if player has a formal workplace job
+-- Used for events like "office drama", "promotion opportunity", "layoff threat"
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	-- Block for entertainment careers - they have their own event files
+	if isEntertainmentCareer(state) then return false end
+	-- Block for informal/illegal careers
+	if state.Flags then
+		if state.Flags.street_hustler or state.Flags.dealer or state.Flags.criminal_career or
+		   state.Flags.supplier or state.Flags.in_mob or state.Flags.mafia_member then
+			return false
+		end
+	end
+	return true
+end
+
 Career.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- GENERAL WORKPLACE EVENTS
@@ -21,7 +101,7 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal workplace jobs - street hustlers don't have "coworkers taking credit"
+		-- CRITICAL FIX: Only for formal workplace jobs
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -30,6 +110,8 @@ Career.events = {
 			freelancer = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - influencers/athletes don't have "coworkers taking credit"
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -62,6 +144,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they have their own promotion events
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -86,7 +170,7 @@ Career.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal company jobs - street hustlers don't get "laid off"
+		-- CRITICAL FIX: Only for formal company jobs
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -95,6 +179,8 @@ Career.events = {
 			self_employed = true,
 			freelancer = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - influencers/athletes don't get "laid off"
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -177,6 +263,8 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
+		-- CRITICAL FIX: Block entertainment careers - they have their own achievement events
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -253,13 +341,15 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal corporate jobs - street hustlers don't get "business trips"
+		-- CRITICAL FIX: Only for formal corporate jobs
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they travel differently (tours, shoots)
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -284,6 +374,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Block entertainment careers - they have their own career progressions
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -638,6 +730,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 70 } },
+		-- CRITICAL FIX: Block entertainment careers - they have their own awards
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -666,13 +760,15 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal office jobs - street hustlers don't get "remote work options"
+		-- CRITICAL FIX: Only for formal office jobs
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - influencers don't get "remote work options"
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Go fully remote", effects = { Happiness = 8, Health = 3, Money = 200 }, setFlags = { works_from_home = true }, feedText = "No more commute! Working in your pajamas!" },
@@ -698,6 +794,8 @@ Career.events = {
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "toxic workplace" in this sense
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -739,6 +837,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "annual reviews"
+		eligibility = hasFormalWorkplaceJob,
 
 		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach"
 		-- Actual raise amount is random based on stats + approach
@@ -835,6 +935,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't get "fired" in this way
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -913,6 +1015,8 @@ Career.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they don't get recruited this way
+		eligibility = hasFormalWorkplaceJob,
 		-- CRITICAL FIX: Random job offer legitimacy - can't choose if it's a scam
 		choices = {
 			{
@@ -990,6 +1094,8 @@ Career.events = {
 		requiresJob = true,
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't have "coworkers" in this way
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -1067,6 +1173,8 @@ Career.events = {
 		requiresJob = true,
 		requiresStats = { Health = { max = 40 } },
 		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Block entertainment careers - they have different burnout scenarios
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -1176,6 +1284,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "coworkers" in the same way
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -1230,6 +1340,8 @@ Career.events = {
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't present to "executives"
+		eligibility = hasFormalWorkplaceJob,
 		-- CRITICAL FIX: Random presentation outcome based on preparation
 		choices = {
 			{
@@ -1322,6 +1434,8 @@ Career.events = {
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they have different mentorship
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Embrace it fully", effects = { Smarts = 5, Happiness = 8, Money = 500 }, setFlags = { has_mentor = true }, feedText = "Having a mentor accelerated your career!" },
@@ -1347,6 +1461,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "overtime" in this sense
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Work the overtime for money", effects = { Money = 600, Health = -8, Happiness = -5 }, feedText = "The money is good but you're exhausted." },
@@ -1366,6 +1482,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't get recruited by startups
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ 
@@ -1417,6 +1535,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - influencers don't have "bosses"
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Online shopping during work", effects = { Happiness = -5 }, feedText = "Caught with Amazon open. Embarrassing warning." },
@@ -1443,6 +1563,8 @@ Career.events = {
 			criminal_career = true,
 			self_employed = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "coworkers leaving"
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Devastated - they made work fun", effects = { Happiness = -8 }, feedText = "Work will be so different without them." },
@@ -1468,6 +1590,8 @@ Career.events = {
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they have different harassment scenarios
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Report it to HR", effects = { Happiness = -5, Smarts = 2 }, setFlags = { reported_harassment = true }, feedText = "You made an official report." },
@@ -1493,6 +1617,8 @@ Career.events = {
 			dealer = true, 
 			criminal_career = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they go to different events
+		eligibility = hasFormalWorkplaceJob,
 
 		choices = {
 			{ text = "Met incredible people", effects = { Happiness = 8, Smarts = 3 }, setFlags = { strong_network = true }, feedText = "The connections you made were invaluable!" },
@@ -1520,6 +1646,8 @@ Career.events = {
 			self_employed = true,
 			freelancer = true,
 		},
+		-- CRITICAL FIX: Block entertainment careers - they don't have "performance reviews"
+		eligibility = hasFormalWorkplaceJob,
 
 		-- CRITICAL FIX: Changed from "pick your outcome" to "pick your approach" 
 		-- Actual outcome is determined by stats + random chance via onResolve
@@ -1588,6 +1716,8 @@ Career.events = {
 	baseChance = 0.455,
 	cooldown = 2,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they don't get "acquired"
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1612,6 +1742,8 @@ Career.events = {
 	baseChance = 0.555,
 	cooldown = 2,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they don't have "remote work options"
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1637,6 +1769,8 @@ Career.events = {
 	baseChance = 0.555,
 	cooldown = 2,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they ARE the side hustle for many
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1662,6 +1796,8 @@ Career.events = {
 	cooldown = 2,
 	requiresJob = true,
 	requiresStats = { Happiness = { max = 60 } },
+	-- CRITICAL FIX: Block entertainment careers - they have different toxic scenarios
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1686,6 +1822,8 @@ Career.events = {
 	baseChance = 0.455,
 	cooldown = 2,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they have different mentorship
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1710,6 +1848,8 @@ Career.events = {
 	baseChance = 0.455,
 	cooldown = 2,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they have different career paths
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -1752,6 +1892,8 @@ Career.events = {
 	baseChance = 0.55,
 	cooldown = 3,
 	requiresJob = true,
+	-- CRITICAL FIX: Block entertainment careers - they have their own awards
+	eligibility = hasFormalWorkplaceJob,
 	
 	-- META
 	stage = STAGE,
@@ -2979,6 +3121,8 @@ Career.events = {
 	cooldown = 3,
 	requiresJob = true,
 	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+	-- CRITICAL FIX: Block entertainment careers - they have different networking
+	eligibility = hasFormalWorkplaceJob,
 	
 	stage = STAGE,
 	ageBand = "working_age",
@@ -3034,8 +3178,11 @@ Career.events = {
 	category = "career_decision",
 	tags = { "sabbatical", "break", "career" },
 	
-	-- CRITICAL FIX: Check if player can afford sabbatical
+	-- CRITICAL FIX: Check if player can afford sabbatical AND block entertainment careers
 	eligibility = function(state)
+		if not hasFormalWorkplaceJob(state) then
+			return false, "Entertainment careers don't have sabbatical programs"
+		end
 		local money = state.Money or 0
 		if money < 3000 then
 			return false, "Can't afford 3 months without income"
@@ -3075,6 +3222,8 @@ Career.events = {
 	cooldown = 2,
 	requiresJob = true,
 	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+	-- CRITICAL FIX: Block entertainment careers - they don't have "review time"
+	eligibility = hasFormalWorkplaceJob,
 	
 	stage = STAGE,
 	ageBand = "working_age",
@@ -3174,6 +3323,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
+		-- CRITICAL FIX: Block entertainment careers - they have different mentorship
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_growth",
 		tags = { "mentor", "growth", "career" },
@@ -3193,6 +3344,8 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Block entertainment careers - they have different speaking events
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_challenge",
 		tags = { "presentation", "public_speaking", "career" },
@@ -3248,6 +3401,8 @@ Career.events = {
 		oneTime = true,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't join startups
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_decision",
 		tags = { "startup", "risk", "opportunity", "career" },
@@ -3292,6 +3447,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, self_employed = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't have executive power struggles
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_workplace",
 		tags = { "politics", "conflict", "strategy", "career" },
@@ -3344,6 +3501,8 @@ Career.events = {
 		baseChance = 0.1,
 		cooldown = 4,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they have their own viral events
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_random",
 		tags = { "viral", "social_media", "fame", "career" },
@@ -3380,6 +3539,8 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't get recruited this way
+		eligibility = hasFormalWorkplaceJob,
 		stage = STAGE,
 		category = "career_opportunity",
 		tags = { "dream_job", "relocation", "opportunity", "career" },
