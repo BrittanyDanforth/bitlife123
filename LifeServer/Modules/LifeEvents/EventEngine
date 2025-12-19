@@ -918,4 +918,68 @@ function EventEngine.selectEventsWithDynamicWeights(events, state, options)
 	return selected
 end
 
+-- ════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: createRelationship function for friend/relationship creation
+-- This was missing and causing friend creation to fail silently!
+-- ════════════════════════════════════════════════════════════════════════════════
+function EventEngine.createRelationship(state, relType, options)
+	options = options or {}
+
+	-- Initialize relationships table if needed
+	state.Relationships = state.Relationships or {
+		family = {},
+		friends = {},
+		romantic = {},
+		enemies = {},
+	}
+
+	-- Generate a new relationship
+	local relationship = {
+		id = "rel_" .. tostring(os.time()) .. "_" .. math.random(1000, 9999),
+		type = relType,
+		name = options.name or EventEngine.generateRandomName(state),
+		age = options.age or (state.Age and math.max(state.Age - 5, 0) + math.random(0, 10)) or math.random(18, 45),
+		relationship = options.initialRelationship or 50,
+		yearsKnown = 0,
+		createdAt = state.Age or 0,
+	}
+
+	-- Add type-specific fields
+	if relType == "friend" then
+		relationship.role = options.role or "Friend"
+		relationship.metAt = options.metAt or "randomly"
+		table.insert(state.Relationships.friends, relationship)
+	elseif relType == "romance" or relType == "partner" then
+		relationship.role = options.role or "Partner"
+		relationship.metAt = options.metAt or "dating"
+		relationship.isMarried = options.isMarried or false
+		table.insert(state.Relationships.romantic, relationship)
+	elseif relType == "enemy" then
+		relationship.role = options.role or "Enemy"
+		relationship.reason = options.reason or "unknown"
+		table.insert(state.Relationships.enemies, relationship)
+	end
+
+	return true, relationship
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- Helper: Generate random name for new relationships
+-- ════════════════════════════════════════════════════════════════════════════════
+function EventEngine.generateRandomName(state)
+	local firstNames = {
+		"Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn",
+		"Jamie", "Avery", "Blake", "Cameron", "Dakota", "Emery", "Finley", "Harper",
+		"James", "Emma", "Oliver", "Sophia", "Liam", "Isabella", "Noah", "Mia",
+		"Lucas", "Charlotte", "Mason", "Amelia", "Ethan", "Evelyn", "Aiden", "Abigail",
+	}
+	local lastNames = {
+		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+		"Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+		"Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+	}
+
+	return firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+end
+
 return EventEngine

@@ -947,24 +947,26 @@ local function canEventTrigger(event, state)
 	-- CRITICAL FIX #513: LOOSENED cooldowns for MORE event variety!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- CRITICAL FIX #723-730: DRASTICALLY REDUCED cooldowns for MAX event variety!
-	-- Players were seeing the same boring events because cooldowns were too high
-	local cooldown = event.cooldown or 1  -- CRITICAL FIX #723: Default cooldown now 1 (was 3)
-	
-	-- CRITICAL FIX #724: Childhood/teen cooldowns now 2 (was 4)
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: BALANCED cooldowns to prevent events from firing too frequently
+	-- User feedback: "Random events popping up at wrong times" - cooldowns were too low!
+	-- ════════════════════════════════════════════════════════════════════════════════
+	local cooldown = event.cooldown or 2  -- BALANCED: Default cooldown now 2 (was 1, too low)
+
+	-- Childhood/teen cooldowns - more events in formative years but not overwhelming
 	local eventCategory = event._category or event.category or ""
 	if eventCategory == "childhood" or eventCategory == "teen" then
-		cooldown = event.cooldown or 2 -- More variety in formative years
+		cooldown = event.cooldown or 2 -- Balanced variety in formative years
 	end
-	
-	-- CRITICAL FIX #725: Random event cooldowns now 2 (was 4)
+
+	-- Random event cooldowns - prevent random events from spamming
 	if eventCategory == "random" then
-		cooldown = event.cooldown or 2
+		cooldown = event.cooldown or 3 -- Random events should be more spaced out!
 	end
-	
-	-- CRITICAL FIX #726: Career events cooldown now 1 (was 2) - careers should be ACTIVE
+
+	-- Career events cooldown - careers can be active but not overwhelming
 	if eventCategory:find("career") then
-		cooldown = event.cooldown or 1 -- Career events can repeat often!
+		cooldown = event.cooldown or 2 -- Career events balanced
 	end
 	
 	local lastAge = history.lastOccurrence[event.id]

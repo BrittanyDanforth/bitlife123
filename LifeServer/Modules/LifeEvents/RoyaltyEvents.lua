@@ -1128,9 +1128,10 @@ RoyaltyEvents.LifeEvents = {
 		oneTime = true, -- CRITICAL FIX #308: Only trigger once to prevent duplicate romance events
 		cooldown = 4, -- CRITICAL FIX: 10 year cooldown as extra safety
 		maxOccurrences = 1,
-		conditions = { 
-			requiresFlags = { married = nil },
-			blockedFlags = { royal_courtship_done = true, engaged = true, married = true }
+		conditions = {
+			-- CRITICAL FIX: Removed "married = nil" (doesn't work in Lua tables)
+			-- blockedFlags handles the "not married" requirement
+			blockedByFlags = { royal_courtship_done = true, engaged = true, married = true }
 		},
 		choices = {
 			{
@@ -1372,7 +1373,11 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		conditions = { requiresFlags = { is_monarch = true, gave_first_speech = nil } },
+		-- CRITICAL FIX: Split into requiresFlags and blockedByFlags (nil doesn't work in Lua tables)
+		conditions = {
+			requiresFlags = { is_monarch = true },
+			blockedByFlags = { gave_first_speech = true }
+		},
 		choices = {
 			{
 				text = "Promise to serve the people",

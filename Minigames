@@ -415,81 +415,252 @@ function Minigames:createDebateGame()
 		self.debateAnswerBtns[i] = btn
 	end
 
-	-- Debate questions database
-	self.debateQuestions = {
-		{
-			q = "The moderator asks: What is your plan to address climate change?",
-			answers = {
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Context-specific debate questions database
+	-- Presidential questions ONLY for political context!
+	-- ════════════════════════════════════════════════════════════════════════════════
+	self.contextQuestions = {
+		-- POLITICAL/PRESIDENTIAL DEBATES ONLY
+		political = {
+			{ q = "The moderator asks: What is your plan to address climate change?", answers = {
 				{ text = "Invest in renewable energy and green jobs", correct = true },
 				{ text = "Climate change is a hoax", correct = false },
 				{ text = "Let the market figure it out", correct = false },
 				{ text = "I don't understand the question", correct = false },
-			}
-		},
-		{
-			q = "A citizen asks: How will you make healthcare more affordable?",
-			answers = {
+			}},
+			{ q = "A citizen asks: How will you make healthcare more affordable?", answers = {
 				{ text = "Expand coverage and negotiate better prices", correct = true },
 				{ text = "Eliminate all healthcare programs", correct = false },
 				{ text = "Healthcare is not a government issue", correct = false },
 				{ text = "I'll think about it later", correct = false },
-			}
-		},
-		{
-			q = "The moderator asks: How will you handle the economy?",
-			answers = {
+			}},
+			{ q = "The moderator asks: How will you handle the economy?", answers = {
 				{ text = "Invest in infrastructure and education", correct = true },
-				{ text = "Cut all government spending immediately", correct = false },
+				{ text = "Cut all government spending", correct = false },
 				{ text = "Print more money", correct = false },
 				{ text = "Economy? What economy?", correct = false },
-			}
-		},
-		{
-			q = "On foreign policy: How will you handle international relations?",
-			answers = {
+			}},
+			{ q = "On foreign policy: How will you handle international relations?", answers = {
 				{ text = "Strengthen alliances and diplomacy first", correct = true },
-				{ text = "Isolate America from the world", correct = false },
+				{ text = "Isolate from the world", correct = false },
 				{ text = "Declare war on everyone", correct = false },
 				{ text = "Foreign policy isn't important", correct = false },
-			}
-		},
-		{
-			q = "On education: What's your plan for improving schools?",
-			answers = {
-				{ text = "Increase funding and teacher pay", correct = true },
-				{ text = "Close all public schools", correct = false },
-				{ text = "Kids don't need education", correct = false },
-				{ text = "Let parents figure it out", correct = false },
-			}
-		},
-		{
-			q = "A voter asks: How will you reduce crime?",
-			answers = {
+			}},
+			{ q = "A voter asks: How will you reduce crime?", answers = {
 				{ text = "Community programs and smart policing", correct = true },
 				{ text = "Abolish all laws", correct = false },
 				{ text = "Lock everyone up forever", correct = false },
 				{ text = "Crime is fine actually", correct = false },
-			}
+			}},
 		},
-		{
-			q = "The moderator asks: What about the national debt?",
-			answers = {
-				{ text = "Responsible budgeting and growth", correct = true },
-				{ text = "Just ignore it", correct = false },
-				{ text = "Borrow more money", correct = false },
-				{ text = "What's a debt?", correct = false },
-			}
+		-- HEATED ARGUMENTS / RELATIONSHIP CONFLICTS
+		argument = {
+			{ q = "They say: You never listen to me!", answers = {
+				{ text = "I hear you, let's talk about this calmly", correct = true },
+				{ text = "Whatever, you're overreacting", correct = false },
+				{ text = "No YOU never listen!", correct = false },
+				{ text = "I'm leaving", correct = false },
+			}},
+			{ q = "They accuse: You always put yourself first!", answers = {
+				{ text = "I'm sorry you feel that way, let's work on this", correct = true },
+				{ text = "So what if I do?", correct = false },
+				{ text = "That's ridiculous!", correct = false },
+				{ text = "Maybe I should!", correct = false },
+			}},
+			{ q = "They're upset: You broke your promise!", answers = {
+				{ text = "You're right, I'm sorry. How can I make it up?", correct = true },
+				{ text = "It wasn't that important anyway", correct = false },
+				{ text = "I never promised anything!", correct = false },
+				{ text = "Deal with it", correct = false },
+			}},
+			{ q = "They demand: Explain yourself right now!", answers = {
+				{ text = "Okay, let me explain what happened", correct = true },
+				{ text = "I don't owe you an explanation", correct = false },
+				{ text = "You're being crazy!", correct = false },
+				{ text = "Make me!", correct = false },
+			}},
+			{ q = "They say: I can't trust you anymore!", answers = {
+				{ text = "I understand, let me earn your trust back", correct = true },
+				{ text = "Then don't, I don't care", correct = false },
+				{ text = "You're being paranoid!", correct = false },
+				{ text = "Good, I can't trust you either!", correct = false },
+			}},
+			{ q = "They're crying: You really hurt my feelings!", answers = {
+				{ text = "I'm so sorry, that wasn't my intention", correct = true },
+				{ text = "Stop being so sensitive", correct = false },
+				{ text = "You hurt mine too!", correct = false },
+				{ text = "Here we go again...", correct = false },
+			}},
 		},
-		{
-			q = "On immigration: What is your policy?",
-			answers = {
-				{ text = "Comprehensive reform with a path to citizenship", correct = true },
-				{ text = "Deport everyone", correct = false },
-				{ text = "Open borders with no rules", correct = false },
-				{ text = "Build a moat with alligators", correct = false },
-			}
+		-- JOB INTERVIEWS
+		interview = {
+			{ q = "Interviewer: Why should we hire you?", answers = {
+				{ text = "I bring unique skills and dedication to succeed", correct = true },
+				{ text = "Because I need money", correct = false },
+				{ text = "I dunno, you tell me", correct = false },
+				{ text = "Because I'm awesome obviously", correct = false },
+			}},
+			{ q = "Interviewer: What's your biggest weakness?", answers = {
+				{ text = "I work too hard sometimes, but I'm learning balance", correct = true },
+				{ text = "I'm perfect, no weaknesses", correct = false },
+				{ text = "I'm always late", correct = false },
+				{ text = "I hate working", correct = false },
+			}},
+			{ q = "Interviewer: Where do you see yourself in 5 years?", answers = {
+				{ text = "Growing with this company and taking on more responsibility", correct = true },
+				{ text = "Definitely not here", correct = false },
+				{ text = "Rich and retired", correct = false },
+				{ text = "I don't plan that far ahead", correct = false },
+			}},
+			{ q = "Interviewer: Why did you leave your last job?", answers = {
+				{ text = "I'm looking for new growth opportunities", correct = true },
+				{ text = "My boss was terrible", correct = false },
+				{ text = "I got fired for fighting", correct = false },
+				{ text = "I was bored", correct = false },
+			}},
+			{ q = "Interviewer: How do you handle pressure?", answers = {
+				{ text = "I stay calm and prioritize tasks effectively", correct = true },
+				{ text = "I usually panic", correct = false },
+				{ text = "I avoid stressful situations", correct = false },
+				{ text = "Pressure? What's that?", correct = false },
+			}},
+		},
+		-- CONFRONTATIONS / INTIMIDATION
+		confrontation = {
+			{ q = "They get in your face: What's your problem?!", answers = {
+				{ text = "Let's talk about this like adults", correct = true },
+				{ text = "YOU'RE my problem!", correct = false },
+				{ text = "Back off before I make you!", correct = false },
+				{ text = "I-I don't have a problem...", correct = false },
+			}},
+			{ q = "They threaten: You're gonna regret this!", answers = {
+				{ text = "I don't want trouble, let's resolve this peacefully", correct = true },
+				{ text = "Try me!", correct = false },
+				{ text = "You're the one who'll regret it!", correct = false },
+				{ text = "Please don't hurt me!", correct = false },
+			}},
+			{ q = "They mock: You think you're tough?", answers = {
+				{ text = "I'm not looking for a fight", correct = true },
+				{ text = "Tougher than you!", correct = false },
+				{ text = "Yeah, what about it?!", correct = false },
+				{ text = "N-no, not really...", correct = false },
+			}},
+			{ q = "They demand: Give me what I want or else!", answers = {
+				{ text = "Let's find a solution that works for both of us", correct = true },
+				{ text = "Or else what?!", correct = false },
+				{ text = "You'll get nothing!", correct = false },
+				{ text = "O-okay, here, take it...", correct = false },
+			}},
+			{ q = "They sneer: You don't belong here!", answers = {
+				{ text = "I have every right to be here", correct = true },
+				{ text = "Make me leave!", correct = false },
+				{ text = "YOU don't belong here!", correct = false },
+				{ text = "Sorry, I'll go...", correct = false },
+			}},
+		},
+		-- FAMILY DRAMA
+		family = {
+			{ q = "Parent says: I'm disappointed in your choices!", answers = {
+				{ text = "I understand, can we talk about your concerns?", correct = true },
+				{ text = "I don't care what you think!", correct = false },
+				{ text = "You're always disappointed!", correct = false },
+				{ text = "Whatever...", correct = false },
+			}},
+			{ q = "Sibling argues: You always got special treatment!", answers = {
+				{ text = "I'm sorry you feel that way, that wasn't intentional", correct = true },
+				{ text = "Because I deserved it!", correct = false },
+				{ text = "No, YOU did!", correct = false },
+				{ text = "Stop whining about the past", correct = false },
+			}},
+			{ q = "Relative asks: When are you getting married?", answers = {
+				{ text = "When the time is right for me", correct = true },
+				{ text = "None of your business!", correct = false },
+				{ text = "Never, just to spite you!", correct = false },
+				{ text = "Stop asking me that!", correct = false },
+			}},
+			{ q = "Family member: You need to take more responsibility!", answers = {
+				{ text = "You're right, I'll work on that", correct = true },
+				{ text = "I take plenty of responsibility!", correct = false },
+				{ text = "You're not my parent!", correct = false },
+				{ text = "Mind your own business!", correct = false },
+			}},
+			{ q = "Parent asks: Why don't you visit more often?", answers = {
+				{ text = "I'll try to come by more, I've been busy", correct = true },
+				{ text = "Because I don't want to!", correct = false },
+				{ text = "You never visit ME!", correct = false },
+				{ text = "I have my own life!", correct = false },
+			}},
+		},
+		-- FRIENDSHIP DISPUTES
+		friendship = {
+			{ q = "Friend says: You've been ignoring me lately!", answers = {
+				{ text = "I'm sorry, I've been going through stuff. Let's hang out!", correct = true },
+				{ text = "Maybe because you're annoying", correct = false },
+				{ text = "You ignore me too!", correct = false },
+				{ text = "I have other friends you know", correct = false },
+			}},
+			{ q = "Friend accuses: You told my secret!", answers = {
+				{ text = "I'm really sorry, I made a mistake and I regret it", correct = true },
+				{ text = "It wasn't that big of a secret", correct = false },
+				{ text = "I never said anything!", correct = false },
+				{ text = "Everyone already knew!", correct = false },
+			}},
+			{ q = "Friend asks: Why weren't you at my party?", answers = {
+				{ text = "I'm so sorry I missed it, something came up", correct = true },
+				{ text = "I didn't feel like going", correct = false },
+				{ text = "I forgot about it", correct = false },
+				{ text = "Your parties are boring anyway", correct = false },
+			}},
+			{ q = "Friend upset: You chose them over me!", answers = {
+				{ text = "I value our friendship, it's not a competition", correct = true },
+				{ text = "Yeah, they're cooler", correct = false },
+				{ text = "You're being jealous!", correct = false },
+				{ text = "I can have multiple friends!", correct = false },
+			}},
+			{ q = "Friend questions: Are we even real friends?", answers = {
+				{ text = "Of course we are! You mean a lot to me", correct = true },
+				{ text = "I don't know, are we?", correct = false },
+				{ text = "If you have to ask...", correct = false },
+				{ text = "We're just acquaintances really", correct = false },
+			}},
+		},
+		-- GENERAL QUICK THINKING (fallback)
+		general = {
+			{ q = "Someone challenges: Prove yourself!", answers = {
+				{ text = "I'll show you through my actions", correct = true },
+				{ text = "I don't need to prove anything!", correct = false },
+				{ text = "Watch me fail spectacularly!", correct = false },
+				{ text = "Um, how?", correct = false },
+			}},
+			{ q = "They question: Why should I believe you?", answers = {
+				{ text = "Because I'm being honest with you", correct = true },
+				{ text = "I don't care if you believe me", correct = false },
+				{ text = "Because I said so!", correct = false },
+				{ text = "Fine, don't believe me then", correct = false },
+			}},
+			{ q = "They push: Make a decision now!", answers = {
+				{ text = "Let me think carefully before deciding", correct = true },
+				{ text = "I'll do whatever!", correct = false },
+				{ text = "You can't rush me!", correct = false },
+				{ text = "Uhh... I choose... nothing?", correct = false },
+			}},
+			{ q = "They test: What would you do if...?", answers = {
+				{ text = "I would handle it calmly and thoughtfully", correct = true },
+				{ text = "I'd probably panic", correct = false },
+				{ text = "I don't do hypotheticals", correct = false },
+				{ text = "Whatever happens, happens", correct = false },
+			}},
+			{ q = "They ask: What makes you different?", answers = {
+				{ text = "My unique perspective and dedication", correct = true },
+				{ text = "Nothing really", correct = false },
+				{ text = "I'm better than everyone!", correct = false },
+				{ text = "Different how?", correct = false },
+			}},
 		},
 	}
+
+	-- Default to general questions for backwards compatibility
+	self.debateQuestions = self.contextQuestions.general
 end
 
 function Minigames:startDebate(callback, options)
@@ -545,10 +716,30 @@ function Minigames:startDebate(callback, options)
 	self.yourScoreLabel.Text = "0"
 	self.oppScoreLabel.Text = "0"
 
-	-- Shuffle and pick questions
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Select questions based on CONTEXT!
+	-- Presidential questions ONLY for political context!
+	-- ════════════════════════════════════════════════════════════════════════════════
 	self.selectedQuestions = {}
 	local shuffled = {}
-	for _, q in ipairs(self.debateQuestions) do
+
+	-- Map context to question pool
+	local contextMap = {
+		politics = "political", political = "political", president = "political", election = "political",
+		argument = "argument", relationship = "argument", cheating_confrontation = "argument",
+		interview = "interview", job = "interview",
+		confrontation = "confrontation", intimidation = "confrontation", extortion = "confrontation",
+		family = "family", relatives = "family",
+		friendship = "friendship", friends = "friendship",
+	}
+
+	-- Get the right question pool for this context
+	local questionPool = contextMap[context] or "general"
+	local questions = self.contextQuestions[questionPool] or self.contextQuestions.general
+
+	print("[Minigames] Using question pool: " .. questionPool .. " for context: " .. tostring(context))
+
+	for _, q in ipairs(questions) do
 		table.insert(shuffled, q)
 	end
 	for i = #shuffled, 2, -1 do

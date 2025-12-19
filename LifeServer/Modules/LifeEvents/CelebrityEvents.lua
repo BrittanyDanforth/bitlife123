@@ -4095,33 +4095,24 @@ function CelebrityEvents.getStageInfo(state)
 	return nil
 end
 
-function CelebrityEvents.processYearlyFameUpdates(state)
+-- ════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Removed duplicate processYearlyFameUpdates function
+-- The primary function is defined at line ~2814 with full career events logic
+-- This duplicate was overwriting that function and breaking celebrity events
+-- ════════════════════════════════════════════════════════════════════════════════
+function CelebrityEvents.processYearlyStatRequirements(state)
+	-- RENAMED: This function now only handles stat requirement checks for promotions
+	-- It supplements the main processYearlyFameUpdates function
 	if not state or not state.FameState then return {} end
-	
+
 	local events = {}
 	local fameState = state.FameState
-	
-	-- Increment years in stage
-	fameState.yearsInStage = (fameState.yearsInStage or 0) + 1
-	
+
 	-- Get current stage info
 	local stageInfo = CelebrityEvents.getStageInfo(state)
 	if not stageInfo then return events end
-	
-	-- Apply yearly fame gain
-	local fameGain = math.random(stageInfo.fameGainPerYear.min, stageInfo.fameGainPerYear.max)
-	state.Fame = math.min(100, (state.Fame or 0) + fameGain)
-	
-	-- Apply yearly salary
-	local salary = math.random(stageInfo.salary.min, stageInfo.salary.max)
-	state.Money = (state.Money or 0) + salary
-	
-	-- Update job info
-	if state.CurrentJob then
-		state.CurrentJob.salary = salary
-	end
-	
-	-- Check for automatic promotion
+
+	-- Check for automatic promotion based on stats
 	local yearsToAdvance = stageInfo.yearsToAdvance
 	if yearsToAdvance then
 		local requiredYears = math.random(yearsToAdvance.min, yearsToAdvance.max)

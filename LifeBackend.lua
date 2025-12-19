@@ -12279,6 +12279,40 @@ function LifeBackend:createRelationship(state, relType, options)
 	return relationship
 end
 
+-- ════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Fallback function for relationship creation
+-- Used when createRelationship fails for any reason
+-- ════════════════════════════════════════════════════════════════════════════════
+function LifeBackend:createBasicRelationship(state, relType)
+	state.Relationships = state.Relationships or {}
+
+	-- Generate random name
+	local firstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery" }
+	local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" }
+	local randomName = firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+
+	local newId = string.format("%s_%s_%d", relType, os.time(), math.random(1000, 9999))
+	local relationship = {
+		id = newId,
+		name = randomName,
+		type = relType,
+		role = relType == "friend" and "Friend" or relType == "romance" and "Partner" or "Person",
+		relationship = 50,
+		age = (state.Age or 20) + math.random(-5, 5),
+		alive = true,
+	}
+
+	state.Relationships[newId] = relationship
+
+	if relType == "friend" then
+		state.Relationships.friends = state.Relationships.friends or {}
+		table.insert(state.Relationships.friends, relationship)
+	end
+
+	debugPrint("[createBasicRelationship] Created basic " .. relType .. ": " .. randomName)
+	return relationship
+end
+
 local InteractionEffects = {
 	family = {
 		hug = { delta = 6, cost = 0, message = "You hugged them tightly." },
@@ -12401,12 +12435,28 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 
 	-- Force create a new relationship if requested
 	if options.forceNewRelationship then
-		return self:createRelationship(state, relType, options.relationshipOptions)
+		-- CRITICAL FIX: Ensure relationshipOptions is never nil
+		local relOptions = options.relationshipOptions or {}
+		local result = self:createRelationship(state, relType, relOptions)
+		if not result then
+			-- Fallback: create a basic relationship if createRelationship failed
+			debugPrint("[ensureRelationship] createRelationship returned nil, creating basic friend")
+			return self:createBasicRelationship(state, relType)
+		end
+		return result
 	end
 
 	-- Friend: create new friend if no specific target
 	if relType == "friend" and not targetId then
-		return self:createRelationship(state, "friend", options.relationshipOptions)
+		-- CRITICAL FIX: Ensure relationshipOptions is never nil
+		local relOptions = options.relationshipOptions or {}
+		local result = self:createRelationship(state, "friend", relOptions)
+		if not result then
+			-- Fallback: create a basic friend if createRelationship failed
+			debugPrint("[ensureRelationship] createRelationship returned nil for friend, creating basic")
+			return self:createBasicRelationship(state, "friend")
+		end
+		return result
 	end
 
 	-- Romance: find existing partner or create new one
