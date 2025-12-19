@@ -3,9 +3,62 @@
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local Players = game:GetService("Players")
 
 local Minigames = {}
 Minigames.__index = Minigames
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Mobile detection and responsive scaling (DYNAMIC!)
+-- Now updates on screen resize/orientation changes
+-- ═══════════════════════════════════════════════════════════════════════════════
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Dynamic screen size detection - call these functions instead of using static vars
+local function getScreenSize()
+	return workspace.CurrentCamera.ViewportSize
+end
+
+local function isSmallScreen()
+	local size = getScreenSize()
+	return size.X < 700 or size.Y < 500  -- CRITICAL FIX: Increased thresholds for more devices
+end
+
+local function isTinyPhone()
+	local size = getScreenSize()
+	return size.X < 450 or size.Y < 350  -- CRITICAL FIX: Increased thresholds
+end
+
+-- Mobile-responsive scaling helpers (now dynamic!)
+local function px(base)
+	if isTinyPhone() then return math.floor(base * 0.65) end  -- More aggressive scaling
+	if isSmallScreen() then return math.floor(base * 0.8) end
+	return base
+end
+
+local function textSize(base)
+	if isTinyPhone() then return math.floor(base * 0.7) end
+	if isSmallScreen() then return math.floor(base * 0.8) end
+	return base
+end
+
+local function touchTarget(base)
+	if IS_MOBILE then return math.max(44, base * 1.2) end
+	return base
+end
+
+-- CRITICAL FIX: Get card height that fits on screen (max 85% of screen height)
+local function getCardHeight(desiredHeight)
+	local screenHeight = getScreenSize().Y
+	local maxHeight = screenHeight * 0.85
+	if isTinyPhone() then
+		return math.min(desiredHeight * 0.65, maxHeight)
+	elseif isSmallScreen() then
+		return math.min(desiredHeight * 0.8, maxHeight)
+	end
+	return math.min(desiredHeight, maxHeight)
+end
 
 -- Premium Colors
 local C = {
@@ -103,6 +156,32 @@ local function disconnectAll(tbl)
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- TYPEWRITER EFFECT - For dramatic text reveals (Purge, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════
+local function typeText(label, fullText, cps, tokenTbl)
+	cps = cps or 45
+	if not label then return end
+	label.Text = ""
+
+	-- tokenTbl is a tiny mutable table used to cancel old typing
+	if tokenTbl then
+		tokenTbl.id = (tokenTbl.id or 0) + 1
+	end
+	local myId = tokenTbl and tokenTbl.id or 0
+
+	local len = utf8.len(fullText) or #fullText
+	for i = 1, len do
+		if tokenTbl and tokenTbl.id ~= myId then
+			return -- cancelled
+		end
+
+		local sub = string.sub(fullText, 1, i)
+		label.Text = sub
+		task.wait(1 / cps)
+	end
+end
+
 function Minigames.new(screenGui)
 	local self = setmetatable({}, Minigames)
 	self.screenGui = screenGui
@@ -127,6 +206,17 @@ function Minigames.new(screenGui)
 
 	self._hackKeyConnections = {}
 	self._hackTimerConnection = nil
+	
+	-- PURGE minigame connections
+	self._purgeChoiceConnections = {}
+	self._purgeBeginConnection = nil
+	self._purgeContinueConnection = nil
+	self._purgeAutoThread = nil
+	self._purgeTypingToken = { id = 0 }
+
+	-- COMBAT minigame connections
+	self._combatConnections = {}
+	self._combatPhase = nil
 
 	-- Build UI once
 	self:createDebateGame()
@@ -136,12 +226,16 @@ function Minigames.new(screenGui)
 	self:createPrisonEscapeGame()
 	self:createMashGame()
 	self:createHackingGame()
+	self:createPurgeGame()
+	self:createCombatGame()
 
 	return self
 end
 
 ----------------------------------------------------------------
--- DEBATE MINIGAME (Presidential Path)
+-- DEBATE/CHALLENGE MINIGAME (Used for multiple contexts)
+-- CRITICAL FIX: Title is now DYNAMIC based on context!
+-- This minigame is used for: job interviews, debates, arguments, tests, etc.
 ----------------------------------------------------------------
 
 function Minigames:createDebateGame()
@@ -158,6 +252,7 @@ function Minigames:createDebateGame()
 	self.debateCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.debateCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.debateCard.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+	self.debateCard.ClipsDescendants = true  -- Prevent overflow on mobile
 	self.debateCard.ZIndex = 201
 	self.debateCard.Parent = self.debateOverlay
 	corner(self.debateCard, 20)
@@ -177,15 +272,16 @@ function Minigames:createDebateGame()
 	stageFix.ZIndex = 202
 	stageFix.Parent = stage
 
-	local stageTitle = Instance.new("TextLabel")
-	stageTitle.Size = UDim2.new(1, 0, 1, 0)
-	stageTitle.BackgroundTransparency = 1
-	stageTitle.Font = F.Title
-	stageTitle.TextSize = 24
-	stageTitle.TextColor3 = C.White
-	stageTitle.Text = "🎤 PRESIDENTIAL DEBATE"
-	stageTitle.ZIndex = 203
-	stageTitle.Parent = stage
+	-- CRITICAL FIX: Store reference to title so we can update it dynamically!
+	self.debateStageTitle = Instance.new("TextLabel")
+	self.debateStageTitle.Size = UDim2.new(1, 0, 1, 0)
+	self.debateStageTitle.BackgroundTransparency = 1
+	self.debateStageTitle.Font = F.Title
+	self.debateStageTitle.TextSize = isTinyPhone() and 18 or (isSmallScreen() and 20 or 24)
+	self.debateStageTitle.TextColor3 = C.White
+	self.debateStageTitle.Text = "🎤 CHALLENGE"  -- Default - will be overridden
+	self.debateStageTitle.ZIndex = 203
+	self.debateStageTitle.Parent = stage
 
 	-- Score display
 	self.debateScoreFrame = Instance.new("Frame")
@@ -319,100 +415,331 @@ function Minigames:createDebateGame()
 		self.debateAnswerBtns[i] = btn
 	end
 
-	-- Debate questions database
-	self.debateQuestions = {
-		{
-			q = "The moderator asks: What is your plan to address climate change?",
-			answers = {
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Context-specific debate questions database
+	-- Presidential questions ONLY for political context!
+	-- ════════════════════════════════════════════════════════════════════════════════
+	self.contextQuestions = {
+		-- POLITICAL/PRESIDENTIAL DEBATES ONLY
+		political = {
+			{ q = "The moderator asks: What is your plan to address climate change?", answers = {
 				{ text = "Invest in renewable energy and green jobs", correct = true },
 				{ text = "Climate change is a hoax", correct = false },
 				{ text = "Let the market figure it out", correct = false },
 				{ text = "I don't understand the question", correct = false },
-			}
-		},
-		{
-			q = "A citizen asks: How will you make healthcare more affordable?",
-			answers = {
-				{ text = "Expand coverage and negotiate drug prices", correct = true },
+			}},
+			{ q = "A citizen asks: How will you make healthcare more affordable?", answers = {
+				{ text = "Expand coverage and negotiate better prices", correct = true },
 				{ text = "Eliminate all healthcare programs", correct = false },
 				{ text = "Healthcare is not a government issue", correct = false },
 				{ text = "I'll think about it later", correct = false },
-			}
-		},
-		{
-			q = "The moderator asks: How will you handle the economy?",
-			answers = {
+			}},
+			{ q = "The moderator asks: How will you handle the economy?", answers = {
 				{ text = "Invest in infrastructure and education", correct = true },
-				{ text = "Cut all government spending immediately", correct = false },
+				{ text = "Cut all government spending", correct = false },
 				{ text = "Print more money", correct = false },
 				{ text = "Economy? What economy?", correct = false },
-			}
-		},
-		{
-			q = "On foreign policy: How will you handle international relations?",
-			answers = {
+			}},
+			{ q = "On foreign policy: How will you handle international relations?", answers = {
 				{ text = "Strengthen alliances and diplomacy first", correct = true },
-				{ text = "Isolate America from the world", correct = false },
+				{ text = "Isolate from the world", correct = false },
 				{ text = "Declare war on everyone", correct = false },
 				{ text = "Foreign policy isn't important", correct = false },
-			}
-		},
-		{
-			q = "On education: What's your plan for improving schools?",
-			answers = {
-				{ text = "Increase funding and teacher pay", correct = true },
-				{ text = "Close all public schools", correct = false },
-				{ text = "Kids don't need education", correct = false },
-				{ text = "Let parents figure it out", correct = false },
-			}
-		},
-		{
-			q = "A voter asks: How will you reduce crime?",
-			answers = {
+			}},
+			{ q = "A voter asks: How will you reduce crime?", answers = {
 				{ text = "Community programs and smart policing", correct = true },
 				{ text = "Abolish all laws", correct = false },
 				{ text = "Lock everyone up forever", correct = false },
 				{ text = "Crime is fine actually", correct = false },
-			}
+			}},
 		},
-		{
-			q = "The moderator asks: What about the national debt?",
-			answers = {
-				{ text = "Responsible budgeting and growth", correct = true },
-				{ text = "Just ignore it", correct = false },
-				{ text = "Borrow more money", correct = false },
-				{ text = "What's a debt?", correct = false },
-			}
+		-- HEATED ARGUMENTS / RELATIONSHIP CONFLICTS
+		argument = {
+			{ q = "They say: You never listen to me!", answers = {
+				{ text = "I hear you, let's talk about this calmly", correct = true },
+				{ text = "Whatever, you're overreacting", correct = false },
+				{ text = "No YOU never listen!", correct = false },
+				{ text = "I'm leaving", correct = false },
+			}},
+			{ q = "They accuse: You always put yourself first!", answers = {
+				{ text = "I'm sorry you feel that way, let's work on this", correct = true },
+				{ text = "So what if I do?", correct = false },
+				{ text = "That's ridiculous!", correct = false },
+				{ text = "Maybe I should!", correct = false },
+			}},
+			{ q = "They're upset: You broke your promise!", answers = {
+				{ text = "You're right, I'm sorry. How can I make it up?", correct = true },
+				{ text = "It wasn't that important anyway", correct = false },
+				{ text = "I never promised anything!", correct = false },
+				{ text = "Deal with it", correct = false },
+			}},
+			{ q = "They demand: Explain yourself right now!", answers = {
+				{ text = "Okay, let me explain what happened", correct = true },
+				{ text = "I don't owe you an explanation", correct = false },
+				{ text = "You're being crazy!", correct = false },
+				{ text = "Make me!", correct = false },
+			}},
+			{ q = "They say: I can't trust you anymore!", answers = {
+				{ text = "I understand, let me earn your trust back", correct = true },
+				{ text = "Then don't, I don't care", correct = false },
+				{ text = "You're being paranoid!", correct = false },
+				{ text = "Good, I can't trust you either!", correct = false },
+			}},
+			{ q = "They're crying: You really hurt my feelings!", answers = {
+				{ text = "I'm so sorry, that wasn't my intention", correct = true },
+				{ text = "Stop being so sensitive", correct = false },
+				{ text = "You hurt mine too!", correct = false },
+				{ text = "Here we go again...", correct = false },
+			}},
 		},
-		{
-			q = "On immigration: What is your policy?",
-			answers = {
-				{ text = "Comprehensive reform with a path to citizenship", correct = true },
-				{ text = "Deport everyone", correct = false },
-				{ text = "Open borders with no rules", correct = false },
-				{ text = "Build a moat with alligators", correct = false },
-			}
+		-- JOB INTERVIEWS
+		interview = {
+			{ q = "Interviewer: Why should we hire you?", answers = {
+				{ text = "I bring unique skills and dedication to succeed", correct = true },
+				{ text = "Because I need money", correct = false },
+				{ text = "I dunno, you tell me", correct = false },
+				{ text = "Because I'm awesome obviously", correct = false },
+			}},
+			{ q = "Interviewer: What's your biggest weakness?", answers = {
+				{ text = "I work too hard sometimes, but I'm learning balance", correct = true },
+				{ text = "I'm perfect, no weaknesses", correct = false },
+				{ text = "I'm always late", correct = false },
+				{ text = "I hate working", correct = false },
+			}},
+			{ q = "Interviewer: Where do you see yourself in 5 years?", answers = {
+				{ text = "Growing with this company and taking on more responsibility", correct = true },
+				{ text = "Definitely not here", correct = false },
+				{ text = "Rich and retired", correct = false },
+				{ text = "I don't plan that far ahead", correct = false },
+			}},
+			{ q = "Interviewer: Why did you leave your last job?", answers = {
+				{ text = "I'm looking for new growth opportunities", correct = true },
+				{ text = "My boss was terrible", correct = false },
+				{ text = "I got fired for fighting", correct = false },
+				{ text = "I was bored", correct = false },
+			}},
+			{ q = "Interviewer: How do you handle pressure?", answers = {
+				{ text = "I stay calm and prioritize tasks effectively", correct = true },
+				{ text = "I usually panic", correct = false },
+				{ text = "I avoid stressful situations", correct = false },
+				{ text = "Pressure? What's that?", correct = false },
+			}},
+		},
+		-- CONFRONTATIONS / INTIMIDATION
+		confrontation = {
+			{ q = "They get in your face: What's your problem?!", answers = {
+				{ text = "Let's talk about this like adults", correct = true },
+				{ text = "YOU'RE my problem!", correct = false },
+				{ text = "Back off before I make you!", correct = false },
+				{ text = "I-I don't have a problem...", correct = false },
+			}},
+			{ q = "They threaten: You're gonna regret this!", answers = {
+				{ text = "I don't want trouble, let's resolve this peacefully", correct = true },
+				{ text = "Try me!", correct = false },
+				{ text = "You're the one who'll regret it!", correct = false },
+				{ text = "Please don't hurt me!", correct = false },
+			}},
+			{ q = "They mock: You think you're tough?", answers = {
+				{ text = "I'm not looking for a fight", correct = true },
+				{ text = "Tougher than you!", correct = false },
+				{ text = "Yeah, what about it?!", correct = false },
+				{ text = "N-no, not really...", correct = false },
+			}},
+			{ q = "They demand: Give me what I want or else!", answers = {
+				{ text = "Let's find a solution that works for both of us", correct = true },
+				{ text = "Or else what?!", correct = false },
+				{ text = "You'll get nothing!", correct = false },
+				{ text = "O-okay, here, take it...", correct = false },
+			}},
+			{ q = "They sneer: You don't belong here!", answers = {
+				{ text = "I have every right to be here", correct = true },
+				{ text = "Make me leave!", correct = false },
+				{ text = "YOU don't belong here!", correct = false },
+				{ text = "Sorry, I'll go...", correct = false },
+			}},
+		},
+		-- FAMILY DRAMA
+		family = {
+			{ q = "Parent says: I'm disappointed in your choices!", answers = {
+				{ text = "I understand, can we talk about your concerns?", correct = true },
+				{ text = "I don't care what you think!", correct = false },
+				{ text = "You're always disappointed!", correct = false },
+				{ text = "Whatever...", correct = false },
+			}},
+			{ q = "Sibling argues: You always got special treatment!", answers = {
+				{ text = "I'm sorry you feel that way, that wasn't intentional", correct = true },
+				{ text = "Because I deserved it!", correct = false },
+				{ text = "No, YOU did!", correct = false },
+				{ text = "Stop whining about the past", correct = false },
+			}},
+			{ q = "Relative asks: When are you getting married?", answers = {
+				{ text = "When the time is right for me", correct = true },
+				{ text = "None of your business!", correct = false },
+				{ text = "Never, just to spite you!", correct = false },
+				{ text = "Stop asking me that!", correct = false },
+			}},
+			{ q = "Family member: You need to take more responsibility!", answers = {
+				{ text = "You're right, I'll work on that", correct = true },
+				{ text = "I take plenty of responsibility!", correct = false },
+				{ text = "You're not my parent!", correct = false },
+				{ text = "Mind your own business!", correct = false },
+			}},
+			{ q = "Parent asks: Why don't you visit more often?", answers = {
+				{ text = "I'll try to come by more, I've been busy", correct = true },
+				{ text = "Because I don't want to!", correct = false },
+				{ text = "You never visit ME!", correct = false },
+				{ text = "I have my own life!", correct = false },
+			}},
+		},
+		-- FRIENDSHIP DISPUTES
+		friendship = {
+			{ q = "Friend says: You've been ignoring me lately!", answers = {
+				{ text = "I'm sorry, I've been going through stuff. Let's hang out!", correct = true },
+				{ text = "Maybe because you're annoying", correct = false },
+				{ text = "You ignore me too!", correct = false },
+				{ text = "I have other friends you know", correct = false },
+			}},
+			{ q = "Friend accuses: You told my secret!", answers = {
+				{ text = "I'm really sorry, I made a mistake and I regret it", correct = true },
+				{ text = "It wasn't that big of a secret", correct = false },
+				{ text = "I never said anything!", correct = false },
+				{ text = "Everyone already knew!", correct = false },
+			}},
+			{ q = "Friend asks: Why weren't you at my party?", answers = {
+				{ text = "I'm so sorry I missed it, something came up", correct = true },
+				{ text = "I didn't feel like going", correct = false },
+				{ text = "I forgot about it", correct = false },
+				{ text = "Your parties are boring anyway", correct = false },
+			}},
+			{ q = "Friend upset: You chose them over me!", answers = {
+				{ text = "I value our friendship, it's not a competition", correct = true },
+				{ text = "Yeah, they're cooler", correct = false },
+				{ text = "You're being jealous!", correct = false },
+				{ text = "I can have multiple friends!", correct = false },
+			}},
+			{ q = "Friend questions: Are we even real friends?", answers = {
+				{ text = "Of course we are! You mean a lot to me", correct = true },
+				{ text = "I don't know, are we?", correct = false },
+				{ text = "If you have to ask...", correct = false },
+				{ text = "We're just acquaintances really", correct = false },
+			}},
+		},
+		-- GENERAL QUICK THINKING (fallback)
+		general = {
+			{ q = "Someone challenges: Prove yourself!", answers = {
+				{ text = "I'll show you through my actions", correct = true },
+				{ text = "I don't need to prove anything!", correct = false },
+				{ text = "Watch me fail spectacularly!", correct = false },
+				{ text = "Um, how?", correct = false },
+			}},
+			{ q = "They question: Why should I believe you?", answers = {
+				{ text = "Because I'm being honest with you", correct = true },
+				{ text = "I don't care if you believe me", correct = false },
+				{ text = "Because I said so!", correct = false },
+				{ text = "Fine, don't believe me then", correct = false },
+			}},
+			{ q = "They push: Make a decision now!", answers = {
+				{ text = "Let me think carefully before deciding", correct = true },
+				{ text = "I'll do whatever!", correct = false },
+				{ text = "You can't rush me!", correct = false },
+				{ text = "Uhh... I choose... nothing?", correct = false },
+			}},
+			{ q = "They test: What would you do if...?", answers = {
+				{ text = "I would handle it calmly and thoughtfully", correct = true },
+				{ text = "I'd probably panic", correct = false },
+				{ text = "I don't do hypotheticals", correct = false },
+				{ text = "Whatever happens, happens", correct = false },
+			}},
+			{ q = "They ask: What makes you different?", answers = {
+				{ text = "My unique perspective and dedication", correct = true },
+				{ text = "Nothing really", correct = false },
+				{ text = "I'm better than everyone!", correct = false },
+				{ text = "Different how?", correct = false },
+			}},
 		},
 	}
+
+	-- Default to general questions for backwards compatibility
+	self.debateQuestions = self.contextQuestions.general
 end
 
-function Minigames:startDebate(callback)
+function Minigames:startDebate(callback, options)
 	self.callback = callback
 	self.debateOverlay.Visible = true
 	self.activeGame = "debate"
 
+	-- CRITICAL FIX: Dynamic title based on context!
+	-- Options can contain: title, context, difficulty
+	options = options or {}
+	local context = options.context or "general"
+	local title = options.title
+	
+	-- Set appropriate title based on context
+	-- CRITICAL FIX: Expanded context handling to prevent "Presidential Debate" from showing incorrectly
+	if title then
+		self.debateStageTitle.Text = title
+	elseif context == "interview" or context == "job" then
+		self.debateStageTitle.Text = "🎤 JOB INTERVIEW"
+	elseif context == "argument" or context == "relationship" then
+		self.debateStageTitle.Text = "💬 HEATED ARGUMENT"
+	elseif context == "cheating_confrontation" then
+		self.debateStageTitle.Text = "💔 CONFRONTATION"
+	elseif context == "office_confrontation" or context == "office" then
+		self.debateStageTitle.Text = "😤 OFFICE SHOWDOWN"
+	elseif context == "exam" or context == "test" or context == "school" then
+		self.debateStageTitle.Text = "📝 EXAM TIME"
+	elseif context == "karaoke" or context == "singing" then
+		self.debateStageTitle.Text = "🎤 KARAOKE BATTLE"
+	elseif context == "extortion" or context == "intimidation" then
+		self.debateStageTitle.Text = "😤 INTIMIDATION"
+	elseif context == "politics" or context == "political" then
+		self.debateStageTitle.Text = "🏛️ POLITICAL DEBATE"
+	elseif context == "internet" or context == "online" then
+		self.debateStageTitle.Text = "💻 ONLINE ARGUMENT"
+	elseif context == "negotiation" or context == "deal" then
+		self.debateStageTitle.Text = "🤝 NEGOTIATION"
+	elseif context == "court" or context == "legal" or context == "trial" then
+		self.debateStageTitle.Text = "⚖️ COURT BATTLE"
+	elseif context == "family" or context == "relatives" then
+		self.debateStageTitle.Text = "👨‍👩‍👧 FAMILY DRAMA"
+	elseif context == "friendship" or context == "friends" then
+		self.debateStageTitle.Text = "👫 FRIEND DISPUTE"
+	else
+		self.debateStageTitle.Text = "🎤 QUICK THINKING"
+	end
+
 	self.yourScore = 0
 	self.oppScore = 0
 	self.currentQuestion = 0
-	self.totalQuestions = 5
+	self.totalQuestions = options.questionCount or 5
 
 	self.yourScoreLabel.Text = "0"
 	self.oppScoreLabel.Text = "0"
 
-	-- Shuffle and pick questions
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Select questions based on CONTEXT!
+	-- Presidential questions ONLY for political context!
+	-- ════════════════════════════════════════════════════════════════════════════════
 	self.selectedQuestions = {}
 	local shuffled = {}
-	for _, q in ipairs(self.debateQuestions) do
+
+	-- Map context to question pool
+	local contextMap = {
+		politics = "political", political = "political", president = "political", election = "political",
+		argument = "argument", relationship = "argument", cheating_confrontation = "argument",
+		interview = "interview", job = "interview",
+		confrontation = "confrontation", intimidation = "confrontation", extortion = "confrontation",
+		family = "family", relatives = "family",
+		friendship = "friendship", friends = "friendship",
+	}
+
+	-- Get the right question pool for this context
+	local questionPool = contextMap[context] or "general"
+	local questions = self.contextQuestions[questionPool] or self.contextQuestions.general
+
+	print("[Minigames] Using question pool: " .. questionPool .. " for context: " .. tostring(context))
+
+	for _, q in ipairs(questions) do
 		table.insert(shuffled, q)
 	end
 	for i = #shuffled, 2, -1 do
@@ -549,7 +876,9 @@ function Minigames:createHeistGame()
 	self.heistOverlay.Parent = self.screenGui
 
 	self.heistCard = Instance.new("Frame")
-	self.heistCard.Size = UDim2.new(0.95, 0, 0, 500)
+	-- CRITICAL FIX: Use percentage height for mobile compatibility
+	self.heistCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.heistCard.ClipsDescendants = true
 	self.heistCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.heistCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.heistCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -868,11 +1197,13 @@ function Minigames:createGetawayGame()
 	self.getawayOverlay.Parent = self.screenGui
 
 	self.getawayCard = Instance.new("Frame")
-	self.getawayCard.Size = UDim2.new(0.95, 0, 0, 450)
+	-- CRITICAL FIX: Use percentage-based height that fits on mobile screens
+	self.getawayCard.Size = UDim2.new(0.95, 0, 0.85, 0)  -- 85% of screen height
 	self.getawayCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.getawayCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.getawayCard.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
 	self.getawayCard.ZIndex = 201
+	self.getawayCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow
 	self.getawayCard.Parent = self.getawayOverlay
 	corner(self.getawayCard, 20)
 
@@ -1003,19 +1334,25 @@ function Minigames:showNextGetawaySequence()
 		btn.BackgroundColor3 = C.Gray600
 	end
 
+	-- CRITICAL FIX: SLOWER arrow display timing so players can actually follow!
+	-- Was 0.4s between arrows, 0.3s visible - way too fast!
+	-- Now 0.7s between arrows, 0.55s visible - much easier to track
+	local ARROW_INTERVAL = 0.7  -- Time between each arrow showing
+	local ARROW_VISIBLE_TIME = 0.55  -- How long each arrow stays lit
+
 	for i, btnIndex in ipairs(self.getawaySequence) do
-		task.delay(i * 0.4, function()
+		task.delay(i * ARROW_INTERVAL, function()
 			if self.activeGame ~= "getaway" then return end
 			local btn = self.getawayBtns[btnIndex]
 			btn.BackgroundColor3 = C.Amber
-			task.delay(0.3, function()
+			task.delay(ARROW_VISIBLE_TIME, function()
 				if self.activeGame ~= "getaway" then return end
 				btn.BackgroundColor3 = C.Gray600
 			end)
 		end)
 	end
 
-	task.delay((#self.getawaySequence + 1) * 0.4, function()
+	task.delay((#self.getawaySequence + 1) * ARROW_INTERVAL, function()
 		if self.activeGame ~= "getaway" then return end
 		self:highlightCurrentTarget()
 	end)
@@ -1131,45 +1468,50 @@ function Minigames:createQuickTimeGame()
 	self.qteOverlay.ZIndex = 200
 	self.qteOverlay.Parent = self.screenGui
 
+	-- CRITICAL UI FIX: Responsive card for mobile compatibility
 	self.qteCard = Instance.new("Frame")
-	self.qteCard.Size = UDim2.new(0.9, 0, 0, 350)
+	self.qteCard.Size = UDim2.new(0.92, 0, 0.8, 0)  -- 80% of screen height
+	self.qteCard.ClipsDescendants = true
 	self.qteCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.qteCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.qteCard.BackgroundColor3 = C.Gray800
 	self.qteCard.ZIndex = 201
 	self.qteCard.Parent = self.qteOverlay
 	corner(self.qteCard, 24)
+	pad(self.qteCard, 16, 16, 16, 16)
 
 	self.qteTitle = Instance.new("TextLabel")
-	self.qteTitle.Size = UDim2.new(1, 0, 0, 60)
+	self.qteTitle.Size = UDim2.new(1, 0, 0, 50)
 	self.qteTitle.BackgroundTransparency = 1
 	self.qteTitle.Font = F.Title
-	self.qteTitle.TextSize = 24
+	self.qteTitle.TextSize = 26
 	self.qteTitle.TextColor3 = C.White
 	self.qteTitle.Text = "⚡ QUICK TIME EVENT"
 	self.qteTitle.ZIndex = 202
 	self.qteTitle.Parent = self.qteCard
 
 	self.qteInstructions = Instance.new("TextLabel")
-	self.qteInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.qteInstructions.Size = UDim2.new(0.9, 0, 0, 50)
 	self.qteInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteInstructions.Position = UDim2.new(0.5, 0, 0, 60)
+	self.qteInstructions.Position = UDim2.new(0.5, 0, 0, 55)
 	self.qteInstructions.BackgroundTransparency = 1
 	self.qteInstructions.Font = F.Body
-	self.qteInstructions.TextSize = 16
+	self.qteInstructions.TextSize = 18
 	self.qteInstructions.TextColor3 = C.Gray300
+	self.qteInstructions.TextWrapped = true
 	self.qteInstructions.Text = "TAP when the bar is in the green zone!"
 	self.qteInstructions.ZIndex = 202
 	self.qteInstructions.Parent = self.qteCard
 
+	-- CRITICAL UI FIX: Larger bar for easier visibility
 	self.qteBarBg = Instance.new("Frame")
-	self.qteBarBg.Size = UDim2.new(0.85, 0, 0, 60)
+	self.qteBarBg.Size = UDim2.new(0.9, 0, 0, 70)
 	self.qteBarBg.AnchorPoint = Vector2.new(0.5, 0)
 	self.qteBarBg.Position = UDim2.new(0.5, 0, 0, 120)
 	self.qteBarBg.BackgroundColor3 = C.Gray600
 	self.qteBarBg.ZIndex = 202
 	self.qteBarBg.Parent = self.qteCard
-	corner(self.qteBarBg, 12)
+	corner(self.qteBarBg, 14)
 
 	self.qteGreenZone = Instance.new("Frame")
 	self.qteGreenZone.Size = UDim2.new(0.2, 0, 1, 0)
@@ -1178,10 +1520,10 @@ function Minigames:createQuickTimeGame()
 	self.qteGreenZone.BackgroundTransparency = 0.3
 	self.qteGreenZone.ZIndex = 203
 	self.qteGreenZone.Parent = self.qteBarBg
-	corner(self.qteGreenZone, 8)
+	corner(self.qteGreenZone, 10)
 
 	self.qteIndicator = Instance.new("Frame")
-	self.qteIndicator.Size = UDim2.new(0.05, 0, 1.2, 0)
+	self.qteIndicator.Size = UDim2.new(0.04, 0, 1.2, 0)
 	self.qteIndicator.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.qteIndicator.Position = UDim2.new(0, 0, 0.5, 0)
 	self.qteIndicator.BackgroundColor3 = C.White
@@ -1189,27 +1531,39 @@ function Minigames:createQuickTimeGame()
 	self.qteIndicator.Parent = self.qteBarBg
 	corner(self.qteIndicator, 4)
 
+	-- CRITICAL MOBILE FIX: Even larger tap button for easy mobile tapping!
 	self.qteTapBtn = Instance.new("TextButton")
-	self.qteTapBtn.Size = UDim2.new(0.7, 0, 0, 80)
+	-- MOBILE OPTIMIZATION: Button is 90% width for massive tap target
+	self.qteTapBtn.Size = UDim2.new(0.9, 0, 0, 120)
 	self.qteTapBtn.AnchorPoint = Vector2.new(0.5, 0)
 	self.qteTapBtn.Position = UDim2.new(0.5, 0, 0, 200)
 	self.qteTapBtn.BackgroundColor3 = C.Blue
 	self.qteTapBtn.Font = F.Title
-	self.qteTapBtn.TextSize = 28
+	self.qteTapBtn.TextSize = 36
 	self.qteTapBtn.TextColor3 = C.White
-	self.qteTapBtn.Text = "TAP!"
+	self.qteTapBtn.Text = "🎯 TAP NOW!"
 	self.qteTapBtn.AutoButtonColor = false
 	self.qteTapBtn.ZIndex = 202
 	self.qteTapBtn.Parent = self.qteCard
-	corner(self.qteTapBtn, 16)
+	corner(self.qteTapBtn, 24)
+	
+	-- MOBILE OPTIMIZATION: Visual feedback on touch
+	self.qteTapBtn.MouseButton1Down:Connect(function()
+		self.qteTapBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0) -- Green on press
+		self.qteTapBtn.Size = UDim2.new(0.88, 0, 0, 116) -- Slight shrink for feedback
+	end)
+	self.qteTapBtn.MouseButton1Up:Connect(function()
+		self.qteTapBtn.BackgroundColor3 = C.Blue
+		self.qteTapBtn.Size = UDim2.new(0.9, 0, 0, 120) -- Back to normal
+	end)
 
 	self.qteResult = Instance.new("TextLabel")
-	self.qteResult.Size = UDim2.new(1, 0, 0, 40)
+	self.qteResult.Size = UDim2.new(1, 0, 0, 50)
 	self.qteResult.AnchorPoint = Vector2.new(0.5, 0)
-	self.qteResult.Position = UDim2.new(0.5, 0, 0, 295)
+	self.qteResult.Position = UDim2.new(0.5, 0, 0, 330)
 	self.qteResult.BackgroundTransparency = 1
 	self.qteResult.Font = F.Title
-	self.qteResult.TextSize = 20
+	self.qteResult.TextSize = 24
 	self.qteResult.TextColor3 = C.White
 	self.qteResult.Text = ""
 	self.qteResult.ZIndex = 202
@@ -1310,7 +1664,9 @@ function Minigames:createPrisonEscapeGame()
 	self.prisonOverlay.Parent = self.screenGui
 
 	self.prisonCard = Instance.new("Frame")
-	self.prisonCard.Size = UDim2.new(0.95, 0, 0, 480)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.prisonCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.prisonCard.ClipsDescendants = true
 	self.prisonCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.prisonCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.prisonCard.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
@@ -1565,7 +1921,9 @@ function Minigames:createMashGame()
 	self.mashOverlay.Parent = self.screenGui
 
 	self.mashCard = Instance.new("Frame")
-	self.mashCard.Size = UDim2.new(0.9, 0, 0, 400)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.mashCard.Size = UDim2.new(0.9, 0, 0.75, 0)
+	self.mashCard.ClipsDescendants = true
 	self.mashCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.mashCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.mashCard.BackgroundColor3 = C.Gray800
@@ -1638,20 +1996,29 @@ function Minigames:createMashGame()
 	self.mashCount.ZIndex = 202
 	self.mashCount.Parent = self.mashCard
 
-	-- Big tap button
+	-- Big tap button - CRITICAL MOBILE FIX: Made MUCH larger for easy tapping!
 	self.mashButton = Instance.new("TextButton")
-	self.mashButton.Size = UDim2.new(0, 180, 0, 180)
+	-- MOBILE OPTIMIZATION: Button is now 70% of card width for bigger tap target
+	self.mashButton.Size = UDim2.new(0.7, 0, 0, 140)
 	self.mashButton.AnchorPoint = Vector2.new(0.5, 0)
-	self.mashButton.Position = UDim2.new(0.5, 0, 0, 210)
+	self.mashButton.Position = UDim2.new(0.5, 0, 0, 200)
 	self.mashButton.BackgroundColor3 = C.Blue
 	self.mashButton.Font = F.Title
-	self.mashButton.TextSize = 48
+	self.mashButton.TextSize = 42
 	self.mashButton.TextColor3 = C.White
-	self.mashButton.Text = "TAP!"
+	self.mashButton.Text = "👆 TAP!"
 	self.mashButton.AutoButtonColor = false
 	self.mashButton.ZIndex = 203
 	self.mashButton.Parent = self.mashCard
-	corner(self.mashButton, 90)
+	corner(self.mashButton, 24)  -- MOBILE FIX: Rounded rectangle instead of circle for bigger tap zone
+	
+	-- MOBILE OPTIMIZATION: Add visual feedback on tap
+	self.mashButton.MouseButton1Down:Connect(function()
+		self.mashButton.BackgroundColor3 = C.Green
+	end)
+	self.mashButton.MouseButton1Up:Connect(function()
+		self.mashButton.BackgroundColor3 = C.Blue
+	end)
 end
 
 function Minigames:startMash(callback, options)
@@ -1707,8 +2074,11 @@ function Minigames:handleMashTap()
 end
 
 function Minigames:startMashTimer()
+	-- CRITICAL FIX: Wrap task.cancel in pcall to prevent "cannot cancel thread" error
+	-- This error occurs when trying to cancel an already-completed thread
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
+		self._mashTimerThread = nil
 	end
 
 	self._mashTimerThread = task.spawn(function()
@@ -1738,8 +2108,9 @@ function Minigames:endMash(success)
 	disconnect(self._mashConnection)
 	self._mashConnection = nil
 
+	-- CRITICAL FIX: Wrap task.cancel in pcall to prevent "cannot cancel thread" error
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
 		self._mashTimerThread = nil
 	end
 
@@ -1763,7 +2134,9 @@ function Minigames:createHackingGame()
 	self.hackOverlay.Parent = self.screenGui
 
 	self.hackCard = Instance.new("Frame")
-	self.hackCard.Size = UDim2.new(0.95, 0, 0, 500)
+	-- CRITICAL FIX: Responsive height for mobile
+	self.hackCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	self.hackCard.ClipsDescendants = true
 	self.hackCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.hackCard.Position = UDim2.fromScale(0.5, 0.5)
 	self.hackCard.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
@@ -2024,8 +2397,662 @@ function Minigames:endHacking(success)
 end
 
 ----------------------------------------------------------------
+-- PURGE MINIGAME (Rare Survival Event)
+----------------------------------------------------------------
+
+function Minigames:createPurgeGame()
+	-- Overlay
+	self.purgeOverlay = Instance.new("Frame")
+	self.purgeOverlay.Size = UDim2.fromScale(1, 1)
+	self.purgeOverlay.BackgroundColor3 = C.Black
+	self.purgeOverlay.BackgroundTransparency = 0.15
+	self.purgeOverlay.Visible = false
+	self.purgeOverlay.ZIndex = 210
+	self.purgeOverlay.Parent = self.screenGui
+
+	-- INTRO CARD
+	self.purgeIntroCard = Instance.new("Frame")
+	self.purgeIntroCard.Size = UDim2.new(0.94, 0, 0.8, 0)
+	self.purgeIntroCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeIntroCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeIntroCard.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	self.purgeIntroCard.ZIndex = 211
+	self.purgeIntroCard.Parent = self.purgeOverlay
+	corner(self.purgeIntroCard, 22)
+	stroke(self.purgeIntroCard, 2, 0, C.Red)
+
+	local introHeader = Instance.new("TextLabel")
+	introHeader.Size = UDim2.new(1, 0, 0, 60)
+	introHeader.BackgroundTransparency = 1
+	introHeader.Font = F.Title
+	introHeader.TextSize = 28
+	introHeader.TextColor3 = C.Red
+	introHeader.Text = "😈 The Purge"
+	introHeader.ZIndex = 212
+	introHeader.TextXAlignment = Enum.TextXAlignment.Center
+	introHeader.Parent = self.purgeIntroCard
+
+	-- Body text (typewriter)
+	self.purgeIntroBody = Instance.new("TextLabel")
+	self.purgeIntroBody.Size = UDim2.new(0.9, 0, 0.5, 0)
+	self.purgeIntroBody.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeIntroBody.Position = UDim2.new(0.5, 0, 0, 90)
+	self.purgeIntroBody.BackgroundTransparency = 1
+	self.purgeIntroBody.Font = F.Medium
+	self.purgeIntroBody.TextSize = 18
+	self.purgeIntroBody.TextColor3 = C.Red
+	self.purgeIntroBody.TextWrapped = true
+	self.purgeIntroBody.Text = ""
+	self.purgeIntroBody.ZIndex = 212
+	self.purgeIntroBody.Parent = self.purgeIntroCard
+
+	-- Begin button
+	self.purgeBeginBtn = Instance.new("TextButton")
+	self.purgeBeginBtn.Size = UDim2.new(0.9, 0, 0, 64)
+	self.purgeBeginBtn.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeBeginBtn.Position = UDim2.new(0.5, 0, 0.75, 0)
+	self.purgeBeginBtn.BackgroundColor3 = C.Red
+	self.purgeBeginBtn.Font = F.Button
+	self.purgeBeginBtn.TextSize = 22
+	self.purgeBeginBtn.TextColor3 = C.White
+	self.purgeBeginBtn.Text = "🚨 BEGIN APOCALYPSE 🚨"
+	self.purgeBeginBtn.AutoButtonColor = false
+	self.purgeBeginBtn.ZIndex = 212
+	self.purgeBeginBtn.Parent = self.purgeIntroCard
+	corner(self.purgeBeginBtn, 16)
+
+	-- GAME CARD
+	self.purgeGameCard = Instance.new("Frame")
+	self.purgeGameCard.Size = UDim2.new(0.94, 0, 0.85, 0)
+	self.purgeGameCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeGameCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeGameCard.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+	self.purgeGameCard.Visible = false
+	self.purgeGameCard.ZIndex = 211
+	self.purgeGameCard.Parent = self.purgeOverlay
+	corner(self.purgeGameCard, 22)
+	stroke(self.purgeGameCard, 2, 0, C.Red)
+
+	-- Title row
+	local gameTitle = Instance.new("TextLabel")
+	gameTitle.Size = UDim2.new(1, 0, 0, 50)
+	gameTitle.BackgroundTransparency = 1
+	gameTitle.Font = F.Title
+	gameTitle.TextSize = 24
+	gameTitle.TextColor3 = C.Red
+	gameTitle.Text = "😈 The Purge"
+	gameTitle.ZIndex = 212
+	gameTitle.TextXAlignment = Enum.TextXAlignment.Center
+	gameTitle.Parent = self.purgeGameCard
+
+	-- HP label
+	self.purgeHpLabel = Instance.new("TextLabel")
+	self.purgeHpLabel.Size = UDim2.new(0.9, 0, 0, 22)
+	self.purgeHpLabel.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeHpLabel.Position = UDim2.new(0.5, 0, 0, 58)
+	self.purgeHpLabel.BackgroundTransparency = 1
+	self.purgeHpLabel.Font = F.Button
+	self.purgeHpLabel.TextSize = 16
+	self.purgeHpLabel.TextColor3 = C.White
+	self.purgeHpLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeHpLabel.Text = "❤️ HP: 100 / 100"
+	self.purgeHpLabel.ZIndex = 212
+	self.purgeHpLabel.Parent = self.purgeGameCard
+
+	-- HP bar bg
+	self.purgeHpBg = Instance.new("Frame")
+	self.purgeHpBg.Size = UDim2.new(0.9, 0, 0, 18)
+	self.purgeHpBg.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeHpBg.Position = UDim2.new(0.5, 0, 0, 84)
+	self.purgeHpBg.BackgroundColor3 = C.Gray800
+	self.purgeHpBg.ZIndex = 212
+	self.purgeHpBg.Parent = self.purgeGameCard
+	pill(self.purgeHpBg)
+
+	-- HP fill
+	self.purgeHpFill = Instance.new("Frame")
+	self.purgeHpFill.Size = UDim2.new(1, 0, 1, 0)
+	self.purgeHpFill.BackgroundColor3 = C.Green
+	self.purgeHpFill.ZIndex = 213
+	self.purgeHpFill.Parent = self.purgeHpBg
+	pill(self.purgeHpFill)
+
+	-- Progress label
+	self.purgeProgressLabel = Instance.new("TextLabel")
+	self.purgeProgressLabel.Size = UDim2.new(0.9, 0, 0, 22)
+	self.purgeProgressLabel.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeProgressLabel.Position = UDim2.new(0.5, 0, 0, 110)
+	self.purgeProgressLabel.BackgroundTransparency = 1
+	self.purgeProgressLabel.Font = F.Medium
+	self.purgeProgressLabel.TextSize = 14
+	self.purgeProgressLabel.TextColor3 = C.Gray300
+	self.purgeProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeProgressLabel.Text = "📊 Progress: 0 / 15 Scenarios Completed"
+	self.purgeProgressLabel.ZIndex = 212
+	self.purgeProgressLabel.Parent = self.purgeGameCard
+
+	-- Scenario box
+	self.purgeScenarioBox = Instance.new("TextLabel")
+	self.purgeScenarioBox.Size = UDim2.new(0.9, 0, 0, 150)
+	self.purgeScenarioBox.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeScenarioBox.Position = UDim2.new(0.5, 0, 0, 140)
+	self.purgeScenarioBox.BackgroundColor3 = C.Gray900
+	self.purgeScenarioBox.Font = F.Medium
+	self.purgeScenarioBox.TextSize = 16
+	self.purgeScenarioBox.TextColor3 = C.White
+	self.purgeScenarioBox.TextWrapped = true
+	self.purgeScenarioBox.TextXAlignment = Enum.TextXAlignment.Left
+	self.purgeScenarioBox.TextYAlignment = Enum.TextYAlignment.Top
+	self.purgeScenarioBox.Text = ""
+	self.purgeScenarioBox.ZIndex = 212
+	self.purgeScenarioBox.Parent = self.purgeGameCard
+	corner(self.purgeScenarioBox, 14)
+	pad(self.purgeScenarioBox, 14, 14, 12, 12)
+
+	-- Choices container
+	self.purgeChoicesFrame = Instance.new("Frame")
+	self.purgeChoicesFrame.Size = UDim2.new(0.9, 0, 0, 210)
+	self.purgeChoicesFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeChoicesFrame.Position = UDim2.new(0.5, 0, 0, 305)
+	self.purgeChoicesFrame.BackgroundTransparency = 1
+	self.purgeChoicesFrame.ZIndex = 212
+	self.purgeChoicesFrame.Parent = self.purgeGameCard
+
+	local choiceLayout = Instance.new("UIListLayout")
+	choiceLayout.Padding = UDim.new(0, 10)
+	choiceLayout.Parent = self.purgeChoicesFrame
+
+	self.purgeChoiceBtns = {}
+	for i = 1, 3 do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, 56)
+		btn.BackgroundColor3 = Color3.fromRGB(80, 15, 25)
+		btn.Font = F.Button
+		btn.TextSize = 16
+		btn.TextColor3 = C.White
+		btn.TextWrapped = true
+		btn.Text = "Choice " .. i
+		btn.AutoButtonColor = false
+		btn.ZIndex = 213
+		btn.Parent = self.purgeChoicesFrame
+		corner(btn, 14)
+		self.purgeChoiceBtns[i] = btn
+	end
+
+	local warn = Instance.new("TextLabel")
+	warn.Size = UDim2.new(1, 0, 0, 22)
+	warn.BackgroundTransparency = 1
+	warn.Font = F.Button
+	warn.TextSize = 14
+	warn.TextColor3 = C.Amber
+	warn.Text = "⚠️ Choose Wisely - Wrong choices will cost you HP!"
+	warn.ZIndex = 212
+	warn.Parent = self.purgeChoicesFrame
+
+	-- DEATH CARD
+	self.purgeDeathCard = Instance.new("Frame")
+	self.purgeDeathCard.Size = UDim2.new(0.94, 0, 0.7, 0)
+	self.purgeDeathCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.purgeDeathCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.purgeDeathCard.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+	self.purgeDeathCard.Visible = false
+	self.purgeDeathCard.ZIndex = 211
+	self.purgeDeathCard.Parent = self.purgeOverlay
+	corner(self.purgeDeathCard, 22)
+	stroke(self.purgeDeathCard, 2, 0, C.Red)
+
+	local diedTitle = Instance.new("TextLabel")
+	diedTitle.Size = UDim2.new(1, 0, 0, 60)
+	diedTitle.BackgroundTransparency = 1
+	diedTitle.Font = F.Title
+	diedTitle.TextSize = 30
+	diedTitle.TextColor3 = C.Red
+	diedTitle.Text = "💀 YOU DIED"
+	diedTitle.ZIndex = 212
+	diedTitle.Parent = self.purgeDeathCard
+
+	self.purgeDeathBody = Instance.new("TextLabel")
+	self.purgeDeathBody.Size = UDim2.new(0.9, 0, 0, 80)
+	self.purgeDeathBody.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeDeathBody.Position = UDim2.new(0.5, 0, 0, 80)
+	self.purgeDeathBody.BackgroundTransparency = 1
+	self.purgeDeathBody.Font = F.Medium
+	self.purgeDeathBody.TextSize = 18
+	self.purgeDeathBody.TextColor3 = C.Red
+	self.purgeDeathBody.TextWrapped = true
+	self.purgeDeathBody.Text = "You have perished in The Purge!\nCause of Death: Became a victim of the purge"
+	self.purgeDeathBody.ZIndex = 212
+	self.purgeDeathBody.Parent = self.purgeDeathCard
+
+	self.purgeContinueBtn = Instance.new("TextButton")
+	self.purgeContinueBtn.Size = UDim2.new(0.9, 0, 0, 56)
+	self.purgeContinueBtn.AnchorPoint = Vector2.new(0.5, 0)
+	self.purgeContinueBtn.Position = UDim2.new(0.5, 0, 0.75, 0)
+	self.purgeContinueBtn.BackgroundColor3 = C.Red
+	self.purgeContinueBtn.Font = F.Button
+	self.purgeContinueBtn.TextSize = 20
+	self.purgeContinueBtn.TextColor3 = C.White
+	self.purgeContinueBtn.Text = "Continue"
+	self.purgeContinueBtn.AutoButtonColor = false
+	self.purgeContinueBtn.ZIndex = 212
+	self.purgeContinueBtn.Parent = self.purgeDeathCard
+	corner(self.purgeContinueBtn, 14)
+
+	-- Scenario data
+	self.purgeScenarios = {
+		{
+			text = "You see a family being chased by an armed gang. They're heading toward your location. Helping them means revealing your position.",
+			choices = {
+				{ text = "Let them in and help defend", hpDelta = -10, good = true },
+				{ text = "Stay hidden - don't reveal yourself", hpDelta = 0, good = true },
+				{ text = "Create a distraction to help them escape", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "A purge gang offers a deal: join them and you'll be protected. Refusing might make you their next target.",
+			choices = {
+				{ text = "Join them for protection", hpDelta = -25, good = false },
+				{ text = "Refuse and prepare to defend", hpDelta = -10, good = true },
+				{ text = "Pretend to join but plan to escape", hpDelta = -20, good = false },
+			}
+		},
+		{
+			text = "Your barricade is holding, but you hear footsteps on the roof. Something's not right.",
+			choices = {
+				{ text = "Move to a secondary safe room", hpDelta = 0, good = true },
+				{ text = "Power off everything and go silent", hpDelta = -5, good = true },
+				{ text = "Check the cameras and reposition", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "A neighbor is pounding at your door begging for help. Loud noise attracts attention.",
+			choices = {
+				{ text = "Ignore them completely", hpDelta = 0, good = true },
+				{ text = "Let them in immediately", hpDelta = -20, good = false },
+				{ text = "Signal them to hide elsewhere", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "You spot a supply cache in a store across the street. The area is exposed.",
+			choices = {
+				{ text = "Go now - speed over stealth", hpDelta = -20, good = false },
+				{ text = "Wait and watch, then move", hpDelta = -5, good = true },
+				{ text = "Skip it - too risky", hpDelta = 0, good = true },
+			}
+		},
+		{
+			text = "Someone is trying to pick your back door lock. You have seconds to act.",
+			choices = {
+				{ text = "Ambush them immediately", hpDelta = -15, good = false },
+				{ text = "Retreat and reinforce inner doors", hpDelta = -5, good = true },
+				{ text = "Make noise to scare them off", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "A fire starts in a nearby building. Smoke may drift into your ventilation soon.",
+			choices = {
+				{ text = "Seal vents and relocate rooms", hpDelta = -5, good = true },
+				{ text = "Investigate outside", hpDelta = -25, good = false },
+				{ text = "Use a wet cloth mask and stay put", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "You find a lone injured stranger who dropped a backpack of supplies.",
+			choices = {
+				{ text = "Take supplies and move on", hpDelta = -5, good = true },
+				{ text = "Help them fully and escort them", hpDelta = -20, good = false },
+				{ text = "Leave a small supply and point them away", hpDelta = -10, good = true },
+			}
+		},
+		{
+			text = "Your phone lights up: 'Safe house two streets over.' Could be a trap.",
+			choices = {
+				{ text = "Go straight there", hpDelta = -20, good = false },
+				{ text = "Ignore it", hpDelta = 0, good = true },
+				{ text = "Observe from distance first", hpDelta = -5, good = true },
+			}
+		},
+		{
+			text = "A drone-like buzzing passes above your street. You're unsure who controls it.",
+			choices = {
+				{ text = "Turn off lights and reduce movement", hpDelta = 0, good = true },
+				{ text = "Go outside to look", hpDelta = -25, good = false },
+				{ text = "Signal with a flashlight", hpDelta = -20, good = false },
+			}
+		},
+		{
+			text = "Final stretch. Sirens in the distance signal the last hour. Stay focused.",
+			choices = {
+				{ text = "Maintain strict silence and wait", hpDelta = 0, good = true },
+				{ text = "Celebrate early and relax security", hpDelta = -25, good = false },
+				{ text = "Re-check all locks and routes", hpDelta = -5, good = true },
+			}
+		},
+	}
+end
+
+local function _purgeDisconnectAll(self)
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+	disconnect(self._purgeBeginConnection)
+	self._purgeBeginConnection = nil
+	disconnect(self._purgeContinueConnection)
+	self._purgeContinueConnection = nil
+end
+
+function Minigames:startPurge(callback, options)
+	options = options or {}
+	self.callback = callback
+	self.activeGame = "purge"
+	self.purgeOverlay.Visible = true
+
+	-- Reset state
+	self.purgeHp = 100
+	self.purgeMaxHp = 100
+	self.purgeIndex = 0
+	self.purgeTotal = options.totalScenarios or 10
+
+	-- Shuffle scenarios
+	local pool = {}
+	for _, s in ipairs(self.purgeScenarios) do
+		table.insert(pool, s)
+	end
+	for i = #pool, 2, -1 do
+		local j = math.random(i)
+		pool[i], pool[j] = pool[j], pool[i]
+	end
+	self.purgeRun = {}
+	for i = 1, math.min(self.purgeTotal, #pool) do
+		table.insert(self.purgeRun, pool[i])
+	end
+
+	-- Show intro first
+	self.purgeIntroCard.Visible = true
+	self.purgeGameCard.Visible = false
+	self.purgeDeathCard.Visible = false
+
+	_purgeDisconnectAll(self)
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Intro text was getting cut off
+	-- User feedback: "LAST COUPLE WORDS GOT CUT OFF LIKE IT SAID WELCOME TO THE"
+	-- Solution: Shorter intro text and slower typewriter for dramatic effect
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local introText =
+		"😈 THE PURGE HAS BEGUN 😈\n\n" ..
+		"For 24 hours, all crime is legal.\n\n" ..
+		"No police. No rules. No mercy.\n\n" ..
+		"Trust no one. Survive."
+	typeText(self.purgeIntroBody, introText, options.introCps or 32, self._purgeTypingToken)
+
+	self._purgeBeginConnection = self.purgeBeginBtn.MouseButton1Click:Connect(function()
+		if self.activeGame ~= "purge" then return end
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = true
+		self:purgeUpdateHud()
+		self:purgeNextScenario()
+	end)
+end
+
+function Minigames:purgeUpdateHud()
+	local hp = math.max(0, self.purgeHp)
+	self.purgeHpLabel.Text = "❤️ HP: " .. hp .. " / " .. self.purgeMaxHp
+
+	local ratio = hp / self.purgeMaxHp
+	local color = (ratio <= 0.25 and C.Red) or (ratio <= 0.55 and C.Amber) or C.Green
+	self.purgeHpFill.BackgroundColor3 = color
+
+	tween(self.purgeHpFill, TweenInfo.new(0.15), {
+		Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0),
+	})
+end
+
+function Minigames:purgeNextScenario()
+	self.purgeIndex = self.purgeIndex + 1
+
+	if self.purgeIndex > #self.purgeRun then
+		self:endPurge(true)
+		return
+	end
+
+	local s = self.purgeRun[self.purgeIndex]
+	self.purgeProgressLabel.Text =
+		"📊 Progress: " .. (self.purgeIndex - 1) .. " / " .. #self.purgeRun .. " Scenarios Completed"
+
+	-- Reset button colors
+	for _, btn in ipairs(self.purgeChoiceBtns) do
+		btn.BackgroundColor3 = Color3.fromRGB(80, 15, 25)
+	end
+
+	-- Typewriter scenario
+	typeText(self.purgeScenarioBox, s.text, 48, self._purgeTypingToken)
+
+	-- Rebind choices
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+
+	for i = 1, 3 do
+		local cData = s.choices[i]
+		local btn = self.purgeChoiceBtns[i]
+		if cData then
+			btn.Visible = true
+			btn.Text = cData.text
+
+			self._purgeChoiceConnections[i] = btn.MouseButton1Click:Connect(function()
+				self:purgeHandleChoice(i)
+			end)
+		else
+			btn.Visible = false
+		end
+	end
+end
+
+function Minigames:purgeHandleChoice(i)
+	if self.activeGame ~= "purge" then return end
+	local s = self.purgeRun[self.purgeIndex]
+	if not s then return end
+	local cData = s.choices[i]
+	if not cData then return end
+
+	-- Visual feedback
+	for idx, btn in ipairs(self.purgeChoiceBtns) do
+		if btn.Visible then
+			if idx == i then
+				btn.BackgroundColor3 = cData.good and C.Green or C.Red
+			else
+				btn.BackgroundColor3 = Color3.fromRGB(60, 10, 18)
+			end
+		end
+	end
+
+	-- Apply HP change
+	self.purgeHp = math.clamp(self.purgeHp + (cData.hpDelta or 0), 0, self.purgeMaxHp)
+	self:purgeUpdateHud()
+
+	-- Death check
+	if self.purgeHp <= 0 then
+		task.delay(0.35, function()
+			if self.activeGame == "purge" then
+				self:purgeShowDeath()
+			end
+		end)
+		return
+	end
+
+	-- Next scenario
+	task.delay(0.45, function()
+		if self.activeGame == "purge" then
+			self:purgeNextScenario()
+		end
+	end)
+end
+
+function Minigames:purgeShowDeath()
+	self.purgeIntroCard.Visible = false
+	self.purgeGameCard.Visible = false
+	self.purgeDeathCard.Visible = true
+
+	_purgeDisconnectAll(self)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show detailed death outcome with typewriter effect
+	-- User feedback: "HAVE IT ACTUALLY KILL YOU AND HAVE IT SAY OUTCOMES LIKE WHAT 
+	-- HAPPENED THEN CONTINUE TO NEXT ONE AND HAVE IT TYPE WRITER IT NICELY"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Random death causes for variety
+	local deathCauses = {
+		"You were caught by a purge gang. They showed no mercy.",
+		"A roaming death squad found your hiding spot.",
+		"You made a wrong turn and walked into an ambush.",
+		"Your barricade was breached. You didn't stand a chance.",
+		"Someone you trusted turned on you.",
+		"The purgers tracked your every move. There was no escape.",
+		"You fought bravely but were overwhelmed by numbers.",
+		"A trap was set. You walked right into it.",
+		"Your injuries from earlier choices proved fatal.",
+		"In the chaos, you became another victim of The Purge.",
+	}
+	
+	local causeOfDeath = deathCauses[math.random(1, #deathCauses)]
+	local deathMessage = "💀 YOU HAVE PERISHED 💀\n\n" .. causeOfDeath .. "\n\n" ..
+		"Scenarios Survived: " .. math.max(0, (self.purgeIndex or 1) - 1) .. " / " .. (#self.purgeRun or 10)
+	
+	-- Typewriter the death outcome
+	typeText(self.purgeDeathBody, deathMessage, 35, self._purgeTypingToken)
+
+	self._purgeContinueConnection = self.purgeContinueBtn.MouseButton1Click:Connect(function()
+		self:endPurge(false)
+	end)
+end
+
+function Minigames:endPurge(won)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show survival outcome before closing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if won then
+		-- Show victory card with typewriter effect before closing
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = false
+		self.purgeDeathCard.Visible = false
+		
+		-- Reuse intro card for survival message
+		self.purgeIntroCard.Visible = true
+		
+		local survivalMessages = {
+			"You made it through the night. The sun rises on your survival.",
+			"Against all odds, you survived The Purge. You're one of the lucky ones.",
+			"The sirens signal the end. You lived to see another day.",
+			"Your choices kept you alive. You survived The Purge.",
+			"Dawn breaks. The nightmare is over. You made it.",
+		}
+		
+		local survivalMsg = "🎉 YOU SURVIVED! 🎉\n\n" .. 
+			survivalMessages[math.random(1, #survivalMessages)] .. "\n\n" ..
+			"HP Remaining: " .. (self.purgeHp or 0) .. " / 100\n" ..
+			"Scenarios Completed: " .. (#self.purgeRun or 10) .. " / " .. (#self.purgeRun or 10)
+		
+		-- Typewriter the survival outcome
+		typeText(self.purgeIntroBody, survivalMsg, 35, self._purgeTypingToken)
+		
+		-- Change begin button to continue
+		self.purgeBeginBtn.Text = "🌅 Continue"
+		self.purgeBeginBtn.BackgroundColor3 = C.Green
+		
+		_purgeDisconnectAll(self)
+		
+		self._purgeBeginConnection = self.purgeBeginBtn.MouseButton1Click:Connect(function()
+			-- Now actually close and call callback
+			self.activeGame = nil
+			self.purgeOverlay.Visible = false
+			self.purgeIntroCard.Visible = false
+			
+			-- Reset button for next time
+			self.purgeBeginBtn.Text = "🚨 BEGIN APOCALYPSE 🚨"
+			self.purgeBeginBtn.BackgroundColor3 = C.Red
+			
+			if self.callback then
+				self.callback(true, {
+					hp = self.purgeHp or 0,
+					completed = self.purgeRun and #self.purgeRun or 0,
+					total = self.purgeRun and #self.purgeRun or 0,
+					survived = true,
+				})
+				self.callback = nil
+			end
+		end)
+	else
+		-- Death path - close immediately (death screen already shown)
+		self.activeGame = nil
+		if self.purgeOverlay then
+			self.purgeOverlay.Visible = false
+		end
+		self.purgeIntroCard.Visible = false
+		self.purgeGameCard.Visible = false
+		self.purgeDeathCard.Visible = false
+
+		_purgeDisconnectAll(self)
+
+		if self.callback then
+			self.callback(false, {
+				hp = 0,
+				completed = math.max(0, (self.purgeIndex or 1) - 1),
+				total = self.purgeRun and #self.purgeRun or 0,
+				died = true,  -- Mark that player died
+				causeOfDeath = "The Purge",
+			})
+			self.callback = nil
+		end
+	end
+end
+
+----------------------------------------------------------------
 -- PUBLIC API
 ----------------------------------------------------------------
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- FIGHT MINIGAME - Quick Time Events with a fighting theme
+-- Used for confrontational choices in events
+-- ═══════════════════════════════════════════════════════════════════════════
+function Minigames:startFight(callback, options)
+	options = options or {}
+	print("[Minigames] 👊 Starting FIGHT minigame!")
+	
+	-- Use enhanced QTE for fights with fight-specific options
+	self:startQTE(function(won, stats)
+		-- Add fight-specific result processing
+		local fightResult = {
+			won = won,
+			knockouts = stats and stats.hits or 0,
+			damage_taken = won and math.random(5, 15) or math.random(20, 40),
+			technique = won and "Victorious!" or "Got beat up...",
+		}
+		if callback then
+			callback(won, fightResult)
+		end
+	end, options.difficulty or "medium")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CONFRONTATION MINIGAME - Dialog-based confrontation with timed responses
+-- ═══════════════════════════════════════════════════════════════════════════
+function Minigames:startConfrontation(callback, options)
+	options = options or {}
+	print("[Minigames] 😤 Starting CONFRONTATION minigame!")
+	
+	-- Use debate system for verbal confrontations - CRITICAL FIX: Pass context!
+	self:startDebate(function(won, stats)
+		local confrontResult = {
+			won = won,
+			intimidation = won and "They backed down!" or "They didn't budge.",
+			respect_change = won and math.random(5, 15) or math.random(-10, -5),
+		}
+		if callback then
+			callback(won, confrontResult)
+		end
+	end, { context = options.context or "argument", title = options.title })
+end
 
 function Minigames:play(gameType, callback, options)
 	options = options or {}
@@ -2034,9 +3061,29 @@ function Minigames:play(gameType, callback, options)
 
 	local success, err = pcall(function()
 		if gameType == "debate" then
-			self:startDebate(callback)
+			-- CRITICAL FIX: Pass options to debate for context-aware title!
+			self:startDebate(callback, options)
 		elseif gameType == "heist" then
-			self:startHeist(callback)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: 4-digit guesser (heist) is ONLY for extremely hard missions!
+			-- User feedback: "THE ONLY HARD ASF MINIGAME U NEED REMOVE IS THAT 4 DIDGET GUESSER"
+			-- Solution: Only use heist for extremely hard missions (bank_robbery, etc.)
+			-- For normal difficulty, convert to easier QTE minigame
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local difficulty = options.difficulty or "normal"
+			local isExtremelyHard = (difficulty == "hard" or difficulty == "extreme" or difficulty == "legendary")
+			
+			-- Also check if this is explicitly a high-risk crime (risk >= 70)
+			local isHighRiskCrime = options.risk and options.risk >= 70
+			
+			if isExtremelyHard or isHighRiskCrime then
+				print("[Minigames] 🔓 Starting heist (4-digit guesser) for hard mission")
+				self:startHeist(callback)
+			else
+				-- Convert to easier QTE for normal missions
+				print("[Minigames] 🎯 Converting heist to QTE for normal difficulty")
+				self:startQTE(callback, "medium")
+			end
 		elseif gameType == "getaway" then
 			self:startGetaway(callback)
 		elseif gameType == "qte" then
@@ -2050,6 +3097,18 @@ function Minigames:play(gameType, callback, options)
 		elseif gameType == "typing" then
 			-- Typing minigame - use mash as fallback
 			self:startMash(callback, options)
+		elseif gameType == "fight" then
+			-- UPGRADED: Now uses full combat minigame instead of QTE
+			self:startCombat(callback, options)
+		elseif gameType == "combat" then
+			-- FULL COMBAT: BitLife-style interactive fighting
+			self:startCombat(callback, options)
+		elseif gameType == "confrontation" then
+			-- CRITICAL FIX: Confrontation minigame for verbal conflicts
+			self:startConfrontation(callback, options)
+		elseif gameType == "purge" then
+			-- THE PURGE: Rare survival event minigame
+			self:startPurge(callback, options)
 		else
 			warn("[Minigames] ⚠️ Unknown minigame type:", gameType, "- auto-failing")
 			if callback then
@@ -2084,15 +3143,16 @@ function Minigames:cancel()
 	if self.hackOverlay then self.hackOverlay.Visible = false end
 
 	disconnectAll(self._debateButtonConnections)
+	-- CRITICAL FIX: Wrap all task.cancel calls in pcall to prevent "cannot cancel thread" errors
 	if self._debateTimerConnection then
-		task.cancel(self._debateTimerConnection)
+		pcall(function() task.cancel(self._debateTimerConnection) end)
 		self._debateTimerConnection = nil
 	end
 
 	disconnectAll(self._heistNumConnections)
 	disconnectAll(self._getawayButtonConnections)
 	if self._getawayCopChaseThread then
-		task.cancel(self._getawayCopChaseThread)
+		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 		self._getawayCopChaseThread = nil
 	end
 
@@ -2101,22 +3161,46 @@ function Minigames:cancel()
 
 	disconnectAll(self._prisonArrowConnections)
 	if self._prisonGuardThread then
-		task.cancel(self._prisonGuardThread)
+		pcall(function() task.cancel(self._prisonGuardThread) end)
 		self._prisonGuardThread = nil
 	end
 
 	disconnect(self._mashConnection)
 	self._mashConnection = nil
 	if self._mashTimerThread then
-		task.cancel(self._mashTimerThread)
+		pcall(function() task.cancel(self._mashTimerThread) end)
 		self._mashTimerThread = nil
 	end
 
 	disconnectAll(self._hackKeyConnections)
 	if self._hackTimerConnection then
-		task.cancel(self._hackTimerConnection)
+		pcall(function() task.cancel(self._hackTimerConnection) end)
 		self._hackTimerConnection = nil
 	end
+
+	-- Purge cleanup
+	if self.purgeOverlay then self.purgeOverlay.Visible = false end
+	if self.purgeIntroCard then self.purgeIntroCard.Visible = false end
+	if self.purgeGameCard then self.purgeGameCard.Visible = false end
+	if self.purgeDeathCard then self.purgeDeathCard.Visible = false end
+
+	disconnectAll(self._purgeChoiceConnections)
+	self._purgeChoiceConnections = {}
+	disconnect(self._purgeBeginConnection)
+	self._purgeBeginConnection = nil
+	disconnect(self._purgeContinueConnection)
+	self._purgeContinueConnection = nil
+
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+	end
+
+	-- Combat cleanup
+	if self.combatOverlay then self.combatOverlay.Visible = false end
+	if self.combatEndFrame then self.combatEndFrame.Visible = false end
+	disconnectAll(self._combatConnections)
+	self._combatConnections = {}
 
 	self.callback = nil
 end
@@ -2130,7 +3214,1091 @@ function Minigames:getAvailableGames()
 		{ id = "prison_escape", name = "Prison Escape", emoji = "🔐", description = "Navigate the maze" },
 		{ id = "mash", name = "Mash", emoji = "👆", description = "Tap as fast as you can" },
 		{ id = "hacking", name = "Hacking", emoji = "💻", description = "Type codes to breach systems" },
+		{ id = "combat", name = "Combat", emoji = "👊", description = "Full interactive fighting" },
+		{ id = "fight", name = "Fight", emoji = "🥊", description = "Physical fight (same as combat)" },
+		{ id = "confrontation", name = "Confrontation", emoji = "😤", description = "Verbal showdown" },
+		{ id = "purge", name = "The Purge", emoji = "😈", description = "Rare survival decision run" },
 	}
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- RARE AUTO PURGE TRIGGER
+-- Ultra-rare random event (0.5% chance) that triggers The Purge survival game
+-- ═══════════════════════════════════════════════════════════════════════════════
+function Minigames:enableRareAutoPurge(config)
+	config = config or {}
+	local chance = config.chance or 0.005 -- 0.5% default
+	local interval = config.interval or 120 -- Check every 2 minutes
+	local totalScenarios = config.totalScenarios or 10
+	local introCps = config.introCps or 38
+	local onComplete = config.onComplete
+	
+	-- Stop existing auto thread if running
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+	end
+	
+	print("[Minigames] 😈 Enabling rare auto Purge trigger (", chance * 100, "% chance every", interval, "seconds)")
+	
+	self._purgeAutoThread = task.spawn(function()
+		while true do
+			task.wait(interval)
+			
+			-- Don't interrupt other active games
+			if self.activeGame == nil then
+				local roll = math.random()
+				if roll <= chance then
+					print("[Minigames] 😈🔥 RARE PURGE EVENT TRIGGERED! Roll:", roll, "Threshold:", chance)
+					
+					self:startPurge(function(won, stats)
+						print("[Minigames] 😈 Purge completed. Won:", won)
+						if onComplete then
+							onComplete(won, stats)
+						end
+					end, {
+						totalScenarios = totalScenarios,
+						introCps = introCps,
+					})
+				end
+			end
+		end
+	end)
+end
+
+function Minigames:disableRareAutoPurge()
+	if self._purgeAutoThread then
+		task.cancel(self._purgeAutoThread)
+		self._purgeAutoThread = nil
+		print("[Minigames] 😈 Disabled rare auto Purge trigger")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COMBAT MINIGAME - Full BitLife-style interactive fighting
+-- Choose where to hit, how to attack, with health bars and round-by-round action
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Combat hit locations
+local CombatHitLocations = {
+	{ id = "head", name = "Head", emoji = "🧠", damage = {15, 35}, accuracy = 55, koChance = 15 },
+	{ id = "face", name = "Face", emoji = "😵", damage = {12, 28}, accuracy = 60, koChance = 12 },
+	{ id = "jaw", name = "Jaw", emoji = "😬", damage = {18, 40}, accuracy = 50, koChance = 20 },
+	{ id = "chin", name = "Chin", emoji = "🫢", damage = {16, 35}, accuracy = 55, koChance = 18 },
+	{ id = "body", name = "Body", emoji = "💪", damage = {10, 22}, accuracy = 75, koChance = 3 },
+	{ id = "ribs", name = "Ribs", emoji = "🦴", damage = {12, 25}, accuracy = 70, koChance = 5 },
+	{ id = "stomach", name = "Stomach", emoji = "😫", damage = {8, 20}, accuracy = 80, koChance = 2 },
+	{ id = "legs", name = "Legs", emoji = "🦵", damage = {6, 15}, accuracy = 85, koChance = 0 },
+	{ id = "groin", name = "Groin", emoji = "😱", damage = {20, 45}, accuracy = 45, koChance = 10, dirty = true },
+}
+
+-- Combat attack types
+local CombatAttackTypes = {
+	{ id = "jab", name = "Jab", emoji = "🥊", damageMod = 0.7, accMod = 1.3 },
+	{ id = "punch", name = "Punch", emoji = "👊", damageMod = 1.0, accMod = 1.0 },
+	{ id = "hook", name = "Hook", emoji = "🪝", damageMod = 1.3, accMod = 0.85 },
+	{ id = "uppercut", name = "Uppercut", emoji = "⬆️", damageMod = 1.5, accMod = 0.7, koBonus = 15 },
+	{ id = "kick", name = "Kick", emoji = "🦶", damageMod = 1.2, accMod = 0.9 },
+	{ id = "knee", name = "Knee Strike", emoji = "🦵", damageMod = 1.4, accMod = 0.75 },
+	{ id = "elbow", name = "Elbow", emoji = "💪", damageMod = 1.35, accMod = 0.8 },
+	{ id = "headbutt", name = "Headbutt", emoji = "🤕", damageMod = 1.6, accMod = 0.6, dirty = true, selfDmg = 10 },
+	{ id = "bite", name = "Bite", emoji = "🦷", damageMod = 0.8, accMod = 0.5, dirty = true },
+	{ id = "push", name = "Push", emoji = "🤲", damageMod = 0.3, accMod = 1.4 },
+	{ id = "dropkick", name = "Dropkick", emoji = "🦘", damageMod = 2.0, accMod = 0.4, selfFall = 60 },
+	{ id = "haymaker", name = "Haymaker", emoji = "💥", damageMod = 2.0, accMod = 0.5, koBonus = 25 },
+	{ id = "slap", name = "Slap", emoji = "🖐️", damageMod = 0.4, accMod = 1.5 },
+}
+
+-- Combat contexts
+local CombatContexts = {
+	{ id = "street", title = "Street Fight", emoji = "🌆", desc = "A stranger wants to fight you!" },
+	{ id = "school", title = "School Fight", emoji = "🏫", desc = "The bully is looking for trouble." },
+	{ id = "bar", title = "Bar Brawl", emoji = "🍺", desc = "Things got heated at the bar." },
+	{ id = "defense", title = "Self Defense", emoji = "⚠️", desc = "Someone attacked you!" },
+	{ id = "revenge", title = "Payback Time", emoji = "😤", desc = "Time to settle an old score." },
+	{ id = "prison", title = "Prison Yard", emoji = "⛓️", desc = "Another inmate is testing you." },
+	{ id = "random", title = "Random Attack", emoji = "❗", desc = "Someone just punched you!" },
+}
+
+-- Opponent types
+local CombatOpponents = {
+	{ id = "weak", name = "Weak", healthMod = 0.6, dmgMod = 0.5, desc = "a scrawny person" },
+	{ id = "average", name = "Average", healthMod = 1.0, dmgMod = 1.0, desc = "someone your size" },
+	{ id = "strong", name = "Strong", healthMod = 1.3, dmgMod = 1.4, desc = "a muscular person" },
+	{ id = "trained", name = "Trained", healthMod = 1.5, dmgMod = 1.6, desc = "a trained fighter" },
+	{ id = "drunk", name = "Drunk", healthMod = 0.8, dmgMod = 0.8, desc = "an intoxicated person" },
+}
+
+function Minigames:createCombatGame()
+	-- Connection tracking
+	self._combatConnections = {}
+	self._combatPhase = nil -- "location", "attack", "result"
+	
+	-- Main overlay
+	self.combatOverlay = Instance.new("Frame")
+	self.combatOverlay.Size = UDim2.fromScale(1, 1)
+	self.combatOverlay.BackgroundColor3 = C.Black
+	self.combatOverlay.BackgroundTransparency = 0.2
+	self.combatOverlay.Visible = false
+	self.combatOverlay.ZIndex = 200
+	self.combatOverlay.Parent = self.screenGui
+
+	-- Main card - CRITICAL FIX: Responsive and clips content
+	self.combatCard = Instance.new("Frame")
+	self.combatCard.Size = UDim2.new(0.95, 0, 0.88, 0)  -- Slightly reduced for mobile
+	self.combatCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.combatCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.combatCard.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	self.combatCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow on mobile
+	self.combatCard.ZIndex = 201
+	self.combatCard.Parent = self.combatOverlay
+	corner(self.combatCard, px(16))
+
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, px(60))
+	header.BackgroundColor3 = C.Red
+	header.ZIndex = 202
+	header.Parent = self.combatCard
+	corner(header, px(16))
+
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0, px(30))
+	headerFix.Position = UDim2.new(0, 0, 1, -px(30))
+	headerFix.BackgroundColor3 = C.Red
+	headerFix.ZIndex = 202
+	headerFix.BorderSizePixel = 0
+	headerFix.Parent = header
+
+	self.combatTitle = Instance.new("TextLabel")
+	self.combatTitle.Size = UDim2.new(1, 0, 1, 0)
+	self.combatTitle.BackgroundTransparency = 1
+	self.combatTitle.Font = F.Title
+	self.combatTitle.TextSize = textSize(22)
+	self.combatTitle.TextColor3 = C.White
+	self.combatTitle.Text = "👊 FIGHT!"
+	self.combatTitle.ZIndex = 203
+	self.combatTitle.Parent = header
+
+	-- Health bars container
+	local healthContainer = Instance.new("Frame")
+	healthContainer.Size = UDim2.new(0.95, 0, 0, px(70))
+	healthContainer.AnchorPoint = Vector2.new(0.5, 0)
+	healthContainer.Position = UDim2.new(0.5, 0, 0, px(70))
+	healthContainer.BackgroundTransparency = 1
+	healthContainer.ZIndex = 202
+	healthContainer.Parent = self.combatCard
+
+	-- Player health
+	local playerHealthFrame = Instance.new("Frame")
+	playerHealthFrame.Size = UDim2.new(0.48, 0, 1, 0)
+	playerHealthFrame.BackgroundColor3 = Color3.fromRGB(30, 40, 50)
+	playerHealthFrame.ZIndex = 203
+	playerHealthFrame.Parent = healthContainer
+	corner(playerHealthFrame, px(8))
+
+	local playerHealthLabel = Instance.new("TextLabel")
+	playerHealthLabel.Size = UDim2.new(1, 0, 0, px(20))
+	playerHealthLabel.BackgroundTransparency = 1
+	playerHealthLabel.Font = F.Medium
+	playerHealthLabel.TextSize = textSize(12)
+	playerHealthLabel.TextColor3 = C.White
+	playerHealthLabel.Text = "👤 YOU"
+	playerHealthLabel.ZIndex = 204
+	playerHealthLabel.Parent = playerHealthFrame
+	pad(playerHealthLabel, px(8), 0, px(4), 0)
+
+	local playerBarBg = Instance.new("Frame")
+	playerBarBg.Size = UDim2.new(0.9, 0, 0, px(20))
+	playerBarBg.AnchorPoint = Vector2.new(0.5, 0)
+	playerBarBg.Position = UDim2.new(0.5, 0, 0, px(24))
+	playerBarBg.BackgroundColor3 = C.Gray700
+	playerBarBg.ZIndex = 204
+	playerBarBg.Parent = playerHealthFrame
+	pill(playerBarBg)
+
+	self.playerHealthBar = Instance.new("Frame")
+	self.playerHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.playerHealthBar.BackgroundColor3 = C.Green
+	self.playerHealthBar.ZIndex = 205
+	self.playerHealthBar.Parent = playerBarBg
+	pill(self.playerHealthBar)
+
+	self.playerHealthText = Instance.new("TextLabel")
+	self.playerHealthText.Size = UDim2.new(1, 0, 0, px(16))
+	self.playerHealthText.AnchorPoint = Vector2.new(0.5, 0)
+	self.playerHealthText.Position = UDim2.new(0.5, 0, 0, px(48))
+	self.playerHealthText.BackgroundTransparency = 1
+	self.playerHealthText.Font = F.Title
+	self.playerHealthText.TextSize = textSize(14)
+	self.playerHealthText.TextColor3 = C.Green
+	self.playerHealthText.Text = "100 HP"
+	self.playerHealthText.ZIndex = 204
+	self.playerHealthText.Parent = playerHealthFrame
+
+	-- Opponent health
+	local oppHealthFrame = Instance.new("Frame")
+	oppHealthFrame.Size = UDim2.new(0.48, 0, 1, 0)
+	oppHealthFrame.Position = UDim2.new(0.52, 0, 0, 0)
+	oppHealthFrame.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+	oppHealthFrame.ZIndex = 203
+	oppHealthFrame.Parent = healthContainer
+	corner(oppHealthFrame, px(8))
+
+	self.oppNameLabel = Instance.new("TextLabel")
+	self.oppNameLabel.Size = UDim2.new(1, 0, 0, px(20))
+	self.oppNameLabel.BackgroundTransparency = 1
+	self.oppNameLabel.Font = F.Medium
+	self.oppNameLabel.TextSize = textSize(12)
+	self.oppNameLabel.TextColor3 = C.White
+	self.oppNameLabel.Text = "😤 OPPONENT"
+	self.oppNameLabel.ZIndex = 204
+	self.oppNameLabel.Parent = oppHealthFrame
+	pad(self.oppNameLabel, px(8), 0, px(4), 0)
+
+	local oppBarBg = Instance.new("Frame")
+	oppBarBg.Size = UDim2.new(0.9, 0, 0, px(20))
+	oppBarBg.AnchorPoint = Vector2.new(0.5, 0)
+	oppBarBg.Position = UDim2.new(0.5, 0, 0, px(24))
+	oppBarBg.BackgroundColor3 = C.Gray700
+	oppBarBg.ZIndex = 204
+	oppBarBg.Parent = oppHealthFrame
+	pill(oppBarBg)
+
+	self.oppHealthBar = Instance.new("Frame")
+	self.oppHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.oppHealthBar.BackgroundColor3 = C.Red
+	self.oppHealthBar.ZIndex = 205
+	self.oppHealthBar.Parent = oppBarBg
+	pill(self.oppHealthBar)
+
+	self.oppHealthText = Instance.new("TextLabel")
+	self.oppHealthText.Size = UDim2.new(1, 0, 0, px(16))
+	self.oppHealthText.AnchorPoint = Vector2.new(0.5, 0)
+	self.oppHealthText.Position = UDim2.new(0.5, 0, 0, px(48))
+	self.oppHealthText.BackgroundTransparency = 1
+	self.oppHealthText.Font = F.Title
+	self.oppHealthText.TextSize = textSize(14)
+	self.oppHealthText.TextColor3 = C.Red
+	self.oppHealthText.Text = "100 HP"
+	self.oppHealthText.ZIndex = 204
+	self.oppHealthText.Parent = oppHealthFrame
+
+	-- Round indicator
+	self.combatRound = Instance.new("TextLabel")
+	self.combatRound.Size = UDim2.new(0.9, 0, 0, px(24))
+	self.combatRound.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatRound.Position = UDim2.new(0.5, 0, 0, px(145))
+	self.combatRound.BackgroundTransparency = 1
+	self.combatRound.Font = F.Medium
+	self.combatRound.TextSize = textSize(14)
+	self.combatRound.TextColor3 = C.Amber
+	self.combatRound.Text = "⚔️ ROUND 1"
+	self.combatRound.ZIndex = 202
+	self.combatRound.Parent = self.combatCard
+
+	-- Narrative text area
+	self.combatNarrative = Instance.new("TextLabel")
+	self.combatNarrative.Size = UDim2.new(0.9, 0, 0, px(60))
+	self.combatNarrative.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatNarrative.Position = UDim2.new(0.5, 0, 0, px(170))
+	self.combatNarrative.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+	self.combatNarrative.Font = F.Body
+	self.combatNarrative.TextSize = textSize(14)
+	self.combatNarrative.TextColor3 = C.White
+	self.combatNarrative.TextWrapped = true
+	self.combatNarrative.Text = "The fight is about to begin..."
+	self.combatNarrative.ZIndex = 202
+	self.combatNarrative.Parent = self.combatCard
+	corner(self.combatNarrative, px(8))
+	pad(self.combatNarrative, px(12), px(12), px(8), px(8))
+
+	-- Phase prompt
+	self.combatPrompt = Instance.new("TextLabel")
+	self.combatPrompt.Size = UDim2.new(0.9, 0, 0, px(28))
+	self.combatPrompt.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatPrompt.Position = UDim2.new(0.5, 0, 0, px(235))
+	self.combatPrompt.BackgroundTransparency = 1
+	self.combatPrompt.Font = F.Title
+	self.combatPrompt.TextSize = textSize(16)
+	self.combatPrompt.TextColor3 = C.Amber
+	self.combatPrompt.Text = "🎯 WHERE DO YOU ATTACK?"
+	self.combatPrompt.ZIndex = 202
+	self.combatPrompt.Parent = self.combatCard
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: BIGGER BUTTONS that fill the combat area properly
+	-- User feedback: "THE FIGHTING MINIGAME SCREEN BUTTONS ARE REALLY SMALL FOR ME 
+	-- NOT FILLING THE THINGY AT BOTTOM"
+	-- Solution: Use larger buttons (48px height), bigger text (14px), fill the space
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Calculate available space - card is 90% of screen, buttons should fill bottom
+	local COMBAT_BTN_HEIGHT = px(48)  -- BIGGER buttons for mobile
+	local COMBAT_BTN_TEXT = textSize(14)  -- BIGGER text for readability
+	local COMBAT_BTN_SPACING = px(6)  -- Good spacing between buttons
+	
+	-- Location buttons container (phase 1) - fills remaining card space
+	self.combatLocationFrame = Instance.new("Frame")
+	self.combatLocationFrame.Size = UDim2.new(0.95, 0, 0, px(320))  -- TALLER frame
+	self.combatLocationFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatLocationFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	self.combatLocationFrame.BackgroundTransparency = 1
+	self.combatLocationFrame.ZIndex = 202
+	self.combatLocationFrame.Parent = self.combatCard
+
+	-- 3-column grid with BIGGER buttons
+	local locGrid = Instance.new("UIGridLayout")
+	locGrid.CellSize = UDim2.new(0.32, 0, 0, COMBAT_BTN_HEIGHT)  -- BIGGER buttons
+	locGrid.CellPadding = UDim2.new(0.01, 0, 0, COMBAT_BTN_SPACING)
+	locGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	locGrid.Parent = self.combatLocationFrame
+
+	self.combatLocationBtns = {}
+	for i, loc in ipairs(CombatHitLocations) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Blue
+		btn.Font = F.Button
+		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
+		btn.TextColor3 = C.White
+		btn.Text = loc.emoji .. " " .. loc.name
+		btn.AutoButtonColor = false
+		btn.ZIndex = 203
+		btn.Parent = self.combatLocationFrame
+		corner(btn, px(8))
+
+		self.combatLocationBtns[i] = { btn = btn, data = loc }
+	end
+
+	-- Defense buttons - BIGGER and more visible
+	local defendBtn = Instance.new("TextButton")
+	defendBtn.BackgroundColor3 = C.Purple
+	defendBtn.Font = F.Button
+	defendBtn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
+	defendBtn.TextColor3 = C.White
+	defendBtn.Text = "🛡️ Block"
+	defendBtn.AutoButtonColor = false
+	defendBtn.ZIndex = 203
+	defendBtn.Parent = self.combatLocationFrame
+	corner(defendBtn, px(8))
+	self.combatDefendBtn = defendBtn
+
+	local runBtn = Instance.new("TextButton")
+	runBtn.BackgroundColor3 = C.Gray600
+	runBtn.Font = F.Button
+	runBtn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
+	runBtn.TextColor3 = C.White
+	runBtn.Text = "🏃 Run Away"
+	runBtn.AutoButtonColor = false
+	runBtn.ZIndex = 203
+	runBtn.Parent = self.combatLocationFrame
+	corner(runBtn, px(8))
+	self.combatRunBtn = runBtn
+
+	-- Attack type buttons container (phase 2) - same sizing
+	self.combatAttackFrame = Instance.new("Frame")
+	self.combatAttackFrame.Size = UDim2.new(0.95, 0, 0, px(320))  -- TALLER frame
+	self.combatAttackFrame.AnchorPoint = Vector2.new(0.5, 0)
+	self.combatAttackFrame.Position = UDim2.new(0.5, 0, 0, px(265))
+	self.combatAttackFrame.BackgroundTransparency = 1
+	self.combatAttackFrame.Visible = false
+	self.combatAttackFrame.ZIndex = 202
+	self.combatAttackFrame.Parent = self.combatCard
+
+	-- 3-column grid for attack types with BIGGER buttons
+	local atkGrid = Instance.new("UIGridLayout")
+	atkGrid.CellSize = UDim2.new(0.32, 0, 0, COMBAT_BTN_HEIGHT)  -- BIGGER buttons
+	atkGrid.CellPadding = UDim2.new(0.01, 0, 0, COMBAT_BTN_SPACING)
+	atkGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	atkGrid.Parent = self.combatAttackFrame
+
+	self.combatAttackBtns = {}
+	for i, atk in ipairs(CombatAttackTypes) do
+		local btn = Instance.new("TextButton")
+		btn.BackgroundColor3 = C.Red
+		btn.Font = F.Button
+		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
+		btn.TextColor3 = C.White
+		btn.Text = atk.emoji .. " " .. atk.name
+		btn.AutoButtonColor = false
+		btn.ZIndex = 203
+		btn.Parent = self.combatAttackFrame
+		corner(btn, px(8))
+
+		self.combatAttackBtns[i] = { btn = btn, data = atk }
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Result panel - MOBILE RESPONSIVE with percentage-based sizing
+	-- Shows round-by-round combat results
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.combatResultFrame = Instance.new("Frame")
+	-- Use percentage height and position relative to card
+	self.combatResultFrame.Size = UDim2.new(0.95, 0, 0.45, 0)  -- 45% of card height
+	self.combatResultFrame.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatResultFrame.Position = UDim2.new(0.5, 0, 1, -px(10))  -- Anchored to bottom
+	self.combatResultFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	self.combatResultFrame.Visible = false
+	self.combatResultFrame.ZIndex = 202
+	self.combatResultFrame.ClipsDescendants = true
+	self.combatResultFrame.Parent = self.combatCard
+	corner(self.combatResultFrame, px(12))
+
+	-- Scrollable text area for round results
+	local resultScroll = Instance.new("ScrollingFrame")
+	resultScroll.Size = UDim2.new(1, 0, 1, -(isTinyPhone() and 50 or px(60)))
+	resultScroll.Position = UDim2.new(0, 0, 0, 0)
+	resultScroll.BackgroundTransparency = 1
+	resultScroll.BorderSizePixel = 0
+	resultScroll.ScrollBarThickness = 3
+	resultScroll.ScrollBarImageColor3 = C.Gray500
+	resultScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	resultScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
+	resultScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	resultScroll.ZIndex = 203
+	resultScroll.Parent = self.combatResultFrame
+
+	local resultPad = Instance.new("UIPadding")
+	resultPad.PaddingTop = UDim.new(0, 8)
+	resultPad.PaddingBottom = UDim.new(0, 8)
+	resultPad.PaddingLeft = UDim.new(0, 10)
+	resultPad.PaddingRight = UDim.new(0, 10)
+	resultPad.Parent = resultScroll
+
+	self.combatResultText = Instance.new("TextLabel")
+	self.combatResultText.Size = UDim2.new(1, 0, 0, 0)
+	self.combatResultText.AutomaticSize = Enum.AutomaticSize.Y
+	self.combatResultText.BackgroundTransparency = 1
+	self.combatResultText.Font = F.Body
+	self.combatResultText.TextSize = isTinyPhone() and 12 or (isSmallScreen() and 13 or textSize(14))
+	self.combatResultText.TextColor3 = C.White
+	self.combatResultText.TextWrapped = true
+	self.combatResultText.Text = ""
+	self.combatResultText.ZIndex = 204
+	self.combatResultText.Parent = resultScroll
+
+	self.combatContinueBtn = Instance.new("TextButton")
+	self.combatContinueBtn.Size = UDim2.new(0.85, 0, 0, isTinyPhone() and 38 or px(44))
+	self.combatContinueBtn.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatContinueBtn.Position = UDim2.new(0.5, 0, 1, -px(8))
+	self.combatContinueBtn.BackgroundColor3 = C.Green
+	self.combatContinueBtn.Font = F.Button
+	self.combatContinueBtn.TextSize = isTinyPhone() and 13 or textSize(16)
+	self.combatContinueBtn.TextColor3 = C.White
+	self.combatContinueBtn.Text = "Continue Fighting"
+	self.combatContinueBtn.AutoButtonColor = false
+	self.combatContinueBtn.ZIndex = 205
+	self.combatContinueBtn.Parent = self.combatResultFrame
+	corner(self.combatContinueBtn, px(8))
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Final outcome panel - MOBILE RESPONSIVE with scrollable content
+	-- User feedback: "fighting results UI is half cut off screen on mobile"
+	-- Solution: Use full card height, scrollable content, proper layout
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.combatEndFrame = Instance.new("Frame")
+	self.combatEndFrame.Size = UDim2.new(0.98, 0, 0.95, 0)  -- Almost full card size
+	self.combatEndFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.combatEndFrame.Position = UDim2.fromScale(0.5, 0.5)
+	self.combatEndFrame.BackgroundColor3 = Color3.fromRGB(25, 30, 40)
+	self.combatEndFrame.Visible = false
+	self.combatEndFrame.ZIndex = 210
+	self.combatEndFrame.ClipsDescendants = true
+	self.combatEndFrame.Parent = self.combatCard
+	corner(self.combatEndFrame, px(16))
+
+	-- Scrollable content container for the results
+	local combatEndScroll = Instance.new("ScrollingFrame")
+	combatEndScroll.Size = UDim2.new(1, 0, 1, -px(70))  -- Leave room for button at bottom
+	combatEndScroll.Position = UDim2.new(0, 0, 0, 0)
+	combatEndScroll.BackgroundTransparency = 1
+	combatEndScroll.BorderSizePixel = 0
+	combatEndScroll.ScrollBarThickness = 4
+	combatEndScroll.ScrollBarImageColor3 = C.Gray500
+	combatEndScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	combatEndScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
+	combatEndScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	combatEndScroll.ZIndex = 211
+	combatEndScroll.Parent = self.combatEndFrame
+
+	-- Use UIListLayout for proper stacking
+	local endLayout = Instance.new("UIListLayout")
+	endLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	endLayout.Padding = UDim.new(0, isTinyPhone() and 4 or 8)
+	endLayout.Parent = combatEndScroll
+
+	local endPadding = Instance.new("UIPadding")
+	endPadding.PaddingTop = UDim.new(0, isTinyPhone() and 8 or 12)
+	endPadding.PaddingBottom = UDim.new(0, isTinyPhone() and 8 or 12)
+	endPadding.PaddingLeft = UDim.new(0, 10)
+	endPadding.PaddingRight = UDim.new(0, 10)
+	endPadding.Parent = combatEndScroll
+
+	-- Smaller emoji on mobile
+	local emojiSize = isTinyPhone() and 50 or (isSmallScreen() and 60 or 80)
+	self.combatEndEmoji = Instance.new("TextLabel")
+	self.combatEndEmoji.Size = UDim2.new(1, 0, 0, emojiSize)
+	self.combatEndEmoji.BackgroundTransparency = 1
+	self.combatEndEmoji.Font = F.Title
+	self.combatEndEmoji.TextSize = isTinyPhone() and 40 or (isSmallScreen() and 50 or 60)
+	self.combatEndEmoji.Text = "🏆"
+	self.combatEndEmoji.LayoutOrder = 1
+	self.combatEndEmoji.ZIndex = 212
+	self.combatEndEmoji.Parent = combatEndScroll
+
+	self.combatEndTitle = Instance.new("TextLabel")
+	self.combatEndTitle.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndTitle.AutomaticSize = Enum.AutomaticSize.Y
+	self.combatEndTitle.BackgroundTransparency = 1
+	self.combatEndTitle.Font = F.Title
+	self.combatEndTitle.TextSize = isTinyPhone() and 18 or (isSmallScreen() and 20 or 24)
+	self.combatEndTitle.TextColor3 = C.White
+	self.combatEndTitle.Text = "VICTORY!"
+	self.combatEndTitle.TextWrapped = true
+	self.combatEndTitle.LayoutOrder = 2
+	self.combatEndTitle.ZIndex = 212
+	self.combatEndTitle.Parent = combatEndScroll
+
+	self.combatEndText = Instance.new("TextLabel")
+	self.combatEndText.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndText.AutomaticSize = Enum.AutomaticSize.Y
+	self.combatEndText.BackgroundTransparency = 1
+	self.combatEndText.Font = F.Body
+	self.combatEndText.TextSize = isTinyPhone() and 12 or (isSmallScreen() and 13 or 14)
+	self.combatEndText.TextColor3 = C.Gray300
+	self.combatEndText.TextWrapped = true
+	self.combatEndText.Text = ""
+	self.combatEndText.LayoutOrder = 3
+	self.combatEndText.ZIndex = 212
+	self.combatEndText.Parent = combatEndScroll
+
+	self.combatEndStats = Instance.new("TextLabel")
+	self.combatEndStats.Size = UDim2.new(1, 0, 0, 0)
+	self.combatEndStats.AutomaticSize = Enum.AutomaticSize.Y
+	self.combatEndStats.BackgroundTransparency = 1
+	self.combatEndStats.Font = F.Medium
+	self.combatEndStats.TextSize = isTinyPhone() and 10 or (isSmallScreen() and 11 or 12)
+	self.combatEndStats.TextColor3 = C.Amber
+	self.combatEndStats.TextWrapped = true
+	self.combatEndStats.Text = ""
+	self.combatEndStats.LayoutOrder = 4
+	self.combatEndStats.ZIndex = 212
+	self.combatEndStats.Parent = combatEndScroll
+
+	-- Continue button at BOTTOM of frame (not in scroll)
+	self.combatEndBtn = Instance.new("TextButton")
+	self.combatEndBtn.Size = UDim2.new(0.8, 0, 0, isTinyPhone() and 40 or px(50))
+	self.combatEndBtn.AnchorPoint = Vector2.new(0.5, 1)
+	self.combatEndBtn.Position = UDim2.new(0.5, 0, 1, isTinyPhone() and -8 or -px(12))
+	self.combatEndBtn.BackgroundColor3 = C.Blue
+	self.combatEndBtn.Font = F.Button
+	self.combatEndBtn.TextSize = isTinyPhone() and 14 or textSize(18)
+	self.combatEndBtn.TextColor3 = C.White
+	self.combatEndBtn.Text = "Continue"
+	self.combatEndBtn.AutoButtonColor = false
+	self.combatEndBtn.ZIndex = 213
+	self.combatEndBtn.Parent = self.combatEndFrame
+	corner(self.combatEndBtn, px(10))
+end
+
+function Minigames:combatUpdateHealthBars()
+	local playerPct = math.clamp(self.combatState.playerHealth / 100, 0, 1)
+	local oppPct = math.clamp(self.combatState.oppHealth / self.combatState.oppMaxHealth, 0, 1)
+
+	tween(self.playerHealthBar, TweenInfo.new(0.3), { Size = UDim2.new(playerPct, 0, 1, 0) })
+	tween(self.oppHealthBar, TweenInfo.new(0.3), { Size = UDim2.new(oppPct, 0, 1, 0) })
+
+	self.playerHealthText.Text = math.floor(self.combatState.playerHealth) .. " HP"
+	self.oppHealthText.Text = math.floor(self.combatState.oppHealth) .. " HP"
+
+	-- Color based on health
+	if playerPct > 0.5 then
+		self.playerHealthBar.BackgroundColor3 = C.Green
+		self.playerHealthText.TextColor3 = C.Green
+	elseif playerPct > 0.25 then
+		self.playerHealthBar.BackgroundColor3 = C.Amber
+		self.playerHealthText.TextColor3 = C.Amber
+	else
+		self.playerHealthBar.BackgroundColor3 = C.Red
+		self.playerHealthText.TextColor3 = C.Red
+	end
+end
+
+function Minigames:combatShowPhase(phase)
+	self._combatPhase = phase
+	self.combatLocationFrame.Visible = (phase == "location")
+	self.combatAttackFrame.Visible = (phase == "attack")
+	self.combatResultFrame.Visible = (phase == "result")
+	self.combatEndFrame.Visible = (phase == "end")
+
+	if phase == "location" then
+		self.combatPrompt.Text = "🎯 WHERE DO YOU ATTACK?"
+	elseif phase == "attack" then
+		local locName = self.combatState.selectedLocation and self.combatState.selectedLocation.name or "target"
+		self.combatPrompt.Text = "⚔️ HOW DO YOU ATTACK THE " .. string.upper(locName) .. "?"
+	elseif phase == "result" then
+		self.combatPrompt.Text = "📊 ROUND " .. self.combatState.round .. " RESULT"
+	elseif phase == "end" then
+		self.combatPrompt.Text = ""
+	end
+end
+
+function Minigames:combatCalculateAttack(attack, location, isPlayer)
+	local baseDmg = math.random(location.damage[1], location.damage[2])
+	local dmg = baseDmg * attack.damageMod
+	local acc = location.accuracy * attack.accMod
+
+	-- Apply opponent modifiers if it's opponent attacking
+	if not isPlayer and self.combatState.opponent then
+		dmg = dmg * self.combatState.opponent.dmgMod
+	end
+
+	-- Roll for hit
+	local hit = math.random(100) <= acc
+	if not hit then
+		return { hit = false, damage = 0, crit = false, ko = false }
+	end
+
+	-- Critical hit
+	local critChance = 15 + (attack.koBonus or 0)
+	local crit = math.random(100) <= critChance
+	if crit then dmg = dmg * 1.5 end
+
+	-- Knockout check
+	local koChance = location.koChance + (attack.koBonus or 0)
+	if crit then koChance = koChance * 1.5 end
+	local ko = math.random(100) <= koChance
+
+	-- Self damage for dirty moves
+	local selfDmg = attack.selfDmg or 0
+	
+	-- Self fall for dropkick
+	if attack.selfFall and math.random(100) <= attack.selfFall then
+		selfDmg = selfDmg + 15
+	end
+
+	return {
+		hit = true,
+		damage = math.floor(dmg),
+		crit = crit,
+		ko = ko,
+		selfDamage = selfDmg,
+		dirty = attack.dirty or location.dirty,
+	}
+end
+
+function Minigames:combatProcessRound()
+	local state = self.combatState
+	local location = state.selectedLocation
+	local attack = state.selectedAttack
+	
+	local narrative = ""
+	
+	-- Player attacks
+	local playerResult = self:combatCalculateAttack(attack, location, true)
+	state.stats.attacksThrown = state.stats.attacksThrown + 1
+	
+	if playerResult.hit then
+		state.stats.attacksLanded = state.stats.attacksLanded + 1
+		state.oppHealth = state.oppHealth - playerResult.damage
+		state.stats.damageDealt = state.stats.damageDealt + playerResult.damage
+		
+		if playerResult.crit then
+			narrative = "💥 CRITICAL HIT! Your " .. attack.name:lower() .. " to their " .. location.name:lower() .. " deals " .. playerResult.damage .. " damage!"
+			state.stats.criticalHits = state.stats.criticalHits + 1
+		else
+			narrative = "Your " .. attack.name:lower() .. " connects with their " .. location.name:lower() .. " for " .. playerResult.damage .. " damage."
+		end
+		
+		if playerResult.dirty then
+			narrative = narrative .. " 😈 Dirty move!"
+		end
+		
+		-- Self damage
+		if playerResult.selfDamage > 0 then
+			state.playerHealth = state.playerHealth - playerResult.selfDamage
+			narrative = narrative .. " You take " .. playerResult.selfDamage .. " self-damage!"
+		end
+		
+		-- Check for knockout
+		if playerResult.ko or state.oppHealth <= 0 then
+			state.combatEnded = true
+			state.won = true
+			state.knockout = true
+			state.stats.knockouts = state.stats.knockouts + 1
+			narrative = narrative .. "\n\n🏆 KNOCKOUT! They're down and not getting up!"
+			self.combatResultText.Text = narrative
+			self:combatShowPhase("result")
+			return
+		end
+	else
+		narrative = "You swing with a " .. attack.name:lower() .. " but miss!"
+	end
+	
+	narrative = narrative .. "\n\n"
+	
+	-- Opponent attacks back
+	local oppAttack = CombatAttackTypes[math.random(#CombatAttackTypes)]
+	local oppLocation = CombatHitLocations[math.random(#CombatHitLocations)]
+	
+	local oppResult = self:combatCalculateAttack(oppAttack, oppLocation, false)
+	
+	-- Apply defense if player was blocking
+	if state.wasBlocking then
+		if oppResult.hit then
+			oppResult.damage = math.floor(oppResult.damage * 0.4)
+		end
+		narrative = narrative .. "🛡️ You blocked! "
+	end
+	
+	if oppResult.hit then
+		state.playerHealth = state.playerHealth - oppResult.damage
+		state.stats.damageTaken = state.stats.damageTaken + oppResult.damage
+		
+		if oppResult.crit then
+			narrative = narrative .. "💥 They land a devastating " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage!"
+		else
+			narrative = narrative .. "They hit you with a " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage."
+		end
+		
+		-- Check for player knockout
+		if oppResult.ko or state.playerHealth <= 0 then
+			state.combatEnded = true
+			state.won = false
+			state.knockout = true
+			narrative = narrative .. "\n\n💫 You got KNOCKED OUT!"
+			self.combatResultText.Text = narrative
+			self:combatShowPhase("result")
+			return
+		end
+	else
+		narrative = narrative .. "They swing but miss!"
+	end
+	
+	-- Health status
+	narrative = narrative .. "\n\n"
+	if state.playerHealth > 70 then
+		narrative = narrative .. "You're feeling strong."
+	elseif state.playerHealth > 40 then
+		narrative = narrative .. "You're hurt but still fighting."
+	else
+		narrative = narrative .. "You're badly injured!"
+	end
+	
+	if state.oppHealth > state.oppMaxHealth * 0.7 then
+		narrative = narrative .. " They look unfazed."
+	elseif state.oppHealth > state.oppMaxHealth * 0.4 then
+		narrative = narrative .. " They're showing damage."
+	else
+		narrative = narrative .. " They're on their last legs!"
+	end
+	
+	state.round = state.round + 1
+	self.combatResultText.Text = narrative
+	self:combatShowPhase("result")
+end
+
+function Minigames:combatSelectLocation(locationData)
+	if self._combatPhase ~= "location" then return end
+	
+	self.combatState.selectedLocation = locationData
+	self.combatState.wasBlocking = false
+	
+	-- Highlight selected button
+	for _, item in ipairs(self.combatLocationBtns) do
+		if item.data.id == locationData.id then
+			item.btn.BackgroundColor3 = C.Green
+		else
+			item.btn.BackgroundColor3 = C.Blue
+		end
+	end
+	
+	-- Show attack type selection
+	task.delay(0.2, function()
+		if self.activeGame == "combat" then
+			self:combatShowPhase("attack")
+		end
+	end)
+end
+
+function Minigames:combatSelectAttack(attackData)
+	if self._combatPhase ~= "attack" then return end
+	
+	self.combatState.selectedAttack = attackData
+	
+	-- Highlight selected button
+	for _, item in ipairs(self.combatAttackBtns) do
+		if item.data.id == attackData.id then
+			item.btn.BackgroundColor3 = C.Green
+		else
+			item.btn.BackgroundColor3 = C.Red
+		end
+	end
+	
+	-- Process the round
+	task.delay(0.3, function()
+		if self.activeGame == "combat" then
+			self:combatProcessRound()
+			self:combatUpdateHealthBars()
+		end
+	end)
+end
+
+function Minigames:combatDefend()
+	if self._combatPhase ~= "location" then return end
+	
+	self.combatState.wasBlocking = true
+	self.combatState.selectedLocation = CombatHitLocations[5] -- body
+	self.combatState.selectedAttack = CombatAttackTypes[1] -- jab (weak)
+	
+	self.combatDefendBtn.BackgroundColor3 = C.Green
+	
+	task.delay(0.3, function()
+		if self.activeGame == "combat" then
+			self:combatProcessRound()
+			self:combatUpdateHealthBars()
+		end
+	end)
+end
+
+function Minigames:combatRun()
+	if self._combatPhase ~= "location" then return end
+	
+	local escapeChance = 60
+	if self.combatState.opponent then
+		escapeChance = escapeChance - (self.combatState.round * 5) -- Harder to run as fight goes on
+	end
+	
+	if math.random(100) <= escapeChance then
+		self.combatState.combatEnded = true
+		self.combatState.escaped = true
+		self.combatResultText.Text = "🏃 You managed to escape the fight!\n\nYou ran away before things got worse. Smart? Maybe. Cowardly? Definitely."
+		self:combatShowPhase("result")
+	else
+		self.combatResultText.Text = "🏃❌ You tried to run but they caught you!\n\nNow they're even angrier..."
+		self.combatState.playerHealth = self.combatState.playerHealth - 10 -- Penalty for failed escape
+		self:combatUpdateHealthBars()
+		self:combatShowPhase("result")
+	end
+end
+
+function Minigames:combatContinue()
+	if self.combatState.combatEnded then
+		self:combatShowEnd()
+	else
+		-- Reset for next round
+		self.combatState.selectedLocation = nil
+		self.combatState.selectedAttack = nil
+		self.combatState.wasBlocking = false
+		
+		-- Reset button colors
+		for _, item in ipairs(self.combatLocationBtns) do
+			item.btn.BackgroundColor3 = C.Blue
+		end
+		for _, item in ipairs(self.combatAttackBtns) do
+			item.btn.BackgroundColor3 = C.Red
+		end
+		self.combatDefendBtn.BackgroundColor3 = C.Purple
+		self.combatRunBtn.BackgroundColor3 = C.Gray600
+		
+		self.combatRound.Text = "⚔️ ROUND " .. self.combatState.round
+		self:combatShowPhase("location")
+	end
+end
+
+function Minigames:combatShowEnd()
+	local state = self.combatState
+	
+	if state.won then
+		if state.knockout then
+			self.combatEndEmoji.Text = "🏆"
+			self.combatEndTitle.Text = "KNOCKOUT VICTORY!"
+			self.combatEndTitle.TextColor3 = C.Green
+			self.combatEndText.Text = "You knocked them out cold! They hit the ground hard and aren't getting back up."
+		else
+			self.combatEndEmoji.Text = "✊"
+			self.combatEndTitle.Text = "YOU WON!"
+			self.combatEndTitle.TextColor3 = C.Green
+			self.combatEndText.Text = "After a tough battle, you emerged victorious. They couldn't take any more."
+		end
+	elseif state.escaped then
+		self.combatEndEmoji.Text = "🏃"
+		self.combatEndTitle.Text = "ESCAPED!"
+		self.combatEndTitle.TextColor3 = C.Amber
+		self.combatEndText.Text = "You managed to get away before things got worse. Living to fight another day."
+	else
+		if state.knockout then
+			self.combatEndEmoji.Text = "💫"
+			self.combatEndTitle.Text = "KNOCKED OUT!"
+			self.combatEndTitle.TextColor3 = C.Red
+			self.combatEndText.Text = "Everything went black. You wake up on the ground, battered and bruised."
+		else
+			self.combatEndEmoji.Text = "😵"
+			self.combatEndTitle.Text = "YOU LOST"
+			self.combatEndTitle.TextColor3 = C.Red
+			self.combatEndText.Text = "They beat you badly. You couldn't take any more and had to give up."
+		end
+	end
+	
+	-- Stats
+	local accuracy = state.stats.attacksThrown > 0 and math.floor((state.stats.attacksLanded / state.stats.attacksThrown) * 100) or 0
+	self.combatEndStats.Text = string.format(
+		"📊 FIGHT STATS\nRounds: %d | Attacks: %d/%d (%d%% acc)\nDamage Dealt: %d | Damage Taken: %d | Critical Hits: %d",
+		state.round,
+		state.stats.attacksLanded,
+		state.stats.attacksThrown,
+		accuracy,
+		state.stats.damageDealt,
+		state.stats.damageTaken,
+		state.stats.criticalHits
+	)
+	
+	self:combatShowPhase("end")
+end
+
+function Minigames:combatEnd()
+	local state = self.combatState
+	self.activeGame = nil
+	self.combatOverlay.Visible = false
+	
+	-- Disconnect all
+	for _, conn in pairs(self._combatConnections) do
+		if typeof(conn) == "RBXScriptConnection" then
+			conn:Disconnect()
+		end
+	end
+	self._combatConnections = {}
+	
+	if self.callback then
+		self.callback(state.won or state.escaped, {
+			won = state.won,
+			escaped = state.escaped,
+			knockout = state.knockout,
+			rounds = state.round,
+			damageDealt = state.stats.damageDealt,
+			damageTaken = state.stats.damageTaken,
+			finalHealth = state.playerHealth,
+			opponentFinalHealth = state.oppHealth,
+			stats = state.stats,
+		})
+		self.callback = nil
+	end
+end
+
+function Minigames:startCombat(callback, options)
+	options = options or {}
+	print("[Minigames] 👊 Starting COMBAT minigame!")
+	
+	self.callback = callback
+	self.combatOverlay.Visible = true
+	self.activeGame = "combat"
+	
+	-- Pick context and opponent
+	local context = options.context
+	if not context then
+		context = CombatContexts[math.random(#CombatContexts)]
+	elseif type(context) == "string" then
+		for _, c in ipairs(CombatContexts) do
+			if c.id == context then context = c break end
+		end
+	end
+	
+	local opponent = options.opponent
+	if not opponent then
+		local difficulty = options.difficulty or "average"
+		for _, o in ipairs(CombatOpponents) do
+			if o.id == difficulty then opponent = o break end
+		end
+		if not opponent then
+			opponent = CombatOpponents[2] -- average
+		end
+	end
+	
+	-- Initialize combat state
+	self.combatState = {
+		context = context,
+		opponent = opponent,
+		round = 1,
+		playerHealth = 100,
+		oppHealth = math.floor(100 * opponent.healthMod),
+		oppMaxHealth = math.floor(100 * opponent.healthMod),
+		selectedLocation = nil,
+		selectedAttack = nil,
+		wasBlocking = false,
+		combatEnded = false,
+		won = false,
+		escaped = false,
+		knockout = false,
+		stats = {
+			attacksThrown = 0,
+			attacksLanded = 0,
+			damageDealt = 0,
+			damageTaken = 0,
+			criticalHits = 0,
+			knockouts = 0,
+		}
+	}
+	
+	-- Set up UI
+	self.combatTitle.Text = context.emoji .. " " .. context.title
+	self.combatNarrative.Text = context.desc .. "\n\nYou're facing " .. opponent.desc .. "."
+	self.oppNameLabel.Text = "😤 " .. string.upper(opponent.name)
+	self.combatRound.Text = "⚔️ ROUND 1"
+	
+	-- Reset health bars
+	self.playerHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.oppHealthBar.Size = UDim2.new(1, 0, 1, 0)
+	self.playerHealthText.Text = "100 HP"
+	self.oppHealthText.Text = self.combatState.oppMaxHealth .. " HP"
+	self.playerHealthBar.BackgroundColor3 = C.Green
+	self.playerHealthText.TextColor3 = C.Green
+	
+	-- Reset button colors
+	for _, item in ipairs(self.combatLocationBtns) do
+		item.btn.BackgroundColor3 = C.Blue
+	end
+	for _, item in ipairs(self.combatAttackBtns) do
+		item.btn.BackgroundColor3 = C.Red
+	end
+	self.combatDefendBtn.BackgroundColor3 = C.Purple
+	self.combatRunBtn.BackgroundColor3 = C.Gray600
+	
+	-- Hide end panel
+	self.combatEndFrame.Visible = false
+	
+	-- Show location selection
+	self:combatShowPhase("location")
+	
+	-- Wire up buttons
+	for _, item in ipairs(self.combatLocationBtns) do
+		local conn = item.btn.MouseButton1Click:Connect(function()
+			self:combatSelectLocation(item.data)
+		end)
+		table.insert(self._combatConnections, conn)
+	end
+	
+	for _, item in ipairs(self.combatAttackBtns) do
+		local conn = item.btn.MouseButton1Click:Connect(function()
+			self:combatSelectAttack(item.data)
+		end)
+		table.insert(self._combatConnections, conn)
+	end
+	
+	table.insert(self._combatConnections, self.combatDefendBtn.MouseButton1Click:Connect(function()
+		self:combatDefend()
+	end))
+	
+	table.insert(self._combatConnections, self.combatRunBtn.MouseButton1Click:Connect(function()
+		self:combatRun()
+	end))
+	
+	table.insert(self._combatConnections, self.combatContinueBtn.MouseButton1Click:Connect(function()
+		self:combatContinue()
+	end))
+	
+	table.insert(self._combatConnections, self.combatEndBtn.MouseButton1Click:Connect(function()
+		self:combatEnd()
+	end))
 end
 
 return Minigames

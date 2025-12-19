@@ -1,0 +1,555 @@
+--[[
+	Professional Athlete Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Professional Athlete
+	- Football Player
+	- Basketball Player
+	- Baseball Player
+	- Soccer Player
+	- MMA Fighter
+	- Olympic Athlete
+]]
+
+local AthleteCareerEvents = {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #16: Enhanced helper functions for athletic careers
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function hasAthleteJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- CRITICAL FIX #17: Exclude non-athlete entertainment careers
+	if jobId:find("actor") or jobId:find("singer") or jobId:find("musician")
+	   or jobId:find("rapper") or jobId:find("streamer") or jobId:find("youtuber") then
+		return false
+	end
+	return jobCat == "sports" or jobId:find("athlete") or jobId:find("player") or 
+		   jobId:find("football") or jobId:find("basketball") or jobId:find("baseball") or
+		   jobId:find("soccer") or jobId:find("mma") or jobId:find("fighter") or
+		   jobId:find("tennis") or jobId:find("golf") or jobId:find("hockey") or
+		   jobId:find("boxing") or jobId:find("racing")
+end
+
+local function isProAthlete(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("pro") or jobId:find("professional") or 
+		   (state.Flags and state.Flags.signed_athlete)
+end
+
+-- CRITICAL FIX #18: Check for specific sport type
+local function isTeamSportAthlete(state)
+	if not hasAthleteJob(state) then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("football") or jobId:find("basketball") or jobId:find("baseball")
+		or jobId:find("soccer") or jobId:find("hockey")
+end
+
+-- CRITICAL FIX #19: Check for individual sport athlete
+local function isIndividualAthlete(state)
+	if not hasAthleteJob(state) then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("tennis") or jobId:find("golf") or jobId:find("mma")
+		or jobId:find("boxing") or jobId:find("racing") or jobId:find("swimmer")
+end
+
+-- CRITICAL FIX #20: Check if player is in prime athletic years
+local function isInPrime(state)
+	local age = state.Age or 25
+	return age >= 22 and age <= 34
+end
+
+-- CRITICAL FIX #21: Check if athlete is aging/declining
+local function isVeteranAthlete(state)
+	local age = state.Age or 25
+	return age >= 32 and hasAthleteJob(state)
+end
+
+AthleteCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PROFESSIONAL ATHLETE EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "athlete_big_game",
+		title = "🏆 Championship Game!",
+		emoji = "🏆",
+		text = "It's the championship! Your team is counting on you! The whole world is watching!",
+		category = "career_sports",
+		weight = 18,
+		minAge = 18, maxAge = 42,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProAthlete,
+		blockedByFlags = { in_prison = true, injured = true },
+		
+		choices = {
+			{
+				text = "Give it everything you've got!",
+				effects = { Health = -5 },
+				feedText = "This is your moment!",
+				triggerMinigame = "mash",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 25 or 0
+					
+					if roll + bonus >= 55 then
+						local prize = math.random(500000, 3000000)
+						state.Money = (state.Money or 0) + prize
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 60
+						state.Flags = state.Flags or {}
+						state.Flags.champion_athlete = true
+						state:AddFeed(string.format("🏆 CHAMPIONS! MVP PERFORMANCE! $%s bonus! Parades in your honor!", prize))
+					elseif roll + bonus >= 30 then
+						local prize = math.random(100000, 400000)
+						state.Money = (state.Money or 0) + prize
+						state:ModifyStat("Happiness", 10)
+						state.Fame = (state.Fame or 0) + 20
+						state:AddFeed(string.format("🏆 Lost the game but you played well. $%s consolation. Next year!", prize))
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("🏆 Made a crucial error that cost the game. The city hates you right now.")
+					end
+				end,
+			},
+			{
+				text = "Play it safe - don't get injured",
+				effects = { Health = 3 },
+				feedText = "Career longevity matters...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local prize = math.random(200000, 600000)
+						state.Money = (state.Money or 0) + prize
+						state:ModifyStat("Happiness", 15)
+						state.Fame = (state.Fame or 0) + 25
+						state:AddFeed(string.format("🏆 Team won anyway! $%s! Smart preservation paid off!", prize))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🏆 Team lost. Coach blames your 'lack of effort'. Not a good look.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_injury_scare",
+		title = "🏥 Injury During Practice!",
+		emoji = "🏥",
+		text = "You felt something pop during practice. The medical staff is concerned. MRI scheduled for tomorrow.",
+		category = "career_sports",
+		weight = 16,
+		minAge = 18, maxAge = 45,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasAthleteJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Get the full medical workup",
+				effects = { Money = -5000 },
+				feedText = "Health comes first...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏥 Just a strain! Rest for a week and you're good. Huge relief!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.minor_injury = true
+						state:AddFeed("🏥 Partial tear. 6-8 weeks out. Could be worse.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.major_injury = true
+						state:AddFeed("🏥 Major injury! Season-ending. Surgery required. Long road ahead.")
+					end
+				end,
+			},
+			{
+				text = "Play through it - tough it out",
+				effects = { Happiness = -3 },
+				feedText = "Can't let the team down...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏥 It was nothing! Played great and showed mental toughness!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -8)
+						state:ModifyStat("Health", -8)
+						state:AddFeed("🏥 Made it worse by playing. Now you're out even longer.")
+					else
+						state:ModifyStat("Happiness", -30)
+						state:ModifyStat("Health", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.career_threatening_injury = true
+						state:AddFeed("🏥 CATASTROPHIC! Complete tear! Your career might be over!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_contract_negotiation",
+		title = "💰 Contract Renewal Time!",
+		emoji = "💰",
+		text = "Your contract is up. You've been playing well and your agent says you can demand big money!",
+		category = "career_sports",
+		weight = 15,
+		minAge = 18, maxAge = 40,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProAthlete,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Demand max money",
+				effects = {},
+				feedText = "I know my worth!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local contract = math.random(10000000, 50000000)
+						state.Money = (state.Money or 0) + contract
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.max_contract = true
+						state:AddFeed(string.format("💰 GOT THE MAX! $%s contract! Set for life!", contract))
+					elseif roll <= 70 then
+						local contract = math.random(3000000, 8000000)
+						state.Money = (state.Money or 0) + contract
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("💰 Didn't get max, but $%s is still great!", contract))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💰 Team let you walk. Now scrambling to find a new team for less money.")
+					end
+				end,
+			},
+			{
+				text = "Take a team-friendly deal",
+				effects = { Happiness = 5 },
+				feedText = "Want to stay with this team...",
+				onResolve = function(state)
+					local contract = math.random(2000000, 6000000)
+					state.Money = (state.Money or 0) + contract
+					state:ModifyStat("Happiness", 12)
+					state.Flags = state.Flags or {}
+					state.Flags.team_player = true
+					state:AddFeed(string.format("💰 $%s team-friendly deal! Fans love your loyalty!", contract))
+				end,
+			},
+			{
+				text = "Test free agency",
+				effects = { Happiness = -5 },
+				feedText = "See what's out there...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						local contract = math.random(15000000, 60000000)
+						state.Money = (state.Money or 0) + contract
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed(string.format("💰 Bidding war! Got $%s from a new team!", contract))
+					elseif roll <= 65 then
+						local contract = math.random(5000000, 12000000)
+						state.Money = (state.Money or 0) + contract
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("💰 Found a new home. $%s contract with a contender.", contract))
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("💰 No good offers. Had to sign for the minimum. Humbling.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_ped_offer",
+		title = "💊 PED Offer",
+		emoji = "💊",
+		text = "A teammate secretly offers you performance-enhancing drugs. Says half the league is using them.",
+		category = "career_sports",
+		weight = 12,
+		minAge = 18, maxAge = 40,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasAthleteJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take them - everyone's doing it",
+				effects = { Health = -3 },
+				feedText = "Leveling the playing field...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Health", 5)
+						state.Money = (state.Money or 0) + math.random(500000, 2000000)
+						state.Flags = state.Flags or {}
+						state.Flags.enhanced_athlete = true
+						state:AddFeed("💊 Performance through the roof! Best season ever! Nobody suspects.")
+					elseif roll <= 65 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💊 Helped a bit but not dramatically. Worth the risk?")
+					else
+						state:ModifyStat("Happiness", -30)
+						state.Fame = (state.Fame or 0) - 50
+						state.Flags = state.Flags or {}
+						state.Flags.banned_athlete = true
+						state.CurrentJob = nil
+						state:AddFeed("💊 FAILED DRUG TEST! Suspended indefinitely! Legacy tarnished forever!")
+					end
+				end,
+			},
+			{
+				text = "Refuse - not worth the risk",
+				effects = { Smarts = 3, Happiness = 5 },
+				setFlags = { clean_athlete = true },
+				feedText = "Natural or nothing.",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("💊 Stayed clean. Sleep well at night knowing your achievements are real.")
+				end,
+			},
+			{
+				text = "Report to the league",
+				effects = { Smarts = 2 },
+				feedText = "This needs to stop...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💊 Investigation launched! You're protected as a whistleblower.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.snitch_athlete = true
+						state:AddFeed("💊 Word got out you snitched. Locker room is ICE COLD now.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_endorsement_deal",
+		title = "📸 Major Endorsement Offer!",
+		emoji = "📸",
+		text = "A major brand wants you as their spokesperson! Commercials, shoe deals, the works!",
+		category = "career_sports",
+		weight = 14,
+		minAge = 18, maxAge = 45,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProAthlete,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Sign the deal!",
+				effects = { Happiness = 15 },
+				feedText = "Time to cash in on fame!",
+				onResolve = function(state)
+					local deal = math.random(500000, 5000000)
+					state.Money = (state.Money or 0) + deal
+					state.Fame = (state.Fame or 0) + 20
+					state.Flags = state.Flags or {}
+					state.Flags.endorsed_athlete = true
+					state:AddFeed(string.format("📸 Signed! $%s endorsement deal! Your face is everywhere!", deal))
+				end,
+			},
+			{
+				text = "Negotiate for more",
+				effects = {},
+				feedText = "My image is worth more...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						local deal = math.random(3000000, 15000000)
+						state.Money = (state.Money or 0) + deal
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 25
+						state:AddFeed(string.format("📸 They REALLY wanted you! $%s mega-deal!", deal))
+					elseif roll <= 70 then
+						local deal = math.random(800000, 4000000)
+						state.Money = (state.Money or 0) + deal
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("📸 Got a bit more. $%s. Not bad.", deal))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📸 They went with another athlete. Missed opportunity.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_trade_rumors",
+		title = "📰 Trade Rumors!",
+		emoji = "📰",
+		text = "The media is reporting your team is shopping you. You might get traded to a team across the country!",
+		category = "career_sports",
+		weight = 13,
+		minAge = 18, maxAge = 38,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProAthlete,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Request a trade to a contender",
+				effects = { Happiness = -5 },
+				feedText = "Want to win a championship...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state.Flags = state.Flags or {}
+						state.Flags.traded_to_contender = true
+						state:AddFeed("📰 Trade granted! Going to a championship team! Ring time!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📰 No contender wanted you. Stuck in a bad situation.")
+					end
+				end,
+			},
+			{
+				text = "Say you want to stay",
+				effects = { Happiness = 5 },
+				feedText = "This is home...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.franchise_player = true
+						state:AddFeed("📰 Front office honored your wishes! Staying put! Fans love you!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("📰 Traded anyway. Your preferences didn't matter. Cold business.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_retirement_consider",
+		title = "🎽 Time to Retire?",
+		emoji = "🎽",
+		text = "Your body is breaking down. The injuries are piling up. Maybe it's time to hang it up?",
+		category = "career_sports",
+		weight = 12,
+		minAge = 32, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isProAthlete,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Retire at the top",
+				effects = { Health = 10, Happiness = 10 },
+				setFlags = { retired_athlete = true },
+				feedText = "Going out on my terms.",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 30
+					state:AddFeed("🎽 Retired as a legend! Hall of Fame career! Analyst offers flooding in!")
+				end,
+			},
+			{
+				text = "Play one more year",
+				effects = { Health = -5 },
+				feedText = "Not ready to give this up...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + math.random(1000000, 5000000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎽 One more GREAT year! Perfect ending! Retire on top!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎽 Mediocre year. Maybe should have retired earlier.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.forced_retirement = true
+						state:AddFeed("🎽 Career-ending injury! Forced retirement! Painful way to go out.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "athlete_hall_of_fame",
+		title = "🏛️ Hall of Fame Nomination!",
+		emoji = "🏛️",
+		text = "You've been nominated for the Hall of Fame! The voting is this week!",
+		category = "career_sports",
+		weight = 8,
+		minAge = 35, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		eligibility = function(state)
+			return (state.Flags and state.Flags.retired_athlete) or 
+				   (state.Flags and state.Flags.champion_athlete)
+		end,
+		blockedByFlags = { in_prison = true, hall_of_famer = true, banned_athlete = true },
+		
+		choices = {
+			{
+				text = "Wait and hope for the best",
+				effects = { Happiness = 5 },
+				feedText = "The ultimate honor...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 100
+						state.Flags = state.Flags or {}
+						state.Flags.hall_of_famer = true
+						state:AddFeed("🏛️ HALL OF FAME! INDUCTED! Your legacy is immortalized forever!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed("🏛️ Didn't make it this year. Maybe next time. Still an honor to be nominated.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return AthleteCareerEvents

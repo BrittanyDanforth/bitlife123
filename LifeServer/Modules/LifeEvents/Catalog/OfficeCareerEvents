@@ -1,0 +1,669 @@
+--[[
+	Office Career Events
+	Events for general corporate/office jobs
+	All events use randomized outcomes - NO god mode
+	
+	Covers: Data Entry, Secretary, HR, Management, Marketing, Accounting, etc.
+]]
+
+local OfficeCareerEvents = {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to detect entertainment careers that should NOT receive
+-- generic office events (commute, meetings, coworker drama, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check for entertainment/influencer keywords
+	if jobId:find("influencer") or jobId:find("streamer") or jobId:find("youtuber")
+	   or jobId:find("content_creator") or jobId:find("rapper") or jobId:find("actor")
+	   or jobId:find("athlete") or jobId:find("musician") or jobId:find("celebrity")
+	   or jobId:find("pro_gamer") or jobId:find("esports") then
+		return true
+	end
+	
+	if jobName:find("influencer") or jobName:find("streamer") or jobName:find("youtuber")
+	   or jobName:find("content creator") or jobName:find("rapper") or jobName:find("actor")
+	   or jobName:find("athlete") or jobName:find("musician") then
+		return true
+	end
+	
+	-- Check job category
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "sports" 
+	   or jobCat == "music" or jobCat == "acting" or jobCat == "gaming" then
+		return true
+	end
+	
+	-- Check for entertainment flags
+	local flags = state.Flags or {}
+	if flags.isInfluencer or flags.isStreamer or flags.isRapper 
+	   or flags.isAthlete or flags.isActor or flags.isFameCareer then
+		return true
+	end
+	
+	return false
+end
+
+local function hasOfficeJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL FIX: Entertainment careers should NOT get office events!
+	if isEntertainmentCareer(state) then return false end
+	
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	local jobId = (state.CurrentJob.id or ""):lower()
+	
+	-- Check for office-related categories and job IDs
+	return jobCat == "office" or jobCat == "corporate" or jobCat == "finance" 
+	   or jobCat == "tech" or jobCat == "admin"
+	   or jobId:find("manager") or jobId:find("secretary") or jobId:find("assistant")
+	   or jobId:find("hr_") or jobId:find("accounting") or jobId:find("data_entry")
+	   or jobId:find("analyst") or jobId:find("executive")
+end
+
+OfficeCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- GENERAL OFFICE EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "office_morning_commute",
+		title = "Morning Commute",
+		emoji = "🚗",
+		textVariants = {
+			"The morning commute is brutal today!",
+			"Traffic is terrible on the way to work!",
+			"Your commute hits a snag this morning.",
+		},
+		text = "The morning commute is brutal today!",
+		question = "How does it go?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "career_office",
+		requiresJob = true,
+		-- CRITICAL FIX: Must have office job, not entertainment career
+		eligibility = hasOfficeJob,
+		requiresJobCategory = {"office", "finance", "tech", "corporate"},
+		
+		choices = {
+			{
+				text = "Leave extra early",
+				effects = {},
+				feedText = "You beat the traffic...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚗 Made it on time! Even got coffee first!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("🚗 Still got stuck in traffic. But not late!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🚗 Unexpected road closure! Still late!")
+					end
+				end,
+			},
+			{
+				text = "Work from home today",
+				effects = {},
+				feedText = "You message your boss...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🚗 Remote work approved! Productive AND comfortable!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 Boss said no. Had to go in anyway. Ugh.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_meeting_marathon",
+		title = "Meeting Marathon",
+		emoji = "📅",
+		textVariants = {
+			"Your calendar is packed with meetings today!",
+			"Back-to-back meetings scheduled all day!",
+			"Meeting overload incoming!",
+		},
+		text = "Your calendar is packed with meetings today!",
+		question = "How do you survive?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.6,
+		cooldown = 2,
+		category = "career_office",
+		requiresJob = true,
+		-- CRITICAL FIX: Must have office job, not entertainment career
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Participate actively",
+				effects = {},
+				feedText = "You engage in every meeting...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.noticed_by_management = true
+						state:AddFeed("📅 Great input! Leadership noticed your contributions!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📅 Productive but exhausted. So many meetings...")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📅 Said something dumb in front of the VP. Oof.")
+					end
+				end,
+			},
+			{
+				text = "Zone out and multitask",
+				effects = {},
+				feedText = "You pretend to pay attention...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📅 Got other work done while nodding along. Efficient!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📅 'What do you think?' Called out! No idea what they asked!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_email_overload",
+		title = "Email Overload",
+		emoji = "📧",
+		textVariants = {
+			"Your inbox is overflowing with emails!",
+			"200+ unread emails await you this morning!",
+			"Email chaos! Your inbox is out of control!",
+		},
+		text = "Your inbox is overflowing with emails!",
+		question = "How do you handle it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.6,
+		cooldown = 2,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Declare email bankruptcy - delete all",
+				effects = {},
+				feedText = "You select all and delete...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📧 Fresh start! Nothing important was missed!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📧 Missed an important email from the CEO. Oops!")
+					end
+				end,
+			},
+			{
+				text = "Power through and respond to all",
+				effects = {},
+				feedText = "You start typing replies...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Smarts", 2)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📧 Inbox zero achieved! Feeling accomplished!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -1)
+						state:AddFeed("📧 Took all day. Eyes hurt. Worth it?")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_coworker_conflict",
+		title = "Coworker Conflict",
+		emoji = "😤",
+		textVariants = {
+			"A coworker is really getting on your nerves!",
+			"Tension is building between you and a colleague.",
+			"Office drama alert! Someone is causing problems!",
+		},
+		text = "A coworker is really getting on your nerves!",
+		question = "How do you handle it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Talk it out professionally",
+				effects = {},
+				feedText = "You ask them to chat...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.conflict_resolution_skills = true
+						state:AddFeed("😤 Cleared the air! Actually became friends!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("😤 Awkward but things are better now.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😤 They got defensive. Now it's worse. HR here we come.")
+					end
+				end,
+			},
+			{
+				text = "Go straight to HR",
+				effects = {},
+				feedText = "You file a complaint...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("😤 HR took it seriously! Problem solved!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("😤 HR did nothing. Now labeled as 'that person'.")
+					end
+				end,
+			},
+			{
+				text = "Just avoid them",
+				effects = {},
+				feedText = "You keep your distance...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("😤 Out of sight, out of mind. Peaceful.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("😤 Hard to avoid them. The tension lingers.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_lunch_break",
+		title = "Lunch Break Dilemma",
+		emoji = "🍱",
+		textVariants = {
+			"It's lunch time! Where do you eat?",
+			"Your stomach is growling. Lunch break!",
+			"Time for the daily lunch decision!",
+		},
+		text = "It's lunch time! Where do you eat?",
+		question = "What's for lunch?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.6,
+		cooldown = 2,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Eat at desk - working lunch",
+				effects = {},
+				feedText = "You eat while typing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🍱 Got a lot done! Very productive!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:ModifyStat("Health", -1)
+						state:AddFeed("🍱 No real break. Feeling burnt out.")
+					end
+				end,
+			},
+			{
+				text = "Join coworkers at a restaurant",
+				effects = { Money = -20 },
+				feedText = "You head out with the team...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🍱 Great bonding time! Learned some office gossip!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🍱 Nice break but kinda pricey.")
+					end
+				end,
+			},
+			{
+				text = "Healthy packed lunch",
+				effects = {},
+				feedText = "You grab your meal prep...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🍱 Healthy AND saved money! Winning!")
+					else
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("🍱 Healthy but kind of boring...")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_performance_review",
+		title = "Performance Review",
+		emoji = "📊",
+		textVariants = {
+			"Performance review time! Your manager wants to meet.",
+			"Annual review is scheduled with your boss.",
+			"Your work evaluation is coming up!",
+		},
+		text = "Performance review time! Your manager wants to meet.",
+		question = "How does it go?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 4,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Be confident about your work",
+				effects = {},
+				feedText = "You walk in with your head high...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 10)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(500, 1500)
+						state.Flags = state.Flags or {}
+						state.Flags.great_review = true
+						state:AddFeed("📊 EXCELLENT REVIEW! Raise incoming!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📊 Good review! 'Meets expectations' - stable!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📊 'Needs improvement.' That stings.")
+					end
+				end,
+			},
+			{
+				text = "Ask for specific feedback",
+				effects = {},
+				feedText = "You want to improve...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("📊 Constructive feedback! Now you know what to work on!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📊 Vague feedback but at least you tried to grow.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_project_deadline",
+		title = "Project Deadline",
+		emoji = "⏰",
+		textVariants = {
+			"Big project deadline is tomorrow! Are you ready?",
+			"Crunch time! Major deliverable due!",
+			"The project you've been working on is due!",
+		},
+		text = "Big project deadline is tomorrow! Are you ready?",
+		question = "How do you handle the pressure?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Work overtime to finish",
+				effects = {},
+				feedText = "You stay late at the office...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.reliable_worker = true
+						state:AddFeed("⏰ Delivered on time! Leadership impressed!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 2)
+						state:ModifyStat("Health", -2)
+						state:AddFeed("⏰ Got it done but exhausted. Weekend ruined.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⏰ Still couldn't finish. Had to ask for extension.")
+					end
+				end,
+			},
+			{
+				text = "Ask for an extension",
+				effects = {},
+				feedText = "You explain the situation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("⏰ Extension granted! Breathing room!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("⏰ Denied! Now under even more pressure!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_new_software",
+		title = "New Software Rollout",
+		emoji = "💻",
+		textVariants = {
+			"The company is rolling out new software!",
+			"Time to learn a new system at work!",
+			"IT is implementing new tools you need to learn.",
+		},
+		text = "The company is rolling out new software you need to learn!",
+		question = "How quickly do you adapt?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Embrace it and learn fast",
+				effects = {},
+				feedText = "You dive into the training...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 10)
+					if roll <= 40 then
+						state:ModifyStat("Smarts", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.tech_savvy = true
+						state:AddFeed("💻 Mastered it quickly! Now helping others learn!")
+					elseif roll <= 70 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("💻 Getting the hang of it. Just takes practice.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💻 Struggling with it. Feeling left behind.")
+					end
+				end,
+			},
+			{
+				text = "Resist the change",
+				effects = {},
+				feedText = "You complain to anyone who'll listen...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💻 Found workarounds! Old ways still work!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("💻 Forced to learn anyway. Wasted energy complaining.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_team_building",
+		title = "Team Building Event",
+		emoji = "🎯",
+		textVariants = {
+			"HR organized a team building activity!",
+			"Mandatory fun! Team building day!",
+			"Your department is doing a team bonding event!",
+		},
+		text = "HR organized a team building activity!",
+		question = "How do you approach it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Participate enthusiastically",
+				effects = {},
+				feedText = "You give it your all...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.team_player = true
+						state:AddFeed("🎯 Actually fun! Made some real connections!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎯 Not bad! Free food at least!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎯 Awkward activities. Would rather be working.")
+					end
+				end,
+			},
+			{
+				text = "Find an excuse to skip",
+				effects = {},
+				feedText = "You claim to have a meeting...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎯 Escaped! Productive day instead!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎯 Got caught. Now labeled as 'not a team player'.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "office_promotion_opportunity",
+		title = "Promotion Opportunity",
+		emoji = "📈",
+		textVariants = {
+			"A senior position just opened up!",
+			"Your manager is leaving - will you apply for their role?",
+			"There's a chance to move up in the company!",
+		},
+		text = "A senior position just opened up! Should you apply?",
+		question = "What do you do?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 5,
+		category = "career_office",
+		requiresJob = true,
+		eligibility = hasOfficeJob,
+		
+		choices = {
+			{
+				text = "Apply with confidence",
+				effects = {},
+				feedText = "You submit your application...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 10)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state.Flags = state.Flags or {}
+						state.Flags.promoted = true
+						state:AddFeed("📈 YOU GOT IT! Promoted! Big raise incoming!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📈 Didn't get it, but impressed leadership. Next time!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📈 Rejected. That hurt. Someone less experienced got it.")
+					end
+				end,
+			},
+			{
+				text = "Wait for the right moment",
+				effects = {},
+				feedText = "You decide to bide your time...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("📈 Smart choice. Better opportunity came later.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📈 Missed your shot. The position was filled.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return OfficeCareerEvents

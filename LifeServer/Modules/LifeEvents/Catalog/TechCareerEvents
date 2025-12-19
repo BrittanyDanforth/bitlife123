@@ -1,0 +1,561 @@
+--[[
+	Tech Career Events - DevOps, Security, Software Development
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- DevOps Engineer
+	- Security Consultant
+	- Software Developer
+	- Senior Developer
+	- Tech Lead
+	- CTO
+]]
+
+local TechCareerEvents = {}
+
+-- Helper function to check if player has a tech job
+local function hasTechJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	return jobCat == "tech" or jobId:find("developer") or jobId:find("devops") or 
+		   jobId:find("security") or jobId:find("engineer") or jobId:find("cto")
+end
+
+local function hasDevOpsJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("devops") or jobId:find("sre") or jobId:find("infrastructure")
+end
+
+local function hasSecurityJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("security") or jobId:find("cyber") or jobId:find("pen_test") or jobId:find("ciso")
+end
+
+TechCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DEVOPS ENGINEER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "devops_production_outage",
+		title = "🚨 PRODUCTION IS DOWN!",
+		emoji = "🚨",
+		text = "At 3 AM, your phone explodes with alerts. The production servers are completely down and thousands of users are affected!",
+		category = "career_tech",
+		weight = 18,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Jump online immediately and fix it",
+				effects = { Health = -5 },
+				feedText = "Logging into the servers at 3 AM...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(2000, 5000)
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.incident_hero = true
+						state:AddFeed("🚨 Fixed the outage in 45 minutes! Management is impressed!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚨 Took a few hours but you got it working. Could be worse.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.outage_blamed = true
+						state:AddFeed("🚨 Made it worse. Had to call senior engineer. Not a good look.")
+					end
+				end,
+			},
+			{
+				text = "Escalate to on-call teammate",
+				effects = {},
+				feedText = "Calling the on-call engineer...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚨 They fixed it. Dodged that bullet!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🚨 They couldn't fix it either. Now you're both awake at 4 AM.")
+					end
+				end,
+			},
+			{
+				text = "Sleep through it - not my rotation",
+				effects = { Health = 3 },
+				feedText = "Phone on silent. Sleep is important.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚨 Nobody noticed you ignored it. Crisis averted by others.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.unreliable_engineer = true
+						state:AddFeed("🚨 Manager furious you didn't respond. Formal warning issued.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "devops_deploy_friday",
+		title = "Friday Deployment",
+		emoji = "📦",
+		text = "It's Friday at 4 PM. A critical fix is ready to deploy. Your manager asks you to push it to production.",
+		category = "career_tech",
+		weight = 15,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Deploy it - we test in production!",
+				effects = {},
+				feedText = "YOLO deploying on Friday...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(500, 2000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📦 Deployment successful! Weekend saved!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("📦 It broke. Spent the whole weekend fixing it.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.friday_disaster = true
+						state:AddFeed("📦 Complete disaster. CEO got involved. Career-limiting move.")
+					end
+				end,
+			},
+			{
+				text = "Wait until Monday",
+				effects = { Happiness = 3 },
+				feedText = "Never deploy on Friday. That's the rule.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📦 Good call. Enjoy your weekend!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📦 Manager annoyed you didn't ship the 'urgent' fix.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "devops_kubernetes_migration",
+		title = "Kubernetes Migration Project",
+		emoji = "☸️",
+		text = "The company wants to migrate everything to Kubernetes. You've been chosen to lead the initiative.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 24, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 4,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept the challenge!",
+				effects = { Smarts = 5 },
+				feedText = "Diving into container orchestration...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(10000, 25000)
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.k8s_expert = true
+						state:AddFeed("☸️ Migration successful! You're now the Kubernetes guru!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("☸️ Migration took longer than expected, but it works!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("☸️ Project became a nightmare. Back to VMs we go.")
+					end
+				end,
+			},
+			{
+				text = "Suggest using managed services instead",
+				effects = { Smarts = 2 },
+				feedText = "Sometimes simpler is better...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Money = (state.Money or 0) + math.random(3000, 8000)
+						state:AddFeed("☸️ They went with your suggestion! Less work, same result!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("☸️ Management insisted on K8s anyway. At least you tried.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- SECURITY CONSULTANT EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "security_breach_discovered",
+		title = "🔐 Security Breach Detected!",
+		emoji = "🔐",
+		text = "You've discovered that hackers breached the company's systems last month. Sensitive data may have been stolen.",
+		category = "career_tech",
+		weight = 16,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Initiate full incident response",
+				effects = { Smarts = 3 },
+				feedText = "Locking down systems and starting investigation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.breach_responder = true
+						state:AddFeed("🔐 Contained the breach! Your quick action saved the company millions!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔐 Damage was limited. Good catch, even if late.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🔐 Too late. Data already on the dark web. Not your fault, but...")
+					end
+				end,
+			},
+			{
+				text = "Quietly investigate first",
+				effects = {},
+				feedText = "Gathering evidence before raising alarm...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 4)
+						state:AddFeed("🔐 Found the exact source and closed the hole. Impressive detective work!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🔐 Investigation took too long. Management upset you delayed reporting.")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("🔐 Hackers noticed you were onto them and wiped their tracks. Evidence gone.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "security_pen_test_success",
+		title = "Penetration Test Results",
+		emoji = "🎯",
+		text = "Your penetration test of a client's systems found critical vulnerabilities that could expose millions of records.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 24, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Present findings professionally",
+				effects = { Smarts = 2, Happiness = 5 },
+				feedText = "Preparing the security report...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state.Money = (state.Money or 0) + math.random(3000, 10000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎯 Client impressed! They want you for their next security audit!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎯 Client denied the vulnerabilities exist. They'll learn...")
+					end
+				end,
+			},
+			{
+				text = "Document and move on",
+				effects = { Happiness = 2 },
+				feedText = "Job done. What they do with it is their problem.",
+			},
+		},
+	},
+	
+	{
+		id = "security_bug_bounty",
+		title = "Bug Bounty Opportunity",
+		emoji = "🐛",
+		text = "A major tech company just launched a huge bug bounty program. Your skills could score you some serious cash!",
+		category = "career_tech",
+		weight = 12,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Spend nights hunting for bugs",
+				effects = { Health = -3 },
+				feedText = "Hacking legally for profit...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						local bounty = math.random(10000, 100000)
+						state.Money = (state.Money or 0) + bounty
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.bug_bounty_hunter = true
+						state:AddFeed(string.format("🐛 CRITICAL BUG FOUND! $%s bounty awarded!", bounty))
+					elseif roll <= 60 then
+						local bounty = math.random(500, 5000)
+						state.Money = (state.Money or 0) + bounty
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("🐛 Found a medium-severity bug. $%s bounty!", bounty))
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🐛 Found a bug but someone reported it first. Duplicate!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🐛 Wasted weeks finding nothing. Their security is actually good.")
+					end
+				end,
+			},
+			{
+				text = "Skip it - day job is enough",
+				effects = { Health = 2, Happiness = 1 },
+				feedText = "Work-life balance is important.",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- GENERAL SOFTWARE DEVELOPER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "tech_code_review_drama",
+		title = "Code Review Conflict",
+		emoji = "👀",
+		text = "A senior developer publicly criticized your code in a very harsh code review. Other team members saw everything.",
+		category = "career_tech",
+		weight = 15,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Address feedback professionally",
+				effects = { Smarts = 3, Happiness = -2 },
+				feedText = "Taking the high road...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👀 Your professional response impressed everyone. Respect earned.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("👀 Fixed the issues. Still stings though.")
+					end
+				end,
+			},
+			{
+				text = "Defend your code choices",
+				effects = {},
+				feedText = "Standing your ground...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("👀 Your explanation convinced them! Your approach was actually better!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👀 Debate got heated. Now there's tension in the team.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.difficult_coworker = true
+						state:AddFeed("👀 You were wrong. And now everyone knows you're defensive about it.")
+					end
+				end,
+			},
+			{
+				text = "Escalate to manager about the tone",
+				effects = {},
+				feedText = "That kind of feedback isn't okay...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👀 Manager agreed the review was unprofessional. Senior dev apologized.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("👀 Manager said 'it's just direct feedback.' Nobody took your side.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "tech_layoff_rumors",
+		title = "Layoff Rumors",
+		emoji = "📉",
+		text = "There are strong rumors that your company is planning layoffs. Your team might be affected.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Start job hunting immediately",
+				effects = {},
+				feedText = "Updating that LinkedIn...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("📉 Got a better offer! Left before the layoffs hit!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📉 Layoffs happened, but you weren't affected. Good backup plan though!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📉 Job hunting visible to management. They're 'reconsidering' your role.")
+					end
+				end,
+			},
+			{
+				text = "Stay loyal and hope for the best",
+				effects = { Happiness = -3 },
+				feedText = "This company is my home...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(2000, 5000)
+						state:AddFeed("📉 Layoffs happened elsewhere. Your loyalty noticed - got a raise!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📉 Layoffs didn't happen. But the stress wasn't worth it.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.CurrentJob = nil
+						state.Flags = state.Flags or {}
+						state.Flags.laid_off = true
+						state:AddFeed("📉 You were laid off. Loyalty meant nothing.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "tech_startup_acquisition",
+		title = "Startup Acqui-hire Offer",
+		emoji = "🚀",
+		text = "A big tech company wants to acquire your startup team! They're offering stock options and a signing bonus.",
+		category = "career_tech",
+		weight = 10,
+		minAge = 24, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the offer!",
+				effects = { Happiness = 15 },
+				feedText = "Joining big tech!",
+				onResolve = function(state)
+					local bonus = math.random(50000, 200000)
+					state.Money = (state.Money or 0) + bonus
+					state.Flags = state.Flags or {}
+					state.Flags.faang_employee = true
+					state:AddFeed(string.format("🚀 Welcome to big tech! $%s signing bonus!", bonus))
+				end,
+			},
+			{
+				text = "Negotiate for more",
+				effects = {},
+				feedText = "Playing hardball...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						local bonus = math.random(150000, 400000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed(string.format("🚀 They really wanted you! $%s signing bonus!", bonus))
+					elseif roll <= 70 then
+						local bonus = math.random(50000, 150000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("🚀 Got a bit more. $%s signing bonus.", bonus))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🚀 They rescinded the offer. Negotiated yourself out of a job.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return TechCareerEvents
