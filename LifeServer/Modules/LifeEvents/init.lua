@@ -1908,12 +1908,13 @@ function LifeEvents.buildYearQueue(state, options)
 		state.FinancialState.yearsBroke = 0
 	end
 
-	-- Add homeless category if player is in financial distress OR homeless
+	-- Add homeless category ONLY if player is ACTUALLY in financial distress OR already homeless
+	-- FIXED: Removed "or age >= 18" which was adding homeless to ALL adults!
 	local inFinancialDistress = (playerMoney < 500 and hasNoJob)
 		or (state.FinancialState.yearsBroke or 0) >= 2
 		or isHomeless or isCouchSurfing or isLivingInCar
 
-	if inFinancialDistress or age >= 18 then
+	if inFinancialDistress then
 		local hasHomelessCat = false
 		for _, cat in ipairs(categories) do
 			if cat == "homeless" then hasHomelessCat = true break end
@@ -2083,15 +2084,18 @@ function LifeEvents.buildYearQueue(state, options)
 	local playerMoney = state.Money or 0
 	local hasNoJob = not state.CurrentJob
 
-	-- CRITICAL FIX #HOMELESS-4: GUARANTEED eviction after 2+ years broke!
-	-- This ensures players CAN'T avoid homelessness indefinitely when broke
+	-- FIXED: Guaranteed eviction after 2+ years broke - but STILL check canEventTrigger!
+	-- This ensures age/flag requirements are still respected
 	if yearsBroke >= 2 and not isHomeless and not isCouchSurfing and not isLivingInCar then
 		local evictionEvent = AllEvents["financial_crisis_eviction"]
-		if evictionEvent then
-			-- Force trigger - bypass normal eligibility for guaranteed eviction
-			table.insert(selectedEvents, evictionEvent)
-			recordEventShown(state, evictionEvent)
-			return selectedEvents
+		if evictionEvent and canEventTrigger(evictionEvent, state) then
+			-- Check if already happened (oneTime event)
+			local occurCount = (history.occurrences[evictionEvent.id] or 0)
+			if occurCount == 0 then
+				table.insert(selectedEvents, evictionEvent)
+				recordEventShown(state, evictionEvent)
+				return selectedEvents
+			end
 		end
 	end
 

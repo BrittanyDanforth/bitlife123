@@ -29,23 +29,20 @@ events[#events + 1] = {
 	baseChance = 0.95,
 	cooldown = 3,
 	oneTime = true,
-	-- CRITICAL FIX #HOMELESS-8: Made eligibility MUCH less strict!
-	-- OLD: Required BOTH money < 200 AND no job (too strict - never triggered)
-	-- NEW: Triggers if broke (< 500) OR unemployed for a while OR tracked as broke for 2+ years
-	-- This ensures eviction actually happens when player is in financial trouble!
+	-- FIXED: Eviction eligibility - must be ACTUALLY struggling, not just low money
+	-- Only triggers if:
+	-- 1. Completely broke (< 100) AND no job - can't pay rent at all
+	-- 2. Been broke for 2+ years (tracked by FinancialState) - long-term poverty
+	-- 3. Has no money at all and no job
 	eligibility = function(state)
 		local money = state.Money or 0
 		local hasJob = state.CurrentJob ~= nil
 		local yearsBroke = (state.FinancialState and state.FinancialState.yearsBroke) or 0
 
-		-- Trigger if any of these conditions:
-		-- 1. Very broke (< 200) regardless of job
-		-- 2. Moderately broke (< 500) AND no job
-		-- 3. Been broke for 2+ years (tracked by FinancialState)
-		-- 4. No money at all
-		return money <= 0
-			or (money < 200)
-			or (money < 500 and not hasJob)
+		-- Only trigger if REALLY struggling:
+		-- Must have no job AND be very broke, OR been broke for 2+ years
+		return (money < 100 and not hasJob)
+			or (money <= 0 and not hasJob)
 			or yearsBroke >= 2
 	end,
 	-- CRITICAL FIX #HOMELESS-9: Mark as high priority so it doesn't get lost in pool
