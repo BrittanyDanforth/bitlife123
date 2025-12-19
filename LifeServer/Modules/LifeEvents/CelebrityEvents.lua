@@ -2936,21 +2936,48 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 		return events
 	end
 	
-	fameState.yearsInCareer = (fameState.yearsInCareer or 0) + 1
-	
-	local currentStage = career.stages[fameState.currentStage or 1]
-	if not currentStage then
+	-- CRITICAL FIX: Ensure career has stages
+	if not career.stages or #career.stages == 0 then
 		return events
 	end
 	
-	-- Fame gain
-	local fameGain = math.random(currentStage.fameGainPerYear.min, currentStage.fameGainPerYear.max)
+	fameState.yearsInCareer = (fameState.yearsInCareer or 0) + 1
+	fameState.yearsInStage = (fameState.yearsInStage or 0) + 1
+	
+	-- CRITICAL FIX: Ensure currentStage is a valid index (must be >= 1)
+	local stageIndex = fameState.currentStage or 1
+	if type(stageIndex) ~= "number" or stageIndex < 1 then
+		stageIndex = 1
+		fameState.currentStage = 1
+	end
+	
+	-- Make sure we don't exceed the number of stages
+	if stageIndex > #career.stages then
+		stageIndex = #career.stages
+		fameState.currentStage = stageIndex
+	end
+	
+	local currentStage = career.stages[stageIndex]
+	if not currentStage then
+		-- If still nil somehow, try stage 1 as fallback
+		currentStage = career.stages[1]
+		if not currentStage then
+			return events
+		end
+		fameState.currentStage = 1
+	end
+	
+	-- CRITICAL FIX: Ensure fameGainPerYear exists with safe defaults
+	local fameGainPerYear = currentStage.fameGainPerYear or { min = 1, max = 5 }
+	local fameGain = math.random(fameGainPerYear.min or 1, fameGainPerYear.max or 5)
 	lifeState.Fame = math.min(100, (lifeState.Fame or 0) + fameGain)
 	
-	-- Update salary
+	-- Update salary with safe defaults
 	if lifeState.CurrentJob then
-		lifeState.CurrentJob.salary = math.random(currentStage.salary.min, currentStage.salary.max)
-		lifeState.Money = (lifeState.Money or 0) + lifeState.CurrentJob.salary
+		local salaryRange = currentStage.salary or { min = 0, max = 1000 }
+		local newSalary = math.random(salaryRange.min or 0, salaryRange.max or 1000)
+		lifeState.CurrentJob.salary = newSalary
+		lifeState.Money = (lifeState.Money or 0) + newSalary
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
