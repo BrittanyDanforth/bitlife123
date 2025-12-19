@@ -258,6 +258,8 @@ Career.events = {
 		cooldown = 3,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
+		-- CRITICAL FIX: Block entertainment careers - they have their own achievement events
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -723,6 +725,8 @@ Career.events = {
 		cooldown = 2,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 70 } },
+		-- CRITICAL FIX: Block entertainment careers - they have their own awards
+		eligibility = hasFormalWorkplaceJob,
 
 		-- META
 		stage = STAGE,
@@ -1006,6 +1010,8 @@ Career.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they don't get recruited this way
+		eligibility = hasFormalWorkplaceJob,
 		-- CRITICAL FIX: Random job offer legitimacy - can't choose if it's a scam
 		choices = {
 			{

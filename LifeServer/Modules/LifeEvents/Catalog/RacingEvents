@@ -11,6 +11,25 @@
 	═══════════════════════════════════════════════════════════════════════════════
 ]]
 
+-- CRITICAL FIX: Helper function to verify player is on racing career path
+local function hasRacingCareer(state)
+	if state.Flags then
+		if state.Flags.discovered_racing or state.Flags.racing_aspirant or
+		   state.Flags.on_racing_path or state.Flags.karting_experience or
+		   state.Flags.pro_racer or state.Flags.f1_driver then
+			return true
+		end
+	end
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		if jobCat == "racing" or jobId:find("racer") or jobId:find("driver") or jobId:find("racing") then
+			return true
+		end
+	end
+	return false
+end
+
 local events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- ENTRY INTO RACING

@@ -15,6 +15,26 @@
 
 local RANDOM = Random.new()
 
+-- CRITICAL FIX: Helper function to check if player is on street hustler path
+local function isStreetHustler(state)
+	-- Check for hustler flags
+	if state.Flags then
+		if state.Flags.street_hustler or state.Flags.selling_product or
+		   state.Flags.street_dealer or state.Flags.hustler_path or
+		   state.Flags.crime_path_active then
+			return true
+		end
+	end
+	-- Check for hustler job
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		if jobId:find("hustler") or jobId:find("dealer") or jobId:find("street_seller") then
+			return true
+		end
+	end
+	return false
+end
+
 -- Helper: Jail the player
 local function jailPlayer(state, yearsMin, yearsMax, reason)
 	-- CRITICAL FIX: Use NextInteger, not NextNumber!
