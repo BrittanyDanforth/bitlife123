@@ -3354,6 +3354,147 @@ local ShopItems = {
 		appreciates = true,
 		appreciationRate = 0.08,  -- 8% annual appreciation
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #15: New luxury items to make money useful!
+	-- User feedback: "assets like sneakers, designer bag, are not functional"
+	-- These items now unlock events and provide meaningful gameplay benefits
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{ 
+		id = "rare_sneakers", 
+		name = "Rare Jordan 1s", 
+		emoji = "👟",
+		price = 5000,
+		tier = "collectible",
+		happinessBonus = 6,
+		looksBonus = 8,
+		statusBonus = 5,
+		minAge = 14,
+		description = "Limited edition kicks - serious collector's item",
+		grantsFlags = { "sneakerhead", "collector", "stylish", "rare_sneaker_owner" },
+		effects = { Happiness = 8, Looks = 8 },
+		fameBonus = 2,
+		appreciates = true,
+		appreciationRate = 0.12,  -- Sneakers can appreciate 12%/year
+	},
+	{ 
+		id = "birkin_bag", 
+		name = "Hermès Birkin Bag", 
+		emoji = "👜",
+		price = 50000,
+		tier = "ultra_luxury",
+		happinessBonus = 12,
+		looksBonus = 15,
+		statusBonus = 20,
+		minAge = 21,
+		description = "The holy grail of luxury bags - status symbol",
+		grantsFlags = { "elite_fashion", "birkin_owner", "high_society", "fashion_icon" },
+		effects = { Happiness = 15, Looks = 15 },
+		fameBonus = 10,
+		appreciates = true,
+		appreciationRate = 0.10,
+	},
+	{ 
+		id = "streaming_setup", 
+		name = "Pro Streaming Setup", 
+		emoji = "🎙️",
+		price = 8000,
+		tier = "tech",
+		happinessBonus = 8,
+		smartsBonus = 2,
+		minAge = 14,
+		description = "Complete streaming rig - camera, mic, lights, green screen",
+		grantsFlags = { "streamer_setup", "content_creator_ready", "can_stream" },
+		effects = { Happiness = 10, Smarts = 2 },
+		unlocksCareers = { "streamer", "content_creator", "twitch_streamer" },
+	},
+	{ 
+		id = "home_gym", 
+		name = "Home Gym Equipment", 
+		emoji = "🏋️",
+		price = 12000,
+		tier = "fitness",
+		happinessBonus = 5,
+		healthBonus = 10,
+		looksBonus = 3,
+		minAge = 16,
+		description = "Complete home gym - weights, machines, everything you need",
+		grantsFlags = { "has_home_gym", "fitness_enthusiast", "gym_rat" },
+		effects = { Happiness = 5, Health = 10, Looks = 5 },
+	},
+	{ 
+		id = "hot_tub", 
+		name = "Hot Tub", 
+		emoji = "🛁",
+		price = 15000,
+		tier = "luxury",
+		happinessBonus = 10,
+		healthBonus = 5,
+		minAge = 21,
+		description = "Perfect for parties or relaxation",
+		grantsFlags = { "hot_tub_owner", "luxury_lifestyle", "party_ready" },
+		effects = { Happiness = 12, Health = 5 },
+		fameBonus = 2,
+	},
+	{ 
+		id = "home_theater", 
+		name = "Home Theater System", 
+		emoji = "🎬",
+		price = 25000,
+		tier = "luxury",
+		happinessBonus = 12,
+		minAge = 21,
+		description = "4K projector, surround sound, the works",
+		grantsFlags = { "home_theater", "movie_buff", "luxury_lifestyle" },
+		effects = { Happiness = 15, Smarts = 2 },
+		fameBonus = 3,
+	},
+	{ 
+		id = "crypto_wallet", 
+		name = "Hardware Crypto Wallet", 
+		emoji = "🔐",
+		price = 500,
+		tier = "tech",
+		happinessBonus = 2,
+		smartsBonus = 3,
+		minAge = 18,
+		description = "Secure your digital assets",
+		grantsFlags = { "crypto_investor", "tech_savvy", "future_minded" },
+		effects = { Happiness = 2, Smarts = 3 },
+		-- This unlocks crypto-related events
+	},
+	{ 
+		id = "patek_philippe", 
+		name = "Patek Philippe Watch", 
+		emoji = "⌚",
+		price = 150000,
+		tier = "ultra_luxury",
+		happinessBonus = 15,
+		looksBonus = 12,
+		statusBonus = 25,
+		minAge = 30,
+		description = "You never own a Patek, you merely hold it for the next generation",
+		grantsFlags = { "patek_owner", "ultra_wealthy", "watch_collector", "elite" },
+		effects = { Happiness = 20, Looks = 12 },
+		fameBonus = 15,
+		appreciates = true,
+		appreciationRate = 0.15,  -- Pateks appreciate well
+	},
+	{ 
+		id = "wine_collection", 
+		name = "Fine Wine Collection", 
+		emoji = "🍷",
+		price = 75000,
+		tier = "investment",
+		happinessBonus = 8,
+		statusBonus = 12,
+		minAge = 21,
+		description = "Curated collection of vintage wines",
+		grantsFlags = { "wine_collector", "sommelier", "refined_taste", "cultured" },
+		effects = { Happiness = 10, Smarts = 2 },
+		fameBonus = 5,
+		appreciates = true,
+		appreciationRate = 0.06,
+	},
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -8040,8 +8181,27 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 
 	local eventId = (eventDef.id or "event") .. "_" .. HttpService:GenerateGUID(false)
 	
-	-- CRITICAL FIX: Process getDynamicText for events with dynamic content
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #13: Apply text variations for replayability!
+	-- User feedback: "every single life is the same exact stuff"
+	-- Each playthrough should have different phrasing of events
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local eventText = eventDef.text
+	local eventTitle = eventDef.title
+	local eventQuestion = eventDef.question
+	
+	-- Apply text variations if available
+	if eventDef.textVariants and type(eventDef.textVariants) == "table" and #eventDef.textVariants > 0 then
+		eventText = eventDef.textVariants[math.random(1, #eventDef.textVariants)]
+	end
+	if eventDef.titleVariants and type(eventDef.titleVariants) == "table" and #eventDef.titleVariants > 0 then
+		eventTitle = eventDef.titleVariants[math.random(1, #eventDef.titleVariants)]
+	end
+	if eventDef.questionVariants and type(eventDef.questionVariants) == "table" and #eventDef.questionVariants > 0 then
+		eventQuestion = eventDef.questionVariants[math.random(1, #eventDef.questionVariants)]
+	end
+	
+	-- CRITICAL FIX: Process getDynamicText for events with dynamic content
 	if eventDef.getDynamicText and type(eventDef.getDynamicText) == "function" then
 		local success, dynamicData = pcall(eventDef.getDynamicText, state)
 		if success and dynamicData then
@@ -8055,8 +8215,8 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	
 	-- CRITICAL FIX: Replace text variables with actual names
 	local processedText = self:replaceTextVariables(eventText, state)
-	local processedTitle = self:replaceTextVariables(eventDef.title, state)
-	local processedQuestion = self:replaceTextVariables(eventDef.question or "What will you do?", state)
+	local processedTitle = self:replaceTextVariables(eventTitle, state)
+	local processedQuestion = self:replaceTextVariables(eventQuestion or "What will you do?", state)
 	
 	local eventPayload = {
 		id = eventId,
@@ -13013,6 +13173,19 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 		local choice = pending.choice
 		local eventDef = pending.eventDef
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #14: Track stat changes BEFORE and AFTER minigame resolution
+		-- User feedback: "minigame result cards not giving stats they say"
+		-- The result popup must show the ACTUAL stat changes that were applied!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local preStats = {
+			Happiness = state.Stats and state.Stats.Happiness or 50,
+			Health = state.Stats and state.Stats.Health or 50,
+			Smarts = state.Stats and state.Stats.Smarts or 50,
+			Looks = state.Stats and state.Stats.Looks or 50,
+		}
+		local preMoney = state.Money or 0
+		
 		-- Create minigame result object
 		local minigameResult = {
 			success = won,
@@ -13043,13 +13216,35 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 			end
 		end
 		
+		-- CRITICAL FIX: Calculate the ACTUAL stat changes that occurred
+		local postStats = {
+			Happiness = state.Stats and state.Stats.Happiness or 50,
+			Health = state.Stats and state.Stats.Health or 50,
+			Smarts = state.Stats and state.Stats.Smarts or 50,
+			Looks = state.Stats and state.Stats.Looks or 50,
+		}
+		local postMoney = state.Money or 0
+		
+		local resultData = {
+			showPopup = true,
+			wasSuccess = won,
+			emoji = won and "🎉" or "😓",
+			title = won and "Success!" or "Failed!",
+			body = choice.feedText or (won and "You succeeded at the challenge!" or "You failed the challenge."),
+			happiness = postStats.Happiness - preStats.Happiness,
+			health = postStats.Health - preStats.Health,
+			smarts = postStats.Smarts - preStats.Smarts,
+			looks = postStats.Looks - preStats.Looks,
+			money = postMoney - preMoney,
+		}
+		
 		-- Clear the pending minigame
 		self.pendingMinigameEvents[player.UserId] = nil
 		
-		-- Complete the age cycle
+		-- Complete the age cycle with ACTUAL stat changes
 		state.awaitingDecision = false
 		local feedText = choice.feedText or (won and "You succeeded!" or "You failed.")
-		self:completeAgeCycle(player, state, feedText)
+		self:completeAgeCycle(player, state, feedText, resultData)
 		
 		return
 	end

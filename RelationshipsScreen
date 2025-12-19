@@ -2701,7 +2701,12 @@ function RelationshipsScreen:show(tabId)
 		pcall(self.showBlur)
 	end
 
-	self.overlay.Visible = true
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1: Add slide-in animation matching OccupationScreen
+	-- User feedback: "RelationshipsScreen just opens right up instantly"
+	-- All other screens are animated nicely - this one needs to match!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	UI.slideInScreen(self.overlay, "right")
 
 	self:updateInfoBar()
 	if tabId then
@@ -2719,14 +2724,18 @@ function RelationshipsScreen:hide()
 		pcall(self.hideBlur)
 	end
 
-	self.overlay.Visible = false
-
-	if self.interactOverlay then
-		self.interactOverlay.Visible = false
-	end
-	if self.resultModal and self.resultModal.overlay then
-		self.resultModal.overlay.Visible = false
-	end
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #2: Add slide-out animation matching OccupationScreen
+	-- Smooth exit animation for consistency with other screens
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	UI.slideOutScreen(self.overlay, "right", function()
+		if self.interactOverlay then
+			self.interactOverlay.Visible = false
+		end
+		if self.resultModal and self.resultModal.overlay then
+			self.resultModal.overlay.Visible = false
+		end
+	end)
 end
 
 function RelationshipsScreen:toggle()

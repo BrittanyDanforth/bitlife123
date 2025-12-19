@@ -8,6 +8,63 @@
 
 local OfficeCareerEvents = {}
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to detect entertainment careers that should NOT receive
+-- generic office events (commute, meetings, coworker drama, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check for entertainment/influencer keywords
+	if jobId:find("influencer") or jobId:find("streamer") or jobId:find("youtuber")
+	   or jobId:find("content_creator") or jobId:find("rapper") or jobId:find("actor")
+	   or jobId:find("athlete") or jobId:find("musician") or jobId:find("celebrity")
+	   or jobId:find("pro_gamer") or jobId:find("esports") then
+		return true
+	end
+	
+	if jobName:find("influencer") or jobName:find("streamer") or jobName:find("youtuber")
+	   or jobName:find("content creator") or jobName:find("rapper") or jobName:find("actor")
+	   or jobName:find("athlete") or jobName:find("musician") then
+		return true
+	end
+	
+	-- Check job category
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "sports" 
+	   or jobCat == "music" or jobCat == "acting" or jobCat == "gaming" then
+		return true
+	end
+	
+	-- Check for entertainment flags
+	local flags = state.Flags or {}
+	if flags.isInfluencer or flags.isStreamer or flags.isRapper 
+	   or flags.isAthlete or flags.isActor or flags.isFameCareer then
+		return true
+	end
+	
+	return false
+end
+
+local function hasOfficeJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL FIX: Entertainment careers should NOT get office events!
+	if isEntertainmentCareer(state) then return false end
+	
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	local jobId = (state.CurrentJob.id or ""):lower()
+	
+	-- Check for office-related categories and job IDs
+	return jobCat == "office" or jobCat == "corporate" or jobCat == "finance" 
+	   or jobCat == "tech" or jobCat == "admin"
+	   or jobId:find("manager") or jobId:find("secretary") or jobId:find("assistant")
+	   or jobId:find("hr_") or jobId:find("accounting") or jobId:find("data_entry")
+	   or jobId:find("analyst") or jobId:find("executive")
+end
+
 OfficeCareerEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- GENERAL OFFICE EVENTS
@@ -28,6 +85,8 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
+		-- CRITICAL FIX: Must have office job, not entertainment career
+		eligibility = hasOfficeJob,
 		requiresJobCategory = {"office", "finance", "tech", "corporate"},
 		
 		choices = {
@@ -83,6 +142,8 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		-- CRITICAL FIX: Must have office job, not entertainment career
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -138,6 +199,7 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -190,6 +252,7 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -261,6 +324,7 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -328,6 +392,7 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -386,6 +451,7 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -443,6 +509,7 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -499,6 +566,7 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{
@@ -554,6 +622,7 @@ OfficeCareerEvents.events = {
 		cooldown = 5,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob,
 		
 		choices = {
 			{

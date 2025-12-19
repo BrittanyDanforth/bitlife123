@@ -10,6 +10,57 @@
 
 local RANDOM = Random.new()
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #1: Helper functions to verify player is on crime path
+-- Prevents crime events from triggering for non-criminals
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isOnCrimePath(state)
+	if not state.Flags then return false end
+	return state.Flags.crime_path_active == true
+end
+
+local function hasCrimeReputation(state, minRep)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= (minRep or 0)
+end
+
+local function isCrimeBoss(state)
+	if not state.Flags then return false end
+	return state.Flags.crime_boss == true or state.Flags.kingpin == true
+		or (state.Flags.crime_reputation or 0) >= 100
+end
+
+local function isStreetLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep < 30 and state.Flags.crime_path_active
+end
+
+local function isMidLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= 30 and rep < 70 and state.Flags.crime_path_active
+end
+
+local function isHighLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= 70 and state.Flags.crime_path_active
+end
+
+-- CRITICAL FIX #2: Prevent crime events for legitimate careers
+local function isNotLegitCareer(state)
+	if not state.CurrentJob then return true end
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- Block if player has a legitimate high-profile career
+	if jobCat == "medical" or jobCat == "legal" or jobCat == "government"
+	   or jobCat == "military" or jobCat == "education" or jobCat == "police" then
+		return false
+	end
+	return true
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- CRIME EMPIRE PATH STAGES
 -- hustler -> operator -> lieutenant -> underboss -> boss
@@ -101,6 +152,8 @@ local events = {
 		cooldown = 2,
 		requiresFlags = { crime_path_active = true, first_hustle_done = true },
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX #3: Eligibility check to ensure on crime path
+		eligibility = function(state) return isOnCrimePath(state) and isNotLegitCareer(state) end,
 		hasMinigame = true,
 		minigameType = "confrontation",
 		minigameOptions = {
@@ -238,6 +291,8 @@ local events = {
 		cooldown = 4,
 		requiresFlags = { crime_path_active = true, has_crew = true },
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX #4: Must have minimum crime reputation
+		eligibility = function(state) return hasCrimeReputation(state, 30) end,
 		hasMinigame = true,
 		minigameType = "heist",
 		minigameOptions = {

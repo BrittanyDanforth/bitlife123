@@ -7,6 +7,56 @@ local Career = {}
 
 local STAGE = "adult" -- working-life events
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to detect entertainment/influencer careers
+-- These careers should NOT get generic workplace events like "office drama",
+-- "layoffs", "coworker taking credit", etc.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check for entertainment/influencer keywords
+	if jobId:find("influencer") or jobId:find("streamer") or jobId:find("youtuber")
+	   or jobId:find("content_creator") or jobId:find("rapper") or jobId:find("actor")
+	   or jobId:find("athlete") or jobId:find("musician") or jobId:find("celebrity")
+	   or jobId:find("pro_gamer") or jobId:find("esports") then
+		return true
+	end
+	
+	if jobName:find("influencer") or jobName:find("streamer") or jobName:find("youtuber")
+	   or jobName:find("content creator") or jobName:find("rapper") or jobName:find("actor")
+	   or jobName:find("athlete") or jobName:find("musician") then
+		return true
+	end
+	
+	-- Check job category
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "sports" 
+	   or jobCat == "music" or jobCat == "acting" or jobCat == "gaming" then
+		return true
+	end
+	
+	-- Check for entertainment flags
+	local flags = state.Flags or {}
+	if flags.isInfluencer or flags.isStreamer or flags.isRapper 
+	   or flags.isAthlete or flags.isActor or flags.isFameCareer then
+		return true
+	end
+	
+	return false
+end
+
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL FIX: Entertainment careers should NOT get workplace events!
+	if isEntertainmentCareer(state) then return false end
+	
+	return true -- Player has a job and it's not entertainment
+end
+
 Career.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- GENERAL WORKPLACE EVENTS
@@ -21,7 +71,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal workplace jobs - street hustlers don't have "coworkers taking credit"
+		-- CRITICAL FIX: Only for formal workplace jobs - entertainment careers don't have "coworkers taking credit"
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -54,7 +105,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal jobs with promotion structures
+		-- CRITICAL FIX: Only for formal jobs with promotion structures - NOT entertainment
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -86,7 +138,8 @@ Career.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal company jobs - street hustlers don't get "laid off"
+		-- CRITICAL FIX: Only for formal company jobs - entertainment careers don't get "laid off"
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -988,6 +1041,8 @@ Career.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Only for formal jobs with coworkers - not entertainment careers
+		eligibility = hasFormalWorkplaceJob,
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
@@ -1065,6 +1120,9 @@ Career.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Use hasFormalWorkplaceJob to exclude entertainment careers
+		-- Entertainment careers have their own burnout events (creator_burnout, gamer_burnout, etc.)
+		eligibility = hasFormalWorkplaceJob,
 		requiresStats = { Health = { max = 40 } },
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -1435,7 +1493,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal jobs with coworkers
+		-- CRITICAL FIX: Only for formal jobs with coworkers - not entertainment
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -1461,7 +1520,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal jobs with HR options
+		-- CRITICAL FIX: Only for formal jobs with HR options - not entertainment
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
@@ -1486,7 +1546,8 @@ Career.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		requiresJob = true,
-		-- CRITICAL FIX: Only for legitimate professional careers
+		-- CRITICAL FIX: Only for legitimate professional careers - not entertainment
+		eligibility = hasFormalWorkplaceJob,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 

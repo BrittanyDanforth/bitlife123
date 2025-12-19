@@ -2458,6 +2458,27 @@ local function createNavButton(info, parent, order)
 	end)
 
 	btn.MouseButton1Click:Connect(function()
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Block navigation when event card is showing!
+		-- User feedback: "I AGED AND CLICKED JOBS,ASSETS,PEOPLE,ACTION,STORY AND IT ALL 
+		-- OPENED AND THEN BROKE THE GAME"
+		-- When an event is active, these buttons should be disabled to prevent
+		-- multiple screens opening simultaneously and breaking the UI!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if awaitingEvent or (EventUI and EventUI.overlay and EventUI.overlay.Visible) then
+			return -- Block navigation while event card is showing
+		end
+		
+		-- Also block if result popup is showing
+		if ResultUI and ResultUI.overlay and ResultUI.overlay.Visible then
+			return
+		end
+		
+		-- Also block if death screen is showing
+		if DeathUI and DeathUI.overlay and DeathUI.overlay.Visible then
+			return
+		end
+		
 		if info.screen == "occupation" and ScreenInstances.occupation then
 			ScreenInstances.occupation:show()
 		elseif info.screen == "assets" and ScreenInstances.assets then

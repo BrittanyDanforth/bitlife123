@@ -21,6 +21,58 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MafiaEvents = {}
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #5: Helper functions for mafia eligibility
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function hasMafiaGamepass(state)
+	return state.Flags and state.Flags.mafia_gamepass == true
+end
+
+local function isInMob(state)
+	return state.Flags and state.Flags.in_mob == true
+end
+
+local function isMadeMan(state)
+	return state.Flags and state.Flags.initiated == true
+end
+
+local function getMobRank(state)
+	if not state.Flags then return "none" end
+	if state.Flags.mob_boss then return "boss" end
+	if state.Flags.mob_underboss then return "underboss" end
+	if state.Flags.mob_capo then return "capo" end
+	if state.Flags.mob_soldier then return "soldier" end
+	if state.Flags.in_mob then return "associate" end
+	return "none"
+end
+
+local function getMobRespect(state)
+	if not state.Flags then return 0 end
+	return state.Flags.mob_respect or 0
+end
+
+-- CRITICAL FIX #6: Check if player can receive mafia approach
+local function canBeApproached(state)
+	if not hasMafiaGamepass(state) then return false end
+	if state.Flags and state.Flags.in_mob then return false end
+	if state.Flags and state.Flags.approached_by_mob then return false end
+	if state.Flags and state.Flags.mob_enemy then return false end
+	return true
+end
+
+-- CRITICAL FIX #7: Prevent mafia events for incompatible careers
+local function isNotIncompatibleCareer(state)
+	if not state.CurrentJob then return true end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- Police, FBI, law enforcement are enemies of the mob
+	if jobId:find("police") or jobId:find("cop") or jobId:find("detective")
+	   or jobId:find("fbi") or jobId:find("dea") or jobCat == "law_enforcement" then
+		return false
+	end
+	return true
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- MAFIA LIFE EVENTS
 -- ════════════════════════════════════════════════════════════════════════════
@@ -195,6 +247,8 @@ MafiaEvents.LifeEvents = {
 		cooldown = 2, -- 2 year cooldown between collections
 		maxOccurrences = 8, -- CRITICAL FIX #247: Max 8 collection events per lifetime
 		conditions = { requiresFlags = { in_mob = true } },
+		-- CRITICAL FIX #34: Eligibility check for in_mob and not in prison
+		eligibility = function(state) return isInMob(state) and isNotIncompatibleCareer(state) end,
 		choices = {
 			{
 				text = "Rough him up as a warning",
@@ -245,6 +299,8 @@ MafiaEvents.LifeEvents = {
 			requiresFlags = { in_mob = true, made_member = true },
 			minRank = 2,
 		},
+		-- CRITICAL FIX #35: Must be a made member for heists
+		eligibility = function(state) return isMadeMan(state) end,
 		choices = {
 			{
 				text = "Lead the crew inside",
@@ -304,6 +360,8 @@ MafiaEvents.LifeEvents = {
 			requiresFlags = { in_mob = true },
 			minRank = 2,
 		},
+		-- CRITICAL FIX #36: Must be a made member for shipment oversight
+		eligibility = function(state) return isMadeMan(state) and getMobRespect(state) >= 15 end,
 		choices = {
 			{
 				text = "Run it by the book",
@@ -352,6 +410,8 @@ MafiaEvents.LifeEvents = {
 			requiresFlags = { in_mob = true, made_member = true },
 			blockedFlags = { boss_dead = true, mob_boss = true, executed = true },
 		},
+		-- CRITICAL FIX #37: Must be a made member and not already trusted
+		eligibility = function(state) return isMadeMan(state) and not (state.Flags and state.Flags.trusted_by_boss) end,
 		choices = {
 			{
 				text = "Prove your loyalty convincingly",
@@ -400,6 +460,8 @@ MafiaEvents.LifeEvents = {
 			blockedFlags = { fbi_informant = true, reported_feds = true, fbi_target = true, boss_dead = true },
 			minHeat = 40,
 		},
+		-- CRITICAL FIX #38: Only approach members with heat
+		eligibility = function(state) return isInMob(state) and getMobRespect(state) >= 20 end,
 		choices = {
 			{
 				text = "Accept the deal - become an informant",
@@ -449,6 +511,8 @@ MafiaEvents.LifeEvents = {
 			blockedFlags = { boss_dead = true, refused_hit = true },
 			minRank = 3,
 		},
+		-- CRITICAL FIX #39: Must be high enough rank and trusted for contracts
+		eligibility = function(state) return isMadeMan(state) and getMobRespect(state) >= 50 end,
 		choices = {
 			{
 				text = "Accept and complete the job",

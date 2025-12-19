@@ -1279,8 +1279,12 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		category = "career_creative",
-		-- Works for any content creator
+		-- CRITICAL FIX: Must be an actual content creator, not just have flags
 		eligibility = function(state)
+			-- First verify player is actually a content creator by job
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local flags = state.Flags or {}
 			return flags.first_video_posted or flags.content_creator or flags.pursuing_streaming
 		end,
@@ -1336,7 +1340,11 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_creative",
 		requiresFlags = { first_video_posted = true },
+		-- CRITICAL FIX: Must be an actual content creator, not just have flags
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 1000, "Need 1000 subscribers first"
 		end,
@@ -1381,6 +1389,13 @@ RapperContentCreatorEvents.events = {
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Viral videos can happen to any creator!
 		requiresFlags = { first_video_posted = true },
+		-- CRITICAL FIX: Must be an actual content creator, not just have flags
+		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -1469,7 +1484,11 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Silver play button is a milestone for ANY creator!
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 100000, "Need 100K subscribers"
 		end,
@@ -1509,7 +1528,11 @@ RapperContentCreatorEvents.events = {
 		oneTime = true,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Gold play button is a milestone for ANY creator!
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 1000000, "Need 1 million subscribers"
 		end,
@@ -2070,8 +2093,18 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 2,
 		category = "career_creative",
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Must check for actual content creator JOB, not just flags!
+		-- Bug: IT Support worker was getting "YouTuber Burnout" because they had
+		-- a content_creator flag from some unrelated event. This is NOT a YouTuber event!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
-			return state.Flags and (state.Flags.daily_uploader or state.Flags.content_creator)
+			-- MUST be an actual content creator by job or have active creator career
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators/streamers"
+			end
+			-- Additionally require one of the burnout-relevant flags
+			return state.Flags and (state.Flags.daily_uploader or state.Flags.content_creator or state.Flags.streamer)
 		end,
 		
 		choices = {
@@ -2117,7 +2150,11 @@ RapperContentCreatorEvents.events = {
 		cooldown = 2,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Collabs happen to growing creators!
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 10000, "Need 10K+ subs for big collabs"
 		end,
@@ -2162,7 +2199,11 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.555,
 		cooldown = 2,
 		category = "career_creative",
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 5000, "Need 5K+ subs for sponsors"
 		end,
@@ -2216,7 +2257,11 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.455,
 		cooldown = 2,
 		category = "career_creative",
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 20000, "Need relevance for drama"
 		end,
@@ -2270,6 +2315,13 @@ RapperContentCreatorEvents.events = {
 		cooldown = 3,
 		category = "career_creative",
 		requiresFlags = { monetized = true },
+		-- CRITICAL FIX: Must be an actual content creator
+		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -2318,7 +2370,11 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.55,
 		cooldown = 3,
 		category = "career_creative",
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 25000, "Need 25K+ subs for merch"
 		end,
@@ -2360,7 +2416,11 @@ RapperContentCreatorEvents.events = {
 		maxOccurrences = 3,
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - 10M views can happen to ANY creator!
+		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
+			if not isContentCreator(state) then
+				return false, "This event is only for content creators"
+			end
 			local subs = state.FameState and state.FameState.subscribers or 0
 			return subs >= 100000, "Need established channel"
 		end,

@@ -14,19 +14,53 @@
 
 local ActorCareerEvents = {}
 
--- Helper function to check if player has an acting career
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #11: Enhanced helper functions for acting career
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function hasActingJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- CRITICAL FIX #12: Exclude non-acting entertainment careers
+	if jobId:find("athlete") or jobId:find("player") or jobId:find("singer") 
+	   or jobId:find("musician") or jobId:find("rapper") or jobId:find("dj") then
+		return false
+	end
 	return jobId:find("actor") or jobId:find("actress") or jobId:find("movie") or 
-		   jobId:find("director") or jobId:find("producer") or jobCat == "entertainment"
+		   jobId:find("director") or jobId:find("producer") or 
+		   (jobCat == "acting" or jobCat == "film")
 end
 
 local function isMovieStar(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	return jobId:find("movie_star") or jobId:find("a_list") or jobId:find("film_actor")
+		or (state.Flags and state.Flags.a_list_actor == true)
+end
+
+-- CRITICAL FIX #13: Check for TV actor specifically
+local function isTVActor(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("tv_actor") or jobId:find("television") or jobId:find("sitcom")
+		or (state.Flags and state.Flags.tv_regular == true)
+end
+
+-- CRITICAL FIX #14: Check if player is struggling/extra vs established
+local function isEstablishedActor(state)
+	if not hasActingJob(state) then return false end
+	local fame = state.Fame or 0
+	return fame >= 30 or isMovieStar(state) or isTVActor(state)
+end
+
+-- CRITICAL FIX #15: Prevent actor events for extras who aren't really actors yet
+local function isNotJustExtra(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	if jobId:find("extra") and not jobId:find("actor") then
+		return (state.Fame or 0) >= 10 -- Extras need some fame first
+	end
+	return true
 end
 
 ActorCareerEvents.events = {

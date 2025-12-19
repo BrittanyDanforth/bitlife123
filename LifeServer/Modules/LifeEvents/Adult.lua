@@ -806,6 +806,15 @@ Adult.events = {
 		id = "wedding_planning",
 		title = "Wedding Planning",
 		emoji = "💒",
+		-- CRITICAL FIX #19: Text variations for wedding planning milestone!
+		textVariants = {
+			"You're engaged and planning a wedding!",
+			"Wedding bells are ringing! Time to plan the big day!",
+			"The engagement was magical. Now comes the real work - wedding planning!",
+			"Pinterest boards are filling up. Wedding venues are being toured. It's happening!",
+			"The date is set, the guest list is growing. Your wedding approaches!",
+			"Everyone keeps asking about 'the wedding'. Time to actually plan it!",
+		},
 		text = "You're engaged and planning a wedding!",
 		question = "What kind of wedding?",
 		minAge = 22, maxAge = 45,

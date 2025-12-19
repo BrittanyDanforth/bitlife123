@@ -14,14 +14,25 @@
 
 local MusicianCareerEvents = {}
 
--- Helper function to check if player has a music career
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #22: Enhanced helper functions for musician careers
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function hasMusicJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()
-	return jobId:find("musician") or jobId:find("singer") or jobId:find("artist") or 
-		   jobId:find("producer") or jobId:find("dj") or jobId:find("rapper") or
-		   jobCat == "music" or jobCat == "entertainment"
+	-- CRITICAL FIX #23: Exclude rappers - they have their own event file!
+	if jobId:find("rapper") or jobId:find("hip.?hop") then
+		return false
+	end
+	-- CRITICAL FIX #24: Exclude non-musician entertainment careers
+	if jobId:find("actor") or jobId:find("athlete") or jobId:find("streamer")
+	   or jobId:find("youtuber") or jobId:find("influencer") then
+		return false
+	end
+	return jobId:find("musician") or jobId:find("singer") or jobId:find("band") or 
+		   jobId:find("producer") or jobId:find("dj") or jobId:find("composer") or
+		   jobId:find("popstar") or jobId:find("rock_star") or jobCat == "music"
 end
 
 local function isSignedArtist(state)
@@ -29,6 +40,36 @@ local function isSignedArtist(state)
 	local jobId = (state.CurrentJob.id or ""):lower()
 	return jobId:find("signed") or jobId:find("recording") or jobId:find("popstar") or
 		   jobId:find("rock_star") or (state.Flags and state.Flags.signed_artist)
+end
+
+-- CRITICAL FIX #25: Check for DJ specifically
+local function isDJ(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("dj") or jobId:find("disc_jockey") or jobId:find("edm")
+end
+
+-- CRITICAL FIX #26: Check for producer role
+local function isMusicProducer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("producer") and not jobId:find("film") and not jobId:find("tv")
+end
+
+-- CRITICAL FIX #27: Check for touring musician
+local function isOnTour(state)
+	return state.Flags and state.Flags.on_tour == true
+end
+
+-- CRITICAL FIX #28: Check for music genre
+local function getMusicGenre(state)
+	if not state.Flags then return "pop" end
+	if state.Flags.rock_musician then return "rock" end
+	if state.Flags.country_musician then return "country" end
+	if state.Flags.edm_artist then return "edm" end
+	if state.Flags.rnb_artist then return "rnb" end
+	if state.Flags.indie_artist then return "indie" end
+	return "pop"
 end
 
 MusicianCareerEvents.events = {

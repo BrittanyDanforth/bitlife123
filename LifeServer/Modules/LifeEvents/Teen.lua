@@ -306,6 +306,15 @@ Teen.events = {
 		id = "first_job_offer",
 		title = "Your First Job",
 		emoji = "💼",
+		-- CRITICAL FIX #16: Text variations for first job experience!
+		textVariants = {
+			"A local business is hiring teenagers for part-time work.",
+			"The mall is hiring! Your chance to earn some cash.",
+			"A 'Now Hiring' sign catches your eye. Time for your first job?",
+			"Your parents suggest you get a part-time job to learn responsibility.",
+			"Friends are bragging about their jobs. Maybe you should get one too?",
+			"Summer is coming and so are job opportunities for teens!",
+		},
 		text = "A local business is hiring teenagers for part-time work.",
 		question = "Will you apply?",
 		minAge = 15, maxAge = 17,
@@ -529,6 +538,15 @@ Teen.events = {
 		id = "prom_invitation",
 		title = "Prom Season",
 		emoji = "💃",
+		-- CRITICAL FIX #17: Text variations for prom experience!
+		textVariants = {
+			"Prom is coming up! The biggest dance of the year.",
+			"Everyone's talking about prom. It's THE event of senior year!",
+			"Prom tickets are on sale. Your social life hangs in the balance!",
+			"The prom theme was just announced. Time to make plans!",
+			"You can feel the prom excitement in the air. What's your move?",
+			"Posters for prom are everywhere. You can't escape prom fever!",
+		},
 		text = "Prom is coming up! The biggest dance of the year.",
 		question = "What's your prom plan?",
 		minAge = 16, maxAge = 18,
@@ -831,6 +849,15 @@ Teen.events = {
 		id = "driving_test",
 		title = "The Driving Test",
 		emoji = "🚙",
+		-- CRITICAL FIX #18: Text variations for driving test milestone!
+		textVariants = {
+			"It's time for your driver's license road test! The examiner is watching your every move.",
+			"The big day is here - your driving test! Your palms are sweaty.",
+			"You're behind the wheel for your license test. The examiner looks stern.",
+			"DMV road test day! Your future of automotive freedom depends on the next 15 minutes.",
+			"The driving instructor clicks their seatbelt. It's go time.",
+			"License test! Your parents wave nervously as you pull away with the examiner.",
+		},
 		text = "It's time for your driver's license road test! The examiner is watching your every move.",
 		question = "How do you approach the test?",
 		minAge = 16, maxAge = 17,

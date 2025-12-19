@@ -13,18 +13,54 @@
 
 local GamerCareerEvents = {}
 
--- Helper function to check if player has a gaming career
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #29: Enhanced helper functions for gaming careers
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function hasGamingJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- CRITICAL FIX #30: Exclude non-gaming content creators
+	if jobId:find("youtuber") and not jobId:find("gam") then
+		return false
+	end
+	if jobId:find("influencer") and not jobId:find("gam") then
+		return false
+	end
 	return jobId:find("gamer") or jobId:find("esports") or jobId:find("streamer") or 
-		   jobId:find("gaming") or jobId:find("content_creator")
+		   jobId:find("gaming") or jobCat == "gaming" or jobCat == "esports"
 end
 
 local function hasProGamerJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	return jobId:find("pro_gamer") or jobId:find("esports") or jobId:find("champion")
+		or (state.Flags and state.Flags.signed_to_org == true)
+end
+
+-- CRITICAL FIX #31: Check if player is a streamer specifically
+local function isGamingStreamer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	return (jobId:find("streamer") and (jobId:find("gam") or jobName:find("gam")))
+		or (state.Flags and state.Flags.gaming_streamer == true)
+end
+
+-- CRITICAL FIX #32: Check if player is in competitive gaming vs casual streaming
+local function isCompetitiveGamer(state)
+	if not hasGamingJob(state) then return false end
+	return hasProGamerJob(state) or (state.Flags and state.Flags.competitive_player == true)
+end
+
+-- CRITICAL FIX #33: Check gaming career level
+local function getGamingLevel(state)
+	if not hasGamingJob(state) then return "none" end
+	if state.Flags and state.Flags.esports_legend then return "legend" end
+	if state.Flags and state.Flags.tournament_champion then return "champion" end
+	if hasProGamerJob(state) then return "pro" end
+	if isGamingStreamer(state) then return "streamer" end
+	return "amateur"
 end
 
 GamerCareerEvents.events = {
