@@ -804,7 +804,7 @@ function Minigames:showNextDebateQuestion()
 	self.debateTimerFill.Size = UDim2.new(1, 0, 1, 0)
 
 	if self._debateTimerConnection then
-		task.cancel(self._debateTimerConnection)
+		pcall(function() task.cancel(self._debateTimerConnection) end)
 		self._debateTimerConnection = nil
 	end
 
@@ -821,7 +821,7 @@ end
 
 function Minigames:handleDebateAnswer(correct)
 	if self._debateTimerConnection then
-		task.cancel(self._debateTimerConnection)
+		pcall(function() task.cancel(self._debateTimerConnection) end)
 		self._debateTimerConnection = nil
 	end
 
@@ -857,7 +857,7 @@ function Minigames:endDebate()
 	disconnectAll(self._debateButtonConnections)
 	self._debateButtonConnections = {}
 	if self._debateTimerConnection then
-		task.cancel(self._debateTimerConnection)
+		pcall(function() task.cancel(self._debateTimerConnection) end)
 		self._debateTimerConnection = nil
 	end
 
@@ -1422,7 +1422,7 @@ end
 
 function Minigames:startCopChase()
 	if self._getawayCopChaseThread then
-		task.cancel(self._getawayCopChaseThread)
+		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 	end
 
 	self._getawayCopChaseThread = task.spawn(function()
@@ -1451,7 +1451,7 @@ function Minigames:endGetaway(escaped)
 	self._getawayButtonConnections = {}
 
 	if self._getawayCopChaseThread then
-		task.cancel(self._getawayCopChaseThread)
+		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 		self._getawayCopChaseThread = nil
 	end
 
@@ -1874,7 +1874,7 @@ end
 
 function Minigames:startGuardPatrol()
 	if self._prisonGuardThread then
-		task.cancel(self._prisonGuardThread)
+		pcall(function() task.cancel(self._prisonGuardThread) end)
 	end
 
 	self._prisonGuardThread = task.spawn(function()
@@ -1903,7 +1903,7 @@ function Minigames:endPrisonEscape(escaped)
 	self._prisonArrowConnections = {}
 
 	if self._prisonGuardThread then
-		task.cancel(self._prisonGuardThread)
+		pcall(function() task.cancel(self._prisonGuardThread) end)
 		self._prisonGuardThread = nil
 	end
 
@@ -2374,7 +2374,7 @@ function Minigames:startHackTimer()
 	})
 
 	if self._hackTimerConnection then
-		task.cancel(self._hackTimerConnection)
+		pcall(function() task.cancel(self._hackTimerConnection) end)
 	end
 
 	self._hackTimerConnection = task.delay(self.hackTimeLimit, function()
@@ -2392,7 +2392,7 @@ function Minigames:endHacking(success)
 	self._hackKeyConnections = {}
 
 	if self._hackTimerConnection then
-		task.cancel(self._hackTimerConnection)
+		pcall(function() task.cancel(self._hackTimerConnection) end)
 		self._hackTimerConnection = nil
 	end
 
@@ -3198,7 +3198,7 @@ function Minigames:cancel()
 	self._purgeContinueConnection = nil
 
 	if self._purgeAutoThread then
-		task.cancel(self._purgeAutoThread)
+		pcall(function() task.cancel(self._purgeAutoThread) end)
 		self._purgeAutoThread = nil
 	end
 
@@ -3241,10 +3241,10 @@ function Minigames:enableRareAutoPurge(config)
 	
 	-- Stop existing auto thread if running
 	if self._purgeAutoThread then
-		task.cancel(self._purgeAutoThread)
+		pcall(function() task.cancel(self._purgeAutoThread) end)
 		self._purgeAutoThread = nil
 	end
-	
+
 	print("[Minigames] 😈 Enabling rare auto Purge trigger (", chance * 100, "% chance every", interval, "seconds)")
 	
 	self._purgeAutoThread = task.spawn(function()
@@ -3274,7 +3274,7 @@ end
 
 function Minigames:disableRareAutoPurge()
 	if self._purgeAutoThread then
-		task.cancel(self._purgeAutoThread)
+		pcall(function() task.cancel(self._purgeAutoThread) end)
 		self._purgeAutoThread = nil
 		print("[Minigames] 😈 Disabled rare auto Purge trigger")
 	end

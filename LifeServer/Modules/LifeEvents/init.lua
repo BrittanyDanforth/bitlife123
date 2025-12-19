@@ -241,6 +241,7 @@ function LifeEvents.init()
 	local moduleConfig = {
 		-- Core event modules (direct children)
 		{ name = "Childhood",     category = "childhood" },
+		{ name = "ToddlerPreschoolEvents", category = "childhood" }, -- 25+ ages 3-6 events with tons of variety
 		{ name = "Teen",          category = "teen" },
 		{ name = "Adult",         category = "adult" },
 		{ name = "Senior",        category = "senior" },              -- Senior/retirement events (ages 60+)
