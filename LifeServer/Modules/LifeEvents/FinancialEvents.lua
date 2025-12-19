@@ -8,6 +8,28 @@ local FinancialEvents = {}
 
 local STAGE = "random"
 
+-- CRITICAL FIX: Helper for entertainment career check
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+		return true
+	end
+	local keywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator", "model"}
+	for _, k in ipairs(keywords) do
+		if jobId:find(k) then return true end
+	end
+	return false
+end
+
+local function hasFormalWorkplaceJob(state)
+	if not state.CurrentJob then return false end
+	if isEntertainmentCareer(state) then return false end
+	return true
+end
+
 FinancialEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- INCOME & OPPORTUNITIES
@@ -169,6 +191,8 @@ FinancialEvents.events = {
 		tags = { "bonus", "work", "income" },
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX #327: Can't get work bonus from prison
+		-- CRITICAL FIX: Entertainment careers get royalties/deals, not work bonuses
+		eligibility = hasFormalWorkplaceJob,
 		
 		-- CRITICAL: Random bonus outcome
 		choices = {
