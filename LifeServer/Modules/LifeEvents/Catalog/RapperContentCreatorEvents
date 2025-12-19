@@ -254,7 +254,6 @@ RapperContentCreatorEvents.events = {
 		cooldown = 3, -- CRITICAL FIX: Increased cooldown to reduce spam
 		maxOccurrences = 2, -- CRITICAL FIX: Can only happen twice max
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		requiresFlags = { first_track_recorded = true },
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #AAA-7: Block this event if player has progressed past underground stage
 		-- This was firing even when player had already done shows, gotten signed, etc.
@@ -270,8 +269,12 @@ RapperContentCreatorEvents.events = {
 			viral_hit = true,            -- Had a viral moment
 			professional_music_career = true, -- Pro career
 		},
-		-- CRITICAL FIX: Also check career progression level
+		-- CRITICAL FIX: Check career progression AND must be rapper
 		eligibility = function(state)
+			-- CRITICAL: Must have first_track_recorded AND be a rapper
+			if not (state.Flags and state.Flags.first_track_recorded) then return false end
+			if not isRapper(state) then return false end
+			
 			-- Block if job is beyond underground level
 			if state.CurrentJob then
 				local jobId = (state.CurrentJob.id or ""):lower()
@@ -1381,10 +1384,25 @@ RapperContentCreatorEvents.events = {
 		cooldown = 2,
 		oneTime = true,
 		category = "career_creative",
-		requiresFlags = { first_video_posted = true },
+		-- CRITICAL FIX: Check subscriber count AND require content creator career
 		eligibility = function(state)
 			local subs = state.FameState and state.FameState.subscribers or 0
-			return subs >= 1000, "Need 1000 subscribers first"
+			if subs < 1000 then return false, "Need 1000 subscribers first" end
+			-- CRITICAL: Must NOT have a regular job like IT Support
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local jobName = (state.CurrentJob.name or ""):lower()
+				local cat = (state.CurrentJob.category or ""):lower()
+				-- Allow if creator job
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") then
+					return true
+				end
+				-- Block if regular job
+				if cat ~= "entertainment" and cat ~= "creative" and cat ~= "fame" and cat ~= "" then
+					return false
+				end
+			end
+			return true
 		end,
 		
 		choices = {
@@ -1425,8 +1443,25 @@ RapperContentCreatorEvents.events = {
 		oneTime = false,
 		maxOccurrences = 5,
 		category = "career_creative",
-		-- REMOVED isCelebrityOnly - Viral videos can happen to any creator!
-		requiresFlags = { first_video_posted = true },
+		-- CRITICAL FIX: Must actually be pursuing content creation, not just hobby
+		eligibility = function(state)
+			-- Must have posted video
+			if not (state.Flags and state.Flags.first_video_posted) then return false end
+			-- CRITICAL: Block if has regular job
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local cat = (state.CurrentJob.category or ""):lower()
+				-- Allow if creator job
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") then
+					return true
+				end
+				-- Block if regular job (IT Support, Office, etc.)
+				if cat ~= "entertainment" and cat ~= "creative" and cat ~= "fame" and cat ~= "" then
+					return false
+				end
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -1637,7 +1672,11 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		category = "career_rapper",
-		requiresFlags = { first_track_recorded = true },
+		-- CRITICAL FIX: Must actually be a rapper, not IT Support with old flag
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.first_track_recorded) then return false end
+			return isRapper(state)
+		end,
 		
 		choices = {
 			{
@@ -1692,8 +1731,12 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.5,
 		cooldown = 2,
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		requiresFlags = { first_track_recorded = true },
+		category = "career_rapper",
+		-- CRITICAL FIX: Must actually be a rapper
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.first_track_recorded) then return false end
+			return isRapper(state)
+		end,
 		
 		choices = {
 			{
@@ -1748,8 +1791,12 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.555,
 		cooldown = 2,
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		requiresFlags = { first_track_recorded = true },
+		category = "career_rapper",
+		-- CRITICAL FIX: Must actually be a rapper
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.first_track_recorded) then return false end
+			return isRapper(state)
+		end,
 		
 		choices = {
 			{
@@ -1794,8 +1841,12 @@ RapperContentCreatorEvents.events = {
 		minAge = 14, maxAge = 50,
 		baseChance = 0.45,
 		cooldown = 2,
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		requiresFlags = { first_track_recorded = true },
+		category = "career_rapper",
+		-- CRITICAL FIX: Must actually be a rapper
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.first_track_recorded) then return false end
+			return isRapper(state)
+		end,
 		
 		choices = {
 			{
@@ -1838,8 +1889,12 @@ RapperContentCreatorEvents.events = {
 		minAge = 16, maxAge = 50,
 		baseChance = 0.455,
 		cooldown = 2,
-		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		requiresFlags = { has_mixtape = true },
+		category = "career_rapper",
+		-- CRITICAL FIX: Must actually be a rapper with mixtape
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.has_mixtape) then return false end
+			return isRapper(state)
+		end,
 		
 		choices = {
 			{
@@ -2340,7 +2395,22 @@ RapperContentCreatorEvents.events = {
 		baseChance = 0.45,
 		cooldown = 3,
 		category = "career_creative",
-		requiresFlags = { monetized = true },
+		-- CRITICAL FIX: Must be monetized AND actually be a creator (not IT Support with old flag)
+		eligibility = function(state)
+			if not (state.Flags and state.Flags.monetized) then return false end
+			-- If they have a regular job, they shouldn't get this event
+			if state.CurrentJob then
+				local jobId = (state.CurrentJob.id or ""):lower()
+				local cat = (state.CurrentJob.category or ""):lower()
+				if jobId:find("creator") or jobId:find("streamer") or jobId:find("youtuber") or jobId:find("influencer") then
+					return true
+				end
+				if cat ~= "entertainment" and cat ~= "creative" and cat ~= "fame" and cat ~= "" then
+					return false
+				end
+			end
+			return true
+		end,
 		
 		choices = {
 			{
