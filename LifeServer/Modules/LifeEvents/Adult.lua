@@ -726,9 +726,24 @@ Adult.events = {
 		question = "How's the adjustment going?",
 		minAge = 19, maxAge = 28,
 		oneTime = true,
-		-- CRITICAL: Requires player to actually HAVE a job
+		-- CRITICAL: Requires player to actually HAVE a job AND be in a formal workplace
 		requiresJob = true,
-		requiresFlags = { employed = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't have "9-5 grind"
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			-- Block entertainment careers
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 
 		choices = {
 			{ text = "Imposter syndrome is real", effects = { Happiness = -3, Smarts = 4 }, setFlags = { imposter_syndrome = true }, feedText = "You feel like a fraud, but you're learning fast." },

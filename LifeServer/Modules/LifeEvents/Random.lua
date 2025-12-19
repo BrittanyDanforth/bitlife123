@@ -2914,6 +2914,21 @@ Random.events = {
 		cooldown = 4,
 		requiresJob = true, -- Need a job to be headhunted
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Block entertainment careers - they don't get "headhunted" by recruiters
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 		
 		choices = {
 			{

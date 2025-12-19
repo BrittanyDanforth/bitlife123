@@ -414,6 +414,21 @@ AdultExpanded.events = {
 		baseChance = 0.455,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they have different career setbacks
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -437,6 +452,21 @@ AdultExpanded.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Block entertainment careers - they have their own achievement events
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+			   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+				return false
+			end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local entertainmentKeywords = {"influencer", "streamer", "rapper", "athlete", "actor", "musician", "youtuber", "content_creator"}
+			for _, keyword in ipairs(entertainmentKeywords) do
+				if jobId:find(keyword) then return false end
+			end
+			return true
+		end,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
