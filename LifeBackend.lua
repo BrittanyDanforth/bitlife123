@@ -121,6 +121,20 @@ local function serializeState(state)
 		serialized.Assets = state.Assets
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #PERSIST-1: Save EventHistory to persist cooldowns and one-time events!
+	-- Without this, event cooldowns reset on rejoin and one-time events can repeat!
+	-- User complaint: "Events don't trigger properly" - because history was lost on rejoin
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.EventHistory then
+		serialized.EventHistory = state.EventHistory
+	end
+
+	-- CRITICAL FIX #PERSIST-2: Save FinancialState to track years broke for homeless events
+	if state.FinancialState then
+		serialized.FinancialState = state.FinancialState
+	end
+
 	-- Timestamp for debugging
 	serialized._savedAt = os.time()
 	serialized._version = 1

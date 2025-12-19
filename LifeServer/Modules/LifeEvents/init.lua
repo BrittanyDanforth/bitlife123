@@ -59,21 +59,26 @@ local LifeStages = {
 -- CRITICAL FIX #26: Added career categories for all job-specific events
 -- This ensures tech, medical, finance, office, creative events can trigger
 -- ════════════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #CATEGORY-1: Added ALL missing event categories!
+-- Many events use categories like "finance", "health", "family", "legal" etc.
+-- But these weren't in StageCategories so the events NEVER triggered!
+-- User complaint: "I havnt had alot of events happen" - because categories were missing!
+-- ═══════════════════════════════════════════════════════════════════════════════
 local StageCategories = {
-	baby        = { "childhood", "milestones", "royalty" },
-	toddler     = { "childhood", "milestones", "royalty" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty" },
+	baby        = { "childhood", "milestones", "royalty", "family", "health" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
 	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
-	-- career_gaming, career_acting, career_sports, career_intelligence, career_mafia were MISSING!
-	-- CRITICAL FIX: Added crime_path and homeless categories for expanded gameplay
-	teen        = { "teen", "milestones", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity" },
-	young_adult = { "adult", "teen", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	adult       = { "adult", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	middle_age  = { "adult", "senior", "milestones", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia" },
-	senior      = { "adult", "senior", "milestones", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity" },
+	-- CRITICAL FIX #CATEGORY-2: Added finance, health, family, legal, pets, hobbies, social, seasonal, milestone categories!
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -1876,7 +1881,47 @@ function LifeEvents.buildYearQueue(state, options)
 			end
 		end
 	end
-	
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HOMELESS-1: DYNAMIC HOMELESS CATEGORY INJECTION
+	-- Add homeless category when player is in financial trouble OR already homeless
+	-- This ensures homeless events actually trigger when conditions warrant it!
+	-- User complaint: "I never had a homeless event happen even when broke for years"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local playerMoney = state.Money or 0
+	local hasNoJob = not state.CurrentJob
+	local isHomeless = state.Flags and state.Flags.homeless
+	local isCouchSurfing = state.Flags and state.Flags.couch_surfing
+	local isLivingInCar = state.Flags and state.Flags.living_in_car
+
+	-- CRITICAL FIX #HOMELESS-2: Track "years broke" for realistic eviction timing
+	-- If player has been broke for 2+ years, they should face eviction!
+	state.FinancialState = state.FinancialState or {}
+	if playerMoney < 500 and hasNoJob then
+		state.FinancialState.yearsBroke = (state.FinancialState.yearsBroke or 0) + 1
+	elseif playerMoney < 1000 then
+		-- Struggling but not completely broke
+		state.FinancialState.yearsBroke = math.max(0, (state.FinancialState.yearsBroke or 0) - 0.5)
+	else
+		-- Financially stable
+		state.FinancialState.yearsBroke = 0
+	end
+
+	-- Add homeless category if player is in financial distress OR homeless
+	local inFinancialDistress = (playerMoney < 500 and hasNoJob)
+		or (state.FinancialState.yearsBroke or 0) >= 2
+		or isHomeless or isCouchSurfing or isLivingInCar
+
+	if inFinancialDistress or age >= 18 then
+		local hasHomelessCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "homeless" then hasHomelessCat = true break end
+		end
+		if not hasHomelessCat then
+			table.insert(categories, "homeless")
+		end
+	end
+
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #68: PREMIUM GAMEPASS EVENT CATEGORIES
 	-- Add premium event categories ONLY for players who have the gamepass AND are active in it
@@ -2023,7 +2068,73 @@ function LifeEvents.buildYearQueue(state, options)
 			return selectedEvents
 		end
 	end
-	
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HOMELESS-3: GUARANTEED HOMELESS EVENT SELECTION
+	-- If player is homeless, they should get homeless events FREQUENTLY (70% chance)
+	-- If player is in financial distress (broke 2+ years), GUARANTEE eviction event!
+	-- User complaint: "I never had a homeless event happen even when broke for years"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isHomeless = flags.homeless
+	local isCouchSurfing = flags.couch_surfing
+	local isLivingInCar = flags.living_in_car
+	local yearsBroke = (state.FinancialState and state.FinancialState.yearsBroke) or 0
+	local playerMoney = state.Money or 0
+	local hasNoJob = not state.CurrentJob
+
+	-- CRITICAL FIX #HOMELESS-4: GUARANTEED eviction after 2+ years broke!
+	-- This ensures players CAN'T avoid homelessness indefinitely when broke
+	if yearsBroke >= 2 and not isHomeless and not isCouchSurfing and not isLivingInCar then
+		local evictionEvent = AllEvents["financial_crisis_eviction"]
+		if evictionEvent then
+			-- Force trigger - bypass normal eligibility for guaranteed eviction
+			table.insert(selectedEvents, evictionEvent)
+			recordEventShown(state, evictionEvent)
+			return selectedEvents
+		end
+	end
+
+	-- CRITICAL FIX #HOMELESS-5: Homeless players get homeless events 70% of the time!
+	if isHomeless and RANDOM_LOCAL:NextNumber() < 0.70 then
+		local homelessEvents = EventsByCategory["homeless"] or {}
+		local eligibleHomelessEvents = {}
+
+		for _, event in ipairs(homelessEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleHomelessEvents, event)
+				end
+			end
+		end
+
+		if #eligibleHomelessEvents > 0 then
+			local chosenEvent = eligibleHomelessEvents[RANDOM_LOCAL:NextInteger(1, #eligibleHomelessEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+
+	-- CRITICAL FIX #HOMELESS-6: Couch surfers and car-dwellers also get homeless events
+	if (isCouchSurfing or isLivingInCar) and RANDOM_LOCAL:NextNumber() < 0.50 then
+		local homelessEvents = EventsByCategory["homeless"] or {}
+		local eligibleHomelessEvents = {}
+
+		for _, event in ipairs(homelessEvents) do
+			if canEventTrigger(event, state) then
+				table.insert(eligibleHomelessEvents, event)
+			end
+		end
+
+		if #eligibleHomelessEvents > 0 then
+			local chosenEvent = eligibleHomelessEvents[RANDOM_LOCAL:NextInteger(1, #eligibleHomelessEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #MOBILE-2: SPLIT RAPPER AND CREATOR EVENTS COMPLETELY!
 	-- BUG: Rapper events fired for streamers because they were grouped together

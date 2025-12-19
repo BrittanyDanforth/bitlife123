@@ -25,14 +25,32 @@ events[#events + 1] = {
 	text = "You've fallen behind on rent for months. Today, the landlord arrived with an eviction notice and two police officers.",
 	question = "You have 48 hours to leave. What do you do?",
 	minAge = 18, maxAge = 75,
-	baseChance = 0.7,
+	-- CRITICAL FIX #HOMELESS-7: Increased baseChance from 0.7 to 0.95 for guaranteed trigger
+	baseChance = 0.95,
 	cooldown = 3,
 	oneTime = true,
+	-- CRITICAL FIX #HOMELESS-8: Made eligibility MUCH less strict!
+	-- OLD: Required BOTH money < 200 AND no job (too strict - never triggered)
+	-- NEW: Triggers if broke (< 500) OR unemployed for a while OR tracked as broke for 2+ years
+	-- This ensures eviction actually happens when player is in financial trouble!
 	eligibility = function(state)
 		local money = state.Money or 0
-		return money < 200 and not state.CurrentJob
+		local hasJob = state.CurrentJob ~= nil
+		local yearsBroke = (state.FinancialState and state.FinancialState.yearsBroke) or 0
+
+		-- Trigger if any of these conditions:
+		-- 1. Very broke (< 200) regardless of job
+		-- 2. Moderately broke (< 500) AND no job
+		-- 3. Been broke for 2+ years (tracked by FinancialState)
+		-- 4. No money at all
+		return money <= 0
+			or (money < 200)
+			or (money < 500 and not hasJob)
+			or yearsBroke >= 2
 	end,
-	blockedByFlags = { homeless = true, in_prison = true },
+	-- CRITICAL FIX #HOMELESS-9: Mark as high priority so it doesn't get lost in pool
+	priority = "high",
+	blockedByFlags = { homeless = true, in_prison = true, couch_surfing = true, living_in_car = true },
 	
 	choices = {
 		{
