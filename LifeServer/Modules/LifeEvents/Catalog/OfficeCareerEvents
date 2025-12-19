@@ -8,6 +8,77 @@
 
 local OfficeCareerEvents = {}
 
+-- CRITICAL FIX: Helper function to check if player is in an entertainment/celebrity career
+-- These players should NOT see generic office events
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check job categories
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or jobCat == "sports" then
+		return true
+	end
+	
+	-- Check specific job IDs/names for entertainment careers
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "dj", "producer_music",
+		"athlete", "player", "football", "basketball", "baseball", "soccer", "mma",
+		"host", "anchor", "presenter", "comedian", "performer"
+	}
+	
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+	
+	-- Check flags
+	if state.Flags then
+		if state.Flags.isInfluencer or state.Flags.isStreamer or state.Flags.isRapper or
+		   state.Flags.isAthlete or state.Flags.isActor or state.Flags.isCelebrity then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Helper function to check if player has an office/corporate job
+local function hasOfficeJob(state)
+	if not state.CurrentJob then return false end
+	
+	-- CRITICAL: Exclude entertainment careers
+	if isEntertainmentCareer(state) then return false end
+	
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	
+	-- Check categories
+	if jobCat == "office" or jobCat == "finance" or jobCat == "corporate" or 
+	   jobCat == "admin" or jobCat == "business" then
+		return true
+	end
+	
+	-- Check specific job IDs
+	local officeKeywords = {
+		"manager", "secretary", "assistant", "clerk", "admin", "hr", "human_resources",
+		"accountant", "analyst", "consultant", "coordinator", "receptionist",
+		"executive", "director", "supervisor", "office", "corporate"
+	}
+	
+	for _, keyword in ipairs(officeKeywords) do
+		if jobId:find(keyword) then
+			return true
+		end
+	end
+	
+	return false
+end
+
 OfficeCareerEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- GENERAL OFFICE EVENTS
@@ -28,7 +99,8 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
-		requiresJobCategory = {"office", "finance", "tech", "corporate"},
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -83,6 +155,8 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -138,6 +212,8 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -190,6 +266,8 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -261,6 +339,8 @@ OfficeCareerEvents.events = {
 		cooldown = 2,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -328,6 +408,8 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -386,6 +468,8 @@ OfficeCareerEvents.events = {
 		cooldown = 3,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -443,6 +527,8 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -499,6 +585,8 @@ OfficeCareerEvents.events = {
 		cooldown = 4,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{
@@ -554,6 +642,8 @@ OfficeCareerEvents.events = {
 		cooldown = 5,
 		category = "career_office",
 		requiresJob = true,
+		eligibility = hasOfficeJob, -- CRITICAL FIX: Use proper eligibility check
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{

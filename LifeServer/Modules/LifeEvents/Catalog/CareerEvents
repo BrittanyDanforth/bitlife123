@@ -19,6 +19,70 @@
 -- Without this, Random:NextNumber() calls would crash!
 local RANDOM = Random.new()
 
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper function to check if player is in an entertainment/celebrity career
+-- These players should NOT see generic office/corporate events
+-- Entertainment careers have their OWN career events (RapperContentCreatorEvents, AthleteCareerEvents, etc.)
+-- ════════════════════════════════════════════════════════════════════════════════════
+local function isEntertainmentCareer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+
+	-- Check job categories that are entertainment-based
+	if jobCat == "entertainment" or jobCat == "celebrity" or jobCat == "fame" or 
+	   jobCat == "sports" or jobCat == "music" or jobCat == "acting" then
+		return true
+	end
+
+	-- Check specific entertainment job IDs/names
+	local entertainmentKeywords = {
+		"influencer", "streamer", "youtuber", "content_creator", "tiktoker",
+		"actor", "actress", "movie_star", "celebrity", "model", "supermodel",
+		"rapper", "musician", "singer", "dj", "producer_music", "artist",
+		"athlete", "player", "football", "basketball", "baseball", "soccer", "mma", "boxer",
+		"host", "anchor", "presenter", "comedian", "performer", "entertainer"
+	}
+
+	for _, keyword in ipairs(entertainmentKeywords) do
+		if jobId:find(keyword) or jobName:find(keyword) then
+			return true
+		end
+	end
+
+	-- Check flags that indicate entertainment career
+	if state.Flags then
+		if state.Flags.isInfluencer or state.Flags.isStreamer or state.Flags.isRapper or
+		   state.Flags.isAthlete or state.Flags.isActor or state.Flags.isCelebrity or
+		   state.Flags.rapper or state.Flags.content_creator or state.Flags.streamer or
+		   state.Flags.signed_athlete or state.Flags.signed_artist then
+			return true
+		end
+	end
+
+	-- Check FameState for career paths
+	if state.FameState then
+		local careerPath = (state.FameState.careerPath or ""):lower()
+		if careerPath == "influencer" or careerPath == "streamer" or careerPath == "rapper" or
+		   careerPath == "youtuber" or careerPath == "athlete" or careerPath == "actor" or
+		   careerPath == "musician" then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- CRITICAL FIX: Helper function to check if player has a regular corporate/office job
+-- Entertainment careers get their own specialized events
+local function hasRegularJob(state)
+	if not state.CurrentJob then return false end
+	-- CRITICAL: Exclude entertainment careers from generic career events
+	if isEntertainmentCareer(state) then return false end
+	return true
+end
+
 local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- ENTRY-LEVEL CAREER (Ages 18-25)
@@ -153,6 +217,9 @@ local events = {
 		requiresJob = true,
 		-- CRITICAL FIX: Only for office/corporate jobs - NOT rappers, musicians, etc.
 		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government" },
+		-- CRITICAL FIX: Double-check no entertainment careers slip through
+		eligibility = hasRegularJob,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
@@ -218,6 +285,9 @@ local events = {
 		maxAge = 35,
 		requiresJob = true,
 		oneTime = true,
+		-- CRITICAL FIX: Entertainment careers have their OWN promotion events!
+		eligibility = hasRegularJob,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
@@ -266,6 +336,9 @@ local events = {
 		minAge = 25,
 		maxAge = 45,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers negotiate contracts/deals differently
+		eligibility = hasRegularJob,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
@@ -319,6 +392,9 @@ local events = {
 		minAge = 28,
 		maxAge = 55,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers have managers/agents, not office bosses
+		eligibility = hasRegularJob,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{
 				index = 1,
@@ -429,6 +505,9 @@ local events = {
 		minAge = 28,
 		maxAge = 45,
 		requiresJob = true,
+		-- CRITICAL FIX: Entertainment careers don't get startup job offers
+		eligibility = hasRegularJob,
+		blockedByFlags = { in_prison = true },
 		choices = {
 		{
 			index = 1,
@@ -500,7 +579,9 @@ local events = {
 		maxAge = 60,
 		requiresJob = true,
 		oneTime = true,
-		blockedByFlags = { executive = true },
+		-- CRITICAL FIX: Entertainment careers don't get corporate executive promotions
+		eligibility = hasRegularJob,
+		blockedByFlags = { executive = true, in_prison = true },
 		choices = {
 			{
 				index = 1,
