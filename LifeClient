@@ -4387,91 +4387,128 @@ end
 ----------------------------------------------------------------
 
 -- ════════════════════════════════════════════════════════════════════════════════
--- WELCOME SCREEN - Shows ONCE for first-time players
+-- WELCOME SCREEN - Shows ONCE for first-time players (BitLife-style!)
 -- ════════════════════════════════════════════════════════════════════════════════
 local WelcomeUI = {}
 local hasShownWelcome = false
 
+-- BitLife green color
+local BITLIFE_GREEN = Color3.fromRGB(76, 217, 100)
+
 WelcomeUI.overlay = Instance.new("Frame")
 WelcomeUI.overlay.Size = UDim2.fromScale(1, 1)
-WelcomeUI.overlay.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+WelcomeUI.overlay.BackgroundColor3 = BITLIFE_GREEN
 WelcomeUI.overlay.BackgroundTransparency = 0
 WelcomeUI.overlay.Visible = false
 WelcomeUI.overlay.ZIndex = 200
 WelcomeUI.overlay.Parent = screenGui
 
+-- White card in the center (BitLife style)
 WelcomeUI.content = Instance.new("Frame")
-WelcomeUI.content.Size = UDim2.new(0.85, 0, 0, 0)
+WelcomeUI.content.Size = UDim2.new(0.9, 0, 0, 0)
 WelcomeUI.content.AutomaticSize = Enum.AutomaticSize.Y
 WelcomeUI.content.AnchorPoint = Vector2.new(0.5, 0.5)
 WelcomeUI.content.Position = UDim2.fromScale(0.5, 0.5)
-WelcomeUI.content.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+WelcomeUI.content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 WelcomeUI.content.ZIndex = 201
 WelcomeUI.content.Parent = WelcomeUI.overlay
-corner(WelcomeUI.content, 20)
-stroke(WelcomeUI.content, 2, 0, C.Green)
+corner(WelcomeUI.content, 16)
+
+-- Shadow effect
+WelcomeUI.shadow = Instance.new("ImageLabel")
+WelcomeUI.shadow.Size = UDim2.new(1, 10, 1, 10)
+WelcomeUI.shadow.Position = UDim2.new(0, -5, 0, -5)
+WelcomeUI.shadow.BackgroundTransparency = 1
+WelcomeUI.shadow.Image = "rbxassetid://5554236805"
+WelcomeUI.shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+WelcomeUI.shadow.ImageTransparency = 0.6
+WelcomeUI.shadow.ScaleType = Enum.ScaleType.Slice
+WelcomeUI.shadow.SliceCenter = Rect.new(23, 23, 277, 277)
+WelcomeUI.shadow.ZIndex = 200
+WelcomeUI.shadow.Parent = WelcomeUI.content
 
 WelcomeUI.padding = Instance.new("UIPadding")
-WelcomeUI.padding.PaddingTop = UDim.new(0, 30)
-WelcomeUI.padding.PaddingBottom = UDim.new(0, 30)
+WelcomeUI.padding.PaddingTop = UDim.new(0, 25)
+WelcomeUI.padding.PaddingBottom = UDim.new(0, 25)
 WelcomeUI.padding.PaddingLeft = UDim.new(0, 20)
 WelcomeUI.padding.PaddingRight = UDim.new(0, 20)
 WelcomeUI.padding.Parent = WelcomeUI.content
 
 WelcomeUI.layout = Instance.new("UIListLayout")
 WelcomeUI.layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-WelcomeUI.layout.Padding = UDim.new(0, 15)
+WelcomeUI.layout.Padding = UDim.new(0, 12)
+WelcomeUI.layout.SortOrder = Enum.SortOrder.LayoutOrder
 WelcomeUI.layout.Parent = WelcomeUI.content
 
+-- Big emoji at top
 WelcomeUI.emoji = Instance.new("TextLabel")
-WelcomeUI.emoji.Size = UDim2.new(1, 0, 0, 60)
+WelcomeUI.emoji.Size = UDim2.new(1, 0, 0, 50)
 WelcomeUI.emoji.BackgroundTransparency = 1
 WelcomeUI.emoji.Font = F.Title
-WelcomeUI.emoji.TextSize = 50
-WelcomeUI.emoji.Text = "🎮"
+WelcomeUI.emoji.TextSize = 45
+WelcomeUI.emoji.Text = "👋"
 WelcomeUI.emoji.ZIndex = 202
 WelcomeUI.emoji.LayoutOrder = 1
 WelcomeUI.emoji.Parent = WelcomeUI.content
 
+-- Title
 WelcomeUI.title = Instance.new("TextLabel")
-WelcomeUI.title.Size = UDim2.new(1, 0, 0, 40)
+WelcomeUI.title.Size = UDim2.new(1, 0, 0, 32)
 WelcomeUI.title.BackgroundTransparency = 1
 WelcomeUI.title.Font = F.Title
-WelcomeUI.title.TextSize = 28
-WelcomeUI.title.TextColor3 = C.Green
+WelcomeUI.title.TextSize = 26
+WelcomeUI.title.TextColor3 = Color3.fromRGB(30, 30, 30)
 WelcomeUI.title.Text = "Welcome to Ro Life!"
 WelcomeUI.title.ZIndex = 202
 WelcomeUI.title.LayoutOrder = 2
 WelcomeUI.title.Parent = WelcomeUI.content
 
+-- Body text
 WelcomeUI.body = Instance.new("TextLabel")
 WelcomeUI.body.Size = UDim2.new(1, 0, 0, 0)
 WelcomeUI.body.AutomaticSize = Enum.AutomaticSize.Y
 WelcomeUI.body.BackgroundTransparency = 1
 WelcomeUI.body.Font = F.Medium
-WelcomeUI.body.TextSize = 16
-WelcomeUI.body.TextColor3 = C.White
+WelcomeUI.body.TextSize = 15
+WelcomeUI.body.TextColor3 = Color3.fromRGB(80, 80, 80)
 WelcomeUI.body.TextWrapped = true
-WelcomeUI.body.Text = "Ro Life is made by a solo developer! 🛠️\n\nIf you find any bugs or have suggestions, please submit feedback - I'll fix issues within a day or two!\n\nI hope you enjoy the game! ❤️"
+WelcomeUI.body.Text = "This game is made by a solo developer!\n\nIf you find any bugs or have suggestions, please submit feedback - I'll fix issues within a day or two!\n\nEnjoy your life!"
 WelcomeUI.body.ZIndex = 202
 WelcomeUI.body.LayoutOrder = 3
 WelcomeUI.body.Parent = WelcomeUI.content
 
+-- Spacer
+WelcomeUI.spacer = Instance.new("Frame")
+WelcomeUI.spacer.Size = UDim2.new(1, 0, 0, 5)
+WelcomeUI.spacer.BackgroundTransparency = 1
+WelcomeUI.spacer.ZIndex = 202
+WelcomeUI.spacer.LayoutOrder = 4
+WelcomeUI.spacer.Parent = WelcomeUI.content
+
+-- Green continue button (BitLife style)
 WelcomeUI.continueBtn = Instance.new("TextButton")
-WelcomeUI.continueBtn.Size = UDim2.new(0.8, 0, 0, 50)
-WelcomeUI.continueBtn.BackgroundColor3 = C.Green
+WelcomeUI.continueBtn.Size = UDim2.new(1, 0, 0, 48)
+WelcomeUI.continueBtn.BackgroundColor3 = BITLIFE_GREEN
 WelcomeUI.continueBtn.Font = F.Button
-WelcomeUI.continueBtn.TextSize = 20
-WelcomeUI.continueBtn.TextColor3 = C.White
-WelcomeUI.continueBtn.Text = "Let's Play! 🎉"
+WelcomeUI.continueBtn.TextSize = 18
+WelcomeUI.continueBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+WelcomeUI.continueBtn.Text = "Continue"
 WelcomeUI.continueBtn.ZIndex = 203
-WelcomeUI.continueBtn.LayoutOrder = 4
+WelcomeUI.continueBtn.LayoutOrder = 5
 WelcomeUI.continueBtn.Parent = WelcomeUI.content
-corner(WelcomeUI.continueBtn, 12)
+corner(WelcomeUI.continueBtn, 10)
 
 WelcomeUI.continueBtn.MouseButton1Click:Connect(function()
 	hasShownWelcome = true
 	WelcomeUI.overlay.Visible = false
+end)
+
+-- Hover effect
+WelcomeUI.continueBtn.MouseEnter:Connect(function()
+	WelcomeUI.continueBtn.BackgroundColor3 = Color3.fromRGB(60, 190, 85)
+end)
+WelcomeUI.continueBtn.MouseLeave:Connect(function()
+	WelcomeUI.continueBtn.BackgroundColor3 = BITLIFE_GREEN
 end)
 
 local function showWelcomeScreen()
