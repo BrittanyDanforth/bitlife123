@@ -20,6 +20,18 @@ Childhood.events = {
 		id = "first_words",
 		title = "First Words",
 		emoji = "👶",
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #7: Text variations for replayability!
+		-- Each life should feel different, not the same scripted experience
+		-- ══════════════════════════════════════════════════════════════════════════════
+		textVariants = {
+			"Your parents are excited - you just spoke your first word!",
+			"A magical moment! Everyone gasps as you speak for the first time!",
+			"Your parents have been waiting for this... your first word!",
+			"The whole family gathers as you attempt to speak your first word!",
+			"Your mom grabs her phone to record - you're about to say your first word!",
+			"Everyone goes quiet... did you just say something?!",
+		},
 		text = "Your parents are excited - you just spoke your first word!",
 		question = "What did you say?",
 		minAge = 1, maxAge = 2,
@@ -47,6 +59,15 @@ Childhood.events = {
 		id = "first_steps",
 		title = "First Steps",
 		emoji = "🚶",
+		-- CRITICAL FIX #8: Text variations for different first steps experiences!
+		textVariants = {
+			"You're standing up and ready to take your first steps!",
+			"You grab onto the coffee table and pull yourself up... here we go!",
+			"Your parents hold their breath as you wobble on your tiny legs!",
+			"This is it! You're going to walk for the first time!",
+			"The living room becomes your runway. Time to walk!",
+			"Everyone watches as you let go of the couch and stand alone!",
+		},
 		text = "You're standing up and ready to take your first steps!",
 		question = "How do you approach this challenge?",
 		minAge = 1, maxAge = 2,
@@ -72,6 +93,15 @@ Childhood.events = {
 		id = "toddler_tantrum",
 		title = "The Terrible Twos",
 		emoji = "😤",
+		-- CRITICAL FIX #9: Text variations for tantrum scenarios!
+		textVariants = {
+			"You want a toy at the store, but your parents said no.",
+			"You spot the PERFECT toy, but mom shakes her head. No.",
+			"That shiny new toy is calling your name, but dad says 'Not today.'",
+			"You're at the checkout and see the candy. Your parents say no.",
+			"The toy aisle is torture. You NEED that action figure, but it's a no.",
+			"Your parents are trying to leave the store, but you've spotted something...",
+		},
 		text = "You want a toy at the store, but your parents said no.",
 		question = "What do you do?",
 		minAge = 2, maxAge = 3,
@@ -97,6 +127,15 @@ Childhood.events = {
 		id = "preschool_start",
 		title = "First Day of Preschool",
 		emoji = "🎒",
+		-- CRITICAL FIX #10: Text variations for preschool experience!
+		textVariants = {
+			"It's your first day of preschool! Your parents drop you off at the colorful building.",
+			"The big day has arrived! Preschool awaits with its finger-paints and nap time.",
+			"Your new backpack is ready. Time for your first day of preschool!",
+			"The preschool door opens and you see dozens of other tiny humans. Here we go!",
+			"Mom gives you one last kiss as she drops you off for your first day of school!",
+			"Preschool! A whole new world of crayons, snacks, and playground time awaits!",
+		},
 		text = "It's your first day of preschool! Your parents drop you off at the colorful building.",
 		question = "How do you handle being away from home?",
 		minAge = 3, maxAge = 4,
@@ -1090,6 +1129,15 @@ Childhood.events = {
 		id = "video_game_discovery",
 		title = "Video Game Obsession",
 		emoji = "🎮",
+		-- CRITICAL FIX #21: Text variations for gaming discovery!
+		textVariants = {
+			"You discovered video games and can't stop playing!",
+			"A friend showed you their video games. You're instantly hooked!",
+			"Your parents got you a gaming console. Best present EVER!",
+			"You've discovered the world of video games. Time disappears when you play!",
+			"Screen time just became your favorite time. Video games are amazing!",
+			"You found your new obsession - video games!",
+		},
 		text = "You discovered video games and can't stop playing!",
 		question = "What's your gaming style?",
 		minAge = 6, maxAge = 12,
@@ -1113,6 +1161,15 @@ Childhood.events = {
 		id = "show_and_tell",
 		title = "Show and Tell",
 		emoji = "🧸",
+		-- CRITICAL FIX #11: Text variations for show and tell!
+		textVariants = {
+			"It's your turn for show and tell at school!",
+			"The teacher calls your name... it's show and tell time!",
+			"You've been waiting all week for this - show and tell day!",
+			"Your classmates gather around as you prepare for show and tell!",
+			"Today's the day! You get to share something special with the class!",
+			"The class goes quiet. All eyes on you for show and tell!",
+		},
 		text = "It's your turn for show and tell at school!",
 		question = "What do you bring?",
 		minAge = 4, maxAge = 7,
@@ -1547,6 +1604,15 @@ Childhood.events = {
 		id = "kindergarten_simple",
 		title = "First Day of Kindergarten",
 		emoji = "🎒",
+		-- CRITICAL FIX #20: Text variations for kindergarten start!
+		textVariants = {
+			"It's your very first day of kindergarten! Everything is new and exciting.",
+			"The school bus pulls up. It's your first day of kindergarten!",
+			"You're wearing new clothes and carrying a new backpack. Kindergarten begins!",
+			"Mom takes pictures as you head to your first day of 'real school'!",
+			"The kindergarten classroom is full of colorful things. Your education begins!",
+			"Other kids are crying, but you're ready for kindergarten adventure!",
+		},
 		text = "It's your very first day of kindergarten! Everything is new and exciting.",
 		question = "How do you feel about starting school?",
 		minAge = 5, maxAge = 5,
@@ -1571,6 +1637,15 @@ Childhood.events = {
 		id = "potty_training",
 		title = "Big Kid Achievement",
 		emoji = "🚽",
+		-- CRITICAL FIX #12: Text variations for potty training milestone!
+		textVariants = {
+			"You've been working on using the potty like a big kid!",
+			"Mom says it's time to learn to use the big kid toilet!",
+			"The potty chair has become your new challenge!",
+			"Your parents are trying to teach you the ways of the bathroom!",
+			"No more diapers? Time to try the potty!",
+			"It's potty training time! A big milestone awaits!",
+		},
 		text = "You've been working on using the potty like a big kid!",
 		question = "How is the potty training going?",
 		minAge = 2, maxAge = 4,
