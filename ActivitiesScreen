@@ -943,10 +943,15 @@ function ActivitiesScreen:rebuildTabs()
 		local fameState = self.playerState and self.playerState.FameState
 		local mobState = self.playerState and self.playerState.MobState
 		
-		-- ROYAL TAB: For players who are royalty
+		-- ROYAL TAB: For players who are royalty OR dating royalty
+		-- CRITICAL FIX: Show royal activities even when just dating royalty
 		local isRoyal = flags.is_royalty or flags.royal_birth or (royalState and royalState.isRoyal)
+		local isDatingRoyalty = flags.dating_royalty or flags.royal_romance
 		if isRoyal then
 			table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) }) -- Gold color
+		elseif isDatingRoyalty then
+			-- Show special "Dating Royal" tab with simpler activities
+			table.insert(tabs, { id = "dating_royal", text = "👑 Dating Royal", color = Color3.fromRGB(218, 165, 32) }) -- Gold color
 		end
 		
 		-- FAME TAB: For players with a celebrity career
@@ -1085,6 +1090,7 @@ function ActivitiesScreen:switchTab(tabId)
 	-- CRITICAL FIX #88/#89/#90: PREMIUM ACTIVITY TABS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif tabId == "royal" then self:populateRoyal()
+	elseif tabId == "dating_royal" then self:populateDatingRoyal()
 	elseif tabId == "fame" then self:populateFame()
 	elseif tabId == "mafia" then self:populateMafia()
 	end
@@ -5471,6 +5477,145 @@ function ActivitiesScreen:populateRoyal()
 		if not duty.monarchOnly or isMonarch then
 			self:createActivityCard(section, duty, i, Color3.fromRGB(218, 165, 32), Color3.fromRGB(255, 248, 220))
 		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: DATING ROYALTY ACTIVITIES TAB
+-- Activities for players dating a royal (before becoming royalty themselves)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateDatingRoyal()
+	self:updateInfoBar()
+	
+	local flags = self.playerState and self.playerState.Flags or {}
+	local relationships = self.playerState and self.playerState.Relationships or {}
+	local partner = relationships.partner or {}
+	local partnerName = partner.name or "Royal Partner"
+	local royalCountry = partner.royalCountry or "European Kingdom"
+	
+	-- Dating Royal status header
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 110)
+	headerCard.BackgroundColor3 = Color3.fromRGB(218, 165, 32) -- Gold
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 55, 0, 55)
+	iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 12)
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body or Enum.Font.Gotham
+	headerIcon.TextSize = 32
+	headerIcon.Text = "💕"
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -85, 0, 26)
+	headerText.Position = UDim2.new(0, 80, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title or Enum.Font.GothamBold
+	headerText.TextSize = 16
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = "Dating " .. partnerName
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+	
+	local statusBadge = Instance.new("Frame")
+	statusBadge.Size = UDim2.new(0, 160, 0, 26)
+	statusBadge.Position = UDim2.new(0, 80, 0, 44)
+	statusBadge.BackgroundColor3 = Color3.fromRGB(255, 255, 200)
+	statusBadge.ZIndex = 83
+	statusBadge.Parent = headerCard
+	UI.pill(statusBadge)
+	
+	local statusText = Instance.new("TextLabel")
+	statusText.Size = UDim2.fromScale(1, 1)
+	statusText.BackgroundTransparency = 1
+	statusText.Font = F.Medium or Enum.Font.GothamMedium
+	statusText.TextSize = 11
+	statusText.TextColor3 = Color3.fromRGB(139, 69, 19)
+	statusText.Text = "👑 Royal Romance in Progress!"
+	statusText.ZIndex = 84
+	statusText.Parent = statusBadge
+	
+	local tipText = Instance.new("TextLabel")
+	tipText.Size = UDim2.new(1, -85, 0, 20)
+	tipText.Position = UDim2.new(0, 80, 0, 76)
+	tipText.BackgroundTransparency = 1
+	tipText.Font = F.Body or Enum.Font.Gotham
+	tipText.TextSize = 11
+	tipText.TextColor3 = Color3.fromRGB(255, 250, 220)
+	tipText.TextXAlignment = Enum.TextXAlignment.Left
+	tipText.Text = "💍 A royal proposal may be coming..."
+	tipText.ZIndex = 83
+	tipText.Parent = headerCard
+	
+	-- Dating Royal activities section
+	local DatingRoyalActivities = {
+		{ id = "royal_date", name = "Go on Royal Date", emoji = "💑", effect = "+8 Happiness +5 Relationship", cost = 0, minAge = 16 },
+		{ id = "palace_visit", name = "Visit Their Palace", emoji = "🏰", effect = "+10 Happiness +5 Looks", cost = 0, minAge = 16 },
+		{ id = "meet_royal_family", name = "Meet the Royal Family", emoji = "👨‍👩‍👧‍👦", effect = "+3 Relationship (risky!)", cost = 0, minAge = 16 },
+		{ id = "royal_event", name = "Attend Royal Event", emoji = "🎭", effect = "+5 Fame +5 Happiness", cost = 500, minAge = 16 },
+		{ id = "learn_etiquette", name = "Learn Royal Etiquette", emoji = "📖", effect = "+5 Smarts +3 Looks", cost = 200, minAge = 16 },
+		{ id = "royal_shopping", name = "Royal Shopping Spree", emoji = "👗", effect = "+8 Looks +5 Happiness", cost = 5000, minAge = 16 },
+		{ id = "romantic_getaway", name = "Romantic Getaway", emoji = "✈️", effect = "+12 Happiness +8 Relationship", cost = 10000, minAge = 18 },
+		{ id = "propose_marriage", name = "Propose Marriage", emoji = "💍", effect = "Could become royalty!", cost = 50000, minAge = 18 },
+	}
+	
+	local section = Instance.new("Frame")
+	section.Name = "DatingRoyalSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+	
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 160, 0, 32)
+	badge.BackgroundColor3 = Color3.fromRGB(218, 165, 32)
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button or Enum.Font.GothamBold
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "💕 Royal Romance"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+	
+	for i, activity in ipairs(DatingRoyalActivities) do
+		self:createActivityCard(section, activity, i, Color3.fromRGB(218, 165, 32), Color3.fromRGB(255, 248, 220))
 	end
 end
 

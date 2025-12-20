@@ -547,12 +547,16 @@ PremiumIntegratedEvents.events = {
 		text = "You're at a major crossroads in life. Everything could change based on your next move.",
 		question = "Which path do you choose?",
 		minAge = 25, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 5,
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 15, -- CRITICAL FIX: Increased from 5 to prevent spam
 		oneTime = true,
+		maxOccurrences = 1, -- CRITICAL FIX: Ensure only once per life
 		stage = STAGE,
 		category = "milestone",
 		tags = { "decision", "life_change", "important" },
+		
+		-- CRITICAL FIX: Block if already shown premium opportunities or chose a path
+		blockedByFlags = { premium_opportunity_shown = true, is_royalty = true, in_mob = true, is_famous = true },
 		
 		choices = {
 			{
@@ -1645,6 +1649,9 @@ PremiumIntegratedEvents.events = {
 		category = "dream",
 		tags = { "dream", "aspiration", "early" },
 		
+		-- CRITICAL FIX: Block if player already made a premium wish
+		blockedByFlags = { primary_wish_type = true },
+		
 		choices = {
 			{
 				text = "Being rich and famous",
@@ -1665,21 +1672,43 @@ PremiumIntegratedEvents.events = {
 				feedText = "The world is your oyster! Adventure awaits!",
 			},
 			-- GAMEPASS OPTIONS
+			-- CRITICAL FIX: Premium choices now set primary_wish_type to prevent conflicts
 			{
 				text = "⭐ [Celebrity] Being a famous superstar!",
 				effects = { Happiness = 15, Fame = 5 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { star_dreamer = true, fame_destiny = true },
 				feedText = "⭐ You're destined for STARDOM! The spotlight awaits!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.star_dreamer = true
+					state.Flags.fame_destiny = true
+					state.Flags.fame_wish = true
+					state.Flags.primary_wish_type = "celebrity"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] Running the underground...",
 				effects = { Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { mob_fascination = true },
 				feedText = "🔫 You're fascinated by crime movies and gangster stories...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.mob_fascination = true
+					state.Flags.power_wish = true
+					state.Flags.primary_wish_type = "mafia"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] Living like a king or queen!",
@@ -1687,6 +1716,17 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
 				feedText = "👑 You imagine palaces, crowns, and royal balls!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.royal_fantasies = true
+					state.Flags.palace_wish = true
+					state.Flags.primary_wish_type = "royalty"
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1742,6 +1782,10 @@ PremiumIntegratedEvents.events = {
 			},
 		},
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Premium opportunity events now track when shown to prevent spam
+	-- Also reduced base chance and increased cooldown significantly
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "premium_special_opportunity",
 		title = "Special Opportunity",
@@ -1749,18 +1793,22 @@ PremiumIntegratedEvents.events = {
 		text = "An unusual opportunity has presented itself. This could change everything!",
 		question = "Do you take the special path?",
 		minAge = 20, maxAge = 28,
-		baseChance = 0.7,
-		cooldown = 8,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 20, -- CRITICAL FIX: Increased from 8 to prevent spam
 		oneTime = true,
+		maxOccurrences = 1, -- CRITICAL FIX: Ensure it only happens once per life
 		stage = "adult",
 		category = "opportunity",
 		tags = { "opportunity", "special", "life_changing" },
+		
+		-- CRITICAL FIX: Block if player already chose a premium path
+		blockedByFlags = { is_royalty = true, in_mob = true, is_famous = true, celebrity = true, premium_opportunity_shown = true },
 		
 		choices = {
 			{
 				text = "Play it safe - stick to the normal path",
 				effects = { Happiness = 3 },
-				setFlags = { played_safe = true },
+				setFlags = { played_safe = true, premium_opportunity_shown = true },
 				feedText = "Sometimes the safe choice is the smart choice.",
 			},
 			{
@@ -1768,6 +1816,8 @@ PremiumIntegratedEvents.events = {
 				effects = {},
 				feedText = "Rolling the dice on opportunity...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.premium_opportunity_shown = true
 					local roll = math.random()
 					if roll < 0.5 then
 						state.Money = (state.Money or 0) + math.random(5000, 20000)
@@ -1780,12 +1830,13 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			-- ALL GAMEPASS OPTIONS IN ONE EVENT
+			-- CRITICAL FIX: Each choice now sets premium_opportunity_shown to prevent spam
 			{
 				text = "⭐ [Celebrity] The entertainment industry beckons!",
 				effects = { Fame = 25, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { entertainment_career = true },
+				setFlags = { entertainment_career = true, premium_opportunity_shown = true, chose_celebrity_path = true },
 				feedText = "⭐ You've been discovered! Hollywood here you come!",
 			},
 			{
@@ -1793,7 +1844,7 @@ PremiumIntegratedEvents.events = {
 				effects = { Money = 25000, Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { joined_mob = true },
+				setFlags = { joined_mob = true, premium_opportunity_shown = true, chose_mafia_path = true },
 				feedText = "🔫 You're in! Welcome to the family. Now the REAL money starts rolling in!",
 			},
 			{
@@ -1807,6 +1858,8 @@ PremiumIntegratedEvents.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.royal_bloodline = true
 					state.Flags.noble_ancestry = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_royalty_path = true
 				end,
 			},
 			{
@@ -1814,6 +1867,7 @@ PremiumIntegratedEvents.events = {
 				effects = { Money = 50000, Happiness = 20, Health = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
+				setFlags = { premium_opportunity_shown = true },
 				feedText = "⚡ God Mode activated! You seized the opportunity with supernatural force!",
 			},
 		},
@@ -1837,6 +1891,9 @@ PremiumIntegratedEvents.events = {
 		category = "dream",
 		priority = "high",
 		tags = { "career_day", "dream", "early", "engaging" },
+		
+		-- CRITICAL FIX: Block if player already made a premium wish
+		blockedByFlags = { primary_wish_type = true },
 		
 		choices = {
 			{
@@ -1864,29 +1921,61 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎨 You draw your dream life - it's colorful and full of possibility!",
 			},
 			-- PREMIUM TEASERS (Show what's possible with gamepasses!)
+			-- CRITICAL FIX: Premium choices now set primary_wish_type to prevent conflicts
 			{
 				text = "⭐ [Celebrity] A famous movie star!",
 				effects = { Happiness = 12, Fame = 8, Looks = 2 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { star_dreams = true, performer = true },
 				feedText = "⭐ 'And the award goes to... YOU!' You practice your acceptance speech while everyone laughs and claps!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flags
+					state.Flags.star_dreams = true
+					state.Flags.performer = true
+					state.Flags.primary_wish_type = "celebrity"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] A mysterious powerful boss...",
 				effects = { Happiness = 10, Smarts = 3 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { fascinated_by_power = true },
 				feedText = "🔫 You've been watching too many movies... but the idea of being powerful is exciting!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.fascinated_by_power = true
+					state.Flags.primary_wish_type = "mafia"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] A real-life king or queen!",
 				effects = { Happiness = 12, Looks = 3 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
-				setFlags = { royal_fantasies = true },
 				feedText = "👑 You make a paper crown and declare yourself ruler of the playground! Long live the king/queen!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.royal_fantasies = true
+					state.Flags.primary_wish_type = "royalty"
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1904,6 +1993,9 @@ PremiumIntegratedEvents.events = {
 		category = "wish",
 		priority = "high",
 		tags = { "birthday", "wish", "early", "engaging" },
+		
+		-- CRITICAL FIX: Block if player already made a premium wish
+		blockedByFlags = { primary_wish_type = true },
 		
 		choices = {
 			{
@@ -1931,29 +2023,60 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
 			},
 			-- PREMIUM OPTIONS
+			-- CRITICAL FIX: Premium wishes now set primary_wish_type to prevent conflicts
 			{
 				text = "⭐ [Celebrity] To be famous!",
 				effects = { Fame = 15, Happiness = 12 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { fame_wish = true },
 				feedText = "⭐ 'I wanna be FAMOUS!' Your parents laugh, but maybe dreams do come true...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.fame_wish = true
+					state.Flags.primary_wish_type = "celebrity"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] For unlimited power!",
 				effects = { Happiness = 10, Smarts = 4 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { power_wish = true },
 				feedText = "🔫 An... interesting wish for a kid. You've been watching those crime shows with dad!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.power_wish = true
+					state.Flags.primary_wish_type = "mafia"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] To live in a palace!",
 				effects = { Happiness = 12, Looks = 4 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
-				setFlags = { palace_wish = true },
 				feedText = "👑 Castles, crowns, and royal balls! Every kid's fantasy! Maybe someday...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.palace_wish = true
+					state.Flags.primary_wish_type = "royalty"
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1981,12 +2104,18 @@ PremiumIntegratedEvents.events = {
 		priority = "high",
 		tags = { "royalty", "romance", "wish_fulfillment", "fairy_tale" },
 
-		-- CRITICAL: Only triggers for players who made the palace wish!
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { married = true, dating_royalty = true, is_royalty = true },
+		-- CRITICAL FIX: Only triggers for players who made the ROYALTY wish specifically!
+		-- Uses eligibility to check primary_wish_type
+		blockedByFlags = { married = true, dating_royalty = true, is_royalty = true },
 		requiresGamepass = "ROYALTY",
 
 		eligibility = function(state)
+			-- CRITICAL FIX: Check primary_wish_type FIRST - must be "royalty"
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			if primaryWish and primaryWish ~= "royalty" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
 			-- Check for EITHER palace_wish OR royal_fantasies flag
 			local hasWish = state.Flags and (state.Flags.palace_wish or state.Flags.royal_fantasies)
 			local looks = (state.Stats and state.Stats.Looks) or 50
@@ -2259,12 +2388,17 @@ PremiumIntegratedEvents.events = {
 		priority = "high",
 		tags = { "mafia", "recruitment", "wish_fulfillment", "power" },
 
-		-- CRITICAL: Only triggers for players who wished for power!
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { in_mob = true, refused_mob = true },
+		-- CRITICAL FIX: Only triggers for players who made the MAFIA wish specifically!
+		blockedByFlags = { in_mob = true, refused_mob = true },
 		requiresGamepass = "MAFIA",
 
 		eligibility = function(state)
+			-- CRITICAL FIX: Check primary_wish_type FIRST - must be "mafia"
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			if primaryWish and primaryWish ~= "mafia" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
 			-- Check for EITHER power_wish OR fascinated_by_power flag
 			local hasWish = state.Flags and (state.Flags.power_wish or state.Flags.fascinated_by_power)
 			return hasWish, "Need power wish or fascinated by power"
@@ -2445,11 +2579,17 @@ PremiumIntegratedEvents.events = {
 		priority = "high",
 		tags = { "celebrity", "fame", "wish_fulfillment" },
 
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { is_famous = true },
+		-- CRITICAL FIX: Only triggers for players who made the CELEBRITY wish specifically!
+		blockedByFlags = { is_famous = true },
 		requiresGamepass = "CELEBRITY",
 
 		eligibility = function(state)
+			-- CRITICAL FIX: Check primary_wish_type FIRST - must be "celebrity"
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			if primaryWish and primaryWish ~= "celebrity" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
 			-- Check for EITHER fame_wish OR star_dreams flag
 			local hasWish = state.Flags and (state.Flags.fame_wish or state.Flags.star_dreams or state.Flags.performer)
 			return hasWish, "Need fame wish or star dreams"

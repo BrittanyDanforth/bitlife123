@@ -693,7 +693,41 @@ end
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- PURCHASE PROMPTING
+-- CRITICAL FIX: Track when prompts are shown to avoid spamming
 -- ════════════════════════════════════════════════════════════════════════════
+
+-- Track when we last showed a prompt for each player/gamepass combo
+GamepassSystem.promptHistory = {}
+
+-- Minimum cooldown between prompts (in seconds)
+GamepassSystem.PROMPT_COOLDOWN = 300 -- 5 minutes
+
+function GamepassSystem:canShowPrompt(player, gamepassKey)
+	local playerId = player.UserId
+	local cacheKey = playerId .. "_prompt_" .. gamepassKey
+	
+	-- Check if player already owns the gamepass
+	if self:checkOwnership(player, gamepassKey) then
+		return false, "already_owns"
+	end
+	
+	-- Check prompt cooldown
+	local lastPrompt = self.promptHistory[cacheKey]
+	if lastPrompt then
+		local timeSince = os.time() - lastPrompt
+		if timeSince < self.PROMPT_COOLDOWN then
+			return false, "cooldown", self.PROMPT_COOLDOWN - timeSince
+		end
+	end
+	
+	return true, nil
+end
+
+function GamepassSystem:recordPromptShown(player, gamepassKey)
+	local playerId = player.UserId
+	local cacheKey = playerId .. "_prompt_" .. gamepassKey
+	self.promptHistory[cacheKey] = os.time()
+end
 
 function GamepassSystem:promptGamepass(player, gamepassKey)
 	local gamepass = self.Gamepasses[gamepassKey]
@@ -701,6 +735,20 @@ function GamepassSystem:promptGamepass(player, gamepassKey)
 		warn("[GamepassSystem] Cannot prompt purchase - invalid ID for:", gamepassKey)
 		return false
 	end
+	
+	-- CRITICAL FIX: Check if we should show the prompt (cooldown + ownership check)
+	local canShow, reason, timeRemaining = self:canShowPrompt(player, gamepassKey)
+	if not canShow then
+		if reason == "already_owns" then
+			print("[GamepassSystem] Player already owns", gamepassKey, "- not showing prompt")
+		elseif reason == "cooldown" then
+			print("[GamepassSystem] Prompt cooldown active for", gamepassKey, "- wait", timeRemaining, "seconds")
+		end
+		return false
+	end
+	
+	-- Record that we showed this prompt
+	self:recordPromptShown(player, gamepassKey)
 	
 	local success, err = pcall(function()
 		MarketplaceService:PromptGamePassPurchase(player, gamepass.id)
