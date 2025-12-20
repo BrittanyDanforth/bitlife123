@@ -938,9 +938,9 @@ function ActivitiesScreen:rebuildTabs()
 		-- CRITICAL FIX #88/#89: PREMIUM ACTIVITY TABS
 		-- Add special tabs for premium gamepass features
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Premium tabs are MUTUALLY EXCLUSIVE
-		-- Only show ONE premium tab based on primary_wish_type and actual state
-		-- This prevents "Join Mob" and "Visit Throne Room" both appearing
+		-- CRITICAL FIX: Premium tabs are STRICTLY MUTUALLY EXCLUSIVE
+		-- ONLY ONE premium tab can ever show, based on primary_wish_type
+		-- This prevents overlapping tabs (Fame, Royal, Mob appearing together)
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		local flags = self.playerState and self.playerState.Flags or {}
 		local royalState = self.playerState and self.playerState.RoyalState
@@ -954,33 +954,43 @@ function ActivitiesScreen:rebuildTabs()
 		local isInMob = flags.in_mob or (mobState and mobState.inMob)
 		local hasFameCareer = flags.fame_career or (fameState and fameState.careerPath)
 		
-		-- CRITICAL FIX: Only show premium tab that matches primary_wish_type OR actual state
-		-- Priority: Actual State > Primary Wish Type
-		local premiumTabAdded = false
+		-- STRICT MUTEX: Determine which SINGLE tab to show
+		-- Priority order: Use primary_wish_type FIRST, then fall back to state
+		local showRoyalTab = false
+		local showMafiaTab = false
+		local showFameTab = false
 		
-		-- ROYAL TAB: Show if actually royal OR (dating royalty AND wish is royalty)
-		if isRoyal then
-			table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) })
-			premiumTabAdded = true
-		elseif isDatingRoyalty and (not primaryWish or primaryWish == "royalty") then
-			table.insert(tabs, { id = "dating_royal", text = "👑 Dating Royal", color = Color3.fromRGB(218, 165, 32) })
-			premiumTabAdded = true
-		end
-		
-		-- MAFIA TAB: Show if in mob AND (no primary wish conflict OR wish is mafia)
-		if isInMob and (not primaryWish or primaryWish == "mafia") then
-			-- Only show if we haven't added a conflicting premium tab
-			if not premiumTabAdded or primaryWish == "mafia" then
-				table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) })
-				premiumTabAdded = true
+		if primaryWish == "royalty" then
+			-- Player chose royalty - ONLY show royal/dating_royal tab
+			showRoyalTab = isRoyal or isDatingRoyalty
+		elseif primaryWish == "mafia" then
+			-- Player chose mafia - ONLY show mafia tab
+			showMafiaTab = isInMob
+		elseif primaryWish == "celebrity" then
+			-- Player chose celebrity - ONLY show fame tab
+			showFameTab = hasFameCareer
+		else
+			-- No primary wish set - use actual state (only ONE)
+			if isRoyal or isDatingRoyalty then
+				showRoyalTab = true
+			elseif isInMob then
+				showMafiaTab = true
+			elseif hasFameCareer then
+				showFameTab = true
 			end
 		end
 		
-		-- FAME TAB: Show if has fame career AND (no primary wish conflict OR wish is celebrity)
-		if hasFameCareer and (not primaryWish or primaryWish == "celebrity") then
-			if not premiumTabAdded or primaryWish == "celebrity" then
-				table.insert(tabs, { id = "fame", text = "⭐ Fame", color = Color3.fromRGB(255, 215, 0) })
+		-- Add the single premium tab (if any)
+		if showRoyalTab then
+			if isRoyal then
+				table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) })
+			elseif isDatingRoyalty then
+				table.insert(tabs, { id = "dating_royal", text = "👑 Dating Royal", color = Color3.fromRGB(218, 165, 32) })
 			end
+		elseif showMafiaTab then
+			table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) })
+		elseif showFameTab then
+			table.insert(tabs, { id = "fame", text = "⭐ Fame", color = Color3.fromRGB(255, 215, 0) })
 		end
 	end
 

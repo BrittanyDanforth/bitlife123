@@ -2136,8 +2136,16 @@ PremiumIntegratedEvents.events = {
 		tags = { "royalty", "romance", "wish_fulfillment", "fairy_tale" },
 
 		-- CRITICAL FIX: Only triggers for players who made the ROYALTY wish specifically!
-		-- Uses eligibility to check primary_wish_type
-		blockedByFlags = { married = true, dating_royalty = true, is_royalty = true },
+		-- CRITICAL FIX #2: Also blocked if player is in mob or is famous
+		blockedByFlags = { 
+			married = true, 
+			dating_royalty = true, 
+			is_royalty = true,
+			in_mob = true,
+			mafia_member = true,
+			is_famous = true,
+			fame_career = true,
+		},
 		requiresGamepass = "ROYALTY",
 
 		eligibility = function(state)
@@ -2418,9 +2426,19 @@ PremiumIntegratedEvents.events = {
 		category = "crime",
 		priority = "high",
 		tags = { "mafia", "recruitment", "wish_fulfillment", "power" },
+		isMafiaOnly = true, -- CRITICAL: Use init.lua's strict filtering
 
 		-- CRITICAL FIX: Only triggers for players who made the MAFIA wish specifically!
-		blockedByFlags = { in_mob = true, refused_mob = true },
+		-- CRITICAL FIX #2: Also blocked if player is dating/married to royalty or is famous
+		blockedByFlags = { 
+			in_mob = true, 
+			refused_mob = true, 
+			is_royalty = true, 
+			dating_royalty = true, 
+			royal_romance = true,
+			is_famous = true,
+			fame_career = true,
+		},
 		requiresGamepass = "MAFIA",
 
 		eligibility = function(state)

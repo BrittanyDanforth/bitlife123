@@ -368,6 +368,184 @@ function LifeBackend:clearConflictingPremiumStates(state, newPath)
 	print("[LifeBackend] Cleared conflicting premium states, new path:", newPath)
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Comprehensive state consistency validator
+-- Runs on every state sync to catch and fix any inconsistent states
+-- Prevents: multiple paths active, conflicting relationship states, ghost flags
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateStateConsistency(state)
+	if not state then return end
+	state.Flags = state.Flags or {}
+	local flags = state.Flags
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #1: PREMIUM PATH MUTEX - Only ONE premium path can be active
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	local isFamous = flags.is_famous or flags.fame_career or (state.FameState and state.FameState.careerPath)
+	
+	local activePaths = 0
+	if isRoyalty then activePaths = activePaths + 1 end
+	if isInMob then activePaths = activePaths + 1 end
+	if isFamous then activePaths = activePaths + 1 end
+	
+	-- If multiple paths are active, use primary_wish_type to determine which to keep
+	if activePaths > 1 then
+		warn("[StateValidator] CONFLICT: Multiple premium paths active! Resolving based on primary_wish_type")
+		local primaryWish = flags.primary_wish_type
+		
+		if primaryWish == "royalty" then
+			-- Keep royalty, clear others
+			self:clearConflictingPremiumStates(state, "royalty")
+		elseif primaryWish == "mafia" then
+			-- Keep mafia, clear others
+			self:clearConflictingPremiumStates(state, "mafia")
+		elseif primaryWish == "celebrity" then
+			-- Keep celebrity, clear others
+			self:clearConflictingPremiumStates(state, "celebrity")
+		else
+			-- No primary wish set - use priority: royalty > mafia > celebrity
+			if isRoyalty then
+				self:clearConflictingPremiumStates(state, "royalty")
+			elseif isInMob then
+				self:clearConflictingPremiumStates(state, "mafia")
+			else
+				self:clearConflictingPremiumStates(state, "celebrity")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #2: RELATIONSHIP STATE MUTEX - Cannot be married+single+engaged+widowed
+	-- ═══════════════════════════════════════════════════════════════════════
+	local married = flags.married
+	local engaged = flags.engaged
+	local single = flags.single
+	local widowed = flags.widowed
+	local hasPartner = flags.has_partner
+	
+	-- Priority: married > engaged > dating > single/widowed
+	if married then
+		flags.engaged = nil
+		flags.single = nil
+		-- Keep widowed if it applies to a previous marriage
+	elseif engaged then
+		flags.married = nil
+		flags.single = nil
+		flags.widowed = nil -- Can't be widowed if engaged to someone new
+	elseif hasPartner or flags.dating_royalty or flags.royal_romance then
+		flags.single = nil
+		flags.married = nil
+		flags.engaged = nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #3: FINANCIAL FLAG CLEANUP - Clear broke flags if player has money
+	-- ═══════════════════════════════════════════════════════════════════════
+	local money = state.Money or 0
+	if money >= 10000 then
+		flags.struggling_financially = nil
+		flags.broke = nil
+		flags.poor = nil
+		flags.is_broke = nil
+		-- Also reset years broke counter
+		if state.HousingState then
+			state.HousingState.yearsWithoutPayingRent = 0
+			state.HousingState.yearsBroke = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #4: INHERITANCE AGE GATE - Children can't receive direct inheritance
+	-- ═══════════════════════════════════════════════════════════════════════
+	if age < 18 and money > 500000 then
+		-- Excessive money for a child - it should be in a trust
+		flags.has_trust_fund = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #5: DEATH STATE - Cannot be dead and alive simultaneously
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.dead or flags.is_dead then
+		flags.is_alive = nil
+		-- Don't allow age ups if dead
+		state.canAgeUp = false
+	else
+		flags.is_alive = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #6: JAIL STATE CONSISTENCY
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.InJail then
+		flags.in_prison = true
+		flags.incarcerated = true
+	else
+		if (state.JailYearsLeft or 0) <= 0 then
+			flags.in_prison = nil
+			flags.incarcerated = nil
+			state.InJail = false
+			state.JailYearsLeft = 0
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #7: CLEANUP DEAD FAMILY MEMBERS from active relationships
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				-- If they're marked deceased, ensure they can't be interacted with romantically
+				if rel.deceased or rel.dead then
+					rel.alive = false
+					-- Clear active romantic status if partner is dead
+					if relId == "partner" and not flags.widowed then
+						flags.widowed = true
+						flags.has_partner = nil
+						flags.dating = nil
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #8: FAME STATE VALIDATION - Can't be famous without proper setup
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.is_famous then
+		-- Ensure FameState exists
+		state.FameState = state.FameState or {}
+		if not state.FameState.careerPath and not state.FameState.currentStage then
+			-- Ghost fame flag - clear it
+			warn("[StateValidator] Ghost fame flag detected - clearing")
+			flags.is_famous = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #9: PALACE/HOUSING VALIDATION - Palace requires royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.HousingState and state.HousingState.status == "royal_palace" then
+		if not isRoyalty and not flags.is_royalty then
+			warn("[StateValidator] Ghost palace status detected - resetting to with_parents")
+			state.HousingState.status = "with_parents"
+			state.HousingState.type = "family_home"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #10: GODMODE PROMPT TRACKING - Prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Reset god_mode_offer_count if it's getting too high
+	if (flags.god_mode_offer_count or 0) > 5 then
+		flags.god_mode_offer_count = 0
+	end
+	
+	print("[StateValidator] Consistency check complete")
+end
+
 -- CRITICAL FIX #358: Developer Product purchase prompt
 function LifeBackend:promptProductPurchase(player, productKey)
 	if not player then
@@ -5711,6 +5889,13 @@ function LifeBackend:pushState(player, feedText, resultData)
 		state.Flags.in_prison = nil
 		state.Flags.incarcerated = nil
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: RUN STATE CONSISTENCY VALIDATOR
+	-- This catches and fixes any inconsistent states before syncing to client
+	-- Prevents: multiple paths, conflicting relationships, ghost flags, broke+rich
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:validateStateConsistency(state)
 	
 	state.lastFeed = feedText or state.lastFeed
 	self.remotes.SyncState:FireClient(player, self:serializeState(state), feedText, resultData)
