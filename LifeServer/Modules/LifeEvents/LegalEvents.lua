@@ -477,6 +477,19 @@ LegalEvents.events = {
 		ageBand = "any",
 		category = "legal",
 		tags = { "traffic", "court", "driving" },
+		-- CRITICAL FIX: Traffic court requires owning a car/having a license!
+		requiresFlags = { has_car = true },
+		eligibility = function(state)
+			-- Must have a vehicle to get traffic violations!
+			if state.Flags and (state.Flags.has_car or state.Flags.has_vehicle or state.Flags.has_drivers_license) then
+				return true
+			end
+			-- Also check Assets
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				return true
+			end
+			return false
+		end,
 		
 		-- CRITICAL: Random traffic court outcome
 		choices = {

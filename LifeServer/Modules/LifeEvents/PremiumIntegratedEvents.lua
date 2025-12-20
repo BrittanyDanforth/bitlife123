@@ -1235,10 +1235,45 @@ PremiumIntegratedEvents.events = {
 		question = "How do you prepare?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased cooldown - don't spam job interviews
+		maxOccurrences = 5, -- CRITICAL FIX: Limit total occurrences
 		stage = STAGE,
 		category = "career",
 		tags = { "job", "interview", "career" },
+		-- CRITICAL FIX: Job interview should only fire if player is unemployed
+		-- or has been in a low-paying job for a while
+		blockedByFlags = { in_prison = true, homeless = true },
+		eligibility = function(state)
+			local hasJob = state.CurrentJob ~= nil
+			local flags = state.Flags or {}
+			
+			-- If unemployed, eligible (great use case!)
+			if not hasJob then
+				return true
+			end
+			
+			-- If employed but at a low-paying/entry-level job for 2+ years, eligible
+			local yearsAtJob = state.CurrentJob and state.CurrentJob.yearsAtJob or 0
+			local salary = state.CurrentJob and state.CurrentJob.salary or 0
+			
+			-- Low-paying job AND been there a while = looking for upgrade
+			if salary < 40000 and yearsAtJob >= 2 then
+				return true
+			end
+			
+			-- Stuck in same job for 5+ years = career change opportunity
+			if yearsAtJob >= 5 then
+				return true
+			end
+			
+			-- Has "looking_for_job" flag
+			if flags.looking_for_job or flags.job_hunting or flags.career_change then
+				return true
+			end
+			
+			-- Otherwise, don't show random job interviews to people with good jobs
+			return false
+		end,
 		
 		choices = {
 			{

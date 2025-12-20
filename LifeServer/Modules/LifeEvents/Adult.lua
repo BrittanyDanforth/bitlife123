@@ -2060,6 +2060,36 @@ Adult.events = {
 		minAge = 60, maxAge = 85,
 		oneTime = true,
 		requiresFlags = { homeowner = true },
+		-- CRITICAL FIX: Only show this if player actually has a BIG house!
+		-- Don't show "downsize your big house" to someone in a studio apartment!
+		eligibility = function(state)
+			-- Must have a big house (mansion, large house, etc.) - not a studio/apartment
+			if state.Assets and state.Assets.Properties then
+				for _, prop in ipairs(state.Assets.Properties) do
+					local name = (prop.name or ""):lower()
+					local propType = (prop.type or ""):lower()
+					local price = prop.price or prop.value or 0
+					-- Only trigger for actual big houses (mansion, large house, or expensive property)
+					if name:find("mansion") or name:find("estate") or name:find("villa")
+						or name:find("large") or name:find("luxury") or name:find("penthouse")
+						or propType:find("mansion") or propType:find("estate")
+						or price >= 500000 then
+						return true
+					end
+				end
+			end
+			-- Also check HousingState
+			if state.HousingState then
+				local housing = state.HousingState
+				local housingType = (housing.type or ""):lower()
+				local housingValue = housing.value or 0
+				if housingType:find("mansion") or housingType:find("estate") or housingType:find("large")
+					or housingValue >= 500000 then
+					return true
+				end
+			end
+			return false -- Don't show this for small apartments/studios
+		end,
 
 		choices = {
 			{ text = "Sell and move to a smaller place", effects = { Money = 20000, Happiness = 3 }, setFlags = { downsized = true }, feedText = "Less space, less maintenance. More freedom!" },

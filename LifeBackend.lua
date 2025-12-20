@@ -12406,6 +12406,60 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HOMELESS-1: Clear homeless flags when buying a property!
+	-- Buying a house means you're NO LONGER HOMELESS - clear all related flags
+	-- This prevents "you're homeless" events from firing after buying housing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if assetType == "Properties" then
+		-- Clear all homeless-related flags
+		state.Flags.homeless = nil
+		state.Flags.couch_surfing = nil
+		state.Flags.living_in_car = nil
+		state.Flags.using_shelter = nil
+		state.Flags.at_risk_homeless = nil
+		state.Flags.eviction_notice = nil
+		
+		-- Set proper housing flags
+		state.Flags.has_home = true
+		state.Flags.has_own_place = true
+		state.Flags.moved_out = true
+		
+		-- Check if it's an apartment or house for specific flags
+		local assetName = (asset.name or ""):lower()
+		if assetName:find("apartment") or assetName:find("studio") or assetName:find("condo") or assetName:find("loft") then
+			state.Flags.has_apartment = true
+			state.Flags.renting = true -- Most apartments are rentals
+		else
+			state.Flags.has_house = true
+			state.Flags.homeowner = true
+		end
+		
+		-- Update HousingState if it exists
+		state.HousingState = state.HousingState or {}
+		state.HousingState.status = "owner"
+		state.HousingState.type = asset.name
+		state.HousingState.value = asset.price
+		state.HousingState.missedRentYears = 0
+		
+		debugPrint("  CLEARED HOMELESS FLAGS - Player now owns property:", asset.name)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #VEHICLE-1: Set vehicle flags when buying a car
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if assetType == "Vehicles" then
+		state.Flags.has_car = true
+		state.Flags.has_vehicle = true
+		
+		-- Clear living_in_car if they now have proper housing too
+		if state.Flags.has_home or state.Flags.has_apartment or state.Flags.has_house then
+			state.Flags.living_in_car = nil
+		end
+		
+		debugPrint("  SET VEHICLE FLAGS - Player now owns vehicle:", asset.name)
+	end
+	
 	-- Apply fame bonus immediately
 	if asset.fameBonus and asset.fameBonus > 0 then
 		state.Fame = (state.Fame or 0) + asset.fameBonus

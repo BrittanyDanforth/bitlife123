@@ -420,6 +420,23 @@ function AssetsScreen:getMoney()
 	return state.Money or (state.Stats and state.Stats.Money) or 0
 end
 
+-- CRITICAL FIX: Added formatMoney method for displaying money values
+function AssetsScreen:formatMoney(amount)
+	if not amount or amount == 0 then return "0" end
+	local negative = amount < 0
+	amount = math.abs(amount)
+	
+	-- Format with commas
+	local formatted = tostring(math.floor(amount))
+	local k
+	while true do
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+		if k == 0 then break end
+	end
+	
+	return negative and "-" .. formatted or formatted
+end
+
 function AssetsScreen:getAssets()
 	local state = self.playerState
 	if not state then return {} end
@@ -1088,6 +1105,162 @@ function AssetsScreen:populateProperty()
 	local assets = self:getAssets()
 	local ownedProperties = {}
 	local catalogIds = {}
+	
+	-- ═══════════════════════════════════════════════════════════
+	-- LIVING SITUATION CARD - Shows where player currently lives
+	-- CRITICAL FIX: Players wanted to see their housing status!
+	-- ═══════════════════════════════════════════════════════════
+	local livingCard = Instance.new("Frame")
+	livingCard.Name = "LivingSituationCard"
+	livingCard.Size = UDim2.new(1, 0, 0, 120)
+	livingCard.BackgroundColor3 = C.PurplePale or Color3.fromRGB(237, 233, 254)
+	livingCard.LayoutOrder = -1 -- Before everything else
+	livingCard.ZIndex = 82
+	livingCard.Parent = self.contentScroll
+	UI.corner(livingCard, 18)
+	UI.stroke(livingCard, 2, 0.5, C.Purple or Color3.fromRGB(147, 51, 234))
+	UI.pad(livingCard, 14, 14, 14, 16)
+	
+	-- Determine living situation
+	local flags = self.playerState and self.playerState.Flags or {}
+	local housingState = self.playerState and self.playerState.HousingState or {}
+	local age = self.playerState and self.playerState.Age or 0
+	
+	local livingEmoji = "🏠"
+	local livingTitle = "Living Situation"
+	local livingStatus = "Unknown"
+	local livingDetail = ""
+	local statusColor = C.Purple
+	
+	-- Check various housing states
+	if flags.homeless then
+		livingEmoji = "🏕️"
+		livingStatus = "Homeless"
+		livingDetail = "Living on the streets"
+		statusColor = C.Red
+	elseif flags.living_in_car then
+		livingEmoji = "🚗"
+		livingStatus = "Living in Car"
+		livingDetail = "No permanent address"
+		statusColor = C.Amber
+	elseif flags.couch_surfing then
+		livingEmoji = "🛋️"
+		livingStatus = "Couch Surfing"
+		livingDetail = "Staying with friends temporarily"
+		statusColor = C.Amber
+	elseif flags.using_shelter then
+		livingEmoji = "🏨"
+		livingStatus = "Homeless Shelter"
+		livingDetail = "Temporary shelter housing"
+		statusColor = C.Amber
+	elseif flags.in_transitional_housing then
+		livingEmoji = "🏢"
+		livingStatus = "Transitional Housing"
+		livingDetail = "Program housing - rebuilding"
+		statusColor = C.Blue
+	elseif flags.living_with_family then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Family"
+		livingDetail = "Living with family members"
+		statusColor = C.Green
+	elseif flags.homeowner or flags.has_house then
+		livingEmoji = "🏡"
+		livingStatus = "Homeowner"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Property value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "You own your home!"
+		end
+		statusColor = C.Green
+	elseif flags.has_apartment or flags.renting then
+		livingEmoji = "🏢"
+		livingStatus = "Renting"
+		local rent = housingState.rent or housingState.monthlyRent or 0
+		if rent > 0 then
+			livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
+		else
+			livingDetail = "Apartment living"
+		end
+		statusColor = C.Blue
+	elseif flags.has_own_place or flags.moved_out then
+		livingEmoji = "🏠"
+		livingStatus = "Independent"
+		livingDetail = "Your own place"
+		statusColor = C.Green
+	elseif age < 18 then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home with family"
+		statusColor = C.Green
+	elseif age >= 18 and not flags.moved_out then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at home"
+		statusColor = C.Green
+	else
+		livingEmoji = "❓"
+		livingStatus = "No Permanent Home"
+		livingDetail = "Consider buying or renting property!"
+		statusColor = C.Gray500
+	end
+	
+	-- Living card icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 70, 0, 70)
+	iconFrame.Position = UDim2.new(0, 10, 0, 12)
+	iconFrame.BackgroundColor3 = C.White
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = livingCard
+	UI.corner(iconFrame, 16)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.TextSize = 36
+	iconLabel.Text = livingEmoji
+	iconLabel.ZIndex = 84
+	iconLabel.Parent = iconFrame
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -100, 0, 24)
+	titleLabel.Position = UDim2.new(0, 90, 0, 10)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(18)
+	titleLabel.TextColor3 = C.Purple
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = livingTitle
+	titleLabel.ZIndex = 83
+	titleLabel.Parent = livingCard
+	
+	-- Status
+	local statusLabel = Instance.new("TextLabel")
+	statusLabel.Size = UDim2.new(1, -100, 0, 28)
+	statusLabel.Position = UDim2.new(0, 90, 0, 34)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.Font = F.Button
+	statusLabel.TextSize = textSize(20)
+	statusLabel.TextColor3 = statusColor
+	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statusLabel.Text = livingStatus
+	statusLabel.ZIndex = 83
+	statusLabel.Parent = livingCard
+	
+	-- Detail
+	local detailLabel = Instance.new("TextLabel")
+	detailLabel.Size = UDim2.new(1, -100, 0, 20)
+	detailLabel.Position = UDim2.new(0, 90, 0, 64)
+	detailLabel.BackgroundTransparency = 1
+	detailLabel.Font = F.Body
+	detailLabel.TextSize = textSize(13)
+	detailLabel.TextColor3 = C.Gray600
+	detailLabel.TextXAlignment = Enum.TextXAlignment.Left
+	detailLabel.Text = livingDetail
+	detailLabel.ZIndex = 83
+	detailLabel.Parent = livingCard
 
 	log("Checking catalog for owned properties...")
 	-- Find owned properties from shop catalog

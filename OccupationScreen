@@ -2145,7 +2145,25 @@ function OccupationScreen:populateJobs()
 
 		-- Previous career info
 		local serverJob = self:getCurrentJobData()
-		local previousJobName = serverJob and serverJob.title or "Unknown Career"
+		-- CRITICAL FIX: Check BOTH title AND name fields - jobs can use either!
+		local previousJobName = "Unknown Career"
+		if serverJob then
+			previousJobName = serverJob.title or serverJob.name or serverJob.jobTitle or serverJob.position or "Unknown Career"
+			-- Also check for job ID that might describe the job
+			if previousJobName == "Unknown Career" and serverJob.id then
+				-- Convert job ID to readable name (e.g., "police_officer" -> "Police Officer")
+				previousJobName = serverJob.id:gsub("_", " "):gsub("(%w)(%w*)", function(a, b) return string.upper(a) .. b end)
+			end
+		end
+		-- CRITICAL FIX: Also check if there's a last career stored in flags
+		local state = self.state or {}
+		if previousJobName == "Unknown Career" and state.Flags then
+			if state.Flags.last_career then
+				previousJobName = state.Flags.last_career
+			elseif state.Flags.previous_job_title then
+				previousJobName = state.Flags.previous_job_title
+			end
+		end
 		local fameState = self:getFameState()
 
 		local prevJobLabel = Instance.new("TextLabel")

@@ -2985,9 +2985,44 @@ Random.events = {
 		weight = 6,
 		minAge = 16,
 		maxAge = 60,
-		baseChance = 0.455,
-		cooldown = 2,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.455
+		cooldown = 4, -- CRITICAL FIX: Increased cooldown
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Side gig should only appear for people who need/want extra money
+		-- Not for wealthy people with high-paying jobs
+		eligibility = function(state)
+			local money = state.Money or 0
+			local salary = state.CurrentJob and state.CurrentJob.salary or 0
+			local flags = state.Flags or {}
+			
+			-- If wealthy (100k+ savings AND 80k+ salary), don't offer side gigs
+			if money >= 100000 and salary >= 80000 then
+				return false
+			end
+			
+			-- If no job, definitely relevant
+			if not state.CurrentJob then
+				return true
+			end
+			
+			-- Low/moderate income = relevant
+			if salary < 60000 then
+				return true
+			end
+			
+			-- Has debt or financial stress flags
+			if flags.in_debt or flags.financial_stress or flags.needs_money then
+				return true
+			end
+			
+			-- Moderate income with low savings
+			if salary < 80000 and money < 20000 then
+				return true
+			end
+			
+			-- Otherwise skip - they don't need side hustles
+			return false
+		end,
 		
 		choices = {
 			{

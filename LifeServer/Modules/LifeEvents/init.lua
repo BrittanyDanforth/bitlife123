@@ -840,6 +840,88 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CAREER-PATH-1: Check careerPath for celebrity career events
+	-- Events tagged with careerPath = "actor"/"musician"/"influencer" etc should ONLY
+	-- fire for players actually in that career! This prevents Grammy nominations for
+	-- baristas, movie premieres for janitors, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.careerPath then
+		local currentJob = state.CurrentJob
+		local careerPath = event.careerPath:lower()
+		local isInCareerPath = false
+		
+		if currentJob then
+			local jobId = (currentJob.id or ""):lower()
+			local jobCategory = (currentJob.category or ""):lower()
+			local jobTitle = (currentJob.title or currentJob.name or ""):lower()
+			
+			-- Check if player's job matches the required career path
+			if careerPath == "actor" then
+				isInCareerPath = jobId:find("actor") or jobId:find("acting") or jobId:find("movie")
+					or jobCategory == "acting" or jobCategory == "actor" or jobCategory == "entertainment"
+					or jobTitle:find("actor") or jobTitle:find("actress")
+			elseif careerPath == "musician" then
+				isInCareerPath = jobId:find("musician") or jobId:find("singer") or jobId:find("band")
+					or jobId:find("music") or jobId:find("rapper")
+					or jobCategory == "music" or jobCategory == "musician" or jobCategory == "entertainment"
+					or jobTitle:find("musician") or jobTitle:find("singer") or jobTitle:find("rapper")
+			elseif careerPath == "influencer" then
+				isInCareerPath = jobId:find("influencer") or jobId:find("content") or jobId:find("youtuber")
+					or jobId:find("tiktok") or jobId:find("streamer")
+					or jobCategory == "influencer" or jobCategory == "content_creator" or jobCategory == "social_media"
+					or jobTitle:find("influencer") or jobTitle:find("content creator")
+			elseif careerPath == "streamer" then
+				isInCareerPath = jobId:find("streamer") or jobId:find("twitch") or jobId:find("gaming")
+					or jobCategory == "streaming" or jobCategory == "streamer"
+					or jobTitle:find("streamer")
+			elseif careerPath == "rapper" then
+				isInCareerPath = jobId:find("rapper") or jobId:find("hip_hop") or jobId:find("hiphop")
+					or jobCategory == "rapper" or jobCategory == "music"
+					or jobTitle:find("rapper")
+			elseif careerPath == "athlete" then
+				isInCareerPath = jobId:find("athlete") or jobId:find("sports") or jobId:find("player")
+					or jobId:find("basketball") or jobId:find("football") or jobId:find("soccer")
+					or jobId:find("baseball") or jobId:find("hockey")
+					or jobCategory == "sports" or jobCategory == "athlete"
+					or jobTitle:find("athlete") or jobTitle:find("player")
+			elseif careerPath == "model" then
+				isInCareerPath = jobId:find("model") or jobId:find("fashion")
+					or jobCategory == "modeling" or jobCategory == "model" or jobCategory == "fashion"
+					or jobTitle:find("model")
+			end
+		end
+		
+		-- Also check FameState for career path
+		if not isInCareerPath and state.FameState then
+			local fameCareer = (state.FameState.careerPath or ""):lower()
+			isInCareerPath = fameCareer == careerPath or fameCareer:find(careerPath)
+		end
+		
+		-- Also check flags for pursuing specific paths
+		if not isInCareerPath and flags then
+			if careerPath == "actor" then
+				isInCareerPath = flags.is_actor or flags.acting_career
+			elseif careerPath == "musician" then
+				isInCareerPath = flags.is_musician or flags.music_career or flags.is_rapper or flags.rapper_career
+			elseif careerPath == "influencer" then
+				isInCareerPath = flags.is_influencer or flags.content_creator
+			elseif careerPath == "streamer" then
+				isInCareerPath = flags.is_streamer or flags.streaming_career
+			elseif careerPath == "rapper" then
+				isInCareerPath = flags.is_rapper or flags.rapper_career
+			elseif careerPath == "athlete" then
+				isInCareerPath = flags.is_athlete or flags.sports_career
+			elseif careerPath == "model" then
+				isInCareerPath = flags.is_model or flags.modeling_career
+			end
+		end
+		
+		if not isInCareerPath then
+			return false -- Player is not in the required career path for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
 	-- Only allow health-related, medical, or high-priority events for very sick players
 	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
