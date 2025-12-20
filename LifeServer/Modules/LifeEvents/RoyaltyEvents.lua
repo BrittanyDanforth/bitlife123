@@ -761,11 +761,19 @@ RoyaltyEvents.LifeEvents = {
 		id = "royal_christmas_speech",
 		title = "🎄 Christmas at the Palace",
 		emoji = "🎄",
+		-- CRITICAL FIX: Added text variations to prevent spam feeling
+		textVariants = {
+			"Christmas is a magical time at the palace! The nation watches as your family celebrates.",
+			"The palace is decorated beautifully for the holidays. Lights twinkle everywhere and carol singers perform in the halls.",
+			"It's Christmas morning! Presents, family time, and royal traditions await.",
+			"The annual Christmas celebration at the palace is in full swing. Dignitaries, family, and festive cheer!",
+			"Snow blankets the palace grounds as Christmas arrives. The whole kingdom feels the holiday spirit.",
+		},
 		text = "Christmas is a magical time at the palace! The nation watches as your family celebrates.",
 		minAge = 6,
 		maxAge = 14,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to 5 to prevent spam
 		-- CRITICAL FIX #42: Eligibility for Christmas events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -2176,11 +2184,19 @@ RoyaltyEvents.LifeEvents = {
 		id = "christmas_speech",
 		title = "📺 Annual Address",
 		emoji = "📺",
+		-- CRITICAL FIX: Added text variations for variety
+		textVariants = {
+			"Time for your annual address to the nation.",
+			"The cameras are ready. Millions await your words of hope and reflection.",
+			"Christmas Day. The nation gathers around their screens to hear your annual message.",
+			"Your speech writers have prepared remarks, but the delivery is all you.",
+			"It's broadcast time. Your Christmas message will be heard by millions worldwide.",
+		},
 		text = "Time for your annual address to the nation.",
 		minAge = 25,
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to 5 to prevent spam
 		conditions = { requiresFlags = { is_monarch = true } },
 		choices = {
 			{ text = "Uplifting and hopeful", effects = { Happiness = 10 }, royaltyEffect = { popularity = 12 }, feed = "Your message resonated." },
@@ -4470,11 +4486,20 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 		id = "royal_christmas_broadcast",
 		title = "🎄 Royal Christmas",
 		emoji = "🎄",
+		-- CRITICAL FIX: Added text variations and blocked by royal_christmas_speech to prevent double christmas
+		textVariants = {
+			"It's Christmas at the palace! The royal family gathers for celebrations and traditions.",
+			"Christmas morning arrives with all the pomp and circumstance of royal tradition!",
+			"The palace Christmas tree is magnificent! Family traditions and festive cheer fill every room.",
+			"Another magical Christmas surrounded by family, tradition, and the warmth of the palace.",
+			"Royal Christmas is here! The nation celebrates alongside your family.",
+		},
 		text = "It's Christmas at the palace! The royal family gathers for celebrations and traditions.",
 		minAge = 3,
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 3,
+		cooldown = 5, -- CRITICAL FIX: Increased from 3 to 5 to prevent spam
+		blockedByFlags = { had_royal_christmas_this_year = true }, -- CRITICAL FIX: Prevent double christmas events
 		conditions = { requiresFlags = { is_royalty = true } },
 		choices = {
 			{

@@ -10236,7 +10236,13 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			
 			-- CRITICAL FIX: If minigame was WON, MASSIVELY reduce risk
 			-- minigameBonus can be: { won = true, success = true } from client
-			if type(minigameBonus) == "table" then
+			-- CRITICAL FIX: Also handle simple boolean `true` from client!
+			-- User complaint: "Crime successful but still sentenced?!"
+			-- The client was passing `true` but server only checked for table/number
+			if minigameBonus == true then
+				-- Simple boolean true = won the minigame = 80% risk reduction!
+				actualRisk = math.floor(actualRisk * 0.2)
+			elseif type(minigameBonus) == "table" then
 				if minigameBonus.won or minigameBonus.success then
 					-- Won minigame = 80% reduction in risk
 					actualRisk = math.floor(actualRisk * 0.2)
@@ -10436,9 +10442,17 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Minigame bonus reduces risk of getting caught!
 	-- Completing the heist minigame (like cracking a safe) gives you an advantage
+	-- CRITICAL FIX: Also handle table format from combat minigames!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if minigameBonus == true then
 		riskModifier = riskModifier - 20  -- 20% less likely to get caught
+	elseif type(minigameBonus) == "table" then
+		-- CRITICAL FIX: Handle table format { won = true, success = true, isCombat = true }
+		if minigameBonus.won or minigameBonus.success then
+			riskModifier = riskModifier - 25 -- Combat win = even bigger bonus!
+		elseif minigameBonus.escaped then
+			riskModifier = riskModifier - 10 -- Escaped = some bonus for getaway
+		end
 	elseif minigameBonus == false and crime.hasMinigame then
 		-- Failed minigame for a crime that has one = higher risk
 		riskModifier = riskModifier + 15  -- 15% more likely to get caught
