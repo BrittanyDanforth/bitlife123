@@ -3567,7 +3567,8 @@ function Minigames:createCombatGame()
 		btn.Font = F.Button
 		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 		btn.TextColor3 = C.White
-		btn.Text = loc.emoji .. " " .. loc.name
+		-- CRITICAL FIX: Nil guards to prevent concatenation errors
+		btn.Text = (loc.emoji or "⚔️") .. " " .. (loc.name or "Target")
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatLocationFrame
@@ -3625,7 +3626,8 @@ function Minigames:createCombatGame()
 		btn.Font = F.Button
 		btn.TextSize = COMBAT_BTN_TEXT  -- BIGGER text
 		btn.TextColor3 = C.White
-		btn.Text = atk.emoji .. " " .. atk.name
+		-- CRITICAL FIX: Nil guards to prevent concatenation errors
+		btn.Text = (atk.emoji or "👊") .. " " .. (atk.name or "Attack")
 		btn.AutoButtonColor = false
 		btn.ZIndex = 203
 		btn.Parent = self.combatAttackFrame
@@ -3850,9 +3852,16 @@ function Minigames:combatShowPhase(phase)
 end
 
 function Minigames:combatCalculateAttack(attack, location, isPlayer)
-	local baseDmg = math.random(location.damage[1], location.damage[2])
-	local dmg = baseDmg * attack.damageMod
-	local acc = location.accuracy * attack.accMod
+	-- CRITICAL FIX: Nil guards to prevent errors when attack/location are nil
+	if not attack or not location then
+		return { hit = false, damage = 0, crit = false, ko = false }
+	end
+	
+	-- Default values if damage/accuracy tables are nil
+	local locDamage = location.damage or {10, 20}
+	local baseDmg = math.random(locDamage[1] or 10, locDamage[2] or 20)
+	local dmg = baseDmg * (attack.damageMod or 1.0)
+	local acc = (location.accuracy or 70) * (attack.accMod or 1.0)
 
 	-- Apply opponent modifiers if it's opponent attacking
 	if not isPlayer and self.combatState.opponent then
@@ -3909,11 +3918,15 @@ function Minigames:combatProcessRound()
 		state.oppHealth = state.oppHealth - playerResult.damage
 		state.stats.damageDealt = state.stats.damageDealt + playerResult.damage
 		
+		-- CRITICAL FIX: Nil guards to prevent "attempt to concatenate string with nil" errors
+		local attackName = (attack and attack.name) and attack.name:lower() or "attack"
+		local locationName = (location and location.name) and location.name:lower() or "body"
+		
 		if playerResult.crit then
-			narrative = "💥 CRITICAL HIT! Your " .. attack.name:lower() .. " to their " .. location.name:lower() .. " deals " .. playerResult.damage .. " damage!"
+			narrative = "💥 CRITICAL HIT! Your " .. attackName .. " to their " .. locationName .. " deals " .. tostring(playerResult.damage or 0) .. " damage!"
 			state.stats.criticalHits = state.stats.criticalHits + 1
 		else
-			narrative = "Your " .. attack.name:lower() .. " connects with their " .. location.name:lower() .. " for " .. playerResult.damage .. " damage."
+			narrative = "Your " .. attackName .. " connects with their " .. locationName .. " for " .. tostring(playerResult.damage or 0) .. " damage."
 		end
 		
 		if playerResult.dirty then
@@ -3938,7 +3951,9 @@ function Minigames:combatProcessRound()
 			return
 		end
 	else
-		narrative = "You swing with a " .. attack.name:lower() .. " but miss!"
+		-- CRITICAL FIX: Nil guard
+		local attackName = (attack and attack.name) and attack.name:lower() or "attack"
+		narrative = "You swing with a " .. attackName .. " but miss!"
 	end
 	
 	narrative = narrative .. "\n\n"
@@ -3957,14 +3972,18 @@ function Minigames:combatProcessRound()
 		narrative = narrative .. "🛡️ You blocked! "
 	end
 	
+	-- CRITICAL FIX: Nil guards for opponent attack/location names
+	local oppAttackName = (oppAttack and oppAttack.name) and oppAttack.name:lower() or "attack"
+	local oppLocationName = (oppLocation and oppLocation.name) and oppLocation.name:lower() or "body"
+	
 	if oppResult.hit then
 		state.playerHealth = state.playerHealth - oppResult.damage
 		state.stats.damageTaken = state.stats.damageTaken + oppResult.damage
 		
 		if oppResult.crit then
-			narrative = narrative .. "💥 They land a devastating " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage!"
+			narrative = narrative .. "💥 They land a devastating " .. oppAttackName .. " to your " .. oppLocationName .. " for " .. tostring(oppResult.damage or 0) .. " damage!"
 		else
-			narrative = narrative .. "They hit you with a " .. oppAttack.name:lower() .. " to your " .. oppLocation.name:lower() .. " for " .. oppResult.damage .. " damage."
+			narrative = narrative .. "They hit you with a " .. oppAttackName .. " to your " .. oppLocationName .. " for " .. tostring(oppResult.damage or 0) .. " damage."
 		end
 		
 		-- Check for player knockout

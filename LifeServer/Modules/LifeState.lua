@@ -182,7 +182,7 @@ function LifeState.new(player)
 		isFamous = false,
 		careerPath = nil, -- rapper, streamer, influencer, actor, musician
 		careerName = nil,
-		currentStage = 0,
+		currentStage = 1, -- CRITICAL FIX: Lua is 1-indexed, was 0 which caused nil stage lookups
 		stageName = nil,
 		subType = nil, -- genre, sport, platform, etc.
 		yearsInCareer = 0,

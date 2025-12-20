@@ -9225,7 +9225,7 @@ function LifeBackend:resetLife(player)
 		isFamous = false,
 		careerPath = nil,
 		careerName = nil,
-		currentStage = 0,
+		currentStage = 1, -- CRITICAL FIX: Lua is 1-indexed, was 0 which caused nil stage lookups
 		stageName = nil,
 		subType = nil,
 		yearsInCareer = 0,
@@ -9772,7 +9772,30 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
 	if activity.requiresFlag then
-		if not state.Flags[activity.requiresFlag] then
+		local hasRequiredFlag = state.Flags[activity.requiresFlag]
+		
+		-- CRITICAL FIX #ROYAL-1: Handle royalty flag aliases
+		-- Players can be royal via is_royalty, royal_birth, or RoyalState.isRoyal
+		-- Activities that require "is_royalty" or "is_monarch" should accept all valid royal states
+		if not hasRequiredFlag then
+			if activity.requiresFlag == "is_royalty" then
+				-- Accept multiple ways to be royalty
+				hasRequiredFlag = state.Flags.royal_birth 
+					or state.Flags.is_royal 
+					or (state.RoyalState and state.RoyalState.isRoyal)
+			elseif activity.requiresFlag == "is_monarch" then
+				-- Accept multiple ways to be monarch
+				hasRequiredFlag = state.Flags.is_king 
+					or state.Flags.is_queen 
+					or (state.RoyalState and state.RoyalState.isMonarch)
+			elseif activity.requiresFlag == "in_mob" then
+				-- Accept multiple ways to be in the mob
+				hasRequiredFlag = state.Flags.mafia_member 
+					or (state.MobState and state.MobState.inMob)
+			end
+		end
+		
+		if not hasRequiredFlag then
 			-- Provide helpful messages based on which flag is missing
 			local helpfulMessage = "You don't meet the requirements for this."
 			if activity.requiresFlag == "dropped_out_high_school" then
@@ -9781,6 +9804,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				helpfulMessage = "You need a high school diploma or GED first."
 			elseif activity.requiresFlag == "has_degree" then
 				helpfulMessage = "You need a college degree first."
+			elseif activity.requiresFlag == "is_royalty" then
+				helpfulMessage = "This activity is only for royalty."
+			elseif activity.requiresFlag == "is_monarch" then
+				helpfulMessage = "This activity is only for the King or Queen."
+			elseif activity.requiresFlag == "in_mob" then
+				helpfulMessage = "This activity requires you to be in the mob."
 			end
 			return { success = false, message = helpfulMessage }
 		end
@@ -9896,19 +9925,20 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #301: Handle royalty-specific effects from royal duties
 	-- Without this, royal activities wouldn't affect popularity/respect
+	-- CRITICAL FIX #ROYAL-2: Use RoyalState NOT RoyaltyState (was causing data to be lost!)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.royaltyEffect then
-		state.RoyaltyState = state.RoyaltyState or {}
+		state.RoyalState = state.RoyalState or {} -- FIXED: Was incorrectly using RoyaltyState
 		local royalEffect = activity.royaltyEffect
 		if royalEffect.popularity then
-			state.RoyaltyState.popularity = (state.RoyaltyState.popularity or 50) + royalEffect.popularity
-			state.RoyaltyState.popularity = math.clamp(state.RoyaltyState.popularity, 0, 100)
+			state.RoyalState.popularity = (state.RoyalState.popularity or 50) + royalEffect.popularity
+			state.RoyalState.popularity = math.clamp(state.RoyalState.popularity, 0, 100)
 		end
 		if royalEffect.respect then
-			state.RoyaltyState.respect = (state.RoyaltyState.respect or 50) + royalEffect.respect
+			state.RoyalState.respect = (state.RoyalState.respect or 50) + royalEffect.respect
 		end
 		if royalEffect.diplomacy then
-			state.RoyaltyState.diplomacy = (state.RoyaltyState.diplomacy or 50) + royalEffect.diplomacy
+			state.RoyalState.diplomacy = (state.RoyalState.diplomacy or 50) + royalEffect.diplomacy
 		end
 	end
 	
@@ -14038,7 +14068,7 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 		if state.FameState then
 			state.FameState.isFamous = false
 			state.FameState.careerPath = nil
-			state.FameState.currentStage = 0
+			state.FameState.currentStage = 1 -- CRITICAL FIX: Lua is 1-indexed
 			state.FameState.followers = 0
 			state.FameState.scandals = 0
 			state.FameState.yearsInCareer = 0

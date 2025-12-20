@@ -280,7 +280,7 @@ local function applyFameEffect(state, fameEffect)
 			isFamous = false,
 			careerPath = nil,
 			careerName = nil,
-			currentStage = 0,
+			currentStage = 1, -- CRITICAL FIX: Lua is 1-indexed
 			stageName = nil,
 			yearsInCareer = 0,
 			followers = 0,
@@ -335,7 +335,7 @@ local function applyFameEffect(state, fameEffect)
 		
 		-- Handle career stage advancement
 		if fameEffect.promotion then
-			fameState.currentStage = (fameState.currentStage or 0) + 1
+			fameState.currentStage = (fameState.currentStage or 1) + 1 -- CRITICAL FIX: Default to 1, not 0
 			fameState.lastPromotionYear = state.Year
 		end
 		
