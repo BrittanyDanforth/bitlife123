@@ -71,19 +71,22 @@ local StageCategories = {
 	-- User complaint: "GAME IS BORING FIRST 5 MINUTES"
 	-- Early life needs MORE variety - fun moments, adventures, discoveries!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments" },
-	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments" },
+	-- CRITICAL FIX #WISH-2: Added "dream" and "wish" categories for childhood wish fulfillment events!
+	-- premium_career_day_dream (ages 5-7) and premium_magic_wish (ages 6-10) use these categories
+	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "dream", "wish" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social", "dream", "wish" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
 	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
 	-- CRITICAL FIX #CATEGORY-2: Added finance, health, family, legal, pets, hobbies, social, seasonal, milestone categories!
-	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	-- CRITICAL FIX #WISH-1: Added "romance" category for wish fulfillment events (royalty romance, etc.)
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream" },
+	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -560,6 +563,55 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: CHECK event.requiresGamepass AT EVENT LEVEL
+	-- This is DIFFERENT from isRoyalOnly/isMafiaOnly/isCelebrityOnly!
+	-- event.requiresGamepass = "ROYALTY" means the player needs the gamepass but does
+	-- NOT need to already BE royalty. This is used for "wish fulfillment" events where
+	-- a player with the gamepass can BECOME royalty through romance, inheritance, etc.
+	-- 
+	-- Examples:
+	-- - premium_wish_royalty_encounter: Player with ROYALTY gamepass meets royalty
+	-- - premium_wish_mafia_approach: Player with MAFIA gamepass gets recruited
+	-- - premium_wish_fame_discovery: Player with CELEBRITY gamepass gets discovered
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresGamepass then
+		local gamepassKey = event.requiresGamepass
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+			BOSS_MODE = "boss_mode_gamepass",
+			BITIZENSHIP = "bitizen",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownsGamepass = false
+		
+		-- Check GamepassOwnership table first (most reliable)
+		if gamepassOwnership[gamepassKey:lower()] or gamepassOwnership[gamepassKey] then
+			ownsGamepass = true
+		end
+		
+		-- Then check flags
+		if not ownsGamepass and flagName then
+			ownsGamepass = flags[flagName] == true
+		end
+		
+		if not ownsGamepass then
+			return false -- Player doesn't own required gamepass for this event
+		end
+		
+		-- NOTE: If event has BOTH requiresGamepass AND isRoyalOnly/isMafiaOnly/etc,
+		-- the stricter checks below will also apply. requiresGamepass alone only
+		-- checks ownership, not whether the player is IN that premium feature.
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #61-63: STRICT PREMIUM EVENT FILTERING
 	-- Premium events should ONLY trigger for players who have BOTH:
 	-- 1. The gamepass ownership
@@ -589,13 +641,23 @@ local function canEventTrigger(event, state)
 		or eventCategory == "royalty" or eventCategory == "royal"
 	
 	if isRoyalThemed and not event.isRoyalOnly then
-		-- This is a royal-themed event without explicit isRoyalOnly flag
-		-- Still require player to actually be royalty
-		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
-			or (state.RoyalState and state.RoyalState.isRoyal)
-		if not isActuallyRoyal then
-			return false -- Block royal-themed events for non-royals
+		-- CRITICAL FIX: Skip this check for "wish fulfillment" events that have requiresGamepass
+		-- These are events where the player can BECOME royalty (via romance, inheritance, etc.)
+		-- The gamepass check above already verified they own ROYALTY gamepass
+		-- Examples: premium_wish_royalty_encounter, premium_wish_royal_proposal
+		local isWishFulfillmentEvent = event.requiresGamepass ~= nil
+		
+		if not isWishFulfillmentEvent then
+			-- This is a royal-themed event without explicit isRoyalOnly flag
+			-- Still require player to actually be royalty
+			local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+				or (state.RoyalState and state.RoyalState.isRoyal)
+			if not isActuallyRoyal then
+				return false -- Block royal-themed events for non-royals
+			end
 		end
+		-- If it's a wish fulfillment event with requiresGamepass, let it through
+		-- The player has the gamepass (checked above) and this event lets them BECOME royalty
 	end
 	
 	-- MAFIA events require Mafia gamepass AND being in the mob
