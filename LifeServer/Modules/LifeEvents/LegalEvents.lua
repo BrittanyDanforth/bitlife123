@@ -246,6 +246,29 @@ LegalEvents.events = {
 		ageBand = "any",
 		category = "legal",
 		tags = { "rental", "housing", "legal" },
+		-- CRITICAL FIX: Rental issues require actually renting!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must be renting (not a homeowner or homeless)
+			if flags.homeless or flags.couch_surfing or flags.living_in_car then
+				return false
+			end
+			-- Must have rental housing
+			if flags.renting or flags.has_apartment or flags.renter then
+				return true
+			end
+			-- Check HousingState
+			if state.HousingState and state.HousingState.status == "renter" then
+				return true
+			end
+			-- If homeowner, no landlord disputes
+			if flags.homeowner or flags.has_house then
+				return false
+			end
+			-- Default: probably renting if has any housing
+			return flags.has_home or flags.has_own_place or flags.moved_out
+		end,
+		blockedByFlags = { homeless = true, in_prison = true },
 		
 		-- CRITICAL: Random landlord/tenant outcome
 		choices = {

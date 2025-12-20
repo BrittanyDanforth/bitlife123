@@ -693,6 +693,8 @@ RelationshipsExpanded.events = {
 		ageBand = "adult",
 		category = "family",
 		tags = { "sibling", "rivalry", "family" },
+		-- CRITICAL FIX: Sibling rivalry requires having siblings!
+		requiresFlags = { has_siblings = true },
 		
 		choices = {
 			{ text = "Let it go - life's too short", effects = { Happiness = 5, Smarts = 2 }, setFlags = { sibling_peace = true }, feedText = "⚔️ Stopped competing. You're on the same team." },

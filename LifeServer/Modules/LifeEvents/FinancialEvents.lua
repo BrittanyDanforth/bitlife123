@@ -247,13 +247,32 @@ FinancialEvents.events = {
 				end,
 			},
 			{ text = "Medical bill", effects = { Happiness = -5, Health = 2 }, feedText = "💸 Healthcare is expensive. At least you're treated." },
-			{ text = "Home repair needed", effects = { Happiness = -4 }, feedText = "💸 Roof leak/plumbing/HVAC. Homeowner problems.",
+			-- CRITICAL FIX: Home repair requires owning a home!
+			{ 
+				text = "Home repair needed", 
+				effects = { Happiness = -4 }, 
+				feedText = "💸 Roof leak/plumbing/HVAC. Homeowner problems.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					return flags.homeowner or flags.has_house or flags.has_home or flags.has_apartment
+						or (state.Assets and state.Assets.Properties and #state.Assets.Properties > 0)
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Money = (state.Money or 0) - math.floor(200 + (roll * 1000))
 				end,
 			},
-			{ text = "Pet emergency", effects = { Happiness = -6, Money = -500 }, setFlags = { pet_medical_bills = true }, feedText = "💸 Vet bills are brutal but you love your pet." },
+			-- CRITICAL FIX: Pet emergency requires owning a pet!
+			{ 
+				text = "Pet emergency", 
+				effects = { Happiness = -6, Money = -500 }, 
+				setFlags = { pet_medical_bills = true }, 
+				feedText = "💸 Vet bills are brutal but you love your pet.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					return flags.has_pet or flags.has_dog or flags.has_cat or flags.has_small_pet
+				end,
+			},
 		},
 	},
 	{

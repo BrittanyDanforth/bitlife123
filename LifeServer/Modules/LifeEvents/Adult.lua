@@ -1657,7 +1657,17 @@ Adult.events = {
 
 		choices = {
 			{ text = "Lonely - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nester = true, lonely = true }, feedText = "The house feels so empty now." },
-			{ text = "Freedom! Time for us again", effects = { Happiness = 10 }, setFlags = { empty_nester = true }, feedText = "You and your partner are rediscovering each other!" },
+			-- CRITICAL FIX: Partner choice needs eligibility check
+			{ 
+				text = "Freedom! Time for us again", 
+				effects = { Happiness = 10 }, 
+				setFlags = { empty_nester = true }, 
+				feedText = "Rediscovering each other and enjoying the quiet!",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					return flags.has_partner or flags.married
+				end,
+			},
 			{ text = "Proud of the adult they became", effects = { Happiness = 8 }, setFlags = { empty_nester = true, proud_parent = true }, feedText = "You raised them well. They're thriving." },
 			{ text = "Turning their room into something fun", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!" },
 		},

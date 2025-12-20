@@ -431,6 +431,8 @@ FamilyEvents.events = {
 		ageBand = "any",
 		category = "family",
 		tags = { "sibling", "family", "relationships" },
+		-- CRITICAL FIX: Sibling events require having siblings!
+		requiresFlags = { has_siblings = true },
 		
 		choices = {
 			{
