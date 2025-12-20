@@ -892,6 +892,82 @@ function OccupationScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- UI STATE HEALER FOR OCCUPATION
+-- Validates occupation display state is consistent before rendering
+-- Prevents conflicting jobs, invalid mafia jobs for non-mob, royalty with regular jobs
+-- ════════════════════════════════════════════════════════════════════════════
+function OccupationScreen:healUIState(state)
+	if not state then return end
+	
+	local flags = state.Flags or {}
+	local healed = 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ROYALTY JOB CONFLICT
+	-- Royalty should NOT have a regular job displayed
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal and state.CurrentJob then
+		log("[UIStateHealer] Royalty has regular job - RVS should clear this")
+		healed = healed + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- MAFIA JOB WITHOUT MOB MEMBERSHIP
+	-- Mafia jobs require actually being in the mob
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobCategory = (state.CurrentJob.category or ""):lower()
+		
+		local isMafiaJob = jobId:find("mafia") or jobId:find("mob") or 
+			jobId:find("enforcer") or jobId:find("capo") or
+			jobCategory == "mafia" or state.CurrentJob.requiresGamepass == "MAFIA"
+		
+		if isMafiaJob and not isInMob then
+			log("[UIStateHealer] Mafia job without mob membership - shouldn't display")
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- MULTIPLE PREMIUM CAREER PATHS
+	-- Only ONE premium career should be active
+	-- ═══════════════════════════════════════════════════════════════════════
+	local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+	
+	local premiumPaths = 0
+	if isRoyal then premiumPaths = premiumPaths + 1 end
+	if isInMob then premiumPaths = premiumPaths + 1 end
+	if hasFameCareer then premiumPaths = premiumPaths + 1 end
+	
+	if premiumPaths > 1 then
+		log("[UIStateHealer] Multiple premium career paths active - RVS should clean")
+		healed = healed + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- CHILD WITH JOB
+	-- Children (under 14) shouldn't have jobs
+	-- ═══════════════════════════════════════════════════════════════════════
+	local age = state.Age or 0
+	if age < 14 and state.CurrentJob then
+		log("[UIStateHealer] Child with job - should be cleared")
+		healed = healed + 1
+	end
+	
+	if healed > 0 then
+		log(string.format("[UIStateHealer] Detected %d occupation state issues", healed))
+	end
+	
+	return healed
+end
+
 function OccupationScreen:updateState(newState)
 	log("Updating state...")
 	if newState then 
@@ -901,6 +977,11 @@ function OccupationScreen:updateState(newState)
 		-- which could cause stale data issues when the client mutated the state
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		self.playerState = newState
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- RUN UI STATE HEALER before rendering
+		-- ═══════════════════════════════════════════════════════════════════════
+		self:healUIState(newState)
 		
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
 		

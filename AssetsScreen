@@ -358,6 +358,68 @@ function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pl
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- UI STATE HEALER FOR ASSETS
+-- Validates asset display state is consistent before rendering
+-- Prevents ghost properties, duplicate assets, and invalid housing states
+-- ════════════════════════════════════════════════════════════════════════════
+function AssetsScreen:healUIState(state)
+	if not state then return end
+	
+	local flags = state.Flags or {}
+	local healed = 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- HOUSING DISPLAY VALIDATION
+	-- Palace should only display for actual royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	
+	if state.HousingState then
+		if state.HousingState.status == "royal_palace" and not isRoyal then
+			log("[UIStateHealer] Ghost palace in HousingState - player not royal")
+			-- Let backend RVS fix this, just note it
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- DUPLICATE PROPERTY DETECTION
+	-- Remove duplicate entries from the display
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets and state.Assets.Properties then
+		local seen = {}
+		local uniqueCount = 0
+		for _, prop in ipairs(state.Assets.Properties) do
+			local key = prop.id or prop.name or "unknown"
+			if not seen[key] then
+				seen[key] = true
+				uniqueCount = uniqueCount + 1
+			end
+		end
+		if uniqueCount < #state.Assets.Properties then
+			log("[UIStateHealer] Duplicate properties detected - will be cleaned by RVS")
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- OWNS_PROPERTY FLAG SYNC
+	-- ═══════════════════════════════════════════════════════════════════════
+	local hasRealProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
+	if flags.owns_property and not hasRealProperty then
+		log("[UIStateHealer] Ghost owns_property flag - no actual properties")
+		healed = healed + 1
+	end
+	
+	if healed > 0 then
+		log(string.format("[UIStateHealer] Detected %d asset state issues", healed))
+	end
+	
+	return healed
+end
+
 function AssetsScreen:updateState(newState)
 	log("=== UPDATE STATE CALLED ===")
 	if newState then 
@@ -369,6 +431,11 @@ function AssetsScreen:updateState(newState)
 		local isNewLife = (wasAge > 5 and newAge <= 1)
 		
 		self.playerState = newState
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- RUN UI STATE HEALER before rendering
+		-- ═══════════════════════════════════════════════════════════════════════
+		self:healUIState(newState)
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 		
 		-- CRITICAL DEBUG: Trace the Assets field

@@ -514,6 +514,75 @@ local function canEventTrigger(event, state)
 		return false -- Dead players can't have events
 	end
 	
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-2: PREMIUM PATH MUTEX ENFORCEMENT AT ELIGIBILITY LEVEL
+	-- If a player has already chosen a premium path (via primary_wish_type), they CANNOT
+	-- receive events that would start a DIFFERENT premium path!
+	-- This prevents the "royalty but got mafia event" bug at the source.
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	
+	if primaryWish then
+		-- Player has already made a childhood wish - block conflicting path events
+		local eventId = event.id or ""
+		local eventCategory = event.category or ""
+		
+		-- Check if this event is trying to start a DIFFERENT premium path
+		local isRoyaltyPathEvent = event.isRoyalOnly or event.isRoyaltyEvent or 
+			eventCategory == "royalty" or eventId:find("royalty") or eventId:find("royal")
+		local isMafiaPathEvent = event.isMafiaOnly or event.isMafiaEvent or 
+			eventCategory == "mafia" or eventId:find("mafia") or eventId:find("mob")
+		local isCelebrityPathEvent = event.isCelebrityOnly or event.isFameEvent or 
+			eventCategory == "celebrity" or eventCategory == "fame" or eventId:find("fame") or eventId:find("celebrity")
+		
+		-- MUTEX ENFORCEMENT: Block events that start conflicting paths
+		if primaryWish == "royalty" then
+			-- Player chose royalty - block mafia and celebrity START events
+			if isMafiaPathEvent then
+				-- Allow if player is ALREADY in mob (continuing events ok)
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for royalty players
+				end
+			end
+			if isCelebrityPathEvent then
+				-- Allow if player ALREADY has fame career (continuing events ok)
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for royalty players
+				end
+			end
+		elseif primaryWish == "mafia" then
+			-- Player chose mafia - block royalty and celebrity START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for mafia players
+				end
+			end
+			if isCelebrityPathEvent then
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for mafia players
+				end
+			end
+		elseif primaryWish == "celebrity" then
+			-- Player chose celebrity - block royalty and mafia START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for celebrity players
+				end
+			end
+			if isMafiaPathEvent then
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for celebrity players
+				end
+			end
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #JAIL-1: GLOBAL PRISON EVENT FILTER
 	-- Players who are incarcerated should ONLY receive prison-specific events!
@@ -2224,12 +2293,52 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-1: PREMIUM PATH MUTEX VALIDATION AT EVENT SELECTION TIME
+	-- Before selecting ANY events, validate that the player's premium path flags are coherent
+	-- This prevents conflicting events from ever entering the selection pool
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	local primaryWish = flags.primary_wish_type
+	
+	-- Validate premium path state and block conflicting event injection
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	local isDatingRoyalty = flags.dating_royalty or flags.royal_romance
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	local isFamous = flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath)
+	
+	-- Count active premium paths
+	local activePaths = 0
+	if isRoyalty or isDatingRoyalty then activePaths = activePaths + 1 end
+	if isInMob then activePaths = activePaths + 1 end
+	if isFamous then activePaths = activePaths + 1 end
+	
+	-- If multiple premium paths are active, this is a CORRUPT state that should be cleaned
+	-- Log warning but continue - the RVS in LifeBackend will clean this up
+	if activePaths > 1 then
+		warn("[LifeEvents] CORRUPT STATE: Multiple premium paths active! Primary wish:", tostring(primaryWish))
+		warn("[LifeEvents] isRoyalty:", isRoyalty, "isDatingRoyalty:", isDatingRoyalty, "isInMob:", isInMob, "isFamous:", isFamous)
+		-- Force the primary_wish_type to be the correct one if available
+		if primaryWish == "royalty" then
+			-- Clear conflicting flags locally for this event selection
+			isInMob = false
+			isFamous = false
+		elseif primaryWish == "mafia" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isFamous = false
+		elseif primaryWish == "celebrity" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isInMob = false
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #68: PREMIUM GAMEPASS EVENT CATEGORIES
 	-- Add premium event categories ONLY for players who have the gamepass AND are active in it
 	-- This ensures premium events appear in the event pool when appropriate
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local flags = state.Flags or {}
 	
 	-- MAFIA: Only add category if player has gamepass AND is in mob
 	-- CRITICAL FIX: Check both capital and lowercase for compatibility
@@ -3952,9 +4061,82 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			flags.chose_royalty_path = nil
 			state.RoyalState = nil
 		end
+		-- Clear conflicting celebrity state
+		if flags.fame_career and not flags.mob_fame then
+			-- Keep fame if it was gained through mob activities, otherwise clear
+			if not (state.FameState and state.FameState.careerPath == "crime_boss") then
+				flags.fame_career = nil
+				flags.is_famous = nil
+			end
+		end
 		-- Ensure primary_wish_type is correct
 		if flags.primary_wish_type ~= "mafia" then
 			flags.primary_wish_type = "mafia"
+		end
+	end
+	
+	-- Check if player just became famous/celebrity through this event
+	if flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath) then
+		local existingWish = flags.primary_wish_type
+		-- Only set if no other premium path is already primary
+		if not existingWish then
+			flags.primary_wish_type = "celebrity"
+		end
+		-- Clear conflicting mafia state (unless fame is from mob activities)
+		if flags.in_mob and not flags.mob_fame then
+			if state.FameState and state.FameState.careerPath ~= "crime_boss" then
+				warn("[EventEngine] CONFLICT: Player became famous but had mafia state - clearing mafia")
+				flags.in_mob = nil
+				flags.mafia_member = nil
+				state.MobState = nil
+			end
+		end
+		-- Clear conflicting royalty state
+		if flags.is_royalty and not flags.royal_fame then
+			warn("[EventEngine] CONFLICT: Player became famous but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			state.RoyalState = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: OUTCOME VALIDATION
+	-- Ensure the event actually produced the expected outcome before returning
+	-- This prevents "Dream Fulfilled" showing without actual state changes
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if outcome then
+		-- Mark outcome as validated
+		outcome.validated = true
+		
+		-- Check if this was supposed to be a life-changing event
+		local isRoyalEvent = eventDef.isRoyalOnly or (eventDef.category == "royalty")
+		local isMafiaEvent = eventDef.isMafiaOnly or (eventDef.category == "mafia")
+		local isFameEvent = eventDef.isCelebrityOnly or (eventDef.category == "celebrity")
+		
+		-- For royal proposal events, verify the marriage actually happened
+		if eventDef.id and eventDef.id:find("proposal") and eventDef.id:find("royal") then
+			if outcome.wasSuccess and not (flags.married_to_royalty or flags.engaged) then
+				warn("[EventEngine] Royal proposal success but no marriage/engagement flag set!")
+				outcome.incompleteChain = true
+			end
+		end
+		
+		-- For mafia join events, verify the in_mob flag was set
+		if eventDef.id and (eventDef.id:find("mafia") or eventDef.id:find("mob")) then
+			if eventDef.id:find("approach") or eventDef.id:find("join") or eventDef.id:find("recruit") then
+				if outcome.wasSuccess and not flags.in_mob and not (state.MobState and state.MobState.inMob) then
+					warn("[EventEngine] Mafia join success but no in_mob flag set!")
+					outcome.incompleteChain = true
+				end
+			end
+		end
+		
+		-- For fame discovery events, verify the fame state was set
+		if eventDef.id and (eventDef.id:find("fame") or eventDef.id:find("discovery") or eventDef.id:find("celebrity")) then
+			if outcome.wasSuccess and not flags.fame_career and not (state.FameState and state.FameState.careerPath) then
+				warn("[EventEngine] Fame discovery success but no fame_career flag set!")
+				outcome.incompleteChain = true
+			end
 		end
 	end
 	

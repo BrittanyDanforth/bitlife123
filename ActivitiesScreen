@@ -438,6 +438,113 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- UI STATE HEALER
+-- Validates that UI state is consistent before rendering
+-- Prevents ghost tabs, invalid overlays, and state mismatches
+-- ════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:healUIState(state)
+	if not state then return end
+	
+	local flags = state.Flags or {}
+	local healed = 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PREMIUM TAB VALIDATION
+	-- Ensure premium tab flags have valid backing
+	-- ═══════════════════════════════════════════════════════════════════════
+	
+	-- Royal tab requires actual royal state
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	local isDatingRoyal = flags.dating_royalty or flags.royal_romance
+	
+	if not isRoyal and not isDatingRoyal then
+		-- Clear any ghost royal tab state
+		if self.currentTab == "royal" or self.currentTab == "dating_royal" then
+			log("[UIStateHealer] Ghost royal tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- Mafia tab requires actual mob membership
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	
+	if not isInMob then
+		if self.currentTab == "mafia" then
+			log("[UIStateHealer] Ghost mafia tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- Fame tab requires actual fame career
+	local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+	
+	if not hasFameCareer then
+		if self.currentTab == "fame" then
+			log("[UIStateHealer] Ghost fame tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PRISON TAB VALIDATION
+	-- Prison tab requires being in jail
+	-- ═══════════════════════════════════════════════════════════════════════
+	local inJail = state.InJail or flags.in_prison or flags.incarcerated
+	
+	if not inJail and self.currentTab == "prison" then
+		log("[UIStateHealer] Not in jail but on prison tab - switching")
+		self.currentTab = "mindbody"
+		healed = healed + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PREMIUM PATH MUTEX - Only ONE premium path can be active
+	-- ═══════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	
+	-- Validate current tab against primary wish
+	if primaryWish then
+		if primaryWish == "royalty" and (self.currentTab == "mafia" or self.currentTab == "fame") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (royalty) - fixing")
+			if isRoyal then
+				self.currentTab = "royal"
+			elseif isDatingRoyal then
+				self.currentTab = "dating_royal"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		elseif primaryWish == "mafia" and (self.currentTab == "royal" or self.currentTab == "dating_royal" or self.currentTab == "fame") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (mafia) - fixing")
+			if isInMob then
+				self.currentTab = "mafia"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		elseif primaryWish == "celebrity" and (self.currentTab == "royal" or self.currentTab == "dating_royal" or self.currentTab == "mafia") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (celebrity) - fixing")
+			if hasFameCareer then
+				self.currentTab = "fame"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		end
+	end
+	
+	if healed > 0 then
+		log(string.format("[UIStateHealer] Healed %d UI state issues", healed))
+	end
+	
+	return healed
+end
+
 function ActivitiesScreen:updateState(newState)
 	log("Updating state...")
 
@@ -457,7 +564,13 @@ function ActivitiesScreen:updateState(newState)
 	end
 
 	if newState then 
-		self.playerState = newState 
+		self.playerState = newState
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- RUN UI STATE HEALER before any rendering
+		-- This catches ghost tabs, invalid premium paths, and state conflicts
+		-- ═══════════════════════════════════════════════════════════════════════
+		self:healUIState(newState) 
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #24: Detect new life and rebuild UI completely

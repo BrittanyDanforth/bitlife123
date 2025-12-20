@@ -703,7 +703,7 @@ GamepassSystem.promptHistory = {}
 -- CRITICAL FIX: Increased from 5 minutes to 30 minutes to prevent annoying spam
 GamepassSystem.PROMPT_COOLDOWN = 1800 -- 30 minutes
 
-function GamepassSystem:canShowPrompt(player, gamepassKey)
+function GamepassSystem:canShowPrompt(player, gamepassKey, requiresFatalCondition, playerState)
 	local playerId = player.UserId
 	local cacheKey = playerId .. "_prompt_" .. gamepassKey
 	
@@ -718,6 +718,28 @@ function GamepassSystem:canShowPrompt(player, gamepassKey)
 		local timeSince = os.time() - lastPrompt
 		if timeSince < self.PROMPT_COOLDOWN then
 			return false, "cooldown", self.PROMPT_COOLDOWN - timeSince
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GOD_MODE can only be prompted on FATAL CONDITIONS
+	-- This prevents random prompts without a death event
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if gamepassKey == "GOD_MODE" and requiresFatalCondition then
+		if not playerState then
+			return false, "no_state"
+		end
+		
+		local flags = playerState.Flags or {}
+		local health = playerState.Health or playerState.Stats and playerState.Stats.Health or 50
+		
+		-- Must be dying or dead to get God Mode prompt
+		local isDying = health <= 10
+		local isDead = flags.dead or flags.is_dead
+		local hasFatalCondition = flags.fatal_condition or flags.dying or flags.near_death
+		
+		if not isDying and not isDead and not hasFatalCondition then
+			return false, "not_fatal_condition"
 		end
 	end
 	
@@ -775,6 +797,70 @@ function GamepassSystem:promptProduct(player, productKey)
 	
 	if not success then
 		warn("[GamepassSystem] Failed to prompt purchase:", err)
+	end
+	
+	return success
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- GOD MODE PROMPT - REQUIRES FATAL CONDITION
+-- This is the ONLY way God Mode should be prompted
+-- It validates that the player is actually dying/dead before showing the prompt
+-- ════════════════════════════════════════════════════════════════════════════
+function GamepassSystem:promptGodModeOnDeath(player, playerState)
+	if not player or not playerState then
+		warn("[GamepassSystem] Cannot prompt God Mode - missing player or state")
+		return false
+	end
+	
+	-- Already owns? No need to prompt
+	if self:hasGodMode(player) then
+		print("[GamepassSystem] Player already has God Mode - not prompting")
+		return false
+	end
+	
+	-- Validate fatal condition
+	local flags = playerState.Flags or {}
+	local health = playerState.Health or (playerState.Stats and playerState.Stats.Health) or 50
+	
+	local isDying = health <= 10
+	local isDead = flags.dead or flags.is_dead
+	local hasFatalCondition = flags.fatal_condition or flags.dying or flags.near_death
+	
+	if not isDying and not isDead and not hasFatalCondition then
+		warn("[GamepassSystem] God Mode prompt blocked - no fatal condition detected")
+		warn("[GamepassSystem] Health:", health, "Dead:", tostring(isDead), "Dying:", tostring(hasFatalCondition))
+		return false
+	end
+	
+	-- Check cooldown
+	local canShow, reason, timeRemaining = self:canShowPrompt(player, "GOD_MODE", true, playerState)
+	if not canShow then
+		if reason == "already_owns" then
+			print("[GamepassSystem] Player already owns GOD_MODE - not showing prompt")
+		elseif reason == "cooldown" then
+			print("[GamepassSystem] God Mode prompt on cooldown - wait", timeRemaining, "seconds")
+		elseif reason == "not_fatal_condition" then
+			print("[GamepassSystem] God Mode prompt blocked - no fatal condition")
+		end
+		return false
+	end
+	
+	-- Record the prompt
+	self:recordPromptShown(player, "GOD_MODE")
+	
+	-- Track offer count
+	flags.god_mode_offer_count = (flags.god_mode_offer_count or 0) + 1
+	flags.last_god_mode_offer_age = playerState.Age
+	
+	print("[GamepassSystem] Showing God Mode prompt due to fatal condition (Health:", health, ")")
+	
+	local success, err = pcall(function()
+		MarketplaceService:PromptGamePassPurchase(player, self.Gamepasses.GOD_MODE.id)
+	end)
+	
+	if not success then
+		warn("[GamepassSystem] Failed to prompt God Mode purchase:", err)
 	end
 	
 	return success
