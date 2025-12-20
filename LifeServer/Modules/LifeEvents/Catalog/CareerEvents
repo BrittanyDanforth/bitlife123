@@ -147,9 +147,12 @@ local events = {
 		text = "Jessica from Accounting HATES you. You don't know why. She 'accidentally' leaves you off email chains. Takes credit for YOUR ideas in meetings. Badmouths you to your boss. Today: she blamed YOU for HER mistake. A $5,000 error. Your boss believed HER. You're furious. HR is useless. This is affecting your performance reviews. What do you do?",
 		question = "How do you handle this toxic coworker?",
 		category = "career",
-		weight = 7,
+		weight = 5, -- CRITICAL FIX: Reduced from 7 - was triggering too often
 		minAge = 22,
 		maxAge = 50,
+		baseChance = 0.3, -- CRITICAL FIX: Added baseChance to limit frequency
+		cooldown = 8, -- CRITICAL FIX: Need 8 year gap between toxic coworker events
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 toxic coworkers per career
 		requiresJob = true,
 		-- CRITICAL FIX: Only for office/corporate jobs - NOT rappers, musicians, etc.
 		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government" },
@@ -315,10 +318,15 @@ local events = {
 		text = "Your old boss retired. New boss started Monday: Marcus. He micromanages EVERYTHING. Emails at 11pm expecting replies. Criticizes you in front of clients. Takes credit for your work. Plays favorites. You heard him call you 'mediocre' in a meeting. Your mental health is tanking. You dread Mondays. This job is DESTROYING you. But you have bills. A mortgage. What do you do?",
 		question = "How do you handle this toxic boss?",
 		category = "career",
-		weight = 6,
+		weight = 4, -- CRITICAL FIX: Reduced from 6 - was too common
 		minAge = 28,
 		maxAge = 55,
+		baseChance = 0.3, -- CRITICAL FIX: Added baseChance to reduce frequency
+		cooldown = 10, -- CRITICAL FIX: Long cooldown - one terrible boss per decade
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 terrible bosses per career
 		requiresJob = true,
+		-- CRITICAL FIX: Only for office/corporate jobs - NOT musicians, actors, etc.
+		requiresJobCategory = { "office", "finance", "tech", "management", "executive", "government", "education" },
 		choices = {
 			{
 				index = 1,

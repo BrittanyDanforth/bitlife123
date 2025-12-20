@@ -1331,9 +1331,19 @@ Random.events = {
 		baseChance = 0.25,
 		cooldown = 2,
 		category = "confrontation",
-		-- Must have a car and not be in prison
-		requiresFlags = {},
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Eligibility check for vehicle ownership - can't have road rage without a car!
+		eligibility = function(state)
+			-- Check if player owns any vehicles
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				return true
+			end
+			-- Also check flags for basic car ownership
+			if state.Flags and (state.Flags.has_car or state.Flags.has_vehicle or state.Flags.has_license) then
+				return true
+			end
+			return false, "You need a car to experience road rage"
+		end,
 		
 		choices = {
 			{

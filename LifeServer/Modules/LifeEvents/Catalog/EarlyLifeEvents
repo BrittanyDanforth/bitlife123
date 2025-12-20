@@ -3204,6 +3204,504 @@ EarlyLifeEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: SUPER ENGAGING EARLY GAME EVENTS (First 5 minutes!)
+	-- These events make the first few years FUN and ENGAGING to hook players!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "baby_first_word",
+		title = "🗣️ First Word!",
+		emoji = "🗣️",
+		text = "Everyone is gathered around, waiting for your first word! This is a BIG moment!",
+		question = "What's your first word?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.95, -- High chance - this is a milestone!
+		cooldown = 99, -- One-time event
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Mama!",
+				effects = {},
+				feedText = "You look at your mother and say...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.first_word_mama = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🗣️ 'MAMA!' Your mother cries tears of joy! She'll never forget this moment!")
+				end,
+			},
+			{
+				text = "Dada!",
+				effects = {},
+				feedText = "You look at your father and say...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.first_word_dada = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🗣️ 'DADA!' Your father is SO proud! He tells EVERYONE!")
+				end,
+			},
+			{
+				text = "No!",
+				effects = {},
+				feedText = "You look around defiantly...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.first_word_no = true
+					state.Flags.rebellious_spirit = true
+					state:ModifyStat("Happiness", 6)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🗣️ 'NO!' Your parents laugh nervously. This one's gonna be trouble!")
+				end,
+			},
+			{
+				text = "Something random!",
+				effects = {},
+				feedText = "You babble something unexpected...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local words = {"cookie", "doggy", "ball", "bye-bye", "uh-oh", "banana"}
+					local word = words[math.random(1, #words)]
+					state.Flags.first_word_random = true
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("🗣️ '" .. string.upper(word) .. "!' Everyone bursts out laughing! So unexpected!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_first_steps",
+		title = "🚶 First Steps!",
+		emoji = "🚶",
+		text = "You're standing up... wobbling... is this it? Your first steps?!",
+		question = "Will you walk?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.9,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Walk to Mommy!",
+				effects = {},
+				feedText = "You take a wobbly step...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.can_walk = true
+					if roll <= 60 then
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🚶 ONE STEP... TWO STEPS... THREE! You walked! Mom is crying happy tears!")
+					else
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🚶 You took a step... then fell! But everyone cheered anyway!")
+					end
+				end,
+			},
+			{
+				text = "Walk to Daddy!",
+				effects = {},
+				feedText = "You reach toward your father...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.can_walk = true
+					if roll <= 60 then
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🚶 Dad catches you after 4 steps! He's over the moon!")
+					else
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🚶 You walked toward dad and fell into his arms! Victory!")
+					end
+				end,
+			},
+			{
+				text = "Run straight for the door!",
+				effects = {},
+				feedText = "You have other plans...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.can_walk = true
+					state.Flags.adventurous = true
+					state:ModifyStat("Health", 4)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🚶 You didn't just walk - you BOLTED for freedom! Everyone chased you laughing!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_playground_adventure",
+		title = "🎢 Playground Adventure!",
+		emoji = "🎢",
+		text = "Your parents took you to the playground! So many things to explore!",
+		question = "What do you do first?",
+		minAge = 2, maxAge = 4,
+		baseChance = 0.85,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "The big slide!",
+				effects = {},
+				feedText = "You climb up the ladder...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.thrill_seeker = true
+						state:AddFeed("🎢 WHEEEEE! Best feeling ever! You went down 20 times!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🎢 A bit scary at first but SO fun! You loved it!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:ModifyStat("Health", -1)
+						state:AddFeed("🎢 You fell off at the bottom! Just a scrape. Mom panicked though!")
+					end
+				end,
+			},
+			{
+				text = "The swings!",
+				effects = {},
+				feedText = "You run to the swings...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎢 'Higher! HIGHER!' You felt like you could fly!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎢 Swinging is peaceful. You could do this forever!")
+					end
+				end,
+			},
+			{
+				text = "Make new friends!",
+				effects = {},
+				feedText = "You spot other kids...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 9)
+						state.Flags.social_butterfly = true
+						state:AddFeed("🎢 You made a new friend! Played together ALL day!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎢 The other kids were nice! Played tag together!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎢 A kid took your toy and made you cry. Playground politics!")
+					end
+				end,
+			},
+			{
+				text = "Build a sandcastle!",
+				effects = {},
+				feedText = "You head to the sandbox...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 7)
+						state:ModifyStat("Smarts", 2)
+						state.Flags.creative = true
+						state:AddFeed("🎢 MASTERPIECE! You built an amazing castle! Dad took a photo!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎢 Some kid stomped your castle! But you rebuilt it bigger!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_discover_talent",
+		title = "⭐ Hidden Talent!",
+		emoji = "⭐",
+		text = "Your parents notice you're really good at something!",
+		question = "What's your hidden talent?",
+		minAge = 2, maxAge = 4,
+		baseChance = 0.7,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Music - you love rhythm!",
+				effects = {},
+				feedText = "You always dance when music plays...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.musical_talent = true
+					state.Flags.musician = true
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("⭐ Natural rhythm! Your parents get you toy instruments! Future rockstar?")
+				end,
+			},
+			{
+				text = "Art - you draw everything!",
+				effects = {},
+				feedText = "Crayons are your best friends...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.artistic_talent = true
+					state.Flags.creative = true
+					state:ModifyStat("Smarts", 3)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("⭐ Little Picasso! Your drawings go on the fridge! Mom says you're gifted!")
+				end,
+			},
+			{
+				text = "Sports - natural athlete!",
+				effects = {},
+				feedText = "You run faster than other kids...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.athletic_talent = true
+					state.Flags.athlete = true
+					state:ModifyStat("Health", 4)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("⭐ Super coordinated! Dad already talking about sports scholarships!")
+				end,
+			},
+			{
+				text = "Reading - you're a bookworm!",
+				effects = {},
+				feedText = "You love being read to...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.reading_talent = true
+					state.Flags.bookworm = true
+					state:ModifyStat("Smarts", 5)
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("⭐ You already know your ABCs! Grandma says you're a genius!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_big_decision",
+		title = "🎯 Big Kid Decision!",
+		emoji = "🎯",
+		text = "You're old enough to make some choices now! What kind of kid are you?",
+		question = "Who do you want to be?",
+		minAge = 5, maxAge = 6,
+		baseChance = 0.85,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "The popular kid!",
+				effects = {},
+				feedText = "You want FRIENDS...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 65 then
+						state.Flags.popular_kid = true
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Looks", 2)
+						state:AddFeed("🎯 Everyone wants to sit with you at lunch! Birthday party = packed!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎯 You're getting there! Making new friends takes time!")
+					end
+				end,
+			},
+			{
+				text = "The smart kid!",
+				effects = {},
+				feedText = "You want to LEARN everything...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 70 then
+						state.Flags.smart_kid = true
+						state:ModifyStat("Smarts", 8)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎯 Teacher's pet! Always raising your hand! Straight A's incoming!")
+					else
+						state:ModifyStat("Smarts", 5)
+						state:AddFeed("🎯 You try hard in class. Knowledge is power!")
+					end
+				end,
+			},
+			{
+				text = "The funny kid!",
+				effects = {},
+				feedText = "You want to make people LAUGH...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.class_clown = true
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🎯 Class clown! Everyone loves your jokes! (Teachers... not so much)")
+				end,
+			},
+			{
+				text = "The tough kid!",
+				effects = {},
+				feedText = "Nobody messes with you...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state.Flags.tough_kid = true
+						state:ModifyStat("Health", 4)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎯 Playground respect EARNED! Bullies know to stay away!")
+					else
+						state.Flags.tough_kid = true
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🎯 Got in a fight already... but you held your own!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "child_birthday_party_epic",
+		title = "🎂 EPIC Birthday Party!",
+		emoji = "🎂",
+		text = "It's your birthday! Your parents are throwing you a party!",
+		question = "What kind of party do you want?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.9,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "Pizza party with friends!",
+				effects = {},
+				feedText = "Everyone's invited...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎂 BEST DAY EVER! Cake, presents, games! Everyone had SO much fun!")
+					else
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🎂 A kid spilled juice on the cake but it was still fun!")
+					end
+				end,
+			},
+			{
+				text = "Theme park adventure!",
+				effects = {},
+				feedText = "ROLLER COASTERS!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🎂 THEME PARK BIRTHDAY! You rode every ride TWICE! Legendary!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎂 Long lines but still amazing! Got a giant stuffed animal!")
+					end
+				end,
+			},
+			{
+				text = "Sleepover party!",
+				effects = {},
+				feedText = "Friends sleeping over...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 11)
+						state.Flags = state.Flags or {}
+						state.Flags.party_animal = true
+						state:AddFeed("🎂 Stayed up till 3AM! Pizza, movies, games! Best night EVER!")
+					else
+						state:ModifyStat("Happiness", 7)
+						state:AddFeed("🎂 Someone got homesick but otherwise amazing!")
+					end
+				end,
+			},
+			{
+				text = "Just family - quiet celebration",
+				effects = {},
+				feedText = "Quality time...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state.Flags = state.Flags or {}
+					state.Flags.family_oriented = true
+					state:AddFeed("🎂 Grandparents came over. Lots of love. Sometimes simple is best!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_pet_encounter",
+		title = "🐕 First Pet Encounter!",
+		emoji = "🐕",
+		text = "There's a cute puppy at the park! It comes right up to you!",
+		question = "What do you do?",
+		minAge = 2, maxAge = 5,
+		baseChance = 0.75,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "Pet the puppy!",
+				effects = {},
+				feedText = "You reach out slowly...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.animal_lover = true
+						state:AddFeed("🐕 The puppy LOVES you! It licks your face! Pure joy!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🐕 The puppy ran away. Maybe next time!")
+					end
+				end,
+			},
+			{
+				text = "BEG for a pet at home!",
+				effects = {},
+				feedText = "You look at your parents with big eyes...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags.has_pet = true
+						state.Flags.animal_lover = true
+						state:AddFeed("🐕 YOUR BEGGING WORKED! Parents promised to get you a pet!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🐕 'Maybe when you're older...' Classic parent response!")
+					end
+				end,
+			},
+			{
+				text = "Run away scared!",
+				effects = {},
+				feedText = "Dogs are big and scary...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 2)
+					state.Flags = state.Flags or {}
+					state.Flags.afraid_of_dogs = true
+					state:AddFeed("🐕 You hid behind your parents. Dogs are intense!")
+				end,
+			},
+		},
+	},
 }
 
 return EarlyLifeEvents
