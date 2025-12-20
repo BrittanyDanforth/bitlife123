@@ -1042,15 +1042,78 @@ local function showResultPopup(data, callback)
 
 	resultCallback = callback
 
-	-- PRIORITY: wasSuccess flag from minigames/events takes precedence
-	-- Otherwise fall back to stat-based check
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PROPER isPositive detection for card border color
+	-- User complaint: "bad cards have green border not red"
+	-- Previous logic: isPositive = happiness >= 0 AND health >= 0 (defaults to TRUE!)
+	-- NEW logic: Check ALL stat deltas and explicit flags properly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	local isPositive
 	if data.wasSuccess ~= nil then
-		-- Explicit success/fail flag from server (e.g., minigame results)
+		-- PRIORITY 1: Explicit success/fail flag from server (minigames, crimes)
 		isPositive = data.wasSuccess
+	elseif data.wasCaught ~= nil and data.wasCaught == true then
+		-- PRIORITY 2: If caught (crime/activity), it's NEGATIVE
+		isPositive = false
+	elseif data.isNegative ~= nil then
+		-- PRIORITY 3: Explicit negative flag
+		isPositive = not data.isNegative
 	else
-		-- Fall back to stat-based check
-		isPositive = (data.happiness or 0) >= 0 and (data.health or 0) >= 0
+		-- PRIORITY 4: Calculate based on actual stat changes
+		-- If ANY major negative impact, treat as negative outcome
+		local hasPositive = false
+		local hasNegative = false
+		
+		-- Check all stat deltas
+		local happiness = data.happiness or 0
+		local health = data.health or 0
+		local smarts = data.smarts or 0
+		local looks = data.looks or 0
+		local money = data.money or 0
+		
+		-- Negative indicators (significant losses)
+		if happiness < -5 then hasNegative = true end
+		if health < 0 then hasNegative = true end  -- ANY health loss is bad
+		if money < -1000 then hasNegative = true end -- Significant money loss
+		if looks < -5 then hasNegative = true end
+		
+		-- Positive indicators
+		if happiness > 5 then hasPositive = true end
+		if health > 0 then hasPositive = true end
+		if money > 500 then hasPositive = true end
+		if smarts > 3 then hasPositive = true end
+		if looks > 3 then hasPositive = true end
+		
+		-- Determine outcome color
+		if hasNegative and not hasPositive then
+			isPositive = false
+		elseif hasPositive and not hasNegative then
+			isPositive = true
+		elseif hasNegative and hasPositive then
+			-- Mixed outcome - use net effect
+			local netEffect = happiness + health + smarts + looks + (money / 1000)
+			isPositive = netEffect >= 0
+		else
+			-- No significant changes either way - neutral (default to positive-ish)
+			-- But check title/emoji for hints
+			local title = data.title or ""
+			local body = data.body or ""
+			local titleLower = string.lower(title)
+			local bodyLower = string.lower(body)
+			
+			-- Check for negative keywords
+			if string.find(titleLower, "caught") or string.find(titleLower, "arrested") 
+				or string.find(titleLower, "jail") or string.find(titleLower, "prison")
+				or string.find(titleLower, "failed") or string.find(titleLower, "disaster")
+				or string.find(titleLower, "death") or string.find(titleLower, "died")
+				or string.find(bodyLower, "caught") or string.find(bodyLower, "arrested")
+				or string.find(bodyLower, "sentenced") or string.find(bodyLower, "prison") then
+				isPositive = false
+			else
+				isPositive = true
+			end
+		end
 	end
 
 	local shellColor = isPositive and C.Green or C.Red

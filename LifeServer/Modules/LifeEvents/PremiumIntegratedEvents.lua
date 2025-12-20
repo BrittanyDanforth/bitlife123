@@ -1818,6 +1818,145 @@ PremiumIntegratedEvents.events = {
 			},
 		},
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: VERY EARLY GAME PREMIUM TEASERS (Ages 5-7)
+	-- User complaint: "Make first 5 minutes engaging, fun ASF"
+	-- These events show premium content early but still give great options for free players
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "premium_career_day_dream",
+		title = "Career Day Dreams",
+		emoji = "💭",
+		text = "It's career day at school! Everyone's talking about what they want to be when they grow up. What sounds exciting to you?",
+		question = "What catches your imagination?",
+		minAge = 5, maxAge = 7,
+		baseChance = 0.9, -- High chance - engaging early content
+		cooldown = 99,
+		oneTime = true,
+		stage = "childhood",
+		category = "dream",
+		priority = "high",
+		tags = { "career_day", "dream", "early", "engaging" },
+		
+		choices = {
+			{
+				text = "Doctor - helping people get better!",
+				effects = { Smarts = 3, Happiness = 5 },
+				setFlags = { dreams_medical = true, curious_about_science = true },
+				feedText = "🩺 You put on a toy stethoscope. 'Say ahhh!' Your parents are proud of your caring heart!",
+			},
+			{
+				text = "Astronaut - going to space!",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { dreams_space = true, big_imagination = true },
+				feedText = "🚀 '3... 2... 1... LIFTOFF!' You zoom around pretending to float in zero gravity!",
+			},
+			{
+				text = "Firefighter - being a hero!",
+				effects = { Health = 3, Happiness = 6 },
+				setFlags = { dreams_hero = true, brave_spirit = true },
+				feedText = "🚒 You slide down an imaginary pole. 'To the rescue!' Everyone claps!",
+			},
+			{
+				text = "Artist - making beautiful things!",
+				effects = { Happiness = 7, Looks = 1 },
+				setFlags = { creative_spirit = true, artistic_interest = true },
+				feedText = "🎨 You draw your dream life - it's colorful and full of possibility!",
+			},
+			-- PREMIUM TEASERS (Show what's possible with gamepasses!)
+			{
+				text = "⭐ [Celebrity] A famous movie star!",
+				effects = { Happiness = 12, Fame = 8, Looks = 2 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { star_dreams = true, performer = true },
+				feedText = "⭐ 'And the award goes to... YOU!' You practice your acceptance speech while everyone laughs and claps!",
+			},
+			{
+				text = "🔫 [Mafia] A mysterious powerful boss...",
+				effects = { Happiness = 10, Smarts = 3 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { fascinated_by_power = true },
+				feedText = "🔫 You've been watching too many movies... but the idea of being powerful is exciting!",
+			},
+			{
+				text = "👑 [Royalty] A real-life king or queen!",
+				effects = { Happiness = 12, Looks = 3 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				setFlags = { royal_fantasies = true },
+				feedText = "👑 You make a paper crown and declare yourself ruler of the playground! Long live the king/queen!",
+			},
+		},
+	},
+	{
+		id = "premium_magic_wish",
+		title = "Make a Wish!",
+		emoji = "🌠",
+		text = "You're blowing out your birthday candles! Everyone says if you make a wish without telling anyone, it might come true!",
+		question = "What do you wish for?",
+		minAge = 6, maxAge = 10,
+		baseChance = 0.85,
+		cooldown = 99,
+		oneTime = true,
+		stage = "childhood",
+		category = "wish",
+		priority = "high",
+		tags = { "birthday", "wish", "early", "engaging" },
+		
+		choices = {
+			{
+				text = "To be happy forever!",
+				effects = { Happiness = 10 },
+				setFlags = { wished_happiness = true },
+				feedText = "🎂 You close your eyes tight and wish with all your heart. Happy birthday!",
+			},
+			{
+				text = "For my family to be healthy!",
+				effects = { Happiness = 6, Health = 3 },
+				setFlags = { wished_family = true, caring_heart = true },
+				feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
+			},
+			{
+				text = "To be super smart!",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { wished_intelligence = true },
+				feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
+			},
+			{
+				text = "For a puppy!",
+				effects = { Happiness = 8 },
+				setFlags = { wants_pet = true },
+				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
+			},
+			-- PREMIUM OPTIONS
+			{
+				text = "⭐ [Celebrity] To be famous!",
+				effects = { Fame = 15, Happiness = 12 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { fame_wish = true },
+				feedText = "⭐ 'I wanna be FAMOUS!' Your parents laugh, but maybe dreams do come true...",
+			},
+			{
+				text = "🔫 [Mafia] For unlimited power!",
+				effects = { Happiness = 10, Smarts = 4 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { power_wish = true },
+				feedText = "🔫 An... interesting wish for a kid. You've been watching those crime shows with dad!",
+			},
+			{
+				text = "👑 [Royalty] To live in a palace!",
+				effects = { Happiness = 12, Looks = 4 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				setFlags = { palace_wish = true },
+				feedText = "👑 Castles, crowns, and royal balls! Every kid's fantasy! Maybe someday...",
+			},
+		},
+	},
 }
 
 return PremiumIntegratedEvents

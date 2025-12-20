@@ -501,38 +501,65 @@ local events = {
 				setFlags = { living_independently = true, lives_alone = true, adulting = true },
 				feedText = "Looking for your own apartment...",
 				-- CRITICAL FIX: Money validation for $15000 apartment costs
+				-- CRITICAL FIX #2: Also set proper housing flags and HousingState!
 				onResolve = function(state)
 					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					state.HousingState = state.HousingState or {}
+					
+					-- CRITICAL: Set all housing flags for proper tracking
+					state.Flags.moved_out = true
+					state.Flags.has_own_place = true
+					state.Flags.has_apartment = true
+					state.Flags.renting = true
+					state.Flags.living_with_parents = nil
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					
 					if money >= 15000 then
 						state.Money = money - 15000
+						state.HousingState.rent = 1200 -- Nice apartment
 						if state.AddFeed then
-							state:AddFeed("📦 Nice apartment in a good area! First month, last month, security deposit done!")
+							state:AddFeed("📦 Nice apartment in a good area! Rent is $1,200/month.")
 						end
 					elseif money >= 8000 then
 						state.Money = money - 8000
+						state.HousingState.rent = 900 -- Studio
 						if state.AddFeed then
-							state:AddFeed("📦 Studio apartment! Small but yours. Ramen 4 nights a week. Worth it!")
+							state:AddFeed("📦 Studio apartment! Rent is $900/month. Small but yours!")
 						end
 					elseif money >= 3000 then
 						state.Money = money - 3000
+						state.HousingState.rent = 600 -- Cheap basement
 						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
 						if state.AddFeed then
-							state:AddFeed("📦 Cheap basement apartment. Not ideal but FREEDOM!")
+							state:AddFeed("📦 Cheap basement apartment. Rent is $600/month. Not ideal but FREEDOM!")
 						end
 					elseif money >= 1000 then
 						state.Money = money - 1000
+						state.HousingState.rent = 400 -- Shared with roommates
+						state.HousingState.type = "shared_apartment"
 						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						state.Flags = state.Flags or {}
 						state.Flags.lives_alone = nil
 						state.Flags.has_roommates = true
 						if state.AddFeed then
-							state:AddFeed("📦 Can't afford alone - found a roommate situation last minute!")
+							state:AddFeed("📦 Found a roommate situation. Your share is $400/month!")
 						end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						state.Flags = state.Flags or {}
+						-- Can't afford - stay with parents
 						state.Flags.living_independently = nil
+						state.Flags.moved_out = nil
+						state.Flags.has_own_place = nil
+						state.Flags.has_apartment = nil
+						state.Flags.renting = nil
 						state.Flags.lives_with_parents = true
+						state.HousingState.status = "with_parents"
+						state.HousingState.type = "family_home"
+						state.HousingState.rent = 0
 						if state.AddFeed then
 							state:AddFeed("📦 Can't afford to move out yet. Staying home a bit longer...")
 						end
@@ -545,29 +572,52 @@ local events = {
 				effects = { Happiness = 7 },
 				setFlags = { living_independently = true, has_roommates = true },
 				feedText = "Finding roommates...",
-				-- CRITICAL FIX: Money validation for $8000 roommate costs
+				-- CRITICAL FIX: Set proper housing flags and HousingState!
 				onResolve = function(state)
 					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					state.HousingState = state.HousingState or {}
+					
+					-- Set housing flags for roommate situation
+					state.Flags.moved_out = true
+					state.Flags.has_own_place = true
+					state.Flags.has_apartment = true
+					state.Flags.renting = true
+					state.Flags.living_with_parents = nil
+					state.HousingState.status = "renter"
+					state.HousingState.type = "shared_apartment"
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					
 					if money >= 8000 then
 						state.Money = money - 8000
+						state.HousingState.rent = 500 -- Nice roommate situation
 						if state.AddFeed then
-							state:AddFeed("📦 Nice place with roommates! $400/month rent! Independent-ish!")
+							state:AddFeed("📦 Nice place with roommates! Your share is $500/month!")
 						end
 					elseif money >= 3000 then
 						state.Money = money - 3000
+						state.HousingState.rent = 400 -- Budget place
 						if state.AddFeed then
-							state:AddFeed("📦 Budget place with roommates. Tiny room but affordable!")
+							state:AddFeed("📦 Budget place with roommates. Rent is $400/month.")
 						end
 					elseif money >= 1000 then
 						state.Money = money - 1000
+						state.HousingState.rent = 300 -- Cramped
 						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
 						if state.AddFeed then
-							state:AddFeed("📦 Cramped apartment with 3 roommates. Privacy? What's that?")
+							state:AddFeed("📦 Cramped apartment with 3 roommates. $300/month. Privacy? What's that?")
 						end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						state.Flags = state.Flags or {}
+						-- Couch surfing - not stable housing
 						state.Flags.couch_surfing = true
+						state.Flags.has_apartment = nil
+						state.Flags.renting = nil
+						state.HousingState.status = "couch_surfing"
+						state.HousingState.type = "temporary"
+						state.HousingState.rent = 0
 						if state.AddFeed then
 							state:AddFeed("📦 Couch surfing with friends until you can afford a real place.")
 						end
@@ -580,6 +630,16 @@ local events = {
 				effects = { Money = 8000, Happiness = -4 },
 				setFlags = { lives_with_parents = true, saving_money = true, late_bloomer = true },
 				feedText = "You stayed home. Your friends judge you. But your savings account is GROWING. You'll move out when you're READY. Smart, not sorry.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "with_parents"
+					state.HousingState.type = "family_home"
+					state.HousingState.rent = 0
+					state.Flags = state.Flags or {}
+					state.Flags.moved_out = nil
+					state.Flags.has_apartment = nil
+					state.Flags.renting = nil
+				end,
 			},
 			{
 				index = 4,
@@ -587,30 +647,48 @@ local events = {
 				effects = { Happiness = 9 },
 				setFlags = { living_independently = true, cohabitating = true, serious_relationship = true },
 				feedText = "Moving in with partner...",
-				-- CRITICAL FIX: Money validation for $10000 cohabitation costs
+				-- CRITICAL FIX: Set proper housing flags for cohabitation!
 				onResolve = function(state)
 					local money = state.Money or 0
+					state.Flags = state.Flags or {}
+					state.HousingState = state.HousingState or {}
+					
+					-- Set housing flags for moving in with partner
+					state.Flags.moved_out = true
+					state.Flags.has_own_place = true
+					state.Flags.has_apartment = true
+					state.Flags.renting = true
+					state.Flags.living_with_parents = nil
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					
 					if money >= 10000 then
 						state.Money = money - 10000
+						state.HousingState.rent = 700 -- Your share of nice place
 						if state.AddFeed then
-							state:AddFeed("📦 Moved in together! Nice place, shared bills. Relationship level: SERIOUS!")
+							state:AddFeed("📦 Moved in together! Nice place, your share is $700/month. Serious!")
 						end
 					elseif money >= 5000 then
 						state.Money = money - 5000
+						state.HousingState.rent = 500 -- Cozy apartment
 						if state.AddFeed then
-							state:AddFeed("📦 Cozy apartment together! Small but romantic!")
+							state:AddFeed("📦 Cozy apartment together! Your share is $500/month!")
 						end
 					elseif money >= 2000 then
 						state.Money = money - 2000
+						state.HousingState.rent = 400 -- Tiny place
 						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
 						if state.AddFeed then
-							state:AddFeed("📦 Tiny place together. Love conquers square footage!")
+							state:AddFeed("📦 Tiny place together. $400/month. Love conquers square footage!")
 						end
 					else
+						state.HousingState.rent = 300 -- Partner covered most
 						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						-- If broke, partner might cover more
 						if state.AddFeed then
-							state:AddFeed("📦 Your partner covered most costs. Bit awkward but grateful!")
+							state:AddFeed("📦 Your partner covered most costs. Feeling a bit awkward but grateful!")
 						end
 					end
 				end,

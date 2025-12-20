@@ -1344,12 +1344,23 @@ RoyaltyEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #191: Fixed throne succession spam
 	-- Made oneTime and added proper blocking flags
+	-- CRITICAL FIX #500: This event should NOT set throne_ready = true!
+	-- User complaint: "BECOMING RULER triggered but my parent hasn't died!"
+	-- The throne_succession event represents the monarch's FAILING health, not death
+	-- Only the monarch's actual death (in advanceYearly) should set throne_ready!
 	-- THRONE AND SUCCESSION
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "throne_succession",
 		title = "👑 Succession Approaches",
 		emoji = "👑",
+		textVariants = {
+			"The current monarch's health is failing. As next in line, you must prepare for the weight of the crown. The doctors say it could be weeks, months, or even years - but the time is coming.",
+			"Your parent the monarch has been unwell lately. The palace is buzzing with whispered concerns about succession. You feel the weight of expectations growing heavier each day.",
+			"News of the monarch's declining health has spread. Foreign dignitaries are already speculating about the transition. Are you ready to lead when the time comes?",
+			"The monarch has had another health scare. The prime minister has requested a private meeting with you about 'continuity of government'. The reality is setting in.",
+			"Advisors have begun briefing you more intensely on state matters. It's unspoken, but everyone knows why - the monarch's condition is worsening.",
+		},
 		text = "The current monarch's health is failing. As next in line, you must prepare for the weight of the crown.",
 		minAge = 25,
 		maxAge = 80,
@@ -1359,29 +1370,45 @@ RoyaltyEvents.LifeEvents = {
 		cooldown = 40,
 		conditions = { 
 			requiresFlags = { is_royalty = true },
-			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true },
+			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true, parent_monarch_deceased = true },
 		},
+		-- CRITICAL: Add eligibility to ensure player is actually in line of succession
+		eligibility = function(state)
+			if not state.RoyalState then return false end
+			local rs = state.RoyalState
+			-- Must be in line of succession (not just any royal)
+			if (rs.lineOfSuccession or 99) > 3 then
+				return false, "Too far from throne to receive this event"
+			end
+			-- Parent monarch must still be alive!
+			if rs.parentMonarchDeceased then
+				return false, "Parent monarch already deceased"
+			end
+			return true
+		end,
 		choices = {
 			{
 				text = "Accept your destiny with grace",
 				effects = { Happiness = 5, Smarts = 5 },
 				royaltyEffect = { popularity = 10 },
-				setFlags = { throne_ready = true, ready_for_throne = true, succession_approached = true },
-				feed = "You prepared yourself for the responsibilities ahead.",
+				-- CRITICAL FIX: Do NOT set throne_ready! Only set mental preparedness flags
+				setFlags = { prepared_for_succession = true, ready_for_throne = true, succession_approached = true },
+				feed = "You prepared yourself for the responsibilities ahead. But only when the monarch passes will the crown truly await you.",
 			},
 			{
 				text = "Feel overwhelmed by the responsibility",
 				effects = { Happiness = -10 },
 				royaltyEffect = { popularity = 0 },
-				setFlags = { throne_ready = true, reluctant_heir = true, succession_approached = true },
-				feed = "The weight of the crown weighs heavily on you.",
+				-- CRITICAL FIX: Do NOT set throne_ready!
+				setFlags = { prepared_for_succession = true, reluctant_heir = true, succession_approached = true },
+				feed = "The weight of the crown weighs heavily on you. But for now, you wait.",
 			},
 			{
 				text = "Consider abdicating before coronation",
 				effects = { Happiness = 0 },
 				royaltyEffect = { popularity = -20 },
 				setFlags = { considering_abdication = true, succession_approached = true },
-				feed = "Rumors spread that you may refuse the throne.",
+				feed = "Rumors spread that you may refuse the throne when the time comes.",
 			},
 		},
 	},
@@ -1390,14 +1417,22 @@ RoyaltyEvents.LifeEvents = {
 	-- CRITICAL FIX: Added parent death requirement!
 	-- User complaint: "IT SAYS YOU'RE BECOMING A RULER BUT MY PARENT HASNT DIED!"
 	-- Coronation should ONLY happen when parent monarch has actually passed away!
+	-- CRITICAL FIX #501: Strengthened eligibility - REQUIRES parent_monarch_deceased flag
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
 		title = "👑 You're Becoming Ruler!",
 		emoji = "👑",
 		-- CRITICAL FIX #307: Simplified text for younger audience
+		textVariants = {
+			"It's finally happening! After the passing of the monarch, you are about to become the new King or Queen! The whole kingdom watches as you prepare to wear the crown and lead your people!",
+			"The day has come. Following the monarch's death, the crown passes to you. Billions will watch as you take your place on the throne. Are you ready for this responsibility?",
+			"A nation mourns, but a new era begins. With the passing of your parent, you are to be crowned. The weight of history rests on your shoulders now.",
+			"The throne awaits. After your parent's passing, it's time for your coronation. Crowds gather, cameras roll, and history is about to be made.",
+			"From heir to monarch. The crown that once sat on your parent's head will soon be yours. The coronation preparations are complete - your reign begins today.",
+		},
 		text = "It's finally happening! You are about to become the new King or Queen! Everyone is watching as you get ready to wear the crown and rule the kingdom!",
-		minAge = 25,
+		minAge = 21, -- Can be crowned as young as 21 in some kingdoms
 		maxAge = 90,
 		isRoyalOnly = true,
 		isMilestone = true,
@@ -1406,26 +1441,42 @@ RoyaltyEvents.LifeEvents = {
 		cooldown = 40,
 		priority = "critical",
 		conditions = { 
+			-- CRITICAL FIX: throne_ready is set ONLY when parent monarch dies (in advanceYearly)
 			requiresFlags = { throne_ready = true },
 			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true },
 		},
-		-- CRITICAL FIX: Extra eligibility check to ensure parent monarch is dead!
+		-- CRITICAL FIX #501: STRICT eligibility - parent monarch MUST be dead!
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			-- throne_ready flag should only be set when parent dies, but double-check
-			if not flags.throne_ready then return false end
-			-- Check if parent monarch has passed
-			if flags.parent_monarch_alive then
-				return false, "Parent monarch is still alive"
+			
+			-- CRITICAL: throne_ready flag MUST be set (set only when parent dies)
+			if not flags.throne_ready then 
+				return false, "Not ready for throne (throne_ready flag not set)"
 			end
-			-- Check RoyalState for monarch parent status
+			
+			-- CRITICAL: parent_monarch_deceased flag MUST be set!
+			-- This flag is set ONLY in advanceYearly when parent actually dies
+			if not flags.parent_monarch_deceased then
+				return false, "Parent monarch has not died yet!"
+			end
+			
+			-- Double-check RoyalState for monarch parent status
 			if state.RoyalState then
 				local rs = state.RoyalState
-				-- If lineOfSuccession is 1, parent should be dead
-				if rs.lineOfSuccession ~= 1 then
+				
+				-- Must be first in line of succession
+				if (rs.lineOfSuccession or 99) ~= 1 then
 					return false, "Not first in line for succession"
 				end
+				
+				-- parentMonarchDeceased flag in RoyalState must also be true
+				if not rs.parentMonarchDeceased then
+					return false, "Parent monarch status doesn't confirm death"
+				end
+			else
+				return false, "No RoyalState - not royalty"
 			end
+			
 			return true
 		end,
 		choices = {

@@ -1317,7 +1317,7 @@ Milestones.events = {
 		id = "moving_out",
 		title = "Moving Out!",
 		emoji = "🏠",
-		text = "It's time to leave the nest! You're getting your own place!",
+		text = "It's time to leave the nest! You're getting your own place! Rent will be about $900/month.",
 		question = "How do you feel about this huge step?",
 		minAge = 18, maxAge = 25,
 		oneTime = true,
@@ -1334,26 +1334,91 @@ Milestones.events = {
 			{ 
 				text = "FREEDOM! So excited!", 
 				effects = { Happiness = 15, Money = -500 }, 
-				setFlags = { moved_out = true, independent = true }, 
-				feedText = "Your own place! No more rules!" 
+				-- CRITICAL FIX: Set ALL housing flags for consistency
+				setFlags = { 
+					moved_out = true, 
+					independent = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				}, 
+				feedText = "Your own place! No more rules! Rent is $900/month.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+				end,
 			},
 			{ 
 				text = "Nervous but ready", 
 				effects = { Happiness = 8, Smarts = 2, Money = -500 }, 
-				setFlags = { moved_out = true, cautious_adult = true }, 
-				feedText = "A big step, but you've got this." 
+				setFlags = { 
+					moved_out = true, 
+					cautious_adult = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				}, 
+				feedText = "A big step, but you've got this. Budget carefully!",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+				end,
 			},
 			{ 
 				text = "Will miss home", 
 				effects = { Happiness = 5, Money = -500 }, 
-				setFlags = { moved_out = true, homebody = true }, 
-				feedText = "It's bittersweet leaving home." 
+				setFlags = { 
+					moved_out = true, 
+					homebody = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				}, 
+				feedText = "It's bittersweet leaving home. But your own space awaits!",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+				end,
 			},
 			{ 
 				text = "Get roommates to save money", 
 				effects = { Happiness = 10, Money = -250 }, 
-				setFlags = { moved_out = true, has_roommates = true }, 
-				feedText = "Living with friends! This could be fun!" 
+				setFlags = { 
+					moved_out = true, 
+					has_roommates = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				}, 
+				feedText = "Living with friends! Your share is $500/month.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "shared_apartment"
+					state.HousingState.rent = 500
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+				end,
 			},
 		},
 	},

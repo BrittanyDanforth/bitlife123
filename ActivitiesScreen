@@ -6464,16 +6464,35 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	-- This requires the statChanges to be stored somewhere accessible
 	-- For now, show the effect from item definition which matches what the server applied
 	if item and item.id then
-		-- Look up what stats this activity gives from our local data
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: EXPANDED effectItems mapping for ALL activities!
+		-- User complaint: "Royal activities show +Popularity not +5 Popularity"
+		-- Added: Royal, Crime, Mafia, Fame, and all other activity stat changes
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		local effectItems = {
+			-- Standard Mind activities
 			read = { Smarts = 5, Happiness = 2 },
 			study = { Smarts = 6 },
 			meditate = { Happiness = 5, Health = 2 },
+			library = { Smarts = 4, Happiness = 2 },
+			puzzle = { Smarts = 4 },
+			chess = { Smarts = 5 },
+			learn_instrument = { Smarts = 3, Happiness = 4 },
+			
+			-- Body/Health activities
 			gym = { Health = 6, Looks = 2 },
 			run = { Health = 5, Happiness = 2 },
 			yoga = { Health = 4, Happiness = 3 },
 			spa = { Looks = 3, Happiness = 4 },
 			salon = { Looks = 3, Happiness = 2 },
+			martial_arts = { Health = 4, Looks = 2 },
+			swimming = { Health = 5, Happiness = 3 },
+			cycling = { Health = 5, Happiness = 2 },
+			walk = { Health = 3, Happiness = 2 },
+			doctor = { Health = 5 },
+			dentist = { Health = 2 },
+			
+			-- Social activities
 			party = { Happiness = 5 },
 			hangout = { Happiness = 3 },
 			nightclub = { Happiness = 6, Health = -2 },
@@ -6482,9 +6501,72 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 			movies = { Happiness = 3 },
 			concert = { Happiness = 5 },
 			vacation = { Happiness = 8, Health = 2 },
-			martial_arts = { Health = 4, Looks = 2 },
 			arcade = { Happiness = 3, Smarts = 1 },
 			karaoke = { Happiness = 4 },
+			shopping = { Happiness = 4, Looks = 2 },
+			beach = { Happiness = 5, Health = 2 },
+			camping = { Happiness = 4, Health = 3 },
+			
+			-- ═══════════════════════════════════════════════════════════════════════════
+			-- ROYAL ACTIVITIES - Show actual stat numbers!
+			-- ═══════════════════════════════════════════════════════════════════════════
+			public_appearance = { Popularity = 5, Happiness = 3 },
+			charity_visit = { Popularity = 8, Happiness = 3 },
+			state_dinner = { Popularity = 10, Smarts = 2 },
+			open_parliament = { Popularity = 15, Respect = 5 },
+			knight_ceremony = { Popularity = 8, Respect = 5 },
+			royal_wedding = { Happiness = 5, Popularity = 3 },
+			military_review = { Popularity = 6, Respect = 3 },
+			charity_gala = { Popularity = 12, Fame = 5 },
+			royal_polo = { Health = 5, Happiness = 8 },
+			royal_hunt = { Health = 5, Happiness = 5 },
+			royal_yacht = { Happiness = 15, Health = 3 },
+			royal_ball = { Happiness = 12, Fame = 5 },
+			royal_council = { Smarts = 5, Popularity = 3 },
+			royal_decree = { Fame = 10, Popularity = 8 },
+			royal_tutor = { Smarts = 8, Happiness = 2 },
+			royal_languages = { Smarts = 5 },
+			royal_etiquette = { Smarts = 3, Looks = 2 },
+			royal_charity_gala = { Fame = 8, Happiness = 10 },
+			royal_state_visit = { Fame = 8, Happiness = 6 },
+			royal_ceremony = { Fame = 8, Happiness = 12 },
+			royal_public_appearance = { Fame = 5, Happiness = 8 },
+			
+			-- ═══════════════════════════════════════════════════════════════════════════
+			-- CRIME ACTIVITIES
+			-- ═══════════════════════════════════════════════════════════════════════════
+			pickpocket = { Money = 50 },
+			shoplift = { Money = 100 },
+			burglary = { Money = 500 },
+			car_theft = { Money = 2000 },
+			bank_robbery = { Money = 10000 },
+			
+			-- ═══════════════════════════════════════════════════════════════════════════
+			-- MAFIA ACTIVITIES
+			-- ═══════════════════════════════════════════════════════════════════════════
+			mob_collection = { Money = 1000, Respect = 5 },
+			mob_protection = { Money = 500, Respect = 3 },
+			mob_heist = { Money = 5000, Respect = 10 },
+			mob_hit = { Respect = 15 },
+			extortion = { Money = 2000, Respect = 5 },
+			smuggling = { Money = 3000, Respect = 5 },
+			bribery = { Respect = 3 },
+			
+			-- ═══════════════════════════════════════════════════════════════════════════
+			-- FAME/CELEBRITY ACTIVITIES
+			-- ═══════════════════════════════════════════════════════════════════════════
+			photo_shoot = { Fame = 5, Looks = 3 },
+			interview = { Fame = 8 },
+			red_carpet = { Fame = 10, Looks = 5 },
+			music_video = { Fame = 12, Happiness = 5 },
+			album_recording = { Fame = 10, Money = 50000 },
+			concert_tour = { Fame = 20, Money = 100000 },
+			movie_role = { Fame = 15, Money = 75000 },
+			tv_appearance = { Fame = 8, Money = 10000 },
+			endorsement = { Fame = 5, Money = 25000 },
+			social_media_post = { Fame = 3 },
+			autograph_signing = { Fame = 5, Happiness = 3 },
+			fan_meet = { Fame = 5, Happiness = 5 },
 		}
 		
 		local activityStats = effectItems[item.id]
@@ -6492,13 +6574,40 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 			local statParts = {}
 			for stat, amount in pairs(activityStats) do
 				local sign = amount >= 0 and "+" or ""
+				-- ═══════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: EXPANDED emoji mapping for all stat types!
+				-- User complaint: "Royal activities show +Popularity not +5 Popularity"
+				-- Now shows actual numbers with appropriate emojis for ALL stats
+				-- ═══════════════════════════════════════════════════════════════════════════
 				local emoji = ""
 				if stat == "Happiness" then emoji = "😊"
 				elseif stat == "Health" then emoji = "💪"
 				elseif stat == "Smarts" then emoji = "🧠"
 				elseif stat == "Looks" then emoji = "✨"
+				elseif stat == "Popularity" then emoji = "👥"
+				elseif stat == "Fame" then emoji = "⭐"
+				elseif stat == "Respect" then emoji = "🤝"
+				elseif stat == "Money" then emoji = "💰"
+				elseif stat == "Diplomacy" then emoji = "🤝"
+				elseif stat == "Heat" then emoji = "🔥"
+				elseif stat == "Karma" then emoji = "☯️"
+				elseif stat == "Followers" then emoji = "📱"
+				elseif stat == "Charisma" then emoji = "💬"
+				elseif stat == "Fitness" then emoji = "🏃"
+				else emoji = "📊"
 				end
-				table.insert(statParts, string.format("%s %s%d %s", emoji, sign, amount, stat))
+				-- Format money differently (with $ and commas)
+				local valueText
+				if stat == "Money" then
+					if amount >= 1000 then
+						valueText = string.format("$%dk", math.floor(amount / 1000))
+					else
+						valueText = string.format("$%d", amount)
+					end
+				else
+					valueText = string.format("%s%d %s", sign, amount, stat)
+				end
+				table.insert(statParts, string.format("%s %s", emoji, valueText))
 			end
 			if #statParts > 0 then
 				statChangesText = "\n\n" .. table.concat(statParts, "  ")

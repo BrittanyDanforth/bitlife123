@@ -1109,6 +1109,7 @@ function AssetsScreen:populateProperty()
 	-- ═══════════════════════════════════════════════════════════
 	-- LIVING SITUATION CARD - Shows where player currently lives
 	-- CRITICAL FIX: Players wanted to see their housing status!
+	-- CRITICAL FIX #2: Also read HousingState.status for accurate info!
 	-- ═══════════════════════════════════════════════════════════
 	local livingCard = Instance.new("Frame")
 	livingCard.Name = "LivingSituationCard"
@@ -1125,6 +1126,7 @@ function AssetsScreen:populateProperty()
 	local flags = self.playerState and self.playerState.Flags or {}
 	local housingState = self.playerState and self.playerState.HousingState or {}
 	local age = self.playerState and self.playerState.Age or 0
+	local housingStatus = housingState.status -- "renter", "owner", "with_parents", "homeless", etc.
 	
 	local livingEmoji = "🏠"
 	local livingTitle = "Living Situation"
@@ -1132,8 +1134,11 @@ function AssetsScreen:populateProperty()
 	local livingDetail = ""
 	local statusColor = C.Purple
 	
-	-- Check various housing states
-	if flags.homeless then
+	-- CRITICAL FIX: Check HousingState.status FIRST for most accurate info
+	-- Then fall back to flags for backwards compatibility
+	
+	-- Check various housing states - ORDER MATTERS!
+	if flags.homeless or housingStatus == "homeless" then
 		livingEmoji = "🏕️"
 		livingStatus = "Homeless"
 		livingDetail = "Living on the streets"
@@ -1163,7 +1168,21 @@ function AssetsScreen:populateProperty()
 		livingStatus = "With Family"
 		livingDetail = "Living with family members"
 		statusColor = C.Green
-	elseif flags.homeowner or flags.has_house then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle INHERITED property specifically
+	-- User complaint: "Not showing inherited housing status"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif flags.inherited_property and (flags.homeowner or flags.has_house) then
+		livingEmoji = "🏚️"
+		livingStatus = "Inherited Property"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Inherited home! Value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "Inherited from family (mortgage-free!)"
+		end
+		statusColor = C.Green
+	elseif flags.homeowner or flags.has_house or housingStatus == "owner" then
 		livingEmoji = "🏡"
 		livingStatus = "Homeowner"
 		local propValue = housingState.value or 0
@@ -1173,15 +1192,16 @@ function AssetsScreen:populateProperty()
 			livingDetail = "You own your home!"
 		end
 		statusColor = C.Green
-	elseif flags.has_apartment or flags.renting then
+	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
+		-- CRITICAL FIX: Show rent amount from HousingState
 		livingEmoji = "🏢"
-		livingStatus = "Renting"
-		local rent = housingState.rent or housingState.monthlyRent or 0
-		if rent > 0 then
-			livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
+		if flags.has_roommates or housingState.type == "shared_apartment" then
+			livingStatus = "Renting (Roommates)"
 		else
-			livingDetail = "Apartment living"
+			livingStatus = "Renting Apartment"
 		end
+		local rent = housingState.rent or 900 -- Default $900 if not set
+		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
 		statusColor = C.Blue
 	elseif flags.married or flags.has_spouse then
 		-- CRITICAL FIX: Show married status in housing
@@ -1192,22 +1212,35 @@ function AssetsScreen:populateProperty()
 			livingDetail = "Living together in your own home"
 			statusColor = C.Green
 		elseif flags.renting or flags.has_apartment then
-			livingDetail = "Renting together"
+			local rent = housingState.rent or 0
+			livingDetail = rent > 0 and ("Renting together - $" .. self:formatMoney(rent) .. "/mo") or "Renting together"
 			statusColor = C.Blue
 		else
 			livingDetail = "Living together"
-			statusColor = C.Pink
+			statusColor = C.Pink or C.Purple
 		end
 	elseif flags.has_partner or flags.dating or flags.cohabiting then
 		-- Living with boyfriend/girlfriend
 		livingEmoji = "💕"
 		livingStatus = "With Partner"
 		livingDetail = "Living with your significant other"
-		statusColor = C.Pink
+		statusColor = C.Pink or C.Purple
 	elseif flags.has_own_place or flags.moved_out then
+		-- Has own place but not specifically apartment/house flagged
 		livingEmoji = "🏠"
 		livingStatus = "Independent"
-		livingDetail = "Living on your own"
+		local rent = housingState.rent or 0
+		if rent > 0 then
+			livingDetail = "Your own place - $" .. self:formatMoney(rent) .. "/mo rent"
+		else
+			livingDetail = "Living on your own"
+		end
+		statusColor = C.Green
+	elseif housingStatus == "with_parents" or flags.living_with_parents then
+		-- Explicitly living with parents
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home (no rent!)"
 		statusColor = C.Green
 	elseif age < 18 then
 		livingEmoji = "👨‍👩‍👧"
@@ -1215,7 +1248,7 @@ function AssetsScreen:populateProperty()
 		livingDetail = "Living at home with family"
 		statusColor = C.Green
 	elseif age >= 18 and age <= 25 and not flags.moved_out then
-		-- Young adult still with parents
+		-- Young adult still with parents (default assumption)
 		livingEmoji = "👨‍👩‍👧"
 		livingStatus = "With Parents"
 		livingDetail = "Still living at home (no rent!)"

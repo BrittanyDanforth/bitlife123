@@ -20,7 +20,8 @@ Adult.events = {
 		id = "moving_out",
 		title = "Time to Leave the Nest",
 		emoji = "🏠",
-		text = "You're considering moving out of your parents' house.",
+		-- CRITICAL FIX: Better text explaining the financial implications
+		text = "You're considering moving out of your parents' house. Getting your own place means rent, bills, and responsibility!",
 		question = "What's your plan?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,
@@ -38,20 +39,76 @@ Adult.events = {
 			{
 				text = "Get my own apartment",
 				effects = { Happiness = 10, Money = -500 },
-				setFlags = { lives_alone = true, independent = true },
-				feedText = "You got your own place! Freedom!"
+				-- CRITICAL FIX: Set ALL the housing flags that other systems check for!
+				-- AssetsScreen checks: has_apartment, renting, moved_out, has_own_place
+				-- Homeless events check: moved_out, has_own_place, renting, has_apartment
+				setFlags = { 
+					lives_alone = true, 
+					independent = true,
+					moved_out = true,        -- CRITICAL: Marks player as moved out
+					has_own_place = true,    -- CRITICAL: Has their own housing
+					has_apartment = true,    -- CRITICAL: Specifically an apartment
+					renting = true,          -- CRITICAL: They're renting (affects expenses)
+				},
+				feedText = "You got your own place! Freedom! But remember - rent is due monthly...",
+				-- CRITICAL FIX: Initialize HousingState properly
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900 -- Basic apartment rent
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					-- Clear living with parents flag
+					state.Flags.living_with_parents = nil
+					state:AddFeed("🔑 Welcome to adulthood! Your rent is $900/month. Better get a job!")
+				end,
 			},
 			{
 				text = "Find roommates",
 				effects = { Happiness = 5, Money = -200 },
-				setFlags = { has_roommates = true },
-				feedText = "You moved in with roommates. Cheaper but... interesting."
+				-- CRITICAL FIX: Roommates still means moved out!
+				setFlags = { 
+					has_roommates = true,
+					moved_out = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				},
+				feedText = "You moved in with roommates. Cheaper but... interesting.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "shared_apartment"
+					state.HousingState.rent = 500 -- Cheaper with roommates
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+					state:AddFeed("🏠 Your share of rent is $500/month. Roommates can be... unpredictable.")
+				end,
 			},
 			{
 				text = "Stay home to save money",
 				effects = { Money = 300, Happiness = -3 },
-				setFlags = { lives_with_parents = true },
-				feedText = "You're staying home. Smart financially."
+				-- CRITICAL FIX: Explicitly mark as still with parents
+				setFlags = { 
+					living_with_parents = true,
+					-- CRITICAL: Do NOT set moved_out, has_apartment, etc.
+				},
+				feedText = "You're staying home. Smart financially, but maybe a bit cramped.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "with_parents"
+					state.HousingState.rent = 0 -- No rent with parents
+					state.HousingState.yearsWithoutPayingRent = 0
+					-- Clear any moved out flags
+					state.Flags.moved_out = nil
+					state.Flags.has_own_place = nil
+					state.Flags.has_apartment = nil
+					state.Flags.renting = nil
+				end,
 			},
 		},
 	},

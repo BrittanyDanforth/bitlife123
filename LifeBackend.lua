@@ -5262,9 +5262,31 @@ function LifeBackend:createInitialState(player)
 	state.Assets.Investments = state.Assets.Investments or {}
 	state.Assets.Businesses = state.Assets.Businesses or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Initialize HousingState for new players
+	-- All players start life living with their parents (age 0)
+	-- This prevents homeless events from triggering incorrectly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.HousingState = state.HousingState or {}
+	state.HousingState.status = "with_parents"  -- Baby lives with parents
+	state.HousingState.type = "family_home"
+	state.HousingState.rent = 0  -- No rent when living with parents
+	state.HousingState.yearsWithoutPayingRent = 0
+	state.HousingState.missedRentYears = 0
+	
+	-- Set initial housing flags (living with parents)
+	state.Flags = state.Flags or {}
+	state.Flags.living_with_parents = true
+	-- Explicitly ensure NOT set homeless or moved out at birth
+	state.Flags.homeless = nil
+	state.Flags.moved_out = nil
+	state.Flags.has_apartment = nil
+	state.Flags.renting = nil
+	
 	debugPrint(string.format("Created initial state for %s with %d family members", 
 		player.Name, countEntries(state.Relationships)))
 	debugPrint("  Assets initialized:", state.Assets ~= nil)
+	debugPrint("  HousingState:", state.HousingState.status)
 	
 	return state
 end
@@ -5380,6 +5402,32 @@ function LifeBackend:serializeState(state)
 			serialized.GodModeState = state.GodModeState
 		else
 			serialized.GodModeState = { enabled = false }
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: HOUSING STATE - Client needs this to display living situation!
+		-- User complaint: AssetsScreen doesn't show where I'm living
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if state.HousingState then
+			serialized.HousingState = {
+				status = state.HousingState.status or "with_parents",
+				type = state.HousingState.type or "family_home",
+				rent = state.HousingState.rent or 0,
+				yearsWithoutPayingRent = state.HousingState.yearsWithoutPayingRent or 0,
+				missedRentYears = state.HousingState.missedRentYears or 0,
+				moveInYear = state.HousingState.moveInYear,
+				value = state.HousingState.value,
+			}
+		else
+			-- Default housing state for players without one set
+			local age = state.Age or 0
+			serialized.HousingState = {
+				status = age < 18 and "with_parents" or "with_parents", -- Default to with parents
+				type = "family_home",
+				rent = 0,
+				yearsWithoutPayingRent = 0,
+				missedRentYears = 0,
+			}
 		end
 		
 		-- GAMEPASS OWNERSHIP
@@ -5877,28 +5925,37 @@ function LifeBackend:advanceRelationships(state)
 			-- Age up the family member
 			rel.age = (rel.age or (state.Age + 20)) + 1
 			
-			-- CRITICAL FIX: Realistic death chances based on age for family members
-			-- More graduated death chances instead of just >95 = 20%
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: More REALISTIC death chances based on age for family members
+			-- User complaint: "IM 69 YEARS OLD AND MY PARENTS ARE STILL ALIVE?!??!"
+			-- Previous chances were too LOW - by age 95+ survival should be rare
+			-- Real-world mortality rates: ~15% at 80, ~25% at 85, ~35% at 90, ~50% at 95
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			if rel.type == "family" or rel.isFamily then
 				local deathChance = 0
 				local relAge = rel.age or 0
 				
+				-- REALISTIC death chances (cumulative survival to 100 should be extremely rare)
 				if relAge >= 100 then
-					deathChance = 0.50 -- 50% chance at 100+
+					deathChance = 0.70 -- 70% chance at 100+ (most don't live past 100)
 				elseif relAge >= 95 then
-					deathChance = 0.25 -- 25% chance at 95-99
+					deathChance = 0.45 -- 45% chance at 95-99 (supercentenarians are rare)
 				elseif relAge >= 90 then
-					deathChance = 0.12 -- 12% chance at 90-94
+					deathChance = 0.30 -- 30% chance at 90-94 (nonagenarians declining rapidly)
 				elseif relAge >= 85 then
-					deathChance = 0.06 -- 6% chance at 85-89
+					deathChance = 0.18 -- 18% chance at 85-89 (major decline in health)
 				elseif relAge >= 80 then
-					deathChance = 0.03 -- 3% chance at 80-84
+					deathChance = 0.10 -- 10% chance at 80-84 (entering elderly)
 				elseif relAge >= 75 then
-					deathChance = 0.015 -- 1.5% chance at 75-79
+					deathChance = 0.05 -- 5% chance at 75-79 
 				elseif relAge >= 70 then
-					deathChance = 0.008 -- 0.8% chance at 70-74
+					deathChance = 0.025 -- 2.5% chance at 70-74
+				elseif relAge >= 65 then
+					deathChance = 0.012 -- 1.2% chance at 65-69
 				elseif relAge >= 60 then
-					deathChance = 0.003 -- 0.3% chance at 60-69 (accidents, illness)
+					deathChance = 0.006 -- 0.6% chance at 60-64 (accidents, illness)
+				elseif relAge >= 50 then
+					deathChance = 0.003 -- 0.3% chance at 50-59 (rare but possible)
 				end
 				
 				if deathChance > 0 and RANDOM:NextNumber() < deathChance then
@@ -6659,6 +6716,33 @@ function LifeBackend:applyLivingExpenses(state)
 	local inCollege = state.Education and (state.Education.inCollege or state.Education.enrolled)
 	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check housing status from both HousingState and Flags!
+	-- Previous bug: Renters were treated as "living with parents" because they don't own property
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	local housingState = state.HousingState or {}
+	
+	-- Player has their own place if they rent OR own
+	local hasOwnHousing = hasProperty 
+		or flags.moved_out 
+		or flags.has_apartment 
+		or flags.renting 
+		or flags.has_own_place
+		or housingState.status == "renter"
+		or housingState.status == "owner"
+	
+	-- Player lives with parents if no housing flags set
+	local livesWithParents = not hasOwnHousing 
+		or flags.living_with_parents 
+		or housingState.status == "with_parents"
+	
+	-- Is homeless?
+	local isHomeless = flags.homeless 
+		or flags.living_in_car 
+		or flags.couch_surfing
+		or housingState.status == "homeless"
+	
 	-- CRITICAL FIX #318: Young adults (18-22) living situations
 	-- If no job and young, they likely live with parents (much lower expenses)
 	-- If in college, they have student living expenses (moderate)
@@ -6667,8 +6751,14 @@ function LifeBackend:applyLivingExpenses(state)
 	local totalExpenses = 0
 	local expenseDescription = "living expenses"
 	
-	if age <= 22 and not hasJob and not hasProperty then
-		-- CRITICAL FIX #318: Young adults without jobs live with parents
+	-- CRITICAL FIX: Homeless people have very different expense structure
+	if isHomeless then
+		baseCost = 1000 -- Minimal expenses - survival mode
+		totalExpenses = baseCost
+		expenseDescription = "survival costs (homeless)"
+		-- No rent, but may have medical issues, etc.
+	elseif livesWithParents and not hasOwnHousing and age <= 22 then
+		-- CRITICAL FIX #318: Young adults without their own housing live with parents
 		if inCollege then
 			-- College student: dorm/shared housing, meal plan
 			baseCost = 3000 -- Just personal expenses, food plan covered
@@ -6680,18 +6770,44 @@ function LifeBackend:applyLivingExpenses(state)
 			totalExpenses = baseCost
 			expenseDescription = "personal expenses (living with family)"
 		end
-	elseif age <= 25 and not hasJob then
-		-- 23-25 without job - struggling but parents may still help
-		baseCost = 4000
+	elseif livesWithParents and not hasOwnHousing and age <= 25 then
+		-- 23-25 without own housing - still with parents
+		baseCost = 2000
 		totalExpenses = baseCost
-		expenseDescription = "basic living costs"
+		expenseDescription = "personal expenses (living with family)"
+	elseif age <= 25 and not hasJob and hasOwnHousing then
+		-- CRITICAL FIX: Young adult with their own place but no job - needs to pay rent!
+		-- This was the bug: renters without jobs were treated as with parents
+		local rent = housingState.rent or 9000 -- Default $750/month
+		baseCost = 4000 -- Base personal expenses
+		totalExpenses = baseCost + rent
+		expenseDescription = "rent and living costs"
 	else
 		-- Normal adult with or seeking employment
 		totalExpenses = baseCost
 		
-		-- Add housing costs if no owned property
-		if not hasProperty then
-			-- CRITICAL FIX #318: Rent scales with age/career stage
+		-- CRITICAL FIX: Add housing costs based on actual housing situation
+		-- Only add rent if player has their own housing (renting) OR doesn't own AND isn't with parents
+		if hasProperty then
+			-- Owns property - no rent, but has maintenance (handled elsewhere)
+			expenseDescription = "homeowner living costs"
+		elseif hasOwnHousing and not hasProperty then
+			-- Renting - use HousingState rent or calculate based on age
+			local rentCost = housingState.rent or 9000 -- Use stored rent or default $750/month
+			if age > 30 and (housingState.rent == nil or housingState.rent == 0) then
+				rentCost = 12000 -- $1,000/month for established adult
+			end
+			if age > 45 and (housingState.rent == nil or housingState.rent == 0) then
+				rentCost = 15000 -- $1,250/month for established family
+			end
+			totalExpenses = totalExpenses + rentCost
+			expenseDescription = "rent and living costs"
+		elseif livesWithParents then
+			-- Living with parents - minimal expenses even as older adult
+			totalExpenses = math.min(totalExpenses, 3000) -- Cap at $3000 for personal expenses
+			expenseDescription = "personal expenses (living with family)"
+		else
+			-- No clear housing situation - assume needs rent
 			local rentCost = 9000 -- Base rent $750/month for starter apartment
 			if age > 30 then
 				rentCost = 12000 -- $1,000/month for established adult
@@ -6700,6 +6816,7 @@ function LifeBackend:applyLivingExpenses(state)
 				rentCost = 15000 -- $1,250/month for established family
 			end
 			totalExpenses = totalExpenses + rentCost
+			expenseDescription = "rent and living costs"
 		end
 	end
 	
@@ -6792,8 +6909,14 @@ function LifeBackend:applyLivingExpenses(state)
 		state.HousingState.yearsWithoutPayingRent = (state.HousingState.yearsWithoutPayingRent or 0) + 1
 		local yearsBroke = state.HousingState.yearsWithoutPayingRent
 		
-		-- First warning after 2 years
-		if yearsBroke == 2 then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Only track eviction if player actually has their own rental housing!
+		-- Living with parents = can't be evicted, just awkward freeloading
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local canBeEvicted = hasOwnHousing and not hasProperty and not livesWithParents
+		
+		-- First warning after 2 years (only for renters)
+		if yearsBroke == 2 and canBeEvicted then
 			state.Flags.eviction_warning = true
 			table.insert(state.YearLog, {
 				type = "housing",
@@ -6801,7 +6924,7 @@ function LifeBackend:applyLivingExpenses(state)
 				text = "You've fallen behind on rent. Your landlord is getting impatient...",
 				amount = 0,
 			})
-		elseif yearsBroke == 3 then
+		elseif yearsBroke == 3 and canBeEvicted then
 			-- Second warning
 			state.Flags.eviction_imminent = true
 			table.insert(state.YearLog, {
@@ -6810,7 +6933,7 @@ function LifeBackend:applyLivingExpenses(state)
 				text = "Eviction notice received! You have one more year to pay up or you're out!",
 				amount = 0,
 			})
-		elseif yearsBroke >= 4 and not hasProperty then
+		elseif yearsBroke >= 4 and canBeEvicted then
 			-- After 4+ years broke without owning property = EVICTED and HOMELESS
 			if not state.Flags.homeless then
 				state.Flags.homeless = true
@@ -6818,6 +6941,8 @@ function LifeBackend:applyLivingExpenses(state)
 				state.Flags.living_with_parents = nil  -- No more support
 				state.Flags.renting = nil
 				state.Flags.has_apartment = nil
+				state.Flags.moved_out = nil
+				state.Flags.has_own_place = nil
 				state.HousingState.status = "homeless"
 				state.HousingState.evictedAt = state.Year or 2025
 				
@@ -6832,6 +6957,14 @@ function LifeBackend:applyLivingExpenses(state)
 					amount = 0,
 				})
 			end
+		elseif yearsBroke >= 3 and livesWithParents then
+			-- Living with parents but broke for 3+ years - uncomfortable but not evicted
+			table.insert(state.YearLog, {
+				type = "housing",
+				emoji = "😬",
+				text = "Your parents are getting frustrated with you freeloading...",
+				amount = 0,
+			})
 		end
 		
 		-- CRITICAL FIX #140: Log when player goes broke
