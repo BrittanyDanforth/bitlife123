@@ -2593,6 +2593,118 @@ local ActivityCatalog = {
 	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FAME/CELEBRITY ACTIVITIES
+	-- These activities are called from the Fame tab in ActivitiesScreen
+	-- User bug: "EVERY SINGLE ACTION INSIDE FAME SAYS UNKNOWN ACTIVITY"
+	-- ═══════════════════════════════════════════════════════════════════════════
+	audition = {
+		stats = { Happiness = 3 },
+		feed = "went to an audition! Fingers crossed!",
+		cost = 0,
+		requiresAge = 16,
+		fameEffect = { fame = 2, breakthrough_chance = 0.15 },
+	},
+	social_post = {
+		stats = { Happiness = 2 },
+		feed = "posted on social media to connect with fans!",
+		cost = 0,
+		requiresAge = 13,
+		fameEffect = { followers = 100, fame = 1 },
+	},
+	interview = {
+		stats = { Happiness = 4, Smarts = 1 },
+		feed = "did a media interview!",
+		cost = 0,
+		requiresAge = 14,
+		fameEffect = { fame = 3 },
+	},
+	photoshoot = {
+		stats = { Looks = 3, Happiness = 4 },
+		feed = "did a professional photoshoot!",
+		cost = 500,
+		requiresAge = 16,
+		fameEffect = { fame = 4, followers = 500 },
+	},
+	endorsement = {
+		stats = { Happiness = 5 },
+		feed = "sought out endorsement deals!",
+		cost = 0,
+		requiresAge = 18,
+		fameEffect = { fame = 2 },
+	},
+	publicity_stunt = {
+		stats = { Happiness = 6 },
+		feed = "pulled a publicity stunt to get attention!",
+		cost = 5000,
+		requiresAge = 18,
+		fameEffect = { fame = 8, scandal = 0.2 },
+	},
+	charity_event = {
+		stats = { Happiness = 10, Health = 2 },
+		feed = "hosted a charity event!",
+		cost = 10000,
+		requiresAge = 16,
+		fameEffect = { fame = 5, followers = 1000 },
+	},
+	album_tour = {
+		stats = { Happiness = 8, Health = -8 },
+		feed = "went on tour! Exhausting but exciting!",
+		cost = 50000,
+		requiresAge = 18,
+		fameEffect = { fame = 10, followers = 5000 },
+	},
+	-- Additional fame activities
+	record_track = {
+		stats = { Happiness = 5 },
+		feed = "recorded a new track in the studio!",
+		cost = 2000,
+		requiresAge = 14,
+		fameEffect = { fame = 3, followers = 200 },
+	},
+	release_album = {
+		stats = { Happiness = 10 },
+		feed = "released a new album!",
+		cost = 10000,
+		requiresAge = 18,
+		fameEffect = { fame = 8, followers = 2000 },
+	},
+	music_video = {
+		stats = { Happiness = 6, Looks = 2 },
+		feed = "filmed a music video!",
+		cost = 15000,
+		requiresAge = 16,
+		fameEffect = { fame = 5, followers = 1500 },
+	},
+	meet_fans = {
+		stats = { Happiness = 8 },
+		feed = "met with fans at a signing event!",
+		cost = 0,
+		requiresAge = 14,
+		fameEffect = { fame = 2, followers = 500 },
+	},
+	award_show = {
+		stats = { Happiness = 7, Looks = 3 },
+		feed = "attended an award show!",
+		cost = 5000,
+		requiresAge = 18,
+		fameEffect = { fame = 4 },
+	},
+	collab = {
+		stats = { Happiness = 6 },
+		feed = "collaborated with another artist!",
+		cost = 3000,
+		requiresAge = 16,
+		fameEffect = { fame = 5, followers = 1000 },
+	},
+	live_stream = {
+		stats = { Happiness = 4 },
+		feed = "did a live stream for fans!",
+		cost = 0,
+		requiresAge = 13,
+		fameEffect = { fame = 2, followers = 300 },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #7: RETIREMENT ACTIVITIES
 	-- Players should be able to retire from their jobs and receive pension
 	-- ═══════════════════════════════════════════════════════════════════════════
@@ -4124,6 +4236,8 @@ local OfficeCareerEvents = {
 		emoji = "📊",
 		text = "Your manager presents YOUR project to executives as their own idea.",
 		question = "What do you do?",
+		cooldown = 8, -- CRITICAL FIX: Prevent spam - was happening too often!
+		maxOccurrences = 2, -- Maximum 2 times per life
 		choices = {
 			{ text = "Confront them privately", deltas = { Happiness = 2 }, setFlags = { office_assertive = true }, feedText = "You addressed the issue directly." },
 			{ text = "Email the executives with proof", deltas = { Happiness = 3 }, setFlags = { office_bold = true }, feedText = "You exposed the credit theft." },
@@ -9225,7 +9339,7 @@ function LifeBackend:resetLife(player)
 		isFamous = false,
 		careerPath = nil,
 		careerName = nil,
-		currentStage = 0,
+		currentStage = 1, -- CRITICAL FIX: Lua is 1-indexed, was 0 which caused nil stage lookups
 		stageName = nil,
 		subType = nil,
 		yearsInCareer = 0,
@@ -9772,7 +9886,30 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
 	if activity.requiresFlag then
-		if not state.Flags[activity.requiresFlag] then
+		local hasRequiredFlag = state.Flags[activity.requiresFlag]
+		
+		-- CRITICAL FIX #ROYAL-1: Handle royalty flag aliases
+		-- Players can be royal via is_royalty, royal_birth, or RoyalState.isRoyal
+		-- Activities that require "is_royalty" or "is_monarch" should accept all valid royal states
+		if not hasRequiredFlag then
+			if activity.requiresFlag == "is_royalty" then
+				-- Accept multiple ways to be royalty
+				hasRequiredFlag = state.Flags.royal_birth 
+					or state.Flags.is_royal 
+					or (state.RoyalState and state.RoyalState.isRoyal)
+			elseif activity.requiresFlag == "is_monarch" then
+				-- Accept multiple ways to be monarch
+				hasRequiredFlag = state.Flags.is_king 
+					or state.Flags.is_queen 
+					or (state.RoyalState and state.RoyalState.isMonarch)
+			elseif activity.requiresFlag == "in_mob" then
+				-- Accept multiple ways to be in the mob
+				hasRequiredFlag = state.Flags.mafia_member 
+					or (state.MobState and state.MobState.inMob)
+			end
+		end
+		
+		if not hasRequiredFlag then
 			-- Provide helpful messages based on which flag is missing
 			local helpfulMessage = "You don't meet the requirements for this."
 			if activity.requiresFlag == "dropped_out_high_school" then
@@ -9781,6 +9918,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				helpfulMessage = "You need a high school diploma or GED first."
 			elseif activity.requiresFlag == "has_degree" then
 				helpfulMessage = "You need a college degree first."
+			elseif activity.requiresFlag == "is_royalty" then
+				helpfulMessage = "This activity is only for royalty."
+			elseif activity.requiresFlag == "is_monarch" then
+				helpfulMessage = "This activity is only for the King or Queen."
+			elseif activity.requiresFlag == "in_mob" then
+				helpfulMessage = "This activity requires you to be in the mob."
 			end
 			return { success = false, message = helpfulMessage }
 		end
@@ -9896,19 +10039,58 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #301: Handle royalty-specific effects from royal duties
 	-- Without this, royal activities wouldn't affect popularity/respect
+	-- CRITICAL FIX #ROYAL-2: Use RoyalState NOT RoyaltyState (was causing data to be lost!)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.royaltyEffect then
-		state.RoyaltyState = state.RoyaltyState or {}
+		state.RoyalState = state.RoyalState or {} -- FIXED: Was incorrectly using RoyaltyState
 		local royalEffect = activity.royaltyEffect
 		if royalEffect.popularity then
-			state.RoyaltyState.popularity = (state.RoyaltyState.popularity or 50) + royalEffect.popularity
-			state.RoyaltyState.popularity = math.clamp(state.RoyaltyState.popularity, 0, 100)
+			state.RoyalState.popularity = (state.RoyalState.popularity or 50) + royalEffect.popularity
+			state.RoyalState.popularity = math.clamp(state.RoyalState.popularity, 0, 100)
 		end
 		if royalEffect.respect then
-			state.RoyaltyState.respect = (state.RoyaltyState.respect or 50) + royalEffect.respect
+			state.RoyalState.respect = (state.RoyalState.respect or 50) + royalEffect.respect
 		end
 		if royalEffect.diplomacy then
-			state.RoyaltyState.diplomacy = (state.RoyaltyState.diplomacy or 50) + royalEffect.diplomacy
+			state.RoyalState.diplomacy = (state.RoyalState.diplomacy or 50) + royalEffect.diplomacy
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle FAME activities (audition, social_post, interview, etc.)
+	-- User bug: "EVERY SINGLE ACTION INSIDE FAME SAYS UNKNOWN ACTIVITY"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.fameEffect then
+		state.FameState = state.FameState or {}
+		local fameEff = activity.fameEffect
+		
+		-- Add fame
+		if fameEff.fame then
+			state.Fame = (state.Fame or 0) + fameEff.fame
+			state.Fame = math.clamp(state.Fame, 0, 100)
+			state.FameState.fame = state.Fame -- Keep in sync
+		end
+		
+		-- Add followers
+		if fameEff.followers then
+			local mult = (state.Fame or 0) > 50 and 2 or 1 -- More famous = more follower gain
+			state.FameState.followers = (state.FameState.followers or 0) + (fameEff.followers * mult)
+		end
+		
+		-- Breakthrough chance (auditions can lead to big breaks)
+		if fameEff.breakthrough_chance and RANDOM:NextNumber() < fameEff.breakthrough_chance then
+			local bonus = RANDOM:NextInteger(5, 15)
+			state.Fame = math.clamp((state.Fame or 0) + bonus, 0, 100)
+			state.FameState.fame = state.Fame
+			state.FameState.followers = (state.FameState.followers or 0) + RANDOM:NextInteger(1000, 5000)
+			appendFeed(state, "⭐ BREAKTHROUGH! Your audition was a huge success!")
+		end
+		
+		-- Scandal chance (publicity stunts can backfire)
+		if fameEff.scandal and RANDOM:NextNumber() < fameEff.scandal then
+			state.Fame = math.max(0, (state.Fame or 0) - RANDOM:NextInteger(2, 8))
+			state.FameState.fame = state.Fame
+			appendFeed(state, "😬 Your stunt backfired! Got some bad press...")
 		end
 	end
 	
@@ -14038,7 +14220,7 @@ function LifeBackend:handleTimeMachine(player, yearsBack)
 		if state.FameState then
 			state.FameState.isFamous = false
 			state.FameState.careerPath = nil
-			state.FameState.currentStage = 0
+			state.FameState.currentStage = 1 -- CRITICAL FIX: Lua is 1-indexed
 			state.FameState.followers = 0
 			state.FameState.scandals = 0
 			state.FameState.yearsInCareer = 0

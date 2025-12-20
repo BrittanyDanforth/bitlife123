@@ -2823,11 +2823,25 @@ function CelebrityEvents.processYearlyFameUpdates(lifeState)
 		return events
 	end
 
-	fameState.yearsInCareer = fameState.yearsInCareer + 1
+	fameState.yearsInCareer = (fameState.yearsInCareer or 0) + 1
+
+	-- CRITICAL FIX: Lua is 1-indexed, so stage 0 is invalid
+	-- Auto-fix any existing saves with stage 0 to stage 1
+	if not fameState.currentStage or fameState.currentStage < 1 then
+		fameState.currentStage = 1
+	end
 
 	local currentStage = career.stages[fameState.currentStage]
 
-	-- CRITICAL FIX: Guard against nil currentStage
+	-- CRITICAL FIX: Guard against nil currentStage (in case stage exceeds career stages)
+	if not currentStage then
+		-- If stage exceeds the array, clamp to last stage
+		if fameState.currentStage > #career.stages then
+			fameState.currentStage = #career.stages
+			currentStage = career.stages[fameState.currentStage]
+		end
+	end
+	
 	if not currentStage or not currentStage.fameGainPerYear then
 		warn("[CelebrityEvents] currentStage or fameGainPerYear is nil for stage:", fameState.currentStage)
 		return events

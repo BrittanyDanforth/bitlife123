@@ -89,8 +89,13 @@ events[#events + 1] = {
 		{
 			text = "Live in your car",
 			effects = { Happiness = -12, Health = -5 },
+			-- CRITICAL FIX: Return reason string when eligibility fails to prevent "unknown" reason
 			eligibility = function(state)
-				return state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0
+				local hasVehicle = state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0
+				if not hasVehicle then
+					return false, "You don't have a car to live in"
+				end
+				return true
 			end,
 			setFlags = { living_in_car = true },
 			feedText = "At least you have your car. You parked in a Walmart lot for the night.",

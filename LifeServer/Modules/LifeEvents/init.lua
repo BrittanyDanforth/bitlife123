@@ -66,9 +66,14 @@ local LifeStages = {
 -- User complaint: "I havnt had alot of events happen" - because categories were missing!
 -- ═══════════════════════════════════════════════════════════════════════════════
 local StageCategories = {
-	baby        = { "childhood", "milestones", "royalty", "family", "health" },
-	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EXPANDED BABY & TODDLER CATEGORIES FOR MORE ENGAGING EARLY GAME!
+	-- User complaint: "GAME IS BORING FIRST 5 MINUTES"
+	-- Early life needs MORE variety - fun moments, adventures, discoveries!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
@@ -1142,11 +1147,29 @@ local function canEventTrigger(event, state)
 	-- Events with category starting with "career_" should not trigger without a job
 	local eventCategory = (event.category or event._category or ""):lower()
 	local eventId = (event.id or ""):lower()
+	local eventTitle = (event.title or ""):lower()
 	
+	-- CRITICAL FIX #QUIT-2: MUCH more comprehensive career event detection
 	-- Check if this is a career-related event that should require a job
-	local isCareerEvent = eventCategory:find("^career_") or eventCategory == "career"
-		or eventId:find("_job_") or eventId:find("work_") or eventId:find("promotion_")
-		or eventId:find("coworker_") or eventId:find("boss_") or eventId:find("office_")
+	local isCareerEvent = eventCategory:find("^career_") or eventCategory == "career" or eventCategory == "job"
+		or eventId:find("_job_") or eventId:find("job_") or eventId:find("_job$")
+		or eventId:find("work_") or eventId:find("_work_") or eventId:find("workplace")
+		or eventId:find("promotion_") or eventId:find("_promotion")
+		or eventId:find("coworker_") or eventId:find("_coworker")
+		or eventId:find("boss_") or eventId:find("_boss") or eventId:find("manager")
+		or eventId:find("office_") or eventId:find("_office")
+		or eventId:find("salary") or eventId:find("raise") or eventId:find("fired")
+		or eventId:find("layoff") or eventId:find("overtime") or eventId:find("performance")
+		or eventId:find("meeting") or eventId:find("deadline") or eventId:find("project")
+		or eventId:find("client_") or eventId:find("corporate")
+		or eventId:find("employee") or eventId:find("colleague")
+		or eventId:find("shift_") or eventId:find("workload")
+		or eventId:find("career_") or eventId:find("_career")
+		-- Also check title for common job-related words
+		or eventTitle:find("at work") or eventTitle:find("your job") or eventTitle:find("your boss")
+		or eventTitle:find("coworker") or eventTitle:find("colleague") or eventTitle:find("office ")
+		or eventTitle:find("workplace") or eventTitle:find("promotion") or eventTitle:find("salary")
+		or eventTitle:find("performance review") or eventTitle:find("manager")
 	
 	-- Automatically require job for career events
 	if isCareerEvent and not event.allowUnemployed then
@@ -1181,6 +1204,38 @@ local function canEventTrigger(event, state)
 	if event.requiresNoJob then
 		if state.CurrentJob then
 			return false -- MUST NOT have a job
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JOBID-1: Check requiresJobId for job-specific events!
+	-- User bug: "IT SAYS ETHICAL DILEMMA BOSS WANTS YOU TO TELL A CUSTOMER THEIR 
+	-- TRANSMISSION IS SHOT IM LEGIT A FAST FOOD WORKER??"
+	-- Events like mechanic_scam_customer need to check if player is actually a mechanic!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresJobId then
+		if not state.CurrentJob then
+			return false -- Need a job
+		end
+		local playerJobId = (state.CurrentJob.id or ""):lower()
+		local allowedJobIds = event.requiresJobId
+		
+		-- Support both string and array
+		if type(allowedJobIds) == "string" then
+			if playerJobId ~= allowedJobIds:lower() then
+				return false -- Job ID doesn't match
+			end
+		elseif type(allowedJobIds) == "table" then
+			local jobMatch = false
+			for _, allowedId in ipairs(allowedJobIds) do
+				if playerJobId == allowedId:lower() or playerJobId:find(allowedId:lower()) then
+					jobMatch = true
+					break
+				end
+			end
+			if not jobMatch then
+				return false -- Job ID not in allowed list
+			end
 		end
 	end
 	
@@ -2262,11 +2317,28 @@ function LifeEvents.buildYearQueue(state, options)
 	-- CRITICAL FIX #67: GUARANTEED MILESTONE EVENTS
 	-- First, check if there's an age-specific milestone that MUST trigger
 	-- These are events that should NEVER be skipped (DMV at 16, graduation at 18, etc.)
+	-- 
+	-- CRITICAL FIX #VARIETY-2: RANDOMIZE milestone order to prevent same events every life!
+	-- The old code always checked milestones in the same order, causing the same events
+	-- to trigger in the same order across different lives. Now we shuffle the order!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local guaranteedMilestones = AgeMilestoneEvents[age]
 	
 	if guaranteedMilestones then
-		for _, milestoneId in ipairs(guaranteedMilestones) do
+		-- CRITICAL FIX #VARIETY-3: Create a shuffled copy of milestones for variety
+		local shuffledMilestones = {}
+		for _, m in ipairs(guaranteedMilestones) do
+			table.insert(shuffledMilestones, m)
+		end
+		-- Fisher-Yates shuffle for true randomization
+		for i = #shuffledMilestones, 2, -1 do
+			local j = RANDOM:NextInteger(1, i)
+			shuffledMilestones[i], shuffledMilestones[j] = shuffledMilestones[j], shuffledMilestones[i]
+		end
+		
+		-- Collect ALL eligible milestones, not just the first one
+		local eligibleMilestones = {}
+		for _, milestoneId in ipairs(shuffledMilestones) do
 			local event = AllEvents[milestoneId]
 			if event then
 				-- Check if event already occurred
@@ -2274,13 +2346,19 @@ function LifeEvents.buildYearQueue(state, options)
 				if occurCount == 0 then
 					-- Event hasn't happened yet - check if it can trigger
 					if canEventTrigger(event, state) then
-						-- GUARANTEED trigger for age-specific milestones!
-						table.insert(selectedEvents, event)
-						recordEventShown(state, event)
-						return selectedEvents -- Return early - milestone takes priority
+						table.insert(eligibleMilestones, event)
 					end
 				end
 			end
+		end
+		
+		-- CRITICAL FIX #VARIETY-4: Pick randomly from eligible milestones for MAXIMUM variety!
+		if #eligibleMilestones > 0 then
+			local chosenIndex = RANDOM:NextInteger(1, #eligibleMilestones)
+			local chosenEvent = eligibleMilestones[chosenIndex]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Return early - milestone takes priority
 		end
 	end
 	
@@ -2318,33 +2396,45 @@ function LifeEvents.buildYearQueue(state, options)
 	-- The old code always picked the highest-weighted event, causing "learning_to_ride_bike"
 	-- and other milestone events to repeat every life since they had the same weight boost.
 	-- Now we use weighted random selection to pick from ALL eligible milestone events.
+	--
+	-- CRITICAL FIX #VARIETY-5: Sometimes skip priority events for MORE variety!
+	-- This prevents every life from being the same sequence of milestones.
+	-- 25% chance to pick from regular events instead of priority (if regular events exist)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #priorityEvents > 0 then
-		-- Use weighted random selection instead of just picking highest weight
-		local totalPriorityWeight = 0
-		for _, candidate in ipairs(priorityEvents) do
-			totalPriorityWeight = totalPriorityWeight + candidate.weight
-		end
-		
-		if totalPriorityWeight > 0 then
-			local roll = RANDOM:NextNumber() * totalPriorityWeight
-			local cumulative = 0
-			
+		-- VARIETY FIX: 25% chance to pick a random event instead of priority milestone
+		-- This breaks up the monotony of always getting the same milestones in order
+		if #candidateEvents > 0 and RANDOM:NextNumber() < 0.25 then
+			-- Skip to regular events for variety - don't return here
+			-- Fall through to the regular event selection below
+		else
+			-- Use weighted random selection instead of just picking highest weight
+			local totalPriorityWeight = 0
 			for _, candidate in ipairs(priorityEvents) do
-				cumulative = cumulative + candidate.weight
-				if roll <= cumulative then
-					table.insert(selectedEvents, candidate.event)
-					recordEventShown(state, candidate.event)
-					return selectedEvents
+				totalPriorityWeight = totalPriorityWeight + candidate.weight
+			end
+			
+			if totalPriorityWeight > 0 then
+				local roll = RANDOM:NextNumber() * totalPriorityWeight
+				local cumulative = 0
+				
+				for _, candidate in ipairs(priorityEvents) do
+					cumulative = cumulative + candidate.weight
+					if roll <= cumulative then
+						table.insert(selectedEvents, candidate.event)
+						recordEventShown(state, candidate.event)
+						return selectedEvents
+					end
 				end
 			end
+			
+			-- Fallback: pick randomly from priority events
+			local chosenIdx = RANDOM:NextInteger(1, #priorityEvents)
+			local chosen = priorityEvents[chosenIdx]
+			table.insert(selectedEvents, chosen.event)
+			recordEventShown(state, chosen.event)
+			return selectedEvents
 		end
-		
-		-- Fallback: pick first if weighted selection somehow failed
-		local chosen = priorityEvents[1]
-		table.insert(selectedEvents, chosen.event)
-		recordEventShown(state, chosen.event)
-		return selectedEvents
 	end
 	
 	-- Check for quiet year (no events)
