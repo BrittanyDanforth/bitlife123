@@ -3702,6 +3702,528 @@ EarlyLifeEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE SUPER ENGAGING FIRST 5 MINUTES EVENTS
+	-- Making early game FUN and MEMORABLE so players want to keep playing!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "baby_secret_power",
+		title = "✨ You Have a Secret Power!",
+		emoji = "✨",
+		text = "Your parents notice something SPECIAL about you! You seem to have an unusual ability...",
+		question = "What's your secret baby power?",
+		minAge = 0, maxAge = 2,
+		baseChance = 0.8,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Super charm - everyone loves me!",
+				effects = {},
+				feedText = "You flash your adorable smile...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.super_charming = true
+					state:ModifyStat("Looks", 5)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("✨ Everyone who sees you falls in love instantly! Strangers stop to coo at you!")
+				end,
+			},
+			{
+				text = "Genius brain - I'm already smart!",
+				effects = {},
+				feedText = "You solve the baby puzzle easily...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.baby_genius = true
+					state:ModifyStat("Smarts", 6)
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("✨ At just months old, you figured out how to escape your crib! Parents are amazed!")
+				end,
+			},
+			{
+				text = "Iron constitution - I never get sick!",
+				effects = {},
+				feedText = "Every other baby catches colds but not you...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.iron_constitution = true
+					state:ModifyStat("Health", 8)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("✨ While other babies sneeze and cough, you're perfectly healthy! Doctor says you're remarkably resilient!")
+				end,
+			},
+			{
+				text = "Lucky baby - good things happen!",
+				effects = {},
+				feedText = "Everything seems to go your way...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.born_lucky = true
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("✨ Your parents won the lottery the week you were born! You're clearly a lucky charm!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_celebrity_encounter",
+		title = "🌟 Celebrity Encounter!",
+		emoji = "🌟",
+		text = "A FAMOUS PERSON is at the park! They're walking right toward you!",
+		question = "What happens?",
+		minAge = 0, maxAge = 3,
+		baseChance = 0.6,
+		cooldown = 99,
+		oneTime = true,
+		priority = "medium",
+		
+		choices = {
+			{
+				text = "They want to hold me!",
+				effects = {},
+				feedText = "The celebrity reaches out...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 70 then
+						state.Flags.met_celebrity = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🌟 OMG! A famous movie star held you! Your parents got a photo - it went viral!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🌟 The celebrity waved at you! Your parents couldn't believe it!")
+					end
+				end,
+			},
+			{
+				text = "I cry at them!",
+				effects = {},
+				feedText = "You let out a wail...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🌟 You cried when the celebrity approached. They laughed and said 'tough crowd!'")
+				end,
+			},
+			{
+				text = "I grab their hair!",
+				effects = {},
+				feedText = "Your little hand reaches out...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.feisty_baby = true
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("🌟 You grabbed the celebrity's hair! They posted about it saying 'Cutest baby ever attacked me!'")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_superhero_moment",
+		title = "🦸 Superhero Moment!",
+		emoji = "🦸",
+		text = "You're wearing your favorite costume and something AMAZING happens...",
+		question = "What's your superhero moment?",
+		minAge = 2, maxAge = 5,
+		baseChance = 0.85,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Save the cat from a tree!",
+				effects = {},
+				feedText = "You hear a meowing cat stuck in a tree...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state.Flags.hero_kid = true
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🦸 You climbed up (with dad's help) and saved the cat! Neighborhood hero!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🦸 You tried to save the cat but needed the fire department. Still brave!")
+					end
+				end,
+			},
+			{
+				text = "Stop a bully at the playground!",
+				effects = {},
+				feedText = "You see a bigger kid picking on someone...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 55 then
+						state.Flags.defender = true
+						state:ModifyStat("Happiness", 14)
+						state:AddFeed("🦸 You stood up to the bully! The other kid became your best friend!")
+					else
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🦸 The bully laughed at you, but the other kid still appreciated your courage!")
+					end
+				end,
+			},
+			{
+				text = "Find a lost puppy's home!",
+				effects = {},
+				feedText = "A lost puppy follows you...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.animal_hero = true
+					state.Flags.animal_lover = true
+					state:ModifyStat("Happiness", 13)
+					state:AddFeed("🦸 You helped find the puppy's owner! They gave you a reward and called you a HERO!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_magic_discovery",
+		title = "🎩 You Discovered Magic!",
+		emoji = "🎩",
+		text = "Something MAGICAL happened today! You can't explain it!",
+		question = "What magical thing happened?",
+		minAge = 2, maxAge = 5,
+		baseChance = 0.75,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "I made a coin disappear!",
+				effects = {},
+				feedText = "You wave your hands mysteriously...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.magic_kid = true
+					state:ModifyStat("Smarts", 3)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🎩 You learned a magic trick! Now you perform shows for everyone!")
+				end,
+			},
+			{
+				text = "I talked to an animal!",
+				effects = {},
+				feedText = "You had a conversation with a bird...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.talks_to_animals = true
+					state.Flags.imaginative = true
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("🎩 You're CONVINCED you talked to a squirrel. Maybe you did? Who knows!")
+				end,
+			},
+			{
+				text = "I made a wish and it came true!",
+				effects = {},
+				feedText = "You wished upon a star and...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state.Flags.wish_maker = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎩 You wished for ice cream and grandma showed up with some! MAGIC IS REAL!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎩 Your wish... sort of came true? Close enough! You believe in magic now!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_treasure_hunt",
+		title = "🗺️ Treasure Hunt!",
+		emoji = "🗺️",
+		text = "You found a mysterious map in the backyard! X marks the spot!",
+		question = "Do you follow the treasure map?",
+		minAge = 3, maxAge = 6,
+		baseChance = 0.9,
+		cooldown = 2,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "DIG FOR TREASURE!",
+				effects = {},
+				feedText = "You start digging where X marks the spot...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state.Flags.treasure_hunter = true
+						state:ModifyStat("Happiness", 18)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🗺️ YOU FOUND BURIED TREASURE! (It was a box of old toys but still AMAZING!)")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🗺️ You found a shiny rock! It's YOUR treasure now!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🗺️ Just dirt... but the adventure was the real treasure!")
+					end
+				end,
+			},
+			{
+				text = "Follow the map's path!",
+				effects = {},
+				feedText = "You follow the mysterious trail...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.adventurer = true
+					state:ModifyStat("Happiness", 14)
+					state:ModifyStat("Health", 2)
+					state:AddFeed("🗺️ The map led you on an adventure around the yard! You found a hidden garden!")
+				end,
+			},
+			{
+				text = "Get mom and dad to help!",
+				effects = {},
+				feedText = "You show them the map excitedly...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.family_oriented = true
+					state:ModifyStat("Happiness", 16)
+					state:AddFeed("🗺️ Family treasure hunt! Dad pretended to find gold coins. Best day ever!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_first_dare",
+		title = "😈 Truth or Dare!",
+		emoji = "😈",
+		text = "Your friends are playing Truth or Dare! It's YOUR turn!",
+		question = "Truth or Dare?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.85,
+		cooldown = 2,
+		priority = "medium",
+		
+		choices = {
+			{
+				text = "DARE! I'm brave!",
+				effects = {},
+				feedText = "Your friends dare you to...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state.Flags.daredevil = true
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("😈 You completed the dare! Ate a worm! Everyone was IMPRESSED!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Health", -2)
+						state:AddFeed("😈 The dare was too hard! You chickened out. Embarrassing!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("😈 The dare went WRONG! You fell and scraped your knee!")
+					end
+				end,
+			},
+			{
+				text = "TRUTH! What secrets?",
+				effects = {},
+				feedText = "They ask you a question...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😈 You told the truth about your crush! Everyone giggled!")
+					else
+						state.Flags.good_liar = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😈 You told a little white lie. Nobody caught on!")
+					end
+				end,
+			},
+			{
+				text = "I don't want to play!",
+				effects = {},
+				feedText = "You back out of the game...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("😈 You sat this one out. Maybe next time you'll be braver!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_fort_building",
+		title = "🏰 EPIC Fort Building!",
+		emoji = "🏰",
+		text = "You're building the ULTIMATE blanket fort! This is serious business!",
+		question = "What kind of fort are you building?",
+		minAge = 4, maxAge = 10,
+		baseChance = 0.9,
+		cooldown = 2,
+		priority = "medium",
+		
+		choices = {
+			{
+				text = "A CASTLE with towers!",
+				effects = {},
+				feedText = "You stack pillows and blankets...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 70 then
+						state.Flags.master_builder = true
+						state:ModifyStat("Happiness", 14)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🏰 Your castle fort is AMAZING! You even made a drawbridge!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏰 It collapsed twice but the final result is cozy!")
+					end
+				end,
+			},
+			{
+				text = "A SECRET spy hideout!",
+				effects = {},
+				feedText = "You create a hidden base...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.spy_kid = true
+					state:ModifyStat("Happiness", 12)
+					state:ModifyStat("Smarts", 3)
+					state:AddFeed("🏰 Your spy hideout is SO hidden that mom couldn't find you for an hour!")
+				end,
+			},
+			{
+				text = "A cozy reading nook!",
+				effects = {},
+				feedText = "You create a comfy space...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bookworm = true
+					state:ModifyStat("Happiness", 10)
+					state:ModifyStat("Smarts", 4)
+					state:AddFeed("🏰 Your reading fort is PERFECT! You read three books in there today!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_laugh_attack",
+		title = "😂 Uncontrollable Giggles!",
+		emoji = "😂",
+		text = "Something is SO FUNNY that you can't stop laughing!",
+		question = "What made you laugh?",
+		minAge = 0, maxAge = 3,
+		baseChance = 0.9,
+		cooldown = 1,
+		priority = "medium",
+		
+		choices = {
+			{
+				text = "Daddy made a funny face!",
+				effects = {},
+				feedText = "He's being SO silly...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.giggly_baby = true
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("😂 You laughed SO HARD at daddy's face! He kept doing it for 10 minutes!")
+				end,
+			},
+			{
+				text = "The dog did something silly!",
+				effects = {},
+				feedText = "The pet is being goofy...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.animal_lover = true
+					state:ModifyStat("Happiness", 11)
+					state:AddFeed("😂 The dog chased its tail and you almost fell over laughing!")
+				end,
+			},
+			{
+				text = "You scared yourself sneezing!",
+				effects = {},
+				feedText = "ACHOO! Wait, what was that?!",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("😂 You sneezed, scared yourself, then laughed about it! Everyone found it adorable!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_imaginary_friend",
+		title = "🧚 Imaginary Friend!",
+		emoji = "🧚",
+		text = "You've made a VERY SPECIAL friend that only you can see!",
+		question = "Who is your imaginary friend?",
+		minAge = 2, maxAge = 6,
+		baseChance = 0.75,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "A friendly dragon named Sparky!",
+				effects = {},
+				feedText = "Sparky breathes pretend fire...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.imaginary_friend = true
+					state.Flags.imaginative = true
+					state:ModifyStat("Happiness", 12)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🧚 Sparky the dragon protects you from monsters! He lives under your bed!")
+				end,
+			},
+			{
+				text = "A superhero sidekick!",
+				effects = {},
+				feedText = "You fight imaginary villains together...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.imaginary_friend = true
+					state.Flags.hero_complex = true
+					state:ModifyStat("Happiness", 13)
+					state:AddFeed("🧚 Captain Awesome is your crime-fighting partner! You save stuffed animals daily!")
+				end,
+			},
+			{
+				text = "A fairy princess!",
+				effects = {},
+				feedText = "She grants wishes and spreads magic...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.imaginary_friend = true
+					state.Flags.creative_soul = true
+					state:ModifyStat("Happiness", 11)
+					state:ModifyStat("Looks", 1)
+					state:AddFeed("🧚 Princess Sparkle teaches you magic spells! (They're just pretend... or ARE they?)")
+				end,
+			},
+			{
+				text = "Just another kid like me!",
+				effects = {},
+				feedText = "Your invisible friend is always there...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.imaginary_friend = true
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🧚 Your friend 'Alex' comes everywhere with you. Set a place at dinner for them!")
+				end,
+			},
+		},
+	},
 }
 
 return EarlyLifeEvents
