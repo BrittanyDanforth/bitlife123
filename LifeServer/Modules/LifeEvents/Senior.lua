@@ -153,7 +153,19 @@ Senior.events = {
                 text = "Driving my spouse crazy at home", 
                 effects = { Happiness = -5 }, 
                 setFlags = { retirement_friction = true }, 
-                feedText = "Too much togetherness can be challenging..." 
+                feedText = "Too much togetherness can be challenging...",
+                -- CRITICAL FIX #1: Only show this choice if player has a spouse/partner
+                eligibility = function(state)
+                    local flags = state.Flags or {}
+                    if flags.married or flags.has_partner or flags.has_spouse then
+                        return true
+                    end
+                    -- Also check Relationships table
+                    if state.Relationships and state.Relationships.partner then
+                        return true
+                    end
+                    return false, "Need a spouse/partner for this choice"
+                end,
             },
             { 
                 text = "Bored - miss the structure", 

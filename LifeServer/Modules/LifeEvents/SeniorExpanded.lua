@@ -133,6 +133,31 @@ SeniorExpanded.events = {
 		category = "family",
 		tags = { "grandchildren", "family", "legacy" },
 		
+		-- CRITICAL FIX #3: Require having grandchildren!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check for grandchildren flags
+			if flags.has_grandchildren or flags.grandparent then
+				return true
+			end
+			-- Check if player has adult children who might have kids
+			if flags.has_child or flags.parent then
+				-- Check Relationships for adult children
+				if state.Relationships then
+					for id, rel in pairs(state.Relationships) do
+						if type(rel) == "table" and rel.isChild then
+							local childAge = rel.age or 0
+							-- If any child is adult age (18+), they might have grandkids
+							if childAge >= 18 then
+								return true
+							end
+						end
+					end
+				end
+			end
+			return false, "Need grandchildren for this event"
+		end,
+		
 		choices = {
 			{ text = "Spoil them rotten", effects = { Happiness = 10, Money = -200 }, setFlags = { spoiling_grandkids = true }, feedText = "Candy, presents, NO rules. That's grandparent privilege!" },
 			{ text = "Teach them your skills/hobbies", effects = { Happiness = 8, Smarts = 2 }, setFlags = { teaching_grandkids = true }, feedText = "Fishing, cooking, gardening - passing down traditions." },

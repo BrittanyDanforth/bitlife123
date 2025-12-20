@@ -2078,7 +2078,28 @@ Random.events = {
 		cooldown = 4,
 		category = "crime",
 		-- CRITICAL FIX: Can't be robbed at home while you're in prison!
-		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true, couch_surfing = true },
+		
+		-- CRITICAL FIX #7: Require having a home for home invasion
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check for various housing flags
+			if flags.has_home or flags.has_apartment or flags.has_house or flags.homeowner or flags.renting or flags.has_own_place then
+				return true
+			end
+			-- Check HousingState
+			if state.HousingState then
+				local status = state.HousingState.status
+				if status == "owner" or status == "renter" or status == "housed" then
+					return true
+				end
+			end
+			-- Check Assets.Properties
+			if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+				return true
+			end
+			return false, "Need a home to have a home invasion"
+		end,
 
 		choices = {
 			{ 

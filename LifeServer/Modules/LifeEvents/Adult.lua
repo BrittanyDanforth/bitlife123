@@ -543,6 +543,28 @@ Adult.events = {
 				effects = { Happiness = 8 },
 				setFlags = { retired = true },
 				feedText = "Family becomes your focus. Your pension awaits.",
+				-- CRITICAL FIX #5: Only show this choice if player actually has family
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- Check for spouse/partner
+					if flags.married or flags.has_partner then
+						return true
+					end
+					-- Check for children
+					if flags.has_child or flags.parent then
+						return true
+					end
+					-- Check Relationships table
+					if state.Relationships then
+						if state.Relationships.partner then return true end
+						for id, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.isChild or rel.type == "family") then
+								return true
+							end
+						end
+					end
+					return false, "Need family to dedicate time to"
+				end,
 				-- Retire for family
 				onResolve = function(state)
 					local pensionBase = 0
@@ -1681,6 +1703,34 @@ Adult.events = {
 		minAge = 35, maxAge = 60,
 		baseChance = 0.3,
 		cooldown = 5,
+		
+		-- CRITICAL FIX #8: Parent health crisis requires living parents!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check if parents are deceased
+			if flags.lost_both_parents or flags.orphan then
+				return false
+			end
+			-- Check Relationships for living parents
+			if state.Relationships then
+				local hasLivingParent = false
+				for id, rel in pairs(state.Relationships) do
+					if type(rel) == "table" then
+						local role = (rel.role or ""):lower()
+						if (role == "mother" or role == "father" or role == "parent") and rel.alive ~= false then
+							hasLivingParent = true
+							break
+						end
+					end
+				end
+				if state.Relationships.mother or state.Relationships.father then
+					return true -- Default assume parents exist
+				end
+				return hasLivingParent
+			end
+			-- Default to true if no flags indicate deceased parents
+			return not flags.lost_parent
+		end,
 
 		choices = {
 			{ text = "Become their primary caregiver", effects = { Happiness = -10, Health = -8, Money = -2000 }, setFlags = { family_caregiver = true }, feedText = "You've taken on a huge responsibility." },

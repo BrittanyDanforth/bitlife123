@@ -705,6 +705,21 @@ SchoolExpanded.events = {
 		ageBand = "young_adult",
 		category = "social",
 		tags = { "party", "college", "social" },
+		-- CRITICAL FIX #10: College parties require being in college!
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must be in college to attend college parties
+			if flags.college_bound or flags.in_college or flags.college_student or flags.enrolled_college then
+				return true
+			end
+			-- Check for university enrollment through education data
+			if state.EducationData and state.EducationData.enrolledUniversity then
+				return true
+			end
+			return false, "Need to be in college for college parties"
+		end,
 		
 		-- CRITICAL: Random party outcome
 		choices = {
@@ -747,6 +762,21 @@ SchoolExpanded.events = {
 		ageBand = "young_adult",
 		category = "academics",
 		tags = { "studying", "exam", "college" },
+		-- CRITICAL FIX #11: All-nighter studying requires being in college!
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must be in college for exam all-nighters
+			if flags.college_bound or flags.in_college or flags.college_student or flags.enrolled_college then
+				return true
+			end
+			-- Check for university enrollment through education data
+			if state.EducationData and state.EducationData.enrolledUniversity then
+				return true
+			end
+			return false, "Need to be in college for exam all-nighters"
+		end,
 		
 		-- CRITICAL: Random exam outcome after all-nighter
 		choices = {
@@ -790,6 +820,22 @@ SchoolExpanded.events = {
 		ageBand = "young_adult",
 		category = "career",
 		tags = { "internship", "college", "career" },
+		
+		-- CRITICAL FIX #12: Internship hunt requires being in college!
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must be in college for internship hunting
+			if flags.college_bound or flags.in_college or flags.college_student or flags.enrolled_college then
+				return true
+			end
+			-- Check for university enrollment through education data
+			if state.EducationData and state.EducationData.enrolledUniversity then
+				return true
+			end
+			return false, "Need to be in college for internship search"
+		end,
 		
 		-- CRITICAL: Random internship outcome
 		choices = {
