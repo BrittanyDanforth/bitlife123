@@ -66,9 +66,14 @@ local LifeStages = {
 -- User complaint: "I havnt had alot of events happen" - because categories were missing!
 -- ═══════════════════════════════════════════════════════════════════════════════
 local StageCategories = {
-	baby        = { "childhood", "milestones", "royalty", "family", "health" },
-	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EXPANDED BABY & TODDLER CATEGORIES FOR MORE ENGAGING EARLY GAME!
+	-- User complaint: "GAME IS BORING FIRST 5 MINUTES"
+	-- Early life needs MORE variety - fun moments, adventures, discoveries!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
@@ -1199,6 +1204,38 @@ local function canEventTrigger(event, state)
 	if event.requiresNoJob then
 		if state.CurrentJob then
 			return false -- MUST NOT have a job
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JOBID-1: Check requiresJobId for job-specific events!
+	-- User bug: "IT SAYS ETHICAL DILEMMA BOSS WANTS YOU TO TELL A CUSTOMER THEIR 
+	-- TRANSMISSION IS SHOT IM LEGIT A FAST FOOD WORKER??"
+	-- Events like mechanic_scam_customer need to check if player is actually a mechanic!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresJobId then
+		if not state.CurrentJob then
+			return false -- Need a job
+		end
+		local playerJobId = (state.CurrentJob.id or ""):lower()
+		local allowedJobIds = event.requiresJobId
+		
+		-- Support both string and array
+		if type(allowedJobIds) == "string" then
+			if playerJobId ~= allowedJobIds:lower() then
+				return false -- Job ID doesn't match
+			end
+		elseif type(allowedJobIds) == "table" then
+			local jobMatch = false
+			for _, allowedId in ipairs(allowedJobIds) do
+				if playerJobId == allowedId:lower() or playerJobId:find(allowedId:lower()) then
+					jobMatch = true
+					break
+				end
+			end
+			if not jobMatch then
+				return false -- Job ID not in allowed list
+			end
 		end
 	end
 	

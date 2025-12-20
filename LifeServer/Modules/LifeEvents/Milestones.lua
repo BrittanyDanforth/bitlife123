@@ -675,10 +675,11 @@ Milestones.events = {
 		text = "You've been promoted to a senior position!",
 		question = "How do you handle the new responsibility?",
 		minAge = 28, maxAge = 55,
-		baseChance = 0.55,
-		cooldown = 2,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.55 - was triggering too often!
+		cooldown = 6, -- CRITICAL FIX: Increased from 2 - promotions every 2 years is unrealistic!
+		maxOccurrences = 3, -- Maximum 3 major promotions per career
 		requiresJob = true,
-		priority = "high",
+		priority = "medium", -- CRITICAL FIX: Reduced from "high" to prevent spam
 		isMilestone = true,
 		-- CRITICAL: Block this event for retired players
 		blockedByFlags = { retired = true, semi_retired = true },
