@@ -1999,13 +1999,31 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 20 },
 				feedText = "Taking your shot at royalty...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local roll = math.random()
 					-- Very high success chance since this is a wish-fulfillment event!
 					local successChance = 0.65 + (looks / 200)
 
 					if roll < successChance then
-						state:ModifyStat("Happiness", 25)
+						modifyStat("Happiness", 25)
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating_royalty = true
@@ -2039,12 +2057,12 @@ PremiumIntegratedEvents.events = {
 							royalTitle = title,
 						}
 
-						state:AddFeed("👑✨ YOUR CHILDHOOD WISH CAME TRUE! You're dating " .. title .. " " .. name .. " of " .. country .. "! This is a FAIRY TALE come to life!")
+						addFeed("👑✨ YOUR CHILDHOOD WISH CAME TRUE! You're dating " .. title .. " " .. name .. " of " .. country .. "! This is a FAIRY TALE come to life!")
 					else
-						state:ModifyStat("Happiness", 8)
+						modifyStat("Happiness", 8)
 						state.Flags = state.Flags or {}
 						state.Flags.met_royalty = true
-						state:AddFeed("👑 They were charming but had to leave. You exchanged numbers though - maybe next time!")
+						addFeed("👑 They were charming but had to leave. You exchanged numbers though - maybe next time!")
 					end
 				end,
 			},
@@ -2059,20 +2077,66 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 15 },
 				feedText = "Playing it smooth...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local roll = math.random()
 					if roll < 0.5 then
-						state:ModifyStat("Happiness", 20)
+						modifyStat("Happiness", 20)
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating_royalty = true
 						state.Flags.royal_romance = true
 						state.Flags.wish_came_true = true
 						state.Money = (state.Money or 0) + 75000
-						state:AddFeed("👑💕 Your 'accident' worked! They found it adorable. You're now dating royalty! Childhood dreams do come true!")
+						
+						-- Also create a partner relationship for this path
+						local partnerGender = state.Gender == "Female" and "male" or "female"
+						local title = partnerGender == "male" and "Prince" or "Princess"
+						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe"}
+						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte"}
+						local royalCountries = {"Monaco", "Sweden", "Denmark", "Netherlands", "Belgium", "Luxembourg"}
+						local names = partnerGender == "male" and royalNames_male or royalNames_female
+						local country = royalCountries[math.random(1, #royalCountries)]
+						local name = names[math.random(1, #names)]
+						
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "royal_partner_bump",
+							name = title .. " " .. name .. " of " .. country,
+							type = "romantic",
+							role = "Royal Partner",
+							relationship = 80,
+							gender = partnerGender,
+							age = (state.Age or 25) + math.random(-3, 5),
+							alive = true,
+							metAge = state.Age,
+							isRoyalty = true,
+							royalCountry = country,
+							royalTitle = title,
+						}
+						
+						addFeed("👑💕 Your 'accident' worked! They found it adorable. You're now dating " .. title .. " " .. name .. "! Childhood dreams do come true!")
 					else
-						state:ModifyStat("Happiness", 5)
+						modifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
 						state.Flags.met_royalty = true
-						state:AddFeed("👑 The bump was awkward but they were gracious. You got their assistant's card!")
+						addFeed("👑 The bump was awkward but they were gracious. You got their assistant's card!")
 					end
 				end,
 			},
@@ -2106,7 +2170,25 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 50 },
 				feedText = "The fairy tale is complete...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 30)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 30)
 					state.Flags = state.Flags or {}
 					state.Flags.is_royalty = true
 					state.Flags.royal_by_marriage = true
@@ -2117,6 +2199,11 @@ PremiumIntegratedEvents.events = {
 
 					-- Massive wealth from marrying into royalty!
 					state.Money = (state.Money or 0) + 25000000
+					
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.role = "Royal Spouse"
+					end
 
 					-- Initialize royal state
 					state.RoyalState = state.RoyalState or {}
@@ -2125,8 +2212,9 @@ PremiumIntegratedEvents.events = {
 					state.RoyalState.popularity = 75
 					state.RoyalState.royalDuties = 0
 					state.RoyalState.scandals = 0
+					state.RoyalState.royalCountry = state.Relationships and state.Relationships.partner and state.Relationships.partner.royalCountry or "Monaco"
 
-					state:AddFeed("👑💍✨ YOU MARRIED INTO ROYALTY! Your childhood wish to live in a palace has COMPLETELY COME TRUE! You are now a member of the royal family with $25 million in royal gifts!")
+					addFeed("👑💍✨ YOU MARRIED INTO ROYALTY! Your childhood wish to live in a palace has COMPLETELY COME TRUE! You are now a member of the royal family with $25 million in royal gifts!")
 				end,
 			},
 			{
@@ -2141,9 +2229,14 @@ PremiumIntegratedEvents.events = {
 				feedText = "👑💔 You declined. The world might not understand, but it was your choice. The prince/princess left heartbroken...",
 				setFlags = { rejected_royalty = true },
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
 					state.Flags.dating_royalty = nil
 					state.Flags.royal_romance = nil
 					state.Flags.has_partner = nil
+					-- Clear partner relationship
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
 				end,
 			},
 		},
@@ -2183,7 +2276,25 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 15, Smarts = 5 },
 				feedText = "Becoming part of the family...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 20)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 20)
 					state.Flags = state.Flags or {}
 					state.Flags.in_mob = true
 					state.Flags.mafia_member = true
@@ -2205,7 +2316,7 @@ PremiumIntegratedEvents.events = {
 					state.MobState.successfulOps = 0
 					state.MobState.failedOps = 0
 
-					state:AddFeed("🔫✨ YOUR CHILDHOOD WISH FOR POWER CAME TRUE! You've been initiated into La Cosa Nostra! You received $50,000 as a welcome 'gift'. The life of crime awaits!")
+					addFeed("🔫✨ YOUR CHILDHOOD WISH FOR POWER CAME TRUE! You've been initiated into La Cosa Nostra! You received $50,000 as a welcome 'gift'. The life of crime awaits!")
 				end,
 			},
 			{
@@ -2255,27 +2366,46 @@ PremiumIntegratedEvents.events = {
 				effects = {},
 				feedText = "Taking on the big job...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
 					local successChance = 0.4 + (smarts / 200)
 
 					if roll < successChance then
-						state:ModifyStat("Happiness", 30)
+						modifyStat("Happiness", 30)
 						state.Money = (state.Money or 0) + 200000
 						state.MobState = state.MobState or {}
 						state.MobState.rankLevel = (state.MobState.rankLevel or 1) + 2
 						state.MobState.rankName = "Made Man"
 						state.MobState.rankEmoji = "🔫"
 						state.MobState.respect = (state.MobState.respect or 0) + 50
+						state.Flags = state.Flags or {}
 						state.Flags.made_man = true
-						state:AddFeed("🔫🎉 THE JOB WAS A SUCCESS! You've been 'made' - a full member of the family! You received $200,000 and massive respect. You're now a Made Man!")
+						addFeed("🔫🎉 THE JOB WAS A SUCCESS! You've been 'made' - a full member of the family! You received $200,000 and massive respect. You're now a Made Man!")
 					else
-						state:ModifyStat("Happiness", -20)
-						state:ModifyStat("Health", -15)
+						modifyStat("Happiness", -20)
+						modifyStat("Health", -15)
 						state.MobState = state.MobState or {}
 						state.MobState.heat = (state.MobState.heat or 0) + 30
 						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 20)
-						state:AddFeed("🔫💀 The job went sideways! You barely escaped. The family is disappointed, and you've got heat on you now.")
+						addFeed("🔫💀 The job went sideways! You barely escaped. The family is disappointed, and you've got heat on you now.")
 					end
 				end,
 			},
@@ -2331,16 +2461,42 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 30, Fame = 25 },
 				feedText = "Starting your journey to stardom...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 25)
-					state:ModifyStat("Fame", 30)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 25)
+					-- Handle Fame specially since it's not a standard stat
+					state.Fame = (state.Fame or 0) + 30
 					state.Flags = state.Flags or {}
 					state.Flags.is_famous = true
 					state.Flags.celebrity = true
 					state.Flags.discovered = true
 					state.Flags.fame_wish_granted = true
+					state.Flags.talent_discovered = true
 					state.Money = (state.Money or 0) + 100000 -- Signing bonus
+					
+					-- Initialize fame state for proper celebrity handling
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "entertainment"
+					state.FameState.talent = "acting"
+					state.FameState.discovered = true
 
-					state:AddFeed("⭐✨ YOUR CHILDHOOD WISH TO BE FAMOUS CAME TRUE! You signed with a major talent agency! You received $100,000 signing bonus and your career has LAUNCHED!")
+					addFeed("⭐✨ YOUR CHILDHOOD WISH TO BE FAMOUS CAME TRUE! You signed with a major talent agency! You received $100,000 signing bonus and your career has LAUNCHED!")
 				end,
 			},
 			{

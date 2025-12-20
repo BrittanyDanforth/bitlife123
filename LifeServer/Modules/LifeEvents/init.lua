@@ -1225,6 +1225,29 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- CRITICAL FIX #PREMIUM-1: Also check event.blockedFlags (not just blockedByFlags!)
+	-- Many events like premium wishes, mafia events, and royalty events use blockedFlags
+	-- at the top level instead of blockedByFlags. This was causing blocked events to still fire!
+	if event.blockedFlags then
+		if type(event.blockedFlags) == "table" then
+			if #event.blockedFlags > 0 then
+				-- Array format: { "married", "is_royalty" }
+				for _, flag in ipairs(event.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			else
+				-- Dictionary format: { married = true, is_royalty = true }
+				for flag, blockValue in pairs(event.blockedFlags) do
+					if blockValue == true and flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			end
+		end
+	end
+	
 	-- Support old "conditions.blockedFlags" format (array of flag names)
 	if cond.blockedFlags then
 		for _, flag in ipairs(cond.blockedFlags) do
@@ -2178,13 +2201,93 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WISH-1: CHILDHOOD WISH FOLLOW-UP EVENT INJECTION
+	-- If player made a childhood wish (palace_wish, power_wish, fame_wish, etc.)
+	-- we need to inject the wish follow-up events into the pool with HIGH priority!
+	-- These events make the wishes come true (meet royalty, join mafia, get discovered)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local history = getEventHistory(state)
+	local RANDOM_LOCAL = Random.new()
+	
+	-- Check for childhood wish flags
+	local hasRoyaltyWish = flags.palace_wish or flags.royal_fantasies
+	local hasMafiaWish = flags.power_wish or flags.fascinated_by_power
+	local hasFameWish = flags.fame_wish or flags.star_dreams or flags.performer
+	
+	-- ROYALTY WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasRoyaltyWish and age >= 18 and age <= 35 then
+		-- Check if they haven't already met royalty
+		if not flags.married and not flags.dating_royalty and not flags.is_royalty then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				-- Try to find and trigger the royalty encounter event
+				local wishEvent = AllEvents["premium_wish_royalty_encounter"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royalty_encounter"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents -- This is a major life event!
+					end
+				end
+			end
+		end
+		
+		-- Check for royal proposal if dating royalty
+		if flags.dating_royalty and flags.royal_romance and not flags.married then
+			if RANDOM_LOCAL:NextNumber() < 0.35 then
+				local proposalEvent = AllEvents["premium_wish_royal_proposal"]
+				if proposalEvent and canEventTrigger(proposalEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royal_proposal"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, proposalEvent)
+						recordEventShown(state, proposalEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- MAFIA WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasMafiaWish and age >= 18 and age <= 35 then
+		if not flags.in_mob and not flags.refused_mob then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_mafia_approach"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_mafia_approach"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- FAME WISH FOLLOW-UP: 25% chance per year if player made the wish and is young adult
+	if hasFameWish and age >= 16 and age <= 30 then
+		if not flags.is_famous and not flags.celebrity then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_fame_discovery"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_fame_discovery"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #105/#116: GUARANTEED PREMIUM EVENT CHECK
 	-- For royal/mafia/celebrity players, ensure they get premium events frequently
 	-- This runs a 40% chance to force a premium event for engaged premium players
 	-- Without this, premium events were being drowned out by regular events!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local history = getEventHistory(state)
-	local RANDOM_LOCAL = Random.new()
 	
 	-- Royal players: 40% chance to get a royal event each year
 	local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
@@ -3630,6 +3733,30 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if choice.onResolve and type(choice.onResolve) == "function" then
+		-- CRITICAL FIX #PREMIUM-2: Ensure state object has necessary methods
+		-- Some events (especially premium events) use state:ModifyStat() and state:AddFeed()
+		-- which may not exist if state is a plain table. Inject these methods if missing.
+		if not state.ModifyStat then
+			state.ModifyStat = function(self, statName, delta)
+				self.Stats = self.Stats or {}
+				-- Initialize stat if missing
+				if self.Stats[statName] == nil then
+					local defaults = { Happiness = 50, Health = 50, Smarts = 50, Looks = 50 }
+					self.Stats[statName] = defaults[statName] or 50
+				end
+				self.Stats[statName] = math.max(0, math.min(100, (self.Stats[statName] or 50) + delta))
+				return self
+			end
+		end
+		if not state.AddFeed then
+			state.AddFeed = function(self, text)
+				if text and text ~= "" then
+					self.PendingFeed = text
+				end
+				return self
+			end
+		end
+		
 		local success, err = pcall(function()
 			-- CRITICAL FIX: Check if this choice has a minigame trigger
 			-- If so, the onResolve expects (state, minigameResult) signature
