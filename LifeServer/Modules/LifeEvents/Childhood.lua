@@ -413,11 +413,17 @@ Childhood.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- LATE CHILDHOOD (Ages 9-12)
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: discovered_passion now actually DOES something!
+	-- User complaint: "DISCOVERED_PASSION DOES NOTHING BRUH"
+	-- Now sets multiple flags AND provides stat bonuses that matter!
+	-- These flags will boost related career events and unlock special paths
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "discovered_passion",
 		title = "Finding Your Passion",
 		emoji = "⭐",
-		text = "Something really captured your interest and imagination!",
+		text = "Something really captured your interest and imagination! This could shape your future!",
 		question = "What got you excited?",
 		minAge = 6, maxAge = 12,
 		oneTime = true,
@@ -432,12 +438,86 @@ Childhood.events = {
 		careerTags = { "sports", "creative", "science", "tech", "medical", "entertainment" },
 
 		choices = {
-			{ text = "Sports and athletics", effects = { Health = 5, Happiness = 5 }, setFlags = { passionate_athlete = true }, hintCareer = "sports", feedText = "You fell in love with sports!" },
-			{ text = "Art and creativity", effects = { Happiness = 7, Looks = 3 }, setFlags = { passionate_artist = true }, hintCareer = "creative", feedText = "Your creative soul awakened!" },
-			{ text = "Science and discovery", effects = { Smarts = 7 }, setFlags = { passionate_scientist = true }, hintCareer = "science", feedText = "The mysteries of the universe call to you!" },
-			{ text = "Building and creating things", effects = { Smarts = 5, Happiness = 3 }, setFlags = { passionate_builder = true }, hintCareer = "tech", feedText = "You love making things with your hands and mind!" },
-			{ text = "Helping and caring for others", effects = { Happiness = 5 }, setFlags = { passionate_helper = true }, hintCareer = "medical", feedText = "You have a natural desire to help others!" },
-			{ text = "Music and performance", effects = { Happiness = 7, Looks = 2 }, setFlags = { passionate_performer = true }, hintCareer = "entertainment", feedText = "The stage calls to you!" },
+			{ 
+				text = "Sports and athletics", 
+				effects = { Health = 10, Happiness = 8 },  -- BIGGER stat bonuses!
+				setFlags = { 
+					passionate_athlete = true, 
+					discovered_passion = true,
+					athletic_talent = true,
+					sports_interest = true,
+					-- These flags unlock sports career paths later!
+					likes_sports = true,
+				}, 
+				hintCareer = "sports", 
+				feedText = "⭐ Sports became your passion! You'll get more athletic opportunities!",
+			},
+			{ 
+				text = "Art and creativity", 
+				effects = { Happiness = 10, Looks = 5, Smarts = 3 }, 
+				setFlags = { 
+					passionate_artist = true,
+					discovered_passion = true,
+					creative_talent = true,
+					artistic = true,
+					likes_art = true,
+				}, 
+				hintCareer = "creative", 
+				feedText = "⭐ Art ignited your soul! You'll get more creative opportunities!",
+			},
+			{ 
+				text = "Science and discovery", 
+				effects = { Smarts = 12, Happiness = 5 }, 
+				setFlags = { 
+					passionate_scientist = true,
+					discovered_passion = true,
+					science_talent = true,
+					curious_mind = true,
+					likes_science = true,
+				}, 
+				hintCareer = "science", 
+				feedText = "⭐ Science captured your imagination! Research opportunities await!",
+			},
+			{ 
+				text = "Building and creating things", 
+				effects = { Smarts = 8, Happiness = 6 }, 
+				setFlags = { 
+					passionate_builder = true,
+					discovered_passion = true,
+					tech_talent = true,
+					problem_solver = true,
+					likes_tech = true,
+				}, 
+				hintCareer = "tech", 
+				feedText = "⭐ You love building things! Tech and engineering paths open up!",
+			},
+			{ 
+				text = "Helping and caring for others", 
+				effects = { Happiness = 10, Health = 3 }, 
+				setFlags = { 
+					passionate_helper = true,
+					discovered_passion = true,
+					empathetic = true,
+					caring_nature = true,
+					likes_helping = true,
+				}, 
+				hintCareer = "medical", 
+				feedText = "⭐ Helping others is your calling! Healthcare paths await!",
+			},
+			{ 
+				text = "Music and performance", 
+				effects = { Happiness = 12, Looks = 4 }, 
+				setFlags = { 
+					passionate_performer = true,
+					discovered_passion = true,
+					musical_talent = true,
+					natural_performer = true,
+					likes_music = true,
+					likes_performing = true,
+				}, 
+				hintCareer = "entertainment", 
+				feedText = "⭐ The stage is calling! Entertainment opportunities await!",
+			},
 		},
 	},
 

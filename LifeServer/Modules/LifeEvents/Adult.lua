@@ -1694,15 +1694,101 @@ Adult.events = {
 			{ text = "Turning their room into something fun", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!" },
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Parent Death Event - Parents should realistically die!
+	-- User complaint: "IM 69 YEARS OLD AND MY PARENTS ARE STILL ALIVE?!"
+	-- This event triggers when parents would realistically pass away
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "parent_passes_away",
+		title = "Losing a Parent",
+		emoji = "💔",
+		text = "You've received devastating news. One of your parents has passed away.",
+		question = "You have to say goodbye...",
+		minAge = 40, maxAge = 80,
+		baseChance = 0.40,
+		cooldown = 5,
+		priority = "high",
+		isMilestone = true,
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local age = state.Age or 0
+			
+			-- If both parents already dead, don't trigger
+			if flags.lost_both_parents or flags.orphan then
+				return false
+			end
+			
+			-- Estimate parent age (assuming parents are 25-35 years older)
+			local parentAgeGap = 30
+			local parentAge = age + parentAgeGap
+			
+			-- Parents realistically start dying around 70+
+			-- Higher chance as parent age increases
+			if parentAge < 65 then
+				return false -- Parents too young to die of natural causes typically
+			end
+			
+			-- Increase chance based on parent age
+			local deathChance = 0
+			if parentAge >= 90 then
+				deathChance = 70 -- Very high chance at 90+
+			elseif parentAge >= 85 then
+				deathChance = 50
+			elseif parentAge >= 80 then
+				deathChance = 35
+			elseif parentAge >= 75 then
+				deathChance = 20
+			elseif parentAge >= 70 then
+				deathChance = 10
+			elseif parentAge >= 65 then
+				deathChance = 5
+			end
+			
+			-- Roll to see if event should trigger
+			return math.random(100) <= deathChance
+		end,
+		
+		choices = {
+			{
+				text = "Be there for the funeral",
+				effects = { Happiness = -25, Health = -5 },
+				setFlags = { lost_parent = true, grieving = true },
+				feedText = "💔 Your parent is gone. You'll never forget them.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Check if this is second parent loss
+					if state.Flags.lost_parent then
+						state.Flags.lost_both_parents = true
+						state.Flags.orphan = true
+						state:AddFeed("💔 Both parents gone now. You feel truly alone in the world.")
+					end
+				end,
+			},
+			{
+				text = "Celebrate their life",
+				effects = { Happiness = -15, Health = -2, Smarts = 3 },
+				setFlags = { lost_parent = true },
+				feedText = "💔 Gone but never forgotten. Their memory lives on in you.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if state.Flags.lost_parent then
+						state.Flags.lost_both_parents = true
+					end
+				end,
+			},
+		},
+	},
 	{
 		id = "parent_health_crisis",
 		title = "Parent's Health Crisis",
 		emoji = "🏥",
 		text = "One of your parents is having serious health problems.",
 		question = "How do you respond?",
-		minAge = 35, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 5,
+		minAge = 35, maxAge = 70, -- Extended age range
+		baseChance = 0.35,
+		cooldown = 4,
 		
 		-- CRITICAL FIX #8: Parent health crisis requires living parents!
 		eligibility = function(state)

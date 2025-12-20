@@ -196,12 +196,28 @@ local events = {
 		},
 	},
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Driver's Ed with TEXT VARIATIONS!
+	-- User complaint: "THE DRIVERS ED IS ALLWAYS THE SAME EXACT TEXT BRUH"
+	-- Added 6 different text variations for variety across playthroughs
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "learning_to_drive",
 		emoji = "🚗",
 		title = "Driver's Ed & First Time Behind the Wheel",
-		-- CRITICAL FIX: Removed hardcoded age "16"
-		text = "You're {{AGE}}. It's time to learn to drive. Your driving instructor has SEEN THINGS. You're in the parking lot. Your hands are SWEATING on the steering wheel. She says, 'Put it in Drive and ease onto the gas.' Your foot is shaking. This is REAL. You could crash. Deep breath. Here we go.",
+		-- CRITICAL FIX: textVariants array for random variation each playthrough!
+		textVariants = {
+			"It's time to learn to drive. Your driving instructor has SEEN THINGS. You're in the parking lot. Your hands are SWEATING on the steering wheel. She says, 'Put it in Drive and ease onto the gas.' Your foot is shaking. This is REAL. Deep breath. Here we go.",
+			"Your first driving lesson begins! The instructor, Mr. Rodriguez, has been teaching for 30 years and has clearly lost hope in humanity. 'Okay, mirrors first. MIRRORS.' You adjust them wrong three times. The car hasn't even moved yet and you're already sweating.",
+			"Driver's Ed day has arrived! Your instructor, Ms. Park, greets you with a tired smile. She's clutching a travel mug like it's a lifeline. 'Alright, let's start with the basics.' She points at the dashboard. You have no idea what any of those symbols mean.",
+			"You're finally behind the wheel! The instructor, Mr. Thompson, double-checks his seatbelt. Then triple-checks it. 'The brake is on the left. PLEASE remember that.' He looks like he's praying. This is going to be interesting.",
+			"First time driving! Your instructor, Mrs. Chen, seems calm but her foot is hovering over her brake pedal. 'Nice and easy. Think of the gas pedal like a soft egg.' You're pretty sure you're about to scramble that egg.",
+			"The moment has come - learning to drive! Your instructor grips the oh-no handle immediately. 'Before we start, I want you to know - the car will stop if you take your foot off the gas.' They say this like it's ground-breaking news. It probably is.",
+			"Today's the day - Driver's Ed! Your instructor looks at you and sighs deeply. 'I've been doing this for 20 years. I've seen things you wouldn't believe. Just... don't hit anything.' Inspirational.",
+			"Learning to drive! Your instructor asks if you've played any racing video games. 'Forget everything you learned from those,' they say firmly. 'Real driving is about NOT hitting things.'",
+		},
+		-- Fallback text
+		text = "It's time to learn to drive. Your driving instructor has SEEN THINGS. Your hands are sweating on the steering wheel. Deep breath. Here we go.",
 		question = "What kind of driver are you?",
 		category = "milestone",
 		weight = 9,
@@ -243,11 +259,26 @@ local events = {
 		},
 	},
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: High School Graduation with TEXT VARIATIONS!
+	-- User complaint: "HIGH SCHOOL GRADUATION IS ALLWAYS SAME NO VARIATIONS"
+	-- Added multiple text variations based on different experiences
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "high_school_graduation",
 		emoji = "🎓",
 		title = "High School Graduation Day",
-		text = "You're sitting in an auditorium wearing a cap and gown. You've been here since 8am. It's been 3 HOURS of speeches and names. Finally: 'And now, graduating with a 3.7 GPA, [YOUR NAME]!' You walk across the stage. Your family is SCREAMING your name. Your mom is crying. Your dad is filming vertically (tragic). You grab your diploma. High school is OVER. What now?",
+		textVariants = {
+			"You're sitting in an auditorium wearing a cap and gown. You've been here since 8am. It's been 3 HOURS of speeches and names. Finally: 'And now, graduating... [YOUR NAME]!' You walk across the stage. Your family is SCREAMING your name. Your mom is crying. Your dad is filming vertically (tragic). You grab your diploma. High school is OVER. What now?",
+			"Graduation day has arrived! The gymnasium is packed with families. Someone's baby won't stop crying. The valedictorian's speech is putting everyone to sleep. But then YOUR name is called and suddenly none of that matters. You did it. You actually did it. Four years of drama, tests, and cafeteria food - all for this moment.",
+			"The ceremony seemed endless, but now you're walking across that stage! Your friends are cheering. Your parents are an emotional mess in the audience. The principal hands you your diploma with a firm handshake. You flip your tassel. This chapter of your life is officially closed.",
+			"High school graduation! You almost can't believe you made it. Through all the late-night cramming, the friend drama, the awkward phases - here you are. A graduate. Your family takes approximately 500 photos. Your face hurts from smiling. Worth it.",
+			"The caps are flying! Four years of your life, distilled into one ceremony. One handshake. One diploma. Your classmates are crying and hugging. Some you'll never see again. Others will be your friends for life. But right now, in this moment, you're all just graduates.",
+			"You walk across that stage and grab your diploma. In your head, you're replaying the last four years like a movie montage. The good times. The bad times. The WEIRD times. And now? A whole new adventure awaits. Your whole life is ahead of you.",
+			"Graduation! The principal calls your name - they somehow STILL mispronounce it. Classic. But you don't care. You're done! DONE! No more early mornings. No more boring assemblies. Well, until college at least. But that's future you's problem.",
+			"The ceremony is over and reality hits - you're actually graduating. No more high school hallways. No more locker combinations. No more weird lunch schedules. You're holding your diploma and your whole family is ugly-crying with pride. Even your dad.",
+		},
+		text = "You're sitting in an auditorium wearing a cap and gown. Finally: your name is called! You walk across the stage. Your family is cheering. You grab your diploma. High school is OVER. What now?",
 		question = "What's your next chapter?",
 		category = "milestone",
 		weight = 10,

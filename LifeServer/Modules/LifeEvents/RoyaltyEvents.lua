@@ -1379,10 +1379,9 @@ RoyaltyEvents.LifeEvents = {
 	},
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #187: Fixed coronation event spam
-	-- 1. Changed becomesMonarch to becomeMonarch (matching EventEngine)
-	-- 2. Added oneTime = true to prevent repeated coronations
-	-- 3. Added maxOccurrences = 1 as safety
-	-- 4. Added cooldown = 40 to prevent any repeat
+	-- CRITICAL FIX: Added parent death requirement!
+	-- User complaint: "IT SAYS YOU'RE BECOMING A RULER BUT MY PARENT HASNT DIED!"
+	-- Coronation should ONLY happen when parent monarch has actually passed away!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
@@ -1394,14 +1393,33 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 90,
 		isRoyalOnly = true,
 		isMilestone = true,
-		oneTime = true, -- CRITICAL FIX: Only once ever!
-		maxOccurrences = 1, -- CRITICAL FIX: Safety - max 1 occurrence
-		cooldown = 40, -- CRITICAL FIX: Huge cooldown as extra safety
+		oneTime = true,
+		maxOccurrences = 1,
+		cooldown = 40,
 		priority = "critical",
 		conditions = { 
 			requiresFlags = { throne_ready = true },
-			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true }, -- Block if already monarch OR crowned
+			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true },
 		},
+		-- CRITICAL FIX: Extra eligibility check to ensure parent monarch is dead!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- throne_ready flag should only be set when parent dies, but double-check
+			if not flags.throne_ready then return false end
+			-- Check if parent monarch has passed
+			if flags.parent_monarch_alive then
+				return false, "Parent monarch is still alive"
+			end
+			-- Check RoyalState for monarch parent status
+			if state.RoyalState then
+				local rs = state.RoyalState
+				-- If lineOfSuccession is 1, parent should be dead
+				if rs.lineOfSuccession ~= 1 then
+					return false, "Not first in line for succession"
+				end
+			end
+			return true
+		end,
 		choices = {
 			{
 				text = "Accept the crown proudly! 👑",
@@ -3073,15 +3091,47 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 		end
 	end
 	
-	-- Check if ready for coronation
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Coronation requires ACTUAL parent monarch death!
+	-- User complaint: "IT SAYS BECOMING RULER BUT MY PARENT HASNT DIED"
+	-- Changed: Only set throne_ready when parent monarch actually dies
+	-- Monarch death now requires age-based probability with actual death event
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not royalState.isMonarch and royalState.lineOfSuccession == 1 and age >= 21 then
-		if math.random(100) <= 10 then -- 10% chance per year when next in line and adult
+		-- Get parent monarch's estimated age (player age + ~25-30 years)
+		local parentMonarchAge = age + (royalState.parentAgeGap or 28)
+		
+		-- Check if monarch parent could pass away based on realistic age
+		-- Parents typically shouldn't die before age 60, increases after
+		local deathChance = 0
+		if parentMonarchAge >= 90 then
+			deathChance = 40 -- High chance at 90+
+		elseif parentMonarchAge >= 80 then
+			deathChance = 20 -- Moderate chance at 80+
+		elseif parentMonarchAge >= 70 then
+			deathChance = 8  -- Lower chance at 70+
+		elseif parentMonarchAge >= 60 then
+			deathChance = 3  -- Small chance at 60+
+		end
+		-- Note: No chance below 60 - parents should live reasonably long
+		
+		if deathChance > 0 and math.random(100) <= deathChance then
 			lifeState.Flags = lifeState.Flags or {}
 			lifeState.Flags.throne_ready = true
 			lifeState.Flags.is_heir = true
+			lifeState.Flags.parent_monarch_deceased = true -- Mark parent as deceased!
+			royalState.parentMonarchDeceased = true -- Track in royal state
 			table.insert(events, {
-				type = "succession_imminent",
-				message = "👑 The current monarch's health is declining. You may soon inherit the throne!",
+				type = "monarch_death",
+				message = "👑 The monarch has passed away. You are now heir to the throne and coronation awaits!",
+			})
+		elseif parentMonarchAge >= 75 and not lifeState.Flags.monarch_health_warned and math.random(100) <= 15 then
+			-- Warning about declining health (no coronation yet)
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.monarch_health_warned = true
+			table.insert(events, {
+				type = "succession_warning",
+				message = "👑 The current monarch's health is declining. You may need to prepare for the throne.",
 			})
 		end
 	end

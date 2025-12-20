@@ -696,52 +696,72 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #646-650: ROYAL EDUCATION BLOCKING
-	-- Royals do NOT attend normal public schools!
-	-- They have private tutors, elite boarding schools, and prestigious academies
-	-- Block normal school events for royal players
+	-- CRITICAL FIX #646-650: ROYAL LIFESTYLE BLOCKING
+	-- Royals have completely different experiences than commoners!
+	-- User complaint: "IM ROYALTY BUT GETTING NORMAL ELEMENTARY SCHOOL AND LIFE ASSESSMENT EVENTS"
+	-- MASSIVELY expanded list of events that royals should NOT see
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local isRoyal = flags.is_royalty or flags.royal_birth 
 		or (state.RoyalState and state.RoyalState.isRoyal)
 	
 	if isRoyal then
-		-- List of normal school event IDs that royals should NOT see
-		local normalSchoolEventIds = {
-			"starting_school", "first_day_school", "elementary_start", "middle_school_start",
-			"high_school_start", "public_school", "first_grade", "kindergarten",
-			"school_bully", "homework_help", "cafeteria", "school_detention",
-			"school_play", "school_dance", "school_suspension", "normal_education",
-			"public_education", "regular_school", "school_registration",
-		}
-		
-		-- Check if this is a normal school event
-		local eventId = event.id and event.id:lower() or ""
-		local eventTitle = event.title and event.title:lower() or ""
-		
-		for _, schoolId in ipairs(normalSchoolEventIds) do
-			if eventId:find(schoolId) or eventTitle:find(schoolId) then
-				-- CRITICAL FIX #647: Only block if event is NOT marked as royal education
-				if not event.isRoyalOnly and not event.isRoyalEducation then
-					return false -- Royals don't attend normal school!
+		-- If this event is specifically FOR royals, allow it!
+		if event.isRoyalOnly or event.isRoyalEducation or event.isRoyalEvent then
+			-- Royal event - explicitly allow it
+		else
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL: List of "commoner" events that royals should NOT see
+			-- Royals have private tutors, security, chauffeurs, etc.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local normalLifeEventIds = {
+				-- School events (royals have private education)
+				"starting_school", "first_day_school", "elementary_start", "middle_school_start",
+				"high_school_start", "public_school", "first_grade", "kindergarten",
+				"school_bully", "homework_help", "cafeteria", "school_detention",
+				"school_play", "school_dance", "school_suspension", "normal_education",
+				"public_education", "regular_school", "school_registration",
+				-- Life assessment events (royals have different life milestones)
+				"life_assessment", "approaching_30", "quarter_life_crisis", "midlife_reflection",
+				"life_crossroads", "turning_30", "turning_40", "dirty_thirty",
+				-- Driving events (royals have chauffeurs)
+				"learning_to_drive", "driver_ed", "first_drive", "parking_disaster",
+				-- Job hunting (royals don't need normal jobs)
+				"job_interview", "job_search", "unemployment", "fired", "laid_off",
+				-- Housing struggles (royals have palaces)
+				"eviction", "rent_due", "homeless", "apartment_hunting", "roommate",
+				-- Money struggles (royals are wealthy)
+				"financial_crisis", "broke", "debt_collector", "payday_loan",
+			}
+			
+			local eventId = event.id and event.id:lower() or ""
+			local eventTitle = event.title and event.title:lower() or ""
+			
+			-- Check if this is a "normal life" event
+			for _, normalId in ipairs(normalLifeEventIds) do
+				if eventId:find(normalId) then
+					return false -- Royals don't experience commoner life events!
 				end
 			end
-		end
-		
-		-- CRITICAL FIX #648: Also check for generic school tags
-		if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
-			return false -- Block any explicitly public school events
-		end
-		
-		-- CRITICAL FIX #649: Check education type requirements
-		if event.requiresEducationType then
-			local eduType = event.requiresEducationType:lower()
-			if eduType == "public" or eduType == "normal" or eduType == "public_school" then
-				return false -- Royals don't have public school education
+			
+			-- CRITICAL FIX #648: Also check for generic school tags
+			if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
+				return false -- Block any explicitly public school events
+			end
+			
+			-- CRITICAL FIX #649: Check education type requirements
+			if event.requiresEducationType then
+				local eduType = event.requiresEducationType:lower()
+				if eduType == "public" or eduType == "normal" or eduType == "public_school" then
+					return false -- Royals don't have public school education
+				end
+			end
+			
+			-- CRITICAL FIX: Block events that are obviously for commoners
+			if event.isCommonerEvent or event.isWorkingClass then
+				return false
 			end
 		end
-		
-		-- CRITICAL FIX #650: Boost royal education events for royals
-		-- (This is handled in the weight calculation section)
+		-- CRITICAL FIX #650: Royal events are boosted in weight calculation
 	end
 	
 	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
@@ -1155,6 +1175,25 @@ local function canEventTrigger(event, state)
 			if requiredValue == false and playerHasFlag then
 				return false -- Has blocked flag
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support requiresAnyFlags - player must have AT LEAST ONE of these flags
+	-- User complaint: "BIG AUDITION popping up when I never did any acting!"
+	-- Events like fame_audition have requiresAnyFlags = { talent_acting = true, ... }
+	-- but this wasn't being checked! Player needs at least ONE talent flag.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresAnyFlags then
+		local hasAnyFlag = false
+		for flag, requiredValue in pairs(event.requiresAnyFlags) do
+			if requiredValue == true and flags[flag] then
+				hasAnyFlag = true
+				break
+			end
+		end
+		if not hasAnyFlag then
+			return false -- Player doesn't have ANY of the required flags
 		end
 	end
 	

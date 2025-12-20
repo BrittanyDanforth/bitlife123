@@ -10145,7 +10145,8 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #302: Handle mafia-specific effects from mob operations
-	-- Without this, mafia activities wouldn't affect respect/heat/earnings
+	-- CRITICAL FIX: Minigame success NOW reduces risk! Also fixed "success but jailed" bug
+	-- User complaint: "Crime successful but still sentenced?!"
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.mafiaEffect then
 		state.MobState = state.MobState or {}
@@ -10165,20 +10166,58 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		end
 		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
 		
-		-- Risk check for mafia operations
-		if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
-			-- Got caught doing mafia business
-			local jailYears = math.ceil(activity.risk / 15)
-			state.InJail = true
-			state.JailYearsLeft = jailYears
-			state.Flags.in_prison = true
-			state.Flags.incarcerated = true
-			-- CRITICAL FIX #253: Preserve mob membership when jailed from mafia ops
-			if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
-				state.Flags.was_in_mob_before_jail = true
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Risk check - minigame success REDUCES risk!
+		-- Without this, winning the minigame does nothing and you still get jailed
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if activity.risk then
+			local actualRisk = activity.risk
+			
+			-- CRITICAL FIX: If minigame was WON, MASSIVELY reduce risk
+			-- minigameBonus can be: { won = true, success = true } from client
+			if type(minigameBonus) == "table" then
+				if minigameBonus.won or minigameBonus.success then
+					-- Won minigame = 80% reduction in risk
+					actualRisk = math.floor(actualRisk * 0.2)
+				elseif minigameBonus.failed == false then
+					-- Passed minigame but not perfectly = 50% reduction
+					actualRisk = math.floor(actualRisk * 0.5)
+				end
+			elseif type(minigameBonus) == "number" then
+				-- Old-style bonus: subtract from risk
+				actualRisk = math.max(1, actualRisk - minigameBonus)
 			end
-			resultMessage = "You got caught! Sentenced to " .. jailYears .. " years in prison."
-			gotCaught = true
+			
+			-- Also reduce risk based on player's stats and experience
+			local smarts = (state.Stats and state.Stats.Smarts) or 50
+			if smarts > 70 then
+				actualRisk = actualRisk - math.floor((smarts - 70) / 5)
+			end
+			if state.MobState.operationsCompleted and state.MobState.operationsCompleted > 10 then
+				actualRisk = actualRisk - 5 -- Experienced mobster bonus
+			end
+			
+			-- CRITICAL: Make sure actualRisk doesn't go negative
+			actualRisk = math.max(1, actualRisk)
+			
+			-- Roll for getting caught
+			if RANDOM:NextInteger(1, 100) <= actualRisk then
+				-- Got caught doing mafia business
+				local jailYears = math.ceil(activity.risk / 15)
+				state.InJail = true
+				state.JailYearsLeft = jailYears
+				state.Flags.in_prison = true
+				state.Flags.incarcerated = true
+				-- Preserve mob membership when jailed from mafia ops
+				if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+					state.Flags.was_in_mob_before_jail = true
+				end
+				resultMessage = "🚔 You got caught! Sentenced to " .. jailYears .. " years in prison."
+				gotCaught = true
+			else
+				-- CRITICAL: Explicitly show that crime succeeded with NO jail
+				resultMessage = "💰 " .. resultMessage .. " Got away clean!"
+			end
 		end
 	end
 
