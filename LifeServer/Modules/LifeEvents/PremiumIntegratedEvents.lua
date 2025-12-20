@@ -1957,6 +1957,406 @@ PremiumIntegratedEvents.events = {
 			},
 		},
 	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: WISH FOLLOW-UP EVENTS
+	-- These events trigger when the player made a premium wish as a child
+	-- and actually make their dreams come true!
+	-- ══════════════════════════════════════════════════════════════════════════════
+
+	-- ROYALTY PATH: Childhood wish leads to meeting royalty!
+	{
+		id = "premium_wish_royalty_encounter",
+		title = "👑 Dreams Come True!",
+		emoji = "👑",
+		text = "Remember that birthday wish you made as a child? You wished to live in a palace... and today, at a charity gala, you lock eyes with a REAL prince/princess from a European kingdom. They seem captivated by you!",
+		question = "Your childhood dream might be coming true! What do you do?",
+		minAge = 18, maxAge = 35,
+		baseChance = 0.85, -- High chance if you have the flags!
+		cooldown = 50, -- Once per life
+		oneTime = true,
+		maxOccurrences = 1,
+		stage = "random",
+		category = "romance",
+		priority = "high",
+		tags = { "royalty", "romance", "wish_fulfillment", "fairy_tale" },
+
+		-- CRITICAL: Only triggers for players who made the palace wish!
+		-- Uses eligibility instead of requiresFlags to support multiple flag options
+		blockedFlags = { married = true, dating_royalty = true, is_royalty = true },
+		requiresGamepass = "ROYALTY",
+
+		eligibility = function(state)
+			-- Check for EITHER palace_wish OR royal_fantasies flag
+			local hasWish = state.Flags and (state.Flags.palace_wish or state.Flags.royal_fantasies)
+			local looks = (state.Stats and state.Stats.Looks) or 50
+			return hasWish and looks >= 40, "Need palace wish or royal fantasies and decent looks"
+		end,
+
+		choices = {
+			{
+				text = "💕 Walk up and introduce yourself (be charming!)",
+				effects = { Happiness = 20 },
+				feedText = "Taking your shot at royalty...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random()
+					-- Very high success chance since this is a wish-fulfillment event!
+					local successChance = 0.65 + (looks / 200)
+
+					if roll < successChance then
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating_royalty = true
+						state.Flags.royal_romance = true
+						state.Flags.wish_came_true = true
+						state.Money = (state.Money or 0) + 100000 -- Royal gifts!
+
+						-- Create royal partner
+						local partnerGender = state.Gender == "Female" and "male" or "female"
+						local title = partnerGender == "male" and "Prince" or "Princess"
+						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe", "Guillaume"}
+						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte", "Leonor"}
+						local royalCountries = {"Monaco", "Sweden", "Denmark", "Netherlands", "Belgium", "Luxembourg", "Norway"}
+						local names = partnerGender == "male" and royalNames_male or royalNames_female
+						local country = royalCountries[math.random(1, #royalCountries)]
+						local name = names[math.random(1, #names)]
+
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "royal_partner_wish",
+							name = title .. " " .. name .. " of " .. country,
+							type = "romantic",
+							role = "Royal Partner",
+							relationship = 85,
+							gender = partnerGender,
+							age = (state.Age or 25) + math.random(-3, 5),
+							alive = true,
+							metAge = state.Age,
+							isRoyalty = true,
+							royalCountry = country,
+							royalTitle = title,
+						}
+
+						state:AddFeed("👑✨ YOUR CHILDHOOD WISH CAME TRUE! You're dating " .. title .. " " .. name .. " of " .. country .. "! This is a FAIRY TALE come to life!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.met_royalty = true
+						state:AddFeed("👑 They were charming but had to leave. You exchanged numbers though - maybe next time!")
+					end
+				end,
+			},
+			{
+				text = "🙈 Too nervous - just admire from afar",
+				effects = { Happiness = -5 },
+				feedText = "👑 You froze up. The royalty left, and with them, your chance. But dreams don't give up easily...",
+				setFlags = { missed_royal_chance = true },
+			},
+			{
+				text = "📱 Casually 'accidentally' bump into them",
+				effects = { Happiness = 15 },
+				feedText = "Playing it smooth...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating_royalty = true
+						state.Flags.royal_romance = true
+						state.Flags.wish_came_true = true
+						state.Money = (state.Money or 0) + 75000
+						state:AddFeed("👑💕 Your 'accident' worked! They found it adorable. You're now dating royalty! Childhood dreams do come true!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Flags.met_royalty = true
+						state:AddFeed("👑 The bump was awkward but they were gracious. You got their assistant's card!")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ROYALTY PROPOSAL - Follows the encounter event
+	{
+		id = "premium_wish_royal_proposal",
+		title = "👑💍 A Royal Proposal!",
+		emoji = "👑",
+		text = "Your royal partner kneels before you with a stunning ring. 'You've changed my life,' they say. 'I want to make you part of my world - forever. The kingdom awaits their new prince/princess!'",
+		question = "This is the ultimate fairy tale moment! What do you say?",
+		minAge = 19, maxAge = 50,
+		baseChance = 0.9, -- Almost guaranteed if you have the flags
+		cooldown = 99,
+		oneTime = true,
+		maxOccurrences = 1,
+		stage = "random",
+		category = "romance",
+		priority = "critical",
+		tags = { "royalty", "proposal", "marriage", "fairy_tale" },
+
+		requiresFlags = { dating_royalty = true, royal_romance = true },
+		blockedFlags = { married = true, is_royalty = true },
+		requiresGamepass = "ROYALTY",
+
+		choices = {
+			{
+				text = "💍 YES! I'll be royalty!",
+				effects = { Happiness = 50 },
+				feedText = "The fairy tale is complete...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 30)
+					state.Flags = state.Flags or {}
+					state.Flags.is_royalty = true
+					state.Flags.royal_by_marriage = true
+					state.Flags.married = true
+					state.Flags.engaged = nil
+					state.Flags.dating_royalty = nil
+					state.Flags.fairy_tale_complete = true
+
+					-- Massive wealth from marrying into royalty!
+					state.Money = (state.Money or 0) + 25000000
+
+					-- Initialize royal state
+					state.RoyalState = state.RoyalState or {}
+					state.RoyalState.isRoyal = true
+					state.RoyalState.title = state.Gender == "Female" and "Princess Consort" or "Prince Consort"
+					state.RoyalState.popularity = 75
+					state.RoyalState.royalDuties = 0
+					state.RoyalState.scandals = 0
+
+					state:AddFeed("👑💍✨ YOU MARRIED INTO ROYALTY! Your childhood wish to live in a palace has COMPLETELY COME TRUE! You are now a member of the royal family with $25 million in royal gifts!")
+				end,
+			},
+			{
+				text = "🤔 I need time to think...",
+				effects = { Happiness = 5 },
+				setFlags = { considering_royal_proposal = true },
+				feedText = "👑 They understand. 'Take all the time you need, my love.'",
+			},
+			{
+				text = "💔 I can't handle royal life",
+				effects = { Happiness = -20 },
+				feedText = "👑💔 You declined. The world might not understand, but it was your choice. The prince/princess left heartbroken...",
+				setFlags = { rejected_royalty = true },
+				onResolve = function(state)
+					state.Flags.dating_royalty = nil
+					state.Flags.royal_romance = nil
+					state.Flags.has_partner = nil
+				end,
+			},
+		},
+	},
+
+	-- MAFIA PATH: Childhood wish leads to mob recruitment!
+	{
+		id = "premium_wish_mafia_approach",
+		title = "🔫 An Offer You Can't Refuse",
+		emoji = "🔫",
+		text = "Remember wishing for 'unlimited power' as a kid? A well-dressed man approaches you at a café. 'I've been watching you,' he says. 'You remind me of myself when I was young. I can offer you power, money, respect... but once you're in, you're family for life.'",
+		question = "The mob is recruiting YOU! Your childhood wish for power might come true...",
+		minAge = 18, maxAge = 35,
+		baseChance = 0.85,
+		cooldown = 50,
+		oneTime = true,
+		maxOccurrences = 1,
+		stage = "random",
+		category = "crime",
+		priority = "high",
+		tags = { "mafia", "recruitment", "wish_fulfillment", "power" },
+
+		-- CRITICAL: Only triggers for players who wished for power!
+		-- Uses eligibility instead of requiresFlags to support multiple flag options
+		blockedFlags = { in_mob = true, refused_mob = true },
+		requiresGamepass = "MAFIA",
+
+		eligibility = function(state)
+			-- Check for EITHER power_wish OR fascinated_by_power flag
+			local hasWish = state.Flags and (state.Flags.power_wish or state.Flags.fascinated_by_power)
+			return hasWish, "Need power wish or fascinated by power"
+		end,
+
+		choices = {
+			{
+				text = "🔫 Accept - join the family",
+				effects = { Happiness = 15, Smarts = 5 },
+				feedText = "Becoming part of the family...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 20)
+					state.Flags = state.Flags or {}
+					state.Flags.in_mob = true
+					state.Flags.mafia_member = true
+					state.Flags.power_wish_granted = true
+					state.Money = (state.Money or 0) + 50000 -- Welcome bonus
+
+					-- Initialize mob state
+					state.MobState = state.MobState or {}
+					state.MobState.inMob = true
+					state.MobState.familyId = "italian"
+					state.MobState.familyName = "La Cosa Nostra"
+					state.MobState.familyEmoji = "🇮🇹"
+					state.MobState.rankLevel = 1
+					state.MobState.rankName = "Associate"
+					state.MobState.rankEmoji = "🔰"
+					state.MobState.respect = 10
+					state.MobState.heat = 0
+					state.MobState.loyalty = 60
+					state.MobState.successfulOps = 0
+					state.MobState.failedOps = 0
+
+					state:AddFeed("🔫✨ YOUR CHILDHOOD WISH FOR POWER CAME TRUE! You've been initiated into La Cosa Nostra! You received $50,000 as a welcome 'gift'. The life of crime awaits!")
+				end,
+			},
+			{
+				text = "🤔 I need to think about it...",
+				effects = { Happiness = 0 },
+				setFlags = { considering_mob = true },
+				feedText = "🔫 'Smart. Take a week. But don't take too long - opportunities like this don't come twice.' He slides a card across the table with just a phone number.",
+			},
+			{
+				text = "❌ No thanks - I'm not cut out for this",
+				effects = { Happiness = 5 },
+				setFlags = { refused_mob = true },
+				feedText = "🔫 He nods slowly. 'Wise choice for some. Cowardly for others. We won't ask again.' He walks away, and the door to that world closes forever.",
+			},
+			{
+				text = "🏃 This is terrifying - RUN!",
+				effects = { Happiness = -10, Health = 5 },
+				setFlags = { fled_mob = true, refused_mob = true },
+				feedText = "🔫 You bolted out the back door. Smart? Maybe. But some opportunities only knock once...",
+			},
+		},
+	},
+
+	-- MAFIA RISE: Follow-up for mob members to rise in ranks
+	{
+		id = "premium_mafia_big_opportunity",
+		title = "🔫 Your Big Chance",
+		emoji = "🔫",
+		text = "The Don himself summons you. 'You've proven yourself loyal,' he says. 'There's a big job coming up. Pull this off, and you'll be made - a full member of the family. Fail, and...' He doesn't finish the sentence.",
+		question = "This is your chance to rise in the mafia! What do you do?",
+		minAge = 20, maxAge = 50,
+		baseChance = 0.7,
+		cooldown = 3,
+		oneTime = true,
+		maxOccurrences = 1,
+		stage = "random",
+		category = "crime",
+		priority = "high",
+		tags = { "mafia", "promotion", "crime" },
+
+		requiresFlags = { in_mob = true },
+		requiresGamepass = "MAFIA",
+
+		choices = {
+			{
+				text = "🎯 Take the job - time to prove myself",
+				effects = {},
+				feedText = "Taking on the big job...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local successChance = 0.4 + (smarts / 200)
+
+					if roll < successChance then
+						state:ModifyStat("Happiness", 30)
+						state.Money = (state.Money or 0) + 200000
+						state.MobState = state.MobState or {}
+						state.MobState.rankLevel = (state.MobState.rankLevel or 1) + 2
+						state.MobState.rankName = "Made Man"
+						state.MobState.rankEmoji = "🔫"
+						state.MobState.respect = (state.MobState.respect or 0) + 50
+						state.Flags.made_man = true
+						state:AddFeed("🔫🎉 THE JOB WAS A SUCCESS! You've been 'made' - a full member of the family! You received $200,000 and massive respect. You're now a Made Man!")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:ModifyStat("Health", -15)
+						state.MobState = state.MobState or {}
+						state.MobState.heat = (state.MobState.heat or 0) + 30
+						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 20)
+						state:AddFeed("🔫💀 The job went sideways! You barely escaped. The family is disappointed, and you've got heat on you now.")
+					end
+				end,
+			},
+			{
+				text = "🙏 Ask for more time to prepare",
+				effects = { Happiness = -5 },
+				setFlags = { delayed_mob_job = true },
+				feedText = "🔫 'Time is a luxury in our business. But fine - one week. Don't disappoint me.'",
+			},
+			{
+				text = "😰 I'm not ready for this level",
+				effects = { Happiness = -10 },
+				feedText = "🔫 The Don's face hardens. 'Disappointing. I had hopes for you.' Your standing in the family drops...",
+				onResolve = function(state)
+					state.MobState = state.MobState or {}
+					state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 30)
+					state.MobState.loyalty = math.max(0, (state.MobState.loyalty or 50) - 20)
+				end,
+			},
+		},
+	},
+
+	-- CELEBRITY WISH FOLLOW-UP
+	{
+		id = "premium_wish_fame_discovery",
+		title = "⭐ Discovered!",
+		emoji = "⭐",
+		text = "Remember wishing to be famous? A talent scout approaches you! 'You've got IT - that star quality! I want to make you famous. Movie auditions, TV shows, the whole package. What do you say?'",
+		question = "Your childhood dream of fame might come true!",
+		minAge = 16, maxAge = 30,
+		baseChance = 0.85,
+		cooldown = 50,
+		oneTime = true,
+		maxOccurrences = 1,
+		stage = "random",
+		category = "career",
+		priority = "high",
+		tags = { "celebrity", "fame", "wish_fulfillment" },
+
+		-- Uses eligibility instead of requiresFlags to support multiple flag options
+		blockedFlags = { is_famous = true },
+		requiresGamepass = "CELEBRITY",
+
+		eligibility = function(state)
+			-- Check for EITHER fame_wish OR star_dreams flag
+			local hasWish = state.Flags and (state.Flags.fame_wish or state.Flags.star_dreams or state.Flags.performer)
+			return hasWish, "Need fame wish or star dreams"
+		end,
+
+		choices = {
+			{
+				text = "⭐ YES! Make me a star!",
+				effects = { Happiness = 30, Fame = 25 },
+				feedText = "Starting your journey to stardom...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 25)
+					state:ModifyStat("Fame", 30)
+					state.Flags = state.Flags or {}
+					state.Flags.is_famous = true
+					state.Flags.celebrity = true
+					state.Flags.discovered = true
+					state.Flags.fame_wish_granted = true
+					state.Money = (state.Money or 0) + 100000 -- Signing bonus
+
+					state:AddFeed("⭐✨ YOUR CHILDHOOD WISH TO BE FAMOUS CAME TRUE! You signed with a major talent agency! You received $100,000 signing bonus and your career has LAUNCHED!")
+				end,
+			},
+			{
+				text = "🤔 What's the catch?",
+				effects = { Happiness = 5 },
+				setFlags = { cautious_about_fame = true },
+				feedText = "⭐ 'Smart question! Nothing's free - hard work, long hours, public scrutiny. But the rewards...' They hand you their card.",
+			},
+			{
+				text = "❌ Fame isn't for me anymore",
+				effects = { Happiness = 0 },
+				setFlags = { rejected_fame = true },
+				feedText = "⭐ 'Your loss, kid. Some people dream their whole lives for this chance.' They walk away, shaking their head.",
+			},
+		},
+	},
 }
 
 return PremiumIntegratedEvents
