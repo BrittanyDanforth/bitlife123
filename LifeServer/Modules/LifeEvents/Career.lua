@@ -68,8 +68,9 @@ Career.events = {
 		text = "A coworker has been taking credit for your work.",
 		question = "How do you handle this?",
 		minAge = 18, maxAge = 65,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - was spamming with other credit events!
+		cooldown = 6, -- CRITICAL FIX: Increased from 3 - prevent "credit stolen" spam
+		maxOccurrences = 3, -- CRITICAL FIX: Max 3 times per career
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal workplace jobs - entertainment careers don't have "coworkers taking credit"
 		eligibility = hasFormalWorkplaceJob,
@@ -102,8 +103,9 @@ Career.events = {
 		text = "A promotion opportunity has opened up at work.",
 		question = "Do you go for it?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - too many promotion events combined!
+		cooldown = 6, -- CRITICAL FIX: Increased from 3 - combine with major_promotion/big_promotion
+		maxOccurrences = 4, -- CRITICAL FIX: Limit total promotions
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with promotion structures - NOT entertainment
 		eligibility = hasFormalWorkplaceJob,

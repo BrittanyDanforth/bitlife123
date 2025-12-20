@@ -1127,6 +1127,236 @@ Milestones.events = {
 			{ text = "Feeling old suddenly", effects = { Happiness = 5 }, setFlags = { grandparent = true }, feedText = "A grandparent already?" },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE ENGAGING MILESTONES FOR KEY AGES
+	-- Making important ages feel SPECIAL and memorable!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "first_best_friend",
+		title = "Best Friends Forever!",
+		emoji = "🤝",
+		text = "You've made a BEST FRIEND! Someone you tell all your secrets to!",
+		question = "How did you two become best friends?",
+		minAge = 5, maxAge = 8,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+
+		stage = "childhood",
+		ageBand = "early_childhood",
+		category = "social",
+		milestoneKey = "FIRST_BEST_FRIEND",
+		tags = { "core", "friendship", "social" },
+
+		choices = {
+			{ text = "Met on the playground!", effects = { Happiness = 12 }, setFlags = { has_best_friend = true, social_butterfly = true }, feedText = "You two became instant besties!" },
+			{ text = "Sat next to each other in class!", effects = { Happiness = 10, Smarts = 2 }, setFlags = { has_best_friend = true }, feedText = "Study buddies who became best friends!" },
+			{ text = "Neighbors who became inseparable!", effects = { Happiness = 11 }, setFlags = { has_best_friend = true, neighborhood_kid = true }, feedText = "Always at each other's houses!" },
+			{ text = "Connected over video games!", effects = { Happiness = 10, Smarts = 1 }, setFlags = { has_best_friend = true, gamer_kid = true }, feedText = "Gaming buddies for life!" },
+		},
+	},
+	{
+		id = "first_pocket_money",
+		title = "First Pocket Money!",
+		emoji = "💰",
+		text = "Your parents started giving you a weekly allowance! Your first real money!",
+		question = "What do you do with your allowance?",
+		minAge = 6, maxAge = 10,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+
+		stage = "childhood",
+		ageBand = "early_childhood",
+		category = "finance",
+		milestoneKey = "FIRST_POCKET_MONEY",
+		tags = { "money", "responsibility", "learning" },
+
+		choices = {
+			{ 
+				text = "SAVE IT ALL! 🏦", 
+				effects = { Happiness = 5, Smarts = 3, Money = 50 }, 
+				setFlags = { saver = true, financially_smart = true }, 
+				feedText = "You're starting a savings habit early!" 
+			},
+			{ 
+				text = "Spend it on candy! 🍬", 
+				effects = { Happiness = 12 }, 
+				setFlags = { spender = true }, 
+				feedText = "So much candy! Your teeth might regret this!" 
+			},
+			{ 
+				text = "Buy a toy I've been wanting! 🎮", 
+				effects = { Happiness = 10, Money = -20 }, 
+				setFlags = { goal_saver = true }, 
+				feedText = "You saved up and bought something special!" 
+			},
+			{ 
+				text = "Share with my friends! 💝", 
+				effects = { Happiness = 8 }, 
+				setFlags = { generous = true }, 
+				feedText = "You're a generous kid!" 
+			},
+		},
+	},
+	{
+		id = "turning_double_digits",
+		title = "Double Digits!",
+		emoji = "🔟",
+		text = "You're turning 10! DOUBLE DIGITS! This feels like a BIG deal!",
+		question = "How do you celebrate?",
+		minAge = 10, maxAge = 10,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+
+		stage = "childhood",
+		ageBand = "late_childhood",
+		category = "life_stage",
+		milestoneKey = "DOUBLE_DIGITS",
+		tags = { "birthday", "milestone", "growing_up" },
+
+		choices = {
+			{ text = "HUGE birthday party!", effects = { Happiness = 15, Money = -100 }, setFlags = { party_person = true }, feedText = "The party of the decade! Everyone came!" },
+			{ text = "Special trip with family!", effects = { Happiness = 12, Health = 2 }, setFlags = { family_oriented = true }, feedText = "Made amazing memories with the family!" },
+			{ text = "Get a pet as a gift!", effects = { Happiness = 18 }, setFlags = { has_pet = true, animal_lover = true }, feedText = "THE BEST BIRTHDAY GIFT EVER!" },
+			{ text = "New gaming console!", effects = { Happiness = 14, Smarts = 1 }, setFlags = { gamer = true }, feedText = "Hours of gaming ahead! Best gift!" },
+		},
+	},
+	{
+		id = "first_heartbreak",
+		title = "First Heartbreak",
+		emoji = "💔",
+		text = "Your first crush doesn't like you back... or worse, likes someone else. It HURTS.",
+		question = "How do you handle your first heartbreak?",
+		minAge = 12, maxAge = 16,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+
+		stage = "teen",
+		ageBand = "teen",
+		category = "relationships",
+		milestoneKey = "FIRST_HEARTBREAK",
+		tags = { "romance", "emotional", "growing_up" },
+
+		choices = {
+			{ 
+				text = "Cry it out with friends", 
+				effects = { Happiness = -3 }, 
+				setFlags = { emotionally_open = true, first_heartbreak = true }, 
+				feedText = "Your friends were there for you. It gets better." 
+			},
+			{ 
+				text = "Listen to sad music alone", 
+				effects = { Happiness = -5, Smarts = 1 }, 
+				setFlags = { introspective = true, first_heartbreak = true }, 
+				feedText = "You wrote some deep thoughts in your journal." 
+			},
+			{ 
+				text = "Pretend you don't care", 
+				effects = { Happiness = -2 }, 
+				setFlags = { guarded_heart = true, first_heartbreak = true }, 
+				feedText = "Playing it cool on the outside." 
+			},
+			{ 
+				text = "Channel it into sports/hobbies", 
+				effects = { Happiness = 2, Health = 3 }, 
+				setFlags = { channels_emotions = true, first_heartbreak = true }, 
+				feedText = "You're going to come out stronger from this!" 
+			},
+		},
+	},
+	{
+		id = "first_paycheck",
+		title = "First Paycheck!",
+		emoji = "💵",
+		text = "You got your FIRST EVER paycheck! All that hard work, and now real money!",
+		question = "What do you do with your first paycheck?",
+		minAge = 14, maxAge = 18,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+		requiresJob = true,
+
+		stage = "teen",
+		ageBand = "teen",
+		category = "finance",
+		milestoneKey = "FIRST_PAYCHECK",
+		tags = { "money", "work", "achievement" },
+
+		choices = {
+			{ 
+				text = "Open a savings account!", 
+				effects = { Happiness = 8, Smarts = 3, Money = 200 }, 
+				setFlags = { saver = true, financially_responsible = true }, 
+				feedText = "Smart move! Your future self will thank you!" 
+			},
+			{ 
+				text = "Buy something awesome!", 
+				effects = { Happiness = 15 }, 
+				setFlags = { treat_yourself = true }, 
+				feedText = "You earned it! Enjoy that purchase!" 
+			},
+			{ 
+				text = "Help the family with bills!", 
+				effects = { Happiness = 6, Smarts = 2 }, 
+				setFlags = { family_helper = true, mature_for_age = true }, 
+				feedText = "Your family appreciates your contribution!" 
+			},
+			{ 
+				text = "Blow it all on a weekend!", 
+				effects = { Happiness = 12, Money = -150 }, 
+				setFlags = { yolo_spender = true }, 
+				feedText = "That was FUN! ...now you're broke again." 
+			},
+		},
+	},
+	{
+		id = "moving_out",
+		title = "Moving Out!",
+		emoji = "🏠",
+		text = "It's time to leave the nest! You're getting your own place!",
+		question = "How do you feel about this huge step?",
+		minAge = 18, maxAge = 25,
+		oneTime = true,
+		priority = "high",
+		isMilestone = true,
+
+		stage = "adult",
+		ageBand = "young_adult",
+		category = "life_stage",
+		milestoneKey = "MOVING_OUT",
+		tags = { "independence", "adult", "home" },
+
+		choices = {
+			{ 
+				text = "FREEDOM! So excited!", 
+				effects = { Happiness = 15, Money = -500 }, 
+				setFlags = { moved_out = true, independent = true }, 
+				feedText = "Your own place! No more rules!" 
+			},
+			{ 
+				text = "Nervous but ready", 
+				effects = { Happiness = 8, Smarts = 2, Money = -500 }, 
+				setFlags = { moved_out = true, cautious_adult = true }, 
+				feedText = "A big step, but you've got this." 
+			},
+			{ 
+				text = "Will miss home", 
+				effects = { Happiness = 5, Money = -500 }, 
+				setFlags = { moved_out = true, homebody = true }, 
+				feedText = "It's bittersweet leaving home." 
+			},
+			{ 
+				text = "Get roommates to save money", 
+				effects = { Happiness = 10, Money = -250 }, 
+				setFlags = { moved_out = true, has_roommates = true }, 
+				feedText = "Living with friends! This could be fun!" 
+			},
+		},
+	},
 }
 
 -- CRITICAL FIX #135: Export events in standard format for LifeEvents loader

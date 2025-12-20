@@ -1180,8 +1180,9 @@ Adult.events = {
 		text = "You've been offered a major promotion at {{COMPANY}}!",
 		question = "What's the catch?",
 		minAge = 28, maxAge = 55,
-		baseChance = 0.3,
-		cooldown = 4,
+		baseChance = 0.2, -- CRITICAL FIX: Reduced from 0.3 - was triggering too often with major_promotion!
+		cooldown = 8, -- CRITICAL FIX: Increased from 4 - promotions every 4 years was still too frequent!
+		maxOccurrences = 2, -- CRITICAL FIX: Maximum 2 big promotions per lifetime to prevent spam
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {

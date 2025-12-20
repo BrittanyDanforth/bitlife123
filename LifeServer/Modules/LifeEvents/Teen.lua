@@ -2588,11 +2588,254 @@ Teen.events = {
 				setFlags = { clap_back_king = true },
 				feedText = "This is getting ugly. But you're winning.",
 			},
+		{
+			text = "Have your parents intervene",
+			effects = { Happiness = -15 },
+			setFlags = { parents_involved = true },
+			feedText = "It stopped, but now you're 'that kid.'",
+		},
+	},
+},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE SUPER ENGAGING TEEN EVENTS
+	-- Making teen years more exciting and memorable!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_viral_moment",
+		title = "You're Going VIRAL!",
+		emoji = "🔥",
+		text = "A video of you just went VIRAL! Thousands of views and climbing!",
+		question = "What happened?!",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 4,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
 			{
-				text = "Have your parents intervene",
-				effects = { Happiness = -15 },
-				setFlags = { parents_involved = true },
-				feedText = "It stopped, but now you're 'that kid.'",
+				text = "An awesome talent video!",
+				effects = {},
+				feedText = "Your talent caught the internet's attention...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 65 then
+						state.Flags.went_viral = true
+						state.Flags.internet_famous = true
+						state:ModifyStat("Happiness", 20)
+						state:ModifyStat("Looks", 3)
+						state:AddFeed("🔥 Your video hit 1 MILLION views! You're internet famous! Agents are calling!")
+					else
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🔥 It got 50K views! Not mega-viral but still cool!")
+					end
+				end,
+			},
+			{
+				text = "A hilarious fail video!",
+				effects = {},
+				feedText = "Your embarrassing moment is everywhere...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state.Flags.went_viral = true
+						state.Flags.meme_kid = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🔥 You became a MEME! Everyone at school knows you now!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔥 It was embarrassing but people forgot pretty quickly.")
+					end
+				end,
+			},
+			{
+				text = "Standing up for something important!",
+				effects = {},
+				feedText = "Your message resonated with people...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_viral = true
+					state.Flags.activist = true
+					state:ModifyStat("Happiness", 15)
+					state:ModifyStat("Smarts", 3)
+					state:AddFeed("🔥 Your video inspired thousands! You're making a difference!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_secret_party",
+		title = "SECRET PARTY INVITE!",
+		emoji = "🎉",
+		text = "You got invited to THE party of the year! But your parents said NO going out tonight...",
+		question = "What do you do?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.75,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "SNEAK OUT! You only live once!",
+				effects = {},
+				feedText = "You climb out your window at midnight...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state.Flags.party_legend = true
+						state:ModifyStat("Happiness", 18)
+						state:AddFeed("🎉 LEGENDARY NIGHT! Made out with your crush! Home safe before sunrise!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎉 Amazing party! And you got away with it!")
+					else
+						state.Flags.grounded = true
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎉 You got CAUGHT sneaking back in. GROUNDED for a month!")
+					end
+				end,
+			},
+			{
+				text = "Stay home - not worth the risk",
+				effects = { Happiness = -5 },
+				setFlags = { rule_follower = true },
+				feedText = "FOMO is real but you stayed put. Your parents appreciated it.",
+			},
+			{
+				text = "Convince your parents to let you go!",
+				effects = {},
+				feedText = "You make your best case...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎉 They said YES! Best party ever, and no guilt!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎉 They said no, but at least you tried the honest way.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_talent_discovered",
+		title = "HIDDEN TALENT!",
+		emoji = "✨",
+		text = "You just discovered you have an AMAZING talent you never knew about!",
+		question = "What is your hidden talent?",
+		minAge = 12, maxAge = 17,
+		baseChance = 0.65,
+		cooldown = 99,
+		oneTime = true,
+		priority = "high",
+		
+		choices = {
+			{
+				text = "Amazing singer/musician!",
+				effects = { Happiness = 12 },
+				setFlags = { musical_talent = true, talented_singer = true },
+				feedText = "🎤 Your voice is INCREDIBLE! People are amazed!",
+			},
+			{
+				text = "Athletic superstar potential!",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { athletic_talent = true, sports_potential = true },
+				feedText = "🏆 You have natural athletic ability! Coaches want you on their team!",
+			},
+			{
+				text = "Artistic genius!",
+				effects = { Happiness = 11, Smarts = 2 },
+				setFlags = { artistic_talent = true, creative_genius = true },
+				feedText = "🎨 Your art is STUNNING! People want to buy your work!",
+			},
+			{
+				text = "Tech/coding prodigy!",
+				effects = { Happiness = 10, Smarts = 5 },
+				setFlags = { tech_talent = true, coding_prodigy = true },
+				feedText = "💻 You built an app in a weekend! Tech companies are interested!",
+			},
+		},
+	},
+	{
+		id = "teen_first_real_relationship",
+		title = "OFFICIAL Relationship!",
+		emoji = "❤️",
+		text = "Someone asked you to be their boyfriend/girlfriend! This is REAL!",
+		question = "How do you feel about this?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.7,
+		cooldown = 3,
+		
+		choices = {
+			{
+				text = "SO EXCITED! Say yes!",
+				effects = {},
+				feedText = "You're in a relationship now...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.in_relationship = true
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 18)
+						state:AddFeed("❤️ Best relationship EVER! You're so happy together!")
+					else
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("❤️ It's nice to have someone. Still figuring things out!")
+					end
+				end,
+			},
+			{
+				text = "Say yes, but keep it chill",
+				effects = { Happiness = 8 },
+				setFlags = { in_relationship = true, casual_dater = true },
+				feedText = "Low-key relationship vibes. Works for you!",
+			},
+			{
+				text = "Actually... I'm not ready",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { knows_themselves = true },
+				feedText = "You know what you want. Respectable.",
+			},
+		},
+	},
+	{
+		id = "teen_school_competition_win",
+		title = "You WON!",
+		emoji = "🏆",
+		text = "You entered a school competition... and you WON!",
+		question = "What did you win?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.55,
+		cooldown = 2,
+		
+		choices = {
+			{
+				text = "Science Fair - First Place!",
+				effects = { Smarts = 8, Happiness = 12 },
+				setFlags = { science_fair_winner = true, academic_achiever = true },
+				feedText = "🏆 Your project impressed the judges! Scholarship offers are coming!",
+			},
+			{
+				text = "Sports Championship!",
+				effects = { Health = 6, Happiness = 15, Looks = 2 },
+				setFlags = { sports_champion = true },
+				feedText = "🏆 MVP! The crowd went WILD! Colleges are scouting you!",
+			},
+			{
+				text = "Art/Music Competition!",
+				effects = { Happiness = 14, Looks = 3 },
+				setFlags = { art_competition_winner = true },
+				feedText = "🏆 Your creativity shined! Local newspaper did a story on you!",
+			},
+			{
+				text = "Debate/Speech Competition!",
+				effects = { Smarts = 6, Happiness = 11 },
+				setFlags = { debate_champion = true, public_speaker = true },
+				feedText = "🏆 You destroyed the competition! Natural leader material!",
 			},
 		},
 	},

@@ -2137,8 +2137,9 @@ JobSpecificEvents.events = {
 		text = "A colleague is taking credit for work YOU did on a project!",
 		question = "How do you respond?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.45,
-		cooldown = 3,
+		baseChance = 0.2, -- CRITICAL FIX: Reduced from 0.45 - was spamming with workplace_conflict!
+		cooldown = 8, -- CRITICAL FIX: Increased from 3 - prevent credit-stealing spam
+		maxOccurrences = 2, -- CRITICAL FIX: Max 2 times - this is a rare but impactful event
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"office", "admin", "corporate", "tech"})

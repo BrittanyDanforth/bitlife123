@@ -1015,6 +1015,8 @@ local function canEventTrigger(event, state)
 			viral = 4,         -- At least 4 years between viral events
 			fame = 2,          -- At least 2 years between fame events
 			hater = 3,         -- At least 3 years between hater events
+			career_workplace = 4, -- CRITICAL FIX: At least 4 years between office drama events
+			career_office = 4,    -- CRITICAL FIX: At least 4 years between office-specific events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -1036,6 +1038,12 @@ local function canEventTrigger(event, state)
 			first_ = 99,    -- "First X" events should be oneTime, enforce with long cooldown
 			exploding = 4,  -- Explosive growth events need cooldown
 			millions = 4,   -- Millions of views events need cooldown
+			promotion = 5,  -- CRITICAL FIX: At least 5 years between promotion events
+			promoted = 5,   -- CRITICAL FIX: At least 5 years between any promotion
+			credit = 5,     -- CRITICAL FIX: At least 5 years between credit-stealing events
+			toxic = 8,      -- CRITICAL FIX: At least 8 years between toxic boss/coworker events
+			terrible = 8,   -- CRITICAL FIX: At least 8 years between terrible boss events
+			sabotag = 8,    -- CRITICAL FIX: At least 8 years between sabotage events
 		}
 		
 		for keyword, keywordCooldown in pairs(spamKeywords) do

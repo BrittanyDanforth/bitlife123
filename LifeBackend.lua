@@ -10186,7 +10186,35 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- The client shows its own result popup via showResult() in ActivitiesScreen
 	-- State will sync on next age up naturally
 	-- self:pushState(player, resultMessage)  -- DISABLED - was closing ActivitiesScreen
-	return { success = true, message = resultMessage, gotCaught = gotCaught }
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: RETURN ACTUAL STAT CHANGES TO CLIENT!
+	-- User bug: "I CLICKED OK IT DIDNT GIVE THE STAT IT SAID"
+	-- The stats ARE applied on server, but client doesn't know what changed!
+	-- Now we send the actual stat deltas so client can show them in the popup
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local statChanges = {}
+	if deltas then
+		for stat, amount in pairs(deltas) do
+			if amount ~= 0 then
+				statChanges[stat] = amount
+			end
+		end
+	end
+	
+	-- Also include cost in the response if paid
+	local moneyCost = shouldChargeCost and actualCost or 0
+	
+	return { 
+		success = true, 
+		message = resultMessage, 
+		gotCaught = gotCaught,
+		-- CRITICAL: Send actual stat changes to client!
+		statChanges = statChanges,
+		cost = moneyCost,
+		activityId = activityId,
+		activityName = activity.feed or activityId,
+	}
 end
 
 function LifeBackend:handleCrime(player, crimeId, minigameBonus)
