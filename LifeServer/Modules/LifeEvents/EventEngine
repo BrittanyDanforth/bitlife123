@@ -1,0 +1,985 @@
+local LifeStageSystem = require(script.Parent.Parent.LifeStageSystem)
+
+local EventEngine = {}
+EventEngine.EventStats = {
+	total = 0,
+	byCategory = {},
+	byStage = {},
+}
+
+local function clone(tbl)
+	if type(tbl) ~= "table" then
+		return tbl
+	end
+	local result = {}
+	for key, value in pairs(tbl) do
+		result[key] = clone(value)
+	end
+	return result
+end
+
+function EventEngine.normalizeEvent(event)
+	if not event.id then
+		error("Events require id")
+	end
+	event.id = string.lower(event.id)
+	event.choices = event.choices or {
+		{ index = 1, text = "Continue", effects = {} },
+	}
+
+	event.conditions = event.conditions or {}
+	event.weight = event.weight or 1
+
+	EventEngine.EventStats.total += 1
+	EventEngine.EventStats.byCategory[event.category or "uncategorized"] =
+		(EventEngine.EventStats.byCategory[event.category or "uncategorized"] or 0) + 1
+
+	local minAge = event.conditions.minAge or event.minAge or 0
+	local stage = LifeStageSystem.getStage(minAge)
+	local stageId = stage and stage.id or "all"
+	EventEngine.EventStats.byStage[stageId] = (EventEngine.EventStats.byStage[stageId] or 0) + 1
+
+	return event
+end
+
+local function meetsProbability(probability)
+	if not probability then
+		return true
+	end
+	return Random.new():NextNumber() <= probability
+end
+
+function EventEngine.isEligible(event, state)
+	if event.probability and not meetsProbability(event.probability) then
+		return false
+	end
+	return LifeStageSystem.validateEvent(event, state)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #53/#76/#94: Apply mafia effects from choices
+-- Extended with full mob state management, heat decay, and operation tracking
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyMafiaEffect(state, mafiaEffect)
+	if not mafiaEffect then return end
+	
+	-- CRITICAL FIX #76: Initialize MobState if needed
+	if not state.MobState then
+		state.MobState = {
+			inMob = false,
+			familyId = nil,
+			familyName = nil,
+			familyEmoji = nil,
+			rankIndex = 1,
+			rankLevel = 1,
+			rankName = "Associate",
+			rankEmoji = "👤",
+			respect = 0,
+			notoriety = 0,
+			heat = 0,
+			loyalty = 100,
+			kills = 0,
+			earnings = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			operationsFailed = 0,
+		}
+	end
+	
+	local mobState = state.MobState
+	state.Flags = state.Flags or {}
+	
+	if mafiaEffect.respect then
+		mobState.respect = (mobState.respect or 0) + mafiaEffect.respect
+		-- Check for automatic rank-up based on respect thresholds
+		if mobState.respect >= 500 and mobState.rankIndex < 5 then
+			mobState.rankIndex = math.min((mobState.rankIndex or 1) + 1, 5)
+			mobState.rankLevel = mobState.rankIndex
+		end
+	end
+	if mafiaEffect.heat then
+		mobState.heat = math.clamp((mobState.heat or 0) + mafiaEffect.heat, 0, 100)
+	end
+	-- CRITICAL FIX #94: Heat decay support
+	if mafiaEffect.heatDecay then
+		mobState.heat = math.max(0, (mobState.heat or 0) - mafiaEffect.heatDecay)
+	end
+	if mafiaEffect.loyalty then
+		mobState.loyalty = math.clamp((mobState.loyalty or 100) + mafiaEffect.loyalty, 0, 100)
+	end
+	if mafiaEffect.money then
+		state.Money = (state.Money or 0) + mafiaEffect.money
+		mobState.earnings = (mobState.earnings or 0) + mafiaEffect.money
+	end
+	if mafiaEffect.kills then
+		mobState.kills = (mobState.kills or 0) + mafiaEffect.kills
+		mobState.notoriety = (mobState.notoriety or 0) + (mafiaEffect.kills * 10)
+	end
+	if mafiaEffect.joinFamily then
+		mobState.inMob = true
+		mobState.yearsInMob = 0
+		state.Flags.in_mob = true
+		state.Flags.mafia_member = true
+		-- Set family info if provided
+		if type(mafiaEffect.joinFamily) == "table" then
+			mobState.familyId = mafiaEffect.joinFamily.id
+			mobState.familyName = mafiaEffect.joinFamily.name
+			mobState.familyEmoji = mafiaEffect.joinFamily.emoji
+		end
+	end
+	if mafiaEffect.kicked then
+		mobState.inMob = false
+		state.Flags.in_mob = nil
+		state.Flags.kicked_from_mob = true
+	end
+	if mafiaEffect.initiated then
+		state.Flags.initiated = true
+		mobState.rankName = "Soldier"
+		mobState.rankEmoji = "🔫"
+	end
+	if mafiaEffect.madeMember then
+		state.Flags.made_member = true
+		mobState.rankName = "Made Man"
+		mobState.rankEmoji = "💀"
+		mobState.rankIndex = math.max(mobState.rankIndex or 1, 2)
+	end
+	if mafiaEffect.rankUp then
+		mobState.rankIndex = math.min((mobState.rankIndex or 1) + 1, 5)
+		mobState.rankLevel = mobState.rankIndex
+		-- Update rank names based on index
+		local rankNames = {"Associate", "Soldier", "Capo", "Underboss", "Boss"}
+		local rankEmojis = {"👤", "🔫", "💀", "🎩", "👑"}
+		mobState.rankName = rankNames[mobState.rankIndex] or "Associate"
+		mobState.rankEmoji = rankEmojis[mobState.rankIndex] or "👤"
+		state.Flags.got_promoted_mob = true
+	end
+	if mafiaEffect.becomeBoss then
+		mobState.rankIndex = 5
+		mobState.rankLevel = 5
+		mobState.rankName = "Boss"
+		mobState.rankEmoji = "👑"
+		state.Flags.mob_boss = true
+	end
+	if mafiaEffect.arrested then
+		state.InJail = true
+		state.JailYearsLeft = mafiaEffect.jailYears or 5
+		state.Flags.in_prison = true
+		state.Flags.arrested_for_crime = true
+	end
+	if mafiaEffect.escaped then
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.escaped_prison = true
+		mobState.heat = math.min(100, (mobState.heat or 0) + 30) -- Escaping adds heat
+	end
+	if mafiaEffect.operationSuccess then
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+	end
+	if mafiaEffect.operationFailed then
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+	end
+	if mafiaEffect.territoryGain then
+		mobState.territories = mobState.territories or {}
+		table.insert(mobState.territories, mafiaEffect.territoryGain)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #54/#71/#75: Apply royalty effects from choices
+-- Extended to handle all royal state changes including succession and duties
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyRoyaltyEffect(state, royaltyEffect)
+	if not royaltyEffect then return end
+	
+	-- CRITICAL FIX #75: Initialize RoyalState if needed
+	if not state.RoyalState then
+		state.RoyalState = {
+			isRoyal = false,
+			isMonarch = false,
+			popularity = 50,
+			scandals = 0,
+			dutiesCompleted = 0,
+			dutyStreak = 0,
+			reignYears = 0,
+			wealth = 0,
+			lineOfSuccession = 99,
+		}
+	end
+	
+	local royalState = state.RoyalState
+	
+	if royaltyEffect.popularity then
+		royalState.popularity = math.clamp((royalState.popularity or 50) + royaltyEffect.popularity, 0, 100)
+	end
+	if royaltyEffect.scandals then
+		royalState.scandals = (royalState.scandals or 0) + royaltyEffect.scandals
+	end
+	if royaltyEffect.wealth then
+		royalState.wealth = (royalState.wealth or 0) + royaltyEffect.wealth
+		state.Money = (state.Money or 0) + royaltyEffect.wealth
+	end
+	
+	-- CRITICAL FIX #71: Handle succession line changes
+	if royaltyEffect.successionChange then
+		royalState.lineOfSuccession = math.max(1, (royalState.lineOfSuccession or 99) + royaltyEffect.successionChange)
+	end
+	
+	-- CRITICAL FIX #92: Handle becoming monarch
+	if royaltyEffect.becomeMonarch then
+		royalState.isMonarch = true
+		royalState.lineOfSuccession = 0
+		royalState.reignYears = 0
+		state.Flags = state.Flags or {}
+		state.Flags.is_monarch = true
+		state.Flags.became_monarch = true
+	end
+	
+	-- CRITICAL FIX #99: Handle coronation
+	if royaltyEffect.coronation then
+		royalState.coronationYear = state.Year
+		state.Flags = state.Flags or {}
+		state.Flags.coronated = true
+	end
+	
+	-- Handle duty completion tracking
+	if royaltyEffect.dutyCompleted then
+		royalState.dutiesCompleted = (royalState.dutiesCompleted or 0) + 1
+		royalState.dutyStreak = (royalState.dutyStreak or 0) + 1
+	end
+	
+	-- Handle abdication
+	if royaltyEffect.abdicate then
+		royalState.isMonarch = false
+		royalState.lineOfSuccession = 99
+		state.Flags = state.Flags or {}
+		state.Flags.abdicated = true
+		state.Flags.is_monarch = nil
+	end
+	
+	-- Handle exile
+	if royaltyEffect.exile then
+		royalState.isRoyal = false
+		royalState.isMonarch = false
+		state.Flags = state.Flags or {}
+		state.Flags.exiled = true
+		state.Flags.is_royalty = nil
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #57/#77/#93/#100: Apply fame effects from choices
+-- Extended to handle career progression, scandals, awards, and breakthrough moments
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function applyFameEffect(state, fameEffect)
+	if not fameEffect then return end
+	
+	-- CRITICAL FIX #77: Initialize FameState if needed
+	if not state.FameState then
+		state.FameState = {
+			isFamous = false,
+			careerPath = nil,
+			careerName = nil,
+			currentStage = 1, -- CRITICAL FIX: Lua is 1-indexed
+			stageName = nil,
+			yearsInCareer = 0,
+			followers = 0,
+			endorsements = {},
+			awards = {},
+			scandals = 0,
+			fameLevel = "Unknown",
+		}
+	end
+	
+	local fameState = state.FameState
+	
+	-- fameEffect can be a number or a table
+	local fameChange = type(fameEffect) == "number" and fameEffect or (fameEffect.fame or 0)
+	state.Fame = math.clamp((state.Fame or 0) + fameChange, 0, 100)
+	
+	if type(fameEffect) == "table" then
+		if fameEffect.followers then
+			fameState.followers = (fameState.followers or 0) + fameEffect.followers
+		end
+		
+		-- CRITICAL FIX #93: Handle fame decay
+		if fameEffect.decay then
+			state.Fame = math.max(0, (state.Fame or 0) - fameEffect.decay)
+		end
+		
+		-- CRITICAL FIX #100: Handle career breakthrough
+		if fameEffect.breakthrough then
+			fameState.isFamous = true
+			state.Flags = state.Flags or {}
+			state.Flags.fame_breakthrough = true
+			state.Flags.famous = true
+		end
+		
+		-- Handle scandals
+		if fameEffect.scandal then
+			fameState.scandals = (fameState.scandals or 0) + (fameEffect.scandal or 1)
+			state.Fame = math.max(0, (state.Fame or 0) - 5)
+		end
+		
+		-- Handle awards
+		if fameEffect.award then
+			fameState.awards = fameState.awards or {}
+			table.insert(fameState.awards, {
+				name = fameEffect.award,
+				year = state.Year,
+			})
+			state.Fame = math.min(100, (state.Fame or 0) + 10)
+			state.Flags = state.Flags or {}
+			state.Flags.award_winner = true
+		end
+		
+		-- Handle career stage advancement
+		if fameEffect.promotion then
+			fameState.currentStage = (fameState.currentStage or 1) + 1 -- CRITICAL FIX: Default to 1, not 0
+			fameState.lastPromotionYear = state.Year
+		end
+		
+		-- Handle starting a fame career
+		if fameEffect.startCareer then
+			fameState.isFamous = true
+			fameState.careerPath = fameEffect.startCareer.path
+			fameState.careerName = fameEffect.startCareer.name
+			fameState.currentStage = 1
+			fameState.yearsInCareer = 0
+			state.Flags = state.Flags or {}
+			state.Flags.fame_career = true
+			state.Flags["career_" .. fameEffect.startCareer.path] = true
+		end
+		
+		-- Handle endorsements
+		if fameEffect.endorsement then
+			fameState.endorsements = fameState.endorsements or {}
+			table.insert(fameState.endorsements, {
+				brand = fameEffect.endorsement.brand or "Unknown Brand",
+				value = fameEffect.endorsement.value or 10000,
+				year = state.Year,
+			})
+			state.Money = (state.Money or 0) + (fameEffect.endorsement.value or 10000)
+		end
+	end
+end
+
+local function applyChoiceEffects(state, choice, isSuccess)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance - use success/fail effects appropriately
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local effectsToApply = choice.effects
+	local moneyToApply = choice.money
+	local feedToUse = choice.feed
+	
+	-- If success/fail effects exist, use those instead
+	if isSuccess == true then
+		effectsToApply = choice.successEffects or choice.effects
+		moneyToApply = choice.successMoney or choice.money
+		feedToUse = choice.successFeed or choice.feed
+	elseif isSuccess == false then
+		effectsToApply = choice.failEffects or {}
+		moneyToApply = choice.failMoney or 0
+		feedToUse = choice.failFeed or choice.failMessage or choice.feed
+	end
+	
+	-- Apply stat effects
+	if effectsToApply then
+		for stat, delta in pairs(effectsToApply) do
+			if stat ~= "Money" then -- Handle money separately
+				if state.ModifyStat then
+					state:ModifyStat(stat, delta)
+				elseif state.Stats and state.Stats[stat] then
+					state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+				end
+			end
+		end
+		-- Check for Money in effects
+		if effectsToApply.Money then
+			moneyToApply = (moneyToApply or 0) + effectsToApply.Money
+		end
+	end
+
+	if moneyToApply and moneyToApply ~= 0 then
+		local amount = moneyToApply
+		if state.AddMoney then
+			state:AddMoney(amount, choice.text)
+		else
+			state.Money = (state.Money or 0) + amount
+		end
+	end
+
+	if choice.flags then
+		if choice.flags.set then
+			for _, flag in ipairs(choice.flags.set) do
+				if state.SetFlag then
+					state:SetFlag(flag, true)
+				else
+					state.Flags[flag] = true
+				end
+			end
+		end
+		if choice.flags.clear then
+			for _, flag in ipairs(choice.flags.clear) do
+				if state.ClearFlag then
+					state:ClearFlag(flag)
+				else
+					state.Flags[flag] = nil
+				end
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Handle setFlags shorthand (many events use this)
+	if choice.setFlags then
+		state.Flags = state.Flags or {}
+		for flag, value in pairs(choice.setFlags) do
+			state.Flags[flag] = value
+		end
+	end
+	
+	-- CRITICAL FIX #53: Apply mafia effects
+	local mafiaEffectToApply = choice.mafiaEffect
+	if isSuccess == true and choice.successMafiaEffect then
+		mafiaEffectToApply = choice.successMafiaEffect
+	elseif isSuccess == false and choice.failMafiaEffect then
+		mafiaEffectToApply = choice.failMafiaEffect
+	end
+	if mafiaEffectToApply then
+		applyMafiaEffect(state, mafiaEffectToApply)
+	end
+	
+	-- CRITICAL FIX #54: Apply royalty effects
+	if choice.royaltyEffect then
+		applyRoyaltyEffect(state, choice.royaltyEffect)
+	end
+	
+	-- CRITICAL FIX #57: Apply fame effects
+	local fameEffectToApply = choice.fameEffect
+	if isSuccess == true and choice.successFame then
+		fameEffectToApply = choice.successFame
+	elseif isSuccess == false and choice.failFame then
+		fameEffectToApply = choice.failFame
+	end
+	if fameEffectToApply then
+		applyFameEffect(state, fameEffectToApply)
+	end
+	
+	-- Handle fameGain shorthand (common in celebrity events)
+	if choice.fameGain then
+		state.Fame = math.clamp((state.Fame or 0) + choice.fameGain, 0, 100)
+	end
+	if isSuccess == false and choice.failFameLoss then
+		state.Fame = math.clamp((state.Fame or 0) - choice.failFameLoss, 0, 100)
+	end
+	
+	-- Handle salaryBonus (common in career events)
+	if choice.salaryBonus then
+		state.Money = (state.Money or 0) + choice.salaryBonus
+	end
+	
+	-- Handle healthLoss/healthGain
+	if choice.healthLoss then
+		if state.ModifyStat then
+			state:ModifyStat("Health", -choice.healthLoss)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) - choice.healthLoss, 0, 100)
+		end
+	end
+	if choice.healthGain then
+		if state.ModifyStat then
+			state:ModifyStat("Health", choice.healthGain)
+		elseif state.Stats then
+			state.Stats.Health = math.clamp((state.Stats.Health or 50) + choice.healthGain, 0, 100)
+		end
+	end
+	
+	-- Set feed message
+	if feedToUse and state.AddFeed then
+		state:AddFeed(feedToUse)
+	elseif feedToUse then
+		state.PendingFeed = feedToUse
+	end
+	
+	return isSuccess
+end
+
+function EventEngine.completeEvent(event, choiceIndex, state)
+	local choice = event.choices[choiceIndex]
+	if not choice then
+		return nil, "Invalid choice"
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #52: Handle successChance for choices with random outcomes
+	-- Many events have choices like "Win the Oscar" with 25% success chance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isSuccess = nil -- nil means no success/fail mechanic
+	
+	if choice.successChance then
+		local roll = Random.new():NextNumber() * 100
+		isSuccess = roll <= choice.successChance
+		
+		-- Store result for UI feedback
+		choice._wasSuccessful = isSuccess
+		choice._rollResult = roll
+	end
+	
+	applyChoiceEffects(state, choice, isSuccess)
+	
+	-- CRITICAL FIX: Call choice-level onResolve callback
+	if choice.onResolve then
+		local success, err = pcall(choice.onResolve, state, choice, event, isSuccess)
+		if not success then
+			warn("[LifeEvents] Choice handler error:", err)
+		end
+	end
+	
+	-- CRITICAL FIX: Also call event-level onComplete callback!
+	-- This is needed for events like parent_divorce that update relationship statuses
+	if event.onComplete then
+		local outcome = {
+			choiceIndex = choiceIndex,
+			choice = choice,
+			wasSuccessful = isSuccess,
+		}
+		local success, err = pcall(event.onComplete, state, choice, event, outcome)
+		if not success then
+			warn("[LifeEvents] Event onComplete error:", err)
+		end
+	end
+
+	if state.RecordEvent then
+		state:RecordEvent(event.id, { choice = choiceIndex, success = isSuccess })
+	end
+
+	return choice, isSuccess
+end
+
+local function weightedPick(events)
+	local total = 0
+	for _, event in ipairs(events) do
+		total += event.weight or 1
+	end
+	local roll = Random.new():NextNumber() * total
+	for _, event in ipairs(events) do
+		roll -= event.weight or 1
+		if roll <= 0 then
+			return event
+		end
+	end
+	return events[#events]
+end
+
+function EventEngine.selectYearEvents(events, state, options)
+	options = options or {}
+	local eligible = {}
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			table.insert(eligible, event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	local maxEvents = options.maxEvents or 2
+	local selected = {}
+	for i = 1, math.min(maxEvents, #eligible) do
+		local pick = weightedPick(eligible)
+		table.insert(selected, clone(pick))
+	end
+	return selected
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #486-488: ENHANCED EVENT SELECTION WITH DEDUPLICATION
+-- Prevents same event appearing multiple times in a year
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.selectYearEventsEnhanced(events, state, options)
+	options = options or {}
+	local eligible = {}
+	local usedEventIds = {}
+	local eventHistory = state.EventHistory or {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			-- Check cooldown
+			local cooldown = event.cooldown or 0
+			local lastOccurrence = eventHistory[event.id]
+			
+			if lastOccurrence then
+				local yearsSince = (state.Age or 0) - (lastOccurrence.age or 0)
+				if yearsSince < cooldown then
+					-- Skip - still on cooldown
+					continue
+				end
+			end
+			
+			-- Check one-time events
+			if event.oneTime or event.maxOccurrences == 1 then
+				if eventHistory[event.id] then
+					continue
+				end
+			end
+			
+			-- Check max occurrences
+			if event.maxOccurrences then
+				local occurrences = lastOccurrence and lastOccurrence.count or 0
+				if occurrences >= event.maxOccurrences then
+					continue
+				end
+			end
+			
+			table.insert(eligible, event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	-- Sort by priority first
+	table.sort(eligible, function(a, b)
+		local priorityA = a.priority == "high" and 3 or (a.priority == "medium" and 2 or 1)
+		local priorityB = b.priority == "high" and 3 or (b.priority == "medium" and 2 or 1)
+		return priorityA > priorityB
+	end)
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	
+	-- Always include high priority events first
+	for _, event in ipairs(eligible) do
+		if event.priority == "high" and not usedEventIds[event.id] then
+			table.insert(selected, clone(event))
+			usedEventIds[event.id] = true
+		end
+		if #selected >= maxEvents then
+			break
+		end
+	end
+	
+	-- Fill remaining slots with weighted random selection
+	while #selected < maxEvents and #eligible > 0 do
+		-- Filter out already used events
+		local remaining = {}
+		for _, event in ipairs(eligible) do
+			if not usedEventIds[event.id] then
+				table.insert(remaining, event)
+			end
+		end
+		
+		if #remaining == 0 then
+			break
+		end
+		
+		local pick = weightedPick(remaining)
+		if pick and not usedEventIds[pick.id] then
+			table.insert(selected, clone(pick))
+			usedEventIds[pick.id] = true
+		end
+	end
+	
+	return selected
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #489-491: EVENT HISTORY TRACKING
+-- Records event occurrences for cooldown and one-time tracking
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.recordEventOccurrence(state, eventId)
+	state.EventHistory = state.EventHistory or {}
+	
+	local existing = state.EventHistory[eventId]
+	if existing then
+		existing.count = (existing.count or 1) + 1
+		existing.lastAge = state.Age
+		existing.lastYear = state.Year
+	else
+		state.EventHistory[eventId] = {
+			count = 1,
+			firstAge = state.Age,
+			lastAge = state.Age,
+			firstYear = state.Year,
+			lastYear = state.Year,
+		}
+	end
+end
+
+function EventEngine.getEventOccurrenceCount(state, eventId)
+	if not state.EventHistory or not state.EventHistory[eventId] then
+		return 0
+	end
+	return state.EventHistory[eventId].count or 0
+end
+
+function EventEngine.hasEventOccurred(state, eventId)
+	return state.EventHistory and state.EventHistory[eventId] ~= nil
+end
+
+function EventEngine.getLastEventAge(state, eventId)
+	if not state.EventHistory or not state.EventHistory[eventId] then
+		return nil
+	end
+	return state.EventHistory[eventId].lastAge
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #492-494: IMPROVED WEIGHTED SELECTION WITH CATEGORY BALANCING
+-- Ensures diverse event categories appear
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.selectBalancedEvents(events, state, options)
+	options = options or {}
+	local eligible = {}
+	local byCategory = {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			table.insert(eligible, event)
+			
+			local category = event.category or "misc"
+			byCategory[category] = byCategory[category] or {}
+			table.insert(byCategory[category], event)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	local usedCategories = {}
+	
+	-- First pass: try to get events from different categories
+	for category, categoryEvents in pairs(byCategory) do
+		if #selected >= maxEvents then
+			break
+		end
+		
+		if not usedCategories[category] then
+			local pick = weightedPick(categoryEvents)
+			if pick then
+				table.insert(selected, clone(pick))
+				usedCategories[category] = true
+			end
+		end
+	end
+	
+	-- Second pass: fill remaining slots with any eligible event
+	while #selected < maxEvents and #eligible > 0 do
+		local pick = weightedPick(eligible)
+		if pick then
+			-- Avoid duplicates
+			local isDuplicate = false
+			for _, existing in ipairs(selected) do
+				if existing.id == pick.id then
+					isDuplicate = true
+					break
+				end
+			end
+			
+			if not isDuplicate then
+				table.insert(selected, clone(pick))
+			else
+				-- Remove from eligible to avoid infinite loop
+				for i, e in ipairs(eligible) do
+					if e.id == pick.id then
+						table.remove(eligible, i)
+						break
+					end
+				end
+			end
+		end
+	end
+	
+	return selected
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #495-497: DYNAMIC WEIGHT CALCULATION
+-- Adjusts event weights based on player state and history
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.calculateDynamicWeight(event, state)
+	local baseWeight = event.weight or 1
+	local multiplier = 1.0
+	
+	-- Boost events relevant to player's flags
+	local flags = state.Flags or {}
+	if event.boostIfFlag then
+		for _, flag in ipairs(event.boostIfFlag) do
+			if flags[flag] then
+				multiplier = multiplier * 1.5
+			end
+		end
+	end
+	
+	-- Reduce weight for recently seen events
+	if state.EventHistory and state.EventHistory[event.id] then
+		local history = state.EventHistory[event.id]
+		local yearsSince = (state.Age or 0) - (history.lastAge or 0)
+		if yearsSince < 5 then
+			multiplier = multiplier * (0.3 + yearsSince * 0.14) -- 0.3 at 0 years, 1.0 at 5 years
+		end
+	end
+	
+	-- Boost events that match player's career
+	if event.category == "career" and state.CurrentJob then
+		multiplier = multiplier * 1.3
+	end
+	
+	-- Boost relationship events for people with partners
+	if event.category == "relationships" and flags.married then
+		multiplier = multiplier * 1.2
+	end
+	
+	-- Boost health events for older players
+	if event.category == "health" and (state.Age or 0) > 50 then
+		multiplier = multiplier * 1.2
+	end
+	
+	-- Premium feature boosts
+	if event.requiresMob and state.MobState and state.MobState.inMob then
+		multiplier = multiplier * 2.0 -- Mafia members get more mafia events
+	end
+	
+	if event.requiresRoyal and state.RoyalState and state.RoyalState.isRoyal then
+		multiplier = multiplier * 2.0 -- Royals get more royal events
+	end
+	
+	if event.requiresFame and state.FameState and state.FameState.isFamous then
+		multiplier = multiplier * 2.0 -- Famous people get more fame events
+	end
+	
+	return baseWeight * multiplier
+end
+
+function EventEngine.selectEventsWithDynamicWeights(events, state, options)
+	options = options or {}
+	local eligible = {}
+	
+	for _, event in ipairs(events) do
+		if EventEngine.isEligible(event, state) then
+			local eventCopy = clone(event)
+			eventCopy._dynamicWeight = EventEngine.calculateDynamicWeight(event, state)
+			table.insert(eligible, eventCopy)
+		end
+	end
+
+	if #eligible == 0 then
+		return {}
+	end
+
+	-- Use dynamic weights for selection
+	local function dynamicWeightedPick(eventList)
+		local total = 0
+		for _, event in ipairs(eventList) do
+			total = total + (event._dynamicWeight or event.weight or 1)
+		end
+		local roll = Random.new():NextNumber() * total
+		for _, event in ipairs(eventList) do
+			roll = roll - (event._dynamicWeight or event.weight or 1)
+			if roll <= 0 then
+				return event
+			end
+		end
+		return eventList[#eventList]
+	end
+
+	local maxEvents = options.maxEvents or 3
+	local selected = {}
+	local usedEventIds = {}
+	
+	for i = 1, maxEvents do
+		local remaining = {}
+		for _, event in ipairs(eligible) do
+			if not usedEventIds[event.id] then
+				table.insert(remaining, event)
+			end
+		end
+		
+		if #remaining == 0 then
+			break
+		end
+		
+		local pick = dynamicWeightedPick(remaining)
+		if pick and not usedEventIds[pick.id] then
+			table.insert(selected, pick)
+			usedEventIds[pick.id] = true
+		end
+	end
+	
+	return selected
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: createRelationship function for friend/relationship creation
+-- This was missing and causing friend creation to fail silently!
+-- ════════════════════════════════════════════════════════════════════════════════
+function EventEngine.createRelationship(state, relType, options)
+	options = options or {}
+
+	-- Initialize relationships table if needed
+	state.Relationships = state.Relationships or {
+		family = {},
+		friends = {},
+		romantic = {},
+		enemies = {},
+	}
+
+	-- Generate a new relationship
+	local relationship = {
+		id = "rel_" .. tostring(os.time()) .. "_" .. math.random(1000, 9999),
+		type = relType,
+		name = options.name or EventEngine.generateRandomName(state),
+		age = options.age or (state.Age and math.max(state.Age - 5, 0) + math.random(0, 10)) or math.random(18, 45),
+		relationship = options.initialRelationship or 50,
+		yearsKnown = 0,
+		createdAt = state.Age or 0,
+	}
+
+	-- Add type-specific fields
+	if relType == "friend" then
+		relationship.role = options.role or "Friend"
+		relationship.metAt = options.metAt or "randomly"
+		table.insert(state.Relationships.friends, relationship)
+	elseif relType == "romance" or relType == "partner" then
+		relationship.role = options.role or "Partner"
+		relationship.metAt = options.metAt or "dating"
+		relationship.isMarried = options.isMarried or false
+		table.insert(state.Relationships.romantic, relationship)
+	elseif relType == "enemy" then
+		relationship.role = options.role or "Enemy"
+		relationship.reason = options.reason or "unknown"
+		table.insert(state.Relationships.enemies, relationship)
+	end
+
+	return true, relationship
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════
+-- Helper: Generate random name for new relationships
+-- ════════════════════════════════════════════════════════════════════════════════
+function EventEngine.generateRandomName(state)
+	local firstNames = {
+		"Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn",
+		"Jamie", "Avery", "Blake", "Cameron", "Dakota", "Emery", "Finley", "Harper",
+		"James", "Emma", "Oliver", "Sophia", "Liam", "Isabella", "Noah", "Mia",
+		"Lucas", "Charlotte", "Mason", "Amelia", "Ethan", "Evelyn", "Aiden", "Abigail",
+	}
+	local lastNames = {
+		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+		"Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+		"Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+	}
+
+	return firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+end
+
+return EventEngine

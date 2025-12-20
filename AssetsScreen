@@ -1,6 +1,6 @@
 -- AssetsScreen.lua
 -- Premium BitLife-style Assets & Shop screen
--- Triple AAA polished UI with gambling minigame
+-- Triple AAA polished UI for managing assets and purchases
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,16 +9,291 @@ local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
 local C = UI.Colors
 local F = UI.Fonts
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Base colors
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Teal       = C.Teal       or Color3.fromRGB(20, 184, 166)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.Gold       = C.Gold       or Color3.fromRGB(251, 191, 36)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+
+-- Dark variants
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.TealDark   = C.TealDark   or Color3.fromRGB(13, 148, 136)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+C.GoldDark   = C.GoldDark   or Color3.fromRGB(217, 119, 6)
+
+-- Pale variants
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
+C.TealPale   = C.TealPale   or Color3.fromRGB(204, 251, 241)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+
+-- Grays
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+
+-- Extra safety colors
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+-- CRITICAL FIX: Added IS_TINY_PHONE for ultra-small phones like iPhone SE
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+local ViewportSize = Camera.ViewportSize
+
+-- CRITICAL UI FIX: More aggressive scaling for small phones
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.55 end  -- SUPER TINY phones
+	if minDim < 380 then return 0.65 end  -- TINY phones like iPhone SE
+	if minDim < 400 then return 0.72 end  -- Small phones
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+
+-- CRITICAL FIX: Better text sizing for tiny phones - more readable
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+
+-- CRITICAL FIX: More padding/spacing on small screens to reduce bunching
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+
+-- CRITICAL FIX: Card heights that scale properly
+local function cardHeight(baseHeight)
+	if IS_TINY_PHONE then return math.max(70, math.floor(baseHeight * 0.7)) end
+	if IS_SMALL_PHONE then return math.max(80, math.floor(baseHeight * 0.85)) end
+	return baseHeight
+end
+
+-- CRITICAL FIX: Proper minimum touch target for tiny phones
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
+end
+
+local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 8 end
+	if IS_SMALL_PHONE then return ViewportSize.X - 12 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 20, 350) end
+	return 350
+end
+
+-- CRITICAL FIX: Icon sizes that scale for small phones
+local function iconSize(base)
+	if IS_TINY_PHONE then return math.max(36, math.floor(base * 0.62)) end
+	if IS_SMALL_PHONE then return math.max(42, math.floor(base * 0.75)) end
+	return base
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PREMIUM EMPTY STATE CARD HELPER
+-- Creates a polished empty state card with icon, message, and optional action
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function createPremiumEmptyCard(parent, options)
+	options = options or {}
+	local emoji = options.emoji or "📭"
+	local title = options.title or "Nothing Here"
+	local message = options.message or "No items to display."
+	local accentColor = options.accentColor or C.Gray400
+	local layoutOrder = options.layoutOrder or 1
+	local actionText = options.actionText
+	local actionCallback = options.actionCallback
+	
+	-- Container
+	local container = Instance.new("Frame")
+	container.Name = "EmptyStateCard"
+	container.Size = UDim2.new(1, 0, 0, actionText and 170 or 140)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = layoutOrder
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.94
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Shell (subtle accent)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = accentColor:Lerp(C.White, 0.6)
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -4, 1, -4)
+	card.Position = UDim2.new(0, 2, 0, 2)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 16)
+	
+	-- Emoji icon with circle background
+	local iconCircle = Instance.new("Frame")
+	iconCircle.Size = UDim2.new(0, 56, 0, 56)
+	iconCircle.AnchorPoint = Vector2.new(0.5, 0)
+	iconCircle.Position = UDim2.new(0.5, 0, 0, 14)
+	iconCircle.BackgroundColor3 = accentColor:Lerp(C.White, 0.85)
+	iconCircle.ZIndex = 85
+	iconCircle.Parent = card
+	UI.corner(iconCircle, 28)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = 26
+	iconLabel.Text = emoji
+	iconLabel.ZIndex = 86
+	iconLabel.Parent = iconCircle
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, 22)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, 74)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = 15
+	titleLabel.TextColor3 = C.Gray700
+	titleLabel.Text = title
+	titleLabel.ZIndex = 85
+	titleLabel.Parent = card
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 28)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 96)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 12
+	messageLabel.TextColor3 = C.Gray500
+	messageLabel.TextWrapped = true
+	messageLabel.Text = message
+	messageLabel.ZIndex = 85
+	messageLabel.Parent = card
+	
+	-- Optional action button
+	if actionText and actionCallback then
+		local actionBtn = Instance.new("TextButton")
+		actionBtn.Size = UDim2.new(0.6, 0, 0, 32)
+		actionBtn.AnchorPoint = Vector2.new(0.5, 0)
+		actionBtn.Position = UDim2.new(0.5, 0, 0, 128)
+		actionBtn.BackgroundColor3 = accentColor
+		actionBtn.Font = F.Button
+		actionBtn.TextSize = 12
+		actionBtn.TextColor3 = C.White
+		actionBtn.Text = actionText
+		actionBtn.AutoButtonColor = false
+		actionBtn.ZIndex = 86
+		actionBtn.Parent = card
+		UI.corner(actionBtn, 8)
+		
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), {
+				BackgroundColor3 = accentColor:Lerp(C.Black, 0.15)
+			})
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+		end)
+		actionBtn.MouseButton1Click:Connect(actionCallback)
+	end
+	
+	return container
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
--- Debug logging (set to false to reduce log spam)
-local DEBUG = false
+-- Debug logging (Disabled for production - was ENABLED to trace asset sync issues)
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end
 local function logWarn(...)
 	warn("[AssetsScreen]", ...)
+end
+
+-- Deep debug for asset tracing
+local function debugAssets(assets, label)
+	if not DEBUG then return end
+	label = label or "Assets"
+	print("[AssetsScreen] === " .. label .. " DEBUG ===")
+	if not assets then
+		print("[AssetsScreen]   Assets table is NIL")
+		return
+	end
+	if type(assets) ~= "table" then
+		print("[AssetsScreen]   Assets is not a table, type:", type(assets))
+		return
+	end
+	
+	local categories = {"Properties", "Vehicles", "Items", "Crypto", "Investments", "Businesses"}
+	for _, cat in ipairs(categories) do
+		local bucket = assets[cat]
+		if bucket then
+			print("[AssetsScreen]   " .. cat .. ": " .. #bucket .. " items")
+			for i, item in ipairs(bucket) do
+				print("[AssetsScreen]     [" .. i .. "] id=" .. tostring(item.id) .. " name=" .. tostring(item.name))
+			end
+		else
+			print("[AssetsScreen]   " .. cat .. ": (nil)")
+		end
+	end
+	print("[AssetsScreen] === END DEBUG ===")
 end
 
 -- Remotes (optimized - fast lookup)
@@ -33,36 +308,39 @@ local SellAsset = getRemote("SellAsset")
 local Gamble = getRemote("Gamble")
 
 -- Asset Data - MUST match server IDs in LifeRemoteHandlers!
+-- CRITICAL FIX #USER-6: Enhanced with happiness bonuses, maintenance, and effects!
 local Properties = {
-	{ id = "studio", name = "Studio Apartment", emoji = "🏢", price = 85000, income = 500, desc = "Cozy studio", minAge = 18 },
-	{ id = "1br_condo", name = "1BR Condo", emoji = "🏬", price = 175000, income = 1000, desc = "Modern condo", minAge = 18 },
-	{ id = "family_house", name = "Family House", emoji = "🏠", price = 350000, income = 2000, desc = "3 bed, 2 bath", minAge = 18 },
-	{ id = "beach_house", name = "Beach House", emoji = "🏖️", price = 1200000, income = 5000, desc = "Ocean views", minAge = 21 },
-	{ id = "penthouse", name = "Luxury Penthouse", emoji = "🌆", price = 2500000, income = 10000, desc = "Top floor luxury", minAge = 21 },
-	{ id = "mansion", name = "Mansion", emoji = "🏰", price = 8500000, income = 25000, desc = "Dream home", minAge = 21 },
+	{ id = "studio", name = "Studio Apartment", emoji = "🏢", price = 85000, income = 500, happiness = 2, maintenance = 1200, desc = "Cozy studio - +2 Happiness/yr", minAge = 18 },
+	{ id = "1br_condo", name = "1BR Condo", emoji = "🏬", price = 175000, income = 1000, happiness = 4, maintenance = 2000, desc = "Modern condo - +4 Happiness/yr", minAge = 18 },
+	{ id = "family_house", name = "Family House", emoji = "🏠", price = 350000, income = 2000, happiness = 6, maintenance = 4000, desc = "3 bed, 2 bath - +6 Happiness/yr", minAge = 18 },
+	{ id = "beach_house", name = "Beach House", emoji = "🏖️", price = 1200000, income = 5000, happiness = 10, maintenance = 8000, desc = "Ocean views - +10 Happiness/yr, +5 Fame", minAge = 21 },
+	{ id = "penthouse", name = "Luxury Penthouse", emoji = "🌆", price = 2500000, income = 10000, happiness = 15, maintenance = 15000, desc = "Top floor luxury - +15 Happiness/yr, +10 Fame", minAge = 21 },
+	{ id = "mansion", name = "Mansion", emoji = "🏰", price = 8500000, income = 25000, happiness = 25, maintenance = 35000, desc = "Dream home - +25 Happiness/yr, +20 Fame, +Status", minAge = 21 },
 }
 
+-- CRITICAL FIX #USER-6: All vehicles now show their ACTUAL gameplay effects!
 local Vehicles = {
-	{ id = "used_civic", name = "Used Honda Civic", emoji = "🚗", price = 8000, minAge = 16 },
-	{ id = "camry", name = "Toyota Camry", emoji = "🚙", price = 28000, minAge = 16 },
-	{ id = "bmw", name = "BMW 3 Series", emoji = "🚘", price = 55000, minAge = 18 },
-	{ id = "tesla", name = "Tesla Model S", emoji = "⚡", price = 95000, minAge = 18 },
-	{ id = "porsche", name = "Porsche 911", emoji = "🏎️", price = 180000, minAge = 21 },
-	{ id = "lambo", name = "Lamborghini", emoji = "🦁", price = 300000, minAge = 21 },
-	{ id = "ferrari", name = "Ferrari F8", emoji = "🐎", price = 350000, minAge = 21 },
-	{ id = "yacht", name = "Yacht", emoji = "🛥️", price = 2000000, minAge = 25 },
-	{ id = "jet", name = "Private Jet", emoji = "✈️", price = 15000000, minAge = 25 },
+	{ id = "used_civic", name = "Used Honda Civic", emoji = "🚗", price = 8000, happiness = 1, maintenance = 800, desc = "+1 Happiness/yr, $800 upkeep", minAge = 16 },
+	{ id = "camry", name = "Toyota Camry", emoji = "🚙", price = 28000, happiness = 2, maintenance = 1500, desc = "+2 Happiness/yr, $1.5K upkeep", minAge = 16 },
+	{ id = "bmw", name = "BMW 3 Series", emoji = "🚘", price = 55000, happiness = 4, maintenance = 3000, desc = "+4 Happiness/yr, +2 Status", minAge = 18 },
+	{ id = "tesla", name = "Tesla Model S", emoji = "⚡", price = 95000, happiness = 5, maintenance = 2000, desc = "+5 Happiness/yr, +3 Status, No gas!", minAge = 18 },
+	{ id = "porsche", name = "Porsche 911", emoji = "🏎️", price = 180000, happiness = 8, maintenance = 8000, desc = "+8 Happiness/yr, +5 Fame, +8 Status", minAge = 21 },
+	{ id = "lambo", name = "Lamborghini", emoji = "🦁", price = 300000, happiness = 12, maintenance = 15000, desc = "+12 Happiness/yr, +10 Fame, SUPERCAR!", minAge = 21 },
+	{ id = "ferrari", name = "Ferrari F8", emoji = "🐎", price = 350000, happiness = 15, maintenance = 18000, desc = "+15 Happiness/yr, +12 Fame, ELITE!", minAge = 21 },
+	{ id = "yacht", name = "Yacht", emoji = "🛥️", price = 2000000, happiness = 20, maintenance = 50000, desc = "+20 Happiness/yr, +20 Fame, LUXURY LIFE!", minAge = 25 },
+	{ id = "jet", name = "Private Jet", emoji = "✈️", price = 15000000, happiness = 35, maintenance = 200000, desc = "+35 Happiness/yr, +50 Fame, BILLIONAIRE!", minAge = 25 },
 }
 
+-- CRITICAL FIX #USER-6: Shop items now show their effects!
 local Shop = {
-	{ id = "sneakers", name = "Sneakers", emoji = "👟", price = 350, minAge = 10 },
-	{ id = "iphone", name = "iPhone", emoji = "📱", price = 1200, minAge = 10 },
-	{ id = "bag", name = "Designer Bag", emoji = "👜", price = 2500, minAge = 14 },
-	{ id = "gaming_pc", name = "Gaming PC", emoji = "🖥️", price = 3000, minAge = 10 },
-	{ id = "necklace", name = "Gold Necklace", emoji = "📿", price = 3500, minAge = 16 },
-	{ id = "watch", name = "Designer Watch", emoji = "⌚", price = 5000, minAge = 16 },
-	{ id = "ring", name = "Diamond Ring", emoji = "💍", price = 15000, minAge = 18 },
-	{ id = "piano", name = "Grand Piano", emoji = "🎹", price = 50000, minAge = 18 },
+	{ id = "sneakers", name = "Sneakers", emoji = "👟", price = 350, happiness = 1, desc = "+1 Happiness, +1 Looks", minAge = 10 },
+	{ id = "iphone", name = "iPhone", emoji = "📱", price = 1200, happiness = 2, desc = "+2 Happiness, Stay connected!", minAge = 10 },
+	{ id = "bag", name = "Designer Bag", emoji = "👜", price = 2500, happiness = 2, desc = "+2 Happiness, +3 Looks, +1 Fame", minAge = 14 },
+	{ id = "gaming_pc", name = "Gaming PC", emoji = "🖥️", price = 3000, happiness = 3, desc = "+3 Happiness, +2 Smarts (research!)", minAge = 10 },
+	{ id = "necklace", name = "Gold Necklace", emoji = "📿", price = 3500, happiness = 2, desc = "+2 Happiness, +2 Looks, +1 Fame", minAge = 16 },
+	{ id = "watch", name = "Designer Watch", emoji = "⌚", price = 5000, happiness = 3, desc = "+3 Happiness, +3 Looks, +2 Fame", minAge = 16 },
+	{ id = "ring", name = "Diamond Ring", emoji = "💍", price = 15000, happiness = 5, desc = "+5 Happiness, +5 Looks, +3 Fame", minAge = 18 },
+	{ id = "piano", name = "Grand Piano", emoji = "🎹", price = 50000, happiness = 8, desc = "+8 Happiness, +5 Smarts, Music skill!", minAge = 18 },
 }
 
 function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
@@ -81,10 +359,52 @@ function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pl
 end
 
 function AssetsScreen:updateState(newState)
-	log("Updating state...")
+	log("=== UPDATE STATE CALLED ===")
 	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #26: Detect new life and reset assets view
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
 		self.playerState = newState
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+		
+		-- CRITICAL DEBUG: Trace the Assets field
+		if newState.Assets then
+			debugAssets(newState.Assets, "Incoming State Assets")
+		else
+			log("WARNING: newState.Assets is NIL or missing!")
+			log("newState keys:", table.concat((function()
+				local keys = {}
+				for k, _ in pairs(newState) do
+					table.insert(keys, tostring(k))
+				end
+				return keys
+			end)(), ", "))
+		end
+		
+		-- Force refresh on new life to clear old assets display
+		if isNewLife then
+			log("🔄 NEW LIFE DETECTED! Forcing assets UI refresh")
+			self.currentTab = "shop" -- Reset to shop tab for new life (baby has no assets)
+		end
+		
+		-- Auto-refresh the current tab if screen is visible
+		-- This ensures assets added by events appear immediately
+		if self.isVisible then
+			self:updateBalanceBar()
+			if self.currentTab == "property" then
+				self:populateProperty()
+			elseif self.currentTab == "vehicles" then
+				self:populateVehicles()
+			else
+				self:populateShop()
+			end
+		end
+	else
+		log("WARNING: updateState called with nil newState!")
 	end
 end
 
@@ -98,6 +418,23 @@ function AssetsScreen:getMoney()
 	local state = self.playerState
 	if not state then return 0 end
 	return state.Money or (state.Stats and state.Stats.Money) or 0
+end
+
+-- CRITICAL FIX: Added formatMoney method for displaying money values
+function AssetsScreen:formatMoney(amount)
+	if not amount or amount == 0 then return "0" end
+	local negative = amount < 0
+	amount = math.abs(amount)
+	
+	-- Format with commas
+	local formatted = tostring(math.floor(amount))
+	local k
+	while true do
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+		if k == 0 then break end
+	end
+	
+	return negative and "-" .. formatted or formatted
 end
 
 function AssetsScreen:getAssets()
@@ -140,7 +477,12 @@ function AssetsScreen:getAssets()
 		end
 	end
 
-	log("Total owned assets:", #flatAssets)
+	-- CRITICAL FIX: Count table entries properly (# only works for arrays, not hash tables)
+	local count = 0
+	for _ in pairs(flatAssets) do
+		count = count + 1
+	end
+	log("Total owned assets:", count)
 	return flatAssets
 end
 
@@ -186,79 +528,89 @@ function AssetsScreen:createUI()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0.1 })
 	end)
 
-	-- Balance bar with casino button
+	-- CRITICAL FIX: Balance bar - clean card design that fits naturally below header
+	-- Uses a white card with teal accent, positioned to look integrated
+	-- CRITICAL FIX: IS_TINY_PHONE responsive sizing
+	local balanceBarHeight = IS_TINY_PHONE and 42 or 54
+	local balanceBarY = IS_TINY_PHONE and 100 or 130
+	local balanceBarMargin = IS_TINY_PHONE and 8 or 12
+	
 	self.balanceBar = Instance.new("Frame")
-	self.balanceBar.Size = UDim2.new(1, -16, 0, 75)
-	self.balanceBar.Position = UDim2.new(0, 8, 0, 116)
+	self.balanceBar.Name = "BalanceBar"
+	self.balanceBar.Size = UDim2.new(1, -balanceBarMargin * 2, 0, balanceBarHeight) -- Full width minus margins
+	self.balanceBar.Position = UDim2.new(0, balanceBarMargin, 0, balanceBarY) -- Below header curve (header extends to ~120px)
 	self.balanceBar.BackgroundColor3 = C.White
+	self.balanceBar.BorderSizePixel = 0
 	self.balanceBar.ZIndex = 84
 	self.balanceBar.Parent = self.overlay
-	UI.corner(self.balanceBar, 18)
-	UI.stroke(self.balanceBar, 1, 0.88, C.Gray200)
-	UI.createShadow(self.balanceBar, 3, 10, C.Black, 0.93)
-
-	-- Balance icon
+	UI.corner(self.balanceBar, 12)
+	UI.stroke(self.balanceBar, 1, 0.85, C.TealPale)
+	
+	-- Teal accent bar on left edge
+	local accentBar = Instance.new("Frame")
+	accentBar.Name = "AccentBar"
+	accentBar.Size = UDim2.new(0, 4, 1, -12)
+	accentBar.Position = UDim2.new(0, 6, 0, 6)
+	accentBar.BackgroundColor3 = C.Teal
+	accentBar.ZIndex = 85
+	accentBar.Parent = self.balanceBar
+	UI.corner(accentBar, 2)
+	
+	-- Money icon in a circular badge
+	local iconBadge = Instance.new("Frame")
+	iconBadge.Name = "IconBadge"
+	iconBadge.Size = UDim2.new(0, 36, 0, 36)
+	iconBadge.Position = UDim2.new(0, 18, 0.5, -18)
+	iconBadge.BackgroundColor3 = C.TealPale or Color3.fromRGB(209, 250, 229)
+	iconBadge.ZIndex = 85
+	iconBadge.Parent = self.balanceBar
+	UI.corner(iconBadge, 18)
+	
 	local balanceIcon = Instance.new("TextLabel")
-	balanceIcon.Size = UDim2.new(0, 55, 0, 55)
-	balanceIcon.Position = UDim2.new(0, 14, 0.5, -27.5)
+	balanceIcon.Name = "Icon"
+	balanceIcon.Size = UDim2.fromScale(1, 1)
 	balanceIcon.BackgroundTransparency = 1
 	balanceIcon.Font = F.Body
-	balanceIcon.TextSize = 38
+	balanceIcon.TextSize = 20
 	balanceIcon.Text = "💰"
-	balanceIcon.ZIndex = 85
-	balanceIcon.Parent = self.balanceBar
-
-	-- Balance text
+	balanceIcon.ZIndex = 86
+	balanceIcon.Parent = iconBadge
+	
+	-- Balance label and value stacked
 	local balanceLabel = Instance.new("TextLabel")
-	balanceLabel.Size = UDim2.new(0.4, 0, 0, 20)
-	balanceLabel.Position = UDim2.new(0, 75, 0, 14)
+	balanceLabel.Name = "Label"
+	balanceLabel.Size = UDim2.new(0.5, 0, 0, 14)
+	balanceLabel.Position = UDim2.new(0, 62, 0, 10)
 	balanceLabel.BackgroundTransparency = 1
-	balanceLabel.Font = F.Body
-	balanceLabel.TextSize = 13
-	balanceLabel.TextColor3 = C.Gray500
+	balanceLabel.Font = F.Medium
+	balanceLabel.TextSize = 10
+	balanceLabel.TextColor3 = C.Gray500 or Color3.fromRGB(107, 114, 128)
 	balanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-	balanceLabel.Text = "Your Balance"
-	balanceLabel.ZIndex = 85
+	balanceLabel.Text = "YOUR BALANCE"
+	balanceLabel.ZIndex = 86
 	balanceLabel.Parent = self.balanceBar
 
 	self.balanceValue = Instance.new("TextLabel")
-	self.balanceValue.Size = UDim2.new(0.5, 0, 0, 32)
-	self.balanceValue.Position = UDim2.new(0, 75, 0, 34)
+	self.balanceValue.Name = "Value"
+	self.balanceValue.Size = UDim2.new(0.6, 0, 0, 22)
+	self.balanceValue.Position = UDim2.new(0, 62, 0, 24)
 	self.balanceValue.BackgroundTransparency = 1
 	self.balanceValue.Font = F.Title
-	self.balanceValue.TextSize = 28
-	self.balanceValue.TextColor3 = C.GreenDark
+	self.balanceValue.TextSize = 19
+	self.balanceValue.TextColor3 = C.TealDark or Color3.fromRGB(17, 94, 89)
 	self.balanceValue.TextXAlignment = Enum.TextXAlignment.Left
 	self.balanceValue.Text = "$0"
-	self.balanceValue.ZIndex = 85
+	self.balanceValue.ZIndex = 86
 	self.balanceValue.Parent = self.balanceBar
 
-	-- Casino button
-	local casinoBtn = Instance.new("TextButton")
-	casinoBtn.Size = UDim2.new(0, 90, 0, 50)
-	casinoBtn.AnchorPoint = Vector2.new(1, 0.5)
-	casinoBtn.Position = UDim2.new(1, -14, 0.5, 0)
-	casinoBtn.BackgroundColor3 = C.Gold
-	casinoBtn.Font = F.Button
-	casinoBtn.TextSize = 13
-	casinoBtn.TextColor3 = C.White
-	casinoBtn.Text = "🎰 Casino"
-	casinoBtn.AutoButtonColor = false
-	casinoBtn.ZIndex = 85
-	casinoBtn.Parent = self.balanceBar
-	UI.corner(casinoBtn, 14)
-	UI.gradient(casinoBtn, C.Gold, C.GoldDark, 90)
+	-- REMOVED: Casino button (per user request)
+	-- Casino/gambling feature removed from AssetsScreen
 
-	casinoBtn.MouseButton1Click:Connect(function() self:showGambling() end)
-	casinoBtn.MouseEnter:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 96, 0, 54) })
-	end)
-	casinoBtn.MouseLeave:Connect(function()
-		UI.tween(casinoBtn, TweenInfo.new(0.12), { Size = UDim2.new(0, 90, 0, 50) })
-	end)
-
-	-- Tab bar
-	self.tabBar = UI.createTabBar(self.overlay, { topOffset = 200, zIndex = 84 })
+	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
+	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
+	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
+	local tabBarY = IS_TINY_PHONE and 150 or 196
+	self.tabBar = UI.createTabBar(self.overlay, { topOffset = tabBarY, zIndex = 84 })
 	self.tabBtns = {}
 
 	local tabs = {
@@ -276,31 +628,230 @@ function AssetsScreen:createUI()
 		btn.MouseButton1Click:Connect(function() self:switchTab(tab.id) end)
 	end
 
-	-- Scroll area
-	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = 264, zIndex = 81 })
+	-- Scroll area - CRITICAL FIX: Positioned below tab bar
+	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
+	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
+	local contentScrollY = IS_TINY_PHONE and 200 or 266
+	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = contentScrollY, zIndex = 81 })
 
 	-- Modals
 	self:createResultModal()
-	self:createGamblingModal()
+	-- REMOVED: self:createGamblingModal() - Casino feature removed
 
 	-- Initial populate
 	self:populateProperty()
 end
 
 function AssetsScreen:createResultModal()
-	self.resultModal = UI.createModalCard(self.screenGui, {
-		name = "AssetsResult",
-		accentColor = C.Green,
-		accentDark = C.GreenDark,
-		accentPale = C.GreenPale,
-		zIndex = 96
-	})
-
-	self.resultModal.closeArea.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Result Modal (matching Quit Job modal style)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	self.resultModal = {}
+	
+	-- Close/dim overlay
+	local closeArea = Instance.new("TextButton")
+	closeArea.Name = "ResultModalCloseArea"
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundColor3 = C.Black
+	closeArea.BackgroundTransparency = 0.35
+	closeArea.Text = ""
+	closeArea.AutoButtonColor = false
+	closeArea.ZIndex = 96
+	closeArea.Visible = false
+	closeArea.Parent = self.screenGui
+	self.resultModal.closeArea = closeArea
+	self.resultModal.overlay = closeArea
+	
+	-- Container (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local modalWidth = IS_TINY_PHONE and 280 or 340
+	local modalHeight = IS_TINY_PHONE and 260 or 320
+	
+	local container = Instance.new("Frame")
+	container.Name = "ResultModalContainer"
+	container.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundTransparency = 1
+	container.ZIndex = 97
+	container.Parent = closeArea
+	self.resultModal.container = container
+	
+	-- Premium shadow (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local shadowPad = IS_TINY_PHONE and 8 or 12
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, shadowPad, 1, shadowPad)
+	shadow.Position = UDim2.new(0, shadowPad/2, 0, shadowPad/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 97
+	shadow.Parent = container
+	UI.corner(shadow, IS_TINY_PHONE and 20 or 28)
+	
+	-- Colored shell
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.fromScale(1, 1)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 98
+	shell.Parent = container
+	UI.corner(shell, 26)
+	self.resultModal.shell = shell
+	
+	-- Shell stroke
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = C.GreenDark
+	shellStroke.Thickness = 2
+	shellStroke.Transparency = 0.5
+	shellStroke.Parent = shell
+	self.resultModal.shellStroke = shellStroke
+	
+	-- Inner white card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -10, 1, -10)
+	card.Position = UDim2.new(0, 5, 0, 5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 99
+	card.Parent = shell
+	UI.corner(card, 22)
+	
+	-- Emoji frame (CRITICAL FIX: IS_TINY_PHONE responsive sizing)
+	local emojiSize = IS_TINY_PHONE and 56 or 80
+	local emojiFrame = Instance.new("Frame")
+	emojiFrame.Size = UDim2.new(0, emojiSize, 0, emojiSize)
+	emojiFrame.AnchorPoint = Vector2.new(0.5, 0)
+	emojiFrame.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 12 or 20)
+	emojiFrame.BackgroundColor3 = C.GreenPale
+	emojiFrame.ZIndex = 100
+	emojiFrame.Parent = card
+	UI.corner(emojiFrame, emojiSize/2)
+	self.resultModal.emojiFrame = emojiFrame
+	
+	-- Emoji label
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.fromScale(1, 1)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 44
+	emojiLabel.Text = "🛒"
+	emojiLabel.ZIndex = 101
+	emojiLabel.Parent = emojiFrame
+	self.resultModal.emojiLabel = emojiLabel
+	
+	-- Title (CRITICAL FIX: IS_TINY_PHONE responsive positioning)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -32, 0, IS_TINY_PHONE and 24 or 32)
+	titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+	titleLabel.Position = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 72 or 108)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = IS_TINY_PHONE and 17 or 22
+	titleLabel.TextColor3 = C.GreenDark
+	titleLabel.Text = "Purchase Complete!"
+	titleLabel.ZIndex = 100
+	titleLabel.Parent = card
+	self.resultModal.titleLabel = titleLabel
+	
+	-- Message
+	local messageLabel = Instance.new("TextLabel")
+	messageLabel.Size = UDim2.new(1, -32, 0, 70)
+	messageLabel.AnchorPoint = Vector2.new(0.5, 0)
+	messageLabel.Position = UDim2.new(0.5, 0, 0, 145)
+	messageLabel.BackgroundTransparency = 1
+	messageLabel.Font = F.Body
+	messageLabel.TextSize = 15
+	messageLabel.TextColor3 = C.Gray700
+	messageLabel.TextWrapped = true
+	messageLabel.Text = ""
+	messageLabel.ZIndex = 100
+	messageLabel.Parent = card
+	self.resultModal.messageLabel = messageLabel
+	
+	-- OK Button
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button, not child)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "OkBtnShadow"
+	btnShadow.Size = UDim2.new(0.7, 4, 0, 56)
+	btnShadow.AnchorPoint = Vector2.new(0.5, 0)
+	btnShadow.Position = UDim2.new(0.5, 2, 0, 232)
+	btnShadow.BackgroundColor3 = C.GreenDark
+	btnShadow.BackgroundTransparency = 0.5
+	btnShadow.ZIndex = 100
+	btnShadow.Parent = card
+	UI.corner(btnShadow, 14)
+	self.resultModal.okBtnShadow = btnShadow
+	
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OkBtn"
+	okBtn.Size = UDim2.new(0.7, 0, 0, 52)
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.Position = UDim2.new(0.5, 0, 0, 230)
+	okBtn.BackgroundColor3 = C.Green
+	okBtn.Font = F.Button
+	okBtn.TextSize = 17
+	okBtn.TextColor3 = C.White
+	okBtn.Text = "👍 Nice!"
+	okBtn.AutoButtonColor = false
+	okBtn.ZIndex = 101
+	okBtn.Parent = card
+	UI.corner(okBtn, 14)
+	self.resultModal.okButton = okBtn
+	
+	-- Button hover (CRITICAL FIX: Also animate shadow)
+	okBtn.MouseEnter:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(0.72, 0, 0, 56),
+			BackgroundColor3 = shell.BackgroundColor3:Lerp(C.Black, 0.15)
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.72, 4, 0, 60)
+		})
 	end)
-	self.resultModal.okButton.MouseButton1Click:Connect(function()
-		UI.hideModal(self.resultModal, function() self:switchTab(self.currentTab) end)
+	okBtn.MouseLeave:Connect(function()
+		UI.tween(okBtn, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 0, 0, 52),
+			BackgroundColor3 = shell.BackgroundColor3
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), {
+			Size = UDim2.new(0.7, 4, 0, 56)
+		})
+	end)
+	
+	-- Custom show/hide
+	self.resultModal.show = function()
+		closeArea.Visible = true
+		closeArea.BackgroundTransparency = 1
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, 320, 0, 300)
+		
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(0, 340, 0, 320)
+		})
+	end
+	
+	self.resultModal.hide = function(callback)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
+		})
+		task.delay(0.15, function()
+			closeArea.Visible = false
+			if callback then callback() end
+		end)
+	end
+	
+	local function onDismiss()
+		self:switchTab(self.currentTab)
+	end
+	
+	closeArea.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
+	end)
+	okBtn.MouseButton1Click:Connect(function()
+		self.resultModal.hide(onDismiss)
 	end)
 end
 
@@ -545,37 +1096,332 @@ function AssetsScreen:switchTab(tabId)
 end
 
 function AssetsScreen:populateProperty()
+	log("=== POPULATE PROPERTY CALLED ===")
 	self:updateBalanceBar()
+
+	-- Debug the raw state
+	debugAssets(self.playerState and self.playerState.Assets, "Current playerState.Assets")
 
 	local assets = self:getAssets()
 	local ownedProperties = {}
 	local catalogIds = {}
+	
+	-- ═══════════════════════════════════════════════════════════
+	-- LIVING SITUATION CARD - Shows where player currently lives
+	-- CRITICAL FIX: Players wanted to see their housing status!
+	-- CRITICAL FIX #2: Also read HousingState.status for accurate info!
+	-- ═══════════════════════════════════════════════════════════
+	local livingCard = Instance.new("Frame")
+	livingCard.Name = "LivingSituationCard"
+	livingCard.Size = UDim2.new(1, 0, 0, 120)
+	livingCard.BackgroundColor3 = C.PurplePale or Color3.fromRGB(237, 233, 254)
+	livingCard.LayoutOrder = -1 -- Before everything else
+	livingCard.ZIndex = 82
+	livingCard.Parent = self.contentScroll
+	UI.corner(livingCard, 18)
+	UI.stroke(livingCard, 2, 0.5, C.Purple or Color3.fromRGB(147, 51, 234))
+	UI.pad(livingCard, 14, 14, 14, 16)
+	
+	-- Determine living situation
+	local flags = self.playerState and self.playerState.Flags or {}
+	local housingState = self.playerState and self.playerState.HousingState or {}
+	local age = self.playerState and self.playerState.Age or 0
+	local housingStatus = housingState.status -- "renter", "owner", "with_parents", "homeless", etc.
+	
+	local livingEmoji = "🏠"
+	local livingTitle = "Living Situation"
+	local livingStatus = "Unknown"
+	local livingDetail = ""
+	local statusColor = C.Purple
+	
+	-- CRITICAL FIX: Check HousingState.status FIRST for most accurate info
+	-- Then fall back to flags for backwards compatibility
+	
+	-- Check various housing states - ORDER MATTERS!
+	if flags.homeless or housingStatus == "homeless" then
+		livingEmoji = "🏕️"
+		livingStatus = "Homeless"
+		livingDetail = "Living on the streets"
+		statusColor = C.Red
+	elseif flags.living_in_car then
+		livingEmoji = "🚗"
+		livingStatus = "Living in Car"
+		livingDetail = "No permanent address"
+		statusColor = C.Amber
+	elseif flags.couch_surfing then
+		livingEmoji = "🛋️"
+		livingStatus = "Couch Surfing"
+		livingDetail = "Staying with friends temporarily"
+		statusColor = C.Amber
+	elseif flags.using_shelter then
+		livingEmoji = "🏨"
+		livingStatus = "Homeless Shelter"
+		livingDetail = "Temporary shelter housing"
+		statusColor = C.Amber
+	elseif flags.in_transitional_housing then
+		livingEmoji = "🏢"
+		livingStatus = "Transitional Housing"
+		livingDetail = "Program housing - rebuilding"
+		statusColor = C.Blue
+	elseif flags.living_with_family then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Family"
+		livingDetail = "Living with family members"
+		statusColor = C.Green
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle INHERITED property specifically
+	-- User complaint: "Not showing inherited housing status"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif flags.inherited_property and (flags.homeowner or flags.has_house) then
+		livingEmoji = "🏚️"
+		livingStatus = "Inherited Property"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Inherited home! Value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "Inherited from family (mortgage-free!)"
+		end
+		statusColor = C.Green
+	elseif flags.homeowner or flags.has_house or housingStatus == "owner" then
+		livingEmoji = "🏡"
+		livingStatus = "Homeowner"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Property value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "You own your home!"
+		end
+		statusColor = C.Green
+	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
+		-- CRITICAL FIX: Show rent amount from HousingState
+		livingEmoji = "🏢"
+		if flags.has_roommates or housingState.type == "shared_apartment" then
+			livingStatus = "Renting (Roommates)"
+		else
+			livingStatus = "Renting Apartment"
+		end
+		local rent = housingState.rent or 900 -- Default $900 if not set
+		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
+		statusColor = C.Blue
+	elseif flags.married or flags.has_spouse then
+		-- CRITICAL FIX: Show married status in housing
+		-- User complaint: "Doesn't show if I'm living with my girl/wife/husband"
+		livingEmoji = "💑"
+		livingStatus = "With Spouse"
+		if flags.homeowner or flags.has_house then
+			livingDetail = "Living together in your own home"
+			statusColor = C.Green
+		elseif flags.renting or flags.has_apartment then
+			local rent = housingState.rent or 0
+			livingDetail = rent > 0 and ("Renting together - $" .. self:formatMoney(rent) .. "/mo") or "Renting together"
+			statusColor = C.Blue
+		else
+			livingDetail = "Living together"
+			statusColor = C.Pink or C.Purple
+		end
+	elseif flags.has_partner or flags.dating or flags.cohabiting then
+		-- Living with boyfriend/girlfriend
+		livingEmoji = "💕"
+		livingStatus = "With Partner"
+		livingDetail = "Living with your significant other"
+		statusColor = C.Pink or C.Purple
+	elseif flags.has_own_place or flags.moved_out then
+		-- Has own place but not specifically apartment/house flagged
+		livingEmoji = "🏠"
+		livingStatus = "Independent"
+		local rent = housingState.rent or 0
+		if rent > 0 then
+			livingDetail = "Your own place - $" .. self:formatMoney(rent) .. "/mo rent"
+		else
+			livingDetail = "Living on your own"
+		end
+		statusColor = C.Green
+	elseif housingStatus == "with_parents" or flags.living_with_parents then
+		-- Explicitly living with parents
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home (no rent!)"
+		statusColor = C.Green
+	elseif age < 18 then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home with family"
+		statusColor = C.Green
+	elseif age >= 18 and age <= 25 and not flags.moved_out then
+		-- Young adult still with parents (default assumption)
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at home (no rent!)"
+		statusColor = C.Green
+	elseif age > 25 and not flags.moved_out then
+		-- Older adult still at home
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at the family home"
+		statusColor = C.Amber
+	else
+		livingEmoji = "❓"
+		livingStatus = "No Permanent Home"
+		livingDetail = "Consider buying or renting property!"
+		statusColor = C.Gray500
+	end
+	
+	-- Living card icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 70, 0, 70)
+	iconFrame.Position = UDim2.new(0, 10, 0, 12)
+	iconFrame.BackgroundColor3 = C.White
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = livingCard
+	UI.corner(iconFrame, 16)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.TextSize = 36
+	iconLabel.Text = livingEmoji
+	iconLabel.ZIndex = 84
+	iconLabel.Parent = iconFrame
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -100, 0, 24)
+	titleLabel.Position = UDim2.new(0, 90, 0, 10)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(18)
+	titleLabel.TextColor3 = C.Purple
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = livingTitle
+	titleLabel.ZIndex = 83
+	titleLabel.Parent = livingCard
+	
+	-- Status
+	local statusLabel = Instance.new("TextLabel")
+	statusLabel.Size = UDim2.new(1, -100, 0, 28)
+	statusLabel.Position = UDim2.new(0, 90, 0, 34)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.Font = F.Button
+	statusLabel.TextSize = textSize(20)
+	statusLabel.TextColor3 = statusColor
+	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statusLabel.Text = livingStatus
+	statusLabel.ZIndex = 83
+	statusLabel.Parent = livingCard
+	
+	-- Detail
+	local detailLabel = Instance.new("TextLabel")
+	detailLabel.Size = UDim2.new(1, -100, 0, 20)
+	detailLabel.Position = UDim2.new(0, 90, 0, 64)
+	detailLabel.BackgroundTransparency = 1
+	detailLabel.Font = F.Body
+	detailLabel.TextSize = textSize(13)
+	detailLabel.TextColor3 = C.Gray600
+	detailLabel.TextXAlignment = Enum.TextXAlignment.Left
+	detailLabel.Text = livingDetail
+	detailLabel.ZIndex = 83
+	detailLabel.Parent = livingCard
 
+	log("Checking catalog for owned properties...")
 	-- Find owned properties from shop catalog
 	for _, prop in ipairs(Properties) do
 		catalogIds[prop.id] = true
 		if assets[prop.id] then
+			log("  Found catalog property:", prop.id)
 			table.insert(ownedProperties, prop)
 		end
 	end
 
 	-- Also include event-acquired properties that aren't in the catalog
+	log("Getting owned list for 'property'...")
 	local ownedList = self:getOwnedList("property")
-	for _, owned in ipairs(ownedList) do
+	log("  getOwnedList returned:", #ownedList, "items")
+	
+	for i, owned in ipairs(ownedList) do
+		log("  Checking owned[" .. i .. "]: id=" .. tostring(owned.id) .. " name=" .. tostring(owned.name))
 		if not catalogIds[owned.id] then
 			-- Create a display entry for this event-acquired property
+			log("    -> Adding as event-acquired property")
 			table.insert(ownedProperties, {
 				id = owned.id,
 				name = owned.name or owned.id,
-				emoji = "🏡",
-				price = owned.value or 0,
+				emoji = owned.emoji or "🏡",
+				price = owned.value or owned.price or 0,
 				minAge = 0,
 				isEventAcquired = true
 			})
+		else
+			log("    -> Already in catalog, skipping")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #603: Show current residence in properties list even if not "owned"
+	-- User complaint: "I moved out and it says rent is 1300 but doesn't show my apartment!"
+	-- When player is renting, they should see their residence in the property list
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local alreadyHasResidence = false
+	for _, prop in ipairs(ownedProperties) do
+		if prop.id and (prop.id:find("apartment") or prop.id:find("house") or prop.id:find("home") or prop.id:find("residence")) then
+			alreadyHasResidence = true
+			break
+		end
+	end
+	
+	-- If player moved out but no residence shown, add their current residence
+	if not alreadyHasResidence then
+		local flags = self.playerState and self.playerState.Flags or {}
+		local housingState = self.playerState and self.playerState.HousingState or {}
+		local age = self.playerState and self.playerState.Age or 0
+		
+		-- Check if player has housing arrangement that should be shown
+		if flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+			local rent = housingState.rent or 900
+			local residenceEntry = {
+				id = "current_residence",
+				name = housingState.type == "shared_apartment" and "Shared Apartment" or "Rental Apartment",
+				emoji = "🏢",
+				price = 0, -- Rentals don't have purchase price
+				monthlyRent = rent,
+				minAge = 0,
+				isRental = true,
+				isEventAcquired = true,
+				description = string.format("Monthly rent: $%s", self:formatMoney(rent))
+			}
+			table.insert(ownedProperties, 1, residenceEntry) -- Add at beginning
+			log("  Added current rental residence to property list")
+		elseif flags.homeowner or flags.has_house or housingState.status == "owner" then
+			-- Player owns home but it's not in list - add placeholder
+			local propValue = housingState.value or 150000
+			local residenceEntry = {
+				id = "current_home",
+				name = flags.inherited_property and "Inherited Home" or "My Home",
+				emoji = flags.inherited_property and "🏚️" or "🏡",
+				price = propValue,
+				minAge = 0,
+				isEventAcquired = true,
+				description = string.format("Property value: $%s", self:formatMoney(propValue))
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added current owned home to property list")
+		elseif flags.in_college or flags.in_university then
+			-- College student - show dorm
+			local residenceEntry = {
+				id = "college_dorm",
+				name = "College Dorm Room",
+				emoji = "🏫",
+				price = 0,
+				minAge = 0,
+				isEventAcquired = true,
+				description = "Student housing (included with tuition)"
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added college dorm to property list")
 		end
 	end
 
-	log("Owned properties:", #ownedProperties, "of", #Properties)
+	log("FINAL: Owned properties:", #ownedProperties, "of catalog:", #Properties)
 
 	-- ═══════════════════════════════════════════════════════════
 	-- MY PROPERTIES SECTION (only if owns any)
@@ -895,53 +1741,166 @@ end
 function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accentColor, paleColor)
 	log("Creating owned asset card:", item.name, "type:", itemType)
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Owned Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Green Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = "Owned_" .. item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 95)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.88
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Green shell (shows ownership)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = C.Green
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = "Owned_" .. item.id
-	card.Size = UDim2.new(1, 0, 0, 85)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
-	UI.corner(card, 14)
-	UI.stroke(card, 2, 0.4, C.Green)
+	card.ZIndex = 84
+	card.Parent = shell
+	UI.corner(card, 16)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX: Reduced width to not cover the Sell button on the right
+	local pressArea = Instance.new("TextButton")
+	pressArea.Name = "PressArea"
+	pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+	pressArea.BackgroundTransparency = 1
+	pressArea.Text = ""
+	pressArea.ZIndex = 90
+	pressArea.Parent = container
+	
+	local isHovering = false
+	local isPressed = false
+	
+	pressArea.MouseEnter:Connect(function()
+		if isPressed then return end
+		isHovering = true
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(1, 0, 0, 99)
+		})
+		UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenDark })
+		UI.tween(shadow, TweenInfo.new(0.12), {
+			BackgroundTransparency = 0.82,
+			Position = UDim2.new(0, 3, 0, 4)
+		})
+		UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.GreenPale:Lerp(C.White, 0.85) })
+	end)
+	
+	pressArea.MouseLeave:Connect(function()
+		isHovering = false
+		isPressed = false
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+			Size = UDim2.new(1, 0, 0, 95)
+		})
+		UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = C.Green })
+		UI.tween(shadow, TweenInfo.new(0.12), {
+			BackgroundTransparency = 0.88,
+			Position = UDim2.new(0, 2, 0, 2)
+		})
+		UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+	end)
+	
+	pressArea.MouseButton1Down:Connect(function()
+		isPressed = true
+		UI.tween(container, TweenInfo.new(0.08), {
+			Size = UDim2.new(1, 0, 0, 91)
+		})
+		UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = C.GreenDark:Lerp(C.Black, 0.1) })
+	end)
+	
+	pressArea.MouseButton1Up:Connect(function()
+		isPressed = false
+		if isHovering then
+			UI.tween(container, TweenInfo.new(0.1), {
+				Size = UDim2.new(1, 0, 0, 99)
+			})
+			UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = C.GreenDark })
+		end
+	end)
 
-	-- Icon
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with green ownership ring)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 60, 0, 60)
+	iconRing.Position = UDim2.new(0, 10, 0.5, -30)
+	iconRing.BackgroundColor3 = C.GreenDark
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 16)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 55, 0, 55)
-	iconFrame.Position = UDim2.new(0, 12, 0.5, -27.5)
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
 	iconFrame.BackgroundColor3 = C.GreenPale
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
 	UI.corner(iconFrame, 14)
 
+	-- CRITICAL UI FIX: Responsive text sizes for asset cards
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 30
+	iconLabel.TextSize = IS_TINY_PHONE and 24 or (IS_SMALL_PHONE and 28 or 32)
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Title
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CONTENT - CRITICAL UI FIX: Responsive sizing for mobile
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Title (CRITICAL FIX: Responsive + truncation)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.45, 0, 0, 24)
-	titleLabel.Position = UDim2.new(0, 80, 0, 14)
+	titleLabel.Size = UDim2.new(0.45, IS_TINY_PHONE and -70 or -85, 0, IS_TINY_PHONE and 22 or 26)
+	titleLabel.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 6 or 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 15
+	titleLabel.TextSize = IS_TINY_PHONE and 14 or (IS_SMALL_PHONE and 15 or 17)
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Owned badge
+	-- Owned badge (prominent) - CRITICAL UI FIX: Responsive sizing
 	local ownedBadge = Instance.new("Frame")
-	ownedBadge.Size = UDim2.new(0, 75, 0, 24)
-	ownedBadge.Position = UDim2.new(0, 80, 0, 40)
+	ownedBadge.Size = UDim2.new(0, IS_TINY_PHONE and 72 or 85, 0, IS_TINY_PHONE and 22 or 26)
+	ownedBadge.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 30 or 36)
 	ownedBadge.BackgroundColor3 = C.Green
-	ownedBadge.ZIndex = 84
+	ownedBadge.ZIndex = 85
 	ownedBadge.Parent = card
 	UI.pill(ownedBadge)
 
@@ -949,50 +1908,105 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	ownedLabel.Size = UDim2.fromScale(1, 1)
 	ownedLabel.BackgroundTransparency = 1
 	ownedLabel.Font = F.Button
-	ownedLabel.TextSize = 11
+	ownedLabel.TextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	ownedLabel.TextColor3 = C.White
 	ownedLabel.Text = "✓ OWNED"
-	ownedLabel.ZIndex = 85
+	ownedLabel.ZIndex = 86
 	ownedLabel.Parent = ownedBadge
 
-	-- Value (sell price = 70% of purchase price)
+	-- Value badge (sell price = 70% of purchase price) - CRITICAL UI FIX: Responsive
 	local sellPrice = math.floor(item.price * 0.7)
+	local valueBadge = Instance.new("Frame")
+	valueBadge.Size = UDim2.new(0, IS_TINY_PHONE and 88 or 100, 0, IS_TINY_PHONE and 20 or 22)
+	valueBadge.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 54 or 64)
+	valueBadge.BackgroundColor3 = C.Gray100
+	valueBadge.ZIndex = 85
+	valueBadge.Parent = card
+	UI.pill(valueBadge)
+	
 	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Size = UDim2.new(0.3, 0, 0, 18)
-	valueLabel.Position = UDim2.new(0, 80, 0, 66)
+	valueLabel.Size = UDim2.fromScale(1, 1)
 	valueLabel.BackgroundTransparency = 1
-	valueLabel.Font = F.Body
-	valueLabel.TextSize = 11
-	valueLabel.TextColor3 = C.Gray500
-	valueLabel.TextXAlignment = Enum.TextXAlignment.Left
-	valueLabel.Text = "Value: " .. UI.formatMoney(sellPrice)
-	valueLabel.ZIndex = 84
-	valueLabel.Parent = card
+	valueLabel.Font = F.Medium
+	valueLabel.TextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	valueLabel.TextColor3 = C.Gray600
+	valueLabel.Text = "💎 Value: " .. UI.formatMoney(sellPrice)
+	valueLabel.ZIndex = 86
+	valueLabel.Parent = valueBadge
 
-	-- Sell button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SELL BUTTON (premium with shadow) - CRITICAL UI FIX: Responsive sizing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local sellBtnW = IS_TINY_PHONE and 65 or (IS_SMALL_PHONE and 72 or 80)
+	local sellBtnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 45 or 50)
+	
+	-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+	local btnShadow = Instance.new("Frame")
+	btnShadow.Name = "SellBtnShadow"
+	btnShadow.Size = UDim2.new(0, sellBtnW + 4, 0, sellBtnH + 4)
+	btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+	btnShadow.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -6, 0.5, 2)
+	btnShadow.BackgroundColor3 = C.AmberDark
+	btnShadow.BackgroundTransparency = 0.6
+	btnShadow.ZIndex = 94
+	btnShadow.Parent = card
+	UI.corner(btnShadow, IS_TINY_PHONE and 10 or 12)
+	
 	local sellBtn = Instance.new("TextButton")
-	sellBtn.Size = UDim2.new(0, 70, 0, 40)
+	sellBtn.Name = "SellBtn"
+	sellBtn.Size = UDim2.new(0, sellBtnW, 0, sellBtnH)
 	sellBtn.AnchorPoint = Vector2.new(1, 0.5)
-	sellBtn.Position = UDim2.new(1, -12, 0.5, 0)
+	sellBtn.Position = UDim2.new(1, IS_TINY_PHONE and -4 or -8, 0.5, 0)
 	sellBtn.BackgroundColor3 = C.Amber
 	sellBtn.Font = F.Button
-	sellBtn.TextSize = 13
+	sellBtn.TextSize = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 13 or 14)
 	sellBtn.TextColor3 = C.White
 	sellBtn.Text = "💰 Sell"
 	sellBtn.AutoButtonColor = false
-	sellBtn.ZIndex = 84
+	sellBtn.ZIndex = 95  -- Higher than shadow and pressArea
 	sellBtn.Parent = card
-	UI.corner(sellBtn, 10)
+	UI.corner(sellBtn, 12)
+	
+	local isLoading = false
 
 	sellBtn.MouseEnter:Connect(function()
-		UI.tween(sellBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.AmberDark })
+		if isLoading then return end
+		UI.tween(sellBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+			Size = UDim2.new(0, 85, 0, 54),
+			BackgroundColor3 = C.AmberDark 
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 89, 0, 58) })
 	end)
 	sellBtn.MouseLeave:Connect(function()
-		UI.tween(sellBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Amber })
+		if isLoading then return end
+		UI.tween(sellBtn, TweenInfo.new(0.12), { 
+			Size = UDim2.new(0, 80, 0, 50),
+			BackgroundColor3 = C.Amber 
+		})
+		UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 84, 0, 54) })
 	end)
 	sellBtn.MouseButton1Click:Connect(function()
+		if isLoading then return end
+		isLoading = true
 		log("Sell clicked for:", item.id, "type:", itemType)
-		self:sellAsset(item, itemType)
+		
+		-- Loading state
+		sellBtn.Text = "⏳..."
+		UI.tween(sellBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+		
+		task.spawn(function()
+			task.wait(0.1)
+			self:sellAsset(item, itemType)
+			
+			-- Reset after completion
+			task.wait(0.5)
+			if sellBtn and sellBtn.Parent then
+				isLoading = false
+				sellBtn.Text = "💰 Sell"
+				sellBtn.BackgroundColor3 = C.Amber
+			end
+		end)
 	end)
 end
 
@@ -1005,7 +2019,15 @@ function AssetsScreen:sellAsset(item, itemType)
 		return
 	end
 
-	local result = SellAsset:InvokeServer(item.id, itemType)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return SellAsset:InvokeServer(item.id, itemType)
+	end)
+	if not success then
+		logWarn("SellAsset call failed:", result)
+		self:showResult(false, "Server error", "❌")
+		return
+	end
 	if result then
 		log("Sell result:", result.success, result.message)
 		self:showResult(result.success, result.message, result.success and "💰" or "😔")
@@ -1018,6 +2040,7 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	local age = self:getAge()
 	local money = self:getMoney()
 	local assets = self:getAssets()
+	local accentDark = accentColor:Lerp(C.Black, 0.2)
 
 	local minAge = item.minAge or 0
 	local meetsAge = age >= minAge
@@ -1025,45 +2048,168 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 	local alreadyOwns = assets[item.id] ~= nil
 	local canBuy = meetsAge and canAfford and not alreadyOwns
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL REVAMP: Premium Card with Shell Structure (like LifeClient popup)
+	-- Container -> Shadow -> Shell -> Inner Card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Container (holds everything)
+	local container = Instance.new("Frame")
+	container.Name = item.id .. "_Container"
+	container.Size = UDim2.new(1, 0, 0, 115)
+	container.BackgroundTransparency = 1
+	container.LayoutOrder = order
+	container.ZIndex = 82
+	container.Parent = parent
+	
+	-- Shadow layer (premium depth)
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = alreadyOwns and 0.88 or (canBuy and 0.92 or 0.96)
+	shadow.ZIndex = 82
+	shadow.Parent = container
+	UI.corner(shadow, 20)
+	
+	-- Colored shell (accent border - green if owned, accent if can buy, gray otherwise)
+	local shellColor = alreadyOwns and C.Green or (canBuy and accentColor or C.Gray300)
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.Size = UDim2.new(1, 0, 1, 0)
+	shell.BackgroundColor3 = shellColor
+	shell.ZIndex = 83
+	shell.Parent = container
+	UI.corner(shell, 18)
+	
+	-- Inner white card
 	local card = Instance.new("Frame")
-	card.Name = item.id
-	card.Size = UDim2.new(1, 0, 0, 105)
+	card.Name = "Card"
+	card.Size = UDim2.new(1, -6, 1, -6)
+	card.Position = UDim2.new(0, 3, 0, 3)
 	card.BackgroundColor3 = C.White
-	card.LayoutOrder = order
-	card.ZIndex = 83
-	card.Parent = parent
+	card.ZIndex = 84
+	card.Parent = shell
 	UI.corner(card, 16)
-	UI.stroke(card, alreadyOwns and 2 or 1, alreadyOwns and 0.3 or 0.88, alreadyOwns and C.Green or C.Gray200)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREMIUM HOVER & PRESS EFFECTS (only for buyable items)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if canBuy then
+		-- CRITICAL FIX: Reduced width to not cover the Buy button on the right
+		local pressArea = Instance.new("TextButton")
+		pressArea.Name = "PressArea"
+		pressArea.Size = UDim2.new(1, -100, 1, 0)  -- Leave 100px for button
+		pressArea.BackgroundTransparency = 1
+		pressArea.Text = ""
+		pressArea.ZIndex = 90
+		pressArea.Parent = container
+		
+		local isHovering = false
+		local isPressed = false
+		
+		pressArea.MouseEnter:Connect(function()
+			if isPressed then return end
+			isHovering = true
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 119)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.85,
+				Position = UDim2.new(0, 3, 0, 4)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = paleColor:Lerp(C.White, 0.85) })
+		end)
+		
+		pressArea.MouseLeave:Connect(function()
+			isHovering = false
+			isPressed = false
+			UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(1, 0, 0, 115)
+			})
+			UI.tween(shell, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+			UI.tween(shadow, TweenInfo.new(0.12), {
+				BackgroundTransparency = 0.92,
+				Position = UDim2.new(0, 2, 0, 2)
+			})
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		
+		pressArea.MouseButton1Down:Connect(function()
+			isPressed = true
+			UI.tween(container, TweenInfo.new(0.08), {
+				Size = UDim2.new(1, 0, 0, 111)
+			})
+			UI.tween(shell, TweenInfo.new(0.08), { BackgroundColor3 = accentDark:Lerp(C.Black, 0.1) })
+		end)
+		
+		pressArea.MouseButton1Up:Connect(function()
+			isPressed = false
+			if isHovering then
+				UI.tween(container, TweenInfo.new(0.1), {
+					Size = UDim2.new(1, 0, 0, 119)
+				})
+				UI.tween(shell, TweenInfo.new(0.1), { BackgroundColor3 = accentDark })
+			end
+		end)
+	end
 
-	-- Icon
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ICON (with ring for owned items)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Icon ring (shows ownership status)
+	local iconRing = Instance.new("Frame")
+	iconRing.Size = UDim2.new(0, 68, 0, 68)
+	iconRing.Position = UDim2.new(0, 12, 0.5, -34)
+	iconRing.BackgroundColor3 = alreadyOwns and C.Green or (canBuy and accentColor or C.Gray400)
+	iconRing.ZIndex = 85
+	iconRing.Parent = card
+	UI.corner(iconRing, 18)
+	
 	local iconFrame = Instance.new("Frame")
-	iconFrame.Size = UDim2.new(0, 62, 0, 62)
-	iconFrame.Position = UDim2.new(0, 16, 0.5, -31)
-	iconFrame.BackgroundColor3 = alreadyOwns and C.GreenPale or paleColor
-	iconFrame.ZIndex = 84
-	iconFrame.Parent = card
+	iconFrame.Size = UDim2.new(1, -6, 1, -6)
+	iconFrame.Position = UDim2.new(0, 3, 0, 3)
+	iconFrame.BackgroundColor3 = alreadyOwns and C.GreenPale or (canBuy and paleColor or C.Gray200)
+	iconFrame.ZIndex = 86
+	iconFrame.Parent = iconRing
 	UI.corner(iconFrame, 16)
-
-	if not alreadyOwns then
-		UI.gradient(iconFrame, paleColor, paleColor:Lerp(C.White, 0.3), 135)
+	
+	-- Gradient for premium look
+	if canBuy and not alreadyOwns then
+		local iconGrad = Instance.new("UIGradient")
+		iconGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, paleColor:Lerp(C.White, 0.3)),
+		})
+		iconGrad.Rotation = 135
+		iconGrad.Parent = iconFrame
 	end
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Size = UDim2.fromScale(1, 1)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = F.Body
-	iconLabel.TextSize = 34
+	iconLabel.TextSize = 36
 	iconLabel.Text = item.emoji
-	iconLabel.ZIndex = 85
+	iconLabel.TextTransparency = (not canBuy and not alreadyOwns) and 0.3 or 0
+	iconLabel.ZIndex = 87
 	iconLabel.Parent = iconFrame
 
-	-- Owned badge
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CONTENT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	-- Owned badge (prominent)
 	if alreadyOwns then
 		local badge = Instance.new("Frame")
-		badge.Size = UDim2.new(0, 85, 0, 24)
-		badge.Position = UDim2.new(0, 92, 0, 10)
+		badge.Size = UDim2.new(0, 90, 0, 26)
+		badge.Position = UDim2.new(0, 92, 0, 8)
 		badge.BackgroundColor3 = C.Green
-		badge.ZIndex = 85
+		badge.ZIndex = 86
 		badge.Parent = card
 		UI.pill(badge)
 
@@ -1071,118 +2217,178 @@ function AssetsScreen:createAssetCard(parent, item, order, itemType, accentColor
 		badgeLabel.Size = UDim2.fromScale(1, 1)
 		badgeLabel.BackgroundTransparency = 1
 		badgeLabel.Font = F.Button
-		badgeLabel.TextSize = 11
+		badgeLabel.TextSize = 12
 		badgeLabel.TextColor3 = C.White
 		badgeLabel.Text = "✓ OWNED"
-		badgeLabel.ZIndex = 86
+		badgeLabel.ZIndex = 87
 		badgeLabel.Parent = badge
 	end
 
-	-- Title
+	-- Title (CRITICAL FIX: Added truncation to prevent overflow)
 	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(0.5, 0, 0, 24)
-	titleLabel.Position = UDim2.new(0, 92, 0, alreadyOwns and 36 or 14)
+	titleLabel.Size = UDim2.new(0.5, -95, 0, 26)  -- Adjusted width with margin
+	titleLabel.Position = UDim2.new(0, 92, 0, alreadyOwns and 36 or 10)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = F.Title
-	titleLabel.TextSize = 16
+	titleLabel.TextSize = 16  -- Slightly smaller for longer names
 	titleLabel.TextColor3 = C.Gray900
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = item.name
-	titleLabel.ZIndex = 84
+	titleLabel.ZIndex = 85
 	titleLabel.Parent = card
 
-	-- Badges
-	local badgeY = alreadyOwns and 64 or 42
+	-- Badges row
+	local badgeY = alreadyOwns and 66 or 40
 
-	-- Price badge
+	-- Price badge (more prominent)
 	local priceBadge = Instance.new("Frame")
-	priceBadge.Size = UDim2.new(0, 85, 0, 26)
+	priceBadge.Size = UDim2.new(0, 95, 0, 28)
 	priceBadge.Position = UDim2.new(0, 92, 0, badgeY)
 	priceBadge.BackgroundColor3 = canAfford and C.GreenPale or C.RedPale
-	priceBadge.ZIndex = 84
+	priceBadge.ZIndex = 85
 	priceBadge.Parent = card
 	UI.pill(priceBadge)
 
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.fromScale(1, 1)
 	priceLabel.BackgroundTransparency = 1
-	priceLabel.Font = F.Medium
+	priceLabel.Font = F.Button
 	priceLabel.TextSize = 12
 	priceLabel.TextColor3 = canAfford and C.GreenDark or C.RedDark
 	priceLabel.Text = "💵 " .. UI.formatMoney(item.price)
-	priceLabel.ZIndex = 85
+	priceLabel.ZIndex = 86
 	priceLabel.Parent = priceBadge
 
 	-- Income badge (for property)
 	if item.income then
 		local incomeBadge = Instance.new("Frame")
-		incomeBadge.Size = UDim2.new(0, 85, 0, 26)
-		incomeBadge.Position = UDim2.new(0, 182, 0, badgeY)
+		incomeBadge.Size = UDim2.new(0, 95, 0, 28)
+		incomeBadge.Position = UDim2.new(0, 192, 0, badgeY)
 		incomeBadge.BackgroundColor3 = C.AmberPale
-		incomeBadge.ZIndex = 84
+		incomeBadge.ZIndex = 85
 		incomeBadge.Parent = card
 		UI.pill(incomeBadge)
 
 		local incomeLabel = Instance.new("TextLabel")
 		incomeLabel.Size = UDim2.fromScale(1, 1)
 		incomeLabel.BackgroundTransparency = 1
-		incomeLabel.Font = F.Medium
+		incomeLabel.Font = F.Button
 		incomeLabel.TextSize = 11
 		incomeLabel.TextColor3 = C.AmberDark
-		incomeLabel.Text = "+" .. UI.formatMoney(item.income) .. "/yr"
-		incomeLabel.ZIndex = 85
+		incomeLabel.Text = "📈 +" .. UI.formatMoney(item.income) .. "/yr"
+		incomeLabel.ZIndex = 86
 		incomeLabel.Parent = incomeBadge
 	end
 
 	-- Age requirement
 	if not alreadyOwns and minAge > 0 then
+		local reqBadge = Instance.new("Frame")
+		reqBadge.Size = UDim2.new(0, 60, 0, 20)
+		reqBadge.Position = UDim2.new(0, 92, 0, badgeY + 32)
+		reqBadge.BackgroundColor3 = meetsAge and C.Gray100 or C.RedPale
+		reqBadge.ZIndex = 85
+		reqBadge.Parent = card
+		UI.pill(reqBadge)
+		
 		local reqLabel = Instance.new("TextLabel")
-		reqLabel.Size = UDim2.new(0.3, 0, 0, 18)
-		reqLabel.Position = UDim2.new(0, 92, 0, badgeY + 30)
+		reqLabel.Size = UDim2.fromScale(1, 1)
 		reqLabel.BackgroundTransparency = 1
-		reqLabel.Font = F.Body
-		reqLabel.TextSize = 11
-		reqLabel.TextColor3 = meetsAge and C.Gray500 or C.Red
-		reqLabel.TextXAlignment = Enum.TextXAlignment.Left
-		reqLabel.Text = "Age " .. minAge .. "+"
-		reqLabel.ZIndex = 84
-		reqLabel.Parent = card
+		reqLabel.Font = F.Medium
+		reqLabel.TextSize = 10
+		reqLabel.TextColor3 = meetsAge and C.Gray500 or C.RedDark
+		reqLabel.Text = "🎂 Age " .. minAge
+		reqLabel.ZIndex = 86
+		reqLabel.Parent = reqBadge
 	end
 
-	-- Buy button
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BUY BUTTON (premium with shadow)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	if not alreadyOwns then
+		-- Button shadow (CRITICAL FIX: Must be SIBLING of button so emoji/text shows properly)
+		local btnShadow
+		if canBuy then
+			btnShadow = Instance.new("Frame")
+			btnShadow.Name = "BuyBtnShadow"
+			btnShadow.Size = UDim2.new(0, 89, 0, 58)
+			btnShadow.AnchorPoint = Vector2.new(1, 0.5)
+			btnShadow.Position = UDim2.new(1, -6, 0.5, 2)
+			btnShadow.BackgroundColor3 = accentDark
+			btnShadow.BackgroundTransparency = 0.6
+			btnShadow.ZIndex = 94
+			btnShadow.Parent = card
+			UI.corner(btnShadow, 14)
+		end
+
 		local buyBtn = Instance.new("TextButton")
-		buyBtn.Size = UDim2.new(0, 78, 0, 46)
+		buyBtn.Name = "BuyBtn"
+		buyBtn.Size = UDim2.new(0, 85, 0, 54)
 		buyBtn.AnchorPoint = Vector2.new(1, 0.5)
-		buyBtn.Position = UDim2.new(1, -14, 0.5, 0)
+		buyBtn.Position = UDim2.new(1, -8, 0.5, 0)
 		buyBtn.BackgroundColor3 = canBuy and accentColor or C.Gray300
 		buyBtn.Font = F.Button
-		buyBtn.TextSize = 14
+		buyBtn.TextSize = 15
 		buyBtn.TextColor3 = canBuy and C.White or C.Gray500
 		buyBtn.AutoButtonColor = false
-		buyBtn.ZIndex = 84
+		buyBtn.ZIndex = 95  -- Higher than shadow and pressArea
 		buyBtn.Parent = card
 		UI.corner(buyBtn, 14)
 
 		if canBuy then
-			buyBtn.Text = "Buy"
+			local isLoading = false
+			buyBtn.Text = "🛒 Buy"
+			
 			buyBtn.MouseEnter:Connect(function()
-				UI.tween(buyBtn, TweenInfo.new(0.12), { 
-					Size = UDim2.new(0, 84, 0, 50),
-					BackgroundColor3 = accentColor:Lerp(C.Black, 0.15)
+				if isLoading then return end
+				UI.tween(buyBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { 
+					Size = UDim2.new(0, 90, 0, 58),
+					BackgroundColor3 = accentDark
 				})
+				if btnShadow then
+					UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 94, 0, 62) })
+				end
 			end)
 			buyBtn.MouseLeave:Connect(function()
+				if isLoading then return end
 				UI.tween(buyBtn, TweenInfo.new(0.12), { 
-					Size = UDim2.new(0, 78, 0, 46),
+					Size = UDim2.new(0, 85, 0, 54),
 					BackgroundColor3 = accentColor
 				})
+				if btnShadow then
+					UI.tween(btnShadow, TweenInfo.new(0.12), { Size = UDim2.new(0, 89, 0, 58) })
+				end
 			end)
 			buyBtn.MouseButton1Click:Connect(function()
-				self:buyAsset(item, itemType)
+				if isLoading then return end
+				isLoading = true
+				
+				-- Loading state
+				buyBtn.Text = "⏳..."
+				UI.tween(buyBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+				
+				task.spawn(function()
+					task.wait(0.1)
+					self:buyAsset(item, itemType)
+					
+					-- Reset after completion
+					task.wait(0.5)
+					if buyBtn and buyBtn.Parent then
+						isLoading = false
+						buyBtn.Text = "🛒 Buy"
+						buyBtn.BackgroundColor3 = accentColor
+					end
+				end)
 			end)
 		else
-			buyBtn.Text = not meetsAge and "Age " .. minAge or "Need $"
+			local btnText = "🔒 "
+			if not meetsAge then
+				btnText = btnText .. "Age " .. minAge
+			else
+				btnText = "💵 Need $"
+			end
+			buyBtn.Text = btnText
 		end
 	end
 end
@@ -1198,9 +2404,56 @@ function AssetsScreen:buyAsset(item, itemType)
 		return
 	end
 
-	local result = remote:InvokeServer(item.id)
+	-- CRITICAL FIX: Add pcall protection for server calls
+	local success, result = pcall(function()
+		return remote:InvokeServer(item.id)
+	end)
+	if not success then
+		logWarn("BuyAsset call failed:", result)
+		self:showResult(false, "Server error", "❌")
+		return
+	end
 	if result then
 		self:showResult(result.success, result.message, result.success and "🎉" or "😔")
+		
+		-- CRITICAL FIX: Refresh the assets screen after successful purchase
+		-- Without this, purchased items don't show in "owned" sections!
+		if result.success then
+			-- Update local state with the new asset
+			self.playerState = self.playerState or {}
+			self.playerState.Assets = self.playerState.Assets or {}
+			
+			local assetTypeName
+			if itemType == "property" then
+				assetTypeName = "Properties"
+			elseif itemType == "vehicle" then
+				assetTypeName = "Vehicles"
+			else
+				assetTypeName = "Items"
+			end
+			
+			self.playerState.Assets[assetTypeName] = self.playerState.Assets[assetTypeName] or {}
+			table.insert(self.playerState.Assets[assetTypeName], {
+				id = item.id,
+				name = item.name,
+				emoji = item.emoji,
+				value = item.price,
+				price = item.price,
+			})
+			
+			-- Deduct money locally to keep UI in sync
+			if self.playerState.Money then
+				self.playerState.Money = self.playerState.Money - item.price
+			end
+			
+			-- Refresh the current tab to show the owned item
+			task.delay(0.5, function()
+				if self.isVisible then
+					self:switchTab(self.currentTab)
+					log("✅ Refreshed assets screen after purchase")
+				end
+			end)
+		end
 	else
 		self:showResult(false, "Server error", "❌")
 	end
@@ -1261,8 +2514,11 @@ function AssetsScreen:spin()
 
 	task.delay(0.3, function()
 		if Gamble then
-			local result = Gamble:InvokeServer(self.betAmount, finalSymbols)
-			if result then
+			-- CRITICAL FIX: Add pcall protection for server calls
+			local success, result = pcall(function()
+				return Gamble:InvokeServer(self.betAmount, finalSymbols)
+			end)
+			if success and result then
 				if result.success then
 					self.spinResult.Text = "🎉 You won " .. UI.formatMoney(result.winnings) .. "!"
 					self.spinResult.TextColor3 = C.Green
@@ -1270,6 +2526,9 @@ function AssetsScreen:spin()
 					self.spinResult.Text = result.message or "Better luck next time!"
 					self.spinResult.TextColor3 = C.Red
 				end
+			elseif not success then
+				self.spinResult.Text = "Server error"
+				self.spinResult.TextColor3 = C.Red
 			end
 		else
 			local won = finalSymbols[1] == finalSymbols[2] and finalSymbols[2] == finalSymbols[3]
@@ -1299,13 +2558,28 @@ function AssetsScreen:showResult(success, message, emoji)
 	self.resultModal.shell.BackgroundColor3 = shellColor
 	self.resultModal.shellStroke.Color = shellStroke
 	self.resultModal.emojiFrame.BackgroundColor3 = pale
-	self.resultModal.emojiLabel.Text = emoji or (success and "🎉" or "😔")
+	
+	-- Better emoji handling
+	local displayEmoji = emoji
+	if not displayEmoji then
+		displayEmoji = success and "🎉" or "😔"
+	elseif displayEmoji == "💰" then
+		displayEmoji = "💸"
+	end
+	self.resultModal.emojiLabel.Text = displayEmoji
+	
 	self.resultModal.titleLabel.Text = success and "Purchase Complete!" or "Uh oh..."
 	self.resultModal.titleLabel.TextColor3 = success and C.GreenDark or C.RedDark
 	self.resultModal.messageLabel.Text = message or ""
 	self.resultModal.okButton.BackgroundColor3 = shellColor
+	self.resultModal.okButton.Text = success and "👍 Nice!" or "😔 Okay..."
 
-	UI.showModal(self.resultModal)
+	-- Use custom show method if available
+	if self.resultModal.show then
+		self.resultModal.show()
+	elseif UI.showModal then
+		UI.showModal(self.resultModal)
+	end
 end
 
 function AssetsScreen:show()
@@ -1321,8 +2595,16 @@ end
 function AssetsScreen:hide()
 	log("=== HIDING AssetsScreen ===")
 	UI.slideOutScreen(self.overlay, "right", function()
-		self.resultModal.overlay.Visible = false
-		self.gamblingOverlay.Visible = false
+		-- CRITICAL FIX: Add nil checks before accessing overlay properties
+		-- resultModal.overlay might not exist if modal wasn't initialized
+		if self.resultModal and self.resultModal.overlay then
+			self.resultModal.overlay.Visible = false
+		end
+		-- CRITICAL FIX: gamblingOverlay was removed (Casino feature disabled)
+		-- Add nil check to prevent "attempt to index nil" errors
+		if self.gamblingOverlay then
+			self.gamblingOverlay.Visible = false
+		end
 		log("✅ AssetsScreen hidden, modals cleaned up")
 	end)
 	self.isVisible = false
