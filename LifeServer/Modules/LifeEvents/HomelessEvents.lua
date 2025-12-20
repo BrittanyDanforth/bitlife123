@@ -24,26 +24,55 @@ events[#events + 1] = {
 	emoji = "💸",
 	text = "You've fallen behind on rent for months. Today, the landlord arrived with an eviction notice and two police officers.",
 	question = "You have 48 hours to leave. What do you do?",
-	minAge = 18, maxAge = 75,
-	-- CRITICAL FIX #HOMELESS-7: Increased baseChance from 0.7 to 0.95 for guaranteed trigger
-	baseChance = 0.95,
-	cooldown = 3,
+	minAge = 21, maxAge = 75, -- CRITICAL FIX: Increased minAge to 21 - need time to establish housing
+	-- CRITICAL FIX: Reduced baseChance - this was triggering way too often!
+	baseChance = 0.5,
+	cooldown = 5, -- CRITICAL FIX: Increased cooldown - eviction shouldn't happen every few years
 	oneTime = true,
-	-- FIXED: Eviction eligibility - must be ACTUALLY struggling, not just low money
-	-- Only triggers if:
-	-- 1. Completely broke (< 100) AND no job - can't pay rent at all
-	-- 2. Been broke for 2+ years (tracked by FinancialState) - long-term poverty
-	-- 3. Has no money at all and no job
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EVICTION REQUIRES PLAYER TO ACTUALLY HAVE THEIR OWN HOUSING!
+	-- A player who just turned 18 and lives with parents should NOT get evicted!
+	-- MUST meet ALL of these conditions:
+	-- 1. Has moved out (has_own_place, moved_out, renting, has_apartment flags)
+	-- 2. Been struggling financially for a while (yearsBroke >= 3 OR very low money + no job)
+	-- 3. NOT still living with parents
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	eligibility = function(state)
+		local age = state.Age or 0
 		local money = state.Money or 0
 		local hasJob = state.CurrentJob ~= nil
+		local flags = state.Flags or {}
+		
+		-- CRITICAL CHECK 1: Must be old enough to have established independent living
+		if age < 21 then return false, "Too young to be evicted from own place" end
+		
+		-- CRITICAL CHECK 2: Must have THEIR OWN housing to be evicted from!
+		-- If they haven't moved out or don't have their own place, they can't be evicted
+		local hasOwnHousing = flags.moved_out 
+			or flags.has_own_place 
+			or flags.renting 
+			or flags.has_apartment
+			or flags.has_house
+			or flags.homeowner
+			or (state.HousingState and state.HousingState.status == "renter")
+			or (state.HousingState and state.HousingState.status == "owner")
+		
+		-- If player has NO housing flags, they probably still live with parents
+		-- In that case, they CANNOT be evicted!
+		if not hasOwnHousing then
+			return false, "Player doesn't have their own housing to be evicted from"
+		end
+		
+		-- CRITICAL CHECK 3: Must be in financial distress for a LONG time
 		local yearsBroke = (state.FinancialState and state.FinancialState.yearsBroke) or 0
-
-		-- Only trigger if REALLY struggling:
-		-- Must have no job AND be very broke, OR been broke for 2+ years
-		return (money < 100 and not hasJob)
-			or (money <= 0 and not hasJob)
-			or yearsBroke >= 2
+		local missedRentYears = (state.HousingState and state.HousingState.missedRentYears) or 0
+		
+		-- Only evict if they've been struggling for 3+ years OR completely destitute
+		local isDestitute = (money <= 0 and not hasJob)
+		local longTermStruggle = yearsBroke >= 3 or missedRentYears >= 3
+		local severeStruggle = (money < 500 and not hasJob and yearsBroke >= 2)
+		
+		return isDestitute or longTermStruggle or severeStruggle
 	end,
 	-- CRITICAL FIX #HOMELESS-9: Mark as high priority so it doesn't get lost in pool
 	priority = "high",
