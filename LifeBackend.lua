@@ -282,6 +282,92 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey)
 	end
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Clear conflicting premium states to prevent "Mobster Prince" bug
+-- When a player enters one premium path, clear flags from other paths
+-- Also clears conflicting housing when becoming royalty
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:clearConflictingPremiumStates(state, newPath)
+	if not state then return end
+	state.Flags = state.Flags or {}
+	
+	if newPath == "royalty" then
+		-- Clear mafia state
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.chose_mafia_path = nil
+		state.Flags.joined_mob = nil
+		if state.MobState then
+			state.MobState = nil
+		end
+		-- Clear celebrity state (unless they're famous through royalty)
+		if not state.Flags.royal_fame then
+			state.Flags.fame_career = nil
+			state.Flags.chose_celebrity_path = nil
+		end
+		-- CRITICAL FIX: Clear old housing when becoming royalty (they move to palace!)
+		state.Flags.renting = nil
+		state.Flags.has_apartment = nil
+		state.Flags.has_own_place = nil
+		state.Flags.homeless = nil
+		state.Flags.living_with_parents = nil
+		-- Update housing state
+		state.HousingState = state.HousingState or {}
+		state.HousingState.status = "royal_palace"
+		state.HousingState.type = "palace"
+		state.HousingState.rent = 0
+		-- Clear old apartment from Assets
+		if state.Assets and state.Assets.Properties then
+			local newProperties = {}
+			for _, prop in ipairs(state.Assets.Properties) do
+				-- Keep only non-rental properties
+				if not (prop.id and (prop.id:find("apartment") or prop.id:find("residence") or prop.id == "current_residence")) then
+					table.insert(newProperties, prop)
+				end
+			end
+			state.Assets.Properties = newProperties
+		end
+	elseif newPath == "mafia" then
+		-- Clear royalty state
+		state.Flags.is_royalty = nil
+		state.Flags.royal_birth = nil
+		state.Flags.dating_royalty = nil
+		state.Flags.royal_romance = nil
+		state.Flags.chose_royalty_path = nil
+		state.Flags.royal_by_marriage = nil
+		if state.RoyalState then
+			state.RoyalState = nil
+		end
+		-- Clear celebrity state
+		state.Flags.fame_career = nil
+		state.Flags.chose_celebrity_path = nil
+	elseif newPath == "celebrity" then
+		-- Clear mafia state
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.chose_mafia_path = nil
+		state.Flags.joined_mob = nil
+		if state.MobState then
+			state.MobState = nil
+		end
+		-- Clear royalty state
+		state.Flags.is_royalty = nil
+		state.Flags.royal_birth = nil
+		state.Flags.dating_royalty = nil
+		state.Flags.royal_romance = nil
+		state.Flags.chose_royalty_path = nil
+		state.Flags.royal_by_marriage = nil
+		if state.RoyalState then
+			state.RoyalState = nil
+		end
+	end
+	
+	-- Update primary_wish_type to ensure consistency
+	state.Flags.primary_wish_type = newPath
+	
+	print("[LifeBackend] Cleared conflicting premium states, new path:", newPath)
+end
+
 -- CRITICAL FIX #358: Developer Product purchase prompt
 function LifeBackend:promptProductPurchase(player, productKey)
 	if not player then
@@ -5492,8 +5578,23 @@ function LifeBackend:serializeState(state)
 		end
 		
 		-- ROYALTY STATE
-		if state.RoyalState and state.RoyalState.isRoyal then
+		-- CRITICAL FIX: Sync RoyalState when either RoyalState.isRoyal OR is_royalty flag is set
+		-- This prevents the "dream fulfilled but nothing changed" bug
+		local isRoyal = (state.RoyalState and state.RoyalState.isRoyal) or 
+			(state.Flags and (state.Flags.is_royalty or state.Flags.royal_by_marriage))
+		
+		if isRoyal then
+			-- Ensure RoyalState exists with defaults
+			state.RoyalState = state.RoyalState or {}
+			state.RoyalState.isRoyal = true
+			state.RoyalState.title = state.RoyalState.title or (state.Gender == "Female" and "Princess" or "Prince")
+			state.RoyalState.popularity = state.RoyalState.popularity or 50
+			state.RoyalState.royalCountry = state.RoyalState.royalCountry or "Monaco"
 			serialized.RoyalState = state.RoyalState
+			
+			-- Also sync flags
+			serialized.Flags = serialized.Flags or {}
+			serialized.Flags.is_royalty = true
 		else
 			serialized.RoyalState = { isRoyal = false }
 		end
@@ -7119,6 +7220,7 @@ function LifeBackend:applyLivingExpenses(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Reset years broke counter if player paid their expenses
+	-- Also clear struggling flag when they have money
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if currentMoney >= totalExpenses then
 		state.HousingState = state.HousingState or {}
@@ -7126,6 +7228,16 @@ function LifeBackend:applyLivingExpenses(state)
 		state.Flags = state.Flags or {}
 		state.Flags.eviction_warning = nil
 		state.Flags.eviction_imminent = nil
+		state.Flags.struggling_financially = nil -- CRITICAL FIX: Clear when not broke
+	end
+	
+	-- CRITICAL FIX: Also clear broke flags if player has substantial money
+	-- This handles cases like inheritance where player suddenly has money
+	if (state.Money or 0) >= 10000 then
+		state.Flags = state.Flags or {}
+		state.Flags.struggling_financially = nil
+		state.Flags.broke = nil
+		state.Flags.poor = nil
 	end
 end
 
@@ -10604,6 +10716,9 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			
 			if RANDOM:NextNumber() < successChance then
 				-- PROPOSAL ACCEPTED! Become royalty!
+				-- CRITICAL FIX: Clear any conflicting premium states first!
+				self:clearConflictingPremiumStates(state, "royalty")
+				
 				state.Flags.married = true
 				state.Flags.married_to_royalty = true
 				state.Flags.is_royalty = true

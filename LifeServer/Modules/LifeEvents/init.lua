@@ -2323,8 +2323,16 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 		
 		-- Check for royal proposal if dating royalty
-		if flags.dating_royalty and flags.royal_romance and not flags.married then
-			if RANDOM_LOCAL:NextNumber() < 0.35 then
+		-- CRITICAL FIX: Increased chance from 35% to 60% so proposal happens faster
+		-- Also: check either dating_royalty OR royal_romance (not both required)
+		local isDatingRoyal = flags.dating_royalty or flags.royal_romance
+		if isDatingRoyal and not flags.married and not flags.is_royalty then
+			-- Higher chance to propose after dating for a while
+			local datingYears = flags.dating_royalty_years or 0
+			local proposalChance = 0.40 + (datingYears * 0.10) -- 40% base + 10% per year dating
+			proposalChance = math.min(0.80, proposalChance) -- Max 80%
+			
+			if RANDOM_LOCAL:NextNumber() < proposalChance then
 				local proposalEvent = AllEvents["premium_wish_royal_proposal"]
 				if proposalEvent and canEventTrigger(proposalEvent, state) then
 					local occurCount = (history.occurrences["premium_wish_royal_proposal"] or 0)
@@ -2334,6 +2342,9 @@ function LifeEvents.buildYearQueue(state, options)
 						return selectedEvents
 					end
 				end
+			else
+				-- Track years dating royalty to increase proposal chance
+				flags.dating_royalty_years = (flags.dating_royalty_years or 0) + 1
 			end
 		end
 	end
@@ -3893,6 +3904,57 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
 		if not success then
 			warn("[EventEngine] onComplete handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Post-event state cleanup to prevent conflicting paths
+	-- After any event that sets a premium path flag, clear conflicting states
+	-- This prevents "Mobster Prince" bug and similar state conflicts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- Check if player just became royalty through this event
+	if flags.is_royalty or flags.royal_by_marriage then
+		-- Clear conflicting mafia state
+		if flags.in_mob or state.MobState then
+			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia")
+			flags.in_mob = nil
+			flags.mafia_member = nil
+			flags.chose_mafia_path = nil
+			state.MobState = nil
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "royalty" then
+			flags.primary_wish_type = "royalty"
+		end
+		-- Update housing to palace
+		state.HousingState = state.HousingState or {}
+		if state.HousingState.status ~= "royal_palace" then
+			state.HousingState.status = "royal_palace"
+			state.HousingState.type = "palace"
+			state.HousingState.rent = 0
+			-- Clear old housing flags
+			flags.renting = nil
+			flags.has_apartment = nil
+			flags.homeless = nil
+		end
+	end
+	
+	-- Check if player just joined mafia through this event
+	if flags.in_mob or (state.MobState and state.MobState.inMob) then
+		-- Clear conflicting royalty state
+		if flags.is_royalty or state.RoyalState then
+			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			flags.royal_birth = nil
+			flags.dating_royalty = nil
+			flags.chose_royalty_path = nil
+			state.RoyalState = nil
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "mafia" then
+			flags.primary_wish_type = "mafia"
 		end
 	end
 	

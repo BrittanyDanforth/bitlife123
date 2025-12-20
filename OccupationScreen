@@ -973,6 +973,12 @@ function OccupationScreen:getMoney()
 	return state.Money or (state.Stats and state.Stats.Money) or 0
 end
 
+function OccupationScreen:getGender()
+	local state = self.playerState
+	if not state then return "Male" end
+	return state.Gender or "Male"
+end
+
 function OccupationScreen:getCurrentJob()
 	local state = self.playerState
 	if not state then return nil end
@@ -2097,6 +2103,108 @@ function OccupationScreen:populateJobs()
 		subText.Parent = prisonCard
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show ROYALTY card for royal players - they don't need regular jobs!
+	-- User complaint: "Starter job still showing after marrying royalty"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = self.playerState and self.playerState.Flags or {}
+	local royalState = self.playerState and self.playerState.RoyalState
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (royalState and royalState.isRoyal)
+	
+	if isRoyalty and not inJail then
+		log("Showing ROYALTY card for royal player")
+		
+		local royalCard = Instance.new("Frame")
+		royalCard.Name = "RoyaltyCard"
+		royalCard.Size = UDim2.new(1, 0, 0, 140)
+		royalCard.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Gold
+		royalCard.LayoutOrder = 0
+		royalCard.ZIndex = 82
+		royalCard.Parent = self.contentScroll
+		UI.corner(royalCard, 18)
+		UI.stroke(royalCard, 3, 0.3, Color3.fromRGB(184, 134, 11)) -- Dark gold
+		
+		-- Royal icon
+		local iconFrame = Instance.new("Frame")
+		iconFrame.Size = UDim2.new(0, 65, 0, 65)
+		iconFrame.Position = UDim2.new(0, 16, 0, 16)
+		iconFrame.BackgroundColor3 = Color3.fromRGB(139, 69, 19) -- Brown gold
+		iconFrame.ZIndex = 83
+		iconFrame.Parent = royalCard
+		UI.corner(iconFrame, 14)
+		
+		local iconLabel = Instance.new("TextLabel")
+		iconLabel.Size = UDim2.fromScale(1, 1)
+		iconLabel.BackgroundTransparency = 1
+		iconLabel.Font = F.Body
+		iconLabel.TextSize = 36
+		iconLabel.Text = "👑"
+		iconLabel.TextColor3 = C.White
+		iconLabel.ZIndex = 84
+		iconLabel.Parent = iconFrame
+		
+		-- Royal title
+		local royalTitle = royalState and royalState.title or (self:getGender() == "Female" and "Princess" or "Prince")
+		local countryName = royalState and royalState.countryName or "European Kingdom"
+		
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.Size = UDim2.new(1, -100, 0, 28)
+		titleLabel.Position = UDim2.new(0, 95, 0, 16)
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Font = F.Title
+		titleLabel.TextSize = textSize(24)
+		titleLabel.TextColor3 = Color3.fromRGB(139, 69, 19) -- Dark brown
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.Text = royalTitle
+		titleLabel.ZIndex = 83
+		titleLabel.Parent = royalCard
+		
+		-- Country/status
+		local statusLabel = Instance.new("TextLabel")
+		statusLabel.Size = UDim2.new(1, -100, 0, 20)
+		statusLabel.Position = UDim2.new(0, 95, 0, 46)
+		statusLabel.BackgroundTransparency = 1
+		statusLabel.Font = F.Body
+		statusLabel.TextSize = textSize(14)
+		statusLabel.TextColor3 = C.Gray700
+		statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+		statusLabel.Text = countryName
+		statusLabel.ZIndex = 83
+		statusLabel.Parent = royalCard
+		
+		-- Royal duties info
+		local dutiesLabel = Instance.new("TextLabel")
+		dutiesLabel.Size = UDim2.new(1, -100, 0, 40)
+		dutiesLabel.Position = UDim2.new(0, 95, 0, 68)
+		dutiesLabel.BackgroundTransparency = 1
+		dutiesLabel.Font = F.Body
+		dutiesLabel.TextSize = textSize(13)
+		dutiesLabel.TextColor3 = C.Gray600
+		dutiesLabel.TextXAlignment = Enum.TextXAlignment.Left
+		dutiesLabel.TextWrapped = true
+		dutiesLabel.Text = "✨ You are royalty! Attend to royal duties in the Activities tab."
+		dutiesLabel.ZIndex = 83
+		dutiesLabel.Parent = royalCard
+		
+		-- Popularity info
+		local popularity = royalState and royalState.popularity or 50
+		local popLabel = Instance.new("TextLabel")
+		popLabel.Size = UDim2.new(1, -100, 0, 18)
+		popLabel.Position = UDim2.new(0, 95, 0, 110)
+		popLabel.BackgroundTransparency = 1
+		popLabel.Font = F.Body
+		popLabel.TextSize = textSize(12)
+		popLabel.TextColor3 = popularity >= 70 and C.Green or (popularity >= 40 and C.Amber or C.Red)
+		popLabel.TextXAlignment = Enum.TextXAlignment.Left
+		popLabel.Text = "👑 Popularity: " .. popularity .. "%"
+		popLabel.ZIndex = 83
+		popLabel.Parent = royalCard
+		
+		-- Skip showing regular job card for royalty
+		isRetired = false -- Don't show retired card either
+		currentJob = nil -- Hide any residual job
+	end
+
 	-- CRITICAL FIX: Show Retired card when player is retired
 	if isRetired and not inJail then
 		log("Showing RETIRED card for retired player")
@@ -2518,9 +2626,20 @@ function OccupationScreen:populateJobs()
 					if gamepassReq == "celebrity" and not hasCelebrity then
 						isLocked = true
 						lockReason = "celebrity"
-					elseif gamepassReq == "mafia" and not hasMafia then
-						isLocked = true
-						lockReason = "mafia"
+					elseif gamepassReq == "mafia" then
+						if not hasMafia then
+							isLocked = true
+							lockReason = "mafia"
+						else
+							-- CRITICAL FIX: Even with gamepass, mafia jobs require BEING IN THE MOB!
+							-- Player must be in_mob flag or have MobState to see mafia career options
+							local flags = self.playerState and self.playerState.Flags or {}
+							local mobState = self.playerState and self.playerState.MobState
+							local isInMob = flags.in_mob or (mobState and mobState.inMob)
+							if not isInMob then
+								showJob = false -- Hide mafia jobs entirely if not in mob
+							end
+						end
 					end
 				end
 				

@@ -1785,6 +1785,8 @@ PremiumIntegratedEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Premium opportunity events now track when shown to prevent spam
 	-- Also reduced base chance and increased cooldown significantly
+	-- CRITICAL FIX #2: This event should NOT show if player already made a childhood wish
+	-- The childhood wish events are the proper way to enter premium paths
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "premium_special_opportunity",
@@ -1793,16 +1795,26 @@ PremiumIntegratedEvents.events = {
 		text = "An unusual opportunity has presented itself. This could change everything!",
 		question = "Do you take the special path?",
 		minAge = 20, maxAge = 28,
-		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
-		cooldown = 20, -- CRITICAL FIX: Increased from 8 to prevent spam
+		baseChance = 0.25, -- CRITICAL FIX: Further reduced to prevent spam
+		cooldown = 30, -- CRITICAL FIX: Further increased
 		oneTime = true,
 		maxOccurrences = 1, -- CRITICAL FIX: Ensure it only happens once per life
 		stage = "adult",
 		category = "opportunity",
 		tags = { "opportunity", "special", "life_changing" },
 		
-		-- CRITICAL FIX: Block if player already chose a premium path
-		blockedByFlags = { is_royalty = true, in_mob = true, is_famous = true, celebrity = true, premium_opportunity_shown = true },
+		-- CRITICAL FIX: Block if player already chose ANY premium path via childhood wish
+		-- Also block if they're already in a premium state
+		blockedByFlags = { 
+			is_royalty = true, 
+			in_mob = true, 
+			is_famous = true, 
+			celebrity = true, 
+			premium_opportunity_shown = true,
+			primary_wish_type = true, -- CRITICAL: Block if ANY childhood wish was made!
+			dating_royalty = true,
+			fame_career = true,
+		},
 		
 		choices = {
 			{
@@ -1829,23 +1841,42 @@ PremiumIntegratedEvents.events = {
 					end
 				end,
 			},
-			-- ALL GAMEPASS OPTIONS IN ONE EVENT
-			-- CRITICAL FIX: Each choice now sets premium_opportunity_shown to prevent spam
+			-- PREMIUM OPTIONS - Only for players who DIDN'T make a childhood wish
+			-- These set primary_wish_type to ensure no conflicts
 			{
 				text = "⭐ [Celebrity] The entertainment industry beckons!",
 				effects = { Fame = 25, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { entertainment_career = true, premium_opportunity_shown = true, chose_celebrity_path = true },
 				feedText = "⭐ You've been discovered! Hollywood here you come!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.entertainment_career = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_celebrity_path = true
+					state.Flags.primary_wish_type = "celebrity" -- CRITICAL: Set to prevent conflicts
+				end,
 			},
 			{
 				text = "🔫 [Mafia] Join the family business...",
 				effects = { Money = 25000, Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { joined_mob = true, premium_opportunity_shown = true, chose_mafia_path = true },
 				feedText = "🔫 You're in! Welcome to the family. Now the REAL money starts rolling in!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.in_mob = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_mafia_path = true
+					state.Flags.primary_wish_type = "mafia" -- CRITICAL: Set to prevent conflicts
+					-- Initialize mob state
+					state.MobState = state.MobState or {}
+					state.MobState.inMob = true
+					state.MobState.familyName = "La Famiglia"
+					state.MobState.rankLevel = 1
+					state.MobState.rankName = "Associate"
+					state.MobState.respect = 10
+				end,
 			},
 			{
 				text = "👑 [Royalty] Discover your royal lineage!",
@@ -1854,12 +1885,12 @@ PremiumIntegratedEvents.events = {
 				gamepassEmoji = "👑",
 				feedText = "👑 Turns out you have royal blood! A distant connection to nobility!",
 				onResolve = function(state)
-					-- Only hint at royalty, doesn't actually make them royal
 					state.Flags = state.Flags or {}
 					state.Flags.royal_bloodline = true
 					state.Flags.noble_ancestry = true
 					state.Flags.premium_opportunity_shown = true
 					state.Flags.chose_royalty_path = true
+					state.Flags.primary_wish_type = "royalty" -- CRITICAL: Set to prevent conflicts
 				end,
 			},
 			{

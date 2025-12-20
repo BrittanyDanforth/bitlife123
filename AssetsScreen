@@ -1138,7 +1138,16 @@ function AssetsScreen:populateProperty()
 	-- Then fall back to flags for backwards compatibility
 	
 	-- Check various housing states - ORDER MATTERS!
-	if flags.homeless or housingStatus == "homeless" then
+	-- CRITICAL FIX: Check royalty FIRST - they live in a palace!
+	local royalState = self.playerState and self.playerState.RoyalState
+	if flags.is_royalty or (royalState and royalState.isRoyal) then
+		livingEmoji = "🏰"
+		livingStatus = "Royal Palace"
+		local country = royalState and royalState.countryName or "European Kingdom"
+		local title = royalState and royalState.title or "Royal"
+		livingDetail = title .. " of " .. country
+		statusColor = C.Gold or C.Amber
+	elseif flags.homeless or housingStatus == "homeless" then
 		livingEmoji = "🏕️"
 		livingStatus = "Homeless"
 		livingDetail = "Living on the streets"
@@ -1374,9 +1383,25 @@ function AssetsScreen:populateProperty()
 		local flags = self.playerState and self.playerState.Flags or {}
 		local housingState = self.playerState and self.playerState.HousingState or {}
 		local age = self.playerState and self.playerState.Age or 0
+		local royalState = self.playerState and self.playerState.RoyalState
 		
+		-- CRITICAL FIX: Royalty gets a palace as their primary residence!
+		if flags.is_royalty or (royalState and royalState.isRoyal) then
+			local country = royalState and royalState.countryName or "European Kingdom"
+			local title = royalState and royalState.title or "Royal"
+			local residenceEntry = {
+				id = "royal_palace",
+				name = "Royal Palace",
+				emoji = "🏰",
+				price = 0, -- Priceless!
+				minAge = 0,
+				isEventAcquired = true,
+				description = title .. " residence in " .. country
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added royal palace to property list")
 		-- Check if player has housing arrangement that should be shown
-		if flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+		elseif flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
 			local rent = housingState.rent or 900
 			local residenceEntry = {
 				id = "current_residence",

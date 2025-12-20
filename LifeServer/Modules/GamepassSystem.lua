@@ -700,7 +700,8 @@ end
 GamepassSystem.promptHistory = {}
 
 -- Minimum cooldown between prompts (in seconds)
-GamepassSystem.PROMPT_COOLDOWN = 300 -- 5 minutes
+-- CRITICAL FIX: Increased from 5 minutes to 30 minutes to prevent annoying spam
+GamepassSystem.PROMPT_COOLDOWN = 1800 -- 30 minutes
 
 function GamepassSystem:canShowPrompt(player, gamepassKey)
 	local playerId = player.UserId
