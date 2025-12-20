@@ -655,9 +655,14 @@ local function canEventTrigger(event, state)
 			if not isActuallyRoyal then
 				return false -- Block royal-themed events for non-royals
 			end
+		else
+			-- Wish fulfillment events - but check if player made a DIFFERENT wish!
+			-- CRITICAL FIX: If player wished for mafia/celebrity, don't show royalty events
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "royalty" then
+				return false -- Player wished for a different premium path
+			end
 		end
-		-- If it's a wish fulfillment event with requiresGamepass, let it through
-		-- The player has the gamepass (checked above) and this event lets them BECOME royalty
 	end
 	
 	-- MAFIA events require Mafia gamepass AND being in the mob
@@ -686,6 +691,13 @@ local function canEventTrigger(event, state)
 			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
 			if isInMob then
 				return false -- Already in mob, don't recruit again
+			end
+			
+			-- CRITICAL FIX: If player made a different premium wish (royalty/celebrity),
+			-- don't show mafia approach events unless they explicitly chose mafia path
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "mafia" then
+				return false -- Player wished for a different premium path
 			end
 		end
 	end
@@ -717,7 +729,23 @@ local function canEventTrigger(event, state)
 				return false -- Player's career path doesn't match event's required path
 			end
 		elseif not hasActiveFameCareer and not hasFame then
-			return false -- Need either career or natural fame
+			-- Check if this is a "discovery" event (entering celebrity path)
+			-- These should be blocked if player chose a different premium wish
+			local isDiscoveryEvent = event.id and (
+				string.find(event.id, "discover") or 
+				string.find(event.id, "talent") or
+				string.find(event.id, "famous")
+			)
+			
+			if isDiscoveryEvent then
+				-- CRITICAL FIX: Block if player made a different premium wish
+				local primaryWish = flags.primary_wish_type
+				if primaryWish and primaryWish ~= "celebrity" then
+					return false -- Player wished for a different premium path
+				end
+			else
+				return false -- Need either career or natural fame
+			end
 		end
 	end
 	

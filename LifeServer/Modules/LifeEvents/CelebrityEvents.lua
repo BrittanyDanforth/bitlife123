@@ -3704,7 +3704,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "actor"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "Extra"
 					state.FameState.yearsInStage = 0
 					-- CRITICAL FIX #38: Use proper job ID that exists in JobCatalog!
@@ -3731,7 +3731,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "musician"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "Street Performer"
 					state.FameState.yearsInStage = 0
 					-- CRITICAL FIX #37: Use proper job ID that exists in JobCatalog!
@@ -3758,7 +3758,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "rapper"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "Underground Rapper"
 					state.FameState.yearsInStage = 0
 					-- CRITICAL FIX #33: Use proper job ID that exists in JobCatalog!
@@ -3785,7 +3785,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "streamer"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "New Streamer"
 					state.FameState.yearsInStage = 0
 					state.FameState.subscribers = 10
@@ -3813,7 +3813,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "influencer"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "New Creator"
 					state.FameState.yearsInStage = 0
 					state.FameState.followers = 100
@@ -3841,7 +3841,7 @@ CelebrityEvents.CareerProgressionEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.careerPath = "athlete"
-					state.FameState.stage = 1
+					state.FameState.currentStage = 1
 					state.FameState.stageName = "Amateur"
 					state.FameState.yearsInStage = 0
 					-- CRITICAL FIX #39: Use proper job ID that exists in JobCatalog!
@@ -3926,12 +3926,12 @@ CelebrityEvents.CareerProgressionEvents = {
 				feed = "You've moved up in your career!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.stage = (state.FameState.stage or 1) + 1
+					state.FameState.currentStage = (state.FameState.currentStage or 1) + 1
 					state.FameState.yearsInStage = 0
 					state.FameState.promotions = (state.FameState.promotions or 0) + 1
 					
 					-- Update salary based on new stage
-					local baseSalary = 50000 * (state.FameState.stage or 1)
+					local baseSalary = 50000 * (state.FameState.currentStage or 1)
 					if state.CurrentJob then
 						state.CurrentJob.salary = baseSalary + math.random(0, baseSalary)
 					end

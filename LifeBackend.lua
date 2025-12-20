@@ -2556,6 +2556,77 @@ local ActivityCatalog = {
 	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: DATING ROYALTY ACTIVITIES
+	-- For players who are dating a royal but not yet royalty themselves
+	-- These are called from the "Dating Royal" tab in ActivitiesScreen
+	-- ═══════════════════════════════════════════════════════════════════════════
+	royal_date = {
+		stats = { Happiness = 8 },
+		feed = "went on a romantic date with your royal partner 💑",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		relationshipBonus = 5,
+	},
+	palace_visit = {
+		stats = { Happiness = 10, Looks = 5 },
+		feed = "visited the royal palace - what luxury! 🏰",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+	},
+	meet_royal_family = {
+		stats = { Happiness = 3 },
+		feed = "met the royal family... hope they like you! 👨‍👩‍👧‍👦",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		relationshipBonus = 3,
+		risky = true, -- Can go poorly
+	},
+	royal_event = {
+		stats = { Happiness = 5 },
+		feed = "attended a glamorous royal event 🎭",
+		cost = 500,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		fameBonus = 5,
+	},
+	learn_etiquette = {
+		stats = { Smarts = 5, Looks = 3 },
+		feed = "learned proper royal etiquette and protocol 📖",
+		cost = 200,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		setFlags = { royal_etiquette = true },
+	},
+	royal_shopping = {
+		stats = { Looks = 8, Happiness = 5 },
+		feed = "went on a royal shopping spree! Designer everything! 👗",
+		cost = 5000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+	},
+	romantic_getaway = {
+		stats = { Happiness = 12 },
+		feed = "took a romantic getaway with your royal partner ✈️",
+		cost = 10000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 18,
+		relationshipBonus = 8,
+	},
+	propose_marriage = {
+		stats = { Happiness = 20 },
+		feed = "proposed marriage to your royal partner! 💍",
+		cost = 50000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 18,
+		blockedByFlag = "married",
+		isProposal = true, -- Special handler needed
+		setFlags = { proposed_to_royal = true },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: MAFIA OPERATIONS (Was causing "Unknown Activity" errors)
 	-- These activities are called from the Mafia tab in ActivitiesScreen
 	-- ═══════════════════════════════════════════════════════════════════════════
@@ -10169,6 +10240,10 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				-- Accept multiple ways to be in the mob
 				hasRequiredFlag = state.Flags.mafia_member 
 					or (state.MobState and state.MobState.inMob)
+			elseif activity.requiresFlag == "dating_royalty" then
+				-- Accept multiple ways to be dating royalty
+				hasRequiredFlag = state.Flags.royal_romance 
+					or (state.Relationships and state.Relationships.partner and state.Relationships.partner.isRoyalty)
 			end
 		end
 		
@@ -10187,6 +10262,8 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				helpfulMessage = "This activity is only for the King or Queen."
 			elseif activity.requiresFlag == "in_mob" then
 				helpfulMessage = "This activity requires you to be in the mob."
+			elseif activity.requiresFlag == "dating_royalty" then
+				helpfulMessage = "You need to be dating a royal first!"
 			end
 			return { success = false, message = helpfulMessage }
 		end
@@ -10494,6 +10571,82 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- The client shows its own result popup via showResult() in ActivitiesScreen
 	-- State will sync on next age up naturally
 	-- self:pushState(player, resultMessage)  -- DISABLED - was closing ActivitiesScreen
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: DATING ROYALTY ACTIVITIES - Handle relationship and fame bonuses
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.relationshipBonus then
+		-- Improve relationship with royal partner
+		if state.Relationships and state.Relationships.partner then
+			state.Relationships.partner.relationship = math.min(100, 
+				(state.Relationships.partner.relationship or 50) + activity.relationshipBonus)
+		end
+	end
+	
+	if activity.fameBonus then
+		state.Fame = math.clamp((state.Fame or 0) + activity.fameBonus, 0, 100)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROYAL PROPOSAL - Become royalty through marriage!
+	-- This is the culmination of the dating royalty path
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isProposal then
+		-- Check if royal partner exists and wants to marry
+		local partner = state.Relationships and state.Relationships.partner
+		if partner and partner.isRoyalty then
+			local relationship = partner.relationship or 50
+			local successChance = 0.3 + (relationship / 200) -- 30% base + up to 50% from relationship
+			
+			if state.Flags.royal_etiquette then
+				successChance = successChance + 0.15 -- Bonus for learning etiquette
+			end
+			
+			if RANDOM:NextNumber() < successChance then
+				-- PROPOSAL ACCEPTED! Become royalty!
+				state.Flags.married = true
+				state.Flags.married_to_royalty = true
+				state.Flags.is_royalty = true
+				state.Flags.royal_by_marriage = true
+				state.Flags.dating_royalty = nil -- No longer just dating
+				state.Flags.royal_romance = nil
+				
+				-- Initialize RoyalState
+				state.RoyalState = state.RoyalState or {}
+				state.RoyalState.isRoyal = true
+				state.RoyalState.royalByMarriage = true
+				state.RoyalState.country = partner.royalCountry or "European Kingdom"
+				state.RoyalState.title = state.Gender == "Female" and "Princess" or "Prince"
+				state.RoyalState.popularity = 60
+				state.RoyalState.spouse = partner.name
+				
+				-- Update partner relationship
+				partner.type = "spouse"
+				partner.role = "Royal Spouse"
+				partner.relationship = 95
+				
+				-- Big money from royal wedding
+				self:addMoney(state, 500000)
+				
+				resultMessage = "💍👑 THEY SAID YES! You married " .. (partner.name or "your royal partner") .. " and are now ROYALTY! Your fairy tale dreams came true!"
+				
+				-- Add to year log
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "royal_wedding",
+					emoji = "👑",
+					text = "You married into royalty and became a " .. (state.RoyalState.title or "Royal") .. "!",
+				})
+			else
+				-- Proposal declined (but can try again later)
+				resultMessage = "💔 They said they need more time... The royal family has concerns. Keep building your relationship!"
+				state.Flags.proposed_to_royal = nil -- Allow trying again
+				self:applyStatChanges(state, { Happiness = -15 })
+			end
+		else
+			resultMessage = "💔 You're not dating anyone royal to propose to!"
+		end
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: RETURN ACTUAL STAT CHANGES TO CLIENT!

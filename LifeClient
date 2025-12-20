@@ -7166,7 +7166,10 @@ if MinigamesModule then
 							-- Add feed message
 							currentState.Feed = currentState.Feed or {}
 							table.insert(currentState.Feed, "🎉 You survived The Purge! You're stronger now! (+Health, +Happiness)")
-							refreshInfo()
+							-- CRITICAL FIX: Use updateFromState() instead of undefined refreshInfo()
+							if updateFromState then
+								updateFromState()
+							end
 						else
 							-- DIED IN THE PURGE - Trigger actual death!
 							currentState.Health = 0  -- Set health to 0
