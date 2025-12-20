@@ -1355,6 +1355,71 @@ function AssetsScreen:populateProperty()
 			log("    -> Already in catalog, skipping")
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #603: Show current residence in properties list even if not "owned"
+	-- User complaint: "I moved out and it says rent is 1300 but doesn't show my apartment!"
+	-- When player is renting, they should see their residence in the property list
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local alreadyHasResidence = false
+	for _, prop in ipairs(ownedProperties) do
+		if prop.id and (prop.id:find("apartment") or prop.id:find("house") or prop.id:find("home") or prop.id:find("residence")) then
+			alreadyHasResidence = true
+			break
+		end
+	end
+	
+	-- If player moved out but no residence shown, add their current residence
+	if not alreadyHasResidence then
+		local flags = self.playerState and self.playerState.Flags or {}
+		local housingState = self.playerState and self.playerState.HousingState or {}
+		local age = self.playerState and self.playerState.Age or 0
+		
+		-- Check if player has housing arrangement that should be shown
+		if flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+			local rent = housingState.rent or 900
+			local residenceEntry = {
+				id = "current_residence",
+				name = housingState.type == "shared_apartment" and "Shared Apartment" or "Rental Apartment",
+				emoji = "🏢",
+				price = 0, -- Rentals don't have purchase price
+				monthlyRent = rent,
+				minAge = 0,
+				isRental = true,
+				isEventAcquired = true,
+				description = string.format("Monthly rent: $%s", self:formatMoney(rent))
+			}
+			table.insert(ownedProperties, 1, residenceEntry) -- Add at beginning
+			log("  Added current rental residence to property list")
+		elseif flags.homeowner or flags.has_house or housingState.status == "owner" then
+			-- Player owns home but it's not in list - add placeholder
+			local propValue = housingState.value or 150000
+			local residenceEntry = {
+				id = "current_home",
+				name = flags.inherited_property and "Inherited Home" or "My Home",
+				emoji = flags.inherited_property and "🏚️" or "🏡",
+				price = propValue,
+				minAge = 0,
+				isEventAcquired = true,
+				description = string.format("Property value: $%s", self:formatMoney(propValue))
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added current owned home to property list")
+		elseif flags.in_college or flags.in_university then
+			-- College student - show dorm
+			local residenceEntry = {
+				id = "college_dorm",
+				name = "College Dorm Room",
+				emoji = "🏫",
+				price = 0,
+				minAge = 0,
+				isEventAcquired = true,
+				description = "Student housing (included with tuition)"
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added college dorm to property list")
+		end
+	end
 
 	log("FINAL: Owned properties:", #ownedProperties, "of catalog:", #Properties)
 

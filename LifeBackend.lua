@@ -998,10 +998,66 @@ local function buildDeathMeta(state, deathInfo)
 	local stats = state.Stats or {}
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #601: ALWAYS provide a specific death reason
+	-- User complaint: "When I died it didn't say a specific reason"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local deathCause = deathInfo and deathInfo.cause
+	
+	-- If no cause provided, generate one based on age and health
+	if not deathCause or deathCause == "" or deathCause == "Unknown causes" or deathCause == "unknown causes" then
+		local age = state.Age or 0
+		local health = (stats.Health or state.Health or 50)
+		
+		if age >= 90 then
+			-- Very old - natural causes
+			local oldAgeReasons = {
+				"Old age - passed peacefully",
+				"Natural causes at a ripe old age",
+				"Died peacefully in their sleep",
+				"Heart gave out after a long life",
+				"Age-related organ failure",
+			}
+			deathCause = oldAgeReasons[math.random(1, #oldAgeReasons)]
+		elseif age >= 75 then
+			local seniorReasons = {
+				"Old age",
+				"Natural causes",
+				"Heart failure",
+				"Stroke",
+				"Pneumonia",
+			}
+			deathCause = seniorReasons[math.random(1, #seniorReasons)]
+		elseif health < 20 then
+			local healthReasons = {
+				"Health complications",
+				"Organ failure",
+				"Critical illness",
+				"Medical emergency",
+			}
+			deathCause = healthReasons[math.random(1, #healthReasons)]
+		elseif flags.has_cancer then
+			deathCause = "Cancer"
+		elseif flags.has_heart_disease or flags.heart_disease then
+			deathCause = "Heart disease"
+		elseif flags.drug_addiction or flags.substance_abuse then
+			deathCause = "Overdose"
+		else
+			-- Generic but specific
+			local genericReasons = {
+				"Sudden cardiac arrest",
+				"Unexpected illness",
+				"Medical complications",
+				"Natural causes",
+			}
+			deathCause = genericReasons[math.random(1, #genericReasons)]
+		end
+	end
+	
 	return {
 		age = state.Age,
 		year = state.Year,
-		cause = deathInfo and deathInfo.cause or "Unknown causes",
+		cause = deathCause,
 		causeId = deathInfo and deathInfo.id,
 		stage = stageData and stageData.id or "unknown",
 		stageName = stageData and stageData.name or "Unknown",
@@ -6520,8 +6576,21 @@ end
 -- PROPERTY INCOME - Collect passive income from owned real estate
 -- CRITICAL FIX: This was completely missing! Properties have income fields but
 -- the rental income was never being collected during age up.
+-- CRITICAL FIX #600: CHILDREN SHOULD NOT RECEIVE PROPERTY INCOME!
+-- User complaint: "I'm 4 years old and getting money from family estate???"
+-- Property income should only be paid to adults (18+) who actually manage properties
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:collectPropertyIncome(state)
+	-- CRITICAL FIX #600: Children cannot receive property income!
+	-- Real-world logic: Minors can't own property or receive rental income
+	-- If inherited, it would go into a trust managed by guardians
+	local age = state.Age or 0
+	if age < 18 then
+		-- Children don't receive property income
+		-- In reality, this would go to parents/guardians or a trust
+		return
+	end
+	
 	-- Properties still generate income even if player is in jail (tenants pay rent)
 	-- But player can't BUY or SELL while incarcerated (handled elsewhere)
 	

@@ -1644,14 +1644,15 @@ local AgeMilestoneEvents = {
 	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
 	
 	-- EARLY CHILDHOOD (5-8) - School and discovery
+	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
 	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading" },
-	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
 	
 	-- LATE CHILDHOOD (9-12) - Growing up
-	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation" },
-	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence" },
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
+	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence", "premium_dream_big" },
 	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
 	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
 	
@@ -1661,9 +1662,10 @@ local AgeMilestoneEvents = {
 	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
 	
 	-- LATE TEEN (16-18) - Major milestones
-	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep" },
-	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time" },
+	-- CRITICAL FIX #604: Added premium turning point events for gamepass exposure
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
+	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads" },
 	
 	-- YOUNG ADULT (19-24) - Independence and discovery
 	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
@@ -1674,7 +1676,8 @@ local AgeMilestoneEvents = {
 	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
 	
 	-- MID-LATE 20s (25-29) - Settling into adulthood
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure" },
+	-- CRITICAL FIX #604: Added premium crossroads and special opportunity events
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure", "premium_life_crossroads", "premium_special_opportunity" },
 	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
 	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
 	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
@@ -2207,14 +2210,38 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- Mafia players: 35% chance to get a mafia event each year
-	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
-	if isInMob and RANDOM_LOCAL:NextNumber() < 0.35 then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #602: Mafia event selection requires STRICT in_mob verification
+	-- User complaint: "IT SAID I WAS IN MAFIA BUT IM NOT IN MAFIA"
+	-- This ensures mafia events ONLY trigger for actual mafia members
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isInMob = flags.in_mob == true -- STRICT check - must be exactly true, not truthy
+	local hasMobState = state.MobState and state.MobState.inMob == true
+	local hasMafiaGamepass = flags.mafia_gamepass == true
+	
+	-- Must have at least ONE concrete indicator of mafia membership
+	local isActuallyInMafia = isInMob or hasMobState
+	
+	-- 35% chance to get a mafia event each year IF player is actually in mafia
+	if isActuallyInMafia and hasMafiaGamepass and RANDOM_LOCAL:NextNumber() < 0.35 then
 		local mafiaEvents = EventsByCategory["mafia"] or {}
 		local eligibleMafiaEvents = {}
 		
 		for _, event in ipairs(mafiaEvents) do
-			if canEventTrigger(event, state) then
+			-- CRITICAL: Skip events that explicitly require in_mob if player doesn't have it
+			local eventRequiresInMob = event.requiresFlags and event.requiresFlags.in_mob
+			local condRequiresInMob = event.conditions and event.conditions.requiresFlags and event.conditions.requiresFlags.in_mob
+			
+			local shouldSkip = false
+			if eventRequiresInMob or condRequiresInMob then
+				-- Event requires in_mob - verify player ACTUALLY has it
+				if not isInMob and not hasMobState then
+					-- Skip this event - player isn't actually in mob
+					shouldSkip = true
+				end
+			end
+			
+			if not shouldSkip and canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)
 				if occurCount == 0 or not event.oneTime then
 					table.insert(eligibleMafiaEvents, event)
