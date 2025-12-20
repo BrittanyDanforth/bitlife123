@@ -1625,6 +1625,199 @@ PremiumIntegratedEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Early-Game Gamepass Opportunities
+	-- User complaint: "ONLY TIMES THEY CAN PURCHASE GAMEPASSES IS IN BEGINNING OF LIFE"
+	-- These events appear during childhood/teen years to show premium options
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "premium_dream_big",
+		title = "Dream Big",
+		emoji = "✨",
+		text = "You're daydreaming about what you want to be when you grow up. The possibilities seem endless!",
+		question = "What do you dream about?",
+		minAge = 8, maxAge = 14,
+		baseChance = 0.85,
+		cooldown = 5,
+		oneTime = true,
+		stage = "childhood",
+		category = "dream",
+		tags = { "dream", "aspiration", "early" },
+		
+		choices = {
+			{
+				text = "Being rich and famous",
+				effects = { Happiness = 5 },
+				setFlags = { dreams_of_fame = true },
+				feedText = "You dream of mansions, limos, and millions of adoring fans!",
+			},
+			{
+				text = "Helping people",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { dreams_of_helping = true },
+				feedText = "You want to make a difference in the world!",
+			},
+			{
+				text = "Going on adventures",
+				effects = { Happiness = 8 },
+				setFlags = { dreams_of_adventure = true },
+				feedText = "The world is your oyster! Adventure awaits!",
+			},
+			-- GAMEPASS OPTIONS
+			{
+				text = "⭐ [Celebrity] Being a famous superstar!",
+				effects = { Happiness = 15, Fame = 5 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { star_dreamer = true, fame_destiny = true },
+				feedText = "⭐ You're destined for STARDOM! The spotlight awaits!",
+			},
+			{
+				text = "🔫 [Mafia] Running the underground...",
+				effects = { Happiness = 10 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { mob_fascination = true },
+				feedText = "🔫 You're fascinated by crime movies and gangster stories...",
+			},
+			{
+				text = "👑 [Royalty] Living like a king or queen!",
+				effects = { Happiness = 10, Looks = 2 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				feedText = "👑 You imagine palaces, crowns, and royal balls!",
+			},
+		},
+	},
+	{
+		id = "premium_turning_point",
+		title = "Turning Point",
+		emoji = "🛤️",
+		text = "You feel like you're at a turning point in your young life. Different paths are opening up before you.",
+		question = "Which direction calls to you?",
+		minAge = 16, maxAge = 19,
+		baseChance = 0.8,
+		cooldown = 5,
+		oneTime = true,
+		stage = "teen",
+		category = "milestone",
+		tags = { "decision", "youth", "turning_point" },
+		
+		choices = {
+			{
+				text = "Focus on school and career",
+				effects = { Smarts = 5, Happiness = 3 },
+				setFlags = { studious_teen = true },
+				feedText = "Education is the key! You buckle down and study hard.",
+			},
+			{
+				text = "Live in the moment - enjoy being young!",
+				effects = { Happiness = 10, Health = 3 },
+				setFlags = { enjoying_youth = true },
+				feedText = "YOLO! These are the best years of your life!",
+			},
+			{
+				text = "Start working and save money",
+				effects = { Money = 1500 },
+				setFlags = { young_earner = true },
+				feedText = "You get a part-time job. First paycheck feels AMAZING!",
+			},
+			-- GAMEPASS OPTIONS
+			{
+				text = "⭐ [Celebrity] Chase your dreams of fame!",
+				effects = { Fame = 10, Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { young_star = true, fame_path = true },
+				feedText = "⭐ You start building your personal brand. The fame journey begins!",
+			},
+			{
+				text = "🔫 [Mafia] Seek out the connected people...",
+				effects = { Money = 5000, Happiness = 5 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { early_mob_contact = true },
+				feedText = "🔫 You make some... interesting connections. Easy money!",
+			},
+		},
+	},
+	{
+		id = "premium_special_opportunity",
+		title = "Special Opportunity",
+		emoji = "🌟",
+		text = "An unusual opportunity has presented itself. This could change everything!",
+		question = "Do you take the special path?",
+		minAge = 20, maxAge = 28,
+		baseChance = 0.7,
+		cooldown = 8,
+		oneTime = true,
+		stage = "adult",
+		category = "opportunity",
+		tags = { "opportunity", "special", "life_changing" },
+		
+		choices = {
+			{
+				text = "Play it safe - stick to the normal path",
+				effects = { Happiness = 3 },
+				setFlags = { played_safe = true },
+				feedText = "Sometimes the safe choice is the smart choice.",
+			},
+			{
+				text = "Take a calculated risk",
+				effects = {},
+				feedText = "Rolling the dice on opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🌟 The risk paid off! Great reward!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌟 Didn't work out, but at least you tried!")
+					end
+				end,
+			},
+			-- ALL GAMEPASS OPTIONS IN ONE EVENT
+			{
+				text = "⭐ [Celebrity] The entertainment industry beckons!",
+				effects = { Fame = 25, Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { entertainment_career = true },
+				feedText = "⭐ You've been discovered! Hollywood here you come!",
+			},
+			{
+				text = "🔫 [Mafia] Join the family business...",
+				effects = { Money = 25000, Happiness = 10 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { joined_mob = true },
+				feedText = "🔫 You're in! Welcome to the family. Now the REAL money starts rolling in!",
+			},
+			{
+				text = "👑 [Royalty] Discover your royal lineage!",
+				effects = { Fame = 20, Happiness = 20 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				feedText = "👑 Turns out you have royal blood! A distant connection to nobility!",
+				onResolve = function(state)
+					-- Only hint at royalty, doesn't actually make them royal
+					state.Flags = state.Flags or {}
+					state.Flags.royal_bloodline = true
+					state.Flags.noble_ancestry = true
+				end,
+			},
+			{
+				text = "⚡ [God Mode] Use your power to seize this moment!",
+				effects = { Money = 50000, Happiness = 20, Health = 20 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ God Mode activated! You seized the opportunity with supernatural force!",
+			},
+		},
+	},
 }
 
 return PremiumIntegratedEvents

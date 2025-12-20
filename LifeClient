@@ -3945,55 +3945,98 @@ end
 ----------------------------------------------------------------
 
 local CategoryColors = {
-	-- Dangerous/negative events - RED
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Comprehensive category colors for proper visual feedback
+	-- User complaint: "bad cards have green border instead of red"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- NEGATIVE EVENTS - RED (must be explicit about all bad things!)
 	disaster = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	danger = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	emergency = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
-	health = { shell = Color3.fromRGB(249, 115, 22), stroke = Color3.fromRGB(194, 65, 12), flash = C.Orange },
-
-	-- Romance/relationships - PINK
-	romance = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
-
-	-- Career/money - BLUE  
-	career = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
-
-	-- Family - PURPLE
-	family = { shell = C.Purple, stroke = Color3.fromRGB(126, 34, 206), flash = C.Purple },
-
-	-- School - TEAL
-	school = { shell = Color3.fromRGB(20, 184, 166), stroke = Color3.fromRGB(13, 148, 136), flash = Color3.fromRGB(20, 184, 166) },
-
-	-- Social - GREEN
-	social = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-
-	-- Motorsport/Racing - ORANGE/GOLD (racing vibes!)
-	motorsport = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
-	racing = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
-
-	-- Milestone events - GOLD
-	milestone = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
-	
-	-- CRITICAL FIX: Success events - GREEN (for things like prison escape success!)
-	success = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	escape = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	positive = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	
-	-- CRITICAL FIX #2: More positive categories for green borders
-	promotion = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	graduation = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
-	achievement = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
-	lottery = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
-	inheritance = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
-	wedding = { shell = Color3.fromRGB(255, 182, 193), stroke = Color3.fromRGB(219, 112, 147), flash = Color3.fromRGB(255, 192, 203) }, -- Pink for wedding
-	birth = { shell = Color3.fromRGB(135, 206, 235), stroke = Color3.fromRGB(70, 130, 180), flash = Color3.fromRGB(176, 224, 230) }, -- Light blue for birth
-	
-	-- CRITICAL FIX #3: Negative categories for red borders (explicit)
 	failure = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	fired = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
 	arrested = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	jail = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	prison = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	death = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	negative = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	bad = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	crime_caught = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	eviction = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	homeless = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	breakup = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	divorce = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	accident = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	injury = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	diagnosis = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	disease = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	illness = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	rejected = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	expelled = { shell = C.Red, stroke = C.RedDark, flash = C.Red },
+	
+	-- HEALTH - ORANGE (concerning but not always bad)
+	health = { shell = Color3.fromRGB(249, 115, 22), stroke = Color3.fromRGB(194, 65, 12), flash = C.Orange },
+	medical = { shell = Color3.fromRGB(249, 115, 22), stroke = Color3.fromRGB(194, 65, 12), flash = C.Orange },
 
-	-- Default - RED (BitLife style)
-	default = { shell = C.Red, stroke = C.RedDark, flash = C.Blue },
+	-- POSITIVE EVENTS - GREEN
+	success = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	escape = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	positive = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	promotion = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	inheritance = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	raise = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	hired = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	good = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	win = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	windfall = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	reward = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+	
+	-- ROMANCE/RELATIONSHIPS - PINK
+	romance = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
+	dating = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
+	love = { shell = C.Pink, stroke = Color3.fromRGB(219, 39, 119), flash = C.Pink },
+	wedding = { shell = Color3.fromRGB(255, 182, 193), stroke = Color3.fromRGB(219, 112, 147), flash = Color3.fromRGB(255, 192, 203) },
+
+	-- CAREER/MONEY - BLUE  
+	career = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
+	job = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
+	work = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
+
+	-- FAMILY - PURPLE
+	family = { shell = C.Purple, stroke = Color3.fromRGB(126, 34, 206), flash = C.Purple },
+	birth = { shell = Color3.fromRGB(135, 206, 235), stroke = Color3.fromRGB(70, 130, 180), flash = Color3.fromRGB(176, 224, 230) },
+
+	-- SCHOOL - TEAL
+	school = { shell = Color3.fromRGB(20, 184, 166), stroke = Color3.fromRGB(13, 148, 136), flash = Color3.fromRGB(20, 184, 166) },
+	education = { shell = Color3.fromRGB(20, 184, 166), stroke = Color3.fromRGB(13, 148, 136), flash = Color3.fromRGB(20, 184, 166) },
+
+	-- SOCIAL - GREEN
+	social = { shell = C.Green, stroke = C.GreenDark, flash = C.Green },
+
+	-- MOTORSPORT/RACING - ORANGE/GOLD
+	motorsport = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
+	racing = { shell = Color3.fromRGB(245, 158, 11), stroke = Color3.fromRGB(217, 119, 6), flash = Color3.fromRGB(251, 191, 36) },
+
+	-- MILESTONE EVENTS - GOLD
+	milestone = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	graduation = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	achievement = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	lottery = { shell = Color3.fromRGB(251, 191, 36), stroke = Color3.fromRGB(202, 138, 4), flash = Color3.fromRGB(253, 224, 71) },
+	
+	-- ROYAL - GOLD/PURPLE
+	royal = { shell = Color3.fromRGB(147, 51, 234), stroke = Color3.fromRGB(126, 34, 206), flash = Color3.fromRGB(168, 85, 247) },
+	royalty = { shell = Color3.fromRGB(147, 51, 234), stroke = Color3.fromRGB(126, 34, 206), flash = Color3.fromRGB(168, 85, 247) },
+	
+	-- MAFIA - DARK GRAY/BLACK
+	mafia = { shell = Color3.fromRGB(55, 65, 81), stroke = Color3.fromRGB(31, 41, 55), flash = Color3.fromRGB(75, 85, 99) },
+	crime = { shell = Color3.fromRGB(55, 65, 81), stroke = Color3.fromRGB(31, 41, 55), flash = Color3.fromRGB(75, 85, 99) },
+	
+	-- NEUTRAL/DEFAULT - Use BLUE instead of RED for neutral events
+	-- RED should only be for explicitly bad events!
+	neutral = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
+	default = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
+	life = { shell = C.Blue, stroke = C.BlueDark, flash = C.Blue },
 }
 
 -- Detect if event is a TRUE disaster/emergency (for visual effects)

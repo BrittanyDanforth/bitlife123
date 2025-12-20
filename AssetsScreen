@@ -1183,21 +1183,49 @@ function AssetsScreen:populateProperty()
 			livingDetail = "Apartment living"
 		end
 		statusColor = C.Blue
+	elseif flags.married or flags.has_spouse then
+		-- CRITICAL FIX: Show married status in housing
+		-- User complaint: "Doesn't show if I'm living with my girl/wife/husband"
+		livingEmoji = "💑"
+		livingStatus = "With Spouse"
+		if flags.homeowner or flags.has_house then
+			livingDetail = "Living together in your own home"
+			statusColor = C.Green
+		elseif flags.renting or flags.has_apartment then
+			livingDetail = "Renting together"
+			statusColor = C.Blue
+		else
+			livingDetail = "Living together"
+			statusColor = C.Pink
+		end
+	elseif flags.has_partner or flags.dating or flags.cohabiting then
+		-- Living with boyfriend/girlfriend
+		livingEmoji = "💕"
+		livingStatus = "With Partner"
+		livingDetail = "Living with your significant other"
+		statusColor = C.Pink
 	elseif flags.has_own_place or flags.moved_out then
 		livingEmoji = "🏠"
 		livingStatus = "Independent"
-		livingDetail = "Your own place"
+		livingDetail = "Living on your own"
 		statusColor = C.Green
 	elseif age < 18 then
 		livingEmoji = "👨‍👩‍👧"
 		livingStatus = "With Parents"
 		livingDetail = "Living at home with family"
 		statusColor = C.Green
-	elseif age >= 18 and not flags.moved_out then
+	elseif age >= 18 and age <= 25 and not flags.moved_out then
+		-- Young adult still with parents
 		livingEmoji = "👨‍👩‍👧"
 		livingStatus = "With Parents"
-		livingDetail = "Still living at home"
+		livingDetail = "Still living at home (no rent!)"
 		statusColor = C.Green
+	elseif age > 25 and not flags.moved_out then
+		-- Older adult still at home
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at the family home"
+		statusColor = C.Amber
 	else
 		livingEmoji = "❓"
 		livingStatus = "No Permanent Home"

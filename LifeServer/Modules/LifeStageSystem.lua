@@ -529,10 +529,20 @@ local DeathCauses = {
 	
 	-- ═════════════════════════════════════════════════════════════════════════
 	-- MEDICAL/HEALTH-RELATED (requires prior health flags)
+	-- CRITICAL FIX: User complaint: "Died to cancer without being diagnosed"
+	-- These deaths now require DIAGNOSIS flags to have been set first!
+	-- You can ONLY die from diseases you've been diagnosed with.
 	-- ═════════════════════════════════════════════════════════════════════════
-	{ id = "cancer_battle",  cause = "their battle with cancer", requiresFlag = "battling_cancer", chance = 0.15, description = "Cancer won in the end" },
+	-- Cancer - requires actual diagnosis (has_cancer, cancer, or fighting_cancer set by HealthEvents)
+	{ id = "cancer_battle",  cause = "their battle with cancer", requiresFlag = "has_cancer", chance = 0.15, description = "Cancer won in the end" },
+	{ id = "cancer_battle_terminal", cause = "terminal cancer", requiresFlag = "terminal_illness", chance = 0.25, description = "The illness took its toll" },
+	{ id = "cancer_refusing_treatment", cause = "cancer (no treatment)", requiresFlag = "refusing_treatment", chance = 0.35, description = "They chose not to fight it" },
 	{ id = "surgery_complications", cause = "surgical complications", requiresFlag = "needs_surgery", chance = 0.03, description = "The operation didn't go as planned" },
 	{ id = "traumatic_injury", cause = "injuries sustained", requiresFlag = "traumatic_injury", chance = 0.05, description = "They never fully recovered" },
+	-- Heart disease - requires diagnosis
+	{ id = "heart_failure", cause = "heart failure", requiresFlag = "heart_disease", minAge = 40, chance = 0.08, description = "Their heart gave out" },
+	-- Chronic conditions
+	{ id = "diabetes_complications", cause = "complications from diabetes", requiresFlag = "diabetic", minAge = 45, chance = 0.04, description = "Long-term diabetes complications proved fatal" },
 }
 
 function LifeStageSystem.checkDeath(state)
@@ -547,8 +557,11 @@ function LifeStageSystem.checkDeath(state)
 	
 	-- CRITICAL FIX: Don't do random death checks for young people (under 45)
 	-- unless they have specific life-threatening conditions
-	local hasLifeThreateningCondition = flags.battling_cancer or flags.traumatic_injury 
+	-- CRITICAL FIX: Added all possible cancer/illness flags that could cause death
+	local hasLifeThreateningCondition = flags.has_cancer or flags.cancer or flags.fighting_cancer
+		or flags.terminal_illness or flags.traumatic_injury 
 		or flags.substance_issue or flags.heavy_drinker
+		or flags.heart_disease or flags.refusing_treatment
 	
 	if age < 45 and not hasLifeThreateningCondition then
 		return { died = false }

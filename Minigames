@@ -724,13 +724,24 @@ function Minigames:startDebate(callback, options)
 	local shuffled = {}
 
 	-- Map context to question pool
+	-- CRITICAL FIX: Added more relationship-specific context mappings
+	-- User complaint: "argument minigame has unrelated replies for relationship arguments"
 	local contextMap = {
 		politics = "political", political = "political", president = "political", election = "political",
+		-- RELATIONSHIP ARGUMENTS - all map to "argument" pool which has relationship-focused questions
 		argument = "argument", relationship = "argument", cheating_confrontation = "argument",
-		interview = "interview", job = "interview",
+		relationship_argument = "argument", partner_argument = "argument", spouse_argument = "argument",
+		dating_argument = "argument", boyfriend_argument = "argument", girlfriend_argument = "argument",
+		marriage_argument = "argument", couple_argument = "argument", lover_argument = "argument",
+		-- INTERVIEWS
+		interview = "interview", job = "interview", job_interview = "interview",
+		-- CONFRONTATIONS (non-relationship)
 		confrontation = "confrontation", intimidation = "confrontation", extortion = "confrontation",
-		family = "family", relatives = "family",
-		friendship = "friendship", friends = "friendship",
+		mafia_intimidation = "confrontation", gang_confrontation = "confrontation",
+		-- FAMILY
+		family = "family", relatives = "family", parent_argument = "family", sibling_argument = "family",
+		-- FRIENDS
+		friendship = "friendship", friends = "friendship", friend_argument = "friendship",
 	}
 
 	-- Get the right question pool for this context
@@ -3315,7 +3326,8 @@ local CombatAttackTypes = {
 	{ id = "slap", name = "Slap", emoji = "🖐️", damageMod = 0.4, accMod = 1.5 },
 }
 
--- Combat contexts
+-- Combat contexts - CRITICAL FIX: Added mafia-specific contexts!
+-- User complaint: "Random Attack" showing instead of actual mafia context
 local CombatContexts = {
 	{ id = "street", title = "Street Fight", emoji = "🌆", desc = "A stranger wants to fight you!" },
 	{ id = "school", title = "School Fight", emoji = "🏫", desc = "The bully is looking for trouble." },
@@ -3323,7 +3335,19 @@ local CombatContexts = {
 	{ id = "defense", title = "Self Defense", emoji = "⚠️", desc = "Someone attacked you!" },
 	{ id = "revenge", title = "Payback Time", emoji = "😤", desc = "Time to settle an old score." },
 	{ id = "prison", title = "Prison Yard", emoji = "⛓️", desc = "Another inmate is testing you." },
-	{ id = "random", title = "Random Attack", emoji = "❗", desc = "Someone just punched you!" },
+	{ id = "random", title = "Street Confrontation", emoji = "❗", desc = "Someone's looking for trouble!" },
+	-- MAFIA-SPECIFIC CONTEXTS
+	{ id = "collection", title = "Debt Collection", emoji = "💰", desc = "Time to collect what's owed to the family." },
+	{ id = "mafia_hit", title = "Family Business", emoji = "🔫", desc = "The boss gave you a job to do." },
+	{ id = "enforcer", title = "Enforcer Duty", emoji = "👊", desc = "Someone needs to be taught a lesson." },
+	{ id = "rival_gang", title = "Rival Gang", emoji = "⚔️", desc = "A rival crew is moving on our territory." },
+	{ id = "protection", title = "Protection Run", emoji = "💵", desc = "The shopkeeper is refusing to pay up." },
+	{ id = "interrogation", title = "Interrogation", emoji = "🤐", desc = "Someone knows something they shouldn't." },
+	{ id = "ambush", title = "Ambush!", emoji = "🚨", desc = "You walked into a trap!" },
+	{ id = "territory", title = "Territory War", emoji = "🗺️", desc = "Defending our turf from invaders." },
+	-- ASSAULT/MUGGING CONTEXTS
+	{ id = "mugging", title = "Robbery", emoji = "💸", desc = "Target acquired. Time to move." },
+	{ id = "assault", title = "Assault", emoji = "👊", desc = "Time to send a message." },
 }
 
 -- Opponent types

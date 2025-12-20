@@ -6784,6 +6784,56 @@ function LifeBackend:applyLivingExpenses(state)
 		state.Flags = state.Flags or {}
 		state.Flags.struggling_financially = true
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Housing state tracking - User complaint: "$0 for 10+ years but not homeless"
+		-- Track years broke to eventually trigger homelessness
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.HousingState = state.HousingState or {}
+		state.HousingState.yearsWithoutPayingRent = (state.HousingState.yearsWithoutPayingRent or 0) + 1
+		local yearsBroke = state.HousingState.yearsWithoutPayingRent
+		
+		-- First warning after 2 years
+		if yearsBroke == 2 then
+			state.Flags.eviction_warning = true
+			table.insert(state.YearLog, {
+				type = "housing",
+				emoji = "⚠️",
+				text = "You've fallen behind on rent. Your landlord is getting impatient...",
+				amount = 0,
+			})
+		elseif yearsBroke == 3 then
+			-- Second warning
+			state.Flags.eviction_imminent = true
+			table.insert(state.YearLog, {
+				type = "housing",
+				emoji = "🏠",
+				text = "Eviction notice received! You have one more year to pay up or you're out!",
+				amount = 0,
+			})
+		elseif yearsBroke >= 4 and not hasProperty then
+			-- After 4+ years broke without owning property = EVICTED and HOMELESS
+			if not state.Flags.homeless then
+				state.Flags.homeless = true
+				state.Flags.evicted = true
+				state.Flags.living_with_parents = nil  -- No more support
+				state.Flags.renting = nil
+				state.Flags.has_apartment = nil
+				state.HousingState.status = "homeless"
+				state.HousingState.evictedAt = state.Year or 2025
+				
+				-- Severe happiness hit
+				state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 30)
+				state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 15)
+				
+				table.insert(state.YearLog, {
+					type = "housing",
+					emoji = "🏚️",
+					text = "EVICTED! After years of not paying rent, you're now homeless. Living on the streets is dangerous...",
+					amount = 0,
+				})
+			end
+		end
+		
 		-- CRITICAL FIX #140: Log when player goes broke
 		state.YearLog = state.YearLog or {}
 		table.insert(state.YearLog, {
@@ -6792,6 +6842,17 @@ function LifeBackend:applyLivingExpenses(state)
 			text = string.format("Couldn't afford $%s in %s - struggling!", formatMoney(totalExpenses), expenseDescription),
 			amount = -paidAmount,
 		})
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Reset years broke counter if player paid their expenses
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if currentMoney >= totalExpenses then
+		state.HousingState = state.HousingState or {}
+		state.HousingState.yearsWithoutPayingRent = 0
+		state.Flags = state.Flags or {}
+		state.Flags.eviction_warning = nil
+		state.Flags.eviction_imminent = nil
 	end
 end
 

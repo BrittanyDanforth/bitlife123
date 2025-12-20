@@ -109,7 +109,17 @@ local events = {
 		id = "learning_to_ride_bike",
 		emoji = "🚴",
 		title = "Learning to Ride a Bike",
-		-- CRITICAL FIX: Removed hardcoded age "8"
+		-- CRITICAL FIX: Added text variations - User complained "bike riding spamming same text"
+		textVariants = {
+			"Your dad got you a bike with training wheels for your birthday. But you're {{AGE}} now. All your friends ride without training wheels. You NEED to learn. {{FATHER_NAME}} says he'll teach you this weekend. But learning means falling. Scraping your knees. Maybe crying. Are you ready?",
+			"It's a sunny Saturday morning. Your shiny new bike sits in the driveway, training wheels gleaming mockingly. You watch the neighbor kids zoom past on two wheels. 'Today's the day,' {{FATHER_NAME}} says with a grin. Your palms are sweating already.",
+			"The bike from your birthday has been sitting in the garage for weeks. You've been avoiding it. But your friends keep asking if you can ride yet. The training wheels make you look like a baby. It's time to face your fears. Maybe.",
+			"Your older cousin came to visit and laughed when they saw your training wheels. 'You still have those?!' Your face burned with embarrassment. Now you're determined. These wheels are coming OFF. Today.",
+			"You watched a YouTube video of a kid half your age doing bike tricks. Meanwhile, your training wheels squeak every time you turn. Enough is enough. You drag the bike outside. It's now or never.",
+			"Mom and Dad have been arguing about when to take off the training wheels. Dad says you're ready, Mom's worried you'll get hurt. You interrupt: 'I want to try.' Their surprised faces almost make you back down. Almost.",
+			"Your best friend just got a cool BMX bike for their birthday. They want to go riding together but you still have training wheels. The shame is unbearable. Time to learn for real.",
+			"The neighborhood bike gang rides past your house every afternoon. You watch from the window, jealous. Today, you march outside and yell: 'I'M LEARNING TODAY!' They circle back, impressed by your courage. Now you have an audience. No pressure.",
+		},
 		text = "Your dad got you a bike with training wheels for your birthday. But you're {{AGE}} now. All your friends ride without training wheels. You NEED to learn. {{FATHER_NAME}} says he'll teach you this weekend. But learning means falling. Scraping your knees. Maybe crying. Are you ready?",
 		question = "How hard do you push yourself?",
 		category = "milestone",
