@@ -420,6 +420,23 @@ function AssetsScreen:getMoney()
 	return state.Money or (state.Stats and state.Stats.Money) or 0
 end
 
+-- CRITICAL FIX: Added formatMoney method for displaying money values
+function AssetsScreen:formatMoney(amount)
+	if not amount or amount == 0 then return "0" end
+	local negative = amount < 0
+	amount = math.abs(amount)
+	
+	-- Format with commas
+	local formatted = tostring(math.floor(amount))
+	local k
+	while true do
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1,%2")
+		if k == 0 then break end
+	end
+	
+	return negative and "-" .. formatted or formatted
+end
+
 function AssetsScreen:getAssets()
 	local state = self.playerState
 	if not state then return {} end
@@ -1088,6 +1105,223 @@ function AssetsScreen:populateProperty()
 	local assets = self:getAssets()
 	local ownedProperties = {}
 	local catalogIds = {}
+	
+	-- ═══════════════════════════════════════════════════════════
+	-- LIVING SITUATION CARD - Shows where player currently lives
+	-- CRITICAL FIX: Players wanted to see their housing status!
+	-- CRITICAL FIX #2: Also read HousingState.status for accurate info!
+	-- ═══════════════════════════════════════════════════════════
+	local livingCard = Instance.new("Frame")
+	livingCard.Name = "LivingSituationCard"
+	livingCard.Size = UDim2.new(1, 0, 0, 120)
+	livingCard.BackgroundColor3 = C.PurplePale or Color3.fromRGB(237, 233, 254)
+	livingCard.LayoutOrder = -1 -- Before everything else
+	livingCard.ZIndex = 82
+	livingCard.Parent = self.contentScroll
+	UI.corner(livingCard, 18)
+	UI.stroke(livingCard, 2, 0.5, C.Purple or Color3.fromRGB(147, 51, 234))
+	UI.pad(livingCard, 14, 14, 14, 16)
+	
+	-- Determine living situation
+	local flags = self.playerState and self.playerState.Flags or {}
+	local housingState = self.playerState and self.playerState.HousingState or {}
+	local age = self.playerState and self.playerState.Age or 0
+	local housingStatus = housingState.status -- "renter", "owner", "with_parents", "homeless", etc.
+	
+	local livingEmoji = "🏠"
+	local livingTitle = "Living Situation"
+	local livingStatus = "Unknown"
+	local livingDetail = ""
+	local statusColor = C.Purple
+	
+	-- CRITICAL FIX: Check HousingState.status FIRST for most accurate info
+	-- Then fall back to flags for backwards compatibility
+	
+	-- Check various housing states - ORDER MATTERS!
+	if flags.homeless or housingStatus == "homeless" then
+		livingEmoji = "🏕️"
+		livingStatus = "Homeless"
+		livingDetail = "Living on the streets"
+		statusColor = C.Red
+	elseif flags.living_in_car then
+		livingEmoji = "🚗"
+		livingStatus = "Living in Car"
+		livingDetail = "No permanent address"
+		statusColor = C.Amber
+	elseif flags.couch_surfing then
+		livingEmoji = "🛋️"
+		livingStatus = "Couch Surfing"
+		livingDetail = "Staying with friends temporarily"
+		statusColor = C.Amber
+	elseif flags.using_shelter then
+		livingEmoji = "🏨"
+		livingStatus = "Homeless Shelter"
+		livingDetail = "Temporary shelter housing"
+		statusColor = C.Amber
+	elseif flags.in_transitional_housing then
+		livingEmoji = "🏢"
+		livingStatus = "Transitional Housing"
+		livingDetail = "Program housing - rebuilding"
+		statusColor = C.Blue
+	elseif flags.living_with_family then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Family"
+		livingDetail = "Living with family members"
+		statusColor = C.Green
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle INHERITED property specifically
+	-- User complaint: "Not showing inherited housing status"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif flags.inherited_property and (flags.homeowner or flags.has_house) then
+		livingEmoji = "🏚️"
+		livingStatus = "Inherited Property"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Inherited home! Value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "Inherited from family (mortgage-free!)"
+		end
+		statusColor = C.Green
+	elseif flags.homeowner or flags.has_house or housingStatus == "owner" then
+		livingEmoji = "🏡"
+		livingStatus = "Homeowner"
+		local propValue = housingState.value or 0
+		if propValue > 0 then
+			livingDetail = "Property value: $" .. self:formatMoney(propValue)
+		else
+			livingDetail = "You own your home!"
+		end
+		statusColor = C.Green
+	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
+		-- CRITICAL FIX: Show rent amount from HousingState
+		livingEmoji = "🏢"
+		if flags.has_roommates or housingState.type == "shared_apartment" then
+			livingStatus = "Renting (Roommates)"
+		else
+			livingStatus = "Renting Apartment"
+		end
+		local rent = housingState.rent or 900 -- Default $900 if not set
+		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
+		statusColor = C.Blue
+	elseif flags.married or flags.has_spouse then
+		-- CRITICAL FIX: Show married status in housing
+		-- User complaint: "Doesn't show if I'm living with my girl/wife/husband"
+		livingEmoji = "💑"
+		livingStatus = "With Spouse"
+		if flags.homeowner or flags.has_house then
+			livingDetail = "Living together in your own home"
+			statusColor = C.Green
+		elseif flags.renting or flags.has_apartment then
+			local rent = housingState.rent or 0
+			livingDetail = rent > 0 and ("Renting together - $" .. self:formatMoney(rent) .. "/mo") or "Renting together"
+			statusColor = C.Blue
+		else
+			livingDetail = "Living together"
+			statusColor = C.Pink or C.Purple
+		end
+	elseif flags.has_partner or flags.dating or flags.cohabiting then
+		-- Living with boyfriend/girlfriend
+		livingEmoji = "💕"
+		livingStatus = "With Partner"
+		livingDetail = "Living with your significant other"
+		statusColor = C.Pink or C.Purple
+	elseif flags.has_own_place or flags.moved_out then
+		-- Has own place but not specifically apartment/house flagged
+		livingEmoji = "🏠"
+		livingStatus = "Independent"
+		local rent = housingState.rent or 0
+		if rent > 0 then
+			livingDetail = "Your own place - $" .. self:formatMoney(rent) .. "/mo rent"
+		else
+			livingDetail = "Living on your own"
+		end
+		statusColor = C.Green
+	elseif housingStatus == "with_parents" or flags.living_with_parents then
+		-- Explicitly living with parents
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home (no rent!)"
+		statusColor = C.Green
+	elseif age < 18 then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Living at home with family"
+		statusColor = C.Green
+	elseif age >= 18 and age <= 25 and not flags.moved_out then
+		-- Young adult still with parents (default assumption)
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at home (no rent!)"
+		statusColor = C.Green
+	elseif age > 25 and not flags.moved_out then
+		-- Older adult still at home
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Parents"
+		livingDetail = "Still living at the family home"
+		statusColor = C.Amber
+	else
+		livingEmoji = "❓"
+		livingStatus = "No Permanent Home"
+		livingDetail = "Consider buying or renting property!"
+		statusColor = C.Gray500
+	end
+	
+	-- Living card icon
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 70, 0, 70)
+	iconFrame.Position = UDim2.new(0, 10, 0, 12)
+	iconFrame.BackgroundColor3 = C.White
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = livingCard
+	UI.corner(iconFrame, 16)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.TextSize = 36
+	iconLabel.Text = livingEmoji
+	iconLabel.ZIndex = 84
+	iconLabel.Parent = iconFrame
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -100, 0, 24)
+	titleLabel.Position = UDim2.new(0, 90, 0, 10)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = textSize(18)
+	titleLabel.TextColor3 = C.Purple
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = livingTitle
+	titleLabel.ZIndex = 83
+	titleLabel.Parent = livingCard
+	
+	-- Status
+	local statusLabel = Instance.new("TextLabel")
+	statusLabel.Size = UDim2.new(1, -100, 0, 28)
+	statusLabel.Position = UDim2.new(0, 90, 0, 34)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.Font = F.Button
+	statusLabel.TextSize = textSize(20)
+	statusLabel.TextColor3 = statusColor
+	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statusLabel.Text = livingStatus
+	statusLabel.ZIndex = 83
+	statusLabel.Parent = livingCard
+	
+	-- Detail
+	local detailLabel = Instance.new("TextLabel")
+	detailLabel.Size = UDim2.new(1, -100, 0, 20)
+	detailLabel.Position = UDim2.new(0, 90, 0, 64)
+	detailLabel.BackgroundTransparency = 1
+	detailLabel.Font = F.Body
+	detailLabel.TextSize = textSize(13)
+	detailLabel.TextColor3 = C.Gray600
+	detailLabel.TextXAlignment = Enum.TextXAlignment.Left
+	detailLabel.Text = livingDetail
+	detailLabel.ZIndex = 83
+	detailLabel.Parent = livingCard
 
 	log("Checking catalog for owned properties...")
 	-- Find owned properties from shop catalog
@@ -1119,6 +1353,71 @@ function AssetsScreen:populateProperty()
 			})
 		else
 			log("    -> Already in catalog, skipping")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #603: Show current residence in properties list even if not "owned"
+	-- User complaint: "I moved out and it says rent is 1300 but doesn't show my apartment!"
+	-- When player is renting, they should see their residence in the property list
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local alreadyHasResidence = false
+	for _, prop in ipairs(ownedProperties) do
+		if prop.id and (prop.id:find("apartment") or prop.id:find("house") or prop.id:find("home") or prop.id:find("residence")) then
+			alreadyHasResidence = true
+			break
+		end
+	end
+	
+	-- If player moved out but no residence shown, add their current residence
+	if not alreadyHasResidence then
+		local flags = self.playerState and self.playerState.Flags or {}
+		local housingState = self.playerState and self.playerState.HousingState or {}
+		local age = self.playerState and self.playerState.Age or 0
+		
+		-- Check if player has housing arrangement that should be shown
+		if flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+			local rent = housingState.rent or 900
+			local residenceEntry = {
+				id = "current_residence",
+				name = housingState.type == "shared_apartment" and "Shared Apartment" or "Rental Apartment",
+				emoji = "🏢",
+				price = 0, -- Rentals don't have purchase price
+				monthlyRent = rent,
+				minAge = 0,
+				isRental = true,
+				isEventAcquired = true,
+				description = string.format("Monthly rent: $%s", self:formatMoney(rent))
+			}
+			table.insert(ownedProperties, 1, residenceEntry) -- Add at beginning
+			log("  Added current rental residence to property list")
+		elseif flags.homeowner or flags.has_house or housingState.status == "owner" then
+			-- Player owns home but it's not in list - add placeholder
+			local propValue = housingState.value or 150000
+			local residenceEntry = {
+				id = "current_home",
+				name = flags.inherited_property and "Inherited Home" or "My Home",
+				emoji = flags.inherited_property and "🏚️" or "🏡",
+				price = propValue,
+				minAge = 0,
+				isEventAcquired = true,
+				description = string.format("Property value: $%s", self:formatMoney(propValue))
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added current owned home to property list")
+		elseif flags.in_college or flags.in_university then
+			-- College student - show dorm
+			local residenceEntry = {
+				id = "college_dorm",
+				name = "College Dorm Room",
+				emoji = "🏫",
+				price = 0,
+				minAge = 0,
+				isEventAcquired = true,
+				description = "Student housing (included with tuition)"
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added college dorm to property list")
 		end
 	end
 

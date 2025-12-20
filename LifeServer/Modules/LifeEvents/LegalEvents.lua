@@ -246,6 +246,29 @@ LegalEvents.events = {
 		ageBand = "any",
 		category = "legal",
 		tags = { "rental", "housing", "legal" },
+		-- CRITICAL FIX: Rental issues require actually renting!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must be renting (not a homeowner or homeless)
+			if flags.homeless or flags.couch_surfing or flags.living_in_car then
+				return false
+			end
+			-- Must have rental housing
+			if flags.renting or flags.has_apartment or flags.renter then
+				return true
+			end
+			-- Check HousingState
+			if state.HousingState and state.HousingState.status == "renter" then
+				return true
+			end
+			-- If homeowner, no landlord disputes
+			if flags.homeowner or flags.has_house then
+				return false
+			end
+			-- Default: probably renting if has any housing
+			return flags.has_home or flags.has_own_place or flags.moved_out
+		end,
+		blockedByFlags = { homeless = true, in_prison = true },
 		
 		-- CRITICAL: Random landlord/tenant outcome
 		choices = {
@@ -477,6 +500,19 @@ LegalEvents.events = {
 		ageBand = "any",
 		category = "legal",
 		tags = { "traffic", "court", "driving" },
+		-- CRITICAL FIX: Traffic court requires owning a car/having a license!
+		requiresFlags = { has_car = true },
+		eligibility = function(state)
+			-- Must have a vehicle to get traffic violations!
+			if state.Flags and (state.Flags.has_car or state.Flags.has_vehicle or state.Flags.has_drivers_license) then
+				return true
+			end
+			-- Also check Assets
+			if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+				return true
+			end
+			return false
+		end,
 		
 		-- CRITICAL: Random traffic court outcome
 		choices = {

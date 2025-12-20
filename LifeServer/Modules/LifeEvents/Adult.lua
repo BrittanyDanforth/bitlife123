@@ -20,7 +20,8 @@ Adult.events = {
 		id = "moving_out",
 		title = "Time to Leave the Nest",
 		emoji = "🏠",
-		text = "You're considering moving out of your parents' house.",
+		-- CRITICAL FIX: Better text explaining the financial implications
+		text = "You're considering moving out of your parents' house. Getting your own place means rent, bills, and responsibility!",
 		question = "What's your plan?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,
@@ -38,20 +39,76 @@ Adult.events = {
 			{
 				text = "Get my own apartment",
 				effects = { Happiness = 10, Money = -500 },
-				setFlags = { lives_alone = true, independent = true },
-				feedText = "You got your own place! Freedom!"
+				-- CRITICAL FIX: Set ALL the housing flags that other systems check for!
+				-- AssetsScreen checks: has_apartment, renting, moved_out, has_own_place
+				-- Homeless events check: moved_out, has_own_place, renting, has_apartment
+				setFlags = { 
+					lives_alone = true, 
+					independent = true,
+					moved_out = true,        -- CRITICAL: Marks player as moved out
+					has_own_place = true,    -- CRITICAL: Has their own housing
+					has_apartment = true,    -- CRITICAL: Specifically an apartment
+					renting = true,          -- CRITICAL: They're renting (affects expenses)
+				},
+				feedText = "You got your own place! Freedom! But remember - rent is due monthly...",
+				-- CRITICAL FIX: Initialize HousingState properly
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900 -- Basic apartment rent
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					-- Clear living with parents flag
+					state.Flags.living_with_parents = nil
+					state:AddFeed("🔑 Welcome to adulthood! Your rent is $900/month. Better get a job!")
+				end,
 			},
 			{
 				text = "Find roommates",
 				effects = { Happiness = 5, Money = -200 },
-				setFlags = { has_roommates = true },
-				feedText = "You moved in with roommates. Cheaper but... interesting."
+				-- CRITICAL FIX: Roommates still means moved out!
+				setFlags = { 
+					has_roommates = true,
+					moved_out = true,
+					has_own_place = true,
+					has_apartment = true,
+					renting = true,
+				},
+				feedText = "You moved in with roommates. Cheaper but... interesting.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "shared_apartment"
+					state.HousingState.rent = 500 -- Cheaper with roommates
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.HousingState.missedRentYears = 0
+					state.HousingState.moveInYear = state.Year or 2025
+					state.Flags.living_with_parents = nil
+					state:AddFeed("🏠 Your share of rent is $500/month. Roommates can be... unpredictable.")
+				end,
 			},
 			{
 				text = "Stay home to save money",
 				effects = { Money = 300, Happiness = -3 },
-				setFlags = { lives_with_parents = true },
-				feedText = "You're staying home. Smart financially."
+				-- CRITICAL FIX: Explicitly mark as still with parents
+				setFlags = { 
+					living_with_parents = true,
+					-- CRITICAL: Do NOT set moved_out, has_apartment, etc.
+				},
+				feedText = "You're staying home. Smart financially, but maybe a bit cramped.",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "with_parents"
+					state.HousingState.rent = 0 -- No rent with parents
+					state.HousingState.yearsWithoutPayingRent = 0
+					-- Clear any moved out flags
+					state.Flags.moved_out = nil
+					state.Flags.has_own_place = nil
+					state.Flags.has_apartment = nil
+					state.Flags.renting = nil
+				end,
 			},
 		},
 	},
@@ -543,6 +600,28 @@ Adult.events = {
 				effects = { Happiness = 8 },
 				setFlags = { retired = true },
 				feedText = "Family becomes your focus. Your pension awaits.",
+				-- CRITICAL FIX #5: Only show this choice if player actually has family
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- Check for spouse/partner
+					if flags.married or flags.has_partner then
+						return true
+					end
+					-- Check for children
+					if flags.has_child or flags.parent then
+						return true
+					end
+					-- Check Relationships table
+					if state.Relationships then
+						if state.Relationships.partner then return true end
+						for id, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.isChild or rel.type == "family") then
+								return true
+							end
+						end
+					end
+					return false, "Need family to dedicate time to"
+				end,
 				-- Retire for family
 				onResolve = function(state)
 					local pensionBase = 0
@@ -1657,9 +1736,105 @@ Adult.events = {
 
 		choices = {
 			{ text = "Lonely - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nester = true, lonely = true }, feedText = "The house feels so empty now." },
-			{ text = "Freedom! Time for us again", effects = { Happiness = 10 }, setFlags = { empty_nester = true }, feedText = "You and your partner are rediscovering each other!" },
+			-- CRITICAL FIX: Partner choice needs eligibility check
+			{ 
+				text = "Freedom! Time for us again", 
+				effects = { Happiness = 10 }, 
+				setFlags = { empty_nester = true }, 
+				feedText = "Rediscovering each other and enjoying the quiet!",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					return flags.has_partner or flags.married
+				end,
+			},
 			{ text = "Proud of the adult they became", effects = { Happiness = 8 }, setFlags = { empty_nester = true, proud_parent = true }, feedText = "You raised them well. They're thriving." },
 			{ text = "Turning their room into something fun", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!" },
+		},
+	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Parent Death Event - Parents should realistically die!
+	-- User complaint: "IM 69 YEARS OLD AND MY PARENTS ARE STILL ALIVE?!"
+	-- This event triggers when parents would realistically pass away
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "parent_passes_away",
+		title = "Losing a Parent",
+		emoji = "💔",
+		text = "You've received devastating news. One of your parents has passed away.",
+		question = "You have to say goodbye...",
+		minAge = 40, maxAge = 80,
+		baseChance = 0.40,
+		cooldown = 5,
+		priority = "high",
+		isMilestone = true,
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local age = state.Age or 0
+			
+			-- If both parents already dead, don't trigger
+			if flags.lost_both_parents or flags.orphan then
+				return false
+			end
+			
+			-- Estimate parent age (assuming parents are 25-35 years older)
+			local parentAgeGap = 30
+			local parentAge = age + parentAgeGap
+			
+			-- Parents realistically start dying around 70+
+			-- Higher chance as parent age increases
+			if parentAge < 65 then
+				return false -- Parents too young to die of natural causes typically
+			end
+			
+			-- Increase chance based on parent age
+			local deathChance = 0
+			if parentAge >= 90 then
+				deathChance = 70 -- Very high chance at 90+
+			elseif parentAge >= 85 then
+				deathChance = 50
+			elseif parentAge >= 80 then
+				deathChance = 35
+			elseif parentAge >= 75 then
+				deathChance = 20
+			elseif parentAge >= 70 then
+				deathChance = 10
+			elseif parentAge >= 65 then
+				deathChance = 5
+			end
+			
+			-- Roll to see if event should trigger
+			return math.random(100) <= deathChance
+		end,
+		
+		choices = {
+			{
+				text = "Be there for the funeral",
+				effects = { Happiness = -25, Health = -5 },
+				setFlags = { lost_parent = true, grieving = true },
+				feedText = "💔 Your parent is gone. You'll never forget them.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Check if this is second parent loss
+					if state.Flags.lost_parent then
+						state.Flags.lost_both_parents = true
+						state.Flags.orphan = true
+						state:AddFeed("💔 Both parents gone now. You feel truly alone in the world.")
+					end
+				end,
+			},
+			{
+				text = "Celebrate their life",
+				effects = { Happiness = -15, Health = -2, Smarts = 3 },
+				setFlags = { lost_parent = true },
+				feedText = "💔 Gone but never forgotten. Their memory lives on in you.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if state.Flags.lost_parent then
+						state.Flags.lost_both_parents = true
+					end
+				end,
+			},
 		},
 	},
 	{
@@ -1668,9 +1843,37 @@ Adult.events = {
 		emoji = "🏥",
 		text = "One of your parents is having serious health problems.",
 		question = "How do you respond?",
-		minAge = 35, maxAge = 60,
-		baseChance = 0.3,
-		cooldown = 5,
+		minAge = 35, maxAge = 70, -- Extended age range
+		baseChance = 0.35,
+		cooldown = 4,
+		
+		-- CRITICAL FIX #8: Parent health crisis requires living parents!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check if parents are deceased
+			if flags.lost_both_parents or flags.orphan then
+				return false
+			end
+			-- Check Relationships for living parents
+			if state.Relationships then
+				local hasLivingParent = false
+				for id, rel in pairs(state.Relationships) do
+					if type(rel) == "table" then
+						local role = (rel.role or ""):lower()
+						if (role == "mother" or role == "father" or role == "parent") and rel.alive ~= false then
+							hasLivingParent = true
+							break
+						end
+					end
+				end
+				if state.Relationships.mother or state.Relationships.father then
+					return true -- Default assume parents exist
+				end
+				return hasLivingParent
+			end
+			-- Default to true if no flags indicate deceased parents
+			return not flags.lost_parent
+		end,
 
 		choices = {
 			{ text = "Become their primary caregiver", effects = { Happiness = -10, Health = -8, Money = -2000 }, setFlags = { family_caregiver = true }, feedText = "You've taken on a huge responsibility." },
@@ -2060,6 +2263,36 @@ Adult.events = {
 		minAge = 60, maxAge = 85,
 		oneTime = true,
 		requiresFlags = { homeowner = true },
+		-- CRITICAL FIX: Only show this if player actually has a BIG house!
+		-- Don't show "downsize your big house" to someone in a studio apartment!
+		eligibility = function(state)
+			-- Must have a big house (mansion, large house, etc.) - not a studio/apartment
+			if state.Assets and state.Assets.Properties then
+				for _, prop in ipairs(state.Assets.Properties) do
+					local name = (prop.name or ""):lower()
+					local propType = (prop.type or ""):lower()
+					local price = prop.price or prop.value or 0
+					-- Only trigger for actual big houses (mansion, large house, or expensive property)
+					if name:find("mansion") or name:find("estate") or name:find("villa")
+						or name:find("large") or name:find("luxury") or name:find("penthouse")
+						or propType:find("mansion") or propType:find("estate")
+						or price >= 500000 then
+						return true
+					end
+				end
+			end
+			-- Also check HousingState
+			if state.HousingState then
+				local housing = state.HousingState
+				local housingType = (housing.type or ""):lower()
+				local housingValue = housing.value or 0
+				if housingType:find("mansion") or housingType:find("estate") or housingType:find("large")
+					or housingValue >= 500000 then
+					return true
+				end
+			end
+			return false -- Don't show this for small apartments/studios
+		end,
 
 		choices = {
 			{ text = "Sell and move to a smaller place", effects = { Money = 20000, Happiness = 3 }, setFlags = { downsized = true }, feedText = "Less space, less maintenance. More freedom!" },

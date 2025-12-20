@@ -422,19 +422,44 @@ EducationCareerEvents.events = {
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Tenure Decision requires PROFESSOR job!
+	-- User complaint: "TENURE DECISION POPPED UP BUT IM JUST A JANITOR"
+	-- Added stricter eligibility check and careerPath requirement
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "edu_tenure_decision",
 		title = "Tenure Decision",
 		emoji = "🎓",
 		text = "The tenure committee has made their decision. Your entire career has led to this moment.",
 		category = "career_education",
+		careerPath = "professor",  -- CRITICAL: Only for professors!
 		weight = 8,
 		minAge = 32, maxAge = 55,
 		baseChance = 0.35,
 		cooldown = 10,
 		oneTime = true,
 		requiresJob = true,
-		eligibility = isProfessor,
+		-- CRITICAL FIX: Much stricter eligibility - must be professor/academia
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			
+			-- MUST be a professor, dean, or academic position
+			local isAcademic = jobId:find("professor") or jobId:find("dean") 
+				or jobId:find("lecturer") or jobId:find("academic")
+				or jobId:find("faculty") or jobId:find("researcher")
+				or (jobCat == "education" and jobId:find("university"))
+			
+			-- Explicitly NOT a janitor, custodian, etc.
+			if jobId:find("janitor") or jobId:find("custodian") or jobId:find("maintenance")
+				or jobId:find("cleaner") or jobId:find("groundskeeper") then
+				return false
+			end
+			
+			return isAcademic == true
+		end,
 		blockedByFlags = { in_prison = true, has_tenure = true },
 		
 		choices = {

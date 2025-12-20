@@ -2078,7 +2078,28 @@ Random.events = {
 		cooldown = 4,
 		category = "crime",
 		-- CRITICAL FIX: Can't be robbed at home while you're in prison!
-		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true, couch_surfing = true },
+		
+		-- CRITICAL FIX #7: Require having a home for home invasion
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check for various housing flags
+			if flags.has_home or flags.has_apartment or flags.has_house or flags.homeowner or flags.renting or flags.has_own_place then
+				return true
+			end
+			-- Check HousingState
+			if state.HousingState then
+				local status = state.HousingState.status
+				if status == "owner" or status == "renter" or status == "housed" then
+					return true
+				end
+			end
+			-- Check Assets.Properties
+			if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+				return true
+			end
+			return false, "Need a home to have a home invasion"
+		end,
 
 		choices = {
 			{ 
@@ -2985,9 +3006,44 @@ Random.events = {
 		weight = 6,
 		minAge = 16,
 		maxAge = 60,
-		baseChance = 0.455,
-		cooldown = 2,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.455
+		cooldown = 4, -- CRITICAL FIX: Increased cooldown
 		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Side gig should only appear for people who need/want extra money
+		-- Not for wealthy people with high-paying jobs
+		eligibility = function(state)
+			local money = state.Money or 0
+			local salary = state.CurrentJob and state.CurrentJob.salary or 0
+			local flags = state.Flags or {}
+			
+			-- If wealthy (100k+ savings AND 80k+ salary), don't offer side gigs
+			if money >= 100000 and salary >= 80000 then
+				return false
+			end
+			
+			-- If no job, definitely relevant
+			if not state.CurrentJob then
+				return true
+			end
+			
+			-- Low/moderate income = relevant
+			if salary < 60000 then
+				return true
+			end
+			
+			-- Has debt or financial stress flags
+			if flags.in_debt or flags.financial_stress or flags.needs_money then
+				return true
+			end
+			
+			-- Moderate income with low savings
+			if salary < 80000 and money < 20000 then
+				return true
+			end
+			
+			-- Otherwise skip - they don't need side hustles
+			return false
+		end,
 		
 		choices = {
 			{

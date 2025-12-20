@@ -129,6 +129,22 @@ DailyLifeEvents.events = {
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't commute from prison!
 		
+		-- CRITICAL FIX #4: Daily car commute requires owning a car!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check car-related flags
+			if flags.has_car or flags.owns_car or flags.has_vehicle or flags.has_first_car then
+				return true
+			end
+			-- Check Assets.Vehicles
+			if state.Assets and state.Assets.Vehicles then
+				if type(state.Assets.Vehicles) == "table" and #state.Assets.Vehicles > 0 then
+					return true
+				end
+			end
+			return false, "Need a car to drive to work"
+		end,
+		
 		-- CRITICAL: Random commute outcome
 		choices = {
 			{
@@ -372,7 +388,34 @@ DailyLifeEvents.events = {
 		choices = {
 			{ text = "Read a book", effects = { Happiness = 5, Smarts = 3, Health = 1 }, feedText = "🌙 Lost in a good book! Perfect evening!" },
 			{ text = "Watch TV/movies", effects = { Happiness = 5, Health = -1 }, feedText = "🌙 Screen time relaxation! Mindless entertainment!" },
-			{ text = "Quality time with family/partner", effects = { Happiness = 7 }, feedText = "🌙 Connection time! Relationships matter!" },
+			{ 
+			text = "Quality time with family/partner", 
+			effects = { Happiness = 7 }, 
+			feedText = "🌙 Connection time! Relationships matter!",
+			-- CRITICAL FIX #2: Only show if player has family/partner
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				-- Check for partner/spouse
+				if flags.married or flags.has_partner or flags.dating then
+					return true
+				end
+				-- Check for children
+				if flags.has_child or flags.parent then
+					return true
+				end
+				-- Check Relationships table
+				if state.Relationships then
+					if state.Relationships.partner then return true end
+					-- Check for any family relationships
+					for _, rel in pairs(state.Relationships) do
+						if type(rel) == "table" and (rel.type == "family" or rel.isFamily) then
+							return true
+						end
+					end
+				end
+				return false, "Need family or partner for quality time"
+			end,
+		},
 			{ text = "Scroll phone until sleep", effects = { Happiness = 2, Health = -2 }, setFlags = { phone_before_bed = true }, feedText = "🌙 Doomscrolling until eyes close. Not ideal but common." },
 		},
 	},
@@ -614,6 +657,25 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "noise", "neighbors", "conflict" },
+		-- CRITICAL FIX #9: Need a home to have neighbors!
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true, couch_surfing = true },
+		
+		-- CRITICAL FIX #9: Require housing for neighbor events
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check for housing
+			if flags.has_home or flags.has_apartment or flags.has_house or flags.homeowner or flags.renting or flags.has_own_place then
+				return true
+			end
+			-- Check HousingState
+			if state.HousingState then
+				local status = state.HousingState.status
+				if status == "owner" or status == "renter" or status == "housed" then
+					return true
+				end
+			end
+			return false, "Need a home to have neighbors"
+		end,
 		
 		-- CRITICAL: Random noise resolution
 		choices = {

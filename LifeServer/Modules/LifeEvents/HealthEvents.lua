@@ -778,19 +778,24 @@ HealthEvents.events = {
 	-- CRITICAL FIX #231-250: DISEASE DIAGNOSIS CARDS
 	-- These events show exactly what illness the player has when diagnosed
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Diagnosis cards now require feeling sick first!
+	-- User complaint: "RANDOM DIAGNOSIS POPPING UP BUT I DIDNT GO TO DOCTOR"
+	-- Changed text to make it clear you GOT sick (not that doctor diagnosed you)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "health_diagnosis_cold_flu",
-		title = "🤒 Diagnosis: Cold or Flu",
+		title = "🤒 You're Sick: Cold or Flu",
 		emoji = "🤒",
-		text = "The doctor has diagnosed you with a cold or flu virus!",
-		question = "Your diagnosis: Common Cold/Flu\n\nSymptoms: Runny nose, cough, fever, body aches\nSeverity: Mild to Moderate\nRecovery Time: 1-2 weeks\n\nWhat do you want to do?",
+		text = "You've come down with a cold or flu! You woke up feeling terrible - stuffy nose, sore throat, and body aches.",
+		question = "Looks like a cold or flu virus. What do you want to do?",
 		minAge = 3, maxAge = 100,
-		baseChance = 0.4,
+		baseChance = 0.35,
 		cooldown = 2,
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
-		tags = { "diagnosis", "cold", "flu", "illness" },
+		tags = { "illness", "cold", "flu", "sick" },
 		isDiagnosisCard = true,
 		diagnosisType = "cold_flu",
 		
@@ -1050,23 +1055,38 @@ HealthEvents.events = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Chronic fatigue requires low health + stress
+	-- User complaint: "CHRONIC FATIGUE KEEPS POPPING UP AT AGE 32"
+	-- Added eligibility to only trigger when player has low health/high stress
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "health_diagnosis_chronic_fatigue",
-		title = "😴 Diagnosis: Chronic Fatigue",
+		title = "😴 Chronic Fatigue",
 		emoji = "😴",
-		text = "You've been diagnosed with chronic fatigue syndrome.",
-		question = "Your diagnosis: CHRONIC FATIGUE SYNDROME\n\n😴 Status: Confirmed\n⚠️ Severity: Ongoing condition\n💊 Treatment: Lifestyle changes, rest\n✅ With management: Improvement possible\n\nTake care of yourself!",
-		minAge = 18, maxAge = 80,
-		baseChance = 0.20,
-		cooldown = 10,
+		text = "You've been feeling exhausted for months. No matter how much you sleep, you wake up tired. After seeing a doctor, they've diagnosed you with chronic fatigue syndrome.",
+		question = "Chronic Fatigue Syndrome\n\nYou've been running on empty for too long. This is your body telling you to slow down. What will you do?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.12, -- Reduced chance
+		cooldown = 40, -- Very long cooldown
 		stage = STAGE,
-		ageBand = "any",
+		ageBand = "adult",
 		category = "health",
-		tags = { "diagnosis", "chronic", "fatigue" },
+		tags = { "chronic", "fatigue", "exhaustion" },
 		isDiagnosisCard = true,
 		diagnosisType = "chronic_fatigue",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- CRITICAL FIX: Only trigger if player has low health or is stressed
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local happiness = (state.Stats and state.Stats.Happiness) or 50
+			local flags = state.Flags or {}
+			-- Already has it? Don't trigger again
+			if flags.chronic_fatigue then return false end
+			-- Must have low health OR low happiness (stress indicator)
+			return health < 45 or happiness < 35
+		end,
 		
 		choices = {
 			{

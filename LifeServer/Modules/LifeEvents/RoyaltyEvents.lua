@@ -761,11 +761,19 @@ RoyaltyEvents.LifeEvents = {
 		id = "royal_christmas_speech",
 		title = "🎄 Christmas at the Palace",
 		emoji = "🎄",
+		-- CRITICAL FIX: Added text variations to prevent spam feeling
+		textVariants = {
+			"Christmas is a magical time at the palace! The nation watches as your family celebrates.",
+			"The palace is decorated beautifully for the holidays. Lights twinkle everywhere and carol singers perform in the halls.",
+			"It's Christmas morning! Presents, family time, and royal traditions await.",
+			"The annual Christmas celebration at the palace is in full swing. Dignitaries, family, and festive cheer!",
+			"Snow blankets the palace grounds as Christmas arrives. The whole kingdom feels the holiday spirit.",
+		},
 		text = "Christmas is a magical time at the palace! The nation watches as your family celebrates.",
 		minAge = 6,
 		maxAge = 14,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to 5 to prevent spam
 		-- CRITICAL FIX #42: Eligibility for Christmas events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -1336,12 +1344,23 @@ RoyaltyEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #191: Fixed throne succession spam
 	-- Made oneTime and added proper blocking flags
+	-- CRITICAL FIX #500: This event should NOT set throne_ready = true!
+	-- User complaint: "BECOMING RULER triggered but my parent hasn't died!"
+	-- The throne_succession event represents the monarch's FAILING health, not death
+	-- Only the monarch's actual death (in advanceYearly) should set throne_ready!
 	-- THRONE AND SUCCESSION
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "throne_succession",
 		title = "👑 Succession Approaches",
 		emoji = "👑",
+		textVariants = {
+			"The current monarch's health is failing. As next in line, you must prepare for the weight of the crown. The doctors say it could be weeks, months, or even years - but the time is coming.",
+			"Your parent the monarch has been unwell lately. The palace is buzzing with whispered concerns about succession. You feel the weight of expectations growing heavier each day.",
+			"News of the monarch's declining health has spread. Foreign dignitaries are already speculating about the transition. Are you ready to lead when the time comes?",
+			"The monarch has had another health scare. The prime minister has requested a private meeting with you about 'continuity of government'. The reality is setting in.",
+			"Advisors have begun briefing you more intensely on state matters. It's unspoken, but everyone knows why - the monarch's condition is worsening.",
+		},
 		text = "The current monarch's health is failing. As next in line, you must prepare for the weight of the crown.",
 		minAge = 25,
 		maxAge = 80,
@@ -1351,57 +1370,115 @@ RoyaltyEvents.LifeEvents = {
 		cooldown = 40,
 		conditions = { 
 			requiresFlags = { is_royalty = true },
-			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true },
+			blockedFlags = { is_monarch = true, throne_ready = true, succession_approached = true, parent_monarch_deceased = true },
 		},
+		-- CRITICAL: Add eligibility to ensure player is actually in line of succession
+		eligibility = function(state)
+			if not state.RoyalState then return false end
+			local rs = state.RoyalState
+			-- Must be in line of succession (not just any royal)
+			if (rs.lineOfSuccession or 99) > 3 then
+				return false, "Too far from throne to receive this event"
+			end
+			-- Parent monarch must still be alive!
+			if rs.parentMonarchDeceased then
+				return false, "Parent monarch already deceased"
+			end
+			return true
+		end,
 		choices = {
 			{
 				text = "Accept your destiny with grace",
 				effects = { Happiness = 5, Smarts = 5 },
 				royaltyEffect = { popularity = 10 },
-				setFlags = { throne_ready = true, ready_for_throne = true, succession_approached = true },
-				feed = "You prepared yourself for the responsibilities ahead.",
+				-- CRITICAL FIX: Do NOT set throne_ready! Only set mental preparedness flags
+				setFlags = { prepared_for_succession = true, ready_for_throne = true, succession_approached = true },
+				feed = "You prepared yourself for the responsibilities ahead. But only when the monarch passes will the crown truly await you.",
 			},
 			{
 				text = "Feel overwhelmed by the responsibility",
 				effects = { Happiness = -10 },
 				royaltyEffect = { popularity = 0 },
-				setFlags = { throne_ready = true, reluctant_heir = true, succession_approached = true },
-				feed = "The weight of the crown weighs heavily on you.",
+				-- CRITICAL FIX: Do NOT set throne_ready!
+				setFlags = { prepared_for_succession = true, reluctant_heir = true, succession_approached = true },
+				feed = "The weight of the crown weighs heavily on you. But for now, you wait.",
 			},
 			{
 				text = "Consider abdicating before coronation",
 				effects = { Happiness = 0 },
 				royaltyEffect = { popularity = -20 },
 				setFlags = { considering_abdication = true, succession_approached = true },
-				feed = "Rumors spread that you may refuse the throne.",
+				feed = "Rumors spread that you may refuse the throne when the time comes.",
 			},
 		},
 	},
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #187: Fixed coronation event spam
-	-- 1. Changed becomesMonarch to becomeMonarch (matching EventEngine)
-	-- 2. Added oneTime = true to prevent repeated coronations
-	-- 3. Added maxOccurrences = 1 as safety
-	-- 4. Added cooldown = 40 to prevent any repeat
+	-- CRITICAL FIX: Added parent death requirement!
+	-- User complaint: "IT SAYS YOU'RE BECOMING A RULER BUT MY PARENT HASNT DIED!"
+	-- Coronation should ONLY happen when parent monarch has actually passed away!
+	-- CRITICAL FIX #501: Strengthened eligibility - REQUIRES parent_monarch_deceased flag
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "coronation",
 		title = "👑 You're Becoming Ruler!",
 		emoji = "👑",
 		-- CRITICAL FIX #307: Simplified text for younger audience
+		textVariants = {
+			"It's finally happening! After the passing of the monarch, you are about to become the new King or Queen! The whole kingdom watches as you prepare to wear the crown and lead your people!",
+			"The day has come. Following the monarch's death, the crown passes to you. Billions will watch as you take your place on the throne. Are you ready for this responsibility?",
+			"A nation mourns, but a new era begins. With the passing of your parent, you are to be crowned. The weight of history rests on your shoulders now.",
+			"The throne awaits. After your parent's passing, it's time for your coronation. Crowds gather, cameras roll, and history is about to be made.",
+			"From heir to monarch. The crown that once sat on your parent's head will soon be yours. The coronation preparations are complete - your reign begins today.",
+		},
 		text = "It's finally happening! You are about to become the new King or Queen! Everyone is watching as you get ready to wear the crown and rule the kingdom!",
-		minAge = 25,
+		minAge = 21, -- Can be crowned as young as 21 in some kingdoms
 		maxAge = 90,
 		isRoyalOnly = true,
 		isMilestone = true,
-		oneTime = true, -- CRITICAL FIX: Only once ever!
-		maxOccurrences = 1, -- CRITICAL FIX: Safety - max 1 occurrence
-		cooldown = 40, -- CRITICAL FIX: Huge cooldown as extra safety
+		oneTime = true,
+		maxOccurrences = 1,
+		cooldown = 40,
 		priority = "critical",
 		conditions = { 
+			-- CRITICAL FIX: throne_ready is set ONLY when parent monarch dies (in advanceYearly)
 			requiresFlags = { throne_ready = true },
-			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true }, -- Block if already monarch OR crowned
+			blockedFlags = { is_monarch = true, crowned = true, coronation_completed = true },
 		},
+		-- CRITICAL FIX #501: STRICT eligibility - parent monarch MUST be dead!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			
+			-- CRITICAL: throne_ready flag MUST be set (set only when parent dies)
+			if not flags.throne_ready then 
+				return false, "Not ready for throne (throne_ready flag not set)"
+			end
+			
+			-- CRITICAL: parent_monarch_deceased flag MUST be set!
+			-- This flag is set ONLY in advanceYearly when parent actually dies
+			if not flags.parent_monarch_deceased then
+				return false, "Parent monarch has not died yet!"
+			end
+			
+			-- Double-check RoyalState for monarch parent status
+			if state.RoyalState then
+				local rs = state.RoyalState
+				
+				-- Must be first in line of succession
+				if (rs.lineOfSuccession or 99) ~= 1 then
+					return false, "Not first in line for succession"
+				end
+				
+				-- parentMonarchDeceased flag in RoyalState must also be true
+				if not rs.parentMonarchDeceased then
+					return false, "Parent monarch status doesn't confirm death"
+				end
+			else
+				return false, "No RoyalState - not royalty"
+			end
+			
+			return true
+		end,
 		choices = {
 			{
 				text = "Accept the crown proudly! 👑",
@@ -1981,10 +2058,21 @@ RoyaltyEvents.LifeEvents = {
 		},
 	},
 	-- CRITICAL FIX #281: Added cooldown to security threat event
+	-- CRITICAL FIX: Added text variations and context - User complaint: "doesn't explain the threat"
 	{
 		id = "royal_security_threat",
 		title = "🚨 Security Threat",
 		emoji = "🚨",
+		textVariants = {
+			"Intelligence has intercepted communications about a plot targeting you. The threat comes from an extremist group opposed to the monarchy. Your security team is on high alert.",
+			"A disgruntled former palace employee has made credible threats online. They claim to know your schedules and routines. The police are investigating but haven't made an arrest yet.",
+			"Anonymous letters containing explicit threats have been received at several royal residences. The handwriting analysis suggests someone educated, possibly with insider knowledge.",
+			"A car was spotted multiple times outside your residence with occupants photographing your movements. When approached, they fled. The license plate traces to a known radical organization.",
+			"During a routine security sweep, your team discovered surveillance equipment had been planted near your private quarters. Someone has been watching you. Who, and for how long?",
+			"Social media chatter has spiked about you in concerning ways. Specific plans are being discussed in encrypted channels. Your cyber security team is working to identify the source.",
+			"A member of your household staff was caught selling information about your whereabouts. The buyer's identity is unknown. How deep does this breach go?",
+			"International intelligence agencies have shared warnings about a potential attack during your upcoming public appearance. The threat is considered serious and credible.",
+		},
 		text = "Your security team has uncovered a credible threat against you. How do you handle this frightening situation?",
 		minAge = 18,
 		maxAge = 90,
@@ -1997,21 +2085,28 @@ RoyaltyEvents.LifeEvents = {
 				effects = { Happiness = -10, Health = 5 },
 				royaltyEffect = { popularity = 0 },
 				setFlags = { high_security = true },
-				feed = "Your security is now fortress-level.",
+				feed = "Your security is now fortress-level. Armed guards, armored vehicles, and 24/7 surveillance. You're safe but it feels like living in a prison.",
 			},
 			{
 				text = "Continue normal duties to show strength",
 				effects = { Happiness = 5, Health = -5 },
 				royaltyEffect = { popularity = 15 },
 				setFlags = { brave_royal = true },
-				feed = "Your courage in the face of threats impressed everyone!",
+				feed = "Your courage in the face of threats impressed everyone! Headlines praise your bravery. But the risk was real - your security team was terrified.",
 			},
 			{
 				text = "Take a temporary break from public life",
 				effects = { Happiness = 3 },
 				royaltyEffect = { popularity = -5 },
 				setFlags = { took_break = true },
-				feed = "Safety first. You'll return when it's safe.",
+				feed = "Safety first. You retreated to a secure location until the threat was neutralized. Some called it wise, others called it cowardly.",
+			},
+			{
+				text = "Address it publicly - transparency wins",
+				effects = { Happiness = 0, Health = -2 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { transparent_royal = true },
+				feed = "You held a press conference acknowledging the threat and reassuring the public. Your honesty was refreshing, though some worried it showed vulnerability.",
 			},
 		},
 	},
@@ -2140,11 +2235,19 @@ RoyaltyEvents.LifeEvents = {
 		id = "christmas_speech",
 		title = "📺 Annual Address",
 		emoji = "📺",
+		-- CRITICAL FIX: Added text variations for variety
+		textVariants = {
+			"Time for your annual address to the nation.",
+			"The cameras are ready. Millions await your words of hope and reflection.",
+			"Christmas Day. The nation gathers around their screens to hear your annual message.",
+			"Your speech writers have prepared remarks, but the delivery is all you.",
+			"It's broadcast time. Your Christmas message will be heard by millions worldwide.",
+		},
 		text = "Time for your annual address to the nation.",
 		minAge = 25,
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to 5 to prevent spam
 		conditions = { requiresFlags = { is_monarch = true } },
 		choices = {
 			{ text = "Uplifting and hopeful", effects = { Happiness = 10 }, royaltyEffect = { popularity = 12 }, feed = "Your message resonated." },
@@ -3073,15 +3176,47 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 		end
 	end
 	
-	-- Check if ready for coronation
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Coronation requires ACTUAL parent monarch death!
+	-- User complaint: "IT SAYS BECOMING RULER BUT MY PARENT HASNT DIED"
+	-- Changed: Only set throne_ready when parent monarch actually dies
+	-- Monarch death now requires age-based probability with actual death event
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if not royalState.isMonarch and royalState.lineOfSuccession == 1 and age >= 21 then
-		if math.random(100) <= 10 then -- 10% chance per year when next in line and adult
+		-- Get parent monarch's estimated age (player age + ~25-30 years)
+		local parentMonarchAge = age + (royalState.parentAgeGap or 28)
+		
+		-- Check if monarch parent could pass away based on realistic age
+		-- Parents typically shouldn't die before age 60, increases after
+		local deathChance = 0
+		if parentMonarchAge >= 90 then
+			deathChance = 40 -- High chance at 90+
+		elseif parentMonarchAge >= 80 then
+			deathChance = 20 -- Moderate chance at 80+
+		elseif parentMonarchAge >= 70 then
+			deathChance = 8  -- Lower chance at 70+
+		elseif parentMonarchAge >= 60 then
+			deathChance = 3  -- Small chance at 60+
+		end
+		-- Note: No chance below 60 - parents should live reasonably long
+		
+		if deathChance > 0 and math.random(100) <= deathChance then
 			lifeState.Flags = lifeState.Flags or {}
 			lifeState.Flags.throne_ready = true
 			lifeState.Flags.is_heir = true
+			lifeState.Flags.parent_monarch_deceased = true -- Mark parent as deceased!
+			royalState.parentMonarchDeceased = true -- Track in royal state
 			table.insert(events, {
-				type = "succession_imminent",
-				message = "👑 The current monarch's health is declining. You may soon inherit the throne!",
+				type = "monarch_death",
+				message = "👑 The monarch has passed away. You are now heir to the throne and coronation awaits!",
+			})
+		elseif parentMonarchAge >= 75 and not lifeState.Flags.monarch_health_warned and math.random(100) <= 15 then
+			-- Warning about declining health (no coronation yet)
+			lifeState.Flags = lifeState.Flags or {}
+			lifeState.Flags.monarch_health_warned = true
+			table.insert(events, {
+				type = "succession_warning",
+				message = "👑 The current monarch's health is declining. You may need to prepare for the throne.",
 			})
 		end
 	end
@@ -4402,11 +4537,20 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 		id = "royal_christmas_broadcast",
 		title = "🎄 Royal Christmas",
 		emoji = "🎄",
+		-- CRITICAL FIX: Added text variations and blocked by royal_christmas_speech to prevent double christmas
+		textVariants = {
+			"It's Christmas at the palace! The royal family gathers for celebrations and traditions.",
+			"Christmas morning arrives with all the pomp and circumstance of royal tradition!",
+			"The palace Christmas tree is magnificent! Family traditions and festive cheer fill every room.",
+			"Another magical Christmas surrounded by family, tradition, and the warmth of the palace.",
+			"Royal Christmas is here! The nation celebrates alongside your family.",
+		},
 		text = "It's Christmas at the palace! The royal family gathers for celebrations and traditions.",
 		minAge = 3,
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 3,
+		cooldown = 5, -- CRITICAL FIX: Increased from 3 to 5 to prevent spam
+		blockedByFlags = { had_royal_christmas_this_year = true }, -- CRITICAL FIX: Prevent double christmas events
 		conditions = { requiresFlags = { is_royalty = true } },
 		choices = {
 			{

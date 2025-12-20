@@ -20,8 +20,34 @@ local function isEnforcer(state)
 	return jobId:find("enforcer") or jobId:find("hitman") or jobId:find("muscle")
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Strict mafia membership check
+-- User complaint: "COLLECTION JOB and ENFORCER_BODY_DISPOSAL popping up when not in mafia!"
+-- The old check was too loose - now requires EXPLICIT mafia membership flags
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function isMafiaAssociate(state)
-	return (state.Flags and (state.Flags.in_mob or state.Flags.mafia_member)) or isEnforcer(state)
+	-- MUST have explicit mafia flags - no loose checking
+	if not state.Flags then return false end
+	
+	-- Check explicit mafia membership flags
+	local hasMafiaFlag = state.Flags.in_mob == true
+		or state.Flags.mafia_member == true
+		or state.Flags.made_member == true
+		or state.Flags.mob_associate == true
+		or state.Flags.initiated == true
+		or state.Flags.mob_soldier == true
+		or state.Flags.mob_capo == true
+		or state.Flags.mob_underboss == true
+		or state.Flags.mob_boss == true
+	
+	if hasMafiaFlag then return true end
+	
+	-- Also allow if explicitly has enforcer job AND mafia gamepass
+	if state.Flags.mafia_gamepass and isEnforcer(state) then
+		return true
+	end
+	
+	return false
 end
 
 EnforcerEvents.events = {

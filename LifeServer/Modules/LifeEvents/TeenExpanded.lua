@@ -1020,6 +1020,8 @@ TeenExpanded.events = {
 		ageBand = "teen",
 		category = "family",
 		tags = { "sibling", "family", "relationships" },
+		-- CRITICAL FIX #13: Sibling events require having siblings!
+		requiresFlags = { has_siblings = true },
 		
 		choices = {
 			{ text = "Becoming real friends", effects = { Happiness = 6 }, setFlags = { sibling_friends = true }, feedText = "You actually like each other now. Who knew?" },

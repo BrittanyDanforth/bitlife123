@@ -144,18 +144,41 @@ MusicianCareerEvents.events = {
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Label Demands requires SIGNED MUSIC CAREER
+	-- User complaint: "RECORD LABEL PRESSURING ME BUT IM NOT A SONG MAKER?!??!"
+	-- Added strict eligibility check and careerPath requirement
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "musician_label_pressure",
 		title = "Label Demands Hit Song",
 		emoji = "💼",
 		text = "Your record label is pressuring you to make a 'radio-friendly' single. They want a guaranteed hit, not your artistic vision.",
 		category = "career_music",
+		careerPath = "musician",  -- CRITICAL: Only for musicians!
 		weight = 15,
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
-		eligibility = isSignedArtist,
+		eligibility = function(state)
+			-- CRITICAL: Must have a music career to receive label demands
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			
+			-- Must be in music industry
+			local isMusicCareer = jobId:find("musician") or jobId:find("singer") or 
+				jobId:find("band") or jobId:find("popstar") or jobId:find("rock") or
+				jobId:find("signed") or jobId:find("recording") or jobCat == "music" or
+				jobCat == "career_music"
+			
+			-- Must also have signed_artist flag or be explicitly signed
+			local isSigned = (state.Flags and state.Flags.signed_artist) or 
+				jobId:find("signed") or jobId:find("recording_artist")
+			
+			return isMusicCareer and isSigned
+		end,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {

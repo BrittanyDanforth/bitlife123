@@ -696,52 +696,72 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #646-650: ROYAL EDUCATION BLOCKING
-	-- Royals do NOT attend normal public schools!
-	-- They have private tutors, elite boarding schools, and prestigious academies
-	-- Block normal school events for royal players
+	-- CRITICAL FIX #646-650: ROYAL LIFESTYLE BLOCKING
+	-- Royals have completely different experiences than commoners!
+	-- User complaint: "IM ROYALTY BUT GETTING NORMAL ELEMENTARY SCHOOL AND LIFE ASSESSMENT EVENTS"
+	-- MASSIVELY expanded list of events that royals should NOT see
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local isRoyal = flags.is_royalty or flags.royal_birth 
 		or (state.RoyalState and state.RoyalState.isRoyal)
 	
 	if isRoyal then
-		-- List of normal school event IDs that royals should NOT see
-		local normalSchoolEventIds = {
-			"starting_school", "first_day_school", "elementary_start", "middle_school_start",
-			"high_school_start", "public_school", "first_grade", "kindergarten",
-			"school_bully", "homework_help", "cafeteria", "school_detention",
-			"school_play", "school_dance", "school_suspension", "normal_education",
-			"public_education", "regular_school", "school_registration",
-		}
-		
-		-- Check if this is a normal school event
-		local eventId = event.id and event.id:lower() or ""
-		local eventTitle = event.title and event.title:lower() or ""
-		
-		for _, schoolId in ipairs(normalSchoolEventIds) do
-			if eventId:find(schoolId) or eventTitle:find(schoolId) then
-				-- CRITICAL FIX #647: Only block if event is NOT marked as royal education
-				if not event.isRoyalOnly and not event.isRoyalEducation then
-					return false -- Royals don't attend normal school!
+		-- If this event is specifically FOR royals, allow it!
+		if event.isRoyalOnly or event.isRoyalEducation or event.isRoyalEvent then
+			-- Royal event - explicitly allow it
+		else
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL: List of "commoner" events that royals should NOT see
+			-- Royals have private tutors, security, chauffeurs, etc.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local normalLifeEventIds = {
+				-- School events (royals have private education)
+				"starting_school", "first_day_school", "elementary_start", "middle_school_start",
+				"high_school_start", "public_school", "first_grade", "kindergarten",
+				"school_bully", "homework_help", "cafeteria", "school_detention",
+				"school_play", "school_dance", "school_suspension", "normal_education",
+				"public_education", "regular_school", "school_registration",
+				-- Life assessment events (royals have different life milestones)
+				"life_assessment", "approaching_30", "quarter_life_crisis", "midlife_reflection",
+				"life_crossroads", "turning_30", "turning_40", "dirty_thirty",
+				-- Driving events (royals have chauffeurs)
+				"learning_to_drive", "driver_ed", "first_drive", "parking_disaster",
+				-- Job hunting (royals don't need normal jobs)
+				"job_interview", "job_search", "unemployment", "fired", "laid_off",
+				-- Housing struggles (royals have palaces)
+				"eviction", "rent_due", "homeless", "apartment_hunting", "roommate",
+				-- Money struggles (royals are wealthy)
+				"financial_crisis", "broke", "debt_collector", "payday_loan",
+			}
+			
+			local eventId = event.id and event.id:lower() or ""
+			local eventTitle = event.title and event.title:lower() or ""
+			
+			-- Check if this is a "normal life" event
+			for _, normalId in ipairs(normalLifeEventIds) do
+				if eventId:find(normalId) then
+					return false -- Royals don't experience commoner life events!
 				end
 			end
-		end
-		
-		-- CRITICAL FIX #648: Also check for generic school tags
-		if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
-			return false -- Block any explicitly public school events
-		end
-		
-		-- CRITICAL FIX #649: Check education type requirements
-		if event.requiresEducationType then
-			local eduType = event.requiresEducationType:lower()
-			if eduType == "public" or eduType == "normal" or eduType == "public_school" then
-				return false -- Royals don't have public school education
+			
+			-- CRITICAL FIX #648: Also check for generic school tags
+			if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
+				return false -- Block any explicitly public school events
+			end
+			
+			-- CRITICAL FIX #649: Check education type requirements
+			if event.requiresEducationType then
+				local eduType = event.requiresEducationType:lower()
+				if eduType == "public" or eduType == "normal" or eduType == "public_school" then
+					return false -- Royals don't have public school education
+				end
+			end
+			
+			-- CRITICAL FIX: Block events that are obviously for commoners
+			if event.isCommonerEvent or event.isWorkingClass then
+				return false
 			end
 		end
-		
-		-- CRITICAL FIX #650: Boost royal education events for royals
-		-- (This is handled in the weight calculation section)
+		-- CRITICAL FIX #650: Royal events are boosted in weight calculation
 	end
 	
 	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
@@ -836,6 +856,88 @@ local function canEventTrigger(event, state)
 		local subs = (state.FameState and state.FameState.subscribers) or 0
 		if subs < event.minSubscribers then
 			return false -- Not enough subscribers for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CAREER-PATH-1: Check careerPath for celebrity career events
+	-- Events tagged with careerPath = "actor"/"musician"/"influencer" etc should ONLY
+	-- fire for players actually in that career! This prevents Grammy nominations for
+	-- baristas, movie premieres for janitors, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.careerPath then
+		local currentJob = state.CurrentJob
+		local careerPath = event.careerPath:lower()
+		local isInCareerPath = false
+		
+		if currentJob then
+			local jobId = (currentJob.id or ""):lower()
+			local jobCategory = (currentJob.category or ""):lower()
+			local jobTitle = (currentJob.title or currentJob.name or ""):lower()
+			
+			-- Check if player's job matches the required career path
+			if careerPath == "actor" then
+				isInCareerPath = jobId:find("actor") or jobId:find("acting") or jobId:find("movie")
+					or jobCategory == "acting" or jobCategory == "actor" or jobCategory == "entertainment"
+					or jobTitle:find("actor") or jobTitle:find("actress")
+			elseif careerPath == "musician" then
+				isInCareerPath = jobId:find("musician") or jobId:find("singer") or jobId:find("band")
+					or jobId:find("music") or jobId:find("rapper")
+					or jobCategory == "music" or jobCategory == "musician" or jobCategory == "entertainment"
+					or jobTitle:find("musician") or jobTitle:find("singer") or jobTitle:find("rapper")
+			elseif careerPath == "influencer" then
+				isInCareerPath = jobId:find("influencer") or jobId:find("content") or jobId:find("youtuber")
+					or jobId:find("tiktok") or jobId:find("streamer")
+					or jobCategory == "influencer" or jobCategory == "content_creator" or jobCategory == "social_media"
+					or jobTitle:find("influencer") or jobTitle:find("content creator")
+			elseif careerPath == "streamer" then
+				isInCareerPath = jobId:find("streamer") or jobId:find("twitch") or jobId:find("gaming")
+					or jobCategory == "streaming" or jobCategory == "streamer"
+					or jobTitle:find("streamer")
+			elseif careerPath == "rapper" then
+				isInCareerPath = jobId:find("rapper") or jobId:find("hip_hop") or jobId:find("hiphop")
+					or jobCategory == "rapper" or jobCategory == "music"
+					or jobTitle:find("rapper")
+			elseif careerPath == "athlete" then
+				isInCareerPath = jobId:find("athlete") or jobId:find("sports") or jobId:find("player")
+					or jobId:find("basketball") or jobId:find("football") or jobId:find("soccer")
+					or jobId:find("baseball") or jobId:find("hockey")
+					or jobCategory == "sports" or jobCategory == "athlete"
+					or jobTitle:find("athlete") or jobTitle:find("player")
+			elseif careerPath == "model" then
+				isInCareerPath = jobId:find("model") or jobId:find("fashion")
+					or jobCategory == "modeling" or jobCategory == "model" or jobCategory == "fashion"
+					or jobTitle:find("model")
+			end
+		end
+		
+		-- Also check FameState for career path
+		if not isInCareerPath and state.FameState then
+			local fameCareer = (state.FameState.careerPath or ""):lower()
+			isInCareerPath = fameCareer == careerPath or fameCareer:find(careerPath)
+		end
+		
+		-- Also check flags for pursuing specific paths
+		if not isInCareerPath and flags then
+			if careerPath == "actor" then
+				isInCareerPath = flags.is_actor or flags.acting_career
+			elseif careerPath == "musician" then
+				isInCareerPath = flags.is_musician or flags.music_career or flags.is_rapper or flags.rapper_career
+			elseif careerPath == "influencer" then
+				isInCareerPath = flags.is_influencer or flags.content_creator
+			elseif careerPath == "streamer" then
+				isInCareerPath = flags.is_streamer or flags.streaming_career
+			elseif careerPath == "rapper" then
+				isInCareerPath = flags.is_rapper or flags.rapper_career
+			elseif careerPath == "athlete" then
+				isInCareerPath = flags.is_athlete or flags.sports_career
+			elseif careerPath == "model" then
+				isInCareerPath = flags.is_model or flags.modeling_career
+			end
+		end
+		
+		if not isInCareerPath then
+			return false -- Player is not in the required career path for this event
 		end
 	end
 	
@@ -1073,6 +1175,25 @@ local function canEventTrigger(event, state)
 			if requiredValue == false and playerHasFlag then
 				return false -- Has blocked flag
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support requiresAnyFlags - player must have AT LEAST ONE of these flags
+	-- User complaint: "BIG AUDITION popping up when I never did any acting!"
+	-- Events like fame_audition have requiresAnyFlags = { talent_acting = true, ... }
+	-- but this wasn't being checked! Player needs at least ONE talent flag.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresAnyFlags then
+		local hasAnyFlag = false
+		for flag, requiredValue in pairs(event.requiresAnyFlags) do
+			if requiredValue == true and flags[flag] then
+				hasAnyFlag = true
+				break
+			end
+		end
+		if not hasAnyFlag then
+			return false -- Player doesn't have ANY of the required flags
 		end
 	end
 	
@@ -1523,14 +1644,15 @@ local AgeMilestoneEvents = {
 	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
 	
 	-- EARLY CHILDHOOD (5-8) - School and discovery
+	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
 	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading" },
-	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
 	
 	-- LATE CHILDHOOD (9-12) - Growing up
-	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation" },
-	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence" },
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
+	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence", "premium_dream_big" },
 	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
 	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
 	
@@ -1540,9 +1662,10 @@ local AgeMilestoneEvents = {
 	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
 	
 	-- LATE TEEN (16-18) - Major milestones
-	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep" },
-	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time" },
+	-- CRITICAL FIX #604: Added premium turning point events for gamepass exposure
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
+	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads" },
 	
 	-- YOUNG ADULT (19-24) - Independence and discovery
 	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
@@ -1553,7 +1676,8 @@ local AgeMilestoneEvents = {
 	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
 	
 	-- MID-LATE 20s (25-29) - Settling into adulthood
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure" },
+	-- CRITICAL FIX #604: Added premium crossroads and special opportunity events
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure", "premium_life_crossroads", "premium_special_opportunity" },
 	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
 	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
 	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
@@ -2086,14 +2210,38 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
-	-- Mafia players: 35% chance to get a mafia event each year
-	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
-	if isInMob and RANDOM_LOCAL:NextNumber() < 0.35 then
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #602: Mafia event selection requires STRICT in_mob verification
+	-- User complaint: "IT SAID I WAS IN MAFIA BUT IM NOT IN MAFIA"
+	-- This ensures mafia events ONLY trigger for actual mafia members
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isInMob = flags.in_mob == true -- STRICT check - must be exactly true, not truthy
+	local hasMobState = state.MobState and state.MobState.inMob == true
+	local hasMafiaGamepass = flags.mafia_gamepass == true
+	
+	-- Must have at least ONE concrete indicator of mafia membership
+	local isActuallyInMafia = isInMob or hasMobState
+	
+	-- 35% chance to get a mafia event each year IF player is actually in mafia
+	if isActuallyInMafia and hasMafiaGamepass and RANDOM_LOCAL:NextNumber() < 0.35 then
 		local mafiaEvents = EventsByCategory["mafia"] or {}
 		local eligibleMafiaEvents = {}
 		
 		for _, event in ipairs(mafiaEvents) do
-			if canEventTrigger(event, state) then
+			-- CRITICAL: Skip events that explicitly require in_mob if player doesn't have it
+			local eventRequiresInMob = event.requiresFlags and event.requiresFlags.in_mob
+			local condRequiresInMob = event.conditions and event.conditions.requiresFlags and event.conditions.requiresFlags.in_mob
+			
+			local shouldSkip = false
+			if eventRequiresInMob or condRequiresInMob then
+				-- Event requires in_mob - verify player ACTUALLY has it
+				if not isInMob and not hasMobState then
+					-- Skip this event - player isn't actually in mob
+					shouldSkip = true
+				end
+			end
+			
+			if not shouldSkip and canEventTrigger(event, state) then
 				local occurCount = (history.occurrences[event.id] or 0)
 				if occurCount == 0 or not event.oneTime then
 					table.insert(eligibleMafiaEvents, event)

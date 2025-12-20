@@ -1768,6 +1768,33 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	roleLabel.Text = roleText
 	roleLabel.ZIndex = 86
 	roleLabel.Parent = roleBadge
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: AGE DISPLAY - User wanted to see ages for all people!
+	-- Shows age badge next to role badge
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local personAge = person.age or 0
+	if personAge > 0 then
+		local AGE_BADGE_WIDTH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 55)
+		local ageBadge = Instance.new("Frame")
+		ageBadge.Name = "AgeBadge"
+		ageBadge.Size = UDim2.new(0, AGE_BADGE_WIDTH, 0, BADGE_HEIGHT)
+		ageBadge.Position = UDim2.new(0, TEXT_START + BADGE_WIDTH + 6, 0, roleY)
+		ageBadge.BackgroundColor3 = isAlive and C.Gray200 or C.Gray100
+		ageBadge.ZIndex = 85
+		ageBadge.Parent = card
+		UI.pill(ageBadge)
+		
+		local ageLabel = Instance.new("TextLabel")
+		ageLabel.Size = UDim2.fromScale(1, 1)
+		ageLabel.BackgroundTransparency = 1
+		ageLabel.Font = F.Button
+		ageLabel.TextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
+		ageLabel.TextColor3 = isAlive and C.Gray600 or C.Gray400
+		ageLabel.Text = "Age " .. tostring(personAge)
+		ageLabel.ZIndex = 86
+		ageLabel.Parent = ageBadge
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP BAR (bigger, more prominent)

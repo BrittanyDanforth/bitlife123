@@ -906,6 +906,23 @@ RandomLifeEvents.events = {
 		minAge = 16, maxAge = 80,
 		baseChance = 0.45,
 		cooldown = 3,
+		-- CRITICAL FIX #14: Flat tire requires owning a car!
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check vehicle ownership flags
+			if flags.has_car or flags.owns_car or flags.has_vehicle or flags.has_first_car then
+				return true
+			end
+			-- Check Assets.Vehicles
+			if state.Assets and state.Assets.Vehicles then
+				if type(state.Assets.Vehicles) == "table" and #state.Assets.Vehicles > 0 then
+					return true
+				end
+			end
+			return false, "Need a car to have a flat tire"
+		end,
 		
 		choices = {
 			{
@@ -1133,6 +1150,11 @@ RandomLifeEvents.events = {
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Parking disaster requires CAR OWNERSHIP
+	-- User complaint: "PARKING DISASTER POPPING UP BUT I DONT OWN A CAR!!!"
+	-- Now properly checks for vehicle ownership before triggering
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "random_parallel_parking",
 		title = "🚙 Parking Disaster",
@@ -1143,6 +1165,25 @@ RandomLifeEvents.events = {
 		minAge = 16, maxAge = 70,
 		baseChance = 0.45,
 		cooldown = 3,
+		blockedByFlags = { in_prison = true, homeless = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- CRITICAL: Must own a car to have parking problems!
+			if flags.has_car or flags.owns_car or flags.has_vehicle or flags.has_first_car then
+				return true
+			end
+			-- Also check for driver's license at minimum
+			if flags.driver_license or flags.has_license or flags.drivers_license then
+				-- And check if they have any vehicles in Assets
+				if state.Assets and state.Assets.Vehicles then
+					if type(state.Assets.Vehicles) == "table" and #state.Assets.Vehicles > 0 then
+						return true
+					end
+				end
+			end
+			return false, "Need a car to have parking disasters"
+		end,
 		
 		choices = {
 			{

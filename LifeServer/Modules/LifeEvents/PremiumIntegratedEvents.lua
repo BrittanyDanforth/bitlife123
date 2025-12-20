@@ -1235,10 +1235,45 @@ PremiumIntegratedEvents.events = {
 		question = "How do you prepare?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased cooldown - don't spam job interviews
+		maxOccurrences = 5, -- CRITICAL FIX: Limit total occurrences
 		stage = STAGE,
 		category = "career",
 		tags = { "job", "interview", "career" },
+		-- CRITICAL FIX: Job interview should only fire if player is unemployed
+		-- or has been in a low-paying job for a while
+		blockedByFlags = { in_prison = true, homeless = true },
+		eligibility = function(state)
+			local hasJob = state.CurrentJob ~= nil
+			local flags = state.Flags or {}
+			
+			-- If unemployed, eligible (great use case!)
+			if not hasJob then
+				return true
+			end
+			
+			-- If employed but at a low-paying/entry-level job for 2+ years, eligible
+			local yearsAtJob = state.CurrentJob and state.CurrentJob.yearsAtJob or 0
+			local salary = state.CurrentJob and state.CurrentJob.salary or 0
+			
+			-- Low-paying job AND been there a while = looking for upgrade
+			if salary < 40000 and yearsAtJob >= 2 then
+				return true
+			end
+			
+			-- Stuck in same job for 5+ years = career change opportunity
+			if yearsAtJob >= 5 then
+				return true
+			end
+			
+			-- Has "looking_for_job" flag
+			if flags.looking_for_job or flags.job_hunting or flags.career_change then
+				return true
+			end
+			
+			-- Otherwise, don't show random job interviews to people with good jobs
+			return false
+		end,
 		
 		choices = {
 			{
@@ -1587,6 +1622,338 @@ PremiumIntegratedEvents.events = {
 				requiresFlags = { is_royalty = true },
 				gamepassEmoji = "👑",
 				feedText = "👑 A royal ball! The kingdom celebrated your love!",
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Early-Game Gamepass Opportunities
+	-- User complaint: "ONLY TIMES THEY CAN PURCHASE GAMEPASSES IS IN BEGINNING OF LIFE"
+	-- These events appear during childhood/teen years to show premium options
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "premium_dream_big",
+		title = "Dream Big",
+		emoji = "✨",
+		text = "You're daydreaming about what you want to be when you grow up. The possibilities seem endless!",
+		question = "What do you dream about?",
+		minAge = 8, maxAge = 14,
+		baseChance = 0.85,
+		cooldown = 5,
+		oneTime = true,
+		stage = "childhood",
+		category = "dream",
+		tags = { "dream", "aspiration", "early" },
+		
+		choices = {
+			{
+				text = "Being rich and famous",
+				effects = { Happiness = 5 },
+				setFlags = { dreams_of_fame = true },
+				feedText = "You dream of mansions, limos, and millions of adoring fans!",
+			},
+			{
+				text = "Helping people",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { dreams_of_helping = true },
+				feedText = "You want to make a difference in the world!",
+			},
+			{
+				text = "Going on adventures",
+				effects = { Happiness = 8 },
+				setFlags = { dreams_of_adventure = true },
+				feedText = "The world is your oyster! Adventure awaits!",
+			},
+			-- GAMEPASS OPTIONS
+			{
+				text = "⭐ [Celebrity] Being a famous superstar!",
+				effects = { Happiness = 15, Fame = 5 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { star_dreamer = true, fame_destiny = true },
+				feedText = "⭐ You're destined for STARDOM! The spotlight awaits!",
+			},
+			{
+				text = "🔫 [Mafia] Running the underground...",
+				effects = { Happiness = 10 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { mob_fascination = true },
+				feedText = "🔫 You're fascinated by crime movies and gangster stories...",
+			},
+			{
+				text = "👑 [Royalty] Living like a king or queen!",
+				effects = { Happiness = 10, Looks = 2 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				feedText = "👑 You imagine palaces, crowns, and royal balls!",
+			},
+		},
+	},
+	{
+		id = "premium_turning_point",
+		title = "Turning Point",
+		emoji = "🛤️",
+		text = "You feel like you're at a turning point in your young life. Different paths are opening up before you.",
+		question = "Which direction calls to you?",
+		minAge = 16, maxAge = 19,
+		baseChance = 0.8,
+		cooldown = 5,
+		oneTime = true,
+		stage = "teen",
+		category = "milestone",
+		tags = { "decision", "youth", "turning_point" },
+		
+		choices = {
+			{
+				text = "Focus on school and career",
+				effects = { Smarts = 5, Happiness = 3 },
+				setFlags = { studious_teen = true },
+				feedText = "Education is the key! You buckle down and study hard.",
+			},
+			{
+				text = "Live in the moment - enjoy being young!",
+				effects = { Happiness = 10, Health = 3 },
+				setFlags = { enjoying_youth = true },
+				feedText = "YOLO! These are the best years of your life!",
+			},
+			{
+				text = "Start working and save money",
+				effects = { Money = 1500 },
+				setFlags = { young_earner = true },
+				feedText = "You get a part-time job. First paycheck feels AMAZING!",
+			},
+			-- GAMEPASS OPTIONS
+			{
+				text = "⭐ [Celebrity] Chase your dreams of fame!",
+				effects = { Fame = 10, Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { young_star = true, fame_path = true },
+				feedText = "⭐ You start building your personal brand. The fame journey begins!",
+			},
+			{
+				text = "🔫 [Mafia] Seek out the connected people...",
+				effects = { Money = 5000, Happiness = 5 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { early_mob_contact = true },
+				feedText = "🔫 You make some... interesting connections. Easy money!",
+			},
+		},
+	},
+	{
+		id = "premium_special_opportunity",
+		title = "Special Opportunity",
+		emoji = "🌟",
+		text = "An unusual opportunity has presented itself. This could change everything!",
+		question = "Do you take the special path?",
+		minAge = 20, maxAge = 28,
+		baseChance = 0.7,
+		cooldown = 8,
+		oneTime = true,
+		stage = "adult",
+		category = "opportunity",
+		tags = { "opportunity", "special", "life_changing" },
+		
+		choices = {
+			{
+				text = "Play it safe - stick to the normal path",
+				effects = { Happiness = 3 },
+				setFlags = { played_safe = true },
+				feedText = "Sometimes the safe choice is the smart choice.",
+			},
+			{
+				text = "Take a calculated risk",
+				effects = {},
+				feedText = "Rolling the dice on opportunity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🌟 The risk paid off! Great reward!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌟 Didn't work out, but at least you tried!")
+					end
+				end,
+			},
+			-- ALL GAMEPASS OPTIONS IN ONE EVENT
+			{
+				text = "⭐ [Celebrity] The entertainment industry beckons!",
+				effects = { Fame = 25, Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { entertainment_career = true },
+				feedText = "⭐ You've been discovered! Hollywood here you come!",
+			},
+			{
+				text = "🔫 [Mafia] Join the family business...",
+				effects = { Money = 25000, Happiness = 10 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { joined_mob = true },
+				feedText = "🔫 You're in! Welcome to the family. Now the REAL money starts rolling in!",
+			},
+			{
+				text = "👑 [Royalty] Discover your royal lineage!",
+				effects = { Fame = 20, Happiness = 20 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				feedText = "👑 Turns out you have royal blood! A distant connection to nobility!",
+				onResolve = function(state)
+					-- Only hint at royalty, doesn't actually make them royal
+					state.Flags = state.Flags or {}
+					state.Flags.royal_bloodline = true
+					state.Flags.noble_ancestry = true
+				end,
+			},
+			{
+				text = "⚡ [God Mode] Use your power to seize this moment!",
+				effects = { Money = 50000, Happiness = 20, Health = 20 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ God Mode activated! You seized the opportunity with supernatural force!",
+			},
+		},
+	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: VERY EARLY GAME PREMIUM TEASERS (Ages 5-7)
+	-- User complaint: "Make first 5 minutes engaging, fun ASF"
+	-- These events show premium content early but still give great options for free players
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "premium_career_day_dream",
+		title = "Career Day Dreams",
+		emoji = "💭",
+		text = "It's career day at school! Everyone's talking about what they want to be when they grow up. What sounds exciting to you?",
+		question = "What catches your imagination?",
+		minAge = 5, maxAge = 7,
+		baseChance = 0.9, -- High chance - engaging early content
+		cooldown = 99,
+		oneTime = true,
+		stage = "childhood",
+		category = "dream",
+		priority = "high",
+		tags = { "career_day", "dream", "early", "engaging" },
+		
+		choices = {
+			{
+				text = "Doctor - helping people get better!",
+				effects = { Smarts = 3, Happiness = 5 },
+				setFlags = { dreams_medical = true, curious_about_science = true },
+				feedText = "🩺 You put on a toy stethoscope. 'Say ahhh!' Your parents are proud of your caring heart!",
+			},
+			{
+				text = "Astronaut - going to space!",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { dreams_space = true, big_imagination = true },
+				feedText = "🚀 '3... 2... 1... LIFTOFF!' You zoom around pretending to float in zero gravity!",
+			},
+			{
+				text = "Firefighter - being a hero!",
+				effects = { Health = 3, Happiness = 6 },
+				setFlags = { dreams_hero = true, brave_spirit = true },
+				feedText = "🚒 You slide down an imaginary pole. 'To the rescue!' Everyone claps!",
+			},
+			{
+				text = "Artist - making beautiful things!",
+				effects = { Happiness = 7, Looks = 1 },
+				setFlags = { creative_spirit = true, artistic_interest = true },
+				feedText = "🎨 You draw your dream life - it's colorful and full of possibility!",
+			},
+			-- PREMIUM TEASERS (Show what's possible with gamepasses!)
+			{
+				text = "⭐ [Celebrity] A famous movie star!",
+				effects = { Happiness = 12, Fame = 8, Looks = 2 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { star_dreams = true, performer = true },
+				feedText = "⭐ 'And the award goes to... YOU!' You practice your acceptance speech while everyone laughs and claps!",
+			},
+			{
+				text = "🔫 [Mafia] A mysterious powerful boss...",
+				effects = { Happiness = 10, Smarts = 3 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { fascinated_by_power = true },
+				feedText = "🔫 You've been watching too many movies... but the idea of being powerful is exciting!",
+			},
+			{
+				text = "👑 [Royalty] A real-life king or queen!",
+				effects = { Happiness = 12, Looks = 3 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				setFlags = { royal_fantasies = true },
+				feedText = "👑 You make a paper crown and declare yourself ruler of the playground! Long live the king/queen!",
+			},
+		},
+	},
+	{
+		id = "premium_magic_wish",
+		title = "Make a Wish!",
+		emoji = "🌠",
+		text = "You're blowing out your birthday candles! Everyone says if you make a wish without telling anyone, it might come true!",
+		question = "What do you wish for?",
+		minAge = 6, maxAge = 10,
+		baseChance = 0.85,
+		cooldown = 99,
+		oneTime = true,
+		stage = "childhood",
+		category = "wish",
+		priority = "high",
+		tags = { "birthday", "wish", "early", "engaging" },
+		
+		choices = {
+			{
+				text = "To be happy forever!",
+				effects = { Happiness = 10 },
+				setFlags = { wished_happiness = true },
+				feedText = "🎂 You close your eyes tight and wish with all your heart. Happy birthday!",
+			},
+			{
+				text = "For my family to be healthy!",
+				effects = { Happiness = 6, Health = 3 },
+				setFlags = { wished_family = true, caring_heart = true },
+				feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
+			},
+			{
+				text = "To be super smart!",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { wished_intelligence = true },
+				feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
+			},
+			{
+				text = "For a puppy!",
+				effects = { Happiness = 8 },
+				setFlags = { wants_pet = true },
+				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
+			},
+			-- PREMIUM OPTIONS
+			{
+				text = "⭐ [Celebrity] To be famous!",
+				effects = { Fame = 15, Happiness = 12 },
+				requiresGamepass = "CELEBRITY",
+				gamepassEmoji = "⭐",
+				setFlags = { fame_wish = true },
+				feedText = "⭐ 'I wanna be FAMOUS!' Your parents laugh, but maybe dreams do come true...",
+			},
+			{
+				text = "🔫 [Mafia] For unlimited power!",
+				effects = { Happiness = 10, Smarts = 4 },
+				requiresGamepass = "MAFIA",
+				gamepassEmoji = "🔫",
+				setFlags = { power_wish = true },
+				feedText = "🔫 An... interesting wish for a kid. You've been watching those crime shows with dad!",
+			},
+			{
+				text = "👑 [Royalty] To live in a palace!",
+				effects = { Happiness = 12, Looks = 4 },
+				requiresGamepass = "ROYALTY",
+				gamepassEmoji = "👑",
+				setFlags = { palace_wish = true },
+				feedText = "👑 Castles, crowns, and royal balls! Every kid's fantasy! Maybe someday...",
 			},
 		},
 	},
