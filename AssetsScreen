@@ -598,8 +598,9 @@ function AssetsScreen:createUI()
 	-- CRITICAL FIX: Balance bar - clean card design that fits naturally below header
 	-- Uses a white card with teal accent, positioned to look integrated
 	-- CRITICAL FIX: IS_TINY_PHONE responsive sizing
+	-- CRITICAL FIX #700: Increased Y positions to prevent overlap with header
 	local balanceBarHeight = IS_TINY_PHONE and 42 or 54
-	local balanceBarY = IS_TINY_PHONE and 100 or 130
+	local balanceBarY = IS_TINY_PHONE and 110 or 145  -- INCREASED from 100/130 to prevent text cutoff
 	local balanceBarMargin = IS_TINY_PHONE and 8 or 12
 	
 	self.balanceBar = Instance.new("Frame")
@@ -674,9 +675,10 @@ function AssetsScreen:createUI()
 	-- Casino/gambling feature removed from AssetsScreen
 
 	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
-	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
+	-- Balance bar is at Y=145 with height 54, ends at Y=199. Tab bar starts at 211.
 	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
-	local tabBarY = IS_TINY_PHONE and 150 or 196
+	-- CRITICAL FIX #700: Increased Y positions to prevent bunching on mobile
+	local tabBarY = IS_TINY_PHONE and 165 or 211  -- INCREASED from 150/196
 	self.tabBar = UI.createTabBar(self.overlay, { topOffset = tabBarY, zIndex = 84 })
 	self.tabBtns = {}
 
@@ -696,9 +698,10 @@ function AssetsScreen:createUI()
 	end
 
 	-- Scroll area - CRITICAL FIX: Positioned below tab bar
-	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
+	-- Tab bar is at Y=211 with ~50px height, so content starts at ~281
 	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
-	local contentScrollY = IS_TINY_PHONE and 200 or 266
+	-- CRITICAL FIX #700: Increased Y positions so Living Situation card is visible
+	local contentScrollY = IS_TINY_PHONE and 215 or 281  -- INCREASED from 200/266
 	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = contentScrollY, zIndex = 81 })
 
 	-- Modals
@@ -1165,6 +1168,11 @@ end
 function AssetsScreen:populateProperty()
 	log("=== POPULATE PROPERTY CALLED ===")
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top so Living Situation card is visible
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	-- Debug the raw state
 	debugAssets(self.playerState and self.playerState.Assets, "Current playerState.Assets")
@@ -1599,6 +1607,11 @@ end
 
 function AssetsScreen:populateVehicles()
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top when switching tabs
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	local assets = self:getAssets()
 	local ownedVehicles = {}
@@ -1714,6 +1727,11 @@ end
 
 function AssetsScreen:populateShop()
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top when switching tabs
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	local assets = self:getAssets()
 	local ownedItems = {}
