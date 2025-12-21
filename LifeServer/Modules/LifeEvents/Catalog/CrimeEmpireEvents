@@ -1,0 +1,857 @@
+--[[
+	CrimeEmpireEvents.lua
+	
+	Crime Empire Story Path Events
+	These events trigger when the player is on the "criminal" story path.
+	Features progressive crime career with minigames, heists, and empire building.
+	
+	CRITICAL: These events check for crime_path_active flag set by startStoryPath
+	
+	CRITICAL FIX #RVS-1: Premium path blocking added to prevent crime events
+	for players on royalty/celebrity paths
+]]
+
+local RANDOM = Random.new()
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-CRIME-1: Premium path blocking
+-- Crime empire events should NEVER fire for royalty or celebrity players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose celebrity path (unless crime-famous)
+	if flags.primary_wish_type == "celebrity" then
+		-- Allow if fame is from crime activities
+		if not (flags.crime_famous or flags.mob_fame) then
+			return true
+		end
+	end
+	if flags.fame_career and not flags.crime_famous then
+		if state.FameState and state.FameState.careerPath then
+			local careerPath = state.FameState.careerPath:lower()
+			if not (careerPath:find("crime") or careerPath:find("mob")) then
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #1: Helper functions to verify player is on crime path
+-- Prevents crime events from triggering for non-criminals
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isOnCrimePath(state)
+	if not state.Flags then return false end
+	-- CRITICAL FIX: Also check premium path blocking
+	if isBlockedByPremiumPath(state) then return false end
+	return state.Flags.crime_path_active == true
+end
+
+local function hasCrimeReputation(state, minRep)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= (minRep or 0)
+end
+
+local function isCrimeBoss(state)
+	if not state.Flags then return false end
+	return state.Flags.crime_boss == true or state.Flags.kingpin == true
+		or (state.Flags.crime_reputation or 0) >= 100
+end
+
+local function isStreetLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep < 30 and state.Flags.crime_path_active
+end
+
+local function isMidLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= 30 and rep < 70 and state.Flags.crime_path_active
+end
+
+local function isHighLevel(state)
+	if not state.Flags then return false end
+	local rep = state.Flags.crime_reputation or 0
+	return rep >= 70 and state.Flags.crime_path_active
+end
+
+-- CRITICAL FIX #2: Prevent crime events for legitimate careers
+local function isNotLegitCareer(state)
+	if not state.CurrentJob then return true end
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- Block if player has a legitimate high-profile career
+	if jobCat == "medical" or jobCat == "legal" or jobCat == "government"
+	   or jobCat == "military" or jobCat == "education" or jobCat == "police" then
+		return false
+	end
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRIME EMPIRE PATH STAGES
+-- hustler -> operator -> lieutenant -> underboss -> boss
+-- ════════════════════════════════════════════════════════════════════════════
+
+local events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STAGE 1: STREET HUSTLER - Starting Out
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_first_hustle",
+		emoji = "💵",
+		title = "First Hustle",
+		text = "You've decided to start making money on the streets. A local dealer offers you a chance to make some quick cash running deliveries.",
+		question = "What's your first move?",
+		category = "crime_path",
+		weight = 15,
+		minAge = 16,
+		maxAge = 30,
+		cooldown = 0, -- Can trigger immediately when path starts
+		oneTime = true,
+		requiresFlags = { crime_path_active = true },
+		blockedByFlags = { in_prison = true, first_hustle_done = true },
+		textVariants = {
+			"You've entered the underground economy. A local hustler says he can show you the ropes.",
+			"The streets are calling. Someone offers you a chance to make real money - no questions asked.",
+			"You've made a choice to live outside the law. Now it's time to learn how.",
+		},
+		choices = {
+			{
+				text = "🚴 Start as a runner",
+				effects = { Happiness = 5 },
+				feedText = "You started running packages. Low risk, low reward - for now.",
+				setFlags = { first_hustle_done = true, street_runner = true, crime_reputation = 5 },
+				onResolve = function(state)
+					local payout = RANDOM:NextInteger(200, 800)
+					state.Money = (state.Money or 0) + payout
+					state:AddFeed(string.format("💵 First hustle earned you $%d", payout))
+				end,
+			},
+			{
+				text = "🎲 Start with gambling operations",
+				effects = { Smarts = 3 },
+				feedText = "You started running small card games in back alleys.",
+				setFlags = { first_hustle_done = true, gambler_route = true, crime_reputation = 8 },
+				onResolve = function(state)
+					local payout = RANDOM:NextInteger(400, 1200)
+					state.Money = (state.Money or 0) + payout
+					state:AddFeed(string.format("🎲 Your first gambling night earned $%d", payout))
+				end,
+			},
+			{
+				text = "📦 Move stolen goods",
+				effects = { Happiness = -3 },
+				feedText = "You became a fence, moving hot merchandise.",
+				setFlags = { first_hustle_done = true, fence_route = true, crime_reputation = 10 },
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.2 then
+						state:ModifyStat("Health", -10)
+						state:AddFeed("📦 Deal went bad. Got roughed up but learned a lesson.")
+					else
+						local payout = RANDOM:NextInteger(600, 1500)
+						state.Money = (state.Money or 0) + payout
+						state:AddFeed(string.format("📦 Moved your first shipment - $%d profit!", payout))
+					end
+				end,
+			},
+			{
+				text = "🔙 Changed my mind - go straight",
+				effects = { Happiness = 10 },
+				feedText = "You decided the criminal life isn't for you.",
+				setFlags = { first_hustle_done = true, left_crime_path = true },
+				removeFlags = { crime_path_active = true },
+			},
+		},
+	},
+	
+	{
+		id = "crime_street_confrontation",
+		emoji = "😤",
+		title = "Street Confrontation",
+		text = "Another hustler is encroaching on your territory. They've been stealing your customers.",
+		question = "How do you handle this?",
+		category = "crime_path",
+		weight = 12,
+		minAge = 16,
+		maxAge = 50,
+		cooldown = 2,
+		requiresFlags = { crime_path_active = true, first_hustle_done = true },
+		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX #3: Eligibility check to ensure on crime path
+		eligibility = function(state) return isOnCrimePath(state) and isNotLegitCareer(state) end,
+		hasMinigame = true,
+		minigameType = "confrontation",
+		minigameOptions = {
+			context = "street_dispute",
+			title = "😤 STREET SHOWDOWN",
+		},
+		textVariants = {
+			"Some punk is moving in on your turf. Time to establish dominance.",
+			"A rival hustler has been bad-mouthing you and stealing your clientele.",
+			"Word on the street is someone's trying to push you out. Not happening.",
+		},
+		choices = {
+			{
+				text = "👊 Confront them directly",
+				effects = { Happiness = -5 },
+				feedText = "You handled it in person.",
+				setFlags = { street_fighter = true },
+				minigameRequired = true,
+				onResolve = function(state, minigameWon)
+					if minigameWon then
+						state:ModifyStat("Happiness", 15)
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 15
+						state:AddFeed("👊 You earned respect on the streets. They won't mess with you again.")
+					else
+						state:ModifyStat("Health", -20)
+						state:AddFeed("👊 The fight didn't go your way. Lost face and got hurt.")
+					end
+				end,
+			},
+			{
+				text = "🗣️ Talk it out - split the territory",
+				effects = { Smarts = 5 },
+				feedText = "Negotiation is sometimes the smarter play.",
+				setFlags = { diplomatic_criminal = true },
+				onResolve = function(state)
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 5
+					state:AddFeed("🤝 You worked out a deal. Smart move.")
+				end,
+			},
+			{
+				text = "🔪 Send them a message",
+				effects = { Happiness = -10 },
+				feedText = "You made sure they understood the consequences.",
+				setFlags = { ruthless_rep = true },
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then
+						state.Flags.wanted_assault = true
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🚔 Things got heated. Now you might have cops looking.")
+					else
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 25
+						state:AddFeed("🔪 Message received. Your reputation just grew.")
+					end
+				end,
+			},
+			{
+				text = "🏃 Move to a different area",
+				effects = { Happiness = -5 },
+				feedText = "You found new territory instead of fighting.",
+				onResolve = function(state)
+					state:AddFeed("🏃 Found better opportunities elsewhere.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STAGE 2: OPERATOR - Running Operations
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_first_crew",
+		emoji = "👥",
+		title = "Building Your Crew",
+		text = "Your reputation is growing. Some younger hustlers want to work under you. Time to build a crew.",
+		question = "How do you structure your operation?",
+		category = "crime_path",
+		weight = 12,
+		minAge = 18,
+		maxAge = 45,
+		cooldown = 3,
+		oneTime = true,
+		requiresFlags = { crime_path_active = true, first_hustle_done = true },
+		blockedByFlags = { in_prison = true, has_crew = true },
+		eligibility = function(state)
+			return (state.Flags.crime_reputation or 0) >= 20
+		end,
+		choices = {
+			{
+				text = "👥 Recruit a small, loyal crew (3-4 people)",
+				effects = { Happiness = 10 },
+				feedText = "Quality over quantity. You handpicked the best.",
+				setFlags = { has_crew = true, small_crew = true, crime_rank = "operator" },
+				onResolve = function(state)
+					state.Flags.crew_size = 4
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 20
+					state:AddFeed("👥 You now have a crew. Operations can expand.")
+				end,
+			},
+			{
+				text = "🌐 Build a larger network (10+ people)",
+				effects = { Happiness = 5 },
+				feedText = "Strength in numbers. Your network is growing.",
+				setFlags = { has_crew = true, large_crew = true, crime_rank = "operator" },
+				onResolve = function(state)
+					state.Flags.crew_size = 12
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 30
+					state.Flags.more_heat = true
+					state:AddFeed("🌐 Big crew means big operations - and more attention.")
+				end,
+			},
+			{
+				text = "🤐 Stay solo - trust no one",
+				effects = { Smarts = 5 },
+				feedText = "Lone wolf. Less risk, less reward.",
+				setFlags = { solo_operator = true, crime_rank = "operator" },
+				onResolve = function(state)
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 10
+					state:AddFeed("🤐 Operating alone keeps things clean.")
+				end,
+			},
+		},
+	},
+
+	{
+		id = "crime_big_score",
+		emoji = "🏦",
+		title = "The Big Score",
+		text = "An opportunity for a major job has come up. This could set you up for life - or land you behind bars.",
+		question = "How do you approach this?",
+		category = "crime_path",
+		weight = 10,
+		minAge = 20,
+		maxAge = 55,
+		cooldown = 4,
+		requiresFlags = { crime_path_active = true, has_crew = true },
+		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX #4: Must have minimum crime reputation
+		eligibility = function(state) return hasCrimeReputation(state, 30) end,
+		hasMinigame = true,
+		minigameType = "heist",
+		minigameOptions = {
+			context = "robbery_heist",
+			title = "🏦 THE BIG SCORE",
+			difficulty = "hard",
+		},
+		choices = {
+			{
+				text = "🏦 Hit the bank",
+				effects = {},
+				feedText = "Going for the biggest prize...",
+				setFlags = { attempted_bank_heist = true },
+				minigameRequired = true,
+				onResolve = function(state, minigameWon)
+					if minigameWon then
+						local payout = RANDOM:NextInteger(50000, 200000)
+						state.Money = (state.Money or 0) + payout
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 50
+						state.Flags.legendary_heist = true
+						state:ModifyStat("Happiness", 30)
+						state:AddFeed(string.format("🏦 THE HEIST WAS A SUCCESS! Scored $%d!", payout))
+					else
+						state.InJail = true
+						state.JailYearsLeft = RANDOM:NextInteger(5, 15)
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+						state.Flags.criminal_record = true
+						state.CurrentJob = nil
+						state:ModifyStat("Happiness", -30)
+						state:AddFeed(string.format("🚔 CAUGHT! Sentenced to %d years.", state.JailYearsLeft))
+					end
+				end,
+			},
+			{
+				text = "💎 Rob a jewelry store",
+				effects = {},
+				feedText = "Smaller target, still big payoff.",
+				minigameRequired = true,
+				onResolve = function(state, minigameWon)
+					if minigameWon then
+						local payout = RANDOM:NextInteger(20000, 80000)
+						state.Money = (state.Money or 0) + payout
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 30
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed(string.format("💎 Clean getaway! Scored $%d in jewels!", payout))
+					else
+						state.InJail = true
+						state.JailYearsLeft = RANDOM:NextInteger(3, 8)
+						state.Flags.in_prison = true
+						state.Flags.criminal_record = true
+						state.CurrentJob = nil
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed(string.format("🚔 Busted! %d years in prison.", state.JailYearsLeft))
+					end
+				end,
+			},
+			{
+				text = "📦 Hit a cargo shipment",
+				effects = {},
+				feedText = "Lower profile, good money.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.7 then
+						local payout = RANDOM:NextInteger(15000, 45000)
+						state.Money = (state.Money or 0) + payout
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 20
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("📦 Cargo secured! Made $%d.", payout))
+					else
+						state.Flags.wanted = true
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📦 Job went sideways. Cops are asking questions.")
+					end
+				end,
+			},
+			{
+				text = "🙅 Too risky - pass on this one",
+				effects = { Happiness = 5 },
+				feedText = "Sometimes the smart play is to walk away.",
+				onResolve = function(state)
+					state:AddFeed("🙅 You trusted your gut and passed. There'll be other scores.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STAGE 3: LIEUTENANT - Managing Territory
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_territory_war",
+		emoji = "⚔️",
+		title = "Turf War",
+		text = "A rival crew is moving in on your territory. This means war.",
+		question = "How do you defend your turf?",
+		category = "crime_path",
+		weight = 10,
+		minAge = 22,
+		maxAge = 55,
+		cooldown = 3,
+		requiresFlags = { crime_path_active = true, has_crew = true },
+		blockedByFlags = { in_prison = true },
+		hasMinigame = true,
+		minigameType = "confrontation",
+		minigameOptions = {
+			context = "gang_war",
+			title = "⚔️ TURF WAR",
+			difficulty = "hard",
+		},
+		eligibility = function(state)
+			return (state.Flags.crime_reputation or 0) >= 50
+		end,
+		choices = {
+			{
+				text = "⚔️ Go to war",
+				effects = { Health = -10 },
+				feedText = "War it is. Blood will be spilled.",
+				setFlags = { at_war = true, violent_rep = true },
+				minigameRequired = true,
+				onResolve = function(state, minigameWon)
+					if minigameWon then
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 40
+						state.Flags.crime_rank = "lieutenant"
+						state.Flags.expanded_territory = true
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("⚔️ Victory! Your territory doubled. You're a lieutenant now.")
+					else
+						state.Flags.crew_size = math.max(1, (state.Flags.crew_size or 4) - 2)
+						state:ModifyStat("Health", -25)
+						state:AddFeed("⚔️ The war cost you. Lost crew members and took hits.")
+					end
+				end,
+			},
+			{
+				text = "🤝 Negotiate a truce",
+				effects = { Smarts = 5 },
+				feedText = "Maybe there's a way to share the pie.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 15
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🤝 Truce established. You kept your territory and made a connection.")
+					else
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) - 10
+						state:AddFeed("🤝 They saw it as weakness. Lost some respect but avoided bloodshed.")
+					end
+				end,
+			},
+			{
+				text = "💰 Buy them out",
+				effects = {},
+				feedText = "Money talks.",
+				eligibility = function(state) return (state.Money or 0) >= 50000 end,
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 50000
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 25
+					state.Flags.businessman_criminal = true
+					state:AddFeed("💰 Paid $50,000. They're out. Business as usual.")
+				end,
+			},
+			{
+				text = "🚗 Relocate operations",
+				effects = { Happiness = -10 },
+				feedText = "Sometimes retreat is the best strategy.",
+				onResolve = function(state)
+					state:AddFeed("🚗 Moved to a new area. Starting fresh.")
+				end,
+			},
+		},
+	},
+
+	{
+		id = "crime_inside_man",
+		emoji = "🕵️",
+		title = "Inside Man",
+		text = "You've got a contact inside a major corporation offering to feed you information for profitable opportunities.",
+		question = "Do you take the deal?",
+		category = "crime_path",
+		weight = 8,
+		minAge = 25,
+		maxAge = 55,
+		cooldown = 4,
+		requiresFlags = { crime_path_active = true },
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return (state.Flags.crime_reputation or 0) >= 40
+		end,
+		choices = {
+			{
+				text = "✅ Take the deal - white collar crime pays",
+				effects = { Smarts = 5 },
+				feedText = "Moving up to more sophisticated operations.",
+				setFlags = { white_collar_criminal = true, has_inside_info = true },
+				onResolve = function(state)
+					local payout = RANDOM:NextInteger(25000, 75000)
+					state.Money = (state.Money or 0) + payout
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 20
+					state:AddFeed(string.format("🕵️ First tip paid off! Made $%d from insider trading.", payout))
+				end,
+			},
+			{
+				text = "🤔 Test them with small jobs first",
+				effects = { Smarts = 3 },
+				feedText = "Trust is earned.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.8 then
+						state.Flags.has_inside_info = true
+						local payout = RANDOM:NextInteger(8000, 20000)
+						state.Money = (state.Money or 0) + payout
+						state:AddFeed(string.format("🕵️ They're legit. Made $%d and have a valuable contact.", payout))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🕵️ Something's off. You backed out before trouble.")
+					end
+				end,
+			},
+			{
+				text = "❌ Too risky - federal charges",
+				effects = { Happiness = 5 },
+				feedText = "Street crime is one thing, but the feds are another.",
+				onResolve = function(state)
+					state:AddFeed("❌ Smart move. White collar crime brings federal attention.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STAGE 4: UNDERBOSS - Right Hand
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_underboss_offer",
+		emoji = "🎩",
+		title = "The Big Leagues",
+		text = "A major crime boss has noticed your operations. They're offering you a position as underboss in their organization.",
+		question = "This is the big leagues. What do you do?",
+		category = "crime_path",
+		weight = 6,
+		minAge = 28,
+		maxAge = 55,
+		cooldown = 5,
+		oneTime = true,
+		requiresFlags = { crime_path_active = true },
+		blockedByFlags = { in_prison = true, is_underboss = true },
+		eligibility = function(state)
+			return (state.Flags.crime_reputation or 0) >= 80
+		end,
+		choices = {
+			{
+				text = "🎩 Accept - become the underboss",
+				effects = { Happiness = 20 },
+				feedText = "You've reached the top. Almost.",
+				setFlags = { is_underboss = true, crime_rank = "underboss", organized_crime = true },
+				onResolve = function(state)
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 50
+					local payout = RANDOM:NextInteger(100000, 300000)
+					state.Money = (state.Money or 0) + payout
+					state:AddFeed(string.format("🎩 Welcome to the organization. Signing bonus: $%d", payout))
+				end,
+			},
+			{
+				text = "🏆 Decline - build my own empire",
+				effects = { Happiness = 10 },
+				feedText = "You answer to no one.",
+				setFlags = { independent_boss = true, crime_rank = "independent_boss" },
+				onResolve = function(state)
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 30
+					state:AddFeed("🏆 You're building your own empire. Respect.")
+				end,
+			},
+			{
+				text = "🤔 Ask for time to think",
+				effects = {},
+				feedText = "Big decisions need time.",
+				setFlags = { pending_underboss_offer = true },
+				onResolve = function(state)
+					state:AddFeed("🤔 They'll give you a week to decide.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- STAGE 5: BOSS - Running the Show
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_boss_crown",
+		emoji = "👑",
+		title = "The Crown",
+		text = "The old boss is stepping down. It's time for new leadership. All eyes are on you.",
+		question = "Will you take the crown?",
+		category = "crime_path",
+		weight = 4,
+		minAge = 35,
+		maxAge = 65,
+		cooldown = 0,
+		oneTime = true,
+		requiresFlags = { crime_path_active = true, is_underboss = true },
+		blockedByFlags = { in_prison = true, is_crime_boss = true },
+		isMilestone = true,
+		choices = {
+			{
+				text = "👑 Take the crown - become the Boss",
+				effects = { Happiness = 30 },
+				feedText = "You've reached the top of the criminal underworld.",
+				setFlags = { is_crime_boss = true, crime_rank = "boss", crime_empire_complete = true },
+				onResolve = function(state)
+					state.Flags.crime_reputation = 100
+					local payout = RANDOM:NextInteger(500000, 1000000)
+					state.Money = (state.Money or 0) + payout
+					state.Fame = math.min(100, (state.Fame or 0) + 30)
+					state:AddFeed(string.format("👑 ALL HAIL THE NEW BOSS! Your empire is worth $%d", payout))
+				end,
+			},
+			{
+				text = "🙅 Pass - too much heat",
+				effects = { Happiness = 5 },
+				feedText = "Heavy is the head that wears the crown.",
+				onResolve = function(state)
+					state:AddFeed("🙅 You passed on the crown. Smart or scared? Only time will tell.")
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ONGOING EVENTS - Can trigger multiple times
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "crime_heat_warning",
+		emoji = "🚔",
+		title = "Heat",
+		text = "Word on the street is the cops are getting close. They've been asking questions about you.",
+		question = "How do you handle the heat?",
+		category = "crime_path",
+		weight = 10,
+		minAge = 18,
+		maxAge = 70,
+		cooldown = 3,
+		requiresFlags = { crime_path_active = true },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "🏝️ Lay low for a while",
+				effects = { Happiness = -5 },
+				feedText = "Time to disappear.",
+				setFlags = { laying_low = true },
+				onResolve = function(state)
+					state.Flags.wanted = nil
+					state.Flags.heat = nil
+					state:AddFeed("🏝️ You went dark. Heat died down.")
+				end,
+			},
+			{
+				text = "💰 Bribe the right people",
+				effects = {},
+				feedText = "Everyone has a price.",
+				eligibility = function(state) return (state.Money or 0) >= 25000 end,
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 25000
+					state.Flags.wanted = nil
+					state.Flags.has_cops_paid_off = true
+					state:AddFeed("💰 Paid $25,000. Problem solved... for now.")
+				end,
+			},
+			{
+				text = "🏃 Business as usual",
+				effects = {},
+				feedText = "You didn't get this far by being scared.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then
+						state.InJail = true
+						state.JailYearsLeft = RANDOM:NextInteger(2, 6)
+						state.Flags.in_prison = true
+						state.Flags.criminal_record = true
+						state.CurrentJob = nil
+						state:AddFeed(string.format("🚔 They got you. %d years.", state.JailYearsLeft))
+					else
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 10
+						state:AddFeed("🏃 Stayed cool under pressure. Cops got nothing.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "crime_betrayal",
+		emoji = "🗡️",
+		title = "Betrayal",
+		text = "One of your crew members has been talking to the cops. You have a rat problem.",
+		question = "How do you deal with the snitch?",
+		category = "crime_path",
+		weight = 8,
+		minAge = 20,
+		maxAge = 60,
+		cooldown = 4,
+		requiresFlags = { crime_path_active = true, has_crew = true },
+		blockedByFlags = { in_prison = true },
+		hasMinigame = true,
+		minigameType = "confrontation",
+		minigameOptions = {
+			context = "betrayal_confrontation",
+			title = "🗡️ RAT HUNT",
+		},
+		choices = {
+			{
+				text = "😤 Confront them",
+				effects = {},
+				feedText = "Time to have a conversation.",
+				minigameRequired = true,
+				onResolve = function(state, minigameWon)
+					if minigameWon then
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 20
+						state.Flags.crew_size = math.max(1, (state.Flags.crew_size or 4) - 1)
+						state:AddFeed("😤 The rat's been dealt with. Message sent.")
+					else
+						state:ModifyStat("Health", -15)
+						state:AddFeed("😤 The confrontation went badly. You're hurt.")
+					end
+				end,
+			},
+			{
+				text = "🔍 Gather evidence first",
+				effects = { Smarts = 5 },
+				feedText = "Make sure you have the right person.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.7 then
+						state.Flags.found_the_rat = true
+						state:AddFeed("🔍 Found definitive proof. Now you can act.")
+					else
+						state:AddFeed("🔍 False alarm. It wasn't who you thought.")
+					end
+				end,
+			},
+			{
+				text = "📦 Give them false information",
+				effects = { Smarts = 10 },
+				feedText = "Use them to your advantage.",
+				setFlags = { counter_intelligence = true },
+				onResolve = function(state)
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 15
+					state:AddFeed("📦 Fed them bad intel. Cops chasing ghosts now.")
+				end,
+			},
+		},
+	},
+
+	{
+		id = "crime_empire_expansion",
+		emoji = "🌐",
+		title = "Empire Expansion",
+		text = "Your operations are profitable. Time to think about expanding into new markets.",
+		question = "Where do you expand?",
+		category = "crime_path",
+		weight = 8,
+		minAge = 25,
+		maxAge = 55,
+		cooldown = 4,
+		requiresFlags = { crime_path_active = true },
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return (state.Flags.crime_reputation or 0) >= 30 and (state.Money or 0) >= 20000
+		end,
+		choices = {
+			{
+				text = "🏙️ Expand to a new city",
+				effects = {},
+				feedText = "New territory, new opportunities.",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 20000
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 25
+						local monthly = RANDOM:NextInteger(5000, 15000)
+						state.Money = (state.Money or 0) + monthly * 2
+						state:AddFeed(string.format("🏙️ New city operation successful! Making $%d/month.", monthly))
+					else
+						state.Flags.territory_conflict = true
+						state:AddFeed("🏙️ Ran into local competition. This won't be easy.")
+					end
+				end,
+			},
+			{
+				text = "💻 Go digital - cyber crime",
+				effects = { Smarts = 10 },
+				feedText = "The future of crime is online.",
+				setFlags = { cyber_criminal = true },
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 10000
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 15
+					local payout = RANDOM:NextInteger(15000, 50000)
+					state.Money = (state.Money or 0) + payout
+					state:AddFeed(string.format("💻 Digital operations established. First score: $%d", payout))
+				end,
+			},
+			{
+				text = "🏭 Legitimate front businesses",
+				effects = {},
+				feedText = "Clean money is the best money.",
+				setFlags = { has_front_business = true },
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 50000
+					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 10
+					state:AddFeed("🏭 Opened a laundromat. Now you can clean your money.")
+				end,
+			},
+			{
+				text = "🛑 Stay focused on current operations",
+				effects = { Happiness = 5 },
+				feedText = "Don't overextend.",
+				onResolve = function(state)
+					state:AddFeed("🛑 Staying lean and mean.")
+				end,
+			},
+		},
+	},
+}
+
+return events

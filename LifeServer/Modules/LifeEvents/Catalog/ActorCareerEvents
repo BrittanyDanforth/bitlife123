@@ -1,0 +1,515 @@
+--[[
+	Actor / Entertainment Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Actor/Extra
+	- TV Actor
+	- Movie Star
+	- A-List Actor
+	- Director
+	- Producer
+	
+	CRITICAL FIX #RVS-5: Premium path blocking for royalty/mafia players
+]]
+
+local ActorCareerEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ACTOR-1: Premium path blocking
+-- Actor events should NOT fire for royalty or mafia players (unless already famous)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already an actor/famous, allow
+	if flags.fame_career or flags.a_list_actor or flags.tv_regular then
+		return false
+	end
+	if state.FameState and state.FameState.careerPath then
+		return false
+	end
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose mafia path
+	if flags.primary_wish_type == "mafia" then return true end
+	if flags.in_mob then return true end
+	if state.MobState and state.MobState.inMob then return true end
+	
+	return false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #11: Enhanced helper functions for acting career
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function hasActingJob(state)
+	-- CRITICAL FIX #RVS-ACTOR-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	-- CRITICAL FIX #12: Exclude non-acting entertainment careers
+	if jobId:find("athlete") or jobId:find("player") or jobId:find("singer") 
+	   or jobId:find("musician") or jobId:find("rapper") or jobId:find("dj") then
+		return false
+	end
+	return jobId:find("actor") or jobId:find("actress") or jobId:find("movie") or 
+		   jobId:find("director") or jobId:find("producer") or 
+		   (jobCat == "acting" or jobCat == "film")
+end
+
+local function isMovieStar(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("movie_star") or jobId:find("a_list") or jobId:find("film_actor")
+		or (state.Flags and state.Flags.a_list_actor == true)
+end
+
+-- CRITICAL FIX #13: Check for TV actor specifically
+local function isTVActor(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("tv_actor") or jobId:find("television") or jobId:find("sitcom")
+		or (state.Flags and state.Flags.tv_regular == true)
+end
+
+-- CRITICAL FIX #14: Check if player is struggling/extra vs established
+local function isEstablishedActor(state)
+	if not hasActingJob(state) then return false end
+	local fame = state.Fame or 0
+	return fame >= 30 or isMovieStar(state) or isTVActor(state)
+end
+
+-- CRITICAL FIX #15: Prevent actor events for extras who aren't really actors yet
+local function isNotJustExtra(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	if jobId:find("extra") and not jobId:find("actor") then
+		return (state.Fame or 0) >= 10 -- Extras need some fame first
+	end
+	return true
+end
+
+ActorCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- AUDITION EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "actor_big_audition",
+		title = "🎬 Big Audition!",
+		emoji = "🎬",
+		text = "You've got an audition for a major role in a blockbuster movie! This could change everything!",
+		category = "career_acting",
+		weight = 18,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Prepare intensely - method acting",
+				effects = { Health = -3 },
+				feedText = "Living as the character for weeks...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 40
+						state.Flags = state.Flags or {}
+						state.Flags.landed_big_role = true
+						state:AddFeed("🎬 YOU GOT THE ROLE! Career-defining moment! Filming starts next month!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎬 They loved your audition but went with someone else. So close!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎬 Casting director said your method acting was 'too much'. Ouch.")
+					end
+				end,
+			},
+			{
+				text = "Stay natural - be yourself",
+				effects = { Happiness = 3 },
+				feedText = "Confidence is key...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 30
+						state:AddFeed("🎬 Your natural charisma won them over! You're in!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🎬 Good audition, but they wanted someone with more 'range'.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎬 They said you didn't bring enough energy. Tough business.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_scandal_photos",
+		title = "📸 Paparazzi Scandal!",
+		emoji = "📸",
+		text = "Paparazzi caught you in a compromising situation! The tabloids are having a field day!",
+		category = "career_acting",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isMovieStar,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Issue a public apology",
+				effects = { Happiness = -5 },
+				feedText = "Damage control mode...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📸 Public forgave you. The apology was well-received.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Fame = (state.Fame or 0) - 15
+						state:AddFeed("📸 Apology made you look guilty. Should have stayed quiet.")
+					end
+				end,
+			},
+			{
+				text = "Deny everything",
+				effects = {},
+				feedText = "Those photos are fake!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 8)
+						state.Fame = (state.Fame or 0) + 5
+						state:AddFeed("📸 Managed to spin it! Media moved on to the next story.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Fame = (state.Fame or 0) - 25
+						state.Flags = state.Flags or {}
+						state.Flags.scandal_tainted = true
+						state:AddFeed("📸 More photos emerged. Now you're a liar AND a scandal. Career hit!")
+					end
+				end,
+			},
+			{
+				text = "Lean into it - all press is good press",
+				effects = {},
+				feedText = "Playing the villain...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Fame = (state.Fame or 0) + 20
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📸 Your bad boy/girl image is now your brand! Offers for edgy roles!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📸 Studios don't want the drama. Several roles fell through.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_oscar_nomination",
+		title = "🏆 Oscar Nomination!",
+		emoji = "🏆",
+		text = "You've been nominated for an Academy Award! The biggest night in Hollywood is coming up!",
+		category = "career_acting",
+		weight = 10,
+		minAge = 22, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isMovieStar,
+		blockedByFlags = { in_prison = true, oscar_winner = true },
+		
+		choices = {
+			{
+				text = "Campaign hard for the win",
+				effects = { Money = -50000, Health = -3 },
+				feedText = "For Your Consideration...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(500000, 2000000)
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 100
+						state.Flags = state.Flags or {}
+						state.Flags.oscar_winner = true
+						state:AddFeed("🏆 AND THE OSCAR GOES TO... YOU! Academy Award winner! This changes everything!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state.Fame = (state.Fame or 0) + 20
+						state:AddFeed("🏆 Didn't win, but being nominated was incredible! Your price went up!")
+					end
+				end,
+			},
+			{
+				text = "Just enjoy the nomination",
+				effects = { Happiness = 10 },
+				feedText = "It's an honor just to be nominated...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state.Money = (state.Money or 0) + math.random(300000, 1000000)
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 80
+						state.Flags = state.Flags or {}
+						state.Flags.oscar_winner = true
+						state:AddFeed("🏆 WON WITHOUT CAMPAIGNING! The most authentic Oscar speech ever!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🏆 Didn't win, but what a night! Career boost regardless!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_difficult_director",
+		title = "Difficult Director",
+		emoji = "😤",
+		text = "The director on your new film is INTENSE. They're demanding 50+ takes of every scene and publicly berating the cast.",
+		category = "career_acting",
+		weight = 14,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Push through professionally",
+				effects = { Happiness = -8, Health = -3 },
+				feedText = "For the art...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(20000, 80000)
+						state.Flags = state.Flags or {}
+						state.Flags.professional_actor = true
+						state:AddFeed("😤 Film was a masterpiece! Director's vision paid off. Award buzz!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 Film flopped despite all that torture. What was the point?")
+					end
+				end,
+			},
+			{
+				text = "Stand up to the director",
+				effects = {},
+				feedText = "This is harassment!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("😤 Director backed down. Other actors thanked you for speaking up!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("😤 Got fired from the project. Word spreads - 'difficult to work with'.")
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed("😤 Story went viral! Industry praised you for standing up to abuse!")
+					end
+				end,
+			},
+			{
+				text = "Secretly record and document everything",
+				effects = { Smarts = 2 },
+				feedText = "Building a case...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("😤 Exposé came out! Director's career over. Huge settlement for you!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 Decided against going public. Sometimes silence is wisdom.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_typecasting",
+		title = "Typecasting Problem",
+		emoji = "🎭",
+		text = "You're becoming known for playing the same type of character. Directors only want you for that one role type.",
+		category = "career_acting",
+		weight = 12,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take a completely different role",
+				effects = { Smarts = 3 },
+				feedText = "Proving your range...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state:ModifyStat("Happiness", 15)
+						state.Fame = (state.Fame or 0) + 20
+						state.Flags = state.Flags or {}
+						state.Flags.versatile_actor = true
+						state:AddFeed("🎭 REVELATION! Critics amazed by your range! New phase of career!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎭 Mixed reviews. Some say stick to what you know.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎭 Film bombed. 'Miscast' written in every review. Painful.")
+					end
+				end,
+			},
+			{
+				text = "Embrace your niche",
+				effects = { Happiness = 5 },
+				feedText = "If it works, why change?",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(30000, 100000)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🎭 Steady work playing what audiences love! Not glamorous but reliable.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_franchise_offer",
+		title = "🦸 Superhero Franchise Offer!",
+		emoji = "🦸",
+		text = "A major studio wants you to play a superhero in their cinematic universe! Multi-movie deal!",
+		category = "career_acting",
+		weight = 10,
+		minAge = 20, maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true, franchise_star = true },
+		
+		choices = {
+			{
+				text = "Sign for 6 movies!",
+				effects = { Happiness = 15 },
+				feedText = "Time to become a superhero!",
+				onResolve = function(state)
+					local contract = math.random(5000000, 20000000)
+					state.Money = (state.Money or 0) + contract
+					state.Fame = (state.Fame or 0) + 80
+					state.Flags = state.Flags or {}
+					state.Flags.franchise_star = true
+					state.Flags.superhero_actor = true
+					state:AddFeed(string.format("🦸 SUPERHERO! $%s contract! Kids will wear costumes of you!", contract))
+				end,
+			},
+			{
+				text = "Decline - superhero movies are beneath you",
+				effects = { Smarts = 2 },
+				feedText = "Real actors do prestige films...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🦸 Your indie career flourished! Credibility intact!")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("🦸 Watched the actor who replaced you become a megastar. Regrets.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_nude_scene",
+		title = "Controversial Scene Request",
+		emoji = "😳",
+		text = "The script calls for a very explicit scene. The director says it's 'essential to the story'.",
+		category = "career_acting",
+		weight = 12,
+		minAge = 21, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Do the scene as written",
+				effects = { Happiness = -3 },
+				feedText = "It's art, right?",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("😳 Scene was tasteful and the film got critical acclaim. Worth it!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("😳 Scene felt exploitative. Now it's everywhere online. Regrets.")
+					end
+				end,
+			},
+			{
+				text = "Negotiate for a body double",
+				effects = { Smarts = 2 },
+				feedText = "Setting boundaries...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😳 Compromise reached! Scene still works with a double.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😳 Director refused. Had to choose between the role and your comfort.")
+					end
+				end,
+			},
+			{
+				text = "Refuse completely",
+				effects = { Happiness = 5 },
+				setFlags = { maintains_boundaries = true },
+				feedText = "Not comfortable with this.",
+			},
+		},
+	},
+}
+
+return ActorCareerEvents

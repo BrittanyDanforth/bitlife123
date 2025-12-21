@@ -1,0 +1,4475 @@
+--[[
+	╔══════════════════════════════════════════════════════════════════════════════╗
+	║                         LIFE EVENTS ENGINE v2.0                              ║
+	║                     AAA-Quality Event Management System                       ║
+	╠══════════════════════════════════════════════════════════════════════════════╣
+	║  This is the ENGINE - it loads events from external module files.            ║
+	║                                                                              ║
+	║  FEATURES:                                                                   ║
+	║  • Modular event loading from separate category files                        ║
+	║  • Comprehensive contextual requirements (job, partner, flags, stats, etc.)  ║
+	║  • Weighted random selection with variety tracking                           ║
+	║  • Event history & cooldown management                                       ║
+	║  • Dynamic relationship creation                                             ║
+	║  • Life stage awareness                                                      ║
+	║                                                                              ║
+	║  USAGE:                                                                      ║
+	║    local LifeEvents = require(path.to.LifeEvents)                           ║
+	║    local events = LifeEvents.buildYearQueue(playerState, { maxEvents = 1 }) ║
+	║    LifeEvents.EventEngine.completeEvent(eventDef, choiceIndex, state)       ║
+	╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+
+local LifeEvents = {}
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CORE SYSTEMS
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local RANDOM = Random.new()
+local AllEvents = {}
+local EventsByCategory = {}
+local LoadedModules = {}
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- LIFE STAGES CONFIGURATION
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local LifeStages = {
+	-- CRITICAL FIX #715-722: DRASTICALLY reduced quietChance for MUCH MORE events per year!
+	-- Old values caused too many "quiet years" where nothing happened - BORING!
+	-- Players should get EVENTS almost every year for engaging gameplay
+	{ id = "baby",        minAge = 0,  maxAge = 2,   quietChance = 0.05 },  -- CRITICAL FIX #715: Was 0.1
+	{ id = "toddler",     minAge = 3,  maxAge = 4,   quietChance = 0.05 },  -- CRITICAL FIX #716: Was 0.15
+	{ id = "child",       minAge = 5,  maxAge = 12,  quietChance = 0.08 },  -- CRITICAL FIX #717: Was 0.2
+	{ id = "teen",        minAge = 13, maxAge = 17,  quietChance = 0.05 },  -- CRITICAL FIX #718: Was 0.15
+	{ id = "young_adult", minAge = 18, maxAge = 29,  quietChance = 0.08 },  -- CRITICAL FIX #719: Was 0.2
+	{ id = "adult",       minAge = 30, maxAge = 49,  quietChance = 0.1 },   -- CRITICAL FIX #720: Was 0.25
+	{ id = "middle_age",  minAge = 50, maxAge = 64,  quietChance = 0.12 },  -- CRITICAL FIX #721: Was 0.3
+	{ id = "senior",      minAge = 65, maxAge = 999, quietChance = 0.15 },  -- CRITICAL FIX #722: Was 0.35
+}
+
+-- Category mappings per life stage
+-- CRITICAL FIX: Added career_racing and career_hacker to appropriate stages
+-- Racing discovery can happen as young as age 10, hacker discovery at age 12
+-- CRITICAL FIX: Added "teen" to young_adult to catch late-teen events like graduation
+-- CRITICAL FIX: Added career_street, career_police, and assets categories which were MISSING!
+-- These categories MUST be included or their events NEVER trigger!
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #26: Added career categories for all job-specific events
+-- This ensures tech, medical, finance, office, creative events can trigger
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #CATEGORY-1: Added ALL missing event categories!
+-- Many events use categories like "finance", "health", "family", "legal" etc.
+-- But these weren't in StageCategories so the events NEVER triggered!
+-- User complaint: "I havnt had alot of events happen" - because categories were missing!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local StageCategories = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EXPANDED BABY & TODDLER CATEGORIES FOR MORE ENGAGING EARLY GAME!
+	-- User complaint: "GAME IS BORING FIRST 5 MINUTES"
+	-- Early life needs MORE variety - fun moments, adventures, discoveries!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WISH-2: Added "dream" and "wish" categories for childhood wish fulfillment events!
+	-- premium_career_day_dream (ages 5-7) and premium_magic_wish (ages 6-10) use these categories
+	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "dream", "wish" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social", "dream", "wish" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish" },
+	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
+	-- Also added career_entertainment for general entertainment careers
+	-- CRITICAL FIX #631: Added career_creative for teen content creators!
+	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
+	-- CRITICAL FIX #CATEGORY-2: Added finance, health, family, legal, pets, hobbies, social, seasonal, milestone categories!
+	-- CRITICAL FIX #WISH-1: Added "romance" category for wish fulfillment events (royalty romance, etc.)
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream" },
+	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+}
+
+function LifeEvents.getLifeStage(age)
+	for _, stage in ipairs(LifeStages) do
+		if age >= stage.minAge and age <= stage.maxAge then
+			return stage
+		end
+	end
+	return LifeStages[6] -- default to adult
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- MODULE LOADING SYSTEM
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local function safeRequire(moduleInstance)
+	local success, result = pcall(function()
+		return require(moduleInstance)
+	end)
+	if success then
+		return result
+	else
+		warn("[LifeEvents] ❌ Failed to require module:", moduleInstance.Name, "-", result)
+		return nil
+	end
+end
+
+local function findModule(moduleName)
+	-- Method 1: Direct child of this script (Rojo: init.lua children)
+	local child = script:FindFirstChild(moduleName)
+	if child and child:IsA("ModuleScript") then
+		return child
+	end
+	
+	-- Method 2: Sibling in parent folder
+	if script.Parent then
+		child = script.Parent:FindFirstChild(moduleName)
+		if child and child:IsA("ModuleScript") and child ~= script then
+			return child
+		end
+	end
+	
+	-- Method 3: Check inside Catalog subfolder (for organized event modules)
+	local catalogFolder = script:FindFirstChild("Catalog")
+	if catalogFolder then
+		child = catalogFolder:FindFirstChild(moduleName)
+		if child and child:IsA("ModuleScript") then
+			return child
+		end
+	end
+	
+	-- Method 4: Check Catalog in parent folder (alternate structure)
+	if script.Parent then
+		catalogFolder = script.Parent:FindFirstChild("Catalog")
+		if catalogFolder then
+			child = catalogFolder:FindFirstChild(moduleName)
+			if child and child:IsA("ModuleScript") then
+				return child
+			end
+		end
+	end
+	
+	return nil
+end
+
+local function loadEventModule(moduleName, categoryName)
+	local moduleInstance = findModule(moduleName)
+	if not moduleInstance then
+		warn("[LifeEvents] ⚠️ Module not found:", moduleName)
+		return 0
+	end
+	
+	local moduleData = safeRequire(moduleInstance)
+	if not moduleData then
+		return 0
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #41-43: Support multiple export formats including premium modules
+	-- Premium modules (MafiaEvents, RoyaltyEvents, CelebrityEvents) use .LifeEvents
+	-- Standard modules use .events, .Events, or return an array directly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local events = moduleData.events 
+		or moduleData.Events 
+		or moduleData.LifeEvents  -- CRITICAL FIX: Premium modules use LifeEvents
+		or moduleData.GeneralEvents  -- Some modules use GeneralEvents
+		or moduleData
+	
+	if type(events) ~= "table" then
+		warn("[LifeEvents] ⚠️ Invalid events format in:", moduleName)
+		return 0
+	end
+	
+	-- Ensure it's an array of events
+	if events[1] == nil and next(events) ~= nil then
+		-- It's a dictionary, not an array - check for nested arrays
+		-- CRITICAL FIX #42: CelebrityEvents has events nested in career paths
+		-- Try to find and combine all event arrays from the module
+		local combinedEvents = {}
+		
+		-- Check for common event array names
+		local possibleArrayNames = { "LifeEvents", "GeneralFameEvents", "events", "Events" }
+		for _, arrayName in ipairs(possibleArrayNames) do
+			if type(moduleData[arrayName]) == "table" and moduleData[arrayName][1] ~= nil then
+				for _, event in ipairs(moduleData[arrayName]) do
+					table.insert(combinedEvents, event)
+				end
+			end
+		end
+		
+		-- If still no events found, skip
+		if #combinedEvents == 0 then
+			warn("[LifeEvents] ⚠️ Events should be an array in:", moduleName, "- found dictionary without event arrays")
+			return 0
+		end
+		
+		events = combinedEvents
+	end
+	
+	local defaultCategory = categoryName or moduleName:lower()
+	EventsByCategory[defaultCategory] = EventsByCategory[defaultCategory] or {}
+	
+	local count = 0
+	for _, event in ipairs(events) do
+		if event.id then
+			-- CRITICAL FIX #640: Respect individual event categories!
+			-- If event has its own category, use that instead of module default
+			-- This is crucial for RapperContentCreatorEvents which has both
+			-- career_music (rapper) and career_creative (content creator) events
+			local eventCategory = event.category or defaultCategory
+			EventsByCategory[eventCategory] = EventsByCategory[eventCategory] or {}
+			
+			event._category = eventCategory
+			event._source = moduleName
+			AllEvents[event.id] = event
+			table.insert(EventsByCategory[eventCategory], event)
+			count += 1
+		end
+	end
+	
+	LoadedModules[moduleName] = {
+		instance = moduleInstance,
+		eventCount = count,
+		category = category,
+	}
+	
+	return count
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- INITIALIZATION
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.init()
+	AllEvents = {}
+	EventsByCategory = {}
+	LoadedModules = {}
+	
+	-- Define module -> category mappings
+	local moduleConfig = {
+		-- Core event modules (direct children)
+		{ name = "Childhood",     category = "childhood" },
+		{ name = "ToddlerPreschoolEvents", category = "childhood" }, -- 25+ ages 3-6 events with tons of variety
+		{ name = "Teen",          category = "teen" },
+		{ name = "Adult",         category = "adult" },
+		{ name = "Senior",        category = "senior" },              -- Senior/retirement events (ages 60+)
+		{ name = "Career",        category = "career" },
+		{ name = "Relationships", category = "relationships" },
+		{ name = "Milestones",    category = "milestones" },
+		{ name = "Random",        category = "random" },
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EXPANSION MODULES - 300+ new events total
+		-- All events use randomized outcomes - NO god mode
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "ChildhoodExpanded",  category = "childhood" },      -- 40+ new childhood events (ages 0-12)
+		{ name = "TeenExpanded",       category = "teen" },           -- 60+ new teen events (ages 13-17)
+		{ name = "AdultExpanded",      category = "adult" },          -- 60+ new adult events (ages 18-60)
+		{ name = "SeniorExpanded",     category = "senior" },         -- 35+ new senior events (ages 60+)
+		{ name = "RandomExpanded",     category = "random" },         -- 30+ new random life events (any age)
+		{ name = "JobSpecificEvents",  category = "career" },         -- 60+ job-specific events per career category
+		{ name = "RelationshipsExpanded", category = "relationships" }, -- 25+ expanded relationship events
+		{ name = "LifeExperiences",  category = "random" },        -- 30+ life experience events
+		{ name = "SchoolExpanded",   category = "childhood" },     -- 30+ school/education events
+		{ name = "CommunityEvents",  category = "random" },        -- 30+ community/social events
+		{ name = "FinancialEvents",  category = "random" },        -- 25+ financial events
+		{ name = "HealthEvents",     category = "health" },        -- 25+ health/wellness events
+		{ name = "TravelEvents",     category = "random" },        -- 15+ travel/vacation events
+		{ name = "FamilyEvents",     category = "family" },        -- 15+ family/parenting events
+		{ name = "HobbyEvents",      category = "hobbies" },       -- 20+ hobby/interest events
+		{ name = "SocialMediaEvents", category = "random" },       -- 12+ social media/online events
+		{ name = "PetEvents",        category = "pets" },          -- 12+ pet/animal events
+		{ name = "LegalEvents",      category = "legal" },         -- 12+ legal/justice events
+		{ name = "LifeChallenges",   category = "random" },        -- 18+ life challenge events
+		{ name = "SeasonalEvents",   category = "seasonal" },      -- 20+ seasonal/holiday events
+		{ name = "MiscEvents",       category = "random" },        -- 18+ miscellaneous events
+		{ name = "DailyLifeEvents",  category = "random" },        -- 22+ daily routine events
+		{ name = "SpecialMoments",   category = "milestone" },     -- 16+ special moment events
+		{ name = "ReputationEvents", category = "social" },        -- 10+ reputation/social events
+		{ name = "LuckEvents",       category = "random" },        -- 4+ luck/superstition events
+		
+		-- Catalog modules (organized event collections)
+		{ name = "CareerEvents",   category = "career" },
+		{ name = "RomanceEvents",  category = "relationships" },
+		{ name = "CrimeEvents",    category = "crime" },
+		{ name = "CoreMilestones", category = "milestones" },
+		
+		-- CRITICAL FIX #716: Progressive Life Events for ages 0-30
+		-- Adds 50+ new varied events to prevent repetition
+		{ name = "ProgressiveLifeEvents", category = "childhood" },
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE EARLY LIFE EXPANSION - 50+ new events for ages 0-17
+		-- User request: "THE GAME IS THE EXACT SAME FROM AGE 0-15 EXPAND SO MUCH"
+		-- All events have RANDOMIZED outcomes (BitLife style - can't pick outcome)
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "EarlyLifeEvents", category = "childhood" },
+		
+		-- Specialized career paths with minigame integration
+		{ name = "RacingEvents",   category = "career_racing" },
+		{ name = "HackerEvents",   category = "career_hacker" },
+		{ name = "StreetHustlerEvents", category = "career_street" }, -- Street Hustler/Dealer career
+		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
+		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
+		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- MASSIVE CAREER EXPANSION - Job-specific events for all careers
+		-- User request: "HUGE HUGE HUGE EXPANSION ALL EVERY SINGLE ONE"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "TechCareerEvents",          category = "career_tech" },       -- DevOps, Security Consultant
+		{ name = "GamerCareerEvents",         category = "career_gaming" },     -- Pro Gamer, Esports
+		{ name = "ActorCareerEvents",         category = "career_acting" },     -- Actor, Movie Star
+		{ name = "MusicianCareerEvents",      category = "career_music" },      -- Signed Musician, Recording Artist
+		{ name = "InvestmentBankingEvents",   category = "career_finance" },    -- Investment Banking, Hedge Fund
+		{ name = "IntelligenceCareerEvents",  category = "career_intelligence" }, -- CIA Agent, FBI
+		{ name = "EnforcerEvents",            category = "career_mafia" },      -- Enforcer, Mob Muscle
+		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
+		{ name = "TradesCareerEvents",        category = "career_trades" },     -- Construction, Electrician, Plumber, Mechanic, Trucker
+		{ name = "ServiceCareerEvents",       category = "career_service" },    -- Waiter, Bartender, Flight Attendant, Personal Trainer
+		{ name = "MedicalCareerEvents",       category = "career_medical" },    -- EMT, Nurse, Doctor, Surgeon, Pharmacist
+		{ name = "OfficeCareerEvents",        category = "career_office" },     -- Data Entry, Secretary, HR, Marketing, Accounting
+		{ name = "EducationCareerEvents",     category = "career_education" },  -- Teacher, Professor, Principal, Dean
+		{ name = "MilitaryCareerEvents",      category = "career_military" },   -- Enlisted, Sergeant, Officer, General
+		{ name = "ScienceCareerEvents",       category = "career_science" },    -- Lab Tech, Scientist, Research Director
+		{ name = "CreativeCareerEvents",      category = "career_creative" },   -- Designer, Journalist, Marketing
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
+		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD AS HELL"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RandomLifeEvents",          category = "random" },            -- Random encounters, luck, surprises
+		{ name = "YoungLifeEvents",           category = "childhood" },         -- Childhood and teen random events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM GAMEPASS EVENT MODULES - Require specific gamepasses
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RoyaltyEvents",   category = "royalty" },           -- Royalty gamepass events
+		{ name = "CelebrityEvents", category = "celebrity" },         -- Celebrity/Fame gamepass events  
+		{ name = "MafiaEvents",     category = "mafia" },             -- Mafia gamepass events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- PREMIUM INTEGRATED EVENTS - Events with optional gamepass choices
+		-- All players can play, premium choices enhance but don't force purchases
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "PremiumIntegratedEvents", category = "random" },    -- 20+ events with tasteful gamepass options
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- RAPPER & CONTENT CREATOR EXPANSION - MASSIVE career paths
+		-- From underground nobody to legendary superstar
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "RapperContentCreatorEvents", category = "career_music" }, -- 50+ rapper/creator events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRIME EMPIRE PATH - Criminal story path events
+		-- Progressive crime career from street hustler to crime boss
+		-- Requires crime_path_active flag set by startStoryPath for "criminal" path
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "CrimeEmpireEvents", category = "crime_path" },  -- 30+ crime empire progression events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- HOMELESS LIFE EVENTS - Comprehensive homeless experience
+		-- From eviction to street survival to recovery
+		-- User request: "ENSURE U CAN GO HOMELESS AND EXPAND EXISTING STUFF"
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "HomelessEvents", category = "homeless" },  -- 25+ homeless life events
+	}
+	
+	local totalEvents = 0
+	local loadedCategories = 0
+	
+	for _, config in ipairs(moduleConfig) do
+		local count = loadEventModule(config.name, config.category)
+		if count > 0 then
+			totalEvents += count
+			loadedCategories += 1
+			print(string.format("[LifeEvents] ✅ Loaded %s: %d events", config.name, count))
+		end
+	end
+	
+	print(string.format("[LifeEvents] 🎮 Initialized: %d events across %d categories", totalEvents, loadedCategories))
+	
+	return totalEvents
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- EVENT HISTORY SYSTEM
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local function getEventHistory(state)
+	-- BULLETPROOF: Handle nil state
+	if not state then
+		return {
+			occurrences = {},
+			lastOccurrence = {},
+			completed = {},
+			recentCategories = {},
+			recentEvents = {},
+			lastCategoryOccurrence = {},
+		}
+	end
+	
+	-- Ensure EventHistory exists on state
+	if type(state.EventHistory) ~= "table" then
+		state.EventHistory = {}
+	end
+	
+	local history = state.EventHistory
+	
+	-- Ensure ALL required fields exist (handles legacy/incomplete history objects)
+	history.occurrences = history.occurrences or {}
+	history.lastOccurrence = history.lastOccurrence or {}
+	history.completed = history.completed or {}
+	history.recentCategories = history.recentCategories or {}
+	history.recentEvents = history.recentEvents or {}
+	history.lastCategoryOccurrence = history.lastCategoryOccurrence or {} -- NEW: Category-based cooldowns
+	
+	return history
+end
+
+local function recordEventShown(state, event)
+	-- Guard: invalid inputs
+	if not state then
+		warn("[LifeEvents] recordEventShown: state is nil")
+		return
+	end
+	if not event or type(event) ~= "table" or not event.id then
+		warn("[LifeEvents] recordEventShown: invalid event")
+		return
+	end
+	
+	local history = getEventHistory(state)
+	if not history then
+		warn("[LifeEvents] recordEventShown: could not get event history")
+		return
+	end
+	
+	local eventId = event.id
+	
+	-- Track occurrence count (with nil safety)
+	if type(history.occurrences) == "table" then
+		history.occurrences[eventId] = (history.occurrences[eventId] or 0) + 1
+	end
+	
+	-- Track when it last occurred
+	if type(history.lastOccurrence) == "table" then
+		history.lastOccurrence[eventId] = state.Age or 0
+	end
+	
+	-- Mark one-time events as completed
+	if event.oneTime and type(history.completed) == "table" then
+		history.completed[eventId] = true
+	end
+	
+	-- Track recent categories (for variety)
+	if type(history.recentCategories) == "table" then
+		local category = event._category or event.category or "general"
+		table.insert(history.recentCategories, category)
+		while #history.recentCategories > 5 do
+			table.remove(history.recentCategories, 1)
+		end
+	end
+	
+	-- Track recent events
+	if type(history.recentEvents) == "table" then
+		table.insert(history.recentEvents, eventId)
+		while #history.recentEvents > 10 do
+			table.remove(history.recentEvents, 1)
+		end
+	end
+	
+	-- CRITICAL: Track category-based cooldowns to prevent spamming
+	local eventCategory = event.category or event._category
+	if eventCategory then
+		history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+		history.lastCategoryOccurrence[eventCategory] = state.Age or 0
+	end
+	
+	-- CRITICAL FIX #SPAM-3: Also track keyword-based cooldowns
+	-- This prevents "viral", "first_", "hater" etc. events from spamming
+	local eventId = (event.id or ""):lower()
+	local spamKeywords = { "viral", "hater", "first_", "exploding", "millions" }
+	for _, keyword in ipairs(spamKeywords) do
+		if eventId:find(keyword) then
+			history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+			history.lastCategoryOccurrence["keyword_" .. keyword] = state.Age or 0
+		end
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CONTEXTUAL ELIGIBILITY SYSTEM
+-- This is the CORE logic that prevents random/inappropriate events
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local function canEventTrigger(event, state)
+	local age = state.Age or 0
+	local history = getEventHistory(state)
+	local flags = state.Flags or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Dead players should not receive any events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.IsDead or flags.dead or (state.Stats and state.Stats.Health and state.Stats.Health <= 0) then
+		return false -- Dead players can't have events
+	end
+	
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-2: PREMIUM PATH MUTEX ENFORCEMENT AT ELIGIBILITY LEVEL
+	-- If a player has already chosen a premium path (via primary_wish_type), they CANNOT
+	-- receive events that would start a DIFFERENT premium path!
+	-- This prevents the "royalty but got mafia event" bug at the source.
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	
+	if primaryWish then
+		-- Player has already made a childhood wish - block conflicting path events
+		local eventId = event.id or ""
+		local eventCategory = event.category or ""
+		
+		-- Check if this event is trying to start a DIFFERENT premium path
+		local isRoyaltyPathEvent = event.isRoyalOnly or event.isRoyaltyEvent or 
+			eventCategory == "royalty" or eventId:find("royalty") or eventId:find("royal")
+		local isMafiaPathEvent = event.isMafiaOnly or event.isMafiaEvent or 
+			eventCategory == "mafia" or eventId:find("mafia") or eventId:find("mob")
+		local isCelebrityPathEvent = event.isCelebrityOnly or event.isFameEvent or 
+			eventCategory == "celebrity" or eventCategory == "fame" or eventId:find("fame") or eventId:find("celebrity")
+		
+		-- MUTEX ENFORCEMENT: Block events that start conflicting paths
+		if primaryWish == "royalty" then
+			-- Player chose royalty - block mafia and celebrity START events
+			if isMafiaPathEvent then
+				-- Allow if player is ALREADY in mob (continuing events ok)
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for royalty players
+				end
+			end
+			if isCelebrityPathEvent then
+				-- Allow if player ALREADY has fame career (continuing events ok)
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for royalty players
+				end
+			end
+		elseif primaryWish == "mafia" then
+			-- Player chose mafia - block royalty and celebrity START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for mafia players
+				end
+			end
+			if isCelebrityPathEvent then
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for mafia players
+				end
+			end
+		elseif primaryWish == "celebrity" then
+			-- Player chose celebrity - block royalty and mafia START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for celebrity players
+				end
+			end
+			if isMafiaPathEvent then
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for celebrity players
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JAIL-1: GLOBAL PRISON EVENT FILTER
+	-- Players who are incarcerated should ONLY receive prison-specific events!
+	-- BUG: Random events (identity_theft, home_invasion, mugged, etc.) were triggering
+	-- while player was serving a 21-year sentence - completely immersion-breaking!
+	-- FIX: Block ALL non-prison events when player is in jail
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isIncarcerated = state.InJail or flags.in_prison or flags.incarcerated
+	
+	if isIncarcerated then
+		-- Check if this is a prison-specific event (allowed while incarcerated)
+		local eventId = (event.id or ""):lower()
+		local eventCategory = (event.category or ""):lower()
+		local eventTitle = (event.title or ""):lower()
+		
+		-- Events explicitly marked as prison events are allowed
+		if event.isPrisonEvent or event.allowInPrison then
+			-- This event is explicitly allowed in prison, let it through
+		-- Events with prison-related IDs or categories are allowed
+		elseif eventId:find("prison") or eventId:find("jail") or eventId:find("inmate") 
+			or eventId:find("warden") or eventId:find("parole") or eventId:find("cell")
+			or eventId:find("sentence") or eventId:find("locked_up") or eventId:find("behind_bars")
+			or eventCategory == "prison" or eventCategory == "jail" or eventCategory == "incarceration"
+			or eventTitle:find("prison") or eventTitle:find("jail") then
+			-- Prison-related event, allow it
+		-- Events about family visiting or letter from family while in prison
+		elseif eventId:find("family_visit") or eventId:find("letter_from") then
+			-- Allow family interaction events even in prison
+		-- Health events can happen in prison (getting sick, etc.)
+		elseif eventId:find("health_decline") or eventId:find("sick") or eventId:find("medical")
+			or eventCategory == "health" then
+			-- Health can deteriorate in prison
+		-- Death events should still work in prison
+		elseif eventId:find("death") or event.isDeath then
+			-- Death events pass through
+		else
+			-- ALL OTHER EVENTS ARE BLOCKED WHILE IN PRISON!
+			-- This prevents identity_theft, home_invasion, mugged, community events, etc.
+			return false
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5/#14: PREMIUM GAMEPASS EVENT FILTERING
+	-- Events marked as premium-only MUST check for gamepass ownership!
+	-- Without this, players without gamepasses could get royalty/mafia/celebrity events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: CHECK event.requiresGamepass AT EVENT LEVEL
+	-- This is DIFFERENT from isRoyalOnly/isMafiaOnly/isCelebrityOnly!
+	-- event.requiresGamepass = "ROYALTY" means the player needs the gamepass but does
+	-- NOT need to already BE royalty. This is used for "wish fulfillment" events where
+	-- a player with the gamepass can BECOME royalty through romance, inheritance, etc.
+	-- 
+	-- Examples:
+	-- - premium_wish_royalty_encounter: Player with ROYALTY gamepass meets royalty
+	-- - premium_wish_mafia_approach: Player with MAFIA gamepass gets recruited
+	-- - premium_wish_fame_discovery: Player with CELEBRITY gamepass gets discovered
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresGamepass then
+		local gamepassKey = event.requiresGamepass
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+			BOSS_MODE = "boss_mode_gamepass",
+			BITIZENSHIP = "bitizen",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownsGamepass = false
+		
+		-- Check GamepassOwnership table first (most reliable)
+		if gamepassOwnership[gamepassKey:lower()] or gamepassOwnership[gamepassKey] then
+			ownsGamepass = true
+		end
+		
+		-- Then check flags
+		if not ownsGamepass and flagName then
+			ownsGamepass = flags[flagName] == true
+		end
+		
+		if not ownsGamepass then
+			return false -- Player doesn't own required gamepass for this event
+		end
+		
+		-- NOTE: If event has BOTH requiresGamepass AND isRoyalOnly/isMafiaOnly/etc,
+		-- the stricter checks below will also apply. requiresGamepass alone only
+		-- checks ownership, not whether the player is IN that premium feature.
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #61-63: STRICT PREMIUM EVENT FILTERING
+	-- Premium events should ONLY trigger for players who have BOTH:
+	-- 1. The gamepass ownership
+	-- 2. Actually started that premium feature (joined mob, born royal, etc.)
+	-- Without this, players could randomly get royal events even if they didn't choose royal!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ROYALTY events require Royalty gamepass AND actually being royalty
+	if event.isRoyalOnly then
+		if not flags.royalty_gamepass then
+			return false -- Must own Royalty gamepass
+		end
+		-- CRITICAL FIX #62: Must actually BE royalty, not just own gamepass
+		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+			or (state.RoyalState and state.RoyalState.isRoyal)
+		if not isActuallyRoyal then
+			return false -- Must have chosen royal at birth or became royal somehow
+		end
+	end
+	
+	-- CRITICAL FIX #17: Also check events with "royal" in their ID or category
+	-- Even if isRoyalOnly isn't explicitly set, royal-themed events need the check
+	local eventId = event.id and event.id:lower() or ""
+	local eventCategory = event.category and event.category:lower() or ""
+	local isRoyalThemed = eventId:find("royal") or eventId:find("throne") or eventId:find("palace") 
+		or eventId:find("kingdom") or eventId:find("monarch") or eventId:find("prince") or eventId:find("princess")
+		or eventCategory == "royalty" or eventCategory == "royal"
+	
+	if isRoyalThemed and not event.isRoyalOnly then
+		-- CRITICAL FIX: Skip this check for "wish fulfillment" events that have requiresGamepass
+		-- These are events where the player can BECOME royalty (via romance, inheritance, etc.)
+		-- The gamepass check above already verified they own ROYALTY gamepass
+		-- Examples: premium_wish_royalty_encounter, premium_wish_royal_proposal
+		local isWishFulfillmentEvent = event.requiresGamepass ~= nil
+		
+		if not isWishFulfillmentEvent then
+			-- This is a royal-themed event without explicit isRoyalOnly flag
+			-- Still require player to actually be royalty
+			local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+				or (state.RoyalState and state.RoyalState.isRoyal)
+			if not isActuallyRoyal then
+				return false -- Block royal-themed events for non-royals
+			end
+		else
+			-- Wish fulfillment events - but check if player made a DIFFERENT wish!
+			-- CRITICAL FIX: If player wished for mafia/celebrity, don't show royalty events
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "royalty" then
+				return false -- Player wished for a different premium path
+			end
+		end
+	end
+	
+	-- MAFIA events require Mafia gamepass AND being in the mob
+	if event.isMafiaOnly then
+		if not flags.mafia_gamepass then
+			return false -- Must own Mafia gamepass
+		end
+		
+		-- CRITICAL FIX #61/#63: Check if this is an "approach" event vs "member" event
+		-- Approach events (mafia_approach) should trigger for gamepass owners who AREN'T in mob yet
+		-- All OTHER mafia events require actually being in the mob
+		local isApproachEvent = event.id and (
+			string.find(event.id, "approach") or 
+			string.find(event.id, "recruit") or
+			string.find(event.id, "offer_to_join")
+		)
+		
+		if not isApproachEvent then
+			-- Regular mafia events - MUST be in the mob
+			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+			if not isInMob then
+				return false -- Must have joined a crime family first
+			end
+		else
+			-- Approach events - should NOT trigger if already in mob
+			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+			if isInMob then
+				return false -- Already in mob, don't recruit again
+			end
+			
+			-- CRITICAL FIX: If player made a different premium wish (royalty/celebrity),
+			-- don't show mafia approach events unless they explicitly chose mafia path
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "mafia" then
+				return false -- Player wished for a different premium path
+			end
+		end
+	end
+	
+	-- CELEBRITY events require Celebrity gamepass AND having a fame career
+	if event.isCelebrityOnly then
+		if not flags.celebrity_gamepass then
+			return false -- Must own Celebrity gamepass
+		end
+		-- CRITICAL FIX #69: Must actually have a fame career to get career events
+		-- General fame events (paparazzi, fans) just need some fame
+		local playerCareerPath = state.FameState and state.FameState.careerPath
+		local hasActiveFameCareer = flags.fame_career or flags.career_actor 
+			or flags.career_musician or flags.career_influencer or flags.career_athlete
+			or playerCareerPath
+		local hasFame = (state.Fame or 0) >= 20
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #USER-1: Career-specific events MUST match player's career path!
+		-- This prevents streamer events from firing for rappers and vice versa
+		-- e.g., "Tournament Victory" should ONLY fire for streamers, NOT rappers
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if event.careerPath then
+			-- Event requires a specific career path - player must have THAT path
+			if not playerCareerPath then
+				return false -- Event needs a career path, player doesn't have one
+			end
+			if playerCareerPath ~= event.careerPath then
+				return false -- Player's career path doesn't match event's required path
+			end
+		elseif not hasActiveFameCareer and not hasFame then
+			-- Check if this is a "discovery" event (entering celebrity path)
+			-- These should be blocked if player chose a different premium wish
+			local isDiscoveryEvent = event.id and (
+				string.find(event.id, "discover") or 
+				string.find(event.id, "talent") or
+				string.find(event.id, "famous")
+			)
+			
+			if isDiscoveryEvent then
+				-- CRITICAL FIX: Block if player made a different premium wish
+				local primaryWish = flags.primary_wish_type
+				if primaryWish and primaryWish ~= "celebrity" then
+					return false -- Player wished for a different premium path
+				end
+			else
+				return false -- Need either career or natural fame
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FAME EVENTS (free for all fame career holders)
+	-- User feedback: "Story paths don't do much" - free players couldn't get fame events!
+	-- isFameEvent events work for ANYONE pursuing fame, not just Celebrity gamepass owners
+	-- This enables influencer/streamer paths (which are FREE) to get fame-related events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.isFameEvent then
+		-- Check if player is pursuing fame through ANY means
+		local isPursuingFame = flags.pursuing_fame or flags.pursuing_streaming 
+			or flags.content_creator or flags.streamer or flags.influencer
+			or flags.broadcaster or flags.youtube_started or flags.tiktok_active
+		
+		-- Check if player has a fame career (influencer/streamer/etc)
+		local hasFameCareer = false
+		if state.CurrentJob then
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCategory = (state.CurrentJob.category or ""):lower()
+			hasFameCareer = jobCategory == "entertainment" or jobCategory == "esports"
+				or jobId:find("influencer") or jobId:find("streamer") 
+				or jobId:find("content") or jobId:find("creator")
+				or jobId:find("gamer") or state.CurrentJob.isFameCareer
+		end
+		
+		-- Check FameState
+		local hasFameState = state.FameState and (
+			state.FameState.pursuing or 
+			state.FameState.careerPath or 
+			(state.FameState.socialFollowers or 0) > 0
+		)
+		
+		-- Must have SOME indication of fame pursuit
+		if not isPursuingFame and not hasFameCareer and not hasFameState then
+			return false -- Not pursuing fame at all
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #646-650: ROYAL LIFESTYLE BLOCKING
+	-- Royals have completely different experiences than commoners!
+	-- User complaint: "IM ROYALTY BUT GETTING NORMAL ELEMENTARY SCHOOL AND LIFE ASSESSMENT EVENTS"
+	-- MASSIVELY expanded list of events that royals should NOT see
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth 
+		or (state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal then
+		-- If this event is specifically FOR royals, allow it!
+		if event.isRoyalOnly or event.isRoyalEducation or event.isRoyalEvent then
+			-- Royal event - explicitly allow it
+		else
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL: List of "commoner" events that royals should NOT see
+			-- Royals have private tutors, security, chauffeurs, etc.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local normalLifeEventIds = {
+				-- School events (royals have private education)
+				"starting_school", "first_day_school", "elementary_start", "middle_school_start",
+				"high_school_start", "public_school", "first_grade", "kindergarten",
+				"school_bully", "homework_help", "cafeteria", "school_detention",
+				"school_play", "school_dance", "school_suspension", "normal_education",
+				"public_education", "regular_school", "school_registration",
+				-- Life assessment events (royals have different life milestones)
+				"life_assessment", "approaching_30", "quarter_life_crisis", "midlife_reflection",
+				"life_crossroads", "turning_30", "turning_40", "dirty_thirty",
+				-- Driving events (royals have chauffeurs)
+				"learning_to_drive", "driver_ed", "first_drive", "parking_disaster",
+				-- Job hunting (royals don't need normal jobs)
+				"job_interview", "job_search", "unemployment", "fired", "laid_off",
+				-- Housing struggles (royals have palaces)
+				"eviction", "rent_due", "homeless", "apartment_hunting", "roommate",
+				-- Money struggles (royals are wealthy)
+				"financial_crisis", "broke", "debt_collector", "payday_loan",
+			}
+			
+			local eventId = event.id and event.id:lower() or ""
+			local eventTitle = event.title and event.title:lower() or ""
+			
+			-- Check if this is a "normal life" event
+			for _, normalId in ipairs(normalLifeEventIds) do
+				if eventId:find(normalId) then
+					return false -- Royals don't experience commoner life events!
+				end
+			end
+			
+			-- CRITICAL FIX #648: Also check for generic school tags
+			if (event.isPublicSchool or event.isNormalSchool) and not event.isRoyalEducation then
+				return false -- Block any explicitly public school events
+			end
+			
+			-- CRITICAL FIX #649: Check education type requirements
+			if event.requiresEducationType then
+				local eduType = event.requiresEducationType:lower()
+				if eduType == "public" or eduType == "normal" or eduType == "public_school" then
+					return false -- Royals don't have public school education
+				end
+			end
+			
+			-- CRITICAL FIX: Block events that are obviously for commoners
+			if event.isCommonerEvent or event.isWorkingClass then
+				return false
+			end
+		end
+		-- CRITICAL FIX #650: Royal events are boosted in weight calculation
+	end
+	
+	-- CRITICAL FIX #436: Check ALL flags in conditions.requiresFlags, not just gamepass flags!
+	-- This was causing events like become_boss to trigger without underboss flag,
+	-- and prison_respect to trigger when not in prison!
+	if event.conditions and event.conditions.requiresFlags then
+		for flag, requiredValue in pairs(event.conditions.requiresFlags) do
+			local playerHasFlag = flags[flag]
+			
+			-- If requiredValue is true, player must have the flag
+			if requiredValue == true and not playerHasFlag then
+				return false -- Missing required flag
+			end
+			
+			-- If requiredValue is false, player must NOT have the flag
+			if requiredValue == false and playerHasFlag then
+				return false -- Has blocked flag
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #437: Check conditions.blockedFlags (dict format) 
+	-- This is DIFFERENT from cond.blockedFlags (array format) checked below
+	if event.conditions and event.conditions.blockedFlags then
+		if type(event.conditions.blockedFlags) == "table" then
+			-- Check if it's array format or dict format
+			if #event.conditions.blockedFlags > 0 then
+				-- Array format: {"flag1", "flag2"}
+				for _, flag in ipairs(event.conditions.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			else
+				-- Dict format: {flag1 = true, flag2 = true}
+				for flag, _ in pairs(event.conditions.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #438: Check minRank and minRespect conditions for mafia events
+	if event.conditions then
+		-- Check minimum mob rank
+		if event.conditions.minRank then
+			local mobState = state.MobState
+			local currentRank = mobState and mobState.rankIndex or 0
+			if currentRank < event.conditions.minRank then
+				return false -- Not high enough rank
+			end
+		end
+		
+		-- Check minimum respect
+		if event.conditions.minRespect then
+			local mobState = state.MobState
+			local currentRespect = mobState and mobState.respect or 0
+			if currentRespect < event.conditions.minRespect then
+				return false -- Not enough respect
+			end
+		end
+		
+		-- Check minimum heat for mafia
+		if event.conditions.minHeat then
+			local mobState = state.MobState
+			local currentHeat = mobState and mobState.heat or 0
+			if currentHeat < event.conditions.minHeat then
+				return false -- Not enough heat
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-18: Check minFame for celebrity events
+	-- Events with minFame property should only trigger for players with that fame level
+	-- This prevents Grammy nominations for hobbyist streamers, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minFame then
+		local playerFame = state.Fame or 0
+		if playerFame < event.minFame then
+			return false -- Player doesn't have enough fame for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-19: Check minSubscribers for content creator events
+	-- Events requiring certain subscriber count should be blocked for small creators
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minSubscribers then
+		local subs = (state.FameState and state.FameState.subscribers) or 0
+		if subs < event.minSubscribers then
+			return false -- Not enough subscribers for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CAREER-PATH-1: Check careerPath for celebrity career events
+	-- Events tagged with careerPath = "actor"/"musician"/"influencer" etc should ONLY
+	-- fire for players actually in that career! This prevents Grammy nominations for
+	-- baristas, movie premieres for janitors, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.careerPath then
+		local currentJob = state.CurrentJob
+		local careerPath = event.careerPath:lower()
+		local isInCareerPath = false
+		
+		if currentJob then
+			local jobId = (currentJob.id or ""):lower()
+			local jobCategory = (currentJob.category or ""):lower()
+			local jobTitle = (currentJob.title or currentJob.name or ""):lower()
+			
+			-- Check if player's job matches the required career path
+			if careerPath == "actor" then
+				isInCareerPath = jobId:find("actor") or jobId:find("acting") or jobId:find("movie")
+					or jobCategory == "acting" or jobCategory == "actor" or jobCategory == "entertainment"
+					or jobTitle:find("actor") or jobTitle:find("actress")
+			elseif careerPath == "musician" then
+				isInCareerPath = jobId:find("musician") or jobId:find("singer") or jobId:find("band")
+					or jobId:find("music") or jobId:find("rapper")
+					or jobCategory == "music" or jobCategory == "musician" or jobCategory == "entertainment"
+					or jobTitle:find("musician") or jobTitle:find("singer") or jobTitle:find("rapper")
+			elseif careerPath == "influencer" then
+				isInCareerPath = jobId:find("influencer") or jobId:find("content") or jobId:find("youtuber")
+					or jobId:find("tiktok") or jobId:find("streamer")
+					or jobCategory == "influencer" or jobCategory == "content_creator" or jobCategory == "social_media"
+					or jobTitle:find("influencer") or jobTitle:find("content creator")
+			elseif careerPath == "streamer" then
+				isInCareerPath = jobId:find("streamer") or jobId:find("twitch") or jobId:find("gaming")
+					or jobCategory == "streaming" or jobCategory == "streamer"
+					or jobTitle:find("streamer")
+			elseif careerPath == "rapper" then
+				isInCareerPath = jobId:find("rapper") or jobId:find("hip_hop") or jobId:find("hiphop")
+					or jobCategory == "rapper" or jobCategory == "music"
+					or jobTitle:find("rapper")
+			elseif careerPath == "athlete" then
+				isInCareerPath = jobId:find("athlete") or jobId:find("sports") or jobId:find("player")
+					or jobId:find("basketball") or jobId:find("football") or jobId:find("soccer")
+					or jobId:find("baseball") or jobId:find("hockey")
+					or jobCategory == "sports" or jobCategory == "athlete"
+					or jobTitle:find("athlete") or jobTitle:find("player")
+			elseif careerPath == "model" then
+				isInCareerPath = jobId:find("model") or jobId:find("fashion")
+					or jobCategory == "modeling" or jobCategory == "model" or jobCategory == "fashion"
+					or jobTitle:find("model")
+			end
+		end
+		
+		-- Also check FameState for career path
+		if not isInCareerPath and state.FameState then
+			local fameCareer = (state.FameState.careerPath or ""):lower()
+			isInCareerPath = fameCareer == careerPath or fameCareer:find(careerPath)
+		end
+		
+		-- Also check flags for pursuing specific paths
+		if not isInCareerPath and flags then
+			if careerPath == "actor" then
+				isInCareerPath = flags.is_actor or flags.acting_career
+			elseif careerPath == "musician" then
+				isInCareerPath = flags.is_musician or flags.music_career or flags.is_rapper or flags.rapper_career
+			elseif careerPath == "influencer" then
+				isInCareerPath = flags.is_influencer or flags.content_creator
+			elseif careerPath == "streamer" then
+				isInCareerPath = flags.is_streamer or flags.streaming_career
+			elseif careerPath == "rapper" then
+				isInCareerPath = flags.is_rapper or flags.rapper_career
+			elseif careerPath == "athlete" then
+				isInCareerPath = flags.is_athlete or flags.sports_career
+			elseif careerPath == "model" then
+				isInCareerPath = flags.is_model or flags.modeling_career
+			end
+		end
+		
+		if not isInCareerPath then
+			return false -- Player is not in the required career path for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
+	-- Only allow health-related, medical, or high-priority events for very sick players
+	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local health = (state.Stats and state.Stats.Health) or state.Health or 50
+	if health <= 15 then
+		-- Player is critically ill - only allow relevant events
+		local eventCategory = event._category or event.category or ""
+		local eventId = event.id or ""
+		local allowedWhileDying = event.allowedWhileDying
+			or event.priority == "high"
+			or event.isMilestone
+			or eventCategory == "health"
+			or eventCategory == "medical"
+			or eventCategory == "death"
+			or string.find(eventId, "health")
+			or string.find(eventId, "illness")
+			or string.find(eventId, "death")
+			or string.find(eventId, "hospital")
+			or string.find(eventId, "doctor")
+		
+		if not allowedWhileDying then
+			return false -- Don't show random events to dying players
+		end
+	end
+	
+	-- Flatten conditions if present (some events use conditions.minAge instead of minAge)
+	local cond = event.conditions or {}
+	local minAge = event.minAge or cond.minAge
+	local maxAge = event.maxAge or cond.maxAge
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INCARCERATION CHECK - CRITICAL FIX
+	-- Players in jail cannot receive most events (career, romance, activities, etc.)
+	-- Only allow events specifically marked for prison or with category "prison"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if state.InJail then
+		local eventCategory = event._category or event.category or ""
+		local allowedInPrison = event.allowedInPrison 
+			or eventCategory == "prison" 
+			or eventCategory == "crime"
+			or (event.id and (
+				string.find(event.id, "prison") 
+				or string.find(event.id, "jail")
+				or string.find(event.id, "inmate")
+			))
+		
+		if not allowedInPrison then
+			return false -- Block this event - player is incarcerated
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOSPITALIZATION CHECK - CRITICAL FIX
+	-- Players in the hospital cannot do normal activities, only medical/recovery events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if flags.hospitalized then
+		local eventCategory = event._category or event.category or ""
+		local allowedInHospital = event.allowedInHospital
+			or eventCategory == "medical"
+			or eventCategory == "recovery"
+			or eventCategory == "random" -- Allow random events like recovery
+			or (event.id and (
+				string.find(event.id, "hospital")
+				or string.find(event.id, "recovery")
+				or string.find(event.id, "medical")
+				or string.find(event.id, "health")
+				or string.find(event.id, "injury")
+			))
+		
+		if not allowedInHospital then
+			return false -- Block this event - player is hospitalized
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BASIC CHECKS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Age range check (check both event.minAge/maxAge and conditions.minAge/maxAge)
+	if minAge and age < minAge then return false end
+	if maxAge and age > maxAge then return false end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Enforce ageBand restrictions!
+	-- Many events set ageBand but it was NEVER enforced, letting kids get adult events
+	-- like stock investing, bankruptcy, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local ageBand = event.ageBand
+	if ageBand and ageBand ~= "any" then
+		if ageBand == "child" then
+			if age > 12 then return false end
+		elseif ageBand == "teen" then
+			if age < 13 or age > 17 then return false end
+		elseif ageBand == "adult" then
+			if age < 18 then return false end
+		elseif ageBand == "senior" then
+			if age < 65 then return false end
+		elseif ageBand == "young_adult" then
+			if age < 18 or age > 35 then return false end
+		elseif ageBand == "middle_age" then
+			if age < 35 or age > 64 then return false end
+		end
+	end
+	
+	-- One-time event already completed
+	if event.oneTime and history.completed[event.id] then
+		return false
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #712-715: BALANCED COOLDOWN & VARIETY SYSTEM
+	-- Cooldowns prevent immediate repetition while still allowing variety
+	-- CRITICAL FIX #513: LOOSENED cooldowns for MORE event variety!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: BALANCED cooldowns to prevent events from firing too frequently
+	-- User feedback: "Random events popping up at wrong times" - cooldowns were too low!
+	-- ════════════════════════════════════════════════════════════════════════════════
+	local cooldown = event.cooldown or 2  -- BALANCED: Default cooldown now 2 (was 1, too low)
+
+	-- Childhood/teen cooldowns - more events in formative years but not overwhelming
+	local eventCategory = event._category or event.category or ""
+	if eventCategory == "childhood" or eventCategory == "teen" then
+		cooldown = event.cooldown or 2 -- Balanced variety in formative years
+	end
+
+	-- Random event cooldowns - prevent random events from spamming
+	if eventCategory == "random" then
+		cooldown = event.cooldown or 3 -- Random events should be more spaced out!
+	end
+
+	-- Career events cooldown - careers can be active but not overwhelming
+	if eventCategory:find("career") then
+		cooldown = event.cooldown or 2 -- Career events balanced
+	end
+	
+	local lastAge = history.lastOccurrence[event.id]
+	if lastAge and (age - lastAge) < cooldown then
+		return false
+	end
+	
+	-- CRITICAL FIX #727: MASSIVELY increased max occurrences for WAY more variety! (was 6, now 15)
+	local occurCount = history.occurrences[event.id] or 0
+	local maxAllowed = event.maxOccurrences or 15
+	if occurCount >= maxAllowed then
+		return false
+	end
+	
+	-- NOTE: Max occurrences is now checked above in CRITICAL FIX #715
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CATEGORY-BASED COOLDOWN - Prevent spamming of similar events
+	-- e.g., don't show multiple injury events in quick succession
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local eventCategory = event.category or event._category
+	if eventCategory then
+		-- CRITICAL FIX #SPAM-1: Define category cooldowns (years between events of same category)
+		-- User complaint: "STUFF IS GETTING SPAMMED LIKE EVENTS"
+		-- This prevents the same types of events from firing back-to-back
+		local categoryCooldowns = {
+			injury = 3,        -- At least 3 years between injury events
+			illness = 2,       -- At least 2 years between illness events
+			mental_health = 4, -- At least 4 years between mental health events
+			disaster = 5,      -- At least 5 years between disasters
+			crime = 2,         -- At least 2 years between crime events
+			social_media = 3,  -- CRITICAL FIX: Prevent viral post spam (was triggering every year!)
+			celebrity = 2,     -- At least 2 years between celebrity events
+			viral = 4,         -- At least 4 years between viral events
+			fame = 2,          -- At least 2 years between fame events
+			hater = 3,         -- At least 3 years between hater events
+			career_workplace = 4, -- CRITICAL FIX: At least 4 years between office drama events
+			career_office = 4,    -- CRITICAL FIX: At least 4 years between office-specific events
+		}
+		
+		local catCooldown = categoryCooldowns[eventCategory]
+		if catCooldown then
+			-- Check history.lastCategoryOccurrence
+			history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+			local lastCatAge = history.lastCategoryOccurrence[eventCategory]
+			if lastCatAge and (age - lastCatAge) < catCooldown then
+				return false -- Too soon for another event of this category
+			end
+		end
+		
+		-- CRITICAL FIX #SPAM-2: Check event ID for spam-prone keywords
+		-- User complaint: "YOUR LATEST POST IS EXPLODING MILLIONS OF VIEWS I GOT IT TWICE"
+		local eventId = (event.id or ""):lower()
+		local spamKeywords = {
+			viral = 5,      -- At least 5 years between viral events
+			hater = 4,      -- At least 4 years between hater events  
+			first_ = 99,    -- "First X" events should be oneTime, enforce with long cooldown
+			exploding = 4,  -- Explosive growth events need cooldown
+			millions = 4,   -- Millions of views events need cooldown
+			promotion = 5,  -- CRITICAL FIX: At least 5 years between promotion events
+			promoted = 5,   -- CRITICAL FIX: At least 5 years between any promotion
+			credit = 5,     -- CRITICAL FIX: At least 5 years between credit-stealing events
+			toxic = 8,      -- CRITICAL FIX: At least 8 years between toxic boss/coworker events
+			terrible = 8,   -- CRITICAL FIX: At least 8 years between terrible boss events
+			sabotag = 8,    -- CRITICAL FIX: At least 8 years between sabotage events
+		}
+		
+		for keyword, keywordCooldown in pairs(spamKeywords) do
+			if eventId:find(keyword) then
+				history.lastCategoryOccurrence = history.lastCategoryOccurrence or {}
+				local keywordKey = "keyword_" .. keyword
+				local lastKeywordAge = history.lastCategoryOccurrence[keywordKey]
+				if lastKeywordAge and (age - lastKeywordAge) < keywordCooldown then
+					return false -- Too soon for another event with this keyword
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FLAG REQUIREMENTS - Check player's life flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.requiresFlags then
+		for flag, requiredValue in pairs(event.requiresFlags) do
+			local playerHasFlag = flags[flag]
+			
+			if requiredValue == true and not playerHasFlag then
+				return false -- Missing required flag
+			end
+			
+			if requiredValue == false and playerHasFlag then
+				return false -- Has blocked flag
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support requiresAnyFlags - player must have AT LEAST ONE of these flags
+	-- User complaint: "BIG AUDITION popping up when I never did any acting!"
+	-- Events like fame_audition have requiresAnyFlags = { talent_acting = true, ... }
+	-- but this wasn't being checked! Player needs at least ONE talent flag.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresAnyFlags then
+		local hasAnyFlag = false
+		for flag, requiredValue in pairs(event.requiresAnyFlags) do
+			if requiredValue == true and flags[flag] then
+				hasAnyFlag = true
+				break
+			end
+		end
+		if not hasAnyFlag then
+			return false -- Player doesn't have ANY of the required flags
+		end
+	end
+	
+	-- Support old "conditions.requiredFlags" format (array of flag names)
+	if cond.requiredFlags then
+		for _, flag in ipairs(cond.requiredFlags) do
+			if not flags[flag] then
+				return false
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #479: Handle blockedByFlags as both array AND dictionary format
+	if event.blockedByFlags then
+		if #event.blockedByFlags > 0 then
+			-- Array format: { "in_prison", "incarcerated" }
+			for _, flag in ipairs(event.blockedByFlags) do
+				if flags[flag] then
+					return false -- Has blocking flag
+				end
+			end
+		else
+			-- Dictionary format: { in_prison = true }
+			for flag, _ in pairs(event.blockedByFlags) do
+				if flags[flag] then
+					return false -- Has blocking flag
+				end
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #PREMIUM-1: Also check event.blockedFlags (not just blockedByFlags!)
+	-- Many events like premium wishes, mafia events, and royalty events use blockedFlags
+	-- at the top level instead of blockedByFlags. This was causing blocked events to still fire!
+	if event.blockedFlags then
+		if type(event.blockedFlags) == "table" then
+			if #event.blockedFlags > 0 then
+				-- Array format: { "married", "is_royalty" }
+				for _, flag in ipairs(event.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			else
+				-- Dictionary format: { married = true, is_royalty = true }
+				for flag, blockValue in pairs(event.blockedFlags) do
+					if blockValue == true and flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			end
+		end
+	end
+	
+	-- Support old "conditions.blockedFlags" format (array of flag names)
+	if cond.blockedFlags then
+		for _, flag in ipairs(cond.blockedFlags) do
+			if flags[flag] then
+				return false
+			end
+		end
+	end
+	
+	-- Support old "requiresNoJob" field (same as blockedByFlags = {employed})
+	-- CRITICAL FIX: Check ALL job indicators to prevent job events for employed players
+	if event.requiresNoJob then
+		if state.CurrentJob then
+			return false -- Has a current job
+		end
+		if flags.employed or flags.has_job or flags.has_teen_job then
+			return false -- Has employment flags
+		end
+		-- Also check for tech/coding jobs that aren't tracked via flags
+		if flags.coder or flags.tech_experience or flags.hacker_experience then
+			return false -- Has tech job experience
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STAT REQUIREMENTS - Check player's stats
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.requiresStats then
+		local stats = state.Stats or state
+		for stat, requirement in pairs(event.requiresStats) do
+			local value = stats[stat] or state[stat] or 50
+			
+			if type(requirement) == "number" then
+				if value < requirement then return false end
+			elseif type(requirement) == "table" then
+				if requirement.min and value < requirement.min then return false end
+				if requirement.max and value > requirement.max then return false end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- JOB/CAREER REQUIREMENTS - No career events if unemployed or retired!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CRITICAL FIX #QUIT-1: Events in career categories AUTOMATICALLY require a job
+	-- User complaint: "WHEN I QUIT IM STILL GETTING THE CARDS FOR JOBS I QUIT"
+	-- Events with category starting with "career_" should not trigger without a job
+	local eventCategory = (event.category or event._category or ""):lower()
+	local eventId = (event.id or ""):lower()
+	local eventTitle = (event.title or ""):lower()
+	
+	-- CRITICAL FIX #QUIT-2: MUCH more comprehensive career event detection
+	-- Check if this is a career-related event that should require a job
+	local isCareerEvent = eventCategory:find("^career_") or eventCategory == "career" or eventCategory == "job"
+		or eventId:find("_job_") or eventId:find("job_") or eventId:find("_job$")
+		or eventId:find("work_") or eventId:find("_work_") or eventId:find("workplace")
+		or eventId:find("promotion_") or eventId:find("_promotion")
+		or eventId:find("coworker_") or eventId:find("_coworker")
+		or eventId:find("boss_") or eventId:find("_boss") or eventId:find("manager")
+		or eventId:find("office_") or eventId:find("_office")
+		or eventId:find("salary") or eventId:find("raise") or eventId:find("fired")
+		or eventId:find("layoff") or eventId:find("overtime") or eventId:find("performance")
+		or eventId:find("meeting") or eventId:find("deadline") or eventId:find("project")
+		or eventId:find("client_") or eventId:find("corporate")
+		or eventId:find("employee") or eventId:find("colleague")
+		or eventId:find("shift_") or eventId:find("workload")
+		or eventId:find("career_") or eventId:find("_career")
+		-- Also check title for common job-related words
+		or eventTitle:find("at work") or eventTitle:find("your job") or eventTitle:find("your boss")
+		or eventTitle:find("coworker") or eventTitle:find("colleague") or eventTitle:find("office ")
+		or eventTitle:find("workplace") or eventTitle:find("promotion") or eventTitle:find("salary")
+		or eventTitle:find("performance review") or eventTitle:find("manager")
+	
+	-- Automatically require job for career events
+	if isCareerEvent and not event.allowUnemployed then
+		if not state.CurrentJob then
+			return false -- Career events require a job
+		end
+		-- Check if player was just fired/quit (CurrentJob might be nil but flags still set)
+		if flags.retired or flags.just_quit or flags.just_fired then
+			return false -- Don't trigger career events right after leaving job
+		end
+		-- CRITICAL FIX: Also check if player is in prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
+		end
+	end
+	
+	if event.requiresJob then
+		if not state.CurrentJob then
+			return false -- MUST have a job
+		end
+		-- CRITICAL FIX: Also block if player is retired (even if CurrentJob wasn't cleared)
+		if flags.retired then
+			return false -- Retired players shouldn't get job events
+		end
+		-- CRITICAL FIX #2: Players in prison can't have work events!
+		-- Even if they technically still have a "job", they can't go to work from prison
+		if flags.in_prison or flags.incarcerated or state.InJail then
+			return false -- Can't work from prison
+		end
+	end
+	
+	if event.requiresNoJob then
+		if state.CurrentJob then
+			return false -- MUST NOT have a job
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JOBID-1: Check requiresJobId for job-specific events!
+	-- User bug: "IT SAYS ETHICAL DILEMMA BOSS WANTS YOU TO TELL A CUSTOMER THEIR 
+	-- TRANSMISSION IS SHOT IM LEGIT A FAST FOOD WORKER??"
+	-- Events like mechanic_scam_customer need to check if player is actually a mechanic!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresJobId then
+		if not state.CurrentJob then
+			return false -- Need a job
+		end
+		local playerJobId = (state.CurrentJob.id or ""):lower()
+		local allowedJobIds = event.requiresJobId
+		
+		-- Support both string and array
+		if type(allowedJobIds) == "string" then
+			if playerJobId ~= allowedJobIds:lower() then
+				return false -- Job ID doesn't match
+			end
+		elseif type(allowedJobIds) == "table" then
+			local jobMatch = false
+			for _, allowedId in ipairs(allowedJobIds) do
+				if playerJobId == allowedId:lower() or playerJobId:find(allowedId:lower()) then
+					jobMatch = true
+					break
+				end
+			end
+			if not jobMatch then
+				return false -- Job ID not in allowed list
+			end
+		end
+	end
+	
+	if event.requiresJobCategory then
+		if not state.CurrentJob then
+			return false
+		end
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- CRITICAL FIX #504: Support both string and array for requiresJobCategory
+		-- Entertainment careers (rapper, musician, actor, etc.) should NOT get corporate events
+		local allowedCategories = event.requiresJobCategory
+		if type(allowedCategories) == "string" then
+			-- Single category string
+			if jobCat ~= allowedCategories:lower() then
+				return false
+			end
+		elseif type(allowedCategories) == "table" then
+			-- Array of allowed categories
+			local categoryMatch = false
+			for _, allowedCat in ipairs(allowedCategories) do
+				if jobCat == allowedCat:lower() then
+					categoryMatch = true
+					break
+				end
+			end
+			if not categoryMatch then
+				return false -- Job category not in allowed list
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #505: Block corporate events for entertainment careers
+	-- Rappers, musicians, actors, etc. should NOT get "CEO email" events
+	if event.requiresJob and state.CurrentJob then
+		local jobCat = (state.CurrentJob.category or state.CurrentJob.Category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		-- Check if this is an entertainment career
+		local isEntertainment = jobCat == "entertainment" or jobCat == "creative" or jobCat == "music"
+			or jobId:find("rapper") or jobId:find("musician") or jobId:find("actor")
+			or jobId:find("influencer") or jobId:find("youtuber") or jobId:find("streamer")
+			or jobId:find("singer") or jobId:find("artist") or jobId:find("celebrity")
+		
+		-- Block corporate-specific events for entertainment careers
+		local eventId = event.id or ""
+		local isCorporateEvent = eventId:find("layoff") or eventId:find("fired_for_cause")
+			or eventId:find("toxic_coworker") or eventId:find("ceo_") or eventId:find("hr_")
+			or eventId:find("office_") or eventId:find("corporate")
+		
+		if isEntertainment and isCorporateEvent then
+			return false -- Entertainment careers don't get corporate events
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP REQUIREMENTS - No marriage events if single!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.requiresPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if not hasPartnerRelation and not hasPartnerFlag then
+			return false -- MUST have a partner
+		end
+	end
+	
+	if event.requiresSingle or event.requiresNoPartner then
+		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
+		local hasPartnerRelation = state.Relationships and state.Relationships.partner
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		if hasPartnerRelation or hasPartnerFlag then
+			return false -- MUST be single
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EDUCATION REQUIREMENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.requiresEducation then
+		local eduLevels = {
+			none = 0, elementary = 1, middle_school = 2, high_school = 3,
+			community = 4, associate = 4, bachelor = 5, master = 6,
+			law = 7, medical = 7, doctorate = 8, phd = 8
+		}
+		
+		local playerEdu = state.Education or "none"
+		local playerLevel = eduLevels[playerEdu:lower()] or 0
+		local requiredLevel = eduLevels[event.requiresEducation:lower()] or 0
+		
+		if playerLevel < requiredLevel then
+			return false
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PREREQUISITE EVENTS - Must have completed certain events first
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.requiresEvents then
+		for _, reqEventId in ipairs(event.requiresEvents) do
+			if not history.completed[reqEventId] and (history.occurrences[reqEventId] or 0) == 0 then
+				return false
+			end
+		end
+	end
+	
+	if event.blockedByEvents then
+		for _, blockEventId in ipairs(event.blockedByEvents) do
+			if history.completed[blockEventId] or (history.occurrences[blockEventId] or 0) > 0 then
+				return false
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #44-46,51: MAFIA-SPECIFIC CONDITION CHECKS
+	-- Mafia events use conditions.minRank, conditions.minHeat, conditions.promotionReady
+	-- These were NOT being checked, causing events to trigger for wrong rank players!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Check for mob membership requirement (CRITICAL FIX #51)
+	if event.requiresMobMembership then
+		local mobState = state.MobState
+		if not mobState or not mobState.inMob then
+			if not flags.in_mob then
+				return false -- Must be in a crime family
+			end
+		end
+	end
+	
+	-- Check minRank condition (CRITICAL FIX #44)
+	if cond.minRank then
+		local mobState = state.MobState
+		local playerRank = 0
+		if mobState and mobState.inMob then
+			playerRank = mobState.rankIndex or mobState.rankLevel or 1
+		end
+		if playerRank < cond.minRank then
+			return false -- Not high enough rank
+		end
+	end
+	
+	-- Check minHeat condition (CRITICAL FIX #45)
+	if cond.minHeat then
+		local mobState = state.MobState
+		local playerHeat = 0
+		if mobState then
+			playerHeat = mobState.heat or 0
+		end
+		if playerHeat < cond.minHeat then
+			return false -- Not enough heat for this event
+		end
+	end
+	
+	-- Check promotionReady condition (CRITICAL FIX #46)
+	if cond.promotionReady then
+		local mobState = state.MobState
+		if not mobState or not mobState.inMob then
+			return false -- Not in mob
+		end
+		-- Check if player has enough respect for next rank
+		-- This requires knowledge of rank thresholds
+		local respectThresholds = { 0, 100, 500, 2000, 10000 }
+		local currentRank = mobState.rankIndex or 1
+		local nextRank = currentRank + 1
+		local nextThreshold = respectThresholds[nextRank]
+		if not nextThreshold then
+			return false -- Already at max rank
+		end
+		if (mobState.respect or 0) < nextThreshold then
+			return false -- Not enough respect for promotion
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #47: CUSTOM CHECK CALLBACK - For complex event conditions
+	-- Events can define conditions.customCheck as a function for advanced logic
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if cond.customCheck and type(cond.customCheck) == "function" then
+		local success, result = pcall(cond.customCheck, state)
+		if success then
+			if result == false then
+				return false -- Custom condition check failed
+			end
+		end
+	end
+	
+	-- Also support event-level customCheck for convenience
+	if event.customCheck and type(event.customCheck) == "function" then
+		local success, result = pcall(event.customCheck, state)
+		if success then
+			if result == false then
+				return false -- Custom condition check failed
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM ELIGIBILITY FUNCTION - For complex checks (like money thresholds)
+	-- CRITICAL FIX: This allows events to have custom logic beyond simple flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.eligibility and type(event.eligibility) == "function" then
+		local success, result = pcall(event.eligibility, state)
+		if success then
+			if result == false then
+				return false -- Custom eligibility check failed
+			end
+			-- CRITICAL FIX #548: If eligibility returns nil or true, allow the event
+		else
+			-- CRITICAL FIX #549: If eligibility function errors, LOG but ALLOW the event
+			-- This prevents broken eligibility functions from blocking all events
+			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result))
+			-- Continue - don't block the event due to error
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RANDOM CHANCE - Final roll (only if all other checks pass)
+	-- CRITICAL FIX #550: Significantly boosted chance for never-seen events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if event.baseChance then
+		local chance = event.baseChance
+		-- CRITICAL FIX #731: GUARANTEED trigger for never-seen events (3x boost)
+		if (history.occurrences[event.id] or 0) == 0 then
+			chance = math.min(1, chance * 3.0)  -- CRITICAL FIX #731: Was 2x, now 3x!
+		elseif (history.occurrences[event.id] or 0) == 1 then
+			-- CRITICAL FIX #732: Bigger boost for events seen only once (was 1.5x, now 2x)
+			chance = math.min(1, chance * 2.0)
+		elseif (history.occurrences[event.id] or 0) == 2 then
+			-- CRITICAL FIX #733: NEW - Boost for events seen twice
+			chance = math.min(1, chance * 1.5)
+		end
+		if RANDOM:NextNumber() > chance then
+			return false
+		end
+	end
+	
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- WEIGHT CALCULATION - Prioritize variety and freshness
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #65/#66/#67: AGE-SPECIFIC MILESTONE EVENTS
+-- These are events that MUST trigger at specific ages (DMV, graduation, etc.)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AGE-SPECIFIC GUARANTEED MILESTONE EVENTS
+-- These events WILL trigger at specific ages (unless already triggered)
+-- This ensures players don't miss important life moments like DMV, graduation, etc.
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #717-730: EXPANDED AGE MILESTONE EVENTS
+-- More varied milestones at each age to prevent repetition
+-- The system will pick ONE eligible event from the list for each age
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #736-740: MASSIVELY EXPANDED AGE MILESTONES
+-- Each age now has 4-8 possible events to choose from
+-- This dramatically reduces repetition across different lives
+-- ═══════════════════════════════════════════════════════════════════════════════
+local AgeMilestoneEvents = {
+	-- BABY/TODDLER (0-4) - Lots of variety in early years
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase" },
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
+	
+	-- EARLY CHILDHOOD (5-8) - School and discovery
+	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
+	
+	-- LATE CHILDHOOD (9-12) - Growing up
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
+	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence", "premium_dream_big" },
+	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
+	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
+	
+	-- EARLY TEEN (13-15) - Identity formation
+	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", "first_crush_serious", "style_change", "friend_drama" },
+	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
+	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
+	
+	-- LATE TEEN (16-18) - Major milestones
+	-- CRITICAL FIX #604: Added premium turning point events for gamepass exposure
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
+	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads" },
+	
+	-- YOUNG ADULT (19-24) - Independence and discovery
+	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
+	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits" },
+	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start" },
+	[23] = { "young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality" },
+	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
+	
+	-- MID-LATE 20s (25-29) - Settling into adulthood
+	-- CRITICAL FIX #604: Added premium crossroads and special opportunity events
+	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure", "premium_life_crossroads", "premium_special_opportunity" },
+	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
+	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
+	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
+	[29] = { "approaching_30", "relationship_milestone", "decade_reflection", "bucket_list_rush", "life_audit" },
+	
+	-- 30s-40s - Established adulthood
+	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough", "dirty_thirty", "real_adult_now", "life_reassessment" },
+	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection", "biological_deadline", "life_stability", "half_life_crisis" },
+	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign", "over_the_hill", "wisdom_gained", "health_priority" },
+	
+	-- 50s-60s - Later adulthood
+	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee", "half_century", "empty_nest", "grandparent_maybe" },
+	[60] = { "golden_jubilee", "retirement_consideration", "senior_discount", "legacy_thoughts", "health_checks" },
+	
+	-- 65+ - Senior years
+	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning", "medicare_eligible", "golden_years_begin" },
+	[70] = { "golden_years", "legacy_planning", "diamond_jubilee", "seven_decades", "life_wisdom", "family_patriarch" },
+	[75] = { "platinum_jubilee", "diamond_anniversary_life", "remarkable_longevity", "great_grandparent" },
+	[80] = { "eighty_years_young", "centenarian_path", "family_elder", "life_celebration" },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #99/#100: PREMIUM MILESTONE EVENTS
+-- These milestone events are for premium gamepass holders
+-- ═══════════════════════════════════════════════════════════════════════════════
+local PremiumMilestoneEvents = {
+	-- Royalty milestones (require is_royalty flag)
+	royalty = {
+		[0] = "royal_birth_announcement",
+		[1] = "royal_christening",
+		[3] = "first_public_appearance",
+		[6] = "royal_education_choice",
+		[18] = "coming_of_age_ball",
+		[21] = "royal_military_service",
+		[25] = "royal_engagement_pressure",
+		[50] = "silver_jubilee",
+		[60] = "golden_jubilee",
+		[70] = "diamond_jubilee",
+		[75] = "platinum_jubilee",
+	},
+	-- Mafia milestones (require in_mob flag)
+	mafia = {
+		-- These trigger based on rank/respect, not age
+	},
+	-- Celebrity milestones (require fame_career flag)
+	celebrity = {
+		[13] = "talent_discovery",
+		[16] = "fame_audition",
+		[21] = "first_big_break",
+		[25] = "award_nomination",
+		[30] = "fame_breakthrough",
+		[35] = "career_peak",
+		[40] = "comeback_opportunity",
+		[50] = "lifetime_achievement",
+	},
+}
+
+local function isAgeMilestoneEvent(eventId, age)
+	local milestones = AgeMilestoneEvents[age]
+	if not milestones then return false end
+	for _, id in ipairs(milestones) do
+		if id == eventId then return true end
+	end
+	return false
+end
+
+local function calculateEventWeight(event, state)
+	local history = getEventHistory(state)
+	local baseWeight = event.weight or 10
+	local weight = baseWeight
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #67: MASSIVE BOOST for age-specific milestone events
+	-- Events like DMV at 15-16, graduation at 17-18 should ALWAYS trigger
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if isAgeMilestoneEvent(event.id, age) then
+		local eventOccurred = (history.occurrences[event.id] or 0) > 0
+		if not eventOccurred then
+			weight = weight * 100 -- MASSIVE boost to guarantee it triggers
+		end
+	end
+	
+	-- BOOST: Never-seen events get priority
+	local occurCount = history.occurrences[event.id] or 0
+	if occurCount == 0 then
+		weight = weight * 2.5
+	elseif occurCount == 1 then
+		weight = weight * 1.5
+	end
+	
+	-- BOOST: Milestone/priority events
+	if event.priority == "high" or event.isMilestone then
+		weight = weight * 3
+	end
+	
+	-- BOOST: One-time events that haven't been seen yet
+	if event.oneTime and occurCount == 0 then
+		weight = weight * 2
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #98: PREMIUM EVENT WEIGHT BOOSTING
+	-- Premium events should have higher priority for gamepass holders
+	-- This ensures royal/mafia/celebrity events actually trigger
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- Boost royal events for royal players
+	if event.isRoyalOnly then
+		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+		if isRoyal then
+			weight = weight * 3 -- Triple weight for royal events when player is royal
+		end
+	end
+	
+	-- Boost mafia events for mob members
+	if event.isMafiaOnly then
+		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+		if isInMob then
+			weight = weight * 3 -- Triple weight for mafia events when player is in mob
+		end
+	end
+	
+	-- Boost celebrity events for famous players
+	if event.isCelebrityOnly then
+		local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+		if hasFameCareer then
+			weight = weight * 3 -- Triple weight for celebrity events when player has fame career
+		end
+	end
+	
+	-- Extra boost for premium milestone events
+	if event.isMilestone then
+		if event.isRoyalOnly or event.isMafiaOnly or event.isCelebrityOnly then
+			weight = weight * 2 -- Extra boost for premium milestones
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #65/#66: Age-appropriate milestone boosting
+	-- Boost events based on how appropriate they are for current age
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local minAge = event.minAge or 0
+	local maxAge = event.maxAge or 999
+	
+	-- If event is at its PRIME age, boost it
+	local midAge = (minAge + maxAge) / 2
+	local ageDistance = math.abs(age - midAge)
+	local ageRange = (maxAge - minAge) / 2
+	if ageRange > 0 then
+		local ageRelevance = 1 - (ageDistance / ageRange)
+		if ageRelevance > 0.8 then
+			weight = weight * 1.5 -- Prime age for this event
+		end
+	end
+	
+	-- REDUCE: Recently seen categories (variety)
+	for _, recentCat in ipairs(history.recentCategories or {}) do
+		if recentCat == event._category then
+			weight = weight * 0.6
+			break
+		end
+	end
+	
+	-- REDUCE: Recently seen events
+	for _, recentId in ipairs(history.recentEvents or {}) do
+		if recentId == event.id then
+			weight = weight * 0.3
+			break
+		end
+	end
+	
+	-- REDUCE: Time since last occurrence
+	local lastAge = history.lastOccurrence[event.id]
+	if lastAge then
+		local yearsSince = age - lastAge
+		if yearsSince < 3 then
+			weight = weight * 0.4
+		elseif yearsSince < 5 then
+			weight = weight * 0.7
+		end
+	end
+	
+	return math.max(weight, 0.1)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- BUILD YEAR QUEUE - Main event selection logic
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.buildYearQueue(state, options)
+	options = options or {}
+	local maxEvents = options.maxEvents or 1
+	
+	if not state then
+		warn("[LifeEvents] buildYearQueue called with nil state")
+		return {}
+	end
+	
+	local age = state.Age or 0
+	local stage = LifeEvents.getLifeStage(age)
+	local selectedEvents = {}
+	
+	-- Get categories relevant to this life stage
+	local categories = StageCategories[stage.id] or { "random" }
+	
+	-- Add career category only if player has a job
+	if state.CurrentJob and age >= 18 then
+		local hasCareer = false
+		for _, cat in ipairs(categories) do
+			if cat == "career" then hasCareer = true break end
+		end
+		if not hasCareer then
+			table.insert(categories, "career")
+		end
+		
+		-- CRITICAL FIX: Add specialized career categories based on job type
+		-- This ensures racing drivers get racing events, hackers get hacker events, etc.
+		local jobCategory = state.CurrentJob.category or ""
+		jobCategory = jobCategory:lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		
+		if jobCategory == "racing" then
+			local hasRacing = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_racing" then hasRacing = true break end
+			end
+			if not hasRacing then
+				table.insert(categories, "career_racing")
+			end
+		elseif jobCategory == "hacker" or jobCategory == "tech" then
+			local hasHacker = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_hacker" then hasHacker = true break end
+			end
+			if not hasHacker then
+				table.insert(categories, "career_hacker")
+			end
+		-- CRITICAL FIX: Add police career category for law enforcement jobs
+		elseif jobCategory == "government" or jobCategory == "law_enforcement" or 
+			   jobId:find("police") or jobId:find("detective") or jobId:find("officer") then
+			local hasPolice = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_police" then hasPolice = true break end
+			end
+			if not hasPolice then
+				table.insert(categories, "career_police")
+			end
+		-- CRITICAL FIX: Add fast food/service career events
+		elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" or
+			   jobId:find("fastfood") or jobId:find("waiter") or jobId:find("barista") or
+			   jobId:find("cashier") or jobId:find("retail") or jobId:find("server") then
+			local hasService = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_service" then hasService = true break end
+			end
+			if not hasService then
+				table.insert(categories, "career_service")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #511: Add music/entertainment career events for rappers, streamers, creators
+	-- This was COMPLETELY MISSING - rapper events were never being selected because
+	-- the career_music category wasn't being added to the event pool!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.CurrentJob then
+		local jobCategory = (state.CurrentJob.category or ""):lower()
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobName = (state.CurrentJob.name or ""):lower()
+		
+		-- Check if this is an entertainment/music career
+		local isEntertainment = jobCategory == "entertainment" or jobCategory == "music" or jobCategory == "creative"
+		local isMusicJob = jobId:find("rapper") or jobId:find("musician") or jobId:find("singer")
+		                or jobId:find("streamer") or jobId:find("creator") or jobId:find("influencer")
+		                or jobId:find("youtuber") or jobId:find("actor")
+		                or jobName:find("rapper") or jobName:find("streamer")
+		
+		if isEntertainment or isMusicJob then
+			local hasMusicCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "career_music" then hasMusicCat = true break end
+			end
+			if not hasMusicCat then
+				table.insert(categories, "career_music")
+			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #MOBILE-14: Only add celebrity category if player has ACTUAL FAME
+			-- BUG: Celebrity events (Grammy, Superbowl) were firing for hobbyist streamers
+			-- A hobbyist streamer is just starting out - they shouldn't get major celebrity events!
+			-- FIX: Only add celebrity category if Fame >= 30 (Rising Star level or higher)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local hasCelebCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "celebrity" then hasCelebCat = true break end
+			end
+			local playerFame = state.Fame or 0
+			if not hasCelebCat and state.CurrentJob.isFameCareer and playerFame >= 30 then
+				table.insert(categories, "celebrity")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-1: SPLIT RAPPER AND CREATOR/STREAMER CATEGORIES!
+	-- BUG: Rapper events were firing for streamers because they shared "career_music" category
+	-- FIX: Separate into career_rapper and career_creator categories
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CHECK IF PLAYER IS A RAPPER (music/rap career)
+	local isRapperFlags = state.Flags and (
+		state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist or
+		state.Flags.hip_hop_experience or state.Flags.first_track_recorded or
+		state.Flags.trap_rapper or state.Flags.lyrical_rapper or state.Flags.melodic_rapper or state.Flags.drill_rapper
+	)
+	local hasRapperJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("hip.?hop")
+	)
+	
+	-- Add career_rapper category ONLY for rappers
+	if isRapperFlags or hasRapperJob then
+		local hasRapperCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_rapper" or cat == "career_music" then hasRapperCat = true break end
+		end
+		if not hasRapperCat then
+			table.insert(categories, "career_rapper")
+			table.insert(categories, "career_music") -- Also add career_music for backwards compatibility
+		end
+	end
+	
+	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (NOT rapper!)
+	local isCreatorFlags = state.Flags and (
+		state.Flags.content_creator or state.Flags.streamer or state.Flags.pursuing_streaming or
+		state.Flags.first_video_uploaded or state.Flags.broadcaster or state.Flags.influencer
+	)
+	local hasCreatorJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	
+	-- Add career_creative category ONLY for creators/streamers
+	-- NOTE: Events use "career_creative" not "career_creator"
+	if isCreatorFlags or hasCreatorJob then
+		local hasCreatorCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_creative" then hasCreatorCat = true break end
+		end
+		if not hasCreatorCat then
+			table.insert(categories, "career_creative")
+		end
+	end
+	
+	-- CRITICAL FIX: Add street hustler events if player has hustler flags
+	-- Even without a "job", hustlers should get their events
+	if state.Flags and (state.Flags.street_hustler or state.Flags.dealer or state.Flags.supplier) then
+		local hasStreet = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_street" then hasStreet = true break end
+		end
+		if not hasStreet then
+			table.insert(categories, "career_street")
+		end
+	end
+	
+	-- CRITICAL FIX: Add asset events if player owns any assets
+	if state.Assets then
+		local hasAssets = false
+		for assetType, assetList in pairs(state.Assets) do
+			if type(assetList) == "table" and #assetList > 0 then
+				hasAssets = true
+				break
+			end
+		end
+		if hasAssets then
+			local hasAssetCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "assets" then hasAssetCat = true break end
+			end
+			if not hasAssetCat then
+				table.insert(categories, "assets")
+			end
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HOMELESS-1: DYNAMIC HOMELESS CATEGORY INJECTION
+	-- Add homeless category when player is in financial trouble OR already homeless
+	-- This ensures homeless events actually trigger when conditions warrant it!
+	-- User complaint: "I never had a homeless event happen even when broke for years"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local playerMoney = state.Money or 0
+	local hasNoJob = not state.CurrentJob
+	local isHomeless = state.Flags and state.Flags.homeless
+	local isCouchSurfing = state.Flags and state.Flags.couch_surfing
+	local isLivingInCar = state.Flags and state.Flags.living_in_car
+
+	-- CRITICAL FIX #HOMELESS-2: Track "years broke" for realistic eviction timing
+	-- If player has been broke for 2+ years, they should face eviction!
+	state.FinancialState = state.FinancialState or {}
+	if playerMoney < 500 and hasNoJob then
+		state.FinancialState.yearsBroke = (state.FinancialState.yearsBroke or 0) + 1
+	elseif playerMoney < 1000 then
+		-- Struggling but not completely broke
+		state.FinancialState.yearsBroke = math.max(0, (state.FinancialState.yearsBroke or 0) - 0.5)
+	else
+		-- Financially stable
+		state.FinancialState.yearsBroke = 0
+	end
+
+	-- Add homeless category ONLY if player is ACTUALLY in financial distress OR already homeless
+	-- FIXED: Removed "or age >= 18" which was adding homeless to ALL adults!
+	local inFinancialDistress = (playerMoney < 500 and hasNoJob)
+		or (state.FinancialState.yearsBroke or 0) >= 2
+		or isHomeless or isCouchSurfing or isLivingInCar
+
+	if inFinancialDistress then
+		local hasHomelessCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "homeless" then hasHomelessCat = true break end
+		end
+		if not hasHomelessCat then
+			table.insert(categories, "homeless")
+		end
+	end
+
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-1: PREMIUM PATH MUTEX VALIDATION AT EVENT SELECTION TIME
+	-- Before selecting ANY events, validate that the player's premium path flags are coherent
+	-- This prevents conflicting events from ever entering the selection pool
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	local primaryWish = flags.primary_wish_type
+	
+	-- Validate premium path state and block conflicting event injection
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	local isDatingRoyalty = flags.dating_royalty or flags.royal_romance
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	local isFamous = flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath)
+	
+	-- Count active premium paths
+	local activePaths = 0
+	if isRoyalty or isDatingRoyalty then activePaths = activePaths + 1 end
+	if isInMob then activePaths = activePaths + 1 end
+	if isFamous then activePaths = activePaths + 1 end
+	
+	-- If multiple premium paths are active, this is a CORRUPT state that should be cleaned
+	-- Log warning but continue - the RVS in LifeBackend will clean this up
+	if activePaths > 1 then
+		warn("[LifeEvents] CORRUPT STATE: Multiple premium paths active! Primary wish:", tostring(primaryWish))
+		warn("[LifeEvents] isRoyalty:", isRoyalty, "isDatingRoyalty:", isDatingRoyalty, "isInMob:", isInMob, "isFamous:", isFamous)
+		-- Force the primary_wish_type to be the correct one if available
+		if primaryWish == "royalty" then
+			-- Clear conflicting flags locally for this event selection
+			isInMob = false
+			isFamous = false
+		elseif primaryWish == "mafia" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isFamous = false
+		elseif primaryWish == "celebrity" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isInMob = false
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #68: PREMIUM GAMEPASS EVENT CATEGORIES
+	-- Add premium event categories ONLY for players who have the gamepass AND are active in it
+	-- This ensures premium events appear in the event pool when appropriate
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- MAFIA: Only add category if player has gamepass AND is in mob
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.mafia_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Mafia or state.GamepassOwnership.mafia)) then
+		local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+		if isInMob then
+			-- Player is in mob - add mafia events
+			local hasMafiaCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "mafia" or cat == "crime" then hasMafiaCat = true break end
+			end
+			if not hasMafiaCat then
+				table.insert(categories, "mafia")
+			end
+		else
+			-- Player NOT in mob yet - only add recruitment events category
+			local hasRecruitCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "mafia_recruit" then hasRecruitCat = true break end
+			end
+			if not hasRecruitCat then
+				table.insert(categories, "mafia_recruit")
+			end
+		end
+	end
+	
+	-- ROYALTY: Only add category if player has gamepass AND is royalty
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.royalty_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Royalty or state.GamepassOwnership.royalty)) then
+		local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+		if isRoyal then
+			local hasRoyalCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "royalty" or cat == "royal" then hasRoyalCat = true break end
+			end
+			if not hasRoyalCat then
+				table.insert(categories, "royalty")
+			end
+		end
+	end
+	
+	-- CELEBRITY: Only add category if player has gamepass AND has fame career OR natural fame
+	-- CRITICAL FIX: Check both capital and lowercase for compatibility
+	if flags.celebrity_gamepass or (state.GamepassOwnership and (state.GamepassOwnership.Celebrity or state.GamepassOwnership.celebrity)) then
+		local hasFameCareer = flags.fame_career or flags.career_actor 
+			or flags.career_musician or flags.career_influencer or flags.career_athlete
+			or (state.FameState and state.FameState.careerPath)
+		local hasFame = (state.Fame or 0) >= 10
+		
+		if hasFameCareer or hasFame then
+			local hasCelebCat = false
+			for _, cat in ipairs(categories) do
+				if cat == "celebrity" or cat == "fame" then hasCelebCat = true break end
+			end
+			if not hasCelebCat then
+				table.insert(categories, "celebrity")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WISH-1: CHILDHOOD WISH FOLLOW-UP EVENT INJECTION
+	-- If player made a childhood wish (palace_wish, power_wish, fame_wish, etc.)
+	-- we need to inject the wish follow-up events into the pool with HIGH priority!
+	-- These events make the wishes come true (meet royalty, join mafia, get discovered)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local history = getEventHistory(state)
+	local RANDOM_LOCAL = Random.new()
+	
+	-- Check for childhood wish flags
+	local hasRoyaltyWish = flags.palace_wish or flags.royal_fantasies
+	local hasMafiaWish = flags.power_wish or flags.fascinated_by_power
+	local hasFameWish = flags.fame_wish or flags.star_dreams or flags.performer
+	
+	-- ROYALTY WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasRoyaltyWish and age >= 18 and age <= 35 then
+		-- Check if they haven't already met royalty
+		if not flags.married and not flags.dating_royalty and not flags.is_royalty then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				-- Try to find and trigger the royalty encounter event
+				local wishEvent = AllEvents["premium_wish_royalty_encounter"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royalty_encounter"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents -- This is a major life event!
+					end
+				end
+			end
+		end
+		
+		-- Check for royal proposal if dating royalty
+		-- CRITICAL FIX: Increased chance from 35% to 60% so proposal happens faster
+		-- Also: check either dating_royalty OR royal_romance (not both required)
+		local isDatingRoyal = flags.dating_royalty or flags.royal_romance
+		if isDatingRoyal and not flags.married and not flags.is_royalty then
+			-- Higher chance to propose after dating for a while
+			local datingYears = flags.dating_royalty_years or 0
+			local proposalChance = 0.40 + (datingYears * 0.10) -- 40% base + 10% per year dating
+			proposalChance = math.min(0.80, proposalChance) -- Max 80%
+			
+			if RANDOM_LOCAL:NextNumber() < proposalChance then
+				local proposalEvent = AllEvents["premium_wish_royal_proposal"]
+				if proposalEvent and canEventTrigger(proposalEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royal_proposal"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, proposalEvent)
+						recordEventShown(state, proposalEvent)
+						return selectedEvents
+					end
+				end
+			else
+				-- Track years dating royalty to increase proposal chance
+				flags.dating_royalty_years = (flags.dating_royalty_years or 0) + 1
+			end
+		end
+	end
+	
+	-- MAFIA WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasMafiaWish and age >= 18 and age <= 35 then
+		if not flags.in_mob and not flags.refused_mob then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_mafia_approach"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_mafia_approach"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- FAME WISH FOLLOW-UP: 25% chance per year if player made the wish and is young adult
+	if hasFameWish and age >= 16 and age <= 30 then
+		if not flags.is_famous and not flags.celebrity then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_fame_discovery"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_fame_discovery"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #105/#116: GUARANTEED PREMIUM EVENT CHECK
+	-- For royal/mafia/celebrity players, ensure they get premium events frequently
+	-- This runs a 40% chance to force a premium event for engaged premium players
+	-- Without this, premium events were being drowned out by regular events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Royal players: 40% chance to get a royal event each year
+	local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	if isRoyal and RANDOM_LOCAL:NextNumber() < 0.40 then
+		local royalEvents = EventsByCategory["royalty"] or {}
+		local eligibleRoyalEvents = {}
+		
+		for _, event in ipairs(royalEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleRoyalEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleRoyalEvents > 0 then
+			-- Pick a random eligible royal event
+			local chosenEvent = eligibleRoyalEvents[RANDOM_LOCAL:NextInteger(1, #eligibleRoyalEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Return early - royal event takes priority
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #602: Mafia event selection requires STRICT in_mob verification
+	-- User complaint: "IT SAID I WAS IN MAFIA BUT IM NOT IN MAFIA"
+	-- This ensures mafia events ONLY trigger for actual mafia members
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isInMob = flags.in_mob == true -- STRICT check - must be exactly true, not truthy
+	local hasMobState = state.MobState and state.MobState.inMob == true
+	local hasMafiaGamepass = flags.mafia_gamepass == true
+	
+	-- Must have at least ONE concrete indicator of mafia membership
+	local isActuallyInMafia = isInMob or hasMobState
+	
+	-- 35% chance to get a mafia event each year IF player is actually in mafia
+	if isActuallyInMafia and hasMafiaGamepass and RANDOM_LOCAL:NextNumber() < 0.35 then
+		local mafiaEvents = EventsByCategory["mafia"] or {}
+		local eligibleMafiaEvents = {}
+		
+		for _, event in ipairs(mafiaEvents) do
+			-- CRITICAL: Skip events that explicitly require in_mob if player doesn't have it
+			local eventRequiresInMob = event.requiresFlags and event.requiresFlags.in_mob
+			local condRequiresInMob = event.conditions and event.conditions.requiresFlags and event.conditions.requiresFlags.in_mob
+			
+			local shouldSkip = false
+			if eventRequiresInMob or condRequiresInMob then
+				-- Event requires in_mob - verify player ACTUALLY has it
+				if not isInMob and not hasMobState then
+					-- Skip this event - player isn't actually in mob
+					shouldSkip = true
+				end
+			end
+			
+			if not shouldSkip and canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleMafiaEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleMafiaEvents > 0 then
+			local chosenEvent = eligibleMafiaEvents[RANDOM_LOCAL:NextInteger(1, #eligibleMafiaEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- Celebrity players: 35% chance to get a celebrity event each year
+	local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+	if hasFameCareer and RANDOM_LOCAL:NextNumber() < 0.35 then
+		local celebEvents = EventsByCategory["celebrity"] or {}
+		local eligibleCelebEvents = {}
+		
+		for _, event in ipairs(celebEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleCelebEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleCelebEvents > 0 then
+			-- CRITICAL FIX #433: Was using celebEvents instead of eligibleCelebEvents!
+			-- This could pick an ineligible event or cause index out of bounds
+			local chosenEvent = eligibleCelebEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCelebEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HOMELESS-3: GUARANTEED HOMELESS EVENT SELECTION
+	-- If player is homeless, they should get homeless events FREQUENTLY (70% chance)
+	-- If player is in financial distress (broke 2+ years), GUARANTEE eviction event!
+	-- User complaint: "I never had a homeless event happen even when broke for years"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isHomeless = flags.homeless
+	local isCouchSurfing = flags.couch_surfing
+	local isLivingInCar = flags.living_in_car
+	local yearsBroke = (state.FinancialState and state.FinancialState.yearsBroke) or 0
+	local playerMoney = state.Money or 0
+	local hasNoJob = not state.CurrentJob
+
+	-- FIXED: Guaranteed eviction after 2+ years broke - but STILL check canEventTrigger!
+	-- This ensures age/flag requirements are still respected
+	if yearsBroke >= 2 and not isHomeless and not isCouchSurfing and not isLivingInCar then
+		local evictionEvent = AllEvents["financial_crisis_eviction"]
+		if evictionEvent and canEventTrigger(evictionEvent, state) then
+			-- Check if already happened (oneTime event)
+			local occurCount = (history.occurrences[evictionEvent.id] or 0)
+			if occurCount == 0 then
+				table.insert(selectedEvents, evictionEvent)
+				recordEventShown(state, evictionEvent)
+				return selectedEvents
+			end
+		end
+	end
+
+	-- CRITICAL FIX #HOMELESS-5: Homeless players get homeless events 70% of the time!
+	if isHomeless and RANDOM_LOCAL:NextNumber() < 0.70 then
+		local homelessEvents = EventsByCategory["homeless"] or {}
+		local eligibleHomelessEvents = {}
+
+		for _, event in ipairs(homelessEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleHomelessEvents, event)
+				end
+			end
+		end
+
+		if #eligibleHomelessEvents > 0 then
+			local chosenEvent = eligibleHomelessEvents[RANDOM_LOCAL:NextInteger(1, #eligibleHomelessEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+
+	-- CRITICAL FIX #HOMELESS-6: Couch surfers and car-dwellers also get homeless events
+	if (isCouchSurfing or isLivingInCar) and RANDOM_LOCAL:NextNumber() < 0.50 then
+		local homelessEvents = EventsByCategory["homeless"] or {}
+		local eligibleHomelessEvents = {}
+
+		for _, event in ipairs(homelessEvents) do
+			if canEventTrigger(event, state) then
+				table.insert(eligibleHomelessEvents, event)
+			end
+		end
+
+		if #eligibleHomelessEvents > 0 then
+			local chosenEvent = eligibleHomelessEvents[RANDOM_LOCAL:NextInteger(1, #eligibleHomelessEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-2: SPLIT RAPPER AND CREATOR EVENTS COMPLETELY!
+	-- BUG: Rapper events fired for streamers because they were grouped together
+	-- FIX: Now we check SEPARATELY for rappers and creators - they are different careers!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- CHECK IF PLAYER IS A RAPPER (hip-hop career)
+	local hasRapperJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("rapper") or
+		(state.CurrentJob.name or ""):lower():find("hip.?hop")
+	)
+	-- RAPPER FLAGS ONLY - NOT streamer/creator flags!
+	local isRapper = flags.rapper or flags.pursuing_rap or flags.underground_artist or
+	                 flags.hip_hop_experience or flags.trap_rapper or flags.lyrical_rapper or
+	                 flags.melodic_rapper or flags.drill_rapper or flags.first_track_recorded
+	
+	-- CHECK IF PLAYER IS A CONTENT CREATOR/STREAMER (YouTube/Twitch career)
+	local hasCreatorJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("youtuber") or
+		(state.CurrentJob.id or ""):lower():find("influencer")
+	)
+	-- CREATOR FLAGS ONLY - NOT rapper flags!
+	local isCreator = flags.content_creator or flags.streamer or flags.pursuing_streaming or
+	                  flags.first_video_uploaded or flags.broadcaster or flags.influencer
+	
+	local hasEntertainmentJob = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or hasRapperJob or hasCreatorJob
+	)
+	
+	-- CRITICAL FIX #MOBILE-3: GUARANTEED first track event ONLY for RAPPERS!
+	-- This should NOT fire for streamers/creators - they get creator_first_video instead
+	if (hasRapperJob or isRapper) and not flags.first_track_recorded then
+		local firstTrackEvent = AllEvents["rapper_first_track"]
+		if firstTrackEvent and canEventTrigger(firstTrackEvent, state) then
+			-- GUARANTEED trigger for first track!
+			table.insert(selectedEvents, firstTrackEvent)
+			recordEventShown(state, firstTrackEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CRITICAL FIX #602: GUARANTEED first video for creators who haven't posted yet!
+	if (hasCreatorJob or flags.content_creator or flags.streamer) and not flags.first_video_posted then
+		local firstVideoEvent = AllEvents["creator_first_video"]
+		if firstVideoEvent and canEventTrigger(firstVideoEvent, state) then
+			table.insert(selectedEvents, firstVideoEvent)
+			recordEventShown(state, firstVideoEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #MOBILE-4: SEPARATE RAPPER AND CREATOR EVENT POOLS!
+	-- BUG: Rapper events were in the same pool as creator events, causing mixups
+	-- FIX: Rappers get career_rapper/career_music, Creators get career_creator
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- RAPPER EVENTS (80% chance if they're a rapper)
+	if (hasRapperJob or isRapper) and RANDOM_LOCAL:NextNumber() < 0.80 then
+		local rapperEvents = EventsByCategory["career_rapper"] or {}
+		local musicEvents = EventsByCategory["career_music"] or {}
+		local eligibleRapperEvents = {}
+		
+		-- Collect rapper-specific events
+		for _, event in ipairs(rapperEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleRapperEvents, event)
+				end
+			end
+		end
+		
+		-- Also include general music events for rappers
+		for _, event in ipairs(musicEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleRapperEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleRapperEvents > 0 then
+			local chosenEvent = eligibleRapperEvents[RANDOM_LOCAL:NextInteger(1, #eligibleRapperEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- CREATOR/STREAMER EVENTS (80% chance if they're a creator/streamer)
+	if (hasCreatorJob or isCreator) and RANDOM_LOCAL:NextNumber() < 0.80 then
+		-- NOTE: All creator/streamer events use "career_creative" category
+		local creativeEvents = EventsByCategory["career_creative"] or {}
+		local eligibleCreatorEvents = {}
+		
+		-- Collect all career_creative events
+		for _, event in ipairs(creativeEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleCreatorEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleCreatorEvents > 0 then
+			local chosenEvent = eligibleCreatorEvents[RANDOM_LOCAL:NextInteger(1, #eligibleCreatorEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #67: GUARANTEED MILESTONE EVENTS
+	-- First, check if there's an age-specific milestone that MUST trigger
+	-- These are events that should NEVER be skipped (DMV at 16, graduation at 18, etc.)
+	-- 
+	-- CRITICAL FIX #VARIETY-2: RANDOMIZE milestone order to prevent same events every life!
+	-- The old code always checked milestones in the same order, causing the same events
+	-- to trigger in the same order across different lives. Now we shuffle the order!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local guaranteedMilestones = AgeMilestoneEvents[age]
+	
+	if guaranteedMilestones then
+		-- CRITICAL FIX #VARIETY-3: Create a shuffled copy of milestones for variety
+		local shuffledMilestones = {}
+		for _, m in ipairs(guaranteedMilestones) do
+			table.insert(shuffledMilestones, m)
+		end
+		-- Fisher-Yates shuffle for true randomization
+		for i = #shuffledMilestones, 2, -1 do
+			local j = RANDOM:NextInteger(1, i)
+			shuffledMilestones[i], shuffledMilestones[j] = shuffledMilestones[j], shuffledMilestones[i]
+		end
+		
+		-- Collect ALL eligible milestones, not just the first one
+		local eligibleMilestones = {}
+		for _, milestoneId in ipairs(shuffledMilestones) do
+			local event = AllEvents[milestoneId]
+			if event then
+				-- Check if event already occurred
+				local occurCount = (history.occurrences[milestoneId] or 0)
+				if occurCount == 0 then
+					-- Event hasn't happened yet - check if it can trigger
+					if canEventTrigger(event, state) then
+						table.insert(eligibleMilestones, event)
+					end
+				end
+			end
+		end
+		
+		-- CRITICAL FIX #VARIETY-4: Pick randomly from eligible milestones for MAXIMUM variety!
+		if #eligibleMilestones > 0 then
+			local chosenIndex = RANDOM:NextInteger(1, #eligibleMilestones)
+			local chosenEvent = eligibleMilestones[chosenIndex]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Return early - milestone takes priority
+		end
+	end
+	
+	-- Collect all eligible events
+	local candidateEvents = {}
+	local priorityEvents = {}
+	
+	for _, categoryName in ipairs(categories) do
+		local categoryEvents = EventsByCategory[categoryName] or {}
+		for _, event in ipairs(categoryEvents) do
+			if canEventTrigger(event, state) then
+				local weight = calculateEventWeight(event, state)
+				
+				-- CRITICAL FIX: Check if this is an age milestone that hasn't triggered
+				local isAgeMilestone = isAgeMilestoneEvent(event.id, age)
+				local eventOccurred = (history.occurrences[event.id] or 0) > 0
+				
+				local candidate = {
+					event = event,
+					weight = weight,
+					isPriority = event.priority == "high" or event.isMilestone or (isAgeMilestone and not eventOccurred),
+				}
+				
+				if candidate.isPriority then
+					table.insert(priorityEvents, candidate)
+				else
+					table.insert(candidateEvents, candidate)
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #735: Use WEIGHTED RANDOM for priority events too!
+	-- The old code always picked the highest-weighted event, causing "learning_to_ride_bike"
+	-- and other milestone events to repeat every life since they had the same weight boost.
+	-- Now we use weighted random selection to pick from ALL eligible milestone events.
+	--
+	-- CRITICAL FIX #VARIETY-5: Sometimes skip priority events for MORE variety!
+	-- This prevents every life from being the same sequence of milestones.
+	-- 25% chance to pick from regular events instead of priority (if regular events exist)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if #priorityEvents > 0 then
+		-- VARIETY FIX: 25% chance to pick a random event instead of priority milestone
+		-- This breaks up the monotony of always getting the same milestones in order
+		if #candidateEvents > 0 and RANDOM:NextNumber() < 0.25 then
+			-- Skip to regular events for variety - don't return here
+			-- Fall through to the regular event selection below
+		else
+			-- Use weighted random selection instead of just picking highest weight
+			local totalPriorityWeight = 0
+			for _, candidate in ipairs(priorityEvents) do
+				totalPriorityWeight = totalPriorityWeight + candidate.weight
+			end
+			
+			if totalPriorityWeight > 0 then
+				local roll = RANDOM:NextNumber() * totalPriorityWeight
+				local cumulative = 0
+				
+				for _, candidate in ipairs(priorityEvents) do
+					cumulative = cumulative + candidate.weight
+					if roll <= cumulative then
+						table.insert(selectedEvents, candidate.event)
+						recordEventShown(state, candidate.event)
+						return selectedEvents
+					end
+				end
+			end
+			
+			-- Fallback: pick randomly from priority events
+			local chosenIdx = RANDOM:NextInteger(1, #priorityEvents)
+			local chosen = priorityEvents[chosenIdx]
+			table.insert(selectedEvents, chosen.event)
+			recordEventShown(state, chosen.event)
+			return selectedEvents
+		end
+	end
+	
+	-- Check for quiet year (no events)
+	-- CRITICAL FIX #734-740: MASSIVELY REDUCED quiet years for MORE engaging gameplay!
+	-- Players want EVENTS, not boring years of nothing happening
+	local quietChance = stage.quietChance or 0.1  -- CRITICAL FIX #734: Was 0.4, now 0.1
+	
+	-- CRITICAL FIX #735: Entertainment careers should ALMOST NEVER have quiet years!
+	local hasEntertainmentCareer = state.CurrentJob and (
+		(state.CurrentJob.category or ""):lower() == "entertainment" or
+		(state.CurrentJob.id or ""):lower():find("rapper") or
+		(state.CurrentJob.id or ""):lower():find("streamer") or
+		(state.CurrentJob.id or ""):lower():find("creator") or
+		(state.CurrentJob.id or ""):lower():find("musician") or
+		(state.CurrentJob.id or ""):lower():find("actor") or
+		(state.CurrentJob.id or ""):lower():find("celeb")
+	)
+	
+	-- CRITICAL FIX #736: Entertainment careers get 90% less quiet years!
+	if hasEntertainmentCareer then
+		quietChance = quietChance * 0.1  -- Was 0.3, now 0.1 - almost NEVER quiet
+	end
+	
+	-- CRITICAL FIX #737: ANY job holder should get more events
+	if state.CurrentJob then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet if employed
+	end
+	
+	-- CRITICAL FIX #738: Teens and young adults should get TONS of events
+	local age = state.Age or 0
+	if age >= 13 and age <= 25 then
+		quietChance = quietChance * 0.5  -- 50% less likely to be quiet
+	end
+	
+	if #candidateEvents == 0 or RANDOM:NextNumber() < quietChance then
+		return {}
+	end
+	
+	-- Weighted random selection
+	local totalWeight = 0
+	for _, candidate in ipairs(candidateEvents) do
+		totalWeight = totalWeight + candidate.weight
+	end
+	
+	if totalWeight <= 0 then
+		return {}
+	end
+	
+	for _ = 1, maxEvents do
+		if #candidateEvents == 0 then break end
+		
+		local roll = RANDOM:NextNumber() * totalWeight
+		local cumulative = 0
+		
+		for i, candidate in ipairs(candidateEvents) do
+			cumulative = cumulative + candidate.weight
+			if roll <= cumulative then
+				-- CRITICAL FIX #VARIETY-1: Apply text variations for event variety
+				-- User feedback: "HAVE MULTIPLE DIFFERENT TEXT LIKE FOR SAME SCENE"
+				local eventCopy = LifeEvents.applyTextVariation(candidate.event)
+				
+				table.insert(selectedEvents, eventCopy)
+				recordEventShown(state, candidate.event)
+				
+				-- Remove from pool and update total weight
+				totalWeight = totalWeight - candidate.weight
+				table.remove(candidateEvents, i)
+				break
+			end
+		end
+	end
+	
+	return selectedEvents
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- TEXT VARIATION SYSTEM - For variety so same events feel different
+-- User feedback: "HAVE MUTLIPLE LIKE DIFFERENT TEXT LIKE FOR SAME SCENE"
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.applyTextVariation(event)
+	-- If event has no text variations, return as-is
+	if not event.textVariants or type(event.textVariants) ~= "table" or #event.textVariants == 0 then
+		return event
+	end
+	
+	-- Create a shallow copy to avoid modifying the original event
+	local eventCopy = {}
+	for key, value in pairs(event) do
+		eventCopy[key] = value
+	end
+	
+	-- Randomly select a text variation
+	local selectedText = event.textVariants[RANDOM:NextInteger(1, #event.textVariants)]
+	eventCopy.text = selectedText
+	
+	-- Also check for title variants
+	if event.titleVariants and type(event.titleVariants) == "table" and #event.titleVariants > 0 then
+		eventCopy.title = event.titleVariants[RANDOM:NextInteger(1, #event.titleVariants)]
+	end
+	
+	-- And question variants
+	if event.questionVariants and type(event.questionVariants) == "table" and #event.questionVariants > 0 then
+		eventCopy.question = event.questionVariants[RANDOM:NextInteger(1, #event.questionVariants)]
+	end
+	
+	return eventCopy
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- ACCESSOR FUNCTIONS
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.getEvent(eventId)
+	return AllEvents[eventId]
+end
+
+function LifeEvents.getAllEvents()
+	return AllEvents
+end
+
+function LifeEvents.getEventsByCategory(categoryName)
+	return EventsByCategory[categoryName] or {}
+end
+
+function LifeEvents.getLoadedModules()
+	return LoadedModules
+end
+
+function LifeEvents.getEventCount()
+	local count = 0
+	for _ in pairs(AllEvents) do
+		count = count + 1
+	end
+	return count
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- EVENT ENGINE - Handles event completion and outcomes
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+local EventEngine = {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ASSET MANAGEMENT API
+-- These helpers let events add/remove assets consistently (BitLife-style glue)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function EventEngine.ensureAssetTables(state)
+	state.Assets = state.Assets or {}
+	state.Assets.Properties = state.Assets.Properties or {}
+	state.Assets.Vehicles = state.Assets.Vehicles or {}
+	state.Assets.Items = state.Assets.Items or {}
+	state.Assets.Crypto = state.Assets.Crypto or {}
+	state.Assets.Investments = state.Assets.Investments or {}
+	state.Assets.Businesses = state.Assets.Businesses or {}
+end
+
+--[[
+	EventEngine.addAsset(state, assetType, assetData)
+	
+	Adds an asset to the player's state.
+	
+	@param state - The player's LifeState object
+	@param assetType - One of: "property", "vehicle", "item", "crypto", "investment", "business"
+	@param assetData - Table with asset information:
+		{
+			id = "unique_id",
+			name = "Display Name",
+			emoji = "🚗" (optional),
+			price = 2500,
+			value = 2500,
+			condition = 35 (optional, for vehicles),
+			acquiredAge = state.Age (optional),
+			acquiredYear = state.Year (optional),
+			isEventAcquired = true (optional, marks as story-given)
+		}
+	
+	Example:
+		EventEngine.addAsset(state, "vehicle", {
+			id = "cheap_used_car",
+			name = "Cheap Used Car",
+			emoji = "🚗",
+			price = 2500,
+			value = 2500,
+			condition = 35,
+			acquiredAge = state.Age,
+			isEventAcquired = true,
+		})
+]]
+function EventEngine.addAsset(state, assetType, assetData)
+	EventEngine.ensureAssetTables(state)
+	
+	-- Normalize asset type to plural category name
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	local category = categoryMap[assetType:lower()]
+	if not category then
+		warn("[EventEngine] Unknown asset type:", assetType)
+		return false
+	end
+	
+	-- Ensure asset has required fields
+	local asset = {
+		id = assetData.id or (assetType .. "_" .. tostring(RANDOM:NextInteger(10000, 99999))),
+		name = assetData.name or "Unknown Asset",
+		emoji = assetData.emoji,
+		price = assetData.price or 0,
+		value = assetData.value or assetData.price or 0,
+		condition = assetData.condition,
+		acquiredAge = assetData.acquiredAge or (state.Age or 0),
+		acquiredYear = assetData.acquiredYear or (state.Year or 2025),
+		isEventAcquired = assetData.isEventAcquired,
+		income = assetData.income,
+	}
+	
+	-- Use LifeState method if available, otherwise direct insert
+	if state.AddAsset and type(state.AddAsset) == "function" then
+		state:AddAsset(category, asset)
+	else
+		state.Assets[category] = state.Assets[category] or {}
+		table.insert(state.Assets[category], asset)
+	end
+	
+	return true
+end
+
+--[[
+	EventEngine.removeAssetById(state, assetType, assetId)
+	
+	Removes an asset from the player's state by its ID.
+	
+	@param state - The player's LifeState object
+	@param assetType - One of: "property", "vehicle", "item", "crypto", "investment", "business"
+	@param assetId - The unique ID of the asset to remove
+	
+	@returns The removed asset, or nil if not found
+]]
+function EventEngine.removeAssetById(state, assetType, assetId)
+	EventEngine.ensureAssetTables(state)
+	
+	-- Normalize asset type
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	local category = categoryMap[assetType:lower()]
+	if not category then
+		warn("[EventEngine] Unknown asset type:", assetType)
+		return nil
+	end
+	
+	-- Use LifeState method if available
+	if state.RemoveAsset and type(state.RemoveAsset) == "function" then
+		return state:RemoveAsset(category, assetId)
+	end
+	
+	-- Fallback: direct removal
+	local bucket = state.Assets[category]
+	if not bucket then return nil end
+	
+	for i = #bucket, 1, -1 do
+		if bucket[i].id == assetId then
+			return table.remove(bucket, i)
+		end
+	end
+	
+	return nil
+end
+
+--[[
+	EventEngine.hasAsset(state, assetType, assetId)
+	
+	Checks if the player owns a specific asset.
+	
+	@param state - The player's LifeState object
+	@param assetType - Asset category (or nil to search all)
+	@param assetId - The asset ID to find
+	
+	@returns true if owned, false otherwise
+]]
+function EventEngine.hasAsset(state, assetType, assetId)
+	EventEngine.ensureAssetTables(state)
+	
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	-- If no specific type, search all categories
+	local categoriesToSearch
+	if assetType then
+		local category = categoryMap[assetType:lower()]
+		if not category then return false end
+		categoriesToSearch = { category }
+	else
+		categoriesToSearch = { "Properties", "Vehicles", "Items", "Crypto", "Investments", "Businesses" }
+	end
+	
+	for _, category in ipairs(categoriesToSearch) do
+		local bucket = state.Assets[category]
+		if bucket then
+			for _, asset in ipairs(bucket) do
+				if asset.id == assetId then
+					return true
+				end
+			end
+		end
+	end
+	
+	return false
+end
+
+--[[
+	EventEngine.countAssets(state, assetType)
+	
+	Counts how many assets the player owns in a category.
+	
+	@param state - The player's LifeState object
+	@param assetType - Asset category (or nil for total count)
+	
+	@returns number of assets
+]]
+function EventEngine.countAssets(state, assetType)
+	EventEngine.ensureAssetTables(state)
+	
+	local categoryMap = {
+		property = "Properties",
+		properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		crypto = "Crypto",
+		investment = "Investments",
+		investments = "Investments",
+		business = "Businesses",
+		businesses = "Businesses",
+	}
+	
+	if assetType then
+		local category = categoryMap[assetType:lower()]
+		if not category then return 0 end
+		return #(state.Assets[category] or {})
+	end
+	
+	-- Count all assets
+	local total = 0
+	for _, category in pairs(state.Assets) do
+		if type(category) == "table" then
+			total = total + #category
+		end
+	end
+	return total
+end
+
+-- Name pools for dynamic relationship creation (EXPANDED - 100+ names each for variety)
+local NamePools = {
+	male = {
+		-- Classic American
+		"James", "Michael", "David", "John", "Robert", "Christopher", "Daniel", "Matthew", "Anthony", "Mark",
+		"Steven", "Andrew", "Joshua", "Kevin", "Brian", "Ryan", "Justin", "Brandon", "Eric", "Tyler",
+		"Alexander", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Oliver", "Aiden", "Carter",
+		"Sebastian", "Henry", "Owen", "Jack", "Leo", "Nathan", "Logan", "Dylan", "Jayden", "Wyatt",
+		"Caleb", "Luke", "Gabriel", "Isaac", "Connor", "Elijah", "Hunter", "Cameron", "Evan", "Austin",
+		-- Hispanic/Latino
+		"Diego", "Carlos", "Miguel", "Rafael", "Alejandro", "Juan", "Marco", "Antonio", "Luis", "Eduardo",
+		"Mateo", "Santiago", "Javier", "Pablo", "Ricardo", "Andres", "Fernando", "Hector", "Oscar", "Victor",
+		-- African American
+		"Jamal", "Darius", "Malik", "Terrence", "Andre", "DeShawn", "Marcus", "Dante", "Isaiah", "Xavier",
+		-- Asian
+		"Kenji", "Ryu", "Akira", "Ren", "Sora", "Kai", "Hiro", "Yuto", "Jun", "Tao",
+		"Wei", "Chen", "Jin", "Min", "Jae", "Sung", "Arjun", "Raj", "Vikram", "Rahul",
+		-- Middle Eastern
+		"Amir", "Omar", "Hassan", "Khalid", "Zaid", "Tariq", "Yusuf", "Ahmed", "Ali", "Samir"
+	},
+	female = {
+		-- Classic American
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail",
+		"Emily", "Elizabeth", "Sofia", "Avery", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Riley",
+		"Aria", "Lily", "Zoey", "Hannah", "Layla", "Nora", "Zoe", "Leah", "Hazel", "Luna",
+		"Penelope", "Stella", "Aurora", "Violet", "Savannah", "Audrey", "Brooklyn", "Claire", "Skylar", "Paisley",
+		"Natalie", "Madison", "Addison", "Eleanor", "Lillian", "Aubrey", "Ellie", "Camila", "Genesis", "Kennedy",
+		-- Hispanic/Latino
+		"Maria", "Carmen", "Valentina", "Lucia", "Ana", "Rosa", "Elena", "Gabriela", "Natalia", "Isabella",
+		"Camila", "Mariana", "Daniela", "Fernanda", "Paula", "Andrea", "Carolina", "Diana", "Adriana", "Alejandra",
+		-- African American
+		"Aaliyah", "Destiny", "Diamond", "Jasmine", "Imani", "Tiana", "Sierra", "Aisha", "Nia", "Maya",
+		-- Asian
+		"Sakura", "Yuki", "Mei", "Hana", "Aiko", "Rin", "Mika", "Kaori", "Nanami", "Koharu",
+		"Lin", "Mei-Lin", "Jing", "Yuna", "Hye", "Ji-Yeon", "Priya", "Ananya", "Isha", "Diya",
+		-- Middle Eastern
+		"Fatima", "Zahra", "Leila", "Nadia", "Sara", "Amira", "Yasmin", "Layla", "Mariam", "Aisha"
+	}
+}
+
+local function generateName(gender)
+	local pool = NamePools[gender] or NamePools.male
+	return pool[RANDOM:NextInteger(1, #pool)]
+end
+
+local function getOppositeGender(playerGender)
+	local g = (playerGender or "male"):lower()
+	return g == "male" and "female" or "male"
+end
+
+function EventEngine.createRelationship(state, relType, options)
+	options = options or {}
+	state.Relationships = state.Relationships or {}
+	
+	local age = state.Age or 20
+	
+	-- CRITICAL FIX: For romance/partner, use "partner" as the ID to prevent duplicates!
+	-- Previously, this created BOTH state.Relationships["romance_XXXX"] AND state.Relationships.partner
+	-- pointing to the same object, causing duplicate display in RelationshipsScreen
+	local id
+	if relType == "romance" or relType == "partner" then
+		id = "partner"  -- Use consistent ID for partners
+	else
+		id = relType .. "_" .. tostring(RANDOM:NextInteger(1000, 9999)) .. "_" .. tostring(tick())
+	end
+	
+	local gender
+	local name = options.name
+	local relAge = age
+	
+	if relType == "romance" or relType == "partner" then
+		gender = getOppositeGender(state.Gender)
+		name = name or generateName(gender)
+		relAge = math.max(18, age + RANDOM:NextInteger(-5, 5))
+	elseif relType == "friend" then
+		gender = options.gender or (RANDOM:NextNumber() > 0.5 and "male" or "female")
+		name = name or generateName(gender)
+		relAge = math.max(5, age + RANDOM:NextInteger(-3, 3))
+	else
+		gender = options.gender or "male"
+		name = name or generateName(gender)
+	end
+	
+	local relationship = {
+		id = id,
+		name = name,
+		type = relType,
+		role = options.role or (relType == "romance" and "Partner" or relType:sub(1,1):upper() .. relType:sub(2)),
+		relationship = options.startLevel or RANDOM:NextInteger(50, 75),
+		age = relAge,
+		gender = gender,
+		alive = true,
+		metAge = state.Age,
+		metYear = state.Year or 2025,
+	}
+	
+	-- CRITICAL FIX: Only store in ONE location, not two!
+	-- For partners, store at Relationships.partner (which is also Relationships["partner"])
+	-- For friends/others, store at Relationships[id]
+	if relType == "romance" or relType == "partner" then
+		state.Relationships.partner = relationship
+		state.Flags = state.Flags or {}
+		state.Flags.has_partner = true
+	else
+		state.Relationships[id] = relationship
+	end
+	
+	return relationship
+end
+
+function EventEngine.completeEvent(eventDef, choiceIndex, state)
+	-- CRITICAL FIX #115: Full nil safety for event completion
+	if not eventDef then
+		warn("[EventEngine] Invalid event definition - nil")
+		return nil
+	end
+	if not eventDef.choices then
+		warn("[EventEngine] Invalid event definition - no choices:", eventDef.id or "unknown")
+		return nil
+	end
+	if not state then
+		warn("[EventEngine] Invalid state - nil")
+		return nil
+	end
+	
+	-- CRITICAL FIX #116: Validate choiceIndex is within bounds
+	if type(choiceIndex) ~= "number" or choiceIndex < 1 or choiceIndex > #eventDef.choices then
+		warn("[EventEngine] Invalid choice index:", choiceIndex, "for event:", eventDef.id, "max:", #eventDef.choices)
+		return nil
+	end
+	
+	local choice = eventDef.choices[choiceIndex]
+	if not choice then
+		warn("[EventEngine] Choice at index is nil:", choiceIndex)
+		return nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check per-choice eligibility BEFORE applying effects
+	-- This prevents players from selecting choices they can't afford or aren't qualified for
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.eligibility and type(choice.eligibility) == "function" then
+		local success, eligible, failReason = pcall(choice.eligibility, state)
+		if success then
+			if eligible == false then
+				warn("[EventEngine] Choice eligibility failed:", eventDef.id, "choice:", choiceIndex, "reason:", failReason or "unknown")
+				return {
+					success = false,
+					failed = true,
+					failReason = failReason or "You can't select this option right now.",
+					eventId = eventDef.id,
+					choiceIndex = choiceIndex,
+				}
+			end
+		else
+			warn("[EventEngine] Choice eligibility function error:", eligible)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #502: Check requiresGamepass on choices for premium options
+	-- Premium choices (God Mode, Mafia, Celebrity, Royalty) require gamepass ownership
+	-- This enables tasteful gamepass integration without forcing purchases
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.requiresGamepass then
+		local gamepassKey = choice.requiresGamepass
+		local flags = state.Flags or {}
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+		}
+		local gamepassToOwnership = {
+			GOD_MODE = "godMode",
+			MAFIA = "mafia",
+			CELEBRITY = "celebrity",
+			ROYALTY = "royalty",
+			TIME_MACHINE = "timeMachine",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownershipName = gamepassToOwnership[gamepassKey]
+		local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+		
+		if not hasGamepass then
+			-- Player doesn't have the required gamepass
+			local gamepassNames = {
+				GOD_MODE = "God Mode",
+				MAFIA = "Mafia",
+				CELEBRITY = "Celebrity",
+				ROYALTY = "Royalty",
+				TIME_MACHINE = "Time Machine",
+			}
+			local gamepassName = gamepassNames[gamepassKey] or gamepassKey
+			local emoji = choice.gamepassEmoji or "🔒"
+			
+			return {
+				success = false,
+				failed = true,
+				requiresGamepass = true,
+				gamepassKey = gamepassKey,
+				gamepassName = gamepassName,
+				failReason = string.format("%s This premium option requires the %s gamepass!", emoji, gamepassName),
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+		
+		-- Also check requiresFlags on premium choices (e.g., must be in mob for mafia options)
+		if choice.requiresFlags then
+			for flagName, requiredValue in pairs(choice.requiresFlags) do
+				local playerHasFlag = flags[flagName]
+				if requiredValue == true and not playerHasFlag then
+					return {
+						success = false,
+						failed = true,
+						failReason = "You don't meet the requirements for this option.",
+						eventId = eventDef.id,
+						choiceIndex = choiceIndex,
+					}
+				end
+			end
+		end
+	end
+	
+	-- Initialize outcome
+	local outcome = {
+		eventId = eventDef.id,
+		eventTitle = eventDef.title,
+		choiceIndex = choiceIndex,
+		choiceText = choice.text,
+		feedText = choice.feedText or choice.feed or choice.text,
+		statChanges = {},
+		flagChanges = {},
+		moneyChange = 0,
+	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #473: Handle successChance on choices (for risky actions)
+	-- Many events use successChance/successMafiaEffect/failMafiaEffect pattern
+	-- NOTE: successChance can be 0-1 OR 0-100 format, detect and handle both!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local wasSuccessful = true
+	if choice.successChance ~= nil then
+		local roll = RANDOM:NextNumber() * 100 -- Roll 0-100
+		-- Normalize successChance to 0-100 scale (some events use 0-1, others use 0-100)
+		local normalizedChance = choice.successChance
+		if normalizedChance <= 1 then
+			normalizedChance = normalizedChance * 100
+		end
+		wasSuccessful = roll < normalizedChance
+		outcome.wasSuccessful = wasSuccessful
+		outcome.successRoll = roll
+		
+		if wasSuccessful then
+			-- Use success effects if available
+			if choice.successFeed then
+				outcome.feedText = choice.successFeed
+			elseif choice.successFeedText then
+				outcome.feedText = choice.successFeedText
+			end
+			if choice.successMoney then
+				-- CRITICAL FIX #529: Protect money from going negative
+				state.Money = math.max(0, (state.Money or 0) + choice.successMoney)
+				outcome.moneyChange = choice.successMoney
+			end
+			if choice.successFame then
+				state.Fame = (state.Fame or 0) + choice.successFame
+			end
+			-- CRITICAL FIX #474: Handle successMafiaEffect
+			if choice.successMafiaEffect and state.MobState then
+				local mEffect = choice.successMafiaEffect
+				if mEffect.respect then
+					state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
+				end
+				if mEffect.money then
+					-- CRITICAL FIX #530: Protect mafia money from going negative
+					state.Money = math.max(0, (state.Money or 0) + mEffect.money)
+					outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
+				end
+				if mEffect.heat then
+					state.MobState.heat = math.min(100, (state.MobState.heat or 0) + mEffect.heat)
+				end
+				if mEffect.heatDecay then
+					state.MobState.heat = math.max(0, (state.MobState.heat or 0) - mEffect.heatDecay)
+				end
+				if mEffect.kills then
+					state.MobState.kills = (state.MobState.kills or 0) + mEffect.kills
+				end
+				if mEffect.rankUp then
+					state.MobState.rankLevel = (state.MobState.rankLevel or 1) + 1
+				end
+			end
+		else
+			-- Use fail effects if available
+			if choice.failFeed then
+				outcome.feedText = choice.failFeed
+			elseif choice.failFeedText then
+				outcome.feedText = choice.failFeedText
+			end
+			if choice.failMoney then
+				state.Money = math.max(0, (state.Money or 0) + choice.failMoney)
+				outcome.moneyChange = choice.failMoney
+			end
+			if choice.failFame then
+				state.Fame = math.max(0, (state.Fame or 0) + choice.failFame)
+			end
+			-- CRITICAL FIX #475: Handle failMafiaEffect
+			if choice.failMafiaEffect and state.MobState then
+				local mEffect = choice.failMafiaEffect
+				if mEffect.respect then
+					state.MobState.respect = math.max(0, (state.MobState.respect or 0) + mEffect.respect)
+				end
+				if mEffect.heat then
+					state.MobState.heat = math.min(100, (state.MobState.heat or 0) + mEffect.heat)
+				end
+				if mEffect.arrested then
+					state.InJail = true
+					state.JailYearsLeft = mEffect.jailYears or 5
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					-- Lose job when arrested
+					if state.CurrentJob then
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+					end
+				end
+			end
+		end
+	end
+	
+	-- Apply stat effects (only if not handled by success/fail above, or if no successChance)
+	local effects = choice.effects or choice.deltas or {}
+	for stat, change in pairs(effects) do
+		local delta = change
+		
+		-- Handle random ranges
+		if type(change) == "table" then
+			local min = change.min or change[1] or 0
+			local max = change.max or change[2] or 0
+			delta = RANDOM:NextInteger(math.min(min, max), math.max(min, max))
+		end
+		
+		outcome.statChanges[stat] = delta
+		
+		-- Apply to state
+		if stat == "Money" or stat == "money" then
+			state.Money = math.max(0, (state.Money or 0) + delta)
+			outcome.moneyChange = (outcome.moneyChange or 0) + delta
+		else
+			state.Stats = state.Stats or {}
+			local current = state.Stats[stat] or state[stat] or 50
+			local newValue = math.clamp(current + delta, 0, 100)
+			state.Stats[stat] = newValue
+			state[stat] = newValue
+		end
+	end
+	
+	-- Apply flag changes
+	local flagChanges = choice.setFlags or choice.flags or {}
+	state.Flags = state.Flags or {}
+	for flag, value in pairs(flagChanges) do
+		state.Flags[flag] = value
+		outcome.flagChanges[flag] = value
+	end
+	
+	-- CRITICAL FIX: Handle clearFlags (for events like prison escape that need to remove flags)
+	local clearFlagChanges = choice.clearFlags or {}
+	for flag, _ in pairs(clearFlagChanges) do
+		if state.Flags[flag] then
+			state.Flags[flag] = nil
+			outcome.flagChanges[flag] = nil -- Mark as cleared
+		end
+	end
+	
+	-- Career hints
+	if choice.hintCareer then
+		state.CareerHints = state.CareerHints or {}
+		state.CareerHints[choice.hintCareer] = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #476: Handle mafiaEffect on choices (for mafia events)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.mafiaEffect then
+		local mEffect = choice.mafiaEffect
+		state.MobState = state.MobState or {}
+		
+		if mEffect.respect then
+			state.MobState.respect = (state.MobState.respect or 0) + mEffect.respect
+		end
+		if mEffect.money then
+			-- CRITICAL FIX #531: Protect mafia money effect from going negative
+			state.Money = math.max(0, (state.Money or 0) + mEffect.money)
+			outcome.moneyChange = (outcome.moneyChange or 0) + mEffect.money
+		end
+		if mEffect.heat then
+			state.MobState.heat = math.min(100, (state.MobState.heat or 0) + mEffect.heat)
+		end
+		if mEffect.heatDecay then
+			state.MobState.heat = math.max(0, (state.MobState.heat or 0) - mEffect.heatDecay)
+		end
+		if mEffect.kills then
+			state.MobState.kills = (state.MobState.kills or 0) + mEffect.kills
+		end
+		if mEffect.rankUp then
+			state.MobState.rankLevel = (state.MobState.rankLevel or 1) + 1
+			state.MobState.rankIndex = (state.MobState.rankIndex or 1) + 1
+		end
+		if mEffect.loyalty then
+			state.MobState.loyalty = math.clamp((state.MobState.loyalty or 50) + mEffect.loyalty, 0, 100)
+		end
+		if mEffect.betrayal then
+			state.Flags.mob_betrayer = true
+		end
+		if mEffect.arrested then
+			state.InJail = true
+			state.JailYearsLeft = mEffect.jailYears or 5
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			if state.CurrentJob then
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #477: Handle royaltyEffect on choices (for royalty events)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.royaltyEffect then
+		local rEffect = choice.royaltyEffect
+		state.RoyalState = state.RoyalState or {}
+		
+		if rEffect.popularity then
+			state.RoyalState.popularity = math.clamp((state.RoyalState.popularity or 50) + rEffect.popularity, 0, 100)
+		end
+		if rEffect.scandals then
+			state.RoyalState.scandals = (state.RoyalState.scandals or 0) + rEffect.scandals
+		end
+		if rEffect.wealthGain then
+			state.Money = (state.Money or 0) + rEffect.wealthGain
+			outcome.moneyChange = (outcome.moneyChange or 0) + rEffect.wealthGain
+		end
+		if rEffect.wealthCost then
+			state.Money = math.max(0, (state.Money or 0) - rEffect.wealthCost)
+			outcome.moneyChange = (outcome.moneyChange or 0) - rEffect.wealthCost
+		end
+		if rEffect.abdicated then
+			state.RoyalState.abdicated = true
+			state.Flags.abdicated = true
+		end
+		if rEffect.exiled then
+			state.RoyalState.exiled = true
+			state.Flags.exiled = true
+		end
+		if rEffect.stepDown then
+			state.RoyalState.steppedDown = true
+			state.Flags.stepped_down = true
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #478: Handle fameEffect on choices (for celebrity events)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.fameEffect then
+		local fEffect = choice.fameEffect
+		if type(fEffect) == "number" then
+			-- Simple fame change
+			state.Fame = math.clamp((state.Fame or 0) + fEffect, 0, 100)
+		else
+			-- Object with fame and followers
+			if fEffect.fame then
+				state.Fame = math.clamp((state.Fame or 0) + fEffect.fame, 0, 100)
+			end
+			if fEffect.followers then
+				state.FameState = state.FameState or {}
+				state.FameState.followers = (state.FameState.followers or 0) + fEffect.followers
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SPECIAL EVENT HANDLING - Relationship creation, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local eventId = eventDef.id
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Universal friend creation handler
+	-- Any event that sets has_best_friend, has_work_friend, or made_friend flags
+	-- should create an actual friend relationship!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.setFlags then
+		local friendFlags = { "has_best_friend", "has_work_friend", "made_friend", "has_close_friend" }
+		local shouldCreateFriend = false
+		local friendType = "Friend"
+		
+		for _, flag in ipairs(friendFlags) do
+			if choice.setFlags[flag] then
+				shouldCreateFriend = true
+				if flag == "has_work_friend" then
+					friendType = "Work Friend"
+				elseif flag == "has_best_friend" then
+					friendType = "Best Friend"
+				end
+				break
+			end
+		end
+		
+		if shouldCreateFriend then
+			local friend = EventEngine.createRelationship(state, "friend", { role = friendType })
+			if friend then
+				outcome.newRelationship = friend
+				-- Update feed text to include friend's name
+				if outcome.feedText then
+					outcome.feedText = outcome.feedText .. " " .. friend.name .. " became your " .. friendType:lower() .. "!"
+				else
+					outcome.feedText = friend.name .. " became your " .. friendType:lower() .. "!"
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Auto-create partner for ANY event that sets has_partner flag
+	-- Previously only worked for 2 hardcoded events, leaving all other dating events broken!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.setFlags and choice.setFlags.has_partner then
+		if not state.Relationships then
+			state.Relationships = {}
+		end
+		-- Only create a new partner if we don't already have one
+		if not state.Relationships.partner then
+			local partner = EventEngine.createRelationship(state, "romance")
+			if partner then
+				outcome.newRelationship = partner
+				-- Update feed text to include partner's name
+				-- MINOR FIX: Added fallback for partner name
+				local partnerName = partner.name or partner.Name or "someone special"
+				if outcome.feedText then
+					outcome.feedText = outcome.feedText .. " You started dating " .. partnerName .. "!"
+				else
+					outcome.feedText = "You started dating " .. partnerName .. "!"
+				end
+			end
+		end
+		-- Ensure dating flag is set
+		state.Flags.dating = true
+	end
+	
+	-- Wedding - update partner role
+	-- CRITICAL FIX: Handle BOTH wedding_day event AND any event that sets married = true
+	if eventId == "wedding_day" then
+		if state.Relationships and state.Relationships.partner then
+			state.Relationships.partner.role = "Spouse"
+			state.Flags.married = true
+			state.Flags.engaged = nil
+			state.Flags.dating = nil -- No longer just dating!
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			outcome.feedText = "You married " .. partnerName .. "!"
+		end
+	end
+	
+	-- CRITICAL FIX: Universal handler for ANY choice that sets married flag
+	-- This ensures wedding_planning (Adult.lua) and similar events update relationship properly
+	if choice.setFlags and choice.setFlags.married then
+		if state.Relationships and state.Relationships.partner then
+			state.Relationships.partner.role = "Spouse"
+			state.Flags.engaged = nil -- No longer engaged, now married
+			state.Flags.dating = nil -- No longer just dating
+			-- CRITICAL FIX: Safe access to partner name with fallback
+			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			-- Update feed text to include partner name if not already mentioned
+			if outcome.feedText and not outcome.feedText:find("married") then
+				outcome.feedText = outcome.feedText .. " You and " .. partnerName .. " are officially married!"
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Universal handler for ANY choice that sets engaged flag
+	if choice.setFlags and choice.setFlags.engaged then
+		if state.Relationships and state.Relationships.partner then
+			local partnerGender = state.Relationships.partner.gender or "female"
+			state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #8: Universal breakup handler
+	-- Any event that sets recently_single should FULLY clear all relationship state
+	-- This prevents bugs where player is "single" but still has has_partner flag
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.setFlags and choice.setFlags.recently_single then
+		local partnerName = "your partner"
+		if state.Relationships and state.Relationships.partner then
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			
+			-- Move to ex-partner storage for potential "ex returns" events later
+			state.Relationships.last_ex = state.Relationships.partner
+			state.Relationships.last_ex.breakupAge = state.Age
+			state.Relationships.partner = nil
+		end
+		
+		-- Clear ALL relationship flags to prevent inconsistent state
+		state.Flags.has_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.office_romance = nil
+		state.Flags.long_distance = nil
+		
+		-- Ensure feedText includes the partner name
+		if not outcome.feedText or outcome.feedText == "" then
+			outcome.feedText = "You and " .. partnerName .. " broke up."
+		end
+	end
+	
+	-- MINOR FIX: Also handle divorce specifically (sets divorced flag)
+	if choice.setFlags and choice.setFlags.divorced then
+		local partnerName = "your spouse"
+		if state.Relationships and state.Relationships.partner then
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your spouse"
+			state.Relationships.ex_spouse = state.Relationships.partner
+			state.Relationships.ex_spouse.divorceAge = state.Age
+			state.Relationships.partner = nil
+		end
+		
+		-- Clear relationship flags
+		state.Flags.has_partner = nil
+		state.Flags.married = nil
+		state.Flags.engaged = nil
+		state.Flags.lives_with_partner = nil
+		state.Flags.dating = nil
+		state.Flags.committed_relationship = nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CUSTOM onResolve HANDLER - Execute event-specific logic (asset creation, etc.)
+	-- This is the key glue that connects story events to actual state changes!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	if choice.onResolve and type(choice.onResolve) == "function" then
+		-- CRITICAL FIX #PREMIUM-2: Ensure state object has necessary methods
+		-- Some events (especially premium events) use state:ModifyStat() and state:AddFeed()
+		-- which may not exist if state is a plain table. Inject these methods if missing.
+		if not state.ModifyStat then
+			state.ModifyStat = function(self, statName, delta)
+				self.Stats = self.Stats or {}
+				-- Initialize stat if missing
+				if self.Stats[statName] == nil then
+					local defaults = { Happiness = 50, Health = 50, Smarts = 50, Looks = 50 }
+					self.Stats[statName] = defaults[statName] or 50
+				end
+				self.Stats[statName] = math.max(0, math.min(100, (self.Stats[statName] or 50) + delta))
+				return self
+			end
+		end
+		if not state.AddFeed then
+			state.AddFeed = function(self, text)
+				if text and text ~= "" then
+					self.PendingFeed = text
+				end
+				return self
+			end
+		end
+		
+		local success, err = pcall(function()
+			-- CRITICAL FIX: Check if this choice has a minigame trigger
+			-- If so, the onResolve expects (state, minigameResult) signature
+			-- Otherwise, it uses the standard (state, choice, eventDef, outcome) signature
+			if choice.triggerMinigame then
+				-- Minigame events expect minigameResult as second parameter
+				-- The minigameResult should be passed in via outcome.minigameResult
+				-- For now, simulate a success/fail based on player stats if not provided
+				local minigameResult = outcome.minigameResult
+				if not minigameResult then
+					-- Fallback: Generate result based on player stats
+					local relevantStat = 50
+					if choice.triggerMinigame == "qte" then
+						relevantStat = (state.Stats and state.Stats.Health) or 50
+					elseif choice.triggerMinigame == "hacking" then
+						relevantStat = (state.Stats and state.Stats.Smarts) or 50
+					elseif choice.triggerMinigame == "heist" then
+						relevantStat = (state.Stats and state.Stats.Smarts) or 50
+					end
+					-- Success chance based on stat and difficulty
+					local difficulty = choice.minigameOptions and choice.minigameOptions.difficulty or "medium"
+					local difficultyMod = { easy = 0.2, medium = 0, hard = -0.2 }
+					local successChance = 0.5 + (relevantStat / 200) + (difficultyMod[difficulty] or 0)
+					minigameResult = {
+						success = RANDOM:NextNumber() < successChance,
+						score = relevantStat,
+					}
+				end
+				choice.onResolve(state, minigameResult)
+			else
+				-- Standard signature for non-minigame events
+				choice.onResolve(state, choice, eventDef, outcome)
+			end
+		end)
+		if not success then
+			warn("[EventEngine] onResolve handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
+		end
+	end
+	
+	-- Also support event-level onComplete handler (runs after any choice)
+	if eventDef.onComplete and type(eventDef.onComplete) == "function" then
+		local success, err = pcall(function()
+			eventDef.onComplete(state, choice, eventDef, outcome)
+		end)
+		if not success then
+			warn("[EventEngine] onComplete handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Post-event state cleanup to prevent conflicting paths
+	-- After any event that sets a premium path flag, clear conflicting states
+	-- This prevents "Mobster Prince" bug and similar state conflicts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- Check if player just became royalty through this event
+	if flags.is_royalty or flags.royal_by_marriage then
+		-- Clear conflicting mafia state
+		if flags.in_mob or state.MobState then
+			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia")
+			flags.in_mob = nil
+			flags.mafia_member = nil
+			flags.chose_mafia_path = nil
+			state.MobState = nil
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "royalty" then
+			flags.primary_wish_type = "royalty"
+		end
+		-- Update housing to palace
+		state.HousingState = state.HousingState or {}
+		if state.HousingState.status ~= "royal_palace" then
+			state.HousingState.status = "royal_palace"
+			state.HousingState.type = "palace"
+			state.HousingState.rent = 0
+			-- Clear old housing flags
+			flags.renting = nil
+			flags.has_apartment = nil
+			flags.homeless = nil
+		end
+	end
+	
+	-- Check if player just joined mafia through this event
+	if flags.in_mob or (state.MobState and state.MobState.inMob) then
+		-- Clear conflicting royalty state
+		if flags.is_royalty or state.RoyalState then
+			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			flags.royal_birth = nil
+			flags.dating_royalty = nil
+			flags.chose_royalty_path = nil
+			state.RoyalState = nil
+		end
+		-- Clear conflicting celebrity state
+		if flags.fame_career and not flags.mob_fame then
+			-- Keep fame if it was gained through mob activities, otherwise clear
+			if not (state.FameState and state.FameState.careerPath == "crime_boss") then
+				flags.fame_career = nil
+				flags.is_famous = nil
+			end
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "mafia" then
+			flags.primary_wish_type = "mafia"
+		end
+	end
+	
+	-- Check if player just became famous/celebrity through this event
+	if flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath) then
+		local existingWish = flags.primary_wish_type
+		-- Only set if no other premium path is already primary
+		if not existingWish then
+			flags.primary_wish_type = "celebrity"
+		end
+		-- Clear conflicting mafia state (unless fame is from mob activities)
+		if flags.in_mob and not flags.mob_fame then
+			if state.FameState and state.FameState.careerPath ~= "crime_boss" then
+				warn("[EventEngine] CONFLICT: Player became famous but had mafia state - clearing mafia")
+				flags.in_mob = nil
+				flags.mafia_member = nil
+				state.MobState = nil
+			end
+		end
+		-- Clear conflicting royalty state
+		if flags.is_royalty and not flags.royal_fame then
+			warn("[EventEngine] CONFLICT: Player became famous but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			state.RoyalState = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: OUTCOME VALIDATION
+	-- Ensure the event actually produced the expected outcome before returning
+	-- This prevents "Dream Fulfilled" showing without actual state changes
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if outcome then
+		-- Mark outcome as validated
+		outcome.validated = true
+		
+		-- Check if this was supposed to be a life-changing event
+		local isRoyalEvent = eventDef.isRoyalOnly or (eventDef.category == "royalty")
+		local isMafiaEvent = eventDef.isMafiaOnly or (eventDef.category == "mafia")
+		local isFameEvent = eventDef.isCelebrityOnly or (eventDef.category == "celebrity")
+		
+		-- For royal proposal events, verify the marriage actually happened
+		if eventDef.id and eventDef.id:find("proposal") and eventDef.id:find("royal") then
+			if outcome.wasSuccess and not (flags.married_to_royalty or flags.engaged) then
+				warn("[EventEngine] Royal proposal success but no marriage/engagement flag set!")
+				outcome.incompleteChain = true
+			end
+		end
+		
+		-- For mafia join events, verify the in_mob flag was set
+		if eventDef.id and (eventDef.id:find("mafia") or eventDef.id:find("mob")) then
+			if eventDef.id:find("approach") or eventDef.id:find("join") or eventDef.id:find("recruit") then
+				if outcome.wasSuccess and not flags.in_mob and not (state.MobState and state.MobState.inMob) then
+					warn("[EventEngine] Mafia join success but no in_mob flag set!")
+					outcome.incompleteChain = true
+				end
+			end
+		end
+		
+		-- For fame discovery events, verify the fame state was set
+		if eventDef.id and (eventDef.id:find("fame") or eventDef.id:find("discovery") or eventDef.id:find("celebrity")) then
+			if outcome.wasSuccess and not flags.fame_career and not (state.FameState and state.FameState.careerPath) then
+				warn("[EventEngine] Fame discovery success but no fame_career flag set!")
+				outcome.incompleteChain = true
+			end
+		end
+	end
+	
+	return outcome
+end
+
+-- Expose the engine
+LifeEvents.EventEngine = EventEngine
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #452-455: ENHANCED EVENT WEIGHT CALCULATION
+-- Additional weight modifiers for better event balance
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.WeightModifiers = {
+	-- Base weights for different event categories
+	categoryWeights = {
+		milestones = 3.0,  -- High priority
+		career = 2.0,
+		relationships = 1.8,
+		health = 1.5,
+		financial = 1.5,
+		random = 1.0,
+		crime = 0.8,  -- Slightly less common
+		mafia = 1.5,  -- Good for mob members
+		royalty = 1.5,  -- Good for royals
+		celebrity = 1.5,  -- Good for famous
+	},
+	
+	-- Boost events based on player flags
+	flagBoosts = {
+		employed = { "career", "financial" },
+		married = { "relationships" },
+		has_children = { "relationships" },
+		wealthy = { "financial", "assets" },
+		famous = { "celebrity" },
+		in_mob = { "mafia", "crime" },
+		is_royalty = { "royalty" },
+	},
+}
+
+function LifeEvents.getWeightModifier(event, state)
+	local modifier = 1.0
+	local flags = state.Flags or {}
+	
+	-- Category weight
+	local category = event._category or "random"
+	modifier = modifier * (LifeEvents.WeightModifiers.categoryWeights[category] or 1.0)
+	
+	-- Flag-based boosts
+	for flag, categories in pairs(LifeEvents.WeightModifiers.flagBoosts) do
+		if flags[flag] then
+			for _, cat in ipairs(categories) do
+				if category == cat then
+					modifier = modifier * 1.5
+				end
+			end
+		end
+	end
+	
+	-- Event-specific modifiers
+	if event.weightMultiplier then
+		modifier = modifier * event.weightMultiplier
+	end
+	
+	return modifier
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #456-458: LIFE STAGE TRANSITION HELPERS
+-- Detect and trigger life stage changes
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.LifeStageTransitions = {
+	{ fromAge = 2, toAge = 3, fromStage = "baby", toStage = "toddler", event = "stage_toddler" },
+	{ fromAge = 4, toAge = 5, fromStage = "toddler", toStage = "child", event = "stage_childhood" },
+	{ fromAge = 12, toAge = 13, fromStage = "child", toStage = "teen", event = "stage_teen" },
+	{ fromAge = 17, toAge = 18, fromStage = "teen", toStage = "young_adult", event = "stage_adult" },
+	{ fromAge = 29, toAge = 30, fromStage = "young_adult", toStage = "adult", event = "stage_thirties" },
+	{ fromAge = 49, toAge = 50, fromStage = "adult", toStage = "middle_age", event = "stage_midlife" },
+	{ fromAge = 64, toAge = 65, fromStage = "middle_age", toStage = "senior", event = "stage_retirement" },
+}
+
+function LifeEvents.checkLifeStageTransition(state, oldAge, newAge)
+	for _, transition in ipairs(LifeEvents.LifeStageTransitions) do
+		if oldAge <= transition.fromAge and newAge >= transition.toAge then
+			return {
+				transitioned = true,
+				fromStage = transition.fromStage,
+				toStage = transition.toStage,
+				eventId = transition.event,
+			}
+		end
+	end
+	return { transitioned = false }
+end
+
+function LifeEvents.getLifeStageEvents(stage)
+	local events = {}
+	
+	-- Get categories for this stage
+	local categories = StageCategories[stage]
+	if not categories then
+		return events
+	end
+	
+	-- Collect events from those categories
+	for _, category in ipairs(categories) do
+		local categoryEvents = EventsByCategory[category] or {}
+		for _, event in ipairs(categoryEvents) do
+			table.insert(events, event)
+		end
+	end
+	
+	return events
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #459-461: CAREER SKILL REQUIREMENTS SYSTEM
+-- Check if player has required skills for jobs
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.CareerSkillRequirements = {
+	-- Tech careers
+	software_engineer = { Smarts = 70, skills = { "programming" } },
+	data_scientist = { Smarts = 75, skills = { "programming", "math" } },
+	it_manager = { Smarts = 65, skills = { "programming", "leadership" } },
+	
+	-- Medical careers
+	doctor = { Smarts = 85, education = "medical" },
+	nurse = { Smarts = 60, education = "bachelor" },
+	surgeon = { Smarts = 90, education = "medical", skills = { "surgery" } },
+	
+	-- Finance careers
+	investment_banker = { Smarts = 75, education = "bachelor", skills = { "finance" } },
+	accountant = { Smarts = 65, education = "bachelor" },
+	cfo = { Smarts = 80, education = "master", skills = { "finance", "leadership" } },
+	
+	-- Legal careers
+	lawyer = { Smarts = 75, education = "law" },
+	judge = { Smarts = 80, education = "law", yearsExperience = 10 },
+	
+	-- Entertainment careers
+	actor = { Looks = 60 },
+	model = { Looks = 75 },
+	musician = { skills = { "music" } },
+	
+	-- Leadership
+	ceo = { Smarts = 70, skills = { "leadership" }, yearsExperience = 8 },
+	politician = { Smarts = 60, Looks = 50, skills = { "public_speaking" } },
+}
+
+function LifeEvents.checkCareerRequirements(state, careerId)
+	local requirements = LifeEvents.CareerSkillRequirements[careerId]
+	if not requirements then
+		return true, nil -- No requirements
+	end
+	
+	local missing = {}
+	
+	-- Check stats
+	for stat, minValue in pairs({ Smarts = requirements.Smarts, Looks = requirements.Looks }) do
+		if minValue then
+			local playerValue = (state.Stats and state.Stats[stat]) or state[stat] or 0
+			if playerValue < minValue then
+				table.insert(missing, string.format("%s %d+ (have %d)", stat, minValue, playerValue))
+			end
+		end
+	end
+	
+	-- Check education
+	if requirements.education then
+		local playerEd = state.Education or "none"
+		local edLevels = { none = 0, high_school = 1, associate = 2, bachelor = 3, master = 4, law = 5, medical = 6, phd = 7 }
+		
+		if (edLevels[playerEd] or 0) < (edLevels[requirements.education] or 0) then
+			table.insert(missing, string.format("%s degree required", requirements.education))
+		end
+	end
+	
+	-- Check skills
+	if requirements.skills then
+		local playerSkills = (state.CareerInfo and state.CareerInfo.skills) or {}
+		for _, skill in ipairs(requirements.skills) do
+			if not playerSkills[skill] then
+				table.insert(missing, string.format("%s skill required", skill))
+			end
+		end
+	end
+	
+	-- Check experience
+	if requirements.yearsExperience then
+		local yearsAtJob = (state.CareerInfo and state.CareerInfo.yearsAtJob) or 0
+		if yearsAtJob < requirements.yearsExperience then
+			table.insert(missing, string.format("%d years experience required", requirements.yearsExperience))
+		end
+	end
+	
+	if #missing > 0 then
+		return false, missing
+	end
+	
+	return true, nil
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #462-464: RELATIONSHIP EVENT REQUIREMENTS
+-- Check relationship requirements for events
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.checkRelationshipRequirements(event, state)
+	local requirements = event.relationshipRequirements or event.requiresRelationship
+	if not requirements then
+		return true
+	end
+	
+	local relationships = state.Relationships or {}
+	
+	-- Check for specific relationship type
+	if type(requirements) == "string" then
+		-- Simple requirement like "partner" or "parent"
+		if relationships[requirements:lower()] then
+			return true
+		end
+		
+		-- Check for partner
+		if requirements == "partner" then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and (rel.type == "romantic" or rel.role == "Partner") then
+					if rel.alive ~= false then
+						return true
+					end
+				end
+			end
+		end
+		
+		return false
+	end
+	
+	-- Complex requirements
+	if type(requirements) == "table" then
+		-- Requires any relationship
+		if requirements.hasAny then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					return true
+				end
+			end
+			return false
+		end
+		
+		-- Requires specific type
+		if requirements.type then
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.type == requirements.type then
+					if rel.alive ~= false then
+						-- Check relationship strength if required
+						if requirements.minStrength then
+							if (rel.relationship or 0) >= requirements.minStrength then
+								return true
+							end
+						else
+							return true
+						end
+					end
+				end
+			end
+			return false
+		end
+		
+		-- Requires minimum count
+		if requirements.minCount then
+			local count = 0
+			for _, rel in pairs(relationships) do
+				if type(rel) == "table" and rel.alive ~= false then
+					count = count + 1
+				end
+			end
+			return count >= requirements.minCount
+		end
+	end
+	
+	return true
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #465: COMPREHENSIVE YEARLY PROGRESSION CHECK
+-- Called to process all yearly updates for premium features
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.processYearlyProgression(state)
+	local results = {
+		events = {},
+		messages = {},
+	}
+	
+	-- Check for life stage transition
+	local prevAge = (state.Age or 1) - 1
+	local transition = LifeEvents.checkLifeStageTransition(state, prevAge, state.Age)
+	if transition.transitioned then
+		table.insert(results.messages, string.format("Life Stage: %s → %s", 
+			transition.fromStage:gsub("_", " "):gsub("^%l", string.upper),
+			transition.toStage:gsub("_", " "):gsub("^%l", string.upper)))
+	end
+	
+	-- Fame career progression
+	if state.FameState and state.FameState.careerPath then
+		state.FameState.yearsInCareer = (state.FameState.yearsInCareer or 0) + 1
+	end
+	
+	-- Royal reign progression
+	if state.RoyalState and state.RoyalState.isMonarch then
+		state.RoyalState.reignYears = (state.RoyalState.reignYears or 0) + 1
+	end
+	
+	-- Mafia years progression
+	if state.MobState and state.MobState.inMob then
+		state.MobState.yearsInMob = (state.MobState.yearsInMob or 0) + 1
+	end
+	
+	-- Career years progression
+	if state.CurrentJob then
+		state.CareerInfo = state.CareerInfo or {}
+		state.CareerInfo.yearsAtJob = (state.CareerInfo.yearsAtJob or 0) + 1
+	end
+	
+	return results
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
+-- AUTO-INITIALIZATION
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+LifeEvents.init()
+
+return LifeEvents

@@ -1,0 +1,756 @@
+local RANDOM = Random.new()
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ROMANCE-1: Premium path validation for romance events
+-- Regular romance events should respect premium path status
+-- Royal dating should only happen for royalty-path players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function canHaveRegularRomance(state)
+	if not state.Flags then return true end
+	local flags = state.Flags
+	
+	-- If dating royalty, regular romance events should be blocked
+	if flags.dating_royalty or flags.royal_romance then
+		return false
+	end
+	
+	-- If married, no new romance events
+	if flags.married then
+		return false
+	end
+	
+	return true
+end
+
+local function isOnRoyaltyPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	return flags.primary_wish_type == "royalty" or
+		flags.is_royalty or flags.royal_birth or
+		flags.dating_royalty or flags.royal_romance or
+		(state.RoyalState and state.RoyalState.isRoyal)
+end
+
+-- Generate random first name
+local function randomName(gender)
+	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas"}
+	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley"}
+	local names = (gender == "male") and maleNames or femaleNames
+	return names[RANDOM:NextInteger(1, #names)]
+end
+
+local events = {
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- TEEN ROMANCE
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "highschool_crush",
+		emoji = "💘",
+		title = "Hallway Crush",
+		-- CRITICAL FIX #FUN-4: Added text variations for teen romance!
+		textVariants = {
+			"You keep running into the same person between classes. Every time you pass them, your heart does a little flip. Is this... feelings?",
+			"There's someone in your math class who makes you forget how to do basic addition. They just smiled at you. Your brain stopped working.",
+			"Your friends have noticed you staring. 'Just GO TALK to them!' they say. Easy for them to say. They don't have sweaty palms right now.",
+			"Third time this week you've 'accidentally' taken the long way to class just to pass by their locker. This is getting ridiculous.",
+			"You just found out you have a mutual friend. They could totally introduce you. But that would mean actually doing something about this crush...",
+			"They followed you on Instagram! YOU'RE FREAKING OUT. This means something, right? RIGHT?!",
+			"Your crush just asked to borrow a pencil. You said 'You're welcome' instead of 'Yes.' Your soul left your body from embarrassment.",
+			"Your best friend is threatening to tell your crush if YOU don't. The clock is ticking. What do you do?!",
+		},
+		text = "You keep running into the same person between classes. Ask them out?",
+		questionVariants = {
+			"What do you do about your crush?",
+			"How do you handle these feelings?",
+			"Time to make a move?",
+		},
+		question = "What do you do about your crush?",
+		category = "romance",
+		weight = 7,
+		minAge = 14,
+		maxAge = 19,
+		blockedByFlags = { in_prison = true },
+		requiresSingle = true,
+		choices = {
+			{
+				index = 1,
+				text = "Shoot your shot - YOLO!",
+				effects = {},
+				feedText = "Taking the plunge...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local bonus = looks > 60 and 10 or 0
+					local crushName = randomName(state.Gender == "male" and "female" or "male")
+					
+					if roll <= (60 + bonus) then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "partner",
+							name = crushName,
+							type = "romance",
+							role = "Partner",
+							relationship = 65,
+							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							gender = state.Gender == "male" and "female" or "male",
+							alive = true,
+						}
+						state:AddFeed("💕 " .. crushName .. " said YES! You're officially dating!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("💔 They said they just want to be friends... ouch.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stay quiet - too risky",
+				effects = { Happiness = -3 },
+				setFlags = { crush_anxiety = true },
+				feedText = "You chickened out. They'll never know how you feel. Safe but... sad.",
+			},
+			{
+				index = 3,
+				text = "Pass them a note (old school romantic!)",
+				effects = {},
+				feedText = "Sliding a note into their locker...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local crushName = randomName(state.Gender == "male" and "female" or "male")
+					
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "partner",
+							name = crushName,
+							type = "romance",
+							role = "Partner",
+							relationship = 60,
+							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							gender = state.Gender == "male" and "female" or "male",
+							alive = true,
+						}
+						state:AddFeed("💌 They wrote back! You're dating " .. crushName .. "!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("💌 They never responded. Maybe they didn't find it?")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💌 They showed the note to their friends. Everyone knows. MORTIFYING.")
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Ask a friend to find out if they like you first",
+				effects = {},
+				feedText = "Playing it safe with intel gathering...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.crush_likes_you = true
+						state:AddFeed("💬 YOUR FRIEND CONFIRMED: They like you back! Now you just have to actually ask them!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💬 Your friend's intel is inconclusive. They 'maybe kinda might' like you?")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💬 Your friend accidentally told them you like them! Now everyone knows!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "prom_invite",
+		emoji = "🎭",
+		title = "Prom Season",
+		-- CRITICAL FIX #FUN-1: Added text variations for more engaging gameplay!
+		textVariants = {
+			"Prom is coming up and EVERYONE is talking about it! Posters everywhere. Who's asking who. The dress drama. The tux rentals. You need to figure out your plan!",
+			"PROM SEASON IS HERE! Your Instagram feed is nothing but prom-posals, dress shopping stories, and limo group chats. The pressure is INTENSE. What's your move?",
+			"The school is buzzing with prom excitement! Someone just asked their date with a flash mob in the cafeteria. Your friends are planning outfits. The clock is ticking!",
+			"Prom tickets go on sale next week and you still don't have a plan! Your group chat is blowing up - 'Who are you asking?' 'What are you wearing?' STRESS.",
+			"You just got asked to join a prom group! But... you don't have a date yet. Everyone else seems to have it figured out. Time to make a decision!",
+			"Someone asked YOU to prom! Well, kind of. It was through a friend of a friend who said they heard someone might be interested. High school romance is weird.",
+			"The theme was announced: 'Enchanted Evening.' Cheesy but kind of exciting? Your friends are losing their minds over dress colors. This is really happening!",
+			"Your best friend just got asked to prom with a HUNDRED roses. Now THEY are expecting something dramatic too. No pressure or anything...",
+		},
+		text = "Prom is coming up and you need a date!",
+		-- CRITICAL FIX #FUN-2: Added question variations too!
+		questionVariants = {
+			"What's your prom plan?",
+			"How are you handling prom?",
+			"What do you want to do about prom?",
+			"Prom strategy?",
+		},
+		question = "What's your prom plan?",
+		category = "romance",
+		weight = 6,
+		minAge = 16,
+		maxAge = 18,
+		oneTime = true,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				index = 1,
+				text = "Ask your crush - go big or go home!",
+				effects = {},
+				feedText = "Taking the leap...",
+				-- CRITICAL FIX #FUN-3: Random outcome for asking crush!
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local bonus = looks > 60 and 15 or 0
+					if roll <= (55 + bonus) then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.went_to_prom = true
+						state.Flags.prom_date = true
+						state:AddFeed("🎭 THEY SAID YES! Prom is going to be AMAZING!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.prom_rejection = true
+						state:AddFeed("🎭 They said no... awkward. Maybe go with friends instead?")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Go with the squad - friends make it fun!",
+				effects = { Happiness = 7 },
+				setFlags = { went_to_prom = true, prom_with_friends = true },
+				feedText = "Who needs a date? Your friend group tore up that dance floor! Best night ever!",
+			},
+			{
+				index = 3,
+				text = "Go solo - own the night!",
+				effects = { Happiness = 4 },
+				setFlags = { went_to_prom = true, confident_solo = true },
+				feedText = "You showed up looking GOOD and danced with everyone. No drama. Pure fun!",
+			},
+			{
+				index = 4,
+				text = "Skip prom - not my thing",
+				effects = { Happiness = -2, Money = 300 },
+				setFlags = { skipped_prom = true },
+				feedText = "You saved $300 on tickets, outfits, and dinner. But everyone's prom pics look so fun... FOMO?",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- ADULT DATING
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "coffee_shop_meet",
+		emoji = "☕",
+		title = "Coffee Shop Connection",
+		text = "An attractive stranger smiles at you in the coffee shop.",
+		category = "romance",
+		weight = 7,
+		minAge = 18,
+		maxAge = 50,
+		requiresSingle = true,
+		-- CRITICAL FIX #RVS-ROMANCE-2: Block regular romance for players dating royalty
+		eligibility = canHaveRegularRomance,
+		blockedByFlags = { in_prison = true, incarcerated = true, dating_royalty = true, royal_romance = true },
+		choices = {
+			{
+				index = 1,
+				text = "Introduce yourself",
+				effects = { Happiness = 10 },
+				setFlags = { has_partner = true, dating = true, met_cute = true },
+				feedText = "You hit it off! Numbers exchanged!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon"} or
+						{"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 70,
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("💕 You started dating " .. partnerName .. "!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Smile back, nothing more",
+				effects = { Happiness = 3 },
+				feedText = "A nice moment, but you let it pass.",
+			},
+			{
+				index = 3,
+				text = "Too nervous, look away",
+				effects = { Happiness = -2 },
+				feedText = "Opportunity missed.",
+			},
+		},
+	},
+	{
+		id = "gym_romance",
+		emoji = "💪",
+		title = "Gym Crush",
+		text = "You've been noticing someone at the gym who always works out near you.",
+		category = "romance",
+		weight = 5,
+		minAge = 18,
+		maxAge = 45,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Ask to spot them",
+				effects = { Happiness = 8, Health = 2 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "Great workout and a date!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Jake", "Tyler", "Marcus", "Derek", "Chad", "Brett", "Kyle"} or
+						{"Jessica", "Ashley", "Brittany", "Tiffany", "Samantha", "Nicole", "Taylor"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 65,
+						age = (state.Age or 25) + math.random(-4, 4),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("💪 You started dating " .. partnerName .. " from the gym!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Keep it professional",
+				effects = { Health = 3 },
+				feedText = "Focus on gains, not romance.",
+			},
+		},
+	},
+	{
+		-- CRITICAL FIX: Renamed from "blind_date" to avoid ID conflict with Relationships.lua
+		id = "blind_date_setup",
+		emoji = "🙈",
+		title = "Blind Date Setup",
+		text = "A friend wants to set you up on a blind date.",
+		category = "romance",
+		weight = 6,
+		minAge = 20,
+		maxAge = 55,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Go for it!",
+				effects = { Happiness = 8 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "The blind date was a success!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Daniel", "Matthew", "Andrew", "Nathan", "Kevin", "Brian", "Eric"} or
+						{"Rachel", "Jennifer", "Amanda", "Stephanie", "Michelle", "Heather", "Lauren"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 60,
+						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("🙈 The blind date worked! You're now dating " .. partnerName .. "!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Awkward disaster",
+				effects = { Happiness = -5 },
+				feedText = "Worst. Date. Ever.",
+			},
+			{
+				index = 3,
+				text = "Decline politely",
+				effects = { Happiness = 0 },
+				feedText = "You're not ready for that.",
+			},
+		},
+	},
+	{
+		-- CRITICAL FIX: Renamed from "speed_dating" to avoid ID conflict with Relationships.lua
+		id = "speed_dating_night",
+		emoji = "⏱️",
+		title = "Speed Dating Night",
+		text = "You decided to try a speed dating event.",
+		category = "romance",
+		weight = 4,
+		minAge = 22,
+		maxAge = 45,
+		requiresSingle = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Made a real connection!",
+				effects = { Happiness = 10 },
+				setFlags = { has_partner = true, dating = true },
+				feedText = "You found someone special!",
+				-- CRITICAL FIX: Actually create the partner relationship
+				onResolve = function(state)
+					local partnerGender = (state.Gender == "male") and "female" or "male"
+					local names = (partnerGender == "male") and 
+						{"Josh", "Adam", "Sean", "Justin", "Patrick", "Aaron", "Jeremy"} or
+						{"Melissa", "Rebecca", "Christina", "Sara", "Danielle", "Katie", "Amber"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships = state.Relationships or {}
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romance",
+						role = "Partner",
+						relationship = 55,
+						age = (state.Age or 28) + math.random(-6, 6),
+						gender = partnerGender,
+						alive = true,
+					}
+					if state.AddFeed then
+						state:AddFeed("⏱️ Speed dating success! You're now dating " .. partnerName .. "!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "A few matches, nothing serious",
+				effects = { Happiness = 3 },
+				feedText = "Fun night, maybe next time.",
+			},
+			{
+				index = 3,
+				text = "Total dud, no chemistry",
+				effects = { Happiness = -3 },
+				feedText = "That was exhausting.",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP PROGRESSION
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "adulthood_engagement",
+		emoji = "💍",
+		title = "Perfect Proposal Moment",
+		text = "{{PARTNER_NAME}} hints they'd say yes if you popped the question. You can feel the love between you two.",
+		category = "romance",
+		weight = 5,
+		minAge = 21,
+		requiresPartner = true,
+		requiresFlags = { dating = true },
+		blockedByFlags = { engaged = true, married = true, in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Propose",
+				-- CRITICAL FIX: Validate money before deducting for ring
+				effects = {}, -- Money handled in onResolve
+				setFlags = { engaged = true },
+				feedText = "Getting ready to propose...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local ringCost = 3000
+					
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
+						local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "Your partner"
+						
+						if money >= ringCost then
+							state.Money = money - ringCost
+							if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! Beautiful ring!")
+							end
+						elseif money >= 500 then
+							-- Budget ring
+							state.Money = money - 500
+							if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! Modest ring, but full of love!")
+							end
+						else
+							-- No ring proposal
+							if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+							if state.AddFeed then
+								state:AddFeed("💍 " .. partnerName .. " said YES! No ring yet, but love is all you need!")
+							end
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Not yet",
+				effects = { Happiness = -3 },
+				feedText = "You decided to wait a bit longer.",
+			},
+		},
+	},
+	{
+		id = "romantic_getaway",
+		emoji = "🏝️",
+		title = "Romantic Vacation",
+		text = "{{PARTNER_NAME}} suggests a romantic getaway together. Some time away from everything sounds nice.",
+		category = "romance",
+		weight = 5,
+		minAge = 20,
+		requiresPartner = true,
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+		-- CRITICAL FIX: Need at least some money for even the cheapest option
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 200 then
+				return false, "Can't afford any vacation right now"
+			end
+			return true
+		end,
+		choices = {
+			{
+				index = 1,
+				text = "Book a tropical paradise",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning the trip...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local tripCost = 3000
+					if money >= tripCost then
+						state.Money = money - tripCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("🏝️ Best vacation ever! Your relationship is stronger than ever.")
+						end
+					elseif money >= 1500 then
+						-- Budget version
+						state.Money = money - 1500
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("🏝️ Went on a budget trip. Still had a great time!")
+						end
+					else
+						-- Can't afford it
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then
+							state:AddFeed("😔 Can't afford that trip right now... had to cancel.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Staycation together",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning a cozy staycation...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local stayCost = 200
+					if money >= stayCost then
+						state.Money = money - stayCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🏠 Cozy staycation together. Perfect!")
+						end
+					else
+						-- Free staycation
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("🏠 No-budget staycation. Quality time together!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Too busy for vacation",
+				effects = { Happiness = -5 },
+				feedText = "Your partner was disappointed.",
+			},
+		},
+	},
+	{
+		id = "anniversary_celebration",
+		emoji = "🎂",
+		title = "Anniversary",
+		text = "It's your anniversary with {{PARTNER_NAME}}! Time really flies when you're in love.",
+		category = "romance",
+		weight = 6,
+		minAge = 18,
+		cooldown = 2,
+		requiresPartner = true,
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		choices = {
+			{
+				index = 1,
+				text = "Plan something special",
+				-- CRITICAL FIX: Validate money before deducting
+				effects = {}, -- Money handled in onResolve
+				feedText = "Planning a celebration...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local celebCost = 500
+					if money >= celebCost then
+						state.Money = money - celebCost
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then
+							state:AddFeed("🎂 A beautiful celebration of your love!")
+						end
+					elseif money >= 100 then
+						-- Budget celebration
+						state.Money = money - 100
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🎂 Small but thoughtful anniversary celebration!")
+						end
+					else
+						-- Free celebration
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("🎂 Celebrated with what you had. Love doesn't need money!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Simple dinner at home",
+				effects = { Happiness = 8 },
+				feedText = "Intimate and meaningful.",
+			},
+			{
+				index = 3,
+				text = "Completely forgot...",
+				effects = { Happiness = -10 },
+				feedText = "Your partner is NOT happy.",
+			},
+		},
+	},
+
+	-- ════════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CHALLENGES
+	-- ════════════════════════════════════════════════════════════════════════════════
+	{
+		id = "relationship_argument",
+		emoji = "😤",
+		title = "Big Argument",
+		text = "You and {{PARTNER_NAME}} had a major fight. Things got heated.",
+		category = "romance",
+		weight = 5,
+		minAge = 16,
+		requiresPartner = true,
+		cooldown = 2,
+		choices = {
+			{
+				index = 1,
+				text = "Apologize and work it out",
+				effects = { Happiness = 5 },
+				feedText = "You made up and grew closer.",
+			},
+			{
+				index = 2,
+				text = "Take some space",
+				effects = { Happiness = -3 },
+				setFlags = { relationship_rocky = true },
+				feedText = "You're giving each other space.",
+			},
+			{
+				index = 3,
+				text = "Break up",
+				effects = { Happiness = -15 },
+				setFlags = { recently_single = true },
+				feedText = "The relationship is over.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.engaged = nil
+					state.Flags.married = nil
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "jealousy_issue",
+		emoji = "😒",
+		title = "Jealousy Problems",
+		text = "{{PARTNER_NAME}} seems jealous of your close friend. There's tension in the air.",
+		category = "romance",
+		weight = 4,
+		minAge = 16,
+		requiresPartner = true,
+		choices = {
+			{
+				index = 1,
+				text = "Reassure them",
+				effects = { Happiness = 5 },
+				feedText = "You talked it through.",
+			},
+			{
+				index = 2,
+				text = "They need to trust you",
+				effects = { Happiness = -3 },
+				setFlags = { relationship_rocky = true },
+				feedText = "The tension remains.",
+			},
+			{
+				index = 3,
+				text = "Distance yourself from friend",
+				effects = { Happiness = -5 },
+				feedText = "You sacrificed a friendship.",
+			},
+		},
+	},
+}
+
+return events
