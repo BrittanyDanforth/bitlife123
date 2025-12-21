@@ -703,6 +703,35 @@ function AssetsScreen:createUI()
 	-- CRITICAL FIX #700: Increased Y positions so Living Situation card is visible
 	local contentScrollY = IS_TINY_PHONE and 215 or 281  -- INCREASED from 200/266
 	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = contentScrollY, zIndex = 81 })
+	
+	-- CRITICAL FIX #LIVING-1: Ensure UIListLayout exists in contentScroll for proper positioning
+	-- This is ESSENTIAL for LayoutOrder to work and for Living Situation card to appear first
+	local existingLayout = self.contentScroll:FindFirstChildOfClass("UIListLayout")
+	if not existingLayout then
+		local scrollLayout = Instance.new("UIListLayout")
+		scrollLayout.Name = "ContentLayout"
+		scrollLayout.Padding = UDim.new(0, IS_TINY_PHONE and 8 or 12)
+		scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		scrollLayout.Parent = self.contentScroll
+		
+		-- CRITICAL: Set AutomaticCanvasSize so content is scrollable
+		self.contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		self.contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		log("✅ Created UIListLayout for contentScroll")
+	end
+	
+	-- CRITICAL FIX #LIVING-2: Add padding to contentScroll for better spacing on all sides
+	local existingPadding = self.contentScroll:FindFirstChildOfClass("UIPadding")
+	if not existingPadding then
+		local scrollPadding = Instance.new("UIPadding")
+		scrollPadding.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 4 or 8)
+		scrollPadding.PaddingRight = UDim.new(0, IS_TINY_PHONE and 4 or 8)
+		scrollPadding.PaddingTop = UDim.new(0, IS_TINY_PHONE and 6 or 10)
+		scrollPadding.PaddingBottom = UDim.new(0, 20)
+		scrollPadding.Parent = self.contentScroll
+		log("✅ Created UIPadding for contentScroll")
+	end
 
 	-- Modals
 	self:createResultModal()
