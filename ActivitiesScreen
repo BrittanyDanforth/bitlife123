@@ -222,7 +222,8 @@ local Social = {
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 	-- NEW: Pick a Fight with combat minigame
 	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
-	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	-- CRITICAL FIX: Changed from "Bar Fight" to "Club Fight" for Roblox TOS compliance
+	{ id = "club_fight", name = "Club Fight", emoji = "🎉", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
 }
 
 -- CRITICAL FIX: Added minigames to entertainment activities!
@@ -5000,6 +5001,12 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 end
 
 -- Activities that should show full BitLife-style event cards
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #BORING-1: Added Royal and Mafia activities to this list
+-- User complaint: "activies in royalty tab inside activityscreen it just pops up saying u did bla bla"
+-- User complaint: "ensure mafia and royalty tab works greatly and isnt boring"
+-- Now these activities will show proper event cards with choices like regular activities!
+-- ═══════════════════════════════════════════════════════════════════════════════
 local FULL_EVENT_ACTIVITIES = {
 	gym = true,
 	meditate = true,
@@ -5021,6 +5028,30 @@ local FULL_EVENT_ACTIVITIES = {
 	arcade = true,
 	karaoke = true,
 	martial_arts = true,
+	-- CRITICAL FIX: ROYAL ACTIVITIES (no longer boring!)
+	public_appearance = true,
+	charity_visit = true,
+	state_dinner = true,
+	open_parliament = true,
+	knight_ceremony = true,
+	royal_wedding = true,
+	military_review = true,
+	charity_gala = true,
+	royal_date = true,
+	meet_the_family = true,
+	royal_tour = true,
+	proposal_planning = true,
+	-- CRITICAL FIX: MAFIA ACTIVITIES (no longer boring!)
+	collect_debts = true,
+	run_numbers = true,
+	do_hits = true,
+	smuggle_goods = true,
+	launder_money = true,
+	intimidate = true,
+	bribe_official = true,
+	expand_territory = true,
+	recruit_soldiers = true,
+	mob_meeting = true,
 	pick_fight = true,
 }
 
@@ -5037,7 +5068,7 @@ local CombatEventTemplates = {
 			},
 			question = "Who do you confront?",
 			choices = {
-				{ text = "🤼 Someone at a bar", feed = "You started a bar fight!", triggersCombat = true, context = "bar_fight" },
+				{ text = "🤼 Someone at the club", feed = "You started a fight at the club!", triggersCombat = true, context = "club_fight" },
 				{ text = "😤 A stranger on the street", feed = "You picked a fight with a random person!", triggersCombat = true, context = "street_random" },
 				{ text = "🙅 Actually, never mind", feed = "You thought better of it." },
 			},
@@ -5072,7 +5103,7 @@ function ActivitiesScreen:doActivity(item, bonus)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- COMBAT ACTIVITIES: Trigger the full combat minigame!
-	-- Activities like "Pick a Fight" and "Bar Fight" use the interactive combat system
+	-- Activities like "Pick a Fight" and "Club Fight" use the interactive combat system
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if item.isCombat then
 		log("COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
@@ -5085,8 +5116,8 @@ function ActivitiesScreen:doActivity(item, bonus)
 		
 		-- Determine combat context based on activity
 		local combatContext = "street"
-		if item.id == "bar_fight" then
-			combatContext = "bar"
+		if item.id == "club_fight" then
+			combatContext = "club"
 		elseif item.id == "martial_arts" then
 			combatContext = "school"
 		elseif item.id == "pick_fight" then

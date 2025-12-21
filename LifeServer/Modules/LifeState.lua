@@ -716,6 +716,29 @@ function LifeState:SetCareer(jobData)
 		hiredAt = self.Age, -- Track when hired for career progression
 	}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #JOBHIST-1: Track job history for achievements!
+	-- User complaint: "MY ACHIEVEMENTS ARENT WORKING PROPERLY CUZ IT SAYS NEVER HELD A JOB"
+	-- The career history was only being written on QUIT/RETIRE, not on HIRE
+	-- Now we track when jobs are obtained so achievements can see work history
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.CareerInfo = self.CareerInfo or {}
+	self.CareerInfo.careerHistory = self.CareerInfo.careerHistory or {}
+	self.CareerInfo.startAge = self.Age
+	self.CareerInfo.totalJobsHeld = (self.CareerInfo.totalJobsHeld or 0) + 1
+	
+	-- Add current job to history immediately (with startAge, endAge will be nil until quit)
+	table.insert(self.CareerInfo.careerHistory, {
+		job = self.CurrentJob.name,
+		jobId = self.CurrentJob.id,
+		company = self.CurrentJob.company,
+		salary = self.CurrentJob.salary,
+		category = self.CurrentJob.category,
+		startAge = self.Age,
+		endAge = nil, -- Will be set when quit/fired/retired
+		endReason = nil,
+	})
+	
 	self.CareerInfo.performance = 60
 	self.CareerInfo.promotionProgress = 0
 	self.CareerInfo.yearsAtJob = 0
@@ -723,6 +746,10 @@ function LifeState:SetCareer(jobData)
 	
 	self.Flags.employed = true
 	self.Flags.has_job = true
+	-- CRITICAL FIX #JOBHIST-2: Set permanent flag that persists even after quitting
+	-- This flag is NEVER cleared so achievements know player has worked at some point
+	self.Flags.ever_worked = true
+	self.Flags.ever_had_job = true
 	
 	-- CRITICAL FIX #60/#553: Grant experience flags based on job category
 	-- This ensures players build up relevant experience for career progression
@@ -3173,17 +3200,41 @@ function LifeState:MatchesJobCategory(category)
 	return currentCategory:lower() == category:lower()
 end
 
-function LifeState:ClearCareer()
+function LifeState:ClearCareer(reason)
 	if self.CurrentJob then
-		-- Save to career history
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #JOBHIST-3: Update the existing career history entry instead of adding duplicate
+		-- The entry was already added at hire time in SetCareer, now we just update it
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		self.CareerInfo = self.CareerInfo or {}
 		self.CareerInfo.careerHistory = self.CareerInfo.careerHistory or {}
-		table.insert(self.CareerInfo.careerHistory, {
-			job = self.CurrentJob,
-			startAge = self.CareerInfo.startAge,
-			endAge = self.Age,
-			endYear = self.Year,
-		})
+		
+		-- Find and update the most recent entry for this job (the one without endAge)
+		local found = false
+		for i = #self.CareerInfo.careerHistory, 1, -1 do
+			local entry = self.CareerInfo.careerHistory[i]
+			if entry and entry.endAge == nil and entry.jobId == self.CurrentJob.id then
+				entry.endAge = self.Age
+				entry.endYear = self.Year
+				entry.endReason = reason or "quit"
+				found = true
+				break
+			end
+		end
+		
+		-- Fallback: if not found (legacy data), add new entry
+		if not found then
+			table.insert(self.CareerInfo.careerHistory, {
+				job = self.CurrentJob.name,
+				jobId = self.CurrentJob.id,
+				company = self.CurrentJob.company,
+				salary = self.CurrentJob.salary,
+				startAge = self.CareerInfo.startAge,
+				endAge = self.Age,
+				endYear = self.Year,
+				endReason = reason or "quit",
+			})
+		end
 	end
 	
 	self.CurrentJob = nil

@@ -322,13 +322,14 @@ CombatSystem.FightContexts = {
 		}
 	},
 	{
-		id = "bar_fight",
-		title = "Bar Brawl",
-		emoji = "🍺",
+		-- CRITICAL FIX: Changed from "bar" to "club" for Roblox TOS compliance
+		id = "club_fight",
+		title = "Club Brawl",
+		emoji = "🎉",
 		descriptions = {
-			"Things got heated at the bar.",
-			"Someone spilled your drink and won't apologize.",
-			"You caught someone hitting on your date.",
+			"Things got heated at the club.",
+			"Someone bumped into you on the dance floor and won't apologize.",
+			"You caught someone hitting on your date at the club.",
 		}
 	},
 	{
