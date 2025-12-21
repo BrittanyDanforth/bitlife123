@@ -9,9 +9,34 @@
 	- Mob Muscle
 	- Crew Boss
 	- Underboss
+	
+	CRITICAL FIX #RVS-2: Added premium path blocking
 ]]
 
 local EnforcerEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ENFORCER-1: Premium path blocking
+-- Enforcer/mafia events should NEVER fire for royalty or celebrity players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose celebrity path (unless crime-famous)
+	if flags.primary_wish_type == "celebrity" then
+		if not (flags.crime_famous or flags.mob_fame) then
+			return true
+		end
+	end
+	
+	return false
+end
 
 -- Helper function to check if player is an enforcer
 local function isEnforcer(state)
@@ -26,6 +51,9 @@ end
 -- The old check was too loose - now requires EXPLICIT mafia membership flags
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function isMafiaAssociate(state)
+	-- CRITICAL FIX #RVS-ENFORCER-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
+	
 	-- MUST have explicit mafia flags - no loose checking
 	if not state.Flags then return false end
 	

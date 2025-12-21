@@ -7,7 +7,31 @@
 	2. Black Hat (Criminal): Script Kiddie -> Black Hat -> Elite Hacker -> Cyber Crime Boss
 	
 	Uses: Hacking minigame for breaches, heist minigame for high-stakes operations
+	
+	CRITICAL FIX #RVS-11: Premium path blocking for royalty players
 ]]
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-HACKER-1: Premium path blocking
+-- Black hat hacker events should NOT fire for royalty players
+-- (White hat/legit security career can still work for anyone)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedForBlackHat(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already a hacker, allow
+	if flags.hacker_discovered or flags.black_hat or flags.elite_hacker then
+		return false
+	end
+	
+	-- Block black hat path if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	return false
+end
 
 local events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════

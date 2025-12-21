@@ -6,9 +6,40 @@
 	
 	CRITICAL: onResolve handlers must properly set InJail, JailYearsLeft, and clear jobs
 	to match the behavior expected from LifeBackend:handleCrime
+	
+	CRITICAL FIX #RVS-3: Added premium path blocking for royalty/celebrity players
 ]]
 
 local RANDOM = Random.new()
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-CRIME-1: Premium path blocking
+-- Major crime events should NOT fire for royalty players (petty teen stuff ok)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function shouldBlockCrimeForRoyalty(state, eventId)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- Royalty players shouldn't get serious crime events
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal then
+		-- Block serious crimes but allow teen petty stuff for realism
+		local seriousCrimes = {
+			"drug_deal", "armed_robbery", "burglary", "car_theft", "fraud",
+			"assault", "murder", "kidnapping", "heist", "gang"
+		}
+		eventId = (eventId or ""):lower()
+		for _, crime in ipairs(seriousCrimes) do
+			if eventId:find(crime) then
+				return true -- Block serious crimes for royalty
+			end
+		end
+	end
+	
+	return false
+end
 
 -- Helper function to properly incarcerate a player
 -- CRITICAL FIX: Now handles juvenile detention for minors automatically!

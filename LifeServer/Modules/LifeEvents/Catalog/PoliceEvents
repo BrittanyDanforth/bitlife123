@@ -10,9 +10,30 @@
 	- Career advancement to detective/sergeant
 	- Internal affairs investigations
 	- Dangerous situations
+	
+	CRITICAL FIX #RVS-9: Premium path blocking for mafia players
 ]]
 
 local RANDOM = Random.new()
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-POLICE-1: Premium path blocking
+-- Police events should NEVER fire for mafia players (obvious conflict of interest!)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByMafiaPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- Block if player is in mafia
+	if flags.primary_wish_type == "mafia" then return true end
+	if flags.in_mob or flags.mafia_member then return true end
+	if state.MobState and state.MobState.inMob then return true end
+	
+	-- Also block if player has serious criminal record (can't be cop with felonies)
+	if flags.criminal_record and flags.violent_crime then return true end
+	
+	return false
+end
 
 -- CRITICAL FIX: Police job IDs for eligibility checks
 -- eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category doesn't work because police jobs use "government" category
@@ -26,6 +47,8 @@ local POLICE_JOB_IDS = {
 }
 
 local function isPoliceJob(state)
+	-- CRITICAL FIX #RVS-POLICE-2: Check mafia path blocking first
+	if isBlockedByMafiaPath(state) then return false end
 	if not state.CurrentJob then return false end
 	local jobId = state.CurrentJob.id or state.CurrentJob
 	return POLICE_JOB_IDS[jobId] == true

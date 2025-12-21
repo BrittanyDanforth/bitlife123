@@ -1,5 +1,36 @@
 local RANDOM = Random.new()
 
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ROMANCE-1: Premium path validation for romance events
+-- Regular romance events should respect premium path status
+-- Royal dating should only happen for royalty-path players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function canHaveRegularRomance(state)
+	if not state.Flags then return true end
+	local flags = state.Flags
+	
+	-- If dating royalty, regular romance events should be blocked
+	if flags.dating_royalty or flags.royal_romance then
+		return false
+	end
+	
+	-- If married, no new romance events
+	if flags.married then
+		return false
+	end
+	
+	return true
+end
+
+local function isOnRoyaltyPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	return flags.primary_wish_type == "royalty" or
+		flags.is_royalty or flags.royal_birth or
+		flags.dating_royalty or flags.royal_romance or
+		(state.RoyalState and state.RoyalState.isRoyal)
+end
+
 -- Generate random first name
 local function randomName(gender)
 	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas"}
@@ -111,7 +142,9 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX #RVS-ROMANCE-2: Block regular romance for players dating royalty
+		eligibility = canHaveRegularRomance,
+		blockedByFlags = { in_prison = true, incarcerated = true, dating_royalty = true, royal_romance = true },
 		choices = {
 			{
 				index = 1,
