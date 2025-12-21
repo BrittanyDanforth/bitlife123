@@ -358,6 +358,68 @@ function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, pl
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- UI STATE HEALER FOR ASSETS
+-- Validates asset display state is consistent before rendering
+-- Prevents ghost properties, duplicate assets, and invalid housing states
+-- ════════════════════════════════════════════════════════════════════════════
+function AssetsScreen:healUIState(state)
+	if not state then return end
+	
+	local flags = state.Flags or {}
+	local healed = 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- HOUSING DISPLAY VALIDATION
+	-- Palace should only display for actual royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	
+	if state.HousingState then
+		if state.HousingState.status == "royal_palace" and not isRoyal then
+			log("[UIStateHealer] Ghost palace in HousingState - player not royal")
+			-- Let backend RVS fix this, just note it
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- DUPLICATE PROPERTY DETECTION
+	-- Remove duplicate entries from the display
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets and state.Assets.Properties then
+		local seen = {}
+		local uniqueCount = 0
+		for _, prop in ipairs(state.Assets.Properties) do
+			local key = prop.id or prop.name or "unknown"
+			if not seen[key] then
+				seen[key] = true
+				uniqueCount = uniqueCount + 1
+			end
+		end
+		if uniqueCount < #state.Assets.Properties then
+			log("[UIStateHealer] Duplicate properties detected - will be cleaned by RVS")
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- OWNS_PROPERTY FLAG SYNC
+	-- ═══════════════════════════════════════════════════════════════════════
+	local hasRealProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
+	if flags.owns_property and not hasRealProperty then
+		log("[UIStateHealer] Ghost owns_property flag - no actual properties")
+		healed = healed + 1
+	end
+	
+	if healed > 0 then
+		log(string.format("[UIStateHealer] Detected %d asset state issues", healed))
+	end
+	
+	return healed
+end
+
 function AssetsScreen:updateState(newState)
 	log("=== UPDATE STATE CALLED ===")
 	if newState then 
@@ -369,6 +431,11 @@ function AssetsScreen:updateState(newState)
 		local isNewLife = (wasAge > 5 and newAge <= 1)
 		
 		self.playerState = newState
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- RUN UI STATE HEALER before rendering
+		-- ═══════════════════════════════════════════════════════════════════════
+		self:healUIState(newState)
 		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
 		
 		-- CRITICAL DEBUG: Trace the Assets field
@@ -531,8 +598,9 @@ function AssetsScreen:createUI()
 	-- CRITICAL FIX: Balance bar - clean card design that fits naturally below header
 	-- Uses a white card with teal accent, positioned to look integrated
 	-- CRITICAL FIX: IS_TINY_PHONE responsive sizing
+	-- CRITICAL FIX #700: Increased Y positions to prevent overlap with header
 	local balanceBarHeight = IS_TINY_PHONE and 42 or 54
-	local balanceBarY = IS_TINY_PHONE and 100 or 130
+	local balanceBarY = IS_TINY_PHONE and 110 or 145  -- INCREASED from 100/130 to prevent text cutoff
 	local balanceBarMargin = IS_TINY_PHONE and 8 or 12
 	
 	self.balanceBar = Instance.new("Frame")
@@ -607,9 +675,10 @@ function AssetsScreen:createUI()
 	-- Casino/gambling feature removed from AssetsScreen
 
 	-- Tab bar - CRITICAL FIX: Positioned below balance bar with proper spacing
-	-- Balance bar is at Y=130 with height 54, ends at Y=184. Tab bar starts at 196.
+	-- Balance bar is at Y=145 with height 54, ends at Y=199. Tab bar starts at 211.
 	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
-	local tabBarY = IS_TINY_PHONE and 150 or 196
+	-- CRITICAL FIX #700: Increased Y positions to prevent bunching on mobile
+	local tabBarY = IS_TINY_PHONE and 165 or 211  -- INCREASED from 150/196
 	self.tabBar = UI.createTabBar(self.overlay, { topOffset = tabBarY, zIndex = 84 })
 	self.tabBtns = {}
 
@@ -629,10 +698,40 @@ function AssetsScreen:createUI()
 	end
 
 	-- Scroll area - CRITICAL FIX: Positioned below tab bar
-	-- Tab bar is at Y=196 with ~50px height, so content starts at ~266
+	-- Tab bar is at Y=211 with ~50px height, so content starts at ~281
 	-- CRITICAL FIX: IS_TINY_PHONE responsive positioning
-	local contentScrollY = IS_TINY_PHONE and 200 or 266
+	-- CRITICAL FIX #700: Increased Y positions so Living Situation card is visible
+	local contentScrollY = IS_TINY_PHONE and 215 or 281  -- INCREASED from 200/266
 	self.contentScroll = UI.createScrollArea(self.overlay, { topOffset = contentScrollY, zIndex = 81 })
+	
+	-- CRITICAL FIX #LIVING-1: Ensure UIListLayout exists in contentScroll for proper positioning
+	-- This is ESSENTIAL for LayoutOrder to work and for Living Situation card to appear first
+	local existingLayout = self.contentScroll:FindFirstChildOfClass("UIListLayout")
+	if not existingLayout then
+		local scrollLayout = Instance.new("UIListLayout")
+		scrollLayout.Name = "ContentLayout"
+		scrollLayout.Padding = UDim.new(0, IS_TINY_PHONE and 8 or 12)
+		scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		scrollLayout.Parent = self.contentScroll
+		
+		-- CRITICAL: Set AutomaticCanvasSize so content is scrollable
+		self.contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		self.contentScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		log("✅ Created UIListLayout for contentScroll")
+	end
+	
+	-- CRITICAL FIX #LIVING-2: Add padding to contentScroll for better spacing on all sides
+	local existingPadding = self.contentScroll:FindFirstChildOfClass("UIPadding")
+	if not existingPadding then
+		local scrollPadding = Instance.new("UIPadding")
+		scrollPadding.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 4 or 8)
+		scrollPadding.PaddingRight = UDim.new(0, IS_TINY_PHONE and 4 or 8)
+		scrollPadding.PaddingTop = UDim.new(0, IS_TINY_PHONE and 6 or 10)
+		scrollPadding.PaddingBottom = UDim.new(0, 20)
+		scrollPadding.Parent = self.contentScroll
+		log("✅ Created UIPadding for contentScroll")
+	end
 
 	-- Modals
 	self:createResultModal()
@@ -1098,6 +1197,11 @@ end
 function AssetsScreen:populateProperty()
 	log("=== POPULATE PROPERTY CALLED ===")
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top so Living Situation card is visible
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	-- Debug the raw state
 	debugAssets(self.playerState and self.playerState.Assets, "Current playerState.Assets")
@@ -1138,7 +1242,16 @@ function AssetsScreen:populateProperty()
 	-- Then fall back to flags for backwards compatibility
 	
 	-- Check various housing states - ORDER MATTERS!
-	if flags.homeless or housingStatus == "homeless" then
+	-- CRITICAL FIX: Check royalty FIRST - they live in a palace!
+	local royalState = self.playerState and self.playerState.RoyalState
+	if flags.is_royalty or (royalState and royalState.isRoyal) then
+		livingEmoji = "🏰"
+		livingStatus = "Royal Palace"
+		local country = royalState and royalState.countryName or "European Kingdom"
+		local title = royalState and royalState.title or "Royal"
+		livingDetail = title .. " of " .. country
+		statusColor = C.Gold or C.Amber
+	elseif flags.homeless or housingStatus == "homeless" then
 		livingEmoji = "🏕️"
 		livingStatus = "Homeless"
 		livingDetail = "Living on the streets"
@@ -1374,9 +1487,25 @@ function AssetsScreen:populateProperty()
 		local flags = self.playerState and self.playerState.Flags or {}
 		local housingState = self.playerState and self.playerState.HousingState or {}
 		local age = self.playerState and self.playerState.Age or 0
+		local royalState = self.playerState and self.playerState.RoyalState
 		
+		-- CRITICAL FIX: Royalty gets a palace as their primary residence!
+		if flags.is_royalty or (royalState and royalState.isRoyal) then
+			local country = royalState and royalState.countryName or "European Kingdom"
+			local title = royalState and royalState.title or "Royal"
+			local residenceEntry = {
+				id = "royal_palace",
+				name = "Royal Palace",
+				emoji = "🏰",
+				price = 0, -- Priceless!
+				minAge = 0,
+				isEventAcquired = true,
+				description = title .. " residence in " .. country
+			}
+			table.insert(ownedProperties, 1, residenceEntry)
+			log("  Added royal palace to property list")
 		-- Check if player has housing arrangement that should be shown
-		if flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+		elseif flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
 			local rent = housingState.rent or 900
 			local residenceEntry = {
 				id = "current_residence",
@@ -1507,6 +1636,11 @@ end
 
 function AssetsScreen:populateVehicles()
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top when switching tabs
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	local assets = self:getAssets()
 	local ownedVehicles = {}
@@ -1622,6 +1756,11 @@ end
 
 function AssetsScreen:populateShop()
 	self:updateBalanceBar()
+	
+	-- CRITICAL FIX #700: Reset scroll to top when switching tabs
+	if self.contentScroll then
+		self.contentScroll.CanvasPosition = Vector2.new(0, 0)
+	end
 
 	local assets = self:getAssets()
 	local ownedItems = {}

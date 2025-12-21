@@ -3079,6 +3079,27 @@ function RoyaltyEvents.processYearlyRoyalUpdates(lifeState)
 		return {}
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CRASH-1: Initialize ALL numeric fields with defaults!
+	-- User complaint: "attempt to compare number < nil" crashes every year after becoming royalty
+	-- Problem: When becoming royalty via marriage, many fields are never set, causing nil compares
+	-- Solution: Ensure EVERY numeric field has a default value BEFORE any comparisons
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	royalState.popularity = tonumber(royalState.popularity) or 50
+	royalState.lineOfSuccession = tonumber(royalState.lineOfSuccession) or 99  -- Far from throne by default (consort)
+	royalState.reignYears = tonumber(royalState.reignYears) or 0
+	royalState.dutiesCompleted = tonumber(royalState.dutiesCompleted) or 0
+	royalState.dutyStreak = tonumber(royalState.dutyStreak) or 0
+	royalState.scandals = tonumber(royalState.scandals) or 0
+	royalState.wealth = tonumber(royalState.wealth) or 0
+	royalState.parentAgeGap = tonumber(royalState.parentAgeGap) or 28
+	royalState.isMonarch = royalState.isMonarch or false
+	royalState.isRoyal = true  -- Ensure this is set
+	
+	-- Boolean field defaults
+	royalState.cameOfAge = royalState.cameOfAge or false
+	royalState.fullyAdult = royalState.fullyAdult or false
+	
 	local events = {}
 	local age = lifeState.Age or 0
 	

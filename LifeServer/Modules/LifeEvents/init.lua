@@ -71,19 +71,22 @@ local StageCategories = {
 	-- User complaint: "GAME IS BORING FIRST 5 MINUTES"
 	-- Early life needs MORE variety - fun moments, adventures, discoveries!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments" },
-	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments" },
+	-- CRITICAL FIX #WISH-2: Added "dream" and "wish" categories for childhood wish fulfillment events!
+	-- premium_career_day_dream (ages 5-7) and premium_magic_wish (ages 6-10) use these categories
+	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "dream", "wish" },
+	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social", "dream", "wish" },
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
 	-- CRITICAL FIX #MEGA-1: Added ALL missing career categories that were loaded but never triggered!
 	-- CRITICAL FIX #CATEGORY-2: Added finance, health, family, legal, pets, hobbies, social, seasonal, milestone categories!
-	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
-	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal" },
+	-- CRITICAL FIX #WISH-1: Added "romance" category for wish fulfillment events (royalty romance, etc.)
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream" },
+	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	adult       = { "adult", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -511,6 +514,75 @@ local function canEventTrigger(event, state)
 		return false -- Dead players can't have events
 	end
 	
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-2: PREMIUM PATH MUTEX ENFORCEMENT AT ELIGIBILITY LEVEL
+	-- If a player has already chosen a premium path (via primary_wish_type), they CANNOT
+	-- receive events that would start a DIFFERENT premium path!
+	-- This prevents the "royalty but got mafia event" bug at the source.
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	
+	if primaryWish then
+		-- Player has already made a childhood wish - block conflicting path events
+		local eventId = event.id or ""
+		local eventCategory = event.category or ""
+		
+		-- Check if this event is trying to start a DIFFERENT premium path
+		local isRoyaltyPathEvent = event.isRoyalOnly or event.isRoyaltyEvent or 
+			eventCategory == "royalty" or eventId:find("royalty") or eventId:find("royal")
+		local isMafiaPathEvent = event.isMafiaOnly or event.isMafiaEvent or 
+			eventCategory == "mafia" or eventId:find("mafia") or eventId:find("mob")
+		local isCelebrityPathEvent = event.isCelebrityOnly or event.isFameEvent or 
+			eventCategory == "celebrity" or eventCategory == "fame" or eventId:find("fame") or eventId:find("celebrity")
+		
+		-- MUTEX ENFORCEMENT: Block events that start conflicting paths
+		if primaryWish == "royalty" then
+			-- Player chose royalty - block mafia and celebrity START events
+			if isMafiaPathEvent then
+				-- Allow if player is ALREADY in mob (continuing events ok)
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for royalty players
+				end
+			end
+			if isCelebrityPathEvent then
+				-- Allow if player ALREADY has fame career (continuing events ok)
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for royalty players
+				end
+			end
+		elseif primaryWish == "mafia" then
+			-- Player chose mafia - block royalty and celebrity START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for mafia players
+				end
+			end
+			if isCelebrityPathEvent then
+				local alreadyFamous = flags.fame_career or (state.FameState and state.FameState.careerPath)
+				if not alreadyFamous then
+					return false -- Block celebrity entry for mafia players
+				end
+			end
+		elseif primaryWish == "celebrity" then
+			-- Player chose celebrity - block royalty and mafia START events
+			if isRoyaltyPathEvent then
+				local isAlreadyRoyal = flags.is_royalty or flags.dating_royalty or (state.RoyalState and state.RoyalState.isRoyal)
+				if not isAlreadyRoyal then
+					return false -- Block royalty entry for celebrity players
+				end
+			end
+			if isMafiaPathEvent then
+				local isAlreadyInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+				if not isAlreadyInMob then
+					return false -- Block mafia entry for celebrity players
+				end
+			end
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #JAIL-1: GLOBAL PRISON EVENT FILTER
 	-- Players who are incarcerated should ONLY receive prison-specific events!
@@ -560,6 +632,55 @@ local function canEventTrigger(event, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: CHECK event.requiresGamepass AT EVENT LEVEL
+	-- This is DIFFERENT from isRoyalOnly/isMafiaOnly/isCelebrityOnly!
+	-- event.requiresGamepass = "ROYALTY" means the player needs the gamepass but does
+	-- NOT need to already BE royalty. This is used for "wish fulfillment" events where
+	-- a player with the gamepass can BECOME royalty through romance, inheritance, etc.
+	-- 
+	-- Examples:
+	-- - premium_wish_royalty_encounter: Player with ROYALTY gamepass meets royalty
+	-- - premium_wish_mafia_approach: Player with MAFIA gamepass gets recruited
+	-- - premium_wish_fame_discovery: Player with CELEBRITY gamepass gets discovered
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresGamepass then
+		local gamepassKey = event.requiresGamepass
+		local gamepassOwnership = state.GamepassOwnership or {}
+		
+		-- Map gamepass keys to flag names
+		local gamepassToFlag = {
+			GOD_MODE = "god_mode_gamepass",
+			MAFIA = "mafia_gamepass",
+			CELEBRITY = "celebrity_gamepass",
+			ROYALTY = "royalty_gamepass",
+			TIME_MACHINE = "time_machine_gamepass",
+			BOSS_MODE = "boss_mode_gamepass",
+			BITIZENSHIP = "bitizen",
+		}
+		
+		local flagName = gamepassToFlag[gamepassKey]
+		local ownsGamepass = false
+		
+		-- Check GamepassOwnership table first (most reliable)
+		if gamepassOwnership[gamepassKey:lower()] or gamepassOwnership[gamepassKey] then
+			ownsGamepass = true
+		end
+		
+		-- Then check flags
+		if not ownsGamepass and flagName then
+			ownsGamepass = flags[flagName] == true
+		end
+		
+		if not ownsGamepass then
+			return false -- Player doesn't own required gamepass for this event
+		end
+		
+		-- NOTE: If event has BOTH requiresGamepass AND isRoyalOnly/isMafiaOnly/etc,
+		-- the stricter checks below will also apply. requiresGamepass alone only
+		-- checks ownership, not whether the player is IN that premium feature.
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #61-63: STRICT PREMIUM EVENT FILTERING
 	-- Premium events should ONLY trigger for players who have BOTH:
 	-- 1. The gamepass ownership
@@ -589,12 +710,27 @@ local function canEventTrigger(event, state)
 		or eventCategory == "royalty" or eventCategory == "royal"
 	
 	if isRoyalThemed and not event.isRoyalOnly then
-		-- This is a royal-themed event without explicit isRoyalOnly flag
-		-- Still require player to actually be royalty
-		local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
-			or (state.RoyalState and state.RoyalState.isRoyal)
-		if not isActuallyRoyal then
-			return false -- Block royal-themed events for non-royals
+		-- CRITICAL FIX: Skip this check for "wish fulfillment" events that have requiresGamepass
+		-- These are events where the player can BECOME royalty (via romance, inheritance, etc.)
+		-- The gamepass check above already verified they own ROYALTY gamepass
+		-- Examples: premium_wish_royalty_encounter, premium_wish_royal_proposal
+		local isWishFulfillmentEvent = event.requiresGamepass ~= nil
+		
+		if not isWishFulfillmentEvent then
+			-- This is a royal-themed event without explicit isRoyalOnly flag
+			-- Still require player to actually be royalty
+			local isActuallyRoyal = flags.is_royalty or flags.royal_birth 
+				or (state.RoyalState and state.RoyalState.isRoyal)
+			if not isActuallyRoyal then
+				return false -- Block royal-themed events for non-royals
+			end
+		else
+			-- Wish fulfillment events - but check if player made a DIFFERENT wish!
+			-- CRITICAL FIX: If player wished for mafia/celebrity, don't show royalty events
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "royalty" then
+				return false -- Player wished for a different premium path
+			end
 		end
 	end
 	
@@ -624,6 +760,13 @@ local function canEventTrigger(event, state)
 			local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
 			if isInMob then
 				return false -- Already in mob, don't recruit again
+			end
+			
+			-- CRITICAL FIX: If player made a different premium wish (royalty/celebrity),
+			-- don't show mafia approach events unless they explicitly chose mafia path
+			local primaryWish = flags.primary_wish_type
+			if primaryWish and primaryWish ~= "mafia" then
+				return false -- Player wished for a different premium path
 			end
 		end
 	end
@@ -655,7 +798,23 @@ local function canEventTrigger(event, state)
 				return false -- Player's career path doesn't match event's required path
 			end
 		elseif not hasActiveFameCareer and not hasFame then
-			return false -- Need either career or natural fame
+			-- Check if this is a "discovery" event (entering celebrity path)
+			-- These should be blocked if player chose a different premium wish
+			local isDiscoveryEvent = event.id and (
+				string.find(event.id, "discover") or 
+				string.find(event.id, "talent") or
+				string.find(event.id, "famous")
+			)
+			
+			if isDiscoveryEvent then
+				-- CRITICAL FIX: Block if player made a different premium wish
+				local primaryWish = flags.primary_wish_type
+				if primaryWish and primaryWish ~= "celebrity" then
+					return false -- Player wished for a different premium path
+				end
+			else
+				return false -- Need either career or natural fame
+			end
 		end
 	end
 	
@@ -1220,6 +1379,29 @@ local function canEventTrigger(event, state)
 			for flag, _ in pairs(event.blockedByFlags) do
 				if flags[flag] then
 					return false -- Has blocking flag
+				end
+			end
+		end
+	end
+	
+	-- CRITICAL FIX #PREMIUM-1: Also check event.blockedFlags (not just blockedByFlags!)
+	-- Many events like premium wishes, mafia events, and royalty events use blockedFlags
+	-- at the top level instead of blockedByFlags. This was causing blocked events to still fire!
+	if event.blockedFlags then
+		if type(event.blockedFlags) == "table" then
+			if #event.blockedFlags > 0 then
+				-- Array format: { "married", "is_royalty" }
+				for _, flag in ipairs(event.blockedFlags) do
+					if flags[flag] then
+						return false -- Has blocking flag
+					end
+				end
+			else
+				-- Dictionary format: { married = true, is_royalty = true }
+				for flag, blockValue in pairs(event.blockedFlags) do
+					if blockValue == true and flags[flag] then
+						return false -- Has blocking flag
+					end
 				end
 			end
 		end
@@ -2111,12 +2293,52 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #RVS-1: PREMIUM PATH MUTEX VALIDATION AT EVENT SELECTION TIME
+	-- Before selecting ANY events, validate that the player's premium path flags are coherent
+	-- This prevents conflicting events from ever entering the selection pool
+	-- ═════════════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	local primaryWish = flags.primary_wish_type
+	
+	-- Validate premium path state and block conflicting event injection
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	local isDatingRoyalty = flags.dating_royalty or flags.royal_romance
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	local isFamous = flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath)
+	
+	-- Count active premium paths
+	local activePaths = 0
+	if isRoyalty or isDatingRoyalty then activePaths = activePaths + 1 end
+	if isInMob then activePaths = activePaths + 1 end
+	if isFamous then activePaths = activePaths + 1 end
+	
+	-- If multiple premium paths are active, this is a CORRUPT state that should be cleaned
+	-- Log warning but continue - the RVS in LifeBackend will clean this up
+	if activePaths > 1 then
+		warn("[LifeEvents] CORRUPT STATE: Multiple premium paths active! Primary wish:", tostring(primaryWish))
+		warn("[LifeEvents] isRoyalty:", isRoyalty, "isDatingRoyalty:", isDatingRoyalty, "isInMob:", isInMob, "isFamous:", isFamous)
+		-- Force the primary_wish_type to be the correct one if available
+		if primaryWish == "royalty" then
+			-- Clear conflicting flags locally for this event selection
+			isInMob = false
+			isFamous = false
+		elseif primaryWish == "mafia" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isFamous = false
+		elseif primaryWish == "celebrity" then
+			isRoyalty = false
+			isDatingRoyalty = false
+			isInMob = false
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #68: PREMIUM GAMEPASS EVENT CATEGORIES
 	-- Add premium event categories ONLY for players who have the gamepass AND are active in it
 	-- This ensures premium events appear in the event pool when appropriate
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local flags = state.Flags or {}
 	
 	-- MAFIA: Only add category if player has gamepass AND is in mob
 	-- CRITICAL FIX: Check both capital and lowercase for compatibility
@@ -2178,13 +2400,104 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WISH-1: CHILDHOOD WISH FOLLOW-UP EVENT INJECTION
+	-- If player made a childhood wish (palace_wish, power_wish, fame_wish, etc.)
+	-- we need to inject the wish follow-up events into the pool with HIGH priority!
+	-- These events make the wishes come true (meet royalty, join mafia, get discovered)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local history = getEventHistory(state)
+	local RANDOM_LOCAL = Random.new()
+	
+	-- Check for childhood wish flags
+	local hasRoyaltyWish = flags.palace_wish or flags.royal_fantasies
+	local hasMafiaWish = flags.power_wish or flags.fascinated_by_power
+	local hasFameWish = flags.fame_wish or flags.star_dreams or flags.performer
+	
+	-- ROYALTY WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasRoyaltyWish and age >= 18 and age <= 35 then
+		-- Check if they haven't already met royalty
+		if not flags.married and not flags.dating_royalty and not flags.is_royalty then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				-- Try to find and trigger the royalty encounter event
+				local wishEvent = AllEvents["premium_wish_royalty_encounter"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royalty_encounter"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents -- This is a major life event!
+					end
+				end
+			end
+		end
+		
+		-- Check for royal proposal if dating royalty
+		-- CRITICAL FIX: Increased chance from 35% to 60% so proposal happens faster
+		-- Also: check either dating_royalty OR royal_romance (not both required)
+		local isDatingRoyal = flags.dating_royalty or flags.royal_romance
+		if isDatingRoyal and not flags.married and not flags.is_royalty then
+			-- Higher chance to propose after dating for a while
+			local datingYears = flags.dating_royalty_years or 0
+			local proposalChance = 0.40 + (datingYears * 0.10) -- 40% base + 10% per year dating
+			proposalChance = math.min(0.80, proposalChance) -- Max 80%
+			
+			if RANDOM_LOCAL:NextNumber() < proposalChance then
+				local proposalEvent = AllEvents["premium_wish_royal_proposal"]
+				if proposalEvent and canEventTrigger(proposalEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_royal_proposal"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, proposalEvent)
+						recordEventShown(state, proposalEvent)
+						return selectedEvents
+					end
+				end
+			else
+				-- Track years dating royalty to increase proposal chance
+				flags.dating_royalty_years = (flags.dating_royalty_years or 0) + 1
+			end
+		end
+	end
+	
+	-- MAFIA WISH FOLLOW-UP: 25% chance per year if player made the wish and is adult
+	if hasMafiaWish and age >= 18 and age <= 35 then
+		if not flags.in_mob and not flags.refused_mob then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_mafia_approach"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_mafia_approach"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- FAME WISH FOLLOW-UP: 25% chance per year if player made the wish and is young adult
+	if hasFameWish and age >= 16 and age <= 30 then
+		if not flags.is_famous and not flags.celebrity then
+			if RANDOM_LOCAL:NextNumber() < 0.25 then
+				local wishEvent = AllEvents["premium_wish_fame_discovery"]
+				if wishEvent and canEventTrigger(wishEvent, state) then
+					local occurCount = (history.occurrences["premium_wish_fame_discovery"] or 0)
+					if occurCount == 0 then
+						table.insert(selectedEvents, wishEvent)
+						recordEventShown(state, wishEvent)
+						return selectedEvents
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #105/#116: GUARANTEED PREMIUM EVENT CHECK
 	-- For royal/mafia/celebrity players, ensure they get premium events frequently
 	-- This runs a 40% chance to force a premium event for engaged premium players
 	-- Without this, premium events were being drowned out by regular events!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local history = getEventHistory(state)
-	local RANDOM_LOCAL = Random.new()
 	
 	-- Royal players: 40% chance to get a royal event each year
 	local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
@@ -3630,6 +3943,30 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	if choice.onResolve and type(choice.onResolve) == "function" then
+		-- CRITICAL FIX #PREMIUM-2: Ensure state object has necessary methods
+		-- Some events (especially premium events) use state:ModifyStat() and state:AddFeed()
+		-- which may not exist if state is a plain table. Inject these methods if missing.
+		if not state.ModifyStat then
+			state.ModifyStat = function(self, statName, delta)
+				self.Stats = self.Stats or {}
+				-- Initialize stat if missing
+				if self.Stats[statName] == nil then
+					local defaults = { Happiness = 50, Health = 50, Smarts = 50, Looks = 50 }
+					self.Stats[statName] = defaults[statName] or 50
+				end
+				self.Stats[statName] = math.max(0, math.min(100, (self.Stats[statName] or 50) + delta))
+				return self
+			end
+		end
+		if not state.AddFeed then
+			state.AddFeed = function(self, text)
+				if text and text ~= "" then
+					self.PendingFeed = text
+				end
+				return self
+			end
+		end
+		
 		local success, err = pcall(function()
 			-- CRITICAL FIX: Check if this choice has a minigame trigger
 			-- If so, the onResolve expects (state, minigameResult) signature
@@ -3676,6 +4013,130 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
 		if not success then
 			warn("[EventEngine] onComplete handler error for event '" .. (eventDef.id or "unknown") .. "':", err)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Post-event state cleanup to prevent conflicting paths
+	-- After any event that sets a premium path flag, clear conflicting states
+	-- This prevents "Mobster Prince" bug and similar state conflicts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	
+	-- Check if player just became royalty through this event
+	if flags.is_royalty or flags.royal_by_marriage then
+		-- Clear conflicting mafia state
+		if flags.in_mob or state.MobState then
+			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia")
+			flags.in_mob = nil
+			flags.mafia_member = nil
+			flags.chose_mafia_path = nil
+			state.MobState = nil
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "royalty" then
+			flags.primary_wish_type = "royalty"
+		end
+		-- Update housing to palace
+		state.HousingState = state.HousingState or {}
+		if state.HousingState.status ~= "royal_palace" then
+			state.HousingState.status = "royal_palace"
+			state.HousingState.type = "palace"
+			state.HousingState.rent = 0
+			-- Clear old housing flags
+			flags.renting = nil
+			flags.has_apartment = nil
+			flags.homeless = nil
+		end
+	end
+	
+	-- Check if player just joined mafia through this event
+	if flags.in_mob or (state.MobState and state.MobState.inMob) then
+		-- Clear conflicting royalty state
+		if flags.is_royalty or state.RoyalState then
+			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			flags.royal_birth = nil
+			flags.dating_royalty = nil
+			flags.chose_royalty_path = nil
+			state.RoyalState = nil
+		end
+		-- Clear conflicting celebrity state
+		if flags.fame_career and not flags.mob_fame then
+			-- Keep fame if it was gained through mob activities, otherwise clear
+			if not (state.FameState and state.FameState.careerPath == "crime_boss") then
+				flags.fame_career = nil
+				flags.is_famous = nil
+			end
+		end
+		-- Ensure primary_wish_type is correct
+		if flags.primary_wish_type ~= "mafia" then
+			flags.primary_wish_type = "mafia"
+		end
+	end
+	
+	-- Check if player just became famous/celebrity through this event
+	if flags.fame_career or flags.is_famous or (state.FameState and state.FameState.careerPath) then
+		local existingWish = flags.primary_wish_type
+		-- Only set if no other premium path is already primary
+		if not existingWish then
+			flags.primary_wish_type = "celebrity"
+		end
+		-- Clear conflicting mafia state (unless fame is from mob activities)
+		if flags.in_mob and not flags.mob_fame then
+			if state.FameState and state.FameState.careerPath ~= "crime_boss" then
+				warn("[EventEngine] CONFLICT: Player became famous but had mafia state - clearing mafia")
+				flags.in_mob = nil
+				flags.mafia_member = nil
+				state.MobState = nil
+			end
+		end
+		-- Clear conflicting royalty state
+		if flags.is_royalty and not flags.royal_fame then
+			warn("[EventEngine] CONFLICT: Player became famous but had royalty state - clearing royalty")
+			flags.is_royalty = nil
+			state.RoyalState = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: OUTCOME VALIDATION
+	-- Ensure the event actually produced the expected outcome before returning
+	-- This prevents "Dream Fulfilled" showing without actual state changes
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if outcome then
+		-- Mark outcome as validated
+		outcome.validated = true
+		
+		-- Check if this was supposed to be a life-changing event
+		local isRoyalEvent = eventDef.isRoyalOnly or (eventDef.category == "royalty")
+		local isMafiaEvent = eventDef.isMafiaOnly or (eventDef.category == "mafia")
+		local isFameEvent = eventDef.isCelebrityOnly or (eventDef.category == "celebrity")
+		
+		-- For royal proposal events, verify the marriage actually happened
+		if eventDef.id and eventDef.id:find("proposal") and eventDef.id:find("royal") then
+			if outcome.wasSuccess and not (flags.married_to_royalty or flags.engaged) then
+				warn("[EventEngine] Royal proposal success but no marriage/engagement flag set!")
+				outcome.incompleteChain = true
+			end
+		end
+		
+		-- For mafia join events, verify the in_mob flag was set
+		if eventDef.id and (eventDef.id:find("mafia") or eventDef.id:find("mob")) then
+			if eventDef.id:find("approach") or eventDef.id:find("join") or eventDef.id:find("recruit") then
+				if outcome.wasSuccess and not flags.in_mob and not (state.MobState and state.MobState.inMob) then
+					warn("[EventEngine] Mafia join success but no in_mob flag set!")
+					outcome.incompleteChain = true
+				end
+			end
+		end
+		
+		-- For fame discovery events, verify the fame state was set
+		if eventDef.id and (eventDef.id:find("fame") or eventDef.id:find("discovery") or eventDef.id:find("celebrity")) then
+			if outcome.wasSuccess and not flags.fame_career and not (state.FameState and state.FameState.careerPath) then
+				warn("[EventEngine] Fame discovery success but no fame_career flag set!")
+				outcome.incompleteChain = true
+			end
 		end
 	end
 	

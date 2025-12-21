@@ -12,10 +12,42 @@
 	║    Newbie → Small → Growing → Partner → Viral → Famous → Icon                ║
 	║                                                                              ║
 	║  REQUIRES: Celebrity Gamepass for premium progression                        ║
+	║                                                                              ║
+	║  CRITICAL FIX #RVS-4: Premium path blocking for royalty/mafia players        ║
 	╚══════════════════════════════════════════════════════════════════════════════╝
 ]]
 
 local RapperContentCreatorEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-FAME-1: Premium path blocking
+-- Fame/entertainment events should NOT fire for royalty or mafia players
+-- unless they're already on the celebrity path
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already a famous entertainer, allow
+	if flags.fame_career or flags.is_famous then
+		return false
+	end
+	if state.FameState and state.FameState.careerPath then
+		return false
+	end
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose mafia path
+	if flags.primary_wish_type == "mafia" then return true end
+	if flags.in_mob then return true end
+	if state.MobState and state.MobState.inMob then return true end
+	
+	return false
+end
 
 -- ════════════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #509: Helper functions to check for rapper/creator careers
@@ -29,6 +61,9 @@ local RapperContentCreatorEvents = {}
 -- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
+	-- CRITICAL FIX #RVS-FAME-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
+	
 	-- CRITICAL FIX: Check if player is a streamer/creator BY JOB - if so, return FALSE immediately!
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
@@ -76,6 +111,9 @@ local function isRapper(state)
 end
 
 local function isContentCreator(state)
+	-- CRITICAL FIX #RVS-FAME-3: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
+	
 	-- Check job
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()

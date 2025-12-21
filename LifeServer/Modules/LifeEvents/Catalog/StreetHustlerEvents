@@ -11,9 +11,37 @@
 	- Building a territory/reputation
 	- Gang interactions
 	- Working up from street seller to supplier
+	
+	CRITICAL FIX #RVS-8: Premium path blocking for royalty/celebrity players
 ]]
 
 local RANDOM = Random.new()
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-HUSTLER-1: Premium path blocking
+-- Street hustler events should NEVER fire for royalty or celebrity players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already a hustler, allow
+	if flags.street_hustler or flags.dealer then
+		return false
+	end
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose celebrity path
+	if flags.primary_wish_type == "celebrity" then return true end
+	if flags.fame_career or flags.is_famous then return true end
+	if state.FameState and state.FameState.careerPath then return true end
+	
+	return false
+end
 
 -- Helper: Jail the player
 local function jailPlayer(state, yearsMin, yearsMax, reason)
@@ -37,6 +65,12 @@ local function jailPlayer(state, yearsMin, yearsMax, reason)
 	return years
 end
 
+-- Helper: Check if can be hustler
+local function canBeHustler(state)
+	if isBlockedByPremiumPath(state) then return false end
+	return true
+end
+
 local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- STARTING OUT - STREET HUSTLER CAREER ENTRY
@@ -55,7 +89,9 @@ local events = {
 		cooldown = 4,
 		oneTime = true,
 		requiresNoJob = true,
-		blockedByFlags = { street_hustler = true, in_prison = true },
+		-- CRITICAL FIX #RVS-HUSTLER-2: Add eligibility check and extended blocking
+		eligibility = canBeHustler,
+		blockedByFlags = { street_hustler = true, in_prison = true, is_royalty = true, dating_royalty = true, fame_career = true },
 		
 		choices = {
 			{

@@ -10,14 +10,47 @@
 	- A-List Actor
 	- Director
 	- Producer
+	
+	CRITICAL FIX #RVS-5: Premium path blocking for royalty/mafia players
 ]]
 
 local ActorCareerEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ACTOR-1: Premium path blocking
+-- Actor events should NOT fire for royalty or mafia players (unless already famous)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already an actor/famous, allow
+	if flags.fame_career or flags.a_list_actor or flags.tv_regular then
+		return false
+	end
+	if state.FameState and state.FameState.careerPath then
+		return false
+	end
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose mafia path
+	if flags.primary_wish_type == "mafia" then return true end
+	if flags.in_mob then return true end
+	if state.MobState and state.MobState.inMob then return true end
+	
+	return false
+end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #11: Enhanced helper functions for acting career
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function hasActingJob(state)
+	-- CRITICAL FIX #RVS-ACTOR-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()

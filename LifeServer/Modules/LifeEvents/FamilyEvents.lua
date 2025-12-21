@@ -534,25 +534,35 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Inheritance situation", effects = {}, feedText = "Dealing with the estate...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.40 then
-						state.Money = (state.Money or 0) + 5000
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("😢 Unexpected inheritance. Money can't replace them.")
-					elseif roll < 0.70 then
-						state.Money = (state.Money or 0) + 500
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("😢 Small inheritance. Memories matter more.")
-					else
-						state:ModifyStat("Happiness", -8)
-						state.Flags = state.Flags or {}
-						state.Flags.inheritance_drama = true
-						state:AddFeed("😢 Family fighting over estate. Grief compounded by greed.")
-					end
-				end,
-			},
+		{ text = "Inheritance situation", effects = {}, feedText = "Dealing with the estate...",
+			onResolve = function(state)
+				local age = state.Age or 0
+				local roll = math.random()
+				
+				-- CRITICAL FIX: Children can't directly receive inheritance
+				-- If under 18, the inheritance goes to parents/guardians
+				if age < 18 then
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed("😢 Adults are handling the estate matters. Too young to be involved.")
+					return
+				end
+				
+				if roll < 0.40 then
+					state.Money = (state.Money or 0) + 5000
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("😢 Unexpected inheritance. Money can't replace them.")
+				elseif roll < 0.70 then
+					state.Money = (state.Money or 0) + 500
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed("😢 Small inheritance. Memories matter more.")
+				else
+					state:ModifyStat("Happiness", -8)
+					state.Flags = state.Flags or {}
+					state.Flags.inheritance_drama = true
+					state:AddFeed("😢 Family fighting over estate. Grief compounded by greed.")
+				end
+			end,
+		},
 		},
 	},
 	{

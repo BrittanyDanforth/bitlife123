@@ -1,5 +1,36 @@
 local RANDOM = Random.new()
 
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ROMANCE-1: Premium path validation for romance events
+-- Regular romance events should respect premium path status
+-- Royal dating should only happen for royalty-path players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function canHaveRegularRomance(state)
+	if not state.Flags then return true end
+	local flags = state.Flags
+	
+	-- If dating royalty, regular romance events should be blocked
+	if flags.dating_royalty or flags.royal_romance then
+		return false
+	end
+	
+	-- If married, no new romance events
+	if flags.married then
+		return false
+	end
+	
+	return true
+end
+
+local function isOnRoyaltyPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	return flags.primary_wish_type == "royalty" or
+		flags.is_royalty or flags.royal_birth or
+		flags.dating_royalty or flags.royal_romance or
+		(state.RoyalState and state.RoyalState.isRoyal)
+end
+
 -- Generate random first name
 local function randomName(gender)
 	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas"}
@@ -16,7 +47,24 @@ local events = {
 		id = "highschool_crush",
 		emoji = "💘",
 		title = "Hallway Crush",
+		-- CRITICAL FIX #FUN-4: Added text variations for teen romance!
+		textVariants = {
+			"You keep running into the same person between classes. Every time you pass them, your heart does a little flip. Is this... feelings?",
+			"There's someone in your math class who makes you forget how to do basic addition. They just smiled at you. Your brain stopped working.",
+			"Your friends have noticed you staring. 'Just GO TALK to them!' they say. Easy for them to say. They don't have sweaty palms right now.",
+			"Third time this week you've 'accidentally' taken the long way to class just to pass by their locker. This is getting ridiculous.",
+			"You just found out you have a mutual friend. They could totally introduce you. But that would mean actually doing something about this crush...",
+			"They followed you on Instagram! YOU'RE FREAKING OUT. This means something, right? RIGHT?!",
+			"Your crush just asked to borrow a pencil. You said 'You're welcome' instead of 'Yes.' Your soul left your body from embarrassment.",
+			"Your best friend is threatening to tell your crush if YOU don't. The clock is ticking. What do you do?!",
+		},
 		text = "You keep running into the same person between classes. Ask them out?",
+		questionVariants = {
+			"What do you do about your crush?",
+			"How do you handle these feelings?",
+			"Time to make a move?",
+		},
+		question = "What do you do about your crush?",
 		category = "romance",
 		weight = 7,
 		minAge = 14,
@@ -26,40 +74,100 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Shoot your shot",
-				effects = { Happiness = 4 },
-				setFlags = { has_partner = true, dating = true },
-				feedText = "You started dating your crush!",
+				text = "Shoot your shot - YOLO!",
+				effects = {},
+				feedText = "Taking the plunge...",
 				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local bonus = looks > 60 and 10 or 0
 					local crushName = randomName(state.Gender == "male" and "female" or "male")
-					state.Relationships = state.Relationships or {}
-					state.Relationships.partner = {
-						id = "partner",
-						name = crushName,
-						type = "romance",
-						role = "Partner",
-						relationship = 65,
-						age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
-						gender = state.Gender == "male" and "female" or "male",
-						alive = true,
-					}
-					if state.AddFeed then
-						state:AddFeed("💕 You started dating " .. crushName .. "!")
+					
+					if roll <= (60 + bonus) then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "partner",
+							name = crushName,
+							type = "romance",
+							role = "Partner",
+							relationship = 65,
+							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							gender = state.Gender == "male" and "female" or "male",
+							alive = true,
+						}
+						state:AddFeed("💕 " .. crushName .. " said YES! You're officially dating!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("💔 They said they just want to be friends... ouch.")
 					end
 				end,
 			},
 			{
 				index = 2,
-				text = "Stay quiet",
-				effects = { Happiness = -2 },
-				feedText = "You stayed quiet about your feelings.",
+				text = "Stay quiet - too risky",
+				effects = { Happiness = -3 },
+				setFlags = { crush_anxiety = true },
+				feedText = "You chickened out. They'll never know how you feel. Safe but... sad.",
 			},
 			{
 				index = 3,
-				text = "Pass them a note",
-				effects = { Happiness = 3 },
-				setFlags = { has_partner = true, dating = true },
-				feedText = "Your note worked! You're dating!",
+				text = "Pass them a note (old school romantic!)",
+				effects = {},
+				feedText = "Sliding a note into their locker...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local crushName = randomName(state.Gender == "male" and "female" or "male")
+					
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.has_partner = true
+						state.Flags.dating = true
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "partner",
+							name = crushName,
+							type = "romance",
+							role = "Partner",
+							relationship = 60,
+							age = (state.Age or 16) + RANDOM:NextInteger(-2, 2),
+							gender = state.Gender == "male" and "female" or "male",
+							alive = true,
+						}
+						state:AddFeed("💌 They wrote back! You're dating " .. crushName .. "!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("💌 They never responded. Maybe they didn't find it?")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💌 They showed the note to their friends. Everyone knows. MORTIFYING.")
+					end
+				end,
+			},
+			{
+				index = 4,
+				text = "Ask a friend to find out if they like you first",
+				effects = {},
+				feedText = "Playing it safe with intel gathering...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags = state.Flags or {}
+						state.Flags.crush_likes_you = true
+						state:AddFeed("💬 YOUR FRIEND CONFIRMED: They like you back! Now you just have to actually ask them!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💬 Your friend's intel is inconclusive. They 'maybe kinda might' like you?")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💬 Your friend accidentally told them you like them! Now everyone knows!")
+					end
+				end,
 			},
 		},
 	},
@@ -67,7 +175,26 @@ local events = {
 		id = "prom_invite",
 		emoji = "🎭",
 		title = "Prom Season",
+		-- CRITICAL FIX #FUN-1: Added text variations for more engaging gameplay!
+		textVariants = {
+			"Prom is coming up and EVERYONE is talking about it! Posters everywhere. Who's asking who. The dress drama. The tux rentals. You need to figure out your plan!",
+			"PROM SEASON IS HERE! Your Instagram feed is nothing but prom-posals, dress shopping stories, and limo group chats. The pressure is INTENSE. What's your move?",
+			"The school is buzzing with prom excitement! Someone just asked their date with a flash mob in the cafeteria. Your friends are planning outfits. The clock is ticking!",
+			"Prom tickets go on sale next week and you still don't have a plan! Your group chat is blowing up - 'Who are you asking?' 'What are you wearing?' STRESS.",
+			"You just got asked to join a prom group! But... you don't have a date yet. Everyone else seems to have it figured out. Time to make a decision!",
+			"Someone asked YOU to prom! Well, kind of. It was through a friend of a friend who said they heard someone might be interested. High school romance is weird.",
+			"The theme was announced: 'Enchanted Evening.' Cheesy but kind of exciting? Your friends are losing their minds over dress colors. This is really happening!",
+			"Your best friend just got asked to prom with a HUNDRED roses. Now THEY are expecting something dramatic too. No pressure or anything...",
+		},
 		text = "Prom is coming up and you need a date!",
+		-- CRITICAL FIX #FUN-2: Added question variations too!
+		questionVariants = {
+			"What's your prom plan?",
+			"How are you handling prom?",
+			"What do you want to do about prom?",
+			"Prom strategy?",
+		},
+		question = "What's your prom plan?",
 		category = "romance",
 		weight = 6,
 		minAge = 16,
@@ -77,23 +204,48 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Ask your crush",
-				effects = { Happiness = 8 },
-				setFlags = { went_to_prom = true, has_partner = true, dating = true },
-				feedText = "They said yes! Best prom ever!",
+				text = "Ask your crush - go big or go home!",
+				effects = {},
+				feedText = "Taking the leap...",
+				-- CRITICAL FIX #FUN-3: Random outcome for asking crush!
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local bonus = looks > 60 and 15 or 0
+					if roll <= (55 + bonus) then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.went_to_prom = true
+						state.Flags.prom_date = true
+						state:AddFeed("🎭 THEY SAID YES! Prom is going to be AMAZING!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.prom_rejection = true
+						state:AddFeed("🎭 They said no... awkward. Maybe go with friends instead?")
+					end
+				end,
 			},
 			{
 				index = 2,
-				text = "Go with friends",
-				effects = { Happiness = 5 },
-				setFlags = { went_to_prom = true },
-				feedText = "Prom was fun with friends!",
+				text = "Go with the squad - friends make it fun!",
+				effects = { Happiness = 7 },
+				setFlags = { went_to_prom = true, prom_with_friends = true },
+				feedText = "Who needs a date? Your friend group tore up that dance floor! Best night ever!",
 			},
 			{
 				index = 3,
-				text = "Skip prom entirely",
-				effects = { Happiness = -3 },
-				feedText = "You missed prom. Oh well.",
+				text = "Go solo - own the night!",
+				effects = { Happiness = 4 },
+				setFlags = { went_to_prom = true, confident_solo = true },
+				feedText = "You showed up looking GOOD and danced with everyone. No drama. Pure fun!",
+			},
+			{
+				index = 4,
+				text = "Skip prom - not my thing",
+				effects = { Happiness = -2, Money = 300 },
+				setFlags = { skipped_prom = true },
+				feedText = "You saved $300 on tickets, outfits, and dinner. But everyone's prom pics look so fun... FOMO?",
 			},
 		},
 	},
@@ -111,7 +263,9 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		requiresSingle = true,
-		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX #RVS-ROMANCE-2: Block regular romance for players dating royalty
+		eligibility = canHaveRegularRomance,
+		blockedByFlags = { in_prison = true, incarcerated = true, dating_royalty = true, royal_romance = true },
 		choices = {
 			{
 				index = 1,

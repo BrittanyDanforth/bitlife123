@@ -4358,6 +4358,9 @@ showEvent = function(payload)
 
 			local choiceIndex = choice.index or i
 			local minigameType = choice.minigame
+			-- CRITICAL FIX #CONTEXT-2: Extract minigame context from choice for proper question bank selection
+			local minigameContext = choice.minigameContext or choice.context or "general"
+			local minigameTitle = choice.minigameTitle or choice.title
 
 			local function handleChoice()
 				if not EventUI.currentEventId then return end
@@ -4422,6 +4425,11 @@ showEvent = function(payload)
 					pendingMinigameChoiceIndex = choiceIndex
 					hideEvent()
 
+					-- CRITICAL FIX #CONTEXT-3: Pass minigame options for proper question bank!
+					local choiceMinigameOptions = {
+						context = minigameContext,
+						title = minigameTitle,
+					}
 					minigamesInstance:play(minigameType, function(won, data)
 						SubmitChoice:FireServer(pendingMinigameEventId, pendingMinigameChoiceIndex)
 						if MinigameResult then
@@ -4429,7 +4437,7 @@ showEvent = function(payload)
 						end
 						pendingMinigameEventId     = nil
 						pendingMinigameChoiceIndex = nil
-					end)
+					end, choiceMinigameOptions)
 				else
 					SubmitChoice:FireServer(EventUI.currentEventId, choiceIndex)
 					hideEvent()
@@ -6976,8 +6984,22 @@ if MinigameStart then
 		-- CRITICAL FIX: Server sends "type" not "id"! This was causing nil minigame errors.
 		local minigameType = config.type or config.id
 		print("[LifeClient] 🎮 Minigame requested from event:", minigameType, "for event:", config.eventId)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #CONTEXT-1: Pass minigame options including CONTEXT from server!
+		-- User complaint: "argument minigame has the wording mixed up allways like weirdly 
+		-- could be a relashonship argument and its a presidental questions"
+		-- The server sends context in config, we need to pass it to the minigame!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local minigameOptions = {
+			context = config.context or config.minigameContext or "general",
+			title = config.title or config.minigameTitle,
+			difficulty = config.difficulty or "medium",
+		}
+		print("[LifeClient] 🎮 Minigame options:", minigameOptions.context, minigameOptions.title)
 
 		if minigamesInstance and minigamesInstance.play then
+			-- CRITICAL FIX: Pass minigameOptions as 3rd argument to get correct question bank!
 			minigamesInstance:play(minigameType, function(won, data)
 
 				-- Send result back to server
@@ -7000,7 +7022,7 @@ if MinigameStart then
 					flashScreen(C.Red, 0.6, 0.3)
 					shakeScreen(6, 0.2)
 				end
-			end)
+			end, minigameOptions)
 		else
 			-- No minigame module - just auto-complete as failure
 			warn("[LifeClient] ⚠️ No minigame module available, auto-failing")
@@ -7166,7 +7188,10 @@ if MinigamesModule then
 							-- Add feed message
 							currentState.Feed = currentState.Feed or {}
 							table.insert(currentState.Feed, "🎉 You survived The Purge! You're stronger now! (+Health, +Happiness)")
-							refreshInfo()
+							-- CRITICAL FIX: Use updateFromState() instead of undefined refreshInfo()
+							if updateFromState then
+								updateFromState()
+							end
 						else
 							-- DIED IN THE PURGE - Trigger actual death!
 							currentState.Health = 0  -- Set health to 0

@@ -10,14 +10,44 @@
 	- Rock Star
 	- Music Producer
 	- DJ
+	
+	CRITICAL FIX #RVS-6: Premium path blocking for royalty/mafia players
 ]]
 
 local MusicianCareerEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-MUSIC-1: Premium path blocking
+-- Music career events should NOT fire for royalty or mafia players (unless already famous)
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player is already a musician/famous, allow
+	if flags.fame_career or flags.signed_artist or flags.signed_musician then
+		return false
+	end
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose mafia path
+	if flags.primary_wish_type == "mafia" then return true end
+	if flags.in_mob then return true end
+	if state.MobState and state.MobState.inMob then return true end
+	
+	return false
+end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #22: Enhanced helper functions for musician careers
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function hasMusicJob(state)
+	-- CRITICAL FIX #RVS-MUSIC-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()

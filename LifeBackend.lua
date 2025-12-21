@@ -163,6 +163,16 @@ function LifeBackend:savePlayerData(player)
 		warn("[LifeBackend] Cannot save - no state for player:", player.Name)
 		return false
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL: Run canonical validator before saving
+	-- This ensures we never save ghost states, zombie flags, or invalid data
+	-- RVS cleans: premium flags, event chains, relationships, assets, housing, jobs
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	print("[LifeBackend] Running pre-save validation...")
+	self:validateStateConsistency(state)
+	self:validateRecursiveState(state)
+	print("[LifeBackend] Pre-save validation complete")
 
 	local serialized = serializeState(state)
 	if not serialized then
@@ -280,6 +290,1382 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey)
 	if not success then
 		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(err)))
 	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Clear conflicting premium states to prevent "Mobster Prince" bug
+-- When a player enters one premium path, clear flags from other paths
+-- Also clears conflicting housing when becoming royalty
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:clearConflictingPremiumStates(state, newPath)
+	if not state then return end
+	state.Flags = state.Flags or {}
+	
+	if newPath == "royalty" then
+		-- Clear mafia state
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.chose_mafia_path = nil
+		state.Flags.joined_mob = nil
+		if state.MobState then
+			state.MobState = nil
+		end
+		-- Clear celebrity state (unless they're famous through royalty)
+		if not state.Flags.royal_fame then
+			state.Flags.fame_career = nil
+			state.Flags.chose_celebrity_path = nil
+		end
+		-- CRITICAL FIX: Clear old housing when becoming royalty (they move to palace!)
+		state.Flags.renting = nil
+		state.Flags.has_apartment = nil
+		state.Flags.has_own_place = nil
+		state.Flags.homeless = nil
+		state.Flags.living_with_parents = nil
+		-- Update housing state
+		state.HousingState = state.HousingState or {}
+		state.HousingState.status = "royal_palace"
+		state.HousingState.type = "palace"
+		state.HousingState.rent = 0
+		-- Clear old apartment from Assets
+		if state.Assets and state.Assets.Properties then
+			local newProperties = {}
+			for _, prop in ipairs(state.Assets.Properties) do
+				-- Keep only non-rental properties
+				if not (prop.id and (prop.id:find("apartment") or prop.id:find("residence") or prop.id == "current_residence")) then
+					table.insert(newProperties, prop)
+				end
+			end
+			state.Assets.Properties = newProperties
+		end
+	elseif newPath == "mafia" then
+		-- Clear royalty state
+		state.Flags.is_royalty = nil
+		state.Flags.royal_birth = nil
+		state.Flags.dating_royalty = nil
+		state.Flags.royal_romance = nil
+		state.Flags.chose_royalty_path = nil
+		state.Flags.royal_by_marriage = nil
+		if state.RoyalState then
+			state.RoyalState = nil
+		end
+		-- Clear celebrity state
+		state.Flags.fame_career = nil
+		state.Flags.chose_celebrity_path = nil
+	elseif newPath == "celebrity" then
+		-- Clear mafia state
+		state.Flags.in_mob = nil
+		state.Flags.mafia_member = nil
+		state.Flags.chose_mafia_path = nil
+		state.Flags.joined_mob = nil
+		if state.MobState then
+			state.MobState = nil
+		end
+		-- Clear royalty state
+		state.Flags.is_royalty = nil
+		state.Flags.royal_birth = nil
+		state.Flags.dating_royalty = nil
+		state.Flags.royal_romance = nil
+		state.Flags.chose_royalty_path = nil
+		state.Flags.royal_by_marriage = nil
+		if state.RoyalState then
+			state.RoyalState = nil
+		end
+	end
+	
+	-- Update primary_wish_type to ensure consistency
+	state.Flags.primary_wish_type = newPath
+	
+	print("[LifeBackend] Cleared conflicting premium states, new path:", newPath)
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Comprehensive state consistency validator
+-- Runs on every state sync to catch and fix any inconsistent states
+-- Prevents: multiple paths active, conflicting relationship states, ghost flags
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateStateConsistency(state)
+	if not state then return end
+	state.Flags = state.Flags or {}
+	local flags = state.Flags
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #1: PREMIUM PATH MUTEX - Only ONE premium path can be active
+	-- ═══════════════════════════════════════════════════════════════════════
+	local isRoyalty = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	local isFamous = flags.is_famous or flags.fame_career or (state.FameState and state.FameState.careerPath)
+	
+	local activePaths = 0
+	if isRoyalty then activePaths = activePaths + 1 end
+	if isInMob then activePaths = activePaths + 1 end
+	if isFamous then activePaths = activePaths + 1 end
+	
+	-- If multiple paths are active, use primary_wish_type to determine which to keep
+	if activePaths > 1 then
+		warn("[StateValidator] CONFLICT: Multiple premium paths active! Resolving based on primary_wish_type")
+		local primaryWish = flags.primary_wish_type
+		
+		if primaryWish == "royalty" then
+			-- Keep royalty, clear others
+			self:clearConflictingPremiumStates(state, "royalty")
+		elseif primaryWish == "mafia" then
+			-- Keep mafia, clear others
+			self:clearConflictingPremiumStates(state, "mafia")
+		elseif primaryWish == "celebrity" then
+			-- Keep celebrity, clear others
+			self:clearConflictingPremiumStates(state, "celebrity")
+		else
+			-- No primary wish set - use priority: royalty > mafia > celebrity
+			if isRoyalty then
+				self:clearConflictingPremiumStates(state, "royalty")
+			elseif isInMob then
+				self:clearConflictingPremiumStates(state, "mafia")
+			else
+				self:clearConflictingPremiumStates(state, "celebrity")
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #2: RELATIONSHIP STATE MUTEX - Cannot be married+single+engaged+widowed
+	-- ═══════════════════════════════════════════════════════════════════════
+	local married = flags.married
+	local engaged = flags.engaged
+	local single = flags.single
+	local widowed = flags.widowed
+	local hasPartner = flags.has_partner
+	
+	-- Priority: married > engaged > dating > single/widowed
+	if married then
+		flags.engaged = nil
+		flags.single = nil
+		-- Keep widowed if it applies to a previous marriage
+	elseif engaged then
+		flags.married = nil
+		flags.single = nil
+		flags.widowed = nil -- Can't be widowed if engaged to someone new
+	elseif hasPartner or flags.dating_royalty or flags.royal_romance then
+		flags.single = nil
+		flags.married = nil
+		flags.engaged = nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #3: FINANCIAL FLAG CLEANUP - Clear broke flags if player has money
+	-- ═══════════════════════════════════════════════════════════════════════
+	local money = state.Money or 0
+	if money >= 10000 then
+		flags.struggling_financially = nil
+		flags.broke = nil
+		flags.poor = nil
+		flags.is_broke = nil
+		-- Also reset years broke counter
+		if state.HousingState then
+			state.HousingState.yearsWithoutPayingRent = 0
+			state.HousingState.yearsBroke = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #4: INHERITANCE AGE GATE - Children can't receive direct inheritance
+	-- ═══════════════════════════════════════════════════════════════════════
+	if age < 18 and money > 500000 then
+		-- Excessive money for a child - it should be in a trust
+		flags.has_trust_fund = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #5: DEATH STATE - Cannot be dead and alive simultaneously
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.dead or flags.is_dead then
+		flags.is_alive = nil
+		-- Don't allow age ups if dead
+		state.canAgeUp = false
+	else
+		flags.is_alive = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #6: JAIL STATE CONSISTENCY
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.InJail then
+		flags.in_prison = true
+		flags.incarcerated = true
+	else
+		if (state.JailYearsLeft or 0) <= 0 then
+			flags.in_prison = nil
+			flags.incarcerated = nil
+			state.InJail = false
+			state.JailYearsLeft = 0
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #7: CLEANUP DEAD FAMILY MEMBERS from active relationships
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Relationships then
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				-- If they're marked deceased, ensure they can't be interacted with romantically
+				if rel.deceased or rel.dead then
+					rel.alive = false
+					-- Clear active romantic status if partner is dead
+					if relId == "partner" and not flags.widowed then
+						flags.widowed = true
+						flags.has_partner = nil
+						flags.dating = nil
+					end
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #8: FAME STATE VALIDATION - Can't be famous without proper setup
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.is_famous then
+		-- Ensure FameState exists
+		state.FameState = state.FameState or {}
+		if not state.FameState.careerPath and not state.FameState.currentStage then
+			-- Ghost fame flag - clear it
+			warn("[StateValidator] Ghost fame flag detected - clearing")
+			flags.is_famous = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #9: PALACE/HOUSING VALIDATION - Palace requires royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.HousingState and state.HousingState.status == "royal_palace" then
+		if not isRoyalty and not flags.is_royalty then
+			warn("[StateValidator] Ghost palace status detected - resetting to with_parents")
+			state.HousingState.status = "with_parents"
+			state.HousingState.type = "family_home"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FIX #10: GODMODE PROMPT TRACKING - Prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Reset god_mode_offer_count if it's getting too high
+	if (flags.god_mode_offer_count or 0) > 5 then
+		flags.god_mode_offer_count = 0
+	end
+	
+	print("[StateValidator] Consistency check complete")
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+-- ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+-- RECURSIVE VALIDATOR SYSTEM (RVS) - DEEP STRUCTURAL REPAIR
+-- This system performs comprehensive validation across ALL game systems:
+-- - Premium path integrity (flags match actual state and event history)
+-- - Event chain completion (incomplete chains are detected and resolved)
+-- - Ghost entity cleanup (dead relatives, duplicate assets, orphan flags)
+-- - Housing/title synchronization
+-- - Occupation history cleanup
+-- - Fame/royalty/mafia path validation
+-- ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+-- ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+-- Master recursive validator function - runs all sub-validators
+function LifeBackend:validateRecursiveState(state)
+	if not state then return 0 end
+	
+	print("[RVS] ═══════════════════════════════════════════════════════════════")
+	print("[RVS] Starting Recursive Validator System...")
+	print("[RVS] ═══════════════════════════════════════════════════════════════")
+	
+	local fixes = 0
+	
+	-- Run all validators in order
+	fixes = fixes + self:validatePremiumFlags(state)
+	fixes = fixes + self:validateEventChains(state)
+	fixes = fixes + self:reconcileEventChains(state)    -- NEW: Event chain recovery
+	fixes = fixes + self:clearGhostRelationships(state)
+	fixes = fixes + self:syncHousingAndTitles(state)
+	fixes = fixes + self:enforceOneOccupation(state)
+	fixes = fixes + self:validateFameState(state)
+	fixes = fixes + self:validateRoyalMarriage(state)
+	fixes = fixes + self:cleanDuplicateAssets(state)
+	fixes = fixes + self:validateChildState(state)
+	fixes = fixes + self:validateMilestones(state)       -- NEW: Milestone validation
+	
+	print(string.format("[RVS] Validation complete. Total fixes applied: %d", fixes))
+	print("[RVS] ═══════════════════════════════════════════════════════════════")
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- PREMIUM FLAGS VALIDATOR
+-- Checks if premium flags (is_royalty, in_mob, is_famous) have valid backing
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validatePremiumFlags(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local history = state.EventHistory or {}
+	local completedEvents = history.completed or {}
+	local occurrences = history.occurrences or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ROYALTY FLAG VALIDATION
+	-- is_royalty should only be true if:
+	-- 1. Player was born royal (royal_birth flag)
+	-- 2. Player married royalty (married + married_to_royalty flags)
+	-- 3. Player has valid RoyalState
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.is_royalty then
+		local hasValidRoyalSource = false
+		
+		-- Check: Born royal
+		if flags.royal_birth then
+			hasValidRoyalSource = true
+		end
+		
+		-- Check: Married into royalty
+		if flags.married and flags.married_to_royalty then
+			hasValidRoyalSource = true
+		end
+		
+		-- Check: Valid RoyalState
+		if state.RoyalState and state.RoyalState.isRoyal then
+			hasValidRoyalSource = true
+		end
+		
+		-- Check: Dating royalty (engaged, not married yet) - NOT full royalty
+		if flags.dating_royalty and not flags.married_to_royalty then
+			hasValidRoyalSource = false -- Dating ≠ Being royalty
+			if not flags.married_to_royalty then
+				warn("[RVS] Ghost royalty flag: is_royalty without marriage - clearing")
+				flags.is_royalty = nil
+				flags.royal_by_marriage = nil
+				if state.RoyalState then
+					state.RoyalState.isRoyal = false
+				end
+				fixes = fixes + 1
+			end
+		end
+		
+		if not hasValidRoyalSource then
+			warn("[RVS] Ghost royalty flag: No valid royal source - clearing")
+			flags.is_royalty = nil
+			flags.royal_birth = nil
+			flags.royal_by_marriage = nil
+			if state.RoyalState then
+				state.RoyalState = nil
+			end
+			-- Reset housing if it was set to palace
+			if state.HousingState and state.HousingState.status == "royal_palace" then
+				state.HousingState.status = "with_parents"
+				state.HousingState.type = "family_home"
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- MAFIA FLAG VALIDATION
+	-- in_mob should only be true if:
+	-- 1. Player has valid MobState with inMob = true
+	-- 2. Player completed a mob joining event
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.in_mob then
+		local hasValidMobSource = false
+		
+		-- Check: Valid MobState
+		if state.MobState and state.MobState.inMob then
+			hasValidMobSource = true
+		end
+		
+		-- Check: Completed mob event
+		local mobEventCompleted = completedEvents["premium_wish_mafia_approach"] or
+			completedEvents["mafia_recruitment"] or
+			completedEvents["mafia_approach"] or
+			(occurrences["premium_wish_mafia_approach"] or 0) > 0
+		
+		if mobEventCompleted then
+			hasValidMobSource = true
+		end
+		
+		if not hasValidMobSource then
+			warn("[RVS] Ghost mafia flag: No valid mob source - clearing")
+			flags.in_mob = nil
+			flags.mafia_member = nil
+			state.MobState = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FAME FLAG VALIDATION
+	-- is_famous should only be true if:
+	-- 1. Player has valid FameState with careerPath
+	-- 2. Player has fame level >= 50
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.is_famous or flags.fame_career then
+		local hasValidFameSource = false
+		
+		-- Check: Valid FameState with career
+		if state.FameState and state.FameState.careerPath then
+			hasValidFameSource = true
+		end
+		
+		-- Check: High fame level
+		if (state.Fame or 0) >= 50 then
+			hasValidFameSource = true
+		end
+		
+		-- Check: Completed fame event
+		local fameEventCompleted = completedEvents["premium_wish_fame_discovery"] or
+			completedEvents["celebrity_discovery"] or
+			(occurrences["premium_wish_fame_discovery"] or 0) > 0
+		
+		if fameEventCompleted then
+			hasValidFameSource = true
+		end
+		
+		if not hasValidFameSource then
+			warn("[RVS] Ghost fame flag: No valid fame source - clearing")
+			flags.is_famous = nil
+			flags.fame_career = nil
+			flags.celebrity = nil
+			if state.FameState then
+				state.FameState.careerPath = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PRIMARY WISH TYPE VALIDATION
+	-- Ensure primary_wish_type matches actual state
+	-- ═══════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	if primaryWish then
+		local wishMatchesState = false
+		
+		if primaryWish == "royalty" then
+			wishMatchesState = flags.is_royalty or flags.dating_royalty or flags.palace_wish
+		elseif primaryWish == "mafia" then
+			wishMatchesState = flags.in_mob or flags.power_wish
+		elseif primaryWish == "celebrity" then
+			wishMatchesState = flags.is_famous or flags.fame_career or flags.fame_wish
+		end
+		
+		-- If wish exists but no progression, check if they should still have events trigger
+		if not wishMatchesState then
+			-- Keep the wish - player may still be waiting for follow-up event
+			-- But clear if they're too old for wish events
+			local age = state.Age or 0
+			if age > 40 then
+				warn("[RVS] Primary wish expired: Player too old for wish events - clearing")
+				flags.primary_wish_type = nil
+				fixes = fixes + 1
+			end
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EVENT CHAIN VALIDATOR
+-- Detects incomplete event chains and resolves them
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateEventChains(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local history = state.EventHistory or {}
+	local occurrences = history.occurrences or {}
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ROYAL ROMANCE CHAIN VALIDATION
+	-- If dating_royalty is true but no proposal happened after 5+ years
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.dating_royalty and not flags.married_to_royalty then
+		local datingYears = flags.dating_royalty_years or 0
+		
+		-- If dating for 10+ years without proposal, relationship ended
+		if datingYears >= 10 then
+			warn("[RVS] Royal romance stale: 10+ years without marriage - ending relationship")
+			flags.dating_royalty = nil
+			flags.royal_romance = nil
+			flags.has_partner = nil
+			flags.dating_royalty_years = nil
+			-- Clear the royal partner
+			if state.Relationships and state.Relationships.partner then
+				if state.Relationships.partner.isRoyalty then
+					state.Relationships.partner = nil
+				end
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- WISH FULFILLMENT CHAIN VALIDATION
+	-- If wish was made but follow-up never happened
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.palace_wish and not flags.dating_royalty and not flags.is_royalty then
+		-- Check if encounter event was completed
+		local encounterOccurred = (occurrences["premium_wish_royalty_encounter"] or 0) > 0
+		
+		if not encounterOccurred and age > 35 then
+			warn("[RVS] Royal wish expired: Never encountered royalty by age 35 - clearing wish")
+			flags.palace_wish = nil
+			flags.royal_fantasies = nil
+			if flags.primary_wish_type == "royalty" then
+				flags.primary_wish_type = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	if flags.power_wish and not flags.in_mob then
+		local approachOccurred = (occurrences["premium_wish_mafia_approach"] or 0) > 0
+		
+		if not approachOccurred and age > 35 then
+			warn("[RVS] Mafia wish expired: Never approached by age 35 - clearing wish")
+			flags.power_wish = nil
+			flags.fascinated_by_power = nil
+			if flags.primary_wish_type == "mafia" then
+				flags.primary_wish_type = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	if flags.fame_wish and not flags.is_famous and not flags.fame_career then
+		local discoveryOccurred = (occurrences["premium_wish_fame_discovery"] or 0) > 0
+		
+		if not discoveryOccurred and age > 35 then
+			warn("[RVS] Fame wish expired: Never discovered by age 35 - clearing wish")
+			flags.fame_wish = nil
+			flags.star_dreams = nil
+			if flags.primary_wish_type == "celebrity" then
+				flags.primary_wish_type = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ENGAGEMENT WITHOUT MARRIAGE VALIDATION
+	-- If engaged but never married after 3+ years
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.engaged and not flags.married then
+		local engagedAge = flags.engaged_at_age or (age - 3)
+		local yearsEngaged = age - engagedAge
+		
+		if yearsEngaged >= 5 then
+			warn("[RVS] Stale engagement: 5+ years engaged without marriage - ending")
+			flags.engaged = nil
+			flags.engaged_at_age = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- GHOST RELATIONSHIP CLEANER
+-- Removes dead, orphaned, or invalid relationship entries
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:clearGhostRelationships(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	if not state.Relationships then return fixes end
+	
+	local validRelationships = {}
+	local hasLivingPartner = false
+	local hasLivingSpouse = false
+	
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" then
+			local isValid = true
+			local reason = nil
+			
+			-- ═══════════════════════════════════════════════════════════
+			-- Check for ghost entries
+			-- ═══════════════════════════════════════════════════════════
+			
+			-- Ghost: Dead but marked alive
+			if (rel.deceased or rel.dead) and rel.alive then
+				rel.alive = false
+				fixes = fixes + 1
+			end
+			
+			-- Ghost: No name or ID
+			if not rel.name and not rel.id then
+				isValid = false
+				reason = "No identifier"
+			end
+			
+			-- Ghost: Impossible age (negative or very old for a child)
+			if rel.age and rel.age < -5 then
+				isValid = false
+				reason = "Impossible age"
+			end
+			
+			-- Ghost: Child marked as spouse
+			if rel.Type == "Child" and (rel.role == "Spouse" or rel.role == "Partner") then
+				rel.role = nil
+				fixes = fixes + 1
+			end
+			
+			-- Track living romantic partners
+			if rel.alive ~= false and not rel.deceased and not rel.dead then
+				if relId == "partner" or rel.Type == "Partner" then
+					hasLivingPartner = true
+				end
+				if relId == "spouse" or rel.Type == "Spouse" or rel.role == "Spouse" then
+					hasLivingSpouse = true
+				end
+			end
+			
+			if isValid then
+				validRelationships[relId] = rel
+			else
+				warn(string.format("[RVS] Removing ghost relationship: %s (%s)", tostring(relId), reason))
+				fixes = fixes + 1
+			end
+		else
+			-- Invalid entry (not a table)
+			fixes = fixes + 1
+		end
+	end
+	
+	state.Relationships = validRelationships
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Sync flags with actual relationships
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.has_partner and not hasLivingPartner then
+		warn("[RVS] Ghost has_partner flag - clearing")
+		flags.has_partner = nil
+		fixes = fixes + 1
+	end
+	
+	if flags.married and not hasLivingSpouse then
+		-- Check if widowed
+		if not flags.widowed then
+			warn("[RVS] Ghost married flag without spouse - setting widowed")
+			flags.widowed = true
+			flags.married = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- HOUSING AND TITLES SYNCHRONIZATION
+-- Ensures housing status matches player's actual status
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:syncHousingAndTitles(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	state.HousingState = state.HousingState or {}
+	local housing = state.HousingState
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Royal Palace requires actual royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	if housing.status == "royal_palace" then
+		local isActuallyRoyal = flags.is_royalty or flags.royal_birth or
+			(state.RoyalState and state.RoyalState.isRoyal)
+		
+		if not isActuallyRoyal then
+			warn("[RVS] Ghost palace: Not actually royal - resetting housing")
+			housing.status = age < 18 and "with_parents" or "renter"
+			housing.type = age < 18 and "family_home" or "apartment"
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Homeless validation
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.homeless then
+		-- Can't be homeless with money
+		if (state.Money or 0) >= 50000 then
+			warn("[RVS] Ghost homeless: Has $50k+ - clearing homeless")
+			flags.homeless = nil
+			housing.status = "renter"
+			housing.type = "apartment"
+			fixes = fixes + 1
+		end
+		
+		-- Can't be homeless and own property
+		if flags.homeowner or flags.has_property then
+			warn("[RVS] Ghost homeless: Owns property - clearing homeless")
+			flags.homeless = nil
+			housing.status = "owner"
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Children always live with parents
+	-- ═══════════════════════════════════════════════════════════════════════
+	if age < 18 and not flags.emancipated then
+		if housing.status ~= "with_parents" and housing.status ~= "royal_palace" then
+			if not flags.is_royalty then
+				housing.status = "with_parents"
+				housing.type = "family_home"
+				housing.rent = 0
+				fixes = fixes + 1
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- RoyalState title validation
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.RoyalState and state.RoyalState.isRoyal then
+		-- Ensure title is set
+		if not state.RoyalState.title then
+			state.RoyalState.title = state.Gender == "Female" and "Princess" or "Prince"
+			fixes = fixes + 1
+		end
+		
+		-- Married royalty gets consort title
+		if flags.married_to_royalty and not flags.royal_birth then
+			local expectedTitle = state.Gender == "Female" and "Princess Consort" or "Prince Consort"
+			if state.RoyalState.title ~= expectedTitle then
+				state.RoyalState.title = expectedTitle
+				fixes = fixes + 1
+			end
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- OCCUPATION ENFORCER
+-- Ensures only ONE occupation is active and clears conflicting job histories
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:enforceOneOccupation(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Royalty can't have regular jobs
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.is_royalty or (state.RoyalState and state.RoyalState.isRoyal) then
+		if state.CurrentJob then
+			warn("[RVS] Royalty with regular job - clearing job")
+			-- Store as previous career
+			flags.previous_career = state.CurrentJob.title or state.CurrentJob.name
+			state.CurrentJob = nil
+			flags.employed = nil
+			flags.has_job = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Clear conflicting career flags
+	-- ═══════════════════════════════════════════════════════════════════════
+	local activeCareerTypes = {}
+	
+	if flags.is_royalty then table.insert(activeCareerTypes, "royalty") end
+	if flags.in_mob then table.insert(activeCareerTypes, "mafia") end
+	if flags.fame_career then table.insert(activeCareerTypes, "fame") end
+	if state.CurrentJob then table.insert(activeCareerTypes, "regular") end
+	
+	-- If multiple career types, keep only the primary one
+	if #activeCareerTypes > 1 then
+		warn("[RVS] Multiple career types detected: " .. table.concat(activeCareerTypes, ", "))
+		
+		local primary = flags.primary_wish_type
+		
+		if primary == "royalty" then
+			-- Keep royalty, clear others
+			state.CurrentJob = nil
+			-- Don't clear mob/fame - they might be compatible
+		elseif primary == "mafia" then
+			-- Mafia can have regular jobs as cover
+		elseif primary == "celebrity" then
+			-- Fame is the career
+			if state.CurrentJob and not state.CurrentJob.isFameRelated then
+				state.CurrentJob = nil
+				fixes = fixes + 1
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Clear impossible job states
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.CurrentJob then
+		local age = state.Age or 0
+		
+		-- Can't have a job if too young
+		if age < 14 then
+			warn("[RVS] Child with job - clearing")
+			state.CurrentJob = nil
+			flags.employed = nil
+			flags.has_job = nil
+			fixes = fixes + 1
+		end
+		
+		-- Can't work in prison
+		if state.InJail then
+			if not state.CurrentJob.isPrisonJob then
+				warn("[RVS] Employed while in prison - clearing job")
+				flags.was_employed_before_jail = true
+				flags.previous_job_id = state.CurrentJob.id
+				state.CurrentJob = nil
+				flags.employed = nil
+				fixes = fixes + 1
+			end
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- FAME STATE VALIDATOR
+-- Ensures fame status has valid backing
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateFameState(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FameState exists but no career path - ghost state
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.FameState then
+		local fameState = state.FameState
+		
+		-- Must have career path to have subscribers/followers
+		if not fameState.careerPath then
+			if (fameState.subscribers or 0) > 0 or (fameState.followers or 0) > 0 then
+				-- Ghost fame state
+				warn("[RVS] Ghost FameState: subscribers/followers without career - clearing")
+				state.FameState = nil
+				flags.is_famous = nil
+				flags.fame_career = nil
+				flags.celebrity = nil
+				fixes = fixes + 1
+			end
+		end
+		
+		-- Current stage can't be 0 or negative
+		if fameState.currentStage and fameState.currentStage <= 0 then
+			fameState.currentStage = 1
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Fame flags without FameState
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.fame_career and not state.FameState then
+		warn("[RVS] fame_career flag without FameState - clearing")
+		flags.fame_career = nil
+		fixes = fixes + 1
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- ROYAL MARRIAGE VALIDATOR
+-- Ensures royal marriage chain completed properly
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateRoyalMarriage(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- married_to_royalty requires both married and a royal spouse
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.married_to_royalty then
+		if not flags.married then
+			warn("[RVS] married_to_royalty without married flag - clearing")
+			flags.married_to_royalty = nil
+			flags.royal_by_marriage = nil
+			flags.is_royalty = nil
+			fixes = fixes + 1
+		end
+		
+		-- Check for royal spouse
+		local hasRoyalSpouse = false
+		if state.Relationships then
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" then
+					if rel.isRoyalty and (rel.role == "Spouse" or rel.role == "Royal Spouse" or relId == "spouse") then
+						hasRoyalSpouse = true
+						break
+					end
+				end
+			end
+		end
+		
+		if not hasRoyalSpouse then
+			warn("[RVS] married_to_royalty without royal spouse - clearing")
+			flags.married_to_royalty = nil
+			flags.royal_by_marriage = nil
+			-- Don't clear is_royalty if they might be born royal
+			if not flags.royal_birth then
+				flags.is_royalty = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- dating_royalty requires a royal partner
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.dating_royalty then
+		local hasRoyalPartner = false
+		if state.Relationships and state.Relationships.partner then
+			local partner = state.Relationships.partner
+			if partner.isRoyalty then
+				hasRoyalPartner = true
+			end
+		end
+		
+		if not hasRoyalPartner then
+			warn("[RVS] dating_royalty without royal partner - clearing")
+			flags.dating_royalty = nil
+			flags.royal_romance = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- DUPLICATE ASSET CLEANER
+-- Removes duplicate properties, vehicles, items from assets
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:cleanDuplicateAssets(state)
+	local fixes = 0
+	
+	if not state.Assets then return fixes end
+	
+	local function removeDuplicates(assetList)
+		if not assetList then return {}, 0 end
+		
+		local seen = {}
+		local unique = {}
+		local dupeCount = 0
+		
+		for _, asset in ipairs(assetList) do
+			local key = asset.id or asset.name or tostring(asset)
+			if not seen[key] then
+				seen[key] = true
+				table.insert(unique, asset)
+			else
+				dupeCount = dupeCount + 1
+			end
+		end
+		
+		return unique, dupeCount
+	end
+	
+	-- Clean Properties
+	if state.Assets.Properties then
+		local cleaned, dupes = removeDuplicates(state.Assets.Properties)
+		if dupes > 0 then
+			warn(string.format("[RVS] Removed %d duplicate properties", dupes))
+			state.Assets.Properties = cleaned
+			fixes = fixes + dupes
+		end
+	end
+	
+	-- Clean Vehicles
+	if state.Assets.Vehicles then
+		local cleaned, dupes = removeDuplicates(state.Assets.Vehicles)
+		if dupes > 0 then
+			warn(string.format("[RVS] Removed %d duplicate vehicles", dupes))
+			state.Assets.Vehicles = cleaned
+			fixes = fixes + dupes
+		end
+	end
+	
+	-- Clean Items
+	if state.Assets.Items then
+		local cleaned, dupes = removeDuplicates(state.Assets.Items)
+		if dupes > 0 then
+			warn(string.format("[RVS] Removed %d duplicate items", dupes))
+			state.Assets.Items = cleaned
+			fixes = fixes + dupes
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Validate owns_property flag
+	-- ═══════════════════════════════════════════════════════════════════════
+	local flags = state.Flags or {}
+	local hasProperty = state.Assets.Properties and #state.Assets.Properties > 0
+	
+	if flags.owns_property and not hasProperty then
+		warn("[RVS] Ghost owns_property flag - clearing")
+		flags.owns_property = nil
+		fixes = fixes + 1
+	end
+	
+	if hasProperty and not flags.owns_property then
+		flags.owns_property = true
+		fixes = fixes + 1
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CHILD STATE VALIDATOR
+-- Ensures children can't have inappropriate flags/states
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateChildState(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local age = state.Age or 0
+	
+	-- Children are under 18
+	if age < 18 then
+		-- ═══════════════════════════════════════════════════════════════════
+		-- Children can't be married
+		-- ═══════════════════════════════════════════════════════════════════
+		if flags.married then
+			warn("[RVS] Child married - clearing")
+			flags.married = nil
+			flags.engaged = nil
+			fixes = fixes + 1
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════
+		-- Children can't own houses (property is held in trust)
+		-- ═══════════════════════════════════════════════════════════════════
+		if flags.homeowner then
+			flags.homeowner = nil
+			flags.has_trust_fund = true
+			fixes = fixes + 1
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════
+		-- Children can't be homeless (wards of state)
+		-- ═══════════════════════════════════════════════════════════════════
+		if flags.homeless then
+			warn("[RVS] Child homeless - placing with foster care")
+			flags.homeless = nil
+			flags.in_foster_care = true
+			state.HousingState = state.HousingState or {}
+			state.HousingState.status = "foster_care"
+			fixes = fixes + 1
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════
+		-- Children with money should have trust fund flag
+		-- ═══════════════════════════════════════════════════════════════════
+		if (state.Money or 0) >= 100000 and not flags.has_trust_fund then
+			flags.has_trust_fund = true
+			fixes = fixes + 1
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════
+		-- Clear broke flags for children (parents support them)
+		-- ═══════════════════════════════════════════════════════════════════
+		if flags.broke or flags.struggling_financially or flags.is_broke or flags.poor then
+			flags.broke = nil
+			flags.struggling_financially = nil
+			flags.is_broke = nil
+			flags.poor = nil
+			if state.HousingState then
+				state.HousingState.yearsWithoutPayingRent = 0
+				state.HousingState.yearsBroke = nil
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- EVENT CHAIN RECONCILER
+-- Detects incomplete event chains and either retries or force-closes them
+-- This prevents ghost states from persisting when follow-up events fail
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:reconcileEventChains(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local history = state.EventHistory or {}
+	local age = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- ROYALTY CHAIN RECONCILIATION
+	-- Chain: wish -> encounter -> dating -> proposal -> marriage
+	-- ═══════════════════════════════════════════════════════════════════════
+	local royalChain = {
+		hasWish = flags.palace_wish or flags.royal_fantasies,
+		hasEncounter = flags.dating_royalty or flags.royal_romance,
+		hasProposal = flags.received_royal_proposal,
+		hasMarriage = flags.married_to_royalty or flags.is_royalty,
+	}
+	
+	-- Stuck: Dating but no proposal after many years
+	if royalChain.hasEncounter and not royalChain.hasMarriage then
+		local datingYears = flags.dating_royalty_years or 0
+		
+		if datingYears >= 7 and age >= 25 then
+			-- Force-inject proposal next year
+			flags.force_royal_proposal = true
+			print("[EventReconciler] Royal chain stuck: Force-scheduling proposal")
+			fixes = fixes + 1
+		end
+	end
+	
+	-- Stuck: Has royalty flag but no spouse
+	if flags.is_royalty and not flags.royal_birth then
+		local hasRoyalSpouse = false
+		if state.Relationships then
+			for _, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.isRoyalty and (rel.role == "Spouse" or rel.role == "Royal Spouse") then
+					hasRoyalSpouse = true
+					break
+				end
+			end
+		end
+		
+		if not hasRoyalSpouse and not flags.married_to_royalty then
+			-- Ghost royalty - clear it
+			warn("[EventReconciler] Ghost royalty state: Married to royalty without spouse - clearing")
+			flags.is_royalty = nil
+			flags.royal_by_marriage = nil
+			if state.RoyalState then
+				state.RoyalState.isRoyal = false
+			end
+			-- Reset housing
+			if state.HousingState and state.HousingState.status == "royal_palace" then
+				state.HousingState.status = age < 18 and "with_parents" or "renter"
+				state.HousingState.type = age < 18 and "family_home" or "apartment"
+			end
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- MAFIA CHAIN RECONCILIATION
+	-- Chain: wish/approach -> join -> rise ranks
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.in_mob and not state.MobState then
+		-- Ghost mob flag without MobState
+		warn("[EventReconciler] Ghost mafia flag: in_mob without MobState - initializing")
+		state.MobState = {
+			inMob = true,
+			rank = "Associate",
+			reputation = 10,
+			territory = 0,
+		}
+		fixes = fixes + 1
+	end
+	
+	if state.MobState and state.MobState.inMob and not flags.in_mob then
+		-- MobState exists but flag missing
+		flags.in_mob = true
+		flags.mafia_member = true
+		fixes = fixes + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- FAME CHAIN RECONCILIATION
+	-- Chain: wish/discovery -> career path -> rise stages
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.fame_career and not state.FameState then
+		-- Ghost fame career flag without FameState
+		warn("[EventReconciler] Ghost fame flag: fame_career without FameState - clearing")
+		flags.fame_career = nil
+		flags.is_famous = nil
+		fixes = fixes + 1
+	end
+	
+	if state.FameState and state.FameState.careerPath and not flags.fame_career then
+		-- FameState exists but flag missing
+		flags.fame_career = true
+		fixes = fixes + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PREGNANCY CHAIN RECONCILIATION
+	-- Can't be pregnant in prison or if too old
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.pregnant then
+		if state.InJail then
+			warn("[EventReconciler] Pregnant in prison - clearing")
+			flags.pregnant = nil
+			fixes = fixes + 1
+		end
+		if age >= 55 then
+			warn("[EventReconciler] Too old for pregnancy - clearing")
+			flags.pregnant = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- SCHOOL/EDUCATION CHAIN RECONCILIATION
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.in_college and age < 18 then
+		warn("[EventReconciler] In college under 18 - clearing")
+		flags.in_college = nil
+		flags.in_school = true
+		fixes = fixes + 1
+	end
+	
+	if flags.in_school and age >= 18 then
+		-- Should have graduated
+		if not flags.dropped_out then
+			flags.graduated_high_school = true
+		end
+		flags.in_school = nil
+		fixes = fixes + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- DEATH/LIFE CHAIN RECONCILIATION
+	-- Can't be alive and dead simultaneously
+	-- ═══════════════════════════════════════════════════════════════════════
+	if flags.dead or flags.is_dead then
+		if flags.is_alive then
+			flags.is_alive = nil
+			fixes = fixes + 1
+		end
+		-- Dead people can't be pregnant
+		if flags.pregnant then
+			flags.pregnant = nil
+			fixes = fixes + 1
+		end
+		-- Dead people can't be dating
+		if flags.dating or flags.has_partner then
+			flags.dating = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MILESTONE VALIDATOR
+-- Ensures milestones are properly marked based on actual achievements
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateMilestones(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local milestones = state.Milestones or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- "Became Royalty" milestone requires actual royalty
+	-- ═══════════════════════════════════════════════════════════════════════
+	if milestones["became_royalty"] and not flags.is_royalty and not flags.royal_birth then
+		warn("[MilestoneValidator] Ghost royalty milestone - clearing")
+		milestones["became_royalty"] = nil
+		fixes = fixes + 1
+	end
+	
+	-- Set milestone if missing but achieved
+	if (flags.is_royalty or flags.royal_birth) and not milestones["became_royalty"] then
+		milestones["became_royalty"] = { age = state.Age, year = os.date("%Y") }
+		fixes = fixes + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- "Joined Mafia" milestone requires actual mob membership
+	-- ═══════════════════════════════════════════════════════════════════════
+	if milestones["joined_mafia"] and not flags.in_mob then
+		warn("[MilestoneValidator] Ghost mafia milestone - clearing")
+		milestones["joined_mafia"] = nil
+		fixes = fixes + 1
+	end
+	
+	if flags.in_mob and not milestones["joined_mafia"] then
+		milestones["joined_mafia"] = { age = state.Age, year = os.date("%Y") }
+		fixes = fixes + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- "Became Famous" milestone requires actual fame
+	-- ═══════════════════════════════════════════════════════════════════════
+	if milestones["became_famous"] and not flags.is_famous and not flags.fame_career then
+		warn("[MilestoneValidator] Ghost fame milestone - clearing")
+		milestones["became_famous"] = nil
+		fixes = fixes + 1
+	end
+	
+	if (flags.is_famous or flags.fame_career) and not milestones["became_famous"] then
+		milestones["became_famous"] = { age = state.Age, year = os.date("%Y") }
+		fixes = fixes + 1
+	end
+	
+	state.Milestones = milestones
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- FULL INTEGRITY CHECK
+-- Runs ALL validators in proper order for complete state healing
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:fullIntegrityCheck(state)
+	if not state then return 0 end
+	
+	print("[FullIntegrityCheck] ═══════════════════════════════════════════════")
+	print("[FullIntegrityCheck] Starting comprehensive state healing...")
+	
+	local totalFixes = 0
+	
+	-- Phase 1: Basic consistency
+	totalFixes = totalFixes + self:validateStateConsistency(state)
+	
+	-- Phase 2: Premium flag validation
+	totalFixes = totalFixes + self:validatePremiumFlags(state)
+	
+	-- Phase 3: Event chain reconciliation
+	totalFixes = totalFixes + self:reconcileEventChains(state)
+	
+	-- Phase 4: Relationship cleanup
+	totalFixes = totalFixes + self:clearGhostRelationships(state)
+	
+	-- Phase 5: Housing and titles
+	totalFixes = totalFixes + self:syncHousingAndTitles(state)
+	
+	-- Phase 6: Occupation validation
+	totalFixes = totalFixes + self:enforceOneOccupation(state)
+	
+	-- Phase 7: Fame state validation
+	totalFixes = totalFixes + self:validateFameState(state)
+	
+	-- Phase 8: Royal marriage validation
+	totalFixes = totalFixes + self:validateRoyalMarriage(state)
+	
+	-- Phase 9: Asset cleanup
+	totalFixes = totalFixes + self:cleanDuplicateAssets(state)
+	
+	-- Phase 10: Child state validation
+	totalFixes = totalFixes + self:validateChildState(state)
+	
+	-- Phase 11: Milestone validation
+	totalFixes = totalFixes + self:validateMilestones(state)
+	
+	print(string.format("[FullIntegrityCheck] Complete. Total fixes: %d", totalFixes))
+	print("[FullIntegrityCheck] ═══════════════════════════════════════════════")
+	
+	return totalFixes
 end
 
 -- CRITICAL FIX #358: Developer Product purchase prompt
@@ -2553,6 +3939,77 @@ local ActivityCatalog = {
 		requiresFlag = "is_royalty",
 		requiresAge = 18,
 		royaltyEffect = { popularity = 10 },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: DATING ROYALTY ACTIVITIES
+	-- For players who are dating a royal but not yet royalty themselves
+	-- These are called from the "Dating Royal" tab in ActivitiesScreen
+	-- ═══════════════════════════════════════════════════════════════════════════
+	royal_date = {
+		stats = { Happiness = 8 },
+		feed = "went on a romantic date with your royal partner 💑",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		relationshipBonus = 5,
+	},
+	palace_visit = {
+		stats = { Happiness = 10, Looks = 5 },
+		feed = "visited the royal palace - what luxury! 🏰",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+	},
+	meet_royal_family = {
+		stats = { Happiness = 3 },
+		feed = "met the royal family... hope they like you! 👨‍👩‍👧‍👦",
+		cost = 0,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		relationshipBonus = 3,
+		risky = true, -- Can go poorly
+	},
+	royal_event = {
+		stats = { Happiness = 5 },
+		feed = "attended a glamorous royal event 🎭",
+		cost = 500,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		fameBonus = 5,
+	},
+	learn_etiquette = {
+		stats = { Smarts = 5, Looks = 3 },
+		feed = "learned proper royal etiquette and protocol 📖",
+		cost = 200,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+		setFlags = { royal_etiquette = true },
+	},
+	royal_shopping = {
+		stats = { Looks = 8, Happiness = 5 },
+		feed = "went on a royal shopping spree! Designer everything! 👗",
+		cost = 5000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 16,
+	},
+	romantic_getaway = {
+		stats = { Happiness = 12 },
+		feed = "took a romantic getaway with your royal partner ✈️",
+		cost = 10000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 18,
+		relationshipBonus = 8,
+	},
+	propose_marriage = {
+		stats = { Happiness = 20 },
+		feed = "proposed marriage to your royal partner! 💍",
+		cost = 50000,
+		requiresFlag = "dating_royalty",
+		requiresAge = 18,
+		blockedByFlag = "married",
+		isProposal = true, -- Special handler needed
+		setFlags = { proposed_to_royal = true },
 	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
@@ -5421,8 +6878,23 @@ function LifeBackend:serializeState(state)
 		end
 		
 		-- ROYALTY STATE
-		if state.RoyalState and state.RoyalState.isRoyal then
+		-- CRITICAL FIX: Sync RoyalState when either RoyalState.isRoyal OR is_royalty flag is set
+		-- This prevents the "dream fulfilled but nothing changed" bug
+		local isRoyal = (state.RoyalState and state.RoyalState.isRoyal) or 
+			(state.Flags and (state.Flags.is_royalty or state.Flags.royal_by_marriage))
+		
+		if isRoyal then
+			-- Ensure RoyalState exists with defaults
+			state.RoyalState = state.RoyalState or {}
+			state.RoyalState.isRoyal = true
+			state.RoyalState.title = state.RoyalState.title or (state.Gender == "Female" and "Princess" or "Prince")
+			state.RoyalState.popularity = state.RoyalState.popularity or 50
+			state.RoyalState.royalCountry = state.RoyalState.royalCountry or "Monaco"
 			serialized.RoyalState = state.RoyalState
+			
+			-- Also sync flags
+			serialized.Flags = serialized.Flags or {}
+			serialized.Flags.is_royalty = true
 		else
 			serialized.RoyalState = { isRoyal = false }
 		end
@@ -5539,6 +7011,23 @@ function LifeBackend:pushState(player, feedText, resultData)
 		state.Flags.in_prison = nil
 		state.Flags.incarcerated = nil
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: RUN STATE CONSISTENCY VALIDATOR
+	-- This catches and fixes any inconsistent states before syncing to client
+	-- Prevents: multiple paths, conflicting relationships, ghost flags, broke+rich
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:validateStateConsistency(state)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RECURSIVE VALIDATOR SYSTEM (RVS) - Deep structural repair
+	-- Runs comprehensive validation across all systems:
+	-- - Premium flag integrity (flags backed by actual events/state)
+	-- - Event chain completion (incomplete chains detected/resolved)
+	-- - Ghost entity cleanup (dead relatives, duplicate assets)
+	-- - Housing/title sync, occupation enforcement, fame/royalty validation
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:validateRecursiveState(state)
 	
 	state.lastFeed = feedText or state.lastFeed
 	self.remotes.SyncState:FireClient(player, self:serializeState(state), feedText, resultData)
@@ -7048,6 +8537,7 @@ function LifeBackend:applyLivingExpenses(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Reset years broke counter if player paid their expenses
+	-- Also clear struggling flag when they have money
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if currentMoney >= totalExpenses then
 		state.HousingState = state.HousingState or {}
@@ -7055,6 +8545,16 @@ function LifeBackend:applyLivingExpenses(state)
 		state.Flags = state.Flags or {}
 		state.Flags.eviction_warning = nil
 		state.Flags.eviction_imminent = nil
+		state.Flags.struggling_financially = nil -- CRITICAL FIX: Clear when not broke
+	end
+	
+	-- CRITICAL FIX: Also clear broke flags if player has substantial money
+	-- This handles cases like inheritance where player suddenly has money
+	if (state.Money or 0) >= 10000 then
+		state.Flags = state.Flags or {}
+		state.Flags.struggling_financially = nil
+		state.Flags.broke = nil
+		state.Flags.poor = nil
 	end
 end
 
@@ -10169,6 +11669,10 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				-- Accept multiple ways to be in the mob
 				hasRequiredFlag = state.Flags.mafia_member 
 					or (state.MobState and state.MobState.inMob)
+			elseif activity.requiresFlag == "dating_royalty" then
+				-- Accept multiple ways to be dating royalty
+				hasRequiredFlag = state.Flags.royal_romance 
+					or (state.Relationships and state.Relationships.partner and state.Relationships.partner.isRoyalty)
 			end
 		end
 		
@@ -10187,6 +11691,8 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				helpfulMessage = "This activity is only for the King or Queen."
 			elseif activity.requiresFlag == "in_mob" then
 				helpfulMessage = "This activity requires you to be in the mob."
+			elseif activity.requiresFlag == "dating_royalty" then
+				helpfulMessage = "You need to be dating a royal first!"
 			end
 			return { success = false, message = helpfulMessage }
 		end
@@ -10494,6 +12000,85 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- The client shows its own result popup via showResult() in ActivitiesScreen
 	-- State will sync on next age up naturally
 	-- self:pushState(player, resultMessage)  -- DISABLED - was closing ActivitiesScreen
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: DATING ROYALTY ACTIVITIES - Handle relationship and fame bonuses
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.relationshipBonus then
+		-- Improve relationship with royal partner
+		if state.Relationships and state.Relationships.partner then
+			state.Relationships.partner.relationship = math.min(100, 
+				(state.Relationships.partner.relationship or 50) + activity.relationshipBonus)
+		end
+	end
+	
+	if activity.fameBonus then
+		state.Fame = math.clamp((state.Fame or 0) + activity.fameBonus, 0, 100)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROYAL PROPOSAL - Become royalty through marriage!
+	-- This is the culmination of the dating royalty path
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isProposal then
+		-- Check if royal partner exists and wants to marry
+		local partner = state.Relationships and state.Relationships.partner
+		if partner and partner.isRoyalty then
+			local relationship = partner.relationship or 50
+			local successChance = 0.3 + (relationship / 200) -- 30% base + up to 50% from relationship
+			
+			if state.Flags.royal_etiquette then
+				successChance = successChance + 0.15 -- Bonus for learning etiquette
+			end
+			
+			if RANDOM:NextNumber() < successChance then
+				-- PROPOSAL ACCEPTED! Become royalty!
+				-- CRITICAL FIX: Clear any conflicting premium states first!
+				self:clearConflictingPremiumStates(state, "royalty")
+				
+				state.Flags.married = true
+				state.Flags.married_to_royalty = true
+				state.Flags.is_royalty = true
+				state.Flags.royal_by_marriage = true
+				state.Flags.dating_royalty = nil -- No longer just dating
+				state.Flags.royal_romance = nil
+				
+				-- Initialize RoyalState
+				state.RoyalState = state.RoyalState or {}
+				state.RoyalState.isRoyal = true
+				state.RoyalState.royalByMarriage = true
+				state.RoyalState.country = partner.royalCountry or "European Kingdom"
+				state.RoyalState.title = state.Gender == "Female" and "Princess" or "Prince"
+				state.RoyalState.popularity = 60
+				state.RoyalState.spouse = partner.name
+				
+				-- Update partner relationship
+				partner.type = "spouse"
+				partner.role = "Royal Spouse"
+				partner.relationship = 95
+				
+				-- Big money from royal wedding
+				self:addMoney(state, 500000)
+				
+				resultMessage = "💍👑 THEY SAID YES! You married " .. (partner.name or "your royal partner") .. " and are now ROYALTY! Your fairy tale dreams came true!"
+				
+				-- Add to year log
+				state.YearLog = state.YearLog or {}
+				table.insert(state.YearLog, {
+					type = "royal_wedding",
+					emoji = "👑",
+					text = "You married into royalty and became a " .. (state.RoyalState.title or "Royal") .. "!",
+				})
+			else
+				-- Proposal declined (but can try again later)
+				resultMessage = "💔 They said they need more time... The royal family has concerns. Keep building your relationship!"
+				state.Flags.proposed_to_royal = nil -- Allow trying again
+				self:applyStatChanges(state, { Happiness = -15 })
+			end
+		else
+			resultMessage = "💔 You're not dating anyone royal to propose to!"
+		end
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: RETURN ACTUAL STAT CHANGES TO CLIENT!

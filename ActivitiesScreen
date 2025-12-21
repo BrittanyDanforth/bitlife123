@@ -222,7 +222,8 @@ local Social = {
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 	-- NEW: Pick a Fight with combat minigame
 	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
-	{ id = "bar_fight", name = "Bar Fight", emoji = "🍺", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
+	-- CRITICAL FIX: Changed from "Bar Fight" to "Club Fight" for Roblox TOS compliance
+	{ id = "club_fight", name = "Club Fight", emoji = "🎉", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
 }
 
 -- CRITICAL FIX: Added minigames to entertainment activities!
@@ -438,6 +439,113 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	return self
 end
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- UI STATE HEALER
+-- Validates that UI state is consistent before rendering
+-- Prevents ghost tabs, invalid overlays, and state mismatches
+-- ════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:healUIState(state)
+	if not state then return end
+	
+	local flags = state.Flags or {}
+	local healed = 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PREMIUM TAB VALIDATION
+	-- Ensure premium tab flags have valid backing
+	-- ═══════════════════════════════════════════════════════════════════════
+	
+	-- Royal tab requires actual royal state
+	local isRoyal = flags.is_royalty or flags.royal_birth or
+		(state.RoyalState and state.RoyalState.isRoyal)
+	local isDatingRoyal = flags.dating_royalty or flags.royal_romance
+	
+	if not isRoyal and not isDatingRoyal then
+		-- Clear any ghost royal tab state
+		if self.currentTab == "royal" or self.currentTab == "dating_royal" then
+			log("[UIStateHealer] Ghost royal tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- Mafia tab requires actual mob membership
+	local isInMob = flags.in_mob or (state.MobState and state.MobState.inMob)
+	
+	if not isInMob then
+		if self.currentTab == "mafia" then
+			log("[UIStateHealer] Ghost mafia tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- Fame tab requires actual fame career
+	local hasFameCareer = flags.fame_career or (state.FameState and state.FameState.careerPath)
+	
+	if not hasFameCareer then
+		if self.currentTab == "fame" then
+			log("[UIStateHealer] Ghost fame tab - switching to mindbody")
+			self.currentTab = "mindbody"
+			healed = healed + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PRISON TAB VALIDATION
+	-- Prison tab requires being in jail
+	-- ═══════════════════════════════════════════════════════════════════════
+	local inJail = state.InJail or flags.in_prison or flags.incarcerated
+	
+	if not inJail and self.currentTab == "prison" then
+		log("[UIStateHealer] Not in jail but on prison tab - switching")
+		self.currentTab = "mindbody"
+		healed = healed + 1
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- PREMIUM PATH MUTEX - Only ONE premium path can be active
+	-- ═══════════════════════════════════════════════════════════════════════
+	local primaryWish = flags.primary_wish_type
+	
+	-- Validate current tab against primary wish
+	if primaryWish then
+		if primaryWish == "royalty" and (self.currentTab == "mafia" or self.currentTab == "fame") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (royalty) - fixing")
+			if isRoyal then
+				self.currentTab = "royal"
+			elseif isDatingRoyal then
+				self.currentTab = "dating_royal"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		elseif primaryWish == "mafia" and (self.currentTab == "royal" or self.currentTab == "dating_royal" or self.currentTab == "fame") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (mafia) - fixing")
+			if isInMob then
+				self.currentTab = "mafia"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		elseif primaryWish == "celebrity" and (self.currentTab == "royal" or self.currentTab == "dating_royal" or self.currentTab == "mafia") then
+			log("[UIStateHealer] Tab conflicts with primary_wish_type (celebrity) - fixing")
+			if hasFameCareer then
+				self.currentTab = "fame"
+			else
+				self.currentTab = "mindbody"
+			end
+			healed = healed + 1
+		end
+	end
+	
+	if healed > 0 then
+		log(string.format("[UIStateHealer] Healed %d UI state issues", healed))
+	end
+	
+	return healed
+end
+
 function ActivitiesScreen:updateState(newState)
 	log("Updating state...")
 
@@ -457,7 +565,13 @@ function ActivitiesScreen:updateState(newState)
 	end
 
 	if newState then 
-		self.playerState = newState 
+		self.playerState = newState
+		
+		-- ═══════════════════════════════════════════════════════════════════════
+		-- RUN UI STATE HEALER before any rendering
+		-- This catches ghost tabs, invalid premium paths, and state conflicts
+		-- ═══════════════════════════════════════════════════════════════════════
+		self:healUIState(newState) 
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #24: Detect new life and rebuild UI completely
@@ -938,27 +1052,59 @@ function ActivitiesScreen:rebuildTabs()
 		-- CRITICAL FIX #88/#89: PREMIUM ACTIVITY TABS
 		-- Add special tabs for premium gamepass features
 		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Premium tabs are STRICTLY MUTUALLY EXCLUSIVE
+		-- ONLY ONE premium tab can ever show, based on primary_wish_type
+		-- This prevents overlapping tabs (Fame, Royal, Mob appearing together)
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		local flags = self.playerState and self.playerState.Flags or {}
 		local royalState = self.playerState and self.playerState.RoyalState
 		local fameState = self.playerState and self.playerState.FameState
 		local mobState = self.playerState and self.playerState.MobState
+		local primaryWish = flags.primary_wish_type
 		
-		-- ROYAL TAB: For players who are royalty
+		-- Determine actual player states
 		local isRoyal = flags.is_royalty or flags.royal_birth or (royalState and royalState.isRoyal)
-		if isRoyal then
-			table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) }) -- Gold color
-		end
-		
-		-- FAME TAB: For players with a celebrity career
-		local hasFameCareer = flags.fame_career or (fameState and fameState.careerPath)
-		if hasFameCareer then
-			table.insert(tabs, { id = "fame", text = "⭐ Fame", color = Color3.fromRGB(255, 215, 0) }) -- Star gold
-		end
-		
-		-- MAFIA TAB: For players in the mob
+		local isDatingRoyalty = flags.dating_royalty or flags.royal_romance
 		local isInMob = flags.in_mob or (mobState and mobState.inMob)
-		if isInMob then
-			table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) }) -- Dark red
+		local hasFameCareer = flags.fame_career or (fameState and fameState.careerPath)
+		
+		-- STRICT MUTEX: Determine which SINGLE tab to show
+		-- Priority order: Use primary_wish_type FIRST, then fall back to state
+		local showRoyalTab = false
+		local showMafiaTab = false
+		local showFameTab = false
+		
+		if primaryWish == "royalty" then
+			-- Player chose royalty - ONLY show royal/dating_royal tab
+			showRoyalTab = isRoyal or isDatingRoyalty
+		elseif primaryWish == "mafia" then
+			-- Player chose mafia - ONLY show mafia tab
+			showMafiaTab = isInMob
+		elseif primaryWish == "celebrity" then
+			-- Player chose celebrity - ONLY show fame tab
+			showFameTab = hasFameCareer
+		else
+			-- No primary wish set - use actual state (only ONE)
+			if isRoyal or isDatingRoyalty then
+				showRoyalTab = true
+			elseif isInMob then
+				showMafiaTab = true
+			elseif hasFameCareer then
+				showFameTab = true
+			end
+		end
+		
+		-- Add the single premium tab (if any)
+		if showRoyalTab then
+			if isRoyal then
+				table.insert(tabs, { id = "royal", text = "👑 Royal", color = Color3.fromRGB(218, 165, 32) })
+			elseif isDatingRoyalty then
+				table.insert(tabs, { id = "dating_royal", text = "👑 Dating Royal", color = Color3.fromRGB(218, 165, 32) })
+			end
+		elseif showMafiaTab then
+			table.insert(tabs, { id = "mafia", text = "🔫 Mafia", color = Color3.fromRGB(88, 28, 28) })
+		elseif showFameTab then
+			table.insert(tabs, { id = "fame", text = "⭐ Fame", color = Color3.fromRGB(255, 215, 0) })
 		end
 	end
 
@@ -1085,6 +1231,7 @@ function ActivitiesScreen:switchTab(tabId)
 	-- CRITICAL FIX #88/#89/#90: PREMIUM ACTIVITY TABS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif tabId == "royal" then self:populateRoyal()
+	elseif tabId == "dating_royal" then self:populateDatingRoyal()
 	elseif tabId == "fame" then self:populateFame()
 	elseif tabId == "mafia" then self:populateMafia()
 	end
@@ -4854,6 +5001,12 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 end
 
 -- Activities that should show full BitLife-style event cards
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #BORING-1: Added Royal and Mafia activities to this list
+-- User complaint: "activies in royalty tab inside activityscreen it just pops up saying u did bla bla"
+-- User complaint: "ensure mafia and royalty tab works greatly and isnt boring"
+-- Now these activities will show proper event cards with choices like regular activities!
+-- ═══════════════════════════════════════════════════════════════════════════════
 local FULL_EVENT_ACTIVITIES = {
 	gym = true,
 	meditate = true,
@@ -4875,6 +5028,30 @@ local FULL_EVENT_ACTIVITIES = {
 	arcade = true,
 	karaoke = true,
 	martial_arts = true,
+	-- CRITICAL FIX: ROYAL ACTIVITIES (no longer boring!)
+	public_appearance = true,
+	charity_visit = true,
+	state_dinner = true,
+	open_parliament = true,
+	knight_ceremony = true,
+	royal_wedding = true,
+	military_review = true,
+	charity_gala = true,
+	royal_date = true,
+	meet_the_family = true,
+	royal_tour = true,
+	proposal_planning = true,
+	-- CRITICAL FIX: MAFIA ACTIVITIES (no longer boring!)
+	collect_debts = true,
+	run_numbers = true,
+	do_hits = true,
+	smuggle_goods = true,
+	launder_money = true,
+	intimidate = true,
+	bribe_official = true,
+	expand_territory = true,
+	recruit_soldiers = true,
+	mob_meeting = true,
 	pick_fight = true,
 }
 
@@ -4891,7 +5068,7 @@ local CombatEventTemplates = {
 			},
 			question = "Who do you confront?",
 			choices = {
-				{ text = "🤼 Someone at a bar", feed = "You started a bar fight!", triggersCombat = true, context = "bar_fight" },
+				{ text = "🤼 Someone at the club", feed = "You started a fight at the club!", triggersCombat = true, context = "club_fight" },
 				{ text = "😤 A stranger on the street", feed = "You picked a fight with a random person!", triggersCombat = true, context = "street_random" },
 				{ text = "🙅 Actually, never mind", feed = "You thought better of it." },
 			},
@@ -4926,7 +5103,7 @@ function ActivitiesScreen:doActivity(item, bonus)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- COMBAT ACTIVITIES: Trigger the full combat minigame!
-	-- Activities like "Pick a Fight" and "Bar Fight" use the interactive combat system
+	-- Activities like "Pick a Fight" and "Club Fight" use the interactive combat system
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if item.isCombat then
 		log("COMBAT ACTIVITY DETECTED! Launching combat minigame for:", item.id)
@@ -4939,8 +5116,8 @@ function ActivitiesScreen:doActivity(item, bonus)
 		
 		-- Determine combat context based on activity
 		local combatContext = "street"
-		if item.id == "bar_fight" then
-			combatContext = "bar"
+		if item.id == "club_fight" then
+			combatContext = "club"
 		elseif item.id == "martial_arts" then
 			combatContext = "school"
 		elseif item.id == "pick_fight" then
@@ -5471,6 +5648,145 @@ function ActivitiesScreen:populateRoyal()
 		if not duty.monarchOnly or isMonarch then
 			self:createActivityCard(section, duty, i, Color3.fromRGB(218, 165, 32), Color3.fromRGB(255, 248, 220))
 		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: DATING ROYALTY ACTIVITIES TAB
+-- Activities for players dating a royal (before becoming royalty themselves)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:populateDatingRoyal()
+	self:updateInfoBar()
+	
+	local flags = self.playerState and self.playerState.Flags or {}
+	local relationships = self.playerState and self.playerState.Relationships or {}
+	local partner = relationships.partner or {}
+	local partnerName = partner.name or "Royal Partner"
+	local royalCountry = partner.royalCountry or "European Kingdom"
+	
+	-- Dating Royal status header
+	local headerCard = Instance.new("Frame")
+	headerCard.Size = UDim2.new(1, 0, 0, 110)
+	headerCard.BackgroundColor3 = Color3.fromRGB(218, 165, 32) -- Gold
+	headerCard.LayoutOrder = 0
+	headerCard.ZIndex = 82
+	headerCard.Parent = self.contentScroll
+	UI.corner(headerCard, 18)
+	
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, 55, 0, 55)
+	iconFrame.Position = UDim2.new(0, 16, 0.5, -27.5)
+	iconFrame.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+	iconFrame.ZIndex = 83
+	iconFrame.Parent = headerCard
+	UI.corner(iconFrame, 12)
+	
+	local headerIcon = Instance.new("TextLabel")
+	headerIcon.Size = UDim2.fromScale(1, 1)
+	headerIcon.BackgroundTransparency = 1
+	headerIcon.Font = F.Body or Enum.Font.Gotham
+	headerIcon.TextSize = 32
+	headerIcon.Text = "💕"
+	headerIcon.ZIndex = 84
+	headerIcon.Parent = iconFrame
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.new(1, -85, 0, 26)
+	headerText.Position = UDim2.new(0, 80, 0, 14)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Title or Enum.Font.GothamBold
+	headerText.TextSize = 16
+	headerText.TextColor3 = C.White
+	headerText.TextXAlignment = Enum.TextXAlignment.Left
+	headerText.Text = "Dating " .. partnerName
+	headerText.ZIndex = 83
+	headerText.Parent = headerCard
+	
+	local statusBadge = Instance.new("Frame")
+	statusBadge.Size = UDim2.new(0, 160, 0, 26)
+	statusBadge.Position = UDim2.new(0, 80, 0, 44)
+	statusBadge.BackgroundColor3 = Color3.fromRGB(255, 255, 200)
+	statusBadge.ZIndex = 83
+	statusBadge.Parent = headerCard
+	UI.pill(statusBadge)
+	
+	local statusText = Instance.new("TextLabel")
+	statusText.Size = UDim2.fromScale(1, 1)
+	statusText.BackgroundTransparency = 1
+	statusText.Font = F.Medium or Enum.Font.GothamMedium
+	statusText.TextSize = 11
+	statusText.TextColor3 = Color3.fromRGB(139, 69, 19)
+	statusText.Text = "👑 Royal Romance in Progress!"
+	statusText.ZIndex = 84
+	statusText.Parent = statusBadge
+	
+	local tipText = Instance.new("TextLabel")
+	tipText.Size = UDim2.new(1, -85, 0, 20)
+	tipText.Position = UDim2.new(0, 80, 0, 76)
+	tipText.BackgroundTransparency = 1
+	tipText.Font = F.Body or Enum.Font.Gotham
+	tipText.TextSize = 11
+	tipText.TextColor3 = Color3.fromRGB(255, 250, 220)
+	tipText.TextXAlignment = Enum.TextXAlignment.Left
+	tipText.Text = "💍 A royal proposal may be coming..."
+	tipText.ZIndex = 83
+	tipText.Parent = headerCard
+	
+	-- Dating Royal activities section
+	local DatingRoyalActivities = {
+		{ id = "royal_date", name = "Go on Royal Date", emoji = "💑", effect = "+8 Happiness +5 Relationship", cost = 0, minAge = 16 },
+		{ id = "palace_visit", name = "Visit Their Palace", emoji = "🏰", effect = "+10 Happiness +5 Looks", cost = 0, minAge = 16 },
+		{ id = "meet_royal_family", name = "Meet the Royal Family", emoji = "👨‍👩‍👧‍👦", effect = "+3 Relationship (risky!)", cost = 0, minAge = 16 },
+		{ id = "royal_event", name = "Attend Royal Event", emoji = "🎭", effect = "+5 Fame +5 Happiness", cost = 500, minAge = 16 },
+		{ id = "learn_etiquette", name = "Learn Royal Etiquette", emoji = "📖", effect = "+5 Smarts +3 Looks", cost = 200, minAge = 16 },
+		{ id = "royal_shopping", name = "Royal Shopping Spree", emoji = "👗", effect = "+8 Looks +5 Happiness", cost = 5000, minAge = 16 },
+		{ id = "romantic_getaway", name = "Romantic Getaway", emoji = "✈️", effect = "+12 Happiness +8 Relationship", cost = 10000, minAge = 18 },
+		{ id = "propose_marriage", name = "Propose Marriage", emoji = "💍", effect = "Could become royalty!", cost = 50000, minAge = 18 },
+	}
+	
+	local section = Instance.new("Frame")
+	section.Name = "DatingRoyalSection"
+	section.Size = UDim2.new(1, 0, 0, 0)
+	section.AutomaticSize = Enum.AutomaticSize.Y
+	section.BackgroundColor3 = C.White
+	section.LayoutOrder = 1
+	section.ZIndex = 82
+	section.Parent = self.contentScroll
+	UI.corner(section, 18)
+	UI.stroke(section, 1, 0.88, C.Gray200)
+	UI.pad(section, 14, 14, 14, 16)
+	
+	local sectionLayout = Instance.new("UIListLayout")
+	sectionLayout.Padding = UDim.new(0, 10)
+	sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sectionLayout.Parent = section
+	
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 36)
+	header.BackgroundTransparency = 1
+	header.LayoutOrder = 0
+	header.ZIndex = 83
+	header.Parent = section
+	
+	local badge = Instance.new("Frame")
+	badge.Size = UDim2.new(0, 160, 0, 32)
+	badge.BackgroundColor3 = Color3.fromRGB(218, 165, 32)
+	badge.ZIndex = 84
+	badge.Parent = header
+	UI.pill(badge)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Button or Enum.Font.GothamBold
+	badgeLabel.TextSize = 14
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "💕 Royal Romance"
+	badgeLabel.ZIndex = 85
+	badgeLabel.Parent = badge
+	
+	for i, activity in ipairs(DatingRoyalActivities) do
+		self:createActivityCard(section, activity, i, Color3.fromRGB(218, 165, 32), Color3.fromRGB(255, 248, 220))
 	end
 end
 

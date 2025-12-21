@@ -547,12 +547,16 @@ PremiumIntegratedEvents.events = {
 		text = "You're at a major crossroads in life. Everything could change based on your next move.",
 		question = "Which path do you choose?",
 		minAge = 25, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 5,
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 15, -- CRITICAL FIX: Increased from 5 to prevent spam
 		oneTime = true,
+		maxOccurrences = 1, -- CRITICAL FIX: Ensure only once per life
 		stage = STAGE,
 		category = "milestone",
 		tags = { "decision", "life_change", "important" },
+		
+		-- CRITICAL FIX: Block if already shown premium opportunities or chose a path
+		blockedByFlags = { premium_opportunity_shown = true, is_royalty = true, in_mob = true, is_famous = true },
 		
 		choices = {
 			{
@@ -1635,51 +1639,119 @@ PremiumIntegratedEvents.events = {
 		id = "premium_dream_big",
 		title = "Dream Big",
 		emoji = "✨",
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #DREAMBIG-1: Added textVariants to prevent "always saying same thing"
+		-- User complaint: "its spamming that dream big card every time i hit age 9"
+		-- CRITICAL FIX #DREAMBIG-2: Changed minAge from 8 to 10 for better timing
+		-- CRITICAL FIX #DREAMBIG-3: ALL choices now set dream_big_complete flag to GUARANTEE once-per-life
+		-- CRITICAL FIX #DREAMBIG-4: Reduced baseChance from 0.85 to 0.65
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		textVariants = {
+			"You're lying on your bed, staring at the ceiling, thinking about your future. What will you become?",
+			"While looking at the clouds, you imagine what your life could be like when you grow up.",
+			"Your teacher asks everyone to write about their dreams. You start to really think about it...",
+			"A career day at school has you thinking about all the possibilities in life.",
+			"You just watched a movie that made you imagine an exciting future. What path calls to you?",
+			"Your {parent.role} asks what you want to be when you grow up. It's a good question...",
+			"While playing with friends, you all talk about your dreams for the future.",
+			"A famous person came to your school! It got you thinking about what you could achieve.",
+		},
+		questionVariants = {
+			"What do you dream about?",
+			"What future do you imagine?",
+			"What kind of life do you want?",
+			"Which dream feels most real to you?",
+		},
 		text = "You're daydreaming about what you want to be when you grow up. The possibilities seem endless!",
 		question = "What do you dream about?",
-		minAge = 8, maxAge = 14,
-		baseChance = 0.85,
-		cooldown = 5,
+		minAge = 10, maxAge = 15,  -- CHANGED: Was 8-14, now 10-15 for better story timing
+		baseChance = 0.65,         -- CHANGED: Was 0.85, reduced to prevent spam
+		cooldown = 99,             -- CHANGED: Was 5, now 99 to effectively make it once-per-life
 		oneTime = true,
 		stage = "childhood",
 		category = "dream",
 		tags = { "dream", "aspiration", "early" },
 		
+		-- CRITICAL FIX: Block if player already saw this event OR made a premium wish
+		blockedByFlags = { dream_big_complete = true, primary_wish_type = true },
+		
+		-- CRITICAL FIX: This onResolve runs BEFORE choices, sets the blocking flag no matter what
+		onEventStart = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.dream_big_complete = true  -- Flag that this event was shown
+		end,
+		
 		choices = {
 			{
-				text = "Being rich and famous",
+				text = "💰 Being rich and famous",
 				effects = { Happiness = 5 },
-				setFlags = { dreams_of_fame = true },
+				setFlags = { dreams_of_fame = true, dream_big_complete = true },
 				feedText = "You dream of mansions, limos, and millions of adoring fans!",
 			},
 			{
-				text = "Helping people",
+				text = "❤️ Helping people",
 				effects = { Happiness = 5, Smarts = 2 },
-				setFlags = { dreams_of_helping = true },
+				setFlags = { dreams_of_helping = true, dream_big_complete = true },
 				feedText = "You want to make a difference in the world!",
 			},
 			{
-				text = "Going on adventures",
+				text = "🌍 Going on adventures",
 				effects = { Happiness = 8 },
-				setFlags = { dreams_of_adventure = true },
+				setFlags = { dreams_of_adventure = true, dream_big_complete = true },
 				feedText = "The world is your oyster! Adventure awaits!",
 			},
+			{
+				text = "🔬 Becoming a genius scientist",
+				effects = { Happiness = 5, Smarts = 5 },
+				setFlags = { dreams_of_science = true, dream_big_complete = true },
+				feedText = "You dream of laboratories, discoveries, and Nobel Prizes!",
+			},
+			{
+				text = "🏆 Being a sports champion",
+				effects = { Happiness = 5, Health = 3 },
+				setFlags = { dreams_of_sports = true, dream_big_complete = true },
+				feedText = "You imagine gold medals, roaring crowds, and victory!",
+			},
 			-- GAMEPASS OPTIONS
+			-- CRITICAL FIX: Premium choices set primary_wish_type AND dream_big_complete
 			{
 				text = "⭐ [Celebrity] Being a famous superstar!",
 				effects = { Happiness = 15, Fame = 5 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { star_dreamer = true, fame_destiny = true },
 				feedText = "⭐ You're destined for STARDOM! The spotlight awaits!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.star_dreamer = true
+					state.Flags.fame_destiny = true
+					state.Flags.fame_wish = true
+					state.Flags.primary_wish_type = "celebrity"
+					state.Flags.dream_big_complete = true
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] Running the underground...",
 				effects = { Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { mob_fascination = true },
 				feedText = "🔫 You're fascinated by crime movies and gangster stories...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.mob_fascination = true
+					state.Flags.power_wish = true
+					state.Flags.primary_wish_type = "mafia"
+					state.Flags.dream_big_complete = true
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] Living like a king or queen!",
@@ -1687,6 +1759,18 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
 				feedText = "👑 You imagine palaces, crowns, and royal balls!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.royal_fantasies = true
+					state.Flags.palace_wish = true
+					state.Flags.primary_wish_type = "royalty"
+					state.Flags.dream_big_complete = true
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1694,34 +1778,70 @@ PremiumIntegratedEvents.events = {
 		id = "premium_turning_point",
 		title = "Turning Point",
 		emoji = "🛤️",
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #TURNPOINT-1: Added textVariants for variety
+		-- CRITICAL FIX #TURNPOINT-2: ALL choices set turning_point_complete flag
+		-- CRITICAL FIX #TURNPOINT-3: Block if dream_big already set a premium path
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		textVariants = {
+			"You feel like you're at a turning point in your young life. Different paths are opening up before you.",
+			"High school is almost over. The real world is calling, and you have decisions to make.",
+			"You wake up one day realizing you're not a kid anymore. What kind of person will you become?",
+			"Your friends are all making plans for the future. It's time to think about yours.",
+			"Senior year is a strange time. You're excited but scared about what comes next.",
+			"Looking at college brochures, job listings, and life ahead, you feel the weight of choice.",
+			"Everyone keeps asking what your plans are. Time to really think about it.",
+			"As your teen years wind down, you sense that the path you choose now matters.",
+		},
+		questionVariants = {
+			"Which direction calls to you?",
+			"What path will you take?",
+			"How will you shape your future?",
+			"What's your next move?",
+		},
 		text = "You feel like you're at a turning point in your young life. Different paths are opening up before you.",
 		question = "Which direction calls to you?",
 		minAge = 16, maxAge = 19,
-		baseChance = 0.8,
-		cooldown = 5,
+		baseChance = 0.60,  -- CHANGED: Was 0.8, reduced
+		cooldown = 99,      -- CHANGED: Was 5, effectively once-per-life
 		oneTime = true,
 		stage = "teen",
 		category = "milestone",
 		tags = { "decision", "youth", "turning_point" },
 		
+		-- CRITICAL FIX: Block if already completed
+		blockedByFlags = { turning_point_complete = true },
+		
 		choices = {
 			{
-				text = "Focus on school and career",
+				text = "📚 Focus on school and career",
 				effects = { Smarts = 5, Happiness = 3 },
-				setFlags = { studious_teen = true },
+				setFlags = { studious_teen = true, turning_point_complete = true },
 				feedText = "Education is the key! You buckle down and study hard.",
 			},
 			{
-				text = "Live in the moment - enjoy being young!",
+				text = "🎉 Live in the moment - enjoy being young!",
 				effects = { Happiness = 10, Health = 3 },
-				setFlags = { enjoying_youth = true },
+				setFlags = { enjoying_youth = true, turning_point_complete = true },
 				feedText = "YOLO! These are the best years of your life!",
 			},
 			{
-				text = "Start working and save money",
+				text = "💵 Start working and save money",
 				effects = { Money = 1500 },
-				setFlags = { young_earner = true },
+				setFlags = { young_earner = true, turning_point_complete = true },
 				feedText = "You get a part-time job. First paycheck feels AMAZING!",
+			},
+			{
+				text = "💪 Work on self-improvement",
+				effects = { Health = 5, Looks = 3, Smarts = 2 },
+				setFlags = { self_improver = true, turning_point_complete = true },
+				feedText = "You hit the gym, read more books, and work on becoming your best self!",
+			},
+			{
+				text = "🎨 Pursue your creative passions",
+				effects = { Happiness = 8, Fame = 2 },
+				setFlags = { creative_teen = true, turning_point_complete = true },
+				feedText = "Art, music, writing - you dedicate yourself to your craft!",
 			},
 			-- GAMEPASS OPTIONS
 			{
@@ -1729,19 +1849,35 @@ PremiumIntegratedEvents.events = {
 				effects = { Fame = 10, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { young_star = true, fame_path = true },
+				setFlags = { young_star = true, fame_path = true, turning_point_complete = true },
 				feedText = "⭐ You start building your personal brand. The fame journey begins!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.primary_wish_type = state.Flags.primary_wish_type or "celebrity"
+					state.Flags.turning_point_complete = true
+				end,
 			},
 			{
 				text = "🔫 [Mafia] Seek out the connected people...",
 				effects = { Money = 5000, Happiness = 5 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { early_mob_contact = true },
+				setFlags = { early_mob_contact = true, turning_point_complete = true },
 				feedText = "🔫 You make some... interesting connections. Easy money!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.primary_wish_type = state.Flags.primary_wish_type or "mafia"
+					state.Flags.turning_point_complete = true
+				end,
 			},
 		},
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Premium opportunity events now track when shown to prevent spam
+	-- Also reduced base chance and increased cooldown significantly
+	-- CRITICAL FIX #2: This event should NOT show if player already made a childhood wish
+	-- The childhood wish events are the proper way to enter premium paths
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "premium_special_opportunity",
 		title = "Special Opportunity",
@@ -1749,18 +1885,32 @@ PremiumIntegratedEvents.events = {
 		text = "An unusual opportunity has presented itself. This could change everything!",
 		question = "Do you take the special path?",
 		minAge = 20, maxAge = 28,
-		baseChance = 0.7,
-		cooldown = 8,
+		baseChance = 0.25, -- CRITICAL FIX: Further reduced to prevent spam
+		cooldown = 30, -- CRITICAL FIX: Further increased
 		oneTime = true,
+		maxOccurrences = 1, -- CRITICAL FIX: Ensure it only happens once per life
 		stage = "adult",
 		category = "opportunity",
 		tags = { "opportunity", "special", "life_changing" },
+		
+		-- CRITICAL FIX: Block if player already chose ANY premium path via childhood wish
+		-- Also block if they're already in a premium state
+		blockedByFlags = { 
+			is_royalty = true, 
+			in_mob = true, 
+			is_famous = true, 
+			celebrity = true, 
+			premium_opportunity_shown = true,
+			primary_wish_type = true, -- CRITICAL: Block if ANY childhood wish was made!
+			dating_royalty = true,
+			fame_career = true,
+		},
 		
 		choices = {
 			{
 				text = "Play it safe - stick to the normal path",
 				effects = { Happiness = 3 },
-				setFlags = { played_safe = true },
+				setFlags = { played_safe = true, premium_opportunity_shown = true },
 				feedText = "Sometimes the safe choice is the smart choice.",
 			},
 			{
@@ -1768,6 +1918,8 @@ PremiumIntegratedEvents.events = {
 				effects = {},
 				feedText = "Rolling the dice on opportunity...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.premium_opportunity_shown = true
 					local roll = math.random()
 					if roll < 0.5 then
 						state.Money = (state.Money or 0) + math.random(5000, 20000)
@@ -1779,22 +1931,42 @@ PremiumIntegratedEvents.events = {
 					end
 				end,
 			},
-			-- ALL GAMEPASS OPTIONS IN ONE EVENT
+			-- PREMIUM OPTIONS - Only for players who DIDN'T make a childhood wish
+			-- These set primary_wish_type to ensure no conflicts
 			{
 				text = "⭐ [Celebrity] The entertainment industry beckons!",
 				effects = { Fame = 25, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { entertainment_career = true },
 				feedText = "⭐ You've been discovered! Hollywood here you come!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.entertainment_career = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_celebrity_path = true
+					state.Flags.primary_wish_type = "celebrity" -- CRITICAL: Set to prevent conflicts
+				end,
 			},
 			{
 				text = "🔫 [Mafia] Join the family business...",
 				effects = { Money = 25000, Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { joined_mob = true },
 				feedText = "🔫 You're in! Welcome to the family. Now the REAL money starts rolling in!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.in_mob = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_mafia_path = true
+					state.Flags.primary_wish_type = "mafia" -- CRITICAL: Set to prevent conflicts
+					-- Initialize mob state
+					state.MobState = state.MobState or {}
+					state.MobState.inMob = true
+					state.MobState.familyName = "La Famiglia"
+					state.MobState.rankLevel = 1
+					state.MobState.rankName = "Associate"
+					state.MobState.respect = 10
+				end,
 			},
 			{
 				text = "👑 [Royalty] Discover your royal lineage!",
@@ -1803,10 +1975,12 @@ PremiumIntegratedEvents.events = {
 				gamepassEmoji = "👑",
 				feedText = "👑 Turns out you have royal blood! A distant connection to nobility!",
 				onResolve = function(state)
-					-- Only hint at royalty, doesn't actually make them royal
 					state.Flags = state.Flags or {}
 					state.Flags.royal_bloodline = true
 					state.Flags.noble_ancestry = true
+					state.Flags.premium_opportunity_shown = true
+					state.Flags.chose_royalty_path = true
+					state.Flags.primary_wish_type = "royalty" -- CRITICAL: Set to prevent conflicts
 				end,
 			},
 			{
@@ -1814,6 +1988,7 @@ PremiumIntegratedEvents.events = {
 				effects = { Money = 50000, Happiness = 20, Health = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
+				setFlags = { premium_opportunity_shown = true },
 				feedText = "⚡ God Mode activated! You seized the opportunity with supernatural force!",
 			},
 		},
@@ -1837,6 +2012,9 @@ PremiumIntegratedEvents.events = {
 		category = "dream",
 		priority = "high",
 		tags = { "career_day", "dream", "early", "engaging" },
+		
+		-- CRITICAL FIX: Block if player already made a premium wish
+		blockedByFlags = { primary_wish_type = true },
 		
 		choices = {
 			{
@@ -1864,29 +2042,61 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎨 You draw your dream life - it's colorful and full of possibility!",
 			},
 			-- PREMIUM TEASERS (Show what's possible with gamepasses!)
+			-- CRITICAL FIX: Premium choices now set primary_wish_type to prevent conflicts
 			{
 				text = "⭐ [Celebrity] A famous movie star!",
 				effects = { Happiness = 12, Fame = 8, Looks = 2 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { star_dreams = true, performer = true },
 				feedText = "⭐ 'And the award goes to... YOU!' You practice your acceptance speech while everyone laughs and claps!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flags
+					state.Flags.star_dreams = true
+					state.Flags.performer = true
+					state.Flags.primary_wish_type = "celebrity"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] A mysterious powerful boss...",
 				effects = { Happiness = 10, Smarts = 3 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { fascinated_by_power = true },
 				feedText = "🔫 You've been watching too many movies... but the idea of being powerful is exciting!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.fascinated_by_power = true
+					state.Flags.primary_wish_type = "mafia"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] A real-life king or queen!",
 				effects = { Happiness = 12, Looks = 3 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
-				setFlags = { royal_fantasies = true },
 				feedText = "👑 You make a paper crown and declare yourself ruler of the playground! Long live the king/queen!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.royal_fantasies = true
+					state.Flags.primary_wish_type = "royalty"
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1904,6 +2114,9 @@ PremiumIntegratedEvents.events = {
 		category = "wish",
 		priority = "high",
 		tags = { "birthday", "wish", "early", "engaging" },
+		
+		-- CRITICAL FIX: Block if player already made a premium wish
+		blockedByFlags = { primary_wish_type = true },
 		
 		choices = {
 			{
@@ -1931,29 +2144,60 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
 			},
 			-- PREMIUM OPTIONS
+			-- CRITICAL FIX: Premium wishes now set primary_wish_type to prevent conflicts
 			{
 				text = "⭐ [Celebrity] To be famous!",
 				effects = { Fame = 15, Happiness = 12 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
-				setFlags = { fame_wish = true },
 				feedText = "⭐ 'I wanna be FAMOUS!' Your parents laugh, but maybe dreams do come true...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.fame_wish = true
+					state.Flags.primary_wish_type = "celebrity"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+				end,
 			},
 			{
 				text = "🔫 [Mafia] For unlimited power!",
 				effects = { Happiness = 10, Smarts = 4 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
-				setFlags = { power_wish = true },
 				feedText = "🔫 An... interesting wish for a kid. You've been watching those crime shows with dad!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.power_wish = true
+					state.Flags.primary_wish_type = "mafia"
+					-- Clear conflicting wishes
+					state.Flags.palace_wish = nil
+					state.Flags.royal_fantasies = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 			{
 				text = "👑 [Royalty] To live in a palace!",
 				effects = { Happiness = 12, Looks = 4 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
-				setFlags = { palace_wish = true },
 				feedText = "👑 Castles, crowns, and royal balls! Every kid's fantasy! Maybe someday...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- Set primary wish type and specific flag
+					state.Flags.palace_wish = true
+					state.Flags.primary_wish_type = "royalty"
+					-- Clear conflicting wishes
+					state.Flags.power_wish = nil
+					state.Flags.fascinated_by_power = nil
+					state.Flags.fame_wish = nil
+					state.Flags.star_dreams = nil
+				end,
 			},
 		},
 	},
@@ -1981,16 +2225,56 @@ PremiumIntegratedEvents.events = {
 		priority = "high",
 		tags = { "royalty", "romance", "wish_fulfillment", "fairy_tale" },
 
-		-- CRITICAL: Only triggers for players who made the palace wish!
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { married = true, dating_royalty = true, is_royalty = true },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #MUTEX-1: Strict premium path mutex enforcement
+		-- User complaint: "wished for mafia stuff royalty popped up"
+		-- This event MUST ONLY trigger for players who chose ROYALTY path specifically
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		blockedByFlags = { 
+			married = true, 
+			dating_royalty = true, 
+			is_royalty = true,
+			in_mob = true,
+			mafia_member = true,
+			is_famous = true,
+			fame_career = true,
+			mob_fascination = true,     -- CRITICAL: Block if chose mafia path
+			power_wish = true,          -- CRITICAL: Block if chose mafia power wish
+			star_dreamer = true,        -- CRITICAL: Block if chose celebrity path
+			fame_destiny = true,        -- CRITICAL: Block if chose fame path
+		},
+		-- CRITICAL FIX: Must have ROYALTY wish flags
+		requiresFlags = { palace_wish = true },
+		requiresAnyFlags = { palace_wish = true, royal_fantasies = true },
 		requiresGamepass = "ROYALTY",
 
 		eligibility = function(state)
-			-- Check for EITHER palace_wish OR royal_fantasies flag
+			-- CRITICAL FIX #MUTEX-2: STRICT check - primary_wish_type MUST be "royalty" or nil
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			
+			-- If player has ANY primary wish type set and it's NOT royalty, BLOCK
+			if primaryWish and primaryWish ~= "royalty" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
+			-- If player has mafia OR celebrity wish flags, BLOCK (double-check)
+			if state.Flags then
+				if state.Flags.mob_fascination or state.Flags.power_wish or state.Flags.fascinated_by_power then
+					return false, "Player has mafia wish flags - cannot get royalty encounter"
+				end
+				if state.Flags.star_dreamer or state.Flags.fame_destiny or state.Flags.fame_wish then
+					return false, "Player has celebrity wish flags - cannot get royalty encounter"
+				end
+			end
+			
+			-- Check for EITHER palace_wish OR royal_fantasies flag (required!)
 			local hasWish = state.Flags and (state.Flags.palace_wish or state.Flags.royal_fantasies)
+			if not hasWish then
+				return false, "Player has no royalty wish flags"
+			end
+			
 			local looks = (state.Stats and state.Stats.Looks) or 50
-			return hasWish and looks >= 40, "Need palace wish or royal fantasies and decent looks"
+			return looks >= 40, "Need decent looks (40+) for royal romance"
 		end,
 
 		choices = {
@@ -1999,13 +2283,31 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 20 },
 				feedText = "Taking your shot at royalty...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local roll = math.random()
 					-- Very high success chance since this is a wish-fulfillment event!
 					local successChance = 0.65 + (looks / 200)
 
 					if roll < successChance then
-						state:ModifyStat("Happiness", 25)
+						modifyStat("Happiness", 25)
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating_royalty = true
@@ -2039,12 +2341,12 @@ PremiumIntegratedEvents.events = {
 							royalTitle = title,
 						}
 
-						state:AddFeed("👑✨ YOUR CHILDHOOD WISH CAME TRUE! You're dating " .. title .. " " .. name .. " of " .. country .. "! This is a FAIRY TALE come to life!")
+						addFeed("👑✨ YOUR CHILDHOOD WISH CAME TRUE! You're dating " .. title .. " " .. name .. " of " .. country .. "! This is a FAIRY TALE come to life!")
 					else
-						state:ModifyStat("Happiness", 8)
+						modifyStat("Happiness", 8)
 						state.Flags = state.Flags or {}
 						state.Flags.met_royalty = true
-						state:AddFeed("👑 They were charming but had to leave. You exchanged numbers though - maybe next time!")
+						addFeed("👑 They were charming but had to leave. You exchanged numbers though - maybe next time!")
 					end
 				end,
 			},
@@ -2059,20 +2361,66 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 15 },
 				feedText = "Playing it smooth...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local roll = math.random()
 					if roll < 0.5 then
-						state:ModifyStat("Happiness", 20)
+						modifyStat("Happiness", 20)
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating_royalty = true
 						state.Flags.royal_romance = true
 						state.Flags.wish_came_true = true
 						state.Money = (state.Money or 0) + 75000
-						state:AddFeed("👑💕 Your 'accident' worked! They found it adorable. You're now dating royalty! Childhood dreams do come true!")
+						
+						-- Also create a partner relationship for this path
+						local partnerGender = state.Gender == "Female" and "male" or "female"
+						local title = partnerGender == "male" and "Prince" or "Princess"
+						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe"}
+						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte"}
+						local royalCountries = {"Monaco", "Sweden", "Denmark", "Netherlands", "Belgium", "Luxembourg"}
+						local names = partnerGender == "male" and royalNames_male or royalNames_female
+						local country = royalCountries[math.random(1, #royalCountries)]
+						local name = names[math.random(1, #names)]
+						
+						state.Relationships = state.Relationships or {}
+						state.Relationships.partner = {
+							id = "royal_partner_bump",
+							name = title .. " " .. name .. " of " .. country,
+							type = "romantic",
+							role = "Royal Partner",
+							relationship = 80,
+							gender = partnerGender,
+							age = (state.Age or 25) + math.random(-3, 5),
+							alive = true,
+							metAge = state.Age,
+							isRoyalty = true,
+							royalCountry = country,
+							royalTitle = title,
+						}
+						
+						addFeed("👑💕 Your 'accident' worked! They found it adorable. You're now dating " .. title .. " " .. name .. "! Childhood dreams do come true!")
 					else
-						state:ModifyStat("Happiness", 5)
+						modifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
 						state.Flags.met_royalty = true
-						state:AddFeed("👑 The bump was awkward but they were gracious. You got their assistant's card!")
+						addFeed("👑 The bump was awkward but they were gracious. You got their assistant's card!")
 					end
 				end,
 			},
@@ -2106,7 +2454,25 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 50 },
 				feedText = "The fairy tale is complete...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 30)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 30)
 					state.Flags = state.Flags or {}
 					state.Flags.is_royalty = true
 					state.Flags.royal_by_marriage = true
@@ -2117,6 +2483,11 @@ PremiumIntegratedEvents.events = {
 
 					-- Massive wealth from marrying into royalty!
 					state.Money = (state.Money or 0) + 25000000
+					
+					-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.role = "Royal Spouse"
+					end
 
 					-- Initialize royal state
 					state.RoyalState = state.RoyalState or {}
@@ -2125,8 +2496,9 @@ PremiumIntegratedEvents.events = {
 					state.RoyalState.popularity = 75
 					state.RoyalState.royalDuties = 0
 					state.RoyalState.scandals = 0
+					state.RoyalState.royalCountry = state.Relationships and state.Relationships.partner and state.Relationships.partner.royalCountry or "Monaco"
 
-					state:AddFeed("👑💍✨ YOU MARRIED INTO ROYALTY! Your childhood wish to live in a palace has COMPLETELY COME TRUE! You are now a member of the royal family with $25 million in royal gifts!")
+					addFeed("👑💍✨ YOU MARRIED INTO ROYALTY! Your childhood wish to live in a palace has COMPLETELY COME TRUE! You are now a member of the royal family with $25 million in royal gifts!")
 				end,
 			},
 			{
@@ -2141,9 +2513,14 @@ PremiumIntegratedEvents.events = {
 				feedText = "👑💔 You declined. The world might not understand, but it was your choice. The prince/princess left heartbroken...",
 				setFlags = { rejected_royalty = true },
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
 					state.Flags.dating_royalty = nil
 					state.Flags.royal_romance = nil
 					state.Flags.has_partner = nil
+					-- Clear partner relationship
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
 				end,
 			},
 		},
@@ -2165,16 +2542,56 @@ PremiumIntegratedEvents.events = {
 		category = "crime",
 		priority = "high",
 		tags = { "mafia", "recruitment", "wish_fulfillment", "power" },
+		isMafiaOnly = true, -- CRITICAL: Use init.lua's strict filtering
 
-		-- CRITICAL: Only triggers for players who wished for power!
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { in_mob = true, refused_mob = true },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #MUTEX-3: Strict premium path mutex enforcement for MAFIA
+		-- This event MUST ONLY trigger for players who chose MAFIA path specifically
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		blockedByFlags = { 
+			in_mob = true, 
+			refused_mob = true, 
+			is_royalty = true, 
+			dating_royalty = true, 
+			royal_romance = true,
+			is_famous = true,
+			fame_career = true,
+			palace_wish = true,         -- CRITICAL: Block if chose royalty path
+			royal_fantasies = true,     -- CRITICAL: Block if chose royalty path
+			star_dreamer = true,        -- CRITICAL: Block if chose celebrity path
+			fame_destiny = true,        -- CRITICAL: Block if chose fame path
+			fame_wish = true,           -- CRITICAL: Block if chose fame path
+		},
+		-- CRITICAL FIX: Must have MAFIA wish flags
+		requiresAnyFlags = { power_wish = true, fascinated_by_power = true, mob_fascination = true },
 		requiresGamepass = "MAFIA",
 
 		eligibility = function(state)
-			-- Check for EITHER power_wish OR fascinated_by_power flag
-			local hasWish = state.Flags and (state.Flags.power_wish or state.Flags.fascinated_by_power)
-			return hasWish, "Need power wish or fascinated by power"
+			-- CRITICAL FIX #MUTEX-4: STRICT check - primary_wish_type MUST be "mafia" or nil
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			
+			-- If player has ANY primary wish type set and it's NOT mafia, BLOCK
+			if primaryWish and primaryWish ~= "mafia" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
+			-- If player has royalty OR celebrity wish flags, BLOCK (double-check)
+			if state.Flags then
+				if state.Flags.palace_wish or state.Flags.royal_fantasies then
+					return false, "Player has royalty wish flags - cannot get mafia approach"
+				end
+				if state.Flags.star_dreamer or state.Flags.fame_destiny or state.Flags.fame_wish then
+					return false, "Player has celebrity wish flags - cannot get mafia approach"
+				end
+			end
+			
+			-- Check for mafia wish flags (required!)
+			local hasWish = state.Flags and (state.Flags.power_wish or state.Flags.fascinated_by_power or state.Flags.mob_fascination)
+			if not hasWish then
+				return false, "Player has no mafia wish flags"
+			end
+			
+			return true, "Eligible for mafia approach"
 		end,
 
 		choices = {
@@ -2183,7 +2600,25 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 15, Smarts = 5 },
 				feedText = "Becoming part of the family...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 20)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 20)
 					state.Flags = state.Flags or {}
 					state.Flags.in_mob = true
 					state.Flags.mafia_member = true
@@ -2205,7 +2640,7 @@ PremiumIntegratedEvents.events = {
 					state.MobState.successfulOps = 0
 					state.MobState.failedOps = 0
 
-					state:AddFeed("🔫✨ YOUR CHILDHOOD WISH FOR POWER CAME TRUE! You've been initiated into La Cosa Nostra! You received $50,000 as a welcome 'gift'. The life of crime awaits!")
+					addFeed("🔫✨ YOUR CHILDHOOD WISH FOR POWER CAME TRUE! You've been initiated into La Cosa Nostra! You received $50,000 as a welcome 'gift'. The life of crime awaits!")
 				end,
 			},
 			{
@@ -2255,27 +2690,46 @@ PremiumIntegratedEvents.events = {
 				effects = {},
 				feedText = "Taking on the big job...",
 				onResolve = function(state)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
 					local successChance = 0.4 + (smarts / 200)
 
 					if roll < successChance then
-						state:ModifyStat("Happiness", 30)
+						modifyStat("Happiness", 30)
 						state.Money = (state.Money or 0) + 200000
 						state.MobState = state.MobState or {}
 						state.MobState.rankLevel = (state.MobState.rankLevel or 1) + 2
 						state.MobState.rankName = "Made Man"
 						state.MobState.rankEmoji = "🔫"
 						state.MobState.respect = (state.MobState.respect or 0) + 50
+						state.Flags = state.Flags or {}
 						state.Flags.made_man = true
-						state:AddFeed("🔫🎉 THE JOB WAS A SUCCESS! You've been 'made' - a full member of the family! You received $200,000 and massive respect. You're now a Made Man!")
+						addFeed("🔫🎉 THE JOB WAS A SUCCESS! You've been 'made' - a full member of the family! You received $200,000 and massive respect. You're now a Made Man!")
 					else
-						state:ModifyStat("Happiness", -20)
-						state:ModifyStat("Health", -15)
+						modifyStat("Happiness", -20)
+						modifyStat("Health", -15)
 						state.MobState = state.MobState or {}
 						state.MobState.heat = (state.MobState.heat or 0) + 30
 						state.MobState.respect = math.max(0, (state.MobState.respect or 0) - 20)
-						state:AddFeed("🔫💀 The job went sideways! You barely escaped. The family is disappointed, and you've got heat on you now.")
+						addFeed("🔫💀 The job went sideways! You barely escaped. The family is disappointed, and you've got heat on you now.")
 					end
 				end,
 			},
@@ -2315,14 +2769,51 @@ PremiumIntegratedEvents.events = {
 		priority = "high",
 		tags = { "celebrity", "fame", "wish_fulfillment" },
 
-		-- Uses eligibility instead of requiresFlags to support multiple flag options
-		blockedFlags = { is_famous = true },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #MUTEX-5: Strict premium path mutex enforcement for CELEBRITY
+		-- This event MUST ONLY trigger for players who chose CELEBRITY path specifically
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		blockedByFlags = { 
+			is_famous = true,
+			fame_career = true,
+			palace_wish = true,         -- CRITICAL: Block if chose royalty path
+			royal_fantasies = true,     -- CRITICAL: Block if chose royalty path
+			is_royalty = true,
+			dating_royalty = true,
+			power_wish = true,          -- CRITICAL: Block if chose mafia path
+			mob_fascination = true,     -- CRITICAL: Block if chose mafia path
+			in_mob = true,
+		},
+		-- CRITICAL FIX: Must have CELEBRITY wish flags
+		requiresAnyFlags = { fame_wish = true, star_dreams = true, star_dreamer = true, fame_destiny = true },
 		requiresGamepass = "CELEBRITY",
 
 		eligibility = function(state)
-			-- Check for EITHER fame_wish OR star_dreams flag
-			local hasWish = state.Flags and (state.Flags.fame_wish or state.Flags.star_dreams or state.Flags.performer)
-			return hasWish, "Need fame wish or star dreams"
+			-- CRITICAL FIX #MUTEX-6: STRICT check - primary_wish_type MUST be "celebrity" or nil
+			local primaryWish = state.Flags and state.Flags.primary_wish_type
+			
+			-- If player has ANY primary wish type set and it's NOT celebrity, BLOCK
+			if primaryWish and primaryWish ~= "celebrity" then
+				return false, "Player chose a different primary wish type: " .. tostring(primaryWish)
+			end
+			
+			-- If player has royalty OR mafia wish flags, BLOCK (double-check)
+			if state.Flags then
+				if state.Flags.palace_wish or state.Flags.royal_fantasies then
+					return false, "Player has royalty wish flags - cannot get fame discovery"
+				end
+				if state.Flags.power_wish or state.Flags.mob_fascination or state.Flags.fascinated_by_power then
+					return false, "Player has mafia wish flags - cannot get fame discovery"
+				end
+			end
+			
+			-- Check for celebrity wish flags (required!)
+			local hasWish = state.Flags and (state.Flags.fame_wish or state.Flags.star_dreams or state.Flags.star_dreamer or state.Flags.fame_destiny or state.Flags.performer)
+			if not hasWish then
+				return false, "Player has no celebrity wish flags"
+			end
+			
+			return true, "Eligible for fame discovery"
 		end,
 
 		choices = {
@@ -2331,16 +2822,42 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 30, Fame = 25 },
 				feedText = "Starting your journey to stardom...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 25)
-					state:ModifyStat("Fame", 30)
+					-- Helper functions for safe state manipulation
+					local function modifyStat(statName, delta)
+						if state.ModifyStat and type(state.ModifyStat) == "function" then
+							state:ModifyStat(statName, delta)
+						else
+							state.Stats = state.Stats or {}
+							state.Stats[statName] = (state.Stats[statName] or 50) + delta
+							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+						end
+					end
+					local function addFeed(text)
+						if state.AddFeed and type(state.AddFeed) == "function" then
+							state:AddFeed(text)
+						else
+							state.PendingFeed = text
+						end
+					end
+					
+					modifyStat("Happiness", 25)
+					-- Handle Fame specially since it's not a standard stat
+					state.Fame = (state.Fame or 0) + 30
 					state.Flags = state.Flags or {}
 					state.Flags.is_famous = true
 					state.Flags.celebrity = true
 					state.Flags.discovered = true
 					state.Flags.fame_wish_granted = true
+					state.Flags.talent_discovered = true
 					state.Money = (state.Money or 0) + 100000 -- Signing bonus
+					
+					-- Initialize fame state for proper celebrity handling
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = "entertainment"
+					state.FameState.talent = "acting"
+					state.FameState.discovered = true
 
-					state:AddFeed("⭐✨ YOUR CHILDHOOD WISH TO BE FAMOUS CAME TRUE! You signed with a major talent agency! You received $100,000 signing bonus and your career has LAUNCHED!")
+					addFeed("⭐✨ YOUR CHILDHOOD WISH TO BE FAMOUS CAME TRUE! You signed with a major talent agency! You received $100,000 signing bonus and your career has LAUNCHED!")
 				end,
 			},
 			{
