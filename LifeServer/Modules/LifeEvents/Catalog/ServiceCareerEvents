@@ -29,7 +29,8 @@ ServiceCareerEvents.events = {
 		baseChance = 0.35,
 		cooldown = 4,
 		requiresJob = true,
-		requiresJobId = { "waiter", "server" },
+		-- CRITICAL FIX: Expanded job ID list to catch all variations
+		requiresJobId = { "waiter", "server", "waitress", "waiter_waitress", "restaurant_server", "food_server" },
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -99,7 +100,8 @@ ServiceCareerEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
-		requiresJobId = { "waiter", "server" },
+		-- CRITICAL FIX: Expanded job ID list to catch all variations
+		requiresJobId = { "waiter", "server", "waitress", "waiter_waitress", "restaurant_server", "food_server" },
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -173,7 +175,8 @@ ServiceCareerEvents.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
-		requiresJobId = { "waiter", "server" },
+		-- CRITICAL FIX: Expanded job ID list to catch all variations
+		requiresJobId = { "waiter", "server", "waitress", "waiter_waitress", "restaurant_server", "food_server" },
 		blockedByFlags = { in_prison = true },
 		
 		choices = {

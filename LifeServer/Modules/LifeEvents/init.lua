@@ -1313,6 +1313,42 @@ local function canEventTrigger(event, state)
 			hater = 3,         -- At least 3 years between hater events
 			career_workplace = 4, -- CRITICAL FIX: At least 4 years between office drama events
 			career_office = 4,    -- CRITICAL FIX: At least 4 years between office-specific events
+			-- CRITICAL FIX: Fast food / service career events were spamming
+			career_service = 2,   -- At least 2 years between fast food/service events
+			career_food = 2,      -- At least 2 years between food service events
+			career_retail = 2,    -- At least 2 years between retail events
+			career_entry = 2,     -- At least 2 years between entry-level job events
+			-- Other career categories
+			career_tech = 3,      -- At least 3 years between tech events
+			career_medical = 3,   -- At least 3 years between medical events
+			career_science = 3,   -- At least 3 years between science/lab events
+			career_military = 3,  -- At least 3 years between military events
+			career_police = 3,    -- At least 3 years between police events
+			career_creative = 2,  -- At least 2 years between creative career events
+			career_trades = 3,    -- At least 3 years between trades events
+			-- CRITICAL FIX #DEEP-1: Added more category cooldowns
+			career_finance = 3,   -- At least 3 years between finance events
+			career_law = 3,       -- At least 3 years between law events
+			career_education = 3, -- At least 3 years between education events
+			career_racing = 3,    -- At least 3 years between racing events
+			career_hacker = 3,    -- At least 3 years between hacker events
+			career_gaming = 2,    -- At least 2 years between gaming/esports events
+			career_acting = 2,    -- At least 2 years between acting events
+			career_music = 2,     -- At least 2 years between music events
+			career_sports = 2,    -- At least 2 years between sports events
+			career_influencer = 2, -- At least 2 years between influencer events
+			career_streaming = 2,  -- At least 2 years between streaming events
+			-- Life category cooldowns
+			family = 2,           -- At least 2 years between family events
+			romance = 2,          -- At least 2 years between romance events
+			friends = 2,          -- At least 2 years between friend events
+			pets = 3,             -- At least 3 years between pet events
+			hobbies = 2,          -- At least 2 years between hobby events
+			travel = 2,           -- At least 2 years between travel events
+			financial = 3,        -- At least 3 years between financial crisis events
+			legal = 4,            -- At least 4 years between legal events
+			housing = 3,          -- At least 3 years between housing events
+			homeless = 2,         -- At least 2 years between homeless events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -1340,6 +1376,45 @@ local function canEventTrigger(event, state)
 			toxic = 8,      -- CRITICAL FIX: At least 8 years between toxic boss/coworker events
 			terrible = 8,   -- CRITICAL FIX: At least 8 years between terrible boss events
 			sabotag = 8,    -- CRITICAL FIX: At least 8 years between sabotage events
+			-- CRITICAL FIX: Fast food/service event keyword cooldowns
+			karen = 4,      -- At least 4 years between Karen events
+			rude_customer = 3, -- At least 3 years between rude customer events
+			rush = 3,       -- At least 3 years between rush hour events
+			tipper = 4,     -- At least 4 years between tipper events
+			coworker_drama = 3, -- At least 3 years between coworker drama events
+			burnout = 5,    -- At least 5 years between burnout events
+			shift_lead = 99, -- Shift lead promotion is basically one-time
+			escape_fast = 4, -- At least 4 years between "escape fast food" existential crises
+			-- CRITICAL FIX #DEEP-2: Added MORE keyword cooldowns for common spam patterns
+			jackpot = 10,    -- At least 10 years between jackpot events
+			lottery = 10,    -- At least 10 years between lottery wins
+			inheritance = 10, -- At least 10 years between inheritance events
+			windfall = 10,   -- At least 10 years between windfall events
+			layoff = 5,      -- At least 5 years between layoff events
+			fired = 4,       -- At least 4 years between getting fired
+			bankrupt = 10,   -- At least 10 years between bankruptcy events
+			accident = 4,    -- At least 4 years between accidents
+			disaster = 8,    -- At least 8 years between disasters
+			robbery = 4,     -- At least 4 years between robbery events
+			mugged = 5,      -- At least 5 years between mugging events
+			stalker = 8,     -- At least 8 years between stalker events
+			lawsuit = 6,     -- At least 6 years between lawsuits
+			audit = 6,       -- At least 6 years between audit events
+			scandal = 5,     -- At least 5 years between scandal events
+			affair = 8,      -- At least 8 years between affair events
+			divorce = 10,    -- At least 10 years between divorce events
+			propose = 5,     -- At least 5 years between proposal events (shouldn't spam)
+			wedding = 10,    -- At least 10 years between wedding events
+			pregnant = 3,    -- At least 3 years between pregnancy events
+			baby = 3,        -- At least 3 years between baby events
+			illness = 3,     -- At least 3 years between illness events
+			disease = 4,     -- At least 4 years between disease events
+			surgery = 5,     -- At least 5 years between surgery events
+			hospital = 4,    -- At least 4 years between hospital events
+			paparazzi = 3,   -- At least 3 years between paparazzi events
+			stalker_fan = 5, -- At least 5 years between stalker fan events
+			award = 4,       -- At least 4 years between award events
+			nomination = 3,  -- At least 3 years between nomination events
 		}
 		
 		for keyword, keywordCooldown in pairs(spamKeywords) do
@@ -2256,6 +2331,94 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 		if not hasCreatorCat then
 			table.insert(categories, "career_creative")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #GAMER-1: ADD GAMING/ESPORTS CAREER CATEGORY INJECTION!
+	-- BUG: GamerCareerEvents NEVER triggered because career_gaming category wasn't injected!
+	-- User complaint: "GAMER CAREER DOESN'T EVEN CALL SOMETIMES AND ISN'T LINKED NICELY"
+	-- FIX: Check for gaming job or gamer flags and inject career_gaming category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isGamerFlags = state.Flags and (
+		state.Flags.pro_gamer or state.Flags.esports_player or state.Flags.gaming_streamer or
+		state.Flags.signed_to_org or state.Flags.competitive_player or state.Flags.tournament_champion
+	)
+	local hasGamerJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("gamer") or
+		(state.CurrentJob.id or ""):lower():find("esports") or
+		(state.CurrentJob.id or ""):lower():find("gaming") or
+		(state.CurrentJob.category or ""):lower() == "gaming" or
+		(state.CurrentJob.category or ""):lower() == "esports"
+	)
+	
+	if isGamerFlags or hasGamerJob then
+		local hasGamerCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_gaming" or cat == "career_esports" then hasGamerCat = true break end
+		end
+		if not hasGamerCat then
+			table.insert(categories, "career_gaming")
+			table.insert(categories, "career_esports")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ACTOR-1: ADD ACTOR/ACTING CAREER CATEGORY INJECTION!
+	-- BUG: ActorCareerEvents had issues because career_acting category wasn't always injected!
+	-- FIX: Check for acting job or actor flags and inject career_acting category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isActorFlags = state.Flags and (
+		state.Flags.landed_big_role or state.Flags.a_list_actor or state.Flags.tv_regular or
+		state.Flags.oscar_winner or state.Flags.franchise_star or state.Flags.superhero_actor
+	)
+	local hasActorJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("actor") or
+		(state.CurrentJob.id or ""):lower():find("actress") or
+		(state.CurrentJob.id or ""):lower():find("movie") or
+		(state.CurrentJob.id or ""):lower():find("director") or
+		(state.CurrentJob.category or ""):lower() == "acting" or
+		(state.CurrentJob.category or ""):lower() == "film"
+	)
+	
+	if isActorFlags or hasActorJob then
+		local hasActorCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_acting" then hasActorCat = true break end
+		end
+		if not hasActorCat then
+			table.insert(categories, "career_acting")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ATHLETE-1: ADD ATHLETE/SPORTS CAREER CATEGORY INJECTION!
+	-- BUG: AthleteCareerEvents had issues because career_sports category wasn't always injected!
+	-- FIX: Check for sports job or athlete flags and inject career_sports category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isAthleteFlags = state.Flags and (
+		state.Flags.signed_athlete or state.Flags.pro_athlete or state.Flags.champion_athlete or
+		state.Flags.hall_of_famer or state.Flags.endorsed_athlete or state.Flags.franchise_player
+	)
+	local hasAthleteJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("athlete") or
+		(state.CurrentJob.id or ""):lower():find("player") or
+		(state.CurrentJob.id or ""):lower():find("football") or
+		(state.CurrentJob.id or ""):lower():find("basketball") or
+		(state.CurrentJob.id or ""):lower():find("baseball") or
+		(state.CurrentJob.id or ""):lower():find("soccer") or
+		(state.CurrentJob.id or ""):lower():find("mma") or
+		(state.CurrentJob.id or ""):lower():find("boxing") or
+		(state.CurrentJob.category or ""):lower() == "sports"
+	)
+	
+	if isAthleteFlags or hasAthleteJob then
+		local hasAthleteCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_sports" then hasAthleteCat = true break end
+		end
+		if not hasAthleteCat then
+			table.insert(categories, "career_sports")
 		end
 	end
 	

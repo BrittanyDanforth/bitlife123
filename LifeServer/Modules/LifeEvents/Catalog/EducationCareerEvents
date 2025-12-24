@@ -49,6 +49,8 @@ EducationCareerEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = "education",
 		eligibility = isTeacher,
 		blockedByFlags = { in_prison = true },
 		

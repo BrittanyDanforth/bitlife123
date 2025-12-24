@@ -1437,34 +1437,77 @@ function EventEngine.createRelationship(state, relType, options)
 		enemies = {},
 	}
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Better age generation for new relationships
+	-- For romance, age should be within reasonable dating range for player's age
+	-- For friends, can be any age within +/- 15 years
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local playerAge = state.Age or 25
+	local newAge
+	if relType == "romance" or relType == "partner" then
+		-- Romance partners: typically within 10-15 years of player's age
+		-- But at least 18 years old
+		local minPartnerAge = math.max(18, playerAge - 15)
+		local maxPartnerAge = math.min(90, playerAge + 15)
+		newAge = math.random(minPartnerAge, maxPartnerAge)
+	else
+		-- Friends: can be wider range
+		local minFriendAge = math.max(10, playerAge - 20)
+		local maxFriendAge = math.min(100, playerAge + 20)
+		newAge = math.random(minFriendAge, maxFriendAge)
+	end
+	
 	-- Generate a new relationship
+	local relId = "rel_" .. tostring(os.time()) .. "_" .. math.random(1000, 9999)
 	local relationship = {
-		id = "rel_" .. tostring(os.time()) .. "_" .. math.random(1000, 9999),
+		id = relId,
 		type = relType,
 		name = options.name or EventEngine.generateRandomName(state),
-		age = options.age or (state.Age and math.max(state.Age - 5, 0) + math.random(0, 10)) or math.random(18, 45),
+		age = options.age or newAge,
 		relationship = options.initialRelationship or 50,
 		yearsKnown = 0,
-		createdAt = state.Age or 0,
+		createdAt = playerAge,
+		alive = true,
+		gender = options.gender,
 	}
 
 	-- Add type-specific fields
 	if relType == "friend" then
 		relationship.role = options.role or "Friend"
 		relationship.metAt = options.metAt or "randomly"
-		table.insert(state.Relationships.friends, relationship)
+		relationship.category = "friend"
+		-- CRITICAL FIX: Store both in the flat lookup AND typed arrays
+		state.Relationships[relId] = relationship
+		if type(state.Relationships.friends) == "table" then
+			table.insert(state.Relationships.friends, relationship)
+		end
 	elseif relType == "romance" or relType == "partner" then
 		relationship.role = options.role or "Partner"
 		relationship.metAt = options.metAt or "dating"
 		relationship.isMarried = options.isMarried or false
-		table.insert(state.Relationships.romantic, relationship)
+		relationship.category = "romance"
+		-- CRITICAL FIX: Store in flat lookup, as partner, AND typed array
+		state.Relationships[relId] = relationship
+		state.Relationships.partner = relationship
+		state.Flags = state.Flags or {}
+		state.Flags.has_partner = true
+		state.Flags.dating = true
+		if type(state.Relationships.romantic) == "table" then
+			table.insert(state.Relationships.romantic, relationship)
+		end
 	elseif relType == "enemy" then
 		relationship.role = options.role or "Enemy"
 		relationship.reason = options.reason or "unknown"
-		table.insert(state.Relationships.enemies, relationship)
+		relationship.category = "enemy"
+		state.Relationships[relId] = relationship
+		if type(state.Relationships.enemies) == "table" then
+			table.insert(state.Relationships.enemies, relationship)
+		end
 	end
 
-	return true, relationship
+	-- CRITICAL FIX: Return just the relationship, not (true, relationship)
+	-- LifeBackend expects just a relationship object or nil
+	return relationship
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════

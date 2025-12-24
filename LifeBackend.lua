@@ -1137,7 +1137,11 @@ function LifeBackend:clearGhostRelationships(state)
 	-- Sync flags with actual relationships
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.has_partner and not hasLivingPartner then
-		warn("[RVS] Ghost has_partner flag - clearing")
+		-- Only log once per session to reduce spam
+		if not flags._ghost_partner_logged then
+			print("[RVS] Ghost has_partner flag - clearing (will only log once)")
+			flags._ghost_partner_logged = true
+		end
 		flags.has_partner = nil
 		fixes = fixes + 1
 	end
@@ -1145,7 +1149,11 @@ function LifeBackend:clearGhostRelationships(state)
 	if flags.married and not hasLivingSpouse then
 		-- Check if widowed
 		if not flags.widowed then
-			warn("[RVS] Ghost married flag without spouse - setting widowed")
+			-- Only log once per session to reduce spam
+			if not flags._ghost_married_logged then
+				print("[RVS] Ghost married flag without spouse - setting widowed (will only log once)")
+				flags._ghost_married_logged = true
+			end
 			flags.widowed = true
 			flags.married = nil
 			fixes = fixes + 1
@@ -1219,16 +1227,30 @@ function LifeBackend:syncHousingAndTitles(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- AAA FIX: Sync housing with owned properties
+	-- CRITICAL FIX: Also clear ALL transitional/homeless flags when owning property
+	-- User complaint: "Housing doesn't update when I buy a house"
 	-- ═══════════════════════════════════════════════════════════════════════
 	if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
 		local primaryHome = state.Assets.Properties[1]
 		if housing.status ~= "owner" and housing.status ~= "royal_palace" then
 			housing.status = "owner"
-			housing.type = primaryHome.type or "house"
+			housing.type = primaryHome.type or primaryHome.name or "house"
 			housing.propertyId = primaryHome.id
+			housing.value = primaryHome.value or primaryHome.price
 			housing.rent = 0
 			flags.homeowner = true
 			flags.has_property = true
+			flags.has_home = true
+			flags.has_own_place = true
+			-- CRITICAL: Clear ALL housing flags that shouldn't exist with property ownership
+			flags.homeless = nil
+			flags.couch_surfing = nil
+			flags.living_in_car = nil
+			flags.using_shelter = nil
+			flags.in_transitional_housing = nil
+			flags.at_risk_homeless = nil
+			flags.eviction_notice = nil
+			flags.living_with_parents = nil
 			fixes = fixes + 1
 		end
 	end
@@ -1306,16 +1328,16 @@ function LifeBackend:enforceOneOccupation(state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- AAA FIX: Multiple career types are VALID in many cases:
 	-- - Mafia + regular job = cover job (realistic)
-	-- - Fame + regular job = working artist (realistic)
+	-- - Fame + regular job = working artist/struggling artist (realistic)
 	-- - Royalty + fame = Prince Harry style (realistic)
-	-- Only warn if truly incompatible AND apply fixes silently (no spam)
+	-- Only fix truly incompatible combinations, NO logging for valid combinations
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #activeCareerTypes > 1 then
 		local primary = flags.primary_wish_type
 		local needsFix = false
 		
-		-- Royalty is EXCLUSIVE of regular jobs (they don't work)
-		if primary == "royalty" and state.CurrentJob then
+		-- Royalty is EXCLUSIVE of regular jobs (they don't work normal jobs)
+		if (primary == "royalty" or flags.is_royalty) and state.CurrentJob then
 			state.CurrentJob = nil
 			flags.employed = nil
 			flags.has_job = nil
@@ -1323,15 +1345,13 @@ function LifeBackend:enforceOneOccupation(state)
 			fixes = fixes + 1
 		end
 		
-		-- Mafia can have cover jobs - this is VALID, no fix needed
-		-- Famous people can have day jobs early in career - VALID
+		-- All other combinations are VALID - no warnings, no fixes needed:
+		-- - Fame + regular job = struggling artist with day job (VALID)
+		-- - Mafia + regular job = cover job for criminal activities (VALID)
+		-- - Fame + mafia = celebrity criminal (VALID if rare)
 		
-		-- Only log once per session to avoid spam (572 warnings!)
-		if needsFix and not flags._career_conflict_logged then
-			flags._career_conflict_logged = true
-			-- Debug log only, not warn (reduces console spam)
-			print("[RVS] Resolved career conflict: " .. table.concat(activeCareerTypes, ", ") .. " -> " .. (primary or "auto"))
-		end
+		-- REMOVED: Logging completely - these combinations are valid game states
+		-- The old "[RVS] Multiple career types detected" warning was spam
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
@@ -1342,7 +1362,11 @@ function LifeBackend:enforceOneOccupation(state)
 		
 		-- Can't have a job if too young
 		if age < 14 then
-			warn("[RVS] Child with job - clearing")
+			-- Only log once per session to reduce spam
+			if not flags._child_job_cleared then
+				print("[RVS] Child with job - clearing (will only log once)")
+				flags._child_job_cleared = true
+			end
 			state.CurrentJob = nil
 			flags.employed = nil
 			flags.has_job = nil
@@ -3014,10 +3038,28 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 	local decayEvents = {}
 	state.Flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Global cooldown to prevent spam!
+	-- User bug: "IT KEEP SPAM SAYING FRIEND SHIPS OVER"
+	-- Only ONE decay popup per year maximum!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state._lastDecayPopupAge = state._lastDecayPopupAge or 0
+	local alreadyShownThisYear = (state._lastDecayPopupAge == currentAge)
+	local hasShownPopupThisCall = false
+	
+	-- Track friendships to remove AFTER iteration (can't modify during iteration)
+	local friendshipsToRemove = {}
+	
 	for relId, rel in pairs(state.Relationships) do
-		if type(rel) == "table" and rel.type == "friend" or relId:find("friend") then
-			-- Skip if deceased
-			if rel.deceased or rel.dead then continue end
+		if type(rel) == "table" and (rel.type == "friend" or (type(relId) == "string" and relId:find("friend"))) then
+			-- Skip if deceased or already estranged
+			if rel.deceased or rel.dead or rel.estranged or rel.formerFriend then 
+				-- Mark for removal if estranged
+				if rel.estranged or rel.formerFriend then
+					table.insert(friendshipsToRemove, relId)
+				end
+				continue 
+			end
 			
 			-- Initialize last contact if missing
 			if not rel.lastContact then
@@ -3032,63 +3074,102 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 				local totalDecay = decayRate * yearsSinceContact
 				rel.relationship = math.max(0, (rel.relationship or 50) - totalDecay)
 				
-				-- Generate anger events
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.annoyed and not rel._announcedAnnoyed then
-					table.insert(decayEvents, {
-						type = "friend_annoyed",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("😤 %s is annoyed you haven't reached out in %d years.", 
-							rel.name or "Your friend", yearsSinceContact),
-						yearsSince = yearsSinceContact,
-					})
-					rel._announcedAnnoyed = true
-				end
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Only show ONE popup per year to prevent spam!
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.angry and not rel._announcedAngry then
-					table.insert(decayEvents, {
-						type = "friend_angry",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("😡 %s is angry! They feel forgotten and hurt.", 
-							rel.name or "Your friend"),
-						yearsSince = yearsSinceContact,
-					})
-					rel._announcedAngry = true
-					rel.angry = true
-				end
-				
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.furious and not rel._announcedFurious then
-					table.insert(decayEvents, {
-						type = "friend_furious",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("🔥 %s is FURIOUS! \"You never talk to me anymore!\"", 
-							rel.name or "Your friend"),
-						yearsSince = yearsSinceContact,
-						mayEndFriendship = true,
-					})
-					rel._announcedFurious = true
-					rel.furious = true
-				end
-				
-				-- Friendship ends after too much neglect
+				-- Friendship ends after too much neglect - PRIORITY CHECK FIRST
 				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.estranged or rel.relationship <= 0 then
-					table.insert(decayEvents, {
-						type = "friendship_ended",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("💔 You and %s have drifted apart. The friendship is over.", 
-							rel.name or "your friend"),
-						yearsSince = yearsSinceContact,
-					})
-					rel.estranged = true
-					rel.formerFriend = true
-					rel.type = "ex_friend"
+					-- Mark for removal
+					table.insert(friendshipsToRemove, relId)
+					
+					-- Only generate popup if we haven't already shown one
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friendship_ended",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("💔 You and %s have drifted apart. The friendship is over.", 
+								rel.name or "your friend"),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					
 					state.Flags.lost_friend = true
 					state.Flags.lost_friend_name = rel.name
+					
+				-- Generate anger events - only if no popup shown yet
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.furious and not rel._announcedFurious then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_furious",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("🔥 %s is FURIOUS! \"You never talk to me anymore!\"", 
+								rel.name or "Your friend"),
+							yearsSince = yearsSinceContact,
+							mayEndFriendship = true,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedFurious = true
+					rel.furious = true
+					
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.angry and not rel._announcedAngry then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_angry",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("😡 %s is angry! They feel forgotten and hurt.", 
+								rel.name or "Your friend"),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedAngry = true
+					rel.angry = true
+					
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.annoyed and not rel._announcedAnnoyed then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_annoyed",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("😤 %s is annoyed you haven't reached out in %d years.", 
+								rel.name or "Your friend", yearsSinceContact),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedAnnoyed = true
 				end
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Actually REMOVE ended friendships from the relationships list!
+	-- User bug: "ENSURE IT ACTUALLY ENDS FRIENDSHIPS"
+	-- Previously we just set flags but the relationship stayed in the UI!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	for _, relId in ipairs(friendshipsToRemove) do
+		local rel = state.Relationships[relId]
+		if rel then
+			-- Store in former friends for reference (not shown in UI)
+			state.FormerFriends = state.FormerFriends or {}
+			state.FormerFriends[relId] = {
+				name = rel.name,
+				endedAt = currentAge,
+				reason = "drifted_apart",
+			}
+			-- Remove from active relationships
+			state.Relationships[relId] = nil
 		end
 	end
 	
@@ -5406,6 +5487,9 @@ local ActivityCatalog = {
 		blockedByFlag = "engaged",
 		blockedByFlag2 = "married",
 		isProposal = true, -- Special handler
+		-- CRITICAL FIX: Add cooldown to prevent proposal spam
+		cooldownYears = 1, -- Can only propose once per year
+		showResult = true, -- CRITICAL: Force show result card
 	},
 	plan_wedding = {
 		stats = { Happiness = 20 },
@@ -8398,8 +8482,9 @@ function LifeBackend:setupRemotes()
 		self:handleAgeUp(player)
 	end)
 
-	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender)
-		self:setLifeInfo(player, name, gender)
+	-- CRITICAL FIX: Now accepts country parameter for country selection feature
+	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender, country)
+		self:setLifeInfo(player, name, gender, country)
 	end)
 
 	self.remotes.SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
@@ -9447,7 +9532,7 @@ local function filterText(text, player)
 	end
 end
 
-function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
+function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 	local state = self:getState(player)
 	if not state then
 		return
@@ -9456,8 +9541,9 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #105: Support both old (name, gender) and new (payload object) formats
 	-- New format: { gender = "Male", isRoyalBirth = true, royalCountry = "uk" }
+	-- Also now supports country selection (third argument)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local name, gender, isRoyalBirth, royalCountry
+	local name, gender, isRoyalBirth, royalCountry, selectedCountry
 	
 	if type(nameOrPayload) == "table" then
 		-- New payload format
@@ -9465,10 +9551,40 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 		gender = nameOrPayload.gender
 		isRoyalBirth = nameOrPayload.isRoyalBirth
 		royalCountry = nameOrPayload.royalCountry
+		selectedCountry = nameOrPayload.country
 	else
-		-- Old format (name, gender)
+		-- Old format (name, gender, country)
 		name = nameOrPayload
 		gender = genderArg
+		selectedCountry = countryArg
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COUNTRY SELECTION: Store selected country in state
+	-- User requested: "add countries even if it doesn't do much like let u pick country after u pick gender"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local countryMap = {
+		usa = "United States",
+		uk = "United Kingdom",
+		canada = "Canada",
+		australia = "Australia",
+		germany = "Germany",
+		france = "France",
+		japan = "Japan",
+		brazil = "Brazil",
+		mexico = "Mexico",
+		italy = "Italy",
+		spain = "Spain",
+		india = "India",
+		china = "China",
+		russia = "Russia",
+		south_korea = "South Korea",
+	}
+	
+	if selectedCountry and selectedCountry ~= "" then
+		state.Country = countryMap[selectedCountry] or selectedCountry or "United States"
+	elseif not state.Country then
+		state.Country = "United States" -- Default country
 	end
 	
 	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
@@ -13817,11 +13933,53 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- Create the new state as the child
 	local newState = self:createInitialState(player)
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Calculate child's actual age properly
+	-- The child's age should be their stored age, not reset to something weird
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local childAge = child.age or 18
+	if childAge < 18 then
+		childAge = 18 -- Minimum age to continue as child
+	end
+	
 	-- Set up child's identity
 	newState.Name = child.name or child.Name or "Child of " .. parentName
 	newState.Gender = child.gender or "male"
-	newState.Age = child.age or 18
+	newState.Age = childAge
 	newState.Year = (state.Year or 2025) -- Same year
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Adjust family member ages based on child's starting age
+	-- createInitialState generates family for age 0 newborn, so we need to age them up
+	-- This prevents grandparents being too young and siblings having weird ages
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if newState.Relationships then
+		for relId, rel in pairs(newState.Relationships) do
+			if type(rel) == "table" and rel.age then
+				-- Age up all family members by the child's starting age
+				rel.age = rel.age + childAge
+				
+				-- Check if grandparents should be dead at this age
+				if relId:find("grand") and rel.age >= 85 then
+					rel.alive = false
+					rel.deceased = true
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Update housing state based on age
+	-- If child is 18+, they shouldn't be "living with parents"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.HousingState = newState.HousingState or {}
+	if childAge >= 18 then
+		newState.HousingState.status = "renter"
+		newState.HousingState.type = "apartment"
+		newState.HousingState.rent = 1000 -- Basic starting rent
+		newState.Flags.living_with_parents = nil
+		newState.Flags.moved_out = true
+	end
 	
 	-- Inherit money
 	newState.Money = inheritance
@@ -13829,8 +13987,8 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- Inherit assets
 	newState.Assets = newState.Assets or {}
 	if state.Assets then
-		-- Inherit properties
-		if state.Assets.Properties then
+		-- Inherit properties (and update housing if inheriting a home)
+		if state.Assets.Properties and #state.Assets.Properties > 0 then
 			newState.Assets.Properties = {}
 			for _, prop in ipairs(state.Assets.Properties) do
 				table.insert(newState.Assets.Properties, {
@@ -13840,15 +13998,21 @@ function LifeBackend:handleContinueAsKid(player, childData)
 					price = prop.price,
 					value = prop.value,
 					income = prop.income,
-					purchasedAt = state.Age,
+					purchasedAt = childAge,
 					inherited = true,
 					inheritedFrom = parentName,
 				})
 			end
+			-- Update housing to owner if inherited properties
+			newState.HousingState.status = "owner"
+			newState.HousingState.type = state.Assets.Properties[1].type or "house"
+			newState.HousingState.rent = 0
+			newState.Flags.homeowner = true
+			newState.Flags.has_property = true
 		end
 		
 		-- Inherit vehicles
-		if state.Assets.Vehicles then
+		if state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
 			newState.Assets.Vehicles = {}
 			for _, vehicle in ipairs(state.Assets.Vehicles) do
 				table.insert(newState.Assets.Vehicles, {
@@ -13861,6 +14025,8 @@ function LifeBackend:handleContinueAsKid(player, childData)
 					inheritedFrom = parentName,
 				})
 			end
+			newState.Flags.has_vehicle = true
+			newState.Flags.has_car = true
 		end
 	end
 	
@@ -13870,13 +14036,90 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Flags.inherited_from_parent = true
 	newState.Flags.parent_name = parentName
 	
-	-- Set some starting stats based on child's prior relationship
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Better starting stats based on child's situation
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local relationship = child.relationship or 50
 	newState.Stats = newState.Stats or {}
-	newState.Stats.Happiness = math.min(100, 50 + math.floor(relationship / 5))
-	newState.Stats.Health = math.max(30, 100 - math.floor((child.age or 18) / 2))
+	newState.Stats.Happiness = clamp(50 + math.floor(relationship / 5), 20, 80)
+	newState.Stats.Health = clamp(100 - math.floor(childAge / 3), 60, 100)
 	newState.Stats.Smarts = newState.Stats.Smarts or 50
 	newState.Stats.Looks = newState.Stats.Looks or 50
+	
+	-- Also set shorthand access
+	newState.Happiness = newState.Stats.Happiness
+	newState.Health = newState.Stats.Health
+	newState.Smarts = newState.Stats.Smarts
+	newState.Looks = newState.Stats.Looks
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CHILD-1: Clear ALL old life state when continuing as child
+	-- User complaint: "Continue as child is buggy - weird spawning and age issues"
+	-- Make sure no data from parent life carries over incorrectly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Clear education state - child needs their own education journey
+	newState.EducationData = {
+		Level = childAge >= 18 and "high_school" or nil,
+		Status = childAge >= 18 and nil or "enrolled",
+		inCollege = false,
+		GPA = nil,
+		Debt = 0,
+	}
+	
+	-- Set appropriate education flags based on age
+	if childAge >= 22 then
+		newState.Flags.has_diploma = true
+		newState.Flags.graduated_high_school = true
+	elseif childAge >= 18 then
+		newState.Flags.has_diploma = true
+		newState.Flags.graduated_high_school = true
+	else
+		-- Shouldn't happen since we require age 18+, but safety check
+		newState.Flags.in_school = true
+	end
+	
+	-- Clear job/career state - child starts fresh
+	newState.CurrentJob = nil
+	newState.Career = {}
+	newState.CareerInfo = nil
+	newState.Flags.employed = nil
+	newState.Flags.has_job = nil
+	
+	-- Clear any premium path states from parent
+	newState.Flags.is_royalty = nil
+	newState.Flags.royal_birth = nil
+	newState.Flags.in_mob = nil
+	newState.Flags.fame_career = nil
+	newState.Flags.is_famous = nil
+	newState.RoyalState = nil
+	newState.MobState = nil
+	newState.FameState = nil
+	
+	-- Clear relationship states - child has fresh relationship slate
+	newState.Flags.married = nil
+	newState.Flags.engaged = nil
+	newState.Flags.has_partner = nil
+	newState.Flags.dating = nil
+	newState.Flags.widowed = nil
+	newState.Relationships.partner = nil
+	
+	-- Clear prison state
+	newState.InJail = false
+	newState.JailYearsLeft = 0
+	newState.Flags.in_prison = nil
+	newState.Flags.incarcerated = nil
+	newState.Flags.criminal_record = nil -- Give child a clean slate
+	
+	-- Clear event history so child gets fresh events
+	newState.EventHistory = {
+		occurrences = {},
+		lastOccurrence = {},
+		completed = {},
+		recentCategories = {},
+		recentEvents = {},
+		lastCategoryOccurrence = {},
+	}
 	
 	-- Create parent as a memory
 	newState.Flags.parent_deceased = true
@@ -14450,6 +14693,23 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.oneTime and not activity.skipCompletionTracking and state.CompletedActivities[activityId] then
 		return { success = false, message = "You can only do this once!" }
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check activity cooldown to prevent spam (like proposal spam)
+	-- User bug: "I CAN SPAM PROPOSE??"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.cooldownYears and activity.cooldownYears > 0 then
+		state.ActivityCooldowns = state.ActivityCooldowns or {}
+		local lastUsedAge = state.ActivityCooldowns[activityId]
+		local currentAge = state.Age or 0
+		if lastUsedAge and (currentAge - lastUsedAge) < activity.cooldownYears then
+			local yearsLeft = activity.cooldownYears - (currentAge - lastUsedAge)
+			return { 
+				success = false, 
+				message = string.format("You need to wait %d more year(s) before you can do this again.", math.ceil(yearsLeft))
+			}
+		end
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #30: Health insurance reduces medical costs
@@ -14550,6 +14810,14 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.oneTime and not activity.skipCompletionTracking and not isEducationActivity then
 		state.CompletedActivities = state.CompletedActivities or {}
 		state.CompletedActivities[activityId] = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Record activity cooldown time to prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.cooldownYears and activity.cooldownYears > 0 then
+		state.ActivityCooldowns = state.ActivityCooldowns or {}
+		state.ActivityCooldowns[activityId] = state.Age or 0
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -17642,13 +17910,20 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	-- This prevents "you're homeless" events from firing after buying housing
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if assetType == "Properties" then
-		-- Clear all homeless-related flags
+		-- Clear ALL homeless-related and transitional housing flags
+		-- CRITICAL FIX: User reported housing situation not updating correctly!
+		-- The in_transitional_housing flag wasn't being cleared, so AssetsScreen
+		-- would still show "Transitional Housing" even after buying a house
 		state.Flags.homeless = nil
 		state.Flags.couch_surfing = nil
 		state.Flags.living_in_car = nil
 		state.Flags.using_shelter = nil
 		state.Flags.at_risk_homeless = nil
 		state.Flags.eviction_notice = nil
+		state.Flags.in_transitional_housing = nil  -- CRITICAL: Was missing!
+		state.Flags.living_with_family = nil       -- No longer living with family
+		state.Flags.living_with_parents = nil      -- No longer living with parents
+		state.Flags.in_foster_care = nil           -- No longer in foster care
 		
 		-- Set proper housing flags
 		state.Flags.has_home = true
@@ -17801,7 +18076,27 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	state.Assets = state.Assets or {}
 	state.Flags = state.Flags or {}
 
-	local bucket = state.Assets[assetType]
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Normalize assetType from client format to server format
+	-- Client sends: "property", "vehicle", "item"
+	-- Server expects: "Properties", "Vehicles", "Items"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local assetTypeMap = {
+		property = "Properties",
+		properties = "Properties",
+		Properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		Vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		Items = "Items",
+		crypto = "Crypto",
+		Crypto = "Crypto",
+	}
+	local normalizedType = assetTypeMap[assetType] or assetType
+	
+	local bucket = state.Assets[normalizedType]
 	if not bucket then
 		return { success = false, message = "You don't own anything like that." }
 	end
@@ -17847,7 +18142,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 				end
 			end
 
-			if assetType == "Vehicles" and #bucket == 0 then
+			if normalizedType == "Vehicles" and #bucket == 0 then
 				state.Flags.has_vehicle = nil
 				state.Flags.has_car = nil
 				state.Flags.car_owner = nil
@@ -17858,7 +18153,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.car_loan_payment = nil
 					state.Flags.has_car_loan = nil
 				end
-			elseif assetType == "Properties" and #bucket == 0 then
+			elseif normalizedType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
 				state.Flags.luxury_homeowner = nil
@@ -17875,7 +18170,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.mortgage_debt = nil
 					state.Flags.mortgage_trouble = nil
 				end
-			elseif assetType == "Properties" and #bucket > 0 then
+			elseif normalizedType == "Properties" and #bucket > 0 then
 				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
 				if asset.hasMortgage then
 					state.Flags.mortgage_debt = nil
@@ -17953,11 +18248,54 @@ end
 -- ════════════════════════════════════════════════════════════════════════════════
 function LifeBackend:createBasicRelationship(state, relType)
 	state.Relationships = state.Relationships or {}
+	state.Flags = state.Flags or {}
 
-	-- Generate random name
-	local firstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery" }
-	local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" }
-	local randomName = firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #DEEP-3: Much more diverse name generation
+	-- Previous list had only 10 first names - now has 60+ for variety
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local maleFirstNames = { 
+		"James", "John", "Michael", "David", "Robert", "William", "Daniel", "Matthew", "Anthony", "Mark",
+		"Joshua", "Andrew", "Joseph", "Christopher", "Ryan", "Tyler", "Brandon", "Kevin", "Justin", "Jason",
+		"Brian", "Eric", "Steven", "Thomas", "Adam", "Nathan", "Charles", "Benjamin", "Timothy", "Patrick"
+	}
+	local femaleFirstNames = { 
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail",
+		"Emily", "Elizabeth", "Sofia", "Ella", "Avery", "Scarlett", "Grace", "Chloe", "Victoria", "Madison",
+		"Luna", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian"
+	}
+	local neutralFirstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery", "Cameron", "Dakota", "Skyler", "Reese", "Finley" }
+	local lastNames = { 
+		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+		"Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris",
+		"Clark", "Lewis", "Robinson", "Walker", "Hall", "Young", "Allen", "King", "Wright", "Lopez"
+	}
+	
+	-- Choose gender randomly for romance/friend, then select appropriate name
+	local gender = (math.random() > 0.5) and "male" or "female"
+	local firstName
+	if gender == "male" then
+		firstName = maleFirstNames[math.random(#maleFirstNames)]
+	elseif gender == "female" then
+		firstName = femaleFirstNames[math.random(#femaleFirstNames)]
+	else
+		firstName = neutralFirstNames[math.random(#neutralFirstNames)]
+	end
+	local randomName = firstName .. " " .. lastNames[math.random(#lastNames)]
+
+	-- CRITICAL FIX: Better age range for romantic partners (especially when old!)
+	-- User complaint: "ROMANCE DOSENT WORK SOMETIMES LIKE WHEN OLD"
+	local playerAge = state.Age or 20
+	local partnerAgeMin = math.max(18, playerAge - 15) -- No more than 15 years younger, min 18
+	local partnerAgeMax = math.max(playerAge + 10, 25) -- No more than 10 years older, but at least 25
+	
+	-- Safety check: ensure min <= max
+	if partnerAgeMin > partnerAgeMax then
+		partnerAgeMin = 18
+		partnerAgeMax = 30
+	end
+	
+	local partnerAge = math.random(partnerAgeMin, partnerAgeMax)
 
 	local newId = string.format("%s_%s_%d", relType, os.time(), math.random(1000, 9999))
 	local relationship = {
@@ -17965,9 +18303,12 @@ function LifeBackend:createBasicRelationship(state, relType)
 		name = randomName,
 		type = relType,
 		role = relType == "friend" and "Friend" or relType == "romance" and "Partner" or "Person",
-		relationship = 50,
-		age = (state.Age or 20) + math.random(-5, 5),
+		relationship = 60, -- CRITICAL FIX: Start at 60 instead of 50 for more immediate connection
+		age = partnerAge,
+		gender = gender, -- CRITICAL FIX #DEEP-4: Store gender for UI display
 		alive = true,
+		metAt = state.Age, -- Track when they met
+		lastContact = state.Age, -- Initialize last contact for decay system
 	}
 
 	state.Relationships[newId] = relationship
@@ -17975,6 +18316,26 @@ function LifeBackend:createBasicRelationship(state, relType)
 	if relType == "friend" then
 		state.Relationships.friends = state.Relationships.friends or {}
 		table.insert(state.Relationships.friends, relationship)
+	end
+
+	-- CRITICAL FIX: Romance/partner relationships MUST set partner reference and flags!
+	-- User complaint: "I CLICK FIND AND PERSON DOSENT SHOWUP EVEN THO IT SAYS I HIT IT OFF"
+	-- The issue: createBasicRelationship was NOT setting state.Relationships.partner
+	-- So the romance was created but UI couldn't find it!
+	if relType == "romance" or relType == "partner" then
+		state.Relationships.partner = relationship
+		state.Flags.has_partner = true
+		state.Flags.dating = true
+		state.Flags.recently_single = nil -- Clear this flag if it was set
+		debugPrint("[createBasicRelationship] Set partner reference for romance: " .. randomName)
+	end
+	
+	-- CRITICAL FIX #DEEP-5: Also handle enemy creation properly
+	if relType == "enemy" then
+		state.Relationships.enemies = state.Relationships.enemies or {}
+		table.insert(state.Relationships.enemies, relationship)
+		relationship.role = "Enemy"
+		relationship.relationship = 10 -- Enemies start with low relationship
 	end
 
 	debugPrint("[createBasicRelationship] Created basic " .. relType .. ": " .. randomName)
@@ -17995,7 +18356,236 @@ local InteractionEffects = {
 		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
 		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
 		kiss = { delta = 5, message = "You shared a kiss." },
-		propose = { delta = 15, cost = 5000, message = "You proposed!", flags = { engaged = true, committed_relationship = true } },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: "Get Married" action for engaged couples!
+		-- After proposing and getting engaged, players need to actually get married!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		get_married = {
+			delta = 25,
+			cost = 10000,
+			isSpecial = true,
+			showResult = true,
+			message = function(state, relationship)
+				state.Flags = state.Flags or {}
+				
+				-- Must be engaged first!
+				if not state.Flags.engaged then
+					return "💭 You need to propose and get engaged first before getting married!"
+				end
+				
+				-- Check if we can afford the wedding
+				local weddingCost = 10000
+				if (state.Money or 0) < weddingCost then
+					return string.format("💸 You can't afford the wedding! You need $%d but only have $%d.", weddingCost, state.Money or 0)
+				end
+				
+				-- Deduct wedding cost
+				state.Money = (state.Money or 0) - weddingCost
+				
+				-- Get partner name
+				local partnerName = (relationship and relationship.name) or "your partner"
+				
+				-- Convert partner to spouse!
+				state.Relationships = state.Relationships or {}
+				if state.Relationships.partner then
+					state.Relationships.spouse = state.Relationships.partner
+					state.Relationships.spouse.type = "spouse"
+					state.Relationships.spouse.role = "Spouse"
+					state.Relationships.spouse.relationship = math.min(100, (state.Relationships.spouse.relationship or 80) + 20)
+					state.Relationships.spouse.marriedAt = state.Age or 25
+					state.Relationships.partner = nil -- Clear partner slot
+				end
+				
+				-- Also update the relationship passed to us
+				if relationship then
+					relationship.type = "spouse"
+					relationship.role = "Spouse"
+					relationship.relationship = math.min(100, (relationship.relationship or 80) + 20)
+					relationship.marriedAt = state.Age or 25
+				end
+				
+				-- Set marriage flags!
+				state.Flags.married = true
+				state.Flags.engaged = nil
+				state.Flags.has_partner = true
+				state.Flags.dating = nil
+				state.Flags.married_at_age = state.Age or 25
+				
+				-- Happiness boost!
+				if state.ModifyStat then
+					state:ModifyStat("Happiness", 30)
+				end
+				
+				return string.format("💒💍 You married %s! Congratulations! 💒💍\n\nThis is the happiest day of your life!", partnerName)
+			end,
+		},
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: "Have a Kid" action!
+		-- User bug: "I DONT HAVE A HAVE A KID OPTION IN RELASHONSHIP"
+		-- Partner can say yes or no based on relationship strength!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		try_baby = {
+			delta = 0, -- Delta applied based on outcome
+			isSpecial = true,
+			showResult = true,
+			cooldownYears = 1, -- Can only try once per year
+			message = function(state, relationship)
+				state.Flags = state.Flags or {}
+				
+				-- Must be in a committed relationship
+				if not (state.Flags.has_partner or state.Flags.married or state.Flags.engaged) then
+					return "💭 You're not in a relationship. Find a partner first!"
+				end
+				
+				-- Calculate if partner agrees
+				local relStrength = (relationship and relationship.relationship) or 50
+				local acceptChance = 0.2 + (relStrength / 200) -- 20% base + up to 50% from relationship
+				
+				-- Married couples more likely to agree
+				if state.Flags.married then
+					acceptChance = acceptChance + 0.25
+				elseif state.Flags.engaged then
+					acceptChance = acceptChance + 0.15
+				end
+				
+				-- Already have kids? Slightly less likely to want more
+				local childCount = state.Flags.child_count or 0
+				if childCount >= 3 then
+					acceptChance = acceptChance - 0.3
+				elseif childCount >= 1 then
+					acceptChance = acceptChance - 0.1
+				end
+				
+				local partnerName = (relationship and relationship.name) or "your partner"
+				
+				if RANDOM:NextNumber() < acceptChance then
+					-- Partner agrees! Now check if pregnancy happens
+					local pregnancyChance = 0.6 -- 60% base chance
+					
+					-- Age affects fertility
+					local playerAge = state.Age or 25
+					if playerAge > 40 then
+						pregnancyChance = pregnancyChance - 0.25
+					elseif playerAge > 35 then
+						pregnancyChance = pregnancyChance - 0.1
+					end
+					
+					if RANDOM:NextNumber() < pregnancyChance then
+						-- SUCCESS! Having a baby!
+						state.Flags.expecting_baby = true
+						state.Flags.baby_due_age = (state.Age or 25) + 1
+						state.Flags.child_count = (state.Flags.child_count or 0) + 1
+						
+						-- Create the baby in relationships!
+						state.Relationships = state.Relationships or {}
+						local babyId = "child_" .. tostring(state.Flags.child_count)
+						local babyGender = RANDOM:NextNumber() < 0.5 and "male" or "female"
+						local babyRole = babyGender == "male" and "Son" or "Daughter"
+						
+						-- Baby names
+						local boyNames = {"James", "Oliver", "William", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Michael", "Ethan", "Daniel", "Noah", "Logan", "Jackson", "Sebastian"}
+						local girlNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna", "Aria", "Chloe", "Penelope", "Layla"}
+						local namePool = babyGender == "male" and boyNames or girlNames
+						local babyName = namePool[RANDOM:NextInteger(1, #namePool)]
+						
+						state.Relationships[babyId] = {
+							name = babyName,
+							type = "family",
+							role = babyRole,
+							isFamily = true,
+							relationship = 100,
+							age = 0,
+							gender = babyGender,
+							alive = true,
+							bornAt = state.Age or 25,
+						}
+						
+						-- Happiness boost!
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 30)
+						end
+						
+						return string.format("🎉 %s said yes! And... you're having a baby! 👶 Welcome %s to the family!", partnerName, babyName)
+					else
+						-- Agreed but no pregnancy this time
+						return string.format("💕 %s agreed! You're trying... but no baby yet. Keep trying!", partnerName)
+					end
+				else
+					-- Partner doesn't want kids right now
+					local declineReasons = {
+						"They're not ready for that commitment yet.",
+						"They want to focus on career first.",
+						"They think you should wait a bit longer.",
+						"They want to be more financially stable first.",
+						"They're not sure about having kids.",
+					}
+					local reason = declineReasons[RANDOM:NextInteger(1, #declineReasons)]
+					
+					-- Small relationship hit
+					if relationship then
+						relationship.relationship = math.max(0, (relationship.relationship or 50) - 5)
+					end
+					
+					return string.format("😔 %s said not right now. %s", partnerName, reason)
+				end
+			end,
+		},
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Proposal now has proper acceptance/rejection logic!
+		-- User bug: "I CAN SPAM PROPOSE?? AND ITS NOT REALLY WORKING WELL HAVING A 
+		-- CARDRESULT POPUP OR SOMETHING"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		propose = { 
+			delta = 0, -- Delta applied based on outcome
+			cost = 5000, 
+			isProposal = true, -- Flag for special handling
+			cooldownYears = 1, -- Prevent spam
+			message = function(state, relationship)
+				-- Calculate acceptance chance based on relationship strength
+				local relStrength = (relationship and relationship.relationship) or 50
+				local acceptChance = 0.3 + (relStrength / 200) -- 30% base + up to 50% from relationship
+				
+				if RANDOM:NextNumber() < acceptChance then
+					-- ACCEPTED!
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = true
+					state.Flags.engaged_at_age = state.Age or 0
+					state.Flags.committed_relationship = true
+					state.Flags.proposal_rejected = nil
+					
+					-- Update relationship
+					if relationship then
+						relationship.type = "fiance"
+						relationship.role = "Fiancé"
+						relationship.relationship = math.min(100, (relationship.relationship or 70) + 20)
+					end
+					
+					local partnerName = (relationship and relationship.name) or "your partner"
+					return string.format("💍 %s said YES! You're engaged! 💍", partnerName)
+				else
+					-- REJECTED
+					state.Flags = state.Flags or {}
+					state.Flags.proposal_rejected = true
+					
+					-- Relationship takes a hit
+					if relationship then
+						relationship.relationship = math.max(0, (relationship.relationship or 50) - 15)
+					end
+					
+					local partnerName = (relationship and relationship.name) or "your partner"
+					return string.format("💔 %s said they need more time... Proposal rejected. 💔", partnerName)
+				end
+			end,
+			grant = function(state, relationship)
+				-- Stats are applied based on the outcome
+				local wasAccepted = state.Flags and state.Flags.engaged
+				if wasAccepted then
+					state:ModifyStat("Happiness", 25)
+				else
+					state:ModifyStat("Happiness", -15)
+				end
+			end,
+		},
 		breakup = { delta = -999, message = "You ended the relationship.", remove = true, clearFlags = { "has_partner", "dating", "committed_relationship", "married", "engaged" } },
 		flirt = { delta = 4, message = "You flirted playfully." },
 		compliment = { delta = 3, message = "You complimented them." },
@@ -18138,7 +18728,16 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 			return partner
 		end
 
-		return self:createRelationship(state, "romance", options.relationshipOptions)
+		-- CRITICAL FIX: Ensure relationshipOptions is never nil for romance
+		-- User complaint: "ROMANCE DOSENT WORK SOMETIMES LIKE WHEN OLD"
+		local relOptions = options.relationshipOptions or {}
+		local result = self:createRelationship(state, "romance", relOptions)
+		if not result then
+			-- Fallback: create a basic partner if createRelationship failed
+			debugPrint("[ensureRelationship] createRelationship returned nil for romance, creating basic partner")
+			return self:createBasicRelationship(state, "romance")
+		end
+		return result
 	end
 
 	-- Enemy: create new enemy if no specific target
@@ -18202,6 +18801,25 @@ function LifeBackend:handleInteraction(player, payload)
 
 	state.Flags = state.Flags or {}
 	state.Relationships = state.Relationships or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check interaction cooldown to prevent spam (like proposal spam)
+	-- User bug: "I CAN SPAM PROPOSE??"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if action.cooldownYears and action.cooldownYears > 0 then
+		state.InteractionCooldowns = state.InteractionCooldowns or {}
+		local cooldownKey = relType .. "_" .. actionId
+		local lastUsedAge = state.InteractionCooldowns[cooldownKey]
+		local currentAge = state.Age or 0
+		if lastUsedAge and (currentAge - lastUsedAge) < action.cooldownYears then
+			local yearsLeft = action.cooldownYears - (currentAge - lastUsedAge)
+			return { 
+				success = false, 
+				message = string.format("You need to wait %d more year(s) before you can do this again.", math.ceil(yearsLeft)),
+				showResult = true,
+			}
+		end
+	end
 
 	-- Single-only actions (meet_someone etc.)
 	if action.requiresSingle then
@@ -18400,6 +19018,15 @@ function LifeBackend:handleInteraction(player, payload)
 
 	feed = feed or grantMessage or action.message or "You interacted."
 	self:pushState(player, feed)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Record interaction cooldown time to prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if action.cooldownYears and action.cooldownYears > 0 then
+		state.InteractionCooldowns = state.InteractionCooldowns or {}
+		local cooldownKey = relType .. "_" .. actionId
+		state.InteractionCooldowns[cooldownKey] = state.Age or 0
+	end
 
 	-- IMPORTANT: do NOT return full state here – the UI should rely on SyncState,
 	-- or only use this small payload for local row updates.
@@ -18408,6 +19035,8 @@ function LifeBackend:handleInteraction(player, payload)
 		message = feed,
 		targetId = relationship.id,
 		relationshipValue = relationship.relationship,
+		-- CRITICAL FIX: Flag for client to show a result popup
+		showResult = action.isProposal or action.showResult,
 	}
 end
 
@@ -18733,9 +19362,15 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 		}
 		local postMoney = state.Money or 0
 		
+		-- CRITICAL FIX: skipClientPopup = true for minigame results!
+		-- User complaint: "RESULT LIKE FROM MINIGAMES THE CARD POP UPS TWO TYPES POPUP"
+		-- The minigame already showed its own result screen (VICTORY!/YOU LOST)
+		-- So we set skipClientPopup = true to prevent a SECOND popup from ShowResult
 		local resultData = {
-			showPopup = true,
+			showPopup = false, -- CRITICAL FIX: Don't show extra popup - minigame already showed result
+			skipClientPopup = true, -- CRITICAL FIX: Explicit flag to skip client popup
 			wasSuccess = won,
+			wasMinigame = true, -- Flag to indicate this was a minigame result
 			emoji = won and "🎉" or "😓",
 			title = won and "Success!" or "Failed!",
 			body = choice.feedText or (won and "You succeeded at the challenge!" or "You failed the challenge."),

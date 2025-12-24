@@ -798,32 +798,470 @@ MedicalEvents.Alternative = {
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEDICAL-1: SPECIALIST EVENTS (Added for more variety)
+-- User request: Fix MedicalActivityEvents.lua
+-- ═══════════════════════════════════════════════════════════════════════════════
+MedicalEvents.Specialist = {
+	-- Event 1: Cardiologist
+	{
+		id = "specialist_cardio",
+		title = "❤️ Heart Checkup",
+		texts = {
+			"You're seeing a cardiologist for a heart checkup.",
+			"Time to check on your ticker!",
+			"Heart health is crucial as you age.",
+		},
+		effects = { Health = {5, 15}, Happiness = {-5, 10} },
+		cost = 300,
+		choices = {
+			{
+				text = "Full cardiac workup",
+				feedback = {
+					"EKG, stress test, the works!",
+					"Your heart is in good shape!",
+					"Strong heartbeat detected!",
+				},
+				effects = { Health = 15, Happiness = 10 },
+			},
+			{
+				text = "Discuss lifestyle changes",
+				feedback = {
+					"The doctor has some recommendations.",
+					"Diet and exercise can make a huge difference.",
+					"Heart-healthy living tips received!",
+				},
+				effects = { Health = 10, Smarts = 5, Happiness = 5 },
+			},
+			{
+				text = "Express concerns",
+				feedback = {
+					"You share your health worries.",
+					"The doctor addresses each one.",
+					"Knowledge reduces anxiety!",
+				},
+				effects = { Health = 8, Happiness = 8 },
+			},
+		},
+	},
+	-- Event 2: Dermatologist
+	{
+		id = "specialist_derm",
+		title = "🧴 Dermatology Appointment",
+		texts = {
+			"Time for a skin check with the dermatologist.",
+			"Taking care of your skin health.",
+			"Prevention and early detection are key!",
+		},
+		effects = { Health = {5, 12}, Looks = {3, 10} },
+		cost = 200,
+		choices = {
+			{
+				text = "Full skin cancer screening",
+				feedback = {
+					"The doctor examines every mole and mark.",
+					"All clear! No concerns found!",
+					"Peace of mind is priceless!",
+				},
+				effects = { Health = 15, Happiness = 10 },
+			},
+			{
+				text = "Address skin concerns",
+				feedback = {
+					"You discuss acne, aging, or other issues.",
+					"The doctor prescribes treatment.",
+					"Clearer skin ahead!",
+				},
+				effects = { Health = 8, Looks = 10, Happiness = 8 },
+			},
+			{
+				text = "Get skincare routine advice",
+				feedback = {
+					"Personalized skincare tips!",
+					"Your skin will thank you!",
+					"Professional recommendations received!",
+				},
+				effects = { Looks = 12, Smarts = 3 },
+			},
+		},
+	},
+	-- Event 3: Ophthalmologist
+	{
+		id = "specialist_eye",
+		title = "👁️ Eye Examination",
+		texts = {
+			"Time for a comprehensive eye exam.",
+			"Your vision is important to check regularly.",
+			"The eye doctor is ready to see you.",
+		},
+		effects = { Health = {5, 10}, Happiness = {-3, 8} },
+		cost = 150,
+		choices = {
+			{
+				text = "Full vision test",
+				feedback = {
+					"Reading the chart... E, F, P, T, O, Z...",
+					"Your vision is checked thoroughly.",
+					"Eyes are looking good!",
+				},
+				effects = { Health = 10, Happiness = 5 },
+			},
+			{
+				text = "Get new glasses/contacts",
+				feedback = {
+					"Time for an updated prescription!",
+					"The world looks sharper now!",
+					"Clear vision achieved!",
+				},
+				effects = { Health = 8, Looks = 5, Happiness = 10 },
+				cost = 200,
+			},
+			{
+				text = "Ask about LASIK",
+				feedback = {
+					"The doctor explains laser eye surgery options.",
+					"Freedom from glasses could be yours!",
+					"Interesting options to consider!",
+				},
+				effects = { Smarts = 5, Happiness = 3 },
+			},
+		},
+	},
+	-- Event 4: Orthopedist
+	{
+		id = "specialist_ortho",
+		title = "🦴 Orthopedic Consultation",
+		texts = {
+			"Your joints and bones need some attention.",
+			"Seeing the orthopedic specialist.",
+			"Musculoskeletal health check!",
+		},
+		effects = { Health = {5, 15}, Happiness = {-5, 8} },
+		cost = 250,
+		choices = {
+			{
+				text = "X-rays and examination",
+				feedback = {
+					"The doctor examines your joints and bones.",
+					"Getting to the root of the issue.",
+					"Diagnosis in progress!",
+				},
+				effects = { Health = 12, Happiness = 3 },
+			},
+			{
+				text = "Physical therapy referral",
+				feedback = {
+					"PT can help strengthen problem areas!",
+					"A plan for improvement!",
+					"Healing through movement!",
+				},
+				effects = { Health = 15, Happiness = 8 },
+			},
+			{
+				text = "Discuss pain management",
+				feedback = {
+					"Options for managing chronic pain.",
+					"The doctor has suggestions.",
+					"Relief might be possible!",
+				},
+				effects = { Health = 10, Happiness = 10 },
+			},
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEDICAL-2: FITNESS/WELLNESS EVENTS
+-- ═══════════════════════════════════════════════════════════════════════════════
+MedicalEvents.Fitness = {
+	-- Event 1: Nutritionist
+	{
+		id = "fitness_nutrition",
+		title = "🥗 Nutritionist Consultation",
+		texts = {
+			"Meeting with a nutritionist about your diet.",
+			"Time to optimize your eating habits!",
+			"Food is medicine!",
+		},
+		effects = { Health = {8, 18}, Happiness = {5, 15} },
+		cost = 150,
+		choices = {
+			{
+				text = "Create a meal plan",
+				feedback = {
+					"A personalized diet plan just for you!",
+					"Eating better starts now!",
+					"Nutrition goals set!",
+				},
+				effects = { Health = 18, Happiness = 10, Smarts = 5 },
+			},
+			{
+				text = "Address specific issues",
+				feedback = {
+					"Targeting your particular health concerns.",
+					"Diet can help many conditions!",
+					"Therapeutic nutrition advice received!",
+				},
+				effects = { Health = 15, Happiness = 8 },
+			},
+			{
+				text = "Learn about supplements",
+				feedback = {
+					"The nutritionist explains what you might need.",
+					"Filling nutritional gaps!",
+					"Knowledge is power!",
+				},
+				effects = { Health = 12, Smarts = 8 },
+			},
+		},
+	},
+	-- Event 2: Personal trainer assessment
+	{
+		id = "fitness_trainer",
+		title = "🏋️ Fitness Assessment",
+		texts = {
+			"A personal trainer evaluates your fitness level.",
+			"Time to see where you stand physically!",
+			"Baseline measurements are important!",
+		},
+		effects = { Health = {5, 15}, Happiness = {5, 12} },
+		cost = 100,
+		choices = {
+			{
+				text = "Full fitness test",
+				feedback = {
+					"Cardio, strength, flexibility - all tested!",
+					"Now you know your starting point!",
+					"Let the gains begin!",
+				},
+				effects = { Health = 15, Happiness = 10 },
+			},
+			{
+				text = "Create workout program",
+				feedback = {
+					"A personalized exercise plan!",
+					"Tailored to your goals!",
+					"Time to get fit!",
+				},
+				effects = { Health = 12, Happiness = 12, Smarts = 3 },
+			},
+			{
+				text = "Set realistic goals",
+				feedback = {
+					"Achievable targets for improvement.",
+					"Progress over perfection!",
+					"Your fitness journey begins!",
+				},
+				effects = { Health = 10, Happiness = 15 },
+			},
+		},
+	},
+	-- Event 3: Sleep specialist
+	{
+		id = "fitness_sleep",
+		title = "😴 Sleep Study",
+		texts = {
+			"You're having your sleep analyzed.",
+			"Quality sleep is crucial for health!",
+			"Time to fix your sleep issues.",
+		},
+		effects = { Health = {8, 15}, Happiness = {5, 15} },
+		cost = 200,
+		choices = {
+			{
+				text = "Full sleep analysis",
+				feedback = {
+					"Monitors track your sleep patterns all night.",
+					"Data reveals the issues!",
+					"Now you understand your sleep!",
+				},
+				effects = { Health = 15, Happiness = 10, Smarts = 5 },
+			},
+			{
+				text = "Try sleep hygiene tips",
+				feedback = {
+					"Simple changes can make a big difference!",
+					"Better sleep habits start tonight!",
+					"Sleep optimization!",
+				},
+				effects = { Health = 12, Happiness = 15 },
+			},
+			{
+				text = "Consider treatment options",
+				feedback = {
+					"There are solutions for sleep disorders.",
+					"Help is available!",
+					"Better rest is possible!",
+				},
+				effects = { Health = 10, Happiness = 12 },
+			},
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #MEDICAL-3: REHAB/ADDICTION EVENTS
+-- ═══════════════════════════════════════════════════════════════════════════════
+MedicalEvents.Rehab = {
+	-- Event 1: Rehab check-in
+	{
+		id = "rehab_checkin",
+		title = "🏥 Rehab Day",
+		texts = {
+			"Another day in your recovery journey.",
+			"Healing from addiction takes time.",
+			"You're working on getting better.",
+		},
+		effects = { Health = {10, 20}, Happiness = {-5, 15} },
+		cost = 0,
+		choices = {
+			{
+				text = "Participate fully",
+				feedback = {
+					"You engage in all the programming.",
+					"Every day is progress!",
+					"Commitment to recovery!",
+				},
+				effects = { Health = 20, Happiness = 15 },
+			},
+			{
+				text = "Attend group sessions",
+				feedback = {
+					"Sharing with others who understand.",
+					"You're not alone in this.",
+					"Community supports recovery!",
+				},
+				effects = { Health = 15, Happiness = 12 },
+			},
+			{
+				text = "Focus on individual work",
+				feedback = {
+					"Deep personal reflection.",
+					"Understanding your triggers.",
+					"Self-awareness grows!",
+				},
+				effects = { Health = 18, Happiness = 8, Smarts = 5 },
+			},
+		},
+	},
+	-- Event 2: Support meeting
+	{
+		id = "rehab_meeting",
+		title = "🤝 Support Group Meeting",
+		texts = {
+			"Time for your recovery support meeting.",
+			"AA, NA, or another group - people who get it.",
+			"Continuing to work your program.",
+		},
+		effects = { Health = {5, 12}, Happiness = {5, 18} },
+		cost = 0,
+		choices = {
+			{
+				text = "Share your story",
+				feedback = {
+					"You open up to the group.",
+					"Others relate and offer support.",
+					"Vulnerability is strength!",
+				},
+				effects = { Health = 12, Happiness = 18 },
+			},
+			{
+				text = "Listen and learn",
+				feedback = {
+					"Others' stories provide insight.",
+					"Wisdom from the fellowship.",
+					"Learning from those ahead of you.",
+				},
+				effects = { Health = 10, Happiness = 12, Smarts = 5 },
+			},
+			{
+				text = "Support newcomers",
+				feedback = {
+					"You help someone new to recovery.",
+					"Giving back what was given to you.",
+					"Service keeps you sober!",
+				},
+				effects = { Health = 8, Happiness = 15 },
+			},
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- MAPPING TABLE
 -- ═══════════════════════════════════════════════════════════════════════════════
 MedicalEvents.ActivityMapping = {
+	-- Doctor/General
 	["doctor"] = "DoctorVisit",
 	["doctor_visit"] = "DoctorVisit",
 	["checkup"] = "DoctorVisit",
 	["physical"] = "DoctorVisit",
+	["general_practitioner"] = "DoctorVisit",
+	["gp"] = "DoctorVisit",
+	-- Therapy/Mental Health
 	["therapy"] = "Therapy",
 	["therapist"] = "Therapy",
 	["counseling"] = "Therapy",
 	["mental_health"] = "Therapy",
+	["psychologist"] = "Therapy",
+	["psychiatrist"] = "Therapy",
+	-- Plastic Surgery
 	["plastic_surgery"] = "PlasticSurgery",
 	["cosmetic"] = "PlasticSurgery",
 	["botox"] = "PlasticSurgery",
+	["facelift"] = "PlasticSurgery",
+	["liposuction"] = "PlasticSurgery",
+	-- Dentist
 	["dentist"] = "Dentist",
 	["dental"] = "Dentist",
 	["teeth"] = "Dentist",
+	["orthodontist"] = "Dentist",
+	-- Emergency
 	["emergency"] = "Emergency",
 	["hospital"] = "Emergency",
 	["er"] = "Emergency",
+	["urgent_care"] = "Emergency",
+	-- Alternative Medicine
 	["acupuncture"] = "Alternative",
 	["massage"] = "Alternative",
 	["chiropractic"] = "Alternative",
 	["chiropractor"] = "Alternative",
 	["alternative"] = "Alternative",
 	["spa"] = "Alternative",
+	["wellness"] = "Alternative",
+	["holistic"] = "Alternative",
+	-- CRITICAL FIX #MEDICAL-4: New specialist mappings
+	["specialist"] = "Specialist",
+	["cardiologist"] = "Specialist",
+	["heart"] = "Specialist",
+	["cardiac"] = "Specialist",
+	["dermatologist"] = "Specialist",
+	["skin"] = "Specialist",
+	["dermatology"] = "Specialist",
+	["ophthalmologist"] = "Specialist",
+	["eye_doctor"] = "Specialist",
+	["eye"] = "Specialist",
+	["optometrist"] = "Specialist",
+	["orthopedist"] = "Specialist",
+	["orthopedic"] = "Specialist",
+	["bone"] = "Specialist",
+	["joint"] = "Specialist",
+	-- Fitness/Wellness
+	["fitness"] = "Fitness",
+	["nutritionist"] = "Fitness",
+	["dietitian"] = "Fitness",
+	["nutrition"] = "Fitness",
+	["trainer"] = "Fitness",
+	["personal_trainer"] = "Fitness",
+	["sleep"] = "Fitness",
+	["sleep_study"] = "Fitness",
+	-- Rehab/Recovery
+	["rehab"] = "Rehab",
+	["rehabilitation"] = "Rehab",
+	["addiction"] = "Rehab",
+	["recovery"] = "Rehab",
+	["aa"] = "Rehab",
+	["na"] = "Rehab",
+	["support_group"] = "Rehab",
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -855,7 +1293,38 @@ function MedicalEvents.getEventForActivity(activityId)
 end
 
 function MedicalEvents.getAllCategories()
-	return {"DoctorVisit", "Therapy", "PlasticSurgery", "Dentist", "Emergency", "Alternative"}
+	return {"DoctorVisit", "Therapy", "PlasticSurgery", "Dentist", "Emergency", "Alternative", "Specialist", "Fitness", "Rehab"}
+end
+
+-- CRITICAL FIX #MEDICAL-5: Helper to get random event from any category
+function MedicalEvents.getRandomEvent()
+	local categories = MedicalEvents.getAllCategories()
+	local category = categories[math.random(1, #categories)]
+	local eventList = MedicalEvents[category]
+	if eventList and #eventList > 0 then
+		return eventList[math.random(1, #eventList)]
+	end
+	return nil
+end
+
+-- CRITICAL FIX #MEDICAL-6: Helper to check if an activity ID maps to a medical event
+function MedicalEvents.isValidActivity(activityId)
+	if not activityId then return false end
+	local lower = activityId:lower()
+	
+	-- Direct mapping check
+	if MedicalEvents.ActivityMapping[lower] then
+		return true
+	end
+	
+	-- Partial match check
+	for key, _ in pairs(MedicalEvents.ActivityMapping) do
+		if string.find(lower, key) or string.find(key, lower) then
+			return true
+		end
+	end
+	
+	return false
 end
 
 return MedicalEvents

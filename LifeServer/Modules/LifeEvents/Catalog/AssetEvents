@@ -2197,6 +2197,560 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ASSET-7: MORE VARIETY EVENTS
+	-- User complaint: "ASSET EVENTS BARELY WAS UPDATED IT HASNT BEEN TOUCHED INA WHILE"
+	-- Adding more diverse asset interaction events
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "car_road_trip",
+		emoji = "🛣️",
+		title = "Epic Road Trip",
+		text = "Perfect weather for a road trip! Your car is itching to hit the open road. Where to?",
+		question = "What kind of road trip?",
+		category = "assets",
+		weight = 6,
+		minAge = 18,
+		maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Vehicles")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Cross-country adventure!",
+				effects = { Happiness = 25, Health = 5 },
+				feedText = "You set out on an epic journey!",
+				onResolve = function(state)
+					local cost = RANDOM:NextInteger(1000, 4000)
+					state.Money = math.max(0, (state.Money or 0) - cost)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						state.Flags = state.Flags or {}
+						state.Flags.road_warrior = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🛣️ INCREDIBLE journey! Spent $%d but made memories for a lifetime!", cost))
+						end
+					elseif roll < 0.85 then
+						if state.AddFeed then
+							state:AddFeed(string.format("🛣️ Great road trip! Minor car trouble but nothing major. Spent $%d.", cost))
+						end
+					else
+						local repair = RANDOM:NextInteger(500, 2000)
+						state.Money = math.max(0, (state.Money or 0) - repair)
+						if state.AddFeed then
+							state:AddFeed(string.format("🛣️ Car broke down mid-trip! $%d in repairs. Still worth it.", repair))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Scenic mountain drive",
+				effects = { Happiness = 18, Health = 8 },
+				feedText = "You drove through breathtaking scenery.",
+				onResolve = function(state)
+					local cost = RANDOM:NextInteger(100, 500)
+					state.Money = math.max(0, (state.Money or 0) - cost)
+					if state.AddFeed then
+						state:AddFeed("🏔️ Stunning views! Perfect day for a mountain drive.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Coastal cruise",
+				effects = { Happiness = 15, Health = 5 },
+				feedText = "You cruised along the coast.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("🌊 Ocean breeze, beautiful sunsets. Perfect coastal drive!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "property_value_tank",
+		emoji = "📉",
+		title = "Property Value Crash!",
+		text = "Bad news! The area around your property has deteriorated. Crime is up, businesses are closing, and property values are TANKING.",
+		question = "What do you do?",
+		category = "assets",
+		weight = 4,
+		minAge = 25,
+		maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Sell now - cut losses!",
+				effects = { Happiness = -15 },
+				feedText = "You sold at a loss...",
+				onResolve = function(state)
+					local loss = RANDOM:NextInteger(20000, 100000)
+					state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 150000)
+					if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+						table.remove(state.Assets.Properties, 1)
+					end
+					if state.AddFeed then
+						state:AddFeed(string.format("📉 Sold the property at a $%d loss. Better than losing more.", loss))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Hold and wait it out",
+				effects = { Happiness = -8 },
+				feedText = "You're riding out the downturn...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("📉 Smart call! The neighborhood eventually recovered. Patience paid off!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("📉 Still waiting for the turnaround. Hope it comes soon...")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Invest in improvements",
+				effects = { Money = -30000, Happiness = 5 },
+				feedText = "You're trying to improve the area yourself!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.community_investor = true
+					if RANDOM:NextNumber() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("📈 Your investment started a revitalization trend! Property value recovering!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("📉 Nice try but one person can't fix everything. At least you tried.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "valet_disaster",
+		emoji = "🚗",
+		title = "Valet Nightmare!",
+		text = "You let a valet park your expensive car and when it comes back... there's a HUGE scratch on the side!",
+		question = "How do you handle this?",
+		category = "assets",
+		weight = 5,
+		minAge = 21,
+		maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			if not hasAssetType(state, "Vehicles") then return false end
+			local vehicle = getBestVehicle(state)
+			return vehicle and (vehicle.price or 0) >= 50000
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Demand they pay for repairs!",
+				effects = { Happiness = -5 },
+				feedText = "You confronted the valet company...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.6 then
+						if state.AddFeed then
+							state:AddFeed("🚗 Valet company covered the repairs! Justice served!")
+						end
+					else
+						local cost = RANDOM:NextInteger(2000, 8000)
+						state.Money = math.max(0, (state.Money or 0) - cost)
+						if state.AddFeed then
+							state:AddFeed(string.format("🚗 They denied everything! Had to pay $%d for repairs yourself.", cost))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Sue them!",
+				effects = { Happiness = -8, Money = -5000 },
+				feedText = "You're taking legal action...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.5 then
+						local settlement = RANDOM:NextInteger(15000, 50000)
+						state.Money = (state.Money or 0) + settlement
+						if state.AddFeed then
+							state:AddFeed(string.format("⚖️ Won the lawsuit! $%d settlement! Worth the hassle.", settlement))
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("⚖️ Lost the case. Expensive lesson about valet parking.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Just get it fixed and move on",
+				effects = { Happiness = -10, Smarts = 2 },
+				feedText = "You took the high road.",
+				onResolve = function(state)
+					local cost = RANDOM:NextInteger(1500, 5000)
+					state.Money = math.max(0, (state.Money or 0) - cost)
+					if state.AddFeed then
+						state:AddFeed(string.format("🚗 Paid $%d for repairs. Never using that valet again.", cost))
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "home_security_breach",
+		emoji = "🚨",
+		title = "Security Alert!",
+		text = "Your home security system detected motion at 3 AM! The cameras show someone in your backyard!",
+		question = "What do you do?",
+		category = "assets",
+		weight = 5,
+		minAge = 21,
+		maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Properties")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Call the police immediately",
+				effects = { Happiness = -5 },
+				feedText = "You dialed 911...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("🚔 Police arrived quickly. It was just a deer. False alarm!")
+						end
+					elseif roll < 0.8 then
+						if state.AddFeed then
+							state:AddFeed("🚔 Police caught a prowler! They were casing houses. Good call!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🚔 Police took too long. Whoever it was is gone. Installing better security.")
+						end
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(500, 2000))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Confront them yourself",
+				effects = { Happiness = 5 },
+				feedText = "You grabbed a flashlight and went outside...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.4 then
+						if state.AddFeed then
+							state:AddFeed("🦝 Just raccoons in your trash! Crisis averted. Heart still racing.")
+						end
+					elseif roll < 0.7 then
+						if state.AddFeed then
+							state:AddFeed("👤 They ran when they saw you! Cowards. Security upgraded after this.")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.home_security = true
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-15, -5))
+						end
+						if state.AddFeed then
+							state:AddFeed("👊 Confrontation went badly! Got hurt defending your home!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Watch from inside and record",
+				effects = { Happiness = -3, Smarts = 3 },
+				feedText = "You stayed safe and documented everything.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("📹 Got clear footage. Gave it to police. Smart and safe approach.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "luxury_investment_offer",
+		emoji = "💎",
+		title = "Art Investment Opportunity",
+		text = "An art dealer offers you a 'once in a lifetime' investment opportunity. A painting that could triple in value!",
+		question = "Do you invest?",
+		category = "assets",
+		weight = 4,
+		minAge = 30,
+		maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return (state.Money or 0) >= 50000
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Invest big ($50,000)",
+				effects = { Happiness = 5 },
+				feedText = "You bought the artwork...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 50000
+					local roll = RANDOM:NextNumber()
+					if roll < 0.25 then
+						local profit = RANDOM:NextInteger(100000, 250000)
+						state.Money = (state.Money or 0) + profit
+						state.Flags = state.Flags or {}
+						state.Flags.art_collector = true
+						if state.AddFeed then
+							state:AddFeed(string.format("💎 JACKPOT! The painting sold for $%d! Art investment genius!", profit))
+						end
+					elseif roll < 0.5 then
+						state.Money = (state.Money or 0) + 60000
+						if state.AddFeed then
+							state:AddFeed("💎 Made a small profit! The painting appreciated nicely.")
+						end
+					elseif roll < 0.75 then
+						state.Money = (state.Money or 0) + 30000
+						if state.AddFeed then
+							state:AddFeed("💎 Lost money on the art. It didn't appreciate as promised.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💎 IT WAS A FAKE! Lost the entire investment! Scammed!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Pass - too risky",
+				effects = { Happiness = 2, Smarts = 3 },
+				feedText = "You declined the opportunity.",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then
+						if state.AddFeed then
+							state:AddFeed("💎 Heard later it was a scam! Dodged a bullet!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💎 The art actually did appreciate. FOMO hitting hard.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "car_celebrity_encounter",
+		emoji = "🌟",
+		title = "Celebrity Wants Your Car!",
+		text = "A famous celebrity saw your car and LOVES it! They want to buy it from you on the spot!",
+		question = "Do you sell?",
+		category = "assets",
+		weight = 4,
+		minAge = 21,
+		maxAge = 65,
+		baseChance = 0.2,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			if not hasAssetType(state, "Vehicles") then return false end
+			local vehicle = getBestVehicle(state)
+			return vehicle and (vehicle.price or 0) >= 75000
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Sell it - that's big money!",
+				effects = { Happiness = 15 },
+				feedText = "You sold your car to a celebrity!",
+				onResolve = function(state)
+					local vehicle = getBestVehicle(state)
+					local value = vehicle and (vehicle.price or 100000) or 100000
+					local premium = RANDOM:NextInteger(20000, 100000)
+					state.Money = (state.Money or 0) + value + premium
+					if state.Assets and state.Assets.Vehicles then
+						for i, v in ipairs(state.Assets.Vehicles) do
+							if v == vehicle then
+								table.remove(state.Assets.Vehicles, i)
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.sold_to_celeb = true
+					if state.AddFeed then
+						state:AddFeed(string.format("🌟 Sold your car for $%d ABOVE market value! Now it's famous!", premium))
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "No deal - this is MY car",
+				effects = { Happiness = 10 },
+				feedText = "You turned down a celebrity!",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("🌟 Kept your car. Some things aren't for sale, even to celebrities!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mansion_movie_set",
+		emoji = "🎬",
+		title = "Hollywood Wants Your House!",
+		text = "A movie production company wants to use your property as a filming location! They'll pay handsomely.",
+		question = "Do you let them film?",
+		category = "assets",
+		weight = 4,
+		minAge = 25,
+		maxAge = 75,
+		baseChance = 0.2,
+		cooldown = 6,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			if not state.Assets or not state.Assets.Properties then return false end
+			for _, prop in ipairs(state.Assets.Properties) do
+				if (prop.price or prop.value or 0) >= 500000 then
+					return true
+				end
+			end
+			return false
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Let them film - easy money!",
+				effects = { Happiness = 15 },
+				feedText = "Your home became a movie set!",
+				onResolve = function(state)
+					local payment = RANDOM:NextInteger(20000, 100000)
+					state.Money = (state.Money or 0) + payment
+					local roll = RANDOM:NextNumber()
+					if roll < 0.7 then
+						state.Flags = state.Flags or {}
+						state.Flags.movie_mansion = true
+						if state.AddFeed then
+							state:AddFeed(string.format("🎬 Earned $%d! Met movie stars! Your house is famous now!", payment))
+						end
+					else
+						local damage = RANDOM:NextInteger(5000, 20000)
+						state.Money = math.max(0, (state.Money or 0) - damage)
+						if state.AddFeed then
+							state:AddFeed(string.format("🎬 Got paid $%d but they caused $%d in damages! Still profit though.", payment, damage))
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "No way - this is my private home",
+				effects = { Happiness = 3 },
+				feedText = "You value your privacy.",
+			},
+		},
+	},
+	
+	{
+		id = "vehicle_recall",
+		emoji = "⚠️",
+		title = "Vehicle Recall Notice!",
+		text = "Your car manufacturer issued a recall for your vehicle! There's a safety defect that needs to be fixed.",
+		question = "How do you handle this?",
+		category = "assets",
+		weight = 5,
+		minAge = 18,
+		maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			return hasAssetType(state, "Vehicles")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Get it fixed immediately - safety first!",
+				effects = { Happiness = 3, Smarts = 3 },
+				feedText = "You took your car in for the recall fix.",
+				onResolve = function(state)
+					if state.AddFeed then
+						state:AddFeed("⚠️ Recall fix complete! Free of charge. Your car is safe now.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait - it's probably nothing serious",
+				effects = { Happiness = 2 },
+				feedText = "You put it off...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.85 then
+						if state.AddFeed then
+							state:AddFeed("⚠️ Got around to it eventually. No problems in the meantime.")
+						end
+					else
+						if state.ModifyStat then
+							state:ModifyStat("Health", RANDOM:NextInteger(-20, -5))
+						end
+						local repair = RANDOM:NextInteger(1000, 5000)
+						state.Money = math.max(0, (state.Money or 0) - repair)
+						if state.AddFeed then
+							state:AddFeed(string.format("⚠️ The defect caused an incident! You got hurt and it cost $%d!", repair))
+						end
+					end
+				end,
+			},
+		},
+	},
 }
 
 return events
