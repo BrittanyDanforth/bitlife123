@@ -622,6 +622,9 @@ function LifeBackend:validateRecursiveState(state, forceRun)
 	fixes = fixes + self:cleanDuplicateAssets(state)
 	fixes = fixes + self:validateChildState(state)
 	fixes = fixes + self:validateMilestones(state)       -- Milestone validation
+	fixes = fixes + self:validateEducationSystem(state)  -- AAA: Education validation
+	fixes = fixes + self:validateAssetOwnership(state)   -- AAA: Asset sync
+	fixes = fixes + self:validatePrisonState(state)      -- AAA: Prison sync
 	
 	if shouldLog or fixes > 0 then
 		print(string.format("[RVS] Validation complete. Total fixes applied: %d", fixes))
@@ -935,7 +938,9 @@ function LifeBackend:validateEventChains(state)
 			flags.dating_royalty_years = nil
 			-- Clear the royal partner
 			if state.Relationships and state.Relationships.partner then
-				if state.Relationships.partner.isRoyalty then
+				-- AAA FIX: Nil safety check
+				local partner = state.Relationships.partner
+				if type(partner) == "table" and partner.isRoyalty then
 					state.Relationships.partner = nil
 				end
 			end
@@ -2027,6 +2032,273 @@ function LifeBackend:validateMilestones(state)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: EDUCATION SYSTEM VALIDATOR
+-- Ensures education data is consistent with flags and age
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateEducationSystem(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	local age = state.Age or 0
+	
+	state.EducationData = state.EducationData or {}
+	local edu = state.EducationData
+	
+	-- Children under 5 can't be in school
+	if age < 5 then
+		if flags.in_school then
+			flags.in_school = nil
+			fixes = fixes + 1
+		end
+		if flags.in_college then
+			flags.in_college = nil
+			edu.inCollege = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- Under 18 can't be in college (unless special cases)
+	if age < 16 and flags.in_college then
+		flags.in_college = nil
+		edu.inCollege = nil
+		fixes = fixes + 1
+	end
+	
+	-- Sync in_college flag with EducationData
+	if flags.in_college and not edu.inCollege then
+		edu.inCollege = true
+		edu.Status = edu.Status or "enrolled"
+		fixes = fixes + 1
+	elseif edu.inCollege and not flags.in_college then
+		flags.in_college = true
+		fixes = fixes + 1
+	end
+	
+	-- GPA must be bounded 0-4
+	if edu.GPA then
+		if type(edu.GPA) ~= "number" then
+			edu.GPA = tonumber(edu.GPA) or 2.5
+			fixes = fixes + 1
+		else
+			edu.GPA = math.max(0, math.min(4, edu.GPA))
+		end
+	end
+	
+	-- Debt must be a number
+	if edu.Debt then
+		if type(edu.Debt) ~= "number" then
+			edu.Debt = tonumber(edu.Debt) or 0
+			fixes = fixes + 1
+		end
+		if edu.Debt < 0 then
+			edu.Debt = 0
+			fixes = fixes + 1
+		end
+	end
+	
+	-- yearsCompleted bounds
+	if edu.yearsCompleted then
+		if type(edu.yearsCompleted) ~= "number" then
+			edu.yearsCompleted = 0
+			fixes = fixes + 1
+		else
+			edu.yearsCompleted = math.max(0, math.min(20, edu.yearsCompleted))
+		end
+	end
+	
+	-- Validate degree flags match degreeLevel
+	if edu.degreeLevel then
+		if edu.degreeLevel >= 1 then flags.has_diploma = true end
+		if edu.degreeLevel >= 2 then flags.has_associate = true end
+		if edu.degreeLevel >= 3 then flags.has_degree = true; flags.has_bachelor = true end
+		if edu.degreeLevel >= 4 then flags.has_master = true end
+		if edu.degreeLevel >= 5 then flags.has_phd = true end
+	end
+	
+	-- Can't be both dropped out AND graduated
+	if flags.dropped_out_high_school and flags.has_diploma then
+		flags.dropped_out_high_school = nil
+		fixes = fixes + 1
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: ASSET OWNERSHIP VALIDATOR
+-- Ensures asset flags match actual owned assets
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateAssetOwnership(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	state.Assets = state.Assets or {}
+	local assets = state.Assets
+	
+	-- Count owned vehicles
+	local vehicleCount = 0
+	if assets.Vehicles then
+		for _, v in ipairs(assets.Vehicles) do
+			if type(v) == "table" and (v.owned or v.id) then
+				vehicleCount = vehicleCount + 1
+			end
+		end
+	end
+	
+	-- Sync vehicle flags
+	if vehicleCount > 0 then
+		if not flags.has_car and not flags.has_vehicle then
+			flags.has_car = true
+			flags.has_vehicle = true
+			fixes = fixes + 1
+		end
+	else
+		if flags.has_car then
+			flags.has_car = nil
+			fixes = fixes + 1
+		end
+		if flags.has_vehicle then
+			flags.has_vehicle = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- Count owned properties
+	local propertyCount = 0
+	if assets.Properties then
+		for _, p in ipairs(assets.Properties) do
+			if type(p) == "table" and (p.owned or p.id) then
+				propertyCount = propertyCount + 1
+			end
+		end
+	end
+	
+	-- Sync property flags
+	if propertyCount > 0 then
+		if not flags.homeowner and not flags.has_property then
+			flags.homeowner = true
+			flags.has_property = true
+			fixes = fixes + 1
+		end
+		-- Can't be homeless with property
+		if flags.homeless then
+			flags.homeless = nil
+			fixes = fixes + 1
+		end
+	else
+		if flags.homeowner then
+			flags.homeowner = nil
+			fixes = fixes + 1
+		end
+		if flags.has_property then
+			flags.has_property = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- Calculate and sync NetWorth
+	local totalWorth = (state.Money or 0)
+	
+	if assets.Vehicles then
+		for _, v in ipairs(assets.Vehicles) do
+			if type(v) == "table" and v.value then
+				totalWorth = totalWorth + (type(v.value) == "number" and v.value or 0)
+			end
+		end
+	end
+	
+	if assets.Properties then
+		for _, p in ipairs(assets.Properties) do
+			if type(p) == "table" and p.value then
+				totalWorth = totalWorth + (type(p.value) == "number" and p.value or 0)
+			end
+		end
+	end
+	
+	if assets.Investments then
+		for _, i in ipairs(assets.Investments) do
+			if type(i) == "table" and i.value then
+				totalWorth = totalWorth + (type(i.value) == "number" and i.value or 0)
+			end
+		end
+	end
+	
+	-- Subtract debts
+	if state.EducationData and state.EducationData.Debt then
+		totalWorth = totalWorth - (state.EducationData.Debt or 0)
+	end
+	if flags.mortgage_debt and type(flags.mortgage_debt) == "number" then
+		totalWorth = totalWorth - flags.mortgage_debt
+	end
+	if flags.credit_card_debt and type(flags.credit_card_debt) == "number" then
+		totalWorth = totalWorth - flags.credit_card_debt
+	end
+	
+	state.NetWorth = totalWorth
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: PRISON STATE VALIDATOR
+-- Ensures prison state is consistent
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validatePrisonState(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	-- If InJail, ensure all prison flags set
+	if state.InJail then
+		if not flags.in_prison then
+			flags.in_prison = true
+			fixes = fixes + 1
+		end
+		if not flags.incarcerated then
+			flags.incarcerated = true
+			fixes = fixes + 1
+		end
+		
+		-- JailYearsLeft must be positive
+		if not state.JailYearsLeft or state.JailYearsLeft <= 0 then
+			state.InJail = false
+			flags.in_prison = nil
+			flags.incarcerated = nil
+			fixes = fixes + 1
+		end
+		
+		-- Can't work while in prison (cleared job)
+		if flags.employed or flags.has_job then
+			-- Save job info before clearing
+			if state.CurrentJob and not (state.CareerInfo and state.CareerInfo.lastJobBeforeJail) then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJobBeforeJail = state.CurrentJob
+			end
+			state.CurrentJob = nil
+			flags.employed = nil
+			flags.has_job = nil
+			fixes = fixes + 1
+		end
+	else
+		-- Not in jail - clear all prison flags
+		if flags.in_prison then
+			flags.in_prison = nil
+			fixes = fixes + 1
+		end
+		if flags.incarcerated then
+			flags.incarcerated = nil
+			fixes = fixes + 1
+		end
+		
+		-- JailYearsLeft should be 0 or nil
+		if state.JailYearsLeft and state.JailYearsLeft > 0 then
+			state.JailYearsLeft = 0
+			fixes = fixes + 1
+		end
+	end
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- AAA FIX: ASSET VALIDATOR
 -- Ensures all assets have valid structure and values
 -- ════════════════════════════════════════════════════════════════════════════
@@ -2584,6 +2856,625 @@ local function formatMoney(amount)
 	end
 end
 
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                        AAA STATE MANAGER SYSTEM                               ║
+-- ║  Single source of truth for all stats - GetStat, SetStat, AddStat            ║
+-- ║  Prevents direct state mutations and ensures consistency                      ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local StateManager = {}
+
+-- Safe type coercion for any value
+function StateManager.safeNumber(value, default)
+	if type(value) == "number" then return value end
+	if type(value) == "boolean" then return value and 1 or 0 end
+	if type(value) == "string" then return tonumber(value) or default or 0 end
+	return default or 0
+end
+
+-- Get a stat value safely
+function StateManager.GetStat(state, statName)
+	if not state then return 0 end
+	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
+	return StateManager.safeNumber(state.Stats[statName], 50)
+end
+
+-- Set a stat value with bounds checking
+function StateManager.SetStat(state, statName, value)
+	if not state then return end
+	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
+	local numValue = StateManager.safeNumber(value, 50)
+	state.Stats[statName] = math.max(0, math.min(100, numValue))
+	-- Keep shortcuts in sync
+	if statName == "Health" then state.Health = state.Stats.Health end
+	if statName == "Happiness" then state.Happiness = state.Stats.Happiness end
+	if statName == "Smarts" then state.Smarts = state.Stats.Smarts end
+	if statName == "Looks" then state.Looks = state.Stats.Looks end
+end
+
+-- Add to a stat value with bounds checking
+function StateManager.AddStat(state, statName, delta)
+	if not state then return end
+	local current = StateManager.GetStat(state, statName)
+	StateManager.SetStat(state, statName, current + StateManager.safeNumber(delta, 0))
+end
+
+-- Get money safely
+function StateManager.GetMoney(state)
+	if not state then return 0 end
+	return StateManager.safeNumber(state.Money, 0)
+end
+
+-- Set money with validation
+function StateManager.SetMoney(state, value)
+	if not state then return end
+	state.Money = StateManager.safeNumber(value, 0)
+end
+
+-- Add money (can be negative for expenses)
+function StateManager.AddMoney(state, delta)
+	if not state then return end
+	state.Money = StateManager.GetMoney(state) + StateManager.safeNumber(delta, 0)
+end
+
+-- Get a flag safely (returns nil if not set, not false)
+function StateManager.GetFlag(state, flagName)
+	if not state or not state.Flags then return nil end
+	return state.Flags[flagName]
+end
+
+-- Set a flag
+function StateManager.SetFlag(state, flagName, value)
+	if not state then return end
+	state.Flags = state.Flags or {}
+	state.Flags[flagName] = value
+end
+
+-- Check if flag is truthy
+function StateManager.HasFlag(state, flagName)
+	return StateManager.GetFlag(state, flagName) ~= nil and StateManager.GetFlag(state, flagName) ~= false
+end
+
+-- Get relationship safely
+function StateManager.GetRelationship(state, relId)
+	if not state or not state.Relationships then return nil end
+	return state.Relationships[relId]
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                      AAA STATE PATCH SYSTEM                                   ║
+-- ║  All state mutations go through patches - enables undo, logging, validation  ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local StatePatch = {}
+
+function StatePatch.new()
+	return {
+		stats = {},      -- { Health = +5, Happiness = -10 }
+		money = 0,       -- delta
+		flags = {},      -- { flag_name = value }
+		relationships = {}, -- { relId = { delta = +5 } }
+		feed = nil,      -- feed message
+		_applied = false,
+	}
+end
+
+function StatePatch.apply(state, patch)
+	if not state or not patch or patch._applied then return false end
+	
+	-- Apply stat changes
+	for statName, delta in pairs(patch.stats or {}) do
+		StateManager.AddStat(state, statName, delta)
+	end
+	
+	-- Apply money change
+	if patch.money and patch.money ~= 0 then
+		StateManager.AddMoney(state, patch.money)
+	end
+	
+	-- Apply flag changes
+	for flagName, value in pairs(patch.flags or {}) do
+		StateManager.SetFlag(state, flagName, value)
+	end
+	
+	-- Apply relationship changes
+	for relId, changes in pairs(patch.relationships or {}) do
+		local rel = StateManager.GetRelationship(state, relId)
+		if rel and changes.delta then
+			rel.relationship = math.max(0, math.min(100, (rel.relationship or 50) + changes.delta))
+		end
+	end
+	
+	patch._applied = true
+	return true
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                  AAA RELATIONSHIP DECAY SYSTEM                                ║
+-- ║  Friends get angry if you don't talk to them - like competition game         ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local RelationshipDecaySystem = {}
+
+RelationshipDecaySystem.DECAY_RATES = {
+	friend = 3,           -- Friends decay 3 points per year of no contact
+	best_friend = 2,      -- Best friends decay slower
+	acquaintance = 5,     -- Acquaintances fade faster
+	partner = 1,          -- Partners decay very slowly
+	ex = 4,               -- Exes fade quickly
+}
+
+RelationshipDecaySystem.ANGER_THRESHOLDS = {
+	annoyed = 2,          -- 2 years = annoyed
+	angry = 4,            -- 4 years = angry
+	furious = 6,          -- 6 years = furious (may end friendship)
+	estranged = 8,        -- 8 years = friendship over
+}
+
+function RelationshipDecaySystem.processYearlyDecay(state)
+	if not state or not state.Relationships then return {} end
+	
+	local currentAge = state.Age or 0
+	local decayEvents = {}
+	state.Flags = state.Flags or {}
+	
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.type == "friend" or relId:find("friend") then
+			-- Skip if deceased
+			if rel.deceased or rel.dead then continue end
+			
+			-- Initialize last contact if missing
+			if not rel.lastContact then
+				rel.lastContact = rel.metAt or rel.createdAt or (currentAge - 1)
+			end
+			
+			local yearsSinceContact = currentAge - (rel.lastContact or 0)
+			
+			-- Apply decay based on neglect
+			if yearsSinceContact >= 1 then
+				local decayRate = RelationshipDecaySystem.DECAY_RATES[rel.subtype or "friend"] or 3
+				local totalDecay = decayRate * yearsSinceContact
+				rel.relationship = math.max(0, (rel.relationship or 50) - totalDecay)
+				
+				-- Generate anger events
+				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.annoyed and not rel._announcedAnnoyed then
+					table.insert(decayEvents, {
+						type = "friend_annoyed",
+						relId = relId,
+						name = rel.name or "Your friend",
+						message = string.format("😤 %s is annoyed you haven't reached out in %d years.", 
+							rel.name or "Your friend", yearsSinceContact),
+						yearsSince = yearsSinceContact,
+					})
+					rel._announcedAnnoyed = true
+				end
+				
+				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.angry and not rel._announcedAngry then
+					table.insert(decayEvents, {
+						type = "friend_angry",
+						relId = relId,
+						name = rel.name or "Your friend",
+						message = string.format("😡 %s is angry! They feel forgotten and hurt.", 
+							rel.name or "Your friend"),
+						yearsSince = yearsSinceContact,
+					})
+					rel._announcedAngry = true
+					rel.angry = true
+				end
+				
+				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.furious and not rel._announcedFurious then
+					table.insert(decayEvents, {
+						type = "friend_furious",
+						relId = relId,
+						name = rel.name or "Your friend",
+						message = string.format("🔥 %s is FURIOUS! \"You never talk to me anymore!\"", 
+							rel.name or "Your friend"),
+						yearsSince = yearsSinceContact,
+						mayEndFriendship = true,
+					})
+					rel._announcedFurious = true
+					rel.furious = true
+				end
+				
+				-- Friendship ends after too much neglect
+				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.estranged or rel.relationship <= 0 then
+					table.insert(decayEvents, {
+						type = "friendship_ended",
+						relId = relId,
+						name = rel.name or "Your friend",
+						message = string.format("💔 You and %s have drifted apart. The friendship is over.", 
+							rel.name or "your friend"),
+						yearsSince = yearsSinceContact,
+					})
+					rel.estranged = true
+					rel.formerFriend = true
+					rel.type = "ex_friend"
+					state.Flags.lost_friend = true
+					state.Flags.lost_friend_name = rel.name
+				end
+			end
+		end
+	end
+	
+	return decayEvents
+end
+
+-- Record contact with a friend (resets decay timer)
+function RelationshipDecaySystem.recordContact(state, relId)
+	if not state or not state.Relationships then return end
+	local rel = state.Relationships[relId]
+	if rel then
+		rel.lastContact = state.Age or 0
+		rel._announcedAnnoyed = nil
+		rel._announcedAngry = nil
+		rel._announcedFurious = nil
+		rel.angry = nil
+		rel.furious = nil
+	end
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                    AAA JOB INTERVIEW SYSTEM                                   ║
+-- ║  Competitive jobs require interviews with choices affecting outcome          ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local JobInterviewSystem = {}
+
+JobInterviewSystem.QUESTIONS = {
+	general = {
+		{ 
+			question = "Why do you want to work here?",
+			options = {
+				{ text = "I'm passionate about this field", modifier = 0.15, feedback = "Great answer! Shows genuine interest." },
+				{ text = "The salary is great", modifier = -0.1, feedback = "A bit too honest..." },
+				{ text = "I need a job", modifier = -0.2, feedback = "Not the enthusiasm they were hoping for." },
+				{ text = "To grow my career", modifier = 0.1, feedback = "Professional response." },
+			}
+		},
+		{
+			question = "What's your greatest weakness?",
+			options = {
+				{ text = "I work too hard", modifier = 0.05, feedback = "Classic answer, a bit cliché." },
+				{ text = "I'm a perfectionist", modifier = 0.08, feedback = "They've heard this before." },
+				{ text = "I sometimes struggle with time management", modifier = 0.1, feedback = "Honest and self-aware!" },
+				{ text = "I don't have any", modifier = -0.15, feedback = "That's a red flag." },
+			}
+		},
+		{
+			question = "Where do you see yourself in 5 years?",
+			options = {
+				{ text = "Leading a team here", modifier = 0.12, feedback = "Shows ambition and loyalty." },
+				{ text = "Running my own company", modifier = -0.05, feedback = "They worry you'll leave quickly." },
+				{ text = "In this same role", modifier = -0.08, feedback = "They want growth mindset." },
+				{ text = "Growing with the company", modifier = 0.1, feedback = "Safe and professional." },
+			}
+		},
+	},
+	tech = {
+		{
+			question = "How do you stay updated with technology trends?",
+			options = {
+				{ text = "I read tech blogs and attend conferences", modifier = 0.15, feedback = "Shows dedication to learning!" },
+				{ text = "I learn on the job", modifier = 0, feedback = "Adequate but not impressive." },
+				{ text = "I take online courses regularly", modifier = 0.12, feedback = "Proactive approach!" },
+				{ text = "I don't, I focus on what I know", modifier = -0.15, feedback = "Tech moves fast..." },
+			}
+		},
+	},
+	medical = {
+		{
+			question = "How do you handle high-pressure situations?",
+			options = {
+				{ text = "I stay calm and prioritize", modifier = 0.15, feedback = "Essential for healthcare!" },
+				{ text = "I sometimes get stressed", modifier = -0.05, feedback = "Honest but concerning." },
+				{ text = "I rely on my training", modifier = 0.1, feedback = "Shows preparation." },
+				{ text = "I panic internally but appear calm", modifier = 0.05, feedback = "Human but professional." },
+			}
+		},
+	},
+	finance = {
+		{
+			question = "How do you approach risk management?",
+			options = {
+				{ text = "Conservative with thorough analysis", modifier = 0.12, feedback = "Solid approach." },
+				{ text = "Aggressive for maximum returns", modifier = -0.1, feedback = "Too risky for most firms." },
+				{ text = "Balanced based on client goals", modifier = 0.15, feedback = "Perfect answer!" },
+				{ text = "I follow market trends", modifier = 0, feedback = "Reactive, not proactive." },
+			}
+		},
+	},
+}
+
+JobInterviewSystem.BEHAVIORAL_SCENARIOS = {
+	{
+		scenario = "You notice a coworker making a serious mistake. What do you do?",
+		options = {
+			{ text = "Privately help them fix it", modifier = 0.15, feedback = "Teamwork and discretion!" },
+			{ text = "Report it to management", modifier = -0.05, feedback = "Seen as a snitch." },
+			{ text = "Ignore it, not my problem", modifier = -0.2, feedback = "Poor team player." },
+			{ text = "Mention it in a team meeting", modifier = -0.1, feedback = "Publicly embarrassing them." },
+		}
+	},
+	{
+		scenario = "A client is being unreasonable and rude. How do you handle it?",
+		options = {
+			{ text = "Stay professional and find a solution", modifier = 0.15, feedback = "Perfect composure!" },
+			{ text = "Match their energy", modifier = -0.2, feedback = "Not professional." },
+			{ text = "Pass them to a manager", modifier = 0.05, feedback = "Sometimes necessary." },
+			{ text = "End the conversation politely", modifier = 0.08, feedback = "Boundary setting." },
+		}
+	},
+}
+
+function JobInterviewSystem.generateInterview(job, state, baseChance)
+	local category = (job.category or "general"):lower()
+	local questions = JobInterviewSystem.QUESTIONS[category] or JobInterviewSystem.QUESTIONS.general
+	
+	-- Pick 2-3 questions
+	local selectedQuestions = {}
+	local shuffled = {}
+	for _, q in ipairs(questions) do table.insert(shuffled, q) end
+	for _, q in ipairs(JobInterviewSystem.QUESTIONS.general) do table.insert(shuffled, q) end
+	
+	-- Shuffle
+	for i = #shuffled, 2, -1 do
+		local j = RANDOM:NextInteger(1, i)
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	end
+	
+	-- Take first 2-3
+	local numQuestions = RANDOM:NextInteger(2, 3)
+	for i = 1, math.min(numQuestions, #shuffled) do
+		table.insert(selectedQuestions, shuffled[i])
+	end
+	
+	-- Add a behavioral scenario
+	local scenario = JobInterviewSystem.BEHAVIORAL_SCENARIOS[RANDOM:NextInteger(1, #JobInterviewSystem.BEHAVIORAL_SCENARIOS)]
+	
+	return {
+		jobId = job.id,
+		jobName = job.name or job.title,
+		company = job.company or "the company",
+		salary = job.salary or 0,
+		baseChance = baseChance,
+		questions = selectedQuestions,
+		scenario = scenario,
+		stage = 1,
+		totalStages = #selectedQuestions + 1,
+		modifierAccumulated = 0,
+	}
+end
+
+function JobInterviewSystem.processResponse(interviewData, stageIndex, optionIndex)
+	local stage = interviewData.questions[stageIndex] or interviewData.scenario
+	if not stage then return interviewData end
+	
+	local option = stage.options[optionIndex]
+	if option then
+		interviewData.modifierAccumulated = (interviewData.modifierAccumulated or 0) + (option.modifier or 0)
+		interviewData.lastFeedback = option.feedback
+	end
+	
+	interviewData.stage = (interviewData.stage or 1) + 1
+	return interviewData
+end
+
+function JobInterviewSystem.calculateFinalChance(interviewData)
+	local base = interviewData.baseChance or 0.5
+	local modifier = interviewData.modifierAccumulated or 0
+	return math.max(0.05, math.min(0.95, base + modifier))
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                    AAA CHAIN STATE MANAGER                                    ║
+-- ║  Manages premium path chains: Royalty, Mafia, Fame                           ║
+-- ║  Ensures only one path active, proper state transitions                       ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local ChainStateManager = {}
+
+ChainStateManager.PATHS = {
+	royalty = {
+		stages = { "commoner", "dating_royalty", "engaged_royalty", "married_royalty", "royal_consort", "heir", "monarch" },
+		exclusiveWith = { "mafia" }, -- Can't be royalty AND mafia
+		stateKey = "RoyalState",
+		flagPrefix = "royal_",
+	},
+	mafia = {
+		stages = { "civilian", "approached", "associate", "soldier", "capo", "underboss", "boss" },
+		exclusiveWith = { "royalty" },
+		stateKey = "MobState",
+		flagPrefix = "mob_",
+	},
+	fame = {
+		stages = { "unknown", "hobbyist", "rising", "notable", "famous", "star", "legend" },
+		exclusiveWith = {}, -- Fame can coexist with others
+		stateKey = "FameState",
+		flagPrefix = "fame_",
+	},
+}
+
+function ChainStateManager.getCurrentPath(state)
+	if not state or not state.Flags then return nil end
+	
+	if state.Flags.is_royalty or state.Flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal) then
+		return "royalty"
+	end
+	if state.Flags.in_mob or (state.MobState and state.MobState.inMob) then
+		return "mafia"
+	end
+	if state.Flags.fame_career or state.Flags.is_famous or (state.FameState and state.FameState.careerPath) then
+		return "fame"
+	end
+	
+	return nil
+end
+
+function ChainStateManager.getPathStage(state, pathName)
+	local pathConfig = ChainStateManager.PATHS[pathName]
+	if not pathConfig then return nil end
+	
+	local stateObj = state[pathConfig.stateKey]
+	if not stateObj then return pathConfig.stages[1] end
+	
+	return stateObj.currentStage or stateObj.stage or pathConfig.stages[1]
+end
+
+function ChainStateManager.advanceStage(state, pathName)
+	local pathConfig = ChainStateManager.PATHS[pathName]
+	if not pathConfig then return false end
+	
+	local stateObj = state[pathConfig.stateKey] or {}
+	local currentStage = stateObj.currentStage or 1
+	
+	if currentStage < #pathConfig.stages then
+		stateObj.currentStage = currentStage + 1
+		stateObj.stageName = pathConfig.stages[currentStage + 1]
+		state[pathConfig.stateKey] = stateObj
+		return true
+	end
+	
+	return false
+end
+
+function ChainStateManager.validateExclusivity(state)
+	local currentPath = ChainStateManager.getCurrentPath(state)
+	if not currentPath then return 0 end
+	
+	local pathConfig = ChainStateManager.PATHS[currentPath]
+	if not pathConfig then return 0 end
+	
+	local fixes = 0
+	for _, exclusivePath in ipairs(pathConfig.exclusiveWith) do
+		local otherConfig = ChainStateManager.PATHS[exclusivePath]
+		if otherConfig then
+			-- Clear the other path
+			if state[otherConfig.stateKey] then
+				state[otherConfig.stateKey] = nil
+				fixes = fixes + 1
+			end
+			-- Clear related flags
+			if state.Flags then
+				for flagName, _ in pairs(state.Flags) do
+					if flagName:find(otherConfig.flagPrefix) then
+						state.Flags[flagName] = nil
+						fixes = fixes + 1
+					end
+				end
+			end
+		end
+	end
+	
+	return fixes
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                    AAA FEED SYSTEM                                            ║
+-- ║  Single unified path for all feed messages                                    ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local FeedSystem = {}
+
+FeedSystem.MAX_LENGTH = 500
+FeedSystem.PRIORITY = {
+	critical = 1,    -- Death, major life events
+	high = 2,        -- Premium events, milestones
+	normal = 3,      -- Regular events
+	low = 4,         -- Minor updates
+}
+
+function FeedSystem.createFeed(state)
+	state._feedQueue = state._feedQueue or {}
+	state._feedSeen = state._feedSeen or {}
+end
+
+function FeedSystem.addMessage(state, message, priority, emoji)
+	if not state or not message or message == "" then return end
+	
+	FeedSystem.createFeed(state)
+	
+	-- Dedupe check
+	local normalized = message:sub(1, 50)
+	if state._feedSeen[normalized] then return end
+	state._feedSeen[normalized] = true
+	
+	table.insert(state._feedQueue, {
+		message = message,
+		priority = priority or FeedSystem.PRIORITY.normal,
+		emoji = emoji,
+		timestamp = os.time(),
+	})
+end
+
+function FeedSystem.flush(state)
+	if not state or not state._feedQueue then return "" end
+	
+	-- Sort by priority
+	table.sort(state._feedQueue, function(a, b) return a.priority < b.priority end)
+	
+	-- Build final message
+	local parts = {}
+	local totalLength = 0
+	
+	for _, item in ipairs(state._feedQueue) do
+		local msg = item.emoji and (item.emoji .. " " .. item.message) or item.message
+		if totalLength + #msg < FeedSystem.MAX_LENGTH then
+			table.insert(parts, msg)
+			totalLength = totalLength + #msg + 1
+		end
+	end
+	
+	-- Clear queue
+	state._feedQueue = {}
+	state._feedSeen = {}
+	
+	return table.concat(parts, " ")
+end
+
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                    AAA INTEGRITY SYSTEM                                       ║
+-- ║  Rate-limited state validation: on load, after major actions, on save        ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+local IntegritySystem = {}
+
+IntegritySystem.MIN_INTERVAL = 30        -- Minimum 30 seconds between full checks
+IntegritySystem.FORCE_INTERVAL = 300     -- Force check every 5 minutes
+IntegritySystem.MAJOR_ACTIONS = {
+	"marriage", "divorce", "job_change", "prison_release", "time_travel",
+	"death", "rebirth", "join_mafia", "become_royalty", "become_famous",
+	"buy_property", "bankruptcy", "inheritance",
+}
+
+function IntegritySystem.shouldRunFull(state)
+	if not state then return false end
+	
+	local now = os.time()
+	local lastRun = state._lastIntegrityCheck or 0
+	local timeSince = now - lastRun
+	
+	-- Force if it's been too long
+	if timeSince >= IntegritySystem.FORCE_INTERVAL then
+		return true
+	end
+	
+	-- Skip if too recent
+	if timeSince < IntegritySystem.MIN_INTERVAL then
+		return false
+	end
+	
+	-- Check if major action occurred
+	if state._majorActionPending then
+		state._majorActionPending = nil
+		return true
+	end
+	
+	return false
+end
+
+function IntegritySystem.markMajorAction(state, actionType)
+	if not state then return end
+	state._majorActionPending = actionType
+end
+
+function IntegritySystem.recordCheck(state)
+	if not state then return end
+	state._lastIntegrityCheck = os.time()
+end
+
 local function countEntries(tbl)
 	if type(tbl) ~= "table" then
 		return 0
@@ -2767,7 +3658,9 @@ local function pruneRelationshipsForAge(state, targetAge)
 
 			if targetAge < 13 and romanticRel then
 				table.insert(toRemove, relId)
-				if state.Relationships.partner and state.Relationships.partner.id == rel.id then
+				-- AAA FIX: Nil safety check
+				local partner = state.Relationships.partner
+				if partner and type(partner) == "table" and partner.id == rel.id then
 					shouldClearPartner = true
 				end
 			elseif targetAge < 10 and not familyRel then
@@ -2780,7 +3673,10 @@ local function pruneRelationshipsForAge(state, targetAge)
 		state.Relationships[relId] = nil
 	end
 
-	if shouldClearPartner or (state.Relationships.partner and state.Relationships.partner.id and not state.Relationships[state.Relationships.partner.id]) then
+	-- AAA FIX: Enhanced nil safety check
+	local partner = state.Relationships.partner
+	local partnerInvalid = partner and type(partner) == "table" and partner.id and not state.Relationships[partner.id]
+	if shouldClearPartner or partnerInvalid then
 		state.Relationships.partner = nil
 		state.Flags = state.Flags or {}
 		state.Flags.has_partner = nil
@@ -4513,6 +5409,100 @@ local ActivityCatalog = {
 	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
 	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
 	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: FRIEND INTERACTION ACTIVITIES
+	-- These reset the friend contact timer to prevent friend anger events
+	-- Like the competition game - friends get angry if you don't talk to them!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	hang_out_friend = {
+		stats = { Happiness = 6 },
+		feed = "hung out with a friend!",
+		cost = 20,
+		friendInteraction = true, -- Resets friend contact timer
+		relationshipBoostFriend = 5, -- Boosts random friend relationship
+	},
+	call_friend = {
+		stats = { Happiness = 3 },
+		feed = "called a friend to catch up!",
+		cost = 0,
+		friendInteraction = true,
+		relationshipBoostFriend = 2,
+	},
+	text_friend = {
+		stats = { Happiness = 2 },
+		feed = "texted with friends!",
+		cost = 0,
+		friendInteraction = true,
+		relationshipBoostFriend = 1,
+	},
+	party_with_friends = {
+		stats = { Happiness = 10, Health = -2 },
+		feed = "partied with friends!",
+		cost = 100,
+		requiresAge = 18,
+		friendInteraction = true,
+		relationshipBoostFriend = 8,
+	},
+	dinner_with_friend = {
+		stats = { Happiness = 5 },
+		feed = "had dinner with a friend!",
+		cost = 50,
+		friendInteraction = true,
+		relationshipBoostFriend = 4,
+	},
+	video_call_friend = {
+		stats = { Happiness = 4 },
+		feed = "had a video call with a friend!",
+		cost = 0,
+		friendInteraction = true,
+		relationshipBoostFriend = 3,
+	},
+	movie_with_friend = {
+		stats = { Happiness = 5 },
+		feed = "watched a movie with a friend!",
+		cost = 25,
+		friendInteraction = true,
+		relationshipBoostFriend = 4,
+	},
+	road_trip_friends = {
+		stats = { Happiness = 12, Health = -1 },
+		feed = "went on a road trip with friends!",
+		cost = 300,
+		requiresAge = 16,
+		friendInteraction = true,
+		relationshipBoostFriend = 10,
+	},
+	gaming_session = {
+		stats = { Happiness = 5 },
+		feed = "had a gaming session with friends!",
+		cost = 0,
+		friendInteraction = true,
+		relationshipBoostFriend = 3,
+	},
+	study_group = {
+		stats = { Happiness = 2, Smarts = 4 },
+		feed = "studied with friends!",
+		cost = 0,
+		requiresAge = 10,
+		maxAge = 25,
+		friendInteraction = true,
+		relationshipBoostFriend = 2,
+	},
+	reconcile_friend = {
+		stats = { Happiness = 8 },
+		feed = "made up with an angry friend!",
+		cost = 50, -- Gift/apology
+		friendReconcile = true, -- Special: fixes angry friend
+		relationshipBoostFriend = 15,
+	},
+	apologize_friend = {
+		stats = { Happiness = 3 },
+		feed = "apologized to a friend you've been neglecting!",
+		cost = 0,
+		friendReconcile = true,
+		relationshipBoostFriend = 10,
+	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #355: Career Skill-Building Activities
@@ -7130,19 +8120,35 @@ function LifeBackend:setupRemotes()
 		self:handleMinigameResult(player, won, payload)
 	end)
 
-	self.remotes.DoActivity.OnServerInvoke = function(player, activityId, bonus)
-		return self:handleActivity(player, activityId, bonus)
-	end
-	self.remotes.CommitCrime.OnServerInvoke = function(player, crimeId, minigameBonus)
-		return self:handleCrime(player, crimeId, minigameBonus)
-	end
-	self.remotes.DoPrisonAction.OnServerInvoke = function(player, actionId)
-		return self:handlePrisonAction(player, actionId)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Wrap remote handlers with pcall for crash protection
+	-- Returns error message instead of crashing the server
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local function safeHandler(handler)
+		return function(player, ...)
+			local success, result = pcall(handler, self, player, ...)
+			if success then
+				return result
+			else
+				warn("[LifeBackend] Remote handler error for", player.Name, ":", result)
+				return { success = false, message = "An error occurred. Please try again." }
+			end
+		end
 	end
 
-	self.remotes.ApplyForJob.OnServerInvoke = function(player, jobId)
+	self.remotes.DoActivity.OnServerInvoke = safeHandler(function(self, player, activityId, bonus)
+		return self:handleActivity(player, activityId, bonus)
+	end)
+	self.remotes.CommitCrime.OnServerInvoke = safeHandler(function(self, player, crimeId, minigameBonus)
+		return self:handleCrime(player, crimeId, minigameBonus)
+	end)
+	self.remotes.DoPrisonAction.OnServerInvoke = safeHandler(function(self, player, actionId)
+		return self:handlePrisonAction(player, actionId)
+	end)
+
+	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId)
 		return self:handleJobApplication(player, jobId)
-	end
+	end)
 	
 	-- AAA FIX: Interview result handler for the interview screen system
 	self.remotes.SubmitInterviewResult = self:createRemote("SubmitInterviewResult", "RemoteFunction")
@@ -8306,7 +9312,9 @@ function LifeBackend:advanceRelationships(state)
 					rel.alive = false -- Mark as "gone" (breakup)
 					state.Flags.recently_single = true
 					state.Flags.has_partner = nil
-					if state.Relationships.partner and state.Relationships.partner.id == rel.id then
+					-- AAA FIX: Nil safety check
+					local partner = state.Relationships.partner
+					if partner and type(partner) == "table" and partner.id == rel.id then
 						state.Relationships.partner = nil
 					end
 					state.PendingFeed = (rel.name or "Your partner") .. " couldn't handle the separation and left you."
@@ -9849,13 +10857,40 @@ function LifeBackend:updateCareerSkills(state)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX #18: Relationship Decay Without Interaction
--- Relationships that aren't maintained should slowly decrease
--- Without this, relationships stay at 100 forever once maxed
+-- CRITICAL FIX #18: Relationship Decay + AAA Friend Anger System
+-- Uses RelationshipDecaySystem for proper friend anger events like competition
+-- Friends get ANGRY if you don't talk to them for years!
 -- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:applyRelationshipDecay(state)
 	if not state.Relationships then
 		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA: Use the RelationshipDecaySystem for friend anger events
+	-- This generates proper "friend is angry you haven't talked" events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local decayEvents = RelationshipDecaySystem.processYearlyDecay(state)
+	
+	-- Process generated decay events - show messages to player
+	for _, event in ipairs(decayEvents) do
+		if event.message then
+			appendFeed(state, event.message)
+		end
+		
+		-- Store for potential event triggering
+		if event.type == "friend_angry" then
+			state.Flags = state.Flags or {}
+			state.Flags.has_angry_friend = true
+			state.Flags.angry_friend_name = event.name
+			state.Flags.angry_friend_id = event.relId
+		end
+		
+		if event.type == "friendship_ended" then
+			state.Flags = state.Flags or {}
+			state.Flags.lost_friend = true
+			state.Flags.lost_friend_name = event.name
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -9871,88 +10906,58 @@ function LifeBackend:applyRelationshipDecay(state)
 		state.Flags.attending_aa
 	)
 	
+	-- Process non-friend relationships (family, romantic, etc.)
 	for relId, rel in pairs(state.Relationships) do
 		if type(rel) == "table" and rel.alive ~= false then
-			-- Relationships naturally decay 1-3 points per year without interaction
-			local decay = RANDOM:NextInteger(1, 3)
-			
-			-- CRITICAL FIX (deep-9): Treatment reduces decay - people are supportive
-			if inTreatment then
-				decay = math.floor(decay * 0.3) -- 70% less decay during treatment
-			end
-			
-			-- Close family decays slower
-			if rel.isFamily or rel.type == "family" then
-				decay = math.floor(decay * 0.5)
-			end
-			
-			-- Partners decay faster if not married (less commitment)
-			if rel.type == "romantic" and not state.Flags.married then
-				decay = decay + 1
-			end
-			
-			-- Prison causes faster decay (people move on)
-			if state.InJail then
-				decay = decay * 2
-			end
-			
-			rel.relationship = math.max(0, (rel.relationship or 50) - decay)
-			
-			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- AAA FIX: Track years since last contact for friend anger events
-			-- Like the competition game, friends get angry if you haven't talked for years
-			-- ═══════════════════════════════════════════════════════════════════════════════
-			if rel.type == "friend" or relId:find("friend") then
-				-- Initialize lastContact if not set
-				if not rel.lastContact and not rel.lastInteraction then
-					rel.lastContact = rel.metAt or rel.createdAt or (state.Age - 1)
+			-- Skip friends - already handled by RelationshipDecaySystem above
+			local isFriend = rel.type == "friend" or (type(relId) == "string" and relId:find("friend"))
+			if isFriend then
+				-- Skip - already processed
+			else
+				-- Relationships naturally decay 1-3 points per year without interaction
+				local decay = RANDOM:NextInteger(1, 3)
+				
+				-- Treatment reduces decay - people are supportive
+				if inTreatment then
+					decay = math.floor(decay * 0.3) -- 70% less decay during treatment
 				end
 				
-				local yearsSinceContact = (state.Age or 0) - (rel.lastContact or rel.lastInteraction or 0)
-				
-				-- Additional decay based on years without contact
-				if yearsSinceContact >= 3 then
-					local neglectDecay = math.min(10, yearsSinceContact * 2)
-					rel.relationship = math.max(0, (rel.relationship or 50) - neglectDecay)
+				-- Close family decays slower
+				if rel.isFamily or rel.type == "family" then
+					decay = math.floor(decay * 0.5)
 				end
 				
-				-- Track neglect status for event triggering
-				if yearsSinceContact >= 2 then
-					rel.neglected = true
+				-- Partners decay faster if not married (less commitment)
+				if rel.type == "romantic" and not (state.Flags and state.Flags.married) then
+					decay = decay + 1
 				end
-				if yearsSinceContact >= 5 then
-					rel.veryNeglected = true
+				
+				-- Prison causes faster decay (people move on)
+				if state.InJail then
+					decay = decay * 2
 				end
-			end
-			
-			-- Very low relationships may end naturally
-			if rel.relationship <= 10 and rel.type == "friend" then
-				if RANDOM:NextNumber() < 0.2 then -- 20% chance friendship fades
-					rel.alive = false
-					rel.ended = true
-					rel.endReason = "drifted_apart"
-					rel.estranged = true
+				
+				rel.relationship = math.max(0, (rel.relationship or 50) - decay)
+				
+				-- Very low romantic relationships may end naturally
+				if rel.relationship <= 10 and rel.type == "romantic" then
+					if RANDOM:NextNumber() < 0.3 then -- 30% chance relationship ends
+						rel.alive = false
+						rel.ended = true
+						rel.endReason = "drifted_apart"
+						appendFeed(state, string.format("💔 You and %s have drifted apart. The relationship is over.", 
+							rel.name or "your partner"))
+						
+						-- Clear partner status
+						if relId == "partner" then
+							state.Flags = state.Flags or {}
+							state.Flags.has_partner = nil
+							state.Flags.dating = nil
+						end
+					end
 				end
 			end
 		end
-	end
-	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- AAA FIX: Track lost friendships for year summary
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	local lostFriends = {}
-	for relId, rel in pairs(state.Relationships) do
-		if type(rel) == "table" and rel.ended and rel.endReason == "drifted_apart" then
-			if not rel._notifiedLoss then
-				table.insert(lostFriends, rel.name or "A friend")
-				rel._notifiedLoss = true
-			end
-		end
-	end
-	
-	if #lostFriends > 0 then
-		local names = table.concat(lostFriends, ", ")
-		appendFeed(state, string.format("💔 You've drifted apart from %s.", names))
 	end
 end
 
@@ -10794,8 +11799,139 @@ function LifeBackend:checkNaturalDeath(state)
 			end
 			
 			state.DeathReason = deathReasons[RANDOM:NextInteger(1, #deathReasons)]
+			
+			-- AAA FIX: Comprehensive death cleanup
+			self:processDeathCleanup(state)
 		end
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: Comprehensive death state cleanup
+-- Ensures all active states are properly terminated on death
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:processDeathCleanup(state)
+	if not state then return end
+	
+	state.Flags = state.Flags or {}
+	
+	-- Set all death flags
+	state.Flags.dead = true
+	state.Flags.is_dead = true
+	state.Flags.is_alive = nil
+	state.Flags.alive = nil
+	
+	-- Clear all active status flags
+	state.Flags.pregnant = nil
+	state.Flags.dating = nil
+	state.Flags.has_partner = nil
+	state.Flags.employed = nil
+	state.Flags.has_job = nil
+	state.Flags.in_college = nil
+	state.Flags.in_school = nil
+	state.Flags.in_prison = nil
+	state.InJail = false
+	state.JailYearsLeft = 0
+	
+	-- Clear current job
+	state.CurrentJob = nil
+	
+	-- Clear education status
+	if state.EducationData then
+		state.EducationData.Status = "deceased"
+		state.EducationData.inCollege = nil
+	end
+	
+	-- Mark all relationships as widowed/orphaned where appropriate
+	if state.Relationships then
+		if state.Relationships.partner then
+			local partner = state.Relationships.partner
+			if type(partner) == "table" then
+				partner.widowed = true
+				partner.type = "late_spouse"
+			end
+		end
+		
+		-- Children become orphaned if both parents dead
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and rel.type == "child" then
+				rel.orphaned = (not state.Flags.has_living_partner)
+			end
+		end
+	end
+	
+	-- Calculate inheritance for children
+	state.Inheritance = {
+		total = state.Money or 0,
+		distributed = false,
+	}
+	
+	-- Add net worth from assets
+	if state.Assets then
+		-- Properties
+		if state.Assets.Properties then
+			for _, prop in ipairs(state.Assets.Properties) do
+				if prop.value then
+					state.Inheritance.total = state.Inheritance.total + (prop.value or 0)
+				end
+			end
+		end
+		-- Vehicles
+		if state.Assets.Vehicles then
+			for _, vehicle in ipairs(state.Assets.Vehicles) do
+				if vehicle.value then
+					state.Inheritance.total = state.Inheritance.total + (vehicle.value or 0)
+				end
+			end
+		end
+		-- Investments
+		if state.Assets.Investments then
+			for _, inv in ipairs(state.Assets.Investments) do
+				if inv.value then
+					state.Inheritance.total = state.Inheritance.total + (inv.value or 0)
+				end
+			end
+		end
+	end
+	
+	-- Generate death summary
+	state.DeathSummary = {
+		age = state.Age or 0,
+		reason = state.DeathReason or "Unknown",
+		year = state.Year or 2025,
+		netWorth = state.Inheritance.total or 0,
+		legacy = {},
+	}
+	
+	-- Build legacy
+	if state.Flags.married or state.Flags.was_married then
+		table.insert(state.DeathSummary.legacy, "Was married")
+	end
+	if state.Flags.has_children then
+		local childCount = 0
+		if state.Relationships then
+			for _, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.type == "child" then
+					childCount = childCount + 1
+				end
+			end
+		end
+		if childCount > 0 then
+			table.insert(state.DeathSummary.legacy, string.format("Had %d children", childCount))
+		end
+	end
+	if state.Flags.is_royalty or state.Flags.royal_birth then
+		table.insert(state.DeathSummary.legacy, "Was royalty")
+	end
+	if state.Flags.in_mob then
+		table.insert(state.DeathSummary.legacy, "Was in the mafia")
+	end
+	if state.FameState and state.FameState.isFamous then
+		table.insert(state.DeathSummary.legacy, "Was famous")
+	end
+	
+	-- Mark major action for integrity
+	IntegritySystem.markMajorAction(state, "death")
 end
 
 function LifeBackend:generateEvent(player, state)
@@ -11729,12 +12865,38 @@ function LifeBackend:handleAgeUp(player)
 		state.JailYearsLeft = state.JailYearsLeft - 1
 		
 		if state.JailYearsLeft <= 0 then
-			-- Sentence complete! Release the prisoner
+			-- ═══════════════════════════════════════════════════════════════════════
+			-- AAA FIX: Comprehensive prison release cleanup
+			-- Clears ALL prison-related flags to prevent ghost prison states
+			-- ═══════════════════════════════════════════════════════════════════════
 			state.InJail = false
 			state.JailYearsLeft = 0
+			
+			-- Clear ALL prison flags (AAA exhaustive list)
 			state.Flags.in_prison = nil
 			state.Flags.incarcerated = nil
-			state.Flags.ex_convict = true -- MINOR FIX: Mark as ex-convict for future events
+			state.Flags.jailed = nil
+			state.Flags.serving_sentence = nil
+			state.Flags.awaiting_trial = nil
+			state.Flags.on_trial = nil
+			state.Flags.arrested = nil
+			state.Flags.awaiting_sentencing = nil
+			state.Flags.in_solitary = nil
+			state.Flags.prison_fight = nil
+			state.Flags.on_work_detail = nil
+			state.Flags.in_county_jail = nil
+			state.Flags.in_federal_prison = nil
+			state.Flags.in_maximum_security = nil
+			state.Flags.in_minimum_security = nil
+			
+			-- Set ex-convict flags for future events
+			state.Flags.ex_convict = true
+			state.Flags.criminal_record = true
+			state.Flags.has_served_time = true
+			state.Flags.released_from_prison = true
+			
+			-- Use IntegritySystem to mark major action
+			IntegritySystem.markMajorAction(state, "prison_release")
 			
 			-- ═══════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #251: Restore mob membership after prison release
@@ -12982,6 +14144,93 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	if activity.fameBonus then
 		state.Fame = math.clamp((state.Fame or 0) + activity.fameBonus, 0, 100)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: FRIEND INTERACTION SYSTEM
+	-- Like the competition game - friends get angry if you don't talk to them!
+	-- These activities reset the friend contact timer and prevent anger events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.friendInteraction or activity.friendReconcile then
+		state.Relationships = state.Relationships or {}
+		local friendsFound = 0
+		local friendUpdated = nil
+		
+		-- Find all friends
+		local friends = {}
+		for relId, rel in pairs(state.Relationships) do
+			if type(rel) == "table" then
+				local isFriend = rel.type == "friend" or (type(relId) == "string" and relId:find("friend"))
+				if isFriend and rel.alive ~= false and not rel.estranged then
+					table.insert(friends, { id = relId, rel = rel })
+				end
+			end
+		end
+		
+		if #friends > 0 then
+			-- Pick a random friend to interact with (or priority to angry friend)
+			local targetFriend = nil
+			
+			-- If reconciling, prioritize angry friends
+			if activity.friendReconcile then
+				for _, f in ipairs(friends) do
+					if f.rel.angry or f.rel.furious or f.rel.neglected then
+						targetFriend = f
+						break
+					end
+				end
+			end
+			
+			-- Otherwise random friend
+			if not targetFriend then
+				targetFriend = friends[RANDOM:NextInteger(1, #friends)]
+			end
+			
+			if targetFriend then
+				local rel = targetFriend.rel
+				
+				-- Reset contact timer using RelationshipDecaySystem
+				RelationshipDecaySystem.recordContact(state, targetFriend.id)
+				
+				-- Also set lastContact directly for compatibility
+				rel.lastContact = state.Age or 0
+				
+				-- Clear anger flags if reconciling
+				if activity.friendReconcile then
+					if rel.angry or rel.furious or rel.neglected then
+						rel.angry = nil
+						rel.furious = nil
+						rel.neglected = nil
+						rel._announcedAnnoyed = nil
+						rel._announcedAngry = nil
+						rel._announcedFurious = nil
+						appendFeed(state, string.format("🤝 You made up with %s! Your friendship is saved.", rel.name or "your friend"))
+					end
+				end
+				
+				-- Boost relationship
+				if activity.relationshipBoostFriend then
+					rel.relationship = math.min(100, (rel.relationship or 50) + activity.relationshipBoostFriend)
+				end
+				
+				friendUpdated = rel.name or "your friend"
+				
+				-- Clear global angry friend flags if this was the angry one
+				if state.Flags and state.Flags.angry_friend_id == targetFriend.id then
+					state.Flags.has_angry_friend = nil
+					state.Flags.angry_friend_name = nil
+					state.Flags.angry_friend_id = nil
+				end
+			end
+		else
+			-- No friends to interact with
+			if not activity.friendReconcile then
+				-- Still get happiness from doing the activity alone
+				resultMessage = resultMessage .. " (You don't have any friends to do this with though...)"
+			else
+				resultMessage = "You don't have any angry friends to reconcile with."
+			end
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -14630,24 +15879,56 @@ local InterviewQuestions = {
 }
 
 function LifeBackend:generateInterviewEvent(state, job, baseChance)
-	local category = job.category or "generic"
-	local questions = InterviewQuestions[category] or InterviewQuestions.generic
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA INTERVIEW SYSTEM: Multi-stage interview with behavioral questions
+	-- Uses JobInterviewSystem for realistic interview experience
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Pick a random question
-	local question = questions[RANDOM:NextInteger(1, #questions)]
+	-- Generate using AAA JobInterviewSystem
+	local interviewData = JobInterviewSystem.generateInterview(job, state, baseChance)
 	
-	-- Always add a generic question too for variety
-	local genericQuestions = InterviewQuestions.generic
-	local secondQuestion = genericQuestions[RANDOM:NextInteger(1, #genericQuestions)]
+	-- Build formatted question data for client
+	local formattedQuestions = {}
+	for i, q in ipairs(interviewData.questions) do
+		table.insert(formattedQuestions, {
+			question = q.question,
+			choices = {},
+		})
+		for j, opt in ipairs(q.options) do
+			table.insert(formattedQuestions[i].choices, {
+				text = opt.text,
+				modifier = opt.modifier, -- Hidden from player
+				feed = opt.feedback,
+			})
+		end
+	end
+	
+	-- Add behavioral scenario
+	if interviewData.scenario then
+		table.insert(formattedQuestions, {
+			question = interviewData.scenario.scenario,
+			isScenario = true,
+			choices = {},
+		})
+		for _, opt in ipairs(interviewData.scenario.options) do
+			table.insert(formattedQuestions[#formattedQuestions].choices, {
+				text = opt.text,
+				modifier = opt.modifier,
+				feed = opt.feedback,
+			})
+		end
+	end
 	
 	return {
 		id = "job_interview_" .. (job.id or "unknown"),
-		title = "Job Interview: " .. (job.name or "Position"),
+		title = "💼 Job Interview: " .. (job.name or "Position"),
 		emoji = "💼",
-		text = string.format("You're interviewing for the %s position at %s.", 
+		text = string.format("You're interviewing for the %s position at %s.\n\nThis is a multi-stage interview. Your answers will affect your chances!", 
 			job.name or "open", job.company or "the company"),
-		questions = { question, secondQuestion },
+		questions = formattedQuestions,
 		baseChance = baseChance,
+		totalStages = #formattedQuestions,
+		currentStage = 1,
 		jobData = {
 			id = job.id,
 			name = job.name,

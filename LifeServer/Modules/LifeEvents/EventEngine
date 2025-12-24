@@ -606,6 +606,191 @@ function EventEngine.filterEligibleChoices(event, state)
 	return event
 end
 
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                      AAA EVENT PIPELINE                                       ║
+-- ║  select → validate → resolve → apply patch → heal → publish                  ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+EventEngine.Pipeline = {}
+
+-- Step 1: Build context for event eligibility
+function EventEngine.Pipeline.buildContext(state)
+	if not state then return {} end
+	
+	return {
+		age = state.Age or 0,
+		money = state.Money or 0,
+		health = state.Stats and state.Stats.Health or 50,
+		happiness = state.Stats and state.Stats.Happiness or 50,
+		smarts = state.Stats and state.Stats.Smarts or 50,
+		looks = state.Stats and state.Stats.Looks or 50,
+		hasJob = state.CurrentJob ~= nil,
+		jobCategory = state.CurrentJob and state.CurrentJob.category,
+		isRoyalty = state.Flags and (state.Flags.is_royalty or state.Flags.royal_birth),
+		inMob = state.Flags and state.Flags.in_mob,
+		isFamous = state.Flags and (state.Flags.fame_career or state.Flags.is_famous),
+		inJail = state.InJail,
+		hasPartner = state.Relationships and state.Relationships.partner ~= nil,
+		isMarried = state.Flags and state.Flags.married,
+		flags = state.Flags or {},
+	}
+end
+
+-- Step 2: Create a patch from choice effects (NO direct state mutations)
+function EventEngine.Pipeline.createPatch(choice, isSuccess)
+	local patch = {
+		stats = {},
+		money = 0,
+		flags = {},
+		relationships = {},
+		feed = nil,
+		_source = "event",
+	}
+	
+	local effects = choice.effects or {}
+	
+	-- Use success/fail effects if applicable
+	if isSuccess == true and choice.successEffects then
+		effects = choice.successEffects
+		patch.feed = choice.successFeed or choice.feedText
+	elseif isSuccess == false and choice.failEffects then
+		effects = choice.failEffects
+		patch.feed = choice.failFeed or choice.feedText
+	else
+		patch.feed = choice.feedText
+	end
+	
+	-- Extract stat changes
+	if effects.Health then patch.stats.Health = effects.Health end
+	if effects.Happiness then patch.stats.Happiness = effects.Happiness end
+	if effects.Smarts then patch.stats.Smarts = effects.Smarts end
+	if effects.Looks then patch.stats.Looks = effects.Looks end
+	
+	-- Extract money
+	if effects.Money then patch.money = effects.Money end
+	if effects.money then patch.money = effects.money end
+	
+	-- Extract flags
+	if effects.flags then
+		for k, v in pairs(effects.flags) do
+			patch.flags[k] = v
+		end
+	end
+	if effects.setFlag then
+		patch.flags[effects.setFlag] = true
+	end
+	if effects.clearFlag then
+		patch.flags[effects.clearFlag] = nil
+	end
+	
+	return patch
+end
+
+-- Step 3: Apply patch to state (single mutation point)
+function EventEngine.Pipeline.applyPatch(state, patch)
+	if not state or not patch then return false end
+	
+	-- Apply stats
+	for statName, delta in pairs(patch.stats or {}) do
+		state.Stats = state.Stats or {}
+		local current = state.Stats[statName] or 50
+		if type(delta) == "number" then
+			state.Stats[statName] = math.max(0, math.min(100, current + delta))
+		end
+	end
+	
+	-- Sync stat shortcuts
+	if state.Stats then
+		state.Health = state.Stats.Health
+		state.Happiness = state.Stats.Happiness
+		state.Smarts = state.Stats.Smarts
+		state.Looks = state.Stats.Looks
+	end
+	
+	-- Apply money
+	if patch.money and patch.money ~= 0 then
+		state.Money = (state.Money or 0) + patch.money
+	end
+	
+	-- Apply flags
+	state.Flags = state.Flags or {}
+	for flagName, value in pairs(patch.flags or {}) do
+		if value == nil then
+			state.Flags[flagName] = nil
+		else
+			state.Flags[flagName] = value
+		end
+	end
+	
+	-- Apply relationship changes
+	if state.Relationships then
+		for relId, changes in pairs(patch.relationships or {}) do
+			local rel = state.Relationships[relId]
+			if rel and changes.delta then
+				rel.relationship = math.max(0, math.min(100, (rel.relationship or 50) + changes.delta))
+			end
+		end
+	end
+	
+	return true
+end
+
+-- Step 4: Record event occurrence
+function EventEngine.Pipeline.recordOccurrence(state, eventId)
+	if not state or not eventId then return end
+	
+	state.EventHistory = state.EventHistory or { occurrences = {} }
+	state.EventHistory.occurrences = state.EventHistory.occurrences or {}
+	state.EventHistory.occurrences[eventId] = (state.EventHistory.occurrences[eventId] or 0) + 1
+	state.EventHistory.lastEventId = eventId
+	state.EventHistory.lastEventAge = state.Age
+end
+
+-- Full pipeline execution
+function EventEngine.Pipeline.execute(event, choiceIndex, state)
+	-- Step 1: Validate
+	local choice = event.choices[choiceIndex]
+	if not choice then
+		return { success = false, error = "Invalid choice" }
+	end
+	
+	-- Step 2: Check eligibility
+	local eligible, reason = EventEngine.isChoiceEligible(choice, state)
+	if not eligible then
+		return { success = false, error = reason or "Choice not available" }
+	end
+	
+	-- Step 3: Resolve success/failure
+	local isSuccess = nil
+	if choice.successChance then
+		local roll = Random.new():NextNumber() * 100
+		isSuccess = roll <= choice.successChance
+	end
+	
+	-- Step 4: Create patch
+	local patch = EventEngine.Pipeline.createPatch(choice, isSuccess)
+	
+	-- Step 5: Apply patch
+	EventEngine.Pipeline.applyPatch(state, patch)
+	
+	-- Step 6: Call callbacks
+	if choice.onResolve then
+		pcall(choice.onResolve, state, choice, event, isSuccess)
+	end
+	if event.onComplete then
+		pcall(event.onComplete, state, choice, event, { wasSuccessful = isSuccess })
+	end
+	
+	-- Step 7: Record occurrence
+	EventEngine.Pipeline.recordOccurrence(state, event.id)
+	
+	return {
+		success = true,
+		isSuccess = isSuccess,
+		patch = patch,
+		feedText = patch.feed,
+	}
+end
+
 function EventEngine.completeEvent(event, choiceIndex, state)
 	local choice = event.choices[choiceIndex]
 	if not choice then
@@ -919,9 +1104,39 @@ end
 -- Adjusts event weights based on player state and history
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+-- ╔══════════════════════════════════════════════════════════════════════════════╗
+-- ║                    AAA DYNAMIC WEIGHT SYSTEM                                  ║
+-- ║  Events are weighted based on player state, history, and relevance           ║
+-- ╚══════════════════════════════════════════════════════════════════════════════╝
+
+-- AAA: Category priority weights - ensures balanced event distribution
+EventEngine.CATEGORY_PRIORITY = {
+	death = 10.0,         -- Death events are critical
+	prison = 8.0,         -- Prison release/events are important
+	career_special = 7.0, -- Career milestones
+	royalty = 6.0,        -- Premium content
+	mafia = 6.0,          -- Premium content
+	fame = 6.0,           -- Premium content
+	health_critical = 5.0, -- Health emergencies
+	relationships = 4.0,  -- Relationship events
+	family = 3.5,         -- Family events
+	career = 3.0,         -- Career events
+	health = 2.5,         -- Health events
+	education = 2.0,      -- Education events
+	random = 1.5,         -- Random life events
+	misc = 1.0,           -- Misc events
+}
+
 function EventEngine.calculateDynamicWeight(event, state)
 	local baseWeight = event.weight or 1
 	local multiplier = 1.0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Category priority system
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local category = event.category or "misc"
+	local categoryPriority = EventEngine.CATEGORY_PRIORITY[category] or 1.0
+	multiplier = multiplier * categoryPriority
 	
 	-- Boost events relevant to player's flags
 	local flags = state.Flags or {}
@@ -933,44 +1148,122 @@ function EventEngine.calculateDynamicWeight(event, state)
 		end
 	end
 	
-	-- Reduce weight for recently seen events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Improved freshness system
+	-- Recently seen events have lower weight, but never 0
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if state.EventHistory and state.EventHistory[event.id] then
 		local history = state.EventHistory[event.id]
 		local yearsSince = (state.Age or 0) - (history.lastAge or 0)
-		if yearsSince < 5 then
-			multiplier = multiplier * (0.3 + yearsSince * 0.14) -- 0.3 at 0 years, 1.0 at 5 years
+		local occurrences = history.count or 1
+		
+		-- More occurrences = lower weight
+		local occurrenceMultiplier = 1.0 / (1 + occurrences * 0.1)
+		
+		-- Recency penalty
+		if yearsSince < 3 then
+			multiplier = multiplier * 0.2 * occurrenceMultiplier
+		elseif yearsSince < 5 then
+			multiplier = multiplier * 0.5 * occurrenceMultiplier
+		elseif yearsSince < 10 then
+			multiplier = multiplier * 0.8 * occurrenceMultiplier
+		end
+	else
+		-- Never seen before - slight boost
+		multiplier = multiplier * 1.2
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Contextual boosts based on player state
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Career events for employed players
+	if (event.category == "career" or event.category == "career_special") and state.CurrentJob then
+		multiplier = multiplier * 1.5
+		-- Extra boost if event matches job category
+		if event.jobCategory and state.CurrentJob.category == event.jobCategory then
+			multiplier = multiplier * 1.5
 		end
 	end
 	
-	-- Boost events that match player's career
-	if event.category == "career" and state.CurrentJob then
-		multiplier = multiplier * 1.3
+	-- Relationship events for people with partners
+	if event.category == "relationships" then
+		if flags.married then
+			multiplier = multiplier * 1.3
+		elseif flags.has_partner or flags.dating then
+			multiplier = multiplier * 1.2
+		end
 	end
 	
-	-- Boost relationship events for people with partners
-	if event.category == "relationships" and flags.married then
-		multiplier = multiplier * 1.2
+	-- Health events scale with age
+	if event.category == "health" or event.category == "health_critical" then
+		local age = state.Age or 0
+		if age > 70 then
+			multiplier = multiplier * 2.0
+		elseif age > 50 then
+			multiplier = multiplier * 1.5
+		elseif age > 30 then
+			multiplier = multiplier * 1.2
+		end
 	end
 	
-	-- Boost health events for older players
-	if event.category == "health" and (state.Age or 0) > 50 then
-		multiplier = multiplier * 1.2
+	-- Family events for players with children/spouse
+	if event.category == "family" then
+		if flags.has_children then
+			multiplier = multiplier * 1.4
+		end
+		if flags.married then
+			multiplier = multiplier * 1.2
+		end
 	end
 	
-	-- Premium feature boosts
-	if event.requiresMob and state.MobState and state.MobState.inMob then
-		multiplier = multiplier * 2.0 -- Mafia members get more mafia events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Premium feature GUARANTEED boosts
+	-- Premium path events ALWAYS get high priority for those players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Mafia members MUST get mafia events
+	if event.requiresMob or event.category == "mafia" then
+		if state.MobState and state.MobState.inMob then
+			multiplier = multiplier * 3.0 -- Guaranteed visibility
+		else
+			multiplier = multiplier * 0.1 -- Nearly invisible to non-mafia
+		end
 	end
 	
-	if event.requiresRoyal and state.RoyalState and state.RoyalState.isRoyal then
-		multiplier = multiplier * 2.0 -- Royals get more royal events
+	-- Royalty MUST get royal events
+	if event.requiresRoyal or event.category == "royalty" then
+		if state.RoyalState and state.RoyalState.isRoyal then
+			multiplier = multiplier * 3.0 -- Guaranteed visibility
+		else
+			multiplier = multiplier * 0.1 -- Nearly invisible to non-royals
+		end
 	end
 	
-	if event.requiresFame and state.FameState and state.FameState.isFamous then
-		multiplier = multiplier * 2.0 -- Famous people get more fame events
+	-- Fame MUST get fame events
+	if event.requiresFame or event.category == "fame" then
+		if state.FameState and (state.FameState.isFamous or state.FameState.careerPath) then
+			multiplier = multiplier * 3.0 -- Guaranteed visibility
+		else
+			multiplier = multiplier * 0.2 -- Low visibility for non-famous
+		end
 	end
 	
-	return baseWeight * multiplier
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Stat-based relevance
+	-- Low health = more health events, low happiness = more mood events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local stats = state.Stats or {}
+	if event.category == "health" and (stats.Health or 50) < 30 then
+		multiplier = multiplier * 2.0 -- Sick people get more health events
+	end
+	
+	if event.category == "relationships" and (stats.Happiness or 50) < 30 then
+		multiplier = multiplier * 1.5 -- Unhappy people get more relationship opportunities
+	end
+	
+	-- Minimum weight to prevent 0 weights
+	return math.max(0.01, baseWeight * multiplier)
 end
 
 function EventEngine.selectEventsWithDynamicWeights(events, state, options)
