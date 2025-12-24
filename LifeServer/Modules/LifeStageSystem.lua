@@ -473,6 +473,32 @@ function LifeStageSystem.validateEvent(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check custom eligibility function
+	-- Many events (especially job-specific events like Lab Accident) use eligibility
+	-- functions to check if the player has the right job. Without this check,
+	-- Lab Accident events can appear for non-lab workers!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.eligibility then
+		local success, result = pcall(event.eligibility, state)
+		if not success then
+			-- Eligibility function errored - treat as ineligible
+			warn("[LifeStageSystem] Eligibility function error for event " .. tostring(event.id) .. ": " .. tostring(result))
+			return false
+		end
+		if not result then
+			return false
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check requiresJob flag
+	-- Events with requiresJob = true should only appear if player has a job
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.requiresJob and not state.CurrentJob then
+		return false
+	end
+	
 	return true
 end
 

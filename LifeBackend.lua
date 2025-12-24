@@ -1137,7 +1137,11 @@ function LifeBackend:clearGhostRelationships(state)
 	-- Sync flags with actual relationships
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.has_partner and not hasLivingPartner then
-		warn("[RVS] Ghost has_partner flag - clearing")
+		-- Only log once per session to reduce spam
+		if not flags._ghost_partner_logged then
+			print("[RVS] Ghost has_partner flag - clearing (will only log once)")
+			flags._ghost_partner_logged = true
+		end
 		flags.has_partner = nil
 		fixes = fixes + 1
 	end
@@ -1145,7 +1149,11 @@ function LifeBackend:clearGhostRelationships(state)
 	if flags.married and not hasLivingSpouse then
 		-- Check if widowed
 		if not flags.widowed then
-			warn("[RVS] Ghost married flag without spouse - setting widowed")
+			-- Only log once per session to reduce spam
+			if not flags._ghost_married_logged then
+				print("[RVS] Ghost married flag without spouse - setting widowed (will only log once)")
+				flags._ghost_married_logged = true
+			end
 			flags.widowed = true
 			flags.married = nil
 			fixes = fixes + 1
@@ -1306,16 +1314,16 @@ function LifeBackend:enforceOneOccupation(state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- AAA FIX: Multiple career types are VALID in many cases:
 	-- - Mafia + regular job = cover job (realistic)
-	-- - Fame + regular job = working artist (realistic)
+	-- - Fame + regular job = working artist/struggling artist (realistic)
 	-- - Royalty + fame = Prince Harry style (realistic)
-	-- Only warn if truly incompatible AND apply fixes silently (no spam)
+	-- Only fix truly incompatible combinations, NO logging for valid combinations
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #activeCareerTypes > 1 then
 		local primary = flags.primary_wish_type
 		local needsFix = false
 		
-		-- Royalty is EXCLUSIVE of regular jobs (they don't work)
-		if primary == "royalty" and state.CurrentJob then
+		-- Royalty is EXCLUSIVE of regular jobs (they don't work normal jobs)
+		if (primary == "royalty" or flags.is_royalty) and state.CurrentJob then
 			state.CurrentJob = nil
 			flags.employed = nil
 			flags.has_job = nil
@@ -1323,15 +1331,13 @@ function LifeBackend:enforceOneOccupation(state)
 			fixes = fixes + 1
 		end
 		
-		-- Mafia can have cover jobs - this is VALID, no fix needed
-		-- Famous people can have day jobs early in career - VALID
+		-- All other combinations are VALID - no warnings, no fixes needed:
+		-- - Fame + regular job = struggling artist with day job (VALID)
+		-- - Mafia + regular job = cover job for criminal activities (VALID)
+		-- - Fame + mafia = celebrity criminal (VALID if rare)
 		
-		-- Only log once per session to avoid spam (572 warnings!)
-		if needsFix and not flags._career_conflict_logged then
-			flags._career_conflict_logged = true
-			-- Debug log only, not warn (reduces console spam)
-			print("[RVS] Resolved career conflict: " .. table.concat(activeCareerTypes, ", ") .. " -> " .. (primary or "auto"))
-		end
+		-- REMOVED: Logging completely - these combinations are valid game states
+		-- The old "[RVS] Multiple career types detected" warning was spam
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
@@ -1342,7 +1348,11 @@ function LifeBackend:enforceOneOccupation(state)
 		
 		-- Can't have a job if too young
 		if age < 14 then
-			warn("[RVS] Child with job - clearing")
+			-- Only log once per session to reduce spam
+			if not flags._child_job_cleared then
+				print("[RVS] Child with job - clearing (will only log once)")
+				flags._child_job_cleared = true
+			end
 			state.CurrentJob = nil
 			flags.employed = nil
 			flags.has_job = nil
@@ -8398,8 +8408,9 @@ function LifeBackend:setupRemotes()
 		self:handleAgeUp(player)
 	end)
 
-	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender)
-		self:setLifeInfo(player, name, gender)
+	-- CRITICAL FIX: Now accepts country parameter for country selection feature
+	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender, country)
+		self:setLifeInfo(player, name, gender, country)
 	end)
 
 	self.remotes.SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
@@ -9447,7 +9458,7 @@ local function filterText(text, player)
 	end
 end
 
-function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
+function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 	local state = self:getState(player)
 	if not state then
 		return
@@ -9456,8 +9467,9 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #105: Support both old (name, gender) and new (payload object) formats
 	-- New format: { gender = "Male", isRoyalBirth = true, royalCountry = "uk" }
+	-- Also now supports country selection (third argument)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local name, gender, isRoyalBirth, royalCountry
+	local name, gender, isRoyalBirth, royalCountry, selectedCountry
 	
 	if type(nameOrPayload) == "table" then
 		-- New payload format
@@ -9465,10 +9477,40 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg)
 		gender = nameOrPayload.gender
 		isRoyalBirth = nameOrPayload.isRoyalBirth
 		royalCountry = nameOrPayload.royalCountry
+		selectedCountry = nameOrPayload.country
 	else
-		-- Old format (name, gender)
+		-- Old format (name, gender, country)
 		name = nameOrPayload
 		gender = genderArg
+		selectedCountry = countryArg
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COUNTRY SELECTION: Store selected country in state
+	-- User requested: "add countries even if it doesn't do much like let u pick country after u pick gender"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local countryMap = {
+		usa = "United States",
+		uk = "United Kingdom",
+		canada = "Canada",
+		australia = "Australia",
+		germany = "Germany",
+		france = "France",
+		japan = "Japan",
+		brazil = "Brazil",
+		mexico = "Mexico",
+		italy = "Italy",
+		spain = "Spain",
+		india = "India",
+		china = "China",
+		russia = "Russia",
+		south_korea = "South Korea",
+	}
+	
+	if selectedCountry and selectedCountry ~= "" then
+		state.Country = countryMap[selectedCountry] or selectedCountry or "United States"
+	elseif not state.Country then
+		state.Country = "United States" -- Default country
 	end
 	
 	-- CRITICAL FIX #104/#117: Handle empty name - generate random default name
@@ -13817,11 +13859,53 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- Create the new state as the child
 	local newState = self:createInitialState(player)
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Calculate child's actual age properly
+	-- The child's age should be their stored age, not reset to something weird
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local childAge = child.age or 18
+	if childAge < 18 then
+		childAge = 18 -- Minimum age to continue as child
+	end
+	
 	-- Set up child's identity
 	newState.Name = child.name or child.Name or "Child of " .. parentName
 	newState.Gender = child.gender or "male"
-	newState.Age = child.age or 18
+	newState.Age = childAge
 	newState.Year = (state.Year or 2025) -- Same year
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Adjust family member ages based on child's starting age
+	-- createInitialState generates family for age 0 newborn, so we need to age them up
+	-- This prevents grandparents being too young and siblings having weird ages
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if newState.Relationships then
+		for relId, rel in pairs(newState.Relationships) do
+			if type(rel) == "table" and rel.age then
+				-- Age up all family members by the child's starting age
+				rel.age = rel.age + childAge
+				
+				-- Check if grandparents should be dead at this age
+				if relId:find("grand") and rel.age >= 85 then
+					rel.alive = false
+					rel.deceased = true
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Update housing state based on age
+	-- If child is 18+, they shouldn't be "living with parents"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.HousingState = newState.HousingState or {}
+	if childAge >= 18 then
+		newState.HousingState.status = "renter"
+		newState.HousingState.type = "apartment"
+		newState.HousingState.rent = 1000 -- Basic starting rent
+		newState.Flags.living_with_parents = nil
+		newState.Flags.moved_out = true
+	end
 	
 	-- Inherit money
 	newState.Money = inheritance
@@ -13829,8 +13913,8 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- Inherit assets
 	newState.Assets = newState.Assets or {}
 	if state.Assets then
-		-- Inherit properties
-		if state.Assets.Properties then
+		-- Inherit properties (and update housing if inheriting a home)
+		if state.Assets.Properties and #state.Assets.Properties > 0 then
 			newState.Assets.Properties = {}
 			for _, prop in ipairs(state.Assets.Properties) do
 				table.insert(newState.Assets.Properties, {
@@ -13840,15 +13924,21 @@ function LifeBackend:handleContinueAsKid(player, childData)
 					price = prop.price,
 					value = prop.value,
 					income = prop.income,
-					purchasedAt = state.Age,
+					purchasedAt = childAge,
 					inherited = true,
 					inheritedFrom = parentName,
 				})
 			end
+			-- Update housing to owner if inherited properties
+			newState.HousingState.status = "owner"
+			newState.HousingState.type = state.Assets.Properties[1].type or "house"
+			newState.HousingState.rent = 0
+			newState.Flags.homeowner = true
+			newState.Flags.has_property = true
 		end
 		
 		-- Inherit vehicles
-		if state.Assets.Vehicles then
+		if state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
 			newState.Assets.Vehicles = {}
 			for _, vehicle in ipairs(state.Assets.Vehicles) do
 				table.insert(newState.Assets.Vehicles, {
@@ -13861,6 +13951,8 @@ function LifeBackend:handleContinueAsKid(player, childData)
 					inheritedFrom = parentName,
 				})
 			end
+			newState.Flags.has_vehicle = true
+			newState.Flags.has_car = true
 		end
 	end
 	
@@ -13870,13 +13962,21 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Flags.inherited_from_parent = true
 	newState.Flags.parent_name = parentName
 	
-	-- Set some starting stats based on child's prior relationship
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Better starting stats based on child's situation
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local relationship = child.relationship or 50
 	newState.Stats = newState.Stats or {}
-	newState.Stats.Happiness = math.min(100, 50 + math.floor(relationship / 5))
-	newState.Stats.Health = math.max(30, 100 - math.floor((child.age or 18) / 2))
+	newState.Stats.Happiness = math.clamp(50 + math.floor(relationship / 5), 20, 80)
+	newState.Stats.Health = math.clamp(100 - math.floor(childAge / 3), 60, 100)
 	newState.Stats.Smarts = newState.Stats.Smarts or 50
 	newState.Stats.Looks = newState.Stats.Looks or 50
+	
+	-- Also set shorthand access
+	newState.Happiness = newState.Stats.Happiness
+	newState.Health = newState.Stats.Health
+	newState.Smarts = newState.Stats.Smarts
+	newState.Looks = newState.Stats.Looks
 	
 	-- Create parent as a memory
 	newState.Flags.parent_deceased = true
@@ -17801,7 +17901,27 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 	state.Assets = state.Assets or {}
 	state.Flags = state.Flags or {}
 
-	local bucket = state.Assets[assetType]
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Normalize assetType from client format to server format
+	-- Client sends: "property", "vehicle", "item"
+	-- Server expects: "Properties", "Vehicles", "Items"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local assetTypeMap = {
+		property = "Properties",
+		properties = "Properties",
+		Properties = "Properties",
+		vehicle = "Vehicles",
+		vehicles = "Vehicles",
+		Vehicles = "Vehicles",
+		item = "Items",
+		items = "Items",
+		Items = "Items",
+		crypto = "Crypto",
+		Crypto = "Crypto",
+	}
+	local normalizedType = assetTypeMap[assetType] or assetType
+	
+	local bucket = state.Assets[normalizedType]
 	if not bucket then
 		return { success = false, message = "You don't own anything like that." }
 	end
@@ -17847,7 +17967,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 				end
 			end
 
-			if assetType == "Vehicles" and #bucket == 0 then
+			if normalizedType == "Vehicles" and #bucket == 0 then
 				state.Flags.has_vehicle = nil
 				state.Flags.has_car = nil
 				state.Flags.car_owner = nil
@@ -17858,7 +17978,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.car_loan_payment = nil
 					state.Flags.has_car_loan = nil
 				end
-			elseif assetType == "Properties" and #bucket == 0 then
+			elseif normalizedType == "Properties" and #bucket == 0 then
 				state.Flags.has_property = nil
 				state.Flags.homeowner = nil
 				state.Flags.luxury_homeowner = nil
@@ -17875,7 +17995,7 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.mortgage_debt = nil
 					state.Flags.mortgage_trouble = nil
 				end
-			elseif assetType == "Properties" and #bucket > 0 then
+			elseif normalizedType == "Properties" and #bucket > 0 then
 				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
 				if asset.hasMortgage then
 					state.Flags.mortgage_debt = nil

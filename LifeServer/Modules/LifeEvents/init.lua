@@ -1313,6 +1313,19 @@ local function canEventTrigger(event, state)
 			hater = 3,         -- At least 3 years between hater events
 			career_workplace = 4, -- CRITICAL FIX: At least 4 years between office drama events
 			career_office = 4,    -- CRITICAL FIX: At least 4 years between office-specific events
+			-- CRITICAL FIX: Fast food / service career events were spamming
+			career_service = 2,   -- At least 2 years between fast food/service events
+			career_food = 2,      -- At least 2 years between food service events
+			career_retail = 2,    -- At least 2 years between retail events
+			career_entry = 2,     -- At least 2 years between entry-level job events
+			-- Other career categories
+			career_tech = 3,      -- At least 3 years between tech events
+			career_medical = 3,   -- At least 3 years between medical events
+			career_science = 3,   -- At least 3 years between science/lab events
+			career_military = 3,  -- At least 3 years between military events
+			career_police = 3,    -- At least 3 years between police events
+			career_creative = 2,  -- At least 2 years between creative career events
+			career_trades = 3,    -- At least 3 years between trades events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -1340,6 +1353,15 @@ local function canEventTrigger(event, state)
 			toxic = 8,      -- CRITICAL FIX: At least 8 years between toxic boss/coworker events
 			terrible = 8,   -- CRITICAL FIX: At least 8 years between terrible boss events
 			sabotag = 8,    -- CRITICAL FIX: At least 8 years between sabotage events
+			-- CRITICAL FIX: Fast food/service event keyword cooldowns
+			karen = 4,      -- At least 4 years between Karen events
+			rude_customer = 3, -- At least 3 years between rude customer events
+			rush = 3,       -- At least 3 years between rush hour events
+			tipper = 4,     -- At least 4 years between tipper events
+			coworker_drama = 3, -- At least 3 years between coworker drama events
+			burnout = 5,    -- At least 5 years between burnout events
+			shift_lead = 99, -- Shift lead promotion is basically one-time
+			escape_fast = 4, -- At least 4 years between "escape fast food" existential crises
 		}
 		
 		for keyword, keywordCooldown in pairs(spamKeywords) do

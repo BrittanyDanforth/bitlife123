@@ -1545,6 +1545,22 @@ end
 -- PERSON CARD ------------------------------------------------------------------
 
 function RelationshipsScreen:createPersonCard(parent, person, order, accentColor, paleColor, relType)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Validate person parameter to prevent nil errors
+	-- User reported: "Unable to assign property Text. string expected, got nil"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if not person or type(person) ~= "table" then
+		logWarn("createPersonCard called with invalid person:", type(person))
+		return nil
+	end
+	
+	-- Ensure required fields have defaults
+	person.id = person.id or ("person_" .. tostring(order))
+	person.name = person.name or person.Name or "Unknown"
+	person.role = person.role or person.type or "Person"
+	person.relationship = person.relationship or 50
+	person.age = person.age or 0
+	
 	local isAlive = person.alive ~= false
 	local accentDark = accentColor:Lerp(C.Black, 0.2)
 	
@@ -1562,7 +1578,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	
 	-- Container (holds everything, manages layout)
 	local container = Instance.new("Frame")
-	container.Name = person.id .. "_Container"
+	container.Name = tostring(person.id) .. "_Container"
 	container.Size = UDim2.new(1, 0, 0, PERSON_CARD_HEIGHT)
 	container.BackgroundTransparency = 1
 	container.LayoutOrder = order
@@ -1730,6 +1746,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	local roleY = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 32 or 36)
 
 	-- Name (bolder) - SCALED
+	-- CRITICAL FIX: Nil safety for person.name - prevents "string expected, got nil" error
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(1, -TEXT_START - (IS_TINY_PHONE and 50 or 100), 0, IS_TINY_PHONE and 18 or 24)
 	nameLabel.Position = UDim2.new(0, TEXT_START, 0, nameY)
@@ -1738,7 +1755,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	nameLabel.TextSize = NAME_SIZE
 	nameLabel.TextColor3 = isAlive and C.Gray900 or C.Gray500
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.Text = person.name
+	nameLabel.Text = person.name or person.Name or person.role or "Unknown"
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.ZIndex = 85
 	nameLabel.Parent = card
