@@ -14504,7 +14504,6 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			end
 		-- Then handle royal proposals (existing logic)
 		elseif partner and partner.isRoyalty then
-		if partner and partner.isRoyalty then
 			local relationship = partner.relationship or 50
 			local successChance = 0.3 + (relationship / 200) -- 30% base + up to 50% from relationship
 			
@@ -14557,7 +14556,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				self:applyStatChanges(state, { Happiness = -15 })
 			end
 		else
-			resultMessage = "💔 You're not dating anyone royal to propose to!"
+			resultMessage = "💔 You're not dating anyone to propose to!"
 		end
 	end
 	
