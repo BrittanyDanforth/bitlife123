@@ -635,6 +635,23 @@ EventEngine.Pipeline = {}
 function EventEngine.Pipeline.buildContext(state)
 	if not state then return {} end
 	
+	-- CRITICAL FIX: Check both flag AND relationship object for partner detection
+	-- Some events set only the flag, others set only the relationship object
+	local hasPartnerFlag = state.Flags and state.Flags.has_partner
+	local hasPartnerObject = state.Relationships and state.Relationships.partner ~= nil
+	-- Also check for spouse (married but using partner checks)
+	local hasSpouseObject = state.Relationships and state.Relationships.spouse ~= nil
+	-- Check for any romantic relationship in the table
+	local hasRomanticRelation = false
+	if state.Relationships then
+		for key, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "spouse" or rel.type == "fiance") then
+				hasRomanticRelation = true
+				break
+			end
+		end
+	end
+	
 	return {
 		age = state.Age or 0,
 		money = state.Money or 0,
@@ -648,7 +665,8 @@ function EventEngine.Pipeline.buildContext(state)
 		inMob = state.Flags and state.Flags.in_mob,
 		isFamous = state.Flags and (state.Flags.fame_career or state.Flags.is_famous),
 		inJail = state.InJail,
-		hasPartner = state.Relationships and state.Relationships.partner ~= nil,
+		-- CRITICAL FIX: Comprehensive partner check
+		hasPartner = hasPartnerFlag or hasPartnerObject or hasSpouseObject or hasRomanticRelation,
 		isMarried = state.Flags and state.Flags.married,
 		flags = state.Flags or {},
 	}
@@ -1597,6 +1615,21 @@ end
 function EventEngine.buildContext(state)
 	if not state then return {} end
 	
+	-- CRITICAL FIX: Comprehensive partner detection 
+	-- Must check BOTH flag AND relationship objects (some events only set one)
+	local hasPartnerFlag = state.Flags and state.Flags.has_partner
+	local hasPartnerObject = state.Relationships and state.Relationships.partner ~= nil
+	local hasSpouseObject = state.Relationships and state.Relationships.spouse ~= nil
+	local hasRomanticRelation = false
+	if state.Relationships then
+		for key, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "spouse" or rel.type == "fiance") then
+				hasRomanticRelation = true
+				break
+			end
+		end
+	end
+	
 	local context = {
 		age = state.Age or 0,
 		year = state.Year or 2025,
@@ -1613,7 +1646,8 @@ function EventEngine.buildContext(state)
 		inSchool = state.EducationData and state.EducationData.Status == "enrolled",
 		
 		-- Relationship context
-		hasPartner = state.Flags and state.Flags.has_partner,
+		-- CRITICAL FIX: Check both flag AND relationship objects
+		hasPartner = hasPartnerFlag or hasPartnerObject or hasSpouseObject or hasRomanticRelation,
 		isMarried = state.Flags and state.Flags.married,
 		hasFriends = state.Relationships and (
 			(state.Relationships.friends and #state.Relationships.friends > 0) or

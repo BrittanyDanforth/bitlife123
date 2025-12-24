@@ -211,6 +211,27 @@ local Education = {
 
 -- CRITICAL FIX: Added minigames to social activities for more engaging gameplay!
 local Social = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: DATING & ROMANCE ACTIVITIES - These were completely missing!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "look_for_love", name = "Look for Love", emoji = "💕", effect = "Meet someone new!", minAge = 16, cost = 0, requiresSingle = true },
+	{ id = "online_dating", name = "Online Dating", emoji = "📱", effect = "Swipe right!", minAge = 18, cost = 0, requiresSingle = true },
+	{ id = "speed_dating", name = "Speed Dating", emoji = "⏱️", effect = "Meet lots of people!", minAge = 18, cost = 50, requiresSingle = true },
+	{ id = "go_on_date", name = "Go on a Date", emoji = "💑", effect = "+Happiness +Relationship", minAge = 16, cost = 50, requiresPartner = true },
+	{ id = "romantic_dinner", name = "Romantic Dinner", emoji = "🍷", effect = "+Happiness +Relationship", minAge = 18, cost = 150, requiresPartner = true },
+	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+Relationship", minAge = 14, cost = 0, requiresPartner = true },
+	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "Maybe something happens!", minAge = 14, cost = 0, requiresSingle = true },
+	{ id = "propose", name = "Propose", emoji = "💍", effect = "Pop the question!", minAge = 18, cost = 500, requiresPartner = true },
+	{ id = "plan_wedding", name = "Plan Wedding", emoji = "💒", effect = "Get married!", minAge = 18, cost = 5000, requiresEngaged = true },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FRIEND ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "make_friends", name = "Make New Friends", emoji = "👋", effect = "+Friends", minAge = 5, cost = 0 },
+	{ id = "hang_with_friends", name = "Hang with Friends", emoji = "🤝", effect = "+Friendship", minAge = 5, cost = 0 },
+	{ id = "friend_trip", name = "Friends Trip", emoji = "🚗", effect = "+Happiness +Friendship", minAge = 16, cost = 500 },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PARTY & SOCIAL ACTIVITIES
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Party now has mash minigame (dance off!)
 	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
 	-- CRITICAL FIX: Hangout now has QTE minigame (social timing!)
@@ -1387,6 +1408,54 @@ end
 
 function ActivitiesScreen:populateSocial()
 	self:updateInfoBar()
+	
+	-- CRITICAL FIX: Filter activities based on relationship status
+	local state = self.playerState or {}
+	local flags = state.Flags or {}
+	local age = self:getAge()
+	
+	-- Determine relationship status
+	local hasPartner = flags.has_partner or flags.dating or flags.married or
+		(state.Relationships and state.Relationships.partner ~= nil) or
+		(state.Relationships and state.Relationships.spouse ~= nil)
+	local isEngaged = flags.engaged or flags.getting_married
+	local isMarried = flags.married
+	
+	-- Filter activities based on eligibility
+	local filteredActivities = {}
+	for _, item in ipairs(Social) do
+		local eligible = true
+		
+		-- Age check
+		if age < (item.minAge or 0) then
+			eligible = false
+		end
+		
+		-- Partner requirement check
+		if item.requiresPartner and not hasPartner then
+			eligible = false
+		end
+		if item.requiresSingle and hasPartner then
+			eligible = false
+		end
+		if item.requiresEngaged and not isEngaged then
+			eligible = false
+		end
+		
+		-- Don't show propose if already married or engaged
+		if item.id == "propose" and (isMarried or isEngaged) then
+			eligible = false
+		end
+		
+		-- Don't show wedding planning if not engaged
+		if item.id == "plan_wedding" and not isEngaged then
+			eligible = false
+		end
+		
+		if eligible then
+			table.insert(filteredActivities, item)
+		end
+	end
 
 	local section = Instance.new("Frame")
 	section.Name = "SocialSection"
@@ -1426,24 +1495,48 @@ function ActivitiesScreen:populateSocial()
 	badgeLabel.Font = F.Button
 	badgeLabel.TextSize = 14
 	badgeLabel.TextColor3 = C.White
-	badgeLabel.Text = "Social"
+	badgeLabel.Text = "💕 Social & Love"
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
 	local countLabel = Instance.new("TextLabel")
-	countLabel.Size = UDim2.new(0, 80, 1, 0)
+	countLabel.Size = UDim2.new(0, 100, 1, 0)
 	countLabel.Position = UDim2.new(0, 100, 0, 0)
 	countLabel.BackgroundTransparency = 1
 	countLabel.Font = F.Medium
 	countLabel.TextSize = 13
 	countLabel.TextColor3 = C.Gray400
 	countLabel.TextXAlignment = Enum.TextXAlignment.Left
-	countLabel.Text = #Social .. " activities"
+	countLabel.Text = #filteredActivities .. " activities"
 	countLabel.ZIndex = 84
 	countLabel.Parent = header
+	
+	-- Status hint
+	local statusHint = Instance.new("TextLabel")
+	statusHint.Size = UDim2.new(1, 0, 0, 20)
+	statusHint.BackgroundTransparency = 1
+	statusHint.Font = F.Body or Enum.Font.Gotham
+	statusHint.TextSize = 12
+	statusHint.TextColor3 = C.Gray500
+	statusHint.TextXAlignment = Enum.TextXAlignment.Left
+	statusHint.LayoutOrder = 1
+	statusHint.ZIndex = 83
+	statusHint.Parent = section
+	
+	if hasPartner then
+		if isMarried then
+			statusHint.Text = "💍 You're married! Spend time with your spouse."
+		elseif isEngaged then
+			statusHint.Text = "💍 You're engaged! Plan your wedding!"
+		else
+			statusHint.Text = "💕 You're in a relationship! Go on dates!"
+		end
+	else
+		statusHint.Text = "💔 Single? Look for love or make new friends!"
+	end
 
-	for i, item in ipairs(Social) do
-		self:createActivityCard(section, item, i, C.Pink, C.PinkPale)
+	for i, item in ipairs(filteredActivities) do
+		self:createActivityCard(section, item, i + 1, C.Pink, C.PinkPale)
 	end
 end
 

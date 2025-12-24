@@ -64,6 +64,38 @@ local function isRapper(state)
 	-- CRITICAL FIX #RVS-FAME-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Block if player has ANY non-rapper formal job!
+	-- A penetration tester, office worker, doctor, etc. should NOT get rapper events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.CurrentJob then
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobName = (state.CurrentJob.name or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		
+		-- First check if it IS a rapper job
+		local isRapperJob = jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop")
+			or jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper")
+			or jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper")
+		
+		if isRapperJob then
+			return true  -- Is a rapper job - allow rapper events!
+		end
+		
+		-- If they have ANY other job, block rapper events!
+		-- This prevents penetration testers, doctors, lawyers, etc from getting rapper events
+		if jobId ~= "" and jobName ~= "" then
+			-- Allow rapper events ONLY if the job is clearly music/entertainment related
+			local isEntertainmentJob = jobCat == "entertainment" or jobCat == "music" or jobCat == "celebrity"
+				or jobId:find("musician") or jobId:find("singer") or jobId:find("artist")
+				or jobName:find("musician") or jobName:find("singer") or jobName:find("artist")
+			
+			if not isEntertainmentJob then
+				return false  -- Has a non-entertainment job - NOT a rapper!
+			end
+		end
+	end
+	
 	-- CRITICAL FIX: Check if player is a streamer/creator BY JOB - if so, return FALSE immediately!
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
@@ -86,25 +118,15 @@ local function isRapper(state)
 		end
 	end
 
-	-- Check for rapper job
-	if state.CurrentJob then
-		local jobId = (state.CurrentJob.id or ""):lower()
-		local jobName = (state.CurrentJob.name or ""):lower()
-		if jobId:find("rapper") or jobName:find("rapper") or jobName:find("hip.?hop") then
-			return true
-		end
-		if jobId:find("underground_rapper") or jobId:find("local_rapper") or jobId:find("buzzing_rapper") or
-		   jobId:find("signed_rapper") or jobId:find("hot_rapper") or jobId:find("mainstream_rapper") then
-			return true
-		end
-	end
-
-	-- CRITICAL FIX: Check rapper-SPECIFIC flags (NOT first_track_recorded - not rapper-specific!)
+	-- CRITICAL FIX: Only allow rapper events if player has rapper flags AND no formal job
 	if state.Flags then
 		if state.Flags.rapper or state.Flags.pursuing_rap or state.Flags.underground_artist
 		   or state.Flags.hip_hop_experience or state.Flags.trap_rapper or state.Flags.lyrical_rapper
 		   or state.Flags.melodic_rapper or state.Flags.drill_rapper then
-			return true
+			-- Has rapper flags - but only allow if they don't have a conflicting formal job
+			if not state.CurrentJob or not state.CurrentJob.id or state.CurrentJob.id == "" then
+				return true  -- No job, has rapper flags - allow!
+			end
 		end
 	end
 	return false

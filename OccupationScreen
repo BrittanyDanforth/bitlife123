@@ -5087,9 +5087,17 @@ function OccupationScreen:finalizeJobApplication(jobId, interviewScore)
 	-- Show loading state
 	self:addFeed("📝 Processing your job application...")
 	
+	-- CRITICAL FIX: Check if ApplyForJob remote exists
+	if not ApplyForJob then
+		log("ERROR: ApplyForJob remote not available!")
+		self:addFeed("⚠️ Server connection issue. Please try again.")
+		return
+	end
+	
 	-- Call server to actually apply for the job
+	-- CRITICAL FIX: Was "Remotes.ApplyForJob" but there's no Remotes table - just use ApplyForJob directly!
 	local success, result = pcall(function()
-		return Remotes.ApplyForJob:InvokeServer(jobId, interviewScore)
+		return ApplyForJob:InvokeServer(jobId, interviewScore)
 	end)
 	
 	if success then

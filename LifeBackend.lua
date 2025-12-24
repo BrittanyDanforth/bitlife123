@@ -5331,6 +5331,109 @@ local ActivityCatalog = {
 	hangout = { stats = { Happiness = 3 }, feed = "hung out with friends", cost = 0 },
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
 	host_party = { stats = { Happiness = 8 }, feed = "hosted a party", cost = 300 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE & DATING ACTIVITIES - These were completely missing!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	look_for_love = { 
+		stats = { Happiness = 5 }, 
+		feed = "looked for love",
+		cost = 0,
+		requiresAge = 16,
+		requiresSingle = true,
+		isRomanceSearch = true, -- Special handler will create partner if lucky
+	},
+	online_dating = { 
+		stats = { Happiness = 3 }, 
+		feed = "tried online dating",
+		cost = 0,
+		requiresAge = 18,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	speed_dating = {
+		stats = { Happiness = 4 },
+		feed = "went speed dating",
+		cost = 50,
+		requiresAge = 18,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	go_on_date = {
+		stats = { Happiness = 8 },
+		feed = "went on a romantic date! 💕",
+		cost = 50,
+		requiresAge = 16,
+		requiresPartner = true,
+		relationshipBoostPartner = 8,
+	},
+	romantic_dinner = {
+		stats = { Happiness = 10 },
+		feed = "had a romantic dinner! 🍷",
+		cost = 150,
+		requiresAge = 18,
+		requiresPartner = true,
+		relationshipBoostPartner = 12,
+	},
+	spend_time_partner = {
+		stats = { Happiness = 6 },
+		feed = "spent quality time with your partner! 💞",
+		cost = 0,
+		requiresAge = 14,
+		requiresPartner = true,
+		relationshipBoostPartner = 5,
+	},
+	flirt = {
+		stats = { Happiness = 4 },
+		feed = "flirted with someone! 😉",
+		cost = 0,
+		requiresAge = 14,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	propose = {
+		stats = { Happiness = 15 },
+		feed = "proposed! 💍",
+		cost = 500,
+		requiresAge = 18,
+		requiresPartner = true,
+		blockedByFlag = "engaged",
+		blockedByFlag2 = "married",
+		isProposal = true, -- Special handler
+	},
+	plan_wedding = {
+		stats = { Happiness = 20 },
+		feed = "planned your dream wedding! 💒",
+		cost = 5000,
+		requiresAge = 18,
+		requiresFlag = "engaged",
+		blockedByFlag = "married",
+		isWedding = true, -- Special handler
+		setFlags = { married = true },
+	},
+	-- Friend activities
+	make_friends = {
+		stats = { Happiness = 5 },
+		feed = "made new friends! 👋",
+		cost = 0,
+		requiresAge = 5,
+		isFriendMaking = true, -- Special handler will create friend
+	},
+	hang_with_friends = {
+		stats = { Happiness = 6 },
+		feed = "hung out with friends! 🤝",
+		cost = 0,
+		requiresAge = 5,
+		relationshipBoostFriend = 5,
+	},
+	friend_trip = {
+		stats = { Happiness = 12, Health = 3 },
+		feed = "went on a trip with friends! 🚗",
+		cost = 500,
+		requiresAge = 16,
+		relationshipBoostFriend = 10,
+	},
+	
 	tv = { stats = { Happiness = 2 }, feed = "binged a show", cost = 0 },
 	games = { stats = { Happiness = 3, Smarts = 1 }, feed = "played video games", cost = 0 },
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
@@ -13772,6 +13875,26 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.blockedByFlag and state.Flags[activity.blockedByFlag] then
 		return { success = false, message = "You've already done this!" }
 	end
+	-- CRITICAL FIX: Handle second blockedByFlag check
+	if activity.blockedByFlag2 and state.Flags[activity.blockedByFlag2] then
+		return { success = false, message = "You've already done this!" }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE ACTIVITY REQUIREMENTS
+	-- Check if the activity requires having a partner or being single
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasPartner = state.Flags.has_partner or state.Flags.dating or state.Flags.married or
+		(state.Relationships and state.Relationships.partner ~= nil) or
+		(state.Relationships and state.Relationships.spouse ~= nil)
+	
+	if activity.requiresPartner and not hasPartner then
+		return { success = false, message = "You need to be in a relationship first! Try looking for love." }
+	end
+	
+	if activity.requiresSingle and hasPartner then
+		return { success = false, message = "You're already in a relationship!" }
+	end
 	
 	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
 	if activity.requiresFlag then
@@ -14233,12 +14356,154 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE SEARCH ACTIVITIES (Look for Love, Online Dating, Flirt)
+	-- These have a chance to create a new partner relationship
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isRomanceSearch then
+		local looks = (state.Stats and state.Stats.Looks) or 50
+		local happiness = (state.Stats and state.Stats.Happiness) or 50
+		local baseChance = 0.25 -- 25% base chance to meet someone
+		local successChance = baseChance + (looks / 400) + (happiness / 500) -- Max ~55% with high stats
+		
+		if RANDOM:NextNumber() < successChance then
+			-- Success! Create a new partner
+			state.Relationships = state.Relationships or {}
+			state.Flags = state.Flags or {}
+			
+			-- Generate partner
+			local isMale = RANDOM:NextNumber() > 0.5
+			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick"}
+			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah"}
+			local names = isMale and maleNames or femaleNames
+			local partnerName = names[RANDOM:NextInteger(1, #names)]
+			
+			state.Relationships.partner = {
+				id = "partner",
+				name = partnerName,
+				type = "romantic",
+				role = isMale and "Boyfriend" or "Girlfriend",
+				relationship = RANDOM:NextInteger(55, 75),
+				age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
+				gender = isMale and "male" or "female",
+				alive = true,
+				metAge = state.Age,
+				metYear = state.Year or 2025,
+			}
+			
+			state.Flags.has_partner = true
+			state.Flags.dating = true
+			
+			resultMessage = string.format("💕 You met %s! You're now dating!", partnerName)
+			self:applyStatChanges(state, { Happiness = 10 }) -- Extra happiness for finding love
+		else
+			resultMessage = "💔 No luck finding love this time. Keep trying!"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PARTNER RELATIONSHIP BOOST (Go on Date, Romantic Dinner, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.relationshipBoostPartner then
+		local partner = state.Relationships and state.Relationships.partner
+		if partner then
+			partner.relationship = math.min(100, (partner.relationship or 50) + activity.relationshipBoostPartner)
+			local partnerName = partner.name or "your partner"
+			resultMessage = string.format("💕 You had a great time with %s! (Relationship +%d)", partnerName, activity.relationshipBoostPartner)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FRIEND MAKING ACTIVITY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isFriendMaking then
+		state.Relationships = state.Relationships or {}
+		
+		-- Generate new friend
+		local isMale = RANDOM:NextNumber() > 0.5
+		local maleNames = {"Josh", "Kevin", "Marcus", "Derek", "Evan", "Austin", "Trevor", "Kyle", "Zack", "Blake"}
+		local femaleNames = {"Taylor", "Morgan", "Jordan", "Casey", "Alex", "Riley", "Avery", "Quinn", "Peyton", "Skyler"}
+		local names = isMale and maleNames or femaleNames
+		local friendName = names[RANDOM:NextInteger(1, #names)]
+		local friendId = "friend_" .. tostring(os.time()) .. "_" .. RANDOM:NextInteger(1, 9999)
+		
+		state.Relationships[friendId] = {
+			id = friendId,
+			name = friendName,
+			type = "friend",
+			role = "Friend",
+			relationship = RANDOM:NextInteger(50, 70),
+			age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
+			gender = isMale and "male" or "female",
+			alive = true,
+			metAge = state.Age,
+			lastContact = state.Age,
+		}
+		
+		resultMessage = string.format("👋 You made a new friend: %s!", friendName)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: WEDDING ACTIVITY - Get married!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isWedding then
+		local partner = state.Relationships and state.Relationships.partner
+		if partner then
+			-- Convert partner to spouse
+			state.Relationships.spouse = partner
+			state.Relationships.spouse.type = "spouse"
+			state.Relationships.spouse.role = "Spouse"
+			state.Relationships.spouse.relationship = math.min(100, (partner.relationship or 70) + 20)
+			state.Relationships.partner = nil
+			
+			-- Set marriage flags
+			state.Flags = state.Flags or {}
+			state.Flags.married = true
+			state.Flags.engaged = nil
+			state.Flags.getting_married = nil
+			state.Flags.has_partner = true -- Still have a partner (spouse counts)
+			state.Flags.dating = nil -- Not dating anymore, married!
+			
+			local spouseName = state.Relationships.spouse.name or "your spouse"
+			resultMessage = string.format("💒 You married %s! Congratulations on your wedding!", spouseName)
+			self:applyStatChanges(state, { Happiness = 25 }) -- Wedding happiness boost
+		else
+			resultMessage = "You need to be engaged to someone first!"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: ROYAL PROPOSAL - Become royalty through marriage!
 	-- This is the culmination of the dating royalty path
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.isProposal then
 		-- Check if royal partner exists and wants to marry
 		local partner = state.Relationships and state.Relationships.partner
+		
+		-- First handle REGULAR (non-royal) proposals
+		if partner and not partner.isRoyalty then
+			local relationship = partner.relationship or 50
+			local successChance = 0.4 + (relationship / 200) -- 40% base + up to 50% from relationship
+			
+			if RANDOM:NextNumber() < successChance then
+				-- PROPOSAL ACCEPTED!
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = true
+				state.Flags.getting_married = true
+				partner.type = "fiance"
+				partner.role = "Fiancé"
+				partner.relationship = math.min(100, (partner.relationship or 70) + 15)
+				
+				local partnerName = partner.name or "your partner"
+				resultMessage = string.format("💍 %s said YES! You're engaged!", partnerName)
+				self:applyStatChanges(state, { Happiness = 20 }) -- Engagement happiness
+			else
+				-- Proposal rejected
+				state.Flags.proposal_rejected = true
+				self:applyStatChanges(state, { Happiness = -15 })
+				resultMessage = "💔 They said they need more time... Your proposal was rejected."
+			end
+		-- Then handle royal proposals (existing logic)
+		elseif partner and partner.isRoyalty then
 		if partner and partner.isRoyalty then
 			local relationship = partner.relationship or 50
 			local successChance = 0.3 + (relationship / 200) -- 30% base + up to 50% from relationship
