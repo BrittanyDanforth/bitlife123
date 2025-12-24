@@ -569,20 +569,51 @@ end
 -- ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 -- ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: RATE-LIMITED INTEGRITY CHECKS
+-- Only run full validation:
+-- - On load
+-- - After major actions (marriage, time machine, prison release, purchase)
+-- - On save
+-- NOT every tick / every remote
+-- ═══════════════════════════════════════════════════════════════════════════════
+local RVS_MIN_INTERVAL = 30 -- Minimum seconds between full RVS runs
+local RVS_FORCE_INTERVAL = 300 -- Force RVS after 5 minutes regardless
+
 -- Master recursive validator function - runs all sub-validators
-function LifeBackend:validateRecursiveState(state)
+-- Now with rate-limiting to prevent performance issues
+function LifeBackend:validateRecursiveState(state, forceRun)
 	if not state then return 0 end
 	
-	print("[RVS] ═══════════════════════════════════════════════════════════════")
-	print("[RVS] Starting Recursive Validator System...")
-	print("[RVS] ═══════════════════════════════════════════════════════════════")
+	-- Rate limiting check
+	state.Flags = state.Flags or {}
+	local currentTime = os.time()
+	local lastCheck = state.Flags._last_rvs_check or 0
+	local timeSinceLastCheck = currentTime - lastCheck
+	
+	-- Skip if checked recently (unless forced)
+	if not forceRun and timeSinceLastCheck < RVS_MIN_INTERVAL then
+		-- Quick sanity checks only (no full validation)
+		return self:quickSanityCheck(state)
+	end
+	
+	-- Update last check time
+	state.Flags._last_rvs_check = currentTime
+	
+	-- Reduce log spam - only print on major validation events
+	local shouldLog = forceRun or timeSinceLastCheck > RVS_FORCE_INTERVAL
+	if shouldLog then
+		print("[RVS] ═══════════════════════════════════════════════════════════════")
+		print("[RVS] Starting Recursive Validator System...")
+		print("[RVS] ═══════════════════════════════════════════════════════════════")
+	end
 	
 	local fixes = 0
 	
 	-- Run all validators in order
 	fixes = fixes + self:validatePremiumFlags(state)
 	fixes = fixes + self:validateEventChains(state)
-	fixes = fixes + self:reconcileEventChains(state)    -- NEW: Event chain recovery
+	fixes = fixes + self:reconcileEventChains(state)    -- Event chain recovery
 	fixes = fixes + self:clearGhostRelationships(state)
 	fixes = fixes + self:syncHousingAndTitles(state)
 	fixes = fixes + self:enforceOneOccupation(state)
@@ -590,10 +621,45 @@ function LifeBackend:validateRecursiveState(state)
 	fixes = fixes + self:validateRoyalMarriage(state)
 	fixes = fixes + self:cleanDuplicateAssets(state)
 	fixes = fixes + self:validateChildState(state)
-	fixes = fixes + self:validateMilestones(state)       -- NEW: Milestone validation
+	fixes = fixes + self:validateMilestones(state)       -- Milestone validation
 	
-	print(string.format("[RVS] Validation complete. Total fixes applied: %d", fixes))
-	print("[RVS] ═══════════════════════════════════════════════════════════════")
+	if shouldLog or fixes > 0 then
+		print(string.format("[RVS] Validation complete. Total fixes applied: %d", fixes))
+		print("[RVS] ═══════════════════════════════════════════════════════════════")
+	end
+	
+	return fixes
+end
+
+-- Quick sanity check for when we skip full RVS
+-- Only checks for truly broken states that cause immediate crashes
+function LifeBackend:quickSanityCheck(state)
+	if not state then return 0 end
+	local fixes = 0
+	
+	-- Ensure critical tables exist
+	state.Flags = state.Flags or {}
+	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
+	state.Relationships = state.Relationships or {}
+	state.Assets = state.Assets or {}
+	
+	-- Sync stat shortcuts
+	state.Health = state.Stats.Health
+	state.Happiness = state.Stats.Happiness
+	state.Smarts = state.Stats.Smarts
+	state.Looks = state.Stats.Looks
+	
+	-- Ensure Money is valid number (not boolean!)
+	if type(state.Money) ~= "number" then
+		state.Money = 0
+		fixes = fixes + 1
+	end
+	
+	-- Ensure Age is valid
+	if type(state.Age) ~= "number" or state.Age < 0 then
+		state.Age = 0
+		fixes = fixes + 1
+	end
 	
 	return fixes
 end
@@ -1083,24 +1149,34 @@ function LifeBackend:enforceOneOccupation(state)
 	if flags.fame_career then table.insert(activeCareerTypes, "fame") end
 	if state.CurrentJob then table.insert(activeCareerTypes, "regular") end
 	
-	-- If multiple career types, keep only the primary one
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Multiple career types are VALID in many cases:
+	-- - Mafia + regular job = cover job (realistic)
+	-- - Fame + regular job = working artist (realistic)
+	-- - Royalty + fame = Prince Harry style (realistic)
+	-- Only warn if truly incompatible AND apply fixes silently (no spam)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if #activeCareerTypes > 1 then
-		warn("[RVS] Multiple career types detected: " .. table.concat(activeCareerTypes, ", "))
-		
 		local primary = flags.primary_wish_type
+		local needsFix = false
 		
-		if primary == "royalty" then
-			-- Keep royalty, clear others
+		-- Royalty is EXCLUSIVE of regular jobs (they don't work)
+		if primary == "royalty" and state.CurrentJob then
 			state.CurrentJob = nil
-			-- Don't clear mob/fame - they might be compatible
-		elseif primary == "mafia" then
-			-- Mafia can have regular jobs as cover
-		elseif primary == "celebrity" then
-			-- Fame is the career
-			if state.CurrentJob and not state.CurrentJob.isFameRelated then
-				state.CurrentJob = nil
-				fixes = fixes + 1
-			end
+			flags.employed = nil
+			flags.has_job = nil
+			needsFix = true
+			fixes = fixes + 1
+		end
+		
+		-- Mafia can have cover jobs - this is VALID, no fix needed
+		-- Famous people can have day jobs early in career - VALID
+		
+		-- Only log once per session to avoid spam (572 warnings!)
+		if needsFix and not flags._career_conflict_logged then
+			flags._career_conflict_logged = true
+			-- Debug log only, not warn (reduces console spam)
+			print("[RVS] Resolved career conflict: " .. table.concat(activeCareerTypes, ", ") .. " -> " .. (primary or "auto"))
 		end
 	end
 	
@@ -6304,6 +6380,13 @@ function LifeBackend:setupRemotes()
 	self.remotes.ApplyForJob.OnServerInvoke = function(player, jobId)
 		return self:handleJobApplication(player, jobId)
 	end
+	
+	-- AAA FIX: Interview result handler for the interview screen system
+	self.remotes.SubmitInterviewResult = self:createRemote("SubmitInterviewResult", "RemoteFunction")
+	self.remotes.SubmitInterviewResult.OnServerInvoke = function(player, interviewData, choices)
+		return self:handleInterviewResult(player, interviewData, choices)
+	end
+	
 	self.remotes.QuitJob.OnServerInvoke = function(player, quitStyle)
 		return self:handleQuitJob(player, quitStyle)
 	end
@@ -9052,15 +9135,61 @@ function LifeBackend:applyRelationshipDecay(state)
 			
 			rel.relationship = math.max(0, (rel.relationship or 50) - decay)
 			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- AAA FIX: Track years since last contact for friend anger events
+			-- Like the competition game, friends get angry if you haven't talked for years
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			if rel.type == "friend" or relId:find("friend") then
+				-- Initialize lastContact if not set
+				if not rel.lastContact and not rel.lastInteraction then
+					rel.lastContact = rel.metAt or rel.createdAt or (state.Age - 1)
+				end
+				
+				local yearsSinceContact = (state.Age or 0) - (rel.lastContact or rel.lastInteraction or 0)
+				
+				-- Additional decay based on years without contact
+				if yearsSinceContact >= 3 then
+					local neglectDecay = math.min(10, yearsSinceContact * 2)
+					rel.relationship = math.max(0, (rel.relationship or 50) - neglectDecay)
+				end
+				
+				-- Track neglect status for event triggering
+				if yearsSinceContact >= 2 then
+					rel.neglected = true
+				end
+				if yearsSinceContact >= 5 then
+					rel.veryNeglected = true
+				end
+			end
+			
 			-- Very low relationships may end naturally
 			if rel.relationship <= 10 and rel.type == "friend" then
 				if RANDOM:NextNumber() < 0.2 then -- 20% chance friendship fades
 					rel.alive = false
 					rel.ended = true
 					rel.endReason = "drifted_apart"
+					rel.estranged = true
 				end
 			end
 		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Track lost friendships for year summary
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local lostFriends = {}
+	for relId, rel in pairs(state.Relationships) do
+		if type(rel) == "table" and rel.ended and rel.endReason == "drifted_apart" then
+			if not rel._notifiedLoss then
+				table.insert(lostFriends, rel.name or "A friend")
+				rel._notifiedLoss = true
+			end
+		end
+	end
+	
+	if #lostFriends > 0 then
+		local names = table.concat(lostFriends, ", ")
+		appendFeed(state, string.format("💔 You've drifted apart from %s.", names))
 	end
 end
 
@@ -9092,21 +9221,49 @@ end
 -- Players with massive debt should face consequences
 -- Without this, players can accumulate infinite negative consequences
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA HELPER: Safe number extraction from flags
+-- Prevents "attempt to perform arithmetic on boolean" crashes
+-- Many flags store numbers but may accidentally be set to true/false
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeNumber(value, default)
+	if type(value) == "number" then
+		return value
+	elseif type(value) == "boolean" then
+		return default or 0 -- Boolean flags should be 0
+	elseif type(value) == "string" then
+		return tonumber(value) or default or 0
+	end
+	return default or 0
+end
+
 function LifeBackend:checkBankruptcy(state)
 	local totalDebt = 0
 	
-	-- Calculate total debt
+	-- Calculate total debt with safe number extraction
 	if state.EducationData and state.EducationData.Debt then
-		totalDebt = totalDebt + state.EducationData.Debt
+		totalDebt = totalDebt + safeNumber(state.EducationData.Debt, 0)
 	end
 	
 	-- CRITICAL FIX #21: Include credit card debt and mortgage in total debt calculation
+	-- AAA FIX: Use safeNumber to prevent boolean arithmetic crashes
 	state.Flags = state.Flags or {}
 	if state.Flags.credit_card_debt then
-		totalDebt = totalDebt + (state.Flags.credit_card_debt or 0)
+		local ccDebt = safeNumber(state.Flags.credit_card_debt, 0)
+		-- If it was a boolean, clear it to prevent future issues
+		if type(state.Flags.credit_card_debt) == "boolean" then
+			state.Flags.credit_card_debt = nil
+			state.Flags.has_credit_card_debt = true -- Use boolean flag for existence
+		end
+		totalDebt = totalDebt + ccDebt
 	end
 	if state.Flags.mortgage_debt then
-		totalDebt = totalDebt + (state.Flags.mortgage_debt or 0)
+		local mortDebt = safeNumber(state.Flags.mortgage_debt, 0)
+		if type(state.Flags.mortgage_debt) == "boolean" then
+			state.Flags.mortgage_debt = nil
+			state.Flags.has_mortgage = true
+		end
+		totalDebt = totalDebt + mortDebt
 	end
 	
 	-- Check if player is in severe financial distress
@@ -9175,8 +9332,20 @@ end
 function LifeBackend:applyCreditCardInterest(state)
 	state.Flags = state.Flags or {}
 	
-	local ccDebt = state.Flags.credit_card_debt or 0
+	-- AAA FIX: Use safeNumber to prevent boolean arithmetic crashes
+	local ccDebt = safeNumber(state.Flags.credit_card_debt, 0)
+	
+	-- Fix corrupted boolean flag
+	if type(state.Flags.credit_card_debt) == "boolean" then
+		state.Flags.credit_card_debt = nil
+		if state.Flags.credit_card_debt == true then
+			state.Flags.has_credit_card_debt = true
+		end
+		return -- No actual debt to process
+	end
+	
 	if ccDebt <= 0 then
+		state.Flags.credit_card_debt = nil -- Clean up zero debt
 		return
 	end
 	
@@ -9191,10 +9360,15 @@ function LifeBackend:applyCreditCardInterest(state)
 	
 	if money >= minPayment then
 		state.Money = money - minPayment
-		state.Flags.credit_card_debt = math.max(0, state.Flags.credit_card_debt - minPayment)
+		state.Flags.credit_card_debt = math.max(0, safeNumber(state.Flags.credit_card_debt, 0) - minPayment)
+		-- Clean up if paid off
+		if safeNumber(state.Flags.credit_card_debt, 0) <= 0 then
+			state.Flags.credit_card_debt = nil
+			state.Flags.has_credit_card_debt = nil
+		end
 	else
 		-- Missed payment - extra penalties
-		state.Flags.credit_card_debt = state.Flags.credit_card_debt + 35 -- Late fee
+		state.Flags.credit_card_debt = safeNumber(state.Flags.credit_card_debt, 0) + 35 -- Late fee
 		state.Flags.bad_credit = true
 		self:logYearEvent(state, "financial", 
 			"💳 Missed credit card payment! Late fees and credit damage.", "💸")
@@ -13338,7 +13512,30 @@ function LifeBackend:handleJobApplication(player, jobId)
 		finalChance = math.max(finalChance, 0.65) -- At least 65% chance for basic jobs (was 80%!)
 	end
 	
-	-- Roll for success
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: INTERVIEW SCREEN SYSTEM
+	-- For competitive jobs (difficulty 4+), show an interview event first
+	-- This gives players choices that affect their chances, like the competition game
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
+	
+	if shouldShowInterview then
+		-- Generate interview questions/scenarios based on job category
+		local interviewData = self:generateInterviewEvent(state, job, finalChance)
+		
+		-- Return interview event for client to display
+		return {
+			success = true,
+			requiresInterview = true,
+			interviewEvent = interviewData,
+			jobId = actualJobId,
+			jobName = job.name or job.title,
+			company = job.company or "the company",
+			baseChance = finalChance,
+		}
+	end
+	
+	-- Roll for success (for jobs that skip interview)
 	local roll = RANDOM:NextNumber()
 	local accepted = roll < finalChance
 	
@@ -13554,6 +13751,254 @@ function LifeBackend:handleJobApplication(player, jobId)
 	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA INTERVIEW SYSTEM
+-- Generates interview events for competitive jobs
+-- Like the competition game, gives players choices that affect their chances
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local InterviewQuestions = {
+	tech = {
+		{
+			question = "The interviewer asks you to solve a coding problem on the whiteboard. How do you approach it?",
+			choices = {
+				{ text = "Think out loud and explain your reasoning", modifier = 0.15, feed = "Your clear communication impressed them!" },
+				{ text = "Dive straight into coding", modifier = -0.05, feed = "They wished you'd explained your thought process." },
+				{ text = "Ask clarifying questions first", modifier = 0.10, feed = "Great! You showed you think before acting." },
+				{ text = "Admit you're nervous and need a moment", modifier = 0.05, feed = "They appreciated your honesty." },
+			}
+		},
+		{
+			question = "They ask about a time you dealt with a difficult coworker.",
+			choices = {
+				{ text = "Share a genuine story with a positive resolution", modifier = 0.12, feed = "Your maturity shone through." },
+				{ text = "Say you've never had problems with anyone", modifier = -0.10, feed = "They didn't believe you." },
+				{ text = "Complain about your last team", modifier = -0.20, feed = "Red flag! Never badmouth past colleagues." },
+				{ text = "Focus on what you learned from the experience", modifier = 0.15, feed = "Perfect answer - growth mindset!" },
+			}
+		},
+	},
+	office = {
+		{
+			question = "The hiring manager asks why you want to leave your current job.",
+			choices = {
+				{ text = "Looking for growth opportunities", modifier = 0.12, feed = "They liked your ambition." },
+				{ text = "My current manager is terrible", modifier = -0.18, feed = "Never complain about past employers!" },
+				{ text = "I'm excited about this company's mission", modifier = 0.15, feed = "Your enthusiasm was genuine." },
+				{ text = "Better salary", modifier = -0.05, feed = "Honest, but they prefer other motivations." },
+			}
+		},
+		{
+			question = "They ask where you see yourself in 5 years.",
+			choices = {
+				{ text = "Growing with this company in a leadership role", modifier = 0.10, feed = "Shows commitment and ambition." },
+				{ text = "Running my own business", modifier = -0.08, feed = "They worry you'll leave soon." },
+				{ text = "I'm not sure yet", modifier = -0.05, feed = "They wanted more direction." },
+				{ text = "Excelling in this role and mentoring others", modifier = 0.12, feed = "Great balance of growth and contribution!" },
+			}
+		},
+	},
+	medical = {
+		{
+			question = "They ask how you handle high-pressure situations with patients.",
+			choices = {
+				{ text = "Share a specific example of staying calm", modifier = 0.15, feed = "Your experience reassured them." },
+				{ text = "I try not to get stressed", modifier = -0.05, feed = "Too vague - they wanted specifics." },
+				{ text = "Focus on the patient, not the pressure", modifier = 0.12, feed = "Patient-first mentality impressed them." },
+				{ text = "I delegate when overwhelmed", modifier = 0.08, feed = "Shows good teamwork." },
+			}
+		},
+	},
+	generic = {
+		{
+			question = "The interviewer asks what your greatest weakness is.",
+			choices = {
+				{ text = "Share a real weakness you're working on", modifier = 0.10, feed = "Your self-awareness impressed them." },
+				{ text = "Say you work too hard", modifier = -0.12, feed = "That cliché answer didn't land well." },
+				{ text = "Claim you don't have any", modifier = -0.15, feed = "Nobody's perfect - they didn't believe you." },
+				{ text = "Mention perfectionism but explain how you manage it", modifier = 0.08, feed = "Good answer with self-awareness." },
+			}
+		},
+		{
+			question = "At the end, they ask if you have any questions for them.",
+			choices = {
+				{ text = "Ask about team culture and growth opportunities", modifier = 0.12, feed = "You showed genuine interest!" },
+				{ text = "Ask about salary and vacation days", modifier = -0.08, feed = "A bit premature for those questions." },
+				{ text = "Say no, you're good", modifier = -0.15, feed = "That seemed disinterested." },
+				{ text = "Ask what success looks like in this role", modifier = 0.15, feed = "Excellent question - they loved it!" },
+			}
+		},
+		{
+			question = "The interviewer seems distracted by their phone. What do you do?",
+			choices = {
+				{ text = "Wait patiently until they're ready", modifier = 0.05, feed = "You stayed professional." },
+				{ text = "Clear your throat to get their attention", modifier = 0.02, feed = "Subtle but it worked." },
+				{ text = "Ask if they need to handle something first", modifier = 0.10, feed = "Thoughtful and understanding!" },
+				{ text = "Get visibly annoyed", modifier = -0.15, feed = "Your frustration showed - not a good look." },
+			}
+		},
+	},
+}
+
+function LifeBackend:generateInterviewEvent(state, job, baseChance)
+	local category = job.category or "generic"
+	local questions = InterviewQuestions[category] or InterviewQuestions.generic
+	
+	-- Pick a random question
+	local question = questions[RANDOM:NextInteger(1, #questions)]
+	
+	-- Always add a generic question too for variety
+	local genericQuestions = InterviewQuestions.generic
+	local secondQuestion = genericQuestions[RANDOM:NextInteger(1, #genericQuestions)]
+	
+	return {
+		id = "job_interview_" .. (job.id or "unknown"),
+		title = "Job Interview: " .. (job.name or "Position"),
+		emoji = "💼",
+		text = string.format("You're interviewing for the %s position at %s.", 
+			job.name or "open", job.company or "the company"),
+		questions = { question, secondQuestion },
+		baseChance = baseChance,
+		jobData = {
+			id = job.id,
+			name = job.name,
+			company = job.company,
+			salary = job.salary,
+			category = job.category,
+		}
+	}
+end
+
+function LifeBackend:handleInterviewResult(player, interviewData, choices)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data not loaded." }
+	end
+	
+	-- Calculate final chance based on interview answers
+	local baseChance = interviewData.baseChance or 0.5
+	local modifier = 0
+	local feedMessages = {}
+	
+	for i, choiceIndex in ipairs(choices) do
+		local question = interviewData.questions[i]
+		if question and question.choices and question.choices[choiceIndex] then
+			local choice = question.choices[choiceIndex]
+			modifier = modifier + (choice.modifier or 0)
+			if choice.feed then
+				table.insert(feedMessages, choice.feed)
+			end
+		end
+	end
+	
+	local finalChance = math.clamp(baseChance + modifier, 0.05, 0.95)
+	local accepted = RANDOM:NextNumber() < finalChance
+	
+	local jobId = interviewData.jobData and interviewData.jobData.id
+	local job = JobCatalog[jobId] or interviewData.jobData
+	
+	-- Track application
+	state.JobApplications = state.JobApplications or {}
+	state.JobApplications[jobId] = state.JobApplications[jobId] or {}
+	state.JobApplications[jobId].attempts = (state.JobApplications[jobId].attempts or 0) + 1
+	state.JobApplications[jobId].lastAttempt = state.Age or 0
+	state.JobApplications[jobId].rejectedThisYear = not accepted
+	
+	if not accepted then
+		local feedText = table.concat(feedMessages, " ") .. " Unfortunately, they went with another candidate."
+		appendFeed(state, feedText)
+		
+		return {
+			success = false,
+			message = "The interview went okay, but they chose another candidate. Don't give up!",
+			interviewFeedback = feedMessages,
+		}
+	end
+	
+	-- SUCCESS! Hired after interview
+	local feedText = table.concat(feedMessages, " ") .. " 🎉 You got the job!"
+	appendFeed(state, feedText)
+	
+	-- Apply the job (similar to normal job acceptance)
+	return self:applyJobOffer(state, job, player)
+end
+
+-- Apply a job offer after successful interview or direct hire
+function LifeBackend:applyJobOffer(state, job, player)
+	if not state or not job then
+		return { success = false, message = "Invalid job data." }
+	end
+	
+	state.CareerInfo = state.CareerInfo or {}
+	state.Career = state.Career or {}
+	state.Flags = state.Flags or {}
+	
+	-- Save old job to career history
+	if state.CurrentJob then
+		state.CareerInfo.careerHistory = state.CareerInfo.careerHistory or {}
+		table.insert(state.CareerInfo.careerHistory, {
+			title = state.CurrentJob.name,
+			company = state.CurrentJob.company,
+			salary = state.CurrentJob.salary,
+			category = state.CurrentJob.category,
+			yearsWorked = state.CareerInfo.yearsAtJob or 0,
+			performance = state.CareerInfo.performance or 60,
+			reason = "quit",
+		})
+	end
+	
+	-- Set up new job
+	state.CurrentJob = {
+		id = job.id,
+		name = job.name or job.title,
+		company = job.company or "Unknown Company",
+		salary = job.salary or 30000,
+		category = job.category or "other",
+		experience = 0,
+	}
+	
+	-- Reset career stats for new job
+	state.CareerInfo.performance = 60
+	state.CareerInfo.promotionProgress = 0
+	state.CareerInfo.yearsAtJob = 0
+	state.CareerInfo.raises = 0
+	state.CareerInfo.promotions = 0
+	
+	-- Set flags
+	state.Flags.employed = true
+	state.Flags.has_job = true
+	state.Flags.just_hired = true
+	state.Flags.recently_single = nil
+	
+	-- Clear any job-seeking flags
+	state.Flags.job_hunting = nil
+	state.Flags.unemployed = nil
+	
+	-- Track career path
+	if job.category then
+		state.Career.track = job.category
+	end
+	
+	-- Happiness boost from getting hired
+	if state.ModifyStat then
+		state:ModifyStat("Happiness", 10)
+	elseif state.Stats then
+		state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 10)
+	end
+	
+	-- Push state to client
+	if player then
+		self:pushState(player, string.format("🎉 Congratulations! You're now a %s at %s!", 
+			state.CurrentJob.name, state.CurrentJob.company))
+	end
+	
+	return {
+		success = true,
+		message = string.format("You're now a %s at %s!", state.CurrentJob.name, state.CurrentJob.company),
+		job = state.CurrentJob,
+	}
 end
 
 function LifeBackend:handleQuitJob(player, quitStyle)
