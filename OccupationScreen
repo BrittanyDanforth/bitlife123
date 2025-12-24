@@ -324,7 +324,7 @@ local Jobs = {
 	{ id = "hotel_front_desk", name = "Hotel Receptionist", company = "Grand Hotel", emoji = "🏨", salary = 32000, minAge = 18, requirement = "high_school", category = "service", difficulty = 2 },
 	{ id = "flight_attendant", name = "Flight Attendant", company = "SkyWays Airlines", emoji = "✈️", salary = 55000, minAge = 21, requirement = "high_school", category = "service", difficulty = 4, minStats = { Looks = 50 } },
 	{ id = "tour_guide", name = "Tour Guide", company = "City Tours", emoji = "🗺️", salary = 35000, minAge = 18, requirement = "high_school", category = "service", difficulty = 2 },
-	{ id = "casino_dealer", name = "Casino Dealer", company = "Lucky Star Casino", emoji = "🎰", salary = 45000, minAge = 21, requirement = "high_school", category = "service", difficulty = 3 },
+	-- REMOVED: Casino Dealer job (gambling against Roblox TOS)
 	{ id = "cruise_staff", name = "Cruise Ship Staff", company = "Ocean Voyages", emoji = "🚢", salary = 42000, minAge = 18, requirement = "high_school", category = "service", difficulty = 3 },
 	{ id = "personal_trainer", name = "Personal Trainer", company = "FitLife Gym", emoji = "💪", salary = 48000, minAge = 18, requirement = "high_school", category = "service", difficulty = 3, minStats = { Health = 55 } },
 
@@ -498,7 +498,10 @@ local Jobs = {
 	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 850000, minAge = 21, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 80 }, requiresExp = "Minor league experience required" },
 	{ id = "star_athlete", name = "Star Athlete", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 24, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresExp = "Professional athlete career required" },
 	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports", difficulty = 4, requiresExp = "Athletic background required" },
-	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 2500000, minAge = 40, requirement = "bachelor", category = "sports", difficulty = 8, requiresExp = "Coaching experience required" },
+	-- CRITICAL FIX: Match head_coach salary with LifeBackend ($1.5M not $2.5M)
+	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 1500000, minAge = 40, requirement = "bachelor", category = "sports", difficulty = 8, requiresExp = "Coaching experience required" },
+	-- CRITICAL FIX: Add senior/lead positions that were missing
+	{ id = "senior_coach", name = "Senior Coach", company = "Pro Team", emoji = "📋", salary = 85000, minAge = 30, requirement = "bachelor", category = "sports", difficulty = 5, requiresExp = "Coaching experience required" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- MILITARY - CRITICAL FIX: Added difficulty & minStats (Health REQUIRED!)
@@ -1497,7 +1500,9 @@ local CareerPaths = {
 	gym_instructor = "sports_coach",
 	minor_league = "professional_athlete",
 	professional_athlete = "star_athlete",
-	sports_coach = "head_coach",
+	-- CRITICAL FIX: Added senior_coach to promotion path
+	sports_coach = "senior_coach",
+	senior_coach = "head_coach",
 	
 	-- Military path
 	enlisted = "sergeant",

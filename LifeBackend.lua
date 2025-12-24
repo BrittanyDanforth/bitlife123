@@ -4517,9 +4517,15 @@ local JobCatalogList = {
 		requiresFlags = { "athlete", "school_sports", "fitness_experience", "minor_league_player", "pro_athlete", "coach_experience" }, -- CRITICAL FIX: Need athletic background OR coaching experience
 		grantsFlags = { "coach_experience", "coaching_career" },
 		description = "Requires athletic background - teaching and athletic knowledge" },
+	-- CRITICAL FIX: Added senior_coach position between coach and head_coach
+	{ id = "senior_coach", name = "Senior Coach", company = "Sports Organization", emoji = "📋", salary = 85000, minAge = 30, requirement = "bachelor", category = "sports",
+		minStats = { Smarts = 55 }, difficulty = 5, 
+		requiresFlags = { "coach_experience", "coaching_career" },
+		grantsFlags = { "senior_coaching", "coaching_career" },
+		description = "Experienced coaching position" },
 	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 1500000, minAge = 40, requirement = "bachelor", category = "sports",
 		minStats = { Smarts = 65 }, difficulty = 8, 
-		requiresFlags = { "coach_experience", "coaching_career" }, -- CRITICAL FIX: Must have coaching experience
+		requiresFlags = { "senior_coaching", "coaching_career" }, -- CRITICAL FIX: Must have senior coaching experience
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
 

@@ -313,6 +313,24 @@ SeniorExpanded.events = {
 					local age = state.Age or 70
 					local roll = math.random()
 					local goodChance = 0.30 + (health / 200) - (age / 300)
+					
+					-- CRITICAL FIX: User complained "CHRONIC ILLNESS DIAGNOSIS YOUVE BEEN DIAGNOSED WITH A CHRONIC CONDITION"
+					-- Now specifies ACTUAL condition names!
+					local chronicConditions = {
+						{ name = "Type 2 Diabetes", flag = "diabetes", treatment = "diet and medication" },
+						{ name = "Hypertension", flag = "hypertension", treatment = "blood pressure medication" },
+						{ name = "Arthritis", flag = "arthritis", treatment = "anti-inflammatory medication" },
+						{ name = "High Cholesterol", flag = "high_cholesterol", treatment = "statins" },
+						{ name = "Osteoporosis", flag = "osteoporosis", treatment = "calcium supplements" },
+						{ name = "COPD", flag = "copd", treatment = "inhalers" },
+					}
+					local seriousConditions = {
+						{ name = "Heart Arrhythmia", flag = "heart_arrhythmia", treatment = "cardiac monitoring" },
+						{ name = "Early Stage Cancer", flag = "early_cancer", treatment = "oncology referral" },
+						{ name = "Kidney Disease", flag = "kidney_disease", treatment = "dialysis may be needed" },
+						{ name = "Liver Problems", flag = "liver_problems", treatment = "specialist care" },
+					}
+					
 					if roll < goodChance then
 						state:ModifyStat("Happiness", 8)
 						state:ModifyStat("Health", 2)
@@ -320,19 +338,25 @@ SeniorExpanded.events = {
 					elseif roll < goodChance + 0.30 then
 						state:ModifyStat("Happiness", -3)
 						state:ModifyStat("Health", -3)
-						state:AddFeed("🏥 Minor issue found. Manageable with medication.")
+						state:AddFeed("🏥 Minor vitamin deficiency found. Taking supplements.")
 					elseif roll < goodChance + 0.50 then
 						state:ModifyStat("Happiness", -6)
 						state:ModifyStat("Health", -8)
 						state.Flags = state.Flags or {}
+						local condition = chronicConditions[math.random(1, #chronicConditions)]
 						state.Flags.chronic_condition = true
-						state:AddFeed("🏥 Chronic condition diagnosed. Lifestyle changes needed.")
+						state.Flags[condition.flag] = true
+						state.Flags.current_condition_name = condition.name
+						state:AddFeed(string.format("🏥 Diagnosed with %s. Doctor prescribed %s.", condition.name, condition.treatment))
 					else
 						state:ModifyStat("Happiness", -12)
 						state:ModifyStat("Health", -15)
 						state.Flags = state.Flags or {}
+						local condition = seriousConditions[math.random(1, #seriousConditions)]
 						state.Flags.serious_illness = true
-						state:AddFeed("🏥 Serious diagnosis. Treatment options being discussed.")
+						state.Flags[condition.flag] = true
+						state.Flags.current_condition_name = condition.name
+						state:AddFeed(string.format("🏥 Serious diagnosis: %s detected. %s required.", condition.name, condition.treatment))
 					end
 				end,
 			},

@@ -1590,3 +1590,257 @@ function HealthEvents.getHealthSummary(state)
 end
 
 return HealthEvents
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CHRONIC CONDITION TREATMENT EVENTS
+-- CRITICAL FIX: User requested "ENSURE IT LINKS TO BACKEND AND CAN HEAL IT OR NOT"
+-- "CAN GO TO DOCTOR AND TRY GET IT TAKEN AWAY LIKE BITLIFE DOES"
+-- These events allow players to attempt treatment for diagnosed conditions
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+HealthEvents.events[#HealthEvents.events + 1] = {
+	id = "health_treatment_checkup",
+	title = "Treatment Follow-Up",
+	emoji = "🏥",
+	text = "Time for your regular checkup to monitor your condition.",
+	question = "The doctor reviews your treatment progress...",
+	minAge = 18, maxAge = 100,
+	baseChance = 0.55,
+	cooldown = 2,
+	stage = STAGE,
+	ageBand = "any",
+	category = "health",
+	tags = { "treatment", "doctor", "chronic" },
+	
+	-- Only trigger for people with chronic conditions
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		return flags.chronic_illness or flags.diabetes or flags.heart_disease 
+			or flags.chronic_condition or flags.hypertension or flags.high_cholesterol
+	end,
+	
+	choices = {
+		{
+			text = "Follow treatment plan strictly",
+			effects = { Money = -200, Happiness = 3 },
+			feedText = "Following doctor's orders...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				local health = (state.Stats and state.Stats.Health) or 50
+				
+				if roll <= 30 then
+					-- CONDITION IMPROVED!
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, health + 10)
+					state.Flags = state.Flags or {}
+					state.Flags.condition_improving = true
+					if state.AddFeed then
+						state:AddFeed("🏥 Great news! Your condition is improving! Keep up the good work!")
+					end
+				elseif roll <= 70 then
+					-- Stable
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, health + 3)
+					if state.AddFeed then
+						state:AddFeed("🏥 Condition stable. Treatment is working as expected.")
+					end
+				else
+					-- Not improving
+					if state.AddFeed then
+						state:AddFeed("🏥 No improvement yet. Doctor adjusting treatment plan.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Ask about new treatments",
+			effects = { Money = -500, Smarts = 3 },
+			feedText = "Exploring options...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				local money = state.Money or 0
+				
+				if money < 500 then
+					if state.AddFeed then
+						state:AddFeed("🏥 Can't afford the consultation fee for new treatments.")
+					end
+					return
+				end
+				
+				if roll <= 25 then
+					-- NEW TREATMENT WORKS - CONDITION REMISSION!
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 20)
+					state.Flags = state.Flags or {}
+					state.Flags.condition_in_remission = true
+					-- Chance to clear the chronic flag
+					if math.random() < 0.3 then
+						state.Flags.chronic_illness = nil
+						state.Flags.chronic_condition = nil
+						if state.AddFeed then
+							state:AddFeed("🎉 AMAZING NEWS! New treatment put your condition into remission! You're essentially cured!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🏥 New treatment is working much better! Condition well-managed now.")
+						end
+					end
+				elseif roll <= 60 then
+					-- Some improvement
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					if state.AddFeed then
+						state:AddFeed("🏥 New medication helping a bit. Slow progress but hopeful.")
+					end
+				else
+					-- Expensive but didn't help
+					if state.AddFeed then
+						state:AddFeed("🏥 Expensive consultations, no new options. Stick with current treatment.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Try alternative medicine",
+			effects = { Money = -300, Happiness = 2 },
+			feedText = "Exploring alternatives...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 15 then
+					-- Actually worked (rare)
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 8)
+					if state.AddFeed then
+						state:AddFeed("🌿 Surprisingly, the alternative approach helped! You feel better!")
+					end
+				elseif roll <= 50 then
+					-- Placebo effect
+					state.Stats = state.Stats or {}
+					state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 5)
+					if state.AddFeed then
+						state:AddFeed("🌿 Hard to say if it worked, but you feel more positive.")
+					end
+				else
+					-- Wasted money
+					if state.AddFeed then
+						state:AddFeed("🌿 No effect. Doctor says stick with proven medicine.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Skip this checkup",
+			effects = { Happiness = 3, Health = -5 },
+			feedText = "Avoiding the doctor...",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.skipped_treatment = true
+				if state.AddFeed then
+					state:AddFeed("🏥 Skipping checkups is risky. Condition could worsen unnoticed.")
+				end
+			end,
+		},
+	},
+}
+
+HealthEvents.events[#HealthEvents.events + 1] = {
+	id = "health_diabetes_management",
+	title = "Diabetes Check",
+	emoji = "💉",
+	text = "Your blood sugar levels need monitoring. Time for a diabetes checkup.",
+	question = "How are you managing your diabetes?",
+	minAge = 18, maxAge = 100,
+	baseChance = 0.50,
+	cooldown = 2,
+	stage = STAGE,
+	ageBand = "any",
+	category = "health",
+	tags = { "diabetes", "chronic", "treatment" },
+	
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		return flags.diabetes == true
+	end,
+	
+	choices = {
+		{
+			text = "Strict diet + regular insulin",
+			effects = { Money = -100, Health = 5, Happiness = -2 },
+			feedText = "Managing carefully...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 40 then
+					-- Really good control
+					state.Flags = state.Flags or {}
+					state.Flags.diabetes_controlled = true
+					if state.AddFeed then
+						state:AddFeed("💉 A1C levels are excellent! Diabetes well-controlled.")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("💉 Blood sugar levels acceptable. Keep up the routine.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Try new medication",
+			effects = { Money = -300 },
+			feedText = "Trying new approach...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 20 then
+					-- REMISSION possible with Type 2
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 15)
+					state.Flags = state.Flags or {}
+					state.Flags.diabetes_remission = true
+					if state.AddFeed then
+						state:AddFeed("💉 NEW MEDS WORKING! Blood sugar nearly normal. Could be remission!")
+					end
+				elseif roll <= 60 then
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					if state.AddFeed then
+						state:AddFeed("💉 New medication helping. Fewer spikes in blood sugar.")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("💉 Side effects from new meds. Going back to old prescription.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Exercise and lifestyle changes",
+			effects = { Health = 8, Happiness = 3 },
+			feedText = "Changing habits...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 30 then
+					state.Flags = state.Flags or {}
+					state.Flags.diabetes_lifestyle_controlled = true
+					if state.AddFeed then
+						state:AddFeed("💉 Lifestyle changes making a real difference! Less medication needed!")
+					end
+				else
+					if state.AddFeed then
+						state:AddFeed("💉 Exercise helping but still need medication. Every bit counts.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Ignore it and hope for the best",
+			effects = { Happiness = 5, Health = -15 },
+			feedText = "Living dangerously...",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.untreated_diabetes = true
+				if state.AddFeed then
+					state:AddFeed("⚠️ DANGEROUS! Uncontrolled diabetes causes serious complications!")
+				end
+			end,
+		},
+	},
+}
