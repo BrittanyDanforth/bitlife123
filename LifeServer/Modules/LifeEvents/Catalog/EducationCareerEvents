@@ -269,9 +269,18 @@ EducationCareerEvents.events = {
 				text = "Buy supplies with your own money",
 				effects = { Happiness = 3 },
 				feedText = "Because kids need supplies...",
+				-- CRITICAL FIX: Add eligibility check to ensure player can afford supplies
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford supplies right now"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local spent = math.random(200, 800)
-					state.Money = (state.Money or 0) - spent
+					-- CRITICAL FIX: Prevent negative money
+					spent = math.min(spent, state.Money or 0)
+					state.Money = math.max(0, (state.Money or 0) - spent)
 					-- AAA FIX: Nil check for all state methods
 					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
 					if state.AddFeed then state:AddFeed(string.format("💸 Spent $%d on classroom supplies. Tax write-off at least?", spent)) end

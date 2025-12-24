@@ -1176,7 +1176,8 @@ Random.events = {
 						end
 					elseif roll <= 75 then
 						-- Cut
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						if state.ModifyStat then
 							state:ModifyStat("Health", -10)
 							state:ModifyStat("Happiness", -6)

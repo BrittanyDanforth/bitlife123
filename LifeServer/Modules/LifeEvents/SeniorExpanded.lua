@@ -47,9 +47,16 @@ SeniorExpanded.events = {
 		-- CRITICAL: Random travel outcome
 		choices = {
 			{
-				text = "Dream vacation abroad",
+				text = "Dream vacation abroad ($3,000)",
 				effects = { Money = -3000 },
 				feedText = "Off to see the world...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford $3,000 vacation"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -70,14 +77,28 @@ SeniorExpanded.events = {
 				end,
 			},
 			{
-				text = "Road trip adventure",
+				text = "Road trip adventure ($800)",
 				effects = { Money = -800, Happiness = 10, Health = 1 },
 				feedText = "Open road, no schedule, pure freedom!",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 800 then
+						return false, "Can't afford $800 trip"
+					end
+					return true
+				end,
 			},
 			{
-				text = "Cruise ship vacation",
+				text = "Cruise ship vacation ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Setting sail...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 2000 then
+						return false, "Can't afford $2,000 cruise"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -353,7 +374,8 @@ SeniorExpanded.events = {
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", -8)
 						state:ModifyStat("Health", -15)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state.Flags = state.Flags or {}
 						state.Flags.broken_bone_senior = true
 						state:AddFeed("⚠️ Broken bone. Hospital and rehab. Serious setback.")
@@ -893,7 +915,8 @@ SeniorExpanded.events = {
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("🚨 Almost got you! Caught it just in time. Close call.")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.scam_victim = true

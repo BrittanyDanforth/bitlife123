@@ -448,7 +448,8 @@ TradesCareerEvents.events = {
 						state:AddFeed("🚗 It took months but the car looks amazing!")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state:AddFeed("🚗 Hit some complications. Lost money on parts.")
 					end
 				end,
@@ -626,10 +627,12 @@ TradesCareerEvents.events = {
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("⚖️ They waved you through! Lucky day!")
 					elseif roll <= 70 then
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("⚖️ $500 fine for being overweight. It happens.")
 					else
-						state.Money = (state.Money or 0) - 2000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						state:ModifyStat("Happiness", -10)
 						state:AddFeed("⚖️ $2000 fine plus forced to offload. Terrible day.")
 					end
@@ -647,7 +650,8 @@ TradesCareerEvents.events = {
 						state.Flags.knows_backroads = true
 						state:AddFeed("⚖️ Made it around. Saved hundreds in fines!")
 					else
-						state.Money = (state.Money or 0) - 3000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 3000)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("⚖️ Highway patrol caught you bypassing. MASSIVE fine.")
 					end
@@ -1078,7 +1082,8 @@ TradesCareerEvents.events = {
 						state.Flags.cover_up = true
 						state:AddFeed(string.format("⚠️ Got a $%d bonus for 'handling it.' Guilt haunts you.", bonus))
 					else
-						state.Money = (state.Money or 0) - 5000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 5000)
 						state:ModifyStat("Happiness", -20)
 						state:AddFeed("⚠️ Worker's wife found out. Lawsuit. You're named personally.")
 					end

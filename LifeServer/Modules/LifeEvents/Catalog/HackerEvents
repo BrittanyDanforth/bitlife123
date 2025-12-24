@@ -563,24 +563,33 @@ local events = {
 					state.Flags.most_wanted = true
 				end,
 			},
-			{
-				index = 2,
-				text = "Go legit - turn yourself in for immunity",
-				effects = { Happiness = -10, Money = -500000 },
-				setFlags = { reformed = true, white_hat = true, black_hat = false },
-				feedText = "You turned state's witness. New life as a consultant.",
-				onResolve = function(state)
-					if state.SetCareer then
-						state:SetCareer({
-							id = "security_consultant",
-							name = "Security Consultant",
-							company = "FBI Contractor",
-							salary = 165000,
-							category = "tech",
-						})
+		{
+			index = 2,
+			text = "Go legit - turn yourself in for immunity",
+			-- CRITICAL FIX: Remove Money from effects to handle in onResolve with proper validation
+			effects = { Happiness = -10 },
+			setFlags = { reformed = true, white_hat = true, black_hat = false },
+			feedText = "You turned state's witness. New life as a consultant.",
+			onResolve = function(state)
+				-- CRITICAL FIX: Handle money loss safely - can't lose more than you have
+				local forfeiture = math.min(500000, state.Money or 0)
+				if forfeiture > 0 then
+					state.Money = math.max(0, (state.Money or 0) - forfeiture)
+					if state.AddFeed then
+						state:AddFeed(string.format("💸 Asset forfeiture: $%d seized by FBI as part of immunity deal.", forfeiture))
 					end
-				end,
-			},
+				end
+				if state.SetCareer then
+					state:SetCareer({
+						id = "security_consultant",
+						name = "Security Consultant",
+						company = "FBI Contractor",
+						salary = 165000,
+						category = "tech",
+					})
+				end
+			end,
+		},
 		},
 	},
 

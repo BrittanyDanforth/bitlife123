@@ -166,18 +166,19 @@ DailyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🚗 Smooth commute! Made great time! Good tunes!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("🚗 Smooth commute! Made great time! Good tunes!") end
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", 1)
-						state:AddFeed("🚗 Normal commute. Not bad, not great.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 1) end
+						if state.AddFeed then state:AddFeed("🚗 Normal commute. Not bad, not great.") end
 					elseif roll < 0.90 then
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("🚗 Traffic nightmare! Late to work! Stressed!")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then state:AddFeed("🚗 Traffic nightmare! Late to work! Stressed!") end
 					else
-						state:ModifyStat("Happiness", -6)
-						state.Money = (state.Money or 0) - 50
-						state:AddFeed("🚗 Fender bender! Minor accident. Insurance claim incoming.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
+						if state.AddFeed then state:AddFeed("🚗 Fender bender! Minor accident. Insurance claim incoming.") end
 					end
 				end,
 			},
@@ -569,7 +570,8 @@ DailyLifeEvents.events = {
 						state:AddFeed("🧺 Washed and dried. Folding? That's future you's problem.")
 					else
 						state:ModifyStat("Happiness", -3)
-						state.Money = (state.Money or 0) - 30
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 30)
 						state:AddFeed("🧺 Ruined a favorite piece! Shrank it! Laundry fail!")
 					end
 				end,
@@ -608,7 +610,8 @@ DailyLifeEvents.events = {
 						state:AddFeed("🛒 Mission accomplished! Budget kept! Well stocked!")
 					else
 						state:ModifyStat("Happiness", 3)
-						state.Money = (state.Money or 0) - 20
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 20)
 						state:AddFeed("🛒 Mostly stuck to list. Few impulse buys. Not bad.")
 					end
 				end,

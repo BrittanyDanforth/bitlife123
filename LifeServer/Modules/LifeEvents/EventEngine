@@ -405,7 +405,19 @@ local function applyChoiceEffects(state, choice, isSuccess)
 		if state.AddMoney then
 			state:AddMoney(amount, choice.text)
 		else
-			state.Money = (state.Money or 0) + amount
+			-- CRITICAL FIX: Prevent negative money when applying money changes
+			state.Money = math.max(0, (state.Money or 0) + amount)
+		end
+	end
+	
+	-- CRITICAL FIX: Handle 'cost' field from ActivityEvents and MedicalActivityEvents
+	-- This was completely missing, meaning costs were never actually deducted!
+	if choice.cost and choice.cost > 0 then
+		if state.AddMoney then
+			state:AddMoney(-choice.cost, choice.text .. " (cost)")
+		else
+			-- CRITICAL FIX: Prevent negative money
+			state.Money = math.max(0, (state.Money or 0) - choice.cost)
 		end
 	end
 
@@ -507,6 +519,7 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- AAA FIX: Check if a choice is eligible (affordable, meets requirements)
 -- Returns: eligible (bool), reason (string or nil)
+-- CRITICAL FIX: Added handling for 'cost' field used by ActivityEvents and MedicalActivityEvents
 -- ═══════════════════════════════════════════════════════════════════════════════
 function EventEngine.isChoiceEligible(choice, state)
 	if not choice then return false, "Invalid choice" end
@@ -518,6 +531,12 @@ function EventEngine.isChoiceEligible(choice, state)
 	-- Check affordability
 	if choice.minMoney and money < choice.minMoney then
 		return false, string.format("Can't afford $%d %s", choice.minMoney, choice.moneyReason or "")
+	end
+	
+	-- CRITICAL FIX: Check 'cost' field (used by ActivityEvents and MedicalActivityEvents)
+	-- This was missing and allowed players to select choices they couldn't afford!
+	if choice.cost and choice.cost > 0 and money < choice.cost then
+		return false, string.format("Can't afford $%d", choice.cost)
 	end
 	
 	-- Check cost in effects
@@ -669,6 +688,11 @@ function EventEngine.Pipeline.createPatch(choice, isSuccess)
 	if effects.Money then patch.money = effects.Money end
 	if effects.money then patch.money = effects.money end
 	
+	-- CRITICAL FIX: Handle 'cost' field from ActivityEvents and MedicalActivityEvents
+	if choice.cost and choice.cost > 0 then
+		patch.money = (patch.money or 0) - choice.cost
+	end
+	
 	-- Extract flags
 	if effects.flags then
 		for k, v in pairs(effects.flags) do
@@ -706,9 +730,9 @@ function EventEngine.Pipeline.applyPatch(state, patch)
 		state.Looks = state.Stats.Looks
 	end
 	
-	-- Apply money
+	-- Apply money - CRITICAL FIX: Prevent negative money
 	if patch.money and patch.money ~= 0 then
-		state.Money = (state.Money or 0) + patch.money
+		state.Money = math.max(0, (state.Money or 0) + patch.money)
 	end
 	
 	-- Apply flags
@@ -1495,12 +1519,13 @@ function EventEngine.StatePatch.apply(state, patch)
 		end
 	end
 	
-	-- Apply money changes
+	-- Apply money changes - CRITICAL FIX: Prevent negative money
 	if patch.money and patch.money ~= 0 then
 		if state.AddMoney then
 			state:AddMoney(patch.money, patch.meta and patch.meta.eventId)
 		else
-			state.Money = (state.Money or 0) + patch.money
+			-- CRITICAL FIX: Prevent negative money values
+			state.Money = math.max(0, (state.Money or 0) + patch.money)
 		end
 	end
 	
@@ -1785,6 +1810,11 @@ function EventEngine.executeEventPipeline(event, choiceIndex, state, options)
 	end
 	patch.money = patch.money + moneyToUse
 	patch.feed = feedToUse
+	
+	-- CRITICAL FIX: Handle 'cost' field from ActivityEvents and MedicalActivityEvents
+	if choice.cost and choice.cost > 0 then
+		patch.money = (patch.money or 0) - choice.cost
+	end
 	
 	-- Apply flag changes to patch
 	if choice.setFlags then

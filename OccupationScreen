@@ -52,6 +52,10 @@ C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
 -- Extra safety colors
 C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
 
+-- CRITICAL FIX: Text colors for interview modal - these were missing!
+C.TextPrimary   = C.TextPrimary   or Color3.fromRGB(17, 24, 39)   -- Gray900 equivalent
+C.TextSecondary = C.TextSecondary or Color3.fromRGB(107, 114, 128) -- Gray500 equivalent
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- MOBILE RESPONSIVE SYSTEM
 -- ═══════════════════════════════════════════════════════════════════════════════

@@ -767,7 +767,8 @@ TeenExpanded.events = {
 						state:ModifyStat("Happiness", 4)
 						state:AddFeed("🚗 Adrenaline rush! Got away with it.")
 					elseif roll < 0.70 then
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🚗 SPEEDING TICKET! $200 fine. Parents furious.")
 					else
@@ -1390,7 +1391,8 @@ TeenExpanded.events = {
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("💡 Modest success. Not rich but learned a lot.")
 					else
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:ModifyStat("Happiness", -3)
 						state:ModifyStat("Smarts", 2)
 						state:AddFeed("💡 Failed. Lost some money. But failure teaches.")

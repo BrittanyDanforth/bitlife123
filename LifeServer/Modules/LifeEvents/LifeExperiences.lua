@@ -521,17 +521,20 @@ LifeExperiences.events = {
 						state:AddFeed("💻 Lost some data but recovered most. Close call.")
 					elseif roll < 0.55 then
 						state:ModifyStat("Happiness", -5)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("💻 Needed repair/replacement. $100 gone.")
 					elseif roll < 0.80 then
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state.Flags = state.Flags or {}
 						state.Flags.lost_data = true
 						state:AddFeed("💻 Major failure. Lost important files. Heartbreaking.")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("💻 Complete disaster. Expensive replacement needed.")
 					end
 				end,

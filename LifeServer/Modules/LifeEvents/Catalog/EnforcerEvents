@@ -306,8 +306,13 @@ EnforcerEvents.events = {
 						state:ModifyStat("Happiness", -30)
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(15, 40)
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft for consistency with rest of codebase
+						state.InJail = true
+						state.JailYearsLeft = math.random(15, 40)
 						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state:AddFeed("☠️ CAUGHT! First-degree charges! Life is essentially over.")
 					end
 				end,
@@ -463,30 +468,44 @@ EnforcerEvents.events = {
 						state:ModifyStat("Happiness", -10)
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(3, 8)
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+						state.InJail = true
+						state.JailYearsLeft = math.random(3, 8)
 						state:AddFeed("⚖️ Convicted on lesser charges. Few years. You kept your mouth shut.")
 					else
 						state:ModifyStat("Happiness", -25)
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(10, 20)
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+						state.InJail = true
+						state.JailYearsLeft = math.random(10, 20)
 						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state:AddFeed("⚖️ Full conviction. Long stretch. Family will take care of you inside.")
 					end
 				end,
 			},
 			{
-				text = "Take a plea deal",
-				effects = { Happiness = -5, Smarts = 3 },
-				feedText = "Lesser of two evils...",
-				onResolve = function(state)
-					state:ModifyStat("Happiness", -10)
-					state.Flags = state.Flags or {}
-					state.Flags.in_prison = true
-					state.PrisonYearsRemaining = math.random(2, 5)
-					state:AddFeed("⚖️ Pled out. Shorter time guaranteed. Smart move.")
-				end,
-			},
+			text = "Take a plea deal",
+			effects = { Happiness = -5, Smarts = 3 },
+			feedText = "Lesser of two evils...",
+			onResolve = function(state)
+				state:ModifyStat("Happiness", -10)
+				state.Flags = state.Flags or {}
+				state.Flags.in_prison = true
+				state.Flags.incarcerated = true
+				-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+				state.InJail = true
+				state.JailYearsLeft = math.random(2, 5)
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+				state:AddFeed("⚖️ Pled out. Shorter time guaranteed. Smart move.")
+			end,
+		},
 		},
 	},
 }

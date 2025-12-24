@@ -128,7 +128,8 @@ FamilyEvents.events = {
 					else
 						state:ModifyStat("Happiness", 8)
 						state:ModifyStat("Health", -8)
-						state.Money = (state.Money or 0) - 2000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						state.Flags.nicu_baby = true
 						state:AddFeed(string.format("👶 Complications. %s is in NICU. Scary but hopeful.", childName))
 					end
@@ -491,7 +492,8 @@ FamilyEvents.events = {
 					else
 						state:ModifyStat("Happiness", -6)
 						state:ModifyStat("Health", -4)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("👴 Their health declining. Medical costs rising. Stressful.")
 					end
 				end,

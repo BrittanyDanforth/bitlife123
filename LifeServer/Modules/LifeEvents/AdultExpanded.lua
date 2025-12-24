@@ -532,7 +532,8 @@ AdultExpanded.events = {
 						state.Money = (state.Money or 0) + 50
 						state:AddFeed("💡 Trickle of sales. Not quitting the day job.")
 					else
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("💡 Inventory sitting unsold. Money lost.")
 					end
 				end,
@@ -641,7 +642,8 @@ AdultExpanded.events = {
 				feedText = "You put money in...",
 				onResolve = function(state)
 					local investment = 500
-					state.Money = (state.Money or 0) - investment
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - investment)
 					local roll = math.random()
 					if roll < 0.35 then
 						state.Money = state.Money + 1200
@@ -717,7 +719,8 @@ AdultExpanded.events = {
 						state:AddFeed(string.format("📋 REFUND! $%d back! Tax return surprise!", refund))
 					elseif roll < 0.65 then
 						local owed = math.random(100, 400)
-						state.Money = (state.Money or 0) - owed
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - owed)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed(string.format("📋 Owed $%d. Ugh. At least it's done.", owed))
 					else
@@ -1409,12 +1412,14 @@ AdultExpanded.events = {
 					local roll = math.random()
 					if roll < 0.40 then
 						local cost = math.random(100, 300)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -2)
 						state:AddFeed(string.format("🚗 Minor repair needed. $%d gone.", cost))
 					elseif roll < 0.70 then
 						local cost = math.random(500, 1200)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed(string.format("🚗 Major repair! $%d! That hurts.", cost))
 					elseif roll < 0.90 then
@@ -1422,7 +1427,8 @@ AdultExpanded.events = {
 						state:AddFeed("🚗 False alarm. Nothing major. Relief.")
 					else
 						local cost = math.random(1500, 3000)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.car_totaled = true

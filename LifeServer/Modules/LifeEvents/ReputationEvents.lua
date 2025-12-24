@@ -111,8 +111,23 @@ ReputationEvents.events = {
 					end
 				end,
 			},
-			{ text = "Stay silent", effects = { Happiness = -6 }, setFlags = { scandal_quiet = true }, feedText = "😱 Saying nothing. Hope it blows over. Anxiety high." },
-			{ text = "Leave/disappear for a while", effects = { Money = -500, Happiness = -4 }, feedText = "😱 Laying low. Distance from the situation. Self-preservation." },
+		{ text = "Stay silent", effects = { Happiness = -6 }, setFlags = { scandal_quiet = true }, feedText = "😱 Saying nothing. Hope it blows over. Anxiety high." },
+		{ 
+			text = "Leave/disappear for a while ($500)", 
+			effects = { Happiness = -4 }, 
+			feedText = "😱 Laying low. Distance from the situation. Self-preservation.",
+			-- CRITICAL FIX: Add eligibility check for affordability
+			eligibility = function(state)
+				if (state.Money or 0) < 500 then
+					return false, "Can't afford $500 to leave town"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - 500)
+			end,
+		},
 		},
 	},
 	{

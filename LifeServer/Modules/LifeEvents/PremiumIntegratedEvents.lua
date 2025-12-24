@@ -487,10 +487,17 @@ PremiumIntegratedEvents.events = {
 				feedText = "Simple but meaningful. You're married!",
 			},
 			{
-				text = "Traditional ceremony",
+				text = "Traditional ceremony ($5,000)",
 				effects = { Happiness = 12, Money = -5000 },
 				setFlags = { married = true, has_partner = true, traditional_wedding = true },
 				feedText = "Beautiful ceremony with family and friends!",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 5000 then
+						return false, "Can't afford $5,000 ceremony"
+					end
+					return true
+				end,
 			},
 			{
 				text = "Big expensive wedding",
@@ -920,9 +927,16 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Settle out of court",
+				text = "Settle out of court ($2,000)",
 				effects = { Money = -2000, Happiness = 5 },
 				feedText = "Reached a settlement. Not ideal but it's over.",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 2000 then
+						return false, "Can't afford $2,000 settlement"
+					end
+					return true
+				end,
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
@@ -1023,8 +1037,16 @@ PremiumIntegratedEvents.events = {
 				text = "Invest small amount ($1,000)",
 				effects = {},
 				feedText = "Small investment, small risk...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 1000 then
+						return false, "Need at least $1,000 to invest"
+					end
+					return true
+				end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 1000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 1000)
 					local roll = math.random()
 					if roll < 0.35 then
 						local profit = math.random(2000, 5000)
@@ -1045,9 +1067,17 @@ PremiumIntegratedEvents.events = {
 				text = "Go all in",
 				effects = {},
 				feedText = "High risk, high reward...",
+				-- CRITICAL FIX: Add eligibility check - need some money to go all in
+				eligibility = function(state)
+					if (state.Money or 0) < 100 then
+						return false, "Need some money to invest"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local investment = math.floor((state.Money or 0) * 0.8)
-					state.Money = (state.Money or 0) - investment
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - investment)
 					local roll = math.random()
 					if roll < 0.25 then
 						local multiplier = math.random(3, 10)

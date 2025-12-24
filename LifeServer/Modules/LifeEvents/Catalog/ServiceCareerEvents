@@ -279,7 +279,8 @@ ServiceCareerEvents.events = {
 						state.Money = (state.Money or 0) + tip
 						state:AddFeed(string.format("🍸 They tipped $%d and stumbled home. Got lucky.", tip))
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("🍸 They got in an accident. You got fired. Could face charges.")
 					end
@@ -801,7 +802,8 @@ ServiceCareerEvents.events = {
 						state.Flags.professional_trainer = true
 						state:AddFeed("💪 Waiver held up. Insurance covered it. You're protected.")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -10)
 						state:AddFeed("💪 Still had to pay some out of pocket. Lesson learned about liability.")
 					end
@@ -956,7 +958,8 @@ ServiceCareerEvents.events = {
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🗺️ They figured it out themselves. Complained but no major issue.")
 					else
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("🗺️ They were a senior citizen. Company is furious. You're on probation.")
 					end

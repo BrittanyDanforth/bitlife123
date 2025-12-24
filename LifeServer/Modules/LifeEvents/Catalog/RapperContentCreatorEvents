@@ -659,11 +659,21 @@ RapperContentCreatorEvents.events = {
 		
 		choices = {
 			{
-				text = "Raw street mixtape - 15 tracks",
-				effects = { Happiness = 20, Money = -200 },
+				text = "Raw street mixtape - 15 tracks ($200)",
+				-- CRITICAL FIX: Moved Money to onResolve to prevent negative
+				effects = { Happiness = 20 },
 				setFlags = { has_mixtape = true },
 				feedText = "📀 MIXTAPE DROPPED! 15 tracks of raw heat! Underground forums going crazy!",
+				-- CRITICAL FIX: Add eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Need $200 for production costs"
+					end
+					return true
+				end,
 				onResolve = function(state)
+					-- CRITICAL FIX: Deduct money safely here
+					state.Money = math.max(0, (state.Money or 0) - 200)
 					state.FameState = state.FameState or {}
 					local boost = math.random(3000, 8000)
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
@@ -673,11 +683,21 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "Quality EP - 7 polished tracks",
-				effects = { Happiness = 18, Money = -500 },
+				text = "Quality EP - 7 polished tracks ($500)",
+				-- CRITICAL FIX: Moved Money to onResolve to prevent negative
+				effects = { Happiness = 18 },
+				-- CRITICAL FIX: Add eligibility check
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Need $500 for production costs"
+					end
+					return true
+				end,
 				setFlags = { has_ep = true },
 				feedText = "📀 EP RELEASED! Shorter but every track is HEAT! Quality over quantity approach!",
 				onResolve = function(state)
+					-- CRITICAL FIX: Deduct money safely here
+					state.Money = math.max(0, (state.Money or 0) - 500)
 					state.FameState = state.FameState or {}
 					local boost = math.random(4000, 10000)
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
@@ -1885,7 +1905,8 @@ RapperContentCreatorEvents.events = {
 						state:AddFeed("⚠️ You won! Fair use argument worked! The track stays up FREE!")
 					else
 						state:ModifyStat("Happiness", -15)
-						state.Money = (state.Money or 0) - 3000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 3000)
 						state:AddFeed("⚠️ Lost the dispute. Song taken down + $3000 in legal fees. Rough L.")
 					end
 				end,

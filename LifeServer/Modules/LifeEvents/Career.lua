@@ -909,7 +909,8 @@ Career.events = {
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
 						end
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						if state.AddFeed then
 							state:AddFeed("📦 Fired for performance issues. You saw it coming.")
 						end
@@ -3333,7 +3334,8 @@ Career.events = {
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🚀 Startup did okay. Made some money and gained great experience.")
 					else
-						state.Money = (state.Money or 0) - 10000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						state:ModifyStat("Happiness", -15)
 						state.Flags = state.Flags or {}
 						state.Flags.startup_failed = true

@@ -842,12 +842,14 @@ RandomLifeEvents.events = {
 					elseif roll <= 80 then
 						state:ModifyStat("Health", -15)
 						state:ModifyStat("Happiness", -15)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("🤢 Had to get IV fluids. Never eating there again.")
 					else
 						state:ModifyStat("Health", -20)
 						state:ModifyStat("Happiness", -20)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("🤢 Hospitalized for 3 days. Severe food poisoning.")
 					end
 				end,
@@ -978,7 +980,8 @@ RandomLifeEvents.events = {
 						state:AddFeed("🐝 Bad swelling. The bee chose violence.")
 					else
 						state:ModifyStat("Health", -20)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.bee_allergy = true
 						state:AddFeed("🐝 ALLERGIC REACTION! Hospital visit. Now you carry an EpiPen.")
@@ -1056,7 +1059,8 @@ RandomLifeEvents.events = {
 						state:AddFeed("👻 Pipes settling. Heart attack for nothing.")
 					elseif roll <= 70 then
 						state:ModifyStat("Happiness", -15)
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:AddFeed("👻 A raccoon got in! Had to call animal control.")
 					elseif roll <= 90 then
 						state:ModifyStat("Happiness", 10)
@@ -1283,7 +1287,8 @@ RandomLifeEvents.events = {
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("✂️ Everyone noticed. Someone took a picture. Not ideal.")
 					else
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("✂️ Had to pay ANOTHER barber to fix it.")
 					end

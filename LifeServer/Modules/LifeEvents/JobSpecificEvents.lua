@@ -1121,7 +1121,8 @@ JobSpecificEvents.events = {
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("📉 Bought the dip! Made money when others panicked!")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed("📉 Wrong call. Lost money trying to time the market.")
 					end

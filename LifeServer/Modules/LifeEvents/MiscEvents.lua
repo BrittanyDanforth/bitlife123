@@ -204,12 +204,13 @@ MiscEvents.events = {
 						state.Flags.good_samaritan = true
 						state:AddFeed("🦸 Made a real difference! They were so grateful!")
 					elseif roll < 0.90 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🦸 Helped but situation was complicated. Did what you could.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🦸 Helped but situation was complicated. Did what you could.") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state.Money = (state.Money or 0) - 20
-						state:AddFeed("🦸 Tried to help but they took advantage. Lesson learned.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 20)
+						if state.AddFeed then state:AddFeed("🦸 Tried to help but they took advantage. Lesson learned.") end
 					end
 				end,
 			},
@@ -376,12 +377,13 @@ MiscEvents.events = {
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed("📶 Back up quickly! Just a brief outage!")
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("📶 Hours without internet! Forgot how to exist offline!")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("📶 Hours without internet! Forgot how to exist offline!") end
 					else
-						state:ModifyStat("Happiness", -6)
-						state.Money = (state.Money or 0) - 50
-						state:AddFeed("📶 Had to call ISP. On hold forever. Rage inducing.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
+						if state.AddFeed then state:AddFeed("📶 Had to call ISP. On hold forever. Rage inducing.") end
 					end
 				end,
 			},
@@ -538,15 +540,17 @@ MiscEvents.events = {
 						state:ModifyStat("Happiness", -2)
 						state:AddFeed("💡 Few hours in the dark. Candles and board games!")
 					elseif roll < 0.90 then
-						state:ModifyStat("Happiness", -6)
-						state.Money = (state.Money or 0) - 100
-						state:AddFeed("💡 Long outage! Lost food in fridge! Miserable!")
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						if state.AddFeed then state:AddFeed("💡 Long outage! Lost food in fridge! Miserable!") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 300
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state.Flags = state.Flags or {}
 						state.Flags.survived_blackout = true
-						state:AddFeed("💡 DAYS without power! Survival mode! Traumatic!")
+						if state.AddFeed then state:AddFeed("💡 DAYS without power! Survival mode! Traumatic!") end
 					end
 				end,
 			},

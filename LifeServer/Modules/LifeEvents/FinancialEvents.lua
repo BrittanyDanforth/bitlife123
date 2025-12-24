@@ -106,7 +106,8 @@ FinancialEvents.events = {
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("📱 Slow week. Only $80. Gas cost cut into profits.")
 					else
-						state.Money = (state.Money or 0) - 50
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("📱 Car trouble during gig. Actually lost money!")
 					end
@@ -231,16 +232,17 @@ FinancialEvents.events = {
 				feedText = "Assessing the damage...",
 				onResolve = function(state)
 					local roll = math.random()
+					-- CRITICAL FIX: Prevent negative money in all branches
 					if roll < 0.40 then
-						state.Money = (state.Money or 0) - 800
+						state.Money = math.max(0, (state.Money or 0) - 800)
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed("💸 Need new fridge. $800. Ouch.")
 					elseif roll < 0.70 then
-						state.Money = (state.Money or 0) - 400
+						state.Money = math.max(0, (state.Money or 0) - 400)
 						state:ModifyStat("Happiness", -4)
 						state:AddFeed("💸 Washing machine died. $400 repair.")
 					else
-						state.Money = (state.Money or 0) - 150
+						state.Money = math.max(0, (state.Money or 0) - 150)
 						state:ModifyStat("Happiness", -2)
 						state:AddFeed("💸 Minor appliance issue. $150. Manageable.")
 					end
@@ -305,16 +307,17 @@ FinancialEvents.events = {
 				feedText = "Getting it checked out...",
 				onResolve = function(state)
 					local roll = math.random()
+					-- CRITICAL FIX: Prevent negative money in all branches
 					if roll < 0.25 then
-						state.Money = (state.Money or 0) - 1500
+						state.Money = math.max(0, (state.Money or 0) - 1500)
 						state:ModifyStat("Happiness", -8)
 						state:AddFeed("🚗 Major repair. Transmission/engine. $1500. Devastating.")
 					elseif roll < 0.50 then
-						state.Money = (state.Money or 0) - 600
+						state.Money = math.max(0, (state.Money or 0) - 600)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🚗 Moderate repair. Brakes/suspension. $600.")
 					elseif roll < 0.75 then
-						state.Money = (state.Money or 0) - 200
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("🚗 Minor fix. $200. Relief!")
 					else
@@ -330,7 +333,8 @@ FinancialEvents.events = {
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("🚗 Fixed it yourself! Pride AND savings!")
 					else
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state:ModifyStat("Happiness", -4)
 						state:AddFeed("🚗 Made it worse. Now needs real mechanic.")
 					end
@@ -713,9 +717,12 @@ FinancialEvents.events = {
 				else
 					-- Managed to pay some down
 					local payment = math.min(currentDebt, 200 + math.floor(math.random() * 300))
+					-- CRITICAL FIX: Also limit payment to available money
+					payment = math.min(payment, state.Money or 0)
 					if payment > 0 then
 						state.Flags.credit_card_debt = math.max(0, currentDebt - payment)
-						state.Money = (state.Money or 0) - payment
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - payment)
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed(string.format("💳 Paid $%d toward credit card. Progress!", payment))
 						if state.Flags.credit_card_debt <= 0 then
@@ -761,7 +768,8 @@ FinancialEvents.events = {
 					local roll = math.random()
 					
 					if roll < 0.40 + (smarts / 200) then
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:ModifyStat("Happiness", 8)
 						state.Flags.in_debt = nil
 						state:AddFeed("📞 Settled for less! Debt cleared! Relief!")
@@ -1082,11 +1090,13 @@ FinancialEvents.events = {
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed("📋 Small refund. $100. Better than owing!")
 					elseif roll < 0.85 then
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("📋 Owe $200. Taxes are painful.")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed("📋 Big tax bill! $500! Where did this come from?!")
 					end
@@ -1133,25 +1143,45 @@ FinancialEvents.events = {
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("😰 Everything checked out! Clear! Relief!")
 					elseif roll < 0.85 then
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX: Prevent negative money
+						local owed = math.min(300, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state:ModifyStat("Happiness", -3)
-						state:AddFeed("😰 Small discrepancy. Owe $300. Could be worse.")
+						if owed < 300 then
+							state.Flags = state.Flags or {}
+							state.Flags.irs_debt = true
+							state:AddFeed("😰 Small discrepancy. Owe $300. Went into IRS debt!")
+						else
+							state:AddFeed("😰 Small discrepancy. Owe $300. Could be worse.")
+						end
 					else
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX: Prevent negative money - set debt flag if can't pay
+						local owed = math.min(1000, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.owed_back_taxes = true
-						state:AddFeed("😰 Major issues found. Owe $1000 plus penalties.")
+						if owed < 1000 then
+							state.Flags.irs_debt = true
+							state:AddFeed("😰 Major issues found. Owe $1000. Now in IRS debt!")
+						else
+							state:AddFeed("😰 Major issues found. Owe $1000 plus penalties.")
+						end
 					end
 				end,
 			},
-			{ text = "Hire tax attorney", effects = { Money = -500, Happiness = 2 }, feedText = "😰 Professional representation. Best defense.",
+			{ 
+				text = "Hire tax attorney ($500)", 
+				effects = { Happiness = 2 }, 
+				feedText = "😰 Professional representation. Best defense.",
+				minMoney = 500, -- CRITICAL FIX: Require money to hire attorney
 				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 500)
 					local roll = math.random()
 					if roll < 0.80 then
 						state:AddFeed("😰 Attorney got you through clean! Worth every penny!")
 					else
-						state.Money = (state.Money or 0) - 200
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:AddFeed("😰 Still owed $200 but avoided bigger problems.")
 					end
 				end,

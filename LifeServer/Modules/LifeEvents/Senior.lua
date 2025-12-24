@@ -1766,14 +1766,16 @@ Senior.events = {
                     local roll = math.random()
                     if roll < 0.85 or health > 40 then
                         state:ModifyStat("Happiness", 20)
-                        state.Money = (state.Money or 0) - 500
+                        -- CRITICAL FIX: Prevent negative money
+                        state.Money = math.max(0, (state.Money or 0) - 500)
                         state.Flags = state.Flags or {}
                         state.Flags.went_skydiving = true
                         state:AddFeed("🪂 INCREDIBLE! You jumped out of a plane! What a rush!")
                     else
                         state:ModifyStat("Health", -5)
                         state:ModifyStat("Happiness", 5)
-                        state.Money = (state.Money or 0) - 500
+                        -- CRITICAL FIX: Prevent negative money
+                        state.Money = math.max(0, (state.Money or 0) - 500)
                         state:AddFeed("🪂 The landing was rough. But you did it!")
                     end
                 end,

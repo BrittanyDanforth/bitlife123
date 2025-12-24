@@ -1866,7 +1866,8 @@ Relationships.events = {
 					if roll <= 25 then
 						-- Caught doing something illegal
 						state.Flags.child_delinquent = true
-						state.Money = (state.Money or 0) - 2000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
 						end
@@ -1892,7 +1893,8 @@ Relationships.events = {
 						end
 					else
 						-- Fighting
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -12)
 						end
