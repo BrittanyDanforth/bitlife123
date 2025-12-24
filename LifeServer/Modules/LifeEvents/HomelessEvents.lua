@@ -951,4 +951,450 @@ events[#events + 1] = {
 	},
 }
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #HOMELESS-10: ADDITIONAL HOMELESS EVENTS FOR VARIETY
+-- User request: "fix HOMELESS EVENTS to work greatly"
+-- Adding more diverse events for engagement
+-- ════════════════════════════════════════════════════════════════════════════
+
+events[#events + 1] = {
+	id = "homeless_phone_theft",
+	title = "Phone Stolen!",
+	emoji = "📱",
+	text = "Someone snatched your phone while you were sleeping! Without it, you can't look for jobs or stay connected.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 70,
+	baseChance = 0.4,
+	cooldown = 4,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Use the library computers",
+			effects = { Happiness = -5, Smarts = 3 },
+			feedText = "The library becomes your lifeline. Free internet and a place to apply for jobs.",
+		},
+		{
+			text = "Panhandle for a cheap phone",
+			effects = { Happiness = -8 },
+			feedText = "You're saving every penny for a cheap phone...",
+			onResolve = function(state)
+				if math.random() < 0.6 then
+					state.Money = math.max(0, (state.Money or 0) - 30)
+					state:AddFeed("📱 Got a cheap prepaid phone. Back in touch with the world!")
+				else
+					state:AddFeed("📱 Still saving. No phone yet.")
+				end
+			end,
+		},
+		{
+			text = "Ask a charity for help",
+			effects = { Happiness = 3 },
+			feedText = "Some charities have phone programs...",
+			onResolve = function(state)
+				if math.random() < 0.5 then
+					state.Flags.got_charity_phone = true
+					state:AddFeed("📱 They had an Obama phone program! You got a free phone!")
+				else
+					state:AddFeed("📱 Waitlist too long. Keep trying.")
+				end
+			end,
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_camp_cleared",
+	title = "Camp Cleared Out",
+	emoji = "🚧",
+	text = "City workers are clearing out the area where you've been staying. Everything you owned is being thrown away.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.5,
+	cooldown = 3,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Try to save your belongings",
+			effects = { Happiness = -10 },
+			feedText = "You grabbed what you could...",
+			onResolve = function(state)
+				if math.random() < 0.6 then
+					state:AddFeed("🎒 Saved your most important items. Lost the rest.")
+				else
+					state:AddFeed("🗑️ Lost everything. Starting over with nothing.")
+					state:ModifyStat("Happiness", -15)
+				end
+			end,
+		},
+		{
+			text = "Argue with the workers",
+			effects = { Happiness = -8 },
+			feedText = "You pleaded for more time...",
+			onResolve = function(state)
+				if math.random() < 0.3 then
+					state:AddFeed("⏰ They gave you an extra hour. Managed to grab everything.")
+				else
+					if math.random() < 0.4 then
+						state.Flags.arrested_homeless = true
+						state:AddFeed("🚔 Police got involved. You were cited for obstruction.")
+					else
+						state:AddFeed("🗑️ They threw everything away anyway.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Accept it and move on",
+			effects = { Happiness = -15, Smarts = 2 },
+			setFlags = { lost_everything = true },
+			feedText = "You watched them throw away your few possessions. Time to start over.",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_documentary",
+	title = "Documentary Crew",
+	emoji = "🎬",
+	text = "A documentary crew is filming the homeless situation in your city. They want to interview you about your story.",
+	question = "Do you participate?",
+	minAge = 18, maxAge = 75,
+	baseChance = 0.25,
+	cooldown = 8,
+	oneTime = true,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Tell your story",
+			effects = { Happiness = 10 },
+			feedText = "You shared your journey with the cameras...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					-- Documentary gets attention
+					local donations = math.random(1000, 5000)
+					state.Money = (state.Money or 0) + donations
+					state.Flags.documentary_famous = true
+					state:AddFeed(string.format("🎬 Documentary aired! Viewers donated $%d to help you! You're getting a fresh start!", donations))
+					state.Flags.homeless = nil
+				elseif roll < 0.6 then
+					state.Money = (state.Money or 0) + 200
+					state:AddFeed("🎬 They paid you $200 for your time. Documentary airs next year.")
+				else
+					state:AddFeed("🎬 Powerful interview. It felt good to be heard.")
+				end
+			end,
+		},
+		{
+			text = "Decline - privacy matters",
+			effects = { Happiness = -3 },
+			feedText = "You don't want your face out there. Too risky.",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_stolen_from",
+	title = "Robbed!",
+	emoji = "💸",
+	text = "Another homeless person stole the money you'd been saving. The little you had is gone.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 75,
+	baseChance = 0.45,
+	cooldown = 3,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Confront them",
+			effects = { Happiness = -5 },
+			feedText = "You tracked them down...",
+			onResolve = function(state)
+				if math.random() < 0.3 then
+					local recovered = math.random(10, 50)
+					state.Money = (state.Money or 0) + recovered
+					state:AddFeed(string.format("💪 Got $%d back! They won't mess with you again.", recovered))
+				elseif math.random() < 0.5 then
+					state:ModifyStat("Health", -15)
+					state:AddFeed("🤕 Fight went badly. You're hurt.")
+				else
+					state:AddFeed("😤 They ran away. Money's gone.")
+				end
+			end,
+		},
+		{
+			text = "Let it go - not worth it",
+			effects = { Happiness = -10, Smarts = 3 },
+			feedText = "Violence solves nothing. You'll earn it back.",
+		},
+		{
+			text = "Report to street community",
+			effects = { Happiness = -3 },
+			feedText = "You told the others what happened...",
+			onResolve = function(state)
+				if state.Flags.homeless_community then
+					state:AddFeed("🤝 Your street family handled it. The thief won't bother you again.")
+					state:ModifyStat("Happiness", 5)
+				else
+					state:AddFeed("👤 Nobody seems to care. You're on your own.")
+				end
+			end,
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_food_poisoning",
+	title = "Bad Food",
+	emoji = "🤢",
+	text = "That food from the dumpster didn't agree with you. You're extremely sick.",
+	question = "What do you do?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.4,
+	cooldown = 3,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Rest and hydrate",
+			effects = { Health = -10, Happiness = -8 },
+			feedText = "You found water and rested...",
+			onResolve = function(state)
+				if math.random() < 0.7 then
+					state:AddFeed("💧 Rough 24 hours but you pulled through.")
+				else
+					state:ModifyStat("Health", -15)
+					state:AddFeed("🤢 Still feeling terrible. This is taking days to recover from.")
+				end
+			end,
+		},
+		{
+			text = "Go to the ER",
+			effects = { Health = 10, Happiness = -5 },
+			feedText = "The hospital treated you.",
+			onResolve = function(state)
+				state.Flags.has_medical_debt = true
+				state:AddFeed("🏥 IV fluids helped. More medical debt though.")
+			end,
+		},
+		{
+			text = "Ask the homeless community for help",
+			effects = { Health = -5 },
+			feedText = "Others on the street watched over you...",
+			onResolve = function(state)
+				if state.Flags.homeless_community then
+					state:ModifyStat("Health", 10)
+					state:AddFeed("🤝 Your street family took care of you. Brought water and stayed close.")
+				else
+					state:AddFeed("👤 No one to help. You suffered alone.")
+					state:ModifyStat("Happiness", -10)
+				end
+			end,
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_unexpected_inheritance",
+	title = "Letter from the Past",
+	emoji = "📨",
+	text = "A lawyer tracked you down. A distant relative you barely knew passed away and left you something in their will!",
+	question = "What did they leave you?",
+	minAge = 25, maxAge = 75,
+	baseChance = 0.1,
+	cooldown = 20,
+	oneTime = true,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "A small amount of money",
+			effects = { Happiness = 30, Health = 10 },
+			feedText = "It's not millions, but it's life-changing!",
+			onResolve = function(state)
+				local inheritance = math.random(2000, 8000)
+				state.Money = (state.Money or 0) + inheritance
+				state.Flags.homeless = nil
+				state.Flags.got_inheritance = true
+				state:AddFeed(string.format("💰 $%d inheritance! Enough for a fresh start! You're off the streets!", inheritance))
+			end,
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_mental_health_struggle",
+	title = "Mental Health Crisis",
+	emoji = "😰",
+	text = "The stress of homelessness is overwhelming. You're struggling with depression and anxiety.",
+	question = "How do you cope?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.55,
+	cooldown = 3,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Seek free counseling",
+			effects = { Happiness = 10, Health = 5 },
+			setFlags = { getting_homeless_counseling = true },
+			feedText = "You found a free mental health clinic. Talking helps.",
+		},
+		{
+			text = "Find an AA/NA meeting",
+			effects = { Happiness = 8 },
+			feedText = "The fellowship provides support, regardless of your struggle.",
+			onResolve = function(state)
+				state.Flags.in_support_group = true
+				state:AddFeed("🤝 The meetings give you structure and community. One day at a time.")
+			end,
+		},
+		{
+			text = "Self-medicate with substances",
+			effects = { Happiness = 5, Health = -15 },
+			feedText = "Temporary relief, long-term damage...",
+			onResolve = function(state)
+				if math.random() < 0.5 then
+					state.Flags.substance_issues = true
+					state:AddFeed("😔 You're developing a problem. This isn't solving anything.")
+				end
+			end,
+		},
+		{
+			text = "Focus on survival - no time for feelings",
+			effects = { Happiness = -10, Smarts = 2 },
+			feedText = "You push it down and keep moving. Survival first.",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_skills_teaching",
+	title = "Sharing Knowledge",
+	emoji = "📚",
+	text = "A newly homeless person is struggling. They don't know how to survive on the streets.",
+	question = "Do you help them?",
+	minAge = 20, maxAge = 70,
+	baseChance = 0.4,
+	cooldown = 4,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Teach them survival skills",
+			effects = { Happiness = 15, Smarts = 2 },
+			feedText = "You showed them where to find food, shelter, and stay safe.",
+			onResolve = function(state)
+				state.Flags.street_mentor = true
+				state:AddFeed("🤝 They were grateful. You found purpose in helping others.")
+			end,
+		},
+		{
+			text = "Point them to resources",
+			effects = { Happiness = 8 },
+			feedText = "You told them about shelters, soup kitchens, and programs.",
+		},
+		{
+			text = "Everyone for themselves",
+			effects = { Happiness = -5 },
+			feedText = "You walked away. Can barely help yourself.",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_shower_opportunity",
+	title = "Chance to Get Clean",
+	emoji = "🚿",
+	text = "Staying clean when homeless is nearly impossible. But today you have an opportunity.",
+	question = "How do you get clean?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.5,
+	cooldown = 2,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Shelter shower program",
+			effects = { Happiness = 12, Looks = 8, Health = 5 },
+			feedText = "The shelter has shower hours. You waited in line for an hour but it was worth it.",
+		},
+		{
+			text = "Sneak into a gym",
+			effects = { Happiness = 8, Looks = 5 },
+			feedText = "You slipped into a gym...",
+			onResolve = function(state)
+				if math.random() < 0.8 then
+					state:AddFeed("🚿 Hot shower! Feel human again.")
+				else
+					state:AddFeed("🚿 Got caught and kicked out, but you were already clean!")
+				end
+			end,
+		},
+		{
+			text = "Use a public fountain",
+			effects = { Happiness = 3, Looks = 3, Health = -3 },
+			feedText = "It's cold and people stare, but you're somewhat cleaner.",
+		},
+		{
+			text = "Skip it - not safe to be vulnerable",
+			effects = { Happiness = -5, Looks = -5 },
+			feedText = "You don't feel safe getting undressed anywhere. Another dirty day.",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "homeless_voucher_lottery",
+	title = "Housing Voucher Lottery",
+	emoji = "🏠",
+	text = "The housing authority opened applications for Section 8 vouchers! Thousands apply for just a few spots.",
+	question = "Do you apply?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.3,
+	cooldown = 6,
+	requiresFlags = { homeless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Apply immediately",
+			effects = { Happiness = 5 },
+			feedText = "You filled out the application and submitted it...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.15 then
+					state.Flags.homeless = nil
+					state.Flags.has_housing_voucher = true
+					state.Flags.has_apartment = true
+					state:AddFeed("🏠 YOU WON THE LOTTERY! Housing voucher approved! You're getting an apartment!")
+					state:ModifyStat("Happiness", 40)
+				elseif roll < 0.4 then
+					state.Flags.on_housing_waitlist = true
+					state:AddFeed("📋 On the waitlist! Could be months or years, but there's hope.")
+				else
+					state:AddFeed("😔 Application wasn't selected. Thousands of others in the same boat.")
+				end
+			end,
+		},
+		{
+			text = "Don't bother - never win these",
+			effects = { Happiness = -5 },
+			feedText = "You missed the deadline. Maybe next time.",
+		},
+	},
+}
+
 return events

@@ -510,6 +510,622 @@ ActorCareerEvents.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ACTOR-5: ADDED MANY MORE ACTOR EVENTS FOR VARIETY!
+	-- User complaint: "ACTOR CAREER IDFK ENSURE IT WORKS"
+	-- Adding diverse events ensures actors have engaging content throughout career
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "actor_table_read",
+		title = "📖 First Table Read",
+		emoji = "📖",
+		text = "It's your first table read for a new project. All the cast is there. Time to make an impression.",
+		category = "career_acting",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Give it everything - steal the show",
+				effects = { Happiness = 5 },
+				feedText = "Time to shine!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.scene_stealer = true
+						state:AddFeed("📖 Everyone was laughing and engaged! Director said you have 'IT'!")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📖 Great table read! Chemistry with the cast is solid.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📖 Came across as trying too hard. Lead actor looked annoyed.")
+					end
+				end,
+			},
+			{
+				text = "Stay professional and measured",
+				effects = { Smarts = 2 },
+				feedText = "Save the best for filming.",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("📖 Solid professional performance. Building relationships with the team.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_awards_show_drama",
+		title = "🎭 Awards Show Drama",
+		emoji = "🎭",
+		text = "You're presenting at a major awards show when something unexpected happens live on stage!",
+		category = "career_acting",
+		weight = 10,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isEstablishedActor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Roll with it - improv time",
+				effects = { Happiness = 5 },
+				feedText = "Live TV baby!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Fame = (state.Fame or 0) + 25
+						state:ModifyStat("Happiness", 18)
+						state:AddFeed("🎭 Your improv saved the moment! Clip went viral! Best presenter ever!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎭 Tried to improv but it fell flat. At least you tried!")
+					end
+				end,
+			},
+			{
+				text = "Stick to the script - stay safe",
+				effects = { Smarts = 2 },
+				feedText = "Professional mode.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:AddFeed("🎭 Handled it gracefully. No memes, but no disasters.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎭 Came across as stiff. Internet wasn't kind.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_costar_romance",
+		title = "💕 On-Set Romance?",
+		emoji = "💕",
+		text = "There's undeniable chemistry between you and your co-star. The sparks are flying on and off camera!",
+		category = "career_acting",
+		weight = 12,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true, married = true },
+		
+		choices = {
+			{
+				text = "Explore the connection",
+				effects = { Happiness = 10 },
+				feedText = "Life imitating art...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 20)
+						state.Fame = (state.Fame or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.hollywood_couple = true
+						state:AddFeed("💕 Hollywood's hottest new couple! You're in love and the world is watching!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💕 Brief fling that ended amicably. Great memories!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💕 Messy breakup! Filming together is now extremely awkward!")
+					end
+				end,
+			},
+			{
+				text = "Keep it professional",
+				effects = { Smarts = 3 },
+				feedText = "Don't mix business and pleasure.",
+				onResolve = function(state)
+					state:AddFeed("💕 Kept boundaries intact. The on-screen chemistry is even better now!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_method_gone_wrong",
+		title = "🎭 Method Acting Crisis",
+		emoji = "🎭",
+		text = "You've been doing intense method acting for your role as a disturbed character. It's affecting your real life.",
+		category = "career_acting",
+		weight = 10,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Break character - mental health first",
+				effects = { Health = 5, Happiness = 5 },
+				feedText = "It's just a role.",
+				onResolve = function(state)
+					state:AddFeed("🎭 Stepped out of character. Feeling like yourself again. Good choice!")
+				end,
+			},
+			{
+				text = "Stay in character until wrap",
+				effects = { Happiness = -10, Health = -8 },
+				feedText = "THE CRAFT demands it...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 35
+						state.Flags = state.Flags or {}
+						state.Flags.method_master = true
+						state:AddFeed("🎭 Performance was TRANSFORMATIVE! Critics calling it career-defining!")
+					else
+						state:ModifyStat("Health", -10)
+						state:AddFeed("🎭 Had a mental health episode. Needed therapy after. Worth it?")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_stunt_offer",
+		title = "🔥 Do Your Own Stunts?",
+		emoji = "🔥",
+		text = "The director wants you to do a dangerous stunt yourself instead of using a stunt double. It would look incredible!",
+		category = "career_acting",
+		weight = 12,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go for it - full commitment!",
+				effects = { Health = -5 },
+				feedText = "Here goes nothing!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 18)
+						state.Fame = (state.Fame or 0) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.does_own_stunts = true
+						state:AddFeed("🔥 NAILED IT! Shot looks AMAZING! You're officially a badass!")
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🔥 Completed the stunt safely! Small bruises but worth it!")
+					else
+						state:ModifyStat("Health", -20)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🔥 INJURED! Stunt went wrong! Production halted for your recovery!")
+					end
+				end,
+			},
+			{
+				text = "Use the stunt double",
+				effects = { Health = 2, Smarts = 2 },
+				feedText = "That's what they're paid for.",
+				onResolve = function(state)
+					state:AddFeed("🔥 Smart choice. Stunt double nailed it. No broken bones for you!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_talk_show",
+		title = "📺 Talk Show Appearance",
+		emoji = "📺",
+		text = "You're booked on a major late night talk show! Time to promote your new project and show your personality!",
+		category = "career_acting",
+		weight = 14,
+		minAge = 18, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Tell a wild story",
+				effects = { Happiness = 8 },
+				feedText = "Time for that crazy anecdote!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Fame = (state.Fame or 0) + 20
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("📺 VIRAL MOMENT! Your story has millions of views! Great promo!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📺 Got some laughs! Good TV appearance overall!")
+					end
+				end,
+			},
+			{
+				text = "Stay on message - promote the project",
+				effects = { Smarts = 2 },
+				feedText = "Professional mode.",
+				onResolve = function(state)
+					state:AddFeed("📺 Professional appearance. Studio is happy with the coverage!")
+				end,
+			},
+			{
+				text = "Play a game/do a bit with the host",
+				effects = { Happiness = 10 },
+				feedText = "Let's have fun with this!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state.Fame = (state.Fame or 0) + 15
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📺 Amazing chemistry with the host! They want you back anytime!")
+					else
+						state:AddFeed("📺 Fun bit! You seemed relatable and down to earth!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_voice_acting",
+		title = "🎙️ Voice Acting Opportunity",
+		emoji = "🎙️",
+		text = "An animated movie wants you to voice a major character! Different skill set than regular acting.",
+		category = "career_acting",
+		weight = 12,
+		minAge = 20, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept - expand your range",
+				effects = { Happiness = 8 },
+				feedText = "Voice acting is real acting!",
+				onResolve = function(state)
+					local earnings = math.random(100000, 800000)
+					state.Money = (state.Money or 0) + earnings
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Fame = (state.Fame or 0) + 25
+						state.Flags = state.Flags or {}
+						state.Flags.voice_actor = true
+						state:AddFeed(string.format("🎙️ Movie was a HIT! Kids love your character! Sequel confirmed! Earned $%d!", earnings))
+					else
+						state:AddFeed(string.format("🎙️ Fun experience! Earned $%d for the voice work!", earnings))
+					end
+				end,
+			},
+			{
+				text = "Decline - focus on live action",
+				effects = { Smarts = 1 },
+				feedText = "Staying in your lane.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎙️ That movie became a massive franchise. The actor who replaced you is iconic now...")
+					else
+						state:AddFeed("🎙️ Focused on your strengths. No regrets!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_red_carpet",
+		title = "👗 Red Carpet Moment",
+		emoji = "👗",
+		text = "Major premiere tonight! Your red carpet look will be scrutinized by millions! What's the move?",
+		category = "career_acting",
+		weight = 12,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go all out - designer everything ($10,000)",
+				effects = { Happiness = 8 },
+				feedText = "Dress to impress!",
+				onResolve = function(state)
+					if (state.Money or 0) >= 10000 then
+						state.Money = state.Money - 10000
+						local roll = math.random(1, 100)
+						if roll <= 60 then
+							state.Fame = (state.Fame or 0) + 20
+							state:ModifyStat("Happiness", 15)
+							state:AddFeed("👗 BEST DRESSED! Fashion magazines are calling! Style icon status!")
+						elseif roll <= 90 then
+							state:ModifyStat("Happiness", 8)
+							state:AddFeed("👗 Looked amazing! Great photos everywhere!")
+						else
+							state:ModifyStat("Happiness", -10)
+							state:AddFeed("👗 Made worst dressed lists. Should have gone simpler...")
+						end
+					else
+						state:AddFeed("👗 Can't afford the designer look right now. Had to improvise!")
+					end
+				end,
+			},
+			{
+				text = "Classic and elegant",
+				effects = { Smarts = 2 },
+				feedText = "Timeless never fails.",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("👗 Classy and elegant! Maybe not best dressed, but definitely not worst!")
+				end,
+			},
+			{
+				text = "Make a statement - go bold",
+				effects = {},
+				feedText = "Fashion is art!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state.Fame = (state.Fame or 0) + 30
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("👗 ICONIC! Your look broke the internet! Memes for days - in a good way!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed("👗 Well... people are talking. 'Bold choice' is what they're saying...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_commercial_offer",
+		title = "📺 Big Commercial Deal",
+		emoji = "📺",
+		text = "A major brand wants you for their ad campaign. Easy money but some actors think commercials are 'selling out'.",
+		category = "career_acting",
+		weight = 14,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the money!",
+				effects = { Happiness = 5 },
+				feedText = "A paycheck is a paycheck!",
+				onResolve = function(state)
+					local earnings = math.random(50000, 500000)
+					state.Money = (state.Money or 0) + earnings
+					state:AddFeed(string.format("📺 Easy $%d! Commercial airs everywhere! Your face is in every living room!", earnings))
+				end,
+			},
+			{
+				text = "Decline - protect your artistic integrity",
+				effects = { Smarts = 3 },
+				feedText = "I'm a serious actor...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📺 Fellow actors respect your integrity! Landed a prestige role instead!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📺 Could've used that money... Principles don't pay the rent.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_reboot_callback",
+		title = "🔁 Franchise Reboot!",
+		emoji = "🔁",
+		text = "The franchise you starred in years ago is being rebooted! They want you to cameo!",
+		category = "career_acting",
+		weight = 10,
+		minAge = 35, maxAge = 75,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isEstablishedActor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Gladly return - for the fans!",
+				effects = { Happiness = 15 },
+				feedText = "Nostalgia time!",
+				onResolve = function(state)
+					local earnings = math.random(200000, 1000000)
+					state.Money = (state.Money or 0) + earnings
+					state.Fame = (state.Fame or 0) + 30
+					state:AddFeed(string.format("🔁 FANS WENT WILD! Your cameo was the best part! $%d for a few days work!", earnings))
+				end,
+			},
+			{
+				text = "Demand more money",
+				effects = {},
+				feedText = "Know your worth...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bigPay = math.random(500000, 3000000)
+						state.Money = (state.Money or 0) + bigPay
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🔁 They paid up! $%d for the cameo! You're irreplaceable!", bigPay))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🔁 They recast your role with someone cheaper. Fans are furious at THEM, not you.")
+					end
+				end,
+			},
+			{
+				text = "Decline - move forward",
+				effects = { Smarts = 2 },
+				feedText = "That chapter is closed.",
+				onResolve = function(state)
+					state:AddFeed("🔁 Let the new generation have their moment. You've done your part!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_theater_return",
+		title = "🎭 Return to Theater",
+		emoji = "🎭",
+		text = "A prestigious Broadway/West End production wants you for the lead! Theater is harder but more artistically fulfilling.",
+		category = "career_acting",
+		weight = 10,
+		minAge = 25, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasActingJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept - back to your roots!",
+				effects = { Happiness = 10, Health = -3 },
+				feedText = "Live theater is the purest form!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 18)
+						state.Fame = (state.Fame or 0) + 25
+						state.Flags = state.Flags or {}
+						state.Flags.theater_actor = true
+						state:AddFeed("🎭 STANDING OVATIONS! Tony/Olivier buzz! Reminded everyone you can REALLY act!")
+					else
+						state:AddFeed("🎭 Great reviews! 8 shows a week is brutal but fulfilling!")
+					end
+				end,
+			},
+			{
+				text = "Decline - films pay better",
+				effects = { Smarts = 1 },
+				feedText = "Business decision.",
+				onResolve = function(state)
+					state:AddFeed("🎭 Stuck to the movie grind. Maybe someday you'll return to the stage.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "actor_fan_encounter",
+		title = "🌟 Obsessed Fan",
+		emoji = "🌟",
+		text = "A fan has been showing up everywhere you go. They know your schedule. This is getting creepy...",
+		category = "career_acting",
+		weight = 10,
+		minAge = 20, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isEstablishedActor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Get a restraining order",
+				effects = { Smarts = 3 },
+				feedText = "Safety first.",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - math.random(5000, 15000))
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🌟 Restraining order granted. Hired security. Feel safer now.")
+				end,
+			},
+			{
+				text = "Try to talk to them",
+				effects = { Happiness = -5 },
+				feedText = "Maybe I can reason with them...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🌟 They apologized and understood they crossed a line. Crisis averted!")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🌟 Made it worse. They thought you were being 'special' to them. Yikes.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🌟 Scary encounter! Had to call police! Traumatizing experience!")
+					end
+				end,
+			},
+			{
+				text = "Ignore it and hope it stops",
+				effects = {},
+				feedText = "Maybe they'll lose interest...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:AddFeed("🌟 They moved on eventually. Dodged a bullet!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🌟 Escalated! Now they're sending stuff to your house! Should've acted sooner!")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return ActorCareerEvents

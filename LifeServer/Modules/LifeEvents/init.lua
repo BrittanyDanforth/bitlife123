@@ -2334,6 +2334,94 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #GAMER-1: ADD GAMING/ESPORTS CAREER CATEGORY INJECTION!
+	-- BUG: GamerCareerEvents NEVER triggered because career_gaming category wasn't injected!
+	-- User complaint: "GAMER CAREER DOESN'T EVEN CALL SOMETIMES AND ISN'T LINKED NICELY"
+	-- FIX: Check for gaming job or gamer flags and inject career_gaming category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isGamerFlags = state.Flags and (
+		state.Flags.pro_gamer or state.Flags.esports_player or state.Flags.gaming_streamer or
+		state.Flags.signed_to_org or state.Flags.competitive_player or state.Flags.tournament_champion
+	)
+	local hasGamerJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("gamer") or
+		(state.CurrentJob.id or ""):lower():find("esports") or
+		(state.CurrentJob.id or ""):lower():find("gaming") or
+		(state.CurrentJob.category or ""):lower() == "gaming" or
+		(state.CurrentJob.category or ""):lower() == "esports"
+	)
+	
+	if isGamerFlags or hasGamerJob then
+		local hasGamerCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_gaming" or cat == "career_esports" then hasGamerCat = true break end
+		end
+		if not hasGamerCat then
+			table.insert(categories, "career_gaming")
+			table.insert(categories, "career_esports")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ACTOR-1: ADD ACTOR/ACTING CAREER CATEGORY INJECTION!
+	-- BUG: ActorCareerEvents had issues because career_acting category wasn't always injected!
+	-- FIX: Check for acting job or actor flags and inject career_acting category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isActorFlags = state.Flags and (
+		state.Flags.landed_big_role or state.Flags.a_list_actor or state.Flags.tv_regular or
+		state.Flags.oscar_winner or state.Flags.franchise_star or state.Flags.superhero_actor
+	)
+	local hasActorJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("actor") or
+		(state.CurrentJob.id or ""):lower():find("actress") or
+		(state.CurrentJob.id or ""):lower():find("movie") or
+		(state.CurrentJob.id or ""):lower():find("director") or
+		(state.CurrentJob.category or ""):lower() == "acting" or
+		(state.CurrentJob.category or ""):lower() == "film"
+	)
+	
+	if isActorFlags or hasActorJob then
+		local hasActorCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_acting" then hasActorCat = true break end
+		end
+		if not hasActorCat then
+			table.insert(categories, "career_acting")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #ATHLETE-1: ADD ATHLETE/SPORTS CAREER CATEGORY INJECTION!
+	-- BUG: AthleteCareerEvents had issues because career_sports category wasn't always injected!
+	-- FIX: Check for sports job or athlete flags and inject career_sports category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isAthleteFlags = state.Flags and (
+		state.Flags.signed_athlete or state.Flags.pro_athlete or state.Flags.champion_athlete or
+		state.Flags.hall_of_famer or state.Flags.endorsed_athlete or state.Flags.franchise_player
+	)
+	local hasAthleteJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("athlete") or
+		(state.CurrentJob.id or ""):lower():find("player") or
+		(state.CurrentJob.id or ""):lower():find("football") or
+		(state.CurrentJob.id or ""):lower():find("basketball") or
+		(state.CurrentJob.id or ""):lower():find("baseball") or
+		(state.CurrentJob.id or ""):lower():find("soccer") or
+		(state.CurrentJob.id or ""):lower():find("mma") or
+		(state.CurrentJob.id or ""):lower():find("boxing") or
+		(state.CurrentJob.category or ""):lower() == "sports"
+	)
+	
+	if isAthleteFlags or hasAthleteJob then
+		local hasAthleteCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_sports" then hasAthleteCat = true break end
+		end
+		if not hasAthleteCat then
+			table.insert(categories, "career_sports")
+		end
+	end
+	
 	-- CRITICAL FIX: Add street hustler events if player has hustler flags
 	-- Even without a "job", hustlers should get their events
 	if state.Flags and (state.Flags.street_hustler or state.Flags.dealer or state.Flags.supplier) then

@@ -17,9 +17,69 @@
 	- prison_fight: Random yard fights
 	- prison_contraband: Smuggling items
 	- prison_therapy: Mental health support
+	
+	CRITICAL FIX: Added global cooldown system to prevent spam!
+	User complaint: "THE PRISON SPAMS STUFF"
 --]]
 
 local PrisonEvents = {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: GLOBAL COOLDOWN SYSTEM TO PREVENT SPAM
+-- Tracks last time each category was shown to prevent rapid repetition
+-- User complaint: "THE PRISON SPAMS STUFF"
+-- ═══════════════════════════════════════════════════════════════════════════════
+PrisonEvents.COOLDOWNS = {
+	Workout = 1,    -- Can show workout events every year
+	Study = 1,      -- Can show study events every year
+	Job = 1,        -- Can show job events every year
+	Crew = 2,       -- Gang events every 2 years minimum
+	Riot = 5,       -- Riots are rare - 5 year minimum between
+	Snitch = 3,     -- Snitch events every 3 years
+	Appeal = 2,     -- Appeal events every 2 years
+	Fight = 2,      -- Fights every 2 years
+}
+
+-- Track when last event of each type was shown
+PrisonEvents.LastShown = {}
+
+function PrisonEvents.canShowCategory(state, category)
+	if not state then return true end
+	local cooldown = PrisonEvents.COOLDOWNS[category] or 1
+	
+	-- Get last shown age for this category
+	state._prisonEventHistory = state._prisonEventHistory or {}
+	local lastAge = state._prisonEventHistory[category]
+	
+	if not lastAge then return true end
+	
+	local currentAge = state.Age or 0
+	return (currentAge - lastAge) >= cooldown
+end
+
+function PrisonEvents.markCategoryShown(state, category)
+	if not state then return end
+	state._prisonEventHistory = state._prisonEventHistory or {}
+	state._prisonEventHistory[category] = state.Age or 0
+end
+
+-- CRITICAL FIX: Limit total prison events per year to prevent spam
+PrisonEvents.MAX_EVENTS_PER_YEAR = 2
+function PrisonEvents.canShowMoreThisYear(state)
+	if not state then return true end
+	state._prisonEventsThisYear = state._prisonEventsThisYear or 0
+	return state._prisonEventsThisYear < PrisonEvents.MAX_EVENTS_PER_YEAR
+end
+
+function PrisonEvents.incrementYearlyCount(state)
+	if not state then return end
+	state._prisonEventsThisYear = (state._prisonEventsThisYear or 0) + 1
+end
+
+function PrisonEvents.resetYearlyCount(state)
+	if not state then return end
+	state._prisonEventsThisYear = 0
+end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- PRISON WORKOUT EVENTS
@@ -1067,9 +1127,14 @@ PrisonEvents.ActivityMapping = {
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- HELPER FUNCTIONS
+-- HELPER FUNCTIONS - CRITICAL FIX: Now with anti-spam cooldown integration!
 -- ═══════════════════════════════════════════════════════════════════════════════
-function PrisonEvents.getEventForActivity(activityId)
+function PrisonEvents.getEventForActivity(activityId, state)
+	-- CRITICAL FIX: Check if we can show more events this year
+	if state and not PrisonEvents.canShowMoreThisYear(state) then
+		return nil, "Maximum prison events reached for this year"
+	end
+	
 	local categoryName = PrisonEvents.ActivityMapping[activityId]
 	if not categoryName then
 		-- Try partial matching
@@ -1082,20 +1147,56 @@ function PrisonEvents.getEventForActivity(activityId)
 	end
 	
 	if not categoryName then
-		return nil
+		return nil, "Unknown activity type"
+	end
+	
+	-- CRITICAL FIX: Check cooldown for this category
+	if state and not PrisonEvents.canShowCategory(state, categoryName) then
+		return nil, "This activity is on cooldown"
 	end
 	
 	local eventList = PrisonEvents[categoryName]
 	if not eventList or #eventList == 0 then
-		return nil
+		return nil, "No events for this category"
+	end
+	
+	-- CRITICAL FIX: Mark category as shown and increment yearly count
+	if state then
+		PrisonEvents.markCategoryShown(state, categoryName)
+		PrisonEvents.incrementYearlyCount(state)
 	end
 	
 	-- Return random event from category
 	return eventList[math.random(1, #eventList)]
 end
 
+-- CRITICAL FIX: New function to get event with state validation
+function PrisonEvents.getEventWithValidation(activityId, state)
+	if not state then
+		return PrisonEvents.getEventForActivity(activityId, nil)
+	end
+	
+	-- Reset yearly count if this is a new year
+	local currentAge = state.Age or 0
+	state._lastPrisonEventAge = state._lastPrisonEventAge or 0
+	if currentAge > state._lastPrisonEventAge then
+		PrisonEvents.resetYearlyCount(state)
+		state._lastPrisonEventAge = currentAge
+	end
+	
+	return PrisonEvents.getEventForActivity(activityId, state)
+end
+
 function PrisonEvents.getAllCategories()
 	return {"Workout", "Study", "Crew", "Riot", "Snitch", "Job", "Appeal", "Fight"}
+end
+
+-- CRITICAL FIX: Reset function for when player leaves prison
+function PrisonEvents.resetAllCooldowns(state)
+	if state then
+		state._prisonEventHistory = {}
+		state._prisonEventsThisYear = 0
+	end
 end
 
 return PrisonEvents

@@ -43,44 +43,80 @@ end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #29: Enhanced helper functions for gaming careers
+-- CRITICAL FIX #GAMER-2: Made eligibility MORE permissive so events actually trigger!
+-- User complaint: "GAMER CAREER DOESN'T EVEN CALL SOMETIMES"
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function hasGamingJob(state)
 	-- CRITICAL FIX #RVS-GAMER-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
+	
+	-- CRITICAL FIX #GAMER-3: Also check for gaming FLAGS even without a formal job!
+	-- This lets players who are pursuing gaming get events before landing a job
+	if state.Flags then
+		local flags = state.Flags
+		if flags.pro_gamer or flags.esports_player or flags.gaming_streamer or
+		   flags.signed_to_org or flags.competitive_player or flags.tournament_champion or
+		   flags.pursuing_esports or flags.gamer_career then
+			return true
+		end
+	end
+	
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()
+	local jobName = (state.CurrentJob.name or ""):lower()
+	
 	-- CRITICAL FIX #30: Exclude non-gaming content creators
-	if jobId:find("youtuber") and not jobId:find("gam") then
+	if jobId:find("youtuber") and not jobId:find("gam") and not jobName:find("gam") then
 		return false
 	end
-	if jobId:find("influencer") and not jobId:find("gam") then
+	if jobId:find("influencer") and not jobId:find("gam") and not jobName:find("gam") then
 		return false
 	end
+	
+	-- CRITICAL FIX #GAMER-4: Also check job name, not just id and category
 	return jobId:find("gamer") or jobId:find("esports") or jobId:find("streamer") or 
-		   jobId:find("gaming") or jobCat == "gaming" or jobCat == "esports"
+		   jobId:find("gaming") or jobCat == "gaming" or jobCat == "esports" or
+		   jobName:find("gamer") or jobName:find("esports") or jobName:find("gaming")
 end
 
 local function hasProGamerJob(state)
+	-- CRITICAL FIX: Also check flags for pro status
+	if state.Flags then
+		if state.Flags.signed_to_org or state.Flags.pro_gamer or 
+		   state.Flags.esports_champion or state.Flags.tournament_champion then
+			return true
+		end
+	end
+	
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
-	return jobId:find("pro_gamer") or jobId:find("esports") or jobId:find("champion")
-		or (state.Flags and state.Flags.signed_to_org == true)
+	local jobName = (state.CurrentJob.name or ""):lower()
+	return jobId:find("pro_gamer") or jobId:find("esports") or jobId:find("champion") or
+		   jobName:find("pro") or jobName:find("professional")
 end
 
 -- CRITICAL FIX #31: Check if player is a streamer specifically
 local function isGamingStreamer(state)
+	-- Check flags first
+	if state.Flags and state.Flags.gaming_streamer then
+		return true
+	end
+	
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobName = (state.CurrentJob.name or ""):lower()
-	return (jobId:find("streamer") and (jobId:find("gam") or jobName:find("gam")))
-		or (state.Flags and state.Flags.gaming_streamer == true)
+	return (jobId:find("streamer") and (jobId:find("gam") or jobName:find("gam"))) or
+		   (jobName:find("streamer") and jobName:find("gam"))
 end
 
 -- CRITICAL FIX #32: Check if player is in competitive gaming vs casual streaming
 local function isCompetitiveGamer(state)
-	if not hasGamingJob(state) then return false end
-	return hasProGamerJob(state) or (state.Flags and state.Flags.competitive_player == true)
+	-- Check flags first for competitive status
+	if state.Flags and state.Flags.competitive_player then
+		return true
+	end
+	return hasProGamerJob(state)
 end
 
 -- CRITICAL FIX #33: Check gaming career level
@@ -91,6 +127,11 @@ local function getGamingLevel(state)
 	if hasProGamerJob(state) then return "pro" end
 	if isGamingStreamer(state) then return "streamer" end
 	return "amateur"
+end
+
+-- CRITICAL FIX #GAMER-5: Helper to check if any gaming condition is met
+local function hasAnyGamingActivity(state)
+	return hasGamingJob(state) or hasProGamerJob(state) or isGamingStreamer(state)
 end
 
 GamerCareerEvents.events = {
@@ -477,6 +518,311 @@ GamerCareerEvents.events = {
 						state:ModifyStat("Happiness", -8)
 						state:AddFeed("🎓 Performance declining. Maybe should have taken that offer...")
 					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #GAMER-6: ADDED NEW GAMER EVENTS FOR MORE VARIETY!
+	-- User complaint: "GAMER CAREER DOESN'T EVEN CALL SOMETIMES"
+	-- Adding more events increases chances of something triggering
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "gamer_hardware_upgrade",
+		title = "🖥️ New Gaming Setup!",
+		emoji = "🖥️",
+		text = "Your current setup is holding you back. Time to upgrade! Better hardware could improve your performance.",
+		category = "career_gaming",
+		weight = 14,
+		minAge = 14, maxAge = 40,
+		baseChance = 0.5,
+		cooldown = 2,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Full RGB beast mode setup ($5,000)",
+				effects = { Happiness = 15 },
+				feedText = "Time to build the dream machine!",
+				onResolve = function(state)
+					if (state.Money or 0) >= 5000 then
+						state.Money = state.Money - 5000
+						state.Flags = state.Flags or {}
+						state.Flags.elite_setup = true
+						state:AddFeed("🖥️ BEAST MODE PC! RTX 4090, 4K 240Hz monitor, everything RGB! Game at maximum settings!")
+					else
+						state:AddFeed("🖥️ Can't afford the dream setup right now. Maybe next time.")
+					end
+				end,
+			},
+			{
+				text = "Smart upgrades only ($1,500)",
+				effects = { Happiness = 10 },
+				feedText = "Targeting the bottlenecks...",
+				onResolve = function(state)
+					if (state.Money or 0) >= 1500 then
+						state.Money = state.Money - 1500
+						state:AddFeed("🖥️ Smart upgrades! New GPU and monitor. Performance noticeably better!")
+					else
+						state:AddFeed("🖥️ Can't afford upgrades right now. The grind continues on old hardware.")
+					end
+				end,
+			},
+			{
+				text = "Keep the current setup",
+				effects = { Happiness = -3 },
+				feedText = "If it ain't broke...",
+			},
+		},
+	},
+	
+	{
+		id = "gamer_online_toxicity",
+		title = "🔥 Toxic Chat Encounter",
+		emoji = "🔥",
+		text = "Someone in your match is being incredibly toxic. Slurs, threats, the works. Your whole team is tilted.",
+		category = "career_gaming",
+		weight = 12,
+		minAge = 14, maxAge = 35,
+		baseChance = 0.5,
+		cooldown = 2,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Mute and focus on winning",
+				effects = { Happiness = 3, Smarts = 3 },
+				feedText = "Mental fortitude activated.",
+				onResolve = function(state)
+					if math.random(1, 100) <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🔥 Muted the troll, carried the game. Best revenge is winning!")
+					else
+						state:AddFeed("🔥 Stayed focused but still lost. At least you kept your dignity.")
+					end
+				end,
+			},
+			{
+				text = "Fire back with a devastating clapback",
+				effects = {},
+				feedText = "Violence is not the answer... but words can be.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 12)
+						state.Fame = (state.Fame or 0) + 5
+						state:AddFeed("🔥 Your clapback went VIRAL! Clip is everywhere! W!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔥 Got into a flame war. Nobody won but it felt good.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🔥 Got reported. Temporary chat restriction. Worth it?")
+					end
+				end,
+			},
+			{
+				text = "Report and move on",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "Let the system handle it.",
+			},
+		},
+	},
+	
+	{
+		id = "gamer_lan_party",
+		title = "🎮 LAN Party Invite!",
+		emoji = "🎮",
+		text = "Your gaming friends want to have an old-school LAN party! All night gaming, pizza, energy drinks. Classic vibes.",
+		category = "career_gaming",
+		weight = 12,
+		minAge = 14, maxAge = 35,
+		baseChance = 0.45,
+		cooldown = 2,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Host it at your place",
+				effects = { Happiness = 18, Health = -3 },
+				feedText = "Let's GOOOO!",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - math.random(100, 300))
+					state.Flags = state.Flags or {}
+					state.Flags.gaming_social = true
+					state:AddFeed("🎮 EPIC LAN PARTY! Stayed up until 6AM. Made memories that'll last forever!")
+				end,
+			},
+			{
+				text = "Attend but leave early",
+				effects = { Happiness = 10 },
+				feedText = "Responsible gaming.",
+				onResolve = function(state)
+					state:AddFeed("🎮 Had a great time but left at a reasonable hour. Balance!")
+				end,
+			},
+			{
+				text = "Skip it - need to practice",
+				effects = { Happiness = -5, Smarts = 3 },
+				feedText = "The grind never stops.",
+			},
+		},
+	},
+	
+	{
+		id = "gamer_content_opportunity",
+		title = "📱 Content Creator Opportunity",
+		emoji = "📱",
+		text = "A gaming channel wants to feature you in their content! Could be good exposure for your brand.",
+		category = "career_gaming",
+		weight = 12,
+		minAge = 16, maxAge = 40,
+		baseChance = 0.4,
+		cooldown = 3,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Collab and create content together",
+				effects = { Happiness = 12 },
+				feedText = "Growing the brand!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local followers = math.random(1000, 10000)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed(string.format("📱 COLLAB SUCCESS! Gained %d new followers! Growing audience!", followers))
+					else
+						state:AddFeed("📱 Collab was okay. Didn't blow up but got some new eyes on your content.")
+					end
+				end,
+			},
+			{
+				text = "Negotiate for payment",
+				effects = {},
+				feedText = "Know your worth...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local payment = math.random(500, 2000)
+						state.Money = (state.Money or 0) + payment
+						state:AddFeed(string.format("📱 They paid you $%d for the collab! Professional!", payment))
+					else
+						state:AddFeed("📱 They went with someone cheaper. Missed opportunity?")
+					end
+				end,
+			},
+			{
+				text = "Decline - staying independent",
+				effects = { Happiness = 2 },
+				feedText = "Building your own thing.",
+			},
+		},
+	},
+	
+	{
+		id = "gamer_carpal_tunnel",
+		title = "⚠️ Wrist Pain Warning",
+		emoji = "⚠️",
+		text = "Your wrists have been aching after long gaming sessions. Could be early signs of carpal tunnel syndrome.",
+		category = "career_gaming",
+		weight = 10,
+		minAge = 18, maxAge = 40,
+		baseChance = 0.35,
+		cooldown = 4,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "See a specialist immediately",
+				effects = { Health = 5, Happiness = -3 },
+				feedText = "Health comes first.",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - math.random(200, 500))
+					state.Flags = state.Flags or {}
+					state.Flags.health_conscious_gamer = true
+					state:AddFeed("⚠️ Doctor caught it early. Physical therapy and ergonomic setup recommended. Crisis averted!")
+				end,
+			},
+			{
+				text = "Try stretches and take breaks",
+				effects = { Health = 3 },
+				feedText = "Self-care mode.",
+				onResolve = function(state)
+					if math.random(1, 100) <= 70 then
+						state:AddFeed("⚠️ Stretching routine helped! Wrists feeling better. Keep it up!")
+					else
+						state:ModifyStat("Health", -5)
+						state:AddFeed("⚠️ Still having issues. Might need to see a doctor after all.")
+					end
+				end,
+			},
+			{
+				text = "Push through - grindset",
+				effects = { Health = -8 },
+				feedText = "Pain is temporary, rank is forever.",
+				onResolve = function(state)
+					if math.random(1, 100) <= 30 then
+						state:AddFeed("⚠️ Somehow got better on its own. Lucky!")
+					else
+						state:ModifyStat("Health", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.chronic_wrist_pain = true
+						state:AddFeed("⚠️ Made it worse. Now dealing with chronic pain. Should have listened...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "gamer_rank_grind",
+		title = "📈 Rank Up Opportunity",
+		emoji = "📈",
+		text = "You're one win away from reaching the next rank! The pressure is on. One more game...",
+		category = "career_gaming",
+		weight = 14,
+		minAge = 14, maxAge = 35,
+		baseChance = 0.5,
+		cooldown = 2,
+		eligibility = hasAnyGamingActivity,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Queue up and give it everything!",
+				effects = { Happiness = 5 },
+				feedText = "This is it!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "medium" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 20 or 0
+					
+					if roll + bonus >= 45 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.ranked_up = true
+						state:AddFeed("📈 NEW RANK ACHIEVED! LETS GOOOO! Time to screenshot and flex!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📈 Lost the promo game... back to the grind. Tilt incoming.")
+					end
+				end,
+			},
+			{
+				text = "Wait until you're in peak form",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "Smart players wait for the right moment.",
+				onResolve = function(state)
+					state:AddFeed("📈 Good call. Take a break, come back fresh. The rank will still be there.")
 				end,
 			},
 		},
