@@ -4614,7 +4614,7 @@ function OccupationScreen:showInterviewModal(jobId, jobData)
 	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	overlay.BackgroundTransparency = 0.4
 	overlay.ZIndex = 100
-	overlay.Parent = self.ui
+	overlay.Parent = self.screenGui
 	self.interviewOverlay = overlay
 	
 	-- Modal dimensions (responsive)
