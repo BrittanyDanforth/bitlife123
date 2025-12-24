@@ -504,10 +504,123 @@ local function applyChoiceEffects(state, choice, isSuccess)
 	return isSuccess
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: Check if a choice is eligible (affordable, meets requirements)
+-- Returns: eligible (bool), reason (string or nil)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function EventEngine.isChoiceEligible(choice, state)
+	if not choice then return false, "Invalid choice" end
+	if not state then return false, "Invalid state" end
+	
+	local money = state.Money or 0
+	local flags = state.Flags or {}
+	
+	-- Check affordability
+	if choice.minMoney and money < choice.minMoney then
+		return false, string.format("Can't afford $%d %s", choice.minMoney, choice.moneyReason or "")
+	end
+	
+	-- Check cost in effects
+	if choice.money and choice.money < 0 and money < math.abs(choice.money) then
+		return false, string.format("Can't afford $%d", math.abs(choice.money))
+	end
+	
+	-- Check effects.Money
+	if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+		if money < math.abs(choice.effects.Money) then
+			return false, string.format("Can't afford $%d", math.abs(choice.effects.Money))
+		end
+	end
+	
+	-- Check required flags
+	if choice.requiresFlags then
+		for _, flag in ipairs(choice.requiresFlags) do
+			if not flags[flag] then
+				return false, string.format("Missing requirement: %s", flag)
+			end
+		end
+	end
+	
+	-- Check blocked flags
+	if choice.blockedByFlags then
+		for flag, _ in pairs(choice.blockedByFlags) do
+			if flags[flag] then
+				return false, string.format("Blocked by: %s", flag)
+			end
+		end
+	end
+	
+	-- Check asset requirements (e.g., "You don't have a car to live in")
+	if choice.requiresCar then
+		local hasVehicle = state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0
+		if not hasVehicle then
+			return false, "You don't have a car to live in"
+		end
+	end
+	
+	if choice.requiresHome then
+		local hasHome = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
+		if not hasHome then
+			return false, "You don't own a home"
+		end
+	end
+	
+	-- Custom eligibility function
+	if choice.eligibility then
+		local eligible, reason = choice.eligibility(state)
+		if not eligible then
+			return false, reason or "Custom requirement not met"
+		end
+	end
+	
+	return true, nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: Filter event choices to only show eligible ones
+-- Adds _ineligibleReason to ineligible choices so UI can show why
+-- ═══════════════════════════════════════════════════════════════════════════════
+function EventEngine.filterEligibleChoices(event, state)
+	if not event or not event.choices then return event end
+	
+	for i, choice in ipairs(event.choices) do
+		local eligible, reason = EventEngine.isChoiceEligible(choice, state)
+		choice._eligible = eligible
+		choice._ineligibleReason = reason
+		
+		-- Log ineligible choices for debugging (but don't spam)
+		if not eligible and reason then
+			-- Only log once per event
+			if not event._loggedIneligible then
+				event._loggedIneligible = {}
+			end
+			if not event._loggedIneligible[i] then
+				-- Debug log only, not warn (reduces console spam)
+				-- warn(string.format("[EventEngine] Choice eligibility failed: %s choice: %d reason: %s", 
+				-- 	event.id, i, reason))
+				event._loggedIneligible[i] = true
+			end
+		end
+	end
+	
+	return event
+end
+
 function EventEngine.completeEvent(event, choiceIndex, state)
 	local choice = event.choices[choiceIndex]
 	if not choice then
 		return nil, "Invalid choice"
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Check choice eligibility before processing
+	-- Prevents players from selecting choices they can't afford
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local eligible, reason = EventEngine.isChoiceEligible(choice, state)
+	if not eligible then
+		warn(string.format("[EventEngine] Choice eligibility failed: %s choice: %d reason: %s", 
+			event.id or "unknown", choiceIndex, reason or "unknown"))
+		return nil, reason or "You can't select this choice right now."
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -910,6 +1023,8 @@ function EventEngine.selectEventsWithDynamicWeights(events, state, options)
 		
 		local pick = dynamicWeightedPick(remaining)
 		if pick and not usedEventIds[pick.id] then
+			-- AAA FIX: Filter eligible choices before returning event
+			EventEngine.filterEligibleChoices(pick, state)
 			table.insert(selected, pick)
 			usedEventIds[pick.id] = true
 		end

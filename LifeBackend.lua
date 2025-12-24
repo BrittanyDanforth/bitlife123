@@ -642,8 +642,32 @@ function LifeBackend:quickSanityCheck(state)
 	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
 	state.Relationships = state.Relationships or {}
 	state.Assets = state.Assets or {}
+	state.EducationData = state.EducationData or {}
+	state.CareerInfo = state.CareerInfo or {}
+	state.EventHistory = state.EventHistory or {}
 	
-	-- Sync stat shortcuts
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Comprehensive stat type validation
+	-- Prevents arithmetic errors from boolean/string stats
+	-- ═══════════════════════════════════════════════════════════════════════
+	local function validateStat(val, default)
+		if type(val) == "number" then
+			return math.max(0, math.min(100, val))
+		elseif type(val) == "boolean" then
+			return val and 75 or 25
+		elseif type(val) == "string" then
+			return tonumber(val) or default
+		end
+		return default
+	end
+	
+	-- Ensure Stats are all valid numbers in 0-100 range
+	state.Stats.Health = validateStat(state.Stats.Health, 50)
+	state.Stats.Happiness = validateStat(state.Stats.Happiness, 50)
+	state.Stats.Smarts = validateStat(state.Stats.Smarts, 50)
+	state.Stats.Looks = validateStat(state.Stats.Looks, 50)
+	
+	-- Sync stat shortcuts (ALWAYS keep in sync)
 	state.Health = state.Stats.Health
 	state.Happiness = state.Stats.Happiness
 	state.Smarts = state.Stats.Smarts
@@ -651,13 +675,61 @@ function LifeBackend:quickSanityCheck(state)
 	
 	-- Ensure Money is valid number (not boolean!)
 	if type(state.Money) ~= "number" then
-		state.Money = 0
+		if type(state.Money) == "boolean" then
+			state.Money = state.Money and 1000 or 0
+		elseif type(state.Money) == "string" then
+			state.Money = tonumber(state.Money) or 0
+		else
+			state.Money = 0
+		end
+		fixes = fixes + 1
+	end
+	
+	-- Ensure Money is not negative (unless debt is allowed in special cases)
+	if state.Money < -1000000 then
+		state.Money = -1000000 -- Cap at -1M (max debt)
 		fixes = fixes + 1
 	end
 	
 	-- Ensure Age is valid
 	if type(state.Age) ~= "number" or state.Age < 0 then
 		state.Age = 0
+		fixes = fixes + 1
+	end
+	if state.Age > 120 then
+		state.Age = 120 -- Cap at 120 years old
+		fixes = fixes + 1
+	end
+	
+	-- Ensure Year is valid
+	if type(state.Year) ~= "number" then
+		state.Year = 2025
+		fixes = fixes + 1
+	end
+	
+	-- AAA FIX: Fame level should be 0-100
+	if state.Fame then
+		if type(state.Fame) ~= "number" then
+			state.Fame = 0
+			fixes = fixes + 1
+		else
+			state.Fame = math.max(0, math.min(100, state.Fame))
+		end
+	end
+	
+	-- AAA FIX: JailYearsLeft can't be negative
+	if state.JailYearsLeft and state.JailYearsLeft < 0 then
+		state.JailYearsLeft = 0
+		state.InJail = false
+		fixes = fixes + 1
+	end
+	
+	-- AAA FIX: Sync InJail with JailYearsLeft
+	if state.InJail and (not state.JailYearsLeft or state.JailYearsLeft <= 0) then
+		state.InJail = false
+		state.JailYearsLeft = 0
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
 		fixes = fixes + 1
 	end
 	
@@ -984,6 +1056,50 @@ function LifeBackend:clearGhostRelationships(state)
 				fixes = fixes + 1
 			end
 			
+			-- AAA FIX: Validate relationship score is a number
+			if rel.relationship and type(rel.relationship) ~= "number" then
+				if type(rel.relationship) == "boolean" then
+					rel.relationship = rel.relationship and 75 or 25
+				else
+					rel.relationship = 50
+				end
+				fixes = fixes + 1
+			end
+			
+			-- AAA FIX: Bound relationship to 0-100
+			if rel.relationship then
+				rel.relationship = math.max(0, math.min(100, rel.relationship))
+			end
+			
+			-- AAA FIX: Validate yearsKnown
+			if rel.yearsKnown and rel.yearsKnown < 0 then
+				rel.yearsKnown = 0
+				fixes = fixes + 1
+			end
+			
+			-- AAA FIX: Dead relationships should be in deceased_partners if romantic
+			if (rel.deceased or rel.dead) then
+				if rel.Type == "Spouse" or rel.Type == "Partner" or rel.role == "Spouse" or rel.role == "Partner" or relId == "spouse" or relId == "partner" then
+					-- Move to deceased partners collection
+					state.DeceasedPartners = state.DeceasedPartners or {}
+					if not state.DeceasedPartners[rel.name or relId] then
+						state.DeceasedPartners[rel.name or relId] = {
+							name = rel.name,
+							diedAt = rel.diedAt or (state.Age or 0),
+							relationship = rel.relationship or 50,
+							wasSpouse = (rel.role == "Spouse" or rel.Type == "Spouse" or relId == "spouse"),
+						}
+						-- Set widowed if was spouse
+						if rel.role == "Spouse" or rel.Type == "Spouse" or relId == "spouse" then
+							flags.widowed = true
+						end
+					end
+					-- Remove from active relationships
+					isValid = false
+					reason = "Moved to deceased partners"
+				end
+			end
+			
 			-- Track living romantic partners
 			if rel.alive ~= false and not rel.deceased and not rel.dead then
 				if relId == "partner" or rel.Type == "Partner" then
@@ -997,7 +1113,11 @@ function LifeBackend:clearGhostRelationships(state)
 			if isValid then
 				validRelationships[relId] = rel
 			else
-				warn(string.format("[RVS] Removing ghost relationship: %s (%s)", tostring(relId), reason))
+				-- Only log if it's an unusual removal (not just deceased partner migration)
+				if reason ~= "Moved to deceased partners" then
+					-- Debug only, no warn spam
+					-- print(string.format("[RVS] Removing ghost relationship: %s (%s)", tostring(relId), reason))
+				end
 				fixes = fixes + 1
 			end
 		else
@@ -1061,20 +1181,49 @@ function LifeBackend:syncHousingAndTitles(state)
 	-- Homeless validation
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.homeless then
-		-- Can't be homeless with money
-		if (state.Money or 0) >= 50000 then
-			warn("[RVS] Ghost homeless: Has $50k+ - clearing homeless")
+		-- Can't be homeless with money - but lower threshold to $5k (realistic)
+		if (state.Money or 0) >= 5000 then
+			-- Don't warn every time, only fix silently
 			flags.homeless = nil
 			housing.status = "renter"
 			housing.type = "apartment"
+			housing.rent = math.min(1200, math.floor((state.Money or 0) * 0.2))
 			fixes = fixes + 1
 		end
 		
 		-- Can't be homeless and own property
-		if flags.homeowner or flags.has_property then
-			warn("[RVS] Ghost homeless: Owns property - clearing homeless")
+		local hasProperties = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
+		if flags.homeowner or flags.has_property or hasProperties then
 			flags.homeless = nil
 			housing.status = "owner"
+			housing.type = state.Assets and state.Assets.Properties and state.Assets.Properties[1] and 
+				state.Assets.Properties[1].type or "house"
+			housing.rent = 0
+			fixes = fixes + 1
+		end
+		
+		-- Can't be homeless if living in car
+		local hasVehicles = state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0
+		if hasVehicles and housing.status == "homeless" then
+			housing.status = "living_in_car"
+			housing.type = "vehicle"
+			housing.rent = 0
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Sync housing with owned properties
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+		local primaryHome = state.Assets.Properties[1]
+		if housing.status ~= "owner" and housing.status ~= "royal_palace" then
+			housing.status = "owner"
+			housing.type = primaryHome.type or "house"
+			housing.propertyId = primaryHome.id
+			housing.rent = 0
+			flags.homeowner = true
+			flags.has_property = true
 			fixes = fixes + 1
 		end
 	end
@@ -1228,8 +1377,7 @@ function LifeBackend:validateFameState(state)
 		-- Must have career path to have subscribers/followers
 		if not fameState.careerPath then
 			if (fameState.subscribers or 0) > 0 or (fameState.followers or 0) > 0 then
-				-- Ghost fame state
-				warn("[RVS] Ghost FameState: subscribers/followers without career - clearing")
+				-- Ghost fame state - clear silently (no warn spam)
 				state.FameState = nil
 				flags.is_famous = nil
 				flags.fame_career = nil
@@ -1243,15 +1391,57 @@ function LifeBackend:validateFameState(state)
 			fameState.currentStage = 1
 			fixes = fixes + 1
 		end
+		
+		-- AAA FIX: Validate followers/subscribers are numbers, not booleans
+		if type(fameState.subscribers) == "boolean" then
+			fameState.subscribers = fameState.subscribers and 100 or 0
+			fixes = fixes + 1
+		end
+		if type(fameState.followers) == "boolean" then
+			fameState.followers = fameState.followers and 100 or 0
+			fixes = fixes + 1
+		end
+		
+		-- AAA FIX: Ensure fame level is bounded
+		if fameState.level then
+			fameState.level = math.max(0, math.min(100, fameState.level or 0))
+		end
+		
+		-- AAA FIX: monthlyIncome should be a number
+		if type(fameState.monthlyIncome) == "boolean" then
+			fameState.monthlyIncome = 0
+			fixes = fixes + 1
+		end
+		
+		-- AAA FIX: Calculate estimated income if missing
+		if not fameState.monthlyIncome and fameState.careerPath then
+			local subs = fameState.subscribers or 0
+			local followers = fameState.followers or 0
+			local totalAudience = subs + followers
+			-- Rough estimate: $1 per 1000 audience per month
+			fameState.monthlyIncome = math.floor(totalAudience / 1000)
+			fixes = fixes + 1
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- Fame flags without FameState
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.fame_career and not state.FameState then
-		warn("[RVS] fame_career flag without FameState - clearing")
+		-- Don't warn, just fix silently
 		flags.fame_career = nil
 		fixes = fixes + 1
+	end
+	
+	-- AAA FIX: is_famous without any fame backing
+	if flags.is_famous then
+		local hasFameBacking = state.FameState or 
+			(state.Fame and state.Fame >= 50) or
+			flags.fame_career or flags.celebrity or flags.movie_star or flags.pop_star
+		if not hasFameBacking then
+			flags.is_famous = nil
+			fixes = fixes + 1
+		end
 	end
 	
 	return fixes
@@ -1315,9 +1505,57 @@ function LifeBackend:validateRoyalMarriage(state)
 		end
 		
 		if not hasRoyalPartner then
-			warn("[RVS] dating_royalty without royal partner - clearing")
 			flags.dating_royalty = nil
 			flags.royal_romance = nil
+			fixes = fixes + 1
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Validate RoyalState structure
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.RoyalState then
+		local royal = state.RoyalState
+		
+		-- Ensure isRoyal matches flag
+		if flags.is_royalty and not royal.isRoyal then
+			royal.isRoyal = true
+			fixes = fixes + 1
+		elseif royal.isRoyal and not flags.is_royalty and not flags.royal_birth then
+			-- RoyalState says royal but no flag
+			flags.is_royalty = true
+			fixes = fixes + 1
+		end
+		
+		-- Validate numeric fields
+		if type(royal.popularity) == "boolean" then
+			royal.popularity = royal.popularity and 75 or 50
+			fixes = fixes + 1
+		end
+		if type(royal.dutiesCompleted) == "boolean" then
+			royal.dutiesCompleted = royal.dutiesCompleted and 5 or 0
+			fixes = fixes + 1
+		end
+		if type(royal.scandals) == "boolean" then
+			royal.scandals = royal.scandals and 1 or 0
+			fixes = fixes + 1
+		end
+		
+		-- Ensure title exists for royals
+		if royal.isRoyal and not royal.title then
+			if flags.royal_birth then
+				royal.title = state.Gender == "Female" and "Princess" or "Prince"
+			elseif flags.married_to_royalty then
+				royal.title = state.Gender == "Female" and "Princess Consort" or "Prince Consort"
+			else
+				royal.title = "Royal"
+			end
+			fixes = fixes + 1
+		end
+		
+		-- Ensure country exists
+		if royal.isRoyal and not royal.country then
+			royal.country = "United Kingdom"
 			fixes = fixes + 1
 		end
 	end
@@ -1541,13 +1779,23 @@ function LifeBackend:reconcileEventChains(state)
 	-- Chain: wish/approach -> join -> rise ranks
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.in_mob and not state.MobState then
-		-- Ghost mob flag without MobState
-		warn("[EventReconciler] Ghost mafia flag: in_mob without MobState - initializing")
+		-- Ghost mob flag without MobState - initialize properly
 		state.MobState = {
 			inMob = true,
 			rank = "Associate",
+			rankIndex = 1,
+			rankLevel = 1,
+			rankName = "Associate",
+			rankEmoji = "👤",
 			reputation = 10,
+			respect = 0,
+			loyalty = 100,
+			heat = 0,
 			territory = 0,
+			yearsInMob = 0,
+			operationsCompleted = 0,
+			operationsThisYear = 0,
+			joinedAt = state.Age or 18,
 		}
 		fixes = fixes + 1
 	end
@@ -1557,6 +1805,35 @@ function LifeBackend:reconcileEventChains(state)
 		flags.in_mob = true
 		flags.mafia_member = true
 		fixes = fixes + 1
+	end
+	
+	-- AAA FIX: Validate MobState values are numbers, not booleans
+	if state.MobState then
+		local mob = state.MobState
+		if type(mob.respect) == "boolean" then
+			mob.respect = mob.respect and 100 or 0
+			fixes = fixes + 1
+		end
+		if type(mob.loyalty) == "boolean" then
+			mob.loyalty = mob.loyalty and 100 or 50
+			fixes = fixes + 1
+		end
+		if type(mob.heat) == "boolean" then
+			mob.heat = mob.heat and 50 or 0
+			fixes = fixes + 1
+		end
+		if type(mob.territory) == "boolean" then
+			mob.territory = mob.territory and 1 or 0
+			fixes = fixes + 1
+		end
+		-- Ensure rank index is valid
+		if mob.rankIndex and type(mob.rankIndex) ~= "number" then
+			mob.rankIndex = 1
+			fixes = fixes + 1
+		elseif mob.rankIndex and (mob.rankIndex < 1 or mob.rankIndex > 5) then
+			mob.rankIndex = math.max(1, math.min(5, mob.rankIndex))
+			fixes = fixes + 1
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
@@ -1598,10 +1875,12 @@ function LifeBackend:reconcileEventChains(state)
 	-- SCHOOL/EDUCATION CHAIN RECONCILIATION
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.in_college and age < 18 then
-		warn("[EventReconciler] In college under 18 - clearing")
-		flags.in_college = nil
-		flags.in_school = true
-		fixes = fixes + 1
+		-- Can't be in college under 18 (unless genius/prodigy)
+		if not flags.child_prodigy then
+			flags.in_college = nil
+			flags.in_school = true
+			fixes = fixes + 1
+		end
 	end
 	
 	if flags.in_school and age >= 18 then
@@ -1610,6 +1889,60 @@ function LifeBackend:reconcileEventChains(state)
 			flags.graduated_high_school = true
 		end
 		flags.in_school = nil
+		fixes = fixes + 1
+	end
+	
+	-- AAA FIX: Validate EducationData consistency
+	if state.EducationData then
+		local edu = state.EducationData
+		
+		-- Can't be in college with degree
+		if edu.inCollege and edu.degreeLevel and edu.degreeLevel ~= "none" then
+			-- Already has degree but still flagged as in college
+			edu.inCollege = false
+			flags.in_college = nil
+			flags.graduated_college = true
+			fixes = fixes + 1
+		end
+		
+		-- Debt should be a number
+		if type(edu.Debt) == "boolean" then
+			edu.Debt = edu.Debt and 50000 or 0
+			fixes = fixes + 1
+		end
+		
+		-- Years should be bounded
+		if edu.yearsCompleted and edu.yearsCompleted < 0 then
+			edu.yearsCompleted = 0
+			fixes = fixes + 1
+		end
+		if edu.yearsCompleted and edu.yearsCompleted > 10 then
+			-- Can't be in college for 10+ years without graduating or dropping out
+			if not edu.degreeLevel then
+				edu.droppedOut = true
+				edu.inCollege = false
+				flags.in_college = nil
+				flags.dropped_out_college = true
+				fixes = fixes + 1
+			end
+		end
+		
+		-- GPA should be bounded 0-4
+		if edu.GPA then
+			edu.GPA = math.max(0, math.min(4, edu.GPA))
+		end
+	end
+	
+	-- AAA FIX: in_college flag sync with EducationData
+	if flags.in_college then
+		state.EducationData = state.EducationData or {}
+		if not state.EducationData.inCollege then
+			state.EducationData.inCollege = true
+			fixes = fixes + 1
+		end
+	elseif state.EducationData and state.EducationData.inCollege then
+		-- EducationData says in college but flag missing
+		flags.in_college = true
 		fixes = fixes + 1
 	end
 	
@@ -1694,6 +2027,213 @@ function LifeBackend:validateMilestones(state)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: ASSET VALIDATOR
+-- Ensures all assets have valid structure and values
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:validateAssets(state)
+	local fixes = 0
+	local flags = state.Flags or {}
+	
+	state.Assets = state.Assets or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Vehicle Validation
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets.Vehicles then
+		local validVehicles = {}
+		
+		for i, vehicle in ipairs(state.Assets.Vehicles) do
+			local isValid = true
+			
+			-- Must have some identifier
+			if not vehicle.id and not vehicle.name then
+				isValid = false
+			end
+			
+			-- Value must be a number and non-negative
+			if vehicle.value then
+				if type(vehicle.value) ~= "number" then
+					vehicle.value = tonumber(vehicle.value) or 0
+					fixes = fixes + 1
+				end
+				if vehicle.value < 0 then
+					vehicle.value = 0
+					fixes = fixes + 1
+				end
+			else
+				vehicle.value = 0
+			end
+			
+			-- Condition should be 0-100
+			if vehicle.condition then
+				if type(vehicle.condition) ~= "number" then
+					vehicle.condition = 50
+					fixes = fixes + 1
+				else
+					vehicle.condition = math.max(0, math.min(100, vehicle.condition))
+				end
+			end
+			
+			-- Ensure purchasePrice exists for profit/loss calculations
+			if not vehicle.purchasePrice and vehicle.value then
+				vehicle.purchasePrice = vehicle.value
+				fixes = fixes + 1
+			end
+			
+			if isValid then
+				table.insert(validVehicles, vehicle)
+			else
+				fixes = fixes + 1
+			end
+		end
+		
+		state.Assets.Vehicles = validVehicles
+		
+		-- Sync flags
+		if #validVehicles > 0 then
+			flags.has_vehicle = true
+			flags.has_car = true
+		else
+			flags.has_vehicle = nil
+			flags.has_car = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Property Validation
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets.Properties then
+		local validProperties = {}
+		
+		for i, property in ipairs(state.Assets.Properties) do
+			local isValid = true
+			
+			-- Must have some identifier
+			if not property.id and not property.name then
+				isValid = false
+			end
+			
+			-- Value must be a number and non-negative
+			if property.value then
+				if type(property.value) ~= "number" then
+					property.value = tonumber(property.value) or 0
+					fixes = fixes + 1
+				end
+				if property.value < 0 then
+					property.value = 0
+					fixes = fixes + 1
+				end
+			else
+				property.value = 100000 -- Default home value
+			end
+			
+			-- Mortgage should be a number
+			if property.mortgage then
+				if type(property.mortgage) ~= "number" then
+					property.mortgage = tonumber(property.mortgage) or 0
+					fixes = fixes + 1
+				end
+				if property.mortgage < 0 then
+					property.mortgage = 0
+					fixes = fixes + 1
+				end
+			end
+			
+			if isValid then
+				table.insert(validProperties, property)
+			else
+				fixes = fixes + 1
+			end
+		end
+		
+		state.Assets.Properties = validProperties
+		
+		-- Sync flags
+		if #validProperties > 0 then
+			flags.homeowner = true
+			flags.has_property = true
+		else
+			flags.homeowner = nil
+			flags.has_property = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Investment Validation  
+	-- ═══════════════════════════════════════════════════════════════════════
+	if state.Assets.Investments then
+		local validInvestments = {}
+		
+		for i, inv in ipairs(state.Assets.Investments) do
+			local isValid = true
+			
+			-- Value and shares must be numbers
+			if inv.value and type(inv.value) ~= "number" then
+				inv.value = tonumber(inv.value) or 0
+				fixes = fixes + 1
+			end
+			if inv.shares and type(inv.shares) ~= "number" then
+				inv.shares = tonumber(inv.shares) or 0
+				fixes = fixes + 1
+			end
+			
+			-- Can't have negative value
+			if inv.value and inv.value < 0 then
+				inv.value = 0
+				fixes = fixes + 1
+			end
+			
+			if isValid and inv.value and inv.value > 0 then
+				table.insert(validInvestments, inv)
+			end
+		end
+		
+		state.Assets.Investments = validInvestments
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════
+	-- Net Worth Calculation
+	-- ═══════════════════════════════════════════════════════════════════════
+	local totalAssetValue = 0
+	
+	-- Add cash
+	totalAssetValue = totalAssetValue + (state.Money or 0)
+	
+	-- Add vehicles
+	if state.Assets.Vehicles then
+		for _, v in ipairs(state.Assets.Vehicles) do
+			totalAssetValue = totalAssetValue + (v.value or 0)
+		end
+	end
+	
+	-- Add properties (minus mortgages)
+	if state.Assets.Properties then
+		for _, p in ipairs(state.Assets.Properties) do
+			totalAssetValue = totalAssetValue + (p.value or 0) - (p.mortgage or 0)
+		end
+	end
+	
+	-- Add investments
+	if state.Assets.Investments then
+		for _, inv in ipairs(state.Assets.Investments) do
+			totalAssetValue = totalAssetValue + (inv.value or 0)
+		end
+	end
+	
+	-- Subtract debts
+	if state.EducationData and state.EducationData.Debt then
+		totalAssetValue = totalAssetValue - (state.EducationData.Debt or 0)
+	end
+	if flags.credit_card_debt and type(flags.credit_card_debt) == "number" then
+		totalAssetValue = totalAssetValue - flags.credit_card_debt
+	end
+	
+	state.NetWorth = totalAssetValue
+	
+	return fixes
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- FULL INTEGRITY CHECK
 -- Runs ALL validators in proper order for complete state healing
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1737,6 +2277,9 @@ function LifeBackend:fullIntegrityCheck(state)
 	
 	-- Phase 11: Milestone validation
 	totalFixes = totalFixes + self:validateMilestones(state)
+	
+	-- Phase 12: AAA FIX - Comprehensive asset validation
+	totalFixes = totalFixes + self:validateAssets(state)
 	
 	print(string.format("[FullIntegrityCheck] Complete. Total fixes: %d", totalFixes))
 	print("[FullIntegrityCheck] ═══════════════════════════════════════════════")
@@ -2113,14 +2656,44 @@ local function formatEducation(educationLevel)
 	return EducationDisplayNames[educationLevel:lower()] or educationLevel:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest) return first:upper()..rest:lower() end)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AAA FIX: Enhanced appendFeed with duplicate prevention
+-- Prevents the same message from appearing multiple times in one year
+-- ═══════════════════════════════════════════════════════════════════════════════
 local function appendFeed(state, message)
 	if not state or not message or message == "" then
 		return
 	end
+	
+	-- AAA FIX: Track messages to prevent exact duplicates
+	state._feedMessages = state._feedMessages or {}
+	
+	-- Normalize message for comparison (remove leading/trailing spaces)
+	local normalizedMessage = message:match("^%s*(.-)%s*$") or message
+	
+	-- Check for duplicate
+	if state._feedMessages[normalizedMessage] then
+		return -- Skip duplicate
+	end
+	
+	-- Also check if message is already in PendingFeed (partial match)
+	if state.PendingFeed and state.PendingFeed:find(normalizedMessage:sub(1, 30), 1, true) then
+		return -- Skip if first 30 chars match something already in feed
+	end
+	
+	-- Mark as seen
+	state._feedMessages[normalizedMessage] = true
+	
+	-- Append message
 	if state.PendingFeed and state.PendingFeed ~= "" then
 		state.PendingFeed = state.PendingFeed .. " " .. message
 	else
 		state.PendingFeed = message
+	end
+	
+	-- AAA FIX: Limit feed length to prevent excessively long messages
+	if state.PendingFeed and #state.PendingFeed > 1000 then
+		state.PendingFeed = state.PendingFeed:sub(1, 997) .. "..."
 	end
 end
 
@@ -3464,14 +4037,136 @@ function LifeBackend:findJobByInput(query)
 	-- Maps client job IDs/names to server IDs for cases where they don't match exactly
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local jobAliases = {
+		-- Content Creator / Streaming
 		["new content creator"] = "new_influencer",
 		["new_content_creator"] = "new_influencer",
 		["content creator"] = "new_influencer",
 		["hobbyist streamer"] = "hobbyist_streamer",
 		["hobbyist_streamer"] = "hobbyist_streamer",
-		["underground rapper"] = "underground_rapper",
+		["streamer"] = "hobbyist_streamer",
+		["youtuber"] = "new_influencer",
+		["content_creator"] = "new_influencer",
+		["vlogger"] = "new_influencer",
+		["tiktoker"] = "new_influencer",
+		["influencer"] = "new_influencer",
 		["new influencer"] = "new_influencer",
+		
+		-- Esports/Gaming career aliases
+		["esports player"] = "casual_gamer",
+		["pro gamer"] = "pro_gamer",
+		["professional gamer"] = "pro_gamer",
+		["gamer"] = "casual_gamer",
+		["esports"] = "casual_gamer",
+		["esports_player"] = "casual_gamer",
+		["gaming pro"] = "pro_gamer",
+		
+		-- Music/Entertainment aliases
+		["underground rapper"] = "underground_rapper",
+		["singer"] = "musician_local",
+		["performer"] = "musician_local",
+		["rapper"] = "underground_rapper",
+		["hip hop artist"] = "underground_rapper",
+		["hip_hop_artist"] = "underground_rapper",
+		["musician"] = "musician_local",
+		["music artist"] = "musician_local",
+		["band member"] = "musician_local",
+		["dj"] = "musician_local",
+		
+		-- Acting
+		["actor"] = "actor_extra",
+		["actress"] = "actor_extra",
+		["background actor"] = "actor_extra",
+		["film actor"] = "actor_extra",
+		["tv actor"] = "actor_extra",
+		
+		-- Tech jobs
+		["programmer"] = "junior_developer",
+		["coder"] = "junior_developer",
+		["software engineer"] = "developer",
+		["web developer"] = "web_developer",
+		["developer"] = "developer",
+		["software developer"] = "developer",
+		["it support"] = "it_support",
+		["tech support"] = "it_support",
+		["computer tech"] = "it_support",
+		["hacker"] = "cybersecurity_analyst",
+		
+		-- Medical
+		["doctor"] = "resident_doctor",
+		["nurse"] = "nurse",
+		["surgeon"] = "surgeon",
+		["dentist"] = "dentist",
+		["vet"] = "veterinarian",
+		["veterinarian"] = "veterinarian",
+		["therapist"] = "therapist",
+		["psychiatrist"] = "psychiatrist",
+		["pharmacist"] = "pharmacist",
+		
+		-- Legal
+		["lawyer"] = "junior_lawyer",
+		["attorney"] = "junior_lawyer",
+		["paralegal"] = "paralegal",
+		["judge"] = "judge",
+		
+		-- Emergency services
+		["cop"] = "police_officer",
+		["police"] = "police_officer",
+		["firefighter"] = "firefighter",
+		["emt"] = "paramedic",
+		["paramedic"] = "paramedic",
+		
+		-- Business
+		["manager"] = "office_manager",
+		["ceo"] = "ceo",
+		["boss"] = "office_manager",
+		["executive"] = "project_manager",
+		["accountant"] = "junior_accountant",
+		["banker"] = "investment_banker_jr",
+		
+		-- Retail/Service
+		["waiter"] = "server",
+		["waitress"] = "server",
+		["barista"] = "barista",
+		["bartender"] = "bartender",
+		["cashier"] = "cashier",
+		["fast food worker"] = "fastfood",
+		["fast food"] = "fastfood",
+		["mcdonalds"] = "fastfood",
+		
+		-- Misc
+		["teacher"] = "teacher",
+		["pilot"] = "junior_pilot",
+		["writer"] = "journalist_jr",
+		["journalist"] = "journalist_jr",
+		["photographer"] = "photographer",
+		["chef"] = "sous_chef",
+		["cook"] = "line_cook",
 	}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: REMOVED JOB HANDLING
+	-- These jobs were removed for Roblox TOS compliance but players may still try
+	-- Return a special marker so handleJobApplication can give a proper message
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local removedJobs = {
+		["casino_dealer"] = "Gambling jobs were removed to comply with Roblox policies.",
+		["casino_worker"] = "Gambling jobs were removed to comply with Roblox policies.",
+		["blackjack_dealer"] = "Gambling jobs were removed to comply with Roblox policies.",
+		["poker_dealer"] = "Gambling jobs were removed to comply with Roblox policies.",
+		["gambler"] = "Gambling jobs were removed to comply with Roblox policies.",
+		["loan_shark"] = "This job was removed to comply with Roblox policies.",
+	}
+	
+	local removedMsg = removedJobs[query]
+	if removedMsg then
+		-- Return a fake job that will be caught by handleJobApplication
+		return { 
+			id = "_removed_job", 
+			name = query, 
+			removed = true, 
+			removedMessage = removedMsg 
+		}
+	end
 	
 	local aliasedId = jobAliases[query]
 	if aliasedId and JobCatalog[aliasedId] then
@@ -3746,6 +4441,74 @@ local ActivityCatalog = {
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
 	concert = { stats = { Happiness = 5 }, feed = "went to a concert", cost = 150 },
 	vacation = { stats = { Happiness = 10, Health = 4 }, feed = "took a vacation", cost = 2000 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- AAA FIX: Added missing vacation types referenced in events
+	-- Users were getting "Choice eligibility failed" because activities didn't exist
+	-- ═══════════════════════════════════════════════════════════════════════════
+	beach_vacation = { 
+		stats = { Happiness = 12, Health = 5 }, 
+		feed = "went on a beach vacation!", 
+		cost = 500 
+	},
+	family_vacation = { 
+		stats = { Happiness = 10, Health = 3 }, 
+		feed = "went on a family vacation!", 
+		cost = 800 
+	},
+	summer_camp = { 
+		stats = { Happiness = 8, Health = 4, Smarts = 2 }, 
+		feed = "went to summer camp!", 
+		cost = 300,
+		requiresAge = 6,
+		maxAge = 17,
+		setFlags = { camp_experience = true, summer_camp = true },
+	},
+	sports_lessons = {
+		stats = { Health = 5, Happiness = 3 },
+		feed = "took sports lessons!",
+		cost = 100,
+		setFlags = { athlete = true },
+	},
+	swimming_lessons = {
+		stats = { Health = 4, Happiness = 3 },
+		feed = "took swimming lessons!",
+		cost = 100,
+		setFlags = { can_swim = true },
+	},
+	dance_lessons = {
+		stats = { Health = 3, Happiness = 4, Looks = 2 },
+		feed = "took dance lessons!",
+		cost = 100,
+		setFlags = { dancer = true, dance_experience = true },
+	},
+	art_lessons = {
+		stats = { Smarts = 2, Happiness = 3 },
+		feed = "took art lessons!",
+		cost = 100,
+		setFlags = { artistic = true, art_experience = true },
+	},
+	buy_sports_car = {
+		stats = { Happiness = 15 },
+		feed = "bought a sports car!",
+		cost = 5000,
+		requiresAge = 16,
+		setFlags = { has_car = true, has_sports_car = true },
+	},
+	tutoring = {
+		stats = { Smarts = 5 },
+		feed = "got tutoring!",
+		cost = 200,
+	},
+	private_school = {
+		stats = { Smarts = 3 },
+		feed = "enrolled in private school!",
+		cost = 5000,
+		requiresAge = 5,
+		maxAge = 17,
+		setFlags = { private_school = true },
+	},
+	
 	-- CRITICAL FIX: Missing activities from client (caused "Unknown activity" error)
 	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
 	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
@@ -9566,8 +10329,18 @@ end
 function LifeBackend:applyMortgagePayments(state)
 	state.Flags = state.Flags or {}
 	
-	local mortgageDebt = state.Flags.mortgage_debt or 0
+	-- AAA FIX: Use safeNumber to prevent boolean arithmetic crashes
+	local mortgageDebt = safeNumber(state.Flags.mortgage_debt, 0)
+	
+	-- Fix corrupted boolean flag
+	if type(state.Flags.mortgage_debt) == "boolean" then
+		state.Flags.mortgage_debt = nil
+		state.Flags.has_mortgage = state.Flags.mortgage_debt
+		return -- No actual debt to process
+	end
+	
 	if mortgageDebt <= 0 then
+		state.Flags.mortgage_debt = nil -- Clean up zero debt
 		return
 	end
 	
@@ -10674,6 +11447,9 @@ function LifeBackend:handleAgeUp(player)
 	state.Flags.just_fired = nil    -- Allow job events again after being fired
 	state.Flags.just_promoted = nil -- Allow promotion events again
 	state.Flags.just_hired = nil    -- Allow new hire events again
+	
+	-- AAA FIX: Clear feed message tracking for new year (prevents duplicate prevention from persisting)
+	state._feedMessages = nil
 
 	-- ════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #48: Save TimeMachine snapshots for time travel feature
@@ -12196,8 +12972,11 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.relationshipBonus then
 		-- Improve relationship with royal partner
 		if state.Relationships and state.Relationships.partner then
-			state.Relationships.partner.relationship = math.min(100, 
-				(state.Relationships.partner.relationship or 50) + activity.relationshipBonus)
+			-- AAA FIX: Nil check before accessing partner relationship
+			if state.Relationships and state.Relationships.partner then
+				state.Relationships.partner.relationship = math.min(100, 
+					(state.Relationships.partner.relationship or 50) + activity.relationshipBonus)
+			end
 		end
 	end
 	
@@ -13065,7 +13844,15 @@ function LifeBackend:handleJobApplication(player, jobId)
 	local job = JobCatalog[jobId] or self:findJobByInput(jobId)
 	if not job then
 		warn("[LifeBackend] Unknown job application:", jobId)
-		return { success = false, message = "Unknown job." }
+		return { success = false, message = "That job doesn't seem to exist. Try browsing available jobs." }
+	end
+	
+	-- AAA FIX: Handle removed jobs gracefully
+	if job.removed then
+		return { 
+			success = false, 
+			message = job.removedMessage or "This job is no longer available."
+		}
 	end
 	
 	-- Use the actual job ID for further checks (in case client sent a name)
