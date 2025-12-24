@@ -43,7 +43,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -100,7 +101,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -144,7 +146,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.5,
 		cooldown = 3,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -203,7 +206,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -264,7 +268,11 @@ ScienceCareerEvents.events = {
 		baseChance = 0.4,
 		cooldown = 4,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check!
+		-- User bug: "IT SAYS LAB ACCIDENT EVEN THO IM A WAITER???"
+		-- The eligibility function was not blocking non-science workers
+		requiresJobCategory = "science",
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -311,7 +319,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.3,
 		cooldown = 5,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -349,7 +358,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -392,7 +402,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.45,
 		cooldown = 3,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -449,7 +460,8 @@ ScienceCareerEvents.events = {
 		baseChance = 0.4,
 		cooldown = 5,
 		requiresJob = true,
-		eligibility = hasScienceJob,
+		requiresJobCategory = "science", -- CRITICAL FIX: Primary eligibility check
+		eligibility = hasScienceJob, -- Keep as backup
 		blockedByFlags = { in_prison = true },
 		
 		choices = {

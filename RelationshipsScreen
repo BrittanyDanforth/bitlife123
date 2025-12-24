@@ -321,12 +321,15 @@ local function isAliveFromRel(rel)
 end
 
 -- Robust categorizer so new backend shapes don't break UI
+-- CRITICAL FIX: Friend was showing in Romance tab because flags-based detection was too aggressive
 local function categorizeRelationship(rel, flags)
 	if type(rel) ~= "table" then
 		return nil
 	end
 
-	-- Explicit category from backend
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #REL-1: Check explicit category FIRST - this is most reliable
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if typeof(rel.category) == "string" then
 		local cat = safeLower(rel.category)
 		if cat == "family" or cat == "romance" or cat == "friend" or cat == "enemy" then
@@ -334,12 +337,15 @@ local function categorizeRelationship(rel, flags)
 		end
 	end
 
-	-- Old-school "type"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #REL-2: Check explicit type - backend sets this on creation
+	-- This MUST come before any role-based or flag-based detection!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local t = safeLower(rel.type or "")
 
 	if t == "family" then
 		return "family"
-	elseif t == "romance" or t == "partner" or t == "lover" or t == "spouse" then
+	elseif t == "romance" or t == "partner" or t == "lover" or t == "spouse" or t == "fiance" then
 		return "romance"
 	elseif t == "friend" or t == "friends" then
 		return "friend"
@@ -347,14 +353,29 @@ local function categorizeRelationship(rel, flags)
 		return "enemy"
 	end
 
-	-- Flags from backend
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #REL-3: Check isFamily/isFriend/isRomance explicit flags
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	if rel.isFamily or rel.is_family then
 		return "family"
 	end
+	if rel.isFriend or rel.is_friend then
+		return "friend"
+	end
+	if rel.isRomance or rel.is_romance or rel.isPartner or rel.is_partner then
+		return "romance"
+	end
+	if rel.isEnemy or rel.is_enemy then
+		return "enemy"
+	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #REL-4: Role-based detection for family members
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local roleLower = safeLower(rel.role or "")
 
 	if roleLower ~= "" then
+		-- Family roles - be comprehensive
 		if roleLower:find("mother") or roleLower:find("mom") then
 			return "family"
 		end
@@ -370,15 +391,43 @@ local function categorizeRelationship(rel, flags)
 		if roleLower:find("son") or roleLower:find("daughter") or roleLower:find("child") then
 			return "family"
 		end
-		if roleLower:find("wife") or roleLower:find("husband") or roleLower:find("spouse") or roleLower:find("partner") then
+		if roleLower:find("aunt") or roleLower:find("uncle") or roleLower:find("cousin") then
+			return "family"
+		end
+		
+		-- Romance roles - only explicit romantic titles
+		if roleLower:find("wife") or roleLower:find("husband") or roleLower:find("spouse") then
 			return "romance"
+		end
+		if roleLower:find("fianc") or roleLower:find("boyfriend") or roleLower:find("girlfriend") then
+			return "romance"
+		end
+		if roleLower:find("partner") and not roleLower:find("business") then
+			return "romance"
+		end
+		
+		-- Friend role - CRITICAL FIX: Check this BEFORE falling through to flags
+		if roleLower:find("friend") then
+			return "friend"
+		end
+		
+		-- Enemy role
+		if roleLower:find("enemy") or roleLower:find("rival") or roleLower:find("nemesis") then
+			return "enemy"
 		end
 	end
 
-	local f = flags or {}
-	if f.married or f.has_partner or f.committed_relationship then
-		return "romance"
-	end
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #REL-5: REMOVED broken flag-based detection!
+	-- OLD BUG: If flags.has_partner was true, ALL uncategorized relationships 
+	-- were being put in romance tab - even friends!
+	-- The flags should NOT determine where a SPECIFIC relationship goes,
+	-- they only indicate the player's overall status.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- REMOVED: local f = flags or {}
+	-- REMOVED: if f.married or f.has_partner or f.committed_relationship then
+	-- REMOVED:     return "romance"
+	-- REMOVED: end
 
 	return nil
 end

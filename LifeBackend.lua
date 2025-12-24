@@ -5430,6 +5430,9 @@ local ActivityCatalog = {
 		blockedByFlag = "engaged",
 		blockedByFlag2 = "married",
 		isProposal = true, -- Special handler
+		-- CRITICAL FIX: Add cooldown to prevent proposal spam
+		cooldownYears = 1, -- Can only propose once per year
+		showResult = true, -- CRITICAL: Force show result card
 	},
 	plan_wedding = {
 		stats = { Happiness = 20 },
@@ -14633,6 +14636,23 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.oneTime and not activity.skipCompletionTracking and state.CompletedActivities[activityId] then
 		return { success = false, message = "You can only do this once!" }
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check activity cooldown to prevent spam (like proposal spam)
+	-- User bug: "I CAN SPAM PROPOSE??"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.cooldownYears and activity.cooldownYears > 0 then
+		state.ActivityCooldowns = state.ActivityCooldowns or {}
+		local lastUsedAge = state.ActivityCooldowns[activityId]
+		local currentAge = state.Age or 0
+		if lastUsedAge and (currentAge - lastUsedAge) < activity.cooldownYears then
+			local yearsLeft = activity.cooldownYears - (currentAge - lastUsedAge)
+			return { 
+				success = false, 
+				message = string.format("You need to wait %d more year(s) before you can do this again.", math.ceil(yearsLeft))
+			}
+		end
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #30: Health insurance reduces medical costs
@@ -14733,6 +14753,14 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	if activity.oneTime and not activity.skipCompletionTracking and not isEducationActivity then
 		state.CompletedActivities = state.CompletedActivities or {}
 		state.CompletedActivities[activityId] = true
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Record activity cooldown time to prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.cooldownYears and activity.cooldownYears > 0 then
+		state.ActivityCooldowns = state.ActivityCooldowns or {}
+		state.ActivityCooldowns[activityId] = state.Age or 0
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -18271,7 +18299,62 @@ local InteractionEffects = {
 		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
 		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
 		kiss = { delta = 5, message = "You shared a kiss." },
-		propose = { delta = 15, cost = 5000, message = "You proposed!", flags = { engaged = true, committed_relationship = true } },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Proposal now has proper acceptance/rejection logic!
+		-- User bug: "I CAN SPAM PROPOSE?? AND ITS NOT REALLY WORKING WELL HAVING A 
+		-- CARDRESULT POPUP OR SOMETHING"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		propose = { 
+			delta = 0, -- Delta applied based on outcome
+			cost = 5000, 
+			isProposal = true, -- Flag for special handling
+			cooldownYears = 1, -- Prevent spam
+			message = function(state, relationship)
+				-- Calculate acceptance chance based on relationship strength
+				local relStrength = (relationship and relationship.relationship) or 50
+				local acceptChance = 0.3 + (relStrength / 200) -- 30% base + up to 50% from relationship
+				
+				if RANDOM:NextNumber() < acceptChance then
+					-- ACCEPTED!
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = true
+					state.Flags.engaged_at_age = state.Age or 0
+					state.Flags.committed_relationship = true
+					state.Flags.proposal_rejected = nil
+					
+					-- Update relationship
+					if relationship then
+						relationship.type = "fiance"
+						relationship.role = "Fiancé"
+						relationship.relationship = math.min(100, (relationship.relationship or 70) + 20)
+					end
+					
+					local partnerName = (relationship and relationship.name) or "your partner"
+					return string.format("💍 %s said YES! You're engaged! 💍", partnerName)
+				else
+					-- REJECTED
+					state.Flags = state.Flags or {}
+					state.Flags.proposal_rejected = true
+					
+					-- Relationship takes a hit
+					if relationship then
+						relationship.relationship = math.max(0, (relationship.relationship or 50) - 15)
+					end
+					
+					local partnerName = (relationship and relationship.name) or "your partner"
+					return string.format("💔 %s said they need more time... Proposal rejected. 💔", partnerName)
+				end
+			end,
+			grant = function(state, relationship)
+				-- Stats are applied based on the outcome
+				local wasAccepted = state.Flags and state.Flags.engaged
+				if wasAccepted then
+					state:ModifyStat("Happiness", 25)
+				else
+					state:ModifyStat("Happiness", -15)
+				end
+			end,
+		},
 		breakup = { delta = -999, message = "You ended the relationship.", remove = true, clearFlags = { "has_partner", "dating", "committed_relationship", "married", "engaged" } },
 		flirt = { delta = 4, message = "You flirted playfully." },
 		compliment = { delta = 3, message = "You complimented them." },
@@ -18487,6 +18570,25 @@ function LifeBackend:handleInteraction(player, payload)
 
 	state.Flags = state.Flags or {}
 	state.Relationships = state.Relationships or {}
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check interaction cooldown to prevent spam (like proposal spam)
+	-- User bug: "I CAN SPAM PROPOSE??"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if action.cooldownYears and action.cooldownYears > 0 then
+		state.InteractionCooldowns = state.InteractionCooldowns or {}
+		local cooldownKey = relType .. "_" .. actionId
+		local lastUsedAge = state.InteractionCooldowns[cooldownKey]
+		local currentAge = state.Age or 0
+		if lastUsedAge and (currentAge - lastUsedAge) < action.cooldownYears then
+			local yearsLeft = action.cooldownYears - (currentAge - lastUsedAge)
+			return { 
+				success = false, 
+				message = string.format("You need to wait %d more year(s) before you can do this again.", math.ceil(yearsLeft)),
+				showResult = true,
+			}
+		end
+	end
 
 	-- Single-only actions (meet_someone etc.)
 	if action.requiresSingle then
@@ -18685,6 +18787,15 @@ function LifeBackend:handleInteraction(player, payload)
 
 	feed = feed or grantMessage or action.message or "You interacted."
 	self:pushState(player, feed)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Record interaction cooldown time to prevent spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if action.cooldownYears and action.cooldownYears > 0 then
+		state.InteractionCooldowns = state.InteractionCooldowns or {}
+		local cooldownKey = relType .. "_" .. actionId
+		state.InteractionCooldowns[cooldownKey] = state.Age or 0
+	end
 
 	-- IMPORTANT: do NOT return full state here – the UI should rely on SyncState,
 	-- or only use this small payload for local row updates.
@@ -18693,6 +18804,8 @@ function LifeBackend:handleInteraction(player, payload)
 		message = feed,
 		targetId = relationship.id,
 		relationshipValue = relationship.relationship,
+		-- CRITICAL FIX: Flag for client to show a result popup
+		showResult = action.isProposal or action.showResult,
 	}
 end
 

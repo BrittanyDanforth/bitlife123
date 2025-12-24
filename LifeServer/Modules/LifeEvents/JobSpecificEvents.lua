@@ -150,6 +150,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "service", "entry" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"service", "entry"})
 		end,
@@ -274,6 +276,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.555,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "trades", "construction" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
 		end,
@@ -340,6 +344,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "trades", "construction" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
 		end,
@@ -406,6 +412,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "trades", "construction" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
 		end,
@@ -508,6 +516,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "tech", "technology" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"tech", "technology"})
 		end,
@@ -577,6 +587,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "tech", "technology" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"tech", "technology"})
 		end,
@@ -715,6 +727,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "tech", "technology" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"tech", "technology"})
 		end,
@@ -771,6 +785,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.55,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "medical", "healthcare" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
 		end,
@@ -824,6 +840,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "medical", "healthcare" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
 		end,
@@ -2271,6 +2289,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.45,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "science", "research", "medical" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"science", "research", "medical"})
 		end,
@@ -2341,6 +2361,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.5,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "science", "research", "education" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"science", "research", "education"})
 		end,
@@ -2404,6 +2426,9 @@ JobSpecificEvents.events = {
 		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		-- User bug: "IT SAYS LAB ACCIDENT EVEN THO IM A WAITER???"
+		requiresJobCategory = { "science", "research", "medical" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"science", "research", "medical"})
 		end,
@@ -2473,6 +2498,8 @@ JobSpecificEvents.events = {
 		baseChance = 0.45,
 		cooldown = 2,
 		requiresJob = true,
+		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
+		requiresJobCategory = { "science", "research", "education" },
 		eligibility = function(state)
 			return isInJobCategory(state, {"science", "research", "education"})
 		end,
