@@ -1769,10 +1769,14 @@ local function canEventTrigger(event, state)
 			end
 			-- CRITICAL FIX #548: If eligibility returns nil or true, allow the event
 		else
-			-- CRITICAL FIX #549: If eligibility function errors, LOG but ALLOW the event
-			-- This prevents broken eligibility functions from blocking all events
-			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result))
-			-- Continue - don't block the event due to error
+			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AAA-MEGA-5: If eligibility function ERRORS, BLOCK the event!
+			-- OLD BUG: Erroring eligibility functions caused events to fire anyway
+			-- This caused PR Crisis events for Movie Ushers, office events for service workers, etc.
+			-- If an eligibility check can't run properly, the event should NOT fire!
+			-- ═══════════════════════════════════════════════════════════════════════
+			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result) .. " - BLOCKING event")
+			return false -- CRITICAL: Block event if eligibility function errors!
 		end
 	end
 	

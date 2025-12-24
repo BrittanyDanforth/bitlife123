@@ -7673,6 +7673,148 @@ local LegalCareerEvents = {
 	},
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #AAA-MEGA-3: ServiceCareerEvents for entry/service/retail workers
+-- Movie ushers, cashiers, servers, etc. don't have office meetings or email overload!
+-- They deal with customers, long shifts, and service industry challenges.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ServiceCareerEvents = {
+	{
+		id = "service_rude_customer",
+		title = "Difficult Customer",
+		emoji = "😤",
+		text = "A customer is being incredibly rude and demanding, yelling at you over something minor.",
+		question = "How do you handle this?",
+		cooldown = 2,
+		maxOccurrences = 4,
+		choices = {
+			{ text = "Stay calm and professional", deltas = { Happiness = -2, Smarts = 2 }, setFlags = { service_professional = true }, feedText = "You kept your cool with a difficult customer." },
+			{ text = "Get a manager", deltas = { Happiness = 1 }, feedText = "You let your manager handle the situation." },
+			{ text = "Walk away for a moment", deltas = { Happiness = 2 }, feedText = "You took a moment to collect yourself." },
+		},
+	},
+	{
+		id = "service_long_shift",
+		title = "Double Shift",
+		emoji = "😴",
+		text = "Your coworker called in sick. Your boss asks if you can cover their shift too.",
+		question = "What do you say?",
+		cooldown = 3,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Work the double", deltas = { Happiness = -4, Money = 100 }, setFlags = { service_reliable = true }, feedText = "You worked a grueling double shift." },
+			{ text = "Politely decline", deltas = { Happiness = 2 }, feedText = "You protected your personal time." },
+			{ text = "Agree but leave early if slow", deltas = { Happiness = 0 }, feedText = "You compromised on staying flexible." },
+		},
+	},
+	{
+		id = "service_tip_dispute",
+		title = "Tip Dispute",
+		emoji = "💵",
+		text = "A customer claims they left a big tip but the tip jar is short. They blame you.",
+		question = "What do you do?",
+		cooldown = 4,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Apologize even though it's not your fault", deltas = { Happiness = -2 }, feedText = "You apologized to calm the situation." },
+			{ text = "Explain you didn't touch their tip", deltas = { Happiness = 1 }, setFlags = { service_honest = true }, feedText = "You stood your ground honestly." },
+			{ text = "Ask manager to check cameras", deltas = { Smarts = 2 }, feedText = "You suggested checking the security footage." },
+		},
+	},
+	{
+		id = "service_coworker_lazy",
+		title = "Slacking Coworker",
+		emoji = "😒",
+		text = "Your coworker keeps disappearing on breaks while you pick up their slack.",
+		question = "What do you do about it?",
+		cooldown = 3,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Confront them directly", deltas = { Happiness = 1 }, setFlags = { service_assertive = true }, feedText = "You called them out on their slacking." },
+			{ text = "Tell the manager", deltas = { Happiness = 0 }, feedText = "You reported the issue to management." },
+			{ text = "Just keep working harder", deltas = { Happiness = -3 }, setFlags = { service_pushover = true }, feedText = "You said nothing and kept covering for them." },
+		},
+	},
+	{
+		id = "service_small_raise",
+		title = "Raise Discussion",
+		emoji = "💰",
+		text = "You've been working here for a while. Time to ask for a raise?",
+		question = "How do you approach it?",
+		cooldown = 5,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Ask confidently", deltas = { Happiness = 2, Money = 50 }, setFlags = { service_confident = true }, feedText = "You asked for and got a small raise!" },
+			{ text = "Wait for annual review", deltas = { Happiness = -1 }, feedText = "You decided to wait for the formal review process." },
+			{ text = "Hint at it casually", deltas = { Happiness = 0 }, feedText = "You dropped some hints about compensation." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #AAA-MEGA-4: CreativeCareerEvents for creative workers
+-- Artists, designers, photographers, etc. have different challenges than office workers.
+-- NOTE: PR Crisis and brand events should ONLY fire for people with public brands!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local CreativeCareerEvents = {
+	{
+		id = "creative_client_revision",
+		title = "Client Revisions",
+		emoji = "🎨",
+		text = "The client wants 'just one more small change' for the tenth time.",
+		question = "How do you handle revision requests?",
+		cooldown = 2,
+		maxOccurrences = 4,
+		choices = {
+			{ text = "Make all the changes", deltas = { Happiness = -3 }, feedText = "You made all their changes again." },
+			{ text = "Explain the revision limit", deltas = { Happiness = 2, Smarts = 2 }, setFlags = { creative_boundaries = true }, feedText = "You professionally explained your revision policy." },
+			{ text = "Suggest a compromise", deltas = { Happiness = 1 }, feedText = "You found a middle ground with the client." },
+		},
+	},
+	{
+		id = "creative_tight_deadline",
+		title = "Tight Deadline",
+		emoji = "⏰",
+		text = "A major project deadline got moved up by a week. Quality or speed?",
+		question = "What do you prioritize?",
+		cooldown = 3,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Crunch to meet deadline", deltas = { Health = -3, Happiness = -2 }, setFlags = { creative_reliable = true }, feedText = "You pulled all-nighters to deliver on time." },
+			{ text = "Ask for deadline extension", deltas = { Happiness = 2 }, feedText = "You negotiated more time for quality work." },
+			{ text = "Deliver what you can", deltas = { Happiness = 0 }, feedText = "You delivered your best work within the timeframe." },
+		},
+	},
+	{
+		id = "creative_portfolio_review",
+		title = "Portfolio Review",
+		emoji = "📂",
+		text = "A potential client wants to see your recent work. Your portfolio is outdated.",
+		question = "What do you do?",
+		cooldown = 4,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Update it immediately", deltas = { Happiness = 1, Smarts = 2 }, setFlags = { creative_organized = true }, feedText = "You updated your portfolio and impressed them!" },
+			{ text = "Send what you have", deltas = { Happiness = -1 }, feedText = "You sent your outdated portfolio anyway." },
+			{ text = "Ask for more time", deltas = { Happiness = 0 }, feedText = "You asked for a few days to prepare." },
+		},
+	},
+	{
+		id = "creative_inspiration_block",
+		title = "Creative Block",
+		emoji = "🧱",
+		text = "You're staring at a blank canvas/screen. Nothing is coming to you.",
+		question = "How do you break through?",
+		cooldown = 2,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Take a walk outside", deltas = { Health = 2, Happiness = 2 }, feedText = "Fresh air helped clear your mind!" },
+			{ text = "Push through", deltas = { Happiness = -2, Smarts = 1 }, feedText = "You forced yourself to work through it." },
+			{ text = "Look at others' work for inspiration", deltas = { Smarts = 2 }, setFlags = { creative_research = true }, feedText = "You found inspiration in others' work." },
+		},
+	},
+}
+
 local OfficeCareerEvents = {
 	{
 		id = "office_credit",
@@ -7819,13 +7961,18 @@ function LifeBackend:buildCareerEvent(state)
 			eventPool = OfficeCareerEvents
 			eventSource = "career_office_generic"
 		end
-	-- Entry-level/service/retail events - use office events as fallback
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-MEGA-2: Entry-level/service/retail events should use
+	-- ServiceCareerEvents, NOT OfficeCareerEvents! A movie usher doesn't have
+	-- "email overload" or "meeting marathon" - they deal with customers!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" then
-		eventPool = OfficeCareerEvents
-		eventSource = "career_entry"
-	-- Creative category (acting, music, etc.)
+		eventPool = ServiceCareerEvents
+		eventSource = "career_service"
+	-- Creative category (acting, music, etc.) - DON'T use office events!
+	-- Creative workers have different work environments than cubicle workers
 	elseif jobCategory == "creative" then
-		eventPool = OfficeCareerEvents -- Use generic office events for creative
+		eventPool = CreativeCareerEvents
 		eventSource = "career_creative"
 	-- Hacker category
 	elseif jobCategory == "hacker" then
@@ -7876,6 +8023,9 @@ function LifeBackend:buildCareerEvent(state)
 	-- CRITICAL FIX #AAA-11: Filter out events that are on cooldown or have maxed occurrences
 	-- This was the main cause of event spam - career events weren't respecting cooldowns
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-MEGA-1: ALSO check eligibility functions! Without this, office
+	-- events fire for service workers, marketing events fire for movie ushers, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	state.EventHistory = state.EventHistory or {}
 	local eligibleEvents = {}
 	
@@ -7884,9 +8034,19 @@ function LifeBackend:buildCareerEvent(state)
 		local history = state.EventHistory[eventId]
 		local isEligible = true
 		
+		-- CRITICAL FIX #AAA-MEGA-1: CHECK ELIGIBILITY FUNCTION FIRST!
+		-- This prevents office events from firing for service workers,
+		-- marketing events from firing for movie ushers, etc.
+		if template.eligibility and type(template.eligibility) == "function" then
+			local success, result = pcall(template.eligibility, state)
+			if not success or not result then
+				isEligible = false
+			end
+		end
+		
 		-- Check cooldown (default 2 years for career events)
 		local cooldown = template.cooldown or 2
-		if history and history.lastAge then
+		if isEligible and history and history.lastAge then
 			local yearsSince = (state.Age or 0) - history.lastAge
 			if yearsSince < cooldown then
 				isEligible = false
@@ -7895,13 +8055,33 @@ function LifeBackend:buildCareerEvent(state)
 		
 		-- Check max occurrences (default 3 for career events)
 		local maxOccurrences = template.maxOccurrences or 3
-		if history and (history.count or 0) >= maxOccurrences then
+		if isEligible and history and (history.count or 0) >= maxOccurrences then
 			isEligible = false
 		end
 		
 		-- Check one-time events
-		if template.oneTime and history then
+		if isEligible and template.oneTime and history then
 			isEligible = false
+		end
+		
+		-- CRITICAL FIX: Check blockedByFlags
+		if isEligible and template.blockedByFlags then
+			for flagName, _ in pairs(template.blockedByFlags) do
+				if state.Flags and state.Flags[flagName] then
+					isEligible = false
+					break
+				end
+			end
+		end
+		
+		-- CRITICAL FIX: Check requiresFlags
+		if isEligible and template.requiresFlags then
+			for _, flagName in ipairs(template.requiresFlags) do
+				if not state.Flags or not state.Flags[flagName] then
+					isEligible = false
+					break
+				end
+			end
 		end
 		
 		if isEligible then

@@ -585,8 +585,14 @@ function EventEngine.isChoiceEligible(choice, state)
 	end
 	
 	-- Custom eligibility function
+	-- CRITICAL FIX: Use pcall to handle errors in eligibility functions gracefully
 	if choice.eligibility then
-		local eligible, reason = choice.eligibility(state)
+		local success, eligible, reason = pcall(choice.eligibility, state)
+		if not success then
+			-- Eligibility function errored - treat as ineligible
+			warn("[EventEngine] Choice eligibility function error: " .. tostring(eligible))
+			return false, "Choice unavailable"
+		end
 		if not eligible then
 			return false, reason or "Custom requirement not met"
 		end
@@ -1750,9 +1756,14 @@ function EventEngine.checkEligibilityDetailed(event, state, context)
 	end
 	
 	-- Custom eligibility function
+	-- CRITICAL FIX: Use pcall to handle errors in eligibility functions gracefully
 	if event.eligibility then
-		local eligible, reason = event.eligibility(state)
-		if not eligible then
+		local success, eligible, reason = pcall(event.eligibility, state)
+		if not success then
+			-- Eligibility function errored - treat as ineligible
+			warn("[EventEngine] Event eligibility function error for " .. tostring(event.id) .. ": " .. tostring(eligible))
+			table.insert(reasons, "Eligibility check failed")
+		elseif not eligible then
 			table.insert(reasons, reason or "Custom eligibility failed")
 		end
 	end
