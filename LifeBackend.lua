@@ -8366,6 +8366,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
 	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
+	-- CRITICAL FEATURE: Continue as your kid on death
+	self.remotes.ContinueAsKid = self:createRemote("ContinueAsKid", "RemoteFunction")
 	
 	-- PREMIUM FEATURES: Organized Crime remotes
 	self.remotes.JoinMob = self:createRemote("JoinMob", "RemoteFunction")
@@ -8524,6 +8526,11 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
 		return self:handleTimeMachine(player, yearsBack)
+	end
+	
+	-- CRITICAL FEATURE: Continue as Your Kid handler
+	self.remotes.ContinueAsKid.OnServerInvoke = function(player, childData)
+		return self:handleContinueAsKid(player, childData)
 	end
 	
 	-- CRITICAL FIX #360: Set up ProcessReceipt for Developer Products (Time Machine)
@@ -13737,6 +13744,163 @@ function LifeBackend:resetLife(player)
 	self:pushState(player, "A new life begins...")
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FEATURE: Continue as Your Kid
+-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+-- Player continues playing as their child, inheriting 70% of assets after taxes
+-- Can only be used ONCE per life (cannot infinitely chain through generations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:handleContinueAsKid(player, childData)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "No life data found." }
+	end
+	
+	-- Must be dead to continue as kid
+	if not state.Flags or not state.Flags.dead then
+		return { success = false, message = "You can only continue as your kid after dying." }
+	end
+	
+	-- Cannot chain infinitely - check if already used this feature
+	if state.Flags.already_continued_as_kid then
+		return { success = false, message = "You can only continue as your child once per life." }
+	end
+	
+	-- Find the child to continue as
+	if not childData or not childData.id then
+		return { success = false, message = "No child data provided." }
+	end
+	
+	local child = nil
+	if state.Relationships then
+		child = state.Relationships[childData.id]
+		if not child then
+			-- Try to find by name
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.name == childData.name then
+					child = rel
+					break
+				end
+			end
+		end
+	end
+	
+	if not child then
+		return { success = false, message = "Could not find that child." }
+	end
+	
+	-- Verify child is eligible (18+, alive)
+	if child.age and child.age < 18 then
+		return { success = false, message = "Your child must be 18 or older to continue as them." }
+	end
+	
+	if child.deceased or child.alive == false then
+		return { success = false, message = "You cannot continue as a deceased child." }
+	end
+	
+	debugPrint("Player", player.Name, "continuing as their child:", child.name or "Child")
+	
+	-- Calculate inheritance (70% after taxes/fees)
+	local parentMoney = state.Money or 0
+	local inheritance = math.floor(parentMoney * 0.7)
+	
+	-- Store parent name for reference
+	local parentName = state.Name or "Parent"
+	local parentAge = state.Age or 0
+	
+	-- Create the new state as the child
+	local newState = self:createInitialState(player)
+	
+	-- Set up child's identity
+	newState.Name = child.name or child.Name or "Child of " .. parentName
+	newState.Gender = child.gender or "male"
+	newState.Age = child.age or 18
+	newState.Year = (state.Year or 2025) -- Same year
+	
+	-- Inherit money
+	newState.Money = inheritance
+	
+	-- Inherit assets
+	newState.Assets = newState.Assets or {}
+	if state.Assets then
+		-- Inherit properties
+		if state.Assets.Properties then
+			newState.Assets.Properties = {}
+			for _, prop in ipairs(state.Assets.Properties) do
+				table.insert(newState.Assets.Properties, {
+					id = prop.id,
+					name = prop.name,
+					emoji = prop.emoji,
+					price = prop.price,
+					value = prop.value,
+					income = prop.income,
+					purchasedAt = state.Age,
+					inherited = true,
+					inheritedFrom = parentName,
+				})
+			end
+		end
+		
+		-- Inherit vehicles
+		if state.Assets.Vehicles then
+			newState.Assets.Vehicles = {}
+			for _, vehicle in ipairs(state.Assets.Vehicles) do
+				table.insert(newState.Assets.Vehicles, {
+					id = vehicle.id,
+					name = vehicle.name,
+					emoji = vehicle.emoji,
+					price = vehicle.price,
+					value = vehicle.value,
+					inherited = true,
+					inheritedFrom = parentName,
+				})
+			end
+		end
+	end
+	
+	-- Mark that this life used the continue feature (can't use again)
+	newState.Flags = newState.Flags or {}
+	newState.Flags.already_continued_as_kid = true
+	newState.Flags.inherited_from_parent = true
+	newState.Flags.parent_name = parentName
+	
+	-- Set some starting stats based on child's prior relationship
+	local relationship = child.relationship or 50
+	newState.Stats = newState.Stats or {}
+	newState.Stats.Happiness = math.min(100, 50 + math.floor(relationship / 5))
+	newState.Stats.Health = math.max(30, 100 - math.floor((child.age or 18) / 2))
+	newState.Stats.Smarts = newState.Stats.Smarts or 50
+	newState.Stats.Looks = newState.Stats.Looks or 50
+	
+	-- Create parent as a memory
+	newState.Flags.parent_deceased = true
+	newState.Flags.grieving = true
+	
+	-- Store the new state
+	self.playerStates[player] = newState
+	
+	-- Clear pending events
+	self.pendingEvents[player.UserId] = nil
+	
+	-- Build a nice starting message
+	local genderText = newState.Gender == "female" and "daughter" or "son"
+	local message = string.format("You are now %s, age %d, %s of %s. You inherited $%s from your parent's estate.",
+		newState.Name, newState.Age, genderText, parentName, formatMoney(inheritance))
+	
+	debugPrint("Continue as kid complete:", message)
+	
+	-- Save and push state
+	self:pushState(player, message)
+	
+	return { 
+		success = true, 
+		message = message,
+		newName = newState.Name,
+		newAge = newState.Age,
+		inheritance = inheritance,
+	}
+end
+
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Show relationship decay events as proper card popups!
@@ -13801,6 +13965,79 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
 		end
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FEATURE: "Continue as Your Kid" on death!
+		-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+		-- Player can continue with their child, inheriting assets but living their own life
+		-- Can only use this ONCE per life (not infinitely)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local continueAsKidData = nil
+		local canContinueAsKid = false
+		local eligibleChild = nil
+		
+		-- Check if player has any living adult children (18+)
+		if state.Relationships and not state.Flags.already_continued_as_kid then
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" then
+					local isChild = rel.type == "child" or rel.role == "Child" 
+						or relId:find("child") or relId:find("son") or relId:find("daughter")
+					local isAlive = rel.alive ~= false and not rel.deceased
+					local isAdult = (rel.age or 0) >= 18
+					
+					if isChild and isAlive and isAdult then
+						eligibleChild = {
+							id = relId,
+							name = rel.name or rel.Name or "Your Child",
+							age = rel.age or 18,
+							gender = rel.gender or "male",
+							relationship = rel.relationship or 50,
+						}
+						canContinueAsKid = true
+						break -- Take first eligible child
+					end
+				end
+			end
+		end
+		
+		if canContinueAsKid and eligibleChild then
+			-- Calculate inheritance
+			local inheritance = math.floor((state.Money or 0) * 0.7) -- 70% after taxes/fees
+			local inheritedAssets = {}
+			
+			-- Copy real estate
+			if state.Assets and state.Assets.Properties then
+				for _, prop in ipairs(state.Assets.Properties) do
+					table.insert(inheritedAssets, {
+						type = "property",
+						id = prop.id,
+						name = prop.name,
+						value = prop.value or prop.price,
+					})
+				end
+			end
+			
+			-- Copy vehicles
+			if state.Assets and state.Assets.Vehicles then
+				for _, vehicle in ipairs(state.Assets.Vehicles) do
+					table.insert(inheritedAssets, {
+						type = "vehicle",
+						id = vehicle.id,
+						name = vehicle.name,
+						value = vehicle.value or vehicle.price,
+					})
+				end
+			end
+			
+			continueAsKidData = {
+				canContinue = true,
+				child = eligibleChild,
+				inheritance = inheritance,
+				inheritedAssets = inheritedAssets,
+				parentName = state.Name or "Parent",
+				parentNetWorth = state.Money or 0,
+			}
+		end
+		
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
@@ -13813,6 +14050,9 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			-- CRITICAL FIX #59: Include time machine options in death screen
 			hasTimeMachine = hasTimeMachineGamepass,
 			timeMachineData = timeMachineData,
+			-- CRITICAL FEATURE: Continue as kid option
+			canContinueAsKid = canContinueAsKid,
+			continueAsKidData = continueAsKidData,
 		}
 	end
 

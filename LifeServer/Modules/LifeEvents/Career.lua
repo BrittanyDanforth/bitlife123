@@ -2847,6 +2847,24 @@ Career.events = {
 	requiresJobCategory = "education",
 	blockedByFlags = { in_prison = true },
 	
+	-- CRITICAL FIX: User reported getting this as non-teacher!
+	-- "ANGRY PARENT A PARENT IS FURIOUS ABOUT THEIR CHILD'S GRADE. BRO IM NOT A TEACHER???"
+	-- Add explicit eligibility check as backup to requiresJobCategory
+	eligibility = function(state)
+		if not state.CurrentJob then return false end
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		-- Must be in education field
+		local isTeacher = jobCat == "education" or jobCat == "teaching" 
+			or jobId:find("teacher") or jobId:find("professor") 
+			or jobId:find("instructor") or jobId:find("educator")
+			or jobId:find("tutor") or jobId:find("principal")
+		if not isTeacher then
+			return false, "Not a teacher"
+		end
+		return true
+	end,
+	
 	stage = STAGE,
 	ageBand = "working_age",
 	category = "career_education",

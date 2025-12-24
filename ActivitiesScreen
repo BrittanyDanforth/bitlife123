@@ -5006,8 +5006,36 @@ function ActivitiesScreen:doCrimeWithBonus(item, bonus)
 	if success and result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
 		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
-		-- CRITICAL FIX: Use BitLife-style result card
-		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
+		
+		-- CRITICAL FIX: User complained about contradictory results!
+		-- "CRIME SUCCESSFUL YOU PARTICIPATED IN A HEIST... AND GOT CAUGHT! EARNED $50K-500K +40 HEAT"
+		-- The issue is showing the RANGE ($50K-500K) instead of ACTUAL amount earned
+		-- Also contradictory text ("successful" + "got caught")
+		-- Fix: Use server's message which has actual amounts, and create clean item copy
+		local cleanItem = {
+			id = item.id,
+			name = item.name,
+			emoji = item.emoji,
+			risk = item.risk,
+			-- CRITICAL FIX: Remove the 'reward' range and 'effect' text
+			-- so it doesn't show "$50K-500K" after the crime is done
+			reward = nil,
+			effect = nil,
+			-- If server returned actual money, store it for display
+			actualEarnings = result.money,
+		}
+		
+		-- CRITICAL FIX: Build a clear, non-contradictory message
+		local displayMessage = result.message
+		if result.caught then
+			-- Caught - don't say "successful" anywhere
+			displayMessage = displayMessage or string.format("You got caught! Sentenced to prison.")
+		elseif result.success and result.money then
+			-- Success with actual earnings - show exact amount
+			displayMessage = displayMessage or string.format("Crime succeeded! You got away with %s!", formatMoneyShort(result.money))
+		end
+		
+		self:showActivityResult(result.success, displayMessage, cleanItem, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
 		self:showActivityResult(false, "Server error", item, "Error")
@@ -5448,8 +5476,18 @@ function ActivitiesScreen:doCrime(item)
 	if result then
 		log("Success:", result.success, "Caught:", result.caught, "Message:", result.message)
 		local emoji = result.caught and "🚔" or (result.success and "💰" or "❌")
-		-- CRITICAL FIX: Use proper BitLife-style crime result card
-		self:showActivityResult(result.success, result.message, item, emoji, result.caught)
+		-- CRITICAL FIX: Create clean item without reward range/effect for crime result
+		-- User complained: "EARNED $50K-500K" showing instead of actual amount
+		local cleanItem = {
+			id = item.id,
+			name = item.name,
+			emoji = item.emoji,
+			risk = item.risk,
+			reward = nil, -- Remove range like "$10K-500K"
+			effect = nil, -- Remove effect text like "+40 Heat"
+			actualEarnings = result.money,
+		}
+		self:showActivityResult(result.success, result.message, cleanItem, emoji, result.caught)
 	else
 		logWarn("Server returned nil!")
 		self:showActivityResult(false, "Server error - no response", item, "Error")
@@ -6865,8 +6903,18 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	local statChanges = nil
 	
 	-- Check if the item has effect text we can display
+	-- CRITICAL FIX: Only show effect text if it doesn't contain ranges like "$50K-500K"
+	-- User complained: "EARNED $50K-500K +40 HEAT" showing after crime completed
+	-- The effect field is for PRE-activity description, not post-activity results
 	if item and item.effect and isActualSuccess then
-		statChangesText = "\n\n📊 " .. item.effect
+		local effectText = item.effect
+		-- Don't show effects that have ranges (indicated by "-" in dollar amounts)
+		-- or are just descriptions of what MIGHT happen
+		local hasRange = effectText:match("%$%d+[KkMm]?%s*%-%s*%$?%d+") or effectText:match("%$%d+[KkMm]?%s*%-%s*%d+")
+		if not hasRange and not item.risk then
+			-- Only show for non-crime activities without reward ranges
+			statChangesText = "\n\n📊 " .. effectText
+		end
 	end
 	
 	-- If we have actual stat changes from server, show them

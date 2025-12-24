@@ -17,6 +17,15 @@ HealthEvents.events = {
 		title = "Under the Weather",
 		emoji = "🤒",
 		text = "You're not feeling well!",
+		-- CRITICAL FIX: Text variations for more variety
+		textVariants = {
+			"You woke up feeling terrible. Head pounding, body aching...",
+			"Something's definitely wrong. You feel awful.",
+			"You've been fighting off something for days. Now it's hit hard.",
+			"Fever, chills, the works. You're sick.",
+			"Your body is telling you to slow down. You feel miserable.",
+			"That tickle in your throat turned into full-blown sickness.",
+		},
 		question = "What's wrong?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.555,
@@ -70,6 +79,15 @@ HealthEvents.events = {
 		title = "Accident/Injury",
 		emoji = "🩹",
 		text = "You've been injured!",
+		-- CRITICAL FIX: Text variations for more variety
+		textVariants = {
+			"Ouch! You've hurt yourself in an accident.",
+			"Something went wrong and now you're injured.",
+			"A sudden mishap left you nursing an injury.",
+			"You had an accident. Time to assess the damage.",
+			"An unexpected fall/collision left you injured.",
+			"You got hurt! It happened so fast...",
+		},
 		question = "How bad is it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.45,
@@ -158,29 +176,49 @@ HealthEvents.events = {
 					local roll = math.random()
 					local goodResultChance = 0.45 + (health / 200) - (age / 250)
 					
-					if roll < goodResultChance then
-						-- AAA FIX: Nil check for all state methods
-						if state.ModifyStat then
-							state:ModifyStat("Happiness", 8)
-							state:ModifyStat("Health", 3)
-						end
-						if state.AddFeed then state:AddFeed("🏥 All clear! Clean bill of health! Relief!") end
-					elseif roll < 0.70 then
-						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
-						state:AddFeed("🏥 Minor concerns. Watch diet and exercise. Manageable.")
-					elseif roll < 0.90 then
-						state:ModifyStat("Happiness", -5)
-						state:ModifyStat("Health", -3)
-						state.Flags = state.Flags or {}
-						state.Flags.health_concerns = true
-						state:AddFeed("🏥 Concerning results. Need follow-up tests. Worry.")
-					else
-						state:ModifyStat("Happiness", -10)
-						state:ModifyStat("Health", -8)
-						state.Flags = state.Flags or {}
-						state.Flags.serious_diagnosis = true
-						state:AddFeed("🏥 Serious condition found. Treatment needed. Life-changing news.")
+				-- CRITICAL FIX: Use actual disease/condition names instead of vague "serious diagnosis"
+				-- User complained: "IT SAID HEALTH SCARE I BEEN DIAGNOSED WITH SOMETHING BUT IT DIDNT SAY ANYTHING"
+				local minorConditions = {
+					"slightly elevated blood pressure", "mild vitamin D deficiency", 
+					"borderline cholesterol", "minor iron deficiency", "slightly low B12"
+				}
+				local moderateConditions = {
+					"prediabetes", "high cholesterol", "hypertension stage 1",
+					"thyroid dysfunction", "sleep apnea", "anemia"
+				}
+				local seriousConditions = {
+					"Type 2 Diabetes", "Hypertension Stage 2", "Heart Arrhythmia",
+					"Early Kidney Disease", "Liver Function Issues", "Autoimmune Disorder"
+				}
+				
+				if roll < goodResultChance then
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Health", 3)
 					end
+					if state.AddFeed then state:AddFeed("🏥 All clear! Clean bill of health! Relief!") end
+				elseif roll < 0.70 then
+					local condition = minorConditions[math.random(1, #minorConditions)]
+					if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+					state:AddFeed(string.format("🏥 Doctor found %s. Watch diet and exercise. Manageable.", condition))
+				elseif roll < 0.90 then
+					local condition = moderateConditions[math.random(1, #moderateConditions)]
+					state:ModifyStat("Happiness", -5)
+					state:ModifyStat("Health", -3)
+					state.Flags = state.Flags or {}
+					state.Flags.health_concerns = true
+					state.Flags.current_condition = condition
+					state:AddFeed(string.format("🏥 Diagnosed with %s. Need follow-up treatment and lifestyle changes.", condition))
+				else
+					local condition = seriousConditions[math.random(1, #seriousConditions)]
+					state:ModifyStat("Happiness", -10)
+					state:ModifyStat("Health", -8)
+					state.Flags = state.Flags or {}
+					state.Flags.serious_diagnosis = true
+					state.Flags.current_condition = condition
+					state:AddFeed(string.format("🏥 Diagnosed with %s. Treatment required immediately. Life-changing news.", condition))
+				end
 				end,
 			},
 		},
