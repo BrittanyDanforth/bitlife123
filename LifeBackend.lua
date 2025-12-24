@@ -11143,6 +11143,9 @@ end
 -- Uses RelationshipDecaySystem for proper friend anger events like competition
 -- Friends get ANGRY if you don't talk to them for years!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: User reported "Robert is furious!" showing as feed text, not card popup!
+-- These relationship events MUST show as proper card popups, not text in feed!
+-- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:applyRelationshipDecay(state)
 	if not state.Relationships then
 		return
@@ -11151,27 +11154,63 @@ function LifeBackend:applyRelationshipDecay(state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- AAA: Use the RelationshipDecaySystem for friend anger events
 	-- This generates proper "friend is angry you haven't talked" events
+	-- CRITICAL FIX: Queue these as POPUP events, not just feed text!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local decayEvents = RelationshipDecaySystem.processYearlyDecay(state)
 	
-	-- Process generated decay events - show messages to player
+	-- CRITICAL FIX: Queue significant events as proper card popups!
+	-- These should NOT be feed text - user complained about this!
+	state.QueuedRelationshipPopups = state.QueuedRelationshipPopups or {}
+	
+	-- Process generated decay events - queue important ones as card popups
 	for _, event in ipairs(decayEvents) do
-		if event.message then
-			appendFeed(state, event.message)
-		end
+		-- CRITICAL FIX: Convert to proper popup format with nice formatting!
+		local popupData = nil
 		
-		-- Store for potential event triggering
-		if event.type == "friend_angry" then
+		if event.type == "friend_annoyed" then
+			popupData = {
+				emoji = "😤",
+				title = "Friend Annoyed",
+				body = string.format("%s is annoyed that you haven't reached out in %d years.\n\nThey feel like you've been neglecting the friendship.", 
+					event.name, event.yearsSince or 2),
+				happiness = -3,
+			}
+		elseif event.type == "friend_angry" then
+			popupData = {
+				emoji = "😡",
+				title = "Friend is Angry!",
+				body = string.format("%s is really upset with you!\n\n\"You haven't talked to me in years! Do you even care about our friendship anymore?\"", 
+					event.name),
+				happiness = -8,
+			}
 			state.Flags = state.Flags or {}
 			state.Flags.has_angry_friend = true
 			state.Flags.angry_friend_name = event.name
 			state.Flags.angry_friend_id = event.relId
-		end
-		
-		if event.type == "friendship_ended" then
+		elseif event.type == "friend_furious" then
+			popupData = {
+				emoji = "🔥",
+				title = string.format("%s is FURIOUS!", event.name),
+				body = string.format("%s confronted you, absolutely livid:\n\n\"You NEVER talk to me anymore! I'm always the one reaching out! What kind of friend are you?!\"\n\nThis friendship is on the verge of ending.", 
+					event.name),
+				happiness = -15,
+			}
+		elseif event.type == "friendship_ended" then
+			popupData = {
+				emoji = "💔",
+				title = "Friendship Over",
+				body = string.format("After %d years of no contact, you and %s have completely drifted apart.\n\nThe friendship that once meant so much... is now just a memory.", 
+					event.yearsSince or 8, event.name),
+				happiness = -20,
+			}
 			state.Flags = state.Flags or {}
 			state.Flags.lost_friend = true
 			state.Flags.lost_friend_name = event.name
+		end
+		
+		-- Queue the popup if it's a significant event
+		if popupData then
+			table.insert(state.QueuedRelationshipPopups, popupData)
 		end
 	end
 	
@@ -11227,8 +11266,17 @@ function LifeBackend:applyRelationshipDecay(state)
 						rel.alive = false
 						rel.ended = true
 						rel.endReason = "drifted_apart"
-						appendFeed(state, string.format("💔 You and %s have drifted apart. The relationship is over.", 
-							rel.name or "your partner"))
+						
+						-- CRITICAL FIX: Show as proper popup card, not feed text!
+						-- User complained these showed as text in the feed, not card popups
+						state.QueuedRelationshipPopups = state.QueuedRelationshipPopups or {}
+						table.insert(state.QueuedRelationshipPopups, {
+							emoji = "💔",
+							title = "Relationship Ended",
+							body = string.format("You and %s have drifted apart.\n\nWithout effort to maintain the relationship, the spark just... faded.\n\nThe relationship is over.", 
+								rel.name or "your partner"),
+							happiness = -25,
+						})
 						
 						-- Clear partner status
 						if relId == "partner" then
@@ -13690,6 +13738,30 @@ function LifeBackend:resetLife(player)
 end
 
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show relationship decay events as proper card popups!
+	-- User reported: "Robert is furious!" was showing as feed text, not card popup
+	-- These queued popups should display as actual card popups instead of feed text!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.QueuedRelationshipPopups and #state.QueuedRelationshipPopups > 0 then
+		-- Take the first (most important) relationship popup
+		local relPopup = table.remove(state.QueuedRelationshipPopups, 1)
+		if relPopup and not resultData then
+			-- Only show if there's no other resultData (don't override important events)
+			resultData = {
+				showPopup = true,
+				emoji = relPopup.emoji or "💔",
+				title = relPopup.title or "Relationship Update",
+				body = relPopup.body or "Something happened with a relationship.",
+				happiness = relPopup.happiness,
+				health = relPopup.health,
+				wasSuccess = false,
+			}
+		end
+		-- Clear remaining popups for this year (to avoid spam)
+		state.QueuedRelationshipPopups = nil
+	end
+	
 	local deathInfo
 	-- CRITICAL FIX: Check Flags.dead FIRST (set by checkNaturalDeath)
 	-- This ensures natural deaths from old age are properly handled
