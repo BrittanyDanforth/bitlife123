@@ -773,11 +773,12 @@ RandomLifeEvents.events = {
 						state:AddFeed("💡 Power came back in 10 minutes. Nice break from screens.")
 					elseif roll <= 75 then
 						state:ModifyStat("Happiness", -5)
-						state:AddFeed("💡 4 hours without power. Lost all the food in the fridge.")
-					else
-						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - math.random(100, 500)
-						state:AddFeed("💡 12 hours of no power. Hotel stay required.")
+					state:AddFeed("💡 4 hours without power. Lost all the food in the fridge.")
+				else
+					state:ModifyStat("Happiness", -10)
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(100, 500))
+					state:AddFeed("💡 12 hours of no power. Hotel stay required.")
 					end
 				end,
 			},
@@ -940,12 +941,13 @@ RandomLifeEvents.events = {
 						state.Flags.can_change_tire = true
 						state:AddFeed("🚗 YouTube tutorial saved you! Now you know how to change a tire!")
 					elseif roll <= 60 then
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🚗 A kind stranger stopped to help. Faith in humanity restored.")
-					else
-						state.Money = (state.Money or 0) - math.random(100, 300)
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("🚗 Had to call a tow truck. Expensive and embarrassing.")
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("🚗 A kind stranger stopped to help. Faith in humanity restored.")
+				else
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(100, 300))
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("🚗 Had to call a tow truck. Expensive and embarrassing.")
 					end
 				end,
 			},
@@ -1205,12 +1207,13 @@ RandomLifeEvents.events = {
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed("🚙 Took 3 tries but you got it. Nobody watched for that long.")
 					elseif roll <= 85 then
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("🚙 Gave up and found a different spot. The shame.")
-					else
-						state.Money = (state.Money or 0) - math.random(200, 800)
-						state:ModifyStat("Happiness", -15)
-						state:AddFeed("🚙 Bumped the car behind you. Had to exchange insurance info.")
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("🚙 Gave up and found a different spot. The shame.")
+				else
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(200, 800))
+					state:ModifyStat("Happiness", -15)
+					state:AddFeed("🚙 Bumped the car behind you. Had to exchange insurance info.")
 					end
 				end,
 			},

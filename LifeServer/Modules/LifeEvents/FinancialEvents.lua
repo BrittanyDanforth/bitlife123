@@ -259,10 +259,11 @@ FinancialEvents.events = {
 					return flags.homeowner or flags.has_house or flags.has_home or flags.has_apartment
 						or (state.Assets and state.Assets.Properties and #state.Assets.Properties > 0)
 				end,
-				onResolve = function(state)
-					local roll = math.random()
-					state.Money = (state.Money or 0) - math.floor(200 + (roll * 1000))
-				end,
+			onResolve = function(state)
+				local roll = math.random()
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - math.floor(200 + (roll * 1000)))
+			end,
 			},
 			-- CRITICAL FIX: Pet emergency requires owning a pet!
 			{ 

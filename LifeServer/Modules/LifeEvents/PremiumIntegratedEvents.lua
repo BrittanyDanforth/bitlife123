@@ -760,12 +760,13 @@ PremiumIntegratedEvents.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.risk_taker_success = true
 					elseif roll < 0.65 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🔀 It worked out okay. Not amazing but no regrets.")
-					else
-						state.Money = (state.Money or 0) - math.random(1000, 5000)
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🔀 The risk didn't pay off. Lesson learned the hard way.")
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🔀 It worked out okay. Not amazing but no regrets.")
+				else
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(1000, 5000))
+					state:ModifyStat("Happiness", -10)
+					state:AddFeed("🔀 The risk didn't pay off. Lesson learned the hard way.")
 					end
 				end,
 			},

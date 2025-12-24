@@ -8248,8 +8248,8 @@ function LifeBackend:setupRemotes()
 		return self:handlePrisonAction(player, actionId)
 	end)
 
-	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId)
-		return self:handleJobApplication(player, jobId)
+	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId, interviewScore)
+		return self:handleJobApplication(player, jobId, interviewScore)
 	end)
 	
 	-- AAA FIX: Interview result handler for the interview screen system
@@ -15344,11 +15344,15 @@ local JobRejectionMessages = {
 
 -- NOTE: PromotionOnlyJobs is defined earlier (after JobCatalog) to fix scope issues
 
-function LifeBackend:handleJobApplication(player, jobId)
+function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data not loaded." }
 	end
+	
+	-- CRITICAL FIX: If client already conducted an interview and passed, use that score
+	-- clientInterviewScore is passed from OccupationScreen after the interview modal
+	local hasClientInterviewScore = clientInterviewScore ~= nil and type(clientInterviewScore) == "number"
 
 	-- CRITICAL FIX #512: Use findJobByInput for flexible job lookup
 	-- This allows the client to send job IDs, names, or partial matches
@@ -15812,31 +15816,53 @@ function LifeBackend:handleJobApplication(player, jobId)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- AAA FIX: INTERVIEW SCREEN SYSTEM
-	-- For competitive jobs (difficulty 4+), show an interview event first
-	-- This gives players choices that affect their chances, like the competition game
+	-- CRITICAL FIX: CLIENT-SIDE INTERVIEW INTEGRATION
+	-- If the client already conducted an interview (passed with a score), use that!
+	-- Otherwise, for competitive jobs, return interview event for server-side flow
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
+	local accepted = false
 	
-	if shouldShowInterview then
-		-- Generate interview questions/scenarios based on job category
-		local interviewData = self:generateInterviewEvent(state, job, finalChance)
+	if hasClientInterviewScore then
+		-- Client already did the interview - use their score!
+		-- Score is 0-100, we need to convert it to hiring success
+		-- High scores should almost guarantee hire, low scores should likely reject
+		local scoreBonus = (clientInterviewScore - 50) / 100 -- -0.5 to +0.5
+		local adjustedChance = math.clamp(finalChance + scoreBonus, 0.10, 0.95)
 		
-		-- Return interview event for client to display
-		return {
-			success = true,
-			requiresInterview = true,
-			interviewEvent = interviewData,
-			jobId = actualJobId,
-			jobName = job.name or job.title,
-			company = job.company or "the company",
-			baseChance = finalChance,
-		}
+		-- For passing interviews (score >= 60), give a significant boost
+		if clientInterviewScore >= 60 then
+			adjustedChance = math.max(adjustedChance, 0.65) -- At least 65% for passing
+		end
+		if clientInterviewScore >= 80 then
+			adjustedChance = math.max(adjustedChance, 0.85) -- At least 85% for great interview
+		end
+		
+		local roll = RANDOM:NextNumber()
+		accepted = roll < adjustedChance
+	else
+		-- No client interview score - check if we should show server-side interview
+		local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
+		
+		if shouldShowInterview then
+			-- Generate interview questions/scenarios based on job category
+			local interviewData = self:generateInterviewEvent(state, job, finalChance)
+			
+			-- Return interview event for client to display
+			return {
+				success = true,
+				requiresInterview = true,
+				interviewEvent = interviewData,
+				jobId = actualJobId,
+				jobName = job.name or job.title,
+				company = job.company or "the company",
+				baseChance = finalChance,
+			}
+		end
+		
+		-- Roll for success (for jobs that skip interview)
+		local roll = RANDOM:NextNumber()
+		accepted = roll < finalChance
 	end
-	
-	-- Roll for success (for jobs that skip interview)
-	local roll = RANDOM:NextNumber()
-	local accepted = roll < finalChance
 	
 	-- Track application
 	state.JobApplications[jobId] = {
@@ -16049,7 +16075,16 @@ function LifeBackend:handleJobApplication(player, jobId)
 
 	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
 	self:pushState(player, feed)
-	return { success = true, message = feed }
+	-- CRITICAL FIX: Return job info for client display
+	return { 
+		success = true, 
+		message = feed,
+		jobName = job.name,
+		jobTitle = job.name,
+		company = job.company,
+		salary = job.salary,
+		category = job.category,
+	}
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════

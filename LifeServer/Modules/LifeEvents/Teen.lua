@@ -1386,25 +1386,46 @@ Teen.events = {
 					end
 				end,
 			},
-			{
-				text = "Write them a letter instead",
-				effects = {},
-				feedText = "You wrote a heartfelt letter...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.40 then
-						state:ModifyStat("Happiness", 10)
-						state:ModifyStat("Smarts", 1)
-						state:AddFeed("💌 The letter worked! They thought it was so romantic!")
-					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("💌 They appreciated the letter but aren't interested that way.")
-					else
-						state:ModifyStat("Happiness", -7)
-						state:AddFeed("💌 They showed the letter to their friends... Mortifying.")
-					end
-				end,
-			},
+		{
+			text = "Write them a letter instead",
+			effects = {},
+			feedText = "You wrote a heartfelt letter...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.40 then
+					state:ModifyStat("Happiness", 10)
+					state:ModifyStat("Smarts", 1)
+					-- CRITICAL FIX: Create partner relationship when letter works!
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = true
+					state.Flags.dating = true
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
+					local names = isMale 
+						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
+						or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
+					local partnerName = names[math.random(1, #names)]
+					state.Relationships.partner = {
+						id = "partner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 70,
+						age = state.Age or 15,
+						gender = isMale and "male" or "female",
+						alive = true,
+						metThrough = "school",
+					}
+					state:AddFeed(string.format("💌 The letter worked! You're now dating %s!", partnerName))
+				elseif roll < 0.70 then
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("💌 They appreciated the letter but aren't interested that way.")
+				else
+					state:ModifyStat("Happiness", -7)
+					state:AddFeed("💌 They showed the letter to their friends... Mortifying.")
+				end
+			end,
+		},
 			{ text = "Keep it inside - too risky", effects = { Happiness = -4 }, setFlags = { fear_of_rejection = true }, feedText = "You'll always wonder what could have been..." },
 			{ text = "Drop hints and see if they notice", effects = { Happiness = 2 }, feedText = "You're being subtle. Maybe too subtle?" },
 		},
