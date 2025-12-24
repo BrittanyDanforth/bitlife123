@@ -54,17 +54,18 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state:ModifyStat("Happiness", 20)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
 						state.Money = (state.Money or 0) + math.random(5000, 20000)
 						state.Flags = state.Flags or {}
 						state.Flags.breakthrough_researcher = true
-						state:AddFeed("🧪 CONFIRMED! Results replicated! This is a legitimate breakthrough!")
+						if state.AddFeed then state:AddFeed("🧪 CONFIRMED! Results replicated! This is a legitimate breakthrough!") end
 					elseif roll <= 80 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🧪 Results are inconsistent. Need more data. Back to the lab.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🧪 Results are inconsistent. Need more data. Back to the lab.") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🧪 Couldn't replicate. Equipment malfunction? False positive. Frustrating.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🧪 Couldn't replicate. Equipment malfunction? False positive. Frustrating.") end
 					end
 				end,
 			},
@@ -75,12 +76,13 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 35 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Fame = (state.Fame or 0) + 15
-						state:AddFeed("🧪 Paper published! Scientific community is intrigued!")
+						if state.AddFeed then state:AddFeed("🧪 Paper published! Scientific community is intrigued!") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("🧪 Peer reviewers tore it apart. 'Insufficient data.' Embarrassing.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("🧪 Peer reviewers tore it apart. 'Insufficient data.' Embarrassing.") end
 					end
 				end,
 			},
@@ -109,11 +111,12 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("💥 Found the flaw! This failure taught you something important!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("💥 Found the flaw! This failure taught you something important!") end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("💥 Still not sure what went wrong. Science can be frustrating.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💥 Still not sure what went wrong. Science can be frustrating.") end
 					end
 				end,
 			},
@@ -122,8 +125,9 @@ ScienceCareerEvents.events = {
 				effects = { Happiness = -10 },
 				feedText = "Back to square one...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("💥 Scrapped everything. Starting fresh. That's science.")
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("💥 Scrapped everything. Starting fresh. That's science.") end
 				end,
 			},
 		},
@@ -153,16 +157,17 @@ ScienceCareerEvents.events = {
 					if roll <= 25 then
 						local grant = math.random(100000, 500000)
 						state.Money = (state.Money or 0) + math.floor(grant * 0.1) -- Researcher's cut
-						state:ModifyStat("Happiness", 25)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
 						state.Flags = state.Flags or {}
 						state.Flags.grant_funded = true
-						state:AddFeed(string.format("💰 GRANT APPROVED! $%d in funding! Research can continue!", grant))
+						if state.AddFeed then state:AddFeed(string.format("💰 GRANT APPROVED! $%d in funding! Research can continue!", grant)) end
 					elseif roll <= 60 then
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("💰 Grant rejected but reviewers gave useful feedback. Revise and resubmit.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💰 Grant rejected but reviewers gave useful feedback. Revise and resubmit.") end
 					else
-						state:ModifyStat("Happiness", -12)
-						state:AddFeed("💰 Rejected. Funding is brutal. Only 10% of grants get approved.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
+						if state.AddFeed then state:AddFeed("💰 Rejected. Funding is brutal. Only 10% of grants get approved.") end
 					end
 				end,
 			},
@@ -175,11 +180,12 @@ ScienceCareerEvents.events = {
 					if roll <= 45 then
 						local funding = math.random(50000, 200000)
 						state.Money = (state.Money or 0) + math.floor(funding * 0.15)
-						state:ModifyStat("Happiness", 15)
-						state:AddFeed(string.format("💰 Industry partner found! $%d in funding! With strings attached...", funding))
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then state:AddFeed(string.format("💰 Industry partner found! $%d in funding! With strings attached...", funding)) end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("💰 Companies aren't interested. Too basic, not profitable enough.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💰 Companies aren't interested. Too basic, not profitable enough.") end
 					end
 				end,
 			},
@@ -208,13 +214,14 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 55 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.published_scientist = true
-						state:AddFeed("📝 Paper accepted after revisions! Published! Sweet vindication!")
+						if state.AddFeed then state:AddFeed("📝 Paper accepted after revisions! Published! Sweet vindication!") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("📝 Still rejected. 'Major revisions needed.' The cycle continues.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("📝 Still rejected. 'Major revisions needed.' The cycle continues.") end
 					end
 				end,
 			},
@@ -225,11 +232,12 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("📝 New journal accepted it! Sometimes it's just about finding the right audience.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("📝 New journal accepted it! Sometimes it's just about finding the right audience.") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("📝 Another rejection. Starting to question the research itself...")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📝 Another rejection. Starting to question the research itself...") end
 					end
 				end,
 			},
@@ -238,7 +246,8 @@ ScienceCareerEvents.events = {
 				effects = { Happiness = -12 },
 				feedText = "It's not worth it anymore...",
 				onResolve = function(state)
-					state:AddFeed("📝 Filed it away. Maybe revisit later. Academia is exhausting.")
+					-- AAA FIX: Nil check for all state methods
+					if state.AddFeed then state:AddFeed("📝 Filed it away. Maybe revisit later. Academia is exhausting.") end
 				end,
 			},
 		},
@@ -266,12 +275,15 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 70 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("⚠️ Handled it by the book. No injuries. Safety review passed.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("⚠️ Handled it by the book. No injuries. Safety review passed.") end
 					else
-						state:ModifyStat("Health", -10)
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("⚠️ Minor exposure. Medical checkup. Scary but okay.")
+						if state.ModifyStat then 
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then state:AddFeed("⚠️ Minor exposure. Medical checkup. Scary but okay.") end
 					end
 				end,
 			},
@@ -280,8 +292,9 @@ ScienceCareerEvents.events = {
 				effects = {},
 				feedText = "Safety first!",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed("⚠️ Everyone got out. Lost some samples but everyone is safe.")
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed("⚠️ Everyone got out. Lost some samples but everyone is safe.") end
 				end,
 			},
 		},
@@ -313,10 +326,12 @@ ScienceCareerEvents.events = {
 						state.Fame = (state.Fame or 0) + 40
 						state.Flags = state.Flags or {}
 						state.Flags.major_discovery = true
-						state:AddFeed("💡 MAJOR DISCOVERY! Your name will be in textbooks! Grant funding secured!")
+						state.Flags.is_famous = true
+						-- AAA FIX: Nil check for all state methods
+						if state.AddFeed then state:AddFeed("💡 MAJOR DISCOVERY! Your name will be in textbooks! Grant funding secured!") end
 					else
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("💡 Significant finding! Paper published in top journal!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("💡 Significant finding! Paper published in top journal!") end
 					end
 				end,
 			},
@@ -348,17 +363,18 @@ ScienceCareerEvents.events = {
 					local bonus = (smarts - 50) / 3
 					
 					if roll + bonus <= 50 then
-						state:ModifyStat("Happiness", 18)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 18) end
 						state.Fame = (state.Fame or 0) + 15
 						state.Flags = state.Flags or {}
 						state.Flags.respected_scientist = true
-						state:AddFeed("🎤 Standing ovation! Brilliant Q&A! Networking opportunities!")
+						if state.AddFeed then state:AddFeed("🎤 Standing ovation! Brilliant Q&A! Networking opportunities!") end
 					elseif roll + bonus <= 80 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("🎤 Solid presentation. Good questions. Made some connections.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("🎤 Solid presentation. Good questions. Made some connections.") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🎤 Tough crowd. Got grilled during Q&A. Humbling experience.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🎤 Tough crowd. Got grilled during Q&A. Humbling experience.") end
 					end
 				end,
 			},
@@ -387,12 +403,17 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 45 then
-						state:ModifyStat("Happiness", 20)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
 						state.Fame = (state.Fame or 0) + 20
-						state:AddFeed("🏃 Published first! YOU get the credit! Science is competitive!")
+						state.Flags = state.Flags or {}
+						state.Flags.published_first = true
+						if state.AddFeed then state:AddFeed("🏃 Published first! YOU get the credit! Science is competitive!") end
 					else
-						state:ModifyStat("Happiness", -15)
-						state:AddFeed("🏃 They beat you by a week. Years of work scooped. Devastating.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						state.Flags = state.Flags or {}
+						state.Flags.got_scooped = true
+						if state.AddFeed then state:AddFeed("🏃 They beat you by a week. Years of work scooped. Devastating.") end
 					end
 				end,
 			},
@@ -403,11 +424,14 @@ ScienceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state:ModifyStat("Happiness", 12)
-						state:AddFeed("🏃 Joint publication! Both labs credited! Science wins!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						state.Flags = state.Flags or {}
+						state.Flags.collaborative_scientist = true
+						if state.AddFeed then state:AddFeed("🏃 Joint publication! Both labs credited! Science wins!") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("🏃 They refused collaboration. Still racing. Their loss.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("🏃 They refused collaboration. Still racing. Their loss.") end
 					end
 				end,
 			},
@@ -445,13 +469,15 @@ ScienceCareerEvents.events = {
 					
 					if roll <= 50 then
 						state.Money = (state.Money or 0) + math.floor(funding * 0.2)
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed(string.format("🤔 $%d in funding. Research advances. Hopefully no bad applications...", funding))
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed(string.format("🤔 $%d in funding. Research advances. Hopefully no bad applications...", funding)) end
 					else
-						state:ModifyStat("Happiness", -20)
+						if state.ModifyStat then state:ModifyStat("Happiness", -20) end
 						state.Flags = state.Flags or {}
 						state.Flags.ethical_compromise = true
-						state:AddFeed("🤔 Your research was weaponized. Haunts you now. Worth the funding?")
+						state.Flags.sold_out_science = true
+						if state.AddFeed then state:AddFeed("🤔 Your research was weaponized. Haunts you now. Worth the funding?") end
 					end
 				end,
 			},
@@ -483,15 +509,17 @@ ScienceCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 30 then
 						state.Money = (state.Money or 0) + 500000
-						state:ModifyStat("Happiness", 50)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 50) end
 						state.Fame = (state.Fame or 0) + 200
 						state.Flags = state.Flags or {}
 						state.Flags.nobel_winner = true
-						state:AddFeed("🏆 NOBEL PRIZE WINNER! Highest honor in science! Your life's work recognized!")
+						state.Flags.is_famous = true
+						if state.AddFeed then state:AddFeed("🏆 NOBEL PRIZE WINNER! Highest honor in science! Your life's work recognized!") end
 					else
-						state:ModifyStat("Happiness", 15)
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Fame = (state.Fame or 0) + 30
-						state:AddFeed("🏆 Didn't win this year but the nomination itself is an honor. Few ever get nominated.")
+						if state.AddFeed then state:AddFeed("🏆 Didn't win this year but the nomination itself is an honor. Few ever get nominated.") end
 					end
 				end,
 			},

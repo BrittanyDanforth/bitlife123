@@ -636,6 +636,651 @@ local EducationRanks = {
 }
 
 -- ════════════════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: COMPREHENSIVE INTERVIEW SYSTEM FOR EVERY JOB
+-- This implements the interview process requested by the user for EVERY SINGLE JOB
+-- Interview questions are category-specific and affect hiring success chance
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
+
+local InterviewQuestions = {
+	-- Default questions for any job
+	default = {
+		{
+			question = "Why do you want to work here?",
+			options = {
+				{ text = "I'm passionate about this field and want to grow", bonus = 15, correct = true },
+				{ text = "I need a job and saw you were hiring", bonus = -5 },
+				{ text = "The salary seems good", bonus = 0 },
+				{ text = "I want to gain experience in this industry", bonus = 10 },
+			},
+		},
+		{
+			question = "What's your greatest strength?",
+			options = {
+				{ text = "I'm a quick learner and adaptable", bonus = 10, correct = true },
+				{ text = "I'm always on time", bonus = 5 },
+				{ text = "I don't have any, I guess", bonus = -15 },
+				{ text = "I work well under pressure", bonus = 10 },
+			},
+		},
+		{
+			question = "Where do you see yourself in 5 years?",
+			options = {
+				{ text = "Growing with this company in a leadership role", bonus = 15, correct = true },
+				{ text = "Probably somewhere else", bonus = -10 },
+				{ text = "I haven't really thought about it", bonus = -5 },
+				{ text = "Building my skills and taking on more responsibility", bonus = 10 },
+			},
+		},
+	},
+	
+	-- Entry Level Jobs - Easier questions
+	entry = {
+		{
+			question = "This job requires working with customers. How do you handle difficult people?",
+			options = {
+				{ text = "Stay calm and try to understand their concern", bonus = 15, correct = true },
+				{ text = "Get a manager immediately", bonus = 5 },
+				{ text = "Tell them they're wrong", bonus = -15 },
+				{ text = "I've never dealt with that before", bonus = -5 },
+			},
+		},
+		{
+			question = "Are you available to work weekends and holidays?",
+			options = {
+				{ text = "Yes, I'm flexible with my schedule", bonus = 15, correct = true },
+				{ text = "Only sometimes", bonus = 0 },
+				{ text = "No, I have other commitments", bonus = -10 },
+				{ text = "I'd prefer not to, but I can if needed", bonus = 5 },
+			},
+		},
+		{
+			question = "Why should we hire you over other candidates?",
+			options = {
+				{ text = "I'm enthusiastic, reliable, and eager to learn", bonus = 15, correct = true },
+				{ text = "I really need this job", bonus = -5 },
+				{ text = "I'll show up on time every day", bonus = 5 },
+				{ text = "I'm the best candidate you'll find", bonus = 0 },
+			},
+		},
+	},
+	
+	-- Service Industry
+	service = {
+		{
+			question = "A customer complains their food is cold. What do you do?",
+			options = {
+				{ text = "Apologize sincerely and get them a fresh order right away", bonus = 15, correct = true },
+				{ text = "Tell them it wasn't cold when it left the kitchen", bonus = -15 },
+				{ text = "Offer to reheat it for them", bonus = 5 },
+				{ text = "Get my manager to handle it", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you handle working during a busy rush?",
+			options = {
+				{ text = "Stay focused, prioritize tasks, and help teammates", bonus = 15, correct = true },
+				{ text = "I get stressed and make mistakes", bonus = -10 },
+				{ text = "I just do what I can", bonus = 0 },
+				{ text = "I prefer slower shifts honestly", bonus = -5 },
+			},
+		},
+		{
+			question = "Have you ever had to upsell or recommend products?",
+			options = {
+				{ text = "Yes, I enjoy helping customers find what they need", bonus = 15, correct = true },
+				{ text = "I'm not comfortable with sales", bonus = -5 },
+				{ text = "I can try but it's not my strength", bonus = 5 },
+				{ text = "No, but I'm willing to learn", bonus = 10 },
+			},
+		},
+	},
+	
+	-- Trades & Skilled Labor
+	trades = {
+		{
+			question = "Safety is crucial in this job. How do you approach workplace safety?",
+			options = {
+				{ text = "I always follow protocols and never cut corners", bonus = 15, correct = true },
+				{ text = "Safety rules slow things down sometimes", bonus = -20 },
+				{ text = "I've never had an accident", bonus = 5 },
+				{ text = "I pay attention but accidents happen", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you handle physically demanding work?",
+			options = {
+				{ text = "I'm in good shape and take care of my body", bonus = 15, correct = true },
+				{ text = "It's tough but I manage", bonus = 5 },
+				{ text = "I prefer desk work honestly", bonus = -15 },
+				{ text = "I pace myself throughout the day", bonus = 10 },
+			},
+		},
+		{
+			question = "Do you have experience with [relevant tools/equipment]?",
+			options = {
+				{ text = "Yes, I'm comfortable with standard industry tools", bonus = 15, correct = true },
+				{ text = "Some experience, always looking to learn more", bonus = 10 },
+				{ text = "Not much, but I'm a fast learner", bonus = 5 },
+				{ text = "No, I've never used those", bonus = -5 },
+			},
+		},
+	},
+	
+	-- Office & Business
+	office = {
+		{
+			question = "How do you prioritize when you have multiple deadlines?",
+			options = {
+				{ text = "I create a list, assess urgency, and tackle critical items first", bonus = 15, correct = true },
+				{ text = "I work on whatever's in front of me", bonus = -5 },
+				{ text = "I ask my manager what to do", bonus = 5 },
+				{ text = "I stay late to finish everything", bonus = 0 },
+			},
+		},
+		{
+			question = "Describe your experience with office software (Excel, Word, etc.)",
+			options = {
+				{ text = "Proficient in all major applications with advanced skills", bonus = 15, correct = true },
+				{ text = "I know the basics", bonus = 5 },
+				{ text = "I can Google how to do things", bonus = 0 },
+				{ text = "I struggle with technology", bonus = -15 },
+			},
+		},
+		{
+			question = "How do you handle a disagreement with a coworker?",
+			options = {
+				{ text = "Discuss it professionally and find common ground", bonus = 15, correct = true },
+				{ text = "I avoid conflict and let it go", bonus = 0 },
+				{ text = "I go to HR immediately", bonus = -5 },
+				{ text = "I stand my ground no matter what", bonus = -10 },
+			},
+		},
+	},
+	
+	-- Technology Jobs
+	tech = {
+		{
+			question = "How do you stay current with rapidly changing technology?",
+			options = {
+				{ text = "Continuous learning, online courses, reading tech news daily", bonus = 15, correct = true },
+				{ text = "I learn what I need for my current job", bonus = 0 },
+				{ text = "Technology changes too fast to keep up", bonus = -15 },
+				{ text = "I attend conferences when I can", bonus = 10 },
+			},
+		},
+		{
+			question = "Describe a challenging technical problem you solved.",
+			options = {
+				{ text = "I broke it down, researched solutions, and implemented a fix", bonus = 15, correct = true },
+				{ text = "I usually ask someone else for help", bonus = -5 },
+				{ text = "I don't remember a specific example", bonus = -10 },
+				{ text = "I tried different things until something worked", bonus = 5 },
+			},
+		},
+		{
+			question = "How do you handle tight deadlines on a project?",
+			options = {
+				{ text = "Prioritize features, communicate clearly, and deliver incrementally", bonus = 15, correct = true },
+				{ text = "I work overtime until it's done", bonus = 5 },
+				{ text = "I usually miss deadlines", bonus = -20 },
+				{ text = "I negotiate for more time", bonus = 0 },
+			},
+		},
+	},
+	
+	-- Medical/Healthcare
+	medical = {
+		{
+			question = "How do you handle high-stress medical situations?",
+			options = {
+				{ text = "Stay calm, follow protocols, and focus on the patient", bonus = 15, correct = true },
+				{ text = "I get stressed but push through", bonus = 0 },
+				{ text = "I freeze sometimes under pressure", bonus = -15 },
+				{ text = "I rely on my team for support", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you maintain patient confidentiality?",
+			options = {
+				{ text = "Strict adherence to HIPAA, never discuss patients outside work", bonus = 15, correct = true },
+				{ text = "I'm careful about what I share", bonus = 5 },
+				{ text = "I might mention things to family sometimes", bonus = -20 },
+				{ text = "I follow the rules my employer sets", bonus = 5 },
+			},
+		},
+		{
+			question = "What motivates you to work in healthcare?",
+			options = {
+				{ text = "A genuine desire to help people and make a difference", bonus = 15, correct = true },
+				{ text = "The job security and benefits", bonus = -5 },
+				{ text = "The salary is good", bonus = -10 },
+				{ text = "I enjoy the challenge of medical work", bonus = 10 },
+			},
+		},
+	},
+	
+	-- Legal
+	law = {
+		{
+			question = "How do you handle confidential client information?",
+			options = {
+				{ text = "Absolute discretion, secure handling, attorney-client privilege", bonus = 15, correct = true },
+				{ text = "I'm careful about what I share", bonus = 5 },
+				{ text = "I discuss cases with my spouse sometimes", bonus = -20 },
+				{ text = "I follow firm policies", bonus = 5 },
+			},
+		},
+		{
+			question = "How do you manage multiple case deadlines?",
+			options = {
+				{ text = "Meticulous calendar management and prioritization", bonus = 15, correct = true },
+				{ text = "I work late when needed", bonus = 5 },
+				{ text = "I've missed deadlines before", bonus = -20 },
+				{ text = "I delegate when possible", bonus = 10 },
+			},
+		},
+		{
+			question = "Why did you choose a career in law?",
+			options = {
+				{ text = "Passion for justice and helping people navigate legal challenges", bonus = 15, correct = true },
+				{ text = "The salary and prestige", bonus = -5 },
+				{ text = "My family pushed me into it", bonus = -10 },
+				{ text = "I enjoy analytical work and research", bonus = 10 },
+			},
+		},
+	},
+	
+	-- Finance
+	finance = {
+		{
+			question = "How do you ensure accuracy in financial work?",
+			options = {
+				{ text = "Double-check everything, use verification systems, peer review", bonus = 15, correct = true },
+				{ text = "I'm usually accurate", bonus = 5 },
+				{ text = "Mistakes happen, that's what audits are for", bonus = -15 },
+				{ text = "I work carefully but quickly", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you handle confidential financial information?",
+			options = {
+				{ text = "Strict confidentiality, secure systems, never discuss outside work", bonus = 15, correct = true },
+				{ text = "I follow company policies", bonus = 5 },
+				{ text = "I'm generally careful", bonus = 0 },
+				{ text = "I share analysis with friends for advice", bonus = -20 },
+			},
+		},
+		{
+			question = "How do you stay updated on market trends and regulations?",
+			options = {
+				{ text = "Daily financial news, continuing education, industry publications", bonus = 15, correct = true },
+				{ text = "I read the news occasionally", bonus = 0 },
+				{ text = "My company handles training", bonus = 5 },
+				{ text = "I don't really follow markets", bonus = -15 },
+			},
+		},
+	},
+	
+	-- Creative
+	creative = {
+		{
+			question = "How do you handle creative feedback and criticism?",
+			options = {
+				{ text = "Welcome it as growth opportunity, separate ego from work", bonus = 15, correct = true },
+				{ text = "It stings but I try to learn from it", bonus = 5 },
+				{ text = "I take it personally sometimes", bonus = -10 },
+				{ text = "I defend my creative choices", bonus = -5 },
+			},
+		},
+		{
+			question = "How do you handle tight creative deadlines?",
+			options = {
+				{ text = "Start early, create drafts quickly, refine iteratively", bonus = 15, correct = true },
+				{ text = "I work best under pressure", bonus = 5 },
+				{ text = "I need time to let ideas develop", bonus = -5 },
+				{ text = "I usually ask for extensions", bonus = -10 },
+			},
+		},
+		{
+			question = "What inspires your creative work?",
+			options = {
+				{ text = "A combination of research, observation, and personal passion", bonus = 15, correct = true },
+				{ text = "I just make what the client wants", bonus = 0 },
+				{ text = "I wait for inspiration to strike", bonus = -5 },
+				{ text = "Other artists' work that I can adapt", bonus = 5 },
+			},
+		},
+	},
+	
+	-- Government/Military
+	government = {
+		{
+			question = "Why do you want to serve in public service?",
+			options = {
+				{ text = "A genuine commitment to serving my community and country", bonus = 15, correct = true },
+				{ text = "Job security and benefits", bonus = -5 },
+				{ text = "It seems like steady work", bonus = -10 },
+				{ text = "I want to make a positive impact on society", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you handle following rules and procedures you disagree with?",
+			options = {
+				{ text = "Follow them professionally while using proper channels to advocate change", bonus = 15, correct = true },
+				{ text = "I follow them reluctantly", bonus = 0 },
+				{ text = "I do things my own way sometimes", bonus = -15 },
+				{ text = "I raise concerns with supervisors", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you maintain integrity in challenging situations?",
+			options = {
+				{ text = "Always do the right thing, even when it's difficult", bonus = 15, correct = true },
+				{ text = "I try my best to be ethical", bonus = 5 },
+				{ text = "It depends on the situation", bonus = -10 },
+				{ text = "I follow my supervisor's guidance", bonus = 0 },
+			},
+		},
+	},
+	
+	-- Military
+	military = {
+		{
+			question = "Are you prepared for the physical and mental demands of military service?",
+			options = {
+				{ text = "Yes, I've been training and I'm committed to excellence", bonus = 15, correct = true },
+				{ text = "I think I can handle it", bonus = 5 },
+				{ text = "I'm not sure honestly", bonus = -10 },
+				{ text = "I've heard it's tough but I'll try", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you respond to authority and orders?",
+			options = {
+				{ text = "I understand chain of command and follow lawful orders without question", bonus = 15, correct = true },
+				{ text = "I follow orders that make sense to me", bonus = -10 },
+				{ text = "I ask questions first", bonus = 0 },
+				{ text = "I respect authority but have my own opinions", bonus = 5 },
+			},
+		},
+		{
+			question = "Why do you want to serve in the military?",
+			options = {
+				{ text = "To serve my country, develop discipline, and be part of something greater", bonus = 15, correct = true },
+				{ text = "For the benefits and job training", bonus = 0 },
+				{ text = "I didn't have other options", bonus = -10 },
+				{ text = "To challenge myself and grow", bonus = 10 },
+			},
+		},
+	},
+	
+	-- Science
+	science = {
+		{
+			question = "How do you approach experimental failures?",
+			options = {
+				{ text = "Analyze what went wrong, document findings, iterate on methods", bonus = 15, correct = true },
+				{ text = "Try again with the same approach", bonus = -5 },
+				{ text = "Get frustrated and move on", bonus = -15 },
+				{ text = "Ask colleagues for help", bonus = 5 },
+			},
+		},
+		{
+			question = "How do you stay current with scientific developments?",
+			options = {
+				{ text = "Read journals regularly, attend conferences, collaborate with peers", bonus = 15, correct = true },
+				{ text = "I read what's relevant to my work", bonus = 5 },
+				{ text = "I'm too busy with my own research", bonus = -10 },
+				{ text = "I rely on news summaries", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you handle data integrity and ethical research?",
+			options = {
+				{ text = "Rigorous documentation, honest reporting, never manipulate results", bonus = 15, correct = true },
+				{ text = "I follow IRB guidelines", bonus = 5 },
+				{ text = "Results matter more than process", bonus = -20 },
+				{ text = "I'm careful with my work", bonus = 5 },
+			},
+		},
+	},
+	
+	-- Sports/Athletics
+	sports = {
+		{
+			question = "How do you handle pressure in competitive situations?",
+			options = {
+				{ text = "I thrive on it, stay focused, and trust my training", bonus = 15, correct = true },
+				{ text = "I get nervous but perform okay", bonus = 5 },
+				{ text = "I choke under pressure sometimes", bonus = -15 },
+				{ text = "I don't like high-pressure situations", bonus = -10 },
+			},
+		},
+		{
+			question = "How committed are you to training and physical conditioning?",
+			options = {
+				{ text = "100% - I train daily and prioritize my health", bonus = 15, correct = true },
+				{ text = "I work out regularly", bonus = 5 },
+				{ text = "I could be more consistent", bonus = -5 },
+				{ text = "Training is boring but necessary", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you handle losing or setbacks?",
+			options = {
+				{ text = "Learn from it, work harder, come back stronger", bonus = 15, correct = true },
+				{ text = "It takes me time to bounce back", bonus = 0 },
+				{ text = "I get discouraged but keep going", bonus = 5 },
+				{ text = "I hate losing and it affects me for a while", bonus = -10 },
+			},
+		},
+	},
+	
+	-- Education (Teaching)
+	education = {
+		{
+			question = "How do you handle difficult students?",
+			options = {
+				{ text = "Understand their needs, adapt approach, build positive relationships", bonus = 15, correct = true },
+				{ text = "Strict discipline and consequences", bonus = 0 },
+				{ text = "Send them to the principal", bonus = -5 },
+				{ text = "I struggle with classroom management", bonus = -15 },
+			},
+		},
+		{
+			question = "What's your teaching philosophy?",
+			options = {
+				{ text = "Student-centered learning with engagement and critical thinking", bonus = 15, correct = true },
+				{ text = "Follow the curriculum exactly", bonus = 0 },
+				{ text = "Lecture and test, traditional approach", bonus = -5 },
+				{ text = "I'm still developing my style", bonus = 5 },
+			},
+		},
+		{
+			question = "How do you measure student success?",
+			options = {
+				{ text = "Multiple metrics - growth, engagement, and understanding, not just tests", bonus = 15, correct = true },
+				{ text = "Test scores primarily", bonus = 0 },
+				{ text = "Grades and attendance", bonus = -5 },
+				{ text = "I follow school assessment guidelines", bonus = 5 },
+			},
+		},
+	},
+	
+	-- Celebrity/Fame
+	celebrity = {
+		{
+			question = "How do you handle public criticism and negative comments?",
+			options = {
+				{ text = "Focus on my craft, ignore trolls, listen to constructive feedback", bonus = 15, correct = true },
+				{ text = "I respond to every comment", bonus = -10 },
+				{ text = "It really affects my mental health", bonus = -5 },
+				{ text = "I try not to read comments", bonus = 5 },
+			},
+		},
+		{
+			question = "What sets you apart from other creators?",
+			options = {
+				{ text = "Unique perspective, authentic voice, consistent quality", bonus = 15, correct = true },
+				{ text = "I follow trends and do what works", bonus = 0 },
+				{ text = "I'm still figuring that out", bonus = -5 },
+				{ text = "I have more followers than most", bonus = -5 },
+			},
+		},
+		{
+			question = "How do you maintain work-life balance with a public career?",
+			options = {
+				{ text = "Set boundaries, protect private time, stay grounded", bonus = 15, correct = true },
+				{ text = "My work is my life", bonus = 0 },
+				{ text = "I struggle with boundaries", bonus = -10 },
+				{ text = "I keep some things private", bonus = 5 },
+			},
+		},
+	},
+	
+	-- Esports/Gaming
+	esports = {
+		{
+			question = "How many hours do you practice your main game?",
+			options = {
+				{ text = "6-10 hours daily with structured training", bonus = 15, correct = true },
+				{ text = "A few hours when I feel like it", bonus = -5 },
+				{ text = "I play casually a lot", bonus = -10 },
+				{ text = "4-6 hours with regular breaks", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you handle tilt or frustration during competition?",
+			options = {
+				{ text = "Take a breath, reset mentally, stay focused on the next play", bonus = 15, correct = true },
+				{ text = "I get angry and it affects my play", bonus = -15 },
+				{ text = "I try to calm down but it's hard", bonus = 0 },
+				{ text = "I blame my teammates sometimes", bonus = -10 },
+			},
+		},
+		{
+			question = "Are you willing to relocate for a team house?",
+			options = {
+				{ text = "Absolutely, I'm committed to going pro", bonus = 15, correct = true },
+				{ text = "Maybe, depends on the location", bonus = 0 },
+				{ text = "I'd prefer to play from home", bonus = -10 },
+				{ text = "I'd have to think about it", bonus = -5 },
+			},
+		},
+	},
+	
+	-- Racing
+	racing = {
+		{
+			question = "How do you handle high-speed, high-risk situations?",
+			options = {
+				{ text = "Stay calm, trust my instincts, and rely on training", bonus = 15, correct = true },
+				{ text = "I get an adrenaline rush", bonus = 5 },
+				{ text = "I can be reckless sometimes", bonus = -15 },
+				{ text = "I'm cautious and avoid risks", bonus = -5 },
+			},
+		},
+		{
+			question = "What's your approach to vehicle maintenance?",
+			options = {
+				{ text = "Know my machine inside and out, work closely with mechanics", bonus = 15, correct = true },
+				{ text = "I let the team handle that", bonus = 0 },
+				{ text = "I just drive, don't understand the technical stuff", bonus = -10 },
+				{ text = "Basic understanding, learning more", bonus = 5 },
+			},
+		},
+		{
+			question = "How do you handle losing a race?",
+			options = {
+				{ text = "Analyze what went wrong, improve for next time", bonus = 15, correct = true },
+				{ text = "I get angry at myself or the car", bonus = -10 },
+				{ text = "It doesn't bother me much", bonus = 0 },
+				{ text = "I blame external factors sometimes", bonus = -5 },
+			},
+		},
+	},
+	
+	-- Hacker/Cybersecurity
+	hacker = {
+		{
+			question = "How do you approach ethical boundaries in security work?",
+			options = {
+				{ text = "Strict ethics - only authorized testing, responsible disclosure", bonus = 15, correct = true },
+				{ text = "Gray areas are sometimes necessary", bonus = -10 },
+				{ text = "I follow company policy", bonus = 5 },
+				{ text = "The ends justify the means", bonus = -20 },
+			},
+		},
+		{
+			question = "Describe your experience with penetration testing.",
+			options = {
+				{ text = "Extensive - CTFs, bug bounties, professional certifications", bonus = 15, correct = true },
+				{ text = "Some practice on my own systems", bonus = 5 },
+				{ text = "I've tried hacking games", bonus = -5 },
+				{ text = "Mostly theoretical knowledge", bonus = 0 },
+			},
+		},
+		{
+			question = "How do you stay current with security threats?",
+			options = {
+				{ text = "Daily security feeds, CVE tracking, research community", bonus = 15, correct = true },
+				{ text = "I read news when something big happens", bonus = 0 },
+				{ text = "I focus on what I already know", bonus = -10 },
+				{ text = "Company training keeps me updated", bonus = 5 },
+			},
+		},
+	},
+	
+	-- Criminal (Mafia/Street)
+	criminal = {
+		{
+			question = "Can you be trusted to keep your mouth shut?",
+			options = {
+				{ text = "Loyalty is everything. I'd never talk to cops.", bonus = 15, correct = true },
+				{ text = "Depends on the situation", bonus = -15 },
+				{ text = "I've never been in that situation", bonus = 0 },
+				{ text = "I'm loyal to those who are loyal to me", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you handle disrespect?",
+			options = {
+				{ text = "Send a message that it won't be tolerated", bonus = 15, correct = true },
+				{ text = "Let it go, not worth the trouble", bonus = -10 },
+				{ text = "It depends who it's from", bonus = 5 },
+				{ text = "I get revenge eventually", bonus = 5 },
+			},
+		},
+		{
+			question = "Why do you want in on this life?",
+			options = {
+				{ text = "Money, respect, and I'm built for this", bonus = 15, correct = true },
+				{ text = "No other options", bonus = 0 },
+				{ text = "I want quick money", bonus = -5 },
+				{ text = "I've got connections and skills", bonus = 10 },
+			},
+		},
+	},
+}
+
+-- Get interview questions for a job category
+local function getInterviewQuestionsForJob(jobCategory)
+	local questions = InterviewQuestions[jobCategory] or InterviewQuestions.default
+	-- Always include at least one default question for variety
+	local result = {}
+	for i, q in ipairs(questions) do
+		if i <= 2 then -- Take 2 category-specific questions
+			table.insert(result, q)
+		end
+	end
+	-- Add one default question
+	if InterviewQuestions.default[1] then
+		table.insert(result, InterviewQuestions.default[1])
+	end
+	return result
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #1: CAREER PATHS & ENTRY-LEVEL SYSTEM
 -- Jobs marked as promotions cannot be applied to directly - must be earned through work performance
 -- This reduces the visible job list to ~50 entry-level positions
@@ -3884,6 +4529,623 @@ function OccupationScreen:hideJobInfoModal()
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FEATURE: COMPREHENSIVE INTERVIEW MODAL SYSTEM
+-- Every job now requires an interview before hiring!
+-- Questions are category-specific and affect hiring success
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Interview state tracking
+local interviewState = {
+	active = false,
+	jobId = nil,
+	jobData = nil,
+	questions = {},
+	currentQuestionIndex = 1,
+	totalScore = 0,
+	answers = {},
+}
+
+function OccupationScreen:showInterviewModal(jobId, jobData)
+	log("Starting interview for job: " .. tostring(jobId))
+	
+	-- Determine job category for questions
+	local category = jobData.category or "default"
+	local categoryToInterviewType = {
+		["Service"] = "service",
+		["FastFood"] = "entry",
+		["Retail"] = "entry",
+		["Trades"] = "trades",
+		["Technology"] = "tech",
+		["Office"] = "office",
+		["Corporate"] = "office",
+		["Finance"] = "finance",
+		["Medical"] = "medical",
+		["Healthcare"] = "medical",
+		["Legal"] = "law",
+		["Law"] = "law",
+		["Government"] = "government",
+		["Military"] = "military",
+		["Science"] = "science",
+		["Creative"] = "creative",
+		["Arts"] = "creative",
+		["Media"] = "creative",
+		["Sports"] = "sports",
+		["Athletics"] = "sports",
+		["Education"] = "education",
+		["Celebrity"] = "celebrity",
+		["Fame"] = "celebrity",
+		["Influencer"] = "celebrity",
+		["Esports"] = "esports",
+		["Gaming"] = "esports",
+		["Racing"] = "racing",
+		["Hacker"] = "hacker",
+		["Cybersecurity"] = "hacker",
+		["Crime"] = "criminal",
+		["Mafia"] = "criminal",
+	}
+	
+	local interviewType = categoryToInterviewType[category] or "default"
+	local questions = getInterviewQuestionsForJob(interviewType)
+	
+	-- Reset interview state
+	interviewState = {
+		active = true,
+		jobId = jobId,
+		jobData = jobData,
+		questions = questions,
+		currentQuestionIndex = 1,
+		totalScore = 50, -- Base score of 50%
+		answers = {},
+	}
+	
+	-- Create overlay
+	if self.interviewOverlay then
+		self.interviewOverlay:Destroy()
+	end
+	
+	local overlay = Instance.new("Frame")
+	overlay.Name = "InterviewOverlay"
+	overlay.Size = UDim2.new(1, 0, 1, 0)
+	overlay.Position = UDim2.new(0, 0, 0, 0)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.4
+	overlay.ZIndex = 100
+	overlay.Parent = self.ui
+	self.interviewOverlay = overlay
+	
+	-- Modal dimensions (responsive)
+	local modalWidth = IS_TINY_PHONE and 0.95 or (IS_SMALL_PHONE and 0.92 or 0.88)
+	local modalHeight = IS_TINY_PHONE and 0.8 or (IS_SMALL_PHONE and 0.75 or 0.7)
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(modalWidth, 0, modalHeight, 0)
+	shadow.Position = UDim2.new(0.5, 3, 0.5, 3)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	shadow.BackgroundTransparency = 0.7
+	shadow.ZIndex = 101
+	shadow.Parent = overlay
+	UI.corner(shadow, 16)
+	self.interviewShadow = shadow
+	
+	-- Main modal shell
+	local shell = Instance.new("Frame")
+	shell.Name = "InterviewShell"
+	shell.Size = UDim2.new(modalWidth, 0, modalHeight, 0)
+	shell.Position = UDim2.new(0.5, 0, 0.5, 25)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.BackgroundColor3 = C.White
+	shell.BackgroundTransparency = 0.5
+	shell.ZIndex = 102
+	shell.Parent = overlay
+	UI.corner(shell, 16)
+	self.interviewShell = shell
+	
+	-- Content frame
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, -px(24), 1, -px(24))
+	content.Position = UDim2.new(0, px(12), 0, px(12))
+	content.BackgroundTransparency = 1
+	content.ZIndex = 103
+	content.Parent = shell
+	self.interviewContent = content
+	
+	-- Header with job info
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, px(70))
+	header.BackgroundTransparency = 1
+	header.ZIndex = 104
+	header.Parent = content
+	
+	-- Job emoji
+	local emoji = Instance.new("TextLabel")
+	emoji.Name = "Emoji"
+	emoji.Size = UDim2.new(0, px(50), 0, px(50))
+	emoji.Position = UDim2.new(0, 0, 0, px(5))
+	emoji.BackgroundTransparency = 1
+	emoji.Text = jobData.emoji or "💼"
+	emoji.TextSize = textSize(32)
+	emoji.TextColor3 = C.TextPrimary
+	emoji.Font = Enum.Font.GothamBold
+	emoji.ZIndex = 105
+	emoji.Parent = header
+	
+	-- Interview title
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.Size = UDim2.new(1, -px(60), 0, px(30))
+	title.Position = UDim2.new(0, px(55), 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "Interview: " .. (jobData.name or "Position")
+	title.TextSize = textSize(IS_TINY_PHONE and 16 or 18)
+	title.TextColor3 = C.TextPrimary
+	title.Font = Enum.Font.GothamBold
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 105
+	title.Parent = header
+	
+	-- Company name
+	local company = Instance.new("TextLabel")
+	company.Name = "Company"
+	company.Size = UDim2.new(1, -px(60), 0, px(20))
+	company.Position = UDim2.new(0, px(55), 0, px(28))
+	company.BackgroundTransparency = 1
+	company.Text = "at " .. (jobData.company or "Company")
+	company.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	company.TextColor3 = C.TextSecondary
+	company.Font = Enum.Font.Gotham
+	company.TextXAlignment = Enum.TextXAlignment.Left
+	company.ZIndex = 105
+	company.Parent = header
+	
+	-- Progress indicator
+	local progress = Instance.new("TextLabel")
+	progress.Name = "Progress"
+	progress.Size = UDim2.new(1, 0, 0, px(20))
+	progress.Position = UDim2.new(0, 0, 0, px(50))
+	progress.BackgroundTransparency = 1
+	progress.Text = "Question 1 of " .. #questions
+	progress.TextSize = textSize(IS_TINY_PHONE and 11 or 12)
+	progress.TextColor3 = C.Purple
+	progress.Font = Enum.Font.GothamMedium
+	progress.TextXAlignment = Enum.TextXAlignment.Left
+	progress.ZIndex = 105
+	progress.Parent = header
+	self.interviewProgress = progress
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "Close"
+	closeBtn.Size = UDim2.new(0, px(36), 0, px(36))
+	closeBtn.Position = UDim2.new(1, -px(36), 0, 0)
+	closeBtn.BackgroundColor3 = C.Gray100
+	closeBtn.Text = "✕"
+	closeBtn.TextSize = textSize(16)
+	closeBtn.TextColor3 = C.TextSecondary
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.ZIndex = 106
+	closeBtn.Parent = header
+	UI.corner(closeBtn, 8)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hideInterviewModal()
+		self:addFeed("📋 You walked out of the interview.")
+	end)
+	
+	-- Question area
+	local questionArea = Instance.new("Frame")
+	questionArea.Name = "QuestionArea"
+	questionArea.Size = UDim2.new(1, 0, 1, -px(80))
+	questionArea.Position = UDim2.new(0, 0, 0, px(75))
+	questionArea.BackgroundTransparency = 1
+	questionArea.ZIndex = 104
+	questionArea.Parent = content
+	self.interviewQuestionArea = questionArea
+	
+	-- Animate in
+	local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	shell.Position = UDim2.new(0.5, 0, 0.5, 50)
+	shell.BackgroundTransparency = 0.5
+	
+	UI.tween(shell, tweenInfo, {
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		BackgroundTransparency = 0
+	})
+	UI.tween(shadow, tweenInfo, {
+		Position = UDim2.new(0.5, 3, 0.5, 3)
+	})
+	
+	-- Show first question
+	self:showInterviewQuestion(1)
+	
+	log("Interview modal created successfully")
+end
+
+function OccupationScreen:showInterviewQuestion(index)
+	if not interviewState.active then return end
+	if index > #interviewState.questions then
+		-- Interview complete!
+		self:completeInterview()
+		return
+	end
+	
+	-- Clear previous question
+	for _, child in ipairs(self.interviewQuestionArea:GetChildren()) do
+		child:Destroy()
+	end
+	
+	local question = interviewState.questions[index]
+	interviewState.currentQuestionIndex = index
+	
+	-- Update progress
+	self.interviewProgress.Text = "Question " .. index .. " of " .. #interviewState.questions
+	
+	-- Question text with speech bubble styling
+	local questionBubble = Instance.new("Frame")
+	questionBubble.Name = "QuestionBubble"
+	questionBubble.Size = UDim2.new(1, 0, 0, px(80))
+	questionBubble.Position = UDim2.new(0, 0, 0, 0)
+	questionBubble.BackgroundColor3 = Color3.fromRGB(240, 245, 255)
+	questionBubble.ZIndex = 105
+	questionBubble.Parent = self.interviewQuestionArea
+	UI.corner(questionBubble, 12)
+	UI.stroke(questionBubble, 1, 0.8, C.Purple)
+	
+	-- Interviewer emoji
+	local interviewer = Instance.new("TextLabel")
+	interviewer.Name = "Interviewer"
+	interviewer.Size = UDim2.new(0, px(30), 0, px(30))
+	interviewer.Position = UDim2.new(0, px(10), 0, px(10))
+	interviewer.BackgroundTransparency = 1
+	interviewer.Text = "🧑‍💼"
+	interviewer.TextSize = textSize(20)
+	interviewer.ZIndex = 106
+	interviewer.Parent = questionBubble
+	
+	-- Question text
+	local qText = Instance.new("TextLabel")
+	qText.Name = "QuestionText"
+	qText.Size = UDim2.new(1, -px(50), 1, -px(20))
+	qText.Position = UDim2.new(0, px(45), 0, px(10))
+	qText.BackgroundTransparency = 1
+	qText.Text = '"' .. question.question .. '"'
+	qText.TextSize = textSize(IS_TINY_PHONE and 13 or 15)
+	qText.TextColor3 = C.TextPrimary
+	qText.Font = Enum.Font.GothamMedium
+	qText.TextXAlignment = Enum.TextXAlignment.Left
+	qText.TextYAlignment = Enum.TextYAlignment.Top
+	qText.TextWrapped = true
+	qText.ZIndex = 106
+	qText.Parent = questionBubble
+	
+	-- Answer options
+	local optionsFrame = Instance.new("ScrollingFrame")
+	optionsFrame.Name = "Options"
+	optionsFrame.Size = UDim2.new(1, 0, 1, -px(95))
+	optionsFrame.Position = UDim2.new(0, 0, 0, px(90))
+	optionsFrame.BackgroundTransparency = 1
+	optionsFrame.ScrollBarThickness = 4
+	optionsFrame.ScrollBarImageColor3 = C.Gray300
+	optionsFrame.ZIndex = 105
+	optionsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	optionsFrame.Parent = self.interviewQuestionArea
+	
+	local optionLayout = Instance.new("UIListLayout")
+	optionLayout.Padding = UDim.new(0, px(8))
+	optionLayout.Parent = optionsFrame
+	
+	-- Shuffle options for fairness
+	local shuffledOptions = {}
+	for i, opt in ipairs(question.options) do
+		table.insert(shuffledOptions, { index = i, data = opt })
+	end
+	-- Simple shuffle
+	for i = #shuffledOptions, 2, -1 do
+		local j = math.random(1, i)
+		shuffledOptions[i], shuffledOptions[j] = shuffledOptions[j], shuffledOptions[i]
+	end
+	
+	local btnHeight = IS_TINY_PHONE and px(55) or px(60)
+	
+	for i, optData in ipairs(shuffledOptions) do
+		local opt = optData.data
+		local optBtn = Instance.new("TextButton")
+		optBtn.Name = "Option" .. i
+		optBtn.Size = UDim2.new(1, -px(8), 0, btnHeight)
+		optBtn.BackgroundColor3 = C.White
+		optBtn.Text = ""
+		optBtn.AutoButtonColor = false
+		optBtn.ZIndex = 106
+		optBtn.LayoutOrder = i
+		optBtn.Parent = optionsFrame
+		UI.corner(optBtn, 10)
+		UI.stroke(optBtn, 1, 0.8, C.Gray300)
+		
+		-- Option text
+		local optText = Instance.new("TextLabel")
+		optText.Name = "Text"
+		optText.Size = UDim2.new(1, -px(20), 1, -px(10))
+		optText.Position = UDim2.new(0, px(10), 0, px(5))
+		optText.BackgroundTransparency = 1
+		optText.Text = opt.text
+		optText.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+		optText.TextColor3 = C.TextPrimary
+		optText.Font = Enum.Font.Gotham
+		optText.TextXAlignment = Enum.TextXAlignment.Left
+		optText.TextWrapped = true
+		optText.ZIndex = 107
+		optText.Parent = optBtn
+		
+		-- Hover effect
+		optBtn.MouseEnter:Connect(function()
+			UI.tween(optBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(245, 248, 255) })
+			UI.tween(optBtn, TweenInfo.new(0.15), { Size = UDim2.new(1, -px(4), 0, btnHeight + px(2)) })
+		end)
+		
+		optBtn.MouseLeave:Connect(function()
+			UI.tween(optBtn, TweenInfo.new(0.15), { BackgroundColor3 = C.White })
+			UI.tween(optBtn, TweenInfo.new(0.15), { Size = UDim2.new(1, -px(8), 0, btnHeight) })
+		end)
+		
+		-- Click handler
+		optBtn.MouseButton1Click:Connect(function()
+			self:answerInterviewQuestion(opt)
+		end)
+	end
+	
+	-- Update canvas size
+	optionsFrame.CanvasSize = UDim2.new(0, 0, 0, #shuffledOptions * (btnHeight + px(8)))
+end
+
+function OccupationScreen:answerInterviewQuestion(answer)
+	if not interviewState.active then return end
+	
+	-- Record answer
+	table.insert(interviewState.answers, {
+		question = interviewState.questions[interviewState.currentQuestionIndex].question,
+		answer = answer.text,
+		bonus = answer.bonus,
+		correct = answer.correct or false,
+	})
+	
+	-- Update score
+	interviewState.totalScore = interviewState.totalScore + (answer.bonus or 0)
+	
+	-- Show brief feedback
+	local feedbackColor = answer.bonus > 0 and Color3.fromRGB(46, 204, 113) or 
+	                       (answer.bonus < 0 and Color3.fromRGB(231, 76, 60) or Color3.fromRGB(149, 165, 166))
+	
+	local feedbackText = answer.bonus > 5 and "Great answer!" or
+	                      (answer.bonus > 0 and "Good answer." or
+	                      (answer.bonus < -5 and "Hmm..." or "Noted."))
+	
+	-- Quick feedback flash
+	if self.interviewQuestionArea then
+		local feedback = Instance.new("TextLabel")
+		feedback.Name = "Feedback"
+		feedback.Size = UDim2.new(1, 0, 0, px(30))
+		feedback.Position = UDim2.new(0, 0, 0, px(55))
+		feedback.BackgroundTransparency = 1
+		feedback.Text = feedbackText
+		feedback.TextSize = textSize(14)
+		feedback.TextColor3 = feedbackColor
+		feedback.Font = Enum.Font.GothamBold
+		feedback.ZIndex = 110
+		feedback.Parent = self.interviewQuestionArea
+		
+		-- Animate feedback
+		feedback.TextTransparency = 1
+		UI.tween(feedback, TweenInfo.new(0.2), { TextTransparency = 0 })
+		
+		task.delay(0.5, function()
+			if feedback and feedback.Parent then
+				UI.tween(feedback, TweenInfo.new(0.2), { TextTransparency = 1 })
+				task.delay(0.2, function()
+					if feedback and feedback.Parent then
+						feedback:Destroy()
+					end
+				end)
+			end
+		end)
+	end
+	
+	-- Move to next question after brief delay
+	task.delay(0.7, function()
+		if interviewState.active then
+			self:showInterviewQuestion(interviewState.currentQuestionIndex + 1)
+		end
+	end)
+end
+
+function OccupationScreen:completeInterview()
+	if not interviewState.active then return end
+	
+	log("Interview complete! Score: " .. interviewState.totalScore)
+	
+	-- Clear question area
+	for _, child in ipairs(self.interviewQuestionArea:GetChildren()) do
+		child:Destroy()
+	end
+	
+	-- Calculate result
+	local score = math.max(0, math.min(100, interviewState.totalScore))
+	local passed = score >= 50
+	local perfectScore = score >= 80
+	
+	-- Results display
+	local resultFrame = Instance.new("Frame")
+	resultFrame.Name = "Results"
+	resultFrame.Size = UDim2.new(1, 0, 1, 0)
+	resultFrame.BackgroundTransparency = 1
+	resultFrame.ZIndex = 105
+	resultFrame.Parent = self.interviewQuestionArea
+	
+	-- Result emoji
+	local resultEmoji = Instance.new("TextLabel")
+	resultEmoji.Name = "Emoji"
+	resultEmoji.Size = UDim2.new(1, 0, 0, px(60))
+	resultEmoji.Position = UDim2.new(0, 0, 0, px(20))
+	resultEmoji.BackgroundTransparency = 1
+	resultEmoji.Text = passed and (perfectScore and "🎉" or "✅") or "❌"
+	resultEmoji.TextSize = textSize(48)
+	resultEmoji.ZIndex = 106
+	resultEmoji.Parent = resultFrame
+	
+	-- Result title
+	local resultTitle = Instance.new("TextLabel")
+	resultTitle.Name = "Title"
+	resultTitle.Size = UDim2.new(1, 0, 0, px(30))
+	resultTitle.Position = UDim2.new(0, 0, 0, px(85))
+	resultTitle.BackgroundTransparency = 1
+	resultTitle.Text = passed and (perfectScore and "Excellent Interview!" or "Interview Passed!") or "Interview Failed"
+	resultTitle.TextSize = textSize(IS_TINY_PHONE and 18 or 22)
+	resultTitle.TextColor3 = passed and C.Green or C.Red
+	resultTitle.Font = Enum.Font.GothamBold
+	resultTitle.ZIndex = 106
+	resultTitle.Parent = resultFrame
+	
+	-- Score display
+	local scoreLabel = Instance.new("TextLabel")
+	scoreLabel.Name = "Score"
+	scoreLabel.Size = UDim2.new(1, 0, 0, px(25))
+	scoreLabel.Position = UDim2.new(0, 0, 0, px(115))
+	scoreLabel.BackgroundTransparency = 1
+	scoreLabel.Text = "Score: " .. math.floor(score) .. "%"
+	scoreLabel.TextSize = textSize(IS_TINY_PHONE and 14 or 16)
+	scoreLabel.TextColor3 = C.TextSecondary
+	scoreLabel.Font = Enum.Font.GothamMedium
+	scoreLabel.ZIndex = 106
+	scoreLabel.Parent = resultFrame
+	
+	-- Feedback message
+	local feedbackMsg = passed and 
+		(perfectScore and "They were very impressed! You've got the job!" or "Good interview. They've decided to hire you!") or
+		"Unfortunately, they decided to go with another candidate."
+	
+	local feedbackLabel = Instance.new("TextLabel")
+	feedbackLabel.Name = "Feedback"
+	feedbackLabel.Size = UDim2.new(1, -px(20), 0, px(50))
+	feedbackLabel.Position = UDim2.new(0, px(10), 0, px(150))
+	feedbackLabel.BackgroundTransparency = 1
+	feedbackLabel.Text = feedbackMsg
+	feedbackLabel.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	feedbackLabel.TextColor3 = C.TextPrimary
+	feedbackLabel.Font = Enum.Font.Gotham
+	feedbackLabel.TextWrapped = true
+	feedbackLabel.ZIndex = 106
+	feedbackLabel.Parent = resultFrame
+	
+	-- Action button
+	local actionBtn = Instance.new("TextButton")
+	actionBtn.Name = "Action"
+	actionBtn.Size = UDim2.new(0.8, 0, 0, px(45))
+	actionBtn.Position = UDim2.new(0.1, 0, 0, px(220))
+	actionBtn.BackgroundColor3 = passed and C.Green or C.Gray400
+	actionBtn.Text = passed and "Start Working!" or "Close"
+	actionBtn.TextSize = textSize(16)
+	actionBtn.TextColor3 = C.White
+	actionBtn.Font = Enum.Font.GothamBold
+	actionBtn.AutoButtonColor = false
+	actionBtn.ZIndex = 106
+	actionBtn.Parent = resultFrame
+	UI.corner(actionBtn, 10)
+	
+	-- Hover effect
+	actionBtn.MouseEnter:Connect(function()
+		UI.tween(actionBtn, TweenInfo.new(0.15), { Size = UDim2.new(0.82, 0, 0, px(47)) })
+	end)
+	actionBtn.MouseLeave:Connect(function()
+		UI.tween(actionBtn, TweenInfo.new(0.15), { Size = UDim2.new(0.8, 0, 0, px(45)) })
+	end)
+	
+	actionBtn.MouseButton1Click:Connect(function()
+		self:hideInterviewModal()
+		
+		if passed then
+			-- Actually apply for the job now
+			self:finalizeJobApplication(interviewState.jobId, score)
+		else
+			self:addFeed("📋 Better luck next time! Keep improving your interview skills.")
+		end
+	end)
+	
+	-- Reset interview state
+	interviewState.active = false
+end
+
+function OccupationScreen:finalizeJobApplication(jobId, interviewScore)
+	log("Finalizing job application for: " .. tostring(jobId) .. " with score: " .. interviewScore)
+	
+	-- Show loading state
+	self:addFeed("📝 Processing your job application...")
+	
+	-- Call server to actually apply for the job
+	local success, result = pcall(function()
+		return Remotes.ApplyForJob:InvokeServer(jobId, interviewScore)
+	end)
+	
+	if success then
+		if result and result.success then
+			self:addFeed("🎉 Congratulations! You got the job as " .. (result.jobName or "employee") .. "!")
+			if result.salary then
+				self:addFeed("💵 Starting salary: $" .. tostring(result.salary) .. "/year")
+			end
+			-- Refresh the occupation display
+			self:updateState(self.state)
+		else
+			local reason = result and result.reason or "Unknown error"
+			self:addFeed("❌ Application issue: " .. reason)
+		end
+	else
+		log("ERROR applying for job: " .. tostring(result))
+		self:addFeed("⚠️ Something went wrong. Please try again.")
+	end
+end
+
+function OccupationScreen:hideInterviewModal()
+	if not self.interviewOverlay then return end
+	log("Hiding interview modal")
+	
+	-- Reset state
+	interviewState.active = false
+	
+	local tweenInfo = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	
+	if self.interviewShell then
+		UI.tween(self.interviewShell, tweenInfo, {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			BackgroundTransparency = 0.5
+		})
+	end
+	
+	if self.interviewShadow then
+		UI.tween(self.interviewShadow, tweenInfo, {
+			Position = UDim2.new(0.5, 3, 0.5, 28),
+			BackgroundTransparency = 1
+		})
+	end
+	
+	task.delay(0.18, function()
+		if self.interviewOverlay then
+			self.interviewOverlay:Destroy()
+			self.interviewOverlay = nil
+		end
+	end)
+end
+
+function OccupationScreen:addFeed(message)
+	-- Helper to add feed messages
+	if self.state and self.state.PendingFeed then
+		table.insert(self.state.PendingFeed, message)
+	end
+	log("FEED: " .. message)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #MOBILE-13: LOCKED JOB CARD for gamepass-required jobs
 -- Shows the job with a 🔒 lock icon and "Get Gamepass" purchase button
 -- This matches the Mafia screen pattern for premium content
@@ -5785,12 +7047,83 @@ function OccupationScreen:createResultModal()
 end
 
 function OccupationScreen:applyForJob(jobId)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FEATURE: Interview System for EVERY JOB
+	-- Every job now requires an interview before hiring!
+	-- This implements the comprehensive interview process requested by the user
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	-- CRITICAL FIX: Enhanced action logging for debugging
 	logAction("APPLY_JOB", jobId, "Apply for Job", string.format("Age: %d | Money: %d", self:getAge(), self:getMoney()))
 	
-	log("=== APPLYING FOR JOB ===")
+	log("=== APPLYING FOR JOB (WITH INTERVIEW) ===")
 	log("Job ID:", jobId)
 	log("Player Age:", self:getAge(), "Money:", self:getMoney())
+	
+	-- Find job data from our Jobs table
+	local jobData = nil
+	for _, job in ipairs(Jobs) do
+		if job.id == jobId then
+			jobData = job
+			break
+		end
+	end
+	
+	if not jobData then
+		log("Job not found in catalog, creating basic job data")
+		jobData = {
+			id = jobId,
+			name = jobId:gsub("_", " "):gsub("^%l", string.upper),
+			company = "Company",
+			emoji = "💼",
+			category = "default",
+		}
+	end
+	
+	-- Check if this is a premium/special job that should skip interview
+	local skipInterviewJobs = {
+		-- Criminal/Mafia jobs skip normal interview (they have their own "initiation")
+		"mafia_associate", "mafia_soldier", "mafia_enforcer", "mafia_capo", "mafia_underboss", "mafia_boss",
+		"street_dealer", "drug_runner", "fence", "bookie",
+		-- Royalty doesn't interview
+		"royal", "prince", "princess", "king", "queen",
+	}
+	
+	local shouldSkipInterview = false
+	for _, skipJob in ipairs(skipInterviewJobs) do
+		if jobId:lower():find(skipJob) then
+			shouldSkipInterview = true
+			break
+		end
+	end
+	
+	-- Also skip interview for very entry-level jobs (they might do quick hire)
+	local quickHireJobs = {
+		"newspaper_delivery", "dog_walker", "babysitter", "lawn_mower",
+	}
+	for _, quickJob in ipairs(quickHireJobs) do
+		if jobId == quickJob then
+			shouldSkipInterview = true
+			break
+		end
+	end
+	
+	if shouldSkipInterview then
+		log("Skipping interview for special job: " .. jobId)
+		-- Direct application for special jobs
+		self:directApplyForJob(jobId)
+		return
+	end
+	
+	-- Show the interview modal!
+	log("Starting interview for job: " .. jobId)
+	self:showInterviewModal(jobId, jobData)
+end
+
+-- Direct application without interview (for special jobs)
+function OccupationScreen:directApplyForJob(jobId)
+	log("=== DIRECT JOB APPLICATION (NO INTERVIEW) ===")
+	log("Job ID:", jobId)
 
 	if not ApplyForJob then
 		logWarn("ApplyForJob remote not available!")
