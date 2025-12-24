@@ -18094,11 +18094,19 @@ end
 -- ════════════════════════════════════════════════════════════════════════════════
 function LifeBackend:createBasicRelationship(state, relType)
 	state.Relationships = state.Relationships or {}
+	state.Flags = state.Flags or {}
 
 	-- Generate random name
 	local firstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery" }
 	local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" }
 	local randomName = firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+
+	-- CRITICAL FIX: Better age range for romantic partners (especially when old!)
+	-- User complaint: "ROMANCE DOSENT WORK SOMETIMES LIKE WHEN OLD"
+	local playerAge = state.Age or 20
+	local partnerAgeMin = math.max(18, playerAge - 15) -- No more than 15 years younger, min 18
+	local partnerAgeMax = playerAge + 10 -- No more than 10 years older
+	local partnerAge = math.random(partnerAgeMin, partnerAgeMax)
 
 	local newId = string.format("%s_%s_%d", relType, os.time(), math.random(1000, 9999))
 	local relationship = {
@@ -18106,8 +18114,8 @@ function LifeBackend:createBasicRelationship(state, relType)
 		name = randomName,
 		type = relType,
 		role = relType == "friend" and "Friend" or relType == "romance" and "Partner" or "Person",
-		relationship = 50,
-		age = (state.Age or 20) + math.random(-5, 5),
+		relationship = 60, -- CRITICAL FIX: Start at 60 instead of 50 for more immediate connection
+		age = partnerAge,
 		alive = true,
 	}
 
@@ -18116,6 +18124,17 @@ function LifeBackend:createBasicRelationship(state, relType)
 	if relType == "friend" then
 		state.Relationships.friends = state.Relationships.friends or {}
 		table.insert(state.Relationships.friends, relationship)
+	end
+
+	-- CRITICAL FIX: Romance/partner relationships MUST set partner reference and flags!
+	-- User complaint: "I CLICK FIND AND PERSON DOSENT SHOWUP EVEN THO IT SAYS I HIT IT OFF"
+	-- The issue: createBasicRelationship was NOT setting state.Relationships.partner
+	-- So the romance was created but UI couldn't find it!
+	if relType == "romance" or relType == "partner" then
+		state.Relationships.partner = relationship
+		state.Flags.has_partner = true
+		state.Flags.dating = true
+		debugPrint("[createBasicRelationship] Set partner reference for romance: " .. randomName)
 	end
 
 	debugPrint("[createBasicRelationship] Created basic " .. relType .. ": " .. randomName)
@@ -18279,7 +18298,16 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 			return partner
 		end
 
-		return self:createRelationship(state, "romance", options.relationshipOptions)
+		-- CRITICAL FIX: Ensure relationshipOptions is never nil for romance
+		-- User complaint: "ROMANCE DOSENT WORK SOMETIMES LIKE WHEN OLD"
+		local relOptions = options.relationshipOptions or {}
+		local result = self:createRelationship(state, "romance", relOptions)
+		if not result then
+			-- Fallback: create a basic partner if createRelationship failed
+			debugPrint("[ensureRelationship] createRelationship returned nil for romance, creating basic partner")
+			return self:createBasicRelationship(state, "romance")
+		end
+		return result
 	end
 
 	-- Enemy: create new enemy if no specific target
@@ -18874,9 +18902,15 @@ function LifeBackend:handleMinigameResult(player, won, payload)
 		}
 		local postMoney = state.Money or 0
 		
+		-- CRITICAL FIX: skipClientPopup = true for minigame results!
+		-- User complaint: "RESULT LIKE FROM MINIGAMES THE CARD POP UPS TWO TYPES POPUP"
+		-- The minigame already showed its own result screen (VICTORY!/YOU LOST)
+		-- So we set skipClientPopup = true to prevent a SECOND popup from ShowResult
 		local resultData = {
-			showPopup = true,
+			showPopup = false, -- CRITICAL FIX: Don't show extra popup - minigame already showed result
+			skipClientPopup = true, -- CRITICAL FIX: Explicit flag to skip client popup
 			wasSuccess = won,
+			wasMinigame = true, -- Flag to indicate this was a minigame result
 			emoji = won and "🎉" or "😓",
 			title = won and "Success!" or "Failed!",
 			body = choice.feedText or (won and "You succeeded at the challenge!" or "You failed the challenge."),

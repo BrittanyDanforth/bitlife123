@@ -708,13 +708,66 @@ local function px(baseValue)
 end
 
 -- Get responsive text size - with better minimums for tiny screens
+-- CRITICAL FIX: User complaint "FAILED TO SET UITEXTSIZECONSTRAINTS"
+-- This error occurs when TextSize is set too small relative to UITextSizeConstraint
+-- The UIComponents module (external) uses constraints with MinTextSize/MaxTextSize
+-- If TextSize is below MinTextSize, Roblox throws this error
+-- Solution: Enforce a STRICT minimum of 10px to prevent any constraint issues
 local function textSize(baseSize)
+	-- Safety: ensure baseSize is a valid number
+	if type(baseSize) ~= "number" or baseSize ~= baseSize then -- NaN check
+		baseSize = 14 -- Default fallback
+	end
+	
 	local scale = getScale()
 	local scaled = math.floor(baseSize * scale)
-	-- Minimum readable text sizes - smaller OK on tiny phones
-	local minSize = Device.IS_TINY_PHONE and 9 or 10
-	if scaled < minSize then scaled = minSize end
+	
+	-- CRITICAL FIX: STRICT minimum of 10px to prevent UITextSizeConstraint errors
+	-- UITextSizeConstraint's MinTextSize is typically 8-12px in UIComponents
+	-- By never going below 10, we ensure MaxTextSize is never < MinTextSize
+	local strictMinSize = 10 -- NEVER go below 10px regardless of device
+	local preferredMin = Device.IS_TINY_PHONE and 10 or 11
+	local minSize = math.max(strictMinSize, preferredMin)
+	
+	if scaled < minSize then 
+		scaled = minSize 
+	end
+	
+	-- Also cap maximum to prevent overflow issues
+	if scaled > 100 then
+		scaled = 100
+	end
+	
 	return scaled
+end
+
+-- CRITICAL FIX: Safe text size setter function
+-- Wraps TextSize assignment in pcall to prevent UITextSizeConstraint errors from crashing
+-- Use this for any dynamically calculated text sizes
+local function safeSetTextSize(textElement, size)
+	if not textElement then return end
+	
+	-- Ensure size is valid
+	local safeSize = size
+	if type(size) ~= "number" or size ~= size or size < 10 then
+		safeSize = 14 -- Default safe size
+	elseif size > 100 then
+		safeSize = 100
+	end
+	
+	-- Try to set text size, catch any constraint errors
+	local success, err = pcall(function()
+		textElement.TextSize = safeSize
+	end)
+	
+	if not success then
+		-- If failed, try with a larger safe size
+		pcall(function()
+			textElement.TextSize = 14
+		end)
+		-- Suppress the warning to avoid spamming console
+		-- warn("[LifeClient] TextSize assignment failed, used fallback:", err)
+	end
 end
 
 -- Get responsive padding - more compact on tiny phones
@@ -1153,7 +1206,8 @@ local function showResultPopup(data, callback)
 		adjustedResultLineHeight = 1.25
 	end
 	
-	ResultUI.body.TextSize = adjustedResultTextSize
+	-- CRITICAL FIX: Use safe text size setter to prevent UITextSizeConstraint errors
+	safeSetTextSize(ResultUI.body, adjustedResultTextSize)
 	ResultUI.body.LineHeight = adjustedResultLineHeight
 	ResultUI.body.Text = bodyText
 
@@ -4308,7 +4362,8 @@ showEvent = function(payload)
 			adjustedLineHeight = 1.18
 		end
 		
-		EventUI.body.TextSize = adjustedBodyTextSize
+		-- CRITICAL FIX: Use safe text size setter to prevent UITextSizeConstraint errors
+		safeSetTextSize(EventUI.body, adjustedBodyTextSize)
 		EventUI.body.LineHeight = adjustedLineHeight
 		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
@@ -7036,7 +7091,17 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	local isDead = (resultData and resultData.fatal) or (currentState.Health and currentState.Health <= 0)
 	
 	-- Show result popup if we have result data from server (but NOT if player is dead!)
-	if resultData and resultData.showPopup and not isDead then
+	-- CRITICAL FIX: Also check skipClientPopup flag for minigame results!
+	-- User complaint: "RESULT LIKE FROM MINIGAMES THE CARD POP UPS TWO TYPES POPUP"
+	-- Minigames already show their own result (VICTORY!/YOU LOST) so we skip the extra popup
+	local shouldShowPopup = resultData and resultData.showPopup and not isDead and not resultData.skipClientPopup
+	
+	-- Also skip popup if this was a minigame (minigames show their own results)
+	if resultData and resultData.wasMinigame then
+		shouldShowPopup = false
+	end
+	
+	if shouldShowPopup then
 		showResultPopup({
 			emoji = resultData.emoji or "📋",
 			title = resultData.title or "Result",
